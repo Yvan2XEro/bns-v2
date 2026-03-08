@@ -69,6 +69,14 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    listings: Listing;
+    categories: Category;
+    favorites: Favorite;
+    conversations: Conversation;
+    messages: Message;
+    reviews: Review;
+    reports: Report;
+    'boost-payments': BoostPayment;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,18 +86,29 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    listings: ListingsSelect<false> | ListingsSelect<true>;
+    categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    favorites: FavoritesSelect<false> | FavoritesSelect<true>;
+    conversations: ConversationsSelect<false> | ConversationsSelect<true>;
+    messages: MessagesSelect<false> | MessagesSelect<true>;
+    reviews: ReviewsSelect<false> | ReviewsSelect<true>;
+    reports: ReportsSelect<false> | ReportsSelect<true>;
+    'boost-payments': BoostPaymentsSelect<false> | BoostPaymentsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
   globals: {};
   globalsSelect: {};
   locale: null;
+  widgets: {
+    collections: CollectionsWidget;
+  };
   user: User;
   jobs: {
     tasks: unknown;
@@ -119,9 +138,18 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
-  updatedAt: string;
+  id: number;
+  name: string;
+  avatar?: (number | null) | Media;
+  role: 'user' | 'moderator' | 'admin';
+  rating?: number | null;
+  totalReviews?: number | null;
+  bio?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  verified?: boolean | null;
   createdAt: string;
+  updatedAt: string;
   email: string;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
@@ -144,7 +172,7 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -160,10 +188,160 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listings".
+ */
+export interface Listing {
+  id: number;
+  title: string;
+  description: string;
+  price: number;
+  images?:
+    | {
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  location: string;
+  seller?: (number | null) | User;
+  category: number | Category;
+  status: 'draft' | 'published' | 'sold' | 'deleted';
+  boostedUntil?: string | null;
+  views?: number | null;
+  attributes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  icon?: string | null;
+  image?: (number | null) | Media;
+  parent?: (number | null) | Category;
+  active?: boolean | null;
+  attributes?:
+    | {
+        name: string;
+        slug: string;
+        type: 'text' | 'number' | 'select' | 'boolean' | 'date';
+        required?: boolean | null;
+        filterable?: boolean | null;
+        options?:
+          | {
+              value: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "favorites".
+ */
+export interface Favorite {
+  id: number;
+  user: number | User;
+  listing: number | Listing;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversations".
+ */
+export interface Conversation {
+  id: number;
+  participants: (number | User)[];
+  listing?: (number | null) | Listing;
+  lastMessage?: (number | null) | Message;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages".
+ */
+export interface Message {
+  id: number;
+  conversation: number | Conversation;
+  sender: number | User;
+  content: string;
+  read?: boolean | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews".
+ */
+export interface Review {
+  id: number;
+  reviewer: number | User;
+  reviewedUser: number | User;
+  listing?: (number | null) | Listing;
+  rating: number;
+  comment?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reports".
+ */
+export interface Report {
+  id: number;
+  reporter: number | User;
+  targetType: 'listing' | 'user' | 'message';
+  targetId: string;
+  reason: 'spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other';
+  description?: string | null;
+  status: 'pending' | 'reviewed' | 'resolved';
+  resolution?: string | null;
+  resolvedBy?: (number | null) | User;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "boost-payments".
+ */
+export interface BoostPayment {
+  id: number;
+  listing: number | Listing;
+  user: number | User;
+  amount: number;
+  duration: '7' | '14' | '30';
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  paymentProvider: 'notchpay';
+  paymentReference?: string | null;
+  paymentUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -180,20 +358,52 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'listings';
+        value: number | Listing;
+      } | null)
+    | ({
+        relationTo: 'categories';
+        value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'favorites';
+        value: number | Favorite;
+      } | null)
+    | ({
+        relationTo: 'conversations';
+        value: number | Conversation;
+      } | null)
+    | ({
+        relationTo: 'messages';
+        value: number | Message;
+      } | null)
+    | ({
+        relationTo: 'reviews';
+        value: number | Review;
+      } | null)
+    | ({
+        relationTo: 'reports';
+        value: number | Report;
+      } | null)
+    | ({
+        relationTo: 'boost-payments';
+        value: number | BoostPayment;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -203,10 +413,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -226,7 +436,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -237,8 +447,17 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  updatedAt?: T;
+  name?: T;
+  avatar?: T;
+  role?: T;
+  rating?: T;
+  totalReviews?: T;
+  bio?: T;
+  phone?: T;
+  location?: T;
+  verified?: T;
   createdAt?: T;
+  updatedAt?: T;
   email?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;
@@ -271,6 +490,140 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listings_select".
+ */
+export interface ListingsSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  price?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  location?: T;
+  seller?: T;
+  category?: T;
+  status?: T;
+  boostedUntil?: T;
+  views?: T;
+  attributes?: T;
+  condition?: T;
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  icon?: T;
+  image?: T;
+  parent?: T;
+  active?: T;
+  attributes?:
+    | T
+    | {
+        name?: T;
+        slug?: T;
+        type?: T;
+        required?: T;
+        filterable?: T;
+        options?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "favorites_select".
+ */
+export interface FavoritesSelect<T extends boolean = true> {
+  user?: T;
+  listing?: T;
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversations_select".
+ */
+export interface ConversationsSelect<T extends boolean = true> {
+  participants?: T;
+  listing?: T;
+  lastMessage?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "messages_select".
+ */
+export interface MessagesSelect<T extends boolean = true> {
+  conversation?: T;
+  sender?: T;
+  content?: T;
+  read?: T;
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reviews_select".
+ */
+export interface ReviewsSelect<T extends boolean = true> {
+  reviewer?: T;
+  reviewedUser?: T;
+  listing?: T;
+  rating?: T;
+  comment?: T;
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reports_select".
+ */
+export interface ReportsSelect<T extends boolean = true> {
+  reporter?: T;
+  targetType?: T;
+  targetId?: T;
+  reason?: T;
+  description?: T;
+  status?: T;
+  resolution?: T;
+  resolvedBy?: T;
+  createdAt?: T;
+  updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "boost-payments_select".
+ */
+export interface BoostPaymentsSelect<T extends boolean = true> {
+  listing?: T;
+  user?: T;
+  amount?: T;
+  duration?: T;
+  status?: T;
+  paymentProvider?: T;
+  paymentReference?: T;
+  paymentUrl?: T;
+  createdAt?: T;
+  updatedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -311,6 +664,16 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collections_widget".
+ */
+export interface CollectionsWidget {
+  data?: {
+    [k: string]: unknown;
+  };
+  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
