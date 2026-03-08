@@ -1,0 +1,95 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+	"root": false,
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"javascript": {
+		"jsxRuntime": "transparent",
+		"globals": [
+			"__DEV__",
+			"ErrorUtils",
+			"FormData",
+			"XMLHttpRequest",
+			"alert",
+			"cancelAnimationFrame",
+			"cancelIdleCallback",
+			"clearImmediate",
+			"fetch",
+			"navigator",
+			"process",
+			"requestAnimationFrame",
+			"requestIdleCallback",
+			"setImmediate",
+			"window"
+		]
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"correctness": {
+				"noUnreachable": "warn",
+				"noUnusedLabels": "warn",
+				"noUnusedVariables": "warn",
+				"noUnusedImports": "warn",
+				"useIsNan": "error",
+				"useJsxKeyInIterable": "error",
+				"useExhaustiveDependencies": "warn",
+				"useHookAtTopLevel": "error",
+				"useValidTypeof": "error"
+			},
+			"suspicious": {
+				"noDoubleEquals": "warn",
+				"noDuplicateParameters": "error",
+				"noDuplicateClassMembers": "error",
+				"noDuplicateObjectKeys": "error",
+				"noDuplicateCase": "error",
+				"noDuplicateJsxProps": "error",
+				"noRedeclare": "warn",
+				"noUnsafeNegation": "warn",
+				"noExtraNonNullAssertion": "warn",
+				"noArrayIndexKey": "warn",
+				"noVar": "error",
+				"noWith": "warn"
+			},
+			"style": {
+				"useConsistentArrayType": {
+					"level": "warn",
+					"options": {
+						"syntax": "shorthand"
+					}
+				},
+				"useConst": "warn",
+				"useImportType": "warn"
+			},
+			"complexity": {
+				"noUselessConstructor": "warn",
+				"useFlatMap": "warn",
+				"useOptionalChain": "warn"
+			},
+			"security": {
+				"noDangerouslySetInnerHtml": "warn"
+			},
+			"performance": {
+				"noDelete": "warn"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "space",
+		"indentWidth": 2,
+		"lineWidth": 100
+	},
+	"overrides": [
+		{
+			"includes": ["*.config.js", "*.config.ts", "metro.config.*"],
+			"javascript": {
+				"globals": ["__dirname", "__filename", "require", "module", "exports"]
+			}
+		}
+	]
+}
