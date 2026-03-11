@@ -26,7 +26,7 @@ RUN mkdir -p public
 RUN bun run build
 
 # --- Runner ---
-FROM node:22-alpine AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -34,14 +34,25 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy standalone output
+COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/standalone ./
 COPY --from=builder /app/packages/api/public ./packages/api/public
 RUN mkdir -p packages/api/.next && chown nextjs:nodejs packages/api/.next
-
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/static ./packages/api/.next/static
+
+# Copy source + deps needed for payload migrate
+COPY --from=builder --chown=nextjs:nodejs /app/packages/api/src ./packages/api/src
+COPY --from=builder --chown=nextjs:nodejs /app/packages/api/tsconfig.json ./packages/api/tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/packages/api/package.json ./packages/api/package.json
+COPY --from=builder --chown=nextjs:nodejs /app/packages/api/node_modules ./packages/api/node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Entrypoint: run migrations then start
+COPY --chown=nextjs:nodejs packages/api/docker-entrypoint.sh ./packages/api/docker-entrypoint.sh
+RUN chmod +x ./packages/api/docker-entrypoint.sh
 
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 WORKDIR /app/packages/api
-CMD HOSTNAME="0.0.0.0" node server.js
+CMD ["./docker-entrypoint.sh"]
