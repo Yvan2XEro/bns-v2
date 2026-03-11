@@ -19,6 +19,7 @@ ENV PAYLOAD_SECRET=$PAYLOAD_SECRET
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
+COPY package.json ./
 COPY packages/api ./packages/api
 COPY packages/biome-config ./packages/biome-config
 
