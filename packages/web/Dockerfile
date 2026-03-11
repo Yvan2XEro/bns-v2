@@ -36,13 +36,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/packages/web/public ./public
-RUN mkdir .next && chown nextjs:nodejs .next
+COPY --from=builder /app/packages/web/public ./packages/web/public
+RUN mkdir -p packages/web/.next && chown nextjs:nodejs packages/web/.next
 
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
 
 USER nextjs
 EXPOSE 3001
 ENV PORT=3001
+WORKDIR /app/packages/web
 CMD HOSTNAME="0.0.0.0" node server.js
