@@ -20,12 +20,10 @@
 	},
 	"dependencies": {
 		"@faker-js/faker": "^10.3.0",
-		"@payload-auth/better-auth-plugin": "^1.1.8",
 		"@payloadcms/db-postgres": "3.79.0",
 		"@payloadcms/next": "3.79.0",
 		"@payloadcms/richtext-lexical": "3.79.0",
 		"@payloadcms/ui": "3.79.0",
-		"better-auth": "^1.5.4",
 		"cross-env": "^7.0.3",
 		"dotenv": "16.4.7",
 		"graphql": "^16.8.1",
@@ -34,6 +32,7 @@
 		"payload": "3.79.0",
 		"react": "19.2.1",
 		"react-dom": "19.2.1",
+		"redis": "^4.7.0",
 		"sharp": "0.34.2"
 	},
 	"devDependencies": {
