@@ -24,6 +24,7 @@ COPY packages/biome-config ./packages/biome-config
 
 WORKDIR /app/packages/api
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN mkdir -p public
 RUN bun run build
 
 # --- Runner ---
