@@ -1,6 +1,7 @@
 import { MeiliSearch } from "meilisearch";
+import type { Where } from "payload";
 import { getPayload } from "payload";
-import config from "../../../../payload.config";
+import config from "@payload-config";
 
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 
 	if (!host) {
 		const payload = await getPayload({ config });
-		const where: Record<string, unknown> = {
+		const where: Where = {
 			status: { equals: "published" },
 		};
 
@@ -67,12 +68,10 @@ export async function GET(request: Request) {
 		}
 
 		if (minPrice || maxPrice) {
-			where.price = {};
-			if (minPrice)
-				(where.price as Record<string, number>).greater_than =
-					parseInt(minPrice);
-			if (maxPrice)
-				(where.price as Record<string, number>).less_than = parseInt(maxPrice);
+			const priceFilter: Record<string, number> = {};
+			if (minPrice) priceFilter.greater_than = parseInt(minPrice);
+			if (maxPrice) priceFilter.less_than = parseInt(maxPrice);
+			where.price = priceFilter;
 		}
 
 		if (location) {
@@ -83,12 +82,12 @@ export async function GET(request: Request) {
 			collection: "listings",
 			where,
 			limit,
-			offset,
+			page: Math.floor(offset / limit) + 1,
 			sort: "-createdAt",
 		});
 
 		return Response.json({
-			hits: result.docs.map((doc: Record<string, unknown>) => ({
+			hits: result.docs.map((doc) => ({
 				id: doc.id,
 				title: doc.title,
 				description: doc.description,

@@ -1,5 +1,5 @@
 import { getPayload } from "payload";
-import config from "../../../../payload.config";
+import config from "@payload-config";
 
 export async function POST(request: Request) {
 	try {
