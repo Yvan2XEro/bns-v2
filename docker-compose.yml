@@ -70,11 +70,19 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.bns_api.rule=Host(`api.buynsellem.com`)"
-      - "traefik.http.routers.bns_api.entrypoints=websecure"
-      - "traefik.http.routers.bns_api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.bns_api.service=bns_api"
-      - "traefik.http.services.bns_api.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
+      # HTTPS
+      - "traefik.http.routers.bns-api.rule=Host(`api.buynsellem.com`)"
+      - "traefik.http.routers.bns-api.entrypoints=websecure"
+      - "traefik.http.routers.bns-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-api.service=bns-api"
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.bns-api-http.rule=Host(`api.buynsellem.com`)"
+      - "traefik.http.routers.bns-api-http.entrypoints=web"
+      - "traefik.http.routers.bns-api-http.middlewares=bns-redirect-https"
+      - "traefik.http.middlewares.bns-redirect-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.bns-redirect-https.redirectscheme.permanent=true"
+      - "traefik.http.services.bns-api.loadbalancer.server.port=3000"
 
   web:
     build:
@@ -90,11 +98,17 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.bns_web.rule=Host(`buynsellem.com`) || Host(`www.buynsellem.com`)"
-      - "traefik.http.routers.bns_web.entrypoints=websecure"
-      - "traefik.http.routers.bns_web.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.bns_web.service=bns_web"
-      - "traefik.http.services.bns_web.loadbalancer.server.port=3001"
+      - "traefik.docker.network=dokploy-network"
+      # HTTPS
+      - "traefik.http.routers.bns-web.rule=Host(`buynsellem.com`) || Host(`www.buynsellem.com`)"
+      - "traefik.http.routers.bns-web.entrypoints=websecure"
+      - "traefik.http.routers.bns-web.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-web.service=bns-web"
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.bns-web-http.rule=Host(`buynsellem.com`) || Host(`www.buynsellem.com`)"
+      - "traefik.http.routers.bns-web-http.entrypoints=web"
+      - "traefik.http.routers.bns-web-http.middlewares=bns-redirect-https"
+      - "traefik.http.services.bns-web.loadbalancer.server.port=3001"
 
   chat-service:
     build:
@@ -115,11 +129,17 @@ services:
       - dokploy-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.bns_chat.rule=Host(`chat.buynsellem.com`)"
-      - "traefik.http.routers.bns_chat.entrypoints=websecure"
-      - "traefik.http.routers.bns_chat.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.bns_chat.service=bns_chat"
-      - "traefik.http.services.bns_chat.loadbalancer.server.port=4000"
+      - "traefik.docker.network=dokploy-network"
+      # HTTPS
+      - "traefik.http.routers.bns-chat.rule=Host(`chat.buynsellem.com`)"
+      - "traefik.http.routers.bns-chat.entrypoints=websecure"
+      - "traefik.http.routers.bns-chat.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-chat.service=bns-chat"
+      # HTTP -> HTTPS redirect
+      - "traefik.http.routers.bns-chat-http.rule=Host(`chat.buynsellem.com`)"
+      - "traefik.http.routers.bns-chat-http.entrypoints=web"
+      - "traefik.http.routers.bns-chat-http.middlewares=bns-redirect-https"
+      - "traefik.http.services.bns-chat.loadbalancer.server.port=4000"
 
   search-indexer:
     build:
