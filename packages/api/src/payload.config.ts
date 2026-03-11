@@ -38,13 +38,13 @@ export default buildConfig({
 		BoostPayments,
 	],
 	editor: lexicalEditor(),
-	secret: process.env.PAYLOAD_SECRET || "",
+	secret: process.env.PAYLOAD_SECRET || "default-secret-change-me",
 	typescript: {
 		outputFile: path.resolve(dirname, "payload-types.ts"),
 	},
 	db: postgresAdapter({
 		pool: {
-			connectionString: process.env.DATABASE_URL || "",
+			connectionString: process.env.DATABASE_URL,
 		},
 	}),
 	sharp,
