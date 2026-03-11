@@ -1,0 +1,19 @@
+# Production overrides — use pre-built images from GHCR instead of building locally
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  api:
+    build: !reset null
+    image: ghcr.io/${GITHUB_REPO}/api:main
+
+  web:
+    build: !reset null
+    image: ghcr.io/${GITHUB_REPO}/web:main
+
+  chat-service:
+    build: !reset null
+    image: ghcr.io/${GITHUB_REPO}/chat-service:main
+
+  search-indexer:
+    build: !reset null
+    image: ghcr.io/${GITHUB_REPO}/search-indexer:main
