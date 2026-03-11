@@ -28,6 +28,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN mkdir -p public
 RUN bun run build
 
+# Normalize standalone output: handle both flat and monorepo structures
+RUN if [ -f .next/standalone/server.js ]; then \
+      mkdir -p /standalone && cp -r .next/standalone/* /standalone/; \
+    elif [ -f .next/standalone/packages/api/server.js ]; then \
+      mkdir -p /standalone && \
+      cp -r .next/standalone/node_modules /standalone/ 2>/dev/null || true && \
+      cp -r .next/standalone/packages/api/* /standalone/; \
+    fi
+
 # --- Runner ---
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -37,14 +46,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/packages/api/public ./packages/api/public
-RUN mkdir -p packages/api/.next && chown nextjs:nodejs packages/api/.next
+COPY --from=builder /app/packages/api/public ./public
+RUN mkdir .next && chown nextjs:nodejs .next
 
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/static ./packages/api/.next/static
+COPY --from=builder --chown=nextjs:nodejs /standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
-WORKDIR /app/packages/api
 CMD HOSTNAME="0.0.0.0" node server.js
