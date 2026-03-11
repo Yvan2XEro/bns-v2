@@ -39,30 +39,20 @@ export const Listings: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc, operation, req }) => {
-				if (process.env.MEILI_HOST) {
-					const { syncListingToMeilisearch } = await import(
-						"../hooks/meilisearch"
-					);
-					await syncListingToMeilisearch({
-						doc,
-						operation,
-						req,
-					});
+			async ({ doc, operation }) => {
+				if (process.env.REDIS_URL) {
+					const { publishSearchEvent } = await import("../hooks/searchEvents");
+					const event =
+						operation === "create" ? "listing.created" : "listing.updated";
+					await publishSearchEvent(event, doc.id as string);
 				}
 			},
 		],
 		afterDelete: [
-			async ({ doc, req }) => {
-				if (process.env.MEILI_HOST) {
-					const { syncListingToMeilisearch } = await import(
-						"../hooks/meilisearch"
-					);
-					await syncListingToMeilisearch({
-						doc,
-						operation: "delete",
-						req,
-					});
+			async ({ doc }) => {
+				if (process.env.REDIS_URL) {
+					const { publishSearchEvent } = await import("../hooks/searchEvents");
+					await publishSearchEvent("listing.deleted", doc.id as string);
 				}
 			},
 		],
@@ -109,9 +99,9 @@ export const Listings: CollectionConfig = {
 			relationTo: "users",
 			required: false,
 			hasMany: false,
-			admin: {
-				readOnly: true,
-			},
+			// admin: {
+			// 	readOnly: true,
+			// },
 		},
 		{
 			name: "category",

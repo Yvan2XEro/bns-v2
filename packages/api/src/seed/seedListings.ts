@@ -259,7 +259,7 @@ export const seedListings = async (
 	categories: Category[],
 	users: User[],
 ) => {
-	const listings: { id: string }[] = [];
+	const listings: { id: string; seller: string | { id: string } }[] = [];
 
 	const leafCategories = categories.filter((c) =>
 		[
@@ -372,7 +372,7 @@ export const seedListings = async (
 			});
 		}
 
-		listings.push(result);
+		listings.push({ ...result, seller: seller.id });
 	}
 
 	return listings;

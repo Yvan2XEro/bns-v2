@@ -49,4 +49,5 @@ export default buildConfig({
 	}),
 	sharp,
 	plugins: [],
+	cors: ["*", ...(process.env.PAYLOAD_ALLOWED_ORIGINS?.split(",") || [])],
 });

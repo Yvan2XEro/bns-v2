@@ -23,7 +23,7 @@ const clearCollections = async (
 		"listings",
 		"categories",
 		"users",
-	];
+	] as const;
 
 	for (const collection of collections) {
 		try {
