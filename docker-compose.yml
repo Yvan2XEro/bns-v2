@@ -1,7 +1,7 @@
 services:
   # --- Infrastructure ---
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-bns}
