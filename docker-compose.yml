@@ -55,7 +55,7 @@ services:
       dockerfile: packages/api/Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-bns}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bns}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-bns}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bns}}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
       PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://buynsellem.com,https://www.buynsellem.com}
       REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
