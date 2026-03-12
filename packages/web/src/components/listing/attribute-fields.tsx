@@ -44,7 +44,7 @@ export function AttributeFields({
 							<Select
 								value={values[attr.slug] || ""}
 								onValueChange={(v) => onChange(attr.slug, v)}
-								required={attr.required}
+								required={attr.required ?? undefined}
 							>
 								<SelectTrigger>
 									<SelectValue placeholder={`Select ${attr.name}`} />
@@ -76,7 +76,7 @@ export function AttributeFields({
 								placeholder={attr.name}
 								value={values[attr.slug] || ""}
 								onChange={(e) => onChange(attr.slug, e.target.value)}
-								required={attr.required}
+								required={attr.required ?? undefined}
 							/>
 						)}
 					</div>

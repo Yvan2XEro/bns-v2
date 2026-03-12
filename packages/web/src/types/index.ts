@@ -40,7 +40,8 @@ export interface CategoryAttribute {
 	type: "text" | "number" | "select" | "boolean" | "date";
 	required?: boolean | null;
 	filterable?: boolean | null;
-	options?: { value: string; id?: string | null }[];
+	options?: { value: string; id?: string | null }[] | null;
+	id?: string | null;
 }
 
 export type ListingWithDetails = Listing & {
