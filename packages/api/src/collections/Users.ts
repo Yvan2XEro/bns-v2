@@ -13,6 +13,32 @@ export const Users: CollectionConfig = {
 		admin: ({ req }) =>
 			req.user?.role === "admin" || req.user?.role === "moderator",
 	},
+	hooks: {
+		beforeChange: [
+			({ req, data, operation }) => {
+				const user = req.user as { role?: string } | undefined;
+				const isAdmin = user?.role === "admin";
+
+				// On create, force role to "user" unless admin
+				if (operation === "create" && !isAdmin) {
+					data.role = "user";
+					data.verified = false;
+					data.rating = 0;
+					data.totalReviews = 0;
+				}
+
+				// On update, prevent non-admins from changing protected fields
+				if (operation === "update" && !isAdmin) {
+					delete data.role;
+					delete data.verified;
+					delete data.rating;
+					delete data.totalReviews;
+				}
+
+				return data;
+			},
+		],
+	},
 	fields: [
 		{
 			name: "name",
