@@ -3,7 +3,7 @@ import type { Listing, Message, User } from "~/types";
 import { MessagesClient } from "./messages-client";
 
 interface ConversationWithDetails {
-	id: number;
+	id: string;
 	participants: User[];
 	listing?: Listing;
 	lastMessage?: Message;
@@ -22,7 +22,7 @@ async function getConversations(): Promise<ConversationWithDetails[]> {
 	}
 }
 
-async function getMessages(conversationId: number): Promise<Message[]> {
+async function getMessages(conversationId: string): Promise<Message[]> {
 	try {
 		const res = await serverFetch(
 			`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&depth=1`,
@@ -47,13 +47,13 @@ async function getListing(id: string): Promise<Listing | null> {
 
 async function findOrCreateConversation(
 	listingId: string,
-	userId: number,
+	userId: string,
 	conversations: ConversationWithDetails[],
 ): Promise<ConversationWithDetails | null> {
 	// Check existing conversations for this listing
 	const existing = conversations.find((c) => {
 		const convListing = c.listing as Listing | undefined;
-		return convListing?.id === Number(listingId);
+		return convListing?.id === listingId;
 	});
 	if (existing) return existing;
 
@@ -75,7 +75,7 @@ async function findOrCreateConversation(
 			method: "POST",
 			body: JSON.stringify({
 				participants: [userId, sellerId],
-				listing: Number(listingId),
+				listing: listingId,
 			}),
 		});
 		if (!res.ok) return null;

@@ -44,7 +44,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	const [boostDuration, setBoostDuration] = useState<BoostDuration>("7");
 	const [isBoosting, setIsBoosting] = useState(false);
 
-	async function handleDelete(id: number) {
+	async function handleDelete(id: string) {
 		if (!confirm("Are you sure you want to delete this listing?")) return;
 
 		startTransition(async () => {

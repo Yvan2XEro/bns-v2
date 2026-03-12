@@ -75,7 +75,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 
 interface ListingGridProps {
 	listings: Listing[];
-	favorites?: number[];
+	favorites?: string[];
 	className?: string;
 }
 

@@ -4,7 +4,7 @@ import type { Favorite, Listing } from "~/types";
 
 async function getFavorites(): Promise<{
 	listings: Listing[];
-	favoriteIds: number[];
+	favoriteIds: string[];
 }> {
 	try {
 		const res = await serverFetch("/api/favorites");
@@ -13,13 +13,13 @@ async function getFavorites(): Promise<{
 		const data: Favorite[] = await res.json();
 
 		const favoriteIds = data.map((f) =>
-			typeof f.listing === "number" ? f.listing : f.listing.id,
+			typeof f.listing === "string" ? f.listing : f.listing.id,
 		);
 
 		// Resolve listing details for favorites that only have IDs
 		const listings = await Promise.all(
 			data.map(async (f) => {
-				if (typeof f.listing !== "number") return f.listing;
+				if (typeof f.listing !== "string") return f.listing;
 				try {
 					const res = await serverFetch(`/api/listings/${f.listing}`);
 					if (!res.ok) return null;

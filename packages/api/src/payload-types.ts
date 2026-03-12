@@ -100,7 +100,7 @@ export interface Config {
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: number;
+    defaultIDType: string;
   };
   fallbackLocale: null;
   globals: {};
@@ -138,9 +138,9 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: number;
+  id: string;
   name: string;
-  avatar?: (number | null) | Media;
+  avatar?: (string | null) | Media;
   role: 'user' | 'moderator' | 'admin';
   rating?: number | null;
   totalReviews?: number | null;
@@ -172,7 +172,7 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: number;
+  id: string;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -191,19 +191,19 @@ export interface Media {
  * via the `definition` "listings".
  */
 export interface Listing {
-  id: number;
+  id: string;
   title: string;
   description: string;
   price: number;
   images?:
     | {
-        image: number | Media;
+        image: string | Media;
         id?: string | null;
       }[]
     | null;
   location: string;
-  seller?: (number | null) | User;
-  category: number | Category;
+  seller?: (string | null) | User;
+  category: string | Category;
   status: 'draft' | 'published' | 'sold' | 'deleted';
   boostedUntil?: string | null;
   views?: number | null;
@@ -225,13 +225,13 @@ export interface Listing {
  * via the `definition` "categories".
  */
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   description?: string | null;
   icon?: string | null;
-  image?: (number | null) | Media;
-  parent?: (number | null) | Category;
+  image?: (string | null) | Media;
+  parent?: (string | null) | Category;
   active?: boolean | null;
   attributes?:
     | {
@@ -257,9 +257,9 @@ export interface Category {
  * via the `definition` "favorites".
  */
 export interface Favorite {
-  id: number;
-  user: number | User;
-  listing: number | Listing;
+  id: string;
+  user: string | User;
+  listing: string | Listing;
   createdAt: string;
   updatedAt: string;
 }
@@ -268,10 +268,10 @@ export interface Favorite {
  * via the `definition` "conversations".
  */
 export interface Conversation {
-  id: number;
-  participants: (number | User)[];
-  listing?: (number | null) | Listing;
-  lastMessage?: (number | null) | Message;
+  id: string;
+  participants: (string | User)[];
+  listing?: (string | null) | Listing;
+  lastMessage?: (string | null) | Message;
   updatedAt: string;
   createdAt: string;
 }
@@ -280,9 +280,9 @@ export interface Conversation {
  * via the `definition` "messages".
  */
 export interface Message {
-  id: number;
-  conversation: number | Conversation;
-  sender: number | User;
+  id: string;
+  conversation: string | Conversation;
+  sender: string | User;
   content: string;
   read?: boolean | null;
   createdAt: string;
@@ -293,10 +293,10 @@ export interface Message {
  * via the `definition` "reviews".
  */
 export interface Review {
-  id: number;
-  reviewer: number | User;
-  reviewedUser: number | User;
-  listing?: (number | null) | Listing;
+  id: string;
+  reviewer: string | User;
+  reviewedUser: string | User;
+  listing?: (string | null) | Listing;
   rating: number;
   comment?: string | null;
   createdAt: string;
@@ -307,15 +307,15 @@ export interface Review {
  * via the `definition` "reports".
  */
 export interface Report {
-  id: number;
-  reporter: number | User;
+  id: string;
+  reporter: string | User;
   targetType: 'listing' | 'user' | 'message';
   targetId: string;
   reason: 'spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other';
   description?: string | null;
   status: 'pending' | 'reviewed' | 'resolved';
   resolution?: string | null;
-  resolvedBy?: (number | null) | User;
+  resolvedBy?: (string | null) | User;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,9 +324,9 @@ export interface Report {
  * via the `definition` "boost-payments".
  */
 export interface BoostPayment {
-  id: number;
-  listing: number | Listing;
-  user: number | User;
+  id: string;
+  listing: string | Listing;
+  user: string | User;
   amount: number;
   duration: '7' | '14' | '30';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
@@ -341,7 +341,7 @@ export interface BoostPayment {
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: number;
+  id: string;
   key: string;
   data:
     | {
@@ -358,52 +358,52 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: number;
+  id: string;
   document?:
     | ({
         relationTo: 'users';
-        value: number | User;
+        value: string | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: number | Media;
+        value: string | Media;
       } | null)
     | ({
         relationTo: 'listings';
-        value: number | Listing;
+        value: string | Listing;
       } | null)
     | ({
         relationTo: 'categories';
-        value: number | Category;
+        value: string | Category;
       } | null)
     | ({
         relationTo: 'favorites';
-        value: number | Favorite;
+        value: string | Favorite;
       } | null)
     | ({
         relationTo: 'conversations';
-        value: number | Conversation;
+        value: string | Conversation;
       } | null)
     | ({
         relationTo: 'messages';
-        value: number | Message;
+        value: string | Message;
       } | null)
     | ({
         relationTo: 'reviews';
-        value: number | Review;
+        value: string | Review;
       } | null)
     | ({
         relationTo: 'reports';
-        value: number | Report;
+        value: string | Report;
       } | null)
     | ({
         relationTo: 'boost-payments';
-        value: number | BoostPayment;
+        value: string | BoostPayment;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: number | User;
+    value: string | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -413,10 +413,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: number;
+  id: string;
   user: {
     relationTo: 'users';
-    value: number | User;
+    value: string | User;
   };
   key?: string | null;
   value?:
@@ -436,7 +436,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: number;
+  id: string;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;

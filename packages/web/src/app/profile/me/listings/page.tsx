@@ -7,7 +7,7 @@ import { MyListingsClient } from "./listings-client";
 const PER_PAGE = 12;
 
 async function getUserListings(
-	userId: number,
+	userId: string,
 	page: number,
 ): Promise<{ listings: Listing[]; total: number }> {
 	try {

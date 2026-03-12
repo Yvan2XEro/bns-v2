@@ -44,7 +44,7 @@ export default async function ListingPage({ params }: PageProps) {
 	const isBoosted =
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
-	const category = listing.category as { id: number; name: string } | undefined;
+	const category = listing.category as { id: string; name: string } | undefined;
 
 	const imageUrls: string[] =
 		listing.images

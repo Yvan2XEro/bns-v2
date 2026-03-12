@@ -101,7 +101,7 @@ export const listingsApi = {
 		return api.get<SearchResult>(`/api/public/search?${searchParams.toString()}`);
 	},
 
-	getById: async (id: number): Promise<Listing> => {
+	getById: async (id: string): Promise<Listing> => {
 		return api.get<Listing>(`/api/listings/${id}`);
 	},
 
@@ -109,11 +109,11 @@ export const listingsApi = {
 		return api.post<Listing>("/api/listings", data);
 	},
 
-	update: async (id: number, data: Partial<Listing>): Promise<Listing> => {
+	update: async (id: string, data: Partial<Listing>): Promise<Listing> => {
 		return api.put<Listing>(`/api/listings/${id}`, data);
 	},
 
-	delete: async (id: number): Promise<void> => {
+	delete: async (id: string): Promise<void> => {
 		return api.delete(`/api/listings/${id}`);
 	},
 
@@ -129,7 +129,7 @@ export const listingsApi = {
 		return result.hits.filter((l) => l.boostedUntil);
 	},
 
-	getByUser: async (userId: number): Promise<Listing[]> => {
+	getByUser: async (userId: string): Promise<Listing[]> => {
 		const result = await api.get<SearchResult>(`/api/public/search?userId=${userId}`);
 		return result.hits;
 	},
@@ -141,7 +141,7 @@ export const categoriesApi = {
 	},
 
 	getById: async (
-		id: number,
+		id: string,
 	): Promise<Category & { attributes: CategoryAttribute[] }> => {
 		return api.get<Category & { attributes: CategoryAttribute[] }>(
 			`/api/public/categories?id=${id}`,
@@ -162,15 +162,15 @@ export const favoritesApi = {
 		return api.get<Favorite[]>("/api/favorites");
 	},
 
-	add: async (listingId: number): Promise<Favorite> => {
+	add: async (listingId: string): Promise<Favorite> => {
 		return api.post<Favorite>("/api/favorites", { listingId });
 	},
 
-	remove: async (listingId: number): Promise<void> => {
+	remove: async (listingId: string): Promise<void> => {
 		return api.delete(`/api/favorites/${listingId}`);
 	},
 
-	check: async (listingId: number): Promise<boolean> => {
+	check: async (listingId: string): Promise<boolean> => {
 		const favs = await api.get<Favorite[]>(
 			`/api/favorites?listingId=${listingId}`,
 		);
@@ -183,16 +183,16 @@ export const conversationsApi = {
 		return api.get<Conversation[]>("/api/public/conversations");
 	},
 
-	getById: async (id: number): Promise<Conversation> => {
+	getById: async (id: string): Promise<Conversation> => {
 		return api.get<Conversation>(`/api/public/conversations/${id}`);
 	},
 
-	getMessages: async (conversationId: number): Promise<Message[]> => {
+	getMessages: async (conversationId: string): Promise<Message[]> => {
 		return api.get<Message[]>(`/api/public/conversations/${conversationId}/messages`);
 	},
 
 	sendMessage: async (
-		conversationId: number,
+		conversationId: string,
 		content: string,
 	): Promise<Message> => {
 		return api.post<Message>(`/api/public/conversations/${conversationId}/messages`, {
@@ -201,8 +201,8 @@ export const conversationsApi = {
 	},
 
 	create: async (
-		listingId: number,
-		sellerId: number,
+		listingId: string,
+		sellerId: string,
 	): Promise<Conversation> => {
 		return api.post<Conversation>("/api/public/conversations", {
 			listingId,
@@ -210,21 +210,21 @@ export const conversationsApi = {
 		});
 	},
 
-	markAsRead: async (conversationId: number): Promise<void> => {
+	markAsRead: async (conversationId: string): Promise<void> => {
 		return api.post(`/api/public/conversations/${conversationId}/read`);
 	},
 };
 
 export const reviewsApi = {
-	getByUser: async (userId: number): Promise<Review[]> => {
+	getByUser: async (userId: string): Promise<Review[]> => {
 		return api.get<Review[]>(`/api/reviews?userId=${userId}`);
 	},
 
 	create: async (data: {
-		reviewedUserId: number;
+		reviewedUserId: string;
 		rating: number;
 		comment?: string;
-		listingId?: number;
+		listingId?: string;
 	}): Promise<Review> => {
 		return api.post<Review>("/api/reviews", data);
 	},
@@ -243,17 +243,17 @@ export const reportsApi = {
 
 export const boostApi = {
 	createPayment: async (
-		listingId: number,
+		listingId: string,
 		duration: BoostDuration,
 	): Promise<{
-		paymentId: number;
+		paymentId: string;
 		paymentUrl?: string;
 		paymentReference?: string;
 	}> => {
 		return api.post("/api/public/boost", { listingId, duration });
 	},
 
-	getStatus: async (listingId: number): Promise<BoostPayment | null> => {
+	getStatus: async (listingId: string): Promise<BoostPayment | null> => {
 		return api.get<BoostPayment | null>(`/api/public/boost/${listingId}`);
 	},
 };
@@ -315,14 +315,14 @@ export const authApi = {
 	},
 
 	changePassword: async (
-		userId: number,
+		userId: string,
 		password: string,
 	): Promise<{ doc: User }> => {
 		return api.patch<{ doc: User }>(`/api/users/${userId}`, { password });
 	},
 
 	updateProfile: async (
-		userId: number,
+		userId: string,
 		data: { name?: string; bio?: string; phone?: string; location?: string },
 	): Promise<{ doc: User }> => {
 		return api.patch<{ doc: User }>(`/api/users/${userId}`, data);
@@ -330,11 +330,11 @@ export const authApi = {
 };
 
 export const usersApi = {
-	getById: async (id: number): Promise<User> => {
+	getById: async (id: string): Promise<User> => {
 		return api.get<User>(`/api/users/${id}`);
 	},
 
-	update: async (id: number, data: Partial<User>): Promise<{ doc: User }> => {
+	update: async (id: string, data: Partial<User>): Promise<{ doc: User }> => {
 		return api.patch<{ doc: User }>(`/api/users/${id}`, data);
 	},
 };

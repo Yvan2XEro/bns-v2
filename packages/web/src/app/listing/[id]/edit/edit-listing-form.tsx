@@ -43,7 +43,7 @@ const CONDITIONS: { value: ListingCondition; label: string }[] = [
 ];
 
 interface ExistingImage {
-	id: number;
+	id: string;
 	url: string;
 }
 
@@ -102,7 +102,7 @@ export function EditListingForm({
 	});
 
 	function handleCategoryChange(categoryId: string) {
-		const category = categories.find((c) => c.id === Number(categoryId));
+		const category = categories.find((c) => c.id === categoryId);
 		setSelectedCategory(category || null);
 		setAttributes(category?.attributes || []);
 		setAttributeValues({});
@@ -134,7 +134,7 @@ export function EditListingForm({
 
 		try {
 			// Upload new images
-			const newImageIds: number[] = [];
+			const newImageIds: string[] = [];
 			for (const image of newImages) {
 				const fd = new FormData();
 				fd.append("file", image);

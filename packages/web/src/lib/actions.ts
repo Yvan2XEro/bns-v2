@@ -8,7 +8,7 @@ type ActionResult<T = unknown> =
 	| { success: false; error: string };
 
 export async function updateProfile(
-	userId: number,
+	userId: string,
 	data: { name?: string; bio?: string; phone?: string; location?: string },
 ): Promise<ActionResult> {
 	try {
@@ -32,7 +32,7 @@ export async function updateProfile(
 	}
 }
 
-export async function deleteListing(id: number): Promise<ActionResult> {
+export async function deleteListing(id: string): Promise<ActionResult> {
 	try {
 		const res = await serverFetch(`/api/listings/${id}`, {
 			method: "DELETE",
@@ -50,7 +50,7 @@ export async function deleteListing(id: number): Promise<ActionResult> {
 }
 
 export async function toggleFavorite(
-	listingId: number,
+	listingId: string,
 	action: "add" | "remove",
 ): Promise<ActionResult> {
 	try {

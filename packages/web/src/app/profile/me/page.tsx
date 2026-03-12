@@ -21,7 +21,7 @@ import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Review, User } from "~/types";
 import { ProfileEditForm } from "./profile-edit-form";
 
-async function getUserReviews(userId: number): Promise<Review[]> {
+async function getUserReviews(userId: string): Promise<Review[]> {
 	try {
 		const res = await serverFetch(`/api/reviews?userId=${userId}`);
 		if (!res.ok) return [];
@@ -31,7 +31,7 @@ async function getUserReviews(userId: number): Promise<Review[]> {
 	}
 }
 
-async function getUserListings(userId: number): Promise<Listing[]> {
+async function getUserListings(userId: string): Promise<Listing[]> {
 	try {
 		const res = await serverFetch(
 			`/api/public/search?userId=${userId}&limit=5`,

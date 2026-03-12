@@ -42,11 +42,7 @@ const CONDITIONS: { value: ListingCondition; label: string }[] = [
 	{ value: "poor", label: "Poor" },
 ];
 
-export function CreateListingForm({
-	categories,
-}: {
-	categories: Category[];
-}) {
+export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +65,7 @@ export function CreateListingForm({
 	});
 
 	function handleCategoryChange(categoryId: string) {
-		const category = categories.find((c) => c.id === Number(categoryId));
+		const category = categories.find((c) => c.id === categoryId);
 		setSelectedCategory(category || null);
 		setAttributes(category?.attributes || []);
 		setAttributeValues({});
@@ -116,11 +112,16 @@ export function CreateListingForm({
 		setIsLoading(true);
 
 		try {
-			const imageIds: number[] = [];
+			const imageIds: string[] = [];
 			for (const image of images) {
 				const fd = new FormData();
 				fd.append("file", image);
-				fd.append("_payload", JSON.stringify({ alt: image.name.replace(/\.[^.]+$/, "") || "listing image" }));
+				fd.append(
+					"_payload",
+					JSON.stringify({
+						alt: image.name.replace(/\.[^.]+$/, "") || "listing image",
+					}),
+				);
 				const uploadRes = await fetch("/api/media", {
 					method: "POST",
 					body: fd,
@@ -347,9 +348,7 @@ export function CreateListingForm({
 									</span>
 								</div>
 								<div className="flex flex-wrap gap-2">
-									<Badge variant="secondary">
-										{selectedCategory?.name}
-									</Badge>
+									<Badge variant="secondary">{selectedCategory?.name}</Badge>
 									{formData.condition && (
 										<Badge variant="outline">
 											{CONDITIONS.find((c) => c.value === formData.condition)
@@ -428,10 +427,7 @@ export function CreateListingForm({
 						<ArrowRight className="ml-2 h-4 w-4" />
 					</Button>
 				) : (
-					<Button
-						onClick={handleSubmit}
-						disabled={isLoading || !canProceed()}
-					>
+					<Button onClick={handleSubmit} disabled={isLoading || !canProceed()}>
 						{isLoading ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />

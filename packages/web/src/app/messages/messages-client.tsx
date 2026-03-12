@@ -13,7 +13,7 @@ const CHAT_URL =
 	process.env.NEXT_PUBLIC_CHAT_URL || "http://localhost:4000";
 
 interface ConversationWithDetails {
-	id: number;
+	id: string;
 	participants: User[];
 	listing?: Listing;
 	lastMessage?: Message;
@@ -78,9 +78,9 @@ export function MessagesClient({
 					return [
 						...prev,
 						{
-							id: Number(msg.id),
-							conversation: Number(msg.conversationId),
-							sender: Number(msg.sender) as unknown as User | number,
+							id: msg.id,
+							conversation: msg.conversationId,
+							sender: msg.sender as unknown as User | string,
 							content: msg.content,
 							createdAt: msg.createdAt,
 							updatedAt: msg.createdAt,
@@ -165,7 +165,7 @@ export function MessagesClient({
 	}, [selectedConversation?.id]);
 
 	// Fetch messages when conversation changes
-	const fetchMessages = useCallback(async (conversationId: number) => {
+	const fetchMessages = useCallback(async (conversationId: string) => {
 		try {
 			const res = await fetch(
 				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&depth=1`,
@@ -222,8 +222,8 @@ export function MessagesClient({
 		return conv.participants?.find((p) => p.id !== user.id) || null;
 	}
 
-	function isUserOnline(userId: number): boolean {
-		return onlineUsers.has(String(userId));
+	function isUserOnline(userId: string): boolean {
+		return onlineUsers.has(userId);
 	}
 
 	function getTypingLabel(): string | null {
