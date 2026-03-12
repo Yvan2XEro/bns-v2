@@ -1,3 +1,4 @@
+import { anyone } from "@/access/anyone";
 import type { CollectionConfig } from "payload";
 
 export const Users: CollectionConfig = {
@@ -7,6 +8,11 @@ export const Users: CollectionConfig = {
 		defaultColumns: ["email", "name", "role", "rating", "createdAt"],
 	},
 	auth: true,
+	access: {
+		create: anyone,
+		admin: ({ req }) =>
+			req.user?.role === "admin" || req.user?.role === "moderator",
+	},
 	fields: [
 		{
 			name: "name",
