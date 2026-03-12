@@ -4,7 +4,6 @@ import { seedCategories } from "./seedCategories";
 import { seedConversations } from "./seedConversations";
 import { seedFavorites } from "./seedFavorites";
 import { seedListings } from "./seedListings";
-import { seedReports } from "./seedReports";
 import { seedReviews } from "./seedReviews";
 import { seedUsers } from "./seedUsers";
 

@@ -73,7 +73,7 @@ export default async function ListingPage({ params }: PageProps) {
 									priority
 								/>
 								{isBoosted && (
-									<Badge className="absolute left-4 top-4 bg-yellow-500 hover:bg-yellow-600">
+									<Badge className="absolute top-4 left-4 bg-yellow-500 hover:bg-yellow-600">
 										<Zap className="mr-1 h-3 w-3" />
 										Boosted
 									</Badge>
@@ -105,12 +105,12 @@ export default async function ListingPage({ params }: PageProps) {
 					</div>
 
 					<div className="mt-8">
-						<h1 className="text-3xl font-bold">{listing.title}</h1>
-						<p className="mt-2 text-2xl font-bold text-primary">
+						<h1 className="font-bold text-3xl">{listing.title}</h1>
+						<p className="mt-2 font-bold text-2xl text-primary">
 							{listing.price.toLocaleString()} XAF
 						</p>
 
-						<div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+						<div className="mt-4 flex flex-wrap gap-4 text-muted-foreground text-sm">
 							<div className="flex items-center">
 								<MapPin className="mr-1 h-4 w-4" />
 								{listing.location}
@@ -136,7 +136,7 @@ export default async function ListingPage({ params }: PageProps) {
 						<Separator className="my-6" />
 
 						<div>
-							<h2 className="mb-3 text-lg font-semibold">Description</h2>
+							<h2 className="mb-3 font-semibold text-lg">Description</h2>
 							<p className="whitespace-pre-wrap text-muted-foreground">
 								{listing.description}
 							</p>
@@ -146,11 +146,11 @@ export default async function ListingPage({ params }: PageProps) {
 							<>
 								<Separator className="my-6" />
 								<div>
-									<h2 className="mb-3 text-lg font-semibold">Details</h2>
+									<h2 className="mb-3 font-semibold text-lg">Details</h2>
 									<dl className="grid grid-cols-2 gap-4">
 										{Object.entries(listing.attributes).map(([key, value]) => (
 											<div key={key}>
-												<dt className="text-sm font-medium text-muted-foreground">
+												<dt className="font-medium text-muted-foreground text-sm">
 													{key.charAt(0).toUpperCase() + key.slice(1)}
 												</dt>
 												<dd>{String(value)}</dd>
@@ -195,7 +195,7 @@ export default async function ListingPage({ params }: PageProps) {
 											<p className="font-medium">{seller.name}</p>
 											{seller.rating !== undefined &&
 												seller.rating !== null && (
-													<p className="text-sm text-muted-foreground">
+													<p className="text-muted-foreground text-sm">
 														★ {seller.rating.toFixed(1)} ({seller.totalReviews}{" "}
 														reviews)
 													</p>
@@ -225,7 +225,6 @@ export default async function ListingPage({ params }: PageProps) {
 									<ReportDialog
 										targetType="listing"
 										targetId={String(listing.id)}
-										asChild
 									>
 										<Button variant="outline" size="icon">
 											<Flag className="h-4 w-4" />
@@ -235,7 +234,7 @@ export default async function ListingPage({ params }: PageProps) {
 							</div>
 						</div>
 
-						<p className="text-xs text-muted-foreground">
+						<p className="text-muted-foreground text-xs">
 							Posted {new Date(listing.createdAt).toLocaleDateString()}
 						</p>
 					</div>

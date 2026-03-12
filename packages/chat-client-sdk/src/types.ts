@@ -24,14 +24,8 @@ export interface ClientToServerEvents {
 /** Events the server can send to the client */
 export interface ServerToClientEvents {
 	"message:new": (message: ChatMessage) => void;
-	"message:delivered": (payload: {
-		messageId: string;
-		userId: string;
-	}) => void;
-	"message:read": (payload: {
-		messageIds: string[];
-		userId: string;
-	}) => void;
+	"message:delivered": (payload: { messageId: string; userId: string }) => void;
+	"message:read": (payload: { messageIds: string[]; userId: string }) => void;
 	typing: (payload: TypingEvent) => void;
 	"user:online": (payload: { userId: string }) => void;
 	"user:offline": (payload: { userId: string }) => void;

@@ -72,7 +72,11 @@ export function EditListingForm({
 	);
 
 	const initialAttrs: Record<string, string> = {};
-	if (listing.attributes && typeof listing.attributes === "object" && !Array.isArray(listing.attributes)) {
+	if (
+		listing.attributes &&
+		typeof listing.attributes === "object" &&
+		!Array.isArray(listing.attributes)
+	) {
 		for (const [k, v] of Object.entries(listing.attributes)) {
 			initialAttrs[k] = String(v);
 		}
@@ -138,7 +142,12 @@ export function EditListingForm({
 			for (const image of newImages) {
 				const fd = new FormData();
 				fd.append("file", image);
-				fd.append("_payload", JSON.stringify({ alt: image.name.replace(/\.[^.]+$/, "") || "listing image" }));
+				fd.append(
+					"_payload",
+					JSON.stringify({
+						alt: image.name.replace(/\.[^.]+$/, "") || "listing image",
+					}),
+				);
 				const uploadRes = await fetch("/api/media", {
 					method: "POST",
 					body: fd,
@@ -150,10 +159,7 @@ export function EditListingForm({
 				}
 			}
 
-			const allImageIds = [
-				...keptImages.map((img) => img.id),
-				...newImageIds,
-			];
+			const allImageIds = [...keptImages.map((img) => img.id), ...newImageIds];
 
 			const updateData = {
 				title: formData.title,
@@ -194,7 +200,7 @@ export function EditListingForm({
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Edit Listing</h1>
+				<h1 className="font-bold text-2xl">Edit Listing</h1>
 				<Button
 					variant="ghost"
 					size="sm"
@@ -359,7 +365,7 @@ export function EditListingForm({
 											type="button"
 											variant="destructive"
 											size="icon"
-											className="absolute -top-2 -right-2 h-6 w-6"
+											className="-top-2 -right-2 absolute h-6 w-6"
 											onClick={() => handleRemoveExisting(index)}
 										>
 											<Trash2 className="h-3 w-3" />

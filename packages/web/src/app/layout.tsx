@@ -26,7 +26,7 @@ export default function RootLayout({
 						<main className="flex-1">{children}</main>
 						<footer className="border-t py-6 md:py-0">
 							<div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-								<p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+								<p className="text-center text-muted-foreground text-sm leading-loose md:text-left">
 									Built with Next.js. The marketplace platform.
 								</p>
 							</div>

@@ -1,14 +1,9 @@
-import {
-	type ListingDocument,
-	indexDocument,
-} from "../meilisearch.ts";
+import { indexDocument, type ListingDocument } from "../meilisearch.ts";
 
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 
-export async function handleListingCreated(
-	listingId: string,
-): Promise<void> {
+export async function handleListingCreated(listingId: string): Promise<void> {
 	console.log(`[handler] Processing listing.created for ${listingId}`);
 
 	const response = await fetch(
@@ -16,9 +11,7 @@ export async function handleListingCreated(
 	);
 
 	if (!response.ok) {
-		throw new Error(
-			`Failed to fetch listing ${listingId}: ${response.status}`,
-		);
+		throw new Error(`Failed to fetch listing ${listingId}: ${response.status}`);
 	}
 
 	const listing = (await response.json()) as Record<string, unknown>;
@@ -31,8 +24,7 @@ export function transformListing(
 ): ListingDocument {
 	const category = listing.category as Record<string, unknown> | null;
 	const seller = listing.seller as Record<string, unknown> | string | null;
-	const attributes =
-		(listing.attributes as Record<string, unknown>) || {};
+	const attributes = (listing.attributes as Record<string, unknown>) || {};
 
 	const doc: ListingDocument = {
 		id: listing.id as string,
@@ -57,10 +49,9 @@ export function transformListing(
 		updatedAt: listing.updatedAt as string,
 	};
 
-	const categoryAttributes =
-		category?.attributes as
-			| Array<{ slug: string; filterable: boolean }>
-			| undefined;
+	const categoryAttributes = category?.attributes as
+		| Array<{ slug: string; filterable: boolean }>
+		| undefined;
 
 	if (categoryAttributes) {
 		for (const attr of categoryAttributes) {

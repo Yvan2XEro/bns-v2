@@ -80,7 +80,7 @@ export default async function ProfilePage({ params }: PageProps) {
 									{user.name?.charAt(0) || "?"}
 								</AvatarFallback>
 							</Avatar>
-							<h1 className="mt-4 text-2xl font-bold">{user.name}</h1>
+							<h1 className="mt-4 font-bold text-2xl">{user.name}</h1>
 							{user.verified && (
 								<Badge variant="secondary" className="mt-2">
 									<ShieldCheck className="mr-1 h-3 w-3" />
@@ -88,12 +88,12 @@ export default async function ProfilePage({ params }: PageProps) {
 								</Badge>
 							)}
 							{user.location && (
-								<p className="mt-2 flex items-center text-sm text-muted-foreground">
+								<p className="mt-2 flex items-center text-muted-foreground text-sm">
 									<MapPin className="mr-1 h-4 w-4" />
 									{user.location}
 								</p>
 							)}
-							<p className="mt-2 flex items-center text-sm text-muted-foreground">
+							<p className="mt-2 flex items-center text-muted-foreground text-sm">
 								<Calendar className="mr-1 h-4 w-4" />
 								Joined {new Date(user.createdAt).toLocaleDateString()}
 							</p>
@@ -109,7 +109,7 @@ export default async function ProfilePage({ params }: PageProps) {
 							</div>
 
 							{user.bio && (
-								<p className="mt-4 text-sm text-muted-foreground">{user.bio}</p>
+								<p className="mt-4 text-muted-foreground text-sm">{user.bio}</p>
 							)}
 
 							<Separator className="my-4" />
@@ -125,7 +125,7 @@ export default async function ProfilePage({ params }: PageProps) {
 				</div>
 
 				<div className="lg:col-span-2">
-					<h2 className="mb-4 text-xl font-semibold">
+					<h2 className="mb-4 font-semibold text-xl">
 						Listings by {user.name}
 					</h2>
 					{listings.length > 0 ? (
@@ -137,7 +137,7 @@ export default async function ProfilePage({ params }: PageProps) {
 					{reviews.length > 0 && (
 						<>
 							<Separator className="my-8" />
-							<h2 className="mb-4 text-xl font-semibold">Reviews</h2>
+							<h2 className="mb-4 font-semibold text-xl">Reviews</h2>
 							<div className="space-y-4">
 								{reviews.map((review) => {
 									const reviewer = review.reviewer as User;
@@ -171,7 +171,7 @@ export default async function ProfilePage({ params }: PageProps) {
 												</div>
 											</div>
 											{review.comment && (
-												<p className="mt-2 text-sm text-muted-foreground">
+												<p className="mt-2 text-muted-foreground text-sm">
 													{review.comment}
 												</p>
 											)}

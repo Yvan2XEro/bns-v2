@@ -1,5 +1,3 @@
-import type { CollectionConfig } from "payload";
-
 export const updateUserRating = async ({
 	req,
 	reviewedUserId,

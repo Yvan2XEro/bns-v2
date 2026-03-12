@@ -90,9 +90,7 @@ function ResetPasswordForm() {
 
 			router.push("/auth/login?reset=success");
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to reset password",
-			);
+			setError(err instanceof Error ? err.message : "Failed to reset password");
 		} finally {
 			setIsLoading(false);
 		}
@@ -108,7 +106,7 @@ function ResetPasswordForm() {
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
 						{error && (
-							<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+							<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 								{error}
 							</div>
 						)}

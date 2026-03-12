@@ -1,5 +1,3 @@
-import { faker } from "@faker-js/faker";
-
 interface CategoryData {
 	name: string;
 	slug: string;

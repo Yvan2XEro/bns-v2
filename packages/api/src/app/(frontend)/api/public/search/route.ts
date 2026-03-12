@@ -1,7 +1,7 @@
+import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
-import config from "@payload-config";
 
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
@@ -10,8 +10,8 @@ export async function GET(request: Request) {
 	const minPrice = searchParams.get("minPrice");
 	const maxPrice = searchParams.get("maxPrice");
 	const location = searchParams.get("location");
-	const limit = parseInt(searchParams.get("limit") || "20");
-	const offset = parseInt(searchParams.get("offset") || "0");
+	const limit = Number.parseInt(searchParams.get("limit") || "20", 10);
+	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
 
 	const host = process.env.MEILI_HOST;
 	const key = process.env.MEILI_MASTER_KEY;
@@ -24,19 +24,19 @@ export async function GET(request: Request) {
 
 			if (attrFilter.startsWith(">=")) {
 				dynamicFilters.push(
-					`${attrSlug} >= ${parseInt(attrFilter.replace(">=", ""))}`,
+					`${attrSlug} >= ${Number.parseInt(attrFilter.replace(">=", ""), 10)}`,
 				);
 			} else if (attrFilter.startsWith("<=")) {
 				dynamicFilters.push(
-					`${attrSlug} <= ${parseInt(attrFilter.replace("<=", ""))}`,
+					`${attrSlug} <= ${Number.parseInt(attrFilter.replace("<=", ""), 10)}`,
 				);
 			} else if (attrFilter.startsWith(">")) {
 				dynamicFilters.push(
-					`${attrSlug} > ${parseInt(attrFilter.replace(">", ""))}`,
+					`${attrSlug} > ${Number.parseInt(attrFilter.replace(">", ""), 10)}`,
 				);
 			} else if (attrFilter.startsWith("<")) {
 				dynamicFilters.push(
-					`${attrSlug} < ${parseInt(attrFilter.replace("<", ""))}`,
+					`${attrSlug} < ${Number.parseInt(attrFilter.replace("<", ""), 10)}`,
 				);
 			} else if (attrFilter.includes(",")) {
 				const options = attrFilter
@@ -69,8 +69,8 @@ export async function GET(request: Request) {
 
 		if (minPrice || maxPrice) {
 			const priceFilter: Record<string, number> = {};
-			if (minPrice) priceFilter.greater_than = parseInt(minPrice);
-			if (maxPrice) priceFilter.less_than = parseInt(maxPrice);
+			if (minPrice) priceFilter.greater_than = Number.parseInt(minPrice, 10);
+			if (maxPrice) priceFilter.less_than = Number.parseInt(maxPrice, 10);
 			where.price = priceFilter;
 		}
 
@@ -115,11 +115,11 @@ export async function GET(request: Request) {
 	}
 
 	if (minPrice) {
-		filters.push(`price >= ${parseInt(minPrice)}`);
+		filters.push(`price >= ${Number.parseInt(minPrice, 10)}`);
 	}
 
 	if (maxPrice) {
-		filters.push(`price <= ${parseInt(maxPrice)}`);
+		filters.push(`price <= ${Number.parseInt(maxPrice, 10)}`);
 	}
 
 	if (location) {

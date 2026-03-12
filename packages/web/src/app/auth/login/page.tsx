@@ -62,13 +62,13 @@ function LoginForm() {
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
 						{resetSuccess && (
-							<div className="rounded-md bg-green-500/10 p-3 text-sm text-green-700">
+							<div className="rounded-md bg-green-500/10 p-3 text-green-700 text-sm">
 								Password reset successfully. You can now sign in with your new
 								password.
 							</div>
 						)}
 						{error && (
-							<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+							<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 								{error}
 							</div>
 						)}
@@ -88,7 +88,7 @@ function LoginForm() {
 								<Label htmlFor="password">Password</Label>
 								<Link
 									href="/auth/forgot-password"
-									className="text-xs text-primary hover:underline"
+									className="text-primary text-xs hover:underline"
 								>
 									Forgot password?
 								</Link>
@@ -107,7 +107,7 @@ function LoginForm() {
 						<Button type="submit" className="w-full" disabled={isLoading}>
 							{isLoading ? "Signing in..." : "Sign in"}
 						</Button>
-						<p className="text-center text-sm text-muted-foreground">
+						<p className="text-center text-muted-foreground text-sm">
 							Don&apos;t have an account?{" "}
 							<Link
 								href="/auth/register"

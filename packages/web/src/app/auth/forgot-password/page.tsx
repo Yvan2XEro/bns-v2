@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
 						{error && (
-							<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+							<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 								{error}
 							</div>
 						)}
@@ -106,12 +106,9 @@ export default function ForgotPasswordPage() {
 						<Button type="submit" className="w-full" disabled={isLoading}>
 							{isLoading ? "Sending..." : "Send reset link"}
 						</Button>
-						<p className="text-center text-sm text-muted-foreground">
+						<p className="text-center text-muted-foreground text-sm">
 							Remember your password?{" "}
-							<Link
-								href="/auth/login"
-								className="text-primary hover:underline"
-							>
+							<Link href="/auth/login" className="text-primary hover:underline">
 								Sign in
 							</Link>
 						</p>

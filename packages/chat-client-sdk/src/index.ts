@@ -1,13 +1,13 @@
 export { ChatClient } from "./client";
 export type {
+	AckResponse,
 	ChatClientOptions,
 	ChatEventMap,
 	ChatMessage,
 	ClientToServerEvents,
 	ConnectionState,
-	SendMessagePayload,
 	SendMessageAck,
+	SendMessagePayload,
 	ServerToClientEvents,
 	TypingEvent,
-	AckResponse,
 } from "./types";

@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
-import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
+import { Server } from "socket.io";
 import { createRedisClients } from "./redis.ts";
 import { registerSocketHandlers } from "./socket.ts";
 

@@ -170,7 +170,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					<div key={s.label} className="flex items-center">
 						<div className="flex flex-col items-center">
 							<div
-								className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors ${
+								className={`flex h-9 w-9 items-center justify-center rounded-full border-2 font-medium text-sm transition-colors ${
 									i < step
 										? "border-primary bg-primary text-primary-foreground"
 										: i === step
@@ -217,7 +217,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								>
 									<p className="font-medium">{cat.name}</p>
 									{cat.description && (
-										<p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+										<p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
 											{cat.description}
 										</p>
 									)}
@@ -340,10 +340,10 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					{/* Step 3: Review */}
 					{step === 3 && (
 						<div className="space-y-4">
-							<div className="rounded-lg border p-4 space-y-3">
+							<div className="space-y-3 rounded-lg border p-4">
 								<div className="flex items-center justify-between">
-									<h3 className="text-lg font-semibold">{formData.title}</h3>
-									<span className="text-lg font-bold text-primary">
+									<h3 className="font-semibold text-lg">{formData.title}</h3>
+									<span className="font-bold text-lg text-primary">
 										{Number(formData.price).toLocaleString()} XAF
 									</span>
 								</div>
@@ -357,7 +357,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 									)}
 									<Badge variant="outline">{formData.location}</Badge>
 								</div>
-								<p className="text-sm text-muted-foreground whitespace-pre-wrap">
+								<p className="whitespace-pre-wrap text-muted-foreground text-sm">
 									{formData.description}
 								</p>
 
@@ -389,7 +389,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 													key={i}
 													src={preview}
 													alt={`Preview ${i + 1}`}
-													className="h-20 w-20 rounded-md object-cover flex-shrink-0"
+													className="h-20 w-20 flex-shrink-0 rounded-md object-cover"
 												/>
 											))}
 										</div>
@@ -398,7 +398,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							</div>
 
 							{imagePreviews.length === 0 && (
-								<p className="text-sm text-muted-foreground">
+								<p className="text-muted-foreground text-sm">
 									No images added. You can go back to add some.
 								</p>
 							)}

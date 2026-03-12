@@ -295,7 +295,7 @@ export const seedListings = async (
 		];
 		const status = faker.helpers.arrayElement(statuses);
 
-		const imageCount = faker.number.int({ min: 1, max: 5 });
+		const _imageCount = faker.number.int({ min: 1, max: 5 });
 		const images: unknown[] = [];
 
 		// Provide empty images array for validation - the hook handles it

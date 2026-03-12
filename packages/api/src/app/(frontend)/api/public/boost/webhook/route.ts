@@ -1,5 +1,5 @@
-import { getPayload } from "payload";
 import config from "@payload-config";
+import { getPayload } from "payload";
 
 export async function POST(request: Request) {
 	try {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 				},
 			});
 
-			const duration = parseInt(payment.duration as string);
+			const duration = Number.parseInt(payment.duration as string, 10);
 			const boostedUntil = new Date();
 			boostedUntil.setDate(boostedUntil.getDate() + duration);
 

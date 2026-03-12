@@ -29,9 +29,7 @@ export async function refreshPresence(userId: string): Promise<void> {
 	await redis.expire(key, PRESENCE_TTL);
 }
 
-export async function getOnlineUsers(
-	userIds: string[],
-): Promise<string[]> {
+export async function getOnlineUsers(userIds: string[]): Promise<string[]> {
 	const redis = getRedis();
 	const online: string[] = [];
 

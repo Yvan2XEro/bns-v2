@@ -27,14 +27,12 @@ interface ReportDialogProps {
 	targetType: "listing" | "user" | "message";
 	targetId: string;
 	children?: React.ReactNode;
-	asChild?: boolean;
 }
 
 export function ReportDialog({
 	targetType,
 	targetId,
 	children,
-	asChild,
 }: ReportDialogProps) {
 	const [open, setOpen] = useState(false);
 	const [reason, setReason] = useState<ReportReason | "">("");
@@ -47,7 +45,7 @@ export function ReportDialog({
 		setIsLoading(true);
 
 		try {
-			const response = await fetch(`/api/reports`, {
+			const response = await fetch("/api/reports", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

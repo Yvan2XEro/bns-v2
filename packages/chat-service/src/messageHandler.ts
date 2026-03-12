@@ -99,7 +99,11 @@ export function registerMessageHandlers(
 		"message:send",
 		async (
 			payload: SendMessagePayload,
-			ack?: (response: { success: boolean; message?: MessageResponse; error?: string }) => void,
+			ack?: (response: {
+				success: boolean;
+				message?: MessageResponse;
+				error?: string;
+			}) => void,
 		) => {
 			const { conversationId, content } = payload;
 
@@ -123,11 +127,7 @@ export function registerMessageHandlers(
 				);
 
 				updateConversationLastMessage(conversationId, message.id, token).catch(
-					(err) =>
-						console.error(
-							"[chat] Failed to update lastMessage:",
-							err,
-						),
+					(err) => console.error("[chat] Failed to update lastMessage:", err),
 				);
 
 				const roomId = getRoomId(conversationId);

@@ -39,8 +39,8 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
-					<h1 className="text-3xl font-bold">My Listings</h1>
-					<p className="text-sm text-muted-foreground">
+					<h1 className="font-bold text-3xl">My Listings</h1>
+					<p className="text-muted-foreground text-sm">
 						{total} listing{total !== 1 ? "s" : ""}
 					</p>
 				</div>
@@ -66,9 +66,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								{Array.from({ length: totalPages }, (_, i) => i + 1)
 									.filter(
 										(p) =>
-											p === 1 ||
-											p === totalPages ||
-											Math.abs(p - page) <= 2,
+											p === 1 || p === totalPages || Math.abs(p - page) <= 2,
 									)
 									.reduce<(number | "...")[]>((acc, p, i, arr) => {
 										if (i > 0 && p - (arr[i - 1] as number) > 1) {
@@ -86,10 +84,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 												...
 											</span>
 										) : (
-											<Link
-												key={p}
-												href={`/profile/me/listings?page=${p}`}
-											>
+											<Link key={p} href={`/profile/me/listings?page=${p}`}>
 												<Button
 													variant={p === page ? "default" : "outline"}
 													size="sm"

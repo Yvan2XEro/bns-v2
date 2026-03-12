@@ -82,7 +82,7 @@ export default async function HomePage() {
 			<section className="bg-gradient-to-b from-primary/10 to-background py-16">
 				<div className="container mx-auto px-4">
 					<div className="mx-auto max-w-2xl text-center">
-						<h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
+						<h1 className="mb-4 font-bold text-4xl tracking-tight sm:text-5xl">
 							Buy & Sell Near You
 						</h1>
 						<p className="mb-8 text-lg text-muted-foreground">
@@ -95,7 +95,7 @@ export default async function HomePage() {
 							className="mx-auto flex max-w-lg gap-2"
 						>
 							<div className="relative flex-1">
-								<Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+								<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-5 w-5 text-muted-foreground" />
 								<Input
 									type="search"
 									name="q"
@@ -114,7 +114,7 @@ export default async function HomePage() {
 			<section className="py-12">
 				<div className="container mx-auto px-4">
 					<div className="mb-8 flex items-center justify-between">
-						<h2 className="text-2xl font-bold">Categories</h2>
+						<h2 className="font-bold text-2xl">Categories</h2>
 						<Link href="/search">
 							<Button variant="ghost" size="sm">
 								View all
@@ -134,7 +134,7 @@ export default async function HomePage() {
 									className="flex flex-col items-center justify-center rounded-lg border p-6 transition-colors hover:bg-accent"
 								>
 									<Icon className="mb-3 h-8 w-8 text-primary" />
-									<span className="text-center text-sm font-medium">
+									<span className="text-center font-medium text-sm">
 										{category.name}
 									</span>
 								</Link>
@@ -148,7 +148,7 @@ export default async function HomePage() {
 				<section className="bg-muted/50 py-12">
 					<div className="container mx-auto px-4">
 						<div className="mb-8 flex items-center justify-between">
-							<h2 className="text-2xl font-bold">Featured Listings</h2>
+							<h2 className="font-bold text-2xl">Featured Listings</h2>
 							<Link href="/search?boosted=true">
 								<Button variant="ghost" size="sm">
 									View all
@@ -164,7 +164,7 @@ export default async function HomePage() {
 			<section className="py-12">
 				<div className="container mx-auto px-4">
 					<div className="mb-8 flex items-center justify-between">
-						<h2 className="text-2xl font-bold">Recent Listings</h2>
+						<h2 className="font-bold text-2xl">Recent Listings</h2>
 						<Link href="/search">
 							<Button variant="ghost" size="sm">
 								View all
@@ -189,7 +189,7 @@ export default async function HomePage() {
 
 			<section className="bg-primary py-16 text-primary-foreground">
 				<div className="container mx-auto px-4 text-center">
-					<h2 className="mb-4 text-3xl font-bold">Start Selling Today</h2>
+					<h2 className="mb-4 font-bold text-3xl">Start Selling Today</h2>
 					<p className="mx-auto mb-8 max-w-xl text-lg">
 						Post your first listing in minutes. Reach thousands of buyers in
 						your area.

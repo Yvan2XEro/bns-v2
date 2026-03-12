@@ -51,9 +51,9 @@ export function Header() {
 			<div className="container mx-auto flex h-14 items-center px-4">
 				<div className="mr-4 hidden md:flex">
 					<Link href="/" className="mr-6 flex items-center space-x-2">
-						<span className="text-xl font-bold">Marketplace</span>
+						<span className="font-bold text-xl">Marketplace</span>
 					</Link>
-					<nav className="flex items-center space-x-6 text-sm font-medium">
+					<nav className="flex items-center space-x-6 font-medium text-sm">
 						<Link
 							href="/search"
 							className={`transition-colors hover:text-foreground ${
@@ -80,6 +80,7 @@ export function Header() {
 				</div>
 
 				<button
+					type="button"
 					className="inline-flex items-center justify-center p-2 md:hidden"
 					onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 				>
@@ -92,7 +93,7 @@ export function Header() {
 				</button>
 
 				<Link href="/" className="mr-4 md:hidden">
-					<span className="text-lg font-bold">Marketplace</span>
+					<span className="font-bold text-lg">Marketplace</span>
 				</Link>
 
 				<div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
@@ -101,7 +102,7 @@ export function Header() {
 						className="hidden w-full max-w-sm md:flex"
 					>
 						<div className="relative w-full">
-							<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+							<Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
 							<Input
 								type="search"
 								placeholder="Search listings..."
@@ -133,7 +134,10 @@ export function Header() {
 											className="relative h-8 w-8 rounded-full"
 										>
 											<Avatar className="h-8 w-8">
-												<AvatarImage src={(user.avatar as { url?: string })?.url} alt={user.name} />
+												<AvatarImage
+													src={(user.avatar as { url?: string })?.url}
+													alt={user.name}
+												/>
 												<AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
 											</Avatar>
 										</Button>
@@ -141,10 +145,10 @@ export function Header() {
 									<DropdownMenuContent className="w-56" align="end" forceMount>
 										<DropdownMenuLabel className="font-normal">
 											<div className="flex flex-col space-y-1">
-												<p className="text-sm font-medium leading-none">
+												<p className="font-medium text-sm leading-none">
 													{user.name}
 												</p>
-												<p className="text-xs leading-none text-muted-foreground">
+												<p className="text-muted-foreground text-xs leading-none">
 													{user.email}
 												</p>
 											</div>
@@ -205,7 +209,7 @@ export function Header() {
 					<div className="container px-4 py-4">
 						<form onSubmit={handleSearch} className="mb-4">
 							<div className="relative">
-								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+								<Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
 								<Input
 									type="search"
 									placeholder="Search listings..."
@@ -218,7 +222,7 @@ export function Header() {
 						<nav className="flex flex-col space-y-2">
 							<Link
 								href="/search"
-								className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+								className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 								onClick={() => setMobileMenuOpen(false)}
 							>
 								Browse
@@ -227,35 +231,36 @@ export function Header() {
 								<>
 									<Link
 										href="/create"
-										className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										Sell
 									</Link>
 									<Link
 										href="/favorites"
-										className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										Favorites
 									</Link>
 									<Link
 										href="/messages"
-										className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										Messages
 									</Link>
 									<Link
 										href="/profile/me"
-										className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										Profile
 									</Link>
 									<button
+										type="button"
 										onClick={handleLogout}
-										className="rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 text-left font-medium text-sm hover:bg-accent"
 									>
 										Log out
 									</button>
@@ -264,14 +269,14 @@ export function Header() {
 								<>
 									<Link
 										href="/auth/login"
-										className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										Log in
 									</Link>
 									<Link
 										href="/auth/register"
-										className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+										className="rounded-md px-3 py-2 font-medium text-sm hover:bg-accent"
 										onClick={() => setMobileMenuOpen(false)}
 									>
 										Sign up

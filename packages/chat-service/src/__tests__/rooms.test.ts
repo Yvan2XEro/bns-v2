@@ -1,5 +1,10 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
-import { getRoomId, verifyConversationAccess, joinRoom, leaveRoom } from "../rooms.ts";
+import { afterEach, describe, expect, mock, test } from "bun:test";
+import {
+	getRoomId,
+	joinRoom,
+	leaveRoom,
+	verifyConversationAccess,
+} from "../rooms.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -22,10 +27,9 @@ describe("verifyConversationAccess", () => {
 	test("returns true when user is a participant", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.resolve(
-				new Response(
-					JSON.stringify({ participants: ["user-1", "user-2"] }),
-					{ status: 200 },
-				),
+				new Response(JSON.stringify({ participants: ["user-1", "user-2"] }), {
+					status: 200,
+				}),
 			),
 		) as typeof fetch;
 
@@ -36,10 +40,9 @@ describe("verifyConversationAccess", () => {
 	test("returns false when user is not a participant", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.resolve(
-				new Response(
-					JSON.stringify({ participants: ["user-1", "user-2"] }),
-					{ status: 200 },
-				),
+				new Response(JSON.stringify({ participants: ["user-1", "user-2"] }), {
+					status: 200,
+				}),
 			),
 		) as typeof fetch;
 
@@ -52,7 +55,11 @@ describe("verifyConversationAccess", () => {
 			Promise.resolve(new Response("Not found", { status: 404 })),
 		) as typeof fetch;
 
-		const result = await verifyConversationAccess("user-1", "nonexistent", "tok");
+		const result = await verifyConversationAccess(
+			"user-1",
+			"nonexistent",
+			"tok",
+		);
 		expect(result).toBe(false);
 	});
 
@@ -86,10 +93,9 @@ describe("joinRoom", () => {
 	test("joins the room when access is granted", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.resolve(
-				new Response(
-					JSON.stringify({ participants: ["user-1"] }),
-					{ status: 200 },
-				),
+				new Response(JSON.stringify({ participants: ["user-1"] }), {
+					status: 200,
+				}),
 			),
 		) as typeof fetch;
 
@@ -110,10 +116,9 @@ describe("joinRoom", () => {
 	test("rejects when access is denied", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.resolve(
-				new Response(
-					JSON.stringify({ participants: ["user-2"] }),
-					{ status: 200 },
-				),
+				new Response(JSON.stringify({ participants: ["user-2"] }), {
+					status: 200,
+				}),
 			),
 		) as typeof fetch;
 

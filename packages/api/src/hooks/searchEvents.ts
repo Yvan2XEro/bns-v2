@@ -31,10 +31,7 @@ export async function publishSearchEvent(
 ): Promise<void> {
 	try {
 		const client = await getPublisher();
-		await client.publish(
-			CHANNEL,
-			JSON.stringify({ event, listingId }),
-		);
+		await client.publish(CHANNEL, JSON.stringify({ event, listingId }));
 	} catch (error) {
 		console.error("[searchEvents] Failed to publish event:", error);
 	}

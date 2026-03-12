@@ -1,10 +1,4 @@
-import {
-	Calendar,
-	MapPin,
-	Settings,
-	ShieldCheck,
-	Star,
-} from "lucide-react";
+import { Calendar, MapPin, Settings, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -61,7 +55,7 @@ export default async function MyProfilePage() {
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold">My Profile</h1>
+				<h1 className="font-bold text-3xl">My Profile</h1>
 				<Link href="/settings">
 					<Button variant="outline" size="sm">
 						<Settings className="mr-2 h-4 w-4" />
@@ -97,7 +91,7 @@ export default async function MyProfilePage() {
 												{user.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>
-										<h2 className="mt-4 text-xl font-bold">{user.name}</h2>
+										<h2 className="mt-4 font-bold text-xl">{user.name}</h2>
 										{user.verified && (
 											<Badge variant="secondary" className="mt-2">
 												<ShieldCheck className="mr-1 h-3 w-3" />
@@ -105,12 +99,12 @@ export default async function MyProfilePage() {
 											</Badge>
 										)}
 										{user.location && (
-											<p className="mt-2 flex items-center text-sm text-muted-foreground">
+											<p className="mt-2 flex items-center text-muted-foreground text-sm">
 												<MapPin className="mr-1 h-4 w-4" />
 												{user.location}
 											</p>
 										)}
-										<p className="mt-2 flex items-center text-sm text-muted-foreground">
+										<p className="mt-2 flex items-center text-muted-foreground text-sm">
 											<Calendar className="mr-1 h-4 w-4" />
 											Joined {new Date(user.createdAt).toLocaleDateString()}
 										</p>
@@ -124,7 +118,7 @@ export default async function MyProfilePage() {
 											</span>
 										</div>
 										{user.bio && (
-											<p className="mt-4 text-sm text-muted-foreground">
+											<p className="mt-4 text-muted-foreground text-sm">
 												{user.bio}
 											</p>
 										)}
@@ -151,7 +145,7 @@ export default async function MyProfilePage() {
 										>
 											<div>
 												<p className="font-medium">{listing.title}</p>
-												<p className="text-sm text-muted-foreground">
+												<p className="text-muted-foreground text-sm">
 													{listing.price.toLocaleString()} XAF •{" "}
 													{listing.location}
 												</p>

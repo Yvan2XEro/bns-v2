@@ -1,13 +1,8 @@
 import type { Server, Socket } from "socket.io";
 import { verifyToken } from "./auth.ts";
-import {
-	setOnline,
-	setOffline,
-	refreshPresence,
-} from "./presence.ts";
-import { joinRoom, leaveRoom } from "./rooms.ts";
 import { registerMessageHandlers } from "./messageHandler.ts";
-import { getRoomId } from "./rooms.ts";
+import { refreshPresence, setOffline, setOnline } from "./presence.ts";
+import { getRoomId, joinRoom, leaveRoom } from "./rooms.ts";
 
 export function registerSocketHandlers(io: Server): void {
 	io.use(async (socket, next) => {
@@ -100,44 +95,35 @@ export function registerSocketHandlers(io: Server): void {
 			},
 		);
 
-		socket.on(
-			"conversation:leave",
-			(payload: { conversationId: string }) => {
-				leaveRoom(socket, payload.conversationId);
-				console.log(
-					JSON.stringify({
-						event: "conversation:leave",
-						userId,
-						conversationId: payload.conversationId,
-						timestamp: new Date().toISOString(),
-					}),
-				);
-			},
-		);
-
-		socket.on(
-			"typing:start",
-			(payload: { conversationId: string }) => {
-				const roomId = getRoomId(payload.conversationId);
-				socket.to(roomId).emit("typing", {
+		socket.on("conversation:leave", (payload: { conversationId: string }) => {
+			leaveRoom(socket, payload.conversationId);
+			console.log(
+				JSON.stringify({
+					event: "conversation:leave",
 					userId,
 					conversationId: payload.conversationId,
-					isTyping: true,
-				});
-			},
-		);
+					timestamp: new Date().toISOString(),
+				}),
+			);
+		});
 
-		socket.on(
-			"typing:stop",
-			(payload: { conversationId: string }) => {
-				const roomId = getRoomId(payload.conversationId);
-				socket.to(roomId).emit("typing", {
-					userId,
-					conversationId: payload.conversationId,
-					isTyping: false,
-				});
-			},
-		);
+		socket.on("typing:start", (payload: { conversationId: string }) => {
+			const roomId = getRoomId(payload.conversationId);
+			socket.to(roomId).emit("typing", {
+				userId,
+				conversationId: payload.conversationId,
+				isTyping: true,
+			});
+		});
+
+		socket.on("typing:stop", (payload: { conversationId: string }) => {
+			const roomId = getRoomId(payload.conversationId);
+			socket.to(roomId).emit("typing", {
+				userId,
+				conversationId: payload.conversationId,
+				isTyping: false,
+			});
+		});
 
 		socket.on("disconnect", async (reason) => {
 			clearInterval(presenceInterval);

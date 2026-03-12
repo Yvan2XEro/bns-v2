@@ -126,18 +126,14 @@ export class ChatClient {
 				return;
 			}
 
-			this.socket.emit(
-				"conversation:join",
-				{ conversationId },
-				(response) => {
-					if (response?.success) {
-						this.joinedConversations.add(conversationId);
-						resolve(true);
-					} else {
-						resolve(false);
-					}
-				},
-			);
+			this.socket.emit("conversation:join", { conversationId }, (response) => {
+				if (response?.success) {
+					this.joinedConversations.add(conversationId);
+					resolve(true);
+				} else {
+					resolve(false);
+				}
+			});
 		});
 	}
 
@@ -219,7 +215,7 @@ export class ChatClient {
 		if (!this.listeners.has(event)) {
 			this.listeners.set(event, new Set());
 		}
-		this.listeners.get(event)!.add(listener as (...args: unknown[]) => void);
+		this.listeners.get(event)?.add(listener as (...args: unknown[]) => void);
 		return this;
 	}
 

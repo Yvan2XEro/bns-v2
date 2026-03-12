@@ -28,9 +28,7 @@ export async function verifyConversationAccess(
 			participants: (string | number)[];
 		};
 
-		return conversation.participants.some(
-			(p) => String(p) === userId,
-		);
+		return conversation.participants.some((p) => String(p) === userId);
 	} catch {
 		return false;
 	}
@@ -42,7 +40,11 @@ export async function joinRoom(
 	userId: string,
 	token: string,
 ): Promise<boolean> {
-	const hasAccess = await verifyConversationAccess(userId, conversationId, token);
+	const hasAccess = await verifyConversationAccess(
+		userId,
+		conversationId,
+		token,
+	);
 	if (!hasAccess) return false;
 
 	const roomId = getRoomId(conversationId);

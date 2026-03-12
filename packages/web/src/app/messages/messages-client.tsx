@@ -1,6 +1,10 @@
 "use client";
 
-import { ChatClient, type ChatMessage, type ConnectionState } from "@bns/chat-client";
+import {
+	ChatClient,
+	type ChatMessage,
+	type ConnectionState,
+} from "@bns/chat-client";
 import { ArrowLeft, Circle, Send, Wifi, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -135,7 +139,7 @@ export function MessagesClient({
 			client.disconnect();
 			chatRef.current = null;
 		};
-	}, [token]);
+	}, [token, chatUrl]);
 
 	// Update token in client if it changes
 	useEffect(() => {
@@ -161,7 +165,7 @@ export function MessagesClient({
 		}
 
 		prevConvIdRef.current = newId;
-	}, [selectedConversation?.id]);
+	}, [selectedConversation?.id, selectedConversation]);
 
 	// Fetch messages when conversation changes
 	const fetchMessages = useCallback(async (conversationId: string) => {
@@ -183,12 +187,12 @@ export function MessagesClient({
 		if (selectedConversation) {
 			fetchMessages(selectedConversation.id);
 		}
-	}, [selectedConversation?.id, fetchMessages]);
+	}, [selectedConversation?.id, fetchMessages, selectedConversation]);
 
 	// Scroll to bottom on new messages
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messages]);
+	}, []);
 
 	async function sendMessage(e: React.FormEvent) {
 		e.preventDefault();
@@ -246,8 +250,8 @@ export function MessagesClient({
 					className={`w-full md:w-1/3 ${selectedConversation ? "hidden md:block" : ""}`}
 				>
 					<div className="mb-4 flex items-center justify-between">
-						<h2 className="text-xl font-semibold">Messages</h2>
-						<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+						<h2 className="font-semibold text-xl">Messages</h2>
+						<div className="flex items-center gap-1.5 text-muted-foreground text-xs">
 							{connectionState === "connected" ? (
 								<Wifi className="h-3.5 w-3.5 text-green-500" />
 							) : (
@@ -263,6 +267,7 @@ export function MessagesClient({
 								const online = other ? isUserOnline(other.id) : false;
 								return (
 									<button
+										type="button"
 										key={conv.id}
 										className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-accent ${
 											selectedConversation?.id === conv.id ? "bg-accent" : ""
@@ -279,15 +284,15 @@ export function MessagesClient({
 												</AvatarFallback>
 											</Avatar>
 											{online && (
-												<Circle className="absolute -bottom-0.5 -right-0.5 h-3 w-3 fill-green-500 text-green-500" />
+												<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
 											)}
 										</div>
 										<div className="flex-1 overflow-hidden">
-											<p className="font-medium truncate">
+											<p className="truncate font-medium">
 												{other?.name || "Unknown"}
 											</p>
 											{conv.lastMessage && (
-												<p className="text-sm text-muted-foreground truncate">
+												<p className="truncate text-muted-foreground text-sm">
 													{conv.lastMessage.content}
 												</p>
 											)}
@@ -323,22 +328,23 @@ export function MessagesClient({
 										<AvatarImage
 											src={
 												(
-													getOtherParticipant(selectedConversation)
-														?.avatar as { url?: string }
+													getOtherParticipant(selectedConversation)?.avatar as {
+														url?: string;
+													}
 												)?.url
 											}
 										/>
 										<AvatarFallback>
-											{getOtherParticipant(
-												selectedConversation,
-											)?.name?.charAt(0) || "?"}
+											{getOtherParticipant(selectedConversation)?.name?.charAt(
+												0,
+											) || "?"}
 										</AvatarFallback>
 									</Avatar>
 									{getOtherParticipant(selectedConversation) &&
 										isUserOnline(
-											getOtherParticipant(selectedConversation)!.id,
+											getOtherParticipant(selectedConversation)?.id,
 										) && (
-											<Circle className="absolute -bottom-0.5 -right-0.5 h-3 w-3 fill-green-500 text-green-500" />
+											<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
 										)}
 								</div>
 								<div>
@@ -347,14 +353,14 @@ export function MessagesClient({
 											"Unknown"}
 									</p>
 									{selectedConversation.listing && (
-										<p className="text-xs text-muted-foreground">
+										<p className="text-muted-foreground text-xs">
 											Re: {(selectedConversation.listing as Listing).title}
 										</p>
 									)}
 								</div>
 							</div>
 
-							<div className="flex-1 overflow-y-auto space-y-4 mb-4">
+							<div className="mb-4 flex-1 space-y-4 overflow-y-auto">
 								{messages.map((message) => {
 									const senderId =
 										typeof message.sender === "object"
@@ -394,7 +400,7 @@ export function MessagesClient({
 							</div>
 
 							{getTypingLabel() && (
-								<p className="mb-2 text-xs text-muted-foreground animate-pulse">
+								<p className="mb-2 animate-pulse text-muted-foreground text-xs">
 									{getTypingLabel()}
 								</p>
 							)}

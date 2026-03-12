@@ -83,9 +83,7 @@ async function findOrCreateConversation(
 		const conv = data.doc || data;
 
 		// Re-fetch with depth to get populated participants/listing
-		const fullRes = await serverFetch(
-			`/api/conversations/${conv.id}?depth=2`,
-		);
+		const fullRes = await serverFetch(`/api/conversations/${conv.id}?depth=2`);
 		if (!fullRes.ok) return conv;
 		return fullRes.json();
 	} catch {
@@ -118,7 +116,7 @@ export default async function MessagesPage({
 		// If a new conversation was created, add it to the list
 		if (
 			preSelectedConversation &&
-			!conversations.some((c) => c.id === preSelectedConversation!.id)
+			!conversations.some((c) => c.id === preSelectedConversation?.id)
 		) {
 			conversations = [preSelectedConversation, ...conversations];
 		}

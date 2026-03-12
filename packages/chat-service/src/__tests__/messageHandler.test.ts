@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 let rateLimitCounter = 0;
 
@@ -34,8 +34,7 @@ afterEach(() => {
 
 function createMockSocketAndIo() {
 	const handlers = new Map<string, Function>();
-	const emittedToRoom: Array<{ room: string; event: string; data: any }> =
-		[];
+	const emittedToRoom: Array<{ room: string; event: string; data: any }> = [];
 	const emittedToIoRoom: Array<{
 		room: string;
 		event: string;
@@ -78,8 +77,7 @@ describe("registerMessageHandlers", () => {
 
 describe("message:send", () => {
 	test("persists message and emits to room on success", async () => {
-		const { socket, io, handlers, emittedToIoRoom } =
-			createMockSocketAndIo();
+		const { socket, io, handlers, emittedToIoRoom } = createMockSocketAndIo();
 		registerMessageHandlers(io as any, socket as any, "user-1", "tok");
 
 		const mockMessage = {
@@ -90,7 +88,7 @@ describe("message:send", () => {
 			createdAt: "2026-03-08T10:00:00Z",
 		};
 
-		globalThis.fetch = mock((url: string, opts?: RequestInit) => {
+		globalThis.fetch = mock((_url: string, opts?: RequestInit) => {
 			if (opts?.method === "POST") {
 				return Promise.resolve(
 					new Response(JSON.stringify({ doc: mockMessage }), {
@@ -103,10 +101,7 @@ describe("message:send", () => {
 
 		const ack = mock(() => {});
 		const handler = handlers.get("message:send")!;
-		await handler(
-			{ conversationId: "conv-1", content: "Hello!" },
-			ack,
-		);
+		await handler({ conversationId: "conv-1", content: "Hello!" }, ack);
 
 		expect(ack).toHaveBeenCalledTimes(1);
 		const ackArg = (ack.mock.calls[0] as any[])[0];
@@ -114,12 +109,10 @@ describe("message:send", () => {
 		expect(ackArg.message.id).toBe("msg-1");
 
 		expect(emittedToIoRoom.length).toBeGreaterThanOrEqual(1);
-		const emitted = emittedToIoRoom.find(
-			(e) => e.event === "message:new",
-		);
+		const emitted = emittedToIoRoom.find((e) => e.event === "message:new");
 		expect(emitted).toBeDefined();
-		expect(emitted!.data.sender).toBe("user-1");
-		expect(emitted!.data.content).toBe("Hello!");
+		expect(emitted?.data.sender).toBe("user-1");
+		expect(emitted?.data.content).toBe("Hello!");
 	});
 
 	test("rejects when conversationId is missing", async () => {
@@ -172,17 +165,12 @@ describe("message:send", () => {
 		registerMessageHandlers(io as any, socket as any, "user-1", "tok");
 
 		globalThis.fetch = mock(() =>
-			Promise.resolve(
-				new Response("Internal Server Error", { status: 500 }),
-			),
+			Promise.resolve(new Response("Internal Server Error", { status: 500 })),
 		) as typeof fetch;
 
 		const ack = mock(() => {});
 		const handler = handlers.get("message:send")!;
-		await handler(
-			{ conversationId: "conv-1", content: "Hello!" },
-			ack,
-		);
+		await handler({ conversationId: "conv-1", content: "Hello!" }, ack);
 
 		const ackArg = (ack.mock.calls[0] as any[])[0];
 		expect(ackArg.success).toBe(false);
@@ -217,8 +205,7 @@ describe("message:send", () => {
 
 describe("message:delivered", () => {
 	test("emits delivery confirmation to the room", async () => {
-		const { socket, io, handlers, emittedToRoom } =
-			createMockSocketAndIo();
+		const { socket, io, handlers, emittedToRoom } = createMockSocketAndIo();
 		registerMessageHandlers(io as any, socket as any, "user-1", "tok");
 
 		const handler = handlers.get("message:delivered")!;
@@ -228,16 +215,15 @@ describe("message:delivered", () => {
 		});
 
 		expect(emittedToRoom.length).toBe(1);
-		expect(emittedToRoom[0]!.event).toBe("message:delivered");
-		expect(emittedToRoom[0]!.data.messageId).toBe("msg-100");
-		expect(emittedToRoom[0]!.data.userId).toBe("user-1");
+		expect(emittedToRoom[0]?.event).toBe("message:delivered");
+		expect(emittedToRoom[0]?.data.messageId).toBe("msg-100");
+		expect(emittedToRoom[0]?.data.userId).toBe("user-1");
 	});
 });
 
 describe("message:read", () => {
 	test("emits read confirmation and patches messages via API", async () => {
-		const { socket, io, handlers, emittedToRoom } =
-			createMockSocketAndIo();
+		const { socket, io, handlers, emittedToRoom } = createMockSocketAndIo();
 		registerMessageHandlers(io as any, socket as any, "user-1", "tok");
 
 		const patchCalls: string[] = [];
@@ -255,11 +241,8 @@ describe("message:read", () => {
 		});
 
 		expect(emittedToRoom.length).toBe(1);
-		expect(emittedToRoom[0]!.event).toBe("message:read");
-		expect(emittedToRoom[0]!.data.messageIds).toEqual([
-			"msg-1",
-			"msg-2",
-		]);
+		expect(emittedToRoom[0]?.event).toBe("message:read");
+		expect(emittedToRoom[0]?.data.messageIds).toEqual(["msg-1", "msg-2"]);
 
 		// Wait for fire-and-forget PATCH calls
 		await new Promise((r) => setTimeout(r, 50));

@@ -46,7 +46,7 @@ export function ImagePicker({
 							type="button"
 							variant="destructive"
 							size="icon"
-							className="absolute -top-2 -right-2 h-6 w-6"
+							className="-top-2 -right-2 absolute h-6 w-6"
 							onClick={() => onRemove(index)}
 						>
 							<X className="h-4 w-4" />
@@ -56,7 +56,7 @@ export function ImagePicker({
 				{previews.length < max && (
 					<button
 						type="button"
-						className="flex aspect-square items-center justify-center rounded-md border-2 border-dashed hover:border-primary/50 transition-colors"
+						className="flex aspect-square items-center justify-center rounded-md border-2 border-dashed transition-colors hover:border-primary/50"
 						onClick={() => fileInputRef.current?.click()}
 					>
 						<Upload className="h-6 w-6 text-muted-foreground" />

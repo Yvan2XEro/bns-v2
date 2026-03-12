@@ -1,8 +1,8 @@
-import { type SearchEvent, createSubscriber } from "./redis.ts";
-import { configureIndex } from "./meilisearch.ts";
 import { handleListingCreated } from "./handlers/listingCreated.ts";
-import { handleListingUpdated } from "./handlers/listingUpdated.ts";
 import { handleListingDeleted } from "./handlers/listingDeleted.ts";
+import { handleListingUpdated } from "./handlers/listingUpdated.ts";
+import { configureIndex } from "./meilisearch.ts";
+import { createSubscriber, type SearchEvent } from "./redis.ts";
 
 async function handleEvent(event: SearchEvent): Promise<void> {
 	const { event: eventType, listingId } = event;

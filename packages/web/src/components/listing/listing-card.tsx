@@ -42,29 +42,29 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						</div>
 					)}
 					{isBoosted && (
-						<Badge className="absolute left-2 top-2 bg-yellow-500 hover:bg-yellow-600">
+						<Badge className="absolute top-2 left-2 bg-yellow-500 hover:bg-yellow-600">
 							<Zap className="mr-1 h-3 w-3" />
 							Boosted
 						</Badge>
 					)}
 					{isFavorite && (
-						<Badge variant="secondary" className="absolute right-2 top-2">
+						<Badge variant="secondary" className="absolute top-2 right-2">
 							<Heart className="mr-1 h-3 w-3 fill-current" />
 						</Badge>
 					)}
 				</div>
 				<div className="p-4">
-					<h3 className="mb-1 line-clamp-1 text-lg font-semibold">
+					<h3 className="mb-1 line-clamp-1 font-semibold text-lg">
 						{listing.title}
 					</h3>
-					<p className="mb-2 text-xl font-bold text-primary">
+					<p className="mb-2 font-bold text-primary text-xl">
 						{listing.price.toLocaleString()} XAF
 					</p>
-					<div className="flex items-center text-sm text-muted-foreground">
+					<div className="flex items-center text-muted-foreground text-sm">
 						<MapPin className="mr-1 h-4 w-4" />
 						<span className="line-clamp-1">{listing.location}</span>
 					</div>
-					<p className="mt-2 text-xs text-muted-foreground">
+					<p className="mt-2 text-muted-foreground text-xs">
 						{new Date(listing.createdAt).toLocaleDateString()}
 					</p>
 				</div>

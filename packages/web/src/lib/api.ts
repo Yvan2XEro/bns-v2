@@ -18,7 +18,7 @@ import type {
 class ApiClient {
 	private baseUrl: string;
 
-	constructor(baseUrl: string = "") {
+	constructor(baseUrl = "") {
 		this.baseUrl = baseUrl;
 	}
 
@@ -98,7 +98,9 @@ export const listingsApi = {
 			}
 		}
 
-		return api.get<SearchResult>(`/api/public/search?${searchParams.toString()}`);
+		return api.get<SearchResult>(
+			`/api/public/search?${searchParams.toString()}`,
+		);
 	},
 
 	getById: async (id: string): Promise<Listing> => {
@@ -117,20 +119,24 @@ export const listingsApi = {
 		return api.delete(`/api/listings/${id}`);
 	},
 
-	getRecent: async (limit: number = 10): Promise<Listing[]> => {
+	getRecent: async (limit = 10): Promise<Listing[]> => {
 		const result = await api.get<SearchResult>(
 			`/api/public/search?limit=${limit}&sort=-createdAt`,
 		);
 		return result.hits;
 	},
 
-	getFeatured: async (limit: number = 6): Promise<Listing[]> => {
-		const result = await api.get<SearchResult>(`/api/public/search?limit=${limit}`);
+	getFeatured: async (limit = 6): Promise<Listing[]> => {
+		const result = await api.get<SearchResult>(
+			`/api/public/search?limit=${limit}`,
+		);
 		return result.hits.filter((l) => l.boostedUntil);
 	},
 
 	getByUser: async (userId: string): Promise<Listing[]> => {
-		const result = await api.get<SearchResult>(`/api/public/search?userId=${userId}`);
+		const result = await api.get<SearchResult>(
+			`/api/public/search?userId=${userId}`,
+		);
 		return result.hits;
 	},
 };
@@ -188,16 +194,21 @@ export const conversationsApi = {
 	},
 
 	getMessages: async (conversationId: string): Promise<Message[]> => {
-		return api.get<Message[]>(`/api/public/conversations/${conversationId}/messages`);
+		return api.get<Message[]>(
+			`/api/public/conversations/${conversationId}/messages`,
+		);
 	},
 
 	sendMessage: async (
 		conversationId: string,
 		content: string,
 	): Promise<Message> => {
-		return api.post<Message>(`/api/public/conversations/${conversationId}/messages`, {
-			content,
-		});
+		return api.post<Message>(
+			`/api/public/conversations/${conversationId}/messages`,
+			{
+				content,
+			},
+		);
 	},
 
 	create: async (

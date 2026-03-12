@@ -1,6 +1,13 @@
 "use client";
 
-import { Edit, ImageIcon, Loader2, MoreVertical, Sparkles, Trash2 } from "lucide-react";
+import {
+	Edit,
+	ImageIcon,
+	Loader2,
+	MoreVertical,
+	Sparkles,
+	Trash2,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -95,8 +102,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 			<div className="space-y-3">
 				{listings.map((listing) => {
 					const isBoosted =
-						listing.boostedUntil &&
-						new Date(listing.boostedUntil) > new Date();
+						listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 					const imageUrl = getListingImageUrl(listing);
 
 					return (
@@ -127,7 +133,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							{/* Info */}
 							<Link href={`/listing/${listing.id}`} className="min-w-0 flex-1">
 								<h3 className="truncate font-medium">{listing.title}</h3>
-								<p className="text-sm text-muted-foreground">
+								<p className="text-muted-foreground text-sm">
 									{listing.price.toLocaleString()} XAF • {listing.location}
 								</p>
 								<div className="mt-1 flex items-center gap-2">
@@ -170,11 +176,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 								)}
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											disabled={isPending}
-										>
+										<Button variant="ghost" size="icon" disabled={isPending}>
 											{isPending ? (
 												<Loader2 className="h-4 w-4 animate-spin" />
 											) : (
@@ -228,7 +230,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 									/>
 									<div>
 										<p className="font-medium">{duration} days</p>
-										<p className="text-sm text-muted-foreground">
+										<p className="text-muted-foreground text-sm">
 											{duration === "7"
 												? "One week"
 												: duration === "14"
@@ -243,10 +245,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						))}
 					</div>
 					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setShowBoostDialog(false)}
-						>
+						<Button variant="outline" onClick={() => setShowBoostDialog(false)}>
 							Cancel
 						</Button>
 						<Button onClick={handleBoost} disabled={isBoosting}>

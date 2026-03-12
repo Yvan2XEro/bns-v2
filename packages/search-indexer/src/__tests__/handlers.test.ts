@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 const mockAddDocuments = mock(() => Promise.resolve());
 const mockDeleteDocument = mock(() => Promise.resolve());
@@ -19,8 +19,8 @@ mock.module("meilisearch", () => ({
 }));
 
 import { handleListingCreated } from "../handlers/listingCreated.ts";
-import { handleListingUpdated } from "../handlers/listingUpdated.ts";
 import { handleListingDeleted } from "../handlers/listingDeleted.ts";
+import { handleListingUpdated } from "../handlers/listingUpdated.ts";
 
 const sampleApiResponse = {
 	id: "listing-123",
@@ -71,14 +71,12 @@ describe("handleListingCreated", () => {
 
 		expect(mockAddDocuments).toHaveBeenCalledTimes(1);
 		const indexed = (
-			mockAddDocuments.mock.calls[0] as [
-				Array<Record<string, unknown>>,
-			]
+			mockAddDocuments.mock.calls[0] as [Array<Record<string, unknown>>]
 		)[0];
-		expect(indexed[0]!.id).toBe("listing-123");
-		expect(indexed[0]!.title).toBe("Vélo de course");
-		expect(indexed[0]!.category).toBe("Sport");
-		expect(indexed[0]!.sellerId).toBe("user-42");
+		expect(indexed[0]?.id).toBe("listing-123");
+		expect(indexed[0]?.title).toBe("Vélo de course");
+		expect(indexed[0]?.category).toBe("Sport");
+		expect(indexed[0]?.sellerId).toBe("user-42");
 	});
 
 	test("throws on non-OK API response", async () => {
@@ -117,12 +115,10 @@ describe("handleListingCreated", () => {
 		await handleListingCreated("listing-123");
 
 		const indexed = (
-			mockAddDocuments.mock.calls[0] as [
-				Array<Record<string, unknown>>,
-			]
+			mockAddDocuments.mock.calls[0] as [Array<Record<string, unknown>>]
 		)[0];
-		expect(indexed[0]!.brand).toBe("Honda");
-		expect(indexed[0]!.year).toBe(2020);
+		expect(indexed[0]?.brand).toBe("Honda");
+		expect(indexed[0]?.year).toBe(2020);
 	});
 });
 

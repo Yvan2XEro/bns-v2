@@ -44,7 +44,7 @@ export default async function FavoritesPage() {
 
 	return (
 		<div className="container mx-auto px-4 py-8">
-			<h1 className="mb-8 text-3xl font-bold">Favorites</h1>
+			<h1 className="mb-8 font-bold text-3xl">Favorites</h1>
 
 			{listings.length > 0 ? (
 				<ListingGrid listings={listings} favorites={favoriteIds} />
@@ -53,7 +53,7 @@ export default async function FavoritesPage() {
 					<p className="text-lg text-muted-foreground">
 						You haven&apos;t saved any listings yet
 					</p>
-					<p className="text-sm text-muted-foreground">
+					<p className="text-muted-foreground text-sm">
 						Click the heart icon on listings to save them here
 					</p>
 				</div>

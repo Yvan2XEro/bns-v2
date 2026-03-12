@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 const store = new Map<string, string>();
 const expireTtls = new Map<string, number>();
@@ -27,11 +27,11 @@ mock.module("../redis.ts", () => ({
 }));
 
 import {
-	setOnline,
-	setOffline,
+	getOnlineUsers,
 	isOnline,
 	refreshPresence,
-	getOnlineUsers,
+	setOffline,
+	setOnline,
 } from "../presence.ts";
 
 beforeEach(() => {
@@ -48,10 +48,7 @@ describe("setOnline", () => {
 		await setOnline("user-1");
 
 		expect(store.has("presence:user:user-1")).toBe(true);
-		expect(mockRedis.expire).toHaveBeenCalledWith(
-			"presence:user:user-1",
-			60,
-		);
+		expect(mockRedis.expire).toHaveBeenCalledWith("presence:user:user-1", 60);
 	});
 
 	test("stores the current timestamp", async () => {
@@ -96,10 +93,7 @@ describe("refreshPresence", () => {
 
 		await refreshPresence("user-1");
 
-		expect(mockRedis.expire).toHaveBeenCalledWith(
-			"presence:user:user-1",
-			60,
-		);
+		expect(mockRedis.expire).toHaveBeenCalledWith("presence:user:user-1", 60);
 	});
 });
 
@@ -108,11 +102,7 @@ describe("getOnlineUsers", () => {
 		store.set("presence:user:user-1", "12345");
 		store.set("presence:user:user-3", "12345");
 
-		const online = await getOnlineUsers([
-			"user-1",
-			"user-2",
-			"user-3",
-		]);
+		const online = await getOnlineUsers(["user-1", "user-2", "user-3"]);
 
 		expect(online).toEqual(["user-1", "user-3"]);
 	});

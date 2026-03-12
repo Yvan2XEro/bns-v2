@@ -119,7 +119,7 @@ export const Categories: CollectionConfig = {
 						},
 					],
 					admin: {
-						condition: (data, siblingData) => siblingData?.type === "select",
+						condition: (_data, siblingData) => siblingData?.type === "select",
 					},
 				},
 			],

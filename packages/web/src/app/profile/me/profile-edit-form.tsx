@@ -54,12 +54,12 @@ export function ProfileEditForm({ user }: { user: User }) {
 			<CardContent>
 				<form onSubmit={handleSubmit} className="space-y-4">
 					{error && (
-						<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+						<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 							{error}
 						</div>
 					)}
 					{success && (
-						<div className="rounded-md bg-green-500/10 p-3 text-sm text-green-700">
+						<div className="rounded-md bg-green-500/10 p-3 text-green-700 text-sm">
 							{success}
 						</div>
 					)}

@@ -67,7 +67,7 @@ export default function SettingsPage() {
 			const loginRes = await fetch("/api/users/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: user!.email, password: currentPassword }),
+				body: JSON.stringify({ email: user?.email, password: currentPassword }),
 				credentials: "include",
 			});
 
@@ -76,7 +76,7 @@ export default function SettingsPage() {
 			}
 
 			// Update password via PATCH
-			const res = await fetch(`/api/users/${user!.id}`, {
+			const res = await fetch(`/api/users/${user?.id}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ password: newPassword }),
@@ -115,7 +115,7 @@ export default function SettingsPage() {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					email: user!.email,
+					email: user?.email,
 					password: emailPassword,
 				}),
 				credentials: "include",
@@ -126,7 +126,7 @@ export default function SettingsPage() {
 			}
 
 			// Update email
-			const res = await fetch(`/api/users/${user!.id}`, {
+			const res = await fetch(`/api/users/${user?.id}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ email: newEmail }),
@@ -135,9 +135,7 @@ export default function SettingsPage() {
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}));
-				throw new Error(
-					data.errors?.[0]?.message || "Failed to change email",
-				);
+				throw new Error(data.errors?.[0]?.message || "Failed to change email");
 			}
 
 			setEmailSuccess("Email changed successfully");
@@ -166,7 +164,7 @@ export default function SettingsPage() {
 		if (!doubleConfirm) return;
 
 		try {
-			const res = await fetch(`/api/users/${user!.id}`, {
+			const res = await fetch(`/api/users/${user?.id}`, {
 				method: "DELETE",
 				credentials: "include",
 			});
@@ -184,7 +182,7 @@ export default function SettingsPage() {
 
 	return (
 		<div className="container mx-auto max-w-2xl px-4 py-8">
-			<h1 className="mb-8 text-3xl font-bold">Account Settings</h1>
+			<h1 className="mb-8 font-bold text-3xl">Account Settings</h1>
 
 			<div className="space-y-6">
 				<Card>
@@ -197,12 +195,12 @@ export default function SettingsPage() {
 					<CardContent>
 						<form onSubmit={handleChangePassword} className="space-y-4">
 							{passwordError && (
-								<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+								<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 									{passwordError}
 								</div>
 							)}
 							{passwordSuccess && (
-								<div className="rounded-md bg-green-500/10 p-3 text-sm text-green-700">
+								<div className="rounded-md bg-green-500/10 p-3 text-green-700 text-sm">
 									{passwordSuccess}
 								</div>
 							)}
@@ -227,9 +225,7 @@ export default function SettingsPage() {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="confirmNewPassword">
-									Confirm New Password
-								</Label>
+								<Label htmlFor="confirmNewPassword">Confirm New Password</Label>
 								<Input
 									id="confirmNewPassword"
 									type="password"
@@ -259,12 +255,12 @@ export default function SettingsPage() {
 					<CardContent>
 						<form onSubmit={handleChangeEmail} className="space-y-4">
 							{emailError && (
-								<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+								<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
 									{emailError}
 								</div>
 							)}
 							{emailSuccess && (
-								<div className="rounded-md bg-green-500/10 p-3 text-sm text-green-700">
+								<div className="rounded-md bg-green-500/10 p-3 text-green-700 text-sm">
 									{emailSuccess}
 								</div>
 							)}

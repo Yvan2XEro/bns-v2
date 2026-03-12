@@ -115,7 +115,6 @@ export const validateListingAttributes = async ({
 					});
 				}
 				break;
-			case "text":
 			default:
 				if (typeof value !== "string") {
 					errors.push({

@@ -29,16 +29,14 @@ export function AttributeFields({
 	return (
 		<div className="space-y-4">
 			{categoryName && (
-				<h3 className="text-lg font-semibold">{categoryName} Details</h3>
+				<h3 className="font-semibold text-lg">{categoryName} Details</h3>
 			)}
 			<div className="grid gap-4 md:grid-cols-2">
 				{attributes.map((attr) => (
 					<div key={attr.slug} className="space-y-2">
 						<Label>
 							{attr.name}
-							{attr.required && (
-								<span className="text-destructive"> *</span>
-							)}
+							{attr.required && <span className="text-destructive"> *</span>}
 						</Label>
 						{attr.type === "select" && attr.options ? (
 							<Select

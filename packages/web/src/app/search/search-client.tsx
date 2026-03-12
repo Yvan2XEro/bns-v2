@@ -87,8 +87,7 @@ export function SearchClient({
 	useEffect(() => {
 		if (filters.category) {
 			const cat = categories.find(
-				(c) =>
-					String(c.id) === filters.category || c.slug === filters.category,
+				(c) => String(c.id) === filters.category || c.slug === filters.category,
 			);
 			if (cat) {
 				setSelectedCategory(cat);
@@ -155,10 +154,10 @@ export function SearchClient({
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8">
-				<h1 className="mb-4 text-3xl font-bold">Search Listings</h1>
+				<h1 className="mb-4 font-bold text-3xl">Search Listings</h1>
 				<div className="flex flex-col gap-4 md:flex-row">
 					<div className="relative flex-1">
-						<Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+						<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-5 w-5 text-muted-foreground" />
 						<Input
 							type="search"
 							placeholder="Search by title or description..."
@@ -185,8 +184,8 @@ export function SearchClient({
 
 			{showFilters && (
 				<div className="mb-8 rounded-lg border bg-card p-6">
-					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-lg font-semibold">Filters</h2>
+					<div className="mb-4 flex items-center justify-between">
+						<h2 className="font-semibold text-lg">Filters</h2>
 						{hasActiveFilters() && (
 							<Button variant="ghost" size="sm" onClick={clearFilters}>
 								Clear all
@@ -249,7 +248,7 @@ export function SearchClient({
 
 					{attributes.length > 0 && (
 						<div className="mt-6">
-							<h3 className="mb-4 text-sm font-medium">
+							<h3 className="mb-4 font-medium text-sm">
 								{selectedCategory?.name} Attributes
 							</h3>
 							<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -363,7 +362,7 @@ export function SearchClient({
 			) : (
 				<div className="py-16 text-center">
 					<p className="text-lg text-muted-foreground">No listings found</p>
-					<p className="text-sm text-muted-foreground">
+					<p className="text-muted-foreground text-sm">
 						Try adjusting your search or filters
 					</p>
 					{hasActiveFilters() && (

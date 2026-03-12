@@ -1,5 +1,5 @@
-import { anyone } from "@/access/anyone";
 import type { CollectionConfig } from "payload";
+import { anyone } from "@/access/anyone";
 
 export const Users: CollectionConfig = {
 	slug: "users",
@@ -29,10 +29,10 @@ export const Users: CollectionConfig = {
 
 				// On update, prevent non-admins from changing protected fields
 				if (operation === "update" && !isAdmin) {
-					delete data.role;
-					delete data.verified;
-					delete data.rating;
-					delete data.totalReviews;
+					data.role = undefined;
+					data.verified = undefined;
+					data.rating = undefined;
+					data.totalReviews = undefined;
 				}
 
 				return data;
