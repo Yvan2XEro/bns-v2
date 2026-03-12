@@ -18,6 +18,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/chat-client-sdk ./packages/chat-client-sdk
 COPY packages/biome-config ./packages/biome-config
+COPY packages/api/src/payload-types.ts ./packages/api/src/payload-types.ts
 COPY packages/web ./packages/web
 COPY --from=deps /app/packages/web/node_modules ./packages/web/node_modules
 COPY --from=deps /app/packages/chat-client-sdk/node_modules ./packages/chat-client-sdk/node_modules
