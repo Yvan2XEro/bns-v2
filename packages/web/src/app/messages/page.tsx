@@ -128,9 +128,12 @@ export default async function MessagesPage({
 		initialMessages = await getMessages(preSelectedConversation.id);
 	}
 
+	const chatUrl = process.env.CHAT_PUBLIC_URL || "http://localhost:4000";
+
 	return (
 		<MessagesClient
 			user={user}
+			chatUrl={chatUrl}
 			initialConversations={conversations}
 			preSelectedConversation={preSelectedConversation}
 			initialMessages={initialMessages}

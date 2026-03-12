@@ -91,7 +91,7 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: https://api.buynsellem.com
-      NEXT_PUBLIC_CHAT_URL: https://chat.buynsellem.com
+      CHAT_PUBLIC_URL: https://chat.buynsellem.com
     depends_on:
       - api
     networks:

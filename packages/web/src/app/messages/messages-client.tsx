@@ -9,9 +9,6 @@ import { Input } from "~/components/ui/input";
 import { useAuth } from "~/hooks/use-auth";
 import type { Listing, Message, User } from "~/types";
 
-const CHAT_URL =
-	process.env.NEXT_PUBLIC_CHAT_URL || "http://localhost:4000";
-
 interface ConversationWithDetails {
 	id: string;
 	participants: User[];
@@ -23,6 +20,7 @@ interface ConversationWithDetails {
 
 interface MessagesClientProps {
 	user: User;
+	chatUrl: string;
 	initialConversations: ConversationWithDetails[];
 	preSelectedConversation: ConversationWithDetails | null;
 	initialMessages: Message[];
@@ -30,6 +28,7 @@ interface MessagesClientProps {
 
 export function MessagesClient({
 	user,
+	chatUrl,
 	initialConversations,
 	preSelectedConversation,
 	initialMessages,
@@ -61,7 +60,7 @@ export function MessagesClient({
 		if (!token) return;
 
 		const client = new ChatClient({
-			url: CHAT_URL,
+			url: chatUrl,
 			token,
 		});
 
