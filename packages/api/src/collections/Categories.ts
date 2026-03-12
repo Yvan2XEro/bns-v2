@@ -74,6 +74,7 @@ export const Categories: CollectionConfig = {
 		{
 			name: "attributes",
 			type: "array",
+			required: false,
 			fields: [
 				{
 					name: "name",
