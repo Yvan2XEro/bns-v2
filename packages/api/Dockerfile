@@ -40,19 +40,8 @@ COPY --from=builder /app/packages/api/public ./packages/api/public
 RUN mkdir -p packages/api/.next && chown nextjs:nodejs packages/api/.next
 COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/static ./packages/api/.next/static
 
-# Copy source + deps needed for payload migrate
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/src ./packages/api/src
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/tsconfig.json ./packages/api/tsconfig.json
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/package.json ./packages/api/package.json
-COPY --from=builder --chown=nextjs:nodejs /app/packages/api/node_modules ./packages/api/node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-
-# Entrypoint: run migrations then start
-COPY --chown=nextjs:nodejs packages/api/docker-entrypoint.sh ./packages/api/docker-entrypoint.sh
-RUN chmod +x ./packages/api/docker-entrypoint.sh
-
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 WORKDIR /app/packages/api
-CMD ["./docker-entrypoint.sh"]
+CMD HOSTNAME="0.0.0.0" node server.js
