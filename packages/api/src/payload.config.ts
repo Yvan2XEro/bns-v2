@@ -25,6 +25,9 @@ export default buildConfig({
 			baseDir: path.resolve(dirname),
 		},
 	},
+	onInit() {
+		console.log(process.env.DATABASE_URL);
+	},
 	collections: [
 		Users,
 		Media,
