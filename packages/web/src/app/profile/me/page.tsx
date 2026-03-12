@@ -59,11 +59,11 @@ export default async function MyProfilePage() {
 			: 0;
 
 	return (
-		<div className="container mx-auto px-4 py-8">
+		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 			<div className="mb-6 flex items-center justify-between">
-				<h1 className="text-3xl font-bold">My Profile</h1>
+				<h1 className="text-2xl font-bold text-[#0F172A]">My Profile</h1>
 				<Link href="/settings">
-					<Button variant="outline" size="sm">
+					<Button variant="outline" size="sm" className="rounded-xl border-[#E2E8F0]">
 						<Settings className="mr-2 h-4 w-4" />
 						Account Settings
 					</Button>
@@ -77,27 +77,27 @@ export default async function MyProfilePage() {
 				</TabsList>
 
 				<TabsContent value="profile">
-					<div className="grid gap-8 lg:grid-cols-3">
+					<div className="grid gap-6 lg:grid-cols-3">
 						<div className="lg:col-span-2">
 							<ProfileEditForm user={user} />
 						</div>
 
 						<div className="lg:col-span-1">
-							<Card>
+							<Card className="border-[#E2E8F0]">
 								<CardHeader>
-									<CardTitle>Profile Preview</CardTitle>
+									<CardTitle className="text-[#0F172A]">Profile Preview</CardTitle>
 								</CardHeader>
 								<CardContent>
 									<div className="flex flex-col items-center text-center">
-										<Avatar className="h-24 w-24">
+										<Avatar className="h-24 w-24 ring-2 ring-[#E2E8F0]">
 											<AvatarImage
 												src={(user.avatar as { url?: string })?.url}
 											/>
-											<AvatarFallback className="text-2xl">
+											<AvatarFallback className="bg-[#1E40AF] text-2xl font-semibold text-white">
 												{user.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>
-										<h2 className="mt-4 text-xl font-bold">{user.name}</h2>
+										<h2 className="mt-4 text-xl font-bold text-[#0F172A]">{user.name}</h2>
 										{user.verified && (
 											<Badge variant="secondary" className="mt-2">
 												<ShieldCheck className="mr-1 h-3 w-3" />
@@ -105,28 +105,26 @@ export default async function MyProfilePage() {
 											</Badge>
 										)}
 										{user.location && (
-											<p className="mt-2 flex items-center text-sm text-muted-foreground">
-												<MapPin className="mr-1 h-4 w-4" />
+											<p className="mt-2 flex items-center text-sm text-[#64748B]">
+												<MapPin className="mr-1 h-4 w-4 text-[#F59E0B]" />
 												{user.location}
 											</p>
 										)}
-										<p className="mt-2 flex items-center text-sm text-muted-foreground">
+										<p className="mt-2 flex items-center text-sm text-[#64748B]">
 											<Calendar className="mr-1 h-4 w-4" />
 											Joined {new Date(user.createdAt).toLocaleDateString()}
 										</p>
 										<div className="mt-4 flex items-center gap-1">
-											<Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-											<span className="font-semibold">
+											<Star className="h-5 w-5 fill-[#F59E0B] text-[#F59E0B]" />
+											<span className="font-semibold text-[#0F172A]">
 												{averageRating.toFixed(1)}
 											</span>
-											<span className="text-muted-foreground">
+											<span className="text-[#94A3B8]">
 												({reviews.length} reviews)
 											</span>
 										</div>
 										{user.bio && (
-											<p className="mt-4 text-sm text-muted-foreground">
-												{user.bio}
-											</p>
+											<p className="mt-4 text-sm leading-relaxed text-[#64748B]">{user.bio}</p>
 										)}
 									</div>
 								</CardContent>
@@ -136,22 +134,23 @@ export default async function MyProfilePage() {
 				</TabsContent>
 
 				<TabsContent value="listings">
-					<Card>
+					<Card className="border-[#E2E8F0]">
 						<CardHeader>
-							<CardTitle>My Listings</CardTitle>
+							<CardTitle className="text-[#0F172A]">My Listings</CardTitle>
 							<CardDescription>Manage your listings</CardDescription>
 						</CardHeader>
 						<CardContent>
 							{listings.length > 0 ? (
-								<div className="space-y-4">
+								<div className="space-y-3">
 									{listings.map((listing) => (
-										<div
+										<Link
 											key={listing.id}
-											className="flex items-center justify-between rounded-lg border p-4"
+											href={`/listing/${listing.id}`}
+											className="flex items-center justify-between rounded-xl border border-[#E2E8F0] p-4 transition-colors hover:bg-[#F8FAFC]"
 										>
 											<div>
-												<p className="font-medium">{listing.title}</p>
-												<p className="text-sm text-muted-foreground">
+												<p className="font-medium text-[#0F172A]">{listing.title}</p>
+												<p className="text-sm text-[#64748B]">
 													{listing.price.toLocaleString()} XAF •{" "}
 													{listing.location}
 												</p>
@@ -165,11 +164,24 @@ export default async function MyProfilePage() {
 											>
 												{listing.status}
 											</Badge>
-										</div>
+										</Link>
 									))}
+									<Link
+										href="/profile/me/listings"
+										className="block pt-2 text-center text-sm font-medium text-[#1E40AF] hover:underline"
+									>
+										View all listings
+									</Link>
 								</div>
 							) : (
-								<p className="text-muted-foreground">No listings yet</p>
+								<div className="py-8 text-center">
+									<p className="text-[#64748B]">No listings yet</p>
+									<Link href="/create">
+										<Button className="mt-3 rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]">
+											Create Your First Listing
+										</Button>
+									</Link>
+								</div>
 							)}
 						</CardContent>
 					</Card>

@@ -10,6 +10,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@bns/chat-client": "workspace:*",
 		"@radix-ui/react-avatar": "^1.1.2",
 		"@radix-ui/react-dialog": "^1.1.4",
 		"@radix-ui/react-dropdown-menu": "^2.1.4",
@@ -26,7 +27,7 @@
 		"next": "16.1.6",
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
-		"@bns/chat-client": "workspace:*",
+		"react-easy-crop": "^5.5.6",
 		"socket.io-client": "^4.8.1",
 		"tailwind-merge": "^2.6.0",
 		"zod": "^3.24.1"

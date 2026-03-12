@@ -13,7 +13,6 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Separator } from "~/components/ui/separator";
 import { useAuth } from "~/hooks/use-auth";
 
 export default function SettingsPage() {
@@ -36,7 +35,7 @@ export default function SettingsPage() {
 	if (authLoading) {
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
-				<Loader2 className="h-8 w-8 animate-spin" />
+				<Loader2 className="h-8 w-8 animate-spin text-[#1E40AF]" />
 			</div>
 		);
 	}
@@ -63,7 +62,6 @@ export default function SettingsPage() {
 		setIsChangingPassword(true);
 
 		try {
-			// Verify current password by attempting login
 			const loginRes = await fetch("/api/users/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -75,7 +73,6 @@ export default function SettingsPage() {
 				throw new Error("Current password is incorrect");
 			}
 
-			// Update password via PATCH
 			const res = await fetch(`/api/users/${user!.id}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
@@ -110,7 +107,6 @@ export default function SettingsPage() {
 		setIsChangingEmail(true);
 
 		try {
-			// Verify password first
 			const loginRes = await fetch("/api/users/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -125,7 +121,6 @@ export default function SettingsPage() {
 				throw new Error("Password is incorrect");
 			}
 
-			// Update email
 			const res = await fetch(`/api/users/${user!.id}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
@@ -183,13 +178,13 @@ export default function SettingsPage() {
 	}
 
 	return (
-		<div className="container mx-auto max-w-2xl px-4 py-8">
-			<h1 className="mb-8 text-3xl font-bold">Account Settings</h1>
+		<div className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+			<h1 className="mb-6 text-2xl font-bold text-[#0F172A]">Account Settings</h1>
 
 			<div className="space-y-6">
-				<Card>
+				<Card className="border-[#E2E8F0]">
 					<CardHeader>
-						<CardTitle>Change Password</CardTitle>
+						<CardTitle className="text-[#0F172A]">Change Password</CardTitle>
 						<CardDescription>
 							Update your password to keep your account secure.
 						</CardDescription>
@@ -197,12 +192,12 @@ export default function SettingsPage() {
 					<CardContent>
 						<form onSubmit={handleChangePassword} className="space-y-4">
 							{passwordError && (
-								<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+								<div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
 									{passwordError}
 								</div>
 							)}
 							{passwordSuccess && (
-								<div className="rounded-md bg-green-500/10 p-3 text-sm text-green-700">
+								<div className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
 									{passwordSuccess}
 								</div>
 							)}
@@ -238,7 +233,11 @@ export default function SettingsPage() {
 									required
 								/>
 							</div>
-							<Button type="submit" disabled={isChangingPassword}>
+							<Button
+								type="submit"
+								disabled={isChangingPassword}
+								className="rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]"
+							>
 								{isChangingPassword ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
@@ -248,9 +247,9 @@ export default function SettingsPage() {
 					</CardContent>
 				</Card>
 
-				<Card>
+				<Card className="border-[#E2E8F0]">
 					<CardHeader>
-						<CardTitle>Change Email</CardTitle>
+						<CardTitle className="text-[#0F172A]">Change Email</CardTitle>
 						<CardDescription>
 							Update the email address associated with your account. Current
 							email: {user.email}
@@ -259,12 +258,12 @@ export default function SettingsPage() {
 					<CardContent>
 						<form onSubmit={handleChangeEmail} className="space-y-4">
 							{emailError && (
-								<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+								<div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
 									{emailError}
 								</div>
 							)}
 							{emailSuccess && (
-								<div className="rounded-md bg-green-500/10 p-3 text-sm text-green-700">
+								<div className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
 									{emailSuccess}
 								</div>
 							)}
@@ -291,7 +290,11 @@ export default function SettingsPage() {
 									required
 								/>
 							</div>
-							<Button type="submit" disabled={isChangingEmail}>
+							<Button
+								type="submit"
+								disabled={isChangingEmail}
+								className="rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]"
+							>
 								{isChangingEmail ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
@@ -301,17 +304,21 @@ export default function SettingsPage() {
 					</CardContent>
 				</Card>
 
-				<Separator />
+				<div className="border-t border-[#E2E8F0]" />
 
-				<Card className="border-destructive/50">
+				<Card className="border-red-200">
 					<CardHeader>
-						<CardTitle className="text-destructive">Danger Zone</CardTitle>
+						<CardTitle className="text-red-600">Danger Zone</CardTitle>
 						<CardDescription>
 							Permanently delete your account and all associated data.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<Button variant="destructive" onClick={handleDeleteAccount}>
+						<Button
+							variant="destructive"
+							onClick={handleDeleteAccount}
+							className="rounded-xl"
+						>
 							Delete Account
 						</Button>
 					</CardContent>

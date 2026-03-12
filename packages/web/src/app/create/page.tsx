@@ -17,7 +17,7 @@ export default async function CreateListingPage() {
 	const categories = await getCategories();
 
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-8">
+		<div className="container mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
 			<CreateListingForm categories={categories} />
 		</div>
 	);

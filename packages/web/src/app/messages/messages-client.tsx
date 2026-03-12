@@ -44,6 +44,7 @@ export function MessagesClient({
 		useState<ConnectionState>("disconnected");
 	const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 	const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+	const [unreadCounts, setUnreadCounts] = useState<Record<number, number>>({});
 
 	const chatRef = useRef<ChatClient | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,11 +97,18 @@ export function MessagesClient({
 						: c,
 				),
 			);
+			// Track unread for non-selected conversations
+			if (!currentConv || msg.conversationId !== String(currentConv.id)) {
+				setUnreadCounts(prev => ({
+					...prev,
+					[Number(msg.conversationId)]: (prev[Number(msg.conversationId)] || 0) + 1,
+				}));
+			}
 		});
 
 		client.on("typing", (event) => {
-			const currentConv = selectedConvRef.current;
-			if (currentConv && event.conversationId === String(currentConv.id)) {
+			const activeConv = selectedConvRef.current;
+			if (activeConv && event.conversationId === String(activeConv.id)) {
 				setTypingUsers((prev) => {
 					const next = new Set(prev);
 					if (event.isTyping) {
@@ -174,6 +182,27 @@ export function MessagesClient({
 			if (res.ok) {
 				const data = await res.json();
 				setMessages(data.docs || []);
+				// Mark as read
+				setUnreadCounts(prev => {
+					const next = { ...prev };
+					delete next[conversationId];
+					return next;
+				});
+				fetch(`/api/messages?where[conversation][equals]=${conversationId}&where[read][equals]=false`, {
+					credentials: "include",
+				}).then(async (res) => {
+					if (!res.ok) return;
+					const data = await res.json();
+					const unreadMessages = data.docs || [];
+					for (const msg of unreadMessages) {
+						fetch(`/api/messages/${msg.id}`, {
+							method: "PATCH",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({ read: true }),
+							credentials: "include",
+						}).catch(() => {});
+					}
+				}).catch(() => {});
 			}
 		} catch (error) {
 			console.error("Failed to fetch messages:", error);
@@ -240,15 +269,15 @@ export function MessagesClient({
 	}
 
 	return (
-		<div className="container mx-auto flex h-[calc(100vh-4rem)] px-4 py-8">
+		<div className="container mx-auto max-w-7xl flex h-[calc(100vh-4rem)] px-4 sm:px-6 lg:px-8 py-6">
 			<div className="flex w-full gap-6">
 				{/* Conversation list */}
 				<div
 					className={`w-full md:w-1/3 ${selectedConversation ? "hidden md:block" : ""}`}
 				>
 					<div className="mb-4 flex items-center justify-between">
-						<h2 className="text-xl font-semibold">Messages</h2>
-						<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+						<h2 className="text-xl font-bold text-[#0F172A]">Messages</h2>
+						<div className="flex items-center gap-1.5 text-xs text-[#64748B]">
 							{connectionState === "connected" ? (
 								<Wifi className="h-3.5 w-3.5 text-green-500" />
 							) : (
@@ -265,8 +294,8 @@ export function MessagesClient({
 								return (
 									<button
 										key={conv.id}
-										className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-accent ${
-											selectedConversation?.id === conv.id ? "bg-accent" : ""
+										className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-[#F1F5F9] ${
+											selectedConversation?.id === conv.id ? "bg-[#EFF6FF] border border-[#DBEAFE]" : ""
 										}`}
 										onClick={() => setSelectedConversation(conv)}
 									>
@@ -275,7 +304,7 @@ export function MessagesClient({
 												<AvatarImage
 													src={(other?.avatar as { url?: string })?.url}
 												/>
-												<AvatarFallback>
+												<AvatarFallback className="bg-[#1E40AF] text-xs font-semibold text-white">
 													{other?.name?.charAt(0) || "?"}
 												</AvatarFallback>
 											</Avatar>
@@ -284,20 +313,25 @@ export function MessagesClient({
 											)}
 										</div>
 										<div className="flex-1 overflow-hidden">
-											<p className="font-medium truncate">
+											<p className="font-medium text-[#0F172A] truncate">
 												{other?.name || "Unknown"}
 											</p>
 											{conv.lastMessage && (
-												<p className="text-sm text-muted-foreground truncate">
+												<p className="text-sm text-[#64748B] truncate">
 													{conv.lastMessage.content}
 												</p>
 											)}
 										</div>
+										{(unreadCounts[conv.id] || 0) > 0 && (
+											<span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1E40AF] px-1.5 text-[10px] font-bold text-white">
+												{unreadCounts[conv.id]}
+											</span>
+										)}
 									</button>
 								);
 							})
 						) : (
-							<p className="text-center text-muted-foreground">
+							<p className="text-center text-[#64748B]">
 								No conversations yet
 							</p>
 						)}
@@ -310,7 +344,7 @@ export function MessagesClient({
 				>
 					{selectedConversation ? (
 						<>
-							<div className="mb-4 flex items-center gap-3 border-b pb-4">
+							<div className="mb-4 flex items-center gap-3 border-b border-[#E2E8F0] pb-4">
 								<Button
 									variant="ghost"
 									size="icon"
@@ -329,7 +363,7 @@ export function MessagesClient({
 												)?.url
 											}
 										/>
-										<AvatarFallback>
+										<AvatarFallback className="bg-[#1E40AF] text-xs font-semibold text-white">
 											{getOtherParticipant(
 												selectedConversation,
 											)?.name?.charAt(0) || "?"}
@@ -343,12 +377,12 @@ export function MessagesClient({
 										)}
 								</div>
 								<div>
-									<p className="font-medium">
+									<p className="font-medium text-[#0F172A]">
 										{getOtherParticipant(selectedConversation)?.name ||
 											"Unknown"}
 									</p>
 									{selectedConversation.listing && (
-										<p className="text-xs text-muted-foreground">
+										<p className="text-xs text-[#64748B]">
 											Re: {(selectedConversation.listing as Listing).title}
 										</p>
 									)}
@@ -368,18 +402,18 @@ export function MessagesClient({
 											className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
 										>
 											<div
-												className={`max-w-[70%] rounded-lg px-4 py-2 ${
+												className={`max-w-[70%] px-4 py-2 ${
 													isOwn
-														? "bg-primary text-primary-foreground"
-														: "bg-muted"
+														? "bg-[#1E40AF] text-white rounded-2xl rounded-br-md"
+														: "bg-[#F1F5F9] text-[#0F172A] rounded-2xl rounded-bl-md"
 												}`}
 											>
 												<p>{message.content}</p>
 												<p
 													className={`text-xs ${
 														isOwn
-															? "text-primary-foreground/70"
-															: "text-muted-foreground"
+															? "text-white/70"
+															: "text-[#94A3B8]"
 													}`}
 												>
 													{new Date(message.createdAt).toLocaleTimeString([], {
@@ -395,17 +429,18 @@ export function MessagesClient({
 							</div>
 
 							{getTypingLabel() && (
-								<p className="mb-2 text-xs text-muted-foreground animate-pulse">
+								<p className="mb-2 text-xs text-[#94A3B8] animate-pulse">
 									{getTypingLabel()}
 								</p>
 							)}
 
-							<form onSubmit={sendMessage} className="flex gap-2">
+							<form onSubmit={sendMessage} className="flex gap-2 border-t border-[#E2E8F0] pt-4">
 								<Input
 									placeholder="Type a message..."
 									value={newMessage}
 									onChange={handleInputChange}
 									disabled={connectionState !== "connected"}
+									className="rounded-xl border-[#E2E8F0] focus:border-[#1E40AF] focus:ring-[#1E40AF]"
 								/>
 								<Button
 									type="submit"
@@ -413,14 +448,17 @@ export function MessagesClient({
 									disabled={
 										connectionState !== "connected" || !newMessage.trim()
 									}
+									className="rounded-xl bg-[#1E40AF] hover:bg-[#1E40AF]/90 text-white"
 								>
 									<Send className="h-4 w-4" />
 								</Button>
 							</form>
 						</>
 					) : (
-						<div className="flex h-full items-center justify-center">
-							<p className="text-muted-foreground">Select a conversation</p>
+						<div className="flex h-full flex-col items-center justify-center gap-3">
+							<Send className="h-10 w-10 text-[#94A3B8]" />
+							<p className="text-[#64748B] font-medium">Select a conversation</p>
+							<p className="text-sm text-[#94A3B8]">Choose a conversation from the list to start messaging</p>
 						</div>
 					)}
 				</div>

@@ -1,10 +1,9 @@
 "use client";
 
-import { Search, SlidersHorizontal } from "lucide-react";
+import { LayoutGrid, List, Search, SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ListingGrid } from "~/components/listing/listing-card";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -39,7 +38,7 @@ export function SearchClient({
 	);
 	const [attributes, setAttributes] = useState<CategoryAttribute[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
-	const [showFilters, setShowFilters] = useState(false);
+	const [showMobileFilters, setShowMobileFilters] = useState(false);
 
 	const [filters, setFilters] = useState({
 		q: initialParams.q || "",
@@ -54,8 +53,9 @@ export function SearchClient({
 		Record<string, string>
 	>({});
 
-	// Track if we need to re-fetch (skip initial render since we have server data)
 	const [shouldFetch, setShouldFetch] = useState(false);
+	const [page, setPage] = useState(1);
+	const LIMIT = 20;
 
 	const fetchListings = useCallback(async () => {
 		setIsLoading(true);
@@ -72,18 +72,24 @@ export function SearchClient({
 				if (value) params.set(`attr_${key}`, value);
 			}
 
+			params.set("limit", String(LIMIT));
+			params.set("offset", String((page - 1) * LIMIT));
+
 			const res = await fetch(`/api/search?${params.toString()}`);
 			const data = await res.json();
-			setListings(data.hits || []);
+			if (page > 1) {
+				setListings(prev => [...prev, ...(data.hits || [])]);
+			} else {
+				setListings(data.hits || []);
+			}
 			setTotal(data.total || 0);
 		} catch (error) {
 			console.error("Failed to fetch listings:", error);
 		} finally {
 			setIsLoading(false);
 		}
-	}, [filters, attributeFilters]);
+	}, [filters, attributeFilters, page]);
 
-	// Resolve selected category when filters change
 	useEffect(() => {
 		if (filters.category) {
 			const cat = categories.find(
@@ -100,35 +106,46 @@ export function SearchClient({
 		}
 	}, [filters.category, categories]);
 
-	// Debounced fetch when filters change (skip first render)
 	useEffect(() => {
 		if (!shouldFetch) return;
-
-		const debounce = setTimeout(() => {
-			fetchListings();
-		}, 300);
-
+		const debounce = setTimeout(() => fetchListings(), 300);
 		return () => clearTimeout(debounce);
 	}, [fetchListings, shouldFetch]);
 
 	function updateFilter(key: string, value: string) {
 		setShouldFetch(true);
+		setPage(1);
 		setFilters((prev) => ({ ...prev, [key]: value }));
 		const newParams = new URLSearchParams();
 		const updated = { ...filters, [key]: value };
 		for (const [k, v] of Object.entries(updated)) {
 			if (v) newParams.set(k, v);
 		}
+		for (const [key, value] of Object.entries(attributeFilters)) {
+			if (value) newParams.set(`attr_${key}`, value);
+		}
 		router.push(`/search?${newParams.toString()}`);
 	}
 
 	function updateAttributeFilter(key: string, value: string) {
 		setShouldFetch(true);
-		setAttributeFilters((prev) => ({ ...prev, [key]: value }));
+		setPage(1);
+		const newAttrs = { ...attributeFilters, [key]: value };
+		setAttributeFilters(newAttrs);
+
+		const newParams = new URLSearchParams();
+		for (const [k, v] of Object.entries(filters)) {
+			if (v) newParams.set(k, v);
+		}
+		for (const [k, v] of Object.entries(newAttrs)) {
+			if (v) newParams.set(`attr_${k}`, v);
+		}
+		router.push(`/search?${newParams.toString()}`);
 	}
 
 	function clearFilters() {
 		setShouldFetch(true);
+		setPage(1);
 		setFilters({
 			q: "",
 			category: "",
@@ -152,225 +169,285 @@ export function SearchClient({
 		);
 	}
 
-	return (
-		<div className="container mx-auto px-4 py-8">
-			<div className="mb-8">
-				<h1 className="mb-4 text-3xl font-bold">Search Listings</h1>
-				<div className="flex flex-col gap-4 md:flex-row">
-					<div className="relative flex-1">
-						<Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-						<Input
-							type="search"
-							placeholder="Search by title or description..."
-							className="pl-10"
-							value={filters.q}
-							onChange={(e) => updateFilter("q", e.target.value)}
-						/>
-					</div>
-					<Button
-						variant="outline"
-						onClick={() => setShowFilters(!showFilters)}
-						className="md:w-auto"
-					>
-						<SlidersHorizontal className="mr-2 h-4 w-4" />
-						Filters
-						{hasActiveFilters() && (
-							<Badge variant="secondary" className="ml-2">
-								Active
-							</Badge>
-						)}
-					</Button>
+	const activeFilterCount = [
+		filters.category,
+		filters.minPrice,
+		filters.maxPrice,
+		filters.location,
+		...Object.values(attributeFilters),
+	].filter(Boolean).length;
+
+	// Sidebar filter panel (reused for desktop sidebar + mobile drawer)
+	const filterPanel = (
+		<div className="space-y-5">
+			{/* Category */}
+			<div className="space-y-2">
+				<Label className="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+					Category
+				</Label>
+				<Select
+					value={filters.category || "all"}
+					onValueChange={(v) => updateFilter("category", v === "all" ? "" : v)}
+				>
+					<SelectTrigger className="h-9 rounded-lg text-sm">
+						<SelectValue placeholder="All categories" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All categories</SelectItem>
+						{categories.map((cat) => (
+							<SelectItem key={cat.id} value={String(cat.id)}>
+								{cat.name}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+
+			{/* Price range */}
+			<div className="space-y-2">
+				<Label className="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+					Price (XAF)
+				</Label>
+				<div className="flex gap-2">
+					<Input
+						type="number"
+						placeholder="Min"
+						className="h-9 rounded-lg text-sm"
+						value={filters.minPrice}
+						onChange={(e) => updateFilter("minPrice", e.target.value)}
+					/>
+					<span className="flex items-center text-[#94A3B8]">—</span>
+					<Input
+						type="number"
+						placeholder="Max"
+						className="h-9 rounded-lg text-sm"
+						value={filters.maxPrice}
+						onChange={(e) => updateFilter("maxPrice", e.target.value)}
+					/>
 				</div>
 			</div>
 
-			{showFilters && (
-				<div className="mb-8 rounded-lg border bg-card p-6">
-					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-lg font-semibold">Filters</h2>
-						{hasActiveFilters() && (
-							<Button variant="ghost" size="sm" onClick={clearFilters}>
-								Clear all
-							</Button>
-						)}
-					</div>
+			{/* Location */}
+			<div className="space-y-2">
+				<Label className="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+					Location
+				</Label>
+				<Input
+					placeholder="City or region"
+					className="h-9 rounded-lg text-sm"
+					value={filters.location}
+					onChange={(e) => updateFilter("location", e.target.value)}
+				/>
+			</div>
 
-					<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-						<div className="space-y-2">
-							<Label>Category</Label>
-							<Select
-								value={filters.category || "all"}
-								onValueChange={(value) =>
-									updateFilter("category", value === "all" ? "" : value)
-								}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="All categories" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All categories</SelectItem>
-									{categories.map((cat) => (
-										<SelectItem key={cat.id} value={String(cat.id)}>
-											{cat.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+			{/* Dynamic attributes */}
+			{attributes.length > 0 && (
+				<div className="space-y-3 border-t border-[#E2E8F0] pt-4">
+					<p className="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+						{selectedCategory?.name}
+					</p>
+					{attributes.map((attr) => (
+						<div key={attr.slug} className="space-y-1.5">
+							<Label className="text-sm text-[#334155]">{attr.name}</Label>
+							{attr.type === "select" && attr.options ? (
+								<Select
+									value={attributeFilters[attr.slug] || "any"}
+									onValueChange={(v) =>
+										updateAttributeFilter(attr.slug, v === "any" ? "" : v)
+									}
+								>
+									<SelectTrigger className="h-9 rounded-lg text-sm">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="any">Any</SelectItem>
+										{attr.options.map((opt) => (
+											<SelectItem key={opt.value} value={opt.value}>
+												{opt.value}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							) : attr.type === "boolean" ? (
+								<Select
+									value={attributeFilters[attr.slug] || "any"}
+									onValueChange={(v) =>
+										updateAttributeFilter(attr.slug, v === "any" ? "" : v)
+									}
+								>
+									<SelectTrigger className="h-9 rounded-lg text-sm">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="any">Any</SelectItem>
+										<SelectItem value="true">Yes</SelectItem>
+										<SelectItem value="false">No</SelectItem>
+									</SelectContent>
+								</Select>
+							) : (
+								<Input
+									type={attr.type === "number" ? "number" : "text"}
+									placeholder={attr.name}
+									className="h-9 rounded-lg text-sm"
+									value={attributeFilters[attr.slug] || ""}
+									onChange={(e) =>
+										updateAttributeFilter(attr.slug, e.target.value)
+									}
+								/>
+							)}
 						</div>
-
-						<div className="space-y-2">
-							<Label>Min Price</Label>
-							<Input
-								type="number"
-								placeholder="0"
-								value={filters.minPrice}
-								onChange={(e) => updateFilter("minPrice", e.target.value)}
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Max Price</Label>
-							<Input
-								type="number"
-								placeholder="Any"
-								value={filters.maxPrice}
-								onChange={(e) => updateFilter("maxPrice", e.target.value)}
-							/>
-						</div>
-
-						<div className="space-y-2">
-							<Label>Location</Label>
-							<Input
-								placeholder="City or region"
-								value={filters.location}
-								onChange={(e) => updateFilter("location", e.target.value)}
-							/>
-						</div>
-					</div>
-
-					{attributes.length > 0 && (
-						<div className="mt-6">
-							<h3 className="mb-4 text-sm font-medium">
-								{selectedCategory?.name} Attributes
-							</h3>
-							<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-								{attributes.map((attr) => (
-									<div key={attr.slug} className="space-y-2">
-										<Label>{attr.name}</Label>
-										{attr.type === "select" && attr.options ? (
-											<Select
-												value={attributeFilters[attr.slug] || "any"}
-												onValueChange={(value) =>
-													updateAttributeFilter(
-														attr.slug,
-														value === "any" ? "" : value,
-													)
-												}
-											>
-												<SelectTrigger>
-													<SelectValue placeholder={`Select ${attr.name}`} />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="any">Any</SelectItem>
-													{attr.options.map((opt) => (
-														<SelectItem key={opt.value} value={opt.value}>
-															{opt.value}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										) : attr.type === "number" ? (
-											<Input
-												type="number"
-												placeholder={`${attr.name}...`}
-												value={attributeFilters[attr.slug] || ""}
-												onChange={(e) =>
-													updateAttributeFilter(attr.slug, e.target.value)
-												}
-											/>
-										) : attr.type === "boolean" ? (
-											<Select
-												value={attributeFilters[attr.slug] || "any"}
-												onValueChange={(value) =>
-													updateAttributeFilter(
-														attr.slug,
-														value === "any" ? "" : value,
-													)
-												}
-											>
-												<SelectTrigger>
-													<SelectValue placeholder="Any" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="any">Any</SelectItem>
-													<SelectItem value="true">Yes</SelectItem>
-													<SelectItem value="false">No</SelectItem>
-												</SelectContent>
-											</Select>
-										) : (
-											<Input
-												type="text"
-												placeholder={attr.name}
-												value={attributeFilters[attr.slug] || ""}
-												onChange={(e) =>
-													updateAttributeFilter(attr.slug, e.target.value)
-												}
-											/>
-										)}
-									</div>
-								))}
-							</div>
-						</div>
-					)}
-
-					<div className="mt-6 flex items-center gap-4">
-						<Label>Sort by:</Label>
-						<Select
-							value={filters.sort}
-							onValueChange={(value) => updateFilter("sort", value)}
-						>
-							<SelectTrigger className="w-[200px]">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="-createdAt">Newest first</SelectItem>
-								<SelectItem value="createdAt">Oldest first</SelectItem>
-								<SelectItem value="-price">Price: High to Low</SelectItem>
-								<SelectItem value="price">Price: Low to High</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
+					))}
 				</div>
 			)}
 
-			<div className="mb-4 flex items-center justify-between">
-				<p className="text-muted-foreground">
-					{isLoading ? "Loading..." : `${total} results found`}
-				</p>
+			{/* Clear */}
+			{hasActiveFilters() && (
+				<button
+					onClick={clearFilters}
+					className="w-full text-center text-sm font-medium text-red-600 hover:underline"
+				>
+					Clear all filters
+				</button>
+			)}
+		</div>
+	);
+
+	return (
+		<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+			{/* Top bar: search + sort + mobile filter toggle */}
+			<div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+				<div className="relative flex-1">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+					<input
+						type="search"
+						placeholder="Search..."
+						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pl-9 pr-3 text-sm text-[#0F172A] placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
+						value={filters.q}
+						onChange={(e) => updateFilter("q", e.target.value)}
+					/>
+				</div>
+				<div className="flex items-center gap-2">
+					<Select
+						value={filters.sort}
+						onValueChange={(v) => updateFilter("sort", v)}
+					>
+						<SelectTrigger className="h-10 w-[160px] rounded-lg text-sm">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="-createdAt">Newest</SelectItem>
+							<SelectItem value="createdAt">Oldest</SelectItem>
+							<SelectItem value="-price">Price ↓</SelectItem>
+							<SelectItem value="price">Price ↑</SelectItem>
+						</SelectContent>
+					</Select>
+					<button
+						className="flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm text-[#475569] hover:bg-[#F8FAFC] lg:hidden"
+						onClick={() => setShowMobileFilters(true)}
+					>
+						<SlidersHorizontal className="h-4 w-4" />
+						Filters
+						{activeFilterCount > 0 && (
+							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E40AF] text-[10px] font-bold text-white">
+								{activeFilterCount}
+							</span>
+						)}
+					</button>
+				</div>
 			</div>
 
-			{isLoading ? (
-				<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{[...Array(8)].map((_, i) => (
-						<div
-							key={i}
-							className="animate-pulse rounded-lg bg-muted"
-							style={{ aspectRatio: "4/5" }}
-						/>
-					))}
-				</div>
-			) : listings.length > 0 ? (
-				<ListingGrid listings={listings} />
-			) : (
-				<div className="py-16 text-center">
-					<p className="text-lg text-muted-foreground">No listings found</p>
-					<p className="text-sm text-muted-foreground">
-						Try adjusting your search or filters
+			{/* Layout: sidebar + results */}
+			<div className="flex gap-6">
+				{/* Desktop sidebar (Leboncoin style) */}
+				<aside className="hidden w-56 shrink-0 lg:block">
+					<div className="sticky top-20 rounded-xl border border-[#E2E8F0] bg-white p-4">
+						<h3 className="mb-4 text-sm font-bold text-[#0F172A]">Filters</h3>
+						{filterPanel}
+					</div>
+				</aside>
+
+				{/* Results */}
+				<div className="min-w-0 flex-1">
+					<p className="mb-4 text-sm text-[#64748B]">
+						{isLoading ? (
+							"Loading..."
+						) : (
+							<>
+								<span className="font-semibold text-[#0F172A]">{total}</span>{" "}
+								results
+							</>
+						)}
 					</p>
-					{hasActiveFilters() && (
-						<Button variant="outline" className="mt-4" onClick={clearFilters}>
-							Clear filters
-						</Button>
+
+					{isLoading ? (
+						<div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+							{[...Array(8)].map((_, i) => (
+								<div
+									key={i}
+									className="animate-pulse rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]"
+									style={{ aspectRatio: "3/4" }}
+								/>
+							))}
+						</div>
+					) : listings.length > 0 ? (
+						<>
+							<ListingGrid listings={listings} className="md:grid-cols-3 xl:grid-cols-4" />
+							{!isLoading && listings.length < total && (
+								<div className="mt-6 text-center">
+									<button
+										onClick={() => { setShouldFetch(true); setPage(p => p + 1); }}
+										className="rounded-xl border border-[#E2E8F0] bg-white px-8 py-2.5 text-sm font-medium text-[#1E40AF] transition-colors hover:bg-[#F8FAFC]"
+									>
+										Load more ({listings.length} of {total})
+									</button>
+								</div>
+							)}
+						</>
+					) : (
+						<div className="py-20 text-center">
+							<Search className="mx-auto mb-3 h-10 w-10 text-[#CBD5E1]" />
+							<p className="font-medium text-[#0F172A]">No results</p>
+							<p className="mt-1 text-sm text-[#64748B]">
+								Try different keywords or filters
+							</p>
+							{hasActiveFilters() && (
+								<button
+									onClick={clearFilters}
+									className="mt-3 text-sm font-medium text-[#1E40AF] hover:underline"
+								>
+									Clear filters
+								</button>
+							)}
+						</div>
 					)}
+				</div>
+			</div>
+
+			{/* Mobile filter drawer */}
+			{showMobileFilters && (
+				<div className="fixed inset-0 z-50 lg:hidden">
+					<div
+						className="absolute inset-0 bg-black/40"
+						onClick={() => setShowMobileFilters(false)}
+					/>
+					<div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl">
+						<div className="mb-4 flex items-center justify-between">
+							<h3 className="text-lg font-bold text-[#0F172A]">Filters</h3>
+							<button
+								onClick={() => setShowMobileFilters(false)}
+								className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#F1F5F9]"
+							>
+								<X className="h-5 w-5 text-[#475569]" />
+							</button>
+						</div>
+						{filterPanel}
+						<Button
+							className="mt-5 w-full rounded-lg"
+							onClick={() => setShowMobileFilters(false)}
+						>
+							Show {total} results
+						</Button>
+					</div>
 				</div>
 			)}
 		</div>

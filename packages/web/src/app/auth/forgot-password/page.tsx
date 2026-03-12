@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -52,9 +53,18 @@ export default function ForgotPasswordPage() {
 
 	if (success) {
 		return (
-			<div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
-				<Card className="w-full max-w-md">
-					<CardHeader className="space-y-1">
+			<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+				<div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#1E40AF]">
+					<div className="absolute -left-20 top-20 h-72 w-72 animate-float rounded-full bg-[#3B82F6]/20 blur-3xl" />
+					<div className="absolute -right-20 bottom-20 h-60 w-60 animate-float rounded-full bg-[#F59E0B]/15 blur-3xl" style={{ animationDelay: "1s" }} />
+				</div>
+				<Card className="relative w-full max-w-md border-white/10 bg-white shadow-2xl">
+					<CardHeader className="space-y-1 text-center">
+						<Link href="/" className="mx-auto mb-2 inline-flex items-center gap-2">
+							<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#1E40AF] to-[#F59E0B] shadow-md">
+								<span className="text-sm font-bold text-white">B</span>
+							</div>
+						</Link>
 						<CardTitle className="text-2xl">Check your email</CardTitle>
 						<CardDescription>
 							If an account with that email exists, we&apos;ve sent a password
@@ -63,7 +73,10 @@ export default function ForgotPasswordPage() {
 					</CardHeader>
 					<CardFooter>
 						<Link href="/auth/login" className="w-full">
-							<Button variant="outline" className="w-full">
+							<Button
+								variant="outline"
+								className="w-full rounded-xl"
+							>
 								Back to sign in
 							</Button>
 						</Link>
@@ -74,9 +87,19 @@ export default function ForgotPasswordPage() {
 	}
 
 	return (
-		<div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
-			<Card className="w-full max-w-md">
-				<CardHeader className="space-y-1">
+		<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+			<div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#1E40AF]">
+				<div className="absolute inset-0 pattern-dots-light" />
+				<div className="absolute inset-0 pattern-diagonal" />
+				<div className="absolute -left-20 top-20 h-72 w-72 animate-float rounded-full bg-[#3B82F6]/20 blur-3xl" />
+				<div className="absolute -right-20 bottom-20 h-60 w-60 animate-float rounded-full bg-[#F59E0B]/15 blur-3xl" style={{ animationDelay: "1s" }} />
+			</div>
+
+			<Card className="relative w-full max-w-md border-white/10 bg-white shadow-2xl">
+				<CardHeader className="space-y-1 text-center">
+					<Link href="/" className="mx-auto mb-2 inline-flex items-center gap-2">
+						<Image src="/logo.png" alt="Buy'N'Sellem" width={40} height={40} className="h-10 w-10 object-contain" />
+					</Link>
 					<CardTitle className="text-2xl">Forgot password</CardTitle>
 					<CardDescription>
 						Enter your email address and we&apos;ll send you a link to reset
@@ -86,12 +109,12 @@ export default function ForgotPasswordPage() {
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
 						{error && (
-							<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+							<div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
 								{error}
 							</div>
 						)}
 						<div className="space-y-2">
-							<Label htmlFor="email">Email</Label>
+							<Label htmlFor="email" className="text-[#0F172A]">Email</Label>
 							<Input
 								id="email"
 								type="email"
@@ -103,14 +126,18 @@ export default function ForgotPasswordPage() {
 						</div>
 					</CardContent>
 					<CardFooter className="flex flex-col space-y-4">
-						<Button type="submit" className="w-full" disabled={isLoading}>
+						<Button
+							type="submit"
+							className="w-full rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#2563EB] font-medium shadow-md shadow-blue-500/20"
+							disabled={isLoading}
+						>
 							{isLoading ? "Sending..." : "Send reset link"}
 						</Button>
-						<p className="text-center text-sm text-muted-foreground">
+						<p className="text-center text-sm text-[#64748B]">
 							Remember your password?{" "}
 							<Link
 								href="/auth/login"
-								className="text-primary hover:underline"
+								className="font-medium text-[#1E40AF] hover:underline"
 							>
 								Sign in
 							</Link>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Save } from "lucide-react";
+import { Camera, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "~/components/ui/button";
@@ -11,6 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { ImageCropper } from "~/components/ui/image-cropper";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
@@ -22,6 +23,9 @@ export function ProfileEditForm({ user }: { user: User }) {
 	const [isPending, startTransition] = useTransition();
 	const [success, setSuccess] = useState("");
 	const [error, setError] = useState("");
+	const [avatarPreview, setAvatarPreview] = useState<string | null>((user.avatar as { url?: string })?.url || null);
+	const [avatarFile, setAvatarFile] = useState<File | null>(null);
+	const [cropSrc, setCropSrc] = useState<string | null>(null);
 	const [formData, setFormData] = useState({
 		name: user.name || "",
 		bio: user.bio || "",
@@ -29,13 +33,49 @@ export function ProfileEditForm({ user }: { user: User }) {
 		location: user.location || "",
 	});
 
+	function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = (ev) => setCropSrc(ev.target?.result as string);
+		reader.readAsDataURL(file);
+		e.target.value = "";
+	}
+
+	function handleCropDone(blob: Blob) {
+		const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+		setAvatarFile(file);
+		setAvatarPreview(URL.createObjectURL(blob));
+		setCropSrc(null);
+	}
+
 	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
 		setSuccess("");
 
 		startTransition(async () => {
-			const result = await updateProfile(user.id, formData);
+			let avatarId: number | undefined;
+
+			if (avatarFile) {
+				const fd = new FormData();
+				fd.append("file", avatarFile);
+				fd.append("_payload", JSON.stringify({ alt: user.name || "avatar" }));
+				try {
+					const uploadRes = await fetch("/api/media", {
+						method: "POST",
+						body: fd,
+						credentials: "include",
+					});
+					if (uploadRes.ok) {
+						const data = await uploadRes.json();
+						avatarId = data.doc?.id ?? data.id;
+					}
+				} catch {}
+			}
+
+			const updateData = avatarId ? { ...formData, avatar: avatarId } : formData;
+			const result = await updateProfile(user.id, updateData);
 			if (result.success) {
 				setSuccess("Profile updated successfully!");
 				router.refresh();
@@ -46,6 +86,15 @@ export function ProfileEditForm({ user }: { user: User }) {
 	}
 
 	return (
+		<>
+		{cropSrc && (
+			<ImageCropper
+				imageSrc={cropSrc}
+				aspect={1}
+				onCropDone={handleCropDone}
+				onCancel={() => setCropSrc(null)}
+			/>
+		)}
 		<Card>
 			<CardHeader>
 				<CardTitle>Edit Profile</CardTitle>
@@ -63,6 +112,27 @@ export function ProfileEditForm({ user }: { user: User }) {
 							{success}
 						</div>
 					)}
+					<div className="flex items-center gap-4">
+						<div className="relative">
+							<div className="h-20 w-20 overflow-hidden rounded-full bg-[#F1F5F9]">
+								{avatarPreview ? (
+									<img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover" />
+								) : (
+									<div className="flex h-full w-full items-center justify-center bg-[#1E40AF] text-2xl font-semibold text-white">
+										{user.name?.charAt(0) || "?"}
+									</div>
+								)}
+							</div>
+							<label className="absolute -bottom-1 -right-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-[#1E40AF] text-white shadow-md hover:bg-[#1E3A8A]">
+								<Camera className="h-3.5 w-3.5" />
+								<input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+							</label>
+						</div>
+						<div>
+							<p className="text-sm font-medium text-[#0F172A]">Profile photo</p>
+							<p className="text-xs text-[#64748B]">Click the camera icon to change</p>
+						</div>
+					</div>
 					<div className="space-y-2">
 						<Label htmlFor="name">Name</Label>
 						<Input
@@ -126,5 +196,6 @@ export function ProfileEditForm({ user }: { user: User }) {
 				</form>
 			</CardContent>
 		</Card>
+		</>
 	);
 }

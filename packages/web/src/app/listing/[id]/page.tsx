@@ -1,21 +1,25 @@
 import {
 	ArrowLeft,
-	Calendar,
+	Clock,
 	Eye,
 	Flag,
 	Heart,
 	MapPin,
 	MessageCircle,
+	Shield,
+	Star,
 	Zap,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FavoriteButton } from "~/components/listing/favorite-button";
+import { ImageGallery } from "~/components/listing/image-gallery";
 import { ReportDialog } from "~/components/listing/report-dialog";
+import { ShareButton } from "~/components/listing/share-button";
+import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Separator } from "~/components/ui/separator";
 import { serverFetch } from "~/lib/server-api";
 import type { Listing, User } from "~/types";
 
@@ -33,6 +37,18 @@ async function getListing(id: string): Promise<Listing | null> {
 	}
 }
 
+function timeAgo(date: string): string {
+	const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+	if (seconds < 60) return "just now";
+	const minutes = Math.floor(seconds / 60);
+	if (minutes < 60) return `${minutes}m ago`;
+	const hours = Math.floor(minutes / 60);
+	if (hours < 24) return `${hours}h ago`;
+	const days = Math.floor(hours / 24);
+	if (days < 30) return `${days}d ago`;
+	return new Date(date).toLocaleDateString();
+}
+
 export default async function ListingPage({ params }: PageProps) {
 	const { id } = await params;
 	const listing = await getListing(id);
@@ -44,200 +60,238 @@ export default async function ListingPage({ params }: PageProps) {
 	const isBoosted =
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
-	const category = listing.category as { id: number; name: string } | undefined;
+	const category = listing.category as
+		| { id: number; name: string }
+		| undefined;
 
 	const imageUrls: string[] =
 		listing.images
 			?.map((img) => (img.image as { url?: string })?.url)
 			.filter((url): url is string => Boolean(url)) || [];
 
-	return (
-		<div className="container mx-auto px-4 py-8">
-			<Link href="/search">
-				<Button variant="ghost" size="sm" className="mb-4">
-					<ArrowLeft className="mr-2 h-4 w-4" />
-					Back to search
-				</Button>
-			</Link>
+	const conditionMap: Record<string, string> = {
+		new: "New",
+		like_new: "Like new",
+		good: "Good",
+		fair: "Fair",
+		poor: "Poor",
+	};
 
-			<div className="grid gap-8 lg:grid-cols-3">
-				<div className="lg:col-span-2">
-					<div className="space-y-4">
-						{imageUrls.length > 0 ? (
-							<div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-								<Image
-									src={imageUrls[0]}
-									alt={listing.title}
-									fill
-									className="object-cover"
-									priority
-								/>
+	return (
+		<div className="min-h-screen bg-[#F8FAFC]">
+			<ViewTracker listingId={listing.id} currentViews={listing.views ?? 0} />
+			{/* Breadcrumb */}
+			<div className="border-b border-[#E2E8F0] bg-white">
+				<div className="container mx-auto max-w-7xl flex items-center gap-2 px-4 sm:px-6 lg:px-8 py-3 text-sm text-[#64748B]">
+					<Link href="/search" className="flex items-center gap-1 hover:text-[#1E40AF]">
+						<ArrowLeft className="h-4 w-4" />
+						Back to results
+					</Link>
+					{category && (
+						<>
+							<span>/</span>
+							<Link
+								href={`/search?category=${category.id}`}
+								className="hover:text-[#1E40AF]"
+							>
+								{category.name}
+							</Link>
+						</>
+					)}
+				</div>
+			</div>
+
+			<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+				<div className="grid gap-6 lg:grid-cols-5">
+					{/* Left: images + details (3 cols) */}
+					<div className="lg:col-span-3">
+						{/* Image gallery */}
+						<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+							<ImageGallery images={imageUrls} title={listing.title} isBoosted={isBoosted} />
+						</div>
+
+						{/* Details card */}
+						<div className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
+							{/* Title + price */}
+							<div className="flex items-start justify-between gap-4">
+								<div>
+									<h1 className="text-2xl font-bold text-[#0F172A]">
+										{listing.title}
+									</h1>
+									<p className="mt-1 text-2xl font-bold text-[#1E40AF]">
+										{listing.price.toLocaleString()}{" "}
+										<span className="text-sm font-medium text-[#64748B]">
+											XAF
+										</span>
+									</p>
+								</div>
+								<div className="flex gap-2">
+									<FavoriteButton
+										listingId={listing.id}
+										className="h-9 w-9 rounded-lg border border-[#E2E8F0]"
+									/>
+									<ShareButton title={listing.title} />
+								</div>
+							</div>
+
+							{/* Meta */}
+							<div className="mt-4 flex flex-wrap gap-3 text-sm text-[#64748B]">
+								<span className="flex items-center gap-1">
+									<MapPin className="h-4 w-4 text-[#F59E0B]" />
+									{listing.location}
+								</span>
+								<span className="flex items-center gap-1">
+									<Clock className="h-4 w-4" />
+									{timeAgo(listing.createdAt)}
+								</span>
+								{listing.views !== undefined && (
+									<span className="flex items-center gap-1">
+										<Eye className="h-4 w-4" />
+										{listing.views} views
+									</span>
+								)}
+							</div>
+
+							{/* Tags */}
+							<div className="mt-4 flex flex-wrap gap-2">
+								{category && (
+									<Badge variant="secondary">{category.name}</Badge>
+								)}
+								{listing.condition && conditionMap[listing.condition] && (
+									<Badge variant="outline">
+										{conditionMap[listing.condition]}
+									</Badge>
+								)}
 								{isBoosted && (
-									<Badge className="absolute left-4 top-4 bg-yellow-500 hover:bg-yellow-600">
+									<Badge variant="boost">
 										<Zap className="mr-1 h-3 w-3" />
 										Boosted
 									</Badge>
 								)}
 							</div>
-						) : (
-							<div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-muted">
-								<span className="text-muted-foreground">No images</span>
-							</div>
-						)}
 
-						{imageUrls.length > 1 && (
-							<div className="flex gap-2 overflow-x-auto pb-2">
-								{imageUrls.map((url, index) => (
-									<div
-										key={index}
-										className="relative h-20 w-28 flex-shrink-0 overflow-hidden rounded-md"
-									>
-										<Image
-											src={url}
-											alt={`${listing.title} ${index + 1}`}
-											fill
-											className="object-cover"
-										/>
-									</div>
-								))}
-							</div>
-						)}
-					</div>
-
-					<div className="mt-8">
-						<h1 className="text-3xl font-bold">{listing.title}</h1>
-						<p className="mt-2 text-2xl font-bold text-primary">
-							{listing.price.toLocaleString()} XAF
-						</p>
-
-						<div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-							<div className="flex items-center">
-								<MapPin className="mr-1 h-4 w-4" />
-								{listing.location}
-							</div>
-							<div className="flex items-center">
-								<Calendar className="mr-1 h-4 w-4" />
-								Posted {new Date(listing.createdAt).toLocaleDateString()}
-							</div>
-							{listing.views !== undefined && (
-								<div className="flex items-center">
-									<Eye className="mr-1 h-4 w-4" />
-									{listing.views} views
-								</div>
-							)}
-						</div>
-
-						{category && (
-							<Badge variant="secondary" className="mt-4">
-								{category.name}
-							</Badge>
-						)}
-
-						<Separator className="my-6" />
-
-						<div>
-							<h2 className="mb-3 text-lg font-semibold">Description</h2>
-							<p className="whitespace-pre-wrap text-muted-foreground">
-								{listing.description}
-							</p>
-						</div>
-
-						{listing.attributes && typeof listing.attributes === "object" && (
-							<>
-								<Separator className="my-6" />
-								<div>
-									<h2 className="mb-3 text-lg font-semibold">Details</h2>
-									<dl className="grid grid-cols-2 gap-4">
-										{Object.entries(listing.attributes).map(([key, value]) => (
-											<div key={key}>
-												<dt className="text-sm font-medium text-muted-foreground">
-													{key.charAt(0).toUpperCase() + key.slice(1)}
-												</dt>
-												<dd>{String(value)}</dd>
-											</div>
-										))}
-									</dl>
-								</div>
-							</>
-						)}
-					</div>
-				</div>
-
-				<div className="lg:col-span-1">
-					<div className="sticky top-24 space-y-6">
-						{isBoosted && listing.boostedUntil && (
-							<div className="rounded-lg bg-yellow-50 p-4 text-yellow-900 dark:bg-yellow-900/20">
-								<div className="flex items-center">
-									<Zap className="mr-2 h-5 w-5" />
-									<span className="font-medium">Boosted until</span>
-								</div>
-								<p className="mt-1 text-sm">
-									{new Date(listing.boostedUntil).toLocaleDateString()}
+							{/* Description */}
+							<div className="mt-6 border-t border-[#E2E8F0] pt-5">
+								<h2 className="mb-2 text-sm font-bold uppercase tracking-wider text-[#64748B]">
+									Description
+								</h2>
+								<p className="whitespace-pre-wrap text-sm leading-relaxed text-[#334155]">
+									{listing.description}
 								</p>
 							</div>
-						)}
 
-						<div className="rounded-lg border p-6">
-							{seller ? (
-								<Link href={`/profile/${seller.id}`}>
-									<div className="flex items-center gap-4">
-										<Avatar className="h-12 w-12">
+							{/* Attributes */}
+							{listing.attributes &&
+								typeof listing.attributes === "object" &&
+								Object.keys(listing.attributes).length > 0 && (
+									<div className="mt-6 border-t border-[#E2E8F0] pt-5">
+										<h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-[#64748B]">
+											Details
+										</h2>
+										<div className="grid grid-cols-2 gap-x-6 gap-y-3">
+											{Object.entries(listing.attributes).map(
+												([key, value]) => (
+													<div key={key} className="flex justify-between text-sm">
+														<span className="text-[#64748B]">
+															{key.charAt(0).toUpperCase() + key.slice(1)}
+														</span>
+														<span className="font-medium text-[#0F172A]">
+															{String(value)}
+														</span>
+													</div>
+												),
+											)}
+										</div>
+									</div>
+								)}
+						</div>
+					</div>
+
+					{/* Right: seller card (2 cols) */}
+					<div className="lg:col-span-2">
+						<div className="sticky top-20 space-y-4">
+							{/* Seller card */}
+							<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+								{seller ? (
+									<Link
+										href={`/profile/${seller.id}`}
+										className="flex items-center gap-3"
+									>
+										<Avatar className="h-12 w-12 ring-2 ring-[#E2E8F0]">
 											<AvatarImage
 												src={
 													(seller.avatar as { url?: string })?.url || undefined
 												}
 											/>
-											<AvatarFallback>
+											<AvatarFallback className="bg-[#1E40AF] text-sm font-semibold text-white">
 												{seller.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>
 										<div>
-											<p className="font-medium">{seller.name}</p>
+											<p className="font-semibold text-[#0F172A]">
+												{seller.name}
+											</p>
 											{seller.rating !== undefined &&
 												seller.rating !== null && (
-													<p className="text-sm text-muted-foreground">
-														★ {seller.rating.toFixed(1)} ({seller.totalReviews}{" "}
-														reviews)
-													</p>
+													<div className="flex items-center gap-1 text-sm text-[#64748B]">
+														<Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" />
+														{seller.rating.toFixed(1)}
+														<span className="text-[#94A3B8]">
+															({seller.totalReviews})
+														</span>
+													</div>
 												)}
 										</div>
-									</div>
-								</Link>
-							) : (
-								<p className="text-muted-foreground">Unknown seller</p>
-							)}
+									</Link>
+								) : (
+									<p className="text-sm text-[#64748B]">Unknown seller</p>
+								)}
 
-							<div className="mt-6 flex flex-col gap-2">
-								<Link
-									href={`/messages?listing=${listing.id}`}
-									className="w-full"
-								>
-									<Button className="w-full">
-										<MessageCircle className="mr-2 h-4 w-4" />
-										Message Seller
-									</Button>
-								</Link>
-								<div className="flex gap-2">
-									<Button variant="outline" className="flex-1">
-										<Heart className="mr-2 h-4 w-4" />
-										Save
-									</Button>
-									<ReportDialog
-										targetType="listing"
-										targetId={String(listing.id)}
-										asChild
+								<div className="mt-5 flex flex-col gap-2">
+									<Link
+										href={`/messages?listing=${listing.id}`}
+										className="w-full"
 									>
-										<Button variant="outline" size="icon">
-											<Flag className="h-4 w-4" />
+										<Button className="w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]">
+											<MessageCircle className="mr-2 h-4 w-4" />
+											Message seller
 										</Button>
-									</ReportDialog>
+									</Link>
+									<FavoriteButton
+									listingId={listing.id}
+									showLabel
+									className="w-full"
+								/>
 								</div>
 							</div>
-						</div>
 
-						<p className="text-xs text-muted-foreground">
-							Posted {new Date(listing.createdAt).toLocaleDateString()}
-						</p>
+							{/* Safety tips */}
+							<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+								<div className="flex items-center gap-2 text-sm font-semibold text-[#0F172A]">
+									<Shield className="h-4 w-4 text-[#1E40AF]" />
+									Safety tips
+								</div>
+								<ul className="mt-2 space-y-1 text-xs text-[#64748B]">
+									<li>Meet in a public place</li>
+									<li>Check the item before paying</li>
+									<li>Never send money in advance</li>
+								</ul>
+							</div>
+
+							{/* Report */}
+							<div className="text-center">
+								<ReportDialog
+									targetType="listing"
+									targetId={String(listing.id)}
+									asChild
+								>
+									<button className="inline-flex items-center gap-1 text-xs text-[#94A3B8] hover:text-red-500">
+										<Flag className="h-3 w-3" />
+										Report this listing
+									</button>
+								</ReportDialog>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

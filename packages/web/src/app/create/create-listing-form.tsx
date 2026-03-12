@@ -78,11 +78,7 @@ export function CreateListingForm({
 	function handleAddImages(files: File[]) {
 		setImages((prev) => [...prev, ...files]);
 		for (const file of files) {
-			const reader = new FileReader();
-			reader.onload = (ev) => {
-				setImagePreviews((prev) => [...prev, ev.target?.result as string]);
-			};
-			reader.readAsDataURL(file);
+			setImagePreviews((prev) => [...prev, URL.createObjectURL(file)]);
 		}
 	}
 
@@ -111,7 +107,7 @@ export function CreateListingForm({
 		}
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(status: "published" | "draft" = "published") {
 		if (!selectedCategory) return;
 		setIsLoading(true);
 
@@ -141,7 +137,7 @@ export function CreateListingForm({
 				condition: formData.condition || undefined,
 				attributes: attributeValues,
 				images: imageIds.map((id) => ({ image: id })),
-				status: "published",
+				status: status,
 			};
 
 			const res = await fetch("/api/listings", {
@@ -420,27 +416,33 @@ export function CreateListingForm({
 				</Button>
 
 				{step < STEPS.length - 1 ? (
-					<Button
-						onClick={() => setStep((s) => s + 1)}
-						disabled={!canProceed()}
-					>
+					<Button onClick={() => setStep((s) => s + 1)} disabled={!canProceed()}>
 						Next
 						<ArrowRight className="ml-2 h-4 w-4" />
 					</Button>
 				) : (
-					<Button
-						onClick={handleSubmit}
-						disabled={isLoading || !canProceed()}
-					>
-						{isLoading ? (
-							<>
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Publishing...
-							</>
-						) : (
-							"Publish Listing"
-						)}
-					</Button>
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							onClick={() => handleSubmit("draft")}
+							disabled={isLoading || !canProceed()}
+						>
+							Save as draft
+						</Button>
+						<Button
+							onClick={() => handleSubmit("published")}
+							disabled={isLoading || !canProceed()}
+						>
+							{isLoading ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Publishing...
+								</>
+							) : (
+								"Publish Listing"
+							)}
+						</Button>
+					</div>
 				)}
 			</div>
 		</div>
