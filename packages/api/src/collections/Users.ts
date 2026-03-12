@@ -22,17 +22,17 @@ export const Users: CollectionConfig = {
 				// On create, force role to "user" unless admin
 				if (operation === "create" && !isAdmin) {
 					data.role = "user";
-					data.verified = false;
-					data.rating = 0;
-					data.totalReviews = 0;
+					delete data.verified;
+					delete data.rating;
+					delete data.totalReviews;
 				}
 
 				// On update, prevent non-admins from changing protected fields
 				if (operation === "update" && !isAdmin) {
-					data.role = undefined;
-					data.verified = undefined;
-					data.rating = undefined;
-					data.totalReviews = undefined;
+					delete data.role;
+					delete data.verified;
+					delete data.rating;
+					delete data.totalReviews;
 				}
 
 				return data;
