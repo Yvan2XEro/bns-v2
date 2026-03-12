@@ -51,7 +51,7 @@ export default async function EditListingPage({ params }: PageProps) {
 	}
 
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-8">
+		<div className="container mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
 			<EditListingForm listing={listing} categories={categories} />
 		</div>
 	);

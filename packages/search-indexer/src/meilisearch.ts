@@ -42,7 +42,7 @@ export type ListingDocument = {
 
 export async function indexDocument(doc: ListingDocument): Promise<void> {
 	const index = getIndex();
-	await index.addDocuments([doc]);
+	await index.addDocuments([doc], { primaryKey: "id" });
 	console.log(`[meilisearch] Indexed listing ${doc.id}`);
 }
 
@@ -60,7 +60,7 @@ export async function indexDocuments(docs: ListingDocument[]): Promise<void> {
 
 	for (let i = 0; i < docs.length; i += BATCH_SIZE) {
 		const batch = docs.slice(i, i + BATCH_SIZE);
-		await index.addDocuments(batch);
+		await index.addDocuments(batch, { primaryKey: "id" });
 		console.log(
 			`[meilisearch] Indexed batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} documents)`,
 		);

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -53,23 +54,48 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
-			<Card className="w-full max-w-md">
-				<CardHeader className="space-y-1">
+		<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-8">
+			{/* Background */}
+			<div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#1E40AF]">
+				<div className="pattern-dots-light absolute inset-0" />
+				<div className="pattern-diagonal absolute inset-0" />
+				<div className="-right-20 absolute top-20 h-72 w-72 animate-float rounded-full bg-[#F59E0B]/15 blur-3xl" />
+				<div
+					className="-left-20 absolute bottom-20 h-60 w-60 animate-float rounded-full bg-[#3B82F6]/20 blur-3xl"
+					style={{ animationDelay: "1.5s" }}
+				/>
+			</div>
+
+			<Card className="relative w-full max-w-md border-white/10 bg-white shadow-2xl">
+				<CardHeader className="space-y-1 text-center">
+					<Link
+						href="/"
+						className="mx-auto mb-2 inline-flex items-center gap-2"
+					>
+						<Image
+							src="/logo.png"
+							alt="Buy'N'Sellem"
+							width={40}
+							height={40}
+							className="h-10 w-10 object-contain"
+						/>
+					</Link>
 					<CardTitle className="text-2xl">Create an account</CardTitle>
 					<CardDescription>
-						Enter your details to create a new account
+						Join Buy&apos;N&apos;Sellem and start trading locally
 					</CardDescription>
 				</CardHeader>
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
 						{error && (
-							<div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
+							<div className="rounded-xl bg-red-50 p-3 text-red-600 text-sm">
 								{error}
 							</div>
 						)}
 						<div className="space-y-2">
-							<Label htmlFor="name">Name</Label>
+							<Label htmlFor="name" className="text-[#0F172A]">
+								Name
+							</Label>
 							<Input
 								id="name"
 								type="text"
@@ -80,7 +106,9 @@ export default function RegisterPage() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="email">Email</Label>
+							<Label htmlFor="email" className="text-[#0F172A]">
+								Email
+							</Label>
 							<Input
 								id="email"
 								type="email"
@@ -91,22 +119,26 @@ export default function RegisterPage() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="password">Password</Label>
+							<Label htmlFor="password" className="text-[#0F172A]">
+								Password
+							</Label>
 							<Input
 								id="password"
 								type="password"
-								placeholder="••••••••"
+								placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								required
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="confirmPassword">Confirm Password</Label>
+							<Label htmlFor="confirmPassword" className="text-[#0F172A]">
+								Confirm Password
+							</Label>
 							<Input
 								id="confirmPassword"
 								type="password"
-								placeholder="••••••••"
+								placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
 								value={confirmPassword}
 								onChange={(e) => setConfirmPassword(e.target.value)}
 								required
@@ -114,12 +146,19 @@ export default function RegisterPage() {
 						</div>
 					</CardContent>
 					<CardFooter className="flex flex-col space-y-4">
-						<Button type="submit" className="w-full" disabled={isLoading}>
+						<Button
+							type="submit"
+							className="w-full rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#2563EB] font-medium shadow-blue-500/20 shadow-md"
+							disabled={isLoading}
+						>
 							{isLoading ? "Creating account..." : "Create account"}
 						</Button>
-						<p className="text-center text-muted-foreground text-sm">
+						<p className="text-center text-[#64748B] text-sm">
 							Already have an account?{" "}
-							<Link href="/auth/login" className="text-primary hover:underline">
+							<Link
+								href="/auth/login"
+								className="font-medium text-[#1E40AF] hover:underline"
+							>
 								Sign in
 							</Link>
 						</p>

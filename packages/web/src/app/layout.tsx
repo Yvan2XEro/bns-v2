@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, Outfit } from "next/font/google";
 import "./globals.css";
+import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
 import { AuthProvider } from "~/hooks/use-auth";
 
-const inter = Inter({ subsets: ["latin"] });
+const dmSans = DM_Sans({
+	subsets: ["latin"],
+	variable: "--font-body",
+});
+
+const outfit = Outfit({
+	subsets: ["latin"],
+	variable: "--font-display",
+	weight: ["500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
-	title: "Marketplace - Buy & Sell Near You",
+	title: "Buy'N'Sellem - Buy & Sell Near You",
 	description:
 		"Discover great deals on items near you. Buy and sell locally with ease.",
 };
@@ -19,18 +29,14 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body className={inter.className}>
+			<body
+				className={`${dmSans.variable} ${outfit.variable} ${dmSans.className}`}
+			>
 				<AuthProvider>
 					<div className="relative flex min-h-screen flex-col">
 						<Header />
 						<main className="flex-1">{children}</main>
-						<footer className="border-t py-6 md:py-0">
-							<div className="container mx-auto flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-								<p className="text-center text-muted-foreground text-sm leading-loose md:text-left">
-									Built with Next.js. The marketplace platform.
-								</p>
-							</div>
-						</footer>
+						<Footer />
 					</div>
 				</AuthProvider>
 			</body>
