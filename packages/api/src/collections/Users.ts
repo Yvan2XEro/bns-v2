@@ -15,7 +15,7 @@ export const Users: CollectionConfig = {
 	},
 	hooks: {
 		beforeChange: [
-			({ req, data, operation }) => {
+			({ req, data, operation, originalDoc }) => {
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
 
@@ -29,10 +29,10 @@ export const Users: CollectionConfig = {
 
 				// On update, prevent non-admins from changing protected fields
 				if (operation === "update" && !isAdmin) {
-					delete data.role;
-					delete data.verified;
-					delete data.rating;
-					delete data.totalReviews;
+					data.role = originalDoc?.role;
+					data.verified = originalDoc.verified;
+					data.rating = originalDoc?.rating;
+					data.totalReviews = originalDoc.totalReviews;
 				}
 
 				return data;
