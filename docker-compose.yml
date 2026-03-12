@@ -1,7 +1,7 @@
 services:
   # --- Infrastructure ---
   mongodb:
-    image: mongo:7
+    image: mongo:4.4
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-bns}
@@ -12,7 +12,7 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 3s
       retries: 5
