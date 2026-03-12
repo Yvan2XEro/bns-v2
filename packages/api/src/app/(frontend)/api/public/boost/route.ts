@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 				amount: amount,
 				currency: "XAF",
 				description: `Boost listing: ${listing.title}`,
-				callback_url: `${process.env.PAYLOAD_PUBLIC_SERVER_URL}/api/boost/webhook`,
+				callback_url: `${process.env.PAYLOAD_PUBLIC_SERVER_URL}/api/public/boost/webhook`,
 				customer: {
 					email:
 						(listing.seller as unknown as { email?: string })?.email ||

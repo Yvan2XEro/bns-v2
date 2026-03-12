@@ -34,7 +34,7 @@ async function getUserReviews(userId: number): Promise<Review[]> {
 async function getUserListings(userId: number): Promise<Listing[]> {
 	try {
 		const res = await serverFetch(
-			`/api/search?userId=${userId}&limit=5`,
+			`/api/public/search?userId=${userId}&limit=5`,
 		);
 		if (!res.ok) return [];
 		const data = await res.json();

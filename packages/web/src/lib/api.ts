@@ -98,7 +98,7 @@ export const listingsApi = {
 			}
 		}
 
-		return api.get<SearchResult>(`/api/search?${searchParams.toString()}`);
+		return api.get<SearchResult>(`/api/public/search?${searchParams.toString()}`);
 	},
 
 	getById: async (id: number): Promise<Listing> => {
@@ -119,32 +119,32 @@ export const listingsApi = {
 
 	getRecent: async (limit: number = 10): Promise<Listing[]> => {
 		const result = await api.get<SearchResult>(
-			`/api/search?limit=${limit}&sort=-createdAt`,
+			`/api/public/search?limit=${limit}&sort=-createdAt`,
 		);
 		return result.hits;
 	},
 
 	getFeatured: async (limit: number = 6): Promise<Listing[]> => {
-		const result = await api.get<SearchResult>(`/api/search?limit=${limit}`);
+		const result = await api.get<SearchResult>(`/api/public/search?limit=${limit}`);
 		return result.hits.filter((l) => l.boostedUntil);
 	},
 
 	getByUser: async (userId: number): Promise<Listing[]> => {
-		const result = await api.get<SearchResult>(`/api/search?userId=${userId}`);
+		const result = await api.get<SearchResult>(`/api/public/search?userId=${userId}`);
 		return result.hits;
 	},
 };
 
 export const categoriesApi = {
 	getAll: async (): Promise<{ categories: Category[] }> => {
-		return api.get<{ categories: Category[] }>("/api/categories");
+		return api.get<{ categories: Category[] }>("/api/public/categories");
 	},
 
 	getById: async (
 		id: number,
 	): Promise<Category & { attributes: CategoryAttribute[] }> => {
 		return api.get<Category & { attributes: CategoryAttribute[] }>(
-			`/api/categories?id=${id}`,
+			`/api/public/categories?id=${id}`,
 		);
 	},
 
@@ -152,7 +152,7 @@ export const categoriesApi = {
 		slug: string,
 	): Promise<Category & { attributes: CategoryAttribute[] }> => {
 		return api.get<Category & { attributes: CategoryAttribute[] }>(
-			`/api/categories?slug=${slug}`,
+			`/api/public/categories?slug=${slug}`,
 		);
 	},
 };
@@ -180,22 +180,22 @@ export const favoritesApi = {
 
 export const conversationsApi = {
 	getAll: async (): Promise<Conversation[]> => {
-		return api.get<Conversation[]>("/api/conversations");
+		return api.get<Conversation[]>("/api/public/conversations");
 	},
 
 	getById: async (id: number): Promise<Conversation> => {
-		return api.get<Conversation>(`/api/conversations/${id}`);
+		return api.get<Conversation>(`/api/public/conversations/${id}`);
 	},
 
 	getMessages: async (conversationId: number): Promise<Message[]> => {
-		return api.get<Message[]>(`/api/conversations/${conversationId}/messages`);
+		return api.get<Message[]>(`/api/public/conversations/${conversationId}/messages`);
 	},
 
 	sendMessage: async (
 		conversationId: number,
 		content: string,
 	): Promise<Message> => {
-		return api.post<Message>(`/api/conversations/${conversationId}/messages`, {
+		return api.post<Message>(`/api/public/conversations/${conversationId}/messages`, {
 			content,
 		});
 	},
@@ -204,14 +204,14 @@ export const conversationsApi = {
 		listingId: number,
 		sellerId: number,
 	): Promise<Conversation> => {
-		return api.post<Conversation>("/api/conversations", {
+		return api.post<Conversation>("/api/public/conversations", {
 			listingId,
 			sellerId,
 		});
 	},
 
 	markAsRead: async (conversationId: number): Promise<void> => {
-		return api.post(`/api/conversations/${conversationId}/read`);
+		return api.post(`/api/public/conversations/${conversationId}/read`);
 	},
 };
 
@@ -250,11 +250,11 @@ export const boostApi = {
 		paymentUrl?: string;
 		paymentReference?: string;
 	}> => {
-		return api.post("/api/boost", { listingId, duration });
+		return api.post("/api/public/boost", { listingId, duration });
 	},
 
 	getStatus: async (listingId: number): Promise<BoostPayment | null> => {
-		return api.get<BoostPayment | null>(`/api/boost/${listingId}`);
+		return api.get<BoostPayment | null>(`/api/public/boost/${listingId}`);
 	},
 };
 

@@ -61,7 +61,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 		setIsBoosting(true);
 
 		try {
-			const res = await fetch("/api/boost", {
+			const res = await fetch("/api/public/boost", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({

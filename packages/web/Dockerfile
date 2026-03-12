@@ -25,6 +25,8 @@ COPY --from=deps /app/packages/chat-client-sdk/node_modules ./packages/chat-clie
 WORKDIR /app/packages/web
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV TURBOPACK_ROOT=/app
+ARG NEXT_PUBLIC_API_URL=http://api:3000
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN bun run build
 
 # --- Runner ---

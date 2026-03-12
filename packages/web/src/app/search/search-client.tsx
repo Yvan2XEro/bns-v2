@@ -72,7 +72,7 @@ export function SearchClient({
 				if (value) params.set(`attr_${key}`, value);
 			}
 
-			const res = await fetch(`/api/search?${params.toString()}`);
+			const res = await fetch(`/api/public/search?${params.toString()}`);
 			const data = await res.json();
 			setListings(data.hits || []);
 			setTotal(data.total || 0);

@@ -4,7 +4,7 @@ import { CreateListingForm } from "./create-listing-form";
 
 async function getCategories(): Promise<Category[]> {
 	try {
-		const res = await serverFetch("/api/categories");
+		const res = await serverFetch("/api/public/categories");
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.categories || [];

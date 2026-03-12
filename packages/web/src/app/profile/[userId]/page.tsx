@@ -31,7 +31,7 @@ async function getUser(userId: string): Promise<User | null> {
 async function getUserListings(userId: string): Promise<Listing[]> {
 	try {
 		const res = await serverFetch(
-			`/api/search?userId=${userId}&limit=20`,
+			`/api/public/search?userId=${userId}&limit=20`,
 		);
 		if (!res.ok) return [];
 		const data = await res.json();

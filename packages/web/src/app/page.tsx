@@ -17,7 +17,7 @@ import type { Category, Listing } from "~/types";
 
 async function getCategories(): Promise<Category[]> {
 	try {
-		const res = await serverFetch("/api/categories");
+		const res = await serverFetch("/api/public/categories");
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.categories || [];
@@ -28,7 +28,7 @@ async function getCategories(): Promise<Category[]> {
 
 async function getRecentListings(): Promise<Listing[]> {
 	try {
-		const res = await serverFetch("/api/search?limit=8&sort=-createdAt");
+		const res = await serverFetch("/api/public/search?limit=8&sort=-createdAt");
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.hits || [];
@@ -39,7 +39,7 @@ async function getRecentListings(): Promise<Listing[]> {
 
 async function getFeaturedListings(): Promise<Listing[]> {
 	try {
-		const res = await serverFetch("/api/search?limit=4");
+		const res = await serverFetch("/api/public/search?limit=4");
 		if (!res.ok) return [];
 		const data = await res.json();
 		return (data.hits || []).filter(

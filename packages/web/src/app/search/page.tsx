@@ -4,7 +4,7 @@ import { SearchClient } from "./search-client";
 
 async function getCategories(): Promise<Category[]> {
 	try {
-		const res = await serverFetch("/api/categories");
+		const res = await serverFetch("/api/public/categories");
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.categories || [];
@@ -25,7 +25,7 @@ async function getInitialListings(
 		if (searchParams.location) params.set("location", searchParams.location);
 		if (searchParams.sort) params.set("sort", searchParams.sort);
 
-		const res = await serverFetch(`/api/search?${params.toString()}`);
+		const res = await serverFetch(`/api/public/search?${params.toString()}`);
 		if (!res.ok) return { hits: [], total: 0 };
 		const data = await res.json();
 		return { hits: data.hits || [], total: data.total || 0 };
