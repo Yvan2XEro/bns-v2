@@ -3,7 +3,6 @@
 import { Check, Minus, Plus, RotateCcw, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
-// @ts-expect-error missing types
 import Cropper, { type Area } from "react-easy-crop";
 
 interface ImageCropperProps {
