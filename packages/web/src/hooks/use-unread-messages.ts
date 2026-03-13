@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const POLL_INTERVAL = 30_000; // 30 seconds
 
 export function useUnreadMessages(enabled: boolean) {
@@ -10,7 +9,7 @@ export function useUnreadMessages(enabled: boolean) {
 
 	const fetchCount = useCallback(async () => {
 		try {
-			const res = await fetch(`${API_URL}/api/public/messages/unread`, {
+			const res = await fetch("/api/public/messages/unread", {
 				credentials: "include",
 			});
 			if (res.ok) {
