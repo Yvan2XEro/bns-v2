@@ -1,4 +1,4 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionConfig, Where } from "payload";
 import { anyone } from "../access/anyone";
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
@@ -19,21 +19,18 @@ export const Listings: CollectionConfig = {
 	access: {
 		read: ({ req: { user } }) => {
 			if (!user) {
-				// Anonymous users: only published listings
-				return { status: { equals: "published" } };
+				return { status: { equals: "published" } } as Where;
 			}
 			const u = user as { role?: string };
 			if (u.role === "admin" || u.role === "moderator") {
-				// Admins/moderators: see everything
 				return true;
 			}
-			// Authenticated users: published + their own listings (any status)
 			return {
 				or: [
 					{ status: { equals: "published" } },
 					{ seller: { equals: user.id } },
 				],
-			};
+			} as Where;
 		},
 		create: authenticated,
 		update: isOwnerOrAdmin,
