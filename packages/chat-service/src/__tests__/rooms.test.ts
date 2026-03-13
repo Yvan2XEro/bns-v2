@@ -31,7 +31,7 @@ describe("verifyConversationAccess", () => {
 					status: 200,
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const result = await verifyConversationAccess("user-1", "conv-1", "tok");
 		expect(result).toBe(true);
@@ -44,7 +44,7 @@ describe("verifyConversationAccess", () => {
 					status: 200,
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const result = await verifyConversationAccess("user-3", "conv-1", "tok");
 		expect(result).toBe(false);
@@ -53,7 +53,7 @@ describe("verifyConversationAccess", () => {
 	test("returns false when API returns non-OK status", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.resolve(new Response("Not found", { status: 404 })),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const result = await verifyConversationAccess(
 			"user-1",
@@ -66,7 +66,7 @@ describe("verifyConversationAccess", () => {
 	test("returns false when fetch throws (network error)", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.reject(new Error("Network error")),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const result = await verifyConversationAccess("user-1", "conv-1", "tok");
 		expect(result).toBe(false);
@@ -79,12 +79,12 @@ describe("verifyConversationAccess", () => {
 					status: 200,
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		await verifyConversationAccess("user-1", "conv-abc", "tok");
 
-		const fetchCall = (globalThis.fetch as ReturnType<typeof mock>).mock
-			.calls[0] as [string];
+		const fetchCall = (globalThis.fetch as unknown as ReturnType<typeof mock>)
+			.mock.calls[0] as unknown as [string];
 		expect(fetchCall[0]).toContain("/conversations/conv-abc?depth=0");
 	});
 });
@@ -97,7 +97,7 @@ describe("joinRoom", () => {
 					status: 200,
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const joinedRooms: string[] = [];
 		const mockSocket = {
@@ -120,7 +120,7 @@ describe("joinRoom", () => {
 					status: 200,
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const mockSocket = {
 			join: mock(() => Promise.resolve()),

@@ -24,3 +24,13 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "✅ Biome: all checks passed"
+
+echo "🔍 TypeScript: checking types..."
+bunx turbo check-types
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript type errors found. Please fix them before committing."
+  exit 1
+fi
+
+echo "✅ TypeScript: all type checks passed"

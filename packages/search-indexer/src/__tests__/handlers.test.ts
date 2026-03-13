@@ -53,25 +53,27 @@ afterEach(() => {
 
 describe("handleListingCreated", () => {
 	test("fetches listing from Payload API and indexes to Meilisearch", async () => {
-		globalThis.fetch = mock(() =>
+		const mockFetch = mock(() =>
 			Promise.resolve(
 				new Response(JSON.stringify(sampleApiResponse), {
 					status: 200,
 					headers: { "Content-Type": "application/json" },
 				}),
 			),
-		) as typeof fetch;
+		);
+		globalThis.fetch = mockFetch as unknown as typeof fetch;
 
 		await handleListingCreated("listing-123");
 
-		expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-		const fetchCall = (globalThis.fetch as ReturnType<typeof mock>).mock
-			.calls[0] as [string];
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const fetchCall = mockFetch.mock.calls[0] as unknown as [string];
 		expect(fetchCall[0]).toContain("/listings/listing-123?depth=1");
 
 		expect(mockAddDocuments).toHaveBeenCalledTimes(1);
 		const indexed = (
-			mockAddDocuments.mock.calls[0] as [Array<Record<string, unknown>>]
+			mockAddDocuments.mock.calls[0] as unknown as [
+				Array<Record<string, unknown>>,
+			]
 		)[0];
 		expect(indexed[0]?.id).toBe("listing-123");
 		expect(indexed[0]?.title).toBe("Vélo de course");
@@ -82,7 +84,7 @@ describe("handleListingCreated", () => {
 	test("throws on non-OK API response", async () => {
 		globalThis.fetch = mock(() =>
 			Promise.resolve(new Response("Not found", { status: 404 })),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		expect(handleListingCreated("nonexistent")).rejects.toThrow(
 			"Failed to fetch listing nonexistent: 404",
@@ -110,12 +112,14 @@ describe("handleListingCreated", () => {
 					headers: { "Content-Type": "application/json" },
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		await handleListingCreated("listing-123");
 
 		const indexed = (
-			mockAddDocuments.mock.calls[0] as [Array<Record<string, unknown>>]
+			mockAddDocuments.mock.calls[0] as unknown as [
+				Array<Record<string, unknown>>,
+			]
 		)[0];
 		expect(indexed[0]?.brand).toBe("Honda");
 		expect(indexed[0]?.year).toBe(2020);
@@ -131,7 +135,7 @@ describe("handleListingUpdated", () => {
 					headers: { "Content-Type": "application/json" },
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		await handleListingUpdated("listing-123");
 

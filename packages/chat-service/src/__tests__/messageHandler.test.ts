@@ -97,7 +97,7 @@ describe("message:send", () => {
 				);
 			}
 			return Promise.resolve(new Response("OK", { status: 200 }));
-		}) as typeof fetch;
+		}) as unknown as typeof fetch;
 
 		const ack = mock(() => {});
 		const handler = handlers.get("message:send")!;
@@ -166,7 +166,7 @@ describe("message:send", () => {
 
 		globalThis.fetch = mock(() =>
 			Promise.resolve(new Response("Internal Server Error", { status: 500 })),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const ack = mock(() => {});
 		const handler = handlers.get("message:send")!;
@@ -195,7 +195,7 @@ describe("message:send", () => {
 					status: 201,
 				}),
 			),
-		) as typeof fetch;
+		) as unknown as typeof fetch;
 
 		const handler = handlers.get("message:send")!;
 		// Should not throw when called without ack
@@ -232,7 +232,7 @@ describe("message:read", () => {
 				patchCalls.push(url);
 			}
 			return Promise.resolve(new Response("OK", { status: 200 }));
-		}) as typeof fetch;
+		}) as unknown as typeof fetch;
 
 		const handler = handlers.get("message:read")!;
 		await handler({

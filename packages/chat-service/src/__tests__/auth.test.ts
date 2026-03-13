@@ -26,7 +26,7 @@ describe("verifyToken", () => {
 		expect(result.email).toBe("jean@example.com");
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 
-		const call = mockFetch.mock.calls[0]!;
+		const call = mockFetch.mock.calls[0] as unknown as [string, RequestInit];
 		expect(call[1]?.headers).toEqual({
 			Authorization: "JWT valid-token",
 		});

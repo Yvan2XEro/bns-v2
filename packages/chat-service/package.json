@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bun run --hot src/server.ts",
-		"test": "bun test"
+		"test": "bun test",
+		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
 		"socket.io": "^4.8.0",
