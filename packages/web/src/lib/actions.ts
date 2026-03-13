@@ -60,32 +60,33 @@ export async function toggleFavorite(
 	action: "add" | "remove",
 ): Promise<ActionResult> {
 	try {
+		// Check if favorite already exists
+		const findRes = await serverFetch(
+			`/api/favorites?where[listing][equals]=${listingId}&limit=1`,
+		);
+		if (!findRes.ok)
+			return { success: false, error: "Failed to check favorite" };
+		const findData = await findRes.json();
+		const existingFav = findData.docs?.[0];
+
 		if (action === "add") {
-			// Payload expects the collection fields: user is auto-set via hook or we need to get the current user
-			const meRes = await serverFetch("/api/users/me");
-			if (!meRes.ok) return { success: false, error: "Not authenticated" };
-			const meData = await meRes.json();
-			const userId = meData.user?.id;
-			if (!userId) return { success: false, error: "Not authenticated" };
+			// Already favorited — no-op, still success
+			if (existingFav) {
+				return { success: true };
+			}
 
 			const res = await serverFetch("/api/favorites", {
 				method: "POST",
-				body: JSON.stringify({ user: userId, listing: listingId }),
+				body: JSON.stringify({ listing: listingId }),
 			});
 			if (!res.ok) return { success: false, error: "Failed to add favorite" };
 		} else {
-			// Find the favorite document by listing ID, then delete it
-			const findRes = await serverFetch(
-				`/api/favorites?where[listing][equals]=${listingId}&limit=1`,
-			);
-			if (!findRes.ok)
-				return { success: false, error: "Failed to find favorite" };
+			// Not favorited — no-op, still success
+			if (!existingFav) {
+				return { success: true };
+			}
 
-			const findData = await findRes.json();
-			const favDoc = findData.docs?.[0];
-			if (!favDoc) return { success: false, error: "Favorite not found" };
-
-			const res = await serverFetch(`/api/favorites/${favDoc.id}`, {
+			const res = await serverFetch(`/api/favorites/${existingFav.id}`, {
 				method: "DELETE",
 			});
 			if (!res.ok)
