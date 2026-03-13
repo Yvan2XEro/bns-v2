@@ -442,10 +442,10 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							{isLoading ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Publishing...
+									Submitting...
 								</>
 							) : (
-								"Publish Listing"
+								"Submit for review"
 							)}
 						</Button>
 					</div>

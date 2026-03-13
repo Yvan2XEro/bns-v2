@@ -9,6 +9,7 @@ let client: MeiliSearch | null = null;
 
 function getClient(): MeiliSearch {
 	if (!client) {
+		console.log(`[search-indexer] meilisearch connecting to ${MEILISEARCH_HOST}`);
 		client = new MeiliSearch({
 			host: MEILISEARCH_HOST,
 			apiKey: MEILISEARCH_API_KEY,
@@ -42,14 +43,23 @@ export type ListingDocument = {
 
 export async function indexDocument(doc: ListingDocument): Promise<void> {
 	const index = getIndex();
-	await index.addDocuments([doc], { primaryKey: "id" });
-	console.log(`[meilisearch] Indexed listing ${doc.id}`);
+	try {
+		await index.addDocuments([doc], { primaryKey: "id" });
+	} catch (error) {
+		console.error(`[search-indexer] meilisearch failed to index listing ${doc.id}:`, error);
+		throw error;
+	}
 }
 
 export async function deleteDocument(id: string): Promise<void> {
 	const index = getIndex();
-	await index.deleteDocument(id);
-	console.log(`[meilisearch] Deleted listing ${id}`);
+	try {
+		await index.deleteDocument(id);
+		console.log(`[search-indexer] meilisearch deleted listing ${id}`);
+	} catch (error) {
+		console.error(`[search-indexer] meilisearch failed to delete listing ${id}:`, error);
+		throw error;
+	}
 }
 
 export async function indexDocuments(docs: ListingDocument[]): Promise<void> {
@@ -57,38 +67,52 @@ export async function indexDocuments(docs: ListingDocument[]): Promise<void> {
 
 	const index = getIndex();
 	const BATCH_SIZE = 500;
+	const totalBatches = Math.ceil(docs.length / BATCH_SIZE);
 
 	for (let i = 0; i < docs.length; i += BATCH_SIZE) {
 		const batch = docs.slice(i, i + BATCH_SIZE);
-		await index.addDocuments(batch, { primaryKey: "id" });
-		console.log(
-			`[meilisearch] Indexed batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} documents)`,
-		);
+		const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+		try {
+			await index.addDocuments(batch, { primaryKey: "id" });
+			console.log(`[search-indexer] meilisearch indexed batch ${batchNum}/${totalBatches} (${batch.length} documents)`);
+		} catch (error) {
+			console.error(`[search-indexer] meilisearch failed on batch ${batchNum}/${totalBatches}:`, error);
+			throw error;
+		}
 	}
 }
 
 export async function configureIndex(): Promise<void> {
 	const index = getIndex();
 
-	await index.updateSettings({
-		searchableAttributes: ["title", "description", "location", "category"],
-		filterableAttributes: [
-			"status",
-			"categoryId",
-			"condition",
-			"price",
-			"location",
-			"boostedUntil",
-			"sellerId",
-		],
-		sortableAttributes: ["price", "createdAt", "views", "boostedUntil"],
-	});
-
-	console.log("[meilisearch] Index settings configured");
+	try {
+		await index.updateSettings({
+			searchableAttributes: ["title", "description", "location", "category"],
+			filterableAttributes: [
+				"status",
+				"categoryId",
+				"condition",
+				"price",
+				"location",
+				"boostedUntil",
+				"sellerId",
+			],
+			sortableAttributes: ["price", "createdAt", "views", "boostedUntil"],
+		});
+		console.log(`[search-indexer] meilisearch index "${INDEX_NAME}" configured`);
+	} catch (error) {
+		console.error(`[search-indexer] meilisearch failed to configure index "${INDEX_NAME}":`, error);
+		throw error;
+	}
 }
 
 export async function clearIndex(): Promise<void> {
 	const index = getIndex();
-	await index.deleteAllDocuments();
-	console.log("[meilisearch] All documents deleted");
+	try {
+		await index.deleteAllDocuments();
+		console.log(`[search-indexer] meilisearch cleared all documents from index "${INDEX_NAME}"`);
+	} catch (error) {
+		console.error(`[search-indexer] meilisearch failed to clear index "${INDEX_NAME}":`, error);
+		throw error;
+	}
 }

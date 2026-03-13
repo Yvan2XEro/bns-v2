@@ -17,7 +17,24 @@ export const Listings: CollectionConfig = {
 		],
 	},
 	access: {
-		read: anyone,
+		read: ({ req: { user } }) => {
+			if (!user) {
+				// Anonymous users: only published listings
+				return { status: { equals: "published" } };
+			}
+			const u = user as { role?: string };
+			if (u.role === "admin" || u.role === "moderator") {
+				// Admins/moderators: see everything
+				return true;
+			}
+			// Authenticated users: published + their own listings (any status)
+			return {
+				or: [
+					{ status: { equals: "published" } },
+					{ seller: { equals: user.id } },
+				],
+			};
+		},
 		create: authenticated,
 		update: isOwnerOrAdmin,
 		delete: isOwnerOrAdmin,
@@ -33,6 +50,18 @@ export const Listings: CollectionConfig = {
 			async ({ data, req, operation }) => {
 				if (operation === "create") {
 					data.seller = req.user?.id;
+					// New listings go to pending review, not directly published
+					if (data.status === "published") {
+						data.status = "pending";
+					}
+				}
+
+				if (operation === "update" && data.status === "published") {
+					// Only admins/moderators can approve (set to published)
+					const u = req.user as { role?: string } | undefined;
+					if (u?.role !== "admin" && u?.role !== "moderator") {
+						data.status = "pending";
+					}
 				}
 
 				return data;
@@ -115,7 +144,9 @@ export const Listings: CollectionConfig = {
 			type: "select",
 			options: [
 				{ label: "Draft", value: "draft" },
+				{ label: "Pending review", value: "pending" },
 				{ label: "Published", value: "published" },
+				{ label: "Rejected", value: "rejected" },
 				{ label: "Sold", value: "sold" },
 				{ label: "Deleted", value: "deleted" },
 			],

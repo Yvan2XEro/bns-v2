@@ -84,6 +84,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+    volumes:
+      - api_media:/app/packages/api/media
     depends_on:
       mongodb:
         condition: service_healthy
@@ -188,6 +190,7 @@ volumes:
   mongo_data:
   redis_data:
   meili_data:
+  api_media:
 
 networks:
   dokploy-network:

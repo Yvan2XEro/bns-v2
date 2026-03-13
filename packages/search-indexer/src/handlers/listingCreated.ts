@@ -1,11 +1,9 @@
-import { indexDocument, type ListingDocument } from "../meilisearch.ts";
+import { deleteDocument, indexDocument, type ListingDocument } from "../meilisearch.ts";
 
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 
 export async function handleListingCreated(listingId: string): Promise<void> {
-	console.log(`[handler] Processing listing.created for ${listingId}`);
-
 	const response = await fetch(
 		`${PAYLOAD_API_URL}/listings/${listingId}?depth=1`,
 	);
@@ -15,8 +13,18 @@ export async function handleListingCreated(listingId: string): Promise<void> {
 	}
 
 	const listing = (await response.json()) as Record<string, unknown>;
+
+	// Only index published listings; remove from index if status changed
+	if (listing.status !== "published") {
+		console.log(`[search-indexer] listingCreated listing=${listingId} status=${listing.status} action=skipped`);
+		await deleteDocument(listingId);
+		return;
+	}
+
+	const start = Date.now();
 	const doc = transformListing(listing);
 	await indexDocument(doc);
+	console.log(`[search-indexer] listingCreated listing=${listingId} status=${listing.status} action=indexed duration=${Date.now() - start}ms`);
 }
 
 export function transformListing(

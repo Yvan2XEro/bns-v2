@@ -204,7 +204,7 @@ export interface Listing {
   location: string;
   seller?: (string | null) | User;
   category: string | Category;
-  status: 'draft' | 'published' | 'sold' | 'deleted';
+  status: 'draft' | 'pending' | 'published' | 'rejected' | 'sold' | 'deleted';
   boostedUntil?: string | null;
   views?: number | null;
   attributes?:

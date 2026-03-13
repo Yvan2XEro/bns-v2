@@ -20,6 +20,7 @@ async function getUserListings(
 	listings: Listing[];
 	total: number;
 	published: number;
+	pending: number;
 	sold: number;
 	boosted: number;
 }> {
@@ -28,20 +29,21 @@ async function getUserListings(
 			`/api/listings?where[seller][equals]=${userId}&limit=${PER_PAGE}&page=${page}&sort=-createdAt&depth=1`,
 		);
 		if (!res.ok)
-			return { listings: [], total: 0, published: 0, sold: 0, boosted: 0 };
+			return { listings: [], total: 0, published: 0, pending: 0, sold: 0, boosted: 0 };
 		const data = await res.json();
 		const docs: Listing[] = data.docs || [];
 		return {
 			listings: docs,
 			total: data.totalDocs || 0,
 			published: docs.filter((l) => l.status === "published").length,
+			pending: docs.filter((l) => l.status === "pending").length,
 			sold: docs.filter((l) => l.status === "sold").length,
 			boosted: docs.filter(
 				(l) => l.boostedUntil && new Date(l.boostedUntil) > new Date(),
 			).length,
 		};
 	} catch {
-		return { listings: [], total: 0, published: 0, sold: 0, boosted: 0 };
+		return { listings: [], total: 0, published: 0, pending: 0, sold: 0, boosted: 0 };
 	}
 }
 
@@ -55,7 +57,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 
 	const { page: pageParam } = await searchParams;
 	const page = Math.max(1, Number(pageParam) || 1);
-	const { listings, total, published, sold, boosted } = await getUserListings(
+	const { listings, total, published, pending, sold, boosted } = await getUserListings(
 		user.id,
 		page,
 	);
@@ -91,7 +93,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 					</div>
 
 					{/* Stats */}
-					<div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+					<div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
 						{[
 							{
 								label: "Total",
@@ -102,6 +104,11 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								label: "Active",
 								value: published,
 								color: "bg-emerald-50 text-emerald-700",
+							},
+							{
+								label: "Pending",
+								value: pending,
+								color: "bg-blue-50 text-blue-700",
 							},
 							{
 								label: "Sold",
