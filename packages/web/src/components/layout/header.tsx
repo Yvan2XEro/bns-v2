@@ -26,6 +26,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useAuth } from "~/hooks/use-auth";
+import { useUnreadMessages } from "~/hooks/use-unread-messages";
 
 export function Header() {
 	const { user, logout } = useAuth();
@@ -34,6 +35,7 @@ export function Header() {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [scrolled, setScrolled] = useState(false);
+	const unreadCount = useUnreadMessages(!!user);
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -125,6 +127,11 @@ export function Header() {
 									className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#64748B] transition-all duration-200 hover:scale-110 hover:bg-[#F1F5F9] hover:text-[#0F172A] active:scale-95"
 								>
 									<MessageCircle className="h-5 w-5" />
+									{unreadCount > 0 && (
+										<span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-bold text-[10px] text-white">
+											{unreadCount > 99 ? "99+" : unreadCount}
+										</span>
+									)}
 								</button>
 							</Link>
 
@@ -253,7 +260,13 @@ export function Header() {
 								? [
 										{ label: "Sell now", href: "/create" },
 										{ label: "Favorites", href: "/favorites" },
-										{ label: "Messages", href: "/messages" },
+										{
+									label:
+										unreadCount > 0
+											? `Messages (${unreadCount > 99 ? "99+" : unreadCount})`
+											: "Messages",
+									href: "/messages",
+								},
 										{ label: "Profile", href: "/profile/me" },
 									]
 								: [

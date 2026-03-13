@@ -1,5 +1,6 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
+import { updateUserRating } from "../hooks/reviews";
 
 export const Reviews: CollectionConfig = {
 	slug: "reviews",
@@ -21,7 +22,30 @@ export const Reviews: CollectionConfig = {
 			return userWithRole.role === "admin";
 		},
 	},
-	hooks: {},
+	hooks: {
+		afterChange: [
+			async ({ doc, req }) => {
+				const reviewedUserId =
+					typeof doc.reviewedUser === "string"
+						? doc.reviewedUser
+						: doc.reviewedUser?.id;
+				if (reviewedUserId) {
+					await updateUserRating({ req, reviewedUserId });
+				}
+			},
+		],
+		afterDelete: [
+			async ({ doc, req }) => {
+				const reviewedUserId =
+					typeof doc.reviewedUser === "string"
+						? doc.reviewedUser
+						: doc.reviewedUser?.id;
+				if (reviewedUserId) {
+					await updateUserRating({ req, reviewedUserId });
+				}
+			},
+		],
+	},
 	fields: [
 		{
 			name: "reviewer",

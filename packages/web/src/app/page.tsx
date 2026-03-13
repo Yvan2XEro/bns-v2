@@ -24,7 +24,7 @@ import { RotatingText } from "~/components/home/rotating-text";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
 import { serverFetch } from "~/lib/server-api";
-import type { Category, Listing } from "~/types";
+import type { Category, Favorite, Listing } from "~/types";
 
 async function getCategories(): Promise<Category[]> {
 	try {
@@ -61,12 +61,28 @@ async function getFeaturedListings(): Promise<Listing[]> {
 	}
 }
 
+async function getUserFavoriteIds(): Promise<string[]> {
+	try {
+		const res = await serverFetch("/api/favorites?limit=200");
+		if (!res.ok) return [];
+		const data = await res.json();
+		const docs: Favorite[] = data.docs || [];
+		return docs.map((f) =>
+			typeof f.listing === "string" ? f.listing : f.listing.id,
+		);
+	} catch {
+		return [];
+	}
+}
+
 export default async function HomePage() {
-	const [categories, recentListings, featuredListings] = await Promise.all([
-		getCategories(),
-		getRecentListings(),
-		getFeaturedListings(),
-	]);
+	const [categories, recentListings, featuredListings, favoriteIds] =
+		await Promise.all([
+			getCategories(),
+			getRecentListings(),
+			getFeaturedListings(),
+			getUserFavoriteIds(),
+		]);
 
 	const defaultCategories = [
 		{ name: "Real Estate", slug: "real-estate", icon: Home },
@@ -226,7 +242,7 @@ export default async function HomePage() {
 								Sponsored
 							</span>
 						</div>
-						<ListingGrid listings={featuredListings} />
+						<ListingGrid listings={featuredListings} favorites={favoriteIds} />
 					</div>
 				</section>
 			)}
@@ -253,7 +269,7 @@ export default async function HomePage() {
 						</Link>
 					</div>
 					{recentListings.length > 0 ? (
-						<ListingGrid listings={recentListings} />
+						<ListingGrid listings={recentListings} favorites={favoriteIds} />
 					) : (
 						<div className="rounded-2xl border-2 border-[#DBEAFE] border-dashed py-16 text-center">
 							<Tag className="mx-auto mb-3 h-10 w-10 text-[#94A3B8]" />

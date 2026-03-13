@@ -21,6 +21,7 @@ interface SearchClientProps {
 	initialListings: Listing[];
 	initialTotal: number;
 	initialParams: Record<string, string>;
+	favoriteIds?: string[];
 }
 
 export function SearchClient({
@@ -28,6 +29,7 @@ export function SearchClient({
 	initialListings,
 	initialTotal,
 	initialParams,
+	favoriteIds = [],
 }: SearchClientProps) {
 	const router = useRouter();
 
@@ -394,6 +396,7 @@ export function SearchClient({
 						<>
 							<ListingGrid
 								listings={listings}
+								favorites={favoriteIds}
 								className="md:grid-cols-3 xl:grid-cols-4"
 							/>
 							{!isLoading && listings.length < total && (

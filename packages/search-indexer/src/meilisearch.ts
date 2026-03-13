@@ -82,24 +82,59 @@ export async function indexDocuments(docs: ListingDocument[]): Promise<void> {
 	}
 }
 
+const PAYLOAD_API_URL =
+	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
+
+async function fetchFilterableAttributeSlugs(): Promise<string[]> {
+	try {
+		const res = await fetch(`${PAYLOAD_API_URL}/categories?limit=200&depth=0`);
+		if (!res.ok) return [];
+		const data = (await res.json()) as {
+			docs: Array<{
+				attributes?: Array<{ slug: string; filterable?: boolean }>;
+			}>;
+		};
+		const slugs = new Set<string>();
+		for (const cat of data.docs) {
+			for (const attr of cat.attributes || []) {
+				if (attr.filterable) {
+					slugs.add(attr.slug);
+				}
+			}
+		}
+		return Array.from(slugs);
+	} catch (error) {
+		console.warn("[search-indexer] failed to fetch category attributes:", error);
+		return [];
+	}
+}
+
 export async function configureIndex(): Promise<void> {
 	const index = getIndex();
+
+	const dynamicAttrs = await fetchFilterableAttributeSlugs();
+	if (dynamicAttrs.length > 0) {
+		console.log(`[search-indexer] meilisearch dynamic filterable attributes: ${dynamicAttrs.join(", ")}`);
+	}
+
+	const filterableAttributes = [
+		"status",
+		"categoryId",
+		"condition",
+		"price",
+		"location",
+		"boostedUntil",
+		"sellerId",
+		...dynamicAttrs,
+	];
 
 	try {
 		await index.updateSettings({
 			searchableAttributes: ["title", "description", "location", "category"],
-			filterableAttributes: [
-				"status",
-				"categoryId",
-				"condition",
-				"price",
-				"location",
-				"boostedUntil",
-				"sellerId",
-			],
+			filterableAttributes,
 			sortableAttributes: ["price", "createdAt", "views", "boostedUntil"],
 		});
-		console.log(`[search-indexer] meilisearch index "${INDEX_NAME}" configured`);
+		console.log(`[search-indexer] meilisearch index "${INDEX_NAME}" configured with ${filterableAttributes.length} filterable attributes`);
 	} catch (error) {
 		console.error(`[search-indexer] meilisearch failed to configure index "${INDEX_NAME}":`, error);
 		throw error;

@@ -36,6 +36,19 @@ async function getListing(id: string): Promise<Listing | null> {
 	}
 }
 
+async function isListingFavorited(listingId: string): Promise<boolean> {
+	try {
+		const res = await serverFetch(
+			`/api/favorites?where[listing][equals]=${listingId}&limit=1`,
+		);
+		if (!res.ok) return false;
+		const data = await res.json();
+		return (data.docs?.length ?? 0) > 0;
+	} catch {
+		return false;
+	}
+}
+
 function timeAgo(date: string): string {
 	const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
 	if (seconds < 60) return "just now";
@@ -50,7 +63,10 @@ function timeAgo(date: string): string {
 
 export default async function ListingPage({ params }: PageProps) {
 	const { id } = await params;
-	const listing = await getListing(id);
+	const [listing, isFavorited] = await Promise.all([
+		getListing(id),
+		isListingFavorited(id),
+	]);
 
 	if (!listing) {
 		notFound();
@@ -132,6 +148,7 @@ export default async function ListingPage({ params }: PageProps) {
 								<div className="flex gap-2">
 									<FavoriteButton
 										listingId={listing.id}
+										initialFavorite={isFavorited}
 										className="h-9 w-9 rounded-lg border border-[#E2E8F0]"
 									/>
 									<ShareButton title={listing.title} />
@@ -264,6 +281,7 @@ export default async function ListingPage({ params }: PageProps) {
 									</Link>
 									<FavoriteButton
 										listingId={listing.id}
+										initialFavorite={isFavorited}
 										showLabel
 										className="w-full"
 									/>

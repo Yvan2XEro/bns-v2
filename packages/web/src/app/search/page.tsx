@@ -1,5 +1,5 @@
 import { serverFetch } from "~/lib/server-api";
-import type { Category, Listing } from "~/types";
+import type { Category, Favorite, Listing } from "~/types";
 import { SearchClient } from "./search-client";
 
 async function getCategories(): Promise<Category[]> {
@@ -34,15 +34,30 @@ async function getInitialListings(
 	}
 }
 
+async function getUserFavoriteIds(): Promise<string[]> {
+	try {
+		const res = await serverFetch("/api/favorites?limit=200");
+		if (!res.ok) return [];
+		const data = await res.json();
+		const docs: Favorite[] = data.docs || [];
+		return docs.map((f) =>
+			typeof f.listing === "string" ? f.listing : f.listing.id,
+		);
+	} catch {
+		return [];
+	}
+}
+
 export default async function SearchPage({
 	searchParams,
 }: {
 	searchParams: Promise<Record<string, string>>;
 }) {
 	const params = await searchParams;
-	const [categories, initialData] = await Promise.all([
+	const [categories, initialData, favoriteIds] = await Promise.all([
 		getCategories(),
 		getInitialListings(params),
+		getUserFavoriteIds(),
 	]);
 
 	return (
@@ -51,6 +66,7 @@ export default async function SearchPage({
 			initialListings={initialData.hits}
 			initialTotal={initialData.total}
 			initialParams={params}
+			favoriteIds={favoriteIds}
 		/>
 	);
 }
