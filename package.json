@@ -7,12 +7,14 @@
 		"lint": "turbo run lint",
 		"clean": "find . -name node_modules -type d -prune -exec rm -rf {} +",
 		"check": "biome check --write .",
-		"check-types": "turbo run check-types"
+		"check-types": "turbo run check-types",
+		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@types/bun": "latest",
-		"turbo": "^2.8.14",
 		"@biomejs/biome": "2.3.8",
+		"@types/bun": "latest",
+		"husky": "^9.1.7",
+		"turbo": "^2.8.14",
 		"typescript": "5.9.2"
 	},
 	"peerDependencies": {

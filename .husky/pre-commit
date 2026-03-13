@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Get staged files (only ts/tsx/js/jsx/json/css)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|json|css)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+echo "🔍 Biome: checking staged files..."
+
+# Step 1: Auto-fix formatting and safe fixes on staged files
+echo "$STAGED_FILES" | xargs bunx biome check --write --unsafe 2>/dev/null
+
+# Step 2: Re-stage the auto-fixed files
+echo "$STAGED_FILES" | xargs git add
+
+# Step 3: Verify no remaining errors (block commit if any)
+echo "$STAGED_FILES" | xargs bunx biome check
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Biome found errors that cannot be auto-fixed. Please fix them manually."
+  exit 1
+fi
+
+echo "✅ Biome: all checks passed"
