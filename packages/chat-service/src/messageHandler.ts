@@ -45,8 +45,8 @@ async function persistMessage(
 			Authorization: `JWT ${token}`,
 		},
 		body: JSON.stringify({
-			conversation: Number(conversationId),
-			sender: Number(senderId),
+			conversation: conversationId,
+			sender: senderId,
 			content,
 		}),
 	});
@@ -71,7 +71,7 @@ async function updateConversationLastMessage(
 			"Content-Type": "application/json",
 			Authorization: `JWT ${token}`,
 		},
-		body: JSON.stringify({ lastMessage: Number(messageId) }),
+		body: JSON.stringify({ lastMessage: messageId }),
 	});
 }
 
