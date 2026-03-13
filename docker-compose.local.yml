@@ -1,0 +1,31 @@
+# Local / test network override — HTTP only, no TLS certificates needed.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+# Also set in your .env:
+#   NEXT_PUBLIC_API_URL=http://api.buynsellem.com
+#   CHAT_PUBLIC_URL=http://chat.buynsellem.com
+#   PAYLOAD_ALLOWED_ORIGINS=http://buynsellem.com,http://www.buynsellem.com
+#   CORS_ORIGIN=http://buynsellem.com,http://www.buynsellem.com
+
+services:
+  api:
+    labels:
+      # Override: serve on HTTP (port 80) directly, no TLS
+      - "traefik.http.routers.bns-api.entrypoints=web"
+      - "traefik.http.routers.bns-api.tls=false"
+      # Disable the HTTPS redirect on the HTTP router
+      - "traefik.http.routers.bns-api-http.middlewares="
+
+  web:
+    labels:
+      # Override: serve on HTTP (port 80) directly, no TLS
+      - "traefik.http.routers.bns-web.entrypoints=web"
+      - "traefik.http.routers.bns-web.tls=false"
+      - "traefik.http.routers.bns-web-http.middlewares="
+
+  chat-service:
+    labels:
+      # Override: serve on HTTP (port 80) directly, no TLS
+      - "traefik.http.routers.bns-chat.entrypoints=web"
+      - "traefik.http.routers.bns-chat.tls=false"
+      - "traefik.http.routers.bns-chat-http.middlewares="

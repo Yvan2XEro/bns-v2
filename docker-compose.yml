@@ -90,8 +90,8 @@ services:
       dockerfile: ./packages/web/Dockerfile
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: https://api.buynsellem.com
-      CHAT_PUBLIC_URL: https://chat.buynsellem.com
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.buynsellem.com}
+      CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://chat.buynsellem.com}
     depends_on:
       - api
     networks:
@@ -118,7 +118,7 @@ services:
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       PAYLOAD_API_URL: http://api:3000/api
-      CORS_ORIGIN: https://buynsellem.com,https://www.buynsellem.com
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://buynsellem.com,https://www.buynsellem.com}
       PORT: 4000
     depends_on:
       redis:
