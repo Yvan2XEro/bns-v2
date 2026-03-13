@@ -66,9 +66,7 @@ export async function POST(request: Request) {
 				description: `Boost listing: ${listing.title}`,
 				callback_url: `${process.env.PAYLOAD_PUBLIC_SERVER_URL}/api/public/boost/webhook`,
 				customer: {
-					email:
-						(listing.seller as unknown as { email?: string })?.email ||
-						"user@example.com",
+					email: user.email,
 				},
 			}),
 		});
