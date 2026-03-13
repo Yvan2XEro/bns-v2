@@ -29,7 +29,11 @@ import {
 import { useAuth } from "~/hooks/use-auth";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
 
-export function Header() {
+interface HeaderProps {
+	novuAppId?: string;
+}
+
+export function Header({ novuAppId }: HeaderProps) {
 	const { user, logout } = useAuth();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -137,7 +141,9 @@ export function Header() {
 							</Link>
 
 							<div className="hidden sm:block">
-								<NotificationInbox />
+								{novuAppId && (
+									<NotificationInbox applicationIdentifier={novuAppId} />
+								)}
 							</div>
 
 							<DropdownMenu>
@@ -295,7 +301,9 @@ export function Header() {
 						{user && (
 							<>
 								<div className="px-3 py-2">
-									<NotificationInbox />
+									{novuAppId && (
+										<NotificationInbox applicationIdentifier={novuAppId} />
+									)}
 								</div>
 								<button
 									type="button"

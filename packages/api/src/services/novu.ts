@@ -1,4 +1,4 @@
-import { Novu } from "@novu/node";
+import { Novu } from "@novu/api";
 
 let novu: Novu | null = null;
 
@@ -10,6 +10,6 @@ export function getNovu(): Novu {
 		throw new Error("NOVU_SECRET_KEY environment variable is not set");
 	}
 
-	novu = new Novu(secretKey);
+	novu = new Novu({ secretKey });
 	return novu;
 }

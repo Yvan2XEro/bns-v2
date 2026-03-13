@@ -4,7 +4,13 @@ import { Inbox } from "@novu/nextjs";
 import { useEffect, useState } from "react";
 import { useAuth } from "~/hooks/use-auth";
 
-export function NotificationInbox() {
+interface NotificationInboxProps {
+	applicationIdentifier: string;
+}
+
+export function NotificationInbox({
+	applicationIdentifier,
+}: NotificationInboxProps) {
 	const { user } = useAuth();
 	const [subscriberHash, setSubscriberHash] = useState<string | null>(null);
 
@@ -18,10 +24,6 @@ export function NotificationInbox() {
 	}, [user]);
 
 	if (!user || !subscriberHash) return null;
-
-	const applicationIdentifier =
-		process.env.NEXT_PUBLIC_NOVU_APPLICATION_IDENTIFIER;
-	if (!applicationIdentifier) return null;
 
 	return (
 		<Inbox

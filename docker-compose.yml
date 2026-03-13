@@ -84,6 +84,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}
     volumes:
       - api_media:/app/packages/api/media
     depends_on:
@@ -117,6 +118,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.buynsellem.com}
       CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://chat.buynsellem.com}
+      NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
     depends_on:
       - api
     networks:

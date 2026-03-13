@@ -13,8 +13,9 @@ export async function triggerNovuEvent({
 }: TriggerPayload): Promise<void> {
 	try {
 		const novu = getNovu();
-		await novu.trigger(event, {
-			to: { subscriberId },
+		await novu.trigger({
+			workflowId: event,
+			to: subscriberId,
 			payload,
 		});
 	} catch (error) {
@@ -35,7 +36,8 @@ export async function syncNovuSubscriber({
 }): Promise<void> {
 	try {
 		const novu = getNovu();
-		await novu.subscribers.identify(subscriberId, {
+		await novu.subscribers.create({
+			subscriberId,
 			email,
 			firstName: name,
 			avatar,

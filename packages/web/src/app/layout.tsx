@@ -34,7 +34,7 @@ export default function RootLayout({
 			>
 				<AuthProvider>
 					<div className="relative flex min-h-screen flex-col">
-						<Header />
+						<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
 						<main className="flex-1">{children}</main>
 						<Footer />
 					</div>
