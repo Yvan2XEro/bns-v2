@@ -1,25 +1,20 @@
 import {
 	ArrowRight,
 	BadgeCheck,
-	Briefcase,
 	Camera,
-	Car,
 	ChevronRight,
 	Clock,
-	Home,
 	MapPin,
 	MessageSquare,
 	Search,
 	Shield,
-	Shirt,
-	Smartphone,
-	Sofa,
 	Star,
 	Tag,
 	Users,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { CategoryIcon } from "~/components/category-icon";
 import { RotatingText } from "~/components/home/rotating-text";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
@@ -28,7 +23,7 @@ import type { Category, Favorite, Listing } from "~/types";
 
 async function getCategories(): Promise<Category[]> {
 	try {
-		const res = await serverFetch("/api/public/categories");
+		const res = await serverFetch("/api/public/categories?depth=1");
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.categories || [];
@@ -84,25 +79,59 @@ export default async function HomePage() {
 			getUserFavoriteIds(),
 		]);
 
-	const defaultCategories = [
-		{ name: "Real Estate", slug: "real-estate", icon: Home },
-		{ name: "Vehicles", slug: "vehicles", icon: Car },
-		{ name: "Electronics", slug: "electronics", icon: Smartphone },
-		{ name: "Furniture", slug: "furniture", icon: Sofa },
-		{ name: "Fashion", slug: "fashion", icon: Shirt },
-		{ name: "Jobs", slug: "jobs", icon: Briefcase },
+	const defaultCategories: Category[] = [
+		{
+			id: "real-estate",
+			name: "Real Estate",
+			slug: "real-estate",
+			icon: "🏠",
+			createdAt: "",
+			updatedAt: "",
+		},
+		{
+			id: "vehicles",
+			name: "Vehicles",
+			slug: "vehicles",
+			icon: "🚗",
+			createdAt: "",
+			updatedAt: "",
+		},
+		{
+			id: "electronics",
+			name: "Electronics",
+			slug: "electronics",
+			icon: "📱",
+			createdAt: "",
+			updatedAt: "",
+		},
+		{
+			id: "furniture",
+			name: "Furniture",
+			slug: "furniture",
+			icon: "🛋️",
+			createdAt: "",
+			updatedAt: "",
+		},
+		{
+			id: "fashion",
+			name: "Fashion",
+			slug: "fashion",
+			icon: "👕",
+			createdAt: "",
+			updatedAt: "",
+		},
+		{
+			id: "jobs",
+			name: "Jobs",
+			slug: "jobs",
+			icon: "💼",
+			createdAt: "",
+			updatedAt: "",
+		},
 	];
 
 	const displayCategories =
-		categories.length > 0
-			? categories.slice(0, 6)
-			: defaultCategories.map((c) => ({
-					...c,
-					id: 0,
-					active: true,
-					createdAt: "",
-					updatedAt: "",
-				}));
+		categories.length > 0 ? categories.slice(0, 6) : defaultCategories;
 
 	return (
 		<div className="flex flex-col">
@@ -207,25 +236,20 @@ export default async function HomePage() {
 						</Link>
 					</div>
 					<div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-						{displayCategories.map((category) => {
-							const Icon =
-								defaultCategories.find((c) => c.slug === category.slug)?.icon ||
-								Home;
-							return (
-								<Link
-									key={category.id || category.slug}
-									href={`/search?category=${category.id || category.slug}`}
-									className="group hover:-translate-y-1 flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 hover:bg-[#F0F4FF] active:scale-95"
-								>
-									<div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#EFF6FF] transition-all duration-200 group-hover:scale-110 group-hover:bg-[#DBEAFE] group-hover:shadow-blue-500/10 group-hover:shadow-md">
-										<Icon className="h-5 w-5 text-[#1E40AF]" />
-									</div>
-									<span className="text-center font-medium text-[#0F172A] text-xs sm:text-sm">
-										{category.name}
-									</span>
-								</Link>
-							);
-						})}
+						{displayCategories.map((category) => (
+							<Link
+								key={category.id || category.slug}
+								href={`/search?category=${category.id || category.slug}`}
+								className="group hover:-translate-y-1 flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 hover:bg-[#F0F4FF] active:scale-95"
+							>
+								<div className="transition-all duration-200 group-hover:scale-110 group-hover:shadow-blue-500/10 group-hover:shadow-md">
+									<CategoryIcon category={category} size={48} />
+								</div>
+								<span className="text-center font-medium text-[#0F172A] text-xs sm:text-sm">
+									{category.name}
+								</span>
+							</Link>
+						))}
 					</div>
 				</div>
 			</section>
