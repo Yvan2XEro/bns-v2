@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { CollectionConfig } from "payload";
 
 export const Media: CollectionConfig = {
@@ -12,5 +13,7 @@ export const Media: CollectionConfig = {
 			required: true,
 		},
 	],
-	upload: true,
+	upload: {
+		staticDir: path.resolve(process.cwd(), "media"),
+	},
 };

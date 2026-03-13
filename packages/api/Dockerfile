@@ -40,6 +40,8 @@ COPY --from=builder /app/packages/api/public ./packages/api/public
 RUN mkdir -p packages/api/.next && chown nextjs:nodejs packages/api/.next
 COPY --from=builder --chown=nextjs:nodejs /app/packages/api/.next/static ./packages/api/.next/static
 
+RUN mkdir -p /app/packages/api/media && chown nextjs:nodejs /app/packages/api/media
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
