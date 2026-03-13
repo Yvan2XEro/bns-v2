@@ -52,7 +52,7 @@ function LoginForm() {
 	}
 
 	return (
-		<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+		<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-4">
 			{/* Background */}
 			<div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#1E40AF]">
 				<div className="pattern-dots-light absolute inset-0" />

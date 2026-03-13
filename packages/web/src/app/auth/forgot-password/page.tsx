@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
 
 	if (success) {
 		return (
-			<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+			<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-4">
 				<div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#1E40AF]">
 					<div className="-left-20 absolute top-20 h-72 w-72 animate-float rounded-full bg-[#3B82F6]/20 blur-3xl" />
 					<div
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
 	}
 
 	return (
-		<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+		<div className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center overflow-hidden px-4">
 			<div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-[#1E3A5F] to-[#1E40AF]">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
