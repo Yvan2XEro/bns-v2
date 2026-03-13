@@ -128,7 +128,7 @@ export function Header() {
 								>
 									<MessageCircle className="h-5 w-5" />
 									{unreadCount > 0 && (
-										<span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-bold text-[10px] text-white">
+										<span className="-top-0.5 -right-0.5 absolute flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-bold text-[10px] text-white">
 											{unreadCount > 99 ? "99+" : unreadCount}
 										</span>
 									)}
@@ -261,12 +261,12 @@ export function Header() {
 										{ label: "Sell now", href: "/create" },
 										{ label: "Favorites", href: "/favorites" },
 										{
-									label:
-										unreadCount > 0
-											? `Messages (${unreadCount > 99 ? "99+" : unreadCount})`
-											: "Messages",
-									href: "/messages",
-								},
+											label:
+												unreadCount > 0
+													? `Messages (${unreadCount > 99 ? "99+" : unreadCount})`
+													: "Messages",
+											href: "/messages",
+										},
 										{ label: "Profile", href: "/profile/me" },
 									]
 								: [

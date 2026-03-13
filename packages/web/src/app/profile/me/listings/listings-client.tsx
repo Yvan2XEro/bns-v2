@@ -185,7 +185,9 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 															: "bg-amber-100 text-amber-800"
 										}`}
 									>
-										{listing.status === "pending" ? "pending review" : listing.status}
+										{listing.status === "pending"
+											? "pending review"
+											: listing.status}
 									</span>
 									{isBoosted && (
 										<span className="flex items-center gap-0.5 rounded-md bg-[#F59E0B] px-2 py-0.5 font-bold text-[10px] text-white shadow-sm">

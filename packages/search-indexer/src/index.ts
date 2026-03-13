@@ -7,7 +7,9 @@ import { createSubscriber, type SearchEvent } from "./redis.ts";
 async function handleEvent(event: SearchEvent): Promise<void> {
 	const { event: eventType, listingId } = event;
 
-	console.log(`[search-indexer] Processing event: ${eventType} for listing ${listingId}`);
+	console.log(
+		`[search-indexer] Processing event: ${eventType} for listing ${listingId}`,
+	);
 
 	switch (eventType) {
 		case "listing.created":
@@ -26,7 +28,9 @@ async function handleEvent(event: SearchEvent): Promise<void> {
 
 async function main(): Promise<void> {
 	console.log("[search-indexer] Starting worker...");
-	console.log(`[search-indexer] Connecting to Redis at ${process.env.REDIS_URL || "redis://localhost:6379"}`);
+	console.log(
+		`[search-indexer] Connecting to Redis at ${process.env.REDIS_URL || "redis://localhost:6379"}`,
+	);
 
 	await configureIndex();
 	console.log("[search-indexer] Meilisearch index configured");

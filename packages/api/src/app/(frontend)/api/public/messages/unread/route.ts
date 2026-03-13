@@ -1,6 +1,6 @@
-import { getPayload } from "payload";
 import config from "@payload-config";
 import { headers as getHeaders } from "next/headers";
+import { getPayload } from "payload";
 
 export async function GET() {
 	try {

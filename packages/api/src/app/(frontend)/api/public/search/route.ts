@@ -4,7 +4,9 @@ import type { Where } from "payload";
 import { getPayload } from "payload";
 
 const meiliConfigured = !!process.env.MEILI_HOST;
-console.log(`[search] Meilisearch configured: ${meiliConfigured} (MEILI_HOST ${meiliConfigured ? "set" : "not set"} — will use ${meiliConfigured ? "Meilisearch" : "Payload fallback"})`);
+console.log(
+	`[search] Meilisearch configured: ${meiliConfigured} (MEILI_HOST ${meiliConfigured ? "set" : "not set"} — will use ${meiliConfigured ? "Meilisearch" : "Payload fallback"})`,
+);
 
 export async function GET(request: Request) {
 	const start = Date.now();
@@ -54,10 +56,7 @@ export async function GET(request: Request) {
 		}
 	}
 
-	console.log(`[search] query="${query}" category=${category ?? "none"} filters=${dynamicFilters.length} limit=${limit} offset=${offset}`);
-
 	if (!host) {
-		console.log("[search] Using Payload (Meilisearch not configured)");
 		const payload = await getPayload({ config });
 		const where: Where = {
 			status: { equals: "published" },
@@ -93,7 +92,6 @@ export async function GET(request: Request) {
 			sort: "-createdAt",
 		});
 
-		console.log(`[search] Payload returned ${result.totalDocs} results in ${Date.now() - start}ms`);
 		return Response.json({
 			hits: result.docs.map((doc) => ({
 				id: doc.id,
@@ -145,7 +143,9 @@ export async function GET(request: Request) {
 		offset,
 	});
 
-	console.log(`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`);
+	console.log(
+		`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`,
+	);
 	return Response.json({
 		hits: result.hits,
 		total: result.estimatedTotalHits,

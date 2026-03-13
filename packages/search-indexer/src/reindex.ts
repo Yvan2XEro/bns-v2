@@ -10,7 +10,11 @@ const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 const PAGE_SIZE = 100;
 
-async function fetchAllListings(): Promise<{ documents: ListingDocument[]; total: number; skipped: number }> {
+async function fetchAllListings(): Promise<{
+	documents: ListingDocument[];
+	total: number;
+	skipped: number;
+}> {
 	const documents: ListingDocument[] = [];
 	let page = 1;
 	let hasMore = true;
@@ -42,7 +46,9 @@ async function fetchAllListings(): Promise<{ documents: ListingDocument[]; total
 			}
 		}
 
-		console.log(`[search-indexer] reindex fetched page ${page} (${data.docs.length} listings, ${documents.length} indexed so far, ${skipped} skipped)`);
+		console.log(
+			`[search-indexer] reindex fetched page ${page} (${data.docs.length} listings, ${documents.length} indexed so far, ${skipped} skipped)`,
+		);
 
 		hasMore = data.hasNextPage;
 		page++;
@@ -62,13 +68,17 @@ async function main(): Promise<void> {
 	console.log("[search-indexer] reindex fetching all listings from Payload...");
 	const { documents, total, skipped } = await fetchAllListings();
 
-	console.log(`[search-indexer] reindex fetched ${total} total listings: ${documents.length} to index, ${skipped} skipped (not published)`);
+	console.log(
+		`[search-indexer] reindex fetched ${total} total listings: ${documents.length} to index, ${skipped} skipped (not published)`,
+	);
 
 	if (documents.length > 0) {
 		await indexDocuments(documents);
 	}
 
-	console.log(`[search-indexer] reindex complete: indexed=${documents.length} skipped=${skipped} total=${total}`);
+	console.log(
+		`[search-indexer] reindex complete: indexed=${documents.length} skipped=${skipped} total=${total}`,
+	);
 }
 
 main().catch((error) => {
