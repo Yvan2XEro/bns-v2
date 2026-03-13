@@ -73,7 +73,9 @@ export function ProfileEditForm({ user }: { user: User }) {
 						const data = await uploadRes.json();
 						avatarId = data.doc?.id ?? data.id;
 					}
-				} catch {}
+				} catch {
+					/* upload failed, continue without avatar */
+				}
 			}
 
 			const updateData = avatarId
@@ -120,6 +122,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 							<div className="relative">
 								<div className="h-20 w-20 overflow-hidden rounded-full bg-[#F1F5F9]">
 									{avatarPreview ? (
+										// biome-ignore lint/performance/noImgElement: blob preview URL
 										<img
 											src={avatarPreview}
 											alt="Avatar"

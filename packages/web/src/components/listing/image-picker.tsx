@@ -117,6 +117,7 @@ export function ImagePicker({
 				<div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
 					{previews.map((preview, index) => (
 						<div key={index} className="relative aspect-square">
+							{/* biome-ignore lint/performance/noImgElement: blob preview URL */}
 							<img
 								src={preview}
 								alt={`Preview ${index + 1}`}

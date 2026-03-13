@@ -381,6 +381,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										<Separator />
 										<div className="flex gap-2 overflow-x-auto">
 											{imagePreviews.map((preview, i) => (
+												// biome-ignore lint/performance/noImgElement: blob preview URL, not optimizable by next/image
 												<img
 													key={i}
 													src={preview}

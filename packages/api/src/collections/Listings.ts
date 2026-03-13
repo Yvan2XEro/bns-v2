@@ -1,5 +1,5 @@
 import type { CollectionConfig, Where } from "payload";
-import { anyone } from "../access/anyone";
+
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 

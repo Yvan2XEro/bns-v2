@@ -126,7 +126,8 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 					const imageUrl = getListingImageUrl(listing);
 					const daysLeft = isBoosted
 						? Math.ceil(
-								(new Date(listing.boostedUntil!).getTime() - Date.now()) /
+								(new Date(listing.boostedUntil as string).getTime() -
+									Date.now()) /
 									(1000 * 60 * 60 * 24),
 							)
 						: 0;

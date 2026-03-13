@@ -207,10 +207,14 @@ export function MessagesClient({
 								headers: { "Content-Type": "application/json" },
 								body: JSON.stringify({ read: true }),
 								credentials: "include",
-							}).catch(() => {});
+							}).catch(() => {
+								/* ignore */
+							});
 						}
 					})
-					.catch(() => {});
+					.catch(() => {
+						/* ignore */
+					});
 			}
 		} catch (error) {
 			console.error("Failed to fetch messages:", error);
@@ -381,7 +385,7 @@ export function MessagesClient({
 									</Avatar>
 									{getOtherParticipant(selectedConversation) &&
 										isUserOnline(
-											getOtherParticipant(selectedConversation)!.id,
+											getOtherParticipant(selectedConversation)?.id,
 										) && (
 											<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
 										)}

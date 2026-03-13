@@ -20,7 +20,9 @@ export function ViewTracker({
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ views: currentViews + 1 }),
 			credentials: "include",
-		}).catch(() => {});
+		}).catch(() => {
+			/* fire and forget */
+		});
 	}, [listingId, currentViews]);
 
 	return null;
