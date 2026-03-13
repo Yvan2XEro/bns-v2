@@ -315,6 +315,11 @@ h6 {
 	animation: loaderTextFade 1.6s ease-in-out infinite;
 }
 
+/* Hide last child in Novu inbox content (branding) */
+.nv-inboxContent > *:last-child {
+	display: none;
+}
+
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
 	.pattern-grid,
