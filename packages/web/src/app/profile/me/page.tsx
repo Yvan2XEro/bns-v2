@@ -1,6 +1,8 @@
 import {
+	BadgeCheck,
 	Bookmark,
 	Calendar,
+	Info,
 	MapPin,
 	Settings,
 	ShieldCheck,
@@ -74,6 +76,28 @@ export default async function MyProfilePage() {
 					</Button>
 				</Link>
 			</div>
+
+			{!user.verified && (
+				<div className="mb-6 flex items-center gap-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3">
+					<Info className="h-5 w-5 shrink-0 text-[#1E40AF]" />
+					<p className="text-[#1E40AF] text-sm">
+						Verify your account to build trust with buyers.{" "}
+						<Link
+							href="/support"
+							className="font-medium underline hover:text-[#1E3A8A]"
+						>
+							Contact support
+						</Link>
+					</p>
+				</div>
+			)}
+
+			{user.verified && (
+				<div className="mb-6 flex items-center gap-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3">
+					<BadgeCheck className="h-5 w-5 shrink-0 text-[#16A34A]" />
+					<p className="font-medium text-[#16A34A] text-sm">Verified Seller</p>
+				</div>
+			)}
 
 			<Tabs defaultValue="profile">
 				<TabsList>

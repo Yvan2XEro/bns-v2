@@ -37,11 +37,13 @@ export const Users: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc }) => {
+			async ({ doc, operation, previousDoc }) => {
 				if (!process.env.NOVU_SECRET_KEY) return;
 
 				try {
-					const { syncNovuSubscriber } = await import("../hooks/novuEvents");
+					const { syncNovuSubscriber, triggerNovuEvent } = await import(
+						"../hooks/novuEvents"
+					);
 
 					const avatarUrl =
 						typeof doc.avatar === "object" && doc.avatar?.url
@@ -54,6 +56,20 @@ export const Users: CollectionConfig = {
 						name: doc.name,
 						avatar: avatarUrl,
 					});
+
+					// Notify user when they become verified
+					if (
+						operation === "update" &&
+						doc.verified &&
+						previousDoc &&
+						!previousDoc.verified
+					) {
+						await triggerNovuEvent({
+							event: "user-verified",
+							subscriberId: doc.id as string,
+							payload: { name: doc.name },
+						});
+					}
 				} catch (error) {
 					console.error("[novu] Failed to sync subscriber:", error);
 				}
@@ -119,7 +135,7 @@ export const Users: CollectionConfig = {
 			type: "checkbox",
 			defaultValue: false,
 			admin: {
-				readOnly: true,
+				position: "sidebar",
 			},
 		},
 		{

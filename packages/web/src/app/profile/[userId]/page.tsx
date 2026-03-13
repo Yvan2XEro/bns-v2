@@ -1,9 +1,9 @@
 import {
+	BadgeCheck,
 	Calendar,
 	Flag,
 	MapPin,
 	MessageCircle,
-	ShieldCheck,
 	Star,
 } from "lucide-react";
 import Link from "next/link";
@@ -85,13 +85,20 @@ export default async function ProfilePage({ params }: PageProps) {
 									{user.name?.charAt(0) || "?"}
 								</AvatarFallback>
 							</Avatar>
-							<h1 className="mt-4 font-bold text-2xl text-[#0F172A]">
-								{user.name}
-							</h1>
+							<div className="mt-4 flex items-center gap-2">
+								<h1 className="font-bold text-2xl text-[#0F172A]">
+									{user.name}
+								</h1>
+								{user.verified && (
+									<BadgeCheck className="h-6 w-6 text-[#16A34A]" />
+								)}
+							</div>
 							{user.verified && (
-								<Badge variant="secondary" className="mt-2">
-									<ShieldCheck className="mr-1 h-3 w-3" />
-									Verified
+								<Badge
+									variant="secondary"
+									className="mt-2 border-[#BBF7D0] bg-[#F0FDF4] text-[#16A34A]"
+								>
+									Verified Seller
 								</Badge>
 							)}
 							{user.location && (

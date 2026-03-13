@@ -71,6 +71,19 @@ export const SavedSearches: CollectionConfig = {
 			type: "text",
 			required: true,
 		},
+		{
+			name: "alertEnabled",
+			type: "checkbox",
+			defaultValue: true,
+			label: "Notify me of new listings",
+		},
+		{
+			name: "lastCheckedAt",
+			type: "date",
+			admin: {
+				readOnly: true,
+			},
+		},
 	],
 	timestamps: true,
 };

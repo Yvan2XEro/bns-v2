@@ -61,6 +61,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		lng: number;
 	} | null>(null);
 	const [geoLoading, setGeoLoading] = useState(false);
+	const [duration, setDuration] = useState("30");
 	const [formData, setFormData] = useState({
 		title: "",
 		description: "",
@@ -166,6 +167,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				attributes: attributeValues,
 				images: imageIds.map((id) => ({ image: id })),
 				status: status,
+				duration: Number(duration),
 			};
 
 			if (coordinates) {
@@ -348,6 +350,23 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							</div>
 
 							<div className="space-y-2">
+								<Label>Listing duration</Label>
+								<Select value={duration} onValueChange={setDuration}>
+									<SelectTrigger>
+										<SelectValue placeholder="Select duration" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="30">30 days</SelectItem>
+										<SelectItem value="60">60 days</SelectItem>
+										<SelectItem value="90">90 days</SelectItem>
+									</SelectContent>
+								</Select>
+								<p className="text-muted-foreground text-xs">
+									How long your listing will be visible before it expires.
+								</p>
+							</div>
+
+							<div className="space-y-2">
 								<Label htmlFor="description">Description</Label>
 								<Textarea
 									id="description"
@@ -408,6 +427,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										</Badge>
 									)}
 									<Badge variant="outline">{formData.location}</Badge>
+									<Badge variant="outline">{duration} days</Badge>
 								</div>
 								<p className="whitespace-pre-wrap text-muted-foreground text-sm">
 									{formData.description}

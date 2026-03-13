@@ -4,8 +4,13 @@ import { getPayload } from "payload";
 export async function POST(request: Request) {
 	try {
 		const payload = await getPayload({ config });
+		const { user } = await payload.auth({ headers: request.headers });
+		if (!user) {
+			return Response.json({ error: "Unauthorized" }, { status: 401 });
+		}
 		const body = await request.json();
-		const { listingId, duration, userId } = body;
+		const { listingId, duration } = body;
+		const userId = user.id;
 
 		const listing = await payload.findByID({
 			collection: "listings",

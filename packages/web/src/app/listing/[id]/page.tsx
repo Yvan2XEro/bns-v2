@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BoostDialog } from "~/components/listing/boost-dialog";
 import { FavoriteButton } from "~/components/listing/favorite-button";
 import { ImageGallery } from "~/components/listing/image-gallery";
 import { ListingGrid } from "~/components/listing/listing-card";
@@ -22,7 +23,7 @@ import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { serverFetch } from "~/lib/server-api";
+import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, User } from "~/types";
 
 interface PageProps {
@@ -79,10 +80,11 @@ function timeAgo(date: string): string {
 
 export default async function ListingPage({ params }: PageProps) {
 	const { id } = await params;
-	const [listing, isFavorited, similarListings] = await Promise.all([
+	const [listing, isFavorited, similarListings, authUser] = await Promise.all([
 		getListing(id),
 		isListingFavorited(id),
 		getSimilarListings(id),
+		getAuthUser(),
 	]);
 
 	if (!listing) {
@@ -92,6 +94,11 @@ export default async function ListingPage({ params }: PageProps) {
 	const isBoosted =
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
+	const isOwner = !!(
+		authUser &&
+		seller &&
+		String(authUser.id) === String(seller.id)
+	);
 	const category = listing.category as { id: string; name: string } | undefined;
 
 	const expiresAt = listing.expiresAt ? new Date(listing.expiresAt) : null;
@@ -314,15 +321,31 @@ export default async function ListingPage({ params }: PageProps) {
 								)}
 
 								<div className="mt-5 flex flex-col gap-2">
-									<Link
-										href={`/messages?listing=${listing.id}`}
-										className="w-full"
-									>
-										<Button className="w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]">
-											<MessageCircle className="mr-2 h-4 w-4" />
-											Message seller
-										</Button>
-									</Link>
+									{isOwner && listing.status === "published" && !isBoosted && (
+										<BoostDialog listingId={listing.id}>
+											<Button className="w-full rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] shadow-amber-500/20 shadow-md hover:shadow-lg">
+												<Zap className="mr-2 h-4 w-4" />
+												Boost this listing
+											</Button>
+										</BoostDialog>
+									)}
+									{isOwner && isBoosted && (
+										<div className="flex items-center justify-center gap-1.5 rounded-lg border border-[#F59E0B]/30 bg-amber-50 px-3 py-2 font-semibold text-[#92400E] text-sm">
+											<Zap className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
+											Currently boosted
+										</div>
+									)}
+									{!isOwner && (
+										<Link
+											href={`/messages?listing=${listing.id}`}
+											className="w-full"
+										>
+											<Button className="w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]">
+												<MessageCircle className="mr-2 h-4 w-4" />
+												Message seller
+											</Button>
+										</Link>
+									)}
 									<FavoriteButton
 										listingId={listing.id}
 										initialFavorite={isFavorited}

@@ -21,6 +21,8 @@ export async function GET(request: Request) {
 	const radius = Number.parseInt(searchParams.get("radius") || "50", 10);
 	const limit = Number.parseInt(searchParams.get("limit") || "20", 10);
 	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
+	const sortParam = searchParams.get("sort") || "newest";
+	const conditionParam = searchParams.get("condition");
 
 	const host = process.env.MEILI_HOST;
 	const key = process.env.MEILI_MASTER_KEY;
@@ -87,12 +89,38 @@ export async function GET(request: Request) {
 			where.location = { contains: location };
 		}
 
+		if (conditionParam) {
+			const conditions = conditionParam
+				.split(",")
+				.map((c) => c.trim())
+				.filter(Boolean);
+			if (conditions.length > 0) {
+				where.condition = { in: conditions };
+			}
+		}
+
+		let payloadSort: string;
+		switch (sortParam) {
+			case "oldest":
+				payloadSort = "createdAt";
+				break;
+			case "price_asc":
+				payloadSort = "price";
+				break;
+			case "price_desc":
+				payloadSort = "-price";
+				break;
+			default:
+				payloadSort = "-createdAt";
+				break;
+		}
+
 		const result = await payload.find({
 			collection: "listings",
 			where,
 			limit,
 			page: Math.floor(offset / limit) + 1,
-			sort: "-createdAt",
+			sort: payloadSort,
 		});
 
 		return Response.json({
@@ -136,6 +164,17 @@ export async function GET(request: Request) {
 		filters.push(`location = "${location}"`);
 	}
 
+	if (conditionParam) {
+		const conditions = conditionParam
+			.split(",")
+			.map((c) => c.trim())
+			.filter(Boolean);
+		if (conditions.length > 0) {
+			const conditionList = conditions.map((c) => `"${c}"`).join(", ");
+			filters.push(`condition IN [${conditionList}]`);
+		}
+	}
+
 	for (const dynamicFilter of dynamicFilters) {
 		filters.push(dynamicFilter);
 	}
@@ -151,6 +190,21 @@ export async function GET(request: Request) {
 		sort.push(
 			`_geoPoint(${Number.parseFloat(lat)}, ${Number.parseFloat(lng)}):asc`,
 		);
+	}
+
+	switch (sortParam) {
+		case "oldest":
+			sort.push("createdAt:asc");
+			break;
+		case "price_asc":
+			sort.push("price:asc");
+			break;
+		case "price_desc":
+			sort.push("price:desc");
+			break;
+		default:
+			sort.push("createdAt:desc");
+			break;
 	}
 
 	const result = await index.search(query, {

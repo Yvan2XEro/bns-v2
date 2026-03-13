@@ -50,10 +50,16 @@ export const Listings: CollectionConfig = {
 					if (data.status === "published") {
 						data.status = "pending";
 					}
-					// Set expiry date to 30 days from now
+					// Set expiry date based on duration (default 30 days)
+					const durationDays =
+						data.duration && [30, 60, 90].includes(Number(data.duration))
+							? Number(data.duration)
+							: 30;
 					const expiresAt = new Date();
-					expiresAt.setDate(expiresAt.getDate() + 30);
+					expiresAt.setDate(expiresAt.getDate() + durationDays);
 					data.expiresAt = expiresAt.toISOString();
+					// Remove duration from data as it's not a persisted field
+					data.duration = undefined;
 				}
 
 				if (operation === "update" && data.status === "published") {

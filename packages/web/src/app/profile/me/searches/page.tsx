@@ -1,8 +1,15 @@
-import { ArrowLeft, Bookmark, Search, Trash2 } from "lucide-react";
+import {
+	ArrowLeft,
+	Bell,
+	BellOff,
+	Bookmark,
+	Search,
+	Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "~/components/ui/badge";
-import { deleteSavedSearch } from "~/lib/actions";
+import { deleteSavedSearch, toggleSearchAlert } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { User } from "~/types";
 
@@ -19,6 +26,7 @@ interface SavedSearch {
 		attributes?: Record<string, string>;
 	};
 	url: string;
+	alertEnabled?: boolean;
 	createdAt: string;
 }
 
@@ -33,6 +41,33 @@ async function getSavedSearches(): Promise<SavedSearch[]> {
 	} catch {
 		return [];
 	}
+}
+
+function AlertToggleButton({ id, enabled }: { id: string; enabled: boolean }) {
+	return (
+		<form
+			action={async () => {
+				"use server";
+				await toggleSearchAlert(id, !enabled);
+			}}
+		>
+			<button
+				type="submit"
+				className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+					enabled
+						? "text-[#1E40AF] hover:bg-[#EFF6FF]"
+						: "text-[#94A3B8] hover:bg-gray-100"
+				}`}
+				title={enabled ? "Disable notifications" : "Enable notifications"}
+			>
+				{enabled ? (
+					<Bell className="h-4 w-4" />
+				) : (
+					<BellOff className="h-4 w-4" />
+				)}
+			</button>
+		</form>
+	);
 }
 
 function DeleteButton({ id }: { id: string }) {
@@ -137,7 +172,13 @@ export default async function SavedSearchesPage() {
 										</div>
 									</div>
 								</Link>
-								<DeleteButton id={search.id} />
+								<div className="flex items-center gap-1">
+									<AlertToggleButton
+										id={search.id}
+										enabled={search.alertEnabled !== false}
+									/>
+									<DeleteButton id={search.id} />
+								</div>
 							</div>
 						))}
 					</div>

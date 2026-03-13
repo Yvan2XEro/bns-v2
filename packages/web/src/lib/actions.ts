@@ -82,6 +82,27 @@ export async function saveSearch(data: {
 	}
 }
 
+export async function toggleSearchAlert(
+	id: string,
+	enabled: boolean,
+): Promise<ActionResult> {
+	try {
+		const res = await serverFetch(`/api/saved-searches/${id}`, {
+			method: "PATCH",
+			body: JSON.stringify({ alertEnabled: enabled }),
+		});
+
+		if (!res.ok) {
+			return { success: false, error: "Failed to update alert preference" };
+		}
+
+		revalidatePath("/profile/me/searches");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to update alert preference" };
+	}
+}
+
 export async function deleteSavedSearch(id: string): Promise<ActionResult> {
 	try {
 		const res = await serverFetch(`/api/saved-searches/${id}`, {
@@ -96,6 +117,90 @@ export async function deleteSavedSearch(id: string): Promise<ActionResult> {
 		return { success: true };
 	} catch {
 		return { success: false, error: "Failed to delete saved search" };
+	}
+}
+
+export async function markListingAsSold(
+	listingId: string,
+): Promise<ActionResult> {
+	try {
+		const res = await serverFetch(`/api/listings/${listingId}`, {
+			method: "PATCH",
+			body: JSON.stringify({ status: "sold" }),
+		});
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return {
+				success: false,
+				error: err.errors?.[0]?.message || "Failed to mark listing as sold",
+			};
+		}
+
+		revalidatePath("/profile/me/listings");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to mark listing as sold" };
+	}
+}
+
+export async function renewListing(listingId: string): Promise<ActionResult> {
+	try {
+		const expiresAt = new Date();
+		expiresAt.setDate(expiresAt.getDate() + 30);
+
+		const res = await serverFetch(`/api/listings/${listingId}`, {
+			method: "PATCH",
+			body: JSON.stringify({
+				status: "pending",
+				expiresAt: expiresAt.toISOString(),
+			}),
+		});
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return {
+				success: false,
+				error: err.errors?.[0]?.message || "Failed to renew listing",
+			};
+		}
+
+		revalidatePath("/profile/me/listings");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to renew listing" };
+	}
+}
+
+export async function createBoostPayment(
+	listingId: string,
+	duration: "7" | "14" | "30",
+): Promise<ActionResult<{ paymentUrl: string }>> {
+	try {
+		const res = await serverFetch("/api/public/boost", {
+			method: "POST",
+			body: JSON.stringify({ listingId, duration }),
+		});
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return {
+				success: false,
+				error: err.error || "Failed to create boost payment",
+			};
+		}
+
+		const data = await res.json();
+		if (data.paymentUrl) {
+			return { success: true, data: { paymentUrl: data.paymentUrl } };
+		}
+
+		return {
+			success: false,
+			error: "Payment URL not available. Please try again later.",
+		};
+	} catch {
+		return { success: false, error: "Failed to create boost payment" };
 	}
 }
 

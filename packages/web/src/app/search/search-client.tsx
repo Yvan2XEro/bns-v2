@@ -73,7 +73,8 @@ export function SearchClient({
 		minPrice: initialParams.minPrice || "",
 		maxPrice: initialParams.maxPrice || "",
 		location: initialParams.location || "",
-		sort: initialParams.sort || "-createdAt",
+		sort: initialParams.sort || "newest",
+		condition: initialParams.condition || "",
 	});
 
 	const [attributeFilters, setAttributeFilters] = useState<
@@ -98,8 +99,9 @@ export function SearchClient({
 		if (filters.minPrice) params.set("minPrice", filters.minPrice);
 		if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
 		if (filters.location) params.set("location", filters.location);
-		if (filters.sort && filters.sort !== "-createdAt")
+		if (filters.sort && filters.sort !== "newest")
 			params.set("sort", filters.sort);
+		if (filters.condition) params.set("condition", filters.condition);
 		for (const [key, value] of Object.entries(attributeFilters)) {
 			if (value) params.set(`attr_${key}`, value);
 		}
@@ -146,6 +148,7 @@ export function SearchClient({
 			if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
 			if (filters.location) params.set("location", filters.location);
 			if (filters.sort) params.set("sort", filters.sort);
+			if (filters.condition) params.set("condition", filters.condition);
 
 			for (const [key, value] of Object.entries(attributeFilters)) {
 				if (value) params.set(`attr_${key}`, value);
@@ -278,7 +281,8 @@ export function SearchClient({
 			minPrice: "",
 			maxPrice: "",
 			location: "",
-			sort: "-createdAt",
+			sort: "newest",
+			condition: "",
 		});
 		setAttributeFilters({});
 		router.push("/search");
@@ -291,6 +295,7 @@ export function SearchClient({
 			filters.minPrice ||
 			filters.maxPrice ||
 			filters.location ||
+			filters.condition ||
 			nearMe ||
 			Object.values(attributeFilters).some(Boolean)
 		);
@@ -301,9 +306,32 @@ export function SearchClient({
 		filters.minPrice,
 		filters.maxPrice,
 		filters.location,
+		filters.condition,
 		nearMe ? "nearMe" : "",
 		...Object.values(attributeFilters),
 	].filter(Boolean).length;
+
+	const CONDITION_OPTIONS = [
+		{ value: "new", label: "New" },
+		{ value: "like_new", label: "Like New" },
+		{ value: "good", label: "Good" },
+		{ value: "fair", label: "Fair" },
+		{ value: "poor", label: "Poor" },
+	] as const;
+
+	const selectedConditions = filters.condition
+		? filters.condition.split(",").filter(Boolean)
+		: [];
+
+	function toggleCondition(value: string) {
+		const current = new Set(selectedConditions);
+		if (current.has(value)) {
+			current.delete(value);
+		} else {
+			current.add(value);
+		}
+		updateFilter("condition", Array.from(current).join(","));
+	}
 
 	// Sidebar filter panel (reused for desktop sidebar + mobile drawer)
 	const filterPanel = (
@@ -406,6 +434,29 @@ export function SearchClient({
 				)}
 			</div>
 
+			{/* Condition */}
+			<div className="space-y-2">
+				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+					Condition
+				</Label>
+				<div className="space-y-1.5">
+					{CONDITION_OPTIONS.map((opt) => (
+						<label
+							key={opt.value}
+							className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-[#F8FAFC]"
+						>
+							<input
+								type="checkbox"
+								checked={selectedConditions.includes(opt.value)}
+								onChange={() => toggleCondition(opt.value)}
+								className="h-4 w-4 rounded border-[#D1D5DB] text-[#1E40AF] focus:ring-[#3B82F6]/20"
+							/>
+							<span className="text-[#334155]">{opt.label}</span>
+						</label>
+					))}
+				</div>
+			</div>
+
 			{/* Dynamic attributes */}
 			{attributes.length > 0 && (
 				<div className="space-y-3 border-[#E2E8F0] border-t pt-4">
@@ -502,10 +553,10 @@ export function SearchClient({
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="-createdAt">Newest</SelectItem>
-							<SelectItem value="createdAt">Oldest</SelectItem>
-							<SelectItem value="-price">Price ↓</SelectItem>
-							<SelectItem value="price">Price ↑</SelectItem>
+							<SelectItem value="newest">Newest</SelectItem>
+							<SelectItem value="oldest">Oldest</SelectItem>
+							<SelectItem value="price_asc">Price: Low to High</SelectItem>
+							<SelectItem value="price_desc">Price: High to Low</SelectItem>
 						</SelectContent>
 					</Select>
 					<button
