@@ -47,7 +47,6 @@ export const Listings: CollectionConfig = {
 			async ({ data, req, operation }) => {
 				if (operation === "create") {
 					data.seller = req.user?.id;
-					// New listings go to pending review, not directly published
 					if (data.status === "published") {
 						data.status = "pending";
 					}
@@ -58,7 +57,6 @@ export const Listings: CollectionConfig = {
 				}
 
 				if (operation === "update" && data.status === "published") {
-					// Only admins/moderators can approve (set to published)
 					const u = req.user as { role?: string } | undefined;
 					if (u?.role !== "admin" && u?.role !== "moderator") {
 						data.status = "pending";
@@ -69,12 +67,38 @@ export const Listings: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc, operation }) => {
+			async ({ doc, operation, previousDoc }) => {
 				if (process.env.REDIS_URL) {
 					const { publishSearchEvent } = await import("../hooks/searchEvents");
 					const event =
 						operation === "create" ? "listing.created" : "listing.updated";
 					await publishSearchEvent(event, doc.id as string);
+				}
+
+				if (!process.env.NOVU_SECRET_KEY) return;
+				if (operation !== "update") return;
+				if (!previousDoc || previousDoc.status === doc.status) return;
+
+				const sellerId =
+					typeof doc.seller === "string"
+						? doc.seller
+						: (doc.seller as { id: string })?.id;
+				if (!sellerId) return;
+
+				try {
+					const { triggerNovuEvent } = await import("../hooks/novuEvents");
+					await triggerNovuEvent({
+						event: "listing-status",
+						subscriberId: sellerId,
+						payload: {
+							listingTitle: doc.title,
+							listingId: doc.id,
+							oldStatus: previousDoc.status,
+							newStatus: doc.status,
+						},
+					});
+				} catch (error) {
+					console.error("[novu] Failed to notify listing status:", error);
 				}
 			},
 		],

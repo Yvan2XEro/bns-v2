@@ -19,7 +19,6 @@ export const Users: CollectionConfig = {
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
 
-				// On create, force role to "user" unless admin
 				if (operation === "create" && !isAdmin) {
 					data.role = "user";
 					data.verified = undefined;
@@ -27,7 +26,6 @@ export const Users: CollectionConfig = {
 					data.totalReviews = undefined;
 				}
 
-				// On update, prevent non-admins from changing protected fields
 				if (operation === "update" && !isAdmin) {
 					data.role = originalDoc?.role;
 					data.verified = originalDoc.verified;
@@ -36,6 +34,29 @@ export const Users: CollectionConfig = {
 				}
 
 				return data;
+			},
+		],
+		afterChange: [
+			async ({ doc }) => {
+				if (!process.env.NOVU_SECRET_KEY) return;
+
+				try {
+					const { syncNovuSubscriber } = await import("../hooks/novuEvents");
+
+					const avatarUrl =
+						typeof doc.avatar === "object" && doc.avatar?.url
+							? doc.avatar.url
+							: undefined;
+
+					await syncNovuSubscriber({
+						subscriberId: doc.id as string,
+						email: doc.email,
+						name: doc.name,
+						avatar: avatarUrl,
+					});
+				} catch (error) {
+					console.error("[novu] Failed to sync subscriber:", error);
+				}
 			},
 		],
 	},

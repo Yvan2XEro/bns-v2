@@ -24,13 +24,44 @@ export const Reviews: CollectionConfig = {
 	},
 	hooks: {
 		afterChange: [
-			async ({ doc, req }) => {
+			async ({ doc, req, operation }) => {
 				const reviewedUserId =
 					typeof doc.reviewedUser === "string"
 						? doc.reviewedUser
 						: doc.reviewedUser?.id;
 				if (reviewedUserId) {
 					await updateUserRating({ req, reviewedUserId });
+				}
+
+				if (operation === "create" && process.env.NOVU_SECRET_KEY) {
+					try {
+						const { triggerNovuEvent } = await import("../hooks/novuEvents");
+
+						const reviewerName =
+							typeof doc.reviewer === "object" && doc.reviewer?.name
+								? doc.reviewer.name
+								: (
+										await req.payload.findByID({
+											collection: "users",
+											id:
+												typeof doc.reviewer === "string"
+													? doc.reviewer
+													: doc.reviewer?.id,
+										})
+									).name;
+
+						await triggerNovuEvent({
+							event: "new-review",
+							subscriberId: reviewedUserId,
+							payload: {
+								reviewerName,
+								rating: doc.rating,
+								comment: doc.comment || "",
+							},
+						});
+					} catch (error) {
+						console.error("[novu] Failed to notify new review:", error);
+					}
 				}
 			},
 		],

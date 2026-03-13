@@ -15,6 +15,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { NotificationInbox } from "~/components/layout/notification-inbox";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import {
@@ -134,6 +135,10 @@ export function Header() {
 									)}
 								</button>
 							</Link>
+
+							<div className="hidden sm:block">
+								<NotificationInbox />
+							</div>
 
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
@@ -288,13 +293,18 @@ export function Header() {
 							</Link>
 						))}
 						{user && (
-							<button
-								type="button"
-								onClick={handleLogout}
-								className="rounded-lg px-3 py-2 text-left font-medium text-red-600 text-sm"
-							>
-								Log out
-							</button>
+							<>
+								<div className="px-3 py-2">
+									<NotificationInbox />
+								</div>
+								<button
+									type="button"
+									onClick={handleLogout}
+									className="rounded-lg px-3 py-2 text-left font-medium text-red-600 text-sm"
+								>
+									Log out
+								</button>
+							</>
 						)}
 					</nav>
 				</div>
