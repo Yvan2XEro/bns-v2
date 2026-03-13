@@ -16,6 +16,9 @@ export async function GET(request: Request) {
 	const minPrice = searchParams.get("minPrice");
 	const maxPrice = searchParams.get("maxPrice");
 	const location = searchParams.get("location");
+	const lat = searchParams.get("lat");
+	const lng = searchParams.get("lng");
+	const radius = Number.parseInt(searchParams.get("radius") || "50", 10);
 	const limit = Number.parseInt(searchParams.get("limit") || "20", 10);
 	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
 
@@ -137,8 +140,22 @@ export async function GET(request: Request) {
 		filters.push(dynamicFilter);
 	}
 
+	if (lat && lng) {
+		filters.push(
+			`_geoRadius(${Number.parseFloat(lat)}, ${Number.parseFloat(lng)}, ${radius * 1000})`,
+		);
+	}
+
+	const sort: string[] = [];
+	if (lat && lng) {
+		sort.push(
+			`_geoPoint(${Number.parseFloat(lat)}, ${Number.parseFloat(lng)}):asc`,
+		);
+	}
+
 	const result = await index.search(query, {
 		filter: filters.join(" AND "),
+		sort: sort.length > 0 ? sort : undefined,
 		limit,
 		offset,
 	});

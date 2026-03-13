@@ -65,6 +65,13 @@ export function transformListing(
 		updatedAt: listing.updatedAt as string,
 	};
 
+	const coordinates = listing.coordinates as
+		| { lat?: number; lng?: number }
+		| undefined;
+	if (coordinates?.lat && coordinates?.lng) {
+		doc._geo = { lat: coordinates.lat, lng: coordinates.lng };
+	}
+
 	const categoryAttributes = category?.attributes as
 		| Array<{ slug: string; filterable: boolean }>
 		| undefined;

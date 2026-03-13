@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Save, Trash2, X } from "lucide-react";
+import { Loader2, MapPin, Save, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -97,6 +97,16 @@ export function EditListingForm({
 	const [newImages, setNewImages] = useState<File[]>([]);
 	const [newPreviews, setNewPreviews] = useState<string[]>([]);
 
+	const initialCoordinates =
+		listing.coordinates?.lat && listing.coordinates?.lng
+			? { lat: listing.coordinates.lat, lng: listing.coordinates.lng }
+			: null;
+	const [coordinates, setCoordinates] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(initialCoordinates);
+	const [geoLoading, setGeoLoading] = useState(false);
+
 	const [formData, setFormData] = useState({
 		title: listing.title,
 		description: listing.description,
@@ -132,6 +142,28 @@ export function EditListingForm({
 		setNewPreviews((prev) => prev.filter((_, i) => i !== index));
 	}
 
+	function handleUseMyLocation() {
+		if (!navigator.geolocation) {
+			alert("Geolocation is not supported by your browser.");
+			return;
+		}
+		setGeoLoading(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setCoordinates({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+				});
+				setGeoLoading(false);
+			},
+			(error) => {
+				console.error("Geolocation error:", error);
+				alert("Could not get your location. Please check your permissions.");
+				setGeoLoading(false);
+			},
+		);
+	}
+
 	async function handleSave() {
 		if (!selectedCategory || !formData.title || !formData.price) return;
 		setIsSaving(true);
@@ -161,7 +193,7 @@ export function EditListingForm({
 
 			const allImageIds = [...keptImages.map((img) => img.id), ...newImageIds];
 
-			const updateData = {
+			const updateData: Record<string, unknown> = {
 				title: formData.title,
 				description: formData.description,
 				price: Number(formData.price),
@@ -171,6 +203,10 @@ export function EditListingForm({
 				attributes: attributeValues,
 				images: allImageIds.map((id) => ({ image: id })),
 			};
+
+			if (coordinates) {
+				updateData.coordinates = coordinates;
+			}
 
 			const res = await fetch(`/api/listings/${listing.id}`, {
 				method: "PATCH",
@@ -273,15 +309,40 @@ export function EditListingForm({
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="location">Location</Label>
-							<Input
-								id="location"
-								placeholder="City or region"
-								value={formData.location}
-								onChange={(e) =>
-									setFormData((p) => ({ ...p, location: e.target.value }))
-								}
-								required
-							/>
+							<div className="flex gap-2">
+								<Input
+									id="location"
+									placeholder="City or region"
+									value={formData.location}
+									onChange={(e) =>
+										setFormData((p) => ({
+											...p,
+											location: e.target.value,
+										}))
+									}
+									required
+								/>
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={handleUseMyLocation}
+									disabled={geoLoading}
+									title="Use my location"
+								>
+									{geoLoading ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										<MapPin className="h-4 w-4" />
+									)}
+								</Button>
+							</div>
+							{coordinates && (
+								<p className="text-muted-foreground text-xs">
+									Location detected ({coordinates.lat.toFixed(4)},{" "}
+									{coordinates.lng.toFixed(4)})
+								</p>
+							)}
 						</div>
 					</div>
 

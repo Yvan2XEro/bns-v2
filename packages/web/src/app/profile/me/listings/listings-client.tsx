@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	AlertTriangle,
 	CheckCircle,
 	Clock,
 	Edit,
@@ -8,6 +9,7 @@ import {
 	Loader2,
 	MoreVertical,
 	Sparkles,
+	Timer,
 	Trash2,
 } from "lucide-react";
 import Image from "next/image";
@@ -132,6 +134,16 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							)
 						: 0;
 					const imageCount = listing.images?.length || 0;
+					const expiresAt = listing.expiresAt
+						? new Date(listing.expiresAt)
+						: null;
+					const daysUntilExpiry = expiresAt
+						? Math.ceil(
+								(expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+							)
+						: null;
+					const isListingActive =
+						listing.status === "published" || listing.status === "pending";
 
 					return (
 						<div
@@ -170,6 +182,13 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 										</span>
 									</div>
 								)}
+								{listing.status === "expired" && (
+									<div className="absolute inset-0 flex items-center justify-center bg-black/40">
+										<span className="rounded-full bg-orange-500 px-3 py-1 font-bold text-white text-xs uppercase">
+											Expired
+										</span>
+									</div>
+								)}
 
 								{/* Top badges */}
 								<div className="absolute top-2 left-2 flex gap-1.5">
@@ -183,7 +202,9 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 														? "bg-blue-100 text-blue-800"
 														: listing.status === "rejected"
 															? "bg-red-100 text-red-800"
-															: "bg-amber-100 text-amber-800"
+															: listing.status === "expired"
+																? "bg-orange-100 text-orange-800"
+																: "bg-amber-100 text-amber-800"
 										}`}
 									>
 										{listing.status === "pending"
@@ -226,6 +247,28 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 										{listing.location}
 									</p>
 								</Link>
+
+								{/* Expiry info */}
+								{listing.status === "expired" && (
+									<p className="mt-1.5 flex items-center gap-1 font-medium text-red-500 text-xs">
+										<AlertTriangle className="h-3 w-3" />
+										Expired
+									</p>
+								)}
+								{isListingActive && expiresAt && daysUntilExpiry !== null && (
+									<p
+										className={`mt-1.5 flex items-center gap-1 font-medium text-xs ${
+											daysUntilExpiry <= 5 ? "text-amber-600" : "text-[#94A3B8]"
+										}`}
+									>
+										<Timer className="h-3 w-3" />
+										{daysUntilExpiry <= 0
+											? "Expires today"
+											: daysUntilExpiry === 1
+												? "Expires tomorrow"
+												: `Expires in ${daysUntilExpiry} days`}
+									</p>
+								)}
 
 								{/* Actions */}
 								<div className="mt-3 flex items-center gap-2 border-[#F1F5F9] border-t pt-3">

@@ -17,8 +17,15 @@ export const BoostPayments: CollectionConfig = {
 	access: {
 		read: ({ req: { user } }) => {
 			if (!user) return false;
-			const userWithRole = user as { role?: string };
-			return userWithRole.role === "admin" || userWithRole.role === "moderator";
+			const userWithRole = user as { role?: string; id?: string };
+			if (userWithRole.role === "admin" || userWithRole.role === "moderator") {
+				return true;
+			}
+			return {
+				user: {
+					equals: userWithRole.id,
+				},
+			};
 		},
 		create: authenticated,
 		update: ({ req: { user } }) => {

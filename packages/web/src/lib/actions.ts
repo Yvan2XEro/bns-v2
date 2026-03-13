@@ -55,6 +55,50 @@ export async function deleteListing(id: string): Promise<ActionResult> {
 	}
 }
 
+export async function saveSearch(data: {
+	name: string;
+	query: string;
+	filters: Record<string, unknown>;
+	url: string;
+}): Promise<ActionResult> {
+	try {
+		const res = await serverFetch("/api/saved-searches", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return {
+				success: false,
+				error: err.errors?.[0]?.message || "Failed to save search",
+			};
+		}
+
+		revalidatePath("/profile/me/searches");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to save search" };
+	}
+}
+
+export async function deleteSavedSearch(id: string): Promise<ActionResult> {
+	try {
+		const res = await serverFetch(`/api/saved-searches/${id}`, {
+			method: "DELETE",
+		});
+
+		if (!res.ok) {
+			return { success: false, error: "Failed to delete saved search" };
+		}
+
+		revalidatePath("/profile/me/searches");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to delete saved search" };
+	}
+}
+
 export async function toggleFavorite(
 	listingId: string,
 	action: "add" | "remove",

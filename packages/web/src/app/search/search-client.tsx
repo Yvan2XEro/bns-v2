@@ -1,10 +1,26 @@
 "use client";
 
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import {
+	Bookmark,
+	Check,
+	MapPin,
+	Search,
+	SlidersHorizontal,
+	X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -14,6 +30,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
+import { saveSearch } from "~/lib/actions";
 import type { Category, CategoryAttribute, Listing } from "~/types";
 
 interface SearchClientProps {
@@ -42,6 +59,14 @@ export function SearchClient({
 	const [isLoading, setIsLoading] = useState(false);
 	const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+	const [nearMe, setNearMe] = useState(false);
+	const [geoCoords, setGeoCoords] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(null);
+	const [geoRadius, setGeoRadius] = useState(initialParams.radius || "50");
+	const [geoLoading, setGeoLoading] = useState(false);
+
 	const [filters, setFilters] = useState({
 		q: initialParams.q || "",
 		category: initialParams.category || "",
@@ -59,6 +84,58 @@ export function SearchClient({
 	const [page, setPage] = useState(1);
 	const LIMIT = 20;
 
+	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+	const [saveName, setSaveName] = useState("");
+	const [saveStatus, setSaveStatus] = useState<
+		"idle" | "saving" | "saved" | "error"
+	>("idle");
+	const [saveError, setSaveError] = useState("");
+
+	function buildSearchUrl() {
+		const params = new URLSearchParams();
+		if (filters.q) params.set("q", filters.q);
+		if (filters.category) params.set("category", filters.category);
+		if (filters.minPrice) params.set("minPrice", filters.minPrice);
+		if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+		if (filters.location) params.set("location", filters.location);
+		if (filters.sort && filters.sort !== "-createdAt")
+			params.set("sort", filters.sort);
+		for (const [key, value] of Object.entries(attributeFilters)) {
+			if (value) params.set(`attr_${key}`, value);
+		}
+		const qs = params.toString();
+		return qs ? `/search?${qs}` : "/search";
+	}
+
+	async function handleSaveSearch() {
+		setSaveStatus("saving");
+		setSaveError("");
+		const result = await saveSearch({
+			name: saveName || filters.q || "My saved search",
+			query: filters.q,
+			filters: {
+				category: filters.category,
+				minPrice: filters.minPrice,
+				maxPrice: filters.maxPrice,
+				location: filters.location,
+				sort: filters.sort,
+				attributes: attributeFilters,
+			},
+			url: buildSearchUrl(),
+		});
+		if (result.success) {
+			setSaveStatus("saved");
+			setTimeout(() => {
+				setSaveDialogOpen(false);
+				setSaveStatus("idle");
+				setSaveName("");
+			}, 1500);
+		} else {
+			setSaveStatus("error");
+			setSaveError(result.error);
+		}
+	}
+
 	const fetchListings = useCallback(async () => {
 		setIsLoading(true);
 		try {
@@ -72,6 +149,12 @@ export function SearchClient({
 
 			for (const [key, value] of Object.entries(attributeFilters)) {
 				if (value) params.set(`attr_${key}`, value);
+			}
+
+			if (nearMe && geoCoords) {
+				params.set("lat", String(geoCoords.lat));
+				params.set("lng", String(geoCoords.lng));
+				params.set("radius", geoRadius);
 			}
 
 			params.set("limit", String(LIMIT));
@@ -90,7 +173,7 @@ export function SearchClient({
 		} finally {
 			setIsLoading(false);
 		}
-	}, [filters, attributeFilters, page]);
+	}, [filters, attributeFilters, page, nearMe, geoCoords, geoRadius]);
 
 	useEffect(() => {
 		if (filters.category) {
@@ -144,9 +227,51 @@ export function SearchClient({
 		router.push(`/search?${newParams.toString()}`);
 	}
 
+	function handleNearMeToggle() {
+		if (nearMe) {
+			setNearMe(false);
+			setGeoCoords(null);
+			setShouldFetch(true);
+			setPage(1);
+			return;
+		}
+		if (!navigator.geolocation) {
+			alert("Geolocation is not supported by your browser.");
+			return;
+		}
+		setGeoLoading(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setGeoCoords({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+				});
+				setNearMe(true);
+				setGeoLoading(false);
+				setShouldFetch(true);
+				setPage(1);
+			},
+			(error) => {
+				console.error("Geolocation error:", error);
+				alert("Could not get your location. Please check your permissions.");
+				setGeoLoading(false);
+			},
+		);
+	}
+
+	function handleRadiusChange(value: string) {
+		setGeoRadius(value);
+		if (nearMe && geoCoords) {
+			setShouldFetch(true);
+			setPage(1);
+		}
+	}
+
 	function clearFilters() {
 		setShouldFetch(true);
 		setPage(1);
+		setNearMe(false);
+		setGeoCoords(null);
 		setFilters({
 			q: "",
 			category: "",
@@ -166,6 +291,7 @@ export function SearchClient({
 			filters.minPrice ||
 			filters.maxPrice ||
 			filters.location ||
+			nearMe ||
 			Object.values(attributeFilters).some(Boolean)
 		);
 	}
@@ -175,6 +301,7 @@ export function SearchClient({
 		filters.minPrice,
 		filters.maxPrice,
 		filters.location,
+		nearMe ? "nearMe" : "",
 		...Object.values(attributeFilters),
 	].filter(Boolean).length;
 
@@ -239,6 +366,44 @@ export function SearchClient({
 					value={filters.location}
 					onChange={(e) => updateFilter("location", e.target.value)}
 				/>
+			</div>
+
+			{/* Near me */}
+			<div className="space-y-2">
+				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+					Near me
+				</Label>
+				<button
+					type="button"
+					onClick={handleNearMeToggle}
+					disabled={geoLoading}
+					className={`flex h-9 w-full items-center justify-center gap-2 rounded-lg border font-medium text-sm transition-colors ${
+						nearMe
+							? "border-[#1E40AF] bg-[#1E40AF]/10 text-[#1E40AF]"
+							: "border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]"
+					}`}
+				>
+					<MapPin className="h-4 w-4" />
+					{geoLoading
+						? "Locating..."
+						: nearMe
+							? "Near me (on)"
+							: "Use my location"}
+				</button>
+				{nearMe && (
+					<Select value={geoRadius} onValueChange={handleRadiusChange}>
+						<SelectTrigger className="h-9 rounded-lg text-sm">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="5">5 km</SelectItem>
+							<SelectItem value="10">10 km</SelectItem>
+							<SelectItem value="25">25 km</SelectItem>
+							<SelectItem value="50">50 km</SelectItem>
+							<SelectItem value="100">100 km</SelectItem>
+						</SelectContent>
+					</Select>
+				)}
 			</div>
 
 			{/* Dynamic attributes */}
@@ -371,16 +536,83 @@ export function SearchClient({
 
 				{/* Results */}
 				<div className="min-w-0 flex-1">
-					<p className="mb-4 text-[#64748B] text-sm">
-						{isLoading ? (
-							"Loading..."
-						) : (
-							<>
-								<span className="font-semibold text-[#0F172A]">{total}</span>{" "}
-								results
-							</>
-						)}
-					</p>
+					<div className="mb-4 flex items-center justify-between">
+						<p className="text-[#64748B] text-sm">
+							{isLoading ? (
+								"Loading..."
+							) : (
+								<>
+									<span className="font-semibold text-[#0F172A]">{total}</span>{" "}
+									results
+								</>
+							)}
+						</p>
+
+						<Dialog
+							open={saveDialogOpen}
+							onOpenChange={(open) => {
+								setSaveDialogOpen(open);
+								if (open) {
+									setSaveName(filters.q || "My saved search");
+									setSaveStatus("idle");
+									setSaveError("");
+								}
+							}}
+						>
+							<DialogTrigger asChild>
+								<button
+									type="button"
+									className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[#475569] text-sm transition-colors hover:bg-[#F8FAFC] hover:text-[#1E40AF]"
+								>
+									<Bookmark className="h-4 w-4" />
+									Save search
+								</button>
+							</DialogTrigger>
+							<DialogContent className="sm:max-w-md">
+								<DialogHeader>
+									<DialogTitle>Save this search</DialogTitle>
+									<DialogDescription>
+										Give your search a name so you can easily find it later.
+									</DialogDescription>
+								</DialogHeader>
+								<div className="space-y-3 py-2">
+									<div className="space-y-1.5">
+										<Label htmlFor="search-name" className="text-sm">
+											Name
+										</Label>
+										<Input
+											id="search-name"
+											value={saveName}
+											onChange={(e) => setSaveName(e.target.value)}
+											placeholder="e.g. Cheap cars in Douala"
+											className="h-9 rounded-lg"
+										/>
+									</div>
+									{saveError && (
+										<p className="text-red-600 text-sm">{saveError}</p>
+									)}
+								</div>
+								<DialogFooter>
+									<Button
+										onClick={handleSaveSearch}
+										disabled={saveStatus === "saving" || saveStatus === "saved"}
+										className="rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+									>
+										{saveStatus === "saving" ? (
+											"Saving..."
+										) : saveStatus === "saved" ? (
+											<>
+												<Check className="mr-1.5 h-4 w-4" />
+												Saved!
+											</>
+										) : (
+											"Save search"
+										)}
+									</Button>
+								</DialogFooter>
+							</DialogContent>
+						</Dialog>
+					</div>
 
 					{isLoading ? (
 						<div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">

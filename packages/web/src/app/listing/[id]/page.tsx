@@ -1,4 +1,5 @@
 import {
+	AlertTriangle,
 	ArrowLeft,
 	Clock,
 	Eye,
@@ -7,12 +8,14 @@ import {
 	MessageCircle,
 	Shield,
 	Star,
+	Timer,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteButton } from "~/components/listing/favorite-button";
 import { ImageGallery } from "~/components/listing/image-gallery";
+import { ListingGrid } from "~/components/listing/listing-card";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ShareButton } from "~/components/listing/share-button";
 import { ViewTracker } from "~/components/listing/view-tracker";
@@ -49,6 +52,19 @@ async function isListingFavorited(listingId: string): Promise<boolean> {
 	}
 }
 
+async function getSimilarListings(listingId: string): Promise<Listing[]> {
+	try {
+		const res = await serverFetch(
+			`/api/public/similar?id=${listingId}&limit=6`,
+		);
+		if (!res.ok) return [];
+		const data = await res.json();
+		return data.hits ?? [];
+	} catch {
+		return [];
+	}
+}
+
 function timeAgo(date: string): string {
 	const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
 	if (seconds < 60) return "just now";
@@ -63,9 +79,10 @@ function timeAgo(date: string): string {
 
 export default async function ListingPage({ params }: PageProps) {
 	const { id } = await params;
-	const [listing, isFavorited] = await Promise.all([
+	const [listing, isFavorited, similarListings] = await Promise.all([
 		getListing(id),
 		isListingFavorited(id),
+		getSimilarListings(id),
 	]);
 
 	if (!listing) {
@@ -76,6 +93,14 @@ export default async function ListingPage({ params }: PageProps) {
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
 	const category = listing.category as { id: string; name: string } | undefined;
+
+	const expiresAt = listing.expiresAt ? new Date(listing.expiresAt) : null;
+	const isExpired = expiresAt ? expiresAt <= new Date() : false;
+	const daysUntilExpiry = expiresAt
+		? Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+		: null;
+	const isActive =
+		listing.status === "published" || listing.status === "pending";
 
 	const imageUrls: string[] =
 		listing.images
@@ -169,6 +194,25 @@ export default async function ListingPage({ params }: PageProps) {
 									<span className="flex items-center gap-1">
 										<Eye className="h-4 w-4" />
 										{listing.views} views
+									</span>
+								)}
+								{expiresAt &&
+									isActive &&
+									!isExpired &&
+									daysUntilExpiry !== null && (
+										<span
+											className={`flex items-center gap-1 ${daysUntilExpiry <= 5 ? "text-amber-600" : "text-[#64748B]"}`}
+										>
+											<Timer className="h-4 w-4" />
+											{daysUntilExpiry <= 1
+												? "Expires today"
+												: `Expires in ${daysUntilExpiry} days`}
+										</span>
+									)}
+								{listing.status === "expired" && (
+									<span className="flex items-center gap-1 text-red-500">
+										<AlertTriangle className="h-4 w-4" />
+										Expired
 									</span>
 								)}
 							</div>
@@ -319,6 +363,16 @@ export default async function ListingPage({ params }: PageProps) {
 						</div>
 					</div>
 				</div>
+
+				{/* Similar Listings */}
+				{similarListings.length > 0 && (
+					<div className="mt-8">
+						<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
+							Similar listings
+						</h2>
+						<ListingGrid listings={similarListings} />
+					</div>
+				)}
 			</div>
 		</div>
 	);

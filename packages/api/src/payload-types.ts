@@ -204,8 +204,9 @@ export interface Listing {
   location: string;
   seller?: (string | null) | User;
   category: string | Category;
-  status: 'draft' | 'pending' | 'published' | 'rejected' | 'sold' | 'deleted';
+  status: 'draft' | 'pending' | 'published' | 'rejected' | 'sold' | 'expired' | 'deleted';
   boostedUntil?: string | null;
+  expiresAt?: string | null;
   views?: number | null;
   attributes?:
     | {
@@ -216,6 +217,10 @@ export interface Listing {
     | number
     | boolean
     | null;
+  coordinates?: {
+    lat?: number | null;
+    lng?: number | null;
+  };
   condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   createdAt: string;
   updatedAt: string;
@@ -510,8 +515,15 @@ export interface ListingsSelect<T extends boolean = true> {
   category?: T;
   status?: T;
   boostedUntil?: T;
+  expiresAt?: T;
   views?: T;
   attributes?: T;
+  coordinates?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+      };
   condition?: T;
   createdAt?: T;
   updatedAt?: T;

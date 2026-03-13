@@ -1,4 +1,11 @@
-import { Calendar, MapPin, Settings, ShieldCheck, Star } from "lucide-react";
+import {
+	Bookmark,
+	Calendar,
+	MapPin,
+	Settings,
+	ShieldCheck,
+	Star,
+} from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -80,7 +87,7 @@ export default async function MyProfilePage() {
 							<ProfileEditForm user={user} />
 						</div>
 
-						<div className="lg:col-span-1">
+						<div className="space-y-4 lg:col-span-1">
 							<Card className="border-[#E2E8F0]">
 								<CardHeader>
 									<CardTitle className="text-[#0F172A]">
@@ -133,6 +140,23 @@ export default async function MyProfilePage() {
 									</div>
 								</CardContent>
 							</Card>
+
+							<Link
+								href="/profile/me/searches"
+								className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-4 transition-colors hover:border-[#93C5FD] hover:bg-[#F8FAFC]"
+							>
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF]">
+									<Bookmark className="h-5 w-5 text-[#1E40AF]" />
+								</div>
+								<div>
+									<p className="font-medium text-[#0F172A] text-sm">
+										Saved Searches
+									</p>
+									<p className="text-[#64748B] text-xs">
+										View and manage your saved searches
+									</p>
+								</div>
+							</Link>
 						</div>
 					</div>
 				</TabsContent>

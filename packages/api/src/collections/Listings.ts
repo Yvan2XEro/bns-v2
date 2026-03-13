@@ -51,6 +51,10 @@ export const Listings: CollectionConfig = {
 					if (data.status === "published") {
 						data.status = "pending";
 					}
+					// Set expiry date to 30 days from now
+					const expiresAt = new Date();
+					expiresAt.setDate(expiresAt.getDate() + 30);
+					data.expiresAt = expiresAt.toISOString();
 				}
 
 				if (operation === "update" && data.status === "published") {
@@ -145,6 +149,7 @@ export const Listings: CollectionConfig = {
 				{ label: "Published", value: "published" },
 				{ label: "Rejected", value: "rejected" },
 				{ label: "Sold", value: "sold" },
+				{ label: "Expired", value: "expired" },
 				{ label: "Deleted", value: "deleted" },
 			],
 			defaultValue: "draft",
@@ -153,6 +158,13 @@ export const Listings: CollectionConfig = {
 		},
 		{
 			name: "boostedUntil",
+			type: "date",
+			admin: {
+				readOnly: true,
+			},
+		},
+		{
+			name: "expiresAt",
 			type: "date",
 			admin: {
 				readOnly: true,
@@ -169,6 +181,14 @@ export const Listings: CollectionConfig = {
 		{
 			name: "attributes",
 			type: "json",
+		},
+		{
+			name: "coordinates",
+			type: "group",
+			fields: [
+				{ name: "lat", type: "number" },
+				{ name: "lng", type: "number" },
+			],
 		},
 		{
 			name: "condition",

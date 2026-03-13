@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AttributeFields } from "~/components/listing/attribute-fields";
@@ -56,6 +56,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	>({});
 	const [images, setImages] = useState<File[]>([]);
 	const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+	const [coordinates, setCoordinates] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(null);
+	const [geoLoading, setGeoLoading] = useState(false);
 	const [formData, setFormData] = useState({
 		title: "",
 		description: "",
@@ -81,6 +86,28 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	function handleRemoveImage(index: number) {
 		setImages((prev) => prev.filter((_, i) => i !== index));
 		setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+	}
+
+	function handleUseMyLocation() {
+		if (!navigator.geolocation) {
+			alert("Geolocation is not supported by your browser.");
+			return;
+		}
+		setGeoLoading(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setCoordinates({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+				});
+				setGeoLoading(false);
+			},
+			(error) => {
+				console.error("Geolocation error:", error);
+				alert("Could not get your location. Please check your permissions.");
+				setGeoLoading(false);
+			},
+		);
 	}
 
 	function canProceed(): boolean {
@@ -129,7 +156,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				}
 			}
 
-			const listingData = {
+			const listingData: Record<string, unknown> = {
 				title: formData.title,
 				description: formData.description,
 				price: Number(formData.price),
@@ -140,6 +167,10 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				images: imageIds.map((id) => ({ image: id })),
 				status: status,
 			};
+
+			if (coordinates) {
+				listingData.coordinates = coordinates;
+			}
 
 			const res = await fetch("/api/listings", {
 				method: "POST",
@@ -255,15 +286,40 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="location">Location</Label>
-									<Input
-										id="location"
-										placeholder="City or region"
-										value={formData.location}
-										onChange={(e) =>
-											setFormData((p) => ({ ...p, location: e.target.value }))
-										}
-										required
-									/>
+									<div className="flex gap-2">
+										<Input
+											id="location"
+											placeholder="City or region"
+											value={formData.location}
+											onChange={(e) =>
+												setFormData((p) => ({
+													...p,
+													location: e.target.value,
+												}))
+											}
+											required
+										/>
+										<Button
+											type="button"
+											variant="outline"
+											size="icon"
+											onClick={handleUseMyLocation}
+											disabled={geoLoading}
+											title="Use my location"
+										>
+											{geoLoading ? (
+												<Loader2 className="h-4 w-4 animate-spin" />
+											) : (
+												<MapPin className="h-4 w-4" />
+											)}
+										</Button>
+									</div>
+									{coordinates && (
+										<p className="text-muted-foreground text-xs">
+											Location detected ({coordinates.lat.toFixed(4)},{" "}
+											{coordinates.lng.toFixed(4)})
+										</p>
+									)}
 								</div>
 							</div>
 

@@ -150,7 +150,13 @@ export async function configureIndex(): Promise<void> {
 		await index.updateSettings({
 			searchableAttributes: ["title", "description", "location", "category"],
 			filterableAttributes,
-			sortableAttributes: ["price", "createdAt", "views", "boostedUntil"],
+			sortableAttributes: [
+				"price",
+				"createdAt",
+				"views",
+				"boostedUntil",
+				"_geo",
+			],
 		});
 		console.log(
 			`[search-indexer] meilisearch index "${INDEX_NAME}" configured with ${filterableAttributes.length} filterable attributes`,

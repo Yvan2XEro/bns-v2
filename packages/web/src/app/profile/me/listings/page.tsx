@@ -4,6 +4,7 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	PlusCircle,
+	Rocket,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
@@ -22,6 +23,7 @@ async function getUserListings(
 	published: number;
 	pending: number;
 	sold: number;
+	expired: number;
 	boosted: number;
 }> {
 	try {
@@ -35,6 +37,7 @@ async function getUserListings(
 				published: 0,
 				pending: 0,
 				sold: 0,
+				expired: 0,
 				boosted: 0,
 			};
 		const data = await res.json();
@@ -45,6 +48,7 @@ async function getUserListings(
 			published: docs.filter((l) => l.status === "published").length,
 			pending: docs.filter((l) => l.status === "pending").length,
 			sold: docs.filter((l) => l.status === "sold").length,
+			expired: docs.filter((l) => l.status === "expired").length,
 			boosted: docs.filter(
 				(l) => l.boostedUntil && new Date(l.boostedUntil) > new Date(),
 			).length,
@@ -56,6 +60,7 @@ async function getUserListings(
 			published: 0,
 			pending: 0,
 			sold: 0,
+			expired: 0,
 			boosted: 0,
 		};
 	}
@@ -71,7 +76,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 
 	const { page: pageParam } = await searchParams;
 	const page = Math.max(1, Number(pageParam) || 1);
-	const { listings, total, published, pending, sold, boosted } =
+	const { listings, total, published, pending, sold, expired, boosted } =
 		await getUserListings(user.id, page);
 	const totalPages = Math.ceil(total / PER_PAGE);
 
@@ -96,16 +101,27 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								Manage, edit and boost your listings
 							</p>
 						</div>
-						<Link href="/create">
-							<Button className="rounded-xl bg-[#F59E0B] font-bold text-[#0F172A] shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
-								<PlusCircle className="mr-2 h-4 w-4" />
-								New listing
-							</Button>
-						</Link>
+						<div className="flex items-center gap-2">
+							<Link href="/profile/me/boosts">
+								<Button
+									variant="outline"
+									className="rounded-xl border-[#E2E8F0] font-bold text-[#64748B] hover:border-[#93C5FD] hover:text-[#1E40AF]"
+								>
+									<Rocket className="mr-2 h-4 w-4" />
+									Boost History
+								</Button>
+							</Link>
+							<Link href="/create">
+								<Button className="rounded-xl bg-[#F59E0B] font-bold text-[#0F172A] shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
+									<PlusCircle className="mr-2 h-4 w-4" />
+									New listing
+								</Button>
+							</Link>
+						</div>
 					</div>
 
 					{/* Stats */}
-					<div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+					<div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-6">
 						{[
 							{
 								label: "Total",
@@ -126,6 +142,11 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								label: "Sold",
 								value: sold,
 								color: "bg-[#F1F5F9] text-[#64748B]",
+							},
+							{
+								label: "Expired",
+								value: expired,
+								color: "bg-orange-50 text-orange-700",
 							},
 							{
 								label: "Boosted",
