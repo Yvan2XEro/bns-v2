@@ -120,9 +120,8 @@ function DesktopCategoryBar({ tree }: { tree: CategoryNode[] }) {
 											<div key={child.id} className="min-w-[140px]">
 												<Link
 													href={`/search?category=${child.id}`}
-													className="flex items-center gap-2 rounded-lg px-2 py-1.5 font-semibold text-[#0F172A] text-sm transition-colors hover:bg-[#F1F5F9] hover:text-[#1E40AF]"
+													className="block rounded-lg px-2 py-1.5 font-semibold text-[#0F172A] text-sm transition-colors hover:bg-[#F1F5F9] hover:text-[#1E40AF]"
 												>
-													<CategoryEmoji icon={child.icon} name={child.name} />
 													{child.name}
 												</Link>
 												{child.children.length > 0 && (
