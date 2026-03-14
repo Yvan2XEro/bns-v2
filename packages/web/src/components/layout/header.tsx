@@ -103,7 +103,7 @@ export function Header({ novuAppId }: HeaderProps) {
 				</form>
 
 				{/* Right actions */}
-				<div className="flex shrink-0 items-center gap-1 sm:gap-2">
+				<div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
 					{user ? (
 						<>
 							{/* Sell button (prominent, like Vinted green CTA) */}
@@ -126,7 +126,7 @@ export function Header({ novuAppId }: HeaderProps) {
 								</button>
 							</Link>
 
-							<Link href="/messages">
+							<Link href="/messages" className="hidden sm:block">
 								<button
 									type="button"
 									className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#64748B] transition-all duration-200 hover:scale-110 hover:bg-[#F1F5F9] hover:text-[#0F172A] active:scale-95"
@@ -140,17 +140,15 @@ export function Header({ novuAppId }: HeaderProps) {
 								</button>
 							</Link>
 
-							<div className="hidden sm:block">
-								{novuAppId && (
-									<NotificationInbox applicationIdentifier={novuAppId} />
-								)}
-							</div>
+							{novuAppId && (
+								<NotificationInbox applicationIdentifier={novuAppId} />
+							)}
 
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<button
 										type="button"
-										className="flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-[#DBEAFE] active:scale-95"
+										className="hidden h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-[#DBEAFE] active:scale-95 sm:flex"
 									>
 										<Avatar className="h-8 w-8">
 											<AvatarImage
@@ -299,20 +297,13 @@ export function Header({ novuAppId }: HeaderProps) {
 							</Link>
 						))}
 						{user && (
-							<>
-								<div className="px-3 py-2">
-									{novuAppId && (
-										<NotificationInbox applicationIdentifier={novuAppId} />
-									)}
-								</div>
-								<button
-									type="button"
-									onClick={handleLogout}
-									className="rounded-lg px-3 py-2 text-left font-medium text-red-600 text-sm"
-								>
-									Log out
-								</button>
-							</>
+							<button
+								type="button"
+								onClick={handleLogout}
+								className="rounded-lg px-3 py-2 text-left font-medium text-red-600 text-sm"
+							>
+								Log out
+							</button>
 						)}
 					</nav>
 				</div>
