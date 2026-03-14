@@ -29,15 +29,15 @@ export default buildConfig({
 		components: {
 			views: {
 				moderation: {
-					Component: "/components/views/ModerationQueue",
+					Component: "@/components/views/ModerationQueue#ModerationQueue",
 					path: "/moderation",
 				},
 				reports: {
-					Component: "/components/views/ReportsQueue",
+					Component: "@/components/views/ReportsQueue#ReportsQueue",
 					path: "/reports-queue",
 				},
 				usersManagement: {
-					Component: "/components/views/UserManagement",
+					Component: "@/components/views/UserManagement#UserManagement",
 					path: "/users-management",
 				},
 			},

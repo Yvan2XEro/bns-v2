@@ -1,14 +1,14 @@
 import { DefaultTemplate } from "@payloadcms/next/templates";
 import { Gutter } from "@payloadcms/ui";
 import type { AdminViewServerProps } from "payload";
-import type React from "react";
 import { ModerationActions } from "./ModerationActions";
 
-const ModerationQueue: React.FC<AdminViewServerProps> = async ({
+export async function ModerationQueue({
 	initPageResult,
-}) => {
-	const { req, permissions } = initPageResult;
-	const { payload, user } = req;
+	params,
+	searchParams,
+}: AdminViewServerProps) {
+	const { payload, user } = initPageResult.req;
 
 	const pendingListings = await payload.find({
 		collection: "listings",
@@ -41,13 +41,13 @@ const ModerationQueue: React.FC<AdminViewServerProps> = async ({
 
 	return (
 		<DefaultTemplate
-			i18n={req.i18n}
+			i18n={initPageResult.req.i18n}
 			locale={initPageResult.locale}
-			params={{}}
+			params={params}
 			payload={payload}
-			permissions={permissions}
-			searchParams={{}}
-			user={user ?? undefined}
+			permissions={initPageResult.permissions}
+			searchParams={searchParams}
+			user={user || undefined}
 			visibleEntities={initPageResult.visibleEntities}
 		>
 			<Gutter>
@@ -176,6 +176,6 @@ const ModerationQueue: React.FC<AdminViewServerProps> = async ({
 			</Gutter>
 		</DefaultTemplate>
 	);
-};
+}
 
 export default ModerationQueue;
