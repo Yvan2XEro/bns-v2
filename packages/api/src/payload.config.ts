@@ -27,25 +27,7 @@ export default buildConfig({
 			baseDir: path.resolve(dirname),
 		},
 		components: {
-			views: {
-				moderation: {
-					Component: "@/components/views/ModerationQueue#ModerationQueue",
-					path: "/moderation",
-				},
-				reports: {
-					Component: "@/components/views/ReportsQueue#ReportsQueue",
-					path: "/reports-queue",
-				},
-				usersManagement: {
-					Component: "@/components/views/UserManagement#UserManagement",
-					path: "/users-management",
-				},
-			},
-			beforeDashboard: [
-				"@/components/BeforeDashboard",
-				"@/components/widgets/ModerationWidget",
-			],
-			afterNavLinks: ["@/components/nav/ModerationNav"],
+			beforeDashboard: ["@/components/BeforeDashboard"],
 		},
 	},
 	collections: [
