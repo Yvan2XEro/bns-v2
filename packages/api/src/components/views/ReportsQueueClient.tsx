@@ -1,7 +1,7 @@
 "use client";
 
 import { Banner, Button, Pill, ShimmerEffect } from "@payloadcms/ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const REASON_LABELS: Record<string, string> = {
 	spam: "Spam",
@@ -35,7 +35,7 @@ export function ReportsQueueClient() {
 	const [resolution, setResolution] = useState("");
 	const [acting, setActing] = useState(false);
 
-	const fetchReports = () => {
+	const fetchReports = useCallback(() => {
 		setLoading(true);
 		fetch(
 			"/api/reports?where[status][equals]=pending&sort=-createdAt&depth=1&limit=50",
@@ -44,7 +44,7 @@ export function ReportsQueueClient() {
 			.then((data) => setReports(data.docs || []))
 			.catch(() => {})
 			.finally(() => setLoading(false));
-	};
+	}, []);
 
 	useEffect(() => {
 		fetchReports();
