@@ -29,7 +29,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.tsbuildinfo
 
 # Payload auto-generated
-**/importMap.js
 
 # IntelliJ based IDEs
 .idea
