@@ -88,7 +88,6 @@ function DesktopCategoryBar({ tree }: { tree: CategoryNode[] }) {
 										: "border-transparent border-b-2 text-[#475569] hover:text-[#0F172A]"
 								}`}
 							>
-								<CategoryEmoji icon={parent.icon} name={parent.name} />
 								<span className="whitespace-nowrap">{parent.name}</span>
 								{parent.children.length > 0 && (
 									<ChevronDown className="h-3.5 w-3.5 opacity-50" />
