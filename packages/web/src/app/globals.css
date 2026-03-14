@@ -315,6 +315,20 @@ h6 {
 	animation: loaderTextFade 1.6s ease-in-out infinite;
 }
 
+/* Mobile category drawer slide-up */
+@keyframes slideUp {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
+.animate-slide-up {
+	animation: slideUp 0.25s ease-out;
+}
+
 /* Hide last child in Novu inbox content (branding) */
 .nv-inboxContent > *:last-child {
 	display: none;
