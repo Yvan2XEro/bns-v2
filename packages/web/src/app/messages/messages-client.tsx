@@ -5,12 +5,38 @@ import {
 	type ChatMessage,
 	type ConnectionState,
 } from "@bns/chat-client";
-import { ArrowLeft, Circle, Send, Wifi, WifiOff } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	ArrowLeft,
+	Ban,
+	Circle,
+	MoreVertical,
+	Send,
+	ShieldOff,
+	Trash2,
+	Wifi,
+	WifiOff,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "~/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { useAuth } from "~/hooks/use-auth";
+import { blockUser, deleteConversation, unblockUser } from "~/lib/actions";
 import type { Listing, Message, User } from "~/types";
 
 interface ConversationWithDetails {
@@ -28,6 +54,7 @@ interface MessagesClientProps {
 	initialConversations: ConversationWithDetails[];
 	preSelectedConversation: ConversationWithDetails | null;
 	initialMessages: Message[];
+	blockedUserIds?: string[];
 }
 
 export function MessagesClient({
@@ -36,6 +63,7 @@ export function MessagesClient({
 	initialConversations,
 	preSelectedConversation,
 	initialMessages,
+	blockedUserIds = [],
 }: MessagesClientProps) {
 	const { token } = useAuth();
 	const [conversations, setConversations] = useState(initialConversations);
@@ -48,6 +76,12 @@ export function MessagesClient({
 	const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 	const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 	const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [deleting, setDeleting] = useState(false);
+	const [blockedIds, setBlockedIds] = useState<Set<string>>(
+		new Set(blockedUserIds),
+	);
+	const [isBlocking, startBlockTransition] = useTransition();
 
 	const chatRef = useRef<ChatClient | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -267,6 +301,47 @@ export function MessagesClient({
 		return onlineUsers.has(userId);
 	}
 
+	async function handleDeleteConversation() {
+		if (!selectedConversation) return;
+		setDeleting(true);
+		const result = await deleteConversation(selectedConversation.id);
+		setDeleting(false);
+		if (result.success) {
+			setConversations((prev) =>
+				prev.filter((c) => c.id !== selectedConversation.id),
+			);
+			setSelectedConversation(null);
+			setMessages([]);
+			setDeleteDialogOpen(false);
+		}
+	}
+
+	function isOtherBlocked(conv: ConversationWithDetails): boolean {
+		const other = getOtherParticipant(conv);
+		return other ? blockedIds.has(other.id) : false;
+	}
+
+	function handleBlockToggle(otherUserId: string) {
+		const isCurrentlyBlocked = blockedIds.has(otherUserId);
+		startBlockTransition(async () => {
+			if (isCurrentlyBlocked) {
+				const result = await unblockUser(otherUserId);
+				if (result.success) {
+					setBlockedIds((prev) => {
+						const next = new Set(prev);
+						next.delete(otherUserId);
+						return next;
+					});
+				}
+			} else {
+				const result = await blockUser(otherUserId);
+				if (result.success) {
+					setBlockedIds((prev) => new Set(prev).add(otherUserId));
+				}
+			}
+		});
+	}
+
 	function getTypingLabel(): string | null {
 		const names = Array.from(typingUsers)
 			.filter((id) => id !== String(user.id))
@@ -303,6 +378,7 @@ export function MessagesClient({
 							conversations.map((conv) => {
 								const other = getOtherParticipant(conv);
 								const online = other ? isUserOnline(other.id) : false;
+								const blocked = isOtherBlocked(conv);
 								return (
 									<button
 										type="button"
@@ -323,14 +399,21 @@ export function MessagesClient({
 													{other?.name?.charAt(0) || "?"}
 												</AvatarFallback>
 											</Avatar>
-											{online && (
+											{online && !blocked && (
 												<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
 											)}
 										</div>
 										<div className="flex-1 overflow-hidden">
-											<p className="truncate font-medium text-[#0F172A]">
-												{other?.name || "Unknown"}
-											</p>
+											<div className="flex items-center gap-2">
+												<p className="truncate font-medium text-[#0F172A]">
+													{other?.name || "Unknown"}
+												</p>
+												{blocked && (
+													<span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 font-medium text-[10px] text-red-600">
+														Blocked
+													</span>
+												)}
+											</div>
 											{conv.lastMessage && (
 												<p className="truncate text-[#64748B] text-sm">
 													{conv.lastMessage.content}
@@ -390,7 +473,7 @@ export function MessagesClient({
 										) : null;
 									})()}
 								</div>
-								<div>
+								<div className="flex-1">
 									<p className="font-medium text-[#0F172A]">
 										{getOtherParticipant(selectedConversation)?.name ||
 											"Unknown"}
@@ -401,6 +484,49 @@ export function MessagesClient({
 										</p>
 									)}
 								</div>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" size="icon">
+											<MoreVertical className="h-5 w-5 text-[#64748B]" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										{(() => {
+											const other = getOtherParticipant(selectedConversation);
+											const blocked = other ? blockedIds.has(other.id) : false;
+											return other ? (
+												<DropdownMenuItem
+													className={
+														blocked
+															? "text-[#64748B]"
+															: "text-red-600 focus:text-red-600"
+													}
+													onClick={() => handleBlockToggle(other.id)}
+													disabled={isBlocking}
+												>
+													{blocked ? (
+														<>
+															<ShieldOff className="mr-2 h-4 w-4" />
+															{isBlocking ? "Unblocking..." : "Unblock user"}
+														</>
+													) : (
+														<>
+															<Ban className="mr-2 h-4 w-4" />
+															{isBlocking ? "Blocking..." : "Block user"}
+														</>
+													)}
+												</DropdownMenuItem>
+											) : null;
+										})()}
+										<DropdownMenuItem
+											className="text-red-600 focus:text-red-600"
+											onClick={() => setDeleteDialogOpen(true)}
+										>
+											<Trash2 className="mr-2 h-4 w-4" />
+											Delete conversation
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
 							</div>
 
 							<div className="mb-4 flex-1 space-y-4 overflow-y-auto">
@@ -446,28 +572,35 @@ export function MessagesClient({
 								</p>
 							)}
 
-							<form
-								onSubmit={sendMessage}
-								className="flex gap-2 border-[#E2E8F0] border-t pt-4"
-							>
-								<Input
-									placeholder="Type a message..."
-									value={newMessage}
-									onChange={handleInputChange}
-									disabled={connectionState !== "connected"}
-									className="rounded-xl border-[#E2E8F0] focus:border-[#1E40AF] focus:ring-[#1E40AF]"
-								/>
-								<Button
-									type="submit"
-									size="icon"
-									disabled={
-										connectionState !== "connected" || !newMessage.trim()
-									}
-									className="rounded-xl bg-[#1E40AF] text-white hover:bg-[#1E40AF]/90"
+							{isOtherBlocked(selectedConversation) ? (
+								<div className="flex items-center justify-center gap-2 border-[#E2E8F0] border-t pt-4 text-[#94A3B8] text-sm">
+									<Ban className="h-4 w-4" />
+									You have blocked this user
+								</div>
+							) : (
+								<form
+									onSubmit={sendMessage}
+									className="flex gap-2 border-[#E2E8F0] border-t pt-4"
 								>
-									<Send className="h-4 w-4" />
-								</Button>
-							</form>
+									<Input
+										placeholder="Type a message..."
+										value={newMessage}
+										onChange={handleInputChange}
+										disabled={connectionState !== "connected"}
+										className="rounded-xl border-[#E2E8F0] focus:border-[#1E40AF] focus:ring-[#1E40AF]"
+									/>
+									<Button
+										type="submit"
+										size="icon"
+										disabled={
+											connectionState !== "connected" || !newMessage.trim()
+										}
+										className="rounded-xl bg-[#1E40AF] text-white hover:bg-[#1E40AF]/90"
+									>
+										<Send className="h-4 w-4" />
+									</Button>
+								</form>
+							)}
 						</>
 					) : (
 						<div className="flex h-full flex-col items-center justify-center gap-3">
@@ -482,6 +615,32 @@ export function MessagesClient({
 					)}
 				</div>
 			</div>
+
+			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete conversation</DialogTitle>
+						<DialogDescription>
+							Are you sure you want to delete this conversation? This action
+							cannot be undone and all messages will be lost.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<DialogClose asChild>
+							<Button variant="ghost" disabled={deleting}>
+								Cancel
+							</Button>
+						</DialogClose>
+						<Button
+							variant="destructive"
+							disabled={deleting}
+							onClick={handleDeleteConversation}
+						>
+							{deleting ? "Deleting..." : "Delete"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

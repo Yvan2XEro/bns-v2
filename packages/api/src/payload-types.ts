@@ -221,6 +221,7 @@ export interface Listing {
     lat?: number | null;
     lng?: number | null;
   };
+  rejectionReason?: string | null;
   condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   createdAt: string;
   updatedAt: string;
@@ -524,6 +525,7 @@ export interface ListingsSelect<T extends boolean = true> {
         lat?: T;
         lng?: T;
       };
+  rejectionReason?: T;
   condition?: T;
   createdAt?: T;
   updatedAt?: T;

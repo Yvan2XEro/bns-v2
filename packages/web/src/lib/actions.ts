@@ -204,6 +204,92 @@ export async function createBoostPayment(
 	}
 }
 
+export async function deleteConversation(
+	conversationId: string,
+): Promise<ActionResult> {
+	try {
+		const res = await serverFetch(`/api/conversations/${conversationId}`, {
+			method: "DELETE",
+		});
+
+		if (!res.ok) {
+			return { success: false, error: "Failed to delete conversation" };
+		}
+
+		revalidatePath("/messages");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to delete conversation" };
+	}
+}
+
+export async function blockUser(userId: string): Promise<ActionResult> {
+	try {
+		const res = await serverFetch("/api/blocked-users", {
+			method: "POST",
+			body: JSON.stringify({ blocked: userId }),
+		});
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return {
+				success: false,
+				error: err.errors?.[0]?.message || "Failed to block user",
+			};
+		}
+
+		revalidatePath("/messages");
+		revalidatePath("/profile");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to block user" };
+	}
+}
+
+export async function unblockUser(
+	blockedUserId: string,
+): Promise<ActionResult> {
+	try {
+		// Find the blocked-users entry for this user
+		const findRes = await serverFetch(
+			`/api/blocked-users?where[blocked][equals]=${blockedUserId}&limit=1`,
+		);
+		if (!findRes.ok)
+			return { success: false, error: "Failed to find block entry" };
+		const findData = await findRes.json();
+		const entry = findData.docs?.[0];
+
+		if (!entry) {
+			return { success: true };
+		}
+
+		const res = await serverFetch(`/api/blocked-users/${entry.id}`, {
+			method: "DELETE",
+		});
+
+		if (!res.ok) {
+			return { success: false, error: "Failed to unblock user" };
+		}
+
+		revalidatePath("/messages");
+		revalidatePath("/profile");
+		return { success: true };
+	} catch {
+		return { success: false, error: "Failed to unblock user" };
+	}
+}
+
+export async function getBlockedUsers(): Promise<string[]> {
+	try {
+		const res = await serverFetch("/api/blocked-users?limit=200&depth=0");
+		if (!res.ok) return [];
+		const data = await res.json();
+		return (data.docs || []).map((doc: { blocked: string }) => doc.blocked);
+	} catch {
+		return [];
+	}
+}
+
 export async function toggleFavorite(
 	listingId: string,
 	action: "add" | "remove",

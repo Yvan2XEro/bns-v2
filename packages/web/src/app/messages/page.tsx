@@ -1,3 +1,4 @@
+import { getBlockedUsers } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Message, User } from "~/types";
 import { MessagesClient } from "./messages-client";
@@ -127,6 +128,7 @@ export default async function MessagesPage({
 	}
 
 	const chatUrl = process.env.CHAT_PUBLIC_URL || "http://localhost:4000";
+	const blockedUserIds = await getBlockedUsers();
 
 	return (
 		<MessagesClient
@@ -135,6 +137,7 @@ export default async function MessagesPage({
 			initialConversations={conversations}
 			preSelectedConversation={preSelectedConversation}
 			initialMessages={initialMessages}
+			blockedUserIds={blockedUserIds}
 		/>
 	);
 }

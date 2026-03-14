@@ -202,6 +202,26 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 								</p>
 							</Link>
 
+							{/* Rejection reason */}
+							{listing.status === "rejected" && (
+								<div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2.5">
+									<p className="flex items-center gap-1 font-semibold text-red-700 text-xs">
+										<AlertTriangle className="h-3 w-3" />
+										Rejected
+									</p>
+									<p className="mt-1 text-red-600 text-xs">
+										{listing.rejectionReason || "No reason provided"}
+									</p>
+									<Link
+										href={`/listing/${listing.id}/edit`}
+										className="mt-2 inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1 font-medium text-white text-xs transition-colors hover:bg-red-700"
+									>
+										<Edit className="h-3 w-3" />
+										Edit & Resubmit
+									</Link>
+								</div>
+							)}
+
 							{/* Expiry info */}
 							{listing.status === "expired" && (
 								<p className="mt-1.5 flex items-center gap-1 font-medium text-red-500 text-xs">

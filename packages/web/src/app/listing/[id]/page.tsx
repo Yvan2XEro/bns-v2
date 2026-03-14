@@ -17,6 +17,7 @@ import { BoostDialog } from "~/components/listing/boost-dialog";
 import { FavoriteButton } from "~/components/listing/favorite-button";
 import { ImageGallery } from "~/components/listing/image-gallery";
 import { ListingGrid } from "~/components/listing/listing-card";
+import { PhoneReveal } from "~/components/listing/phone-reveal";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ShareButton } from "~/components/listing/share-button";
 import { ViewTracker } from "~/components/listing/view-tracker";
@@ -345,6 +346,9 @@ export default async function ListingPage({ params }: PageProps) {
 												Message seller
 											</Button>
 										</Link>
+									)}
+									{!isOwner && seller?.phone && (
+										<PhoneReveal phone={seller.phone} />
 									)}
 									<FavoriteButton
 										listingId={listing.id}

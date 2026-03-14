@@ -8,12 +8,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BlockUserButton } from "~/components/chat/block-user-button";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ReviewForm } from "~/components/listing/review-form";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { getBlockedUsers } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Review, User } from "~/types";
 
@@ -62,6 +64,9 @@ export default async function ProfilePage({ params }: PageProps) {
 		getUserReviews(userId),
 	]);
 	const currentUser = (await getAuthUser()) as { id: string } | null;
+	const blockedUserIds = currentUser ? await getBlockedUsers() : [];
+	const isOwnProfile = currentUser?.id === userId;
+	const isBlocked = blockedUserIds.includes(userId);
 
 	if (!user) {
 		notFound();
@@ -136,6 +141,15 @@ export default async function ProfilePage({ params }: PageProps) {
 									</Button>
 								</Link>
 							</div>
+							{currentUser && !isOwnProfile && (
+								<div className="mt-3 w-full">
+									<BlockUserButton
+										userId={user.id}
+										initialBlocked={isBlocked}
+										variant="full"
+									/>
+								</div>
+							)}
 							<div className="mt-4 text-center">
 								<ReportDialog targetType="user" targetId={String(user.id)}>
 									<button

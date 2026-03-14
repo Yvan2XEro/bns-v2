@@ -93,16 +93,37 @@ export const Listings: CollectionConfig = {
 
 				try {
 					const { triggerNovuEvent } = await import("../hooks/novuEvents");
-					await triggerNovuEvent({
-						event: "listing-status",
-						subscriberId: sellerId,
-						payload: {
-							listingTitle: doc.title,
-							listingId: doc.id,
-							oldStatus: previousDoc.status,
-							newStatus: doc.status,
-						},
-					});
+
+					if (doc.status === "rejected" && previousDoc.status !== "rejected") {
+						await triggerNovuEvent({
+							event: "listing-rejected",
+							subscriberId: sellerId,
+							payload: {
+								listingTitle: doc.title,
+								reason: doc.rejectionReason || "No reason provided",
+							},
+						});
+					} else if (
+						doc.status === "published" &&
+						previousDoc.status !== "published"
+					) {
+						await triggerNovuEvent({
+							event: "listing-approved",
+							subscriberId: sellerId,
+							payload: { listingTitle: doc.title },
+						});
+					} else {
+						await triggerNovuEvent({
+							event: "listing-status",
+							subscriberId: sellerId,
+							payload: {
+								listingTitle: doc.title,
+								listingId: doc.id,
+								oldStatus: previousDoc.status,
+								newStatus: doc.status,
+							},
+						});
+					}
 				} catch (error) {
 					console.error("[novu] Failed to notify listing status:", error);
 				}
@@ -219,6 +240,13 @@ export const Listings: CollectionConfig = {
 				{ name: "lat", type: "number" },
 				{ name: "lng", type: "number" },
 			],
+		},
+		{
+			name: "rejectionReason",
+			type: "textarea",
+			admin: {
+				description: "Reason for rejection (visible to seller)",
+			},
 		},
 		{
 			name: "condition",

@@ -57,17 +57,34 @@ export default function ContactPage() {
 	});
 	const [isLoading, setIsLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
+	const [error, setError] = useState("");
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setIsLoading(true);
+		setError("");
 
-		// Simulate sending (no backend endpoint for contact yet)
-		await new Promise((resolve) => setTimeout(resolve, 1000));
+		try {
+			const res = await fetch("/api/public/contact", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(formData),
+			});
 
-		setSuccess(true);
-		setFormData({ name: "", email: "", subject: "", message: "" });
-		setIsLoading(false);
+			const data = await res.json();
+
+			if (!res.ok) {
+				setError(data.error || "Something went wrong. Please try again.");
+				return;
+			}
+
+			setSuccess(true);
+			setFormData({ name: "", email: "", subject: "", message: "" });
+		} catch {
+			setError("Could not send your message. Please try again later.");
+		} finally {
+			setIsLoading(false);
+		}
 	}
 
 	return (
@@ -217,6 +234,11 @@ export default function ContactPage() {
 											required
 										/>
 									</div>
+									{error && (
+										<div className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+											{error}
+										</div>
+									)}
 									<Button
 										type="submit"
 										disabled={isLoading}

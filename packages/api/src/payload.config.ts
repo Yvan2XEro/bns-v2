@@ -4,6 +4,7 @@ import { mongooseAdapter } from "@payloadcms/db-mongodb";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { buildConfig } from "payload";
 import sharp from "sharp";
+import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
 import { Categories } from "./collections/Categories";
 import { Conversations } from "./collections/Conversations";
@@ -41,6 +42,7 @@ export default buildConfig({
 		Reports,
 		BoostPayments,
 		SavedSearches,
+		BlockedUsers,
 	],
 	editor: lexicalEditor(),
 	secret: process.env.PAYLOAD_SECRET || "default-secret-change-me",
