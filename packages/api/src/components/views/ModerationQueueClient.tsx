@@ -1,7 +1,7 @@
 "use client";
 
 import { Banner, Button, Pill, ShimmerEffect } from "@payloadcms/ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface ListingDoc {
 	id: string;
@@ -21,7 +21,7 @@ export function ModerationQueueClient() {
 	const [reason, setReason] = useState("");
 	const [acting, setActing] = useState(false);
 
-	const fetchListings = () => {
+	const fetchListings = useCallback(() => {
 		setLoading(true);
 		fetch(
 			"/api/listings?where[status][equals]=pending&sort=-createdAt&depth=1&limit=50",
@@ -30,7 +30,7 @@ export function ModerationQueueClient() {
 			.then((data) => setListings(data.docs || []))
 			.catch(() => {})
 			.finally(() => setLoading(false));
-	};
+	}, []);
 
 	useEffect(() => {
 		fetchListings();

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Pill, ShimmerEffect, toast } from "@payloadcms/ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface UserDoc {
 	id: string;
@@ -19,14 +19,14 @@ export function UserManagementClient() {
 	const [loading, setLoading] = useState(true);
 	const [acting, setActing] = useState<string | null>(null);
 
-	const fetchUsers = () => {
+	const fetchUsers = useCallback(() => {
 		setLoading(true);
 		fetch("/api/users?sort=-createdAt&limit=50&depth=0")
 			.then((r) => r.json())
 			.then((data) => setUsers(data.docs || []))
 			.catch(() => {})
 			.finally(() => setLoading(false));
-	};
+	}, []);
 
 	useEffect(() => {
 		fetchUsers();
