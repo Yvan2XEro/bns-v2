@@ -3,6 +3,7 @@
 import { ArrowLeft, ArrowRight, Check, Loader2, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CategoryGrid } from "~/components/category-picker";
 import { AttributeFields } from "~/components/listing/attribute-fields";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { Badge } from "~/components/ui/badge";
@@ -232,27 +233,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				<CardContent>
 					{/* Step 0: Category */}
 					{step === 0 && (
-						<div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-							{categories.map((cat) => (
-								<button
-									key={cat.id}
-									type="button"
-									onClick={() => handleCategoryChange(String(cat.id))}
-									className={`rounded-lg border-2 p-4 text-left transition-colors hover:bg-accent ${
-										selectedCategory?.id === cat.id
-											? "border-primary bg-primary/5"
-											: "border-transparent bg-muted/50"
-									}`}
-								>
-									<p className="font-medium">{cat.name}</p>
-									{cat.description && (
-										<p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
-											{cat.description}
-										</p>
-									)}
-								</button>
-							))}
-						</div>
+						<CategoryGrid
+							categories={categories}
+							value={selectedCategory ? String(selectedCategory.id) : undefined}
+							onChange={handleCategoryChange}
+						/>
 					)}
 
 					{/* Step 1: Details */}

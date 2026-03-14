@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { CategoryDropdown } from "~/components/category-picker";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
 import {
@@ -341,22 +342,13 @@ export function SearchClient({
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
 					Category
 				</Label>
-				<Select
-					value={filters.category || "all"}
-					onValueChange={(v) => updateFilter("category", v === "all" ? "" : v)}
-				>
-					<SelectTrigger className="h-9 rounded-lg text-sm">
-						<SelectValue placeholder="All categories" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">All categories</SelectItem>
-						{categories.map((cat) => (
-							<SelectItem key={cat.id} value={String(cat.id)}>
-								{cat.name}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+				<CategoryDropdown
+					categories={categories}
+					value={filters.category || ""}
+					onChange={(v) => updateFilter("category", v)}
+					placeholder="All categories"
+					showAll
+				/>
 			</div>
 
 			{/* Price range */}

@@ -4,6 +4,7 @@ import { Loader2, MapPin, Save, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { CategoryDropdown } from "~/components/category-picker";
 import { AttributeFields } from "~/components/listing/attribute-fields";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { Badge } from "~/components/ui/badge";
@@ -254,21 +255,12 @@ export function EditListingForm({
 					<CardDescription>What type of item is this?</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<Select
-						value={selectedCategory ? String(selectedCategory.id) : ""}
-						onValueChange={handleCategoryChange}
-					>
-						<SelectTrigger>
-							<SelectValue placeholder="Select a category" />
-						</SelectTrigger>
-						<SelectContent>
-							{categories.map((cat) => (
-								<SelectItem key={cat.id} value={String(cat.id)}>
-									{cat.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<CategoryDropdown
+						categories={categories}
+						value={selectedCategory ? String(selectedCategory.id) : undefined}
+						onChange={handleCategoryChange}
+						placeholder="Select a category"
+					/>
 				</CardContent>
 			</Card>
 
