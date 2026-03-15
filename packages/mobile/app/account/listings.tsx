@@ -483,16 +483,16 @@ const styles = StyleSheet.create({
 	/* Stats */
 	statsRow: {
 		flexDirection: "row",
-		gap: 8,
-		paddingHorizontal: 16,
+		gap: 6,
 		paddingTop: 16,
-		paddingBottom: 12,
+		paddingBottom: 16,
 	},
 	statCard: {
 		flex: 1,
 		borderRadius: 12,
 		borderWidth: 1,
-		padding: 12,
+		paddingHorizontal: 12,
+		paddingVertical: 14,
 		alignItems: "center",
 		gap: 4,
 	},
