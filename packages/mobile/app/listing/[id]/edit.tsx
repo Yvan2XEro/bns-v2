@@ -138,17 +138,7 @@ export default function EditListingScreen() {
 			})
 			.filter((img: ImageItem) => img.id);
 		setImages(imgs);
-	}, [
-		listing?.id,
-		listing.attributes,
-		listing.condition,
-		listing.description,
-		listing.duration,
-		listing.images,
-		listing.location,
-		listing.price,
-		listing,
-	]);
+	}, [listing?.id, listing]);
 
 	const categoryAttributes: any[] = listing?.category?.attributes ?? [];
 
