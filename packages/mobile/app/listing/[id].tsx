@@ -14,6 +14,8 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ListingCard } from "@/src/components/ListingCard";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
@@ -21,6 +23,7 @@ import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const { width } = Dimensions.get("window");
 
@@ -29,8 +32,10 @@ export default function ListingDetail() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
+	const { top: safeTop } = useSafeAreaInsets();
 	const [imageIndex, setImageIndex] = useState(0);
 	const [descExpanded, setDescExpanded] = useState(false);
+	const [contactLoading, setContactLoading] = useState(false);
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -38,7 +43,7 @@ export default function ListingDetail() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const amberColor = "#f59e0b";
+	const priceColor = isDark ? "#e2e8f0" : "#0f172a";
 
 	const { data: listingData, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -57,7 +62,10 @@ export default function ListingDetail() {
 
 	const { data: similarData } = useQuery({
 		queryKey: ["similar", id],
-		queryFn: () => api.get<{ docs: any[] }>("/api/public/search?limit=6"),
+		queryFn: () =>
+			api.get<{ hits: any[]; total: number }>(
+				`/api/public/similar?id=${id}&limit=6`,
+			),
 		enabled: !!id,
 	});
 
@@ -90,12 +98,34 @@ export default function ListingDetail() {
 		});
 	};
 
-	const handleMessage = () => {
+	const handleMessage = async () => {
 		if (!user) {
 			router.push("/auth/login");
 			return;
 		}
-		router.push({ pathname: "/(tabs)/messages", params: { listing: id } });
+		if (!seller) return;
+		setContactLoading(true);
+		try {
+			// Check for an existing conversation about this listing
+			const existing = await api.get<{ docs: any[] }>(
+				`/api/conversations?where[listing][equals]=${id}&where[participants][equals]=${user.id}&limit=1&depth=0`,
+			);
+			if (existing.docs?.length > 0) {
+				router.push(`/(tabs)/messages/${existing.docs[0].id}`);
+				return;
+			}
+			// Create a new conversation
+			const created = await api.post<{ doc: any }>("/api/conversations", {
+				participants: [user.id, seller.id],
+				listing: id,
+			});
+			const convId = created.doc?.id ?? created.doc;
+			router.push(`/(tabs)/messages/${convId}`);
+		} catch (e) {
+			console.error("handleMessage error", e);
+		} finally {
+			setContactLoading(false);
+		}
 	};
 
 	if (isLoading) {
@@ -124,40 +154,18 @@ export default function ListingDetail() {
 
 	return (
 		<View style={[styles.root, { backgroundColor: bg }]}>
-			<ScrollView
-				showsVerticalScrollIndicator={false}
-				stickyHeaderIndices={[0]}
+			{/* Fixed back button — always visible over image */}
+			<Pressable
+				onPress={() => router.back()}
+				style={[
+					styles.backBtn,
+					{ top: safeTop + 12, backgroundColor: "rgba(0,0,0,0.45)" },
+				]}
 			>
-				{/* Back & actions header */}
-				<View style={[styles.topBar, { backgroundColor: "transparent" }]}>
-					<Pressable
-						onPress={() => router.back()}
-						style={[styles.topBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-					>
-						<Ionicons name="arrow-back" size={20} color="#fff" />
-					</Pressable>
-					<View style={styles.topRight}>
-						<Pressable
-							onPress={handleShare}
-							style={[styles.topBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-						>
-							<Ionicons name="share-outline" size={20} color="#fff" />
-						</Pressable>
-						{!isOwner && (
-							<Pressable
-								onPress={() => toggleFav()}
-								style={[styles.topBtn, { backgroundColor: "rgba(0,0,0,0.4)" }]}
-							>
-								<Ionicons
-									name={isFavorite ? "heart" : "heart-outline"}
-									size={20}
-									color={isFavorite ? "#dc2626" : "#fff"}
-								/>
-							</Pressable>
-						)}
-					</View>
-				</View>
+				<Ionicons name="arrow-back" size={20} color="#fff" />
+			</Pressable>
 
+			<ScrollView showsVerticalScrollIndicator={false}>
 				{/* Image Gallery */}
 				<View style={styles.gallery}>
 					<ScrollView
@@ -172,7 +180,7 @@ export default function ListingDetail() {
 							images.map((img: any, i: number) => (
 								<Image
 									key={i}
-									source={{ uri: img.url }}
+									source={{ uri: resolveListingImageUrl(img) ?? undefined }}
 									style={{ width, height: 300 }}
 									contentFit="cover"
 									placeholder={{ blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6." }}
@@ -216,15 +224,17 @@ export default function ListingDetail() {
 								{ backgroundColor: "rgba(0,0,0,0.5)" },
 							]}
 						>
+							<Ionicons name="camera-outline" size={12} color="#fff" />
 							<Text style={styles.photoCountText}>
-								📷 {imageIndex + 1}/{images.length}
+								{imageIndex + 1}/{images.length}
 							</Text>
 						</View>
 					)}
 
 					{listing.isBoosted && (
 						<View style={styles.boostedBadge}>
-							<Text style={styles.boostedText}>⭐ À la une</Text>
+							<Ionicons name="flash" size={12} color="#fff" />
+							<Text style={styles.boostedText}>À la une</Text>
 						</View>
 					)}
 				</View>
@@ -233,7 +243,58 @@ export default function ListingDetail() {
 				<View style={styles.content}>
 					{/* Price & Title */}
 					<View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-						<Text style={[styles.price, { color: primaryColor }]}>
+						{/* ── Actions row: share + favorite ── */}
+						<View style={styles.actionsRow}>
+							<Pressable
+								onPress={handleShare}
+								style={[
+									styles.actionBtn,
+									{
+										backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
+										borderColor,
+									},
+								]}
+							>
+								<Ionicons name="share-outline" size={16} color={primaryColor} />
+								<Text style={[styles.actionBtnText, { color: primaryColor }]}>
+									Partager
+								</Text>
+							</Pressable>
+							{!isOwner && (
+								<Pressable
+									onPress={() => toggleFav()}
+									style={[
+										styles.actionBtn,
+										{
+											backgroundColor: isFavorite
+												? isDark
+													? "#3f1212"
+													: "#fef2f2"
+												: isDark
+													? "#0b1120"
+													: "#f1f5f9",
+											borderColor: isFavorite ? "#fca5a5" : borderColor,
+										},
+									]}
+								>
+									<Ionicons
+										name={isFavorite ? "heart" : "heart-outline"}
+										size={16}
+										color={isFavorite ? "#ef4444" : primaryColor}
+									/>
+									<Text
+										style={[
+											styles.actionBtnText,
+											{ color: isFavorite ? "#ef4444" : primaryColor },
+										]}
+									>
+										{isFavorite ? "Sauvegardé" : "Sauvegarder"}
+									</Text>
+								</Pressable>
+							)}
+						</View>
+
+						<Text style={[styles.price, { color: priceColor }]}>
 							{listing.price?.toLocaleString() ?? "—"}{" "}
 							<Text style={[styles.priceSuffix, { color: mutedColor }]}>
 								XAF
@@ -247,16 +308,29 @@ export default function ListingDetail() {
 							{listing.isBoosted && <StatusPill status="boosted" />}
 						</View>
 						<View style={styles.metaRow2}>
-							<Text style={[styles.metaItem, { color: mutedColor }]}>
-								📍 {listing.location ?? "—"}
-							</Text>
-							<Text style={[styles.metaItem, { color: mutedColor }]}>
-								🕐 {timeAgo}
-							</Text>
-							{listing.viewCount > 0 && (
-								<Text style={[styles.metaItem, { color: mutedColor }]}>
-									👁 {listing.viewCount}
+							<View style={styles.metaItem}>
+								<Ionicons
+									name="location-outline"
+									size={13}
+									color={mutedColor}
+								/>
+								<Text style={[styles.metaText, { color: mutedColor }]}>
+									{listing.location ?? "—"}
 								</Text>
+							</View>
+							<View style={styles.metaItem}>
+								<Ionicons name="time-outline" size={13} color={mutedColor} />
+								<Text style={[styles.metaText, { color: mutedColor }]}>
+									{timeAgo}
+								</Text>
+							</View>
+							{listing.viewCount > 0 && (
+								<View style={styles.metaItem}>
+									<Ionicons name="eye-outline" size={13} color={mutedColor} />
+									<Text style={[styles.metaText, { color: mutedColor }]}>
+										{listing.viewCount}
+									</Text>
+								</View>
 							)}
 						</View>
 					</View>
@@ -278,7 +352,7 @@ export default function ListingDetail() {
 						{listing.description?.length > 150 && (
 							<Pressable onPress={() => setDescExpanded(!descExpanded)}>
 								<Text style={[styles.readMore, { color: primaryColor }]}>
-									{descExpanded ? "Réduire ▲" : "Lire plus ▼"}
+									{descExpanded ? "Réduire" : "Lire plus"}
 								</Text>
 							</Pressable>
 						)}
@@ -347,31 +421,22 @@ export default function ListingDetail() {
 									</View>
 								)}
 								<View style={styles.sellerInfo}>
-									<View
-										style={{
-											flexDirection: "row",
-											alignItems: "center",
-											gap: 6,
-										}}
-									>
+									<View style={styles.sellerNameRow}>
 										<Text style={[styles.sellerName, { color: textColor }]}>
 											{seller.name}
 										</Text>
-										{seller.isVerified && (
-											<View
-												style={[
-													styles.verifiedBadge,
-													{ backgroundColor: primaryColor },
-												]}
-											>
-												<Text style={styles.verifiedText}>✓</Text>
-											</View>
+										{seller.verified && (
+											<Ionicons
+												name="checkmark-circle"
+												size={16}
+												color={primaryColor}
+											/>
 										)}
 									</View>
 									<ReviewStars
-										rating={seller.averageRating ?? 0}
+										rating={seller.rating ?? 0}
 										showCount
-										count={seller.reviewCount}
+										count={seller.totalReviews}
 									/>
 									<Text style={[styles.memberSince, { color: mutedColor }]}>
 										Membre depuis{" "}
@@ -397,37 +462,50 @@ export default function ListingDetail() {
 							},
 						]}
 					>
-						<Text
-							style={[
-								styles.sectionTitle,
-								{ color: isDark ? "#fcd34d" : "#92400e" },
-							]}
-						>
-							🛡️ Conseils de sécurité
-						</Text>
+						<View style={styles.safetyHeader}>
+							<Ionicons
+								name="shield-checkmark-outline"
+								size={16}
+								color={isDark ? "#fcd34d" : "#92400e"}
+							/>
+							<Text
+								style={[
+									styles.sectionTitle,
+									{ color: isDark ? "#fcd34d" : "#92400e", marginBottom: 0 },
+								]}
+							>
+								Conseils de sécurité
+							</Text>
+						</View>
 						{[
 							"Rencontrez-vous dans un lieu public",
 							"Vérifiez l'article avant de payer",
 							"N'envoyez jamais d'argent à l'avance",
 						].map((tip, i) => (
-							<Text
-								key={i}
-								style={[
-									styles.safetyTip,
-									{ color: isDark ? "#fbbf24" : "#92400e" },
-								]}
-							>
-								• {tip}
-							</Text>
+							<View key={i} style={styles.safetyTipRow}>
+								<Ionicons
+									name="checkmark"
+									size={14}
+									color={isDark ? "#fbbf24" : "#92400e"}
+								/>
+								<Text
+									style={[
+										styles.safetyTip,
+										{ color: isDark ? "#fbbf24" : "#92400e" },
+									]}
+								>
+									{tip}
+								</Text>
+							</View>
 						))}
 					</View>
 
 					{/* Similar Listings */}
-					{(similarData?.docs?.length ?? 0) > 0 && (
+					{(similarData?.hits?.length ?? 0) > 0 && (
 						<View style={{ marginBottom: 100 }}>
 							<Text
 								style={[
-									styles.sectionTitle2,
+									styles.sectionTitle,
 									{ color: textColor, paddingHorizontal: 0 },
 								]}
 							>
@@ -438,7 +516,7 @@ export default function ListingDetail() {
 								showsHorizontalScrollIndicator={false}
 								contentContainerStyle={{ gap: 12 }}
 							>
-								{(similarData?.docs ?? [])
+								{(similarData?.hits ?? [])
 									.filter((l: any) => l.id !== id)
 									.slice(0, 5)
 									.map((l: any) => (
@@ -465,8 +543,9 @@ export default function ListingDetail() {
 						}
 						style={styles.reportLink}
 					>
+						<Ionicons name="flag-outline" size={14} color={mutedColor} />
 						<Text style={[styles.reportText, { color: mutedColor }]}>
-							🚩 Signaler cette annonce
+							Signaler cette annonce
 						</Text>
 					</Pressable>
 				</View>
@@ -483,9 +562,20 @@ export default function ListingDetail() {
 					<View style={styles.actionButtons}>
 						<Pressable
 							onPress={handleMessage}
-							style={[styles.msgBtn, { backgroundColor: primaryColor }]}
+							disabled={contactLoading}
+							style={[
+								styles.msgBtn,
+								{
+									backgroundColor: primaryColor,
+									opacity: contactLoading ? 0.7 : 1,
+								},
+							]}
 						>
-							<Ionicons name="chatbubble" size={18} color="#fff" />
+							{contactLoading ? (
+								<ActivityIndicator size="small" color="#fff" />
+							) : (
+								<Ionicons name="chatbubble-outline" size={18} color="#fff" />
+							)}
 							<Text style={styles.msgBtnText}>Contacter le vendeur</Text>
 						</Pressable>
 					</View>
@@ -494,9 +584,10 @@ export default function ListingDetail() {
 						{listing._status === "published" && !listing.isBoosted && (
 							<Pressable
 								onPress={() => router.push(`/boost/${id}`)}
-								style={[styles.boostBtn, { backgroundColor: amberColor }]}
+								style={styles.boostBtn}
 							>
-								<Text style={styles.boostBtnText}>🚀 Booster</Text>
+								<Ionicons name="rocket-outline" size={18} color="#fff" />
+								<Text style={styles.boostBtnText}>Booster</Text>
 							</Pressable>
 						)}
 						<Pressable
@@ -521,24 +612,19 @@ export default function ListingDetail() {
 const styles = StyleSheet.create({
 	root: { flex: 1 },
 	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
-	topBar: {
+
+	// ── Fixed back button ──
+	backBtn: {
 		position: "absolute",
-		top: 50,
-		left: 0,
-		right: 0,
-		flexDirection: "row",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		zIndex: 10,
-	},
-	topBtn: {
+		left: 16,
+		zIndex: 20,
 		width: 40,
 		height: 40,
 		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	topRight: { flexDirection: "row", gap: 8 },
+
 	gallery: { position: "relative" },
 	imagePlaceholder: {
 		width,
@@ -563,30 +649,68 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
 	},
 	photoCountText: { color: "#fff", fontSize: 12 },
 	boostedBadge: {
 		position: "absolute",
-		top: 60,
+		top: 12,
 		left: 12,
 		backgroundColor: "#f59e0b",
 		borderRadius: 8,
 		paddingHorizontal: 10,
 		paddingVertical: 4,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
 	},
-	boostedText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+	boostedText: { color: "#fff", fontSize: 12, fontFamily: Fonts.displayBold },
+
+	// ── Content ──
 	content: { padding: 16, gap: 12 },
 	card: { borderRadius: 14, borderWidth: 1, padding: 16 },
-	price: { fontSize: 26, fontWeight: "800", marginBottom: 6 },
-	priceSuffix: { fontSize: 16, fontWeight: "400" },
-	title: { fontSize: 18, fontWeight: "600", marginBottom: 10, lineHeight: 24 },
+
+	// ── Share / Favorite actions ──
+	actionsRow: {
+		flexDirection: "row",
+		gap: 8,
+		marginBottom: 14,
+	},
+	actionBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		borderRadius: 10,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingVertical: 8,
+	},
+	actionBtnText: {
+		fontSize: 13,
+		fontFamily: Fonts.bodySemibold,
+	},
+
+	price: { fontSize: 26, fontFamily: Fonts.displayExtrabold, marginBottom: 6 },
+	priceSuffix: { fontSize: 16, fontFamily: Fonts.body },
+	title: {
+		fontSize: 18,
+		fontFamily: Fonts.displayBold,
+		marginBottom: 10,
+		lineHeight: 24,
+	},
 	metaRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
 	metaRow2: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
-	metaItem: { fontSize: 13 },
-	sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
-	sectionTitle2: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
-	description: { fontSize: 14, lineHeight: 22 },
-	readMore: { marginTop: 8, fontSize: 14, fontWeight: "600" },
+	metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+	metaText: { fontSize: 13, fontFamily: Fonts.body },
+	sectionTitle: {
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+		marginBottom: 12,
+	},
+	description: { fontSize: 14, lineHeight: 22, fontFamily: Fonts.body },
+	readMore: { marginTop: 8, fontSize: 14, fontFamily: Fonts.bodySemibold },
 	attrsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	attrItem: {
 		borderRadius: 8,
@@ -595,8 +719,8 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		minWidth: "45%",
 	},
-	attrKey: { fontSize: 11, fontWeight: "600", marginBottom: 2 },
-	attrVal: { fontSize: 14, fontWeight: "500" },
+	attrKey: { fontSize: 11, fontFamily: Fonts.bodySemibold, marginBottom: 2 },
+	attrVal: { fontSize: 14, fontFamily: Fonts.bodyMedium },
 	sellerRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -611,14 +735,32 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	sellerLetter: { fontSize: 22, fontWeight: "700" },
+	sellerLetter: { fontSize: 22, fontFamily: Fonts.displayBold },
 	sellerInfo: { flex: 1, gap: 3 },
-	sellerName: { fontSize: 16, fontWeight: "700" },
-	verifiedBadge: { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 },
-	verifiedText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-	memberSince: { fontSize: 12 },
-	safetyTip: { fontSize: 13, lineHeight: 20, marginBottom: 4 },
-	reportLink: { alignItems: "center", padding: 8, marginBottom: 16 },
+	sellerNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+	sellerName: { fontSize: 16, fontFamily: Fonts.displayBold },
+	memberSince: { fontSize: 12, fontFamily: Fonts.body },
+	safetyHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		marginBottom: 10,
+	},
+	safetyTipRow: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 6,
+		marginBottom: 4,
+	},
+	safetyTip: { fontSize: 13, lineHeight: 20, flex: 1, fontFamily: Fonts.body },
+	reportLink: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+		padding: 8,
+		marginBottom: 16,
+	},
 	reportText: { fontSize: 13 },
 	actionBar: {
 		position: "absolute",
@@ -639,15 +781,18 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		paddingVertical: 14,
 	},
-	msgBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+	msgBtnText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
 	boostBtn: {
 		flex: 1,
+		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
+		gap: 8,
 		borderRadius: 14,
 		paddingVertical: 14,
+		backgroundColor: "#f59e0b",
 	},
-	boostBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+	boostBtnText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
 	editBtn: {
 		flex: 1,
 		flexDirection: "row",
@@ -657,5 +802,5 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		paddingVertical: 14,
 	},
-	editBtnText: { fontSize: 15, fontWeight: "700" },
+	editBtnText: { fontSize: 15, fontFamily: Fonts.displayBold },
 });

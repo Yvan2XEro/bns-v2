@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import React from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	FlatList,
 	Pressable,
 	RefreshControl,
@@ -14,16 +13,20 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { StatusPill } from "@/src/components/StatusPill";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 export default function MyListingsScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
+	const { showConfirm } = useAlert();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -84,7 +87,10 @@ export default function MyListingsScreen() {
 	] as const;
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
 			{/* Header */}
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<Pressable onPress={() => router.back()} style={styles.backBtn}>
@@ -134,7 +140,7 @@ export default function MyListingsScreen() {
 					}
 					ListEmptyComponent={
 						<EmptyState
-							emoji="📦"
+							icon="cube-outline"
 							title="Aucune annonce"
 							subtitle="Publiez votre première annonce !"
 							ctaLabel="Créer une annonce"
@@ -149,9 +155,9 @@ export default function MyListingsScreen() {
 								{ backgroundColor: cardBg, borderColor },
 							]}
 						>
-							{item.images?.[0]?.url ? (
+							{resolveListingImageUrl(item.images?.[0]) ? (
 								<Image
-									source={{ uri: item.images[0].url }}
+									source={{ uri: resolveListingImageUrl(item.images?.[0])! }}
 									style={styles.thumbnail}
 									contentFit="cover"
 								/>
@@ -189,14 +195,9 @@ export default function MyListingsScreen() {
 								</Pressable>
 								<Pressable
 									onPress={() =>
-										Alert.alert("Supprimer", "Supprimer cette annonce ?", [
-											{ text: "Annuler", style: "cancel" },
-											{
-												text: "Supprimer",
-												style: "destructive",
-												onPress: () => deleteListing(item.id),
-											},
-										])
+										showConfirm("Supprimer", "Supprimer cette annonce ?", () =>
+											deleteListing(item.id),
+										)
 									}
 									style={[
 										styles.actionBtn,
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		flex: 1,
 		fontSize: 18,
-		fontWeight: "700",
+		fontFamily: Fonts.displayBold,
 		textAlign: "center",
 	},
 	addBtn: {
@@ -256,8 +257,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: "center",
 	},
-	statNum: { fontSize: 22, fontWeight: "800" },
-	statLabel: { fontSize: 11, fontWeight: "600", marginTop: 2 },
+	statNum: { fontSize: 22, fontFamily: Fonts.displayExtrabold },
+	statLabel: { fontSize: 11, fontFamily: Fonts.bodySemibold, marginTop: 2 },
 	listingRow: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -275,8 +276,8 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	listingInfo: { flex: 1, gap: 4 },
-	listingTitle: { fontSize: 14, fontWeight: "500", lineHeight: 18 },
-	listingPrice: { fontSize: 14, fontWeight: "700" },
+	listingTitle: { fontSize: 14, fontFamily: Fonts.bodyMedium, lineHeight: 18 },
+	listingPrice: { fontSize: 14, fontFamily: Fonts.displayBold },
 	actions: { gap: 6 },
 	actionBtn: {
 		width: 32,

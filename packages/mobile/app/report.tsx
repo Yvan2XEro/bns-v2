@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -14,15 +13,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 
 const REASONS = [
-	{ key: "spam", label: "🚫 Spam ou publicité abusive" },
-	{ key: "inappropriate", label: "⚠️ Contenu inapproprié" },
-	{ key: "fraud", label: "💰 Fraude ou arnaque" },
-	{ key: "prohibited", label: "🚷 Article interdit" },
-	{ key: "harassment", label: "😤 Harcèlement" },
-	{ key: "other", label: "❓ Autre" },
+	{ key: "spam", label: "Spam ou publicité abusive" },
+	{ key: "inappropriate", label: "Contenu inapproprié" },
+	{ key: "fraud", label: "Fraude ou arnaque" },
+	{ key: "prohibited", label: "Article interdit" },
+	{ key: "harassment", label: "Harcèlement" },
+	{ key: "other", label: "Autre" },
 ];
 
 export default function ReportModal() {
@@ -31,6 +31,7 @@ export default function ReportModal() {
 		targetId: string;
 	}>();
 	const isDark = useColorScheme() === "dark";
+	const { showSuccess, showError } = useAlert();
 	const [reason, setReason] = useState("");
 	const [description, setDescription] = useState("");
 
@@ -45,19 +46,25 @@ export default function ReportModal() {
 		mutationFn: () =>
 			api.post("/api/reports", { targetType, targetId, reason, description }),
 		onSuccess: () => {
-			Alert.alert(
+			showSuccess(
 				"Signalement envoyé",
 				"Merci pour votre signalement. Notre équipe va examiner le contenu.",
-				[{ text: "OK", onPress: () => router.dismiss() }],
 			);
+			router.dismiss();
 		},
-		onError: (err: any) => Alert.alert("Erreur", err.message),
+		onError: (err: any) => showError("Erreur", err.message),
 	});
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Text style={[styles.title, { color: textColor }]}>🚩 Signaler</Text>
+				<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+					<Ionicons name="flag-outline" size={20} color={textColor} />
+					<Text style={[styles.title, { color: textColor }]}>Signaler</Text>
+				</View>
 				<Pressable onPress={() => router.dismiss()}>
 					<Ionicons name="close" size={24} color={textColor} />
 				</Pressable>

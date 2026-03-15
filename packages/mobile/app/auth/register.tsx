@@ -1,25 +1,46 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Alert,
-	KeyboardAvoidingView,
-	Platform,
 	Pressable,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
+
+function AppLogo({ isDark }: { isDark: boolean }) {
+	const baseColor = isDark ? "#e2e8f0" : "#0f172a";
+	return (
+		<View style={styles.logoBlock}>
+			<Image
+				source={require("@/assets/icon2.png")}
+				style={styles.logoImg}
+				contentFit="contain"
+			/>
+			<Text style={[styles.logoText, { color: baseColor }]}>
+				Buy
+				<Text style={{ color: "#f59e0b" }}>'</Text>
+				<Text style={{ color: "#f59e0b" }}>N</Text>
+				<Text style={{ color: "#f59e0b" }}>'</Text>Sellem
+			</Text>
+		</View>
+	);
+}
 
 export default function RegisterScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { register } = useAuth();
+	const { showError } = useAlert();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -36,18 +57,21 @@ export default function RegisterScreen() {
 
 	const handleRegister = async () => {
 		if (!name || !email || !password || !confirm) {
-			Alert.alert("Erreur", "Veuillez remplir tous les champs");
+			showError("Champs manquants", "Veuillez remplir tous les champs");
 			return;
 		}
 		if (password.length < 8) {
-			Alert.alert(
-				"Erreur",
+			showError(
+				"Mot de passe trop court",
 				"Le mot de passe doit contenir au moins 8 caractères",
 			);
 			return;
 		}
 		if (password !== confirm) {
-			Alert.alert("Erreur", "Les mots de passe ne correspondent pas");
+			showError(
+				"Mots de passe différents",
+				"Les mots de passe ne correspondent pas",
+			);
 			return;
 		}
 		setLoading(true);
@@ -55,7 +79,7 @@ export default function RegisterScreen() {
 			await register(name.trim(), email.trim().toLowerCase(), password);
 			router.dismiss();
 		} catch (err: any) {
-			Alert.alert(
+			showError(
 				"Inscription échouée",
 				err.message ?? "Une erreur est survenue",
 			);
@@ -74,10 +98,19 @@ export default function RegisterScreen() {
 		showToggle,
 		toggleShow,
 		autoComplete,
+		icon,
 	}: any) => (
 		<View style={{ gap: 6 }}>
 			<Text style={[styles.fieldLabel, { color: mutedColor }]}>{label}</Text>
 			<View style={[styles.inputWrapper, { borderColor }]}>
+				{icon && (
+					<Ionicons
+						name={icon}
+						size={18}
+						color={mutedColor}
+						style={styles.inputIcon}
+					/>
+				)}
 				<TextInput
 					value={value}
 					onChangeText={onChange}
@@ -103,117 +136,123 @@ export default function RegisterScreen() {
 	);
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-			<KeyboardAvoidingView
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
+			<KeyboardAwareScrollView
 				style={{ flex: 1 }}
-				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				contentContainerStyle={{ flexGrow: 1 }}
+				keyboardShouldPersistTaps="handled"
+				bottomOffset={20}
 			>
-				<ScrollView
-					contentContainerStyle={{ flexGrow: 1 }}
-					keyboardShouldPersistTaps="handled"
-				>
-					<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
-						<Ionicons name="close" size={24} color={textColor} />
-					</Pressable>
+				<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
+					<Ionicons name="close" size={24} color={textColor} />
+				</Pressable>
 
-					<View style={styles.container}>
-						<Text style={styles.logo}>✨</Text>
-						<Text style={[styles.title, { color: textColor }]}>
-							Créer un compte
-						</Text>
-						<Text style={[styles.subtitle, { color: mutedColor }]}>
-							Rejoignez Buy'N'Sellem et commencez à acheter et vendre
-						</Text>
-
-						<View
-							style={[styles.form, { backgroundColor: cardBg, borderColor }]}
-						>
-							<Field
-								label="Nom complet"
-								value={name}
-								onChange={setName}
-								placeholder="Jean Dupont"
-								autoComplete="name"
-							/>
-							<Field
-								label="Adresse email"
-								value={email}
-								onChange={setEmail}
-								placeholder="votre@email.com"
-								keyboard="email-address"
-								autoComplete="email"
-							/>
-							<Field
-								label="Mot de passe"
-								value={password}
-								onChange={setPassword}
-								placeholder="Min. 8 caractères"
-								secure={!showPwd}
-								showToggle
-								toggleShow={() => setShowPwd(!showPwd)}
-								autoComplete="new-password"
-							/>
-							<Field
-								label="Confirmer le mot de passe"
-								value={confirm}
-								onChange={setConfirm}
-								placeholder="Répétez le mot de passe"
-								secure={!showPwd}
-								autoComplete="new-password"
-							/>
-
-							<Pressable
-								onPress={handleRegister}
-								disabled={loading}
-								style={[
-									styles.submitBtn,
-									{ backgroundColor: primaryColor, opacity: loading ? 0.7 : 1 },
-								]}
-							>
-								{loading ? (
-									<ActivityIndicator color="#fff" />
-								) : (
-									<Text style={styles.submitText}>Créer mon compte</Text>
-								)}
-							</Pressable>
-
-							<Text style={[styles.termsText, { color: mutedColor }]}>
-								En créant un compte, vous acceptez nos{" "}
-								<Text
-									style={{ color: primaryColor }}
-									onPress={() => router.push("/terms")}
-								>
-									Conditions d'utilisation
-								</Text>{" "}
-								et notre{" "}
-								<Text
-									style={{ color: primaryColor }}
-									onPress={() => router.push("/privacy")}
-								>
-									Politique de confidentialité
-								</Text>
-								.
-							</Text>
-						</View>
-
-						<View style={styles.loginRow}>
-							<Text style={[styles.loginText, { color: mutedColor }]}>
-								Déjà un compte ?{" "}
-							</Text>
-							<Pressable
-								onPress={() => {
-									router.dismiss();
-									router.push("/auth/login");
-								}}
-							>
-								<Text style={[styles.loginLink, { color: primaryColor }]}>
-									Se connecter
-								</Text>
-							</Pressable>
-						</View>
+				<View style={styles.container}>
+					{/* Logo */}
+					<View style={styles.logoWrap}>
+						<AppLogo isDark={isDark} />
 					</View>
-				</ScrollView>
-			</KeyboardAvoidingView>
+					<Text style={[styles.title, { color: textColor }]}>
+						Créer un compte
+					</Text>
+					<Text style={[styles.subtitle, { color: mutedColor }]}>
+						Rejoignez-nous et commencez à acheter et vendre
+					</Text>
+
+					<View style={[styles.form, { backgroundColor: cardBg, borderColor }]}>
+						<Field
+							label="Nom complet"
+							value={name}
+							onChange={setName}
+							placeholder="Jean Dupont"
+							autoComplete="name"
+							icon="person-outline"
+						/>
+						<Field
+							label="Adresse email"
+							value={email}
+							onChange={setEmail}
+							placeholder="votre@email.com"
+							keyboard="email-address"
+							autoComplete="email"
+							icon="mail-outline"
+						/>
+						<Field
+							label="Mot de passe"
+							value={password}
+							onChange={setPassword}
+							placeholder="Min. 8 caractères"
+							secure={!showPwd}
+							showToggle
+							toggleShow={() => setShowPwd(!showPwd)}
+							autoComplete="new-password"
+							icon="lock-closed-outline"
+						/>
+						<Field
+							label="Confirmer le mot de passe"
+							value={confirm}
+							onChange={setConfirm}
+							placeholder="Répétez le mot de passe"
+							secure={!showPwd}
+							autoComplete="new-password"
+							icon="lock-closed-outline"
+						/>
+
+						<AnimatedPressable
+							onPress={handleRegister}
+							disabled={loading}
+							scaleTo={0.97}
+							style={[
+								styles.submitBtn,
+								{ backgroundColor: primaryColor, opacity: loading ? 0.7 : 1 },
+							]}
+						>
+							{loading ? (
+								<ActivityIndicator color="#fff" />
+							) : (
+								<Text style={styles.submitText}>Créer mon compte</Text>
+							)}
+						</AnimatedPressable>
+
+						<Text style={[styles.termsText, { color: mutedColor }]}>
+							En créant un compte, vous acceptez nos{" "}
+							<Text
+								style={{ color: primaryColor }}
+								onPress={() => router.push("/terms")}
+							>
+								Conditions d'utilisation
+							</Text>{" "}
+							et notre{" "}
+							<Text
+								style={{ color: primaryColor }}
+								onPress={() => router.push("/privacy")}
+							>
+								Politique de confidentialité
+							</Text>
+							.
+						</Text>
+					</View>
+
+					<View style={styles.loginRow}>
+						<Text style={[styles.loginText, { color: mutedColor }]}>
+							Déjà un compte ?{" "}
+						</Text>
+						<Pressable
+							onPress={() => {
+								router.dismiss();
+								router.push("/auth/login");
+							}}
+						>
+							<Text style={[styles.loginLink, { color: primaryColor }]}>
+								Se connecter
+							</Text>
+						</Pressable>
+					</View>
+				</View>
+			</KeyboardAwareScrollView>
 		</SafeAreaView>
 	);
 }
@@ -222,21 +261,29 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	closeBtn: { padding: 16, alignSelf: "flex-end" },
 	container: { flex: 1, padding: 24, paddingTop: 8 },
-	logo: { fontSize: 48, textAlign: "center", marginBottom: 12 },
+	logoWrap: { alignItems: "center", marginBottom: 16 },
+	logoBlock: { alignItems: "center", gap: 10 },
+	logoImg: { width: 72, height: 72, borderRadius: 18 },
+	logoText: {
+		fontSize: 28,
+		fontFamily: Fonts.displayExtrabold,
+		letterSpacing: -0.5,
+	},
 	title: {
-		fontSize: 26,
-		fontWeight: "800",
+		fontSize: 24,
+		fontFamily: Fonts.displayExtrabold,
 		textAlign: "center",
 		marginBottom: 8,
 	},
 	subtitle: {
 		fontSize: 14,
+		fontFamily: Fonts.body,
 		textAlign: "center",
-		marginBottom: 28,
+		marginBottom: 24,
 		lineHeight: 20,
 	},
 	form: { borderRadius: 16, borderWidth: 1, padding: 20, gap: 14 },
-	fieldLabel: { fontSize: 13, fontWeight: "600" },
+	fieldLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	inputWrapper: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -245,14 +292,15 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 12,
 	},
-	input: { flex: 1, fontSize: 15 },
+	inputIcon: { marginRight: 10 },
+	input: { flex: 1, fontSize: 15, fontFamily: Fonts.body },
 	submitBtn: {
 		borderRadius: 12,
 		paddingVertical: 15,
 		alignItems: "center",
 		marginTop: 4,
 	},
-	submitText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+	submitText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
 	termsText: { fontSize: 12, textAlign: "center", lineHeight: 18 },
 	loginRow: {
 		flexDirection: "row",
@@ -260,6 +308,6 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 20,
 	},
-	loginText: { fontSize: 14 },
-	loginLink: { fontSize: 14, fontWeight: "700" },
+	loginText: { fontSize: 14, fontFamily: Fonts.body },
+	loginLink: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

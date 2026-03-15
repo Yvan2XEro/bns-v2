@@ -1,33 +1,21 @@
 import * as SecureStore from "expo-secure-store";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
 import { api } from "./api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface User {
-	id: string;
-	email: string;
-	name: string;
-	phone?: string;
-	bio?: string;
-	location?: string;
-	avatar?: { url: string };
-	isVerified?: boolean;
-	averageRating?: number;
-	reviewCount?: number;
-	createdAt: string;
-}
+// Re-export for convenience so other files can import User from here
+export type { UserDoc as User };
 
 interface AuthContextType {
-	user: User | null;
+	user: UserDoc | null;
 	token: string | null;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<void>;
 	register: (name: string, email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
-	updateUser: (updates: Partial<User>) => void;
+	updateUser: (updates: Partial<UserDoc>) => void;
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -37,7 +25,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-	const [user, setUser] = useState<User | null>(null);
+	const [user, setUser] = useState<UserDoc | null>(null);
 	const [token, setToken] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -48,8 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				const stored = await SecureStore.getItemAsync("auth_token");
 				if (stored) {
 					setToken(stored);
-					const data = await api.get<{ doc: User }>("/api/users/me");
-					setUser(data.doc);
+					// Payload v3: /api/users/me returns { user: {...} }
+					const data = await api.get<MeResponse>("/api/users/me");
+					setUser(data.user);
 				}
 			} catch {
 				// Token is invalid or expired — clear it silently
@@ -63,10 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	}, []);
 
 	const login = async (email: string, password: string): Promise<void> => {
-		const data = await api.post<{ token: string; user: User }>(
-			"/api/users/login",
-			{ email, password },
-		);
+		const data = await api.post<LoginResponse>("/api/users/login", {
+			email,
+			password,
+		});
 		await SecureStore.setItemAsync("auth_token", data.token);
 		setToken(data.token);
 		setUser(data.user);
@@ -95,15 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const refreshUser = async (): Promise<void> => {
 		try {
-			const data = await api.get<{ doc: User }>("/api/users/me");
-			setUser(data.doc);
+			const data = await api.get<MeResponse>("/api/users/me");
+			setUser(data.user);
 		} catch {
 			// Silently fail — don't log out the user on a refresh error
 		}
 	};
 
 	/** Optimistically update local user state (e.g. after profile edit) */
-	const updateUser = (updates: Partial<User>): void => {
+	const updateUser = (updates: Partial<UserDoc>): void => {
 		setUser((prev) => (prev ? { ...prev, ...updates } : prev));
 	};
 

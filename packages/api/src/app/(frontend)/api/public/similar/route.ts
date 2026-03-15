@@ -78,7 +78,6 @@ export async function GET(request: Request) {
 	const filters: string[] = [
 		"status = published",
 		`categoryId = "${categoryId}"`,
-		`id != "${id}"`,
 	];
 
 	const result = await index.search("", {

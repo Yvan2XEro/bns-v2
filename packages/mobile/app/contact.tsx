@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -14,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
@@ -28,6 +28,7 @@ const SUBJECTS = [
 export default function ContactScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const { showError } = useAlert();
 	const [name, setName] = useState(user?.name ?? "");
 	const [email, setEmail] = useState(user?.email ?? "");
 	const [subject, setSubject] = useState(SUBJECTS[0]);
@@ -45,14 +46,22 @@ export default function ContactScreen() {
 		mutationFn: () =>
 			api.post("/api/public/contact", { name, email, subject, message }),
 		onSuccess: () => setSent(true),
-		onError: (err: any) => Alert.alert("Erreur", err.message),
+		onError: (err: any) => showError("Erreur", err.message),
 	});
 
 	if (sent) {
 		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
 				<View style={styles.center}>
-					<Text style={{ fontSize: 64 }}>✅</Text>
+					<Ionicons
+						name="checkmark-circle"
+						size={64}
+						color="#16a34a"
+						style={{ marginBottom: 16 }}
+					/>
 					<Text style={[styles.title, { color: textColor }]}>
 						Message envoyé !
 					</Text>
@@ -71,7 +80,10 @@ export default function ContactScreen() {
 	}
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<Pressable onPress={() => router.back()}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
@@ -161,7 +173,7 @@ export default function ContactScreen() {
 				<Pressable
 					onPress={() =>
 						!name || !email || !message
-							? Alert.alert("Erreur", "Veuillez remplir tous les champs")
+							? showError("Erreur", "Veuillez remplir tous les champs")
 							: sendMessage()
 					}
 					disabled={isPending}

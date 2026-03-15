@@ -6,7 +6,6 @@ import type React from "react";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -16,12 +15,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
 export default function SettingsScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user, logout } = useAuth();
+	const { showSuccess, showError, showConfirm } = useAlert();
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [_currentPwd, setCurrentPwd] = useState("");
@@ -43,44 +44,40 @@ export default function SettingsScreen() {
 			return api.patch(`/api/users/${user?.id}`, { password: newPassword });
 		},
 		onSuccess: () => {
-			Alert.alert("✓ Mot de passe modifié");
+			showSuccess(
+				"Mot de passe modifié",
+				"Votre mot de passe a été mis à jour.",
+			);
 			setNewPassword("");
 			setConfirmPassword("");
 			setCurrentPwd("");
 		},
-		onError: (err: any) => Alert.alert("Erreur", err.message),
+		onError: (err: any) => showError("Erreur", err.message),
 	});
 
 	const { mutate: changeEmail, isPending: emailLoading } = useMutation({
 		mutationFn: () => api.patch(`/api/users/${user?.id}`, { email: newEmail }),
 		onSuccess: () => {
-			Alert.alert("✓ Email modifié");
+			showSuccess("Email modifié", "Votre adresse email a été mise à jour.");
 			setNewEmail("");
 			setPwdForEmail("");
 		},
-		onError: (err: any) => Alert.alert("Erreur", err.message),
+		onError: (err: any) => showError("Erreur", err.message),
 	});
 
 	const handleDeleteAccount = () => {
-		Alert.alert(
+		showConfirm(
 			"Supprimer le compte",
 			"Cette action est irréversible. Toutes vos données seront supprimées.",
-			[
-				{ text: "Annuler", style: "cancel" },
-				{
-					text: "Supprimer définitivement",
-					style: "destructive",
-					onPress: async () => {
-						try {
-							await api.delete(`/api/users/${user?.id}`);
-							await logout();
-							router.replace("/(tabs)/home");
-						} catch (err: any) {
-							Alert.alert("Erreur", err.message);
-						}
-					},
-				},
-			],
+			async () => {
+				try {
+					await api.delete(`/api/users/${user?.id}`);
+					await logout();
+					router.replace("/(tabs)/home");
+				} catch (err: any) {
+					showError("Erreur", err.message);
+				}
+			},
 		);
 	};
 
@@ -121,7 +118,10 @@ export default function SettingsScreen() {
 	);
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<Pressable onPress={() => router.back()}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />

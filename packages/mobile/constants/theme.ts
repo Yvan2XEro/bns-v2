@@ -1,5 +1,3 @@
-import { Platform } from "react-native";
-
 // ─── Color Palette ────────────────────────────────────────────────────────────
 // Matches the web globals.css palette exactly.
 
@@ -136,28 +134,53 @@ export const borderRadius = {
 } as const;
 
 // ─── Typography ───────────────────────────────────────────────────────────────
+// Matches the web: DM Sans (body) + Outfit (display/headings)
 
-export const Fonts = Platform.select({
-	ios: {
-		sans: "system-ui",
-		serif: "ui-serif",
-		rounded: "ui-rounded",
-		mono: "ui-monospace",
-	},
-	default: {
-		sans: "normal",
-		serif: "serif",
-		rounded: "normal",
-		mono: "monospace",
-	},
-	web: {
-		sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-		serif: "Georgia, 'Times New Roman', serif",
-		rounded:
-			"'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-		mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-	},
-});
+/**
+ * Font family names — use these in fontFamily style props.
+ * DM Sans  → body text (same as web --font-body)
+ * Outfit   → headings, titles, bold labels (same as web --font-display)
+ */
+export const Fonts = {
+	// Body — DM Sans (maps to web's `--font-body: DM Sans`)
+	body: "DMSans_400Regular",
+	bodyMedium: "DMSans_500Medium",
+	bodySemibold: "DMSans_600SemiBold",
+	bodyBold: "DMSans_700Bold",
+
+	// Display — Outfit (maps to web's `--font-display: Outfit`)
+	displayMedium: "Outfit_500Medium",
+	displaySemibold: "Outfit_600SemiBold",
+	displayBold: "Outfit_700Bold",
+	displayExtrabold: "Outfit_800ExtraBold",
+} as const;
+
+/**
+ * Shorthand text-style presets mirroring the web design.
+ * Import and spread these in StyleSheet definitions.
+ */
+export const TextStyles = {
+	// Headings (Outfit)
+	h1: { fontFamily: Fonts.displayExtrabold, fontSize: 28, letterSpacing: -0.5 },
+	h2: { fontFamily: Fonts.displayBold, fontSize: 22, letterSpacing: -0.3 },
+	h3: { fontFamily: Fonts.displayBold, fontSize: 18 },
+	h4: { fontFamily: Fonts.displaySemibold, fontSize: 16 },
+
+	// Body (DM Sans)
+	bodyLg: { fontFamily: Fonts.body, fontSize: 17, lineHeight: 26 },
+	body: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22 },
+	bodySm: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 20 },
+	caption: { fontFamily: Fonts.body, fontSize: 11 },
+
+	// Labels (DM Sans Medium/Semibold)
+	labelLg: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
+	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
+	labelSm: { fontFamily: Fonts.bodySemibold, fontSize: 11 },
+
+	// Price / highlight (Outfit)
+	price: { fontFamily: Fonts.displayBold, fontSize: 16 },
+	priceLg: { fontFamily: Fonts.displayExtrabold, fontSize: 26 },
+} as const;
 
 export const typography = {
 	// Font sizes
@@ -264,6 +287,24 @@ export const zIndex = {
 	popover: 500,
 	toast: 600,
 	tooltip: 700,
+} as const;
+
+// ─── Spring Presets ───────────────────────────────────────────────────────────
+// Reanimated spring configs — import these instead of hardcoding per-component.
+
+export const SpringPresets = {
+	gentle: { damping: 20, stiffness: 200, mass: 1 },
+	snappy: { damping: 15, stiffness: 400, mass: 0.8 },
+	bouncy: { damping: 10, stiffness: 300, mass: 0.8 },
+	slow: { damping: 25, stiffness: 120, mass: 1.2 },
+	micro: { damping: 18, stiffness: 500, mass: 0.5 },
+} as const;
+
+export const ANIMATION_DURATION = {
+	fast: 150,
+	normal: 250,
+	slow: 400,
+	slower: 600,
 } as const;
 
 // ─── Animation ────────────────────────────────────────────────────────────────

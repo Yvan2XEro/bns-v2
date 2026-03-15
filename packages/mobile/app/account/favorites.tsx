@@ -11,6 +11,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
@@ -44,7 +45,10 @@ export default function FavoritesScreen() {
 	};
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<Pressable onPress={() => router.back()}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
@@ -55,7 +59,7 @@ export default function FavoritesScreen() {
 
 			{favorites.length === 0 ? (
 				<EmptyState
-					emoji="❤️"
+					icon="heart-outline"
 					title="Aucun favori"
 					subtitle="Ajoutez des annonces à vos favoris pour les retrouver facilement"
 					ctaLabel="Parcourir"
@@ -102,6 +106,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 		borderBottomWidth: 1,
 	},
-	title: { fontSize: 18, fontWeight: "700" },
+	title: { fontSize: 18, fontFamily: Fonts.displayBold },
 	row: { flexDirection: "row", gap: 12, marginBottom: 12 },
 });

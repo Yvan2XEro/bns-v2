@@ -12,6 +12,7 @@ import {
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { api } from "@/src/lib/api";
@@ -54,21 +55,36 @@ export default function MessagesScreen() {
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 
+	const accentBg = isDark ? "#111827" : "#eef2ff";
+
 	if (!user) {
 		return (
-			<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-				<View style={[styles.header, { borderBottomColor: borderColor }]}>
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: accentBg }]}
+			>
+				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
+					<View
+						style={[
+							styles.msgIconWrap,
+							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+						]}
+					>
+						<Ionicons name="chatbubbles" size={22} color={primaryColor} />
+					</View>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
 						Messages
 					</Text>
 				</View>
-				<EmptyState
-					emoji="💬"
-					title="Connexion requise"
-					subtitle="Connectez-vous pour accéder à vos messages"
-					ctaLabel="Se connecter"
-					onCta={() => router.push("/auth/login")}
-				/>
+				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
+					<EmptyState
+						icon="chatbubbles-outline"
+						title="Connexion requise"
+						subtitle="Connectez-vous pour accéder à vos messages"
+						ctaLabel="Se connecter"
+						onCta={() => router.push("/auth/login")}
+					/>
+				</View>
 			</SafeAreaView>
 		);
 	}
@@ -124,7 +140,10 @@ export default function MessagesScreen() {
 						<Text
 							style={[
 								styles.convName,
-								{ color: textColor, fontWeight: unread ? "700" : "500" },
+								{
+									color: textColor,
+									fontFamily: unread ? Fonts.displayBold : Fonts.displayMedium,
+								},
 							]}
 							numberOfLines={1}
 						>
@@ -145,7 +164,10 @@ export default function MessagesScreen() {
 					<Text
 						style={[
 							styles.convLastMsg,
-							{ color: mutedColor, fontWeight: unread ? "600" : "400" },
+							{
+								color: mutedColor,
+								fontFamily: unread ? Fonts.bodySemibold : Fonts.body,
+							},
 						]}
 						numberOfLines={1}
 					>
@@ -159,7 +181,10 @@ export default function MessagesScreen() {
 	};
 
 	return (
-		<SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
+		<SafeAreaView
+			edges={["top"]}
+			style={[styles.safe, { backgroundColor: bg }]}
+		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<Text style={[styles.headerTitle, { color: textColor }]}>Messages</Text>
 				{conversations.length > 0 && (
@@ -170,7 +195,11 @@ export default function MessagesScreen() {
 						]}
 					>
 						<Text
-							style={{ color: primaryColor, fontSize: 12, fontWeight: "700" }}
+							style={{
+								color: primaryColor,
+								fontSize: 12,
+								fontFamily: Fonts.displayBold,
+							}}
 						>
 							{conversations.length}
 						</Text>
@@ -180,7 +209,7 @@ export default function MessagesScreen() {
 
 			{conversations.length === 0 && !isLoading ? (
 				<EmptyState
-					emoji="💬"
+					icon="chatbubbles-outline"
 					title="Aucune conversation"
 					subtitle="Contactez un vendeur pour commencer une discussion"
 					ctaLabel="Parcourir les annonces"
@@ -207,6 +236,27 @@ export default function MessagesScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
+	noUserHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		paddingHorizontal: 16,
+		paddingTop: 6,
+		paddingBottom: 14,
+	},
+	msgIconWrap: {
+		width: 44,
+		height: 44,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	contentWrap: {
+		flex: 1,
+		borderTopLeftRadius: 20,
+		borderTopRightRadius: 20,
+		overflow: "hidden",
+	},
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -214,7 +264,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 16,
 		borderBottomWidth: 1,
 	},
-	headerTitle: { fontSize: 22, fontWeight: "800", flex: 1 },
+	headerTitle: { fontSize: 24, fontFamily: Fonts.displayExtrabold, flex: 1 },
 	countBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
 	convItem: {
 		flexDirection: "row",
@@ -232,7 +282,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	avatarLetter: { fontSize: 20, fontWeight: "700" },
+	avatarLetter: { fontSize: 20, fontFamily: Fonts.displayBold },
 	unreadDot: {
 		position: "absolute",
 		bottom: 1,
@@ -250,8 +300,12 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		marginBottom: 2,
 	},
-	convName: { fontSize: 15, flex: 1 },
-	convTime: { fontSize: 12 },
-	convListing: { fontSize: 12, marginBottom: 2 },
-	convLastMsg: { fontSize: 13 },
+	convName: { fontSize: 15, flex: 1, fontFamily: Fonts.displayMedium },
+	convTime: { fontSize: 12, fontFamily: Fonts.body },
+	convListing: {
+		fontSize: 12,
+		marginBottom: 2,
+		fontFamily: Fonts.bodySemibold,
+	},
+	convLastMsg: { fontSize: 13, fontFamily: Fonts.body },
 });

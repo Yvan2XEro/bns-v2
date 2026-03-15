@@ -4,159 +4,116 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import type {
+	CategoriesResponse,
+	ListingDoc,
+	ListingHitMapped,
+	PayloadDoc,
+	PayloadPage,
+	SearchQueryParams,
+	SearchResponse,
+	SearchSortKey,
+} from "@/src/types/api";
 import { api } from "../lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Re-export types consumers may need
+export type { ListingDoc as Listing, SearchQueryParams as SearchParams };
 
-export interface ListingImage {
-	url: string;
-	thumbnailURL?: string;
-	width?: number;
-	height?: number;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Derive isBoosted from the boostedUntil date field */
+function mapHit(hit: SearchResponse["hits"][number]): ListingHitMapped {
+	return {
+		...hit,
+		isBoosted: !!(hit.boostedUntil && new Date(hit.boostedUntil) > new Date()),
+	};
 }
 
-export interface Category {
-	id: string;
-	name: string;
-	slug: string;
-	icon?: string;
-	parent?: Category | string;
-}
-
-export interface ListingSeller {
-	id: string;
-	name: string;
-	email: string;
-	phone?: string;
-	avatar?: { url: string };
-	isVerified?: boolean;
-	averageRating?: number;
-	reviewCount?: number;
-	createdAt: string;
-}
-
-export interface Listing {
-	id: string;
-	title: string;
-	description?: string;
-	price: number;
-	negotiable?: boolean;
-	condition?: "new" | "likeNew" | "good" | "fair" | "poor";
-	status?: "active" | "sold" | "expired" | "pending";
-	images?: ListingImage[];
-	category?: Category;
-	location?: string;
-	views?: number;
-	isBoosted?: boolean;
-	boostExpiresAt?: string;
-	expiresAt?: string;
-	createdAt: string;
-	updatedAt: string;
-	seller?: ListingSeller | string;
-	attributes?: Record<string, string | number | boolean>;
-}
-
-export interface PaginatedListings {
-	docs: Listing[];
-	totalDocs: number;
-	limit: number;
-	offset: number;
-	hasNextPage?: boolean;
-	hasPrevPage?: boolean;
-	page?: number;
-	totalPages?: number;
-}
-
-export interface SearchParams {
-	q?: string;
-	category?: string;
-	minPrice?: number;
-	maxPrice?: number;
-	condition?: string;
-	location?: string;
-	radius?: number;
-	sort?: "newest" | "priceAsc" | "priceDesc" | "nearest" | "relevance";
-	withPhotos?: boolean;
-	limit?: number;
-	offset?: number;
-	page?: number;
-}
-
-// ─── Hooks ────────────────────────────────────────────────────────────────────
-
-/**
- * Fetches a single page of listings matching the given search params.
- */
-export function useListings(params: SearchParams = {}) {
-	const query = new URLSearchParams(
+function buildQuery(
+	params: Record<string, string | number | undefined>,
+): string {
+	return new URLSearchParams(
 		Object.fromEntries(
 			Object.entries(params)
 				.filter(([, v]) => v !== undefined && v !== null && v !== "")
 				.map(([k, v]) => [k, String(v)]),
 		),
 	).toString();
+}
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
+/**
+ * Fetches a single page of listings matching the given search params.
+ * Returns hits mapped with the derived `isBoosted` flag.
+ */
+export function useListings(params: SearchQueryParams = {}) {
+	const query = buildQuery(
+		params as Record<string, string | number | undefined>,
+	);
 
 	return useQuery({
 		queryKey: ["listings", params],
-		queryFn: () => api.get<PaginatedListings>(`/api/public/search?${query}`),
+		queryFn: async () => {
+			const res = await api.get<SearchResponse>(`/api/public/search?${query}`);
+			return { ...res, hits: res.hits.map(mapHit) };
+		},
 	});
 }
 
 /**
- * Fetches a single listing by ID (with depth=1 to populate relations).
+ * Fetches a single listing by ID (depth=1 — relations populated).
+ * Response: { doc: ListingDoc }
  */
 export function useListing(id: string) {
 	return useQuery({
 		queryKey: ["listing", id],
-		queryFn: () => api.get<{ doc: Listing }>(`/api/listings/${id}?depth=1`),
+		queryFn: () =>
+			api.get<PayloadDoc<ListingDoc>>(`/api/listings/${id}?depth=1`),
 		enabled: !!id,
 	});
 }
 
 /**
- * Infinite-scroll listings for feed / category pages.
- * Pages of 20 items loaded via offset pagination.
+ * Infinite-scroll listings (offset pagination, 20 per page).
  */
 export function useInfiniteListings(
-	params: Omit<SearchParams, "limit" | "offset"> = {},
+	params: Omit<SearchQueryParams, "limit" | "offset"> = {},
 ) {
 	return useInfiniteQuery({
 		queryKey: ["listings-infinite", params],
-		queryFn: ({ pageParam = 0 }) => {
-			const p: Record<string, string> = {
-				limit: "20",
-				offset: String(pageParam),
-				...Object.fromEntries(
-					Object.entries(params)
-						.filter(([, v]) => v !== undefined && v !== null && v !== "")
-						.map(([k, v]) => [k, String(v)]),
-				),
-			};
-			const query = new URLSearchParams(p).toString();
-			return api.get<PaginatedListings>(`/api/public/search?${query}`);
+		queryFn: async ({ pageParam = 0 }) => {
+			const q = buildQuery({
+				...(params as Record<string, string | number | undefined>),
+				limit: 20,
+				offset: pageParam as number,
+			});
+			const res = await api.get<SearchResponse>(`/api/public/search?${q}`);
+			return { ...res, hits: res.hits.map(mapHit) };
 		},
 		getNextPageParam: (lastPage, pages) => {
 			const loaded = pages.length * 20;
-			return loaded < lastPage.totalDocs ? loaded : undefined;
+			return loaded < lastPage.total ? loaded : undefined;
 		},
 		initialPageParam: 0,
 	});
 }
 
 /**
- * Fetches the category tree (stale for 1 hour — categories rarely change).
+ * Fetches all active categories (stale for 1 hour).
+ * Response: { categories: Category[] }
  */
 export function useCategories() {
 	return useQuery({
 		queryKey: ["categories"],
-		queryFn: () =>
-			api.get<{ docs: Category[] }>("/api/public/categories?depth=1"),
-		staleTime: 60 * 60 * 1000, // 1 hour
+		queryFn: () => api.get<CategoriesResponse>("/api/public/categories"),
+		staleTime: 60 * 60 * 1000,
 	});
 }
 
 /**
  * Fetches listings created by the currently authenticated user.
+ * Uses Payload REST endpoint — returns PayloadPage<ListingDoc>.
  */
 export function useMyListings(status?: string) {
 	const params = status
@@ -164,18 +121,16 @@ export function useMyListings(status?: string) {
 		: "?depth=0";
 	return useQuery({
 		queryKey: ["my-listings", status],
-		queryFn: () => api.get<PaginatedListings>(`/api/listings${params}`),
+		queryFn: () => api.get<PayloadPage<ListingDoc>>(`/api/listings${params}`),
 	});
 }
 
-/**
- * Mutation to create a new listing.
- */
+/** Mutation to create a new listing. */
 export function useCreateListing() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: Partial<Listing>) =>
-			api.post<{ doc: Listing }>("/api/listings", data),
+		mutationFn: (data: Partial<ListingDoc>) =>
+			api.post<PayloadDoc<ListingDoc>>("/api/listings", data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["listings"] });
 			queryClient.invalidateQueries({ queryKey: ["my-listings"] });
@@ -183,14 +138,12 @@ export function useCreateListing() {
 	});
 }
 
-/**
- * Mutation to update an existing listing.
- */
+/** Mutation to update an existing listing. */
 export function useUpdateListing(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (data: Partial<Listing>) =>
-			api.patch<{ doc: Listing }>(`/api/listings/${id}`, data),
+		mutationFn: (data: Partial<ListingDoc>) =>
+			api.patch<PayloadDoc<ListingDoc>>(`/api/listings/${id}`, data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["listing", id] });
 			queryClient.invalidateQueries({ queryKey: ["my-listings"] });
@@ -198,9 +151,7 @@ export function useUpdateListing(id: string) {
 	});
 }
 
-/**
- * Mutation to delete a listing.
- */
+/** Mutation to delete a listing. */
 export function useDeleteListing() {
 	const queryClient = useQueryClient();
 	return useMutation({
@@ -211,3 +162,12 @@ export function useDeleteListing() {
 		},
 	});
 }
+
+// ─── Sort helpers ─────────────────────────────────────────────────────────────
+
+export const SORT_OPTIONS: Array<{ key: SearchSortKey; label: string }> = [
+	{ key: "newest", label: "Récents" },
+	{ key: "oldest", label: "Anciens" },
+	{ key: "price_asc", label: "Prix ↑" },
+	{ key: "price_desc", label: "Prix ↓" },
+];
