@@ -19,6 +19,7 @@ import {
 	Favorites,
 	NoListings,
 	NoMessages,
+	NotFound,
 	Searching,
 	Sell,
 } from "./illustrations";
@@ -32,6 +33,7 @@ const ILLUSTRATION_MAP = {
 	auth: Auth,
 	boost: Boost,
 	listings: NoListings,
+	notFound: NotFound,
 } as const;
 
 export type EmptyStateIllustration = keyof typeof ILLUSTRATION_MAP;
@@ -56,6 +58,8 @@ const ICON_TO_ILLUSTRATION: Record<string, EmptyStateIllustration> = {
 	rocket: "boost",
 	"lock-closed-outline": "auth",
 	"person-outline": "auth",
+	"alert-circle-outline": "notFound",
+	"help-circle-outline": "notFound",
 };
 
 interface EmptyStateProps {

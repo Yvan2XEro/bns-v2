@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
@@ -152,8 +153,29 @@ export default function ListingDetail() {
 
 	if (!listing) {
 		return (
-			<View style={[styles.loader, { backgroundColor: bg }]}>
-				<Text style={{ color: textColor }}>Annonce introuvable</Text>
+			<View style={[styles.root, { backgroundColor: bg }]}>
+				<Pressable
+					onPress={() => router.back()}
+					style={[
+						styles.backBtn,
+						{
+							top: safeTop + 12,
+							backgroundColor: isDark ? "#1e293b" : "#ffffff",
+							borderWidth: 1,
+							borderColor,
+						},
+					]}
+				>
+					<Ionicons name="arrow-back" size={20} color={primaryColor} />
+				</Pressable>
+				<EmptyState
+					illustration="notFound"
+					title="Annonce introuvable"
+					subtitle="Cette annonce n'existe plus, a ete retiree ou le lien est invalide."
+					ctaLabel="Retour"
+					onCta={() => router.back()}
+					size={240}
+				/>
 			</View>
 		);
 	}
