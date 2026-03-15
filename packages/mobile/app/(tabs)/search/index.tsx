@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
@@ -21,6 +21,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
@@ -128,11 +129,7 @@ export default function SearchScreen() {
 		initialPageParam: 0,
 	});
 
-	const { data: favData } = useQuery({
-		queryKey: ["favorites"],
-		queryFn: () => api.get<{ docs: any[] }>("/api/favorites?limit=200"),
-		enabled: !!user,
-	});
+	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
 	const listings = (data?.pages.flatMap((p) => p.hits) ?? [])
 		.filter(Boolean)
@@ -141,10 +138,6 @@ export default function SearchScreen() {
 			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
 		}));
 	const totalDocs = data?.pages[0]?.total ?? 0;
-	const favoriteIds = new Set(
-		(favData?.docs ?? []).map((f: any) => f.listing?.id ?? f.listing),
-	);
-
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -218,7 +211,7 @@ export default function SearchScreen() {
 					key={listing.id}
 					listing={listing}
 					isFavorite={favoriteIds.has(listing.id)}
-					onToggleFavorite={() => {}}
+					onToggleFavorite={() => toggleFavorite(listing)}
 					onPress={(id: string) => router.push(`/listing/${id}`)}
 				/>
 			))}

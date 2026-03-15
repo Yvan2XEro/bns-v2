@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useMemo } from "react";
@@ -25,7 +24,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
-import { api } from "@/src/lib/api";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { useAuth } from "@/src/lib/auth";
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<any[]>);
@@ -45,7 +44,6 @@ type SortKey = (typeof SORTS)[number]["key"];
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
-	const queryClient = useQueryClient();
 
 	const [query, setQuery] = React.useState("");
 	const [sortKey, setSortKey] = React.useState<SortKey>("recent");
@@ -107,17 +105,12 @@ export default function FavoritesScreen() {
 	}));
 
 	// ── Data ────────────────────────────────────────────────────────
-	const { data, isLoading, refetch } = useQuery({
-		queryKey: ["favorites"],
-		queryFn: () => api.get<{ docs: any[] }>("/api/favorites?depth=1&limit=100"),
-		enabled: !!user,
-	});
-
-	const favorites = data?.docs ?? [];
+	const { favorites, isLoading, refetch, toggleFavorite } =
+		useFavoriteActions();
 
 	const onRefresh = async () => {
 		setRefreshing(true);
-		await queryClient.invalidateQueries({ queryKey: ["favorites"] });
+		await refetch();
 		setRefreshing(false);
 	};
 
@@ -374,7 +367,7 @@ export default function FavoritesScreen() {
 										key={fav.id}
 										listing={getListing(fav)}
 										isFavorite
-										onToggleFavorite={() => {}}
+										onToggleFavorite={() => toggleFavorite(getListing(fav))}
 										onPress={(id) => router.push(`/listing/${id}`)}
 									/>
 								))}

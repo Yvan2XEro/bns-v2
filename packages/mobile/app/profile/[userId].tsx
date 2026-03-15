@@ -21,6 +21,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ListingCard } from "@/src/components/ListingCard";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
@@ -33,6 +34,7 @@ export default function PublicProfileScreen() {
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
 	const { showSuccess, showError } = useAlert();
+	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 	const [activeTab, setActiveTab] = useState<"listings" | "reviews">(
 		"listings",
 	);
@@ -272,8 +274,8 @@ export default function PublicProfileScreen() {
 											key={listing.id}
 											listing={listing}
 											width={CARD_W}
-											isFavorite={false}
-											onToggleFavorite={() => {}}
+											isFavorite={favoriteIds.has(listing.id)}
+											onToggleFavorite={() => toggleFavorite(listing)}
 											onPress={(id) => router.push(`/listing/${id}`)}
 										/>
 									))}

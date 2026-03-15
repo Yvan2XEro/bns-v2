@@ -39,6 +39,7 @@ import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import {
@@ -269,11 +270,7 @@ export default function HomeScreen() {
 			),
 	});
 
-	const { data: favData } = useQuery({
-		queryKey: ["favorites"],
-		queryFn: () => api.get<{ docs: any[] }>("/api/favorites?limit=200"),
-		enabled: !!user,
-	});
+	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
 	const { data: nearbyData } = useQuery({
 		queryKey: ["listings", "nearby", userCoords],
@@ -302,10 +299,6 @@ export default function HomeScreen() {
 		isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
 	}));
 	const boostedListings = homeListings.filter((l: any) => l.isBoosted);
-	const favoriteIds = new Set(
-		(favData?.docs ?? []).map((f: any) => f.listing?.id ?? f.listing),
-	);
-
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -636,7 +629,7 @@ export default function HomeScreen() {
 												key={listing.id}
 												listing={listing}
 												isFavorite={favoriteIds.has(listing.id)}
-												onToggleFavorite={() => {}}
+												onToggleFavorite={() => toggleFavorite(listing)}
 												onPress={(id) => router.push(`/listing/${id}`)}
 											/>
 										))}
@@ -825,7 +818,7 @@ export default function HomeScreen() {
 											key={listing.id}
 											listing={listing}
 											isFavorite={favoriteIds.has(listing.id)}
-											onToggleFavorite={() => {}}
+											onToggleFavorite={() => toggleFavorite(listing)}
 											onPress={(id) => router.push(`/listing/${id}`)}
 										/>
 									))}
@@ -923,7 +916,7 @@ export default function HomeScreen() {
 										key={listing.id}
 										listing={listing}
 										isFavorite={favoriteIds.has(listing.id)}
-										onToggleFavorite={() => {}}
+										onToggleFavorite={() => toggleFavorite(listing)}
 										onPress={(id) => router.push(`/listing/${id}`)}
 									/>
 								))}
