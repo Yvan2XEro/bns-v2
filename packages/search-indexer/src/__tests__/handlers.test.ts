@@ -67,7 +67,7 @@ describe("handleListingCreated", () => {
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 		const fetchCall = mockFetch.mock.calls[0] as unknown as [string];
-		expect(fetchCall[0]).toContain("/listings/listing-123?depth=1");
+		expect(fetchCall[0]).toContain("/listings/listing-123?depth=2");
 
 		expect(mockAddDocuments).toHaveBeenCalledTimes(1);
 		const indexed = (

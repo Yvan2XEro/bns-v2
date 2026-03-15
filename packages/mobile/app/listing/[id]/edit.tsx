@@ -189,8 +189,12 @@ export default function EditListingScreen() {
 				name: asset.fileName ?? `photo_${Date.now()}.jpg`,
 				type: asset.mimeType ?? "image/jpeg",
 			} as any);
-			formData.append("alt", asset.fileName ?? `photo_${Date.now()}`);
-
+			formData.append(
+				"_payload",
+				JSON.stringify({
+					alt: asset.fileName?.replace(/\.[^.]+$/, "") || `${title} image`,
+				}),
+			);
 			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
 				"/api/media",
 				formData,

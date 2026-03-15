@@ -9,7 +9,7 @@ const PAYLOAD_API_URL =
 
 export async function handleListingCreated(listingId: string): Promise<void> {
 	const response = await fetch(
-		`${PAYLOAD_API_URL}/listings/${listingId}?depth=1`,
+		`${PAYLOAD_API_URL}/listings/${listingId}?depth=2`,
 	);
 
 	if (!response.ok) {
@@ -41,6 +41,45 @@ export function transformListing(
 	const category = listing.category as Record<string, unknown> | null;
 	const seller = listing.seller as Record<string, unknown> | string | null;
 	const attributes = (listing.attributes as Record<string, unknown>) || {};
+	const images = Array.isArray(listing.images)
+		? listing.images
+				.map((entry) => {
+					if (!entry || typeof entry !== "object") {
+						return null;
+					}
+
+					const imageEntry = entry as {
+						id?: string | null;
+						image?: string | Record<string, unknown> | null;
+					};
+					const image = imageEntry.image;
+
+					if (!image) {
+						return null;
+					}
+
+					if (typeof image === "string") {
+						return {
+							id: imageEntry.id ?? null,
+							image: { id: image },
+						};
+					}
+
+					return {
+						id: imageEntry.id ?? null,
+						image: {
+							id: (image.id as string) || null,
+							url: (image.url as string) || null,
+							thumbnailURL: (image.thumbnailURL as string) || null,
+							filename: (image.filename as string) || null,
+							alt: (image.alt as string) || null,
+							width: (image.width as number) || null,
+							height: (image.height as number) || null,
+						},
+					};
+				})
+				.filter(Boolean)
+		: [];
 
 	const doc: ListingDocument = {
 		id: listing.id as string,
@@ -60,7 +99,7 @@ export function transformListing(
 		condition: (listing.condition as string) || null,
 		boostedUntil: (listing.boostedUntil as string) || null,
 		views: (listing.views as number) || 0,
-		images: (listing.images as unknown[]) || [],
+		images,
 		createdAt: listing.createdAt as string,
 		updatedAt: listing.updatedAt as string,
 	};

@@ -40,6 +40,20 @@ describe("transformListing", () => {
 		expect(doc.status).toBe("published");
 		expect(doc.condition).toBe("new");
 		expect(doc.views).toBe(42);
+		expect(doc.images).toEqual([
+			{
+				id: null,
+				image: {
+					id: null,
+					url: "/media/img1.jpg",
+					thumbnailURL: null,
+					filename: null,
+					alt: null,
+					width: null,
+					height: null,
+				},
+			},
+		]);
 		expect(doc.createdAt).toBe("2026-01-15T10:00:00Z");
 	});
 
@@ -144,6 +158,24 @@ describe("transformListing", () => {
 		expect(doc.boostedUntil).toBeNull();
 		expect(doc.views).toBe(0);
 		expect(doc.images).toEqual([]);
+	});
+
+	test("preserves image ids when uploads are not yet fully populated", () => {
+		const listing = {
+			...baseListing,
+			images: [{ id: "row-1", image: "media-123" }],
+			category: { id: "cat-1", name: "Électronique" },
+			seller: "user-1",
+		};
+
+		const doc = transformListing(listing);
+
+		expect(doc.images).toEqual([
+			{
+				id: "row-1",
+				image: { id: "media-123" },
+			},
+		]);
 	});
 
 	test("skips filterable attributes that are not present in listing data", () => {
