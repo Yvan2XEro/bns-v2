@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useCounts } from "@novu/react-native";
 import {
 	useInfiniteQuery,
 	useMutation,
@@ -60,6 +61,34 @@ const SORTS = [
 ];
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+
+// ─── Notification bell ────────────────────────────────────────────────────────
+// Isolated component so useCounts (from @novu/react-native) runs inside
+// NovuProvider. When the user is not authenticated, this component is not
+// rendered so the hook is never called outside its provider.
+
+function NotificationBell({
+	cardBg,
+	borderColor,
+	mutedColor,
+}: {
+	cardBg: string;
+	borderColor: string;
+	mutedColor: string;
+}) {
+	const { data } = useCounts();
+	const unseenCount = data?.unseenCount ?? 0;
+
+	return (
+		<Pressable
+			onPress={() => router.push("/account/notifications")}
+			style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
+		>
+			<Ionicons name="notifications-outline" size={18} color={mutedColor} />
+			{unseenCount > 0 && <View style={styles.bellBadge} />}
+		</Pressable>
+	);
+}
 
 export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
@@ -428,6 +457,15 @@ export default function HomeScreen() {
 					</Animated.Text>
 
 					<View style={{ flex: 1 }} />
+
+					{/* Bell icon — useCounts lives inside its own component to stay in NovuProvider scope */}
+					{user && (
+						<NotificationBell
+							cardBg={cardBg}
+							borderColor={borderColor}
+							mutedColor={mutedColor}
+						/>
+					)}
 
 					<Pressable
 						onPress={() => router.push("/(tabs)/account")}
@@ -1037,6 +1075,26 @@ const styles = StyleSheet.create({
 		fontSize: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
+	},
+	bellBtn: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		alignItems: "center",
+		justifyContent: "center",
+		borderWidth: 1,
+		position: "relative",
+	},
+	bellBadge: {
+		position: "absolute",
+		top: 6,
+		right: 6,
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: "#ef4444",
+		borderWidth: 1.5,
+		borderColor: "#fff",
 	},
 	avatarBtn: {
 		width: 36,

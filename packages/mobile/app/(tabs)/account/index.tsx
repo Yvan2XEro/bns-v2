@@ -287,7 +287,7 @@ export default function AccountScreen() {
 							<MenuItem
 								icon="notifications-outline"
 								label="Notifications"
-								onPress={() => {}}
+								onPress={() => router.push("/account/notifications")}
 								isDark={isDark}
 								borderColor="transparent"
 							/>
