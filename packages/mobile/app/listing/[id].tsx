@@ -90,11 +90,13 @@ export default function ListingDetail() {
 	});
 
 	const handleShare = async () => {
-		const url = `${process.env.EXPO_PUBLIC_API_URL?.replace("/api", "")}/listing/${id}`;
+		const baseUrl =
+			process.env.EXPO_PUBLIC_API_URL?.replace(/\/api\/?$/, "") ?? "";
+		const url = `${baseUrl}/listing/${id}`;
 		Share.share({
 			title: listing?.title,
 			url,
-			message: `${listing?.title} - ${listing?.price?.toLocaleString()} XAF`,
+			message: `${listing?.title} — ${listing?.price?.toLocaleString()} XAF\n${url}`,
 		});
 	};
 
@@ -120,6 +122,14 @@ export default function ListingDetail() {
 				listing: id,
 			});
 			const convId = created.doc?.id ?? created.doc;
+			// Send an initial message with the listing info
+			try {
+				await api.post("/api/messages", {
+					conversation: convId,
+					content: `Bonjour ! Je suis intéressé(e) par votre annonce :\n📦 ${listing?.title}\n💰 ${listing?.price?.toLocaleString()} XAF\n\nEst-il encore disponible ?`,
+					sender: user.id,
+				});
+			} catch (_) {}
 			router.push(`/(tabs)/messages/${convId}`);
 		} catch (e) {
 			console.error("handleMessage error", e);
@@ -452,52 +462,21 @@ export default function ListingDetail() {
 						</Pressable>
 					)}
 
-					{/* Safety Tips */}
+					{/* Safety Tips — discreet */}
 					<View
 						style={[
-							styles.card,
-							{
-								backgroundColor: isDark ? "#162032" : "#fff7ed",
-								borderColor: isDark ? "#1e3a5f" : "#fcd34d",
-							},
+							styles.safetyStrip,
+							{ borderColor: isDark ? "#1e3a5f" : "#e2e8f0" },
 						]}
 					>
-						<View style={styles.safetyHeader}>
-							<Ionicons
-								name="shield-checkmark-outline"
-								size={16}
-								color={isDark ? "#fcd34d" : "#92400e"}
-							/>
-							<Text
-								style={[
-									styles.sectionTitle,
-									{ color: isDark ? "#fcd34d" : "#92400e", marginBottom: 0 },
-								]}
-							>
-								Conseils de sécurité
-							</Text>
-						</View>
-						{[
-							"Rencontrez-vous dans un lieu public",
-							"Vérifiez l'article avant de payer",
-							"N'envoyez jamais d'argent à l'avance",
-						].map((tip, i) => (
-							<View key={i} style={styles.safetyTipRow}>
-								<Ionicons
-									name="checkmark"
-									size={14}
-									color={isDark ? "#fbbf24" : "#92400e"}
-								/>
-								<Text
-									style={[
-										styles.safetyTip,
-										{ color: isDark ? "#fbbf24" : "#92400e" },
-									]}
-								>
-									{tip}
-								</Text>
-							</View>
-						))}
+						<Ionicons
+							name="shield-checkmark-outline"
+							size={13}
+							color={mutedColor}
+						/>
+						<Text style={[styles.safetyStripText, { color: mutedColor }]}>
+							Lieu public · Vérifiez avant paiement · Pas d'avance
+						</Text>
 					</View>
 
 					{/* Similar Listings */}
@@ -740,19 +719,16 @@ const styles = StyleSheet.create({
 	sellerNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
 	sellerName: { fontSize: 16, fontFamily: Fonts.displayBold },
 	memberSince: { fontSize: 12, fontFamily: Fonts.body },
-	safetyHeader: {
+	safetyStrip: {
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 6,
-		marginBottom: 10,
+		borderWidth: 1,
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
 	},
-	safetyTipRow: {
-		flexDirection: "row",
-		alignItems: "flex-start",
-		gap: 6,
-		marginBottom: 4,
-	},
-	safetyTip: { fontSize: 13, lineHeight: 20, flex: 1, fontFamily: Fonts.body },
+	safetyStripText: { fontSize: 12, fontFamily: Fonts.body, flex: 1 },
 	reportLink: {
 		flexDirection: "row",
 		alignItems: "center",

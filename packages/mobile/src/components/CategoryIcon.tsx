@@ -9,34 +9,10 @@ import Animated, {
 	withSpring,
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-// Palette restreinte : bleu + ambre (cohérent avec la charte)
-const TINTS = [
-	{ bg: "#dbeafe", icon: "#1e40af" }, // bleu pâle
-	{ bg: "#fef3c7", icon: "#b45309" }, // ambre pâle
-	{ bg: "#bfdbfe", icon: "#1e3a8a" }, // bleu clair
-	{ bg: "#fde68a", icon: "#92400e" }, // ambre clair
-	{ bg: "#eff6ff", icon: "#2563eb" }, // bleu très pâle
-	{ bg: "#fef9c3", icon: "#a16207" }, // jaune pâle
-	{ bg: "#e0f2fe", icon: "#0369a1" }, // bleu ciel
-	{ bg: "#fef3c7", icon: "#d97706" }, // ambre doux
-	{ bg: "#dbeafe", icon: "#3b82f6" }, // bleu vif
-	{ bg: "#fde68a", icon: "#b45309" }, // ambre foncé
-];
-
-// Variantes dark
-const TINTS_DARK = [
-	{ bg: "#1e3a5f", icon: "#93c5fd" },
-	{ bg: "#451a03", icon: "#fcd34d" },
-	{ bg: "#1e3a8a", icon: "#bfdbfe" },
-	{ bg: "#78350f", icon: "#fde68a" },
-	{ bg: "#172554", icon: "#93c5fd" },
-	{ bg: "#422006", icon: "#fef08a" },
-	{ bg: "#082f49", icon: "#7dd3fc" },
-	{ bg: "#451a03", icon: "#fbbf24" },
-	{ bg: "#1e3a5f", icon: "#60a5fa" },
-	{ bg: "#78350f", icon: "#fcd34d" },
-];
+const TINT_LIGHT = { bg: "#f1f5f9", icon: "#475569" };
+const TINT_DARK = { bg: "#1e293b", icon: "#94a3b8" };
 
 interface Category {
 	id: string;
@@ -49,19 +25,15 @@ interface CategoryIconProps {
 	category: Category;
 	onPress: (id: string) => void;
 	size?: number;
-	colorIndex?: number;
 }
 
 export function CategoryIcon({
 	category,
 	onPress,
 	size = 56,
-	colorIndex = 0,
 }: CategoryIconProps) {
+	const isDark = useColorScheme() === "dark";
 	const scale = useSharedValue(1);
-
-	// Pick a stable tint from the palette
-	const idx = colorIndex % TINTS.length;
 
 	const animStyle = useAnimatedStyle(() => ({
 		transform: [{ scale: scale.value }],
@@ -77,10 +49,7 @@ export function CategoryIcon({
 		onPress(category.id);
 	};
 
-	// We embed both light/dark in inline style — simpler than a hook here
-	// Use the same idx for dark
-	const tint = TINTS[idx];
-	const _tintDark = TINTS_DARK[idx];
+	const tint = isDark ? TINT_DARK : TINT_LIGHT;
 
 	return (
 		<TouchableOpacity
@@ -110,7 +79,10 @@ export function CategoryIcon({
 					<Ionicons name="cube-outline" size={size * 0.42} color={tint.icon} />
 				)}
 			</Animated.View>
-			<Text style={[styles.label, { color: "#334155" }]} numberOfLines={2}>
+			<Text
+				style={[styles.label, { color: isDark ? "#94a3b8" : "#334155" }]}
+				numberOfLines={2}
+			>
 				{category.name}
 			</Text>
 		</TouchableOpacity>

@@ -85,7 +85,7 @@ export default function LoginScreen() {
 			>
 				{/* Close button */}
 				<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
-					<Ionicons name="close" size={24} color={textColor} />
+					<Ionicons name="arrow-back" size={24} color={textColor} />
 				</Pressable>
 
 				<View style={styles.container}>
@@ -205,7 +205,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	closeBtn: { padding: 16, alignSelf: "flex-end" },
+	closeBtn: { padding: 16, alignSelf: "flex-start" },
 	container: { flex: 1, padding: 24, paddingTop: 8 },
 	logoWrap: { alignItems: "center", marginBottom: 20 },
 	logoBlock: { alignItems: "center", gap: 10 },

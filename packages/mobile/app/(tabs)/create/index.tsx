@@ -7,7 +7,6 @@ import { router } from "expo-router";
 import { useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	Alert,
 	Dimensions,
 	Pressable,
 	ScrollView,
@@ -678,25 +677,152 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 
 // ─── Attributes Step ───────────────────────────────────────────────────────────
 
-function AttributesStep({ form, onNext, colors }: any) {
-	const { bg, textColor, mutedColor, primary } = colors;
-	const attributes = form.category?.attributes ?? [];
+function AttributesStep({ form, setForm, onNext, colors }: any) {
+	const { bg, cardBg, textColor, mutedColor, primary, border, inputBg } =
+		colors;
+	const attributes: any[] = form.category?.attributes ?? [];
 
 	if (attributes.length === 0) {
 		onNext();
 		return null;
 	}
 
+	const updateAttr = (slug: string, value: any) =>
+		setForm((f: any) => ({
+			...f,
+			attributes: { ...f.attributes, [slug]: value },
+		}));
+
+	const canProceed = attributes
+		.filter((a) => a.required)
+		.every((a) => {
+			const v = form.attributes[a.slug];
+			return v !== undefined && v !== "" && v !== null;
+		});
+
 	return (
 		<ScrollView
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+			keyboardShouldPersistTaps="handled"
 		>
-			<Text style={[styles.stepTitle, { color: textColor }]}>Attributs</Text>
+			<Text style={[styles.stepTitle, { color: textColor }]}>
+				{form.category?.name}
+			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
 				Ces informations aident les acheteurs à trouver votre annonce.
 			</Text>
-			<NextButton label="Continuer" onPress={onNext} active colors={colors} />
+
+			{attributes.map((attr: any) => (
+				<View
+					key={attr.slug}
+					style={[
+						styles.fieldCard,
+						{ backgroundColor: cardBg, borderColor: border },
+					]}
+				>
+					<FieldHeader
+						icon="pricetag-outline"
+						label={attr.name}
+						required={attr.required}
+						colors={colors}
+					/>
+
+					{attr.type === "select" && attr.options ? (
+						<View style={styles.conditionWrap}>
+							{attr.options.map((opt: any) => {
+								const active = form.attributes[attr.slug] === opt.value;
+								return (
+									<Pressable
+										key={opt.value}
+										onPress={() =>
+											updateAttr(attr.slug, active ? "" : opt.value)
+										}
+										style={[
+											styles.conditionPill,
+											{
+												backgroundColor: active ? primary : inputBg,
+												borderColor: active ? primary : border,
+											},
+										]}
+									>
+										{active && (
+											<Ionicons name="checkmark" size={12} color="#fff" />
+										)}
+										<Text
+											style={[
+												styles.conditionText,
+												{ color: active ? "#fff" : mutedColor },
+											]}
+										>
+											{opt.value}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
+					) : attr.type === "boolean" ? (
+						<View style={[styles.conditionWrap, { gap: 8 }]}>
+							{[
+								{ label: "Oui", value: "true" },
+								{ label: "Non", value: "false" },
+							].map((opt) => {
+								const active = form.attributes[attr.slug] === opt.value;
+								return (
+									<Pressable
+										key={opt.value}
+										onPress={() =>
+											updateAttr(attr.slug, active ? "" : opt.value)
+										}
+										style={[
+											styles.conditionPill,
+											{
+												backgroundColor: active ? primary : inputBg,
+												borderColor: active ? primary : border,
+											},
+										]}
+									>
+										{active && (
+											<Ionicons name="checkmark" size={12} color="#fff" />
+										)}
+										<Text
+											style={[
+												styles.conditionText,
+												{ color: active ? "#fff" : mutedColor },
+											]}
+										>
+											{opt.label}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
+					) : (
+						<TextInput
+							value={form.attributes[attr.slug] ?? ""}
+							onChangeText={(v) => updateAttr(attr.slug, v)}
+							placeholder={attr.name}
+							placeholderTextColor={mutedColor}
+							keyboardType={attr.type === "number" ? "numeric" : "default"}
+							style={[
+								styles.fieldInput,
+								{
+									color: textColor,
+									borderColor: border,
+									backgroundColor: inputBg,
+								},
+							]}
+						/>
+					)}
+				</View>
+			))}
+
+			<NextButton
+				label="Continuer"
+				onPress={canProceed ? onNext : undefined}
+				active={canProceed}
+				colors={colors}
+			/>
 		</ScrollView>
 	);
 }
@@ -705,6 +831,7 @@ function AttributesStep({ form, onNext, colors }: any) {
 
 function PhotosStep({ form, setForm, onNext, colors }: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+	const { showAlert, showError, showWarning } = useAlert();
 	const [uploading, setUploading] = useState(false);
 
 	const pickImage = async (fromCamera: boolean) => {
@@ -712,7 +839,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			if (fromCamera) {
 				const { status } = await ImagePicker.requestCameraPermissionsAsync();
 				if (status !== "granted") {
-					Alert.alert(
+					showError(
 						"Permission refusée",
 						"L'accès à la caméra est nécessaire.",
 					);
@@ -722,7 +849,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 				const { status } =
 					await ImagePicker.requestMediaLibraryPermissionsAsync();
 				if (status !== "granted") {
-					Alert.alert(
+					showError(
 						"Permission refusée",
 						"L'accès à la galerie est nécessaire.",
 					);
@@ -737,7 +864,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 						quality: 0.85,
 					})
 				: await ImagePicker.launchImageLibraryAsync({
-						mediaTypes: ImagePicker.MediaTypeOptions.Images,
+						mediaTypes: ["images"],
 						allowsEditing: true,
 						aspect: [4, 3],
 						quality: 0.85,
@@ -754,6 +881,10 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 					name: asset.fileName ?? `photo_${Date.now()}.jpg`,
 					type: asset.mimeType ?? "image/jpeg",
 				} as any);
+				formData.append(
+					"_payload",
+					JSON.stringify({ alt: asset.fileName ?? `photo_${Date.now()}` }),
+				);
 
 				const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
 					"/api/media",
@@ -773,16 +904,16 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			}
 		} catch (err: any) {
 			setUploading(false);
-			Alert.alert("Erreur", err.message ?? "Impossible d'ajouter la photo.");
+			showError("Erreur", err.message ?? "Impossible d'ajouter la photo.");
 		}
 	};
 
 	const showPicker = () => {
 		if (form.images.length >= 10) {
-			Alert.alert("Limite atteinte", "Vous pouvez ajouter jusqu'à 10 photos.");
+			showWarning("Limite atteinte", "Vous pouvez ajouter jusqu'à 10 photos.");
 			return;
 		}
-		Alert.alert("Ajouter une photo", "Choisissez une source", [
+		showAlert("Ajouter une photo", "Choisissez une source", [
 			{ text: "Appareil photo", onPress: () => pickImage(true) },
 			{ text: "Galerie", onPress: () => pickImage(false) },
 			{ text: "Annuler", style: "cancel" },
@@ -887,7 +1018,17 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 				)}
 			</View>
 
-			<NextButton label="Continuer" onPress={onNext} active colors={colors} />
+			{form.images.length === 0 && (
+				<Text style={[styles.photoRequired, { color: "#ef4444" }]}>
+					Au moins une photo est requise
+				</Text>
+			)}
+			<NextButton
+				label="Continuer"
+				onPress={onNext}
+				active={form.images.length > 0}
+				colors={colors}
+			/>
 		</ScrollView>
 	);
 }
@@ -910,6 +1051,9 @@ function ReviewStep({ form, setStep, colors }: any) {
 				category: form.category?.id,
 				seller: user?.id,
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
+				...(Object.keys(form.attributes).length > 0
+					? { attributes: form.attributes }
+					: {}),
 			}),
 		onSuccess: () => {
 			showSuccess(
@@ -922,6 +1066,24 @@ function ReviewStep({ form, setStep, colors }: any) {
 			showError("Erreur", err.message ?? "Une erreur est survenue");
 		},
 	});
+
+	const categoryAttributes: any[] = form.category?.attributes ?? [];
+	const attrRows = categoryAttributes
+		.filter(
+			(a) =>
+				form.attributes[a.slug] !== undefined && form.attributes[a.slug] !== "",
+		)
+		.map((a) => {
+			let value = form.attributes[a.slug];
+			if (value === "true") value = "Oui";
+			else if (value === "false") value = "Non";
+			return {
+				label: a.name,
+				icon: "pricetag-outline",
+				value: String(value),
+				step: 2,
+			};
+		});
 
 	const rows = [
 		{
@@ -951,6 +1113,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 			value: form.location || "—",
 			step: 1,
 		},
+		...attrRows,
 		{
 			label: "Photos",
 			icon: "camera-outline",
@@ -1048,6 +1211,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 
 function GpsButton({ onLocation, colors }: any) {
 	const { primary, mutedColor, isDark } = colors;
+	const { showError } = useAlert();
 	const [loading, setLoading] = useState(false);
 
 	const getLocation = async () => {
@@ -1055,7 +1219,7 @@ function GpsButton({ onLocation, colors }: any) {
 		try {
 			const { status } = await Location.requestForegroundPermissionsAsync();
 			if (status !== "granted") {
-				Alert.alert(
+				showError(
 					"Permission refusée",
 					"L'accès à la localisation est nécessaire.",
 				);
@@ -1076,7 +1240,7 @@ function GpsButton({ onLocation, colors }: any) {
 				onLocation(parts.join(", ") || (result.formattedAddress ?? ""));
 			}
 		} catch (_err: any) {
-			Alert.alert("Erreur", "Impossible d'obtenir la localisation.");
+			showError("Erreur", "Impossible d'obtenir la localisation.");
 		} finally {
 			setLoading(false);
 		}
@@ -1512,6 +1676,12 @@ const styles = StyleSheet.create({
 	addPhotoText: {
 		fontSize: 11,
 		fontFamily: Fonts.bodySemibold,
+	},
+	photoRequired: {
+		fontSize: 13,
+		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
+		marginTop: 8,
 	},
 	photoPrimaryBadge: {
 		position: "absolute",

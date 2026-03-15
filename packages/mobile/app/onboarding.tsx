@@ -1428,6 +1428,13 @@ export default function OnboardingScreen() {
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<FlatList>(null);
 
+	// Guard: if already seen, skip immediately (handles Expo Router state restore)
+	useEffect(() => {
+		AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
+			if (value !== null) router.replace("/(tabs)/home");
+		});
+	}, []);
+
 	const isLast = currentIndex === SLIDES.length - 1;
 
 	const onViewableItemsChanged = useRef(

@@ -131,13 +131,37 @@ export function registerMessageHandlers(
 				);
 
 				const roomId = getRoomId(conversationId);
-				io.to(roomId).emit("message:new", {
+				const msgPayload = {
 					id: message.id,
 					conversationId,
 					sender: userId,
 					content: message.content,
 					createdAt: message.createdAt,
-				});
+				};
+
+				// Emit to conversation room (for users who already joined it)
+				io.to(roomId).emit("message:new", msgPayload);
+
+				// Also emit to each participant's personal room so recipients
+				// of a brand-new conversation receive the event in real-time.
+				try {
+					const convRes = await fetch(
+						`${PAYLOAD_API_URL}/conversations/${conversationId}?depth=0`,
+						{ headers: { Authorization: `JWT ${token}` } },
+					);
+					if (convRes.ok) {
+						const conv = (await convRes.json()) as {
+							participants: (string | number)[];
+						};
+						for (const participantId of conv.participants) {
+							if (String(participantId) !== userId) {
+								io.to(`user:${participantId}`).emit("message:new", msgPayload);
+							}
+						}
+					}
+				} catch (err) {
+					console.error("[chat] Failed to notify participant rooms:", err);
+				}
 
 				ack?.({ success: true, message });
 

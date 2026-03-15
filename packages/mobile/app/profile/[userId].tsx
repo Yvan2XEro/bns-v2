@@ -1,31 +1,46 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
+	Dimensions,
+	Modal,
 	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ListingCard } from "@/src/components/ListingCard";
 import { ReviewStars } from "@/src/components/ReviewStars";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+
+const { width } = Dimensions.get("window");
+const CARD_W = (width - 48) / 2;
 
 export default function PublicProfileScreen() {
 	const { userId } = useLocalSearchParams<{ userId: string }>();
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
-	const _queryClient = useQueryClient();
+	const queryClient = useQueryClient();
+	const { showSuccess, showError } = useAlert();
 	const [activeTab, setActiveTab] = useState<"listings" | "reviews">(
 		"listings",
 	);
+
+	// Review modal state
+	const [reviewModal, setReviewModal] = useState(false);
+	const [reviewRating, setReviewRating] = useState(0);
+	const [reviewComment, setReviewComment] = useState("");
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -45,7 +60,7 @@ export default function PublicProfileScreen() {
 		queryKey: ["profile-listings", userId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
-				`/api/listings?where[seller][equals]=${userId}&where[_status][equals]=published&limit=20`,
+				`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=20`,
 			),
 		enabled: !!userId,
 	});
@@ -57,6 +72,25 @@ export default function PublicProfileScreen() {
 				`/api/reviews?where[reviewedUser][equals]=${userId}&limit=20`,
 			),
 		enabled: !!userId,
+	});
+
+	const { mutate: submitReview, isPending: submittingReview } = useMutation({
+		mutationFn: () =>
+			api.post("/api/reviews", {
+				reviewer: user?.id,
+				reviewedUser: userId,
+				rating: reviewRating,
+				comment: reviewComment.trim() || undefined,
+			}),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["profile-reviews", userId] });
+			queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+			setReviewModal(false);
+			setReviewRating(0);
+			setReviewComment("");
+			showSuccess("Avis publié", "Votre avis a été enregistré.");
+		},
+		onError: (err: any) => showError("Erreur", err.message),
 	});
 
 	const profile = profileData?.doc ?? profileData;
@@ -81,11 +115,12 @@ export default function PublicProfileScreen() {
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
-			<View style={[styles.topBar, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
+			{/* Header */}
+			<View style={[styles.header, { borderBottomColor: borderColor }]}>
+				<Pressable onPress={() => router.back()} style={styles.backBtn}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
-				<Text style={[styles.topTitle, { color: textColor }]}>Profil</Text>
+				<Text style={[styles.headerTitle, { color: textColor }]}>Profil</Text>
 				<View style={{ width: 40 }} />
 			</View>
 
@@ -124,7 +159,8 @@ export default function PublicProfileScreen() {
 									{ backgroundColor: primaryColor },
 								]}
 							>
-								<Text style={styles.verifiedText}>✓ Vérifié</Text>
+								<Ionicons name="checkmark" size={11} color="#fff" />
+								<Text style={styles.verifiedText}>Vérifié</Text>
 							</View>
 						)}
 					</View>
@@ -138,9 +174,7 @@ export default function PublicProfileScreen() {
 
 					<View style={styles.metaRow}>
 						{profile?.location && (
-							<View
-								style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-							>
+							<View style={styles.metaItem}>
 								<Ionicons
 									name="location-outline"
 									size={13}
@@ -161,6 +195,12 @@ export default function PublicProfileScreen() {
 							</Text>
 						)}
 					</View>
+
+					{profile?.bio && (
+						<Text style={[styles.bio, { color: mutedColor }]}>
+							{profile.bio}
+						</Text>
+					)}
 
 					{!isOwnProfile && (
 						<View style={styles.actionRow}>
@@ -183,7 +223,7 @@ export default function PublicProfileScreen() {
 									})
 								}
 								style={[
-									styles.reportBtn,
+									styles.iconBtn,
 									{ borderColor, backgroundColor: cardBg },
 								]}
 							>
@@ -224,23 +264,35 @@ export default function PublicProfileScreen() {
 				{/* Listings tab */}
 				{activeTab === "listings" && (
 					<View style={styles.grid}>
-						{pairs.map((pair, i) => (
-							<View key={i} style={styles.gridRow}>
-								{pair.map((listing: any) => (
-									<ListingCard
-										key={listing.id}
-										listing={listing}
-										isFavorite={false}
-										onToggleFavorite={() => {}}
-										onPress={(id) => router.push(`/listing/${id}`)}
-									/>
-								))}
+						{pairs.length > 0 ? (
+							pairs.map((pair, i) => (
+								<View key={i} style={styles.gridRow}>
+									{pair.map((listing: any) => (
+										<ListingCard
+											key={listing.id}
+											listing={listing}
+											width={CARD_W}
+											isFavorite={false}
+											onToggleFavorite={() => {}}
+											onPress={(id) => router.push(`/listing/${id}`)}
+										/>
+									))}
+								</View>
+							))
+						) : (
+							<View style={styles.emptyBox}>
+								<Ionicons
+									name="pricetag-outline"
+									size={36}
+									color={mutedColor}
+								/>
+								<Text style={[styles.emptyTitle, { color: textColor }]}>
+									Aucune annonce
+								</Text>
+								<Text style={[styles.emptySub, { color: mutedColor }]}>
+									Cet utilisateur n'a pas encore publié d'annonce.
+								</Text>
 							</View>
-						))}
-						{listings.length === 0 && (
-							<Text style={[styles.emptyText, { color: mutedColor }]}>
-								Aucune annonce
-							</Text>
 						)}
 					</View>
 				)}
@@ -248,55 +300,170 @@ export default function PublicProfileScreen() {
 				{/* Reviews tab */}
 				{activeTab === "reviews" && (
 					<View style={styles.reviewsList}>
-						{reviews.map((review: any) => (
-							<View
-								key={review.id}
-								style={[
-									styles.reviewCard,
-									{ backgroundColor: cardBg, borderColor },
-								]}
+						{/* Add review button (non-own profile, logged in) */}
+						{!isOwnProfile && user && (
+							<Pressable
+								onPress={() => setReviewModal(true)}
+								style={[styles.addReviewBtn, { backgroundColor: primaryColor }]}
 							>
-								<View style={styles.reviewHeader}>
-									<View
-										style={[
-											styles.reviewerAvatar,
-											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-										]}
-									>
-										<Text style={{ color: primaryColor, fontWeight: "700" }}>
-											{review.reviewer?.name?.[0]?.toUpperCase()}
+								<Ionicons name="star" size={16} color="#fff" />
+								<Text style={styles.addReviewText}>Laisser un avis</Text>
+							</Pressable>
+						)}
+
+						{reviews.length > 0 ? (
+							reviews.map((review: any) => (
+								<View
+									key={review.id}
+									style={[
+										styles.reviewCard,
+										{ backgroundColor: cardBg, borderColor },
+									]}
+								>
+									<View style={styles.reviewHeader}>
+										<View
+											style={[
+												styles.reviewerAvatar,
+												{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+											]}
+										>
+											<Text
+												style={[styles.reviewerLetter, { color: primaryColor }]}
+											>
+												{review.reviewer?.name?.[0]?.toUpperCase()}
+											</Text>
+										</View>
+										<View style={{ flex: 1 }}>
+											<Text style={[styles.reviewerName, { color: textColor }]}>
+												{review.reviewer?.name}
+											</Text>
+											<ReviewStars rating={review.rating} size={12} />
+										</View>
+										<Text style={[styles.reviewDate, { color: mutedColor }]}>
+											{new Date(review.createdAt).toLocaleDateString("fr-FR")}
 										</Text>
 									</View>
-									<View style={{ flex: 1 }}>
-										<Text style={[styles.reviewerName, { color: textColor }]}>
-											{review.reviewer?.name}
+									{review.comment && (
+										<Text
+											style={[
+												styles.reviewComment,
+												{ color: isDark ? "#cbd5e1" : "#334155" },
+											]}
+										>
+											{review.comment}
 										</Text>
-										<ReviewStars rating={review.rating} size={12} />
-									</View>
-									<Text style={[styles.reviewDate, { color: mutedColor }]}>
-										{new Date(review.createdAt).toLocaleDateString("fr-FR")}
-									</Text>
+									)}
 								</View>
-								{review.comment && (
-									<Text
-										style={[
-											styles.reviewComment,
-											{ color: isDark ? "#cbd5e1" : "#334155" },
-										]}
-									>
-										{review.comment}
-									</Text>
-								)}
+							))
+						) : (
+							<View style={styles.emptyBox}>
+								<Ionicons name="star-outline" size={36} color={mutedColor} />
+								<Text style={[styles.emptyTitle, { color: textColor }]}>
+									Aucun avis
+								</Text>
+								<Text style={[styles.emptySub, { color: mutedColor }]}>
+									Soyez le premier à laisser un avis.
+								</Text>
 							</View>
-						))}
-						{reviews.length === 0 && (
-							<Text style={[styles.emptyText, { color: mutedColor }]}>
-								Aucun avis
-							</Text>
 						)}
 					</View>
 				)}
 			</ScrollView>
+
+			{/* Add review modal */}
+			<Modal
+				visible={reviewModal}
+				transparent
+				animationType="slide"
+				onRequestClose={() => setReviewModal(false)}
+			>
+				<Pressable
+					style={styles.modalOverlay}
+					onPress={() => setReviewModal(false)}
+				/>
+				<View style={[styles.modalSheet, { backgroundColor: cardBg }]}>
+					<View
+						style={[styles.modalHeader, { borderBottomColor: borderColor }]}
+					>
+						<Text style={[styles.modalTitle, { color: textColor }]}>
+							Laisser un avis
+						</Text>
+						<Pressable onPress={() => setReviewModal(false)}>
+							<Ionicons name="close" size={22} color={textColor} />
+						</Pressable>
+					</View>
+
+					<KeyboardAwareScrollView
+						keyboardShouldPersistTaps="handled"
+						bottomOffset={24}
+						contentContainerStyle={styles.modalBody}
+					>
+						{/* Star rating picker */}
+						<Text style={[styles.fieldLabel, { color: mutedColor }]}>Note</Text>
+						<View style={styles.starPicker}>
+							{[1, 2, 3, 4, 5].map((s) => (
+								<Pressable
+									key={s}
+									onPress={() => setReviewRating(s)}
+									hitSlop={8}
+								>
+									<Ionicons
+										name={s <= reviewRating ? "star" : "star-outline"}
+										size={36}
+										color={s <= reviewRating ? "#f59e0b" : mutedColor}
+									/>
+								</Pressable>
+							))}
+						</View>
+
+						{/* Comment */}
+						<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+							Commentaire (optionnel)
+						</Text>
+						<TextInput
+							value={reviewComment}
+							onChangeText={setReviewComment}
+							placeholder="Partagez votre expérience..."
+							placeholderTextColor={mutedColor}
+							multiline
+							numberOfLines={4}
+							style={[
+								styles.textarea,
+								{ backgroundColor: bg, borderColor, color: textColor },
+							]}
+						/>
+
+						<Pressable
+							onPress={() => reviewRating > 0 && submitReview()}
+							disabled={reviewRating === 0 || submittingReview}
+							style={[
+								styles.submitBtn,
+								{
+									backgroundColor:
+										reviewRating === 0
+											? isDark
+												? "#1e293b"
+												: "#e2e8f0"
+											: primaryColor,
+								},
+							]}
+						>
+							{submittingReview ? (
+								<ActivityIndicator color="#fff" />
+							) : (
+								<Text
+									style={[
+										styles.submitText,
+										{ color: reviewRating === 0 ? mutedColor : "#fff" },
+									]}
+								>
+									Publier l'avis
+								</Text>
+							)}
+						</Pressable>
+					</KeyboardAwareScrollView>
+				</View>
+			</Modal>
 		</SafeAreaView>
 	);
 }
@@ -304,7 +471,9 @@ export default function PublicProfileScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
-	topBar: {
+
+	/* Header */
+	header: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
@@ -312,7 +481,15 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		borderBottomWidth: 1,
 	},
-	topTitle: { fontSize: 17, fontWeight: "700" },
+	backBtn: {
+		width: 40,
+		height: 40,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	headerTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+
+	/* Profile card */
 	profileCard: {
 		margin: 16,
 		borderRadius: 16,
@@ -329,14 +506,28 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	avatarLetter: { fontSize: 34, fontWeight: "700" },
+	avatarLetter: { fontSize: 34, fontFamily: Fonts.displayExtrabold },
 	nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-	name: { fontSize: 20, fontWeight: "800" },
-	verifiedBadge: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3 },
-	verifiedText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+	name: { fontSize: 20, fontFamily: Fonts.displayExtrabold },
+	verifiedBadge: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 3,
+		borderRadius: 12,
+		paddingHorizontal: 8,
+		paddingVertical: 3,
+	},
+	verifiedText: { color: "#fff", fontSize: 11, fontFamily: Fonts.displayBold },
 	metaRow: { gap: 4, alignItems: "center" },
-	metaText: { fontSize: 13 },
-	actionRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+	metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+	metaText: { fontSize: 13, fontFamily: Fonts.body },
+	bio: {
+		fontSize: 14,
+		fontFamily: Fonts.body,
+		lineHeight: 20,
+		textAlign: "center",
+	},
+	actionRow: { flexDirection: "row", gap: 8, marginTop: 4, width: "100%" },
 	msgBtn: {
 		flex: 1,
 		flexDirection: "row",
@@ -344,17 +535,19 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 		borderRadius: 12,
-		paddingVertical: 11,
+		paddingVertical: 12,
 	},
-	msgBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-	reportBtn: {
-		width: 44,
-		height: 44,
+	msgBtnText: { color: "#fff", fontFamily: Fonts.displayBold, fontSize: 14 },
+	iconBtn: {
+		width: 46,
+		height: 46,
 		borderRadius: 12,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 	},
+
+	/* Tabs */
 	tabs: { flexDirection: "row", borderBottomWidth: 1 },
 	tab: {
 		flex: 1,
@@ -363,10 +556,24 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 2,
 		borderBottomColor: "transparent",
 	},
-	tabText: { fontSize: 14, fontWeight: "600" },
-	grid: { padding: 16 },
-	gridRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
+	tabText: { fontSize: 14, fontFamily: Fonts.displayBold },
+
+	/* Listings grid */
+	grid: { padding: 16, gap: 12 },
+	gridRow: { flexDirection: "row", gap: 12 },
+
+	/* Reviews */
 	reviewsList: { padding: 16, gap: 10 },
+	addReviewBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
+		borderRadius: 12,
+		paddingVertical: 13,
+		marginBottom: 4,
+	},
+	addReviewText: { color: "#fff", fontFamily: Fonts.displayBold, fontSize: 14 },
 	reviewCard: { borderRadius: 12, borderWidth: 1, padding: 14 },
 	reviewHeader: {
 		flexDirection: "row",
@@ -381,8 +588,52 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	reviewerName: { fontSize: 14, fontWeight: "700" },
-	reviewDate: { fontSize: 12 },
-	reviewComment: { fontSize: 14, lineHeight: 20 },
-	emptyText: { textAlign: "center", padding: 32, fontSize: 14 },
+	reviewerLetter: { fontFamily: Fonts.displayBold, fontSize: 15 },
+	reviewerName: { fontSize: 14, fontFamily: Fonts.displayBold },
+	reviewDate: { fontSize: 12, fontFamily: Fonts.body },
+	reviewComment: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
+
+	/* Empty state */
+	emptyBox: { alignItems: "center", paddingVertical: 40, gap: 8 },
+	emptyTitle: { fontSize: 16, fontFamily: Fonts.displayBold },
+	emptySub: { fontSize: 13, fontFamily: Fonts.body, textAlign: "center" },
+
+	/* Review modal */
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0,0,0,0.4)",
+	},
+	modalSheet: {
+		borderTopLeftRadius: 20,
+		borderTopRightRadius: 20,
+		paddingBottom: 32,
+	},
+	modalHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		padding: 16,
+		borderBottomWidth: 1,
+	},
+	modalTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	modalBody: { padding: 20, gap: 12 },
+	fieldLabel: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	starPicker: {
+		flexDirection: "row",
+		gap: 8,
+		justifyContent: "center",
+		paddingVertical: 8,
+	},
+	textarea: {
+		borderRadius: 12,
+		borderWidth: 1.5,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		fontSize: 14,
+		fontFamily: Fonts.body,
+		minHeight: 100,
+		textAlignVertical: "top",
+	},
+	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
+	submitText: { fontSize: 15, fontFamily: Fonts.displayBold },
 });

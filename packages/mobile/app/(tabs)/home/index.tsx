@@ -1,16 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
 	useInfiniteQuery,
+	useMutation,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import * as Location from "expo-location";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Dimensions,
 	FlatList,
+	KeyboardAvoidingView,
+	Modal,
+	Platform,
 	Pressable,
 	RefreshControl,
 	ScrollView,
@@ -36,7 +41,10 @@ import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
-import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import {
+	resolveImageUrl,
+	resolveListingImageUrl,
+} from "@/src/lib/resolveImageUrl";
 
 const { width } = Dimensions.get("window");
 
@@ -56,6 +64,7 @@ export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
+	const filterParams = useLocalSearchParams();
 
 	// ── Search state ──────────────────────────────────────────────
 	const [query, setQuery] = useState("");
@@ -144,6 +153,21 @@ export default function HomeScreen() {
 		setDebouncedQuery("");
 		searchActive.value = withTiming(0, { duration: 200 });
 		inputRef.current?.blur();
+		// Efface aussi les filtres URL si présents
+		if (activeFilterCount > 0) {
+			const resetParams: Record<string, undefined> = {
+				category: undefined,
+				minPrice: undefined,
+				maxPrice: undefined,
+				conditions: undefined,
+				location: undefined,
+				radius: undefined,
+			};
+			for (const key of Object.keys(attrParams)) {
+				resetParams[key] = undefined;
+			}
+			router.setParams(resetParams);
+		}
 	};
 
 	// ── Colors ────────────────────────────────────────────────────
@@ -154,6 +178,76 @@ export default function HomeScreen() {
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const accentBg = isDark ? "#111827" : "#eef2ff";
+
+	// ── Géolocalisation ───────────────────────────────────────────
+	const [userCoords, setUserCoords] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(null);
+	const [locationDenied, setLocationDenied] = useState(false);
+
+	useEffect(() => {
+		(async () => {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				setLocationDenied(true);
+				return;
+			}
+			const pos = await Location.getCurrentPositionAsync({
+				accuracy: Location.Accuracy.Balanced,
+			});
+			setUserCoords({
+				lat: pos.coords.latitude,
+				lng: pos.coords.longitude,
+			});
+		})();
+	}, []);
+
+	// ── Save search dialog ─────────────────────────────────────────
+	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+	const [saveName, setSaveName] = useState("");
+	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+		"idle",
+	);
+
+	const { mutate: saveSearch } = useMutation({
+		mutationFn: () => {
+			const urlParams = new URLSearchParams();
+			if (debouncedQuery) urlParams.set("q", debouncedQuery);
+			for (const [k, v] of Object.entries(searchParams)) {
+				if (v && k !== "sort") urlParams.set(k, v);
+			}
+			return api.post("/api/saved-searches", {
+				name: saveName.trim() || debouncedQuery || "Ma recherche",
+				query: debouncedQuery,
+				filters: {
+					category: filterParams.category,
+					minPrice: filterParams.minPrice,
+					maxPrice: filterParams.maxPrice,
+					conditions: filterParams.conditions,
+					location: filterParams.location,
+					sort,
+					...attrParams,
+				},
+				url: `/search?${urlParams.toString()}`,
+			});
+		},
+		onSuccess: () => {
+			setSaveStatus("saved");
+			setTimeout(() => {
+				setSaveDialogOpen(false);
+				setSaveStatus("idle");
+				setSaveName("");
+			}, 1200);
+		},
+		onError: () => setSaveStatus("idle"),
+	});
+
+	const openSaveDialog = () => {
+		setSaveName(debouncedQuery || "");
+		setSaveStatus("idle");
+		setSaveDialogOpen(true);
+	};
 
 	// ── Queries (home) ────────────────────────────────────────────
 	const { data: categoriesData } = useQuery({
@@ -181,6 +275,22 @@ export default function HomeScreen() {
 		enabled: !!user,
 	});
 
+	const { data: nearbyData } = useQuery({
+		queryKey: ["listings", "nearby", userCoords],
+		queryFn: () =>
+			api.get<{ hits: any[]; total: number }>(
+				`/api/public/search?lat=${userCoords?.lat}&lng=${userCoords?.lng}&radius=50&limit=10&sort=newest`,
+			),
+		enabled: !!userCoords,
+		staleTime: 5 * 60 * 1000,
+	});
+	const nearbyListings = (nearbyData?.hits ?? [])
+		.filter(Boolean)
+		.map((l: any) => ({
+			...l,
+			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
+		}));
+
 	const categories = (categoriesData?.categories ?? [])
 		.filter(Boolean)
 		.slice(0, 8);
@@ -205,11 +315,63 @@ export default function HomeScreen() {
 	};
 
 	// ── Queries (search) ──────────────────────────────────────────
-	const isSearchMode = searchFocused || query.length > 0;
+	// Extraire les attr_* depuis les params URL
+	const attrParams: Record<string, string> = {};
+	for (const [key, value] of Object.entries(filterParams)) {
+		if (key.startsWith("attr_") && typeof value === "string" && value) {
+			attrParams[key] = value;
+		}
+	}
+
+	const activeFilterCount = [
+		filterParams.category,
+		filterParams.minPrice,
+		filterParams.maxPrice,
+		filterParams.conditions,
+		filterParams.location,
+		...Object.values(attrParams),
+	].filter(Boolean).length;
+
+	const isSearchMode =
+		searchFocused || query.length > 0 || activeFilterCount > 0;
+
+	const openFilters = () =>
+		router.push({
+			pathname: "/filters",
+			params: {
+				returnTo: "/(tabs)/home",
+				category: (filterParams.category as string) ?? "",
+				minPrice: (filterParams.minPrice as string) ?? "",
+				maxPrice: (filterParams.maxPrice as string) ?? "",
+				conditions: (filterParams.conditions as string) ?? "",
+				location: (filterParams.location as string) ?? "",
+				radius: (filterParams.radius as string) ?? "",
+				...attrParams,
+			},
+		});
 
 	const searchParams: Record<string, string> = {
 		sort,
 		...(debouncedQuery ? { q: debouncedQuery } : {}),
+		...(filterParams.category
+			? { category: filterParams.category as string }
+			: {}),
+		...(filterParams.minPrice
+			? { minPrice: filterParams.minPrice as string }
+			: {}),
+		...(filterParams.maxPrice
+			? { maxPrice: filterParams.maxPrice as string }
+			: {}),
+		...(filterParams.conditions
+			? { condition: filterParams.conditions as string }
+			: {}),
+		...(filterParams.location
+			? { location: filterParams.location as string }
+			: {}),
+		...(filterParams.location && filterParams.radius
+			? { radius: filterParams.radius as string }
+			: {}),
+		...attrParams,
 	};
 	const queryString = Object.entries(searchParams)
 		.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
@@ -280,7 +442,11 @@ export default function HomeScreen() {
 					>
 						{(user as any)?.avatar?.url ? (
 							<Image
-								source={{ uri: (user as any).avatar.url }}
+								source={{
+									uri:
+										resolveImageUrl((user as any).avatar.url) ??
+										(user as any).avatar.url,
+								}}
 								style={styles.avatar}
 								contentFit="cover"
 							/>
@@ -353,106 +519,161 @@ export default function HomeScreen() {
 			{/* ══ Content ══ */}
 			{isSearchMode ? (
 				/* ── MODE RECHERCHE ── */
-				<View style={[styles.content, { backgroundColor: bg }]}>
-					<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
-						<View style={styles.sortPills}>
-							{SORTS.map((s) => {
-								const active = sort === s.key;
-								return (
-									<Pressable
-										key={s.key}
-										onPress={() => setSort(s.key)}
+				<>
+					<View style={[styles.content, { backgroundColor: bg }]}>
+						<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
+							<View style={styles.sortPills}>
+								{SORTS.map((s) => {
+									const active = sort === s.key;
+									return (
+										<Pressable
+											key={s.key}
+											onPress={() => setSort(s.key)}
+											style={[
+												styles.sortPill,
+												{
+													backgroundColor: active
+														? primaryColor
+														: isDark
+															? "#1e293b"
+															: "#f1f5f9",
+												},
+											]}
+										>
+											<Ionicons
+												name={s.icon}
+												size={12}
+												color={active ? "#fff" : mutedColor}
+											/>
+											<Text
+												style={[
+													styles.sortText,
+													{
+														color: active ? "#fff" : mutedColor,
+														fontFamily: Fonts.bodySemibold,
+													},
+												]}
+											>
+												{s.label}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+							<View
+								style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+							>
+								{debouncedQuery && totalDocs > 0 && !searchLoading && (
+									<View
 										style={[
-											styles.sortPill,
-											{
-												backgroundColor: active
+											styles.countBadge,
+											{ backgroundColor: primaryColor },
+										]}
+									>
+										<Text style={styles.countText}>{totalDocs}</Text>
+									</View>
+								)}
+								<Pressable
+									onPress={openFilters}
+									style={[
+										styles.sortPill,
+										{
+											backgroundColor:
+												activeFilterCount > 0
 													? primaryColor
 													: isDark
 														? "#1e293b"
 														: "#f1f5f9",
+										},
+									]}
+								>
+									<Ionicons
+										name="options"
+										size={12}
+										color={activeFilterCount > 0 ? "#fff" : mutedColor}
+									/>
+									<Text
+										style={[
+											styles.sortText,
+											{
+												color: activeFilterCount > 0 ? "#fff" : mutedColor,
+												fontFamily: Fonts.bodySemibold,
 											},
 										]}
 									>
-										<Ionicons
-											name={s.icon}
-											size={12}
-											color={active ? "#fff" : mutedColor}
-										/>
-										<Text
-											style={[
-												styles.sortText,
-												{
-													color: active ? "#fff" : mutedColor,
-													fontFamily: Fonts.bodySemibold,
-												},
-											]}
-										>
-											{s.label}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-						{debouncedQuery && totalDocs > 0 && !searchLoading && (
-							<View
-								style={[styles.countBadge, { backgroundColor: primaryColor }]}
-							>
-								<Text style={styles.countText}>{totalDocs}</Text>
+										{activeFilterCount > 0
+											? `Filtres (${activeFilterCount})`
+											: "Filtres"}
+									</Text>
+								</Pressable>
 							</View>
+						</View>
+
+						{searchLoading ? (
+							<View style={styles.skeletonGrid}>
+								{Array.from({ length: 6 }).map((_, i) => (
+									<SkeletonCard key={i} />
+								))}
+							</View>
+						) : searchListings.length === 0 ? (
+							<EmptyState
+								icon="search-outline"
+								title="Aucun résultat"
+								subtitle="Essayez d'autres mots-clés"
+								ctaLabel="Effacer"
+								onCta={() => {
+									setQuery("");
+									setDebouncedQuery("");
+								}}
+							/>
+						) : (
+							<FlatList
+								data={searchPairs}
+								renderItem={({ item }) => (
+									<View style={styles.row}>
+										{item.map((listing: any) => (
+											<ListingCard
+												key={listing.id}
+												listing={listing}
+												isFavorite={favoriteIds.has(listing.id)}
+												onToggleFavorite={() => {}}
+												onPress={(id) => router.push(`/listing/${id}`)}
+											/>
+										))}
+									</View>
+								)}
+								keyExtractor={(_, i) => String(i)}
+								contentContainerStyle={styles.list}
+								onEndReached={() =>
+									hasNextPage && !isFetchingNextPage && fetchNextPage()
+								}
+								onEndReachedThreshold={0.5}
+								showsVerticalScrollIndicator={false}
+								ListFooterComponent={
+									isFetchingNextPage ? (
+										<ActivityIndicator
+											color={primaryColor}
+											style={{ margin: 16 }}
+										/>
+									) : null
+								}
+							/>
 						)}
 					</View>
 
-					{searchLoading ? (
-						<View style={styles.skeletonGrid}>
-							{Array.from({ length: 6 }).map((_, i) => (
-								<SkeletonCard key={i} />
-							))}
-						</View>
-					) : searchListings.length === 0 ? (
-						<EmptyState
-							icon="search-outline"
-							title="Aucun résultat"
-							subtitle="Essayez d'autres mots-clés"
-							ctaLabel="Effacer"
-							onCta={() => {
-								setQuery("");
-								setDebouncedQuery("");
-							}}
-						/>
-					) : (
-						<FlatList
-							data={searchPairs}
-							renderItem={({ item }) => (
-								<View style={styles.row}>
-									{item.map((listing: any) => (
-										<ListingCard
-											key={listing.id}
-											listing={listing}
-											isFavorite={favoriteIds.has(listing.id)}
-											onToggleFavorite={() => {}}
-											onPress={(id) => router.push(`/listing/${id}`)}
-										/>
-									))}
-								</View>
-							)}
-							keyExtractor={(_, i) => String(i)}
-							contentContainerStyle={styles.list}
-							onEndReached={() =>
-								hasNextPage && !isFetchingNextPage && fetchNextPage()
-							}
-							onEndReachedThreshold={0.5}
-							showsVerticalScrollIndicator={false}
-							ListFooterComponent={
-								isFetchingNextPage ? (
-									<ActivityIndicator
-										color={primaryColor}
-										style={{ margin: 16 }}
-									/>
-								) : null
-							}
-						/>
+					{/* Save Search FAB */}
+					{(debouncedQuery || activeFilterCount > 0) && user && (
+						<Pressable
+							style={[styles.fab, { backgroundColor: primaryColor }]}
+							onPress={openSaveDialog}
+						>
+							<Ionicons name="bookmark" size={18} color="#fff" />
+							<Text style={[styles.fabText, { fontFamily: Fonts.displayBold }]}>
+								Sauvegarder
+							</Text>
+						</Pressable>
 					)}
-				</View>
+				</>
 			) : (
 				/* ── MODE ACCUEIL ── */
 				<AnimatedScrollView
@@ -482,11 +703,10 @@ export default function HomeScreen() {
 									showsHorizontalScrollIndicator={false}
 									contentContainerStyle={styles.catList}
 								>
-									{categories.map((cat: any, i: number) => (
+									{categories.map((cat: any, _i: number) => (
 										<CategoryIcon
 											key={cat.id}
 											category={cat}
-											colorIndex={i}
 											onPress={() => {
 												setQuery(cat.name ?? "");
 												setDebouncedQuery(cat.name ?? "");
@@ -613,8 +833,269 @@ export default function HomeScreen() {
 							)}
 						</View>
 					</View>
+
+					{/* ── Annonces proches de vous ── */}
+					<View style={styles.section}>
+						<View style={styles.sectionHeader}>
+							<View style={styles.sectionTitleRow}>
+								<Ionicons name="navigate" size={16} color={primaryColor} />
+								<Text style={[styles.sectionTitle, { color: textColor }]}>
+									Près de vous
+								</Text>
+							</View>
+						</View>
+						{locationDenied ? (
+							<Pressable
+								onPress={async () => {
+									const { status } =
+										await Location.requestForegroundPermissionsAsync();
+									if (status === "granted") {
+										setLocationDenied(false);
+										const pos = await Location.getCurrentPositionAsync({
+											accuracy: Location.Accuracy.Balanced,
+										});
+										setUserCoords({
+											lat: pos.coords.latitude,
+											lng: pos.coords.longitude,
+										});
+									}
+								}}
+								style={[
+									styles.locationPrompt,
+									{
+										backgroundColor: isDark ? "#1e293b" : "#eef2ff",
+										borderColor: isDark ? "#1e3a5f" : "#bfdbfe",
+									},
+								]}
+							>
+								<Ionicons
+									name="location-outline"
+									size={20}
+									color={primaryColor}
+								/>
+								<View style={{ flex: 1 }}>
+									<Text
+										style={[styles.locationPromptTitle, { color: textColor }]}
+									>
+										Activer la localisation
+									</Text>
+									<Text
+										style={[styles.locationPromptSub, { color: mutedColor }]}
+									>
+										Découvrez les annonces autour de vous
+									</Text>
+								</View>
+								<Ionicons name="chevron-forward" size={16} color={mutedColor} />
+							</Pressable>
+						) : !userCoords ? (
+							<ScrollView
+								horizontal
+								showsHorizontalScrollIndicator={false}
+								contentContainerStyle={styles.nearbyList}
+							>
+								{Array.from({ length: 4 }).map((_, i) => (
+									<SkeletonCard key={i} />
+								))}
+							</ScrollView>
+						) : nearbyListings.length === 0 ? (
+							<View
+								style={[
+									styles.locationPrompt,
+									{
+										backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+										borderColor,
+									},
+								]}
+							>
+								<Ionicons name="map-outline" size={20} color={mutedColor} />
+								<Text style={[styles.locationPromptSub, { color: mutedColor }]}>
+									Aucune annonce dans un rayon de 50 km
+								</Text>
+							</View>
+						) : (
+							<ScrollView
+								horizontal
+								showsHorizontalScrollIndicator={false}
+								contentContainerStyle={styles.nearbyList}
+							>
+								{nearbyListings.map((listing: any) => (
+									<ListingCard
+										key={listing.id}
+										listing={listing}
+										isFavorite={favoriteIds.has(listing.id)}
+										onToggleFavorite={() => {}}
+										onPress={(id) => router.push(`/listing/${id}`)}
+									/>
+								))}
+							</ScrollView>
+						)}
+					</View>
+
+					{/* ── Comment ça marche ── */}
+					<View style={[styles.section, styles.howSection]}>
+						<View style={styles.sectionHeader}>
+							<Text style={[styles.sectionTitle, { color: textColor }]}>
+								Comment ça marche ?
+							</Text>
+						</View>
+						<View style={styles.howSteps}>
+							{[
+								{
+									icon: "camera-outline",
+									color: "#3b82f6",
+									bg: "#dbeafe",
+									title: "Photographiez",
+									sub: "Prenez une photo, ajoutez une description et un prix",
+									n: "1",
+								},
+								{
+									icon: "chatbubbles-outline",
+									color: "#10b981",
+									bg: "#d1fae5",
+									title: "Discutez",
+									sub: "Les acheteurs vous contactent, négociez le prix",
+									n: "2",
+								},
+								{
+									icon: "cash-outline",
+									color: "#f59e0b",
+									bg: "#fef3c7",
+									title: "Vendez",
+									sub: "Rencontrez-vous, remettez l'article, soyez payé",
+									n: "3",
+								},
+							].map((step) => (
+								<View
+									key={step.n}
+									style={[
+										styles.howCard,
+										{ backgroundColor: cardBg, borderColor },
+									]}
+								>
+									<View
+										style={[styles.howIconWrap, { backgroundColor: step.bg }]}
+									>
+										<Ionicons
+											name={step.icon as any}
+											size={22}
+											color={step.color}
+										/>
+									</View>
+									<View
+										style={[
+											styles.howStep,
+											{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+										]}
+									>
+										<Text style={[styles.howStepNum, { color: primaryColor }]}>
+											{step.n}
+										</Text>
+									</View>
+									<Text style={[styles.howTitle, { color: textColor }]}>
+										{step.title}
+									</Text>
+									<Text
+										style={[styles.howSub, { color: mutedColor }]}
+										numberOfLines={3}
+									>
+										{step.sub}
+									</Text>
+								</View>
+							))}
+						</View>
+						<Pressable
+							onPress={() => router.push("/(tabs)/create")}
+							style={[styles.sellNowBtn, { backgroundColor: "#f59e0b" }]}
+						>
+							<Ionicons name="rocket-outline" size={17} color="#fff" />
+							<Text style={styles.sellNowText}>Publier une annonce</Text>
+						</Pressable>
+					</View>
 				</AnimatedScrollView>
 			)}
+
+			{/* Save dialog */}
+			<Modal
+				visible={saveDialogOpen}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setSaveDialogOpen(false)}
+			>
+				<KeyboardAvoidingView
+					behavior={Platform.OS === "ios" ? "padding" : "height"}
+					style={styles.modalOverlay}
+				>
+					<Pressable
+						style={StyleSheet.absoluteFill}
+						onPress={() => setSaveDialogOpen(false)}
+					/>
+					<View
+						style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}
+					>
+						<Text style={[styles.modalTitle, { color: textColor }]}>
+							Sauvegarder la recherche
+						</Text>
+						<Text style={[styles.modalSub, { color: mutedColor }]}>
+							Nommez cette recherche pour la retrouver facilement.
+						</Text>
+						<TextInput
+							value={saveName}
+							onChangeText={setSaveName}
+							placeholder={debouncedQuery || "Ex : Voitures à Douala"}
+							placeholderTextColor={mutedColor}
+							autoFocus
+							style={[
+								styles.modalInput,
+								{
+									color: textColor,
+									borderColor: primaryColor,
+									backgroundColor: isDark ? "#0b1120" : "#f8fafc",
+								},
+							]}
+							returnKeyType="done"
+							onSubmitEditing={() => saveStatus === "idle" && saveSearch()}
+						/>
+						<View style={styles.modalActions}>
+							<Pressable
+								onPress={() => setSaveDialogOpen(false)}
+								style={[
+									styles.modalBtn,
+									{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+								]}
+							>
+								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
+									Annuler
+								</Text>
+							</Pressable>
+							<Pressable
+								onPress={() => saveStatus === "idle" && saveSearch()}
+								disabled={saveStatus !== "idle"}
+								style={[
+									styles.modalBtn,
+									{
+										backgroundColor:
+											saveStatus === "saved" ? "#16a34a" : primaryColor,
+									},
+								]}
+							>
+								{saveStatus === "saving" ? (
+									<ActivityIndicator size="small" color="#fff" />
+								) : saveStatus === "saved" ? (
+									<>
+										<Ionicons name="checkmark" size={15} color="#fff" />
+										<Text style={styles.modalBtnTextPrimary}>Sauvegardé !</Text>
+									</>
+								) : (
+									<>
+										<Ionicons name="bookmark" size={15} color="#fff" />
+										<Text style={styles.modalBtnTextPrimary}>Sauvegarder</Text>
+									</>
+								)}
+							</Pressable>
+						</View>
+					</View>
+				</KeyboardAvoidingView>
+			</Modal>
 		</SafeAreaView>
 	);
 }
@@ -815,4 +1296,120 @@ const styles = StyleSheet.create({
 		padding: 16,
 		gap: 12,
 	},
+
+	/* ── Save Search FAB ── */
+	fab: {
+		position: "absolute",
+		bottom: 16,
+		alignSelf: "center",
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		paddingHorizontal: 18,
+		paddingVertical: 12,
+		borderRadius: 28,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.2,
+		shadowRadius: 8,
+		elevation: 6,
+	},
+	fabText: { color: "#fff", fontSize: 14 },
+
+	/* ── Save Search Modal ── */
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0,0,0,0.5)",
+		justifyContent: "flex-end",
+	},
+	modalCard: {
+		borderTopLeftRadius: 20,
+		borderTopRightRadius: 20,
+		padding: 24,
+		borderTopWidth: 1,
+		gap: 12,
+	},
+	modalTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	modalSub: { fontSize: 13, fontFamily: Fonts.body },
+	modalInput: {
+		borderWidth: 1.5,
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 11,
+		fontSize: 15,
+		fontFamily: Fonts.body,
+	},
+	modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
+	modalBtn: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+		borderRadius: 12,
+		paddingVertical: 13,
+	},
+	modalBtnText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	modalBtnTextPrimary: {
+		color: "#fff",
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+	},
+
+	/* ── Nearby / Location prompt ── */
+	locationPrompt: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		marginHorizontal: 16,
+		padding: 14,
+		borderRadius: 12,
+		borderWidth: 1,
+	},
+	locationPromptTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	locationPromptSub: { fontSize: 12, fontFamily: Fonts.body, marginTop: 2 },
+	nearbyList: { paddingHorizontal: 16, gap: 12 },
+
+	/* ── How it works ── */
+	howSection: {
+		marginHorizontal: 16,
+		marginBottom: 24,
+		borderRadius: 16,
+		padding: 16,
+	},
+	howSteps: { flexDirection: "row", gap: 10, marginBottom: 16 },
+	howCard: {
+		flex: 1,
+		borderRadius: 12,
+		padding: 12,
+		borderWidth: 1,
+		gap: 8,
+		alignItems: "flex-start",
+	},
+	howIconWrap: {
+		width: 40,
+		height: 40,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	howStep: {
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	howStepNum: { fontSize: 12, fontFamily: Fonts.displayBold },
+	howTitle: { fontSize: 13, fontFamily: Fonts.displayBold },
+	howSub: { fontSize: 11, fontFamily: Fonts.body, lineHeight: 16 },
+	sellNowBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
+		borderRadius: 12,
+		paddingVertical: 14,
+	},
+	sellNowText: { color: "#fff", fontSize: 15, fontFamily: Fonts.displayBold },
 });

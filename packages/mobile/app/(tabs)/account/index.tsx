@@ -10,6 +10,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
@@ -39,7 +40,7 @@ function MenuItem({
 	const textColor = danger ? "#dc2626" : isDark ? "#e2e8f0" : "#0f172a";
 	const resolvedIconColor = danger
 		? "#dc2626"
-		: (iconColor ?? (isDark ? "#94a3b8" : "#64748b"));
+		: (iconColor ?? (isDark ? "#94a3b8" : "#475569"));
 	const resolvedIconBg = danger
 		? isDark
 			? "#3b1111"
@@ -153,7 +154,9 @@ export default function AccountScreen() {
 						<View style={styles.avatarWrap}>
 							{user.avatar?.url ? (
 								<Image
-									source={{ uri: user.avatar?.url }}
+									source={{
+										uri: resolveImageUrl(user.avatar?.url) ?? user.avatar?.url,
+									}}
 									style={styles.avatar}
 									contentFit="cover"
 								/>
@@ -232,8 +235,6 @@ export default function AccountScreen() {
 								label="Mes annonces"
 								sublabel="Vos annonces publiées"
 								onPress={() => router.push("/account/listings")}
-								iconBg={isDark ? "#1e3a5f" : "#dbeafe"}
-								iconColor={isDark ? "#60a5fa" : "#2563eb"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -242,8 +243,6 @@ export default function AccountScreen() {
 								label="Favoris"
 								sublabel="Annonces sauvegardées"
 								onPress={() => router.push("/account/favorites")}
-								iconBg={isDark ? "#4a1942" : "#fce7f3"}
-								iconColor={isDark ? "#f9a8d4" : "#db2777"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -251,8 +250,6 @@ export default function AccountScreen() {
 								icon="bookmark-outline"
 								label="Recherches sauvegardées"
 								onPress={() => router.push("/account/searches")}
-								iconBg={isDark ? "#3b1f6e" : "#ede9fe"}
-								iconColor={isDark ? "#c4b5fd" : "#7c3aed"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -260,8 +257,6 @@ export default function AccountScreen() {
 								icon="rocket-outline"
 								label="Historique des boosts"
 								onPress={() => router.push("/account/boosts")}
-								iconBg={isDark ? "#422006" : "#fef3c7"}
-								iconColor={isDark ? "#fde68a" : "#d97706"}
 								isDark={isDark}
 								borderColor="transparent"
 							/>
@@ -286,8 +281,6 @@ export default function AccountScreen() {
 								icon="settings-outline"
 								label="Paramètres"
 								onPress={() => router.push("/settings")}
-								iconBg={isDark ? "#1e293b" : "#f1f5f9"}
-								iconColor={isDark ? "#94a3b8" : "#475569"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -295,8 +288,6 @@ export default function AccountScreen() {
 								icon="notifications-outline"
 								label="Notifications"
 								onPress={() => {}}
-								iconBg={isDark ? "#082f49" : "#e0f2fe"}
-								iconColor={isDark ? "#7dd3fc" : "#0284c7"}
 								isDark={isDark}
 								borderColor="transparent"
 							/>
@@ -321,8 +312,6 @@ export default function AccountScreen() {
 								icon="help-circle-outline"
 								label="Aide & FAQ"
 								onPress={() => router.push("/help")}
-								iconBg={isDark ? "#14532d" : "#dcfce7"}
-								iconColor={isDark ? "#86efac" : "#15803d"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -330,8 +319,6 @@ export default function AccountScreen() {
 								icon="shield-checkmark-outline"
 								label="Conseils de sécurité"
 								onPress={() => router.push("/safety")}
-								iconBg={isDark ? "#1e3a5f" : "#dbeafe"}
-								iconColor={isDark ? "#60a5fa" : "#1d4ed8"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -339,8 +326,6 @@ export default function AccountScreen() {
 								icon="mail-outline"
 								label="Nous contacter"
 								onPress={() => router.push("/contact")}
-								iconBg={isDark ? "#3b1f6e" : "#ede9fe"}
-								iconColor={isDark ? "#c4b5fd" : "#7c3aed"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -348,8 +333,6 @@ export default function AccountScreen() {
 								icon="document-text-outline"
 								label="Conditions d'utilisation"
 								onPress={() => router.push("/terms")}
-								iconBg={isDark ? "#1e293b" : "#f1f5f9"}
-								iconColor={isDark ? "#94a3b8" : "#475569"}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -357,8 +340,6 @@ export default function AccountScreen() {
 								icon="lock-closed-outline"
 								label="Politique de confidentialité"
 								onPress={() => router.push("/privacy")}
-								iconBg={isDark ? "#1e293b" : "#f1f5f9"}
-								iconColor={isDark ? "#94a3b8" : "#475569"}
 								isDark={isDark}
 								borderColor="transparent"
 							/>

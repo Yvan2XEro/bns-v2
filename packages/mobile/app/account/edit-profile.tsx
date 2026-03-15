@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -18,6 +19,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
 export default function EditProfileScreen() {
 	const isDark = useColorScheme() === "dark";
@@ -28,6 +30,8 @@ export default function EditProfileScreen() {
 	const [bio, setBio] = useState(user?.bio ?? "");
 	const [phone, setPhone] = useState(user?.phone ?? "");
 	const [location, setLocation] = useState(user?.location ?? "");
+	const [avatarUri, setAvatarUri] = useState<string | null>(null);
+	const [avatarUploading, setAvatarUploading] = useState(false);
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -35,6 +39,77 @@ export default function EditProfileScreen() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+
+	const pickAvatar = async (fromCamera: boolean) => {
+		try {
+			if (fromCamera) {
+				const { status } = await ImagePicker.requestCameraPermissionsAsync();
+				if (status !== "granted") {
+					showError(
+						"Permission refusée",
+						"L'accès à la caméra est nécessaire.",
+					);
+					return;
+				}
+			} else {
+				const { status } =
+					await ImagePicker.requestMediaLibraryPermissionsAsync();
+				if (status !== "granted") {
+					showError(
+						"Permission refusée",
+						"L'accès à la galerie est nécessaire.",
+					);
+					return;
+				}
+			}
+			const result = fromCamera
+				? await ImagePicker.launchCameraAsync({
+						allowsEditing: true,
+						aspect: [1, 1],
+						quality: 0.85,
+					})
+				: await ImagePicker.launchImageLibraryAsync({
+						mediaTypes: ["images"],
+						allowsEditing: true,
+						aspect: [1, 1],
+						quality: 0.85,
+					});
+			if (result.canceled || !result.assets?.[0]) return;
+			const asset = result.assets[0];
+			setAvatarUploading(true);
+			const formData = new FormData();
+			formData.append("file", {
+				uri: asset.uri,
+				name: asset.fileName ?? `avatar_${Date.now()}.jpg`,
+				type: asset.mimeType ?? "image/jpeg",
+			} as any);
+			formData.append(
+				"_payload",
+				JSON.stringify({ alt: asset.fileName ?? `avatar_${Date.now()}` }),
+			);
+			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
+				"/api/media",
+				formData,
+			);
+			if (!uploaded?.doc?.id) throw new Error("Upload échoué");
+			await api.patch(`/api/users/${user?.id}`, { avatar: uploaded.doc.id });
+			setAvatarUri(asset.uri);
+			await refreshUser();
+			showSuccess("Photo mise à jour", "Votre photo de profil a été changée.");
+		} catch (err: any) {
+			showError("Erreur", err.message ?? "Impossible de changer la photo.");
+		} finally {
+			setAvatarUploading(false);
+		}
+	};
+
+	const handlePickAvatar = () => {
+		showAlert("Photo de profil", "Choisissez une source", [
+			{ text: "Appareil photo", onPress: () => pickAvatar(true) },
+			{ text: "Galerie", onPress: () => pickAvatar(false) },
+			{ text: "Annuler", style: "cancel" },
+		]);
+	};
 
 	const { mutate: save, isPending } = useMutation({
 		mutationFn: () =>
@@ -80,9 +155,12 @@ export default function EditProfileScreen() {
 			>
 				{/* Avatar */}
 				<View style={styles.avatarSection}>
-					{user?.avatar?.url ? (
+					{avatarUri || user?.avatar?.url ? (
 						<Image
-							source={{ uri: user?.avatar?.url }}
+							source={{
+								uri:
+									avatarUri ?? resolveImageUrl(user?.avatar?.url) ?? undefined,
+							}}
 							style={styles.avatar}
 							contentFit="cover"
 						/>
@@ -99,18 +177,24 @@ export default function EditProfileScreen() {
 						</View>
 					)}
 					<Pressable
-						style={[styles.changeAvatarBtn, { backgroundColor: primaryColor }]}
-						onPress={() =>
-							showAlert(
-								"Photo de profil",
-								"Choisir depuis la galerie ou prendre une photo",
-								undefined,
-								"info",
-							)
-						}
+						style={[
+							styles.changeAvatarBtn,
+							{
+								backgroundColor: primaryColor,
+								opacity: avatarUploading ? 0.7 : 1,
+							},
+						]}
+						onPress={handlePickAvatar}
+						disabled={avatarUploading}
 					>
-						<Ionicons name="camera" size={14} color="#fff" />
-						<Text style={styles.changeAvatarText}>Changer</Text>
+						{avatarUploading ? (
+							<ActivityIndicator size="small" color="#fff" />
+						) : (
+							<>
+								<Ionicons name="camera" size={14} color="#fff" />
+								<Text style={styles.changeAvatarText}>Changer</Text>
+							</>
+						)}
 					</Pressable>
 				</View>
 

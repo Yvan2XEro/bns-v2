@@ -1,10 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
+	KeyboardAvoidingView,
+	Modal,
+	Platform,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
@@ -34,9 +37,9 @@ const SORTS = [
 export default function SearchScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
-	const params = useLocalSearchParams<{ q?: string; category?: string }>();
+	const params = useLocalSearchParams();
 
-	const [query, setQuery] = useState(params.q ?? "");
+	const [query, setQuery] = useState((params.q as string) ?? "");
 	const [sort, setSort] = useState("newest");
 	const [debouncedQuery, setDebouncedQuery] = useState(query);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -56,10 +59,50 @@ export default function SearchScreen() {
 		debounceRef.current = setTimeout(() => setDebouncedQuery(text), 300);
 	};
 
+	// Extraire les attr_* depuis les params URL
+	const attrParams: Record<string, string> = {};
+	for (const [key, value] of Object.entries(params)) {
+		if (key.startsWith("attr_") && typeof value === "string" && value) {
+			attrParams[key] = value;
+		}
+	}
+
+	const activeFilterCount = [
+		params.category,
+		params.minPrice,
+		params.maxPrice,
+		params.conditions,
+		params.location,
+		...Object.values(attrParams),
+	].filter(Boolean).length;
+
+	const openFilters = () =>
+		router.push({
+			pathname: "/filters",
+			params: {
+				returnTo: "/(tabs)/search",
+				category: (params.category as string) ?? "",
+				minPrice: (params.minPrice as string) ?? "",
+				maxPrice: (params.maxPrice as string) ?? "",
+				conditions: (params.conditions as string) ?? "",
+				location: (params.location as string) ?? "",
+				radius: (params.radius as string) ?? "",
+				...attrParams,
+			},
+		});
+
 	const searchParams: Record<string, string> = {
 		sort,
 		...(debouncedQuery ? { q: debouncedQuery } : {}),
-		...(params.category ? { category: params.category } : {}),
+		...(params.category ? { category: params.category as string } : {}),
+		...(params.minPrice ? { minPrice: params.minPrice as string } : {}),
+		...(params.maxPrice ? { maxPrice: params.maxPrice as string } : {}),
+		...(params.conditions ? { condition: params.conditions as string } : {}),
+		...(params.location ? { location: params.location as string } : {}),
+		...(params.location && params.radius
+			? { radius: params.radius as string }
+			: {}),
+		...attrParams,
 	};
 	const queryString = Object.entries(searchParams)
 		.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
@@ -121,6 +164,52 @@ export default function SearchScreen() {
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const accentBg = isDark ? "#111827" : "#eef2ff";
+
+	// ── Save search dialog ─────────────────────────────────────────
+	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+	const [saveName, setSaveName] = useState("");
+	const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+		"idle",
+	);
+
+	const { mutate: saveSearch } = useMutation({
+		mutationFn: () => {
+			const urlParams = new URLSearchParams();
+			if (debouncedQuery) urlParams.set("q", debouncedQuery);
+			for (const [k, v] of Object.entries(searchParams)) {
+				if (v && k !== "sort") urlParams.set(k, v);
+			}
+			return api.post("/api/saved-searches", {
+				name: saveName.trim() || debouncedQuery || "Ma recherche",
+				query: debouncedQuery,
+				filters: {
+					category: params.category,
+					minPrice: params.minPrice,
+					maxPrice: params.maxPrice,
+					conditions: params.conditions,
+					location: params.location,
+					sort,
+					...attrParams,
+				},
+				url: `/search?${urlParams.toString()}`,
+			});
+		},
+		onSuccess: () => {
+			setSaveStatus("saved");
+			setTimeout(() => {
+				setSaveDialogOpen(false);
+				setSaveStatus("idle");
+				setSaveName("");
+			}, 1200);
+		},
+		onError: () => setSaveStatus("idle"),
+	});
+
+	const openSaveDialog = () => {
+		setSaveName(debouncedQuery || "");
+		setSaveStatus("idle");
+		setSaveDialogOpen(true);
+	};
 
 	const renderRow = ({ item }: { item: any[] }) => (
 		<View style={styles.row}>
@@ -201,14 +290,25 @@ export default function SearchScreen() {
 						</Pressable>
 					) : (
 						<Pressable
-							onPress={() => router.push("/filters")}
+							onPress={openFilters}
 							style={[
 								styles.filterIconBtn,
-								{ backgroundColor: isDark ? "#334155" : "#f1f5f9" },
+								{
+									backgroundColor:
+										activeFilterCount > 0
+											? primaryColor
+											: isDark
+												? "#334155"
+												: "#f1f5f9",
+								},
 							]}
 							hitSlop={8}
 						>
-							<Ionicons name="options" size={15} color={primaryColor} />
+							<Ionicons
+								name="options"
+								size={15}
+								color={activeFilterCount > 0 ? "#fff" : primaryColor}
+							/>
 						</Pressable>
 					)}
 				</View>
@@ -259,23 +359,38 @@ export default function SearchScreen() {
 					</View>
 					{query.length > 0 && (
 						<Pressable
-							onPress={() => router.push("/filters")}
+							onPress={openFilters}
 							style={[
 								styles.filtersBtn,
 								{
-									backgroundColor: isDark ? "#1e293b" : "#f1f5f9",
-									borderColor,
+									backgroundColor:
+										activeFilterCount > 0
+											? primaryColor
+											: isDark
+												? "#1e293b"
+												: "#f1f5f9",
+									borderColor:
+										activeFilterCount > 0 ? primaryColor : borderColor,
 								},
 							]}
 						>
-							<Ionicons name="options" size={14} color={mutedColor} />
+							<Ionicons
+								name="options"
+								size={14}
+								color={activeFilterCount > 0 ? "#fff" : mutedColor}
+							/>
 							<Text
 								style={[
 									styles.filtersText,
-									{ color: mutedColor, fontFamily: Fonts.body },
+									{
+										color: activeFilterCount > 0 ? "#fff" : mutedColor,
+										fontFamily: Fonts.body,
+									},
 								]}
 							>
-								Filtres
+								{activeFilterCount > 0
+									? `Filtres (${activeFilterCount})`
+									: "Filtres"}
 							</Text>
 						</Pressable>
 					)}
@@ -330,12 +445,10 @@ export default function SearchScreen() {
 			</View>
 
 			{/* Save Search FAB */}
-			{(query || params.category) && user && (
+			{(debouncedQuery || activeFilterCount > 0) && user && (
 				<Pressable
 					style={[styles.fab, { backgroundColor: primaryColor }]}
-					onPress={() => {
-						// TODO: save search dialog
-					}}
+					onPress={openSaveDialog}
 				>
 					<Ionicons name="bookmark" size={18} color="#fff" />
 					<Text style={[styles.fabText, { fontFamily: Fonts.displayBold }]}>
@@ -343,6 +456,93 @@ export default function SearchScreen() {
 					</Text>
 				</Pressable>
 			)}
+
+			{/* Save dialog */}
+			<Modal
+				visible={saveDialogOpen}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setSaveDialogOpen(false)}
+			>
+				<KeyboardAvoidingView
+					behavior={Platform.OS === "ios" ? "padding" : "height"}
+					style={styles.modalOverlay}
+				>
+					<Pressable
+						style={StyleSheet.absoluteFill}
+						onPress={() => setSaveDialogOpen(false)}
+					/>
+					<View
+						style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}
+					>
+						<Text style={[styles.modalTitle, { color: textColor }]}>
+							Sauvegarder la recherche
+						</Text>
+						<Text style={[styles.modalSub, { color: mutedColor }]}>
+							Nommez cette recherche pour la retrouver facilement.
+						</Text>
+
+						<TextInput
+							value={saveName}
+							onChangeText={setSaveName}
+							placeholder={debouncedQuery || "Ex : Voitures à Douala"}
+							placeholderTextColor={mutedColor}
+							autoFocus
+							style={[
+								styles.modalInput,
+								{
+									color: textColor,
+									borderColor: primaryColor,
+									backgroundColor: isDark ? "#0b1120" : "#f8fafc",
+								},
+							]}
+							returnKeyType="done"
+							onSubmitEditing={() => saveStatus === "idle" && saveSearch()}
+						/>
+
+						<View style={styles.modalActions}>
+							<Pressable
+								onPress={() => setSaveDialogOpen(false)}
+								style={[
+									styles.modalBtn,
+									{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+								]}
+							>
+								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
+									Annuler
+								</Text>
+							</Pressable>
+
+							<Pressable
+								onPress={() => saveStatus === "idle" && saveSearch()}
+								disabled={saveStatus !== "idle"}
+								style={[
+									styles.modalBtn,
+									styles.modalBtnPrimary,
+									{
+										backgroundColor:
+											saveStatus === "saved" ? "#16a34a" : primaryColor,
+									},
+								]}
+							>
+								{saveStatus === "saving" ? (
+									<ActivityIndicator size="small" color="#fff" />
+								) : saveStatus === "saved" ? (
+									<>
+										<Ionicons name="checkmark" size={15} color="#fff" />
+										<Text style={styles.modalBtnTextPrimary}>Sauvegardé !</Text>
+									</>
+								) : (
+									<>
+										<Ionicons name="bookmark" size={15} color="#fff" />
+										<Text style={styles.modalBtnTextPrimary}>Sauvegarder</Text>
+									</>
+								)}
+							</Pressable>
+						</View>
+					</View>
+				</KeyboardAvoidingView>
+			</Modal>
 		</SafeAreaView>
 	);
 }
@@ -477,4 +677,66 @@ const styles = StyleSheet.create({
 		elevation: 8,
 	},
 	fabText: { color: "#fff", fontSize: 14 },
+
+	// Modal
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0,0,0,0.5)",
+		justifyContent: "flex-end",
+		paddingBottom: 32,
+		paddingHorizontal: 16,
+	},
+	modalCard: {
+		borderRadius: 20,
+		borderWidth: 1,
+		padding: 20,
+		gap: 12,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: -4 },
+		shadowOpacity: 0.12,
+		shadowRadius: 16,
+		elevation: 10,
+	},
+	modalTitle: {
+		fontSize: 17,
+		fontFamily: Fonts.displayBold,
+	},
+	modalSub: {
+		fontSize: 13,
+		fontFamily: Fonts.body,
+		lineHeight: 18,
+		marginTop: -4,
+	},
+	modalInput: {
+		borderWidth: 1.5,
+		borderRadius: 12,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+		fontSize: 15,
+		fontFamily: Fonts.body,
+	},
+	modalActions: {
+		flexDirection: "row",
+		gap: 10,
+		marginTop: 4,
+	},
+	modalBtn: {
+		flex: 1,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+		borderRadius: 12,
+		paddingVertical: 13,
+	},
+	modalBtnPrimary: {},
+	modalBtnText: {
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+	},
+	modalBtnTextPrimary: {
+		color: "#fff",
+		fontSize: 14,
+		fontFamily: Fonts.displayBold,
+	},
 });

@@ -45,6 +45,9 @@ export function registerSocketHandlers(io: Server): void {
 			}),
 		);
 
+		// Join personal room so the user receives events for new conversations
+		socket.join(`user:${userId}`);
+
 		await setOnline(userId);
 		io.emit("user:online", { userId });
 

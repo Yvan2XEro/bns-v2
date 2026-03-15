@@ -102,8 +102,13 @@ export const api = {
 		if (!res.ok) {
 			const error = (await res.json().catch(() => ({}))) as {
 				message?: string;
+				errors?: { message: string }[];
 			};
-			throw new ApiError(error.message ?? "Upload failed", res.status, error);
+			const msg =
+				error.message ??
+				error.errors?.[0]?.message ??
+				`Upload failed (${res.status})`;
+			throw new ApiError(msg, res.status, error);
 		}
 
 		return res.json() as Promise<T>;

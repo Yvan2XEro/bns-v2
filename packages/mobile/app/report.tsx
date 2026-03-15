@@ -5,12 +5,12 @@ import { useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
-	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
 	View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -69,7 +69,11 @@ export default function ReportModal() {
 					<Ionicons name="close" size={24} color={textColor} />
 				</Pressable>
 			</View>
-			<ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
+			<KeyboardAwareScrollView
+				contentContainerStyle={{ padding: 20, gap: 12 }}
+				keyboardShouldPersistTaps="handled"
+				bottomOffset={24}
+			>
 				<Text style={[styles.label, { color: mutedColor }]}>
 					Raison du signalement
 				</Text>
@@ -143,7 +147,7 @@ export default function ReportModal() {
 						</Text>
 					)}
 				</Pressable>
-			</ScrollView>
+			</KeyboardAwareScrollView>
 		</SafeAreaView>
 	);
 }

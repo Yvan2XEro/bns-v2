@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
@@ -24,10 +25,14 @@ export default function ConversationScreen() {
 	const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const { chatClient, onlineUsers } = useChatClient();
 	const { showError, showAlert } = useAlert();
 	const queryClient = useQueryClient();
 	const [text, setText] = useState("");
+	const [isOtherTyping, setIsOtherTyping] = useState(false);
+	const [readByOther, setReadByOther] = useState<Set<string>>(new Set());
 	const listRef = useRef<FlatList>(null);
+	const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -46,16 +51,115 @@ export default function ConversationScreen() {
 		queryKey: ["messages", conversationId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
-				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=50`,
+				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=100`,
 			),
 		enabled: !!conversationId,
-		refetchInterval: 5000,
 	});
 
 	const messages = messagesData?.docs ?? [];
 	const conv = convData?.doc ?? convData;
 	const otherUser = conv?.participants?.find((p: any) => p.id !== user?.id);
 	const listing = conv?.listing;
+	const isOtherOnline = otherUser?.id ? onlineUsers.has(otherUser.id) : false;
+
+	// Initialise readByOther from loaded messages
+	useEffect(() => {
+		if (!user || messages.length === 0) return;
+		const ids = new Set<string>();
+		for (const m of messages) {
+			const senderId = m.sender?.id ?? m.sender;
+			if (senderId === user.id && m.read) ids.add(m.id);
+		}
+		setReadByOther(ids);
+	}, [messages, user]);
+
+	// Socket: join conversation, listen for events
+	useEffect(() => {
+		if (!chatClient || !conversationId) return;
+
+		chatClient.joinConversation(conversationId);
+
+		const onNewMessage = (msg: any) => {
+			queryClient.setQueryData(["messages", conversationId], (old: any) => {
+				if (!old) return old;
+				const exists = old.docs.some((m: any) => m.id === msg.id);
+				if (exists) return old;
+				return { ...old, docs: [...old.docs, msg] };
+			});
+			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+			// Mark as read immediately since we're viewing the conversation
+			chatClient.markRead(conversationId, [msg.id]);
+			chatClient.markDelivered(conversationId, msg.id);
+		};
+
+		const onTyping = (event: any) => {
+			if (event.conversationId !== conversationId) return;
+			if (event.userId === user?.id) return;
+			setIsOtherTyping(event.isTyping);
+		};
+
+		const onMessageRead = (payload: any) => {
+			setReadByOther((prev) => {
+				const next = new Set(prev);
+				for (const id of payload.messageIds) next.add(id);
+				return next;
+			});
+		};
+
+		chatClient.on("message:new", onNewMessage);
+		chatClient.on("typing", onTyping);
+		chatClient.on("message:read", onMessageRead);
+
+		// Mark existing unread messages as read
+		const unreadIds = messages
+			.filter((m: any) => {
+				const senderId = m.sender?.id ?? m.sender;
+				return senderId !== user?.id && !m.read;
+			})
+			.map((m: any) => m.id);
+		if (unreadIds.length > 0) {
+			chatClient.markRead(conversationId, unreadIds);
+			queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		}
+
+		return () => {
+			chatClient.off("message:new", onNewMessage);
+			chatClient.off("typing", onTyping);
+			chatClient.off("message:read", onMessageRead);
+			chatClient.leaveConversation(conversationId);
+		};
+	}, [
+		chatClient,
+		conversationId,
+		messages.filter,
+		queryClient.invalidateQueries,
+		queryClient.setQueryData,
+		user?.id,
+	]);
+
+	// Scroll to bottom when messages change
+	useEffect(() => {
+		if (messages.length > 0) {
+			setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+		}
+	}, [messages.length]);
+
+	// Typing indicator: emit start/stop as user types
+	const handleTextChange = (val: string) => {
+		setText(val);
+		if (!chatClient || !conversationId) return;
+
+		if (val.length > 0) {
+			chatClient.startTyping(conversationId);
+			if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+			typingTimeoutRef.current = setTimeout(() => {
+				chatClient.stopTyping(conversationId);
+			}, 3000);
+		} else {
+			if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+			chatClient.stopTyping(conversationId);
+		}
+	};
 
 	const { mutate: sendMessage, isPending: sending } = useMutation({
 		mutationFn: () =>
@@ -66,17 +170,13 @@ export default function ConversationScreen() {
 			}),
 		onSuccess: () => {
 			setText("");
+			if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+			chatClient?.stopTyping(conversationId!);
 			queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		},
 		onError: (err: any) => showError("Erreur", err.message),
 	});
-
-	useEffect(() => {
-		if (messages.length > 0) {
-			setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-		}
-	}, [messages.length]);
 
 	const formatTime = (dateStr: string) =>
 		new Date(dateStr).toLocaleTimeString("fr-FR", {
@@ -100,6 +200,8 @@ export default function ConversationScreen() {
 				: msgDate === yesterday
 					? "Hier"
 					: new Date(item.createdAt).toLocaleDateString("fr-FR");
+
+		const isRead = readByOther.has(item.id) || item.read;
 
 		return (
 			<>
@@ -148,15 +250,28 @@ export default function ConversationScreen() {
 						>
 							{item.content}
 						</Text>
-						<Text
-							style={[
-								styles.bubbleTime,
-								{ color: isMe ? "rgba(255,255,255,0.7)" : mutedColor },
-							]}
-						>
-							{formatTime(item.createdAt)}
-							{isMe && " ✓"}
-						</Text>
+						<View style={styles.bubbleMeta}>
+							<Text
+								style={[
+									styles.bubbleTime,
+									{ color: isMe ? "rgba(255,255,255,0.7)" : mutedColor },
+								]}
+							>
+								{formatTime(item.createdAt)}
+							</Text>
+							{isMe && (
+								<Text
+									style={[
+										styles.readTick,
+										{
+											color: isRead ? "#60a5fa" : "rgba(255,255,255,0.5)",
+										},
+									]}
+								>
+									{isRead ? " ✓✓" : " ✓"}
+								</Text>
+							)}
+						</View>
 					</View>
 				</View>
 			</>
@@ -196,35 +311,42 @@ export default function ConversationScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<View style={styles.headerInfo}>
-					<View
-						style={[
-							styles.headerAvatar,
-							{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-						]}
-					>
-						{otherUser?.avatar?.url ? (
-							<Image
-								source={{ uri: otherUser.avatar.url }}
-								style={styles.headerAvatarImg}
-								contentFit="cover"
-							/>
-						) : (
-							<Text
-								style={{
-									color: primaryColor,
-									fontFamily: Fonts.displayBold,
-									fontSize: 16,
-								}}
-							>
-								{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
-							</Text>
-						)}
+					<View style={styles.avatarWrapper}>
+						<View
+							style={[
+								styles.headerAvatar,
+								{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+							]}
+						>
+							{otherUser?.avatar?.url ? (
+								<Image
+									source={{ uri: otherUser.avatar.url }}
+									style={styles.headerAvatarImg}
+									contentFit="cover"
+								/>
+							) : (
+								<Text
+									style={{
+										color: primaryColor,
+										fontFamily: Fonts.displayBold,
+										fontSize: 16,
+									}}
+								>
+									{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
+								</Text>
+							)}
+						</View>
+						{isOtherOnline && <View style={styles.onlineDotHeader} />}
 					</View>
 					<View>
 						<Text style={[styles.headerName, { color: textColor }]}>
 							{otherUser?.name ?? "Utilisateur"}
 						</Text>
-						{listing && (
+						{isOtherOnline ? (
+							<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
+								En ligne
+							</Text>
+						) : listing ? (
 							<Pressable
 								onPress={() => router.push(`/listing/${listing.id ?? listing}`)}
 							>
@@ -235,7 +357,7 @@ export default function ConversationScreen() {
 									{listing.title ?? "Voir l'annonce"}
 								</Text>
 							</Pressable>
-						)}
+						) : null}
 					</View>
 				</View>
 				<Pressable
@@ -281,6 +403,39 @@ export default function ConversationScreen() {
 						onContentSizeChange={() =>
 							listRef.current?.scrollToEnd({ animated: false })
 						}
+						ListFooterComponent={
+							isOtherTyping ? (
+								<View style={[styles.msgRow, styles.msgLeft, { marginTop: 4 }]}>
+									<View
+										style={[
+											styles.msgAvatar,
+											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+										]}
+									>
+										<Text
+											style={{
+												color: primaryColor,
+												fontFamily: Fonts.displayBold,
+												fontSize: 12,
+											}}
+										>
+											{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
+										</Text>
+									</View>
+									<View
+										style={[
+											styles.bubble,
+											styles.typingBubble,
+											{ backgroundColor: cardBg, borderColor },
+										]}
+									>
+										<Text style={[styles.typingDots, { color: mutedColor }]}>
+											• • •
+										</Text>
+									</View>
+								</View>
+							) : null
+						}
 					/>
 				)}
 
@@ -293,7 +448,7 @@ export default function ConversationScreen() {
 				>
 					<TextInput
 						value={text}
-						onChangeText={setText}
+						onChangeText={handleTextChange}
 						placeholder="Écrivez un message..."
 						placeholderTextColor={mutedColor}
 						style={[
@@ -348,6 +503,7 @@ const styles = StyleSheet.create({
 	},
 	backBtn: { width: 40, alignItems: "center", justifyContent: "center" },
 	headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+	avatarWrapper: { position: "relative" },
 	headerAvatar: {
 		width: 40,
 		height: 40,
@@ -357,8 +513,20 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 	},
 	headerAvatarImg: { width: 40, height: 40 },
+	onlineDotHeader: {
+		position: "absolute",
+		bottom: 1,
+		right: 1,
+		width: 12,
+		height: 12,
+		borderRadius: 6,
+		backgroundColor: "#22c55e",
+		borderWidth: 2,
+		borderColor: "white",
+	},
 	headerName: { fontSize: 15, fontFamily: Fonts.displayBold },
 	headerListing: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	onlineLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	msgList: { padding: 12, paddingBottom: 8 },
 	dateSep: { alignItems: "center", marginVertical: 12 },
 	dateLabel: {
@@ -387,10 +555,22 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 10,
 		maxWidth: "75%",
-		gap: 4,
+		gap: 2,
+	},
+	typingBubble: {
+		paddingHorizontal: 16,
+		paddingVertical: 12,
 	},
 	bubbleText: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.body },
-	bubbleTime: { fontSize: 10, alignSelf: "flex-end", fontFamily: Fonts.body },
+	bubbleMeta: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "flex-end",
+		gap: 2,
+	},
+	bubbleTime: { fontSize: 10, fontFamily: Fonts.body },
+	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	typingDots: { fontSize: 18, letterSpacing: 4 },
 	inputBar: {
 		flexDirection: "row",
 		alignItems: "flex-end",

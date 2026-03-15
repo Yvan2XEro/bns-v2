@@ -25,10 +25,12 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import "react-native-reanimated";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { AlertProvider } from "@/src/contexts/AlertContext";
+import { ChatProvider } from "@/src/contexts/ChatContext";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 
 SplashScreen.preventAutoHideAsync();
@@ -70,15 +72,19 @@ export default function RootLayout() {
 	if (!fontsLoaded) return null;
 
 	return (
-		<KeyboardProvider>
-			<QueryClientProvider client={queryClient}>
-				<AuthProvider>
-					<AlertProvider>
-						<RootLayoutNav />
-					</AlertProvider>
-				</AuthProvider>
-			</QueryClientProvider>
-		</KeyboardProvider>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<KeyboardProvider>
+				<QueryClientProvider client={queryClient}>
+					<AuthProvider>
+						<ChatProvider>
+							<AlertProvider>
+								<RootLayoutNav />
+							</AlertProvider>
+						</ChatProvider>
+					</AuthProvider>
+				</QueryClientProvider>
+			</KeyboardProvider>
+		</GestureHandlerRootView>
 	);
 }
 

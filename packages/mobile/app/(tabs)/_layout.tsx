@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HapticTab } from "@/components/haptic-tab";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
@@ -85,6 +86,8 @@ export default function TabLayout() {
 	const colorScheme = useColorScheme();
 	const isDark = colorScheme === "dark";
 	const { user } = useAuth();
+	const { chatClient } = useChatClient();
+	const queryClient = useQueryClient();
 	const insets = useSafeAreaInsets();
 
 	const { data: unreadData } = useQuery({
@@ -93,6 +96,16 @@ export default function TabLayout() {
 		enabled: !!user,
 		refetchInterval: 30000,
 	});
+
+	// Refresh unread count instantly when a new message arrives via socket
+	useEffect(() => {
+		if (!chatClient) return;
+		const onNewMessage = () => {
+			queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
+		};
+		chatClient.on("message:new", onNewMessage);
+		return () => chatClient.off("message:new", onNewMessage);
+	}, [chatClient, queryClient]);
 
 	const unreadCount = unreadData?.count ?? 0;
 

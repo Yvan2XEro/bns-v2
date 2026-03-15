@@ -37,6 +37,74 @@ function AppLogo({ isDark }: { isDark: boolean }) {
 	);
 }
 
+interface RegisterFieldProps {
+	label: string;
+	value: string;
+	onChange: (v: string) => void;
+	placeholder: string;
+	keyboard?: string;
+	secure?: boolean;
+	showToggle?: boolean;
+	toggleShow?: () => void;
+	autoComplete?: string;
+	icon?: keyof typeof Ionicons.glyphMap;
+	mutedColor: string;
+	borderColor: string;
+	textColor: string;
+}
+
+function RegisterField({
+	label,
+	value,
+	onChange,
+	placeholder,
+	keyboard,
+	secure,
+	showToggle,
+	toggleShow,
+	autoComplete,
+	icon,
+	mutedColor,
+	borderColor,
+	textColor,
+}: RegisterFieldProps) {
+	return (
+		<View style={{ gap: 6 }}>
+			<Text style={[styles.fieldLabel, { color: mutedColor }]}>{label}</Text>
+			<View style={[styles.inputWrapper, { borderColor }]}>
+				{icon && (
+					<Ionicons
+						name={icon}
+						size={18}
+						color={mutedColor}
+						style={styles.inputIcon}
+					/>
+				)}
+				<TextInput
+					value={value}
+					onChangeText={onChange}
+					placeholder={placeholder}
+					placeholderTextColor={mutedColor}
+					style={[styles.input, { color: textColor }]}
+					keyboardType={(keyboard as any) ?? "default"}
+					secureTextEntry={secure}
+					autoCapitalize={keyboard === "email-address" ? "none" : "words"}
+					autoComplete={autoComplete as any}
+				/>
+				{showToggle && (
+					<Pressable onPress={toggleShow} hitSlop={8}>
+						<Ionicons
+							name={!secure ? "eye-off-outline" : "eye-outline"}
+							size={18}
+							color={mutedColor}
+						/>
+					</Pressable>
+				)}
+			</View>
+		</View>
+	);
+}
+
 export default function RegisterScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { register } = useAuth();
@@ -54,6 +122,8 @@ export default function RegisterScreen() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+
+	const fieldColors = { mutedColor, borderColor, textColor };
 
 	const handleRegister = async () => {
 		if (!name || !email || !password || !confirm) {
@@ -88,53 +158,6 @@ export default function RegisterScreen() {
 		}
 	};
 
-	const Field = ({
-		label,
-		value,
-		onChange,
-		placeholder,
-		keyboard,
-		secure,
-		showToggle,
-		toggleShow,
-		autoComplete,
-		icon,
-	}: any) => (
-		<View style={{ gap: 6 }}>
-			<Text style={[styles.fieldLabel, { color: mutedColor }]}>{label}</Text>
-			<View style={[styles.inputWrapper, { borderColor }]}>
-				{icon && (
-					<Ionicons
-						name={icon}
-						size={18}
-						color={mutedColor}
-						style={styles.inputIcon}
-					/>
-				)}
-				<TextInput
-					value={value}
-					onChangeText={onChange}
-					placeholder={placeholder}
-					placeholderTextColor={mutedColor}
-					style={[styles.input, { color: textColor }]}
-					keyboardType={keyboard ?? "default"}
-					secureTextEntry={secure}
-					autoCapitalize={keyboard === "email-address" ? "none" : "words"}
-					autoComplete={autoComplete}
-				/>
-				{showToggle && (
-					<Pressable onPress={toggleShow} hitSlop={8}>
-						<Ionicons
-							name={!secure ? "eye-off-outline" : "eye-outline"}
-							size={18}
-							color={mutedColor}
-						/>
-					</Pressable>
-				)}
-			</View>
-		</View>
-	);
-
 	return (
 		<SafeAreaView
 			edges={["top"]}
@@ -147,7 +170,7 @@ export default function RegisterScreen() {
 				bottomOffset={20}
 			>
 				<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
-					<Ionicons name="close" size={24} color={textColor} />
+					<Ionicons name="arrow-back" size={24} color={textColor} />
 				</Pressable>
 
 				<View style={styles.container}>
@@ -163,15 +186,16 @@ export default function RegisterScreen() {
 					</Text>
 
 					<View style={[styles.form, { backgroundColor: cardBg, borderColor }]}>
-						<Field
+						<RegisterField
 							label="Nom complet"
 							value={name}
 							onChange={setName}
 							placeholder="Jean Dupont"
 							autoComplete="name"
 							icon="person-outline"
+							{...fieldColors}
 						/>
-						<Field
+						<RegisterField
 							label="Adresse email"
 							value={email}
 							onChange={setEmail}
@@ -179,8 +203,9 @@ export default function RegisterScreen() {
 							keyboard="email-address"
 							autoComplete="email"
 							icon="mail-outline"
+							{...fieldColors}
 						/>
-						<Field
+						<RegisterField
 							label="Mot de passe"
 							value={password}
 							onChange={setPassword}
@@ -190,8 +215,9 @@ export default function RegisterScreen() {
 							toggleShow={() => setShowPwd(!showPwd)}
 							autoComplete="new-password"
 							icon="lock-closed-outline"
+							{...fieldColors}
 						/>
-						<Field
+						<RegisterField
 							label="Confirmer le mot de passe"
 							value={confirm}
 							onChange={setConfirm}
@@ -199,6 +225,7 @@ export default function RegisterScreen() {
 							secure={!showPwd}
 							autoComplete="new-password"
 							icon="lock-closed-outline"
+							{...fieldColors}
 						/>
 
 						<AnimatedPressable
@@ -259,7 +286,7 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	closeBtn: { padding: 16, alignSelf: "flex-end" },
+	closeBtn: { padding: 16, alignSelf: "flex-start" },
 	container: { flex: 1, padding: 24, paddingTop: 8 },
 	logoWrap: { alignItems: "center", marginBottom: 16 },
 	logoBlock: { alignItems: "center", gap: 10 },
