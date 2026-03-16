@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useCounts } from "@novu/react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -8,6 +9,7 @@ import { HapticTab } from "@/components/haptic-tab";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useChatClient } from "@/src/contexts/ChatContext";
+import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
@@ -15,7 +17,39 @@ function MessagesBadge({ count }: { count: number }) {
 	if (count === 0) return null;
 	return (
 		<View style={styles.badge}>
-			<Text style={styles.badgeText}>{count > 99 ? "99+" : count}</Text>
+			<Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text>
+		</View>
+	);
+}
+
+function NotificationsCount() {
+	const { counts } = useCounts({ filters: [{ read: false }] });
+	const count = counts?.[0]?.count ?? 0;
+	if (count === 0) return null;
+	return (
+		<View style={styles.badge}>
+			<Text style={styles.badgeText}>{count > 9 ? "9+" : count}</Text>
+		</View>
+	);
+}
+
+function AccountTabIcon({
+	color,
+	focused,
+}: {
+	color: string;
+	focused: boolean;
+}) {
+	const notificationReady = useNotificationReady();
+	return (
+		<View>
+			<AnimatedTabIcon
+				name="person-outline"
+				focusedName="person"
+				color={color}
+				focused={focused}
+			/>
+			{notificationReady && <NotificationsCount />}
 		</View>
 	);
 }
@@ -194,12 +228,7 @@ export default function TabLayout() {
 				options={{
 					title: "Compte",
 					tabBarIcon: ({ color, focused }) => (
-						<AnimatedTabIcon
-							name="person-outline"
-							focusedName="person"
-							color={color}
-							focused={focused}
-						/>
+						<AccountTabIcon color={color} focused={focused} />
 					),
 				}}
 			/>

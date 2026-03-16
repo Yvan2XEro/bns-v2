@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useCounts } from "@novu/react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -9,6 +10,7 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useAuth } from "@/src/lib/auth";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -24,6 +26,7 @@ interface MenuItemProps {
 	iconColor?: string;
 	isDark: boolean;
 	borderColor: string;
+	rightElement?: React.ReactNode;
 }
 
 function MenuItem({
@@ -36,6 +39,7 @@ function MenuItem({
 	iconColor,
 	isDark,
 	borderColor,
+	rightElement,
 }: MenuItemProps) {
 	const textColor = danger ? "#dc2626" : isDark ? "#e2e8f0" : "#0f172a";
 	const resolvedIconColor = danger
@@ -69,6 +73,7 @@ function MenuItem({
 					</Text>
 				)}
 			</View>
+			{rightElement}
 			<Ionicons
 				name="chevron-forward"
 				size={16}
@@ -78,10 +83,23 @@ function MenuItem({
 	);
 }
 
+function NotificationsUnreadBadge() {
+	const { counts } = useCounts({ filters: [{ read: false }] });
+	const count = counts?.[0]?.count ?? 0;
+	if (count === 0) return null;
+	return (
+		<View style={styles.notifBadge}>
+			<Text style={styles.notifBadgeText}>{count > 9 ? "9+" : count}</Text>
+		</View>
+	);
+}
+
 export default function AccountScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user, logout } = useAuth();
 	const { showConfirm } = useAlert();
+
+	const notificationReady = useNotificationReady();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -290,6 +308,9 @@ export default function AccountScreen() {
 								onPress={() => router.push("/account/notifications")}
 								isDark={isDark}
 								borderColor="transparent"
+								rightElement={
+									notificationReady ? <NotificationsUnreadBadge /> : undefined
+								}
 							/>
 						</View>
 					</View>
@@ -498,4 +519,19 @@ const styles = StyleSheet.create({
 	},
 	registerText: { fontSize: 14, fontFamily: Fonts.body },
 	registerLink: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	notifBadge: {
+		backgroundColor: "#dc2626",
+		borderRadius: 10,
+		minWidth: 18,
+		height: 18,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 5,
+		marginRight: 4,
+	},
+	notifBadgeText: {
+		color: "#fff",
+		fontSize: 10,
+		fontFamily: Fonts.displayExtrabold,
+	},
 });
