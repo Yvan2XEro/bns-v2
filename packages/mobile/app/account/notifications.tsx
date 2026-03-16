@@ -69,6 +69,16 @@ function notificationIcon(tags: string[]): {
 		return { name: "bookmark-outline", color: "#7c3aed", bg: "#ede9fe" };
 	if (tag.includes("sold"))
 		return { name: "cash-outline", color: "#16a34a", bg: "#dcfce7" };
+	if (tag.includes("expired"))
+		return { name: "time-outline", color: "#dc2626", bg: "#fee2e2" };
+	if (tag.includes("verified"))
+		return {
+			name: "shield-checkmark-outline",
+			color: "#16a34a",
+			bg: "#dcfce7",
+		};
+	if (tag.includes("review"))
+		return { name: "star-outline", color: "#d97706", bg: "#fef3c7" };
 	return { name: "notifications-outline", color: "#1e40af", bg: "#dbeafe" };
 }
 
@@ -152,11 +162,20 @@ function NotificationRow({
 	const listingId = data?.listingId as string | undefined;
 	const hasActions = !!(item.primaryAction || item.secondaryAction);
 
+	const conversationId = data?.conversationId as string | undefined;
+
 	const handleRowPress = async () => {
 		if (!item.isRead) await item.read();
 		const url = item.redirect?.url;
-		if (url) navigate(url);
-		else if (listingId) router.push(`/listing/${listingId}`);
+		if (url) {
+			navigate(url);
+			return;
+		}
+		if (conversationId) {
+			router.push(`/messages/${conversationId}`);
+			return;
+		}
+		if (listingId) router.push(`/listing/${listingId}`);
 	};
 
 	const handlePrimaryAction = async () => {

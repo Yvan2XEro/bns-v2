@@ -122,7 +122,10 @@ export default buildConfig({
 									await triggerNovuEvent({
 										event: "listing-expired",
 										subscriberId: sellerId,
-										payload: { listingTitle: listing.title },
+										payload: {
+											listingId: listing.id as string,
+											listingTitle: listing.title,
+										},
 									});
 								} catch (error) {
 									console.error(
@@ -309,7 +312,10 @@ export default buildConfig({
 									await triggerNovuEvent({
 										event: "boost-expired",
 										subscriberId: sellerId,
-										payload: { listingTitle: listing.title },
+										payload: {
+											listingId: listing.id as string,
+											listingTitle: listing.title,
+										},
 									});
 								} catch (error) {
 									console.error("[novu] Failed to notify boost expiry:", error);
