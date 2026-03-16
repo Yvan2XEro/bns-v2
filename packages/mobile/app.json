@@ -20,7 +20,7 @@
 			},
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
-			"package": "com.cedric_tefoye.mobile"
+			"package": "com.buynsellem.mobile-v2"
 		},
 		"web": {
 			"output": "static",
