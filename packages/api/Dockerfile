@@ -17,7 +17,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/biome-config ./packages/biome-config
 COPY packages/api ./packages/api
-COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
 
 WORKDIR /app/packages/api
 ENV NEXT_TELEMETRY_DISABLED=1
