@@ -33,6 +33,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
+import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 import {
@@ -97,12 +98,15 @@ export default function RootLayout() {
 }
 
 // ─── NovuWrapper ──────────────────────────────────────────────────────────────
-// Wraps the app with NovuProvider when user is authenticated.
-// Uses the HMAC subscriber hash from the backend for production security.
+// NovuProvider is rendered only when the user is authenticated.
+// All components that call Novu hooks (useCounts, useNotifications) are
+// themselves conditionally mounted on user auth — so a hook is never called
+// outside its provider context, which respects React's rules of hooks.
 
 function NovuWrapper({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
-	const appId = process.env.EXPO_PUBLIC_NOVU_APP_ID;
+	const appId = process.env.EXPO_PUBLIC_NOVU_APP_ID ?? "";
+	const [ready, setReady] = useState(false);
 
 	const { data } = useQuery({
 		queryKey: ["novu-subscriber-hash", user?.id],
@@ -113,18 +117,32 @@ function NovuWrapper({ children }: { children: React.ReactNode }) {
 		retry: false,
 	});
 
+	// Set ready one render cycle after NovuProvider mounts, so consumers that
+	// call Novu hooks (useCounts, useNotifications) are never rendered in the
+	// same cycle as NovuProvider — avoiding "must be used within NovuProvider".
+	useEffect(() => {
+		if (user && appId) setReady(true);
+		else setReady(false);
+	}, [user?.id, appId, user]);
+
 	if (!user || !appId) {
-		return <>{children}</>;
+		return (
+			<NotificationReadyContext.Provider value={false}>
+				{children}
+			</NotificationReadyContext.Provider>
+		);
 	}
 
 	return (
 		<NovuProvider
 			key={user.id}
-			subscriber={user.id}
+			subscriberId={user.id}
 			applicationIdentifier={appId}
 			subscriberHash={data?.subscriberHash}
 		>
-			{children}
+			<NotificationReadyContext.Provider value={ready}>
+				{children}
+			</NotificationReadyContext.Provider>
 		</NovuProvider>
 	);
 }

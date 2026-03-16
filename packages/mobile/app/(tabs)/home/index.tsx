@@ -40,6 +40,7 @@ import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -76,8 +77,8 @@ function NotificationBell({
 	borderColor: string;
 	mutedColor: string;
 }) {
-	const { data } = useCounts();
-	const unseenCount = data?.unseenCount ?? 0;
+	const { counts } = useCounts({ filters: [{ read: false }] });
+	const unseenCount = counts?.[0]?.count ?? 0;
 
 	return (
 		<Pressable
@@ -93,6 +94,7 @@ function NotificationBell({
 export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
 
@@ -101,7 +103,7 @@ export default function HomeScreen() {
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const [sort, setSort] = useState("newest");
 	const [searchFocused, setSearchFocused] = useState(false);
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 	const inputRef = useRef<TextInput>(null);
 
 	// ── Animations ────────────────────────────────────────────────
@@ -168,7 +170,7 @@ export default function HomeScreen() {
 	// ── Handlers ──────────────────────────────────────────────────
 	const handleQueryChange = (text: string) => {
 		setQuery(text);
-		clearTimeout(debounceRef.current);
+		clearTimeout(debounceRef.current || undefined);
 		debounceRef.current = setTimeout(() => setDebouncedQuery(text), 300);
 	};
 
@@ -458,8 +460,8 @@ export default function HomeScreen() {
 
 					<View style={{ flex: 1 }} />
 
-					{/* Bell icon — useCounts lives inside its own component to stay in NovuProvider scope */}
-					{user && (
+					{/* Bell icon — only rendered after NovuProvider context is established */}
+					{user && novuReady && (
 						<NotificationBell
 							cardBg={cardBg}
 							borderColor={borderColor}

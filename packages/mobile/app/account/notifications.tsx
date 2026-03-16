@@ -1,26 +1,38 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNotifications, useNovu } from "@novu/react-native";
+import type { Notification } from "@novu/js";
+import { useNotifications } from "@novu/react-native";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
+	Linking,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import type { SharedValue } from "react-native-reanimated";
+import Reanimated, {
+	interpolate,
+	useAnimatedStyle,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
+import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
 import { registerForPushNotificationsAsync } from "@/src/lib/notifications";
 
-function timeAgo(date: Date | string): string {
+const SWIPE_BTN_WIDTH = 72;
+
+function timeAgo(date: string): string {
 	const diff = Date.now() - new Date(date).getTime();
 	const minutes = Math.floor(diff / 60_000);
 	if (minutes < 1) return "à l'instant";
@@ -35,60 +47,366 @@ function timeAgo(date: Date | string): string {
 	});
 }
 
-function notificationIcon(type: string): {
+function notificationIcon(tags: string[]): {
 	name: keyof typeof Ionicons.glyphMap;
 	color: string;
 	bg: string;
 } {
-	if (type.includes("approved") || type.includes("published"))
+	const tag = tags.join(" ");
+	if (tag.includes("approved") || tag.includes("published"))
 		return {
 			name: "checkmark-circle-outline",
 			color: "#16a34a",
 			bg: "#dcfce7",
 		};
-	if (type.includes("rejected"))
+	if (tag.includes("rejected"))
 		return { name: "close-circle-outline", color: "#dc2626", bg: "#fee2e2" };
-	if (type.includes("message"))
+	if (tag.includes("message"))
 		return { name: "chatbubble-outline", color: "#1e40af", bg: "#dbeafe" };
-	if (type.includes("boost"))
+	if (tag.includes("boost"))
 		return { name: "rocket-outline", color: "#d97706", bg: "#fef3c7" };
-	if (type.includes("alert") || type.includes("search"))
+	if (tag.includes("alert") || tag.includes("search"))
 		return { name: "bookmark-outline", color: "#7c3aed", bg: "#ede9fe" };
-	if (type.includes("sold"))
+	if (tag.includes("sold"))
 		return { name: "cash-outline", color: "#16a34a", bg: "#dcfce7" };
 	return { name: "notifications-outline", color: "#1e40af", bg: "#dbeafe" };
 }
 
-export default function NotificationsScreen() {
-	const isDark = useColorScheme() === "dark";
+function navigate(url: string) {
+	if (url.startsWith("/")) {
+		router.push(url as Parameters<typeof router.push>[0]);
+	} else {
+		Linking.openURL(url);
+	}
+}
 
+// ─── Swipe action button ──────────────────────────────────────────────────────
+// Each button slides in independently with a staggered interpolation so the
+// reveal feels natural rather than all buttons snapping in at once.
+
+function SwipeActionButton({
+	label,
+	icon,
+	color,
+	onPress,
+	progress,
+	index,
+	total,
+}: {
+	label: string;
+	icon: keyof typeof Ionicons.glyphMap;
+	color: string;
+	onPress: () => void;
+	progress: SharedValue<number>;
+	index: number;
+	total: number;
+}) {
+	const animStyle = useAnimatedStyle(() => ({
+		transform: [
+			{
+				translateX: interpolate(
+					progress.value,
+					[0, 1],
+					[(total - index) * SWIPE_BTN_WIDTH, 0],
+				),
+			},
+		],
+	}));
+
+	return (
+		<Reanimated.View style={[{ width: SWIPE_BTN_WIDTH }, animStyle]}>
+			<Pressable
+				onPress={onPress}
+				style={[styles.swipeBtn, { backgroundColor: color }]}
+			>
+				<Ionicons name={icon} size={20} color="#fff" />
+				<Text style={styles.swipeBtnLabel}>{label}</Text>
+			</Pressable>
+		</Reanimated.View>
+	);
+}
+
+// ─── Notification row ─────────────────────────────────────────────────────────
+
+function NotificationRow({
+	item,
+	isDark,
+	borderColor,
+	textColor,
+	mutedColor,
+	primaryColor,
+	cardBg,
+}: {
+	item: Notification;
+	isDark: boolean;
+	borderColor: string;
+	textColor: string;
+	mutedColor: string;
+	primaryColor: string;
+	cardBg: string;
+}) {
+	const icon = notificationIcon(item.tags ?? []);
+	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff6ff";
+	const rowBg = item.isRead ? cardBg : unreadBg;
+	const data = item.data as Record<string, unknown> | undefined;
+	const listingId = data?.listingId as string | undefined;
+	const hasActions = !!(item.primaryAction || item.secondaryAction);
+
+	const handleRowPress = async () => {
+		if (!item.isRead) await item.read();
+		const url = item.redirect?.url;
+		if (url) navigate(url);
+		else if (listingId) router.push(`/listing/${listingId}`);
+	};
+
+	const handlePrimaryAction = async () => {
+		await item.completePrimary();
+		const url = item.primaryAction?.redirect?.url;
+		if (url) navigate(url);
+	};
+
+	const handleSecondaryAction = async () => {
+		await item.completeSecondary();
+		const url = item.secondaryAction?.redirect?.url;
+		if (url) navigate(url);
+	};
+
+	const renderRightActions = (
+		progress: SharedValue<number>,
+		_translation: SharedValue<number>,
+		methods: SwipeableMethods,
+	) => {
+		const actions: {
+			label: string;
+			icon: keyof typeof Ionicons.glyphMap;
+			color: string;
+			onPress: () => void;
+		}[] = [
+			{
+				label: item.isRead ? "Non lu" : "Lu",
+				icon: item.isRead ? "mail-unread-outline" : "mail-open-outline",
+				color: "#3b82f6",
+				onPress: async () => {
+					methods.close();
+					if (item.isRead) await item.unread();
+					else await item.read();
+				},
+			},
+			{
+				label: item.isArchived ? "Restaurer" : "Archiver",
+				icon: item.isArchived ? "arrow-undo-outline" : "archive-outline",
+				color: "#f59e0b",
+				onPress: async () => {
+					methods.close();
+					if (item.isArchived) await item.unarchive();
+					else await item.archive();
+				},
+			},
+		];
+
+		return (
+			<View style={{ flexDirection: "row" }}>
+				{actions.map((action, i) => (
+					<SwipeActionButton
+						key={action.label}
+						label={action.label}
+						icon={action.icon}
+						color={action.color}
+						onPress={action.onPress}
+						progress={progress}
+						index={i}
+						total={actions.length}
+					/>
+				))}
+			</View>
+		);
+	};
+
+	return (
+		<ReanimatedSwipeable
+			friction={2}
+			overshootRight={false}
+			rightThreshold={SWIPE_BTN_WIDTH}
+			renderRightActions={renderRightActions}
+			containerStyle={{ backgroundColor: cardBg }}
+		>
+			<AnimatedPressable
+				onPress={handleRowPress}
+				scaleTo={0.985}
+				style={[
+					styles.item,
+					{ borderBottomColor: borderColor, backgroundColor: rowBg },
+					!item.isRead && styles.itemUnread,
+				]}
+			>
+				{/* Unread indicator bar */}
+				{!item.isRead && (
+					<View style={[styles.unreadBar, { backgroundColor: primaryColor }]} />
+				)}
+
+				<View style={[styles.iconBox, { backgroundColor: icon.bg }]}>
+					<Ionicons name={icon.name} size={18} color={icon.color} />
+				</View>
+
+				<View style={{ flex: 1, gap: 3 }}>
+					{item.subject ? (
+						<Text
+							style={[
+								styles.itemSubject,
+								{ color: textColor },
+								!item.isRead && { fontFamily: Fonts.bodySemibold },
+							]}
+							numberOfLines={1}
+						>
+							{item.subject}
+						</Text>
+					) : null}
+					<Text
+						style={[
+							styles.itemBody,
+							{ color: item.subject ? mutedColor : textColor },
+							!item.isRead &&
+								!item.subject && { fontFamily: Fonts.bodySemibold },
+						]}
+						numberOfLines={hasActions ? 2 : 3}
+					>
+						{item.body}
+					</Text>
+					<Text style={[styles.itemTime, { color: mutedColor }]}>
+						{timeAgo(item.createdAt)}
+					</Text>
+
+					{hasActions && (
+						<View style={styles.inlineActions}>
+							{item.primaryAction && (
+								<Pressable
+									onPress={handlePrimaryAction}
+									style={[
+										styles.actionBtn,
+										item.primaryAction.isCompleted
+											? [styles.actionBtnDone, { borderColor }]
+											: [
+													styles.actionBtnPrimary,
+													{ borderColor: primaryColor },
+												],
+									]}
+								>
+									{item.primaryAction.isCompleted && (
+										<Ionicons name="checkmark" size={11} color={mutedColor} />
+									)}
+									<Text
+										style={[
+											styles.actionBtnText,
+											{
+												color: item.primaryAction.isCompleted
+													? mutedColor
+													: primaryColor,
+											},
+										]}
+									>
+										{item.primaryAction.label}
+									</Text>
+								</Pressable>
+							)}
+							{item.secondaryAction && (
+								<Pressable
+									onPress={handleSecondaryAction}
+									style={[
+										styles.actionBtn,
+										item.secondaryAction.isCompleted
+											? [styles.actionBtnDone, { borderColor }]
+											: [styles.actionBtnSecondary, { borderColor }],
+									]}
+								>
+									{item.secondaryAction.isCompleted && (
+										<Ionicons name="checkmark" size={11} color={mutedColor} />
+									)}
+									<Text style={[styles.actionBtnText, { color: mutedColor }]}>
+										{item.secondaryAction.label}
+									</Text>
+								</Pressable>
+							)}
+						</View>
+					)}
+				</View>
+
+				{!item.isRead && <View style={styles.unreadDot} />}
+			</AnimatedPressable>
+		</ReanimatedSwipeable>
+	);
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
+export default function NotificationsScreen() {
+	const notificationReady = useNotificationReady();
+	const isDark = useColorScheme() === "dark";
+	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
+	const accentBg = isDark ? "#111827" : "#eef2ff";
+
+	if (!notificationReady) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: accentBg }]}
+			>
+				<View style={styles.center}>
+					<ActivityIndicator color={primaryColor} />
+				</View>
+			</SafeAreaView>
+		);
+	}
+
+	return (
+		<NotificationsContent
+			isDark={isDark}
+			primaryColor={primaryColor}
+			accentBg={accentBg}
+		/>
+	);
+}
+
+function NotificationsContent({
+	isDark,
+	primaryColor,
+	accentBg,
+}: {
+	isDark: boolean;
+	primaryColor: string;
+	accentBg: string;
+}) {
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
-	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e293b" : "#f1f5f9";
-	const accentBg = isDark ? "#111827" : "#eef2ff";
 
-	const { notifications, isLoading, hasMore, loadMore, refetch } =
+	const { notifications, isLoading, hasMore, fetchMore, readAll, refetch } =
 		useNotifications();
-	const { novu } = useNovu();
 
 	const [isMarkingRead, setIsMarkingRead] = useState(false);
 	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [permissionStatus, setPermissionStatus] = useState<
+		"granted" | "denied" | "undetermined" | null
+	>(null);
 
-	const unreadCount = notifications.filter((n) => !n.read).length;
+	const items = notifications ?? [];
+	const unreadCount = items.filter((n) => !n.isRead).length;
 
-	// Clear native badge count when screen opens
 	useEffect(() => {
 		Notifications.setBadgeCountAsync(0);
+	}, []);
+
+	useEffect(() => {
+		Notifications.getPermissionsAsync().then((perm) => {
+			setPermissionStatus(perm.status as "granted" | "denied" | "undetermined");
+		});
 	}, []);
 
 	const handleMarkAllRead = async () => {
 		setIsMarkingRead(true);
 		try {
-			await novu.notifications.readAll();
-			await refetch();
+			await readAll();
 		} finally {
 			setIsMarkingRead(false);
 		}
@@ -99,16 +417,6 @@ export default function NotificationsScreen() {
 		await refetch();
 		setIsRefreshing(false);
 	};
-
-	const [permissionStatus, setPermissionStatus] = useState<
-		"granted" | "denied" | "undetermined" | null
-	>(null);
-
-	useEffect(() => {
-		Notifications.getPermissionsAsync().then((perm) => {
-			setPermissionStatus(perm.status as "granted" | "denied" | "undetermined");
-		});
-	}, []);
 
 	const handleEnablePush = async () => {
 		const token = await registerForPushNotificationsAsync();
@@ -153,7 +461,7 @@ export default function NotificationsScreen() {
 				)}
 			</View>
 
-			{/* Push permission banner */}
+			{/* Push permission banners */}
 			{permissionStatus === "denied" && (
 				<View
 					style={[
@@ -205,7 +513,7 @@ export default function NotificationsScreen() {
 					<View style={styles.center}>
 						<ActivityIndicator color={primaryColor} />
 					</View>
-				) : notifications.length === 0 ? (
+				) : items.length === 0 ? (
 					<EmptyState
 						icon="notifications-outline"
 						title="Aucune notification"
@@ -213,62 +521,22 @@ export default function NotificationsScreen() {
 					/>
 				) : (
 					<FlatList
-						data={notifications}
+						data={items}
 						keyExtractor={(item) => item.id}
-						renderItem={({ item }) => {
-							const type = (item as unknown as { type?: string }).type ?? "";
-							const payload =
-								(item as unknown as { payload?: Record<string, unknown> })
-									.payload ?? {};
-							const icon = notificationIcon(type);
-							const unreadBg = isDark ? "rgba(30,58,95,0.35)" : "#eff6ff";
-
-							return (
-								<AnimatedPressable
-									onPress={async () => {
-										if (!item.read) {
-											await novu.notifications.read(item.id);
-										}
-										if (payload.listingId) {
-											router.push(`/listing/${payload.listingId}`);
-										}
-									}}
-									scaleTo={0.985}
-									style={[
-										styles.item,
-										{ borderBottomColor: borderColor },
-										!item.read && { backgroundColor: unreadBg },
-									]}
-								>
-									<View style={[styles.iconBox, { backgroundColor: icon.bg }]}>
-										<Ionicons name={icon.name} size={18} color={icon.color} />
-									</View>
-
-									<View style={{ flex: 1, gap: 3 }}>
-										<Text
-											style={[
-												styles.itemContent,
-												{ color: textColor },
-												!item.read && {
-													fontFamily: Fonts.bodySemibold,
-												},
-											]}
-											numberOfLines={3}
-										>
-											{item.content as string}
-										</Text>
-										<Text style={[styles.itemTime, { color: mutedColor }]}>
-											{timeAgo(item.createdAt)}
-										</Text>
-									</View>
-
-									{!item.read && <View style={styles.unreadDot} />}
-								</AnimatedPressable>
-							);
-						}}
+						renderItem={({ item }) => (
+							<NotificationRow
+								item={item}
+								isDark={isDark}
+								borderColor={borderColor}
+								textColor={textColor}
+								mutedColor={mutedColor}
+								primaryColor={primaryColor}
+								cardBg={cardBg}
+							/>
+						)}
 						contentContainerStyle={[styles.list, { backgroundColor: cardBg }]}
 						style={styles.flatList}
-						onEndReached={() => hasMore && loadMore()}
+						onEndReached={() => hasMore && fetchMore()}
 						onEndReachedThreshold={0.5}
 						refreshControl={
 							<RefreshControl
@@ -328,6 +596,7 @@ const styles = StyleSheet.create({
 	flatList: { flex: 1 },
 	list: { flexGrow: 1 },
 
+	// ── Row ──────────────────────────────────────────────────────
 	item: {
 		flexDirection: "row",
 		alignItems: "flex-start",
@@ -335,6 +604,18 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 		borderBottomWidth: 1,
 		gap: 12,
+	},
+	itemUnread: {
+		paddingLeft: 12, // compensate for the 4px unread bar
+	},
+	unreadBar: {
+		position: "absolute",
+		left: 0,
+		top: 0,
+		bottom: 0,
+		width: 4,
+		borderTopRightRadius: 2,
+		borderBottomRightRadius: 2,
 	},
 	iconBox: {
 		width: 38,
@@ -344,10 +625,15 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 1,
 	},
-	itemContent: {
+	itemSubject: {
 		fontSize: 14,
-		fontFamily: Fonts.body,
+		fontFamily: Fonts.bodySemibold,
 		lineHeight: 20,
+	},
+	itemBody: {
+		fontSize: 13,
+		fontFamily: Fonts.body,
+		lineHeight: 18,
 	},
 	itemTime: { fontSize: 12, fontFamily: Fonts.body },
 	unreadDot: {
@@ -356,5 +642,41 @@ const styles = StyleSheet.create({
 		borderRadius: 4,
 		backgroundColor: "#3b82f6",
 		marginTop: 6,
+	},
+
+	// ── Swipe actions ─────────────────────────────────────────────
+	swipeBtn: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 4,
+	},
+	swipeBtnLabel: {
+		fontSize: 11,
+		fontFamily: Fonts.bodySemibold,
+		color: "#fff",
+	},
+
+	// ── Inline Novu actions (primary / secondary) ─────────────────
+	inlineActions: {
+		flexDirection: "row",
+		gap: 8,
+		marginTop: 6,
+	},
+	actionBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		paddingHorizontal: 12,
+		paddingVertical: 5,
+		borderRadius: 20,
+		borderWidth: 1,
+	},
+	actionBtnPrimary: { backgroundColor: "transparent" },
+	actionBtnSecondary: { backgroundColor: "transparent" },
+	actionBtnDone: { backgroundColor: "transparent", opacity: 0.5 },
+	actionBtnText: {
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
 	},
 });
