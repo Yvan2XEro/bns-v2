@@ -9,7 +9,7 @@ COPY bun.lock package.json ./
 COPY packages/web/package.json ./packages/web/
 COPY packages/chat-client-sdk/package.json ./packages/chat-client-sdk/
 COPY packages/biome-config/package.json ./packages/biome-config/
-RUN cd packages/web && bun install --ci
+RUN cd packages/web && bun install --frozen-lockfile
 
 # --- Builder ---
 FROM base AS builder

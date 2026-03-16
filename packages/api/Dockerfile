@@ -8,7 +8,7 @@ WORKDIR /app
 COPY bun.lock package.json ./
 COPY packages/api/package.json ./packages/api/
 COPY packages/biome-config/package.json ./packages/biome-config/
-RUN cd packages/api && bun install --ci
+RUN cd packages/api && bun install --frozen-lockfile
 
 # --- Builder ---
 FROM base AS builder

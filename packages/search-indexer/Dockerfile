@@ -5,7 +5,7 @@ FROM base AS deps
 WORKDIR /app
 COPY packages/search-indexer/package.json ./
 COPY bun.lock ./
-RUN bun install --ci
+RUN bun install --frozen-lockfile
 
 # --- Runner ---
 FROM base AS runner
