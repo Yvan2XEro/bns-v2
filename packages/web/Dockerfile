@@ -9,6 +9,10 @@ COPY bun.lock package.json ./
 COPY packages/web/package.json ./packages/web/
 COPY packages/chat-client-sdk/package.json ./packages/chat-client-sdk/
 COPY packages/biome-config/package.json ./packages/biome-config/
+COPY packages/api/package.json ./packages/api/
+COPY packages/chat-service/package.json ./packages/chat-service/
+COPY packages/mobile/package.json ./packages/mobile/
+COPY packages/search-indexer/package.json ./packages/search-indexer/
 RUN cd packages/web && bun install --frozen-lockfile
 
 # --- Builder ---

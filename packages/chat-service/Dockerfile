@@ -4,8 +4,7 @@ FROM oven/bun:latest AS base
 FROM base AS deps
 WORKDIR /app
 COPY packages/chat-service/package.json ./
-COPY bun.lock ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # --- Runner ---
 FROM base AS runner
