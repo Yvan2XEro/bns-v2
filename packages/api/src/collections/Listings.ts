@@ -99,6 +99,7 @@ export const Listings: CollectionConfig = {
 							event: "listing-rejected",
 							subscriberId: sellerId,
 							payload: {
+								listingId: doc.id,
 								listingTitle: doc.title,
 								reason: doc.rejectionReason || "No reason provided",
 							},
@@ -110,7 +111,7 @@ export const Listings: CollectionConfig = {
 						await triggerNovuEvent({
 							event: "listing-approved",
 							subscriberId: sellerId,
-							payload: { listingTitle: doc.title },
+							payload: { listingId: doc.id, listingTitle: doc.title },
 						});
 					} else {
 						await triggerNovuEvent({

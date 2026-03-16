@@ -20,6 +20,7 @@ import {
 } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
+import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -86,6 +87,7 @@ export default function RootLayout() {
 							<ChatProvider>
 								<AlertProvider>
 									<PushTokenRegistrar />
+									<PushNotificationHandler />
 									<RootLayoutNav />
 								</AlertProvider>
 							</ChatProvider>
@@ -163,6 +165,60 @@ function PushTokenRegistrar() {
 			if (token) syncPushTokenWithBackend(token);
 		});
 	}, [user]);
+
+	return null;
+}
+
+// ─── PushNotificationHandler ─────────────────────────────────────────────────
+// Handles deep-link navigation when the user taps a push notification.
+// Works for two scenarios:
+//   - Cold start: app was killed, notification tap launches it
+//   - Background: app was backgrounded, user taps notification
+// Navigation is deferred until auth is resolved and the user is logged in.
+
+function resolveNotificationUrl(data: Record<string, unknown>): string | null {
+	const conversationId = data?.conversationId as string | undefined;
+	const listingId = data?.listingId as string | undefined;
+	if (conversationId) return `/messages/${conversationId}`;
+	if (listingId) return `/listing/${listingId}`;
+	return null;
+}
+
+function PushNotificationHandler() {
+	const { isLoading, user } = useAuth();
+	const pendingUrlRef = useRef<string | null>(null);
+	const isReady = !isLoading && !!user;
+
+	useEffect(() => {
+		Notifications.getLastNotificationResponseAsync().then((response) => {
+			if (!response) return;
+			const url = resolveNotificationUrl(
+				response.notification.request.content.data as Record<string, unknown>,
+			);
+			if (url) pendingUrlRef.current = url;
+		});
+	}, []);
+
+	useEffect(() => {
+		const sub = Notifications.addNotificationResponseReceivedListener(
+			(response) => {
+				const url = resolveNotificationUrl(
+					response.notification.request.content.data as Record<string, unknown>,
+				);
+				if (!url) return;
+				if (isReady) router.push(url as Parameters<typeof router.push>[0]);
+				else pendingUrlRef.current = url;
+			},
+		);
+		return () => sub.remove();
+	}, [isReady]);
+
+	useEffect(() => {
+		if (isReady && pendingUrlRef.current) {
+			router.push(pendingUrlRef.current as Parameters<typeof router.push>[0]);
+			pendingUrlRef.current = null;
+		}
+	}, [isReady]);
 
 	return null;
 }
