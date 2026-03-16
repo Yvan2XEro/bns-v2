@@ -15,13 +15,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { SkeletonRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 
 export default function SavedSearchesScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { user } = useAuth();
+	const { user, isLoading: authLoading } = useAuth();
 	const queryClient = useQueryClient();
 	const { showConfirm } = useAlert();
 
@@ -32,11 +33,11 @@ export default function SavedSearchesScreen() {
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 
-	const { data, refetch } = useQuery({
+	const { data, isLoading, refetch } = useQuery({
 		queryKey: ["saved-searches"],
 		queryFn: () =>
 			api.get<{ docs: any[] }>("/api/saved-searches?sort=-createdAt&limit=50"),
-		enabled: !!user,
+		enabled: !!user && !authLoading,
 	});
 
 	const searches = data?.docs ?? [];
@@ -76,7 +77,13 @@ export default function SavedSearchesScreen() {
 				<View style={{ width: 40 }} />
 			</View>
 
-			{searches.length === 0 ? (
+			{authLoading || isLoading ? (
+				<View style={styles.skeletonList}>
+					{Array.from({ length: 5 }).map((_, i) => (
+						<SkeletonRow key={i} />
+					))}
+				</View>
+			) : searches.length === 0 ? (
 				<EmptyState
 					icon="bookmark-outline"
 					title="Aucune recherche"
@@ -169,6 +176,10 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	title: { fontSize: 17, fontFamily: Fonts.displayBold },
+	skeletonList: {
+		padding: 16,
+		gap: 10,
+	},
 	searchItem: {
 		flexDirection: "row",
 		alignItems: "center",

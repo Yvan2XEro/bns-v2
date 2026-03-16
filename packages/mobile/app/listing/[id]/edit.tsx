@@ -138,17 +138,7 @@ export default function EditListingScreen() {
 			})
 			.filter((img: ImageItem) => img.id);
 		setImages(imgs);
-	}, [
-		listing?.id,
-		listing.attributes,
-		listing.condition,
-		listing.description,
-		listing.duration,
-		listing.images,
-		listing.location,
-		listing.price,
-		listing,
-	]);
+	}, [listing?.id, listing]);
 
 	const categoryAttributes: any[] = listing?.category?.attributes ?? [];
 
@@ -199,8 +189,12 @@ export default function EditListingScreen() {
 				name: asset.fileName ?? `photo_${Date.now()}.jpg`,
 				type: asset.mimeType ?? "image/jpeg",
 			} as any);
-			formData.append("alt", asset.fileName ?? `photo_${Date.now()}`);
-
+			formData.append(
+				"_payload",
+				JSON.stringify({
+					alt: asset.fileName?.replace(/\.[^.]+$/, "") || `${title} image`,
+				}),
+			);
 			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
 				"/api/media",
 				formData,

@@ -1,13 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
+import { useCallback, useMemo } from "react";
+import { useAlert } from "../contexts/AlertContext";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { Listing } from "./useListings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface FavoriteListingInput {
+	id: string;
+	[key: string]: unknown;
+}
+
 export interface Favorite {
 	id: string;
-	listing: Listing | string;
+	listing: FavoriteListingInput | string;
 	user: string;
 	createdAt: string;
 }
@@ -24,13 +31,13 @@ export interface FavoritesResponse {
  * Only enabled when the user is authenticated.
  */
 export function useFavorites() {
-	const { user } = useAuth();
+	const { user, isLoading } = useAuth();
 
 	return useQuery({
 		queryKey: ["favorites"],
 		queryFn: () =>
 			api.get<FavoritesResponse>("/api/favorites?limit=200&depth=1"),
-		enabled: !!user,
+		enabled: !!user && !isLoading,
 	});
 }
 
@@ -63,6 +70,7 @@ interface ToggleFavoriteInput {
 	listingId: string;
 	isFavorite: boolean;
 	favoriteId?: string;
+	listing?: FavoriteListingInput;
 }
 
 /**
@@ -87,7 +95,7 @@ export function useToggleFavorite() {
 			return api.post("/api/favorites", { listing: listingId });
 		},
 		// Optimistic update: flip the cached state immediately
-		onMutate: async ({ listingId, isFavorite, favoriteId }) => {
+		onMutate: async ({ listingId, isFavorite, favoriteId, listing }) => {
 			await queryClient.cancelQueries({ queryKey: ["favorites"] });
 
 			const previous = queryClient.getQueryData<FavoritesResponse>([
@@ -109,7 +117,7 @@ export function useToggleFavorite() {
 				// Add a placeholder to cache (will be replaced by server data on settle)
 				const placeholder: Favorite = {
 					id: `__optimistic__${listingId}`,
-					listing: listingId,
+					listing: listing ?? listingId,
 					user: "",
 					createdAt: new Date().toISOString(),
 				};
@@ -133,4 +141,73 @@ export function useToggleFavorite() {
 			queryClient.invalidateQueries({ queryKey: ["favorites"] });
 		},
 	});
+}
+
+export function useFavoriteActions() {
+	const { user } = useAuth();
+	const { showError } = useAlert();
+	const favoritesQuery = useFavorites();
+	const toggleMutation = useToggleFavorite();
+
+	const favorites = favoritesQuery.data?.docs ?? [];
+
+	const favoriteIds = useMemo(
+		() =>
+			new Set(
+				favorites
+					.map((fav) =>
+						typeof fav.listing === "string" ? fav.listing : fav.listing?.id,
+					)
+					.filter(Boolean),
+			),
+		[favorites],
+	);
+
+	const findFavorite = useCallback(
+		(listingId: string) =>
+			favorites.find((fav) => {
+				const id =
+					typeof fav.listing === "string" ? fav.listing : fav.listing?.id;
+				return id === listingId;
+			}),
+		[favorites],
+	);
+
+	const toggleFavorite = useCallback(
+		(listing: FavoriteListingInput | string) => {
+			const listingId = typeof listing === "string" ? listing : listing.id;
+
+			if (!user) {
+				router.push("/auth/login");
+				return;
+			}
+
+			const favorite = findFavorite(listingId);
+			toggleMutation.mutate(
+				{
+					listingId,
+					isFavorite: !!favorite,
+					favoriteId: favorite?.id,
+					listing: typeof listing === "string" ? undefined : listing,
+				},
+				{
+					onError: (err) => {
+						console.error(err);
+						showError("Favoris", "Impossible de mettre a jour les favoris.");
+					},
+				},
+			);
+		},
+		[findFavorite, showError, toggleMutation, user],
+	);
+
+	return {
+		favorites,
+		favoriteIds,
+		isFavorite: (listingId: string) => favoriteIds.has(listingId),
+		toggleFavorite,
+		isLoading: favoritesQuery.isLoading,
+		isPending: toggleMutation.isPending,
+		refetch: favoritesQuery.refetch,
+	};
 }

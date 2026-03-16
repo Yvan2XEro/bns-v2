@@ -23,7 +23,7 @@ async function fetchAllListings(): Promise<{
 
 	while (hasMore) {
 		const response = await fetch(
-			`${PAYLOAD_API_URL}/listings?depth=1&limit=${PAGE_SIZE}&page=${page}`,
+			`${PAYLOAD_API_URL}/listings?depth=2&limit=${PAGE_SIZE}&page=${page}`,
 		);
 
 		if (!response.ok) {

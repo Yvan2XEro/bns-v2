@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useCounts } from "@novu/react-native";
 import {
 	useInfiniteQuery,
 	useMutation,
@@ -39,6 +40,8 @@ import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import {
@@ -60,9 +63,38 @@ const SORTS = [
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
+// ─── Notification bell ────────────────────────────────────────────────────────
+// Isolated component so useCounts (from @novu/react-native) runs inside
+// NovuProvider. When the user is not authenticated, this component is not
+// rendered so the hook is never called outside its provider.
+
+function NotificationBell({
+	cardBg,
+	borderColor,
+	mutedColor,
+}: {
+	cardBg: string;
+	borderColor: string;
+	mutedColor: string;
+}) {
+	const { counts } = useCounts({ filters: [{ read: false }] });
+	const unseenCount = counts?.[0]?.count ?? 0;
+
+	return (
+		<Pressable
+			onPress={() => router.push("/account/notifications")}
+			style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
+		>
+			<Ionicons name="notifications-outline" size={18} color={mutedColor} />
+			{unseenCount > 0 && <View style={styles.bellBadge} />}
+		</Pressable>
+	);
+}
+
 export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
 
@@ -71,7 +103,7 @@ export default function HomeScreen() {
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const [sort, setSort] = useState("newest");
 	const [searchFocused, setSearchFocused] = useState(false);
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 	const inputRef = useRef<TextInput>(null);
 
 	// ── Animations ────────────────────────────────────────────────
@@ -138,7 +170,7 @@ export default function HomeScreen() {
 	// ── Handlers ──────────────────────────────────────────────────
 	const handleQueryChange = (text: string) => {
 		setQuery(text);
-		clearTimeout(debounceRef.current);
+		clearTimeout(debounceRef.current || undefined);
 		debounceRef.current = setTimeout(() => setDebouncedQuery(text), 300);
 	};
 
@@ -269,11 +301,7 @@ export default function HomeScreen() {
 			),
 	});
 
-	const { data: favData } = useQuery({
-		queryKey: ["favorites"],
-		queryFn: () => api.get<{ docs: any[] }>("/api/favorites?limit=200"),
-		enabled: !!user,
-	});
+	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
 	const { data: nearbyData } = useQuery({
 		queryKey: ["listings", "nearby", userCoords],
@@ -302,10 +330,6 @@ export default function HomeScreen() {
 		isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
 	}));
 	const boostedListings = homeListings.filter((l: any) => l.isBoosted);
-	const favoriteIds = new Set(
-		(favData?.docs ?? []).map((f: any) => f.listing?.id ?? f.listing),
-	);
-
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -435,6 +459,15 @@ export default function HomeScreen() {
 					</Animated.Text>
 
 					<View style={{ flex: 1 }} />
+
+					{/* Bell icon — only rendered after NovuProvider context is established */}
+					{user && novuReady && (
+						<NotificationBell
+							cardBg={cardBg}
+							borderColor={borderColor}
+							mutedColor={mutedColor}
+						/>
+					)}
 
 					<Pressable
 						onPress={() => router.push("/(tabs)/account")}
@@ -636,7 +669,7 @@ export default function HomeScreen() {
 												key={listing.id}
 												listing={listing}
 												isFavorite={favoriteIds.has(listing.id)}
-												onToggleFavorite={() => {}}
+												onToggleFavorite={() => toggleFavorite(listing)}
 												onPress={(id) => router.push(`/listing/${id}`)}
 											/>
 										))}
@@ -825,7 +858,7 @@ export default function HomeScreen() {
 											key={listing.id}
 											listing={listing}
 											isFavorite={favoriteIds.has(listing.id)}
-											onToggleFavorite={() => {}}
+											onToggleFavorite={() => toggleFavorite(listing)}
 											onPress={(id) => router.push(`/listing/${id}`)}
 										/>
 									))}
@@ -923,93 +956,12 @@ export default function HomeScreen() {
 										key={listing.id}
 										listing={listing}
 										isFavorite={favoriteIds.has(listing.id)}
-										onToggleFavorite={() => {}}
+										onToggleFavorite={() => toggleFavorite(listing)}
 										onPress={(id) => router.push(`/listing/${id}`)}
 									/>
 								))}
 							</ScrollView>
 						)}
-					</View>
-
-					{/* ── Comment ça marche ── */}
-					<View style={[styles.section, styles.howSection]}>
-						<View style={styles.sectionHeader}>
-							<Text style={[styles.sectionTitle, { color: textColor }]}>
-								Comment ça marche ?
-							</Text>
-						</View>
-						<View style={styles.howSteps}>
-							{[
-								{
-									icon: "camera-outline",
-									color: "#3b82f6",
-									bg: "#dbeafe",
-									title: "Photographiez",
-									sub: "Prenez une photo, ajoutez une description et un prix",
-									n: "1",
-								},
-								{
-									icon: "chatbubbles-outline",
-									color: "#10b981",
-									bg: "#d1fae5",
-									title: "Discutez",
-									sub: "Les acheteurs vous contactent, négociez le prix",
-									n: "2",
-								},
-								{
-									icon: "cash-outline",
-									color: "#f59e0b",
-									bg: "#fef3c7",
-									title: "Vendez",
-									sub: "Rencontrez-vous, remettez l'article, soyez payé",
-									n: "3",
-								},
-							].map((step) => (
-								<View
-									key={step.n}
-									style={[
-										styles.howCard,
-										{ backgroundColor: cardBg, borderColor },
-									]}
-								>
-									<View
-										style={[styles.howIconWrap, { backgroundColor: step.bg }]}
-									>
-										<Ionicons
-											name={step.icon as any}
-											size={22}
-											color={step.color}
-										/>
-									</View>
-									<View
-										style={[
-											styles.howStep,
-											{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
-										]}
-									>
-										<Text style={[styles.howStepNum, { color: primaryColor }]}>
-											{step.n}
-										</Text>
-									</View>
-									<Text style={[styles.howTitle, { color: textColor }]}>
-										{step.title}
-									</Text>
-									<Text
-										style={[styles.howSub, { color: mutedColor }]}
-										numberOfLines={3}
-									>
-										{step.sub}
-									</Text>
-								</View>
-							))}
-						</View>
-						<Pressable
-							onPress={() => router.push("/(tabs)/create")}
-							style={[styles.sellNowBtn, { backgroundColor: "#f59e0b" }]}
-						>
-							<Ionicons name="rocket-outline" size={17} color="#fff" />
-							<Text style={styles.sellNowText}>Publier une annonce</Text>
-						</Pressable>
 					</View>
 				</AnimatedScrollView>
 			)}
@@ -1125,6 +1077,26 @@ const styles = StyleSheet.create({
 		fontSize: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
+	},
+	bellBtn: {
+		width: 36,
+		height: 36,
+		borderRadius: 18,
+		alignItems: "center",
+		justifyContent: "center",
+		borderWidth: 1,
+		position: "relative",
+	},
+	bellBadge: {
+		position: "absolute",
+		top: 6,
+		right: 6,
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: "#ef4444",
+		borderWidth: 1.5,
+		borderColor: "#fff",
 	},
 	avatarBtn: {
 		width: 36,
@@ -1369,47 +1341,4 @@ const styles = StyleSheet.create({
 	locationPromptTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	locationPromptSub: { fontSize: 12, fontFamily: Fonts.body, marginTop: 2 },
 	nearbyList: { paddingHorizontal: 16, gap: 12 },
-
-	/* ── How it works ── */
-	howSection: {
-		marginHorizontal: 16,
-		marginBottom: 24,
-		borderRadius: 16,
-		padding: 16,
-	},
-	howSteps: { flexDirection: "row", gap: 10, marginBottom: 16 },
-	howCard: {
-		flex: 1,
-		borderRadius: 12,
-		padding: 12,
-		borderWidth: 1,
-		gap: 8,
-		alignItems: "flex-start",
-	},
-	howIconWrap: {
-		width: 40,
-		height: 40,
-		borderRadius: 12,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	howStep: {
-		width: 22,
-		height: 22,
-		borderRadius: 11,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	howStepNum: { fontSize: 12, fontFamily: Fonts.displayBold },
-	howTitle: { fontSize: 13, fontFamily: Fonts.displayBold },
-	howSub: { fontSize: 11, fontFamily: Fonts.body, lineHeight: 16 },
-	sellNowBtn: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 8,
-		borderRadius: 12,
-		paddingVertical: 14,
-	},
-	sellNowText: { color: "#fff", fontSize: 15, fontFamily: Fonts.displayBold },
 });

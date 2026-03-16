@@ -17,10 +17,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -32,7 +34,8 @@ export default function ListingDetail() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
-	const { top: safeTop } = useSafeAreaInsets();
+	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
+	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 	const [imageIndex, setImageIndex] = useState(0);
 	const [descExpanded, setDescExpanded] = useState(false);
 	const [contactLoading, setContactLoading] = useState(false);
@@ -85,8 +88,10 @@ export default function ListingDetail() {
 			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 			await queryClient.cancelQueries({ queryKey: ["favorite", id] });
 		},
-		onSettled: () =>
-			queryClient.invalidateQueries({ queryKey: ["favorite", id] }),
+		onSettled: async () => {
+			await queryClient.invalidateQueries({ queryKey: ["favorite", id] });
+			await queryClient.invalidateQueries({ queryKey: ["favorites"] });
+		},
 	});
 
 	const handleShare = async () => {
@@ -148,8 +153,29 @@ export default function ListingDetail() {
 
 	if (!listing) {
 		return (
-			<View style={[styles.loader, { backgroundColor: bg }]}>
-				<Text style={{ color: textColor }}>Annonce introuvable</Text>
+			<View style={[styles.root, { backgroundColor: bg }]}>
+				<Pressable
+					onPress={() => router.back()}
+					style={[
+						styles.backBtn,
+						{
+							top: safeTop + 12,
+							backgroundColor: isDark ? "#1e293b" : "#ffffff",
+							borderWidth: 1,
+							borderColor,
+						},
+					]}
+				>
+					<Ionicons name="arrow-back" size={20} color={primaryColor} />
+				</Pressable>
+				<EmptyState
+					illustration="notFound"
+					title="Annonce introuvable"
+					subtitle="Cette annonce n'existe plus, a ete retiree ou le lien est invalide."
+					ctaLabel="Retour"
+					onCta={() => router.back()}
+					size={240}
+				/>
 			</View>
 		);
 	}
@@ -161,6 +187,8 @@ export default function ListingDetail() {
 		if (days === 1) return "Hier";
 		return `Il y a ${days} jours`;
 	})();
+
+	const actionBarInset = safeBottom + 120;
 
 	return (
 		<View style={[styles.root, { backgroundColor: bg }]}>
@@ -175,7 +203,10 @@ export default function ListingDetail() {
 				<Ionicons name="arrow-back" size={20} color="#fff" />
 			</Pressable>
 
-			<ScrollView showsVerticalScrollIndicator={false}>
+			<ScrollView
+				showsVerticalScrollIndicator={false}
+				contentContainerStyle={{ paddingBottom: actionBarInset }}
+			>
 				{/* Image Gallery */}
 				<View style={styles.gallery}>
 					<ScrollView
@@ -503,8 +534,8 @@ export default function ListingDetail() {
 											key={l.id}
 											listing={l}
 											width={180}
-											isFavorite={false}
-											onToggleFavorite={() => {}}
+											isFavorite={favoriteIds.has(l.id)}
+											onToggleFavorite={() => toggleFavorite(l)}
 											onPress={(lid) => router.push(`/listing/${lid}`)}
 										/>
 									))}
@@ -534,7 +565,11 @@ export default function ListingDetail() {
 			<View
 				style={[
 					styles.actionBar,
-					{ backgroundColor: cardBg, borderTopColor: borderColor },
+					{
+						backgroundColor: cardBg,
+						borderTopColor: borderColor,
+						paddingBottom: safeBottom + 16,
+					},
 				]}
 			>
 				{!isOwner ? (

@@ -18,12 +18,14 @@ import {
 	DefaultTheme,
 	ThemeProvider,
 } from "@react-navigation/native";
+import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "react-native-reanimated";
+import { NovuProvider } from "@novu/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -31,7 +33,13 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
+import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
+import { api } from "@/src/lib/api";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
+import {
+	registerForPushNotificationsAsync,
+	syncPushTokenWithBackend,
+} from "@/src/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,7 +55,6 @@ const queryClient = new QueryClient({
 export const unstable_settings = { anchor: "(tabs)" };
 
 // ─── Root layout ──────────────────────────────────────────────────────────────
-// Loads fonts, hides the native splash, then mounts providers.
 
 export default function RootLayout() {
 	const [fontsLoaded] = useFonts({
@@ -68,7 +75,6 @@ export default function RootLayout() {
 		}
 	}, [fontsLoaded]);
 
-	// Keep the native splash visible until fonts are ready.
 	if (!fontsLoaded) return null;
 
 	return (
@@ -76,11 +82,14 @@ export default function RootLayout() {
 			<KeyboardProvider>
 				<QueryClientProvider client={queryClient}>
 					<AuthProvider>
-						<ChatProvider>
-							<AlertProvider>
-								<RootLayoutNav />
-							</AlertProvider>
-						</ChatProvider>
+						<NovuWrapper>
+							<ChatProvider>
+								<AlertProvider>
+									<PushTokenRegistrar />
+									<RootLayoutNav />
+								</AlertProvider>
+							</ChatProvider>
+						</NovuWrapper>
 					</AuthProvider>
 				</QueryClientProvider>
 			</KeyboardProvider>
@@ -88,8 +97,77 @@ export default function RootLayout() {
 	);
 }
 
-// ─── Inner nav component ──────────────────────────────────────────────────────
-// Has access to AuthProvider — handles loading overlay + onboarding redirect.
+// ─── NovuWrapper ──────────────────────────────────────────────────────────────
+// NovuProvider is rendered only when the user is authenticated.
+// All components that call Novu hooks (useCounts, useNotifications) are
+// themselves conditionally mounted on user auth — so a hook is never called
+// outside its provider context, which respects React's rules of hooks.
+
+function NovuWrapper({ children }: { children: React.ReactNode }) {
+	const { user } = useAuth();
+	const appId = process.env.EXPO_PUBLIC_NOVU_APP_ID ?? "";
+	const [ready, setReady] = useState(false);
+
+	const { data } = useQuery({
+		queryKey: ["novu-subscriber-hash", user?.id],
+		queryFn: () =>
+			api.get<{ subscriberHash: string }>("/api/public/novu/subscriber-hash"),
+		enabled: !!user && !!appId,
+		staleTime: Number.POSITIVE_INFINITY,
+		retry: false,
+	});
+
+	// Set ready one render cycle after NovuProvider mounts, so consumers that
+	// call Novu hooks (useCounts, useNotifications) are never rendered in the
+	// same cycle as NovuProvider — avoiding "must be used within NovuProvider".
+	useEffect(() => {
+		if (user && appId) setReady(true);
+		else setReady(false);
+	}, [user?.id, appId, user]);
+
+	if (!user || !appId) {
+		return (
+			<NotificationReadyContext.Provider value={false}>
+				{children}
+			</NotificationReadyContext.Provider>
+		);
+	}
+
+	return (
+		<NovuProvider
+			key={user.id}
+			subscriberId={user.id}
+			applicationIdentifier={appId}
+			subscriberHash={data?.subscriberHash}
+		>
+			<NotificationReadyContext.Provider value={ready}>
+				{children}
+			</NotificationReadyContext.Provider>
+		</NovuProvider>
+	);
+}
+
+// ─── PushTokenRegistrar ───────────────────────────────────────────────────────
+// Requests push permission and syncs the Expo token with Novu once per session.
+
+function PushTokenRegistrar() {
+	const { user } = useAuth();
+	const registeredRef = useRef<string | null>(null);
+
+	useEffect(() => {
+		if (!user) return;
+		if (registeredRef.current === user.id) return;
+		registeredRef.current = user.id;
+
+		registerForPushNotificationsAsync().then((token) => {
+			if (token) syncPushTokenWithBackend(token);
+		});
+	}, [user]);
+
+	return null;
+}
+
+// ─── RootLayoutNav ────────────────────────────────────────────────────────────
 
 function RootLayoutNav() {
 	const colorScheme = useColorScheme();
@@ -98,7 +176,6 @@ function RootLayoutNav() {
 	const [onboardingChecked, setOnboardingChecked] = useState(false);
 	const [isFirstLaunch, setIsFirstLaunch] = useState(false);
 
-	// Check AsyncStorage once on mount
 	useEffect(() => {
 		AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
 			setIsFirstLaunch(value === null);
@@ -106,10 +183,8 @@ function RootLayoutNav() {
 		});
 	}, []);
 
-	// Show custom loading screen while auth session restores + onboarding check
 	const showLoader = authLoading || !onboardingChecked;
 
-	// Redirect to onboarding once both checks are done
 	useEffect(() => {
 		if (!showLoader && isFirstLaunch) {
 			router.replace("/onboarding");
@@ -141,6 +216,10 @@ function RootLayoutNav() {
 				<Stack.Screen name="account/boosts" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="account/searches"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="account/notifications"
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen
@@ -179,7 +258,6 @@ function RootLayoutNav() {
 				<Stack.Screen name="privacy" options={{ headerShown: false }} />
 			</Stack>
 
-			{/* Custom in-app loading overlay (auth restore + onboarding check) */}
 			{showLoader && <LoadingScreen />}
 
 			<StatusBar style="auto" />

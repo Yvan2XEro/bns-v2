@@ -332,6 +332,34 @@ export interface SavedSearch {
 	updatedAt: string;
 }
 
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+/** Single notification from GET /api/public/novu/notifications */
+export interface AppNotification {
+	id: string;
+	content: string;
+	seen: boolean;
+	read: boolean;
+	createdAt: string;
+	type: string;
+	workflowName: string;
+	payload: Record<string, unknown>;
+}
+
+/** Response from GET /api/public/novu/notifications */
+export interface NotificationsResponse {
+	notifications: AppNotification[];
+	totalCount: number;
+	unreadCount: number;
+	page: number;
+	pageSize: number;
+}
+
+/** Response from GET /api/public/novu/notifications/unread-count */
+export interface UnreadCountResponse {
+	count: number;
+}
+
 // ─── Boost Payments ───────────────────────────────────────────────────────────
 
 export type BoostDuration = "7" | "14" | "30";

@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React from "react";
 import {
@@ -15,24 +14,16 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
-import { api } from "@/src/lib/api";
-import { useAuth } from "@/src/lib/auth";
+import { useFavoriteActions } from "@/src/hooks/useFavorites";
 
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { user } = useAuth();
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 
-	const { data, refetch } = useQuery({
-		queryKey: ["favorites"],
-		queryFn: () => api.get<{ docs: any[] }>("/api/favorites?depth=1&limit=100"),
-		enabled: !!user,
-	});
-
-	const favorites = data?.docs ?? [];
+	const { favorites, refetch, toggleFavorite } = useFavoriteActions();
 	const pairs: any[][] = [];
 	for (let i = 0; i < favorites.length; i += 2)
 		pairs.push(favorites.slice(i, i + 2));
@@ -75,7 +66,7 @@ export default function FavoritesScreen() {
 									key={fav.id}
 									listing={fav.listing ?? fav}
 									isFavorite
-									onToggleFavorite={() => {}}
+									onToggleFavorite={() => toggleFavorite(fav.listing ?? fav)}
 									onPress={(id) => router.push(`/listing/${id}`)}
 								/>
 							))}
