@@ -6,7 +6,6 @@ import {
 	Clock,
 	MapPin,
 	MessageSquare,
-	Search,
 	Shield,
 	Star,
 	Tag,
@@ -16,6 +15,7 @@ import {
 import Link from "next/link";
 import { CategoryIcon } from "~/components/category-icon";
 import { RotatingText } from "~/components/home/rotating-text";
+import { HomeSearchBar } from "~/components/home-search-bar";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
 import { serverFetch } from "~/lib/server-api";
@@ -149,38 +149,8 @@ export default async function HomePage() {
 							Thousands of listings near you. Find deals, sell fast.
 						</p>
 
-						{/* Search bar (Leboncoin style: prominent, multi-field) */}
-						<form action="/search" method="GET" className="mx-auto max-w-xl">
-							<div className="flex overflow-hidden rounded-2xl bg-white shadow-black/10 shadow-xl transition-all duration-300 focus-within:scale-[1.01] focus-within:shadow-2xl focus-within:shadow-black/15">
-								<div className="relative flex-1">
-									<Search className="-translate-y-1/2 absolute top-1/2 left-4 h-5 w-5 text-[#94A3B8]" />
-									<input
-										type="search"
-										name="q"
-										placeholder="Search items, cars, phones..."
-										className="h-14 w-full border-0 bg-transparent pr-4 pl-12 text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none"
-									/>
-								</div>
-								<div className="hidden items-center border-[#E2E8F0] border-l sm:flex">
-									<div className="relative">
-										<MapPin className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
-										<input
-											type="text"
-											name="location"
-											placeholder="City"
-											className="h-14 w-40 border-0 bg-transparent pr-3 pl-9 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:outline-none"
-										/>
-									</div>
-								</div>
-								<button
-									type="submit"
-									className="flex items-center gap-2 bg-[#F59E0B] px-6 font-semibold text-[#0F172A] transition-all duration-200 hover:bg-[#D97706] active:scale-95 sm:px-8"
-								>
-									<Search className="h-5 w-5" />
-									<span className="hidden sm:inline">Search</span>
-								</button>
-							</div>
-						</form>
+						{/* Search bar */}
+						<HomeSearchBar />
 
 						{/* Quick category pills (OLX style) */}
 						<div className="mt-6 flex flex-wrap items-center justify-center gap-2">

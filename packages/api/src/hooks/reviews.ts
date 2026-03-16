@@ -13,6 +13,7 @@ export const updateUserRating = async ({
 		update: (options: {
 			collection: string;
 			id: string;
+			overrideAccess?: boolean;
 			data: Record<string, unknown>;
 		}) => Promise<unknown>;
 	};
@@ -35,6 +36,7 @@ export const updateUserRating = async ({
 	await payload.update({
 		collection: "users",
 		id: reviewedUserId,
+		overrideAccess: true,
 		data: {
 			rating: Math.round(averageRating * 10) / 10,
 			totalReviews: reviews.docs.length,

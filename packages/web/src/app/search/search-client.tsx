@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
+import { CitySelect } from "~/components/ui/city-select";
 import {
 	Dialog,
 	DialogContent,
@@ -32,6 +33,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { saveSearch } from "~/lib/actions";
+import type { CameroonCity } from "~/lib/cameroon-cities";
 import type { Category, CategoryAttribute, Listing } from "~/types";
 
 interface SearchClientProps {
@@ -378,13 +380,22 @@ export function SearchClient({
 			{/* Location */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					Location
+					Ville
 				</Label>
-				<Input
-					placeholder="City or region"
-					className="h-9 rounded-lg text-sm"
+				<CitySelect
 					value={filters.location}
-					onChange={(e) => updateFilter("location", e.target.value)}
+					onChange={(city: CameroonCity | null) => {
+						updateFilter("location", city?.name ?? "");
+						if (city) {
+							setGeoCoords({ lat: city.lat, lng: city.lng });
+							setNearMe(true);
+						} else {
+							if (!nearMe) setGeoCoords(null);
+						}
+						setShouldFetch(true);
+						setPage(1);
+					}}
+					className="h-9 text-sm"
 				/>
 			</div>
 

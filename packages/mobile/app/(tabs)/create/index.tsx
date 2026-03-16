@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useRef, useState } from "react";
 import {
@@ -24,9 +23,11 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { CityPicker } from "@/src/components/CityPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import type { CameroonCity } from "@/src/lib/cameroon-cities";
 
 const STEPS = ["Catégorie", "Détails", "Attributs", "Photos", "Révision"];
 const SCREEN_W = Dimensions.get("window").width;
@@ -70,6 +71,7 @@ interface FormData {
 	condition: string;
 	duration: number;
 	location: string;
+	coordinates: { lat: number; lng: number } | null;
 	attributes: Record<string, any>;
 	images: UploadedImage[];
 }
@@ -122,6 +124,7 @@ export default function CreateScreen() {
 		condition: "new",
 		duration: 30,
 		location: "",
+		coordinates: null,
 		attributes: {},
 		images: [],
 	});
@@ -421,6 +424,14 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 	} = colors;
 	const update = (key: string, val: any) =>
 		setForm((f: any) => ({ ...f, [key]: val }));
+	const handleCitySelect = (city: CameroonCity) =>
+		setForm((f: any) => ({
+			...f,
+			location: city.name,
+			coordinates: { lat: city.lat, lng: city.lng },
+		}));
+	const handleCityClear = () =>
+		setForm((f: any) => ({ ...f, location: "", coordinates: null }));
 	const canProceed =
 		form.title.trim() &&
 		form.description.trim() &&
@@ -594,24 +605,15 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 					required
 					colors={colors}
 				/>
-				<View
-					style={[
-						styles.locationRow,
-						{ backgroundColor: inputBg, borderColor: border },
-					]}
-				>
-					<Ionicons name="map-outline" size={16} color={mutedColor} />
-					<TextInput
-						value={form.location}
-						onChangeText={(v) => update("location", v)}
-						placeholder="Ex : Douala, Akwa"
-						placeholderTextColor={mutedColor}
-						style={[styles.locationInput, { color: textColor }]}
-					/>
-				</View>
-				<GpsButton
-					onLocation={(loc: string) => update("location", loc)}
-					colors={colors}
+				<CityPicker
+					value={form.location}
+					onSelect={handleCitySelect}
+					onClear={handleCityClear}
+					inputBg={inputBg}
+					borderColor={border}
+					textColor={textColor}
+					mutedColor={mutedColor}
+					primaryColor={primary}
 				/>
 			</View>
 
@@ -1047,7 +1049,9 @@ function ReviewStep({ form, setStep, colors }: any) {
 				description: form.description,
 				price: Number(form.price),
 				condition: form.condition,
+				duration: form.duration,
 				location: form.location,
+				...(form.coordinates ? { coordinates: form.coordinates } : {}),
 				category: form.category?.id,
 				seller: user?.id,
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
@@ -1208,64 +1212,6 @@ function ReviewStep({ form, setStep, colors }: any) {
 }
 
 // ─── Shared sub-components ─────────────────────────────────────────────────────
-
-function GpsButton({ onLocation, colors }: any) {
-	const { primary, mutedColor, isDark } = colors;
-	const { showError } = useAlert();
-	const [loading, setLoading] = useState(false);
-
-	const getLocation = async () => {
-		setLoading(true);
-		try {
-			const { status } = await Location.requestForegroundPermissionsAsync();
-			if (status !== "granted") {
-				showError(
-					"Permission refusée",
-					"L'accès à la localisation est nécessaire.",
-				);
-				return;
-			}
-			const pos = await Location.getCurrentPositionAsync({
-				accuracy: Location.Accuracy.Balanced,
-			});
-			const [result] = await Location.reverseGeocodeAsync({
-				latitude: pos.coords.latitude,
-				longitude: pos.coords.longitude,
-			});
-			if (result) {
-				const parts = [
-					result.district ?? result.subregion,
-					result.city ?? result.region,
-				].filter(Boolean);
-				onLocation(parts.join(", ") || (result.formattedAddress ?? ""));
-			}
-		} catch (_err: any) {
-			showError("Erreur", "Impossible d'obtenir la localisation.");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	return (
-		<Pressable
-			onPress={getLocation}
-			disabled={loading}
-			style={[
-				styles.gpsBtn,
-				{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-			]}
-		>
-			{loading ? (
-				<ActivityIndicator size="small" color={primary} />
-			) : (
-				<Ionicons name="navigate-outline" size={14} color={primary} />
-			)}
-			<Text style={[styles.gpsBtnText, { color: primary }]}>
-				{loading ? "Localisation..." : "Utiliser ma position"}
-			</Text>
-		</Pressable>
-	);
-}
 
 function FieldHeader({ icon, label, required, colors }: any) {
 	const { textColor, mutedColor, primary } = colors;

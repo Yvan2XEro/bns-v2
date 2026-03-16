@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
@@ -161,8 +162,8 @@ const styles = StyleSheet.create({
 		padding: 16,
 		borderBottomWidth: 1,
 	},
-	title: { fontSize: 18, fontWeight: "700" },
-	label: { fontSize: 13, fontWeight: "600" },
+	title: { fontSize: 18, fontFamily: Fonts.displayBold },
+	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	reasonBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -170,16 +171,17 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		padding: 14,
 	},
-	reasonText: { fontSize: 14 },
+	reasonText: { fontSize: 14, fontFamily: Fonts.body },
 	textarea: {
 		borderRadius: 12,
 		borderWidth: 1.5,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		fontSize: 14,
+		fontFamily: Fonts.body,
 		minHeight: 100,
 		textAlignVertical: "top",
 	},
 	submitBtn: { borderRadius: 14, paddingVertical: 15, alignItems: "center" },
-	submitText: { fontSize: 16, fontWeight: "700" },
+	submitText: { fontSize: 16, fontFamily: Fonts.displayBold },
 });

@@ -13,7 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { CityPicker } from "@/src/components/CityPicker";
 import { api } from "@/src/lib/api";
+import type { CameroonCity } from "@/src/lib/cameroon-cities";
 
 const CONDITIONS = [
 	{ key: "new", label: "Neuf" },
@@ -47,6 +49,12 @@ export default function FiltersModal() {
 	);
 	const [location, setLocation] = useState(
 		(rawParams.location as string) ?? "",
+	);
+	const [locationLat, setLocationLat] = useState(
+		rawParams.lat ? Number(rawParams.lat) : (null as number | null),
+	);
+	const [locationLng, setLocationLng] = useState(
+		rawParams.lng ? Number(rawParams.lng) : (null as number | null),
 	);
 	const [radius, setRadius] = useState(
 		rawParams.radius ? Number(rawParams.radius) : 10,
@@ -109,6 +117,8 @@ export default function FiltersModal() {
 			filterParams.conditions = selectedConditions.join(",");
 		if (location) filterParams.location = location;
 		if (location) filterParams.radius = String(radius);
+		if (location && locationLat != null) filterParams.lat = String(locationLat);
+		if (location && locationLng != null) filterParams.lng = String(locationLng);
 		for (const [slug, value] of Object.entries(attributeFilters)) {
 			if (value) filterParams[`attr_${slug}`] = value;
 		}
@@ -269,15 +279,23 @@ export default function FiltersModal() {
 				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
 					Localisation
 				</Text>
-				<TextInput
+				<CityPicker
 					value={location}
-					onChangeText={setLocation}
-					placeholder="Ex: Douala"
-					placeholderTextColor={mutedColor}
-					style={[
-						styles.textInput,
-						{ backgroundColor: cardBg, borderColor, color: textColor },
-					]}
+					onSelect={(city: CameroonCity) => {
+						setLocation(city.name);
+						setLocationLat(city.lat);
+						setLocationLng(city.lng);
+					}}
+					onClear={() => {
+						setLocation("");
+						setLocationLat(null);
+						setLocationLng(null);
+					}}
+					inputBg={cardBg}
+					borderColor={borderColor}
+					textColor={textColor}
+					mutedColor={mutedColor}
+					primaryColor={primaryColor}
 				/>
 
 				{/* ── Rayon ── */}

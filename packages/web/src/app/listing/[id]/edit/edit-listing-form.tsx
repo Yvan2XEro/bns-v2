@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, MapPin, Save, Trash2, X } from "lucide-react";
+import { LoaderCircle, Save, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -16,6 +16,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
+import { CitySelect } from "~/components/ui/city-select";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -27,6 +28,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
+import type { CameroonCity } from "~/lib/cameroon-cities";
 import type {
 	Category,
 	CategoryAttribute,
@@ -106,7 +108,6 @@ export function EditListingForm({
 		lat: number;
 		lng: number;
 	} | null>(initialCoordinates);
-	const [geoLoading, setGeoLoading] = useState(false);
 
 	const [formData, setFormData] = useState({
 		title: listing.title,
@@ -141,28 +142,6 @@ export function EditListingForm({
 	function handleRemoveNewImage(index: number) {
 		setNewImages((prev) => prev.filter((_, i) => i !== index));
 		setNewPreviews((prev) => prev.filter((_, i) => i !== index));
-	}
-
-	function handleUseMyLocation() {
-		if (!navigator.geolocation) {
-			alert("Geolocation is not supported by your browser.");
-			return;
-		}
-		setGeoLoading(true);
-		navigator.geolocation.getCurrentPosition(
-			(position) => {
-				setCoordinates({
-					lat: position.coords.latitude,
-					lng: position.coords.longitude,
-				});
-				setGeoLoading(false);
-			},
-			(error) => {
-				console.error("Geolocation error:", error);
-				alert("Could not get your location. Please check your permissions.");
-				setGeoLoading(false);
-			},
-		);
 	}
 
 	async function handleSave() {
@@ -300,41 +279,19 @@ export function EditListingForm({
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="location">Location</Label>
-							<div className="flex gap-2">
-								<Input
-									id="location"
-									placeholder="City or region"
-									value={formData.location}
-									onChange={(e) =>
-										setFormData((p) => ({
-											...p,
-											location: e.target.value,
-										}))
-									}
-									required
-								/>
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									onClick={handleUseMyLocation}
-									disabled={geoLoading}
-									title="Use my location"
-								>
-									{geoLoading ? (
-										<Loader2 className="h-4 w-4 animate-spin" />
-									) : (
-										<MapPin className="h-4 w-4" />
-									)}
-								</Button>
-							</div>
-							{coordinates && (
-								<p className="text-muted-foreground text-xs">
-									Location detected ({coordinates.lat.toFixed(4)},{" "}
-									{coordinates.lng.toFixed(4)})
-								</p>
-							)}
+							<Label htmlFor="location">Localisation</Label>
+							<CitySelect
+								value={formData.location}
+								onChange={(city: CameroonCity | null) => {
+									setFormData((p) => ({
+										...p,
+										location: city?.name ?? "",
+									}));
+									setCoordinates(
+										city ? { lat: city.lat, lng: city.lng } : null,
+									);
+								}}
+							/>
 						</div>
 					</div>
 
@@ -467,7 +424,7 @@ export function EditListingForm({
 				<Button onClick={handleSave} disabled={isSaving || !canSave}>
 					{isSaving ? (
 						<>
-							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
 							Saving...
 						</>
 					) : (

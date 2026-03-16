@@ -90,13 +90,15 @@ function NotificationBell({
 		</Pressable>
 	);
 }
-
+const darkIcon = require("@/assets/icon2-dark.png");
+const lightIcon = require("@/assets/icon2.png");
 export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
+	const scheme = useColorScheme();
 
 	// ── Search state ──────────────────────────────────────────────
 	const [query, setQuery] = useState("");
@@ -445,7 +447,7 @@ export default function HomeScreen() {
 				<Animated.View style={[styles.topRow, topRowStyle]}>
 					<Animated.View style={[styles.logoImgWrap, logoAnimStyle]}>
 						<Image
-							source={require("@/assets/icon2.png")}
+							source={scheme === "dark" ? darkIcon : lightIcon}
 							style={{ width: "100%", height: "100%" }}
 							contentFit="contain"
 						/>

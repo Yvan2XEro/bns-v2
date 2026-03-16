@@ -270,7 +270,11 @@ export default async function ListingPage({ params }: PageProps) {
 															{key.charAt(0).toUpperCase() + key.slice(1)}
 														</span>
 														<span className="font-medium text-[#0F172A]">
-															{String(value)}
+															{value === true || value === "true"
+																? "Oui"
+																: value === false || value === "false"
+																	? "Non"
+																	: String(value)}
 														</span>
 													</div>
 												),

@@ -423,7 +423,11 @@ export default function ListingDetail() {
 											{k}
 										</Text>
 										<Text style={[styles.attrVal, { color: textColor }]}>
-											{String(v)}
+											{v === true || v === "true"
+												? "Oui"
+												: v === false || v === "false"
+													? "Non"
+													: String(v)}
 										</Text>
 									</View>
 								))}

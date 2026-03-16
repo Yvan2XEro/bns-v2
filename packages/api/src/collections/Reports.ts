@@ -3,6 +3,16 @@ import { authenticated } from "../access/authenticated";
 
 export const Reports: CollectionConfig = {
 	slug: "reports",
+	hooks: {
+		beforeChange: [
+			({ req, data, operation }) => {
+				if (operation === "create" && req.user) {
+					data.reporter = req.user.id;
+				}
+				return data;
+			},
+		],
+	},
 	admin: {
 		useAsTitle: "id",
 		defaultColumns: [

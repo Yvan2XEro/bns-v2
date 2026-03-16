@@ -18,8 +18,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { CityPicker } from "@/src/components/CityPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
+import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const CONDITIONS = [
@@ -110,6 +112,10 @@ export default function EditListingScreen() {
 	const [price, setPrice] = useState("");
 	const [condition, setCondition] = useState("new");
 	const [location, setLocation] = useState("");
+	const [coordinates, setCoordinates] = useState<{
+		lat: number;
+		lng: number;
+	} | null>(null);
 	const [duration, setDuration] = useState(30);
 	const [attributes, setAttributes] = useState<Record<string, any>>({});
 	const [images, setImages] = useState<ImageItem[]>([]);
@@ -123,6 +129,12 @@ export default function EditListingScreen() {
 		setPrice(String(listing.price ?? ""));
 		setCondition(listing.condition ?? "new");
 		setLocation(listing.location ?? "");
+		if (listing.coordinates?.lat && listing.coordinates?.lng) {
+			setCoordinates({
+				lat: listing.coordinates.lat,
+				lng: listing.coordinates.lng,
+			});
+		}
 		setDuration(listing.duration ?? 30);
 		setAttributes(listing.attributes ?? {});
 
@@ -232,6 +244,7 @@ export default function EditListingScreen() {
 				price: Number(price),
 				condition,
 				location,
+				...(coordinates ? { coordinates } : {}),
 				duration,
 				images: images.map((img) => ({ image: img.id })),
 				...(Object.keys(attributes).length > 0 ? { attributes } : {}),
@@ -464,26 +477,22 @@ export default function EditListingScreen() {
 					{/* Location */}
 					<View style={styles.fieldGroup}>
 						<FieldLabel label="Localisation" required mutedColor={mutedColor} />
-						<View
-							style={[
-								styles.inputRow,
-								{ backgroundColor: inputBg, borderColor },
-							]}
-						>
-							<Ionicons
-								name="location-outline"
-								size={16}
-								color={mutedColor}
-								style={{ marginRight: 8 }}
-							/>
-							<TextInput
-								value={location}
-								onChangeText={setLocation}
-								placeholder="Ex : Douala, Akwa"
-								placeholderTextColor={mutedColor}
-								style={[styles.rowInput, { color: textColor }]}
-							/>
-						</View>
+						<CityPicker
+							value={location}
+							onSelect={(city: CameroonCity) => {
+								setLocation(city.name);
+								setCoordinates({ lat: city.lat, lng: city.lng });
+							}}
+							onClear={() => {
+								setLocation("");
+								setCoordinates(null);
+							}}
+							inputBg={inputBg}
+							borderColor={borderColor}
+							textColor={textColor}
+							mutedColor={mutedColor}
+							primaryColor={primaryColor}
+						/>
 					</View>
 
 					{/* Duration */}
