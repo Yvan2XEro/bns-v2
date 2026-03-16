@@ -18,7 +18,6 @@ config.resolver.resolverMainFields = [
 	"module",
 ];
 
-// Look for node_modules in both the project and monorepo root
 config.resolver.nodeModulesPaths = [
 	path.resolve(projectRoot, "node_modules"),
 	path.resolve(monorepoRoot, "node_modules"),

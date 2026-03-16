@@ -1,15 +1,16 @@
 {
 	"expo": {
-		"name": "mobile",
-		"slug": "mobile",
+		"name": "BuyNSellem",
+		"slug": "buynsellem",
 		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/icon2.png",
-		"scheme": "mobile",
+		"scheme": "buynsellem",
 		"userInterfaceStyle": "automatic",
 		"newArchEnabled": true,
 		"ios": {
-			"supportsTablet": true
+			"supportsTablet": true,
+			"bundleIdentifier": "com.buynsellem.mobilev2"
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -20,7 +21,7 @@
 			},
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
-			"package": "com.buynsellem.mobile-v2"
+			"package": "com.buynsellem.mobilev2"
 		},
 		"web": {
 			"output": "static",
@@ -46,6 +47,12 @@
 		"experiments": {
 			"typedRoutes": true,
 			"reactCompiler": false
+		},
+		"extra": {
+			"router": {},
+			"eas": {
+				"projectId": "c5bebedf-e500-4243-8386-85cf6d62d233"
+			}
 		}
 	}
 }

@@ -32,8 +32,8 @@
 		"meilisearch": "^0.55.0",
 		"next": "16.1.6",
 		"payload": "3.79.0",
-		"react": "19.2.3",
-		"react-dom": "19.2.3",
+		"react": "19.1.0",
+		"react-dom": "19.1.0",
 		"redis": "^4.7.0",
 		"sharp": "0.34.2"
 	},
