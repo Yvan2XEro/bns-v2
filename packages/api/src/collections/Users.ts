@@ -10,6 +10,7 @@ export const Users: CollectionConfig = {
 	auth: true,
 	access: {
 		create: anyone,
+		read: anyone,
 		admin: ({ req }) =>
 			req.user?.role === "admin" || req.user?.role === "moderator",
 	},
