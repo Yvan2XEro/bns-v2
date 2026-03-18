@@ -20,57 +20,63 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 type FilterKey = "all" | "published" | "pending" | "sold" | "expired";
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-	{ key: "all", label: "Toutes" },
-	{ key: "published", label: "Publiées" },
-	{ key: "pending", label: "En attente" },
-	{ key: "sold", label: "Vendues" },
-	{ key: "expired", label: "Expirées" },
-];
+function getStatusConfig(t: (key: string) => string) {
+	return {
+		published: {
+			label: t("listings.statusPublished"),
+			bg: "#dcfce7",
+			text: "#166534",
+			dotColor: "#22c55e",
+		},
+		pending: {
+			label: t("listings.statusPending"),
+			bg: "#dbeafe",
+			text: "#1e40af",
+			dotColor: "#3b82f6",
+		},
+		review: {
+			label: t("listings.statusReview"),
+			bg: "#dbeafe",
+			text: "#1e40af",
+			dotColor: "#3b82f6",
+		},
+		rejected: {
+			label: t("listings.statusRejected"),
+			bg: "#fee2e2",
+			text: "#991b1b",
+			dotColor: "#ef4444",
+		},
+		sold: {
+			label: t("listings.statusSold"),
+			bg: "#f3f4f6",
+			text: "#374151",
+			dotColor: "#94a3b8",
+		},
+		expired: {
+			label: t("listings.statusExpired"),
+			bg: "#fff7ed",
+			text: "#9a3412",
+			dotColor: "#f97316",
+		},
+	} as Record<
+		string,
+		{ label: string; bg: string; text: string; dotColor: string }
+	>;
+}
 
-const STATUS_CONFIG: Record<
-	string,
-	{ label: string; bg: string; text: string; dotColor: string }
-> = {
-	published: {
-		label: "Publié",
-		bg: "#dcfce7",
-		text: "#166534",
-		dotColor: "#22c55e",
-	},
-	pending: {
-		label: "En attente",
-		bg: "#dbeafe",
-		text: "#1e40af",
-		dotColor: "#3b82f6",
-	},
-	review: {
-		label: "En révision",
-		bg: "#dbeafe",
-		text: "#1e40af",
-		dotColor: "#3b82f6",
-	},
-	rejected: {
-		label: "Rejeté",
-		bg: "#fee2e2",
-		text: "#991b1b",
-		dotColor: "#ef4444",
-	},
-	sold: { label: "Vendu", bg: "#f3f4f6", text: "#374151", dotColor: "#94a3b8" },
-	expired: {
-		label: "Expiré",
-		bg: "#fff7ed",
-		text: "#9a3412",
-		dotColor: "#f97316",
-	},
-};
-
-function StatusBadge({ status }: { status: string }) {
-	const cfg = STATUS_CONFIG[status] ?? {
+function StatusBadge({
+	status,
+	t,
+}: {
+	status: string;
+	t: (key: string) => string;
+}) {
+	const cfg = getStatusConfig(t)[status] ?? {
 		label: status,
 		bg: "#f3f4f6",
 		text: "#374151",
@@ -97,6 +103,7 @@ export default function MyListingsScreen() {
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
 	const { showConfirm } = useAlert();
+	const { t } = useTranslation();
 	const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -105,6 +112,14 @@ export default function MyListingsScreen() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+
+	const FILTERS: { key: FilterKey; label: string }[] = [
+		{ key: "all", label: t("listings.filterAll") },
+		{ key: "published", label: t("listings.filterPublished") },
+		{ key: "pending", label: t("listings.filterPending") },
+		{ key: "sold", label: t("listings.filterSold") },
+		{ key: "expired", label: t("listings.filterExpired") },
+	];
 
 	const { data, isLoading, refetch } = useQuery({
 		queryKey: ["my-listings"],
@@ -168,25 +183,25 @@ export default function MyListingsScreen() {
 	const STAT_ITEMS = [
 		{
 			key: "total" as const,
-			label: "Total",
+			label: t("listings.total"),
 			color: primaryColor,
 			icon: "layers-outline" as const,
 		},
 		{
 			key: "published" as const,
-			label: "Publiées",
+			label: t("listings.published"),
 			color: "#22c55e",
 			icon: "checkmark-circle-outline" as const,
 		},
 		{
 			key: "pending" as const,
-			label: "En attente",
+			label: t("listings.pending"),
 			color: "#3b82f6",
 			icon: "time-outline" as const,
 		},
 		{
 			key: "sold" as const,
-			label: "Vendues",
+			label: t("listings.sold"),
 			color: "#94a3b8",
 			icon: "bag-check-outline" as const,
 		},
@@ -238,7 +253,7 @@ export default function MyListingsScreen() {
 						{item.price?.toLocaleString()} XAF
 					</Text>
 					<View style={styles.metaRow}>
-						<StatusBadge status={item.status ?? "pending"} />
+						<StatusBadge status={item.status ?? "pending"} t={t} />
 						{item.createdAt && (
 							<Text style={[styles.date, { color: mutedColor }]}>
 								{formatDate(item.createdAt)}
@@ -263,8 +278,8 @@ export default function MyListingsScreen() {
 						<Pressable
 							onPress={() =>
 								showConfirm(
-									"Marquer vendu",
-									"Marquer cette annonce comme vendue ?",
+									t("listings.markAsSold"),
+									t("listings.markAsSoldConfirm"),
 									() => markSold(item.id),
 								)
 							}
@@ -279,7 +294,7 @@ export default function MyListingsScreen() {
 					)}
 					<Pressable
 						onPress={() =>
-							showConfirm("Supprimer", "Supprimer cette annonce ?", () =>
+							showConfirm(t("common.delete"), t("listings.deleteConfirm"), () =>
 								deleteListing(item.id),
 							)
 						}
@@ -307,14 +322,14 @@ export default function MyListingsScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
-					Mes annonces
+					{t("listings.myListings")}
 				</Text>
 				<Pressable
 					onPress={() => router.push("/(tabs)/create")}
 					style={[styles.newBtn, { backgroundColor: primaryColor }]}
 				>
 					<Ionicons name="add" size={18} color="#fff" />
-					<Text style={styles.newBtnText}>Publier</Text>
+					<Text style={styles.newBtnText}>{t("listings.publish")}</Text>
 				</Pressable>
 			</View>
 
@@ -417,15 +432,17 @@ export default function MyListingsScreen() {
 						<EmptyState
 							icon="cube-outline"
 							title={
-								activeFilter === "all" ? "Aucune annonce" : "Aucun résultat"
+								activeFilter === "all"
+									? t("listings.noListings")
+									: t("listings.noResults")
 							}
 							subtitle={
 								activeFilter === "all"
-									? "Publiez votre première annonce !"
-									: `Vous n'avez aucune annonce dans cette catégorie`
+									? t("listings.noListingsSubtitle")
+									: t("listings.noResultsSubtitle")
 							}
 							ctaLabel={
-								activeFilter === "all" ? "Créer une annonce" : undefined
+								activeFilter === "all" ? t("listings.createFirst") : undefined
 							}
 							onCta={
 								activeFilter === "all"

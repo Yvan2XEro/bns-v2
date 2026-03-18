@@ -22,6 +22,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 function formatTime(dateStr: string): string {
 	const d = new Date(dateStr);
@@ -39,6 +40,7 @@ type FilterTab = "all" | "unread";
 export default function MessagesScreen() {
 	const { showError, showConfirm } = useAlert();
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { onlineUsers, chatClient } = useChatClient();
 	const queryClient = useQueryClient();
@@ -154,14 +156,14 @@ export default function MessagesScreen() {
 	const handleDelete = (convId: string) => {
 		swipeableRefs.current.get(convId)?.close();
 		showConfirm(
-			"Supprimer la conversation",
-			"Cette action est irréversible.",
+			t("messages.deleteTitle"),
+			t("messages.deleteConfirmText"),
 			async () => {
 				try {
 					await api.delete(`/api/conversations/${convId}`);
 					queryClient.invalidateQueries({ queryKey: ["conversations"] });
 				} catch {
-					showError("Erreur", "Impossible de supprimer la conversation.");
+					showError(t("common.error"), t("messages.deleteError"));
 				}
 			},
 		);
@@ -183,15 +185,15 @@ export default function MessagesScreen() {
 						<Ionicons name="chatbubbles" size={22} color={primaryColor} />
 					</View>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
-						Messages
+						{t("messages.title")}
 					</Text>
 				</View>
 				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
 					<EmptyState
 						icon="chatbubbles-outline"
-						title="Connexion requise"
-						subtitle="Connectez-vous pour accéder à vos messages"
-						ctaLabel="Se connecter"
+						title={t("auth.loginRequired")}
+						subtitle={t("auth.loginToAccess")}
+						ctaLabel={t("auth.signIn")}
 						onCta={() => router.push("/auth/login")}
 					/>
 				</View>
@@ -202,7 +204,7 @@ export default function MessagesScreen() {
 	const renderRightActions = (convId: string) => (
 		<Pressable onPress={() => handleDelete(convId)} style={styles.deleteAction}>
 			<Ionicons name="trash-outline" size={22} color="#fff" />
-			<Text style={styles.deleteActionText}>Supprimer</Text>
+			<Text style={styles.deleteActionText}>{t("common.delete")}</Text>
 		</Pressable>
 	);
 
@@ -276,7 +278,7 @@ export default function MessagesScreen() {
 								]}
 								numberOfLines={1}
 							>
-								{other?.name ?? "Utilisateur"}
+								{other?.name ?? t("messages.user")}
 							</Text>
 							<Text style={[styles.convTime, { color: mutedColor }]}>
 								{item.updatedAt ? formatTime(item.updatedAt) : ""}
@@ -300,7 +302,7 @@ export default function MessagesScreen() {
 							]}
 							numberOfLines={1}
 						>
-							{lastMsg?.content ?? "Aucun message"}
+							{lastMsg?.content ?? t("messages.noMessages")}
 						</Text>
 					</View>
 
@@ -325,7 +327,9 @@ export default function MessagesScreen() {
 		>
 			{/* Header */}
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Text style={[styles.headerTitle, { color: textColor }]}>Messages</Text>
+				<Text style={[styles.headerTitle, { color: textColor }]}>
+					{t("messages.title")}
+				</Text>
 				<View style={styles.headerActions}>
 					{unreadCount > 0 && (
 						<Pressable
@@ -346,7 +350,7 @@ export default function MessagesScreen() {
 										color={primaryColor}
 									/>
 									<Text style={[styles.markReadText, { color: primaryColor }]}>
-										Tout lire
+										{t("messages.markAllRead")}
 									</Text>
 								</>
 							)}
@@ -387,7 +391,7 @@ export default function MessagesScreen() {
 					<TextInput
 						value={search}
 						onChangeText={setSearch}
-						placeholder="Rechercher une conversation..."
+						placeholder={t("messages.searchPlaceholder")}
 						placeholderTextColor={mutedColor}
 						style={[styles.searchInput, { color: textColor }]}
 						returnKeyType="search"
@@ -407,8 +411,13 @@ export default function MessagesScreen() {
 					const active = filter === tab;
 					const label =
 						tab === "all"
-							? "Tous"
-							: `Non lus${unreadCount > 0 ? ` (${unreadCount})` : ""}`;
+							? t("common.all")
+							: unreadCount > 0
+								? t("messages.unreadWithCount").replace(
+										"{{count}}",
+										String(unreadCount),
+									)
+								: t("messages.unread");
 					return (
 						<Pressable
 							key={tab}
@@ -443,20 +452,25 @@ export default function MessagesScreen() {
 					icon="chatbubbles-outline"
 					title={
 						search
-							? "Aucun résultat"
+							? t("search.noResults")
 							: filter === "unread"
-								? "Aucun message non lu"
-								: "Aucune conversation"
+								? t("messages.noUnread")
+								: t("messages.noConversations")
 					}
 					subtitle={
 						search
-							? `Aucune conversation pour "${search}"`
+							? t("messages.noConversationsForSearch").replace(
+									"{{query}}",
+									search,
+								)
 							: filter === "unread"
-								? "Vous avez tout lu !"
-								: "Contactez un vendeur pour commencer une discussion"
+								? t("messages.allRead")
+								: t("messages.contactSeller")
 					}
 					ctaLabel={
-						search || filter !== "all" ? undefined : "Parcourir les annonces"
+						search || filter !== "all"
+							? undefined
+							: t("messages.browseListings")
 					}
 					onCta={
 						search || filter !== "all"

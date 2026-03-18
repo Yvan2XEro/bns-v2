@@ -19,9 +19,11 @@ import { SkeletonRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function SavedSearchesScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user, isLoading: authLoading } = useAuth();
 	const queryClient = useQueryClient();
 	const { showConfirm } = useAlert();
@@ -72,7 +74,7 @@ export default function SavedSearchesScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.title, { color: textColor }]}>
-					Recherches sauvegardées
+					{t("savedSearches.title")}
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>
@@ -86,9 +88,9 @@ export default function SavedSearchesScreen() {
 			) : searches.length === 0 ? (
 				<EmptyState
 					icon="bookmark-outline"
-					title="Aucune recherche"
+					title={t("savedSearches.noSearches")}
 					subtitle="Sauvegardez vos recherches pour être notifié des nouvelles annonces"
-					ctaLabel="Rechercher"
+					ctaLabel={t("common.search")}
 					onCta={() => router.push("/(tabs)/search")}
 				/>
 			) : (
@@ -138,14 +140,14 @@ export default function SavedSearchesScreen() {
 										}}
 									/>
 									<Text style={[styles.alertLabel, { color: mutedColor }]}>
-										Alertes
+										{t("savedSearches.alerts")}
 									</Text>
 								</View>
 								<Pressable
 									onPress={() =>
 										showConfirm(
-											"Supprimer",
-											"Supprimer cette recherche ?",
+											t("common.delete"),
+											t("savedSearches.deleteConfirm"),
 											() => deleteSearch(item.id),
 										)
 									}

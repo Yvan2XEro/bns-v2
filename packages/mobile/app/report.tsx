@@ -16,15 +16,16 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
+import { useTranslation } from "@/src/lib/i18n";
 
-const REASONS = [
-	{ key: "spam", label: "Spam ou publicité abusive" },
-	{ key: "inappropriate", label: "Contenu inapproprié" },
-	{ key: "fraud", label: "Fraude ou arnaque" },
-	{ key: "prohibited", label: "Article interdit" },
-	{ key: "harassment", label: "Harcèlement" },
-	{ key: "other", label: "Autre" },
-];
+const REASON_KEYS = [
+	"spam",
+	"inappropriate",
+	"fraud",
+	"prohibited",
+	"harassment",
+	"other",
+] as const;
 
 export default function ReportModal() {
 	const { targetType, targetId } = useLocalSearchParams<{
@@ -32,6 +33,7 @@ export default function ReportModal() {
 		targetId: string;
 	}>();
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const [reason, setReason] = useState("");
 	const [description, setDescription] = useState("");
@@ -47,13 +49,10 @@ export default function ReportModal() {
 		mutationFn: () =>
 			api.post("/api/reports", { targetType, targetId, reason, description }),
 		onSuccess: () => {
-			showSuccess(
-				"Signalement envoyé",
-				"Merci pour votre signalement. Notre équipe va examiner le contenu.",
-			);
+			showSuccess(t("report.successTitle"), t("report.successMessage"));
 			router.dismiss();
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("report.errorTitle"), err.message),
 	});
 
 	return (
@@ -64,7 +63,9 @@ export default function ReportModal() {
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
 					<Ionicons name="flag-outline" size={20} color={textColor} />
-					<Text style={[styles.title, { color: textColor }]}>Signaler</Text>
+					<Text style={[styles.title, { color: textColor }]}>
+						{t("report.title")}
+					</Text>
 				</View>
 				<Pressable onPress={() => router.dismiss()}>
 					<Ionicons name="close" size={24} color={textColor} />
@@ -76,26 +77,26 @@ export default function ReportModal() {
 				bottomOffset={24}
 			>
 				<Text style={[styles.label, { color: mutedColor }]}>
-					Raison du signalement
+					{t("report.reasonLabel")}
 				</Text>
-				{REASONS.map((r) => (
+				{REASON_KEYS.map((key) => (
 					<Pressable
-						key={r.key}
-						onPress={() => setReason(r.key)}
+						key={key}
+						onPress={() => setReason(key)}
 						style={[
 							styles.reasonBtn,
 							{
 								backgroundColor:
-									reason === r.key ? (isDark ? "#1e3a5f" : "#dbeafe") : cardBg,
-								borderColor: reason === r.key ? primaryColor : borderColor,
-								borderWidth: reason === r.key ? 2 : 1,
+									reason === key ? (isDark ? "#1e3a5f" : "#dbeafe") : cardBg,
+								borderColor: reason === key ? primaryColor : borderColor,
+								borderWidth: reason === key ? 2 : 1,
 							},
 						]}
 					>
 						<Text style={[styles.reasonText, { color: textColor }]}>
-							{r.label}
+							{t(`report.${key}Label` as any)}
 						</Text>
-						{reason === r.key && (
+						{reason === key && (
 							<Ionicons
 								name="checkmark-circle"
 								size={18}
@@ -106,12 +107,12 @@ export default function ReportModal() {
 				))}
 
 				<Text style={[styles.label, { color: mutedColor, marginTop: 8 }]}>
-					Description (optionnel)
+					{t("report.descriptionLabel")}
 				</Text>
 				<TextInput
 					value={description}
 					onChangeText={setDescription}
-					placeholder="Décrivez le problème..."
+					placeholder={t("report.descriptionPlaceholder")}
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.textarea,
@@ -144,7 +145,7 @@ export default function ReportModal() {
 								{ color: !reason ? mutedColor : "#fff" },
 							]}
 						>
-							Soumettre le signalement
+							{t("report.submit")}
 						</Text>
 					)}
 				</Pressable>

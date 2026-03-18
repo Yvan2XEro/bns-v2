@@ -15,9 +15,11 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
@@ -44,16 +46,18 @@ export default function FavoritesScreen() {
 				<Pressable onPress={() => router.back()}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
-				<Text style={[styles.title, { color: textColor }]}>Favoris</Text>
+				<Text style={[styles.title, { color: textColor }]}>
+					{t("favorites.title")}
+				</Text>
 				<View style={{ width: 40 }} />
 			</View>
 
 			{favorites.length === 0 ? (
 				<EmptyState
 					icon="heart-outline"
-					title="Aucun favori"
-					subtitle="Ajoutez des annonces à vos favoris pour les retrouver facilement"
-					ctaLabel="Parcourir"
+					title={t("favorites.noFavorites")}
+					subtitle={t("favorites.noFavoritesSub")}
+					ctaLabel={t("favorites.browse")}
 					onCta={() => router.push("/(tabs)/search")}
 				/>
 			) : (

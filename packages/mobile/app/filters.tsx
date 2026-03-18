@@ -16,19 +16,21 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
-
-const CONDITIONS = [
-	{ key: "new", label: "Neuf" },
-	{ key: "like_new", label: "Très bon état" },
-	{ key: "good", label: "Bon état" },
-	{ key: "fair", label: "État correct" },
-	{ key: "poor", label: "À rénover" },
-];
+import { useTranslation } from "@/src/lib/i18n";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
 export default function FiltersModal() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
+
+	const CONDITIONS = [
+		{ key: "new", label: t("filters.conditionNew") },
+		{ key: "like_new", label: t("filters.conditionLikeNew") },
+		{ key: "good", label: t("filters.conditionGood") },
+		{ key: "fair", label: t("filters.conditionFair") },
+		{ key: "poor", label: t("filters.conditionPoor") },
+	];
 
 	// On récupère tous les params sans typage pour accéder aux attr_*
 	const rawParams = useLocalSearchParams();
@@ -160,11 +162,12 @@ export default function FiltersModal() {
 					<Ionicons name="close" size={24} color={textColor} />
 				</Pressable>
 				<Text style={[styles.title, { color: textColor }]}>
-					Filtres{activeCount > 0 ? ` (${activeCount})` : ""}
+					{t("filters.title")}
+					{activeCount > 0 ? ` (${activeCount})` : ""}
 				</Text>
 				<Pressable onPress={handleReset}>
 					<Text style={[styles.resetText, { color: primaryColor }]}>
-						Réinitialiser
+						{t("filters.reset")}
 					</Text>
 				</Pressable>
 			</View>
@@ -172,7 +175,7 @@ export default function FiltersModal() {
 			<ScrollView contentContainerStyle={styles.scroll}>
 				{/* ── Catégorie ── */}
 				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					Catégorie
+					{t("filters.category")}
 				</Text>
 				<ScrollView
 					horizontal
@@ -216,13 +219,13 @@ export default function FiltersModal() {
 
 				{/* ── Prix ── */}
 				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					Prix (XAF)
+					{t("filters.price")}
 				</Text>
 				<View style={styles.priceRow}>
 					<TextInput
 						value={minPrice}
 						onChangeText={setMinPrice}
-						placeholder="Min"
+						placeholder={t("filters.minPrice")}
 						placeholderTextColor={mutedColor}
 						style={[
 							styles.priceInput,
@@ -234,7 +237,7 @@ export default function FiltersModal() {
 					<TextInput
 						value={maxPrice}
 						onChangeText={setMaxPrice}
-						placeholder="Max"
+						placeholder={t("filters.maxPrice")}
 						placeholderTextColor={mutedColor}
 						style={[
 							styles.priceInput,
@@ -245,7 +248,9 @@ export default function FiltersModal() {
 				</View>
 
 				{/* ── État ── */}
-				<Text style={[styles.sectionTitle, { color: mutedColor }]}>État</Text>
+				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
+					{t("filters.condition")}
+				</Text>
 				<View style={styles.conditionGrid}>
 					{CONDITIONS.map((c) => {
 						const active = selectedConditions.includes(c.key);
@@ -277,7 +282,7 @@ export default function FiltersModal() {
 
 				{/* ── Localisation ── */}
 				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					Localisation
+					{t("filters.location")}
 				</Text>
 				<CityPicker
 					value={location}
@@ -302,7 +307,7 @@ export default function FiltersModal() {
 				{location.length > 0 && (
 					<>
 						<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-							Rayon
+							{t("filters.radius")}
 						</Text>
 						<View style={styles.pillRow}>
 							{RADIUS_OPTIONS.map((r) => {
@@ -390,8 +395,8 @@ export default function FiltersModal() {
 								) : attr.type === "boolean" ? (
 									<View style={styles.boolRow}>
 										{[
-											{ label: "Oui", value: "true" },
-											{ label: "Non", value: "false" },
+											{ label: t("common.yes"), value: "true" },
+											{ label: t("common.no"), value: "false" },
 										].map((opt) => {
 											const active = attributeFilters[attr.slug] === opt.value;
 											return (
@@ -463,7 +468,7 @@ export default function FiltersModal() {
 					onPress={handleApply}
 					style={[styles.applyBtn, { backgroundColor: primaryColor }]}
 				>
-					<Text style={styles.applyText}>Appliquer les filtres</Text>
+					<Text style={styles.applyText}>{t("filters.apply")}</Text>
 				</Pressable>
 			</View>
 		</SafeAreaView>

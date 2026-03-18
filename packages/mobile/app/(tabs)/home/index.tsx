@@ -44,22 +44,13 @@ import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 import {
 	resolveImageUrl,
 	resolveListingImageUrl,
 } from "@/src/lib/resolveImageUrl";
 
 const { width } = Dimensions.get("window");
-
-const SORTS = [
-	{ key: "newest", label: "Récents", icon: "time-outline" as const },
-	{ key: "price_asc", label: "Prix ↑", icon: "trending-up-outline" as const },
-	{
-		key: "price_desc",
-		label: "Prix ↓",
-		icon: "trending-down-outline" as const,
-	},
-];
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -94,11 +85,30 @@ const darkIcon = require("@/assets/icon2-dark.png");
 const lightIcon = require("@/assets/icon2.png");
 export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
 	const scheme = useColorScheme();
+
+	const SORTS = [
+		{
+			key: "newest",
+			label: t("search.sortNewest"),
+			icon: "time-outline" as const,
+		},
+		{
+			key: "price_asc",
+			label: t("search.sortPriceAsc"),
+			icon: "trending-up-outline" as const,
+		},
+		{
+			key: "price_desc",
+			label: t("search.sortPriceDesc"),
+			icon: "trending-down-outline" as const,
+		},
+	];
 
 	// ── Search state ──────────────────────────────────────────────
 	const [query, setQuery] = useState("");
@@ -252,7 +262,7 @@ export default function HomeScreen() {
 				if (v && k !== "sort") urlParams.set(k, v);
 			}
 			return api.post("/api/saved-searches", {
-				name: saveName.trim() || debouncedQuery || "Ma recherche",
+				name: saveName.trim() || debouncedQuery || t("search.saveSearch"),
 				query: debouncedQuery,
 				filters: {
 					category: filterParams.category,
@@ -519,7 +529,7 @@ export default function HomeScreen() {
 							value={query}
 							onChangeText={handleQueryChange}
 							onFocus={onSearchFocus}
-							placeholder="Voitures, téléphones, maisons…"
+							placeholder={t("home.searchPlaceholderDetailed")}
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.searchInput,
@@ -544,7 +554,7 @@ export default function HomeScreen() {
 					<Animated.View style={cancelStyle}>
 						<Pressable onPress={onSearchCancel} style={styles.cancelBtn}>
 							<Text style={[styles.cancelText, { color: primaryColor }]}>
-								Annuler
+								{t("common.cancel")}
 							</Text>
 						</Pressable>
 					</Animated.View>
@@ -637,8 +647,8 @@ export default function HomeScreen() {
 										]}
 									>
 										{activeFilterCount > 0
-											? `Filtres (${activeFilterCount})`
-											: "Filtres"}
+											? t("search.filtersCount", { count: activeFilterCount })
+											: t("search.filters")}
 									</Text>
 								</Pressable>
 							</View>
@@ -653,9 +663,9 @@ export default function HomeScreen() {
 						) : searchListings.length === 0 ? (
 							<EmptyState
 								icon="search-outline"
-								title="Aucun résultat"
-								subtitle="Essayez d'autres mots-clés"
-								ctaLabel="Effacer"
+								title={t("search.noResults")}
+								subtitle={t("search.noResultsHintShort")}
+								ctaLabel={t("search.clearSearch")}
 								onCta={() => {
 									setQuery("");
 									setDebouncedQuery("");
@@ -704,7 +714,7 @@ export default function HomeScreen() {
 						>
 							<Ionicons name="bookmark" size={18} color="#fff" />
 							<Text style={[styles.fabText, { fontFamily: Fonts.displayBold }]}>
-								Sauvegarder
+								{t("search.save")}
 							</Text>
 						</Pressable>
 					)}
@@ -730,7 +740,7 @@ export default function HomeScreen() {
 							<View style={styles.section}>
 								<View style={styles.sectionHeader}>
 									<Text style={[styles.sectionTitle, { color: textColor }]}>
-										Catégories
+										{t("home.categories")}
 									</Text>
 								</View>
 								<ScrollView
@@ -760,7 +770,7 @@ export default function HomeScreen() {
 									<View style={styles.sectionTitleRow}>
 										<Ionicons name="flash" size={16} color="#f59e0b" />
 										<Text style={[styles.sectionTitle, { color: textColor }]}>
-											À la une
+											{t("home.featured")}
 										</Text>
 									</View>
 								</View>
@@ -794,7 +804,9 @@ export default function HomeScreen() {
 											<View style={styles.featuredOverlay}>
 												<View style={styles.featuredBadge}>
 													<Ionicons name="flash" size={11} color="#fff" />
-													<Text style={styles.featuredBadgeText}>À la une</Text>
+													<Text style={styles.featuredBadgeText}>
+														{t("home.featuredBadge")}
+													</Text>
 												</View>
 												<Text style={styles.featuredPrice}>
 													{listing.price?.toLocaleString()} XAF
@@ -823,11 +835,11 @@ export default function HomeScreen() {
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
 								<Text style={[styles.sectionTitle, { color: textColor }]}>
-									Annonces récentes
+									{t("home.recentListings")}
 								</Text>
 								<Pressable onPress={onSearchFocus}>
 									<Text style={[styles.seeAll, { color: primaryColor }]}>
-										Voir tout
+										{t("home.seeAll")}
 									</Text>
 								</Pressable>
 							</View>
@@ -840,17 +852,17 @@ export default function HomeScreen() {
 							) : recentError ? (
 								<EmptyState
 									icon="cloud-offline-outline"
-									title="Erreur de chargement"
-									subtitle="Vérifiez votre connexion"
-									ctaLabel="Réessayer"
+									title={t("home.errorTitle")}
+									subtitle={t("home.errorSub")}
+									ctaLabel={t("common.retry")}
 									onCta={() => refetchRecent()}
 								/>
 							) : homeListings.length === 0 ? (
 								<EmptyState
 									icon="storefront-outline"
-									title="Aucune annonce"
-									subtitle="Soyez le premier à publier !"
-									ctaLabel="Publier"
+									title={t("home.noListings")}
+									subtitle={t("home.noListingsSub")}
+									ctaLabel={t("home.publish")}
 									onCta={() => router.push("/(tabs)/create")}
 								/>
 							) : (
@@ -875,7 +887,7 @@ export default function HomeScreen() {
 							<View style={styles.sectionTitleRow}>
 								<Ionicons name="navigate" size={16} color={primaryColor} />
 								<Text style={[styles.sectionTitle, { color: textColor }]}>
-									Près de vous
+									{t("home.nearbySection")}
 								</Text>
 							</View>
 						</View>
@@ -912,12 +924,12 @@ export default function HomeScreen() {
 									<Text
 										style={[styles.locationPromptTitle, { color: textColor }]}
 									>
-										Activer la localisation
+										{t("home.enableLocation")}
 									</Text>
 									<Text
 										style={[styles.locationPromptSub, { color: mutedColor }]}
 									>
-										Découvrez les annonces autour de vous
+										{t("home.enableLocationSub")}
 									</Text>
 								</View>
 								<Ionicons name="chevron-forward" size={16} color={mutedColor} />
@@ -944,7 +956,7 @@ export default function HomeScreen() {
 							>
 								<Ionicons name="map-outline" size={20} color={mutedColor} />
 								<Text style={[styles.locationPromptSub, { color: mutedColor }]}>
-									Aucune annonce dans un rayon de 50 km
+									{t("home.noNearby")}
 								</Text>
 							</View>
 						) : (
@@ -987,15 +999,17 @@ export default function HomeScreen() {
 						style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}
 					>
 						<Text style={[styles.modalTitle, { color: textColor }]}>
-							Sauvegarder la recherche
+							{t("search.saveSearchTitle")}
 						</Text>
 						<Text style={[styles.modalSub, { color: mutedColor }]}>
-							Nommez cette recherche pour la retrouver facilement.
+							{t("search.saveSearchSub")}
 						</Text>
 						<TextInput
 							value={saveName}
 							onChangeText={setSaveName}
-							placeholder={debouncedQuery || "Ex : Voitures à Douala"}
+							placeholder={
+								debouncedQuery || t("search.saveSearchPlaceholderFallback")
+							}
 							placeholderTextColor={mutedColor}
 							autoFocus
 							style={[
@@ -1018,7 +1032,7 @@ export default function HomeScreen() {
 								]}
 							>
 								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
-									Annuler
+									{t("common.cancel")}
 								</Text>
 							</Pressable>
 							<Pressable
@@ -1037,12 +1051,16 @@ export default function HomeScreen() {
 								) : saveStatus === "saved" ? (
 									<>
 										<Ionicons name="checkmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>Sauvegardé !</Text>
+										<Text style={styles.modalBtnTextPrimary}>
+											{t("search.saved")}
+										</Text>
 									</>
 								) : (
 									<>
 										<Ionicons name="bookmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>Sauvegarder</Text>
+										<Text style={styles.modalBtnTextPrimary}>
+											{t("search.save")}
+										</Text>
 									</>
 								)}
 							</Pressable>

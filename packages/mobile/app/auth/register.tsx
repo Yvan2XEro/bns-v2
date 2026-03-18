@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 function AppLogo({ isDark }: { isDark: boolean }) {
 	const baseColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -109,6 +110,7 @@ export default function RegisterScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { register } = useAuth();
 	const { showError } = useAlert();
+	const { t } = useTranslation();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -127,20 +129,20 @@ export default function RegisterScreen() {
 
 	const handleRegister = async () => {
 		if (!name || !email || !password || !confirm) {
-			showError("Champs manquants", "Veuillez remplir tous les champs");
+			showError(t("auth.missingFieldsTitle"), t("auth.missingFieldsMessage"));
 			return;
 		}
 		if (password.length < 8) {
 			showError(
-				"Mot de passe trop court",
-				"Le mot de passe doit contenir au moins 8 caractères",
+				t("auth.passwordTooShortTitle"),
+				t("auth.passwordTooShortMessage"),
 			);
 			return;
 		}
 		if (password !== confirm) {
 			showError(
-				"Mots de passe différents",
-				"Les mots de passe ne correspondent pas",
+				t("auth.passwordMismatchTitle"),
+				t("auth.passwordMismatchMessage"),
 			);
 			return;
 		}
@@ -150,8 +152,8 @@ export default function RegisterScreen() {
 			router.dismiss();
 		} catch (err: any) {
 			showError(
-				"Inscription échouée",
-				err.message ?? "Une erreur est survenue",
+				t("auth.registerFailedTitle"),
+				err.message ?? t("auth.registerFailedMessage"),
 			);
 		} finally {
 			setLoading(false);
@@ -179,37 +181,37 @@ export default function RegisterScreen() {
 						<AppLogo isDark={isDark} />
 					</View>
 					<Text style={[styles.title, { color: textColor }]}>
-						Créer un compte
+						{t("auth.registerTitle")}
 					</Text>
 					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						Rejoignez-nous et commencez à acheter et vendre
+						{t("auth.registerSubtitleShort")}
 					</Text>
 
 					<View style={[styles.form, { backgroundColor: cardBg, borderColor }]}>
 						<RegisterField
-							label="Nom complet"
+							label={t("auth.name")}
 							value={name}
 							onChange={setName}
-							placeholder="Jean Dupont"
+							placeholder={t("auth.fullNamePlaceholder")}
 							autoComplete="name"
 							icon="person-outline"
 							{...fieldColors}
 						/>
 						<RegisterField
-							label="Adresse email"
+							label={t("auth.email")}
 							value={email}
 							onChange={setEmail}
-							placeholder="votre@email.com"
+							placeholder={t("auth.emailPlaceholder")}
 							keyboard="email-address"
 							autoComplete="email"
 							icon="mail-outline"
 							{...fieldColors}
 						/>
 						<RegisterField
-							label="Mot de passe"
+							label={t("auth.password")}
 							value={password}
 							onChange={setPassword}
-							placeholder="Min. 8 caractères"
+							placeholder={t("auth.passwordMinHint")}
 							secure={!showPwd}
 							showToggle
 							toggleShow={() => setShowPwd(!showPwd)}
@@ -218,10 +220,10 @@ export default function RegisterScreen() {
 							{...fieldColors}
 						/>
 						<RegisterField
-							label="Confirmer le mot de passe"
+							label={t("auth.confirmPassword")}
 							value={confirm}
 							onChange={setConfirm}
-							placeholder="Répétez le mot de passe"
+							placeholder={t("auth.confirmPasswordPlaceholder")}
 							secure={!showPwd}
 							autoComplete="new-password"
 							icon="lock-closed-outline"
@@ -240,24 +242,26 @@ export default function RegisterScreen() {
 							{loading ? (
 								<ActivityIndicator color="#fff" />
 							) : (
-								<Text style={styles.submitText}>Créer mon compte</Text>
+								<Text style={styles.submitText}>
+									{t("auth.createMyAccount")}
+								</Text>
 							)}
 						</AnimatedPressable>
 
 						<Text style={[styles.termsText, { color: mutedColor }]}>
-							En créant un compte, vous acceptez nos{" "}
+							{t("auth.termsPrefix")}{" "}
 							<Text
 								style={{ color: primaryColor }}
 								onPress={() => router.push("/terms")}
 							>
-								Conditions d'utilisation
+								{t("auth.termsLink")}
 							</Text>{" "}
-							et notre{" "}
+							{t("auth.privacyPrefix")}{" "}
 							<Text
 								style={{ color: primaryColor }}
 								onPress={() => router.push("/privacy")}
 							>
-								Politique de confidentialité
+								{t("auth.privacyLink")}
 							</Text>
 							.
 						</Text>
@@ -265,7 +269,7 @@ export default function RegisterScreen() {
 
 					<View style={styles.loginRow}>
 						<Text style={[styles.loginText, { color: mutedColor }]}>
-							Déjà un compte ?{" "}
+							{t("auth.alreadyHaveAccount")}{" "}
 						</Text>
 						<Pressable
 							onPress={() => {
@@ -274,7 +278,7 @@ export default function RegisterScreen() {
 							}}
 						>
 							<Text style={[styles.loginLink, { color: primaryColor }]}>
-								Se connecter
+								{t("auth.signIn")}
 							</Text>
 						</Pressable>
 					</View>

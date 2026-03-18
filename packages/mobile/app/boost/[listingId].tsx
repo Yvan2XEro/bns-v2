@@ -16,18 +16,20 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
-
-const PLANS = [
-	{ duration: 7, price: 500, label: "1 semaine" },
-	{ duration: 14, price: 900, label: "2 semaines", popular: true },
-	{ duration: 30, price: 1500, label: "1 mois" },
-];
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function BoostModal() {
 	const { listingId } = useLocalSearchParams<{ listingId: string }>();
 	const isDark = useColorScheme() === "dark";
 	const { showError } = useAlert();
+	const { t } = useTranslation();
 	const [selected, setSelected] = useState(1);
+
+	const PLANS = [
+		{ duration: 7, price: 500, label: t("boost.week1") },
+		{ duration: 14, price: 900, label: t("boost.week2"), popular: true },
+		{ duration: 30, price: 1500, label: t("boost.month1") },
+	];
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -49,7 +51,7 @@ export default function BoostModal() {
 			router.dismiss();
 		},
 		onError: (err: any) =>
-			showError("Erreur", err.message ?? "Une erreur est survenue"),
+			showError(t("boost.errorTitle"), err.message ?? t("common.error")),
 	});
 
 	return (
@@ -64,10 +66,10 @@ export default function BoostModal() {
 						<Ionicons name="rocket-outline" size={44} color="#f59e0b" />
 					</View>
 					<Text style={[styles.title, { color: textColor }]}>
-						Boostez votre annonce
+						{t("boost.boostTitle")}
 					</Text>
 					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						Mettez votre annonce en avant et obtenez plus de visibilité
+						{t("boost.boostSubtitle")}
 					</Text>
 				</View>
 
@@ -89,7 +91,9 @@ export default function BoostModal() {
 						>
 							{plan.popular && (
 								<View style={styles.popularBadge}>
-									<Text style={styles.popularText}>Populaire</Text>
+									<Text style={styles.popularText}>
+										{t("boost.popularBadge")}
+									</Text>
 								</View>
 							)}
 							<View style={styles.planRadio}>
@@ -134,7 +138,9 @@ export default function BoostModal() {
 						<>
 							<Ionicons name="flash" size={18} color="#0f172a" />
 							<Text style={styles.payBtnText}>
-								Payer {PLANS[selected].price.toLocaleString()} XAF
+								{t("boost.payBtn", {
+									amount: PLANS[selected].price.toLocaleString(),
+								})}
 							</Text>
 						</>
 					)}
@@ -143,7 +149,7 @@ export default function BoostModal() {
 				{/* Cancel */}
 				<Pressable onPress={() => router.dismiss()} style={styles.cancelBtn}>
 					<Text style={[styles.cancelText, { color: mutedColor }]}>
-						Annuler
+						{t("boost.cancelBtn")}
 					</Text>
 				</Pressable>
 			</View>

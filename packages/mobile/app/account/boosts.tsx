@@ -27,6 +27,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const CHART_W = Dimensions.get("window").width - 64;
@@ -34,14 +35,16 @@ const CHART_H = 72;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDuration(days: number | undefined | null): string {
+type TFunction = (key: string) => string;
+
+function formatDuration(days: number | undefined | null, t: TFunction): string {
 	if (!days && days !== 0) return "—";
-	if (days === 7) return "1 semaine";
-	if (days === 14) return "2 semaines";
-	if (days === 30) return "1 mois";
-	if (days === 60) return "2 mois";
-	if (days === 90) return "3 mois";
-	return `${days} jour${days > 1 ? "s" : ""}`;
+	if (days === 7) return t("boostHistory.week1");
+	if (days === 14) return t("boostHistory.week2");
+	if (days === 30) return t("boostHistory.month1");
+	if (days === 60) return t("boostHistory.month2");
+	if (days === 90) return t("boostHistory.month3");
+	return t("boostHistory.days", { count: days } as any);
 }
 
 function formatDateRange(
@@ -52,34 +55,40 @@ function formatDateRange(
 	const end = new Date(createdAt);
 	if (durationDays) end.setDate(end.getDate() + durationDays);
 	const fmt = (d: Date) =>
-		d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+		d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
 	return durationDays ? `${fmt(start)} → ${fmt(end)}` : fmt(start);
 }
 
-const STATUS_CONFIG: Record<
-	string,
-	{ label: string; color: string; bg: string; icon: string }
-> = {
-	completed: {
-		label: "Terminé",
-		color: "#16a34a",
-		bg: "#dcfce7",
-		icon: "checkmark-circle",
-	},
-	pending: { label: "En cours", color: "#2563eb", bg: "#dbeafe", icon: "time" },
-	failed: {
-		label: "Échoué",
-		color: "#dc2626",
-		bg: "#fee2e2",
-		icon: "close-circle",
-	},
-	refunded: {
-		label: "Remboursé",
-		color: "#64748b",
-		bg: "#f1f5f9",
-		icon: "refresh-circle",
-	},
-};
+function getStatusConfig(
+	t: TFunction,
+): Record<string, { label: string; color: string; bg: string; icon: string }> {
+	return {
+		completed: {
+			label: t("boostHistory.statusCompleted"),
+			color: "#16a34a",
+			bg: "#dcfce7",
+			icon: "checkmark-circle",
+		},
+		pending: {
+			label: t("boostHistory.statusActive"),
+			color: "#2563eb",
+			bg: "#dbeafe",
+			icon: "time",
+		},
+		failed: {
+			label: t("boostHistory.statusFailed"),
+			color: "#dc2626",
+			bg: "#fee2e2",
+			icon: "close-circle",
+		},
+		refunded: {
+			label: t("boostHistory.statusRefunded"),
+			color: "#64748b",
+			bg: "#f1f5f9",
+			icon: "refresh-circle",
+		},
+	};
+}
 
 // ── Boost Item Card ────────────────────────────────────────────────────────────
 
@@ -91,9 +100,11 @@ function BoostCard({
 	textColor,
 	mutedColor,
 }: any) {
+	const { t } = useTranslation();
+	const STATUS_CONFIG = getStatusConfig(t);
 	const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
 	const imgUrl = resolveListingImageUrl(item.listing?.images?.[0]);
-	const durationLabel = formatDuration(item.durationDays);
+	const durationLabel = formatDuration(item.durationDays, t);
 	const dateRange = formatDateRange(item.createdAt, item.durationDays);
 	const isActive =
 		item.status === "pending" &&
@@ -147,7 +158,7 @@ function BoostCard({
 						style={[styles.cardTitle, { color: textColor }]}
 						numberOfLines={1}
 					>
-						{item.listing?.title ?? "Annonce supprimée"}
+						{item.listing?.title ?? t("boostHistory.deletedListing")}
 					</Text>
 
 					{/* Duration + date */}
@@ -193,7 +204,7 @@ function BoostCard({
 						{item.amount?.toLocaleString() ?? "—"}
 						{"\n"}
 						<Text style={[styles.cardAmountSuffix, { color: mutedColor }]}>
-							XAF
+							{t("currency.symbol")}
 						</Text>
 					</Text>
 					<View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
@@ -213,6 +224,7 @@ function BoostCard({
 export default function BoostHistoryScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -311,12 +323,12 @@ export default function BoostHistoryScreen() {
 				</Pressable>
 				<View>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
-						Historique des boosts
+						{t("boostHistory.title")}
 					</Text>
 					<Text style={[styles.headerSub, { color: mutedColor }]}>
 						{payments.length > 0
-							? `${payments.length} boost${payments.length > 1 ? "s" : ""} chargé${payments.length > 1 ? "s" : ""}`
-							: "Aucun boost"}
+							? t("boostHistory.subtitle", { count: payments.length } as any)
+							: t("boostHistory.noBoosts")}
 					</Text>
 				</View>
 				<View style={{ width: 40 }} />
@@ -327,9 +339,9 @@ export default function BoostHistoryScreen() {
 			) : payments.length === 0 ? (
 				<EmptyState
 					icon="rocket-outline"
-					title="Aucun boost"
-					subtitle="Boostez vos annonces pour obtenir plus de visibilité"
-					ctaLabel="Voir mes annonces"
+					title={t("boostHistory.noBoosts")}
+					subtitle={t("boostHistory.noBoostsSubtitle")}
+					ctaLabel={t("boostHistory.viewMyListings")}
 					onCta={() => router.push("/account/listings")}
 				/>
 			) : (
@@ -349,21 +361,21 @@ export default function BoostHistoryScreen() {
 							<View style={styles.statsRow}>
 								{[
 									{
-										label: "Total",
+										label: t("boostHistory.total"),
 										value: String(payments.length),
 										icon: "rocket-outline",
 										color: primaryColor,
 										iconBg: isDark ? "#1e3a5f" : "#dbeafe",
 									},
 									{
-										label: "Actifs",
+										label: t("boostHistory.active"),
 										value: String(active),
 										icon: "flash",
 										color: "#2563eb",
 										iconBg: isDark ? "#1e3a5f" : "#dbeafe",
 									},
 									{
-										label: "Terminés",
+										label: t("boostHistory.completed"),
 										value: String(completed),
 										icon: "checkmark-circle",
 										color: "#16a34a",
@@ -410,7 +422,7 @@ export default function BoostHistoryScreen() {
 								</View>
 								<View style={{ flex: 1 }}>
 									<Text style={[styles.spentLabel, { color: mutedColor }]}>
-										Total dépensé en boosts
+										{t("boostHistory.totalSpent")}
 									</Text>
 									<Text
 										style={[
@@ -418,7 +430,9 @@ export default function BoostHistoryScreen() {
 											{ color: isDark ? "#fbbf24" : "#92400e" },
 										]}
 									>
-										{totalSpent.toLocaleString()} XAF
+										{t("currency.format", {
+											amount: totalSpent.toLocaleString(),
+										} as any)}
 									</Text>
 								</View>
 							</View>
@@ -433,10 +447,10 @@ export default function BoostHistoryScreen() {
 								>
 									<View style={styles.chartHeader}>
 										<Text style={[styles.chartTitle, { color: textColor }]}>
-											Dépenses mensuelles
+											{t("boostHistory.monthlySpend")}
 										</Text>
 										<Text style={[styles.chartSub, { color: mutedColor }]}>
-											6 derniers mois
+											{t("boostHistory.last6Months")}
 										</Text>
 									</View>
 									<Svg width={CHART_W} height={CHART_H + 4}>
@@ -508,7 +522,7 @@ export default function BoostHistoryScreen() {
 							{/* Section separator */}
 							<View style={styles.sectionRow}>
 								<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-									HISTORIQUE
+									{t("boostHistory.history")}
 								</Text>
 								<View
 									style={[styles.sectionLine, { backgroundColor: borderColor }]}
@@ -530,7 +544,7 @@ export default function BoostHistoryScreen() {
 							/>
 						) : !hasNextPage && payments.length > 0 ? (
 							<Text style={[styles.endLabel, { color: mutedColor }]}>
-								— Fin de l'historique —
+								{t("boostHistory.endOfHistory")}
 							</Text>
 						) : null
 					}

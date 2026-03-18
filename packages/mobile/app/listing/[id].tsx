@@ -25,6 +25,7 @@ import { StatusPill } from "@/src/components/StatusPill";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const { width } = Dimensions.get("window");
@@ -33,6 +34,7 @@ export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
@@ -170,9 +172,9 @@ export default function ListingDetail() {
 				</Pressable>
 				<EmptyState
 					illustration="notFound"
-					title="Annonce introuvable"
-					subtitle="Cette annonce n'existe plus, a ete retiree ou le lien est invalide."
-					ctaLabel="Retour"
+					title={t("listing.notFound")}
+					subtitle={t("listing.notFoundSubtitle")}
+					ctaLabel={t("listing.back")}
 					onCta={() => router.back()}
 					size={240}
 				/>
@@ -183,9 +185,9 @@ export default function ListingDetail() {
 	const timeAgo = (() => {
 		const diff = Date.now() - new Date(listing.createdAt).getTime();
 		const days = Math.floor(diff / 86400000);
-		if (days === 0) return "Aujourd'hui";
-		if (days === 1) return "Hier";
-		return `Il y a ${days} jours`;
+		if (days === 0) return t("listing.today");
+		if (days === 1) return t("listing.yesterday");
+		return t("listing.daysAgo", { count: days });
 	})();
 
 	const actionBarInset = safeBottom + 120;
@@ -275,7 +277,7 @@ export default function ListingDetail() {
 					{listing.isBoosted && (
 						<View style={styles.boostedBadge}>
 							<Ionicons name="flash" size={12} color="#fff" />
-							<Text style={styles.boostedText}>À la une</Text>
+							<Text style={styles.boostedText}>{t("listing.featured")}</Text>
 						</View>
 					)}
 				</View>
@@ -298,7 +300,7 @@ export default function ListingDetail() {
 							>
 								<Ionicons name="share-outline" size={16} color={primaryColor} />
 								<Text style={[styles.actionBtnText, { color: primaryColor }]}>
-									Partager
+									{t("listing.share")}
 								</Text>
 							</Pressable>
 							{!isOwner && (
@@ -329,7 +331,7 @@ export default function ListingDetail() {
 											{ color: isFavorite ? "#ef4444" : primaryColor },
 										]}
 									>
-										{isFavorite ? "Sauvegardé" : "Sauvegarder"}
+										{isFavorite ? t("listing.saved") : t("listing.save")}
 									</Text>
 								</Pressable>
 							)}
@@ -379,7 +381,7 @@ export default function ListingDetail() {
 					{/* Description */}
 					<View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
 						<Text style={[styles.sectionTitle, { color: textColor }]}>
-							Description
+							{t("listing.description")}
 						</Text>
 						<Text
 							style={[
@@ -393,7 +395,7 @@ export default function ListingDetail() {
 						{listing.description?.length > 150 && (
 							<Pressable onPress={() => setDescExpanded(!descExpanded)}>
 								<Text style={[styles.readMore, { color: primaryColor }]}>
-									{descExpanded ? "Réduire" : "Lire plus"}
+									{descExpanded ? t("listing.readLess") : t("listing.readMore")}
 								</Text>
 							</Pressable>
 						)}
@@ -405,7 +407,7 @@ export default function ListingDetail() {
 							style={[styles.card, { backgroundColor: cardBg, borderColor }]}
 						>
 							<Text style={[styles.sectionTitle, { color: textColor }]}>
-								Caractéristiques
+								{t("listing.characteristics")}
 							</Text>
 							<View style={styles.attrsGrid}>
 								{Object.entries(listing.attributes).map(([k, v]) => (
@@ -424,9 +426,9 @@ export default function ListingDetail() {
 										</Text>
 										<Text style={[styles.attrVal, { color: textColor }]}>
 											{v === true || v === "true"
-												? "Oui"
+												? t("listing.yes")
 												: v === false || v === "false"
-													? "Non"
+													? t("listing.no")
 													: String(v)}
 										</Text>
 									</View>
@@ -442,7 +444,7 @@ export default function ListingDetail() {
 							style={[styles.card, { backgroundColor: cardBg, borderColor }]}
 						>
 							<Text style={[styles.sectionTitle, { color: textColor }]}>
-								Vendeur
+								{t("listing.seller")}
 							</Text>
 							<View style={styles.sellerRow}>
 								{seller.avatar?.url ? (
@@ -484,7 +486,7 @@ export default function ListingDetail() {
 										count={seller.totalReviews}
 									/>
 									<Text style={[styles.memberSince, { color: mutedColor }]}>
-										Membre depuis{" "}
+										{t("listing.memberSinceLabel")}{" "}
 										{new Date(seller.createdAt).toLocaleDateString("fr-FR", {
 											year: "numeric",
 											month: "long",
@@ -510,7 +512,7 @@ export default function ListingDetail() {
 							color={mutedColor}
 						/>
 						<Text style={[styles.safetyStripText, { color: mutedColor }]}>
-							Lieu public · Vérifiez avant paiement · Pas d'avance
+							{t("listing.safetyTips.strip")}
 						</Text>
 					</View>
 
@@ -523,7 +525,7 @@ export default function ListingDetail() {
 									{ color: textColor, paddingHorizontal: 0 },
 								]}
 							>
-								Annonces similaires
+								{t("listing.similarListings")}
 							</Text>
 							<ScrollView
 								horizontal
@@ -559,7 +561,7 @@ export default function ListingDetail() {
 					>
 						<Ionicons name="flag-outline" size={14} color={mutedColor} />
 						<Text style={[styles.reportText, { color: mutedColor }]}>
-							Signaler cette annonce
+							{t("listing.reportListing")}
 						</Text>
 					</Pressable>
 				</View>
@@ -594,7 +596,9 @@ export default function ListingDetail() {
 							) : (
 								<Ionicons name="chatbubble-outline" size={18} color="#fff" />
 							)}
-							<Text style={styles.msgBtnText}>Contacter le vendeur</Text>
+							<Text style={styles.msgBtnText}>
+								{t("listing.contactSeller")}
+							</Text>
 						</Pressable>
 					</View>
 				) : (
@@ -605,7 +609,7 @@ export default function ListingDetail() {
 								style={styles.boostBtn}
 							>
 								<Ionicons name="rocket-outline" size={18} color="#fff" />
-								<Text style={styles.boostBtnText}>Booster</Text>
+								<Text style={styles.boostBtnText}>{t("listing.boost")}</Text>
 							</Pressable>
 						)}
 						<Pressable
@@ -617,7 +621,7 @@ export default function ListingDetail() {
 						>
 							<Ionicons name="pencil" size={16} color={primaryColor} />
 							<Text style={[styles.editBtnText, { color: primaryColor }]}>
-								Modifier
+								{t("listing.edit")}
 							</Text>
 						</Pressable>
 					</View>

@@ -32,12 +32,7 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<any[]>);
 // Height of the expanded title row (icon 44 + gap between rows ~16)
 const EXPANDED_ROW_H = 60;
 
-const SORTS = [
-	{ key: "recent", label: "Récents", icon: "time-outline" },
-	{ key: "price_asc", label: "Prix ↑", icon: "trending-up-outline" },
-	{ key: "price_desc", label: "Prix ↓", icon: "trending-down-outline" },
-	{ key: "az", label: "A → Z", icon: "text-outline" },
-] as const;
+const _SORT_KEYS = ["recent", "price_asc", "price_desc", "az"] as const;
 
 type SortKey = (typeof SORTS)[number]["key"];
 

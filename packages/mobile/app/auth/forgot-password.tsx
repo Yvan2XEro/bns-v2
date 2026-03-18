@@ -16,10 +16,12 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function ForgotPasswordScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { showError } = useAlert();
+	const { t } = useTranslation();
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [sent, setSent] = useState(false);
@@ -40,7 +42,7 @@ export default function ForgotPasswordScreen() {
 			});
 			setSent(true);
 		} catch (err: any) {
-			showError("Erreur", err.message ?? "Une erreur est survenue");
+			showError(t("auth.errorTitle"), err.message ?? t("auth.errorGeneric"));
 		} finally {
 			setLoading(false);
 		}
@@ -60,17 +62,16 @@ export default function ForgotPasswordScreen() {
 						style={{ marginBottom: 16 }}
 					/>
 					<Text style={[styles.title, { color: textColor }]}>
-						Email envoyé !
+						{t("auth.resetLinkSentTitle")}
 					</Text>
 					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						Vérifiez votre boîte email et suivez les instructions pour
-						réinitialiser votre mot de passe.
+						{t("auth.resetLinkSentMessage")}
 					</Text>
 					<Pressable
 						onPress={() => router.dismiss()}
 						style={[styles.btn, { backgroundColor: primaryColor }]}
 					>
-						<Text style={styles.btnText}>Retour à la connexion</Text>
+						<Text style={styles.btnText}>{t("auth.backToLogin")}</Text>
 					</Pressable>
 				</View>
 			</SafeAreaView>
@@ -106,14 +107,13 @@ export default function ForgotPasswordScreen() {
 						</Text>
 					</View>
 					<Text style={[styles.title, { color: textColor }]}>
-						Mot de passe oublié
+						{t("auth.resetTitle")}
 					</Text>
 					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						Entrez votre adresse email et nous vous enverrons un lien de
-						réinitialisation.
+						{t("auth.resetSubtitle")}
 					</Text>
 					<Text style={[styles.label, { color: mutedColor }]}>
-						Adresse email
+						{t("auth.email")}
 					</Text>
 					<View
 						style={[
@@ -130,7 +130,7 @@ export default function ForgotPasswordScreen() {
 						<TextInput
 							value={email}
 							onChangeText={setEmail}
-							placeholder="votre@email.com"
+							placeholder={t("auth.emailPlaceholder")}
 							placeholderTextColor={mutedColor}
 							style={[styles.input, { color: textColor }]}
 							keyboardType="email-address"
@@ -148,7 +148,7 @@ export default function ForgotPasswordScreen() {
 						{loading ? (
 							<ActivityIndicator color="#fff" />
 						) : (
-							<Text style={styles.btnText}>Envoyer le lien</Text>
+							<Text style={styles.btnText}>{t("auth.sendResetLink")}</Text>
 						)}
 					</Pressable>
 				</View>

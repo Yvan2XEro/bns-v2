@@ -5,41 +5,19 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
-const FAQS = [
-	{
-		q: "Comment publier une annonce ?",
-		a: "Appuyez sur le bouton « Vendre » en bas de l'écran, remplissez le formulaire en 5 étapes et publiez votre annonce. Elle sera visible après validation par notre équipe (sous 24h).",
-	},
-	{
-		q: "Comment contacter un vendeur ?",
-		a: "Depuis la page de l'annonce, appuyez sur « Contacter le vendeur » pour envoyer un message directement.",
-	},
-	{
-		q: "Comment fonctionne le boost ?",
-		a: "Le boost met votre annonce en avant dans les résultats de recherche et sur la page d'accueil. Choisissez une durée (1 sem, 2 sem, 1 mois) et payez via NotchPay.",
-	},
-	{
-		q: "Mon annonce n'est pas visible, pourquoi ?",
-		a: "Les annonces doivent être validées par notre équipe avant d'être publiées. Cela peut prendre jusqu'à 24h. Vérifiez votre statut dans « Mes annonces ».",
-	},
-	{
-		q: "Comment signaler une annonce suspecte ?",
-		a: "Depuis la page de l'annonce, faites défiler jusqu'en bas et appuyez sur « Signaler cette annonce ». Choisissez une raison et confirmez.",
-	},
-	{
-		q: "Comment sauvegarder une recherche ?",
-		a: "Sur la page Recherche, appuyez sur le bouton « Sauvegarder » en bas de l'écran pour enregistrer vos critères et recevoir des alertes.",
-	},
-	{
-		q: "Comment supprimer mon compte ?",
-		a: "Allez dans Compte → Paramètres → Zone dangereuse → Supprimer mon compte. Cette action est irréversible.",
-	},
-];
+const FAQ_COUNT = 7;
 
 export default function HelpScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const [expanded, setExpanded] = useState<number | null>(null);
+
+	const FAQS = Array.from({ length: FAQ_COUNT }, (_, i) => ({
+		q: t(`help.q${i + 1}` as any),
+		a: t(`help.a${i + 1}` as any),
+	}));
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -57,7 +35,9 @@ export default function HelpScreen() {
 				<Pressable onPress={() => router.back()}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
-				<Text style={[styles.title, { color: textColor }]}>Aide & FAQ</Text>
+				<Text style={[styles.title, { color: textColor }]}>
+					{t("help.title")}
+				</Text>
 				<View style={{ width: 40 }} />
 			</View>
 
@@ -72,7 +52,7 @@ export default function HelpScreen() {
 					<Ionicons name="help-circle-outline" size={48} color={primaryColor} />
 				</View>
 				<Text style={[styles.heading, { color: textColor }]}>
-					Questions fréquentes
+					{t("help.frequentQuestions")}
 				</Text>
 
 				{FAQS.map((faq, i) => (
@@ -111,7 +91,7 @@ export default function HelpScreen() {
 						color={primaryColor}
 					/>
 					<Text style={[styles.contactText, { color: primaryColor }]}>
-						Contacter le support
+						{t("help.contactSupport")}
 					</Text>
 				</Pressable>
 			</ScrollView>

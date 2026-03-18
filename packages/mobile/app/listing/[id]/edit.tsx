@@ -22,19 +22,8 @@ import { CityPicker } from "@/src/components/CityPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
+import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-
-const CONDITIONS = [
-	{ key: "new", label: "Neuf", icon: "sparkles-outline" as const },
-	{ key: "like_new", label: "Très bon état", icon: "star-outline" as const },
-	{ key: "good", label: "Bon état", icon: "thumbs-up-outline" as const },
-	{
-		key: "fair",
-		label: "État correct",
-		icon: "remove-circle-outline" as const,
-	},
-	{ key: "poor", label: "À rénover", icon: "construct-outline" as const },
-];
 
 const DURATIONS = [30, 60, 90];
 
@@ -89,6 +78,7 @@ export default function EditListingScreen() {
 	const isDark = useColorScheme() === "dark";
 	const queryClient = useQueryClient();
 	const { showSuccess, showError, showAlert, showWarning } = useAlert();
+	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -97,6 +87,34 @@ export default function EditListingScreen() {
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const inputBg = isDark ? "#0b1120" : "#f8fafc";
+
+	const CONDITIONS = [
+		{
+			key: "new",
+			label: t("conditions.new"),
+			icon: "sparkles-outline" as const,
+		},
+		{
+			key: "like_new",
+			label: t("conditions.likeNew"),
+			icon: "star-outline" as const,
+		},
+		{
+			key: "good",
+			label: t("conditions.good"),
+			icon: "thumbs-up-outline" as const,
+		},
+		{
+			key: "fair",
+			label: t("conditions.fair"),
+			icon: "remove-circle-outline" as const,
+		},
+		{
+			key: "poor",
+			label: t("conditions.poor"),
+			icon: "construct-outline" as const,
+		},
+	];
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -160,20 +178,14 @@ export default function EditListingScreen() {
 			if (fromCamera) {
 				const { status } = await ImagePicker.requestCameraPermissionsAsync();
 				if (status !== "granted") {
-					showError(
-						"Permission refusée",
-						"L'accès à la caméra est nécessaire.",
-					);
+					showError(t("edit.permissionDenied"), t("edit.cameraPermissionMsg"));
 					return;
 				}
 			} else {
 				const { status } =
 					await ImagePicker.requestMediaLibraryPermissionsAsync();
 				if (status !== "granted") {
-					showError(
-						"Permission refusée",
-						"L'accès à la galerie est nécessaire.",
-					);
+					showError(t("edit.permissionDenied"), t("edit.galleryPermissionMsg"));
 					return;
 				}
 			}
@@ -213,11 +225,11 @@ export default function EditListingScreen() {
 			);
 			const mediaId = uploaded?.doc?.id;
 			const mediaUri = uploaded?.doc?.url ?? asset.uri;
-			if (!mediaId) throw new Error("Upload échoué");
+			if (!mediaId) throw new Error(t("edit.uploadError"));
 
 			setImages((prev) => [...prev, { id: mediaId, uri: mediaUri }]);
 		} catch (err: any) {
-			showError("Erreur", err.message ?? "Impossible d'ajouter la photo.");
+			showError(t("edit.errorTitle"), err.message ?? t("edit.uploadError"));
 		} finally {
 			setUploading(false);
 		}
@@ -225,13 +237,13 @@ export default function EditListingScreen() {
 
 	const showImagePicker = () => {
 		if (images.length >= 10) {
-			showWarning("Limite atteinte", "Maximum 10 photos.");
+			showWarning(t("edit.limitReached"), t("edit.limitReachedMsg"));
 			return;
 		}
-		showAlert("Ajouter une photo", "Choisissez une source", [
-			{ text: "Appareil photo", onPress: () => pickImage(true) },
-			{ text: "Galerie", onPress: () => pickImage(false) },
-			{ text: "Annuler", style: "cancel" },
+		showAlert(t("edit.addPhotoTitle"), t("edit.addPhotoSource"), [
+			{ text: t("edit.camera"), onPress: () => pickImage(true) },
+			{ text: t("edit.gallery"), onPress: () => pickImage(false) },
+			{ text: t("edit.cancel"), style: "cancel" },
 		]);
 	};
 
@@ -252,13 +264,10 @@ export default function EditListingScreen() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["listing", id] });
 			queryClient.invalidateQueries({ queryKey: ["my-listings"] });
-			showSuccess(
-				"Annonce modifiée",
-				"Vos modifications ont été enregistrées.",
-			);
+			showSuccess(t("edit.saveSuccess"), t("edit.saveSuccessMsg"));
 			router.back();
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("edit.errorTitle"), err.message),
 	});
 
 	const updateAttr = (slug: string, value: any) =>
@@ -292,7 +301,7 @@ export default function EditListingScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
-					Modifier l'annonce
+					{t("edit.title")}
 				</Text>
 				<Pressable
 					onPress={() => save()}
@@ -305,7 +314,7 @@ export default function EditListingScreen() {
 					{isPending ? (
 						<ActivityIndicator size="small" color="#fff" />
 					) : (
-						<Text style={styles.saveBtnText}>Enregistrer</Text>
+						<Text style={styles.saveBtnText}>{t("edit.save")}</Text>
 					)}
 				</Pressable>
 			</View>
@@ -318,9 +327,13 @@ export default function EditListingScreen() {
 				showsVerticalScrollIndicator={false}
 			>
 				{/* ── Photos ── */}
-				<SectionCard icon="images-outline" title="Photos" {...sharedSection}>
+				<SectionCard
+					icon="images-outline"
+					title={t("edit.photos")}
+					{...sharedSection}
+				>
 					<Text style={[styles.hint, { color: mutedColor }]}>
-						La première photo sera la photo principale. Max 10 photos.
+						{t("edit.photosHint")}
 					</Text>
 					<ScrollView
 						horizontal
@@ -336,7 +349,9 @@ export default function EditListingScreen() {
 								/>
 								{index === 0 && (
 									<View style={styles.mainBadge}>
-										<Text style={styles.mainBadgeText}>Principal</Text>
+										<Text style={styles.mainBadgeText}>
+											{t("edit.mainPhoto")}
+										</Text>
 									</View>
 								)}
 								<Pressable
@@ -368,7 +383,7 @@ export default function EditListingScreen() {
 											color={mutedColor}
 										/>
 										<Text style={[styles.addImageText, { color: mutedColor }]}>
-											Ajouter
+											{t("edit.addPhoto")}
 										</Text>
 									</>
 								)}
@@ -378,14 +393,22 @@ export default function EditListingScreen() {
 				</SectionCard>
 
 				{/* ── Détails ── */}
-				<SectionCard icon="create-outline" title="Détails" {...sharedSection}>
+				<SectionCard
+					icon="create-outline"
+					title={t("edit.details")}
+					{...sharedSection}
+				>
 					{/* Title */}
 					<View style={styles.fieldGroup}>
-						<FieldLabel label="Titre" required mutedColor={mutedColor} />
+						<FieldLabel
+							label={t("edit.titleLabel")}
+							required
+							mutedColor={mutedColor}
+						/>
 						<TextInput
 							value={title}
 							onChangeText={setTitle}
-							placeholder="Titre de l'annonce"
+							placeholder={t("edit.titlePlaceholder")}
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.input,
@@ -400,11 +423,15 @@ export default function EditListingScreen() {
 
 					{/* Description */}
 					<View style={styles.fieldGroup}>
-						<FieldLabel label="Description" required mutedColor={mutedColor} />
+						<FieldLabel
+							label={t("edit.descriptionLabel")}
+							required
+							mutedColor={mutedColor}
+						/>
 						<TextInput
 							value={description}
 							onChangeText={setDescription}
-							placeholder="Décrivez votre article..."
+							placeholder={t("edit.descriptionPlaceholder")}
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.input,
@@ -418,7 +445,11 @@ export default function EditListingScreen() {
 
 					{/* Price */}
 					<View style={styles.fieldGroup}>
-						<FieldLabel label="Prix (XAF)" required mutedColor={mutedColor} />
+						<FieldLabel
+							label={t("edit.priceLabel")}
+							required
+							mutedColor={mutedColor}
+						/>
 						<View
 							style={[
 								styles.inputRow,
@@ -439,7 +470,10 @@ export default function EditListingScreen() {
 
 					{/* Condition */}
 					<View style={styles.fieldGroup}>
-						<FieldLabel label="État" mutedColor={mutedColor} />
+						<FieldLabel
+							label={t("edit.conditionLabel")}
+							mutedColor={mutedColor}
+						/>
 						<View style={styles.pillRow}>
 							{CONDITIONS.map((c) => {
 								const active = condition === c.key;
@@ -476,7 +510,11 @@ export default function EditListingScreen() {
 
 					{/* Location */}
 					<View style={styles.fieldGroup}>
-						<FieldLabel label="Localisation" required mutedColor={mutedColor} />
+						<FieldLabel
+							label={t("edit.locationLabel")}
+							required
+							mutedColor={mutedColor}
+						/>
 						<CityPicker
 							value={location}
 							onSelect={(city: CameroonCity) => {
@@ -497,7 +535,10 @@ export default function EditListingScreen() {
 
 					{/* Duration */}
 					<View style={styles.fieldGroup}>
-						<FieldLabel label="Durée de publication" mutedColor={mutedColor} />
+						<FieldLabel
+							label={t("edit.durationLabel")}
+							mutedColor={mutedColor}
+						/>
 						<View style={styles.pillRow}>
 							{DURATIONS.map((d) => {
 								const active = duration === d;
@@ -529,7 +570,7 @@ export default function EditListingScreen() {
 												},
 											]}
 										>
-											jours
+											{t("edit.days")}
 										</Text>
 									</Pressable>
 								);
@@ -542,7 +583,7 @@ export default function EditListingScreen() {
 				{categoryAttributes.length > 0 && (
 					<SectionCard
 						icon="pricetag-outline"
-						title={`Caractéristiques — ${listing?.category?.name ?? ""}`}
+						title={`${t("edit.characteristics")} — ${listing?.category?.name ?? ""}`}
 						{...sharedSection}
 					>
 						{categoryAttributes.map((attr: any) => (
@@ -589,8 +630,8 @@ export default function EditListingScreen() {
 								) : attr.type === "boolean" ? (
 									<View style={styles.pillRow}>
 										{[
-											{ label: "Oui", value: "true" },
-											{ label: "Non", value: "false" },
+											{ label: t("common.yes"), value: "true" },
+											{ label: t("common.no"), value: "false" },
 										].map((opt) => {
 											const active = attributes[attr.slug] === opt.value;
 											return (
@@ -665,9 +706,7 @@ export default function EditListingScreen() {
 								size={20}
 								color="#fff"
 							/>
-							<Text style={styles.submitText}>
-								Sauvegarder les modifications
-							</Text>
+							<Text style={styles.submitText}>{t("edit.saveChanges")}</Text>
 						</>
 					)}
 				</AnimatedPressable>

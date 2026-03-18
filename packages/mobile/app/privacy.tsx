@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 const SECTIONS = [
 	{
@@ -41,6 +42,7 @@ const SECTIONS = [
 
 export default function PrivacyScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -57,7 +59,7 @@ export default function PrivacyScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.title, { color: textColor }]}>
-					Politique de confidentialité
+					{t("privacy.title")}
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>

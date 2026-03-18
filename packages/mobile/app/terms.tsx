@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 const SECTIONS = [
 	{
@@ -45,6 +46,7 @@ const SECTIONS = [
 
 export default function TermsScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const _cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -62,7 +64,7 @@ export default function TermsScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.title, { color: textColor }]}>
-					Conditions d'utilisation
+					{t("terms.title")}
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>

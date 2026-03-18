@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 function AppLogo({ isDark }: { isDark: boolean }) {
 	const baseColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -41,6 +42,7 @@ export default function LoginScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { login } = useAuth();
 	const { showError } = useAlert();
+	const { t } = useTranslation();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPwd, setShowPwd] = useState(false);
@@ -55,7 +57,7 @@ export default function LoginScreen() {
 
 	const handleLogin = async () => {
 		if (!email || !password) {
-			showError("Champs manquants", "Veuillez remplir tous les champs");
+			showError(t("auth.missingFieldsTitle"), t("auth.missingFieldsMessage"));
 			return;
 		}
 		setLoading(true);
@@ -64,8 +66,8 @@ export default function LoginScreen() {
 			router.dismiss();
 		} catch (err: any) {
 			showError(
-				"Connexion échouée",
-				err.message ?? "Email ou mot de passe incorrect",
+				t("auth.loginFailedTitle"),
+				err.message ?? t("auth.loginFailedMessage"),
 			);
 		} finally {
 			setLoading(false);
@@ -93,9 +95,11 @@ export default function LoginScreen() {
 					<View style={styles.logoWrap}>
 						<AppLogo isDark={isDark} />
 					</View>
-					<Text style={[styles.title, { color: textColor }]}>Bon retour !</Text>
+					<Text style={[styles.title, { color: textColor }]}>
+						{t("auth.loginTitle")}
+					</Text>
 					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						Connectez-vous à votre compte
+						{t("auth.loginSubtitleShort")}
 					</Text>
 
 					{/* Form */}
@@ -103,7 +107,7 @@ export default function LoginScreen() {
 						{/* Email */}
 						<View style={styles.fieldGroup}>
 							<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-								Adresse email
+								{t("auth.email")}
 							</Text>
 							<View style={[styles.inputWrapper, { borderColor }]}>
 								<Ionicons
@@ -115,7 +119,7 @@ export default function LoginScreen() {
 								<TextInput
 									value={email}
 									onChangeText={setEmail}
-									placeholder="votre@email.com"
+									placeholder={t("auth.emailPlaceholder")}
 									placeholderTextColor={mutedColor}
 									style={[styles.input, { color: textColor }]}
 									keyboardType="email-address"
@@ -129,11 +133,11 @@ export default function LoginScreen() {
 						<View style={styles.fieldGroup}>
 							<View style={styles.labelRow}>
 								<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-									Mot de passe
+									{t("auth.password")}
 								</Text>
 								<Pressable onPress={() => router.push("/auth/forgot-password")}>
 									<Text style={[styles.forgotLink, { color: primaryColor }]}>
-										Mot de passe oublié ?
+										{t("auth.forgotPassword")}
 									</Text>
 								</Pressable>
 							</View>
@@ -176,7 +180,7 @@ export default function LoginScreen() {
 							{loading ? (
 								<ActivityIndicator color="#fff" />
 							) : (
-								<Text style={styles.submitText}>Se connecter</Text>
+								<Text style={styles.submitText}>{t("auth.signIn")}</Text>
 							)}
 						</AnimatedPressable>
 					</View>
@@ -184,7 +188,7 @@ export default function LoginScreen() {
 					{/* Register Link */}
 					<View style={styles.registerRow}>
 						<Text style={[styles.registerText, { color: mutedColor }]}>
-							Pas encore de compte ?{" "}
+							{t("auth.noAccount")}{" "}
 						</Text>
 						<Pressable
 							onPress={() => {
@@ -193,7 +197,7 @@ export default function LoginScreen() {
 							}}
 						>
 							<Text style={[styles.registerLink, { color: primaryColor }]}>
-								Créer un compte
+								{t("auth.createAccount")}
 							</Text>
 						</Pressable>
 					</View>

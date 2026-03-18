@@ -12,6 +12,7 @@ import { useChatClient } from "@/src/contexts/ChatContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 function MessagesBadge({ count }: { count: number }) {
 	if (count === 0) return null;
@@ -119,6 +120,7 @@ function SellButton() {
 export default function TabLayout() {
 	const colorScheme = useColorScheme();
 	const isDark = colorScheme === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { chatClient } = useChatClient();
 	const queryClient = useQueryClient();
@@ -173,7 +175,7 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="home/index"
 				options={{
-					title: "Accueil",
+					title: t("navigation.home"),
 					tabBarIcon: ({ color, focused }) => (
 						<AnimatedTabIcon
 							name="home-outline"
@@ -187,7 +189,7 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="favorites/index"
 				options={{
-					title: "Favoris",
+					title: t("navigation.favorites"),
 					tabBarIcon: ({ color, focused }) => (
 						<AnimatedTabIcon
 							name="heart-outline"
@@ -201,7 +203,7 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="create/index"
 				options={{
-					title: "Vendre",
+					title: t("navigation.sell"),
 					tabBarIcon: () => <SellButton />,
 					tabBarLabel: () => null,
 				}}
@@ -209,7 +211,7 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="messages/index"
 				options={{
-					title: "Messages",
+					title: t("navigation.messages"),
 					tabBarIcon: ({ color, focused }) => (
 						<View>
 							<AnimatedTabIcon
@@ -226,7 +228,7 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="account/index"
 				options={{
-					title: "Compte",
+					title: t("navigation.account"),
 					tabBarIcon: ({ color, focused }) => (
 						<AccountTabIcon color={color} focused={focused} />
 					),

@@ -24,6 +24,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 const { width } = Dimensions.get("window");
 const CARD_W = (width - 48) / 2;
@@ -31,6 +32,7 @@ const CARD_W = (width - 48) / 2;
 export default function PublicProfileScreen() {
 	const { userId } = useLocalSearchParams<{ userId: string }>();
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
 	const { showSuccess, showError } = useAlert();
@@ -90,9 +92,9 @@ export default function PublicProfileScreen() {
 			setReviewModal(false);
 			setReviewRating(0);
 			setReviewComment("");
-			showSuccess("Avis publié", "Votre avis a été enregistré.");
+			showSuccess(t("profile.reviewPublished"), t("profile.reviewSaved"));
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("common.error"), err.message),
 	});
 
 	const profile = profileData?.doc ?? profileData;
@@ -122,7 +124,9 @@ export default function PublicProfileScreen() {
 				<Pressable onPress={() => router.back()} style={styles.backBtn}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
-				<Text style={[styles.headerTitle, { color: textColor }]}>Profil</Text>
+				<Text style={[styles.headerTitle, { color: textColor }]}>
+					{t("profile.title")}
+				</Text>
 				<View style={{ width: 40 }} />
 			</View>
 
@@ -162,7 +166,9 @@ export default function PublicProfileScreen() {
 								]}
 							>
 								<Ionicons name="checkmark" size={11} color="#fff" />
-								<Text style={styles.verifiedText}>Vérifié</Text>
+								<Text style={styles.verifiedText}>
+									{t("profile.verifiedBadge")}
+								</Text>
 							</View>
 						)}
 					</View>
@@ -189,7 +195,7 @@ export default function PublicProfileScreen() {
 						)}
 						{profile?.createdAt && (
 							<Text style={[styles.metaText, { color: mutedColor }]}>
-								Membre depuis{" "}
+								{t("profile.memberSinceDate")}{" "}
 								{new Date(profile.createdAt).toLocaleDateString("fr-FR", {
 									year: "numeric",
 									month: "long",
@@ -215,7 +221,7 @@ export default function PublicProfileScreen() {
 								style={[styles.msgBtn, { backgroundColor: primaryColor }]}
 							>
 								<Ionicons name="chatbubble" size={16} color="#fff" />
-								<Text style={styles.msgBtnText}>Message</Text>
+								<Text style={styles.msgBtnText}>{t("profile.message")}</Text>
 							</Pressable>
 							<Pressable
 								onPress={() =>
@@ -256,8 +262,14 @@ export default function PublicProfileScreen() {
 								]}
 							>
 								{tab === "listings"
-									? `Annonces (${listings.length})`
-									: `Avis (${reviews.length})`}
+									? t("profile.listingsTab").replace(
+											"{{count}}",
+											String(listings.length),
+										)
+									: t("profile.reviewsTab").replace(
+											"{{count}}",
+											String(reviews.length),
+										)}
 							</Text>
 						</Pressable>
 					))}
@@ -289,10 +301,10 @@ export default function PublicProfileScreen() {
 									color={mutedColor}
 								/>
 								<Text style={[styles.emptyTitle, { color: textColor }]}>
-									Aucune annonce
+									{t("profile.noListingsYet")}
 								</Text>
 								<Text style={[styles.emptySub, { color: mutedColor }]}>
-									Cet utilisateur n'a pas encore publié d'annonce.
+									{t("profile.noListingsYetSub")}
 								</Text>
 							</View>
 						)}
@@ -309,7 +321,9 @@ export default function PublicProfileScreen() {
 								style={[styles.addReviewBtn, { backgroundColor: primaryColor }]}
 							>
 								<Ionicons name="star" size={16} color="#fff" />
-								<Text style={styles.addReviewText}>Laisser un avis</Text>
+								<Text style={styles.addReviewText}>
+									{t("profile.leaveReview")}
+								</Text>
 							</Pressable>
 						)}
 
@@ -361,10 +375,10 @@ export default function PublicProfileScreen() {
 							<View style={styles.emptyBox}>
 								<Ionicons name="star-outline" size={36} color={mutedColor} />
 								<Text style={[styles.emptyTitle, { color: textColor }]}>
-									Aucun avis
+									{t("profile.noReviewsYet")}
 								</Text>
 								<Text style={[styles.emptySub, { color: mutedColor }]}>
-									Soyez le premier à laisser un avis.
+									{t("profile.noReviewsYetSub")}
 								</Text>
 							</View>
 						)}
@@ -388,7 +402,7 @@ export default function PublicProfileScreen() {
 						style={[styles.modalHeader, { borderBottomColor: borderColor }]}
 					>
 						<Text style={[styles.modalTitle, { color: textColor }]}>
-							Laisser un avis
+							{t("profile.leaveReview")}
 						</Text>
 						<Pressable onPress={() => setReviewModal(false)}>
 							<Ionicons name="close" size={22} color={textColor} />
@@ -401,7 +415,9 @@ export default function PublicProfileScreen() {
 						contentContainerStyle={styles.modalBody}
 					>
 						{/* Star rating picker */}
-						<Text style={[styles.fieldLabel, { color: mutedColor }]}>Note</Text>
+						<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+							{t("profile.ratingLabel")}
+						</Text>
 						<View style={styles.starPicker}>
 							{[1, 2, 3, 4, 5].map((s) => (
 								<Pressable
@@ -420,12 +436,12 @@ export default function PublicProfileScreen() {
 
 						{/* Comment */}
 						<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-							Commentaire (optionnel)
+							{t("profile.commentLabel")}
 						</Text>
 						<TextInput
 							value={reviewComment}
 							onChangeText={setReviewComment}
-							placeholder="Partagez votre expérience..."
+							placeholder={t("profile.commentPlaceholder")}
 							placeholderTextColor={mutedColor}
 							multiline
 							numberOfLines={4}
@@ -459,7 +475,7 @@ export default function PublicProfileScreen() {
 										{ color: reviewRating === 0 ? mutedColor : "#fff" },
 									]}
 								>
-									Publier l'avis
+									{t("profile.publishReview")}
 								</Text>
 							)}
 						</Pressable>

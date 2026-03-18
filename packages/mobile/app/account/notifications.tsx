@@ -28,20 +28,21 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
+import { useTranslation } from "@/src/lib/i18n";
 import { registerForPushNotificationsAsync } from "@/src/lib/notifications";
 
 const SWIPE_BTN_WIDTH = 72;
 
-function timeAgo(date: string): string {
+function timeAgo(date: string, t: (key: string) => string): string {
 	const diff = Date.now() - new Date(date).getTime();
 	const minutes = Math.floor(diff / 60_000);
-	if (minutes < 1) return "à l'instant";
+	if (minutes < 1) return t("time.justNow");
 	if (minutes < 60) return `${minutes}min`;
 	const hours = Math.floor(minutes / 60);
 	if (hours < 24) return `${hours}h`;
 	const days = Math.floor(hours / 24);
 	if (days < 7) return `${days}j`;
-	return new Date(date).toLocaleDateString("fr-FR", {
+	return new Date(date).toLocaleDateString(undefined, {
 		day: "numeric",
 		month: "short",
 	});
@@ -155,6 +156,7 @@ function NotificationRow({
 	primaryColor: string;
 	cardBg: string;
 }) {
+	const { t } = useTranslation();
 	const icon = notificationIcon(item.tags ?? []);
 	const unreadBg = isDark ? "rgba(30,58,95,0.4)" : "#eff6ff";
 	const rowBg = item.isRead ? cardBg : unreadBg;
@@ -202,7 +204,9 @@ function NotificationRow({
 			onPress: () => void;
 		}[] = [
 			{
-				label: item.isRead ? "Non lu" : "Lu",
+				label: item.isRead
+					? t("notifications.unread")
+					: t("notifications.read"),
 				icon: item.isRead ? "mail-unread-outline" : "mail-open-outline",
 				color: "#3b82f6",
 				onPress: async () => {
@@ -212,7 +216,9 @@ function NotificationRow({
 				},
 			},
 			{
-				label: item.isArchived ? "Restaurer" : "Archiver",
+				label: item.isArchived
+					? t("notifications.restore")
+					: t("notifications.archive"),
 				icon: item.isArchived ? "arrow-undo-outline" : "archive-outline",
 				color: "#f59e0b",
 				onPress: async () => {
@@ -292,7 +298,7 @@ function NotificationRow({
 						{item.body}
 					</Text>
 					<Text style={[styles.itemTime, { color: mutedColor }]}>
-						{timeAgo(item.createdAt)}
+						{timeAgo(item.createdAt, t)}
 					</Text>
 
 					{hasActions && (
@@ -394,6 +400,7 @@ function NotificationsContent({
 	primaryColor: string;
 	accentBg: string;
 }) {
+	const { t } = useTranslation();
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -462,7 +469,9 @@ function NotificationsContent({
 						color={isDark ? "#e2e8f0" : "#0f172a"}
 					/>
 				</Pressable>
-				<Text style={[styles.title, { color: textColor }]}>Notifications</Text>
+				<Text style={[styles.title, { color: textColor }]}>
+					{t("notifications.title")}
+				</Text>
 				{unreadCount > 0 && (
 					<AnimatedPressable
 						onPress={handleMarkAllRead}
@@ -473,7 +482,7 @@ function NotificationsContent({
 							<ActivityIndicator size="small" color={primaryColor} />
 						) : (
 							<Text style={[styles.markAllText, { color: primaryColor }]}>
-								Tout lire
+								{t("notifications.markAllRead")}
 							</Text>
 						)}
 					</AnimatedPressable>
@@ -492,11 +501,11 @@ function NotificationsContent({
 					<Text
 						style={[styles.permText, { color: isDark ? "#fbbf24" : "#92400e" }]}
 					>
-						Activez les notifications pour ne rien manquer
+						{t("notifications.deniedBannerText")}
 					</Text>
 					<Pressable onPress={handleEnablePush}>
 						<Text style={[styles.permLink, { color: primaryColor }]}>
-							Activer
+							{t("notifications.enablePush")}
 						</Text>
 					</Pressable>
 				</View>
@@ -516,11 +525,11 @@ function NotificationsContent({
 					<Text
 						style={[styles.permText, { color: isDark ? "#93c5fd" : "#1e40af" }]}
 					>
-						Recevez des alertes pour vos annonces et messages
+						{t("notifications.undeterminedBannerText")}
 					</Text>
 					<Pressable onPress={handleEnablePush}>
 						<Text style={[styles.permLink, { color: primaryColor }]}>
-							Activer
+							{t("notifications.enablePush")}
 						</Text>
 					</Pressable>
 				</View>
@@ -535,8 +544,8 @@ function NotificationsContent({
 				) : items.length === 0 ? (
 					<EmptyState
 						icon="notifications-outline"
-						title="Aucune notification"
-						subtitle="Vos alertes d'annonces et messages apparaîtront ici"
+						title={t("notifications.noNotifications")}
+						subtitle={t("notifications.noNotificationsSub")}
 					/>
 				) : (
 					<FlatList

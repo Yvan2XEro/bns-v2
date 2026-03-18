@@ -28,20 +28,9 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
+import { useTranslation } from "@/src/lib/i18n";
 
-const STEPS = ["Catégorie", "Détails", "Attributs", "Photos", "Révision"];
 const SCREEN_W = Dimensions.get("window").width;
-
-const CONDITIONS: { key: string; label: string; icon: string }[] = [
-	{ key: "new", label: "Neuf", icon: "sparkles-outline" },
-	{ key: "like_new", label: "Très bon état", icon: "star-outline" },
-	{ key: "good", label: "Bon état", icon: "thumbs-up-outline" },
-	{ key: "fair", label: "État correct", icon: "remove-circle-outline" },
-	{ key: "poor", label: "À rénover", icon: "construct-outline" },
-];
-const CONDITION_LABELS: Record<string, string> = Object.fromEntries(
-	CONDITIONS.map((c) => [c.key, c.label]),
-);
 const DURATIONS = [30, 60, 90];
 
 // Blue + amber category tints (matches CategoryIcon palette)
@@ -78,8 +67,17 @@ interface FormData {
 
 export default function CreateScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const [step, setStep] = useState(0);
+
+	const STEPS = [
+		t("create.stepCategory"),
+		t("create.stepDetails"),
+		t("create.stepAttributes"),
+		t("create.stepPhotos"),
+		t("create.stepReview"),
+	];
 
 	// ── Animations ────────────────────────────────────────────────
 	const translateX = useSharedValue(0);
@@ -153,7 +151,9 @@ export default function CreateScreen() {
 					>
 						<Ionicons name="pricetag" size={22} color="#d97706" />
 					</View>
-					<Text style={[styles.noUserTitle, { color: textColor }]}>Vendre</Text>
+					<Text style={[styles.noUserTitle, { color: textColor }]}>
+						{t("create.sell")}
+					</Text>
 				</View>
 				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
 					<View style={styles.noUserInner}>
@@ -166,16 +166,16 @@ export default function CreateScreen() {
 							<Ionicons name="lock-closed" size={32} color={primary} />
 						</View>
 						<Text style={[styles.noUserHeading, { color: textColor }]}>
-							Connexion requise
+							{t("create.loginRequired")}
 						</Text>
 						<Text style={[styles.noUserSub, { color: mutedColor }]}>
-							Connectez-vous pour publier une annonce
+							{t("create.loginRequiredSubtitle")}
 						</Text>
 						<Pressable
 							onPress={() => router.push("/auth/login")}
 							style={[styles.loginBtn, { backgroundColor: primary }]}
 						>
-							<Text style={styles.loginBtnText}>Se connecter</Text>
+							<Text style={styles.loginBtnText}>{t("auth.login")}</Text>
 						</Pressable>
 					</View>
 				</View>
@@ -213,10 +213,14 @@ export default function CreateScreen() {
 
 				<View style={styles.headerCenter}>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
-						Nouvelle annonce
+						{t("create.newListing")}
 					</Text>
 					<Text style={[styles.headerStep, { color: mutedColor }]}>
-						Étape {step + 1} sur {STEPS.length} — {STEPS[step]}
+						{t("create.stepLabel", {
+							current: step + 1,
+							total: STEPS.length,
+							name: STEPS[step],
+						})}
 					</Text>
 				</View>
 
@@ -305,6 +309,7 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 		isDark,
 		inputBg,
 	} = colors;
+	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
 
 	const { data } = useQuery({
@@ -325,10 +330,10 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 			showsVerticalScrollIndicator={false}
 		>
 			<Text style={[styles.stepTitle, { color: textColor }]}>
-				Dans quelle catégorie ?
+				{t("create.stepCategoryTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				Choisissez la catégorie qui correspond le mieux à votre article.
+				{t("create.stepCategoryHint")}
 			</Text>
 
 			{/* Search */}
@@ -342,7 +347,7 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 				<TextInput
 					value={search}
 					onChangeText={setSearch}
-					placeholder="Rechercher une catégorie..."
+					placeholder={t("create.searchCategory")}
 					placeholderTextColor={mutedColor}
 					style={[styles.searchInput, { color: textColor }]}
 				/>
@@ -422,6 +427,16 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 		isDark,
 		inputBg,
 	} = colors;
+	const { t } = useTranslation();
+
+	const CONDITIONS: { key: string; label: string; icon: string }[] = [
+		{ key: "new", label: t("conditions.new"), icon: "sparkles-outline" },
+		{ key: "like_new", label: t("conditions.likeNew"), icon: "star-outline" },
+		{ key: "good", label: t("conditions.good"), icon: "thumbs-up-outline" },
+		{ key: "fair", label: t("conditions.fair"), icon: "remove-circle-outline" },
+		{ key: "poor", label: t("conditions.poor"), icon: "construct-outline" },
+	];
+
 	const update = (key: string, val: any) =>
 		setForm((f: any) => ({ ...f, [key]: val }));
 	const handleCitySelect = (city: CameroonCity) =>
@@ -446,10 +461,10 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			keyboardShouldPersistTaps="handled"
 		>
 			<Text style={[styles.stepTitle, { color: textColor }]}>
-				Détails de l'annonce
+				{t("create.stepDetailsTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				Plus votre annonce est précise, plus elle attire d'acheteurs.
+				{t("create.stepDetailsHint")}
 			</Text>
 
 			{/* Card: Titre + Description */}
@@ -461,14 +476,14 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			>
 				<FieldHeader
 					icon="text-outline"
-					label="Titre de l'annonce"
+					label={t("create.titleFieldLabel")}
 					required
 					colors={colors}
 				/>
 				<TextInput
 					value={form.title}
 					onChangeText={(v) => update("title", v)}
-					placeholder="Ex : iPhone 13 Pro 256 Go, noir..."
+					placeholder={t("create.titlePlaceholder")}
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.fieldInput,
@@ -484,14 +499,14 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 
 				<FieldHeader
 					icon="document-text-outline"
-					label="Description"
+					label={t("create.descriptionFieldLabel")}
 					required
 					colors={colors}
 				/>
 				<TextInput
 					value={form.description}
 					onChangeText={(v) => update("description", v)}
-					placeholder="Décrivez l'état, les caractéristiques, les accessoires inclus..."
+					placeholder={t("create.descriptionPlaceholder")}
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.fieldInput,
@@ -513,7 +528,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			>
 				<FieldHeader
 					icon="cash-outline"
-					label="Prix"
+					label={t("create.priceFieldLabel")}
 					required
 					colors={colors}
 				/>
@@ -555,7 +570,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			>
 				<FieldHeader
 					icon="shield-checkmark-outline"
-					label="État de l'article"
+					label={t("create.conditionFieldLabel")}
 					colors={colors}
 				/>
 				<View style={styles.conditionWrap}>
@@ -601,7 +616,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			>
 				<FieldHeader
 					icon="location-outline"
-					label="Localisation"
+					label={t("create.locationFieldLabel")}
 					required
 					colors={colors}
 				/>
@@ -626,7 +641,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			>
 				<FieldHeader
 					icon="time-outline"
-					label="Durée de publication"
+					label={t("create.durationFieldLabel")}
 					colors={colors}
 				/>
 				<View style={styles.durationRow}>
@@ -659,7 +674,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 										{ color: active ? "rgba(255,255,255,0.8)" : mutedColor },
 									]}
 								>
-									jours
+									{t("create.days")}
 								</Text>
 							</Pressable>
 						);
@@ -668,7 +683,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			</View>
 
 			<NextButton
-				label="Continuer"
+				label={t("create.continue")}
 				onPress={canProceed ? onNext : undefined}
 				active={!!canProceed}
 				colors={colors}
@@ -682,6 +697,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 function AttributesStep({ form, setForm, onNext, colors }: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, border, inputBg } =
 		colors;
+	const { t } = useTranslation();
 	const attributes: any[] = form.category?.attributes ?? [];
 
 	if (attributes.length === 0) {
@@ -712,7 +728,7 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 				{form.category?.name}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				Ces informations aident les acheteurs à trouver votre annonce.
+				{t("create.stepAttributesHint")}
 			</Text>
 
 			{attributes.map((attr: any) => (
@@ -766,8 +782,8 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 					) : attr.type === "boolean" ? (
 						<View style={[styles.conditionWrap, { gap: 8 }]}>
 							{[
-								{ label: "Oui", value: "true" },
-								{ label: "Non", value: "false" },
+								{ label: t("common.yes"), value: "true" },
+								{ label: t("common.no"), value: "false" },
 							].map((opt) => {
 								const active = form.attributes[attr.slug] === opt.value;
 								return (
@@ -820,7 +836,7 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 			))}
 
 			<NextButton
-				label="Continuer"
+				label={t("create.continue")}
 				onPress={canProceed ? onNext : undefined}
 				active={canProceed}
 				colors={colors}
@@ -833,6 +849,7 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 
 function PhotosStep({ form, setForm, onNext, colors }: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+	const { t } = useTranslation();
 	const { showAlert, showError, showWarning } = useAlert();
 	const [uploading, setUploading] = useState(false);
 
@@ -842,8 +859,8 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 				const { status } = await ImagePicker.requestCameraPermissionsAsync();
 				if (status !== "granted") {
 					showError(
-						"Permission refusée",
-						"L'accès à la caméra est nécessaire.",
+						t("create.permissionDenied"),
+						t("create.cameraPermissionMsg"),
 					);
 					return;
 				}
@@ -852,8 +869,8 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 					await ImagePicker.requestMediaLibraryPermissionsAsync();
 				if (status !== "granted") {
 					showError(
-						"Permission refusée",
-						"L'accès à la galerie est nécessaire.",
+						t("create.permissionDenied"),
+						t("create.galleryPermissionMsg"),
 					);
 					return;
 				}
@@ -895,7 +912,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 				const mediaId = uploaded?.doc?.id;
 				const mediaUri = uploaded?.doc?.url ?? asset.uri;
 
-				if (!mediaId) throw new Error("Upload échoué");
+				if (!mediaId) throw new Error("upload_failed");
 
 				setForm((f: any) => ({
 					...f,
@@ -904,21 +921,21 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			} finally {
 				setUploading(false);
 			}
-		} catch (err: any) {
+		} catch (_err: any) {
 			setUploading(false);
-			showError("Erreur", err.message ?? "Impossible d'ajouter la photo.");
+			showError(t("create.uploadError"), t("create.uploadErrorMsg"));
 		}
 	};
 
 	const showPicker = () => {
 		if (form.images.length >= 10) {
-			showWarning("Limite atteinte", "Vous pouvez ajouter jusqu'à 10 photos.");
+			showWarning(t("create.limitReached"), t("create.limitReachedMsg"));
 			return;
 		}
-		showAlert("Ajouter une photo", "Choisissez une source", [
-			{ text: "Appareil photo", onPress: () => pickImage(true) },
-			{ text: "Galerie", onPress: () => pickImage(false) },
-			{ text: "Annuler", style: "cancel" },
+		showAlert(t("create.addPhotoTitle"), t("create.addPhotoSource"), [
+			{ text: t("create.camera"), onPress: () => pickImage(true) },
+			{ text: t("create.gallery"), onPress: () => pickImage(false) },
+			{ text: t("create.cancel"), style: "cancel" },
 		]);
 	};
 
@@ -935,10 +952,10 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 		>
 			<Text style={[styles.stepTitle, { color: textColor }]}>
-				Photos de l'annonce
+				{t("create.stepPhotosTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				Ajoutez jusqu'à 10 photos. La première sera la photo principale.
+				{t("create.stepPhotosHint")}
 			</Text>
 
 			{/* Tip card */}
@@ -953,7 +970,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			>
 				<Ionicons name="information-circle-outline" size={16} color={primary} />
 				<Text style={[styles.tipText, { color: primary }]}>
-					Des photos nettes et bien éclairées augmentent vos chances de vente.
+					{t("create.stepPhotosQualityTip")}
 				</Text>
 			</View>
 
@@ -975,7 +992,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 							<View
 								style={[styles.photoPrimaryBadge, { backgroundColor: primary }]}
 							>
-								<Text style={styles.photoPrimaryText}>Principal</Text>
+								<Text style={styles.photoPrimaryText}>{t("create.main")}</Text>
 							</View>
 						)}
 						<Pressable
@@ -1012,7 +1029,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 									<Ionicons name="add" size={24} color={primary} />
 								</View>
 								<Text style={[styles.addPhotoText, { color: primary }]}>
-									Ajouter
+									{t("create.addPhoto")}
 								</Text>
 							</>
 						)}
@@ -1022,11 +1039,11 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 
 			{form.images.length === 0 && (
 				<Text style={[styles.photoRequired, { color: "#ef4444" }]}>
-					Au moins une photo est requise
+					{t("create.photoRequired")}
 				</Text>
 			)}
 			<NextButton
-				label="Continuer"
+				label={t("create.continue")}
 				onPress={onNext}
 				active={form.images.length > 0}
 				colors={colors}
@@ -1039,8 +1056,17 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 
 function ReviewStep({ form, setStep, colors }: any) {
 	const { user } = useAuth();
+	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+
+	const CONDITION_LABELS: Record<string, string> = {
+		new: t("conditions.new"),
+		like_new: t("conditions.likeNew"),
+		good: t("conditions.good"),
+		fair: t("conditions.fair"),
+		poor: t("conditions.poor"),
+	};
 
 	const { mutate: publish, isPending } = useMutation({
 		mutationFn: async () =>
@@ -1060,14 +1086,14 @@ function ReviewStep({ form, setStep, colors }: any) {
 					: {}),
 			}),
 		onSuccess: () => {
-			showSuccess(
-				"Annonce publiée !",
-				"Votre annonce est en attente de validation.",
-			);
+			showSuccess(t("create.publishSuccess"), t("create.publishSuccessMsg"));
 			router.push("/(tabs)/account");
 		},
 		onError: (err: any) => {
-			showError("Erreur", err.message ?? "Une erreur est survenue");
+			showError(
+				t("create.publishError"),
+				err.message ?? t("create.publishErrorMsg"),
+			);
 		},
 	});
 
@@ -1079,8 +1105,8 @@ function ReviewStep({ form, setStep, colors }: any) {
 		)
 		.map((a) => {
 			let value = form.attributes[a.slug];
-			if (value === "true") value = "Oui";
-			else if (value === "false") value = "Non";
+			if (value === "true") value = t("common.yes");
+			else if (value === "false") value = t("common.no");
 			return {
 				label: a.name,
 				icon: "pricetag-outline",
@@ -1091,14 +1117,19 @@ function ReviewStep({ form, setStep, colors }: any) {
 
 	const rows = [
 		{
-			label: "Catégorie",
+			label: t("create.categoryFieldLabel"),
 			icon: "grid-outline",
 			value: form.category?.name ?? "—",
 			step: 0,
 		},
-		{ label: "Titre", icon: "text-outline", value: form.title || "—", step: 1 },
 		{
-			label: "Prix",
+			label: t("create.titleRowLabel"),
+			icon: "text-outline",
+			value: form.title || "—",
+			step: 1,
+		},
+		{
+			label: t("create.priceRowLabel"),
 			icon: "cash-outline",
 			value: form.price
 				? `${Number.parseInt(form.price, 10).toLocaleString()} XAF`
@@ -1106,22 +1137,22 @@ function ReviewStep({ form, setStep, colors }: any) {
 			step: 1,
 		},
 		{
-			label: "État",
+			label: t("create.conditionRowLabel"),
 			icon: "shield-checkmark-outline",
 			value: CONDITION_LABELS[form.condition] ?? form.condition,
 			step: 1,
 		},
 		{
-			label: "Localisation",
+			label: t("create.locationRowLabel"),
 			icon: "location-outline",
 			value: form.location || "—",
 			step: 1,
 		},
 		...attrRows,
 		{
-			label: "Photos",
+			label: t("create.photosRowLabel"),
 			icon: "camera-outline",
-			value: `${form.images.length} photo(s)`,
+			value: t("create.photoCount", { count: form.images.length }),
 			step: 3,
 		},
 	];
@@ -1132,10 +1163,10 @@ function ReviewStep({ form, setStep, colors }: any) {
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 		>
 			<Text style={[styles.stepTitle, { color: textColor }]}>
-				Vérifier et publier
+				{t("create.stepReviewTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				Relisez votre annonce avant de la publier.
+				{t("create.stepReviewHint")}
 			</Text>
 
 			<View
@@ -1181,7 +1212,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 							]}
 						>
 							<Text style={[styles.editPillText, { color: primary }]}>
-								Modifier
+								{t("create.editBtn")}
 							</Text>
 						</Pressable>
 					</View>
@@ -1199,13 +1230,13 @@ function ReviewStep({ form, setStep, colors }: any) {
 				) : (
 					<>
 						<Ionicons name="rocket-outline" size={20} color="#fff" />
-						<Text style={styles.publishBtnText}>Publier l'annonce</Text>
+						<Text style={styles.publishBtnText}>{t("create.publishBtn")}</Text>
 					</>
 				)}
 			</Pressable>
 
 			<Text style={[styles.publishNote, { color: mutedColor }]}>
-				Votre annonce sera vérifiée avant publication (moins de 24h).
+				{t("create.publishNote")}
 			</Text>
 		</ScrollView>
 	);

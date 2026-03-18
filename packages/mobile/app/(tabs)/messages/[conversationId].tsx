@@ -20,10 +20,12 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function ConversationScreen() {
 	const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { chatClient, onlineUsers } = useChatClient();
 	const { showError, showAlert } = useAlert();
@@ -175,7 +177,7 @@ export default function ConversationScreen() {
 			queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("common.error"), err.message),
 	});
 
 	const formatTime = (dateStr: string) =>
@@ -196,9 +198,9 @@ export default function ConversationScreen() {
 		const msgDate = new Date(item.createdAt).toDateString();
 		const dateLabel =
 			msgDate === today
-				? "Aujourd'hui"
+				? t("messages.today")
 				: msgDate === yesterday
-					? "Hier"
+					? t("messages.yesterday")
 					: new Date(item.createdAt).toLocaleDateString("fr-FR");
 
 		const isRead = readByOther.has(item.id) || item.read;
@@ -290,7 +292,7 @@ export default function ConversationScreen() {
 					},
 				]}
 			>
-				<Text style={{ color: textColor }}>Connexion requise</Text>
+				<Text style={{ color: textColor }}>{t("auth.loginRequired")}</Text>
 			</View>
 		);
 	}
@@ -340,11 +342,11 @@ export default function ConversationScreen() {
 					</View>
 					<View>
 						<Text style={[styles.headerName, { color: textColor }]}>
-							{otherUser?.name ?? "Utilisateur"}
+							{otherUser?.name ?? t("messages.user")}
 						</Text>
 						{isOtherOnline ? (
 							<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
-								En ligne
+								{t("messages.online")}
 							</Text>
 						) : listing ? (
 							<Pressable
@@ -354,7 +356,7 @@ export default function ConversationScreen() {
 									style={[styles.headerListing, { color: primaryColor }]}
 									numberOfLines={1}
 								>
-									{listing.title ?? "Voir l'annonce"}
+									{listing.title ?? t("messages.viewListing")}
 								</Text>
 							</Pressable>
 						) : null}
@@ -363,22 +365,22 @@ export default function ConversationScreen() {
 				<Pressable
 					onPress={() =>
 						showAlert(
-							"Options",
+							t("messages.options"),
 							"",
 							[
 								{
-									text: "Voir le profil",
+									text: t("messages.viewProfile"),
 									onPress: () => router.push(`/profile/${otherUser?.id}`),
 								},
 								{
-									text: "Signaler",
+									text: t("messages.report"),
 									onPress: () =>
 										router.push({
 											pathname: "/report",
 											params: { targetType: "user", targetId: otherUser?.id },
 										}),
 								},
-								{ text: "Annuler", style: "cancel" },
+								{ text: t("common.cancel"), style: "cancel" },
 							],
 							"info",
 						)
@@ -449,7 +451,7 @@ export default function ConversationScreen() {
 					<TextInput
 						value={text}
 						onChangeText={handleTextChange}
-						placeholder="Écrivez un message..."
+						placeholder={t("messages.writePlaceholder")}
 						placeholderTextColor={mutedColor}
 						style={[
 							styles.msgInput,

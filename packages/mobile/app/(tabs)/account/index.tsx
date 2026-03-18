@@ -12,6 +12,7 @@ import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
@@ -98,6 +99,7 @@ export default function AccountScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user, logout } = useAuth();
 	const { showConfirm } = useAlert();
+	const { t } = useTranslation();
 
 	const notificationReady = useNotificationReady();
 
@@ -125,24 +127,24 @@ export default function AccountScreen() {
 						<Ionicons name="person" size={22} color={primaryColor} />
 					</View>
 					<Text style={[styles.headerTitle, { color: textColor }]}>
-						Mon Compte
+						{t("account.myAccount")}
 					</Text>
 				</View>
 				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
 					<EmptyState
 						icon="person-outline"
-						title="Connectez-vous"
-						subtitle="Accédez à votre compte, vos annonces et messages"
-						ctaLabel="Se connecter"
+						title={t("account.signIn")}
+						subtitle={t("account.signInPrompt")}
+						ctaLabel={t("account.signIn")}
 						onCta={() => router.push("/auth/login")}
 					/>
 					<View style={styles.registerRow}>
 						<Text style={[styles.registerText, { color: mutedColor }]}>
-							Pas de compte ?{" "}
+							{t("account.noAccountQ")}{" "}
 						</Text>
 						<Pressable onPress={() => router.push("/auth/register")}>
 							<Text style={[styles.registerLink, { color: primaryColor }]}>
-								Créer un compte
+								{t("account.createAccount")}
 							</Text>
 						</Pressable>
 					</View>
@@ -152,11 +154,7 @@ export default function AccountScreen() {
 	}
 
 	const handleLogout = () => {
-		showConfirm(
-			"Déconnexion",
-			"Êtes-vous sûr de vouloir vous déconnecter ?",
-			logout,
-		);
+		showConfirm(t("account.logoutTitle"), t("account.logoutMessage"), logout);
 	};
 
 	return (
@@ -211,7 +209,7 @@ export default function AccountScreen() {
 								count={user.totalReviews}
 							/>
 							<Text style={[styles.memberSince, { color: mutedColor }]}>
-								Membre depuis{" "}
+								{t("account.memberSince")}{" "}
 								{new Date(user.createdAt).toLocaleDateString("fr-FR", {
 									month: "long",
 									year: "numeric",
@@ -226,7 +224,7 @@ export default function AccountScreen() {
 						>
 							<Ionicons name="pencil" size={14} color={primaryColor} />
 							<Text style={[styles.editBtnText, { color: primaryColor }]}>
-								Modifier
+								{t("account.edit")}
 							</Text>
 						</AnimatedPressable>
 					</View>
@@ -237,7 +235,7 @@ export default function AccountScreen() {
 					{/* Mon activité */}
 					<View style={styles.section}>
 						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							MON ACTIVITÉ
+							{t("account.sectionActivity")}
 						</Text>
 						<View
 							style={[
@@ -250,30 +248,30 @@ export default function AccountScreen() {
 						>
 							<MenuItem
 								icon="cube-outline"
-								label="Mes annonces"
-								sublabel="Vos annonces publiées"
+								label={t("account.myListings")}
+								sublabel={t("account.myListingsSublabel")}
 								onPress={() => router.push("/account/listings")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="heart-outline"
-								label="Favoris"
-								sublabel="Annonces sauvegardées"
+								label={t("account.favorites")}
+								sublabel={t("account.favoritesSublabel")}
 								onPress={() => router.push("/account/favorites")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="bookmark-outline"
-								label="Recherches sauvegardées"
+								label={t("account.savedSearches")}
 								onPress={() => router.push("/account/searches")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="rocket-outline"
-								label="Historique des boosts"
+								label={t("account.boostHistory")}
 								onPress={() => router.push("/account/boosts")}
 								isDark={isDark}
 								borderColor="transparent"
@@ -284,7 +282,7 @@ export default function AccountScreen() {
 					{/* Paramètres */}
 					<View style={styles.section}>
 						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							PARAMÈTRES
+							{t("account.sectionSettings")}
 						</Text>
 						<View
 							style={[
@@ -297,14 +295,14 @@ export default function AccountScreen() {
 						>
 							<MenuItem
 								icon="settings-outline"
-								label="Paramètres"
+								label={t("account.settings")}
 								onPress={() => router.push("/settings")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="notifications-outline"
-								label="Notifications"
+								label={t("account.notifications")}
 								onPress={() => router.push("/account/notifications")}
 								isDark={isDark}
 								borderColor="transparent"
@@ -318,7 +316,7 @@ export default function AccountScreen() {
 					{/* Assistance */}
 					<View style={styles.section}>
 						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							ASSISTANCE
+							{t("account.sectionSupport")}
 						</Text>
 						<View
 							style={[
@@ -331,35 +329,35 @@ export default function AccountScreen() {
 						>
 							<MenuItem
 								icon="help-circle-outline"
-								label="Aide & FAQ"
+								label={t("account.help")}
 								onPress={() => router.push("/help")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="shield-checkmark-outline"
-								label="Conseils de sécurité"
+								label={t("account.safety")}
 								onPress={() => router.push("/safety")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="mail-outline"
-								label="Nous contacter"
+								label={t("account.contact")}
 								onPress={() => router.push("/contact")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="document-text-outline"
-								label="Conditions d'utilisation"
+								label={t("account.terms")}
 								onPress={() => router.push("/terms")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
 							<MenuItem
 								icon="lock-closed-outline"
-								label="Politique de confidentialité"
+								label={t("account.privacy")}
 								onPress={() => router.push("/privacy")}
 								isDark={isDark}
 								borderColor="transparent"
@@ -380,7 +378,7 @@ export default function AccountScreen() {
 						>
 							<MenuItem
 								icon="log-out-outline"
-								label="Se déconnecter"
+								label={t("account.logout")}
 								onPress={handleLogout}
 								danger
 								isDark={isDark}

@@ -19,6 +19,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 
 interface SectionProps {
 	title: string;
@@ -143,6 +144,7 @@ export default function SettingsScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user, logout } = useAuth();
 	const { showSuccess, showError, showConfirm } = useAlert();
+	const { t } = useTranslation();
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [_currentPwd, setCurrentPwd] = useState("");
@@ -160,43 +162,47 @@ export default function SettingsScreen() {
 	const { mutate: changePassword, isPending: pwdLoading } = useMutation({
 		mutationFn: async () => {
 			if (newPassword !== confirmPassword)
-				throw new Error("Les mots de passe ne correspondent pas");
-			if (newPassword.length < 8) throw new Error("Min. 8 caractères");
+				throw new Error(t("settings.passwordMismatchError"));
+			if (newPassword.length < 8)
+				throw new Error(t("settings.passwordTooShortError"));
 			return api.patch(`/api/users/${user?.id}`, { password: newPassword });
 		},
 		onSuccess: () => {
 			showSuccess(
-				"Mot de passe modifié",
-				"Votre mot de passe a été mis à jour.",
+				t("settings.passwordChangedTitle"),
+				t("settings.passwordChangedMessage"),
 			);
 			setNewPassword("");
 			setConfirmPassword("");
 			setCurrentPwd("");
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("settings.errorTitle"), err.message),
 	});
 
 	const { mutate: changeEmail, isPending: emailLoading } = useMutation({
 		mutationFn: () => api.patch(`/api/users/${user?.id}`, { email: newEmail }),
 		onSuccess: () => {
-			showSuccess("Email modifié", "Votre adresse email a été mise à jour.");
+			showSuccess(
+				t("settings.emailChangedTitle"),
+				t("settings.emailChangedMessage"),
+			);
 			setNewEmail("");
 			setPwdForEmail("");
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("settings.errorTitle"), err.message),
 	});
 
 	const handleDeleteAccount = () => {
 		showConfirm(
-			"Supprimer le compte",
-			"Cette action est irréversible. Toutes vos données seront supprimées.",
+			t("settings.deleteConfirmTitle"),
+			t("settings.deleteConfirmMessage"),
 			async () => {
 				try {
 					await api.delete(`/api/users/${user?.id}`);
 					await logout();
 					router.replace("/(tabs)/home");
 				} catch (err: any) {
-					showError("Erreur", err.message);
+					showError(t("settings.errorTitle"), err.message);
 				}
 			},
 		);
@@ -218,7 +224,7 @@ export default function SettingsScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
-					Paramètres
+					{t("settings.title")}
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>
@@ -229,24 +235,24 @@ export default function SettingsScreen() {
 			>
 				{/* Mot de passe */}
 				<Section
-					title="Mot de passe"
+					title={t("settings.passwordSection")}
 					icon="lock-closed-outline"
 					{...sectionColors}
 				>
 					<Field
-						label="Nouveau mot de passe"
+						label={t("settings.newPasswordLabel")}
 						value={newPassword}
 						onChange={setNewPassword}
-						placeholder="Min. 8 caractères"
+						placeholder={t("settings.newPasswordPlaceholder")}
 						secure
 						icon="lock-closed-outline"
 						{...fieldColors}
 					/>
 					<Field
-						label="Confirmer le mot de passe"
+						label={t("settings.confirmPasswordLabel")}
 						value={confirmPassword}
 						onChange={setConfirmPassword}
-						placeholder="Répétez le mot de passe"
+						placeholder={t("settings.confirmPasswordPlaceholder")}
 						secure
 						icon="lock-closed-outline"
 						{...fieldColors}
@@ -262,17 +268,23 @@ export default function SettingsScreen() {
 						{pwdLoading ? (
 							<ActivityIndicator color="#fff" />
 						) : (
-							<Text style={styles.btnText}>Modifier le mot de passe</Text>
+							<Text style={styles.btnText}>
+								{t("settings.changePasswordBtn")}
+							</Text>
 						)}
 					</Pressable>
 				</Section>
 
 				{/* Email */}
-				<Section title="Adresse email" icon="mail-outline" {...sectionColors}>
+				<Section
+					title={t("settings.emailSection")}
+					icon="mail-outline"
+					{...sectionColors}
+				>
 					{user?.email && (
 						<View style={[styles.currentRow, { borderColor }]}>
 							<Text style={[styles.currentLabel, { color: mutedColor }]}>
-								Actuel
+								{t("settings.currentLabel")}
 							</Text>
 							<Text style={[styles.currentValue, { color: textColor }]}>
 								{user.email}
@@ -280,10 +292,10 @@ export default function SettingsScreen() {
 						</View>
 					)}
 					<Field
-						label="Nouvel email"
+						label={t("settings.newEmailLabel")}
 						value={newEmail}
 						onChange={setNewEmail}
-						placeholder="nouveau@email.com"
+						placeholder={t("settings.newEmailPlaceholder")}
 						icon="mail-outline"
 						{...fieldColors}
 					/>
@@ -301,20 +313,20 @@ export default function SettingsScreen() {
 						{emailLoading ? (
 							<ActivityIndicator color="#fff" />
 						) : (
-							<Text style={styles.btnText}>Modifier l'email</Text>
+							<Text style={styles.btnText}>{t("settings.changeEmailBtn")}</Text>
 						)}
 					</Pressable>
 				</Section>
 
 				{/* Informations */}
 				<Section
-					title="À propos"
+					title={t("settings.aboutSection")}
 					icon="information-circle-outline"
 					{...sectionColors}
 				>
 					<View style={[styles.infoRow, { borderColor }]}>
 						<Text style={[styles.infoLabel, { color: mutedColor }]}>
-							Version de l'application
+							{t("settings.appVersion")}
 						</Text>
 						<View
 							style={[
@@ -331,18 +343,19 @@ export default function SettingsScreen() {
 
 				{/* Zone dangereuse */}
 				<Section
-					title="Zone dangereuse"
+					title={t("settings.dangerZone")}
 					icon="warning-outline"
 					danger
 					{...sectionColors}
 				>
 					<Text style={[styles.dangerDesc, { color: mutedColor }]}>
-						La suppression de votre compte est irréversible. Toutes vos
-						annonces, messages et données seront définitivement effacés.
+						{t("settings.dangerDesc")}
 					</Text>
 					<Pressable onPress={handleDeleteAccount} style={styles.deleteBtn}>
 						<Ionicons name="trash-outline" size={16} color="#dc2626" />
-						<Text style={styles.deleteText}>Supprimer mon compte</Text>
+						<Text style={styles.deleteText}>
+							{t("settings.deleteMyAccount")}
+						</Text>
 					</Pressable>
 				</Section>
 			</ScrollView>

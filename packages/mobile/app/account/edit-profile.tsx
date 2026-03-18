@@ -19,12 +19,14 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
 export default function EditProfileScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user, refreshUser } = useAuth();
 	const { showSuccess, showError, showAlert } = useAlert();
+	const { t } = useTranslation();
 
 	const [name, setName] = useState(user?.name ?? "");
 	const [bio, setBio] = useState(user?.bio ?? "");
@@ -46,8 +48,8 @@ export default function EditProfileScreen() {
 				const { status } = await ImagePicker.requestCameraPermissionsAsync();
 				if (status !== "granted") {
 					showError(
-						"Permission refusée",
-						"L'accès à la caméra est nécessaire.",
+						t("profile.cameraPermissionDeniedTitle"),
+						t("profile.cameraPermissionDeniedMessage"),
 					);
 					return;
 				}
@@ -56,8 +58,8 @@ export default function EditProfileScreen() {
 					await ImagePicker.requestMediaLibraryPermissionsAsync();
 				if (status !== "granted") {
 					showError(
-						"Permission refusée",
-						"L'accès à la galerie est nécessaire.",
+						t("profile.galleryPermissionDeniedTitle"),
+						t("profile.galleryPermissionDeniedMessage"),
 					);
 					return;
 				}
@@ -95,19 +97,25 @@ export default function EditProfileScreen() {
 			await api.patch(`/api/users/${user?.id}`, { avatar: uploaded.doc.id });
 			setAvatarUri(asset.uri);
 			await refreshUser();
-			showSuccess("Photo mise à jour", "Votre photo de profil a été changée.");
+			showSuccess(
+				t("profile.uploadSuccessTitle"),
+				t("profile.uploadSuccessMessage"),
+			);
 		} catch (err: any) {
-			showError("Erreur", err.message ?? "Impossible de changer la photo.");
+			showError(
+				t("auth.errorTitle"),
+				err.message ?? t("profile.uploadFailedMessage"),
+			);
 		} finally {
 			setAvatarUploading(false);
 		}
 	};
 
 	const handlePickAvatar = () => {
-		showAlert("Photo de profil", "Choisissez une source", [
-			{ text: "Appareil photo", onPress: () => pickAvatar(true) },
-			{ text: "Galerie", onPress: () => pickAvatar(false) },
-			{ text: "Annuler", style: "cancel" },
+		showAlert(t("profile.photoPickerTitle"), t("profile.photoPickerMessage"), [
+			{ text: t("profile.takePhoto"), onPress: () => pickAvatar(true) },
+			{ text: t("profile.gallery"), onPress: () => pickAvatar(false) },
+			{ text: t("common.cancel"), style: "cancel" },
 		]);
 	};
 
@@ -117,13 +125,44 @@ export default function EditProfileScreen() {
 		onSuccess: async () => {
 			await refreshUser();
 			showSuccess(
-				"Profil mis à jour",
-				"Vos informations ont été enregistrées.",
+				t("profile.profileUpdatedTitle"),
+				t("profile.profileUpdatedMessage"),
 			);
 			router.back();
 		},
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("auth.errorTitle"), err.message),
 	});
+
+	const fields = [
+		{
+			label: t("profile.fullNameLabel"),
+			value: name,
+			set: setName,
+			placeholder: t("auth.fullNamePlaceholder"),
+			keyboard: "default",
+		},
+		{
+			label: t("profile.bioLabel"),
+			value: bio,
+			set: setBio,
+			placeholder: t("profile.bioPlaceholderInput"),
+			multiline: true,
+		},
+		{
+			label: t("profile.phoneLabel"),
+			value: phone,
+			set: setPhone,
+			placeholder: t("profile.phonePlaceholder"),
+			keyboard: "phone-pad",
+		},
+		{
+			label: t("profile.locationLabel"),
+			value: location,
+			set: setLocation,
+			placeholder: t("profile.locationPlaceholder"),
+			keyboard: "default",
+		},
+	];
 
 	return (
 		<SafeAreaView
@@ -135,14 +174,14 @@ export default function EditProfileScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
-					Modifier le profil
+					{t("profile.editProfileTitle")}
 				</Text>
 				<Pressable onPress={() => save()} disabled={isPending}>
 					{isPending ? (
 						<ActivityIndicator color={primaryColor} />
 					) : (
 						<Text style={[styles.saveBtn, { color: primaryColor }]}>
-							Sauvegarder
+							{t("profile.save")}
 						</Text>
 					)}
 				</Pressable>
@@ -192,7 +231,9 @@ export default function EditProfileScreen() {
 						) : (
 							<>
 								<Ionicons name="camera" size={14} color="#fff" />
-								<Text style={styles.changeAvatarText}>Changer</Text>
+								<Text style={styles.changeAvatarText}>
+									{t("profile.change")}
+								</Text>
 							</>
 						)}
 					</Pressable>
@@ -211,7 +252,7 @@ export default function EditProfileScreen() {
 					>
 						<Ionicons name="checkmark-circle" size={18} color="#16a34a" />
 						<Text style={[styles.bannerText, { color: "#16a34a" }]}>
-							Compte vérifié ✓
+							{t("profile.verifiedBanner")}
 						</Text>
 					</View>
 				) : (
@@ -230,63 +271,35 @@ export default function EditProfileScreen() {
 							color={primaryColor}
 						/>
 						<Text style={[styles.bannerText, { color: primaryColor, flex: 1 }]}>
-							Vérifiez votre compte pour instaurer la confiance avec les
-							acheteurs
+							{t("profile.unverifiedBanner")}
 						</Text>
 					</View>
 				)}
 
 				{/* Fields */}
-				{[
-					{
-						label: "Nom complet *",
-						value: name,
-						set: setName,
-						placeholder: "Jean Dupont",
-						keyboard: "default",
-					},
-					{
-						label: "Bio",
-						value: bio,
-						set: setBio,
-						placeholder: "Décrivez-vous...",
-						multiline: true,
-					},
-					{
-						label: "Téléphone",
-						value: phone,
-						set: setPhone,
-						placeholder: "+237 6XX XXX XXX",
-						keyboard: "phone-pad",
-					},
-					{
-						label: "Localisation",
-						value: location,
-						set: setLocation,
-						placeholder: "Douala, Cameroun",
-						keyboard: "default",
-					},
-				].map(({ label, value, set, placeholder, multiline, keyboard }) => (
-					<View key={label} style={{ gap: 6 }}>
-						<Text style={[styles.fieldLabel, { color: mutedColor }]}>
-							{label}
-						</Text>
-						<TextInput
-							value={value}
-							onChangeText={set}
-							placeholder={placeholder}
-							placeholderTextColor={mutedColor}
-							style={[
-								styles.field,
-								{ backgroundColor: cardBg, borderColor, color: textColor },
-								multiline && styles.multiline,
-							]}
-							multiline={multiline}
-							numberOfLines={multiline ? 4 : 1}
-							keyboardType={(keyboard as any) ?? "default"}
-						/>
-					</View>
-				))}
+				{fields.map(
+					({ label, value, set, placeholder, multiline, keyboard }) => (
+						<View key={label} style={{ gap: 6 }}>
+							<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+								{label}
+							</Text>
+							<TextInput
+								value={value}
+								onChangeText={set}
+								placeholder={placeholder}
+								placeholderTextColor={mutedColor}
+								style={[
+									styles.field,
+									{ backgroundColor: cardBg, borderColor, color: textColor },
+									multiline && styles.multiline,
+								]}
+								multiline={multiline}
+								numberOfLines={multiline ? 4 : 1}
+								keyboardType={(keyboard as any) ?? "default"}
+							/>
+						</View>
+					),
+				)}
 			</KeyboardAwareScrollView>
 		</SafeAreaView>
 	);

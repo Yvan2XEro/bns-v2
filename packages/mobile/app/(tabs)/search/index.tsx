@@ -24,21 +24,31 @@ import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
-
-const SORTS = [
-	{ key: "newest", label: "Récents", icon: "time-outline" as const },
-	{ key: "price_asc", label: "Prix ↑", icon: "trending-up-outline" as const },
-	{
-		key: "price_desc",
-		label: "Prix ↓",
-		icon: "trending-down-outline" as const,
-	},
-];
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function SearchScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
+
+	const SORTS = [
+		{
+			key: "newest",
+			label: t("search.sortNewest"),
+			icon: "time-outline" as const,
+		},
+		{
+			key: "price_asc",
+			label: t("search.sortPriceAsc"),
+			icon: "trending-up-outline" as const,
+		},
+		{
+			key: "price_desc",
+			label: t("search.sortPriceDesc"),
+			icon: "trending-down-outline" as const,
+		},
+	];
 
 	const [query, setQuery] = useState((params.q as string) ?? "");
 	const [sort, setSort] = useState("newest");
@@ -173,7 +183,7 @@ export default function SearchScreen() {
 				if (v && k !== "sort") urlParams.set(k, v);
 			}
 			return api.post("/api/saved-searches", {
-				name: saveName.trim() || debouncedQuery || "Ma recherche",
+				name: saveName.trim() || debouncedQuery || t("search.saveSearch"),
 				query: debouncedQuery,
 				filters: {
 					category: params.category,
@@ -229,7 +239,7 @@ export default function SearchScreen() {
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
 				<View style={styles.titleRow}>
 					<Text style={[styles.pageTitle, { color: textColor }]}>
-						Rechercher
+						{t("search.title")}
 					</Text>
 					{hasActiveSearch && listings.length > 0 && !isLoading && (
 						<View
@@ -259,7 +269,7 @@ export default function SearchScreen() {
 						ref={inputRef}
 						value={query}
 						onChangeText={handleQueryChange}
-						placeholder="Voitures, téléphones, maisons…"
+						placeholder={t("home.searchPlaceholderDetailed")}
 						placeholderTextColor={mutedColor}
 						style={[
 							styles.searchInput,
@@ -382,8 +392,8 @@ export default function SearchScreen() {
 								]}
 							>
 								{activeFilterCount > 0
-									? `Filtres (${activeFilterCount})`
-									: "Filtres"}
+									? t("search.filtersCount", { count: activeFilterCount })
+									: t("search.filters")}
 							</Text>
 						</Pressable>
 					)}
@@ -399,9 +409,9 @@ export default function SearchScreen() {
 				) : listings.length === 0 ? (
 					<EmptyState
 						icon="search-outline"
-						title="Aucun résultat"
-						subtitle="Essayez d'autres mots-clés ou filtres"
-						ctaLabel="Effacer les filtres"
+						title={t("search.noResults")}
+						subtitle={t("search.noResultsHint")}
+						ctaLabel={t("search.clearFilters")}
 						onCta={() => {
 							setQuery("");
 							setDebouncedQuery("");
@@ -445,7 +455,7 @@ export default function SearchScreen() {
 				>
 					<Ionicons name="bookmark" size={18} color="#fff" />
 					<Text style={[styles.fabText, { fontFamily: Fonts.displayBold }]}>
-						Sauvegarder
+						{t("search.save")}
 					</Text>
 				</Pressable>
 			)}
@@ -469,16 +479,18 @@ export default function SearchScreen() {
 						style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}
 					>
 						<Text style={[styles.modalTitle, { color: textColor }]}>
-							Sauvegarder la recherche
+							{t("search.saveSearchTitle")}
 						</Text>
 						<Text style={[styles.modalSub, { color: mutedColor }]}>
-							Nommez cette recherche pour la retrouver facilement.
+							{t("search.saveSearchSub")}
 						</Text>
 
 						<TextInput
 							value={saveName}
 							onChangeText={setSaveName}
-							placeholder={debouncedQuery || "Ex : Voitures à Douala"}
+							placeholder={
+								debouncedQuery || t("search.saveSearchPlaceholderFallback")
+							}
 							placeholderTextColor={mutedColor}
 							autoFocus
 							style={[
@@ -502,7 +514,7 @@ export default function SearchScreen() {
 								]}
 							>
 								<Text style={[styles.modalBtnText, { color: mutedColor }]}>
-									Annuler
+									{t("common.cancel")}
 								</Text>
 							</Pressable>
 
@@ -523,12 +535,16 @@ export default function SearchScreen() {
 								) : saveStatus === "saved" ? (
 									<>
 										<Ionicons name="checkmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>Sauvegardé !</Text>
+										<Text style={styles.modalBtnTextPrimary}>
+											{t("search.saved")}
+										</Text>
 									</>
 								) : (
 									<>
 										<Ionicons name="bookmark" size={15} color="#fff" />
-										<Text style={styles.modalBtnTextPrimary}>Sauvegarder</Text>
+										<Text style={styles.modalBtnTextPrimary}>
+											{t("search.save")}
+										</Text>
 									</>
 								)}
 							</Pressable>

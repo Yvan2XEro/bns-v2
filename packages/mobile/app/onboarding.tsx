@@ -35,6 +35,7 @@ import Svg, {
 } from "react-native-svg";
 import { Colors, Fonts, shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -65,40 +66,38 @@ const P = {
 };
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
-const SLIDES = [
-	{
-		id: "welcome",
-		bgLight: "#eff6ff",
-		bgDark: "#1a2540",
-		title: "Bienvenue sur\nBuy'N'Sellem",
-		description:
-			"La marketplace simple pour acheter et vendre près de chez vous.",
-	},
-	{
-		id: "browse",
-		bgLight: "#f0f9ff",
-		bgDark: "#0c2233",
-		title: "Des milliers\nd'annonces",
-		description:
-			"Trouvez les meilleures offres dans votre région en quelques secondes.",
-	},
-	{
-		id: "sell",
-		bgLight: "#fff7ed",
-		bgDark: "#261508",
-		title: "Vendez\nen quelques clics",
-		description:
-			"Publiez votre annonce en moins de 2 minutes et touchez des milliers d'acheteurs.",
-	},
-	{
-		id: "chat",
-		bgLight: "#f0fdf4",
-		bgDark: "#0a2015",
-		title: "Échangez\nen toute sécurité",
-		description:
-			"Discutez directement avec acheteurs et vendeurs en toute confiance.",
-	},
-];
+function getSlides(t: (key: string) => string) {
+	return [
+		{
+			id: "welcome",
+			bgLight: "#eff6ff",
+			bgDark: "#1a2540",
+			title: t("onboarding.slide1Title"),
+			description: t("onboarding.slide1Desc"),
+		},
+		{
+			id: "browse",
+			bgLight: "#f0f9ff",
+			bgDark: "#0c2233",
+			title: t("onboarding.slide2Title"),
+			description: t("onboarding.slide2Desc"),
+		},
+		{
+			id: "sell",
+			bgLight: "#fff7ed",
+			bgDark: "#261508",
+			title: t("onboarding.slide3Title"),
+			description: t("onboarding.slide3Desc"),
+		},
+		{
+			id: "chat",
+			bgLight: "#f0fdf4",
+			bgDark: "#0a2015",
+			title: t("onboarding.slide4Title"),
+			description: t("onboarding.slide4Desc"),
+		},
+	];
+}
 
 // ─── Illustration 1 — Storefront ──────────────────────────────────────────────
 function IllustrationStore() {
@@ -1425,6 +1424,8 @@ const dotStyles = StyleSheet.create({
 export default function OnboardingScreen() {
 	const isDark = useColorScheme() === "dark";
 	const colors = isDark ? Colors.dark : Colors.light;
+	const { t } = useTranslation();
+	const SLIDES = getSlides(t);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<FlatList>(null);
 
@@ -1507,7 +1508,7 @@ export default function OnboardingScreen() {
 			{!isLast && (
 				<Pressable style={styles.skipBtn} onPress={handleComplete} hitSlop={12}>
 					<Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-						Ignorer
+						{t("onboarding.skip")}
 					</Text>
 				</Pressable>
 			)}
@@ -1546,7 +1547,7 @@ export default function OnboardingScreen() {
 					onPress={goNext}
 				>
 					<Text style={styles.nextBtnText}>
-						{isLast ? "Commencer" : "Suivant →"}
+						{isLast ? t("onboarding.start") : t("onboarding.next")}
 					</Text>
 				</Pressable>
 			</View>

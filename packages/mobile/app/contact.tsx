@@ -16,22 +16,25 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
-
-const SUBJECTS = [
-	"Question générale",
-	"Problème technique",
-	"Signaler un abus",
-	"Demande de partenariat",
-	"Autre",
-];
+import { useTranslation } from "@/src/lib/i18n";
 
 export default function ContactScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const { showError } = useAlert();
+	const { t } = useTranslation();
+
+	const SUBJECTS = [
+		t("contact.subjectGeneral"),
+		t("contact.subjectTechnical"),
+		t("contact.subjectAbuse"),
+		t("contact.subjectPartnership"),
+		t("contact.subjectOther"),
+	];
+
 	const [name, setName] = useState(user?.name ?? "");
 	const [email, setEmail] = useState(user?.email ?? "");
-	const [subject, setSubject] = useState(SUBJECTS[0]);
+	const [subject, setSubject] = useState(() => SUBJECTS[0]);
 	const [message, setMessage] = useState("");
 	const [sent, setSent] = useState(false);
 
@@ -46,7 +49,7 @@ export default function ContactScreen() {
 		mutationFn: () =>
 			api.post("/api/public/contact", { name, email, subject, message }),
 		onSuccess: () => setSent(true),
-		onError: (err: any) => showError("Erreur", err.message),
+		onError: (err: any) => showError(t("contact.errorTitle"), err.message),
 	});
 
 	if (sent) {
@@ -63,16 +66,16 @@ export default function ContactScreen() {
 						style={{ marginBottom: 16 }}
 					/>
 					<Text style={[styles.title, { color: textColor }]}>
-						Message envoyé !
+						{t("contact.successTitle")}
 					</Text>
 					<Text style={[styles.subtitle, { color: mutedColor }]}>
-						Nous vous répondrons dans les plus brefs délais.
+						{t("contact.successMessage")}
 					</Text>
 					<Pressable
 						onPress={() => router.back()}
 						style={[styles.btn, { backgroundColor: primaryColor }]}
 					>
-						<Text style={styles.btnText}>Retour</Text>
+						<Text style={styles.btnText}>{t("contact.backBtn")}</Text>
 					</Pressable>
 				</View>
 			</SafeAreaView>
@@ -89,24 +92,24 @@ export default function ContactScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.headerTitle, { color: textColor }]}>
-					Nous contacter
+					{t("contact.title")}
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>
 			<ScrollView contentContainerStyle={styles.scroll}>
 				{[
 					{
-						label: "Nom",
+						label: t("contact.nameLabel"),
 						value: name,
 						set: setName,
-						placeholder: "Votre nom",
+						placeholder: t("contact.namePlaceholder"),
 						type: "default",
 					},
 					{
-						label: "Email",
+						label: t("contact.emailLabel"),
 						value: email,
 						set: setEmail,
-						placeholder: "votre@email.com",
+						placeholder: t("contact.emailPlaceholder"),
 						type: "email-address",
 					},
 				].map(({ label, value, set, placeholder, type }) => (
@@ -128,7 +131,9 @@ export default function ContactScreen() {
 						/>
 					</View>
 				))}
-				<Text style={[styles.fieldLabel, { color: mutedColor }]}>Sujet</Text>
+				<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+					{t("contact.subjectLabel")}
+				</Text>
 				<ScrollView
 					horizontal
 					showsHorizontalScrollIndicator={false}
@@ -157,11 +162,13 @@ export default function ContactScreen() {
 						</Pressable>
 					))}
 				</ScrollView>
-				<Text style={[styles.fieldLabel, { color: mutedColor }]}>Message</Text>
+				<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+					{t("contact.messageLabel")}
+				</Text>
 				<TextInput
 					value={message}
 					onChangeText={setMessage}
-					placeholder="Votre message..."
+					placeholder={t("contact.messagePlaceholder")}
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.textarea,
@@ -173,7 +180,7 @@ export default function ContactScreen() {
 				<Pressable
 					onPress={() =>
 						!name || !email || !message
-							? showError("Erreur", "Veuillez remplir tous les champs")
+							? showError(t("contact.errorTitle"), t("contact.fillAllFields"))
 							: sendMessage()
 					}
 					disabled={isPending}
@@ -182,7 +189,7 @@ export default function ContactScreen() {
 					{isPending ? (
 						<ActivityIndicator color="#fff" />
 					) : (
-						<Text style={styles.btnText}>Envoyer le message</Text>
+						<Text style={styles.btnText}>{t("contact.send")}</Text>
 					)}
 				</Pressable>
 			</ScrollView>

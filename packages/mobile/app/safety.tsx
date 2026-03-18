@@ -4,44 +4,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
-const TIPS: Array<{ icon: IoniconsName; title: string; desc: string }> = [
-	{
-		icon: "storefront-outline",
-		title: "Rencontrez-vous en lieu public",
-		desc: "Choisissez un endroit animé comme un café, un marché ou un centre commercial pour effectuer la transaction.",
-	},
-	{
-		icon: "eye-outline",
-		title: "Vérifiez l'article avant de payer",
-		desc: "Inspectez soigneusement l'article avant de remettre l'argent. Testez les appareils électroniques.",
-	},
-	{
-		icon: "cash-outline",
-		title: "N'envoyez jamais d'argent à l'avance",
-		desc: "Ne transférez jamais d'argent avant d'avoir reçu l'article en mains propres. Méfiez-vous des offres trop avantageuses.",
-	},
-	{
-		icon: "people-outline",
-		title: "Venez accompagné",
-		desc: "Pour les transactions importantes ou avec des inconnus, venez avec une personne de confiance.",
-	},
-	{
-		icon: "person-circle-outline",
-		title: "Vérifiez l'identité du vendeur",
-		desc: "Consultez le profil du vendeur, ses avis et sa date d'inscription sur la plateforme avant de procéder.",
-	},
-	{
-		icon: "flag-outline",
-		title: "Signalez les comportements suspects",
-		desc: "Utilisez le bouton « Signaler » si vous détectez une arnaque, un faux article ou un comportement inapproprié.",
-	},
-];
-
 export default function SafetyScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -49,6 +18,39 @@ export default function SafetyScreen() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
+
+	const TIPS: Array<{ icon: IoniconsName; title: string; desc: string }> = [
+		{
+			icon: "storefront-outline",
+			title: t("safety.tip1Title"),
+			desc: t("safety.tip1Desc"),
+		},
+		{
+			icon: "eye-outline",
+			title: t("safety.tip2Title"),
+			desc: t("safety.tip2Desc"),
+		},
+		{
+			icon: "cash-outline",
+			title: t("safety.tip3Title"),
+			desc: t("safety.tip3Desc"),
+		},
+		{
+			icon: "people-outline",
+			title: t("safety.tip4Title"),
+			desc: t("safety.tip4Desc"),
+		},
+		{
+			icon: "person-circle-outline",
+			title: t("safety.tip5Title"),
+			desc: t("safety.tip5Desc"),
+		},
+		{
+			icon: "flag-outline",
+			title: t("safety.tip6Title"),
+			desc: t("safety.tip6Desc"),
+		},
+	];
 
 	return (
 		<SafeAreaView
@@ -60,7 +62,7 @@ export default function SafetyScreen() {
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.title, { color: textColor }]}>
-					Conseils de sécurité
+					{t("safety.title")}
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>
@@ -80,11 +82,10 @@ export default function SafetyScreen() {
 					/>
 				</View>
 				<Text style={[styles.heading, { color: textColor }]}>
-					Achetez et vendez en sécurité
+					{t("safety.heading")}
 				</Text>
 				<Text style={[styles.subtitle, { color: mutedColor }]}>
-					Suivez ces conseils pour éviter les arnaques et les transactions
-					dangereuses.
+					{t("safety.subtitle")}
 				</Text>
 
 				{TIPS.map((tip, i) => (
