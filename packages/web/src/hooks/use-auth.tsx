@@ -10,11 +10,17 @@ import {
 } from "react";
 import type { User } from "~/types";
 
+export type SocialAuthProvider = "apple" | "facebook" | "google";
+
 interface AuthContextType {
 	user: User | null;
 	token: string | null;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<void>;
+	loginWithProvider: (
+		provider: SocialAuthProvider,
+		redirectTo?: string,
+	) => void;
 	register: (email: string, password: string, name: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
@@ -90,6 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		await login(email, password);
 	}
 
+	function loginWithProvider(
+		provider: SocialAuthProvider,
+		redirectTo = "/",
+	): void {
+		const target = encodeURIComponent(redirectTo);
+		const returnTo = encodeURIComponent(
+			new URL(redirectTo, window.location.origin).toString(),
+		);
+		window.location.assign(
+			`/api/public/auth/oauth/${provider}/start?audience=web&redirectTo=${target}&returnTo=${returnTo}`,
+		);
+	}
+
 	async function logout() {
 		try {
 			await fetch("/api/users/logout", {
@@ -145,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 				token,
 				isLoading,
 				login,
+				loginWithProvider,
 				register,
 				logout,
 				refreshUser,

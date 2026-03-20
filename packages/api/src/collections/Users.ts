@@ -1,6 +1,31 @@
+import { randomUUID } from "node:crypto";
 import type { CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
+import type { AuthProvider } from "../auth/oauth/types";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
+
+function ensureAuthProviders(data: Record<string, unknown>) {
+	const authProvider =
+		(data.authProvider as AuthProvider | undefined) ?? "local";
+	const providerAccountId =
+		(typeof data.providerAccountId === "string" && data.providerAccountId) ||
+		`local_${randomUUID()}`;
+
+	const authProviders = Array.isArray(data.authProviders)
+		? data.authProviders
+		: [
+				{
+					provider: authProvider,
+					providerAccountId,
+				},
+			];
+
+	return {
+		authProvider,
+		authProviders,
+		providerAccountId,
+	};
+}
 
 export const Users: CollectionConfig = {
 	slug: "users",
@@ -20,19 +45,35 @@ export const Users: CollectionConfig = {
 			({ req, data, operation, originalDoc }) => {
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
+				const isOAuthFlow = req.context?.oauthFlow === true;
 
-				if (operation === "create" && !isAdmin) {
-					data.role = "user";
-					data.verified = undefined;
-					data.rating = undefined;
-					data.totalReviews = undefined;
+				if (operation === "create") {
+					const authData = ensureAuthProviders(data as Record<string, unknown>);
+					data.authProvider = authData.authProvider;
+					data.authProviders = authData.authProviders;
+					data.providerAccountId = authData.providerAccountId;
+
+					if (!isAdmin) {
+						data.role = "user";
+						data.verified = undefined;
+						data.rating = undefined;
+						data.totalReviews = undefined;
+					}
 				}
 
-				if (operation === "update" && !isAdmin) {
-					data.role = originalDoc?.role;
-					data.verified = originalDoc.verified;
-					data.rating = originalDoc?.rating;
-					data.totalReviews = originalDoc.totalReviews;
+				if (operation === "update") {
+					if (!isAdmin) {
+						data.role = originalDoc?.role;
+						data.verified = originalDoc.verified;
+						data.rating = originalDoc?.rating;
+						data.totalReviews = originalDoc.totalReviews;
+					}
+
+					if (!isAdmin && !isOAuthFlow) {
+						data.authProvider = originalDoc.authProvider;
+						data.authProviders = originalDoc.authProviders;
+						data.providerAccountId = originalDoc.providerAccountId;
+					}
 				}
 
 				return data;
@@ -100,6 +141,46 @@ export const Users: CollectionConfig = {
 			defaultValue: "user",
 			required: true,
 			saveToJWT: true,
+		},
+		{
+			name: "authProvider",
+			type: "select",
+			defaultValue: "local",
+			options: [
+				{ label: "Local", value: "local" },
+				{ label: "Google", value: "google" },
+				{ label: "Apple", value: "apple" },
+				{ label: "Facebook", value: "facebook" },
+			],
+			required: true,
+		},
+		{
+			name: "providerAccountId",
+			type: "text",
+			index: true,
+			required: true,
+		},
+		{
+			name: "authProviders",
+			type: "array",
+			fields: [
+				{
+					name: "provider",
+					type: "select",
+					options: [
+						{ label: "Local", value: "local" },
+						{ label: "Google", value: "google" },
+						{ label: "Apple", value: "apple" },
+						{ label: "Facebook", value: "facebook" },
+					],
+					required: true,
+				},
+				{
+					name: "providerAccountId",
+					type: "text",
+					required: true,
+				},
+			],
 		},
 		{
 			name: "rating",

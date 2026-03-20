@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { SocialAuthButtons } from "~/components/auth/social-auth-buttons";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -35,6 +36,13 @@ function LoginForm() {
 	const searchParams = useSearchParams();
 	const redirectTo = searchParams.get("redirect") || "/";
 	const resetSuccess = searchParams.get("reset") === "success";
+	const oauthError = searchParams.get("oauthError");
+
+	useEffect(() => {
+		if (oauthError) {
+			setError("Social login failed. Please try again.");
+		}
+	}, [oauthError]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -130,6 +138,7 @@ function LoginForm() {
 								required
 							/>
 						</div>
+						<SocialAuthButtons redirectTo={redirectTo} />
 					</CardContent>
 					<CardFooter className="flex flex-col space-y-4">
 						<Button

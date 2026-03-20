@@ -1,17 +1,23 @@
+import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
-import { api } from "./api";
+import { API_BASE_URL, api } from "./api";
+
+WebBrowser.maybeCompleteAuthSession();
 
 // Re-export for convenience so other files can import User from here
 export type { UserDoc as User };
+export type SocialAuthProvider = "apple" | "facebook" | "google";
 
 interface AuthContextType {
 	user: UserDoc | null;
 	token: string | null;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<void>;
+	loginWithProvider: (provider: SocialAuthProvider) => Promise<void>;
 	register: (name: string, email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
@@ -61,6 +67,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		setUser(data.user);
 	};
 
+	const loginWithProvider = async (
+		provider: SocialAuthProvider,
+	): Promise<void> => {
+		const redirectUri = Linking.createURL("/auth/callback");
+		const startUrl = `${API_BASE_URL}/api/public/auth/oauth/${provider}/start?audience=mobile&mobileRedirectUri=${encodeURIComponent(redirectUri)}`;
+		const result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUri);
+
+		if (result.type !== "success" || !result.url) {
+			throw new Error("Social login was cancelled");
+		}
+
+		const parsed = Linking.parse(result.url);
+		const oauthError =
+			typeof parsed.queryParams?.oauthError === "string"
+				? parsed.queryParams.oauthError
+				: null;
+		const transferToken =
+			typeof parsed.queryParams?.transferToken === "string"
+				? parsed.queryParams.transferToken
+				: null;
+
+		if (oauthError) {
+			throw new Error(oauthError);
+		}
+
+		if (!transferToken) {
+			throw new Error("Missing mobile OAuth transfer token");
+		}
+
+		const data = await api.post<LoginResponse>(
+			"/api/public/auth/oauth/mobile/exchange",
+			{ transferToken },
+		);
+
+		await SecureStore.setItemAsync("auth_token", data.token);
+		setToken(data.token);
+		setUser(data.user);
+	};
+
 	const register = async (
 		name: string,
 		email: string,
@@ -101,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		token,
 		isLoading,
 		login,
+		loginWithProvider,
 		register,
 		logout,
 		refreshUser,

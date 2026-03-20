@@ -160,6 +160,15 @@ export interface User {
   name: string;
   avatar?: (string | null) | Media;
   role: 'user' | 'moderator' | 'admin';
+  authProvider: 'local' | 'google' | 'apple' | 'facebook';
+  providerAccountId: string;
+  authProviders?:
+    | {
+        provider: 'local' | 'google' | 'apple' | 'facebook';
+        providerAccountId: string;
+        id?: string | null;
+      }[]
+    | null;
   rating?: number | null;
   totalReviews?: number | null;
   bio?: string | null;
@@ -621,6 +630,15 @@ export interface UsersSelect<T extends boolean = true> {
   name?: T;
   avatar?: T;
   role?: T;
+  authProvider?: T;
+  providerAccountId?: T;
+  authProviders?:
+    | T
+    | {
+        provider?: T;
+        providerAccountId?: T;
+        id?: T;
+      };
   rating?: T;
   totalReviews?: T;
   bio?: T;

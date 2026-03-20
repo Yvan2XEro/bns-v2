@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -38,9 +39,13 @@ function AppLogo({ isDark }: { isDark: boolean }) {
 	);
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+	return error instanceof Error ? error.message : fallback;
+}
+
 export default function LoginScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { login } = useAuth();
+	const { login, loginWithProvider } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
 	const [email, setEmail] = useState("");
@@ -64,10 +69,27 @@ export default function LoginScreen() {
 		try {
 			await login(email.trim().toLowerCase(), password);
 			router.dismiss();
-		} catch (err: any) {
+		} catch (err: unknown) {
 			showError(
 				t("auth.loginFailedTitle"),
-				err.message ?? t("auth.loginFailedMessage"),
+				getErrorMessage(err, t("auth.loginFailedMessage")),
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleSocialLogin = async (
+		provider: "apple" | "facebook" | "google",
+	) => {
+		setLoading(true);
+		try {
+			await loginWithProvider(provider);
+			router.dismiss();
+		} catch (err: unknown) {
+			showError(
+				t("auth.loginFailedTitle"),
+				getErrorMessage(err, t("auth.socialLoginFailedMessage")),
 			);
 		} finally {
 			setLoading(false);
@@ -104,6 +126,12 @@ export default function LoginScreen() {
 
 					{/* Form */}
 					<View style={[styles.form, { backgroundColor: cardBg, borderColor }]}>
+						<SocialAuthButtons
+							borderColor={borderColor}
+							mutedColor={mutedColor}
+							onPress={handleSocialLogin}
+							primaryColor={primaryColor}
+						/>
 						{/* Email */}
 						<View style={styles.fieldGroup}>
 							<Text style={[styles.fieldLabel, { color: mutedColor }]}>

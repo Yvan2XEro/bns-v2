@@ -28,6 +28,7 @@ export default buildConfig({
 			baseDir: path.resolve(dirname),
 		},
 		components: {
+			beforeLogin: ["@/components/auth/AdminSocialLogin"],
 			views: {
 				moderation: {
 					Component: "@/components/views/ModerationQueue",
