@@ -37,11 +37,11 @@ async function getUserReviews(userId: string): Promise<Review[]> {
 async function getUserListings(userId: string): Promise<Listing[]> {
 	try {
 		const res = await serverFetch(
-			`/api/public/search?userId=${userId}&limit=5`,
+			`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=5&sort=-createdAt&depth=1`,
 		);
 		if (!res.ok) return [];
 		const data = await res.json();
-		return data.hits || [];
+		return data.docs || [];
 	} catch {
 		return [];
 	}
