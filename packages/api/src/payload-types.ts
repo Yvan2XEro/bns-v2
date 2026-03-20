@@ -110,9 +110,11 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
+    'app-settings': AppSetting;
     'payload-jobs-stats': PayloadJobsStat;
   };
   globalsSelect: {
+    'app-settings': AppSettingsSelect<false> | AppSettingsSelect<true>;
     'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
   locale: null;
@@ -173,6 +175,12 @@ export interface User {
   totalReviews?: number | null;
   bio?: string | null;
   phone?: string | null;
+  pendingPhone?: string | null;
+  phoneVerifiedAt?: string | null;
+  phoneVerificationCodeHash?: string | null;
+  phoneVerificationExpiresAt?: string | null;
+  phoneVerificationAttempts?: number | null;
+  phoneVerificationLastSentAt?: string | null;
   location?: string | null;
   verified?: boolean | null;
   createdAt: string;
@@ -643,6 +651,12 @@ export interface UsersSelect<T extends boolean = true> {
   totalReviews?: T;
   bio?: T;
   phone?: T;
+  pendingPhone?: T;
+  phoneVerifiedAt?: T;
+  phoneVerificationCodeHash?: T;
+  phoneVerificationExpiresAt?: T;
+  phoneVerificationAttempts?: T;
+  phoneVerificationLastSentAt?: T;
   location?: T;
   verified?: T;
   createdAt?: T;
@@ -921,6 +935,27 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "app-settings".
+ */
+export interface AppSetting {
+  id: string;
+  sms: {
+    provider: 'avlytext' | 'mtarget';
+    defaultSender?: string | null;
+    avlytext?: {
+      apiKey?: string | null;
+      sender?: string | null;
+    };
+    mtarget?: {
+      apiKey?: string | null;
+      sender?: string | null;
+    };
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs-stats".
  */
 export interface PayloadJobsStat {
@@ -936,6 +971,33 @@ export interface PayloadJobsStat {
     | null;
   updatedAt?: string | null;
   createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "app-settings_select".
+ */
+export interface AppSettingsSelect<T extends boolean = true> {
+  sms?:
+    | T
+    | {
+        provider?: T;
+        defaultSender?: T;
+        avlytext?:
+          | T
+          | {
+              apiKey?: T;
+              sender?: T;
+            };
+        mtarget?:
+          | T
+          | {
+              apiKey?: T;
+              sender?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

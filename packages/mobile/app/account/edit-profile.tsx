@@ -10,6 +10,7 @@ import {
 	StyleSheet,
 	Text,
 	TextInput,
+	type TextInputProps,
 	View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -22,6 +23,10 @@ import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+	return error instanceof Error ? error.message : fallback;
+}
+
 export default function EditProfileScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user, refreshUser } = useAuth();
@@ -30,7 +35,6 @@ export default function EditProfileScreen() {
 
 	const [name, setName] = useState(user?.name ?? "");
 	const [bio, setBio] = useState(user?.bio ?? "");
-	const [phone, setPhone] = useState(user?.phone ?? "");
 	const [location, setLocation] = useState(user?.location ?? "");
 	const [avatarUri, setAvatarUri] = useState<string | null>(null);
 	const [avatarUploading, setAvatarUploading] = useState(false);
@@ -84,7 +88,7 @@ export default function EditProfileScreen() {
 				uri: asset.uri,
 				name: asset.fileName ?? `avatar_${Date.now()}.jpg`,
 				type: asset.mimeType ?? "image/jpeg",
-			} as any);
+			} as Parameters<FormData["append"]>[1]);
 			formData.append(
 				"_payload",
 				JSON.stringify({ alt: asset.fileName ?? `avatar_${Date.now()}` }),
@@ -101,10 +105,10 @@ export default function EditProfileScreen() {
 				t("profile.uploadSuccessTitle"),
 				t("profile.uploadSuccessMessage"),
 			);
-		} catch (err: any) {
+		} catch (err) {
 			showError(
 				t("auth.errorTitle"),
-				err.message ?? t("profile.uploadFailedMessage"),
+				getErrorMessage(err, t("profile.uploadFailedMessage")),
 			);
 		} finally {
 			setAvatarUploading(false);
@@ -121,7 +125,7 @@ export default function EditProfileScreen() {
 
 	const { mutate: save, isPending } = useMutation({
 		mutationFn: () =>
-			api.patch(`/api/users/${user?.id}`, { name, bio, phone, location }),
+			api.patch(`/api/users/${user?.id}`, { name, bio, location }),
 		onSuccess: async () => {
 			await refreshUser();
 			showSuccess(
@@ -130,7 +134,8 @@ export default function EditProfileScreen() {
 			);
 			router.back();
 		},
-		onError: (err: any) => showError(t("auth.errorTitle"), err.message),
+		onError: (err: unknown) =>
+			showError(t("auth.errorTitle"), getErrorMessage(err, t("common.error"))),
 	});
 
 	const fields = [
@@ -147,13 +152,6 @@ export default function EditProfileScreen() {
 			set: setBio,
 			placeholder: t("profile.bioPlaceholderInput"),
 			multiline: true,
-		},
-		{
-			label: t("profile.phoneLabel"),
-			value: phone,
-			set: setPhone,
-			placeholder: t("profile.phonePlaceholder"),
-			keyboard: "phone-pad",
 		},
 		{
 			label: t("profile.locationLabel"),
@@ -295,11 +293,21 @@ export default function EditProfileScreen() {
 								]}
 								multiline={multiline}
 								numberOfLines={multiline ? 4 : 1}
-								keyboardType={(keyboard as any) ?? "default"}
+								keyboardType={
+									(keyboard as TextInputProps["keyboardType"]) ?? "default"
+								}
 							/>
 						</View>
 					),
 				)}
+
+				<View
+					style={[styles.infoBox, { backgroundColor: cardBg, borderColor }]}
+				>
+					<Text style={[styles.infoText, { color: mutedColor }]}>
+						{t("profile.phoneManagedInSettings")}
+					</Text>
+				</View>
 			</KeyboardAwareScrollView>
 		</SafeAreaView>
 	);
@@ -357,6 +365,17 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 11,
 		fontSize: 15,
+		fontFamily: Fonts.body,
+	},
+	infoBox: {
+		borderRadius: 10,
+		borderWidth: 1,
+		paddingHorizontal: 12,
+		paddingVertical: 12,
+	},
+	infoText: {
+		fontSize: 13,
+		lineHeight: 18,
 		fontFamily: Fonts.body,
 	},
 	multiline: { minHeight: 100, textAlignVertical: "top" },

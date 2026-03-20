@@ -46,6 +46,8 @@ export const Users: CollectionConfig = {
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
 				const isOAuthFlow = req.context?.oauthFlow === true;
+				const isPhoneVerificationFlow =
+					req.context?.phoneVerificationFlow === true;
 
 				if (operation === "create") {
 					const authData = ensureAuthProviders(data as Record<string, unknown>);
@@ -63,10 +65,25 @@ export const Users: CollectionConfig = {
 
 				if (operation === "update") {
 					if (!isAdmin) {
+						data.email = originalDoc.email;
 						data.role = originalDoc?.role;
 						data.verified = originalDoc.verified;
 						data.rating = originalDoc?.rating;
 						data.totalReviews = originalDoc.totalReviews;
+					}
+
+					if (!isAdmin && !isPhoneVerificationFlow) {
+						data.pendingPhone = originalDoc.pendingPhone;
+						data.phone = originalDoc.phone;
+						data.phoneVerificationAttempts =
+							originalDoc.phoneVerificationAttempts;
+						data.phoneVerificationCodeHash =
+							originalDoc.phoneVerificationCodeHash;
+						data.phoneVerificationExpiresAt =
+							originalDoc.phoneVerificationExpiresAt;
+						data.phoneVerificationLastSentAt =
+							originalDoc.phoneVerificationLastSentAt;
+						data.phoneVerifiedAt = originalDoc.phoneVerifiedAt;
 					}
 
 					if (!isAdmin && !isOAuthFlow) {
@@ -207,6 +224,67 @@ export const Users: CollectionConfig = {
 		{
 			name: "phone",
 			type: "text",
+		},
+		{
+			name: "pendingPhone",
+			type: "text",
+			access: {
+				read: () => false,
+			},
+			admin: {
+				readOnly: true,
+			},
+		},
+		{
+			name: "phoneVerifiedAt",
+			type: "date",
+			access: {
+				read: () => false,
+			},
+			admin: {
+				readOnly: true,
+			},
+		},
+		{
+			name: "phoneVerificationCodeHash",
+			type: "text",
+			access: {
+				read: () => false,
+			},
+			admin: {
+				readOnly: true,
+			},
+		},
+		{
+			name: "phoneVerificationExpiresAt",
+			type: "date",
+			access: {
+				read: () => false,
+			},
+			admin: {
+				readOnly: true,
+			},
+		},
+		{
+			name: "phoneVerificationAttempts",
+			type: "number",
+			defaultValue: 0,
+			access: {
+				read: () => false,
+			},
+			admin: {
+				readOnly: true,
+			},
+		},
+		{
+			name: "phoneVerificationLastSentAt",
+			type: "date",
+			access: {
+				read: () => false,
+			},
+			admin: {
+				readOnly: true,
+			},
 		},
 		{
 			name: "location",

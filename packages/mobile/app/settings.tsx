@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -21,6 +21,10 @@ import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+	return error instanceof Error ? error.message : fallback;
+}
+
 interface SectionProps {
 	title: string;
 	icon: keyof typeof Ionicons.glyphMap;
@@ -30,6 +34,29 @@ interface SectionProps {
 	borderColor: string;
 	textColor: string;
 	isDark: boolean;
+}
+
+interface FieldProps {
+	label: string;
+	value: string;
+	onChange: (v: string) => void;
+	placeholder: string;
+	secure?: boolean;
+	icon?: keyof typeof Ionicons.glyphMap;
+	mutedColor: string;
+	inputBg: string;
+	borderColor: string;
+	textColor: string;
+}
+
+interface PhoneVerificationStatus {
+	expiresAt: null | string;
+	hasPendingVerification: boolean;
+	isPhoneVerified: boolean;
+	pendingPhone: null | string;
+	phone: null | string;
+	phoneVerifiedAt: null | string;
+	resendAvailableAt: null | string;
 }
 
 function Section({
@@ -87,19 +114,6 @@ function Section({
 	);
 }
 
-interface FieldProps {
-	label: string;
-	value: string;
-	onChange: (v: string) => void;
-	placeholder: string;
-	secure?: boolean;
-	icon?: keyof typeof Ionicons.glyphMap;
-	mutedColor: string;
-	inputBg: string;
-	borderColor: string;
-	textColor: string;
-}
-
 function Field({
 	label,
 	value,
@@ -142,14 +156,13 @@ function Field({
 
 export default function SettingsScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { user, logout } = useAuth();
+	const { user, logout, refreshUser } = useAuth();
 	const { showSuccess, showError, showConfirm } = useAlert();
 	const { t } = useTranslation();
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
-	const [_currentPwd, setCurrentPwd] = useState("");
-	const [newEmail, setNewEmail] = useState("");
-	const [_pwdForEmail, setPwdForEmail] = useState("");
+	const [phoneInput, setPhoneInput] = useState("");
+	const [otpCode, setOtpCode] = useState("");
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -161,10 +174,14 @@ export default function SettingsScreen() {
 
 	const { mutate: changePassword, isPending: pwdLoading } = useMutation({
 		mutationFn: async () => {
-			if (newPassword !== confirmPassword)
+			if (newPassword !== confirmPassword) {
 				throw new Error(t("settings.passwordMismatchError"));
-			if (newPassword.length < 8)
+			}
+
+			if (newPassword.length < 8) {
 				throw new Error(t("settings.passwordTooShortError"));
+			}
+
 			return api.patch(`/api/users/${user?.id}`, { password: newPassword });
 		},
 		onSuccess: () => {
@@ -174,23 +191,92 @@ export default function SettingsScreen() {
 			);
 			setNewPassword("");
 			setConfirmPassword("");
-			setCurrentPwd("");
 		},
-		onError: (err: any) => showError(t("settings.errorTitle"), err.message),
+		onError: (err: unknown) =>
+			showError(
+				t("settings.errorTitle"),
+				getErrorMessage(err, t("settings.errorTitle")),
+			),
 	});
 
-	const { mutate: changeEmail, isPending: emailLoading } = useMutation({
-		mutationFn: () => api.patch(`/api/users/${user?.id}`, { email: newEmail }),
-		onSuccess: () => {
-			showSuccess(
-				t("settings.emailChangedTitle"),
-				t("settings.emailChangedMessage"),
-			);
-			setNewEmail("");
-			setPwdForEmail("");
-		},
-		onError: (err: any) => showError(t("settings.errorTitle"), err.message),
+	const {
+		data: phoneStatus,
+		isLoading: phoneStatusLoading,
+		refetch: refetchPhoneStatus,
+	} = useQuery({
+		queryKey: ["phone-verification-status"],
+		queryFn: () =>
+			api.get<PhoneVerificationStatus>("/api/account/phone/status"),
+		enabled: !!user,
 	});
+
+	useEffect(() => {
+		setPhoneInput(phoneStatus?.pendingPhone ?? phoneStatus?.phone ?? "");
+	}, [phoneStatus?.pendingPhone, phoneStatus?.phone]);
+
+	const { mutate: startPhoneVerification, isPending: phoneStartLoading } =
+		useMutation({
+			mutationFn: () =>
+				api.post<{ message: string }>("/api/account/phone/start", {
+					phone: phoneInput,
+				}),
+			onSuccess: async (data) => {
+				await refetchPhoneStatus();
+				setOtpCode("");
+				showSuccess(
+					t("settings.phoneCodeSentTitle"),
+					data.message || t("settings.phoneCodeSentMessage"),
+				);
+			},
+			onError: (err: unknown) =>
+				showError(
+					t("settings.errorTitle"),
+					getErrorMessage(err, t("settings.errorTitle")),
+				),
+		});
+
+	const { mutate: verifyPhoneCode, isPending: phoneVerifyLoading } =
+		useMutation({
+			mutationFn: () =>
+				api.post<{ message: string }>("/api/account/phone/verify", {
+					code: otpCode,
+				}),
+			onSuccess: async (data) => {
+				await refetchPhoneStatus();
+				await refreshUser();
+				setOtpCode("");
+				showSuccess(
+					t("settings.phoneVerifiedTitle"),
+					data.message || t("settings.phoneVerifiedMessage"),
+				);
+			},
+			onError: (err: unknown) =>
+				showError(
+					t("settings.errorTitle"),
+					getErrorMessage(err, t("settings.errorTitle")),
+				),
+		});
+
+	const handleSendPhoneCode = () => {
+		if (!phoneInput) {
+			showError(
+				t("settings.errorTitle"),
+				t("settings.phoneNumberRequiredError"),
+			);
+			return;
+		}
+
+		startPhoneVerification();
+	};
+
+	const handleVerifyPhoneCode = () => {
+		if (!otpCode) {
+			showError(t("settings.errorTitle"), t("settings.phoneCodeRequiredError"));
+			return;
+		}
+
+		verifyPhoneCode();
+	};
 
 	const handleDeleteAccount = () => {
 		showConfirm(
@@ -201,15 +287,17 @@ export default function SettingsScreen() {
 					await api.delete(`/api/users/${user?.id}`);
 					await logout();
 					router.replace("/(tabs)/home");
-				} catch (err: any) {
-					showError(t("settings.errorTitle"), err.message);
+				} catch (err) {
+					showError(
+						t("settings.errorTitle"),
+						getErrorMessage(err, t("settings.errorTitle")),
+					);
 				}
 			},
 		);
 	};
 
 	const version = Constants.expoConfig?.version ?? "1.0.0";
-
 	const sectionColors = { cardBg, borderColor, textColor, isDark };
 	const fieldColors = { mutedColor, inputBg, borderColor, textColor };
 
@@ -218,7 +306,6 @@ export default function SettingsScreen() {
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
-			{/* Header */}
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
 				<Pressable onPress={() => router.back()} style={styles.backBtn}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
@@ -233,7 +320,6 @@ export default function SettingsScreen() {
 				contentContainerStyle={[styles.scroll, { backgroundColor: bg }]}
 				showsVerticalScrollIndicator={false}
 			>
-				{/* Mot de passe */}
 				<Section
 					title={t("settings.passwordSection")}
 					icon="lock-closed-outline"
@@ -275,50 +361,112 @@ export default function SettingsScreen() {
 					</Pressable>
 				</Section>
 
-				{/* Email */}
 				<Section
 					title={t("settings.emailSection")}
 					icon="mail-outline"
 					{...sectionColors}
 				>
-					{user?.email && (
+					<View style={[styles.currentRow, { borderColor }]}>
+						<Text style={[styles.currentLabel, { color: mutedColor }]}>
+							{t("settings.currentLabel")}
+						</Text>
+						<Text style={[styles.currentValue, { color: textColor }]}>
+							{user?.email}
+						</Text>
+					</View>
+					<Text style={[styles.helperText, { color: mutedColor }]}>
+						{t("settings.emailManagedMessage")}
+					</Text>
+				</Section>
+
+				<Section
+					title={t("settings.phoneSection")}
+					icon="call-outline"
+					{...sectionColors}
+				>
+					{phoneStatus?.phone && (
 						<View style={[styles.currentRow, { borderColor }]}>
 							<Text style={[styles.currentLabel, { color: mutedColor }]}>
 								{t("settings.currentLabel")}
 							</Text>
-							<Text style={[styles.currentValue, { color: textColor }]}>
-								{user.email}
-							</Text>
+							<View style={{ alignItems: "flex-end", gap: 4 }}>
+								<Text style={[styles.currentValue, { color: textColor }]}>
+									{phoneStatus.phone}
+								</Text>
+								<Text style={[styles.helperText, { color: mutedColor }]}>
+									{phoneStatus.isPhoneVerified
+										? t("settings.phoneVerifiedBadge")
+										: t("settings.phoneNotVerifiedBadge")}
+								</Text>
+							</View>
 						</View>
 					)}
 					<Field
-						label={t("settings.newEmailLabel")}
-						value={newEmail}
-						onChange={setNewEmail}
-						placeholder={t("settings.newEmailPlaceholder")}
-						icon="mail-outline"
+						label={t("settings.phoneNumberLabel")}
+						value={phoneInput}
+						onChange={setPhoneInput}
+						placeholder={t("settings.phoneNumberPlaceholder")}
+						icon="call-outline"
 						{...fieldColors}
 					/>
 					<Pressable
-						onPress={() => changeEmail()}
-						disabled={emailLoading}
+						onPress={handleSendPhoneCode}
+						disabled={phoneStartLoading || phoneStatusLoading}
 						style={[
 							styles.btn,
 							{
 								backgroundColor: primaryColor,
-								opacity: emailLoading ? 0.7 : 1,
+								opacity: phoneStartLoading || phoneStatusLoading ? 0.7 : 1,
 							},
 						]}
 					>
-						{emailLoading ? (
+						{phoneStartLoading ? (
 							<ActivityIndicator color="#fff" />
 						) : (
-							<Text style={styles.btnText}>{t("settings.changeEmailBtn")}</Text>
+							<Text style={styles.btnText}>
+								{phoneStatus?.hasPendingVerification
+									? t("settings.resendPhoneCodeBtn")
+									: t("settings.sendPhoneCodeBtn")}
+							</Text>
 						)}
 					</Pressable>
+
+					{phoneStatus?.hasPendingVerification && (
+						<>
+							<Field
+								label={t("settings.phoneCodeLabel")}
+								value={otpCode}
+								onChange={setOtpCode}
+								placeholder={t("settings.phoneCodePlaceholder")}
+								icon="key-outline"
+								{...fieldColors}
+							/>
+							<Pressable
+								onPress={handleVerifyPhoneCode}
+								disabled={phoneVerifyLoading}
+								style={[
+									styles.btnSecondary,
+									{
+										borderColor,
+										backgroundColor: cardBg,
+										opacity: phoneVerifyLoading ? 0.7 : 1,
+									},
+								]}
+							>
+								{phoneVerifyLoading ? (
+									<ActivityIndicator color={primaryColor} />
+								) : (
+									<Text
+										style={[styles.btnSecondaryText, { color: primaryColor }]}
+									>
+										{t("settings.verifyPhoneBtn")}
+									</Text>
+								)}
+							</Pressable>
+						</>
+					)}
 				</Section>
 
-				{/* Informations */}
 				<Section
 					title={t("settings.aboutSection")}
 					icon="information-circle-outline"
@@ -341,7 +489,6 @@ export default function SettingsScreen() {
 					</View>
 				</Section>
 
-				{/* Zone dangereuse */}
 				<Section
 					title={t("settings.dangerZone")}
 					icon="warning-outline"
@@ -385,8 +532,6 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	scroll: { padding: 16, gap: 12, paddingBottom: 48 },
-
-	/* Section */
 	section: {
 		borderRadius: 16,
 		borderWidth: 1,
@@ -416,8 +561,6 @@ const styles = StyleSheet.create({
 		paddingBottom: 16,
 		gap: 12,
 	},
-
-	/* Field */
 	fieldGroup: { gap: 6 },
 	fieldLabel: {
 		fontSize: 13,
@@ -436,8 +579,11 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontFamily: Fonts.body,
 	},
-
-	/* Button */
+	helperText: {
+		fontSize: 12,
+		fontFamily: Fonts.body,
+		lineHeight: 18,
+	},
 	btn: {
 		borderRadius: 10,
 		paddingVertical: 13,
@@ -449,8 +595,17 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontFamily: Fonts.displayBold,
 	},
-
-	/* Current value row */
+	btnSecondary: {
+		borderRadius: 10,
+		paddingVertical: 13,
+		alignItems: "center",
+		marginTop: 4,
+		borderWidth: 1,
+	},
+	btnSecondaryText: {
+		fontSize: 15,
+		fontFamily: Fonts.displayBold,
+	},
 	currentRow: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -468,8 +623,6 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		fontFamily: Fonts.body,
 	},
-
-	/* Info row */
 	infoRow: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -492,8 +645,6 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		fontFamily: Fonts.displayBold,
 	},
-
-	/* Danger zone */
 	dangerDesc: {
 		fontSize: 13,
 		fontFamily: Fonts.body,

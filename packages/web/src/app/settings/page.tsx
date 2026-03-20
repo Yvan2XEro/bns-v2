@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -15,8 +15,23 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
 
+interface PhoneVerificationStatus {
+	expiresAt: null | string;
+	hasPendingVerification: boolean;
+	isPhoneVerified: boolean;
+	pendingPhone: null | string;
+	phone: null | string;
+	phoneVerifiedAt: null | string;
+	resendAvailableAt: null | string;
+}
+
+async function getErrorMessage(response: Response): Promise<string> {
+	const data = await response.json().catch(() => ({}));
+	return data.message || data.errors?.[0]?.message || "Request failed";
+}
+
 export default function SettingsPage() {
-	const { user, isLoading: authLoading, logout } = useAuth();
+	const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
 	const router = useRouter();
 
 	const [currentPassword, setCurrentPassword] = useState("");
@@ -26,11 +41,65 @@ export default function SettingsPage() {
 	const [passwordSuccess, setPasswordSuccess] = useState("");
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-	const [newEmail, setNewEmail] = useState("");
-	const [emailPassword, setEmailPassword] = useState("");
-	const [emailError, setEmailError] = useState("");
-	const [emailSuccess, setEmailSuccess] = useState("");
-	const [isChangingEmail, setIsChangingEmail] = useState(false);
+	const [phoneStatus, setPhoneStatus] =
+		useState<null | PhoneVerificationStatus>(null);
+	const [phoneInput, setPhoneInput] = useState("");
+	const [otpCode, setOtpCode] = useState("");
+	const [phoneError, setPhoneError] = useState("");
+	const [phoneSuccess, setPhoneSuccess] = useState("");
+	const [isLoadingPhoneStatus, setIsLoadingPhoneStatus] = useState(false);
+	const [isSendingPhoneCode, setIsSendingPhoneCode] = useState(false);
+	const [isVerifyingPhoneCode, setIsVerifyingPhoneCode] = useState(false);
+
+	useEffect(() => {
+		if (!user) {
+			return;
+		}
+
+		let isMounted = true;
+
+		async function loadPhoneStatus() {
+			setIsLoadingPhoneStatus(true);
+
+			try {
+				const res = await fetch("/api/account/phone/status", {
+					credentials: "include",
+				});
+
+				if (!res.ok) {
+					throw new Error(await getErrorMessage(res));
+				}
+
+				const data = (await res.json()) as PhoneVerificationStatus;
+				if (!isMounted) {
+					return;
+				}
+
+				setPhoneStatus(data);
+				setPhoneInput(data.pendingPhone || data.phone || "");
+			} catch (err) {
+				if (!isMounted) {
+					return;
+				}
+
+				setPhoneError(
+					err instanceof Error
+						? err.message
+						: "Failed to load phone verification status",
+				);
+			} finally {
+				if (isMounted) {
+					setIsLoadingPhoneStatus(false);
+				}
+			}
+		}
+
+		void loadPhoneStatus();
+
+		return () => {
+			isMounted = false;
+		};
+	}, [user]);
 
 	if (authLoading) {
 		return (
@@ -42,6 +111,22 @@ export default function SettingsPage() {
 
 	if (!user) {
 		return null;
+	}
+
+	const currentUser = user;
+
+	async function refreshPhoneStatus() {
+		const res = await fetch("/api/account/phone/status", {
+			credentials: "include",
+		});
+
+		if (!res.ok) {
+			throw new Error(await getErrorMessage(res));
+		}
+
+		const data = (await res.json()) as PhoneVerificationStatus;
+		setPhoneStatus(data);
+		setPhoneInput(data.pendingPhone || data.phone || "");
 	}
 
 	async function handleChangePassword(e: React.FormEvent) {
@@ -65,7 +150,10 @@ export default function SettingsPage() {
 			const loginRes = await fetch("/api/users/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: user?.email, password: currentPassword }),
+				body: JSON.stringify({
+					email: currentUser.email,
+					password: currentPassword,
+				}),
 				credentials: "include",
 			});
 
@@ -73,7 +161,7 @@ export default function SettingsPage() {
 				throw new Error("Current password is incorrect");
 			}
 
-			const res = await fetch(`/api/users/${user?.id}`, {
+			const res = await fetch(`/api/users/${currentUser.id}`, {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ password: newPassword }),
@@ -81,10 +169,7 @@ export default function SettingsPage() {
 			});
 
 			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				throw new Error(
-					data.errors?.[0]?.message || "Failed to change password",
-				);
+				throw new Error(await getErrorMessage(res));
 			}
 
 			setPasswordSuccess("Password changed successfully");
@@ -100,48 +185,64 @@ export default function SettingsPage() {
 		}
 	}
 
-	async function handleChangeEmail(e: React.FormEvent) {
+	async function handleSendPhoneCode(e: React.FormEvent) {
 		e.preventDefault();
-		setEmailError("");
-		setEmailSuccess("");
-		setIsChangingEmail(true);
+		setPhoneError("");
+		setPhoneSuccess("");
+		setIsSendingPhoneCode(true);
 
 		try {
-			const loginRes = await fetch("/api/users/login", {
+			const res = await fetch("/api/account/phone/start", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					email: user?.email,
-					password: emailPassword,
-				}),
-				credentials: "include",
-			});
-
-			if (!loginRes.ok) {
-				throw new Error("Password is incorrect");
-			}
-
-			const res = await fetch(`/api/users/${user?.id}`, {
-				method: "PATCH",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: newEmail }),
+				body: JSON.stringify({ phone: phoneInput }),
 				credentials: "include",
 			});
 
 			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				throw new Error(data.errors?.[0]?.message || "Failed to change email");
+				throw new Error(await getErrorMessage(res));
 			}
 
-			setEmailSuccess("Email changed successfully");
-			setNewEmail("");
-			setEmailPassword("");
+			await refreshPhoneStatus();
+			setOtpCode("");
+			setPhoneSuccess("Verification code sent to your phone");
 		} catch (err) {
-			setEmailError(
-				err instanceof Error ? err.message : "Failed to change email",
+			setPhoneError(
+				err instanceof Error ? err.message : "Failed to send verification code",
 			);
 		} finally {
-			setIsChangingEmail(false);
+			setIsSendingPhoneCode(false);
+		}
+	}
+
+	async function handleVerifyPhoneCode(e: React.FormEvent) {
+		e.preventDefault();
+		setPhoneError("");
+		setPhoneSuccess("");
+		setIsVerifyingPhoneCode(true);
+
+		try {
+			const res = await fetch("/api/account/phone/verify", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ code: otpCode }),
+				credentials: "include",
+			});
+
+			if (!res.ok) {
+				throw new Error(await getErrorMessage(res));
+			}
+
+			await refreshPhoneStatus();
+			await refreshUser();
+			setOtpCode("");
+			setPhoneSuccess("Phone number verified successfully");
+		} catch (err) {
+			setPhoneError(
+				err instanceof Error ? err.message : "Failed to verify phone number",
+			);
+		} finally {
+			setIsVerifyingPhoneCode(false);
 		}
 	}
 
@@ -159,7 +260,7 @@ export default function SettingsPage() {
 		if (!doubleConfirm) return;
 
 		try {
-			const res = await fetch(`/api/users/${user?.id}`, {
+			const res = await fetch(`/api/users/${currentUser.id}`, {
 				method: "DELETE",
 				credentials: "include",
 			});
@@ -247,62 +348,110 @@ export default function SettingsPage() {
 
 				<Card className="border-[#E2E8F0]">
 					<CardHeader>
-						<CardTitle className="text-[#0F172A]">Change Email</CardTitle>
+						<CardTitle className="text-[#0F172A]">Email address</CardTitle>
 						<CardDescription>
-							Update the email address associated with your account. Current
-							email: {user.email}
+							Email addresses are now managed by your sign-in method and can no
+							longer be edited from the app.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<form onSubmit={handleChangeEmail} className="space-y-4">
-							{emailError && (
+						<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+							<p className="text-[#64748B] text-sm">Current email</p>
+							<p className="mt-1 font-medium text-[#0F172A]">
+								{currentUser.email}
+							</p>
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card className="border-[#E2E8F0]">
+					<CardHeader>
+						<CardTitle className="text-[#0F172A]">
+							Verify phone number
+						</CardTitle>
+						<CardDescription>
+							Phone changes now require an OTP verification code before they are
+							applied to your account.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<form onSubmit={handleSendPhoneCode} className="space-y-4">
+							{phoneError && (
 								<div className="rounded-xl bg-red-50 p-3 text-red-600 text-sm">
-									{emailError}
+									{phoneError}
 								</div>
 							)}
-							{emailSuccess && (
+							{phoneSuccess && (
 								<div className="rounded-xl bg-emerald-50 p-3 text-emerald-700 text-sm">
-									{emailSuccess}
+									{phoneSuccess}
+								</div>
+							)}
+							{phoneStatus?.phone && (
+								<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+									<p className="text-[#64748B] text-sm">Current phone</p>
+									<p className="mt-1 font-medium text-[#0F172A]">
+										{phoneStatus.phone}
+									</p>
+									<p className="mt-1 text-[#64748B] text-xs">
+										{phoneStatus.isPhoneVerified
+											? "Verified"
+											: "Not verified yet"}
+									</p>
 								</div>
 							)}
 							<div className="space-y-2">
-								<Label htmlFor="newEmail">New Email</Label>
+								<Label htmlFor="phoneNumber">Phone number</Label>
 								<Input
-									id="newEmail"
-									type="email"
-									placeholder="newemail@example.com"
-									value={newEmail}
-									onChange={(e) => setNewEmail(e.target.value)}
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="emailPassword">
-									Confirm with your password
-								</Label>
-								<Input
-									id="emailPassword"
-									type="password"
-									value={emailPassword}
-									onChange={(e) => setEmailPassword(e.target.value)}
+									id="phoneNumber"
+									type="tel"
+									placeholder="+2376XXXXXXXX"
+									value={phoneInput}
+									onChange={(e) => setPhoneInput(e.target.value)}
 									required
 								/>
 							</div>
 							<Button
 								type="submit"
-								disabled={isChangingEmail}
+								disabled={isSendingPhoneCode || isLoadingPhoneStatus}
 								className="rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]"
 							>
-								{isChangingEmail ? (
+								{isSendingPhoneCode ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
-								Change Email
+								{phoneStatus?.hasPendingVerification
+									? "Resend verification code"
+									: "Send verification code"}
 							</Button>
 						</form>
+
+						{phoneStatus?.hasPendingVerification && (
+							<form onSubmit={handleVerifyPhoneCode} className="space-y-4">
+								<div className="space-y-2">
+									<Label htmlFor="otpCode">Verification code</Label>
+									<Input
+										id="otpCode"
+										inputMode="numeric"
+										maxLength={6}
+										placeholder="123456"
+										value={otpCode}
+										onChange={(e) => setOtpCode(e.target.value)}
+										required
+									/>
+								</div>
+								<Button
+									type="submit"
+									disabled={isVerifyingPhoneCode}
+									className="rounded-xl bg-[#0F172A] hover:bg-[#1E293B]"
+								>
+									{isVerifyingPhoneCode ? (
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									) : null}
+									Verify phone number
+								</Button>
+							</form>
+						)}
 					</CardContent>
 				</Card>
-
-				<div className="border-[#E2E8F0] border-t" />
 
 				<Card className="border-red-200">
 					<CardHeader>

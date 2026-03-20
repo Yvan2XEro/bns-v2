@@ -31,7 +31,6 @@ export function ProfileEditForm({ user }: { user: User }) {
 	const [formData, setFormData] = useState({
 		name: user.name || "",
 		bio: user.bio || "",
-		phone: user.phone || "",
 		location: user.location || "",
 	});
 
@@ -176,33 +175,24 @@ export function ProfileEditForm({ user }: { user: User }) {
 							/>
 						</div>
 
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="phone">Phone</Label>
-								<Input
-									id="phone"
-									type="tel"
-									placeholder="+237..."
-									value={formData.phone}
-									onChange={(e) =>
-										setFormData((prev) => ({ ...prev, phone: e.target.value }))
-									}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="location">Location</Label>
-								<Input
-									id="location"
-									placeholder="City, Region"
-									value={formData.location}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											location: e.target.value,
-										}))
-									}
-								/>
-							</div>
+						<div className="space-y-2">
+							<Label htmlFor="location">Location</Label>
+							<Input
+								id="location"
+								placeholder="City, Region"
+								value={formData.location}
+								onChange={(e) =>
+									setFormData((prev) => ({
+										...prev,
+										location: e.target.value,
+									}))
+								}
+							/>
+						</div>
+
+						<div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-[#64748B] text-sm">
+							Phone numbers are managed from account settings and require OTP
+							verification before they are updated.
 						</div>
 
 						<Button type="submit" disabled={isPending}>
