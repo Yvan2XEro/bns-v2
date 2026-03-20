@@ -16,6 +16,7 @@ import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Users } from "./collections/Users";
+import { isNotificationProviderConfigured } from "./services/notificationProvider";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -109,17 +110,17 @@ export default buildConfig({
 						expiredCount++;
 
 						// Notify seller about listing expiry
-						if (process.env.NOVU_SECRET_KEY) {
+						if (isNotificationProviderConfigured()) {
 							const sellerId =
 								typeof listing.seller === "string"
 									? listing.seller
 									: (listing.seller as { id: string })?.id;
 							if (sellerId) {
 								try {
-									const { triggerNovuEvent } = await import(
-										"./hooks/novuEvents"
+									const { triggerNotificationEvent } = await import(
+										"./hooks/notificationEvents"
 									);
-									await triggerNovuEvent({
+									await triggerNotificationEvent({
 										event: "listing-expired",
 										subscriberId: sellerId,
 										payload: {
@@ -129,7 +130,7 @@ export default buildConfig({
 									});
 								} catch (error) {
 									console.error(
-										"[novu] Failed to notify listing expiry:",
+										"[notifications] Failed to notify listing expiry:",
 										error,
 									);
 								}
@@ -230,10 +231,10 @@ export default buildConfig({
 								});
 
 								if (matches.totalDocs > 0) {
-									const { triggerNovuEvent } = await import(
-										"./hooks/novuEvents"
+									const { triggerNotificationEvent } = await import(
+										"./hooks/notificationEvents"
 									);
-									await triggerNovuEvent({
+									await triggerNotificationEvent({
 										event: "search-alert",
 										subscriberId: userId,
 										payload: {
@@ -299,17 +300,17 @@ export default buildConfig({
 						expiredBoostCount++;
 
 						// Notify seller about boost expiry
-						if (process.env.NOVU_SECRET_KEY) {
+						if (isNotificationProviderConfigured()) {
 							const sellerId =
 								typeof listing.seller === "string"
 									? listing.seller
 									: (listing.seller as { id: string })?.id;
 							if (sellerId) {
 								try {
-									const { triggerNovuEvent } = await import(
-										"./hooks/novuEvents"
+									const { triggerNotificationEvent } = await import(
+										"./hooks/notificationEvents"
 									);
-									await triggerNovuEvent({
+									await triggerNotificationEvent({
 										event: "boost-expired",
 										subscriberId: sellerId,
 										payload: {
@@ -318,7 +319,10 @@ export default buildConfig({
 										},
 									});
 								} catch (error) {
-									console.error("[novu] Failed to notify boost expiry:", error);
+									console.error(
+										"[notifications] Failed to notify boost expiry:",
+										error,
+									);
 								}
 							}
 						}

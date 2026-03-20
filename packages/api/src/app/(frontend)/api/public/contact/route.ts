@@ -1,4 +1,4 @@
-import { triggerNovuEvent } from "../../../../../hooks/novuEvents";
+import { triggerNotificationEvent } from "../../../../../hooks/notificationEvents";
 
 export async function POST(request: Request) {
 	try {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 			return Response.json({ error: "Invalid email address" }, { status: 400 });
 		}
 
-		await triggerNovuEvent({
+		await triggerNotificationEvent({
 			event: "contact-form",
 			subscriberId: "admin",
 			payload: { name, email, subject, message },

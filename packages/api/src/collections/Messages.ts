@@ -1,5 +1,6 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
+import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 export const Messages: CollectionConfig = {
 	slug: "messages",
@@ -11,10 +12,12 @@ export const Messages: CollectionConfig = {
 		afterChange: [
 			async ({ doc, operation, req }) => {
 				if (operation !== "create") return;
-				if (!process.env.NOVU_SECRET_KEY) return;
+				if (!isNotificationProviderConfigured()) return;
 
 				try {
-					const { triggerNovuEvent } = await import("../hooks/novuEvents");
+					const { triggerNotificationEvent } = await import(
+						"../hooks/notificationEvents"
+					);
 
 					const conversation = await req.payload.findByID({
 						collection: "conversations",
@@ -43,7 +46,7 @@ export const Messages: CollectionConfig = {
 						.filter((id) => id !== senderId);
 
 					for (const recipientId of recipients) {
-						await triggerNovuEvent({
+						await triggerNotificationEvent({
 							event: "new-message",
 							subscriberId: recipientId,
 							payload: {
@@ -57,7 +60,7 @@ export const Messages: CollectionConfig = {
 						});
 					}
 				} catch (error) {
-					console.error("[novu] Failed to notify new message:", error);
+					console.error("[notifications] Failed to notify new message:", error);
 				}
 			},
 		],

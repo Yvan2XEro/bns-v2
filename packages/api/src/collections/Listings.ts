@@ -2,6 +2,7 @@ import type { CollectionConfig, Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
+import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 export const Listings: CollectionConfig = {
 	slug: "listings",
@@ -81,7 +82,7 @@ export const Listings: CollectionConfig = {
 					await publishSearchEvent(event, doc.id as string);
 				}
 
-				if (!process.env.NOVU_SECRET_KEY) return;
+				if (!isNotificationProviderConfigured()) return;
 				if (operation !== "update") return;
 				if (!previousDoc || previousDoc.status === doc.status) return;
 
@@ -92,10 +93,12 @@ export const Listings: CollectionConfig = {
 				if (!sellerId) return;
 
 				try {
-					const { triggerNovuEvent } = await import("../hooks/novuEvents");
+					const { triggerNotificationEvent } = await import(
+						"../hooks/notificationEvents"
+					);
 
 					if (doc.status === "rejected" && previousDoc.status !== "rejected") {
-						await triggerNovuEvent({
+						await triggerNotificationEvent({
 							event: "listing-rejected",
 							subscriberId: sellerId,
 							payload: {
@@ -108,13 +111,13 @@ export const Listings: CollectionConfig = {
 						doc.status === "published" &&
 						previousDoc.status !== "published"
 					) {
-						await triggerNovuEvent({
+						await triggerNotificationEvent({
 							event: "listing-approved",
 							subscriberId: sellerId,
 							payload: { listingId: doc.id, listingTitle: doc.title },
 						});
 					} else {
-						await triggerNovuEvent({
+						await triggerNotificationEvent({
 							event: "listing-status",
 							subscriberId: sellerId,
 							payload: {
@@ -126,7 +129,10 @@ export const Listings: CollectionConfig = {
 						});
 					}
 				} catch (error) {
-					console.error("[novu] Failed to notify listing status:", error);
+					console.error(
+						"[notifications] Failed to notify listing status:",
+						error,
+					);
 				}
 			},
 		],

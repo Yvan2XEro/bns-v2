@@ -1,6 +1,7 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
 import { updateUserRating } from "../hooks/reviews";
+import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 export const Reviews: CollectionConfig = {
 	slug: "reviews",
@@ -33,9 +34,11 @@ export const Reviews: CollectionConfig = {
 					await updateUserRating({ req, reviewedUserId });
 				}
 
-				if (operation === "create" && process.env.NOVU_SECRET_KEY) {
+				if (operation === "create" && isNotificationProviderConfigured()) {
 					try {
-						const { triggerNovuEvent } = await import("../hooks/novuEvents");
+						const { triggerNotificationEvent } = await import(
+							"../hooks/notificationEvents"
+						);
 
 						const reviewerName =
 							typeof doc.reviewer === "object" && doc.reviewer?.name
@@ -50,7 +53,7 @@ export const Reviews: CollectionConfig = {
 										})
 									).name;
 
-						await triggerNovuEvent({
+						await triggerNotificationEvent({
 							event: "new-review",
 							subscriberId: reviewedUserId,
 							payload: {
@@ -60,7 +63,10 @@ export const Reviews: CollectionConfig = {
 							},
 						});
 					} catch (error) {
-						console.error("[novu] Failed to notify new review:", error);
+						console.error(
+							"[notifications] Failed to notify new review:",
+							error,
+						);
 					}
 				}
 			},

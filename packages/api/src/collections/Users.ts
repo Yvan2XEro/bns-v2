@@ -1,5 +1,6 @@
 import type { CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
+import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 export const Users: CollectionConfig = {
 	slug: "users",
@@ -39,19 +40,18 @@ export const Users: CollectionConfig = {
 		],
 		afterChange: [
 			async ({ doc, operation, previousDoc }) => {
-				if (!process.env.NOVU_SECRET_KEY) return;
+				if (!isNotificationProviderConfigured()) return;
 
 				try {
-					const { syncNovuSubscriber, triggerNovuEvent } = await import(
-						"../hooks/novuEvents"
-					);
+					const { syncNotificationSubscriber, triggerNotificationEvent } =
+						await import("../hooks/notificationEvents");
 
 					const avatarUrl =
 						typeof doc.avatar === "object" && doc.avatar?.url
 							? doc.avatar.url
 							: undefined;
 
-					await syncNovuSubscriber({
+					await syncNotificationSubscriber({
 						subscriberId: doc.id as string,
 						email: doc.email,
 						name: doc.name,
@@ -65,14 +65,14 @@ export const Users: CollectionConfig = {
 						previousDoc &&
 						!previousDoc.verified
 					) {
-						await triggerNovuEvent({
+						await triggerNotificationEvent({
 							event: "user-verified",
 							subscriberId: doc.id as string,
 							payload: { name: doc.name },
 						});
 					}
 				} catch (error) {
-					console.error("[novu] Failed to sync subscriber:", error);
+					console.error("[notifications] Failed to sync subscriber:", error);
 				}
 			},
 		],
