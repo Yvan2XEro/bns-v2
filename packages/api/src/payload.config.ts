@@ -16,6 +16,7 @@ import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Users } from "./collections/Users";
+import { AppSettings } from "./globals/AppSettings";
 import { isNotificationProviderConfigured } from "./services/notificationProvider";
 
 const filename = fileURLToPath(import.meta.url);
@@ -28,6 +29,7 @@ export default buildConfig({
 			baseDir: path.resolve(dirname),
 		},
 		components: {
+			beforeLogin: ["@/components/auth/AdminSocialLogin"],
 			views: {
 				moderation: {
 					Component: "@/components/views/ModerationQueue",
@@ -63,6 +65,7 @@ export default buildConfig({
 		SavedSearches,
 		BlockedUsers,
 	],
+	globals: [AppSettings],
 	editor: lexicalEditor(),
 	secret: process.env.PAYLOAD_SECRET || "default-secret-change-me",
 	typescript: {

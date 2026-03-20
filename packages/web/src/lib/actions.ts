@@ -12,7 +12,6 @@ export async function updateProfile(
 	data: {
 		name?: string;
 		bio?: string;
-		phone?: string;
 		location?: string;
 		avatar?: string;
 	},

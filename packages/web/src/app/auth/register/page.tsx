@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { SocialAuthButtons } from "~/components/auth/social-auth-buttons";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -26,6 +27,14 @@ export default function RegisterPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const { register } = useAuth();
 	const router = useRouter();
+	const searchParams = useSearchParams();
+	const oauthError = searchParams.get("oauthError");
+
+	useEffect(() => {
+		if (oauthError) {
+			setError("Social sign-up failed. Please try again.");
+		}
+	}, [oauthError]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -92,6 +101,7 @@ export default function RegisterPage() {
 								{error}
 							</div>
 						)}
+						<SocialAuthButtons />
 						<div className="space-y-2">
 							<Label htmlFor="name" className="text-[#0F172A]">
 								Name

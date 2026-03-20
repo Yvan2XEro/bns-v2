@@ -8,6 +8,7 @@ import {
 	StyleSheet,
 	Text,
 	TextInput,
+	type TextInputProps,
 	View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -15,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -43,11 +45,11 @@ interface RegisterFieldProps {
 	value: string;
 	onChange: (v: string) => void;
 	placeholder: string;
-	keyboard?: string;
+	keyboard?: TextInputProps["keyboardType"];
 	secure?: boolean;
 	showToggle?: boolean;
 	toggleShow?: () => void;
-	autoComplete?: string;
+	autoComplete?: TextInputProps["autoComplete"];
 	icon?: keyof typeof Ionicons.glyphMap;
 	mutedColor: string;
 	borderColor: string;
@@ -87,10 +89,10 @@ function RegisterField({
 					placeholder={placeholder}
 					placeholderTextColor={mutedColor}
 					style={[styles.input, { color: textColor }]}
-					keyboardType={(keyboard as any) ?? "default"}
+					keyboardType={keyboard ?? "default"}
 					secureTextEntry={secure}
 					autoCapitalize={keyboard === "email-address" ? "none" : "words"}
-					autoComplete={autoComplete as any}
+					autoComplete={autoComplete}
 				/>
 				{showToggle && (
 					<Pressable onPress={toggleShow} hitSlop={8}>
@@ -106,9 +108,13 @@ function RegisterField({
 	);
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+	return error instanceof Error ? error.message : fallback;
+}
+
 export default function RegisterScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { register } = useAuth();
+	const { loginWithProvider, register } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
 	const [name, setName] = useState("");
@@ -150,10 +156,27 @@ export default function RegisterScreen() {
 		try {
 			await register(name.trim(), email.trim().toLowerCase(), password);
 			router.dismiss();
-		} catch (err: any) {
+		} catch (err: unknown) {
 			showError(
 				t("auth.registerFailedTitle"),
-				err.message ?? t("auth.registerFailedMessage"),
+				getErrorMessage(err, t("auth.registerFailedMessage")),
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleSocialLogin = async (
+		provider: "apple" | "facebook" | "google",
+	) => {
+		setLoading(true);
+		try {
+			await loginWithProvider(provider);
+			router.dismiss();
+		} catch (err: unknown) {
+			showError(
+				t("auth.registerFailedTitle"),
+				getErrorMessage(err, t("auth.socialLoginFailedMessage")),
 			);
 		} finally {
 			setLoading(false);
@@ -188,6 +211,12 @@ export default function RegisterScreen() {
 					</Text>
 
 					<View style={[styles.form, { backgroundColor: cardBg, borderColor }]}>
+						<SocialAuthButtons
+							borderColor={borderColor}
+							mutedColor={mutedColor}
+							onPress={handleSocialLogin}
+							primaryColor={primaryColor}
+						/>
 						<RegisterField
 							label={t("auth.name")}
 							value={name}
