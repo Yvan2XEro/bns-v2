@@ -25,10 +25,21 @@ const dirname = path.dirname(filename);
 export default buildConfig({
 	admin: {
 		user: Users.slug,
+		meta: {
+			icons: [
+				{
+					url: "/logo.png",
+				},
+			],
+		},
 		importMap: {
 			baseDir: path.resolve(dirname),
 		},
 		components: {
+			graphics: {
+				Icon: "@/components/branding/AdminLogo#Icon",
+				Logo: "@/components/branding/AdminLogo#Logo",
+			},
 			beforeLogin: ["@/components/auth/AdminSocialLogin"],
 			views: {
 				moderation: {

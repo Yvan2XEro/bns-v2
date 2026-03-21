@@ -27,6 +27,7 @@ WORKDIR /app/packages/api
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV TURBOPACK_ROOT=/app
 RUN mkdir -p public
+RUN bun run generate:importmap
 RUN bun run build
 
 # --- Runner ---
