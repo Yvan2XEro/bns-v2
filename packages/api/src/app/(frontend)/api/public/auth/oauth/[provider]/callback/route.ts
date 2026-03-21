@@ -102,13 +102,7 @@ async function handleCallback(
 		const identity = await getOAuthProvider(provider).exchangeCodeForIdentity({
 			code: params.code,
 			rawUser: params.rawUser,
-			redirectUri: getOAuthCallbackURL(
-				request,
-				provider,
-				state.audience === "web" && isAllowedAbsoluteRedirect(state.returnTo)
-					? state.returnTo
-					: undefined,
-			),
+			redirectUri: getOAuthCallbackURL(request, provider),
 		});
 		const user = await resolveOAuthUser(payload, identity, {
 			audience: state.audience === "admin" ? "admin" : "app",
