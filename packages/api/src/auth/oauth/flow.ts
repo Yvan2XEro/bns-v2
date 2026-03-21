@@ -76,65 +76,6 @@ export function getOAuthStateCookieName(provider: OAuthProvider): string {
 	return `oauth-state-${provider}`;
 }
 
-function getCookieDomainHosts(): string[] {
-	const hosts = new Set<string>();
-
-	for (const origin of getAllowedRedirectOrigins()) {
-		try {
-			hosts.add(new URL(origin).hostname);
-		} catch {
-			// Ignore malformed origins.
-		}
-	}
-
-	if (process.env.PAYLOAD_PUBLIC_SERVER_URL?.trim()) {
-		try {
-			hosts.add(new URL(process.env.PAYLOAD_PUBLIC_SERVER_URL).hostname);
-		} catch {
-			// Ignore malformed public server URL.
-		}
-	}
-
-	return [...hosts];
-}
-
-function getCommonCookieDomain(hosts: string[]): null | string {
-	if (hosts.length === 0) {
-		return null;
-	}
-
-	const splitHosts = hosts
-		.map((host) => host.toLowerCase())
-		.filter((host) => host.includes("."))
-		.map((host) => host.split(".").reverse());
-
-	if (splitHosts.length !== hosts.length) {
-		return null;
-	}
-
-	const common: string[] = [];
-
-	for (let index = 0; ; index += 1) {
-		const label = splitHosts[0]?.[index];
-
-		if (!label || splitHosts.some((parts) => parts[index] !== label)) {
-			break;
-		}
-
-		common.push(label);
-	}
-
-	if (common.length < 2) {
-		return null;
-	}
-
-	return common.reverse().join(".");
-}
-
-export function getSharedCookieDomain(): null | string {
-	return getCommonCookieDomain(getCookieDomainHosts());
-}
-
 export function getOAuthStateCookieValue(payload: OAuthStatePayload): string {
 	return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
@@ -154,6 +95,7 @@ export function parseOAuthStateCookie(
 
 export function createOAuthState(options: {
 	audience: OAuthAudience;
+	callbackURL: string;
 	initiatedFrom?: string;
 	mobileRedirectUri?: string;
 	redirectTo: string;
@@ -161,6 +103,7 @@ export function createOAuthState(options: {
 }): OAuthStatePayload {
 	return {
 		audience: options.audience,
+		callbackURL: options.callbackURL,
 		initiatedFrom: options.initiatedFrom,
 		mobileRedirectUri: options.mobileRedirectUri,
 		redirectTo: options.redirectTo,
@@ -171,7 +114,6 @@ export function createOAuthState(options: {
 
 export function getOAuthStateCookieOptions() {
 	return {
-		domain: getSharedCookieDomain() ?? undefined,
 		httpOnly: true,
 		maxAge: OAUTH_STATE_TTL_SECONDS,
 		path: "/",

@@ -17,6 +17,7 @@ export type OAuthResolvedAudience = "admin" | "app";
 
 export interface OAuthStatePayload {
 	audience: OAuthAudience;
+	callbackURL: string;
 	initiatedFrom?: string;
 	mobileRedirectUri?: string;
 	redirectTo: string;

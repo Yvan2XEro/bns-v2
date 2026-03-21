@@ -7,7 +7,6 @@ import {
 } from "payload";
 import { addSessionToUser } from "payload/shared";
 import type { User } from "@/payload-types";
-import { getSharedCookieDomain } from "./flow";
 
 export async function issuePayloadSession(
 	payload: Payload,
@@ -46,11 +45,5 @@ export async function issuePayloadSession(
 		token,
 	});
 
-	const sharedCookieDomain = getSharedCookieDomain();
-	const cookieWithDomain =
-		sharedCookieDomain && !cookie.toLowerCase().includes("domain=")
-			? `${cookie}; Domain=${sharedCookieDomain}`
-			: cookie;
-
-	return { cookie: cookieWithDomain, exp, token };
+	return { cookie, exp, token };
 }

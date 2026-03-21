@@ -4,7 +4,6 @@ import { getPayload } from "payload";
 import {
 	createMobileTransferToken,
 	getDefaultAllowedRedirect,
-	getOAuthCallbackURL,
 	getOAuthErrorRedirectPath,
 	getOAuthStateCookieName,
 	getOAuthStateCookieOptions,
@@ -114,7 +113,7 @@ async function handleCallback(
 		const identity = await getOAuthProvider(provider).exchangeCodeForIdentity({
 			code: params.code,
 			rawUser: params.rawUser,
-			redirectUri: getOAuthCallbackURL(request, provider),
+			redirectUri: state.callbackURL,
 		});
 		const user = await resolveOAuthUser(payload, identity, {
 			audience: state.audience === "admin" ? "admin" : "app",
@@ -150,7 +149,7 @@ async function handleCallback(
 			const response = NextResponse.redirect(
 				getMobileErrorRedirect(state.mobileRedirectUri, message),
 			);
-			response.cookies.delete(getOAuthStateCookieName(provider));
+			clearOAuthStateCookie(response, provider);
 			return response;
 		}
 

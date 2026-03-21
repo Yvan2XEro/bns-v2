@@ -121,15 +121,24 @@ export async function GET(
 		);
 	}
 
+	const callbackURL =
+		audience === "web" && returnTo
+			? new URL(
+					`/api/public/auth/oauth/${provider}/callback`,
+					returnTo,
+				).toString()
+			: getOAuthCallbackURL(request, provider);
+
 	const state = createOAuthState({
 		audience,
+		callbackURL,
 		initiatedFrom: initiatedFrom ?? undefined,
 		mobileRedirectUri: mobileRedirectUri ?? undefined,
 		redirectTo,
 		returnTo: returnTo ?? undefined,
 	});
 	const authorizationURL = getOAuthProvider(provider).buildAuthorizationURL({
-		redirectUri: getOAuthCallbackURL(request, provider),
+		redirectUri: callbackURL,
 		state: state.state,
 	});
 
