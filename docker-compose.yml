@@ -12,7 +12,11 @@ services:
     networks:
       - dokploy-network
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand(\"ping\")' || mongo --eval 'db.adminCommand(\"ping\")'"]
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh --eval ''db.adminCommand("ping")'' || mongo --eval ''db.adminCommand("ping")''',
+        ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -85,6 +89,14 @@ services:
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID}
+      APPLE_OAUTH_TEAM_ID: ${APPLE_OAUTH_TEAM_ID}
+      APPLE_OAUTH_KEY_ID: ${APPLE_OAUTH_KEY_ID}
+      APPLE_OAUTH_PRIVATE_KEY: ${APPLE_OAUTH_PRIVATE_KEY}
+      FACEBOOK_OAUTH_APP_ID: ${FACEBOOK_OAUTH_APP_ID}
+      FACEBOOK_OAUTH_APP_SECRET: ${FACEBOOK_OAUTH_APP_SECRET}
     volumes:
       - api_media:/app/packages/api/media
     depends_on:
