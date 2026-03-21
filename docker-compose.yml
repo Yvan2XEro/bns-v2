@@ -84,6 +84,7 @@ services:
     environment:
       DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
       PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       MEILI_HOST: http://meilisearch:7700

@@ -19,6 +19,32 @@ export function getOAuthCallbackURL(
 	request: NextRequest,
 	provider: OAuthProvider,
 ): string {
+	const configuredPublicServerURL =
+		process.env.PAYLOAD_PUBLIC_SERVER_URL?.trim();
+
+	if (configuredPublicServerURL) {
+		return new URL(
+			`/api/public/auth/oauth/${provider}/callback`,
+			configuredPublicServerURL,
+		).toString();
+	}
+
+	const forwardedHost = request.headers.get("x-forwarded-host");
+
+	if (forwardedHost) {
+		const host = forwardedHost.split(",")[0]?.trim();
+		const forwardedProto =
+			request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+			"https";
+
+		if (host) {
+			return new URL(
+				`/api/public/auth/oauth/${provider}/callback`,
+				`${forwardedProto}://${host}`,
+			).toString();
+		}
+	}
+
 	return new URL(
 		`/api/public/auth/oauth/${provider}/callback`,
 		request.url,
