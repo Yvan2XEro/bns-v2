@@ -18,7 +18,15 @@ function getSecretKey(): Uint8Array {
 export function getOAuthCallbackURL(
 	request: NextRequest,
 	provider: OAuthProvider,
+	preferredBaseURL?: string,
 ): string {
+	if (preferredBaseURL) {
+		return new URL(
+			`/api/public/auth/oauth/${provider}/callback`,
+			preferredBaseURL,
+		).toString();
+	}
+
 	const configuredPublicServerURL =
 		process.env.PAYLOAD_PUBLIC_SERVER_URL?.trim();
 
@@ -49,6 +57,27 @@ export function getOAuthCallbackURL(
 		`/api/public/auth/oauth/${provider}/callback`,
 		request.url,
 	).toString();
+}
+
+export function getPublicRequestOrigin(request: NextRequest): string {
+	const forwardedHost = request.headers.get("x-forwarded-host");
+
+	if (forwardedHost) {
+		const host = forwardedHost.split(",")[0]?.trim();
+		const forwardedProto =
+			request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+			"https";
+
+		if (host) {
+			return `${forwardedProto}://${host}`;
+		}
+	}
+
+	if (process.env.PAYLOAD_PUBLIC_SERVER_URL?.trim()) {
+		return process.env.PAYLOAD_PUBLIC_SERVER_URL.trim();
+	}
+
+	return new URL(request.url).origin;
 }
 
 export function getOAuthStateCookieName(provider: OAuthProvider): string {
@@ -129,6 +158,16 @@ function getAllowedRedirectOrigins(): string[] {
 		.filter(Boolean);
 
 	return configuredOrigins ?? [];
+}
+
+export function getDefaultAllowedRedirect(fallbackPath = "/"): string {
+	const firstAllowedOrigin = getAllowedRedirectOrigins()[0];
+
+	if (!firstAllowedOrigin) {
+		return fallbackPath;
+	}
+
+	return new URL(fallbackPath, firstAllowedOrigin).toString();
 }
 
 export function isAllowedAbsoluteRedirect(

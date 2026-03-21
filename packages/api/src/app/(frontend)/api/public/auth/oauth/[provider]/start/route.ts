@@ -128,8 +128,10 @@ export async function GET(
 		redirectTo,
 		returnTo: returnTo ?? undefined,
 	});
+	const callbackBaseURL =
+		audience === "web" && returnTo ? returnTo : (initiatedFrom ?? undefined);
 	const authorizationURL = getOAuthProvider(provider).buildAuthorizationURL({
-		redirectUri: getOAuthCallbackURL(request, provider),
+		redirectUri: getOAuthCallbackURL(request, provider, callbackBaseURL),
 		state: state.state,
 	});
 

@@ -3,9 +3,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getPayload } from "payload";
 import {
 	createMobileTransferToken,
+	getDefaultAllowedRedirect,
 	getOAuthCallbackURL,
 	getOAuthErrorRedirectPath,
 	getOAuthStateCookieName,
+	getPublicRequestOrigin,
 	isAllowedAbsoluteRedirect,
 	parseOAuthStateCookie,
 	sanitizeRedirectPath,
@@ -18,6 +20,14 @@ function getMobileErrorRedirect(mobileRedirectUri: string, error: string): URL {
 	const url = new URL(mobileRedirectUri);
 	url.searchParams.set("oauthError", error);
 	return url;
+}
+
+function resolveRedirectURL(request: NextRequest, target: string): URL {
+	if (isAllowedAbsoluteRedirect(target)) {
+		return new URL(target);
+	}
+
+	return new URL(target, getPublicRequestOrigin(request));
 }
 
 async function handleCallback(
@@ -46,13 +56,17 @@ async function handleCallback(
 					state?.redirectTo,
 					state?.audience === "admin" ? "/admin" : "/",
 				);
-	const errorRedirect = state?.initiatedFrom ?? successRedirect;
+	const errorRedirect =
+		state?.initiatedFrom ??
+		(state?.audience === "web"
+			? (state?.returnTo ?? getDefaultAllowedRedirect("/"))
+			: successRedirect);
 
 	if (!state || !params.state || state.state !== params.state) {
 		return NextResponse.redirect(
-			new URL(
+			resolveRedirectURL(
+				request,
 				getOAuthErrorRedirectPath(errorRedirect, "invalid_state"),
-				request.url,
 			),
 		);
 	}
@@ -67,18 +81,18 @@ async function handleCallback(
 		}
 
 		return NextResponse.redirect(
-			new URL(
+			resolveRedirectURL(
+				request,
 				getOAuthErrorRedirectPath(errorRedirect, params.error),
-				request.url,
 			),
 		);
 	}
 
 	if (!params.code) {
 		return NextResponse.redirect(
-			new URL(
+			resolveRedirectURL(
+				request,
 				getOAuthErrorRedirectPath(errorRedirect, "missing_code"),
-				request.url,
 			),
 		);
 	}
@@ -88,7 +102,13 @@ async function handleCallback(
 		const identity = await getOAuthProvider(provider).exchangeCodeForIdentity({
 			code: params.code,
 			rawUser: params.rawUser,
-			redirectUri: getOAuthCallbackURL(request, provider),
+			redirectUri: getOAuthCallbackURL(
+				request,
+				provider,
+				state.audience === "web" && isAllowedAbsoluteRedirect(state.returnTo)
+					? state.returnTo
+					: undefined,
+			),
 		});
 		const user = await resolveOAuthUser(payload, identity, {
 			audience: state.audience === "admin" ? "admin" : "app",
@@ -111,7 +131,7 @@ async function handleCallback(
 		const response = NextResponse.redirect(
 			isAllowedAbsoluteRedirect(successRedirect)
 				? successRedirect
-				: new URL(successRedirect, request.url),
+				: resolveRedirectURL(request, successRedirect),
 		);
 		response.cookies.delete(getOAuthStateCookieName(provider));
 		response.headers.append("Set-Cookie", cookie);
@@ -129,7 +149,10 @@ async function handleCallback(
 		}
 
 		const response = NextResponse.redirect(
-			new URL(getOAuthErrorRedirectPath(errorRedirect, message), request.url),
+			resolveRedirectURL(
+				request,
+				getOAuthErrorRedirectPath(errorRedirect, message),
+			),
 		);
 		response.cookies.delete(getOAuthStateCookieName(provider));
 		return response;
