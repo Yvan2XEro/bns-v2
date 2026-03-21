@@ -7,6 +7,7 @@ import {
 	getOAuthCallbackURL,
 	getOAuthErrorRedirectPath,
 	getOAuthStateCookieName,
+	getOAuthStateCookieOptions,
 	getPublicRequestOrigin,
 	isAllowedAbsoluteRedirect,
 	parseOAuthStateCookie,
@@ -14,6 +15,7 @@ import {
 } from "@/auth/oauth/flow";
 import { getOAuthProvider, isOAuthProvider } from "@/auth/oauth/providers";
 import { issuePayloadSession } from "@/auth/oauth/session";
+import type { OAuthProvider } from "@/auth/oauth/types";
 import { resolveOAuthUser } from "@/auth/oauth/users";
 
 function getMobileErrorRedirect(mobileRedirectUri: string, error: string): URL {
@@ -28,6 +30,16 @@ function resolveRedirectURL(request: NextRequest, target: string): URL {
 	}
 
 	return new URL(target, getPublicRequestOrigin(request));
+}
+
+function clearOAuthStateCookie(
+	response: NextResponse,
+	provider: OAuthProvider,
+) {
+	response.cookies.set(getOAuthStateCookieName(provider), "", {
+		...getOAuthStateCookieOptions(),
+		maxAge: 0,
+	});
 }
 
 async function handleCallback(
@@ -76,7 +88,7 @@ async function handleCallback(
 			const response = NextResponse.redirect(
 				getMobileErrorRedirect(state.mobileRedirectUri, params.error),
 			);
-			response.cookies.delete(getOAuthStateCookieName(provider));
+			clearOAuthStateCookie(response, provider);
 			return response;
 		}
 
@@ -118,7 +130,7 @@ async function handleCallback(
 			const mobileURL = new URL(state.mobileRedirectUri);
 			mobileURL.searchParams.set("transferToken", transferToken);
 			const response = NextResponse.redirect(mobileURL);
-			response.cookies.delete(getOAuthStateCookieName(provider));
+			clearOAuthStateCookie(response, provider);
 			return response;
 		}
 
@@ -127,7 +139,7 @@ async function handleCallback(
 				? successRedirect
 				: resolveRedirectURL(request, successRedirect),
 		);
-		response.cookies.delete(getOAuthStateCookieName(provider));
+		clearOAuthStateCookie(response, provider);
 		response.headers.append("Set-Cookie", cookie);
 		return response;
 	} catch (error) {
@@ -148,7 +160,7 @@ async function handleCallback(
 				getOAuthErrorRedirectPath(errorRedirect, message),
 			),
 		);
-		response.cookies.delete(getOAuthStateCookieName(provider));
+		clearOAuthStateCookie(response, provider);
 		return response;
 	}
 }

@@ -100,22 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		provider: SocialAuthProvider,
 		redirectTo = "/",
 	): void {
-		const apiBaseURL =
-			process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
-			window.location.origin;
-		const startURL = new URL(
-			`/api/public/auth/oauth/${provider}/start`,
-			apiBaseURL,
-		);
-
-		startURL.searchParams.set("audience", "web");
-		startURL.searchParams.set("redirectTo", redirectTo);
-		startURL.searchParams.set(
-			"returnTo",
+		const target = encodeURIComponent(redirectTo);
+		const returnTo = encodeURIComponent(
 			new URL(redirectTo, window.location.origin).toString(),
 		);
-
-		window.location.assign(startURL.toString());
+		window.location.assign(
+			`/api/public/auth/oauth/${provider}/start?audience=web&redirectTo=${target}&returnTo=${returnTo}`,
+		);
 	}
 
 	async function logout() {
