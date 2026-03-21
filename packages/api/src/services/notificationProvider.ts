@@ -14,6 +14,9 @@ export function getNotificationProvider(): Novu {
 		throw new Error("NOVU_SECRET_KEY environment variable is not set");
 	}
 
-	notificationProvider = new Novu({ secretKey });
+	notificationProvider = new Novu({
+		secretKey,
+		serverURL: process.env.NOVU_API_URL || undefined,
+	});
 	return notificationProvider;
 }

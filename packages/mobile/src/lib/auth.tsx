@@ -17,7 +17,10 @@ interface AuthContextType {
 	token: string | null;
 	isLoading: boolean;
 	login: (email: string, password: string) => Promise<void>;
-	loginWithProvider: (provider: SocialAuthProvider) => Promise<void>;
+	loginWithProvider: (
+		provider: SocialAuthProvider,
+		redirectTo?: string,
+	) => Promise<void>;
 	register: (name: string, email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
@@ -69,8 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const loginWithProvider = async (
 		provider: SocialAuthProvider,
+		redirectTo?: string,
 	): Promise<void> => {
-		const redirectUri = Linking.createURL("/auth/callback");
+		const callbackPath = redirectTo
+			? `/auth/callback?redirect=${encodeURIComponent(redirectTo)}`
+			: "/auth/callback";
+		const redirectUri = Linking.createURL(callbackPath);
 		const startUrl = `${API_BASE_URL}/api/public/auth/oauth/${provider}/start?audience=mobile&mobileRedirectUri=${encodeURIComponent(redirectUri)}`;
 		const result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUri);
 

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import React, { useMemo } from "react";
 import {
 	FlatList,
@@ -26,19 +26,26 @@ import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<any[]>);
 
 // Height of the expanded title row (icon 44 + gap between rows ~16)
 const EXPANDED_ROW_H = 60;
 
-const _SORT_KEYS = ["recent", "price_asc", "price_desc", "az"] as const;
+const SORTS = [
+	{ key: "recent", label: "Récents", icon: "time-outline" },
+	{ key: "price_asc", label: "Prix ↑", icon: "arrow-up-outline" },
+	{ key: "price_desc", label: "Prix ↓", icon: "arrow-down-outline" },
+	{ key: "az", label: "A-Z", icon: "text-outline" },
+] as const;
 
 type SortKey = (typeof SORTS)[number]["key"];
 
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
+	const pathname = usePathname();
 
 	const [query, setQuery] = React.useState("");
 	const [sortKey, setSortKey] = React.useState<SortKey>("recent");
@@ -154,7 +161,12 @@ export default function FavoritesScreen() {
 						title="Connectez-vous"
 						subtitle="Créez un compte pour sauvegarder vos annonces favorites"
 						ctaLabel="Se connecter"
-						onCta={() => router.push("/auth/login")}
+						onCta={() =>
+							router.push({
+								pathname: "/auth/login",
+								params: getAuthModalParams(pathname),
+							})
+						}
 					/>
 				</View>
 			</SafeAreaView>

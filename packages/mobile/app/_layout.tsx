@@ -25,6 +25,7 @@ import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
+import { Linking } from "react-native";
 import "react-native-reanimated";
 import { NovuProvider } from "@novu/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -177,11 +178,27 @@ function PushTokenRegistrar() {
 // Navigation is deferred until auth is resolved and the user is logged in.
 
 function resolveNotificationUrl(data: Record<string, unknown>): string | null {
+	const directUrl =
+		(typeof data?.url === "string" && data.url) ||
+		(typeof data?.redirectUrl === "string" && data.redirectUrl) ||
+		(typeof data?.searchUrl === "string" && data.searchUrl) ||
+		(typeof data?.deepLink === "string" && data.deepLink);
+	if (directUrl) return directUrl;
+
 	const conversationId = data?.conversationId as string | undefined;
 	const listingId = data?.listingId as string | undefined;
 	if (conversationId) return `/messages/${conversationId}`;
 	if (listingId) return `/listing/${listingId}`;
 	return null;
+}
+
+function navigateFromNotificationUrl(url: string) {
+	if (url.startsWith("/")) {
+		router.push(url as Parameters<typeof router.push>[0]);
+		return;
+	}
+
+	void Linking.openURL(url);
 }
 
 function PushNotificationHandler() {
@@ -206,7 +223,7 @@ function PushNotificationHandler() {
 					response.notification.request.content.data as Record<string, unknown>,
 				);
 				if (!url) return;
-				if (isReady) router.push(url as Parameters<typeof router.push>[0]);
+				if (isReady) navigateFromNotificationUrl(url);
 				else pendingUrlRef.current = url;
 			},
 		);
@@ -215,7 +232,7 @@ function PushNotificationHandler() {
 
 	useEffect(() => {
 		if (isReady && pendingUrlRef.current) {
-			router.push(pendingUrlRef.current as Parameters<typeof router.push>[0]);
+			navigateFromNotificationUrl(pendingUrlRef.current);
 			pendingUrlRef.current = null;
 		}
 	}, [isReady]);
@@ -294,6 +311,7 @@ function RootLayoutNav() {
 					name="auth/forgot-password"
 					options={{ presentation: "modal", headerShown: false }}
 				/>
+				<Stack.Screen name="auth/callback" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="filters"
 					options={{ presentation: "modal", headerShown: false }}

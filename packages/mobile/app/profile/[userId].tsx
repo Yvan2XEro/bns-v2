@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -24,6 +24,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 
 const { width } = Dimensions.get("window");
@@ -34,6 +35,7 @@ export default function PublicProfileScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
 	const { user } = useAuth();
+	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { showSuccess, showError } = useAlert();
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
@@ -216,7 +218,10 @@ export default function PublicProfileScreen() {
 								onPress={() =>
 									user
 										? router.push("/(tabs)/messages")
-										: router.push("/auth/login")
+										: router.push({
+												pathname: "/auth/login",
+												params: getAuthModalParams(pathname),
+											})
 								}
 								style={[styles.msgBtn, { backgroundColor: primaryColor }]}
 							>

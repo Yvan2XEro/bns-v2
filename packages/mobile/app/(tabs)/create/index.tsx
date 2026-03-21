@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { useRef, useState } from "react";
 import {
 	ActivityIndicator,
@@ -27,6 +27,7 @@ import { CityPicker } from "@/src/components/CityPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -69,6 +70,7 @@ export default function CreateScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
 	const { user } = useAuth();
+	const pathname = usePathname();
 	const [step, setStep] = useState(0);
 
 	const STEPS = [
@@ -172,7 +174,12 @@ export default function CreateScreen() {
 							{t("create.loginRequiredSubtitle")}
 						</Text>
 						<Pressable
-							onPress={() => router.push("/auth/login")}
+							onPress={() =>
+								router.push({
+									pathname: "/auth/login",
+									params: getAuthModalParams(pathname),
+								})
+							}
 							style={[styles.loginBtn, { backgroundColor: primary }]}
 						>
 							<Text style={styles.loginBtnText}>{t("auth.login")}</Text>

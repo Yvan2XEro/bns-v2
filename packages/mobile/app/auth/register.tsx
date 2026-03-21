@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -19,6 +19,10 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
+import {
+	getAuthModalParams,
+	getSafeAuthRedirect,
+} from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 
 function AppLogo({ isDark }: { isDark: boolean }) {
@@ -117,6 +121,7 @@ export default function RegisterScreen() {
 	const { loginWithProvider, register } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
+	const params = useLocalSearchParams<{ redirect?: string }>();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -132,6 +137,16 @@ export default function RegisterScreen() {
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 
 	const fieldColors = { mutedColor, borderColor, textColor };
+	const redirectTo = getSafeAuthRedirect(params.redirect);
+
+	const finishAuth = () => {
+		if (params.redirect) {
+			router.replace(redirectTo);
+			return;
+		}
+
+		router.dismiss();
+	};
 
 	const handleRegister = async () => {
 		if (!name || !email || !password || !confirm) {
@@ -155,7 +170,7 @@ export default function RegisterScreen() {
 		setLoading(true);
 		try {
 			await register(name.trim(), email.trim().toLowerCase(), password);
-			router.dismiss();
+			finishAuth();
 		} catch (err: unknown) {
 			showError(
 				t("auth.registerFailedTitle"),
@@ -171,8 +186,8 @@ export default function RegisterScreen() {
 	) => {
 		setLoading(true);
 		try {
-			await loginWithProvider(provider);
-			router.dismiss();
+			await loginWithProvider(provider, redirectTo);
+			finishAuth();
 		} catch (err: unknown) {
 			showError(
 				t("auth.registerFailedTitle"),
@@ -301,10 +316,12 @@ export default function RegisterScreen() {
 							{t("auth.alreadyHaveAccount")}{" "}
 						</Text>
 						<Pressable
-							onPress={() => {
-								router.dismiss();
-								router.push("/auth/login");
-							}}
+							onPress={() =>
+								router.replace({
+									pathname: "/auth/login",
+									params: getAuthModalParams(params.redirect),
+								})
+							}
 						>
 							<Text style={[styles.loginLink, { color: primaryColor }]}>
 								{t("auth.signIn")}

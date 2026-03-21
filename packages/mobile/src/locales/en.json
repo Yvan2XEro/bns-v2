@@ -95,6 +95,8 @@
 		"passwordMismatchMessage": "The passwords you entered do not match",
 		"registerFailedTitle": "Registration failed",
 		"registerFailedMessage": "An error occurred",
+		"callbackTitle": "Signing you in...",
+		"callbackSubtitle": "Returning to the app",
 		"errorTitle": "Error",
 		"errorGeneric": "An error occurred"
 	},

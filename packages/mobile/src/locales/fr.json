@@ -95,6 +95,8 @@
 		"passwordMismatchMessage": "Les mots de passe ne correspondent pas",
 		"registerFailedTitle": "Inscription échouée",
 		"registerFailedMessage": "Une erreur est survenue",
+		"callbackTitle": "Connexion en cours...",
+		"callbackSubtitle": "Retour à l'application",
 		"errorTitle": "Erreur",
 		"errorGeneric": "Une erreur est survenue"
 	},

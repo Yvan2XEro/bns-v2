@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCounts } from "@novu/react-native";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
@@ -12,6 +12,7 @@ import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -100,6 +101,7 @@ export default function AccountScreen() {
 	const { user, logout } = useAuth();
 	const { showConfirm } = useAlert();
 	const { t } = useTranslation();
+	const pathname = usePathname();
 
 	const notificationReady = useNotificationReady();
 
@@ -136,13 +138,25 @@ export default function AccountScreen() {
 						title={t("account.signIn")}
 						subtitle={t("account.signInPrompt")}
 						ctaLabel={t("account.signIn")}
-						onCta={() => router.push("/auth/login")}
+						onCta={() =>
+							router.push({
+								pathname: "/auth/login",
+								params: getAuthModalParams(pathname),
+							})
+						}
 					/>
 					<View style={styles.registerRow}>
 						<Text style={[styles.registerText, { color: mutedColor }]}>
 							{t("account.noAccountQ")}{" "}
 						</Text>
-						<Pressable onPress={() => router.push("/auth/register")}>
+						<Pressable
+							onPress={() =>
+								router.push({
+									pathname: "/auth/register",
+									params: getAuthModalParams(pathname),
+								})
+							}
+						>
 							<Text style={[styles.registerLink, { color: primaryColor }]}>
 								{t("account.createAccount")}
 							</Text>

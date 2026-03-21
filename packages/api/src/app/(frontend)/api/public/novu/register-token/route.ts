@@ -1,7 +1,7 @@
+import { ChatOrPushProviderEnum } from "@novu/api/models/components";
 import configPromise from "@payload-config";
 import { getPayload } from "payload";
-
-const NOVU_API_URL = process.env.NOVU_API_URL ?? "https://api.novu.co";
+import { getNotificationProvider } from "../../../../../../services/notificationProvider";
 
 export async function POST(request: Request) {
 	const payload = await getPayload({ config: configPromise });
@@ -11,8 +11,7 @@ export async function POST(request: Request) {
 		return Response.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const secretKey = process.env.NOVU_SECRET_KEY;
-	if (!secretKey) {
+	if (!process.env.NOVU_SECRET_KEY) {
 		return Response.json({ error: "Novu not configured" }, { status: 500 });
 	}
 
@@ -28,41 +27,27 @@ export async function POST(request: Request) {
 		return Response.json({ error: "token is required" }, { status: 400 });
 	}
 
+	const notificationProvider = getNotificationProvider();
+
 	// Ensure subscriber exists
-	await fetch(`${NOVU_API_URL}/v1/subscribers`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `ApiKey ${secretKey}`,
-		},
-		body: JSON.stringify({
-			subscriberId: user.id,
-			email: user.email,
-			firstName: user.name,
-		}),
+	await notificationProvider.subscribers.create({
+		subscriberId: user.id,
+		email: user.email,
+		firstName: user.name,
 	});
 
-	// Register Expo push token as device credential
-	const credResponse = await fetch(
-		`${NOVU_API_URL}/v1/subscribers/${user.id}/credentials`,
-		{
-			method: "PUT",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `ApiKey ${secretKey}`,
-			},
-			body: JSON.stringify({
-				providerId: "expo",
+	try {
+		await notificationProvider.subscribers.credentials.update(
+			{
+				providerId: ChatOrPushProviderEnum.Expo,
+				integrationIdentifier:
+					process.env.NOVU_EXPO_INTEGRATION_IDENTIFIER || undefined,
 				credentials: { deviceTokens: [token] },
-			}),
-		},
-	);
-
-	if (!credResponse.ok) {
-		console.error(
-			"[novu] Failed to register push token:",
-			await credResponse.text(),
+			},
+			user.id,
 		);
+	} catch (error) {
+		console.error("[novu] Failed to register push token:", error);
 		return Response.json(
 			{ error: "Failed to register token" },
 			{ status: 500 },

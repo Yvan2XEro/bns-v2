@@ -168,7 +168,10 @@ function NotificationRow({
 
 	const handleRowPress = async () => {
 		if (!item.isRead) await item.read();
-		const url = item.redirect?.url;
+		const url =
+			item.redirect?.url ??
+			(typeof data?.url === "string" ? data.url : undefined) ??
+			(typeof data?.searchUrl === "string" ? data.searchUrl : undefined);
 		if (url) {
 			navigate(url);
 			return;

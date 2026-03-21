@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { useAlert } from "../contexts/AlertContext";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { getAuthModalParams } from "../lib/authRedirect";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,7 @@ export function useToggleFavorite() {
 export function useFavoriteActions() {
 	const { user } = useAuth();
 	const { showError } = useAlert();
+	const pathname = usePathname();
 	const favoritesQuery = useFavorites();
 	const toggleMutation = useToggleFavorite();
 
@@ -178,7 +180,10 @@ export function useFavoriteActions() {
 			const listingId = typeof listing === "string" ? listing : listing.id;
 
 			if (!user) {
-				router.push("/auth/login");
+				router.push({
+					pathname: "/auth/login",
+					params: getAuthModalParams(pathname),
+				});
 				return;
 			}
 
@@ -198,7 +203,7 @@ export function useFavoriteActions() {
 				},
 			);
 		},
-		[findFavorite, showError, toggleMutation, user],
+		[findFavorite, pathname, showError, toggleMutation, user],
 	);
 
 	return {

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
@@ -22,6 +22,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 
 function formatTime(dateStr: string): string {
@@ -42,6 +43,7 @@ export default function MessagesScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
 	const { user } = useAuth();
+	const pathname = usePathname();
 	const { onlineUsers, chatClient } = useChatClient();
 	const queryClient = useQueryClient();
 	const [search, setSearch] = useState("");
@@ -194,7 +196,12 @@ export default function MessagesScreen() {
 						title={t("auth.loginRequired")}
 						subtitle={t("auth.loginToAccess")}
 						ctaLabel={t("auth.signIn")}
-						onCta={() => router.push("/auth/login")}
+						onCta={() =>
+							router.push({
+								pathname: "/auth/login",
+								params: getAuthModalParams(pathname),
+							})
+						}
 					/>
 				</View>
 			</SafeAreaView>

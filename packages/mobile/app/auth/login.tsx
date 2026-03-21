@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -18,6 +18,10 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAuth } from "@/src/lib/auth";
+import {
+	getAuthModalParams,
+	getSafeAuthRedirect,
+} from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 
 function AppLogo({ isDark }: { isDark: boolean }) {
@@ -48,6 +52,10 @@ export default function LoginScreen() {
 	const { login, loginWithProvider } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
+	const params = useLocalSearchParams<{
+		oauthError?: string;
+		redirect?: string;
+	}>();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPwd, setShowPwd] = useState(false);
@@ -59,6 +67,24 @@ export default function LoginScreen() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
+	const redirectTo = getSafeAuthRedirect(params.redirect);
+
+	const finishAuth = () => {
+		if (params.redirect) {
+			router.replace(redirectTo);
+			return;
+		}
+
+		router.dismiss();
+	};
+
+	useEffect(() => {
+		if (typeof params.oauthError !== "string" || !params.oauthError.length) {
+			return;
+		}
+
+		showError(t("auth.loginFailedTitle"), params.oauthError);
+	}, [params.oauthError, showError, t]);
 
 	const handleLogin = async () => {
 		if (!email || !password) {
@@ -68,7 +94,7 @@ export default function LoginScreen() {
 		setLoading(true);
 		try {
 			await login(email.trim().toLowerCase(), password);
-			router.dismiss();
+			finishAuth();
 		} catch (err: unknown) {
 			showError(
 				t("auth.loginFailedTitle"),
@@ -84,8 +110,8 @@ export default function LoginScreen() {
 	) => {
 		setLoading(true);
 		try {
-			await loginWithProvider(provider);
-			router.dismiss();
+			await loginWithProvider(provider, redirectTo);
+			finishAuth();
 		} catch (err: unknown) {
 			showError(
 				t("auth.loginFailedTitle"),
@@ -219,10 +245,12 @@ export default function LoginScreen() {
 							{t("auth.noAccount")}{" "}
 						</Text>
 						<Pressable
-							onPress={() => {
-								router.dismiss();
-								router.push("/auth/register");
-							}}
+							onPress={() =>
+								router.replace({
+									pathname: "/auth/register",
+									params: getAuthModalParams(params.redirect),
+								})
+							}
 						>
 							<Text style={[styles.registerLink, { color: primaryColor }]}>
 								{t("auth.createAccount")}

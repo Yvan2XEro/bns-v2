@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -25,6 +25,7 @@ import { StatusPill } from "@/src/components/StatusPill";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -35,6 +36,7 @@ export default function ListingDetail() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const { t } = useTranslation();
+	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
@@ -109,7 +111,10 @@ export default function ListingDetail() {
 
 	const handleMessage = async () => {
 		if (!user) {
-			router.push("/auth/login");
+			router.push({
+				pathname: "/auth/login",
+				params: getAuthModalParams(pathname),
+			});
 			return;
 		}
 		if (!seller) return;
