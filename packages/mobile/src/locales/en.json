@@ -472,7 +472,17 @@
 		"gallery": "Gallery",
 		"cancel": "Cancel",
 		"uploadError": "Could not add the photo.",
-		"days": "days"
+		"days": "days",
+		"statusSection": "Publication",
+		"statusSectionDesc": "Manage your listing visibility",
+		"statusCurrentLabel": "Current status",
+		"statusDraft": "Save as draft",
+		"statusDraftDesc": "Not visible to buyers",
+		"statusPending": "Submit for review",
+		"statusPendingDesc": "Will be reviewed by our team within 24h",
+		"statusPublishedNotice": "Editing this listing will re-submit it for review.",
+		"statusRejectedNotice": "Your listing was rejected.",
+		"statusRejectionReason": "Reason: {{reason}}"
 	},
 	"profile": {
 		"bio": "Bio",

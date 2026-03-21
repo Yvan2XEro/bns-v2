@@ -357,7 +357,17 @@
 		"gallery": "Galerie",
 		"cancel": "Annuler",
 		"uploadError": "Impossible d'ajouter la photo.",
-		"days": "jours"
+		"days": "jours",
+		"statusSection": "Publication",
+		"statusSectionDesc": "Gérez la visibilité de votre annonce",
+		"statusCurrentLabel": "Statut actuel",
+		"statusDraft": "Brouillon",
+		"statusDraftDesc": "Non visible par les acheteurs",
+		"statusPending": "Soumettre pour révision",
+		"statusPendingDesc": "Sera examiné par notre équipe sous 24h",
+		"statusPublishedNotice": "Modifier cette annonce la soumettra à nouveau pour révision.",
+		"statusRejectedNotice": "Votre annonce a été rejetée.",
+		"statusRejectionReason": "Raison : {{reason}}"
 	},
 	"messages": {
 		"title": "Messages",

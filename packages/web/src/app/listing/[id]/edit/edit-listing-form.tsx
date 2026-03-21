@@ -29,6 +29,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
+import { cn } from "~/lib/utils";
 import type {
 	Category,
 	CategoryAttribute,
@@ -59,6 +60,17 @@ export function EditListingForm({
 }) {
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
+
+	type UserStatus = "draft" | "pending";
+
+	function getDefaultStatus(status: string): UserStatus {
+		if (status === "draft") return "draft";
+		return "pending";
+	}
+
+	const [nextStatus, setNextStatus] = useState<UserStatus>(() =>
+		getDefaultStatus(listing.status),
+	);
 
 	const currentCategoryId =
 		typeof listing.category === "object"
@@ -182,6 +194,7 @@ export function EditListingForm({
 				condition: formData.condition || undefined,
 				attributes: attributeValues,
 				images: allImageIds.map((id) => ({ image: id })),
+				status: nextStatus,
 			};
 
 			if (coordinates) {
@@ -402,14 +415,125 @@ export function EditListingForm({
 			{/* Status */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Status</CardTitle>
+					<CardTitle>Publication</CardTitle>
+					<CardDescription>
+						Gérez la visibilité de votre annonce
+					</CardDescription>
 				</CardHeader>
-				<CardContent>
-					<Badge
-						variant={listing.status === "published" ? "default" : "secondary"}
-					>
-						{listing.status}
-					</Badge>
+				<CardContent className="space-y-4">
+					{/* Current status */}
+					<div className="flex items-center gap-2 text-sm">
+						<span className="text-muted-foreground">Statut actuel :</span>
+						<Badge
+							variant={
+								listing.status === "published"
+									? "default"
+									: listing.status === "rejected"
+										? "destructive"
+										: "secondary"
+							}
+							className={cn(
+								listing.status === "pending" &&
+									"border-amber-300 bg-amber-50 text-amber-700",
+								listing.status === "draft" &&
+									"border-slate-300 bg-slate-50 text-slate-600",
+								listing.status === "sold" &&
+									"border-purple-300 bg-purple-50 text-purple-700",
+								listing.status === "expired" &&
+									"border-orange-300 bg-orange-50 text-orange-700",
+							)}
+						>
+							{listing.status === "draft" && "Brouillon"}
+							{listing.status === "pending" && "En attente de révision"}
+							{listing.status === "published" && "Publié"}
+							{listing.status === "rejected" && "Rejeté"}
+							{listing.status === "sold" && "Vendu"}
+							{listing.status === "expired" && "Expiré"}
+							{listing.status === "deleted" && "Supprimé"}
+						</Badge>
+					</div>
+
+					{/* Published notice */}
+					{listing.status === "published" && (
+						<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
+							⚠️ Modifier cette annonce la soumettra à nouveau pour révision.
+						</div>
+					)}
+
+					{/* Rejection reason */}
+					{listing.status === "rejected" && (
+						<div className="space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 text-sm">
+							<p className="font-medium">Votre annonce a été rejetée.</p>
+							{(listing as any).rejectionReason && (
+								<p>Raison : {(listing as any).rejectionReason}</p>
+							)}
+						</div>
+					)}
+
+					{/* Status options */}
+					<div className="grid grid-cols-2 gap-3 pt-1">
+						<button
+							type="button"
+							onClick={() => setNextStatus("draft")}
+							className={cn(
+								"flex flex-col gap-1 rounded-xl border-2 p-4 text-left transition-colors",
+								nextStatus === "draft"
+									? "border-primary bg-primary/5"
+									: "border-border bg-background hover:border-muted-foreground/40",
+							)}
+						>
+							<div className="flex items-center gap-2">
+								<div
+									className={cn(
+										"flex h-4 w-4 items-center justify-center rounded-full border-2",
+										nextStatus === "draft"
+											? "border-primary"
+											: "border-muted-foreground/40",
+									)}
+								>
+									{nextStatus === "draft" && (
+										<div className="h-2 w-2 rounded-full bg-primary" />
+									)}
+								</div>
+								<span className="font-semibold text-sm">Brouillon</span>
+							</div>
+							<p className="pl-6 text-muted-foreground text-xs">
+								Non visible par les acheteurs
+							</p>
+						</button>
+
+						<button
+							type="button"
+							onClick={() => setNextStatus("pending")}
+							className={cn(
+								"flex flex-col gap-1 rounded-xl border-2 p-4 text-left transition-colors",
+								nextStatus === "pending"
+									? "border-primary bg-primary/5"
+									: "border-border bg-background hover:border-muted-foreground/40",
+							)}
+						>
+							<div className="flex items-center gap-2">
+								<div
+									className={cn(
+										"flex h-4 w-4 items-center justify-center rounded-full border-2",
+										nextStatus === "pending"
+											? "border-primary"
+											: "border-muted-foreground/40",
+									)}
+								>
+									{nextStatus === "pending" && (
+										<div className="h-2 w-2 rounded-full bg-primary" />
+									)}
+								</div>
+								<span className="font-semibold text-sm">
+									Soumettre pour révision
+								</span>
+							</div>
+							<p className="pl-6 text-muted-foreground text-xs">
+								Sera examiné par notre équipe sous 24h
+							</p>
+						</button>
+					</div>
 				</CardContent>
 			</Card>
 

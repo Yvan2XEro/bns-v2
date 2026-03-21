@@ -63,10 +63,16 @@ export const Listings: CollectionConfig = {
 					data.duration = undefined;
 				}
 
-				if (operation === "update" && data.status === "published") {
+				if (operation === "update" && data.status !== undefined) {
 					const u = req.user as { role?: string } | undefined;
-					if (u?.role !== "admin" && u?.role !== "moderator") {
-						data.status = "pending";
+					const isAdmin = u?.role === "admin" || u?.role === "moderator";
+					if (!isAdmin) {
+						// Non-admins can only transition to these statuses
+						const userAllowed = ["draft", "pending", "sold"];
+						if (!userAllowed.includes(data.status)) {
+							// published → pending (re-submit for review); anything else → ignore
+							data.status = data.status === "published" ? "pending" : undefined;
+						}
 					}
 				}
 

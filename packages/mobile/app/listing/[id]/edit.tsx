@@ -138,10 +138,13 @@ export default function EditListingScreen() {
 	const [attributes, setAttributes] = useState<Record<string, any>>({});
 	const [images, setImages] = useState<ImageItem[]>([]);
 	const [uploading, setUploading] = useState(false);
+	const [nextStatus, setNextStatus] = useState<"draft" | "pending">("pending");
 
 	// Initialize once listing is loaded
 	useEffect(() => {
 		if (!listing) return;
+		const s = listing.status ?? "pending";
+		setNextStatus(s === "draft" ? "draft" : "pending");
 		setTitle(listing.title ?? "");
 		setDescription(listing.description ?? "");
 		setPrice(String(listing.price ?? ""));
@@ -260,6 +263,7 @@ export default function EditListingScreen() {
 				duration,
 				images: images.map((img) => ({ image: img.id })),
 				...(Object.keys(attributes).length > 0 ? { attributes } : {}),
+				status: nextStatus,
 			}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["listing", id] });
@@ -686,6 +690,260 @@ export default function EditListingScreen() {
 						))}
 					</SectionCard>
 				)}
+
+				{/* \u2500\u2500 Publication \u2500\u2500 */}
+				<SectionCard
+					icon="paper-plane-outline"
+					title={t("edit.statusSection")}
+					{...sharedSection}
+				>
+					{/* Current status badge */}
+					{listing?.status &&
+						(() => {
+							const s = listing.status as string;
+							const statusColors: Record<
+								string,
+								{ bg: string; text: string; border: string }
+							> = {
+								draft: {
+									bg: isDark ? "#1e293b" : "#f1f5f9",
+									text: isDark ? "#94a3b8" : "#64748b",
+									border: isDark ? "#334155" : "#cbd5e1",
+								},
+								pending: {
+									bg: isDark ? "#2d1f00" : "#fffbeb",
+									text: isDark ? "#fbbf24" : "#92400e",
+									border: isDark ? "#854d0e" : "#fde68a",
+								},
+								published: {
+									bg: isDark ? "#052e16" : "#f0fdf4",
+									text: isDark ? "#4ade80" : "#15803d",
+									border: isDark ? "#166534" : "#bbf7d0",
+								},
+								rejected: {
+									bg: isDark ? "#2d0707" : "#fef2f2",
+									text: isDark ? "#f87171" : "#b91c1c",
+									border: isDark ? "#991b1b" : "#fecaca",
+								},
+								sold: {
+									bg: isDark ? "#1e1440" : "#faf5ff",
+									text: isDark ? "#c084fc" : "#7e22ce",
+									border: isDark ? "#6b21a8" : "#e9d5ff",
+								},
+								expired: {
+									bg: isDark ? "#2c1000" : "#fff7ed",
+									text: isDark ? "#fb923c" : "#c2410c",
+									border: isDark ? "#9a3412" : "#fed7aa",
+								},
+							};
+							const colors = statusColors[s] ?? statusColors.draft;
+							const statusLabel: Record<string, string> = {
+								draft:
+									t("listings.statusPublished") === "Publi\u00e9"
+										? "Brouillon"
+										: "Draft",
+								pending: "En attente",
+								published: "Publi\u00e9",
+								rejected: "Rejet\u00e9",
+								sold: "Vendu",
+								expired: "Expir\u00e9",
+							};
+							return (
+								<View style={{ gap: 8 }}>
+									<View
+										style={{
+											flexDirection: "row",
+											alignItems: "center",
+											gap: 8,
+										}}
+									>
+										<Text style={[styles.fieldLabel, { color: mutedColor }]}>
+											{t("edit.statusCurrentLabel")}
+										</Text>
+										<View
+											style={{
+												borderRadius: 20,
+												borderWidth: 1,
+												borderColor: colors.border,
+												backgroundColor: colors.bg,
+												paddingHorizontal: 10,
+												paddingVertical: 3,
+											}}
+										>
+											<Text
+												style={{
+													fontSize: 12,
+													fontFamily: Fonts.bodySemibold,
+													color: colors.text,
+												}}
+											>
+												{statusLabel[s] ?? s}
+											</Text>
+										</View>
+									</View>
+
+									{s === "published" && (
+										<View
+											style={{
+												borderRadius: 10,
+												borderWidth: 1,
+												borderColor: isDark ? "#854d0e" : "#fde68a",
+												backgroundColor: isDark ? "#2d1f00" : "#fffbeb",
+												padding: 10,
+												flexDirection: "row",
+												gap: 8,
+												alignItems: "flex-start",
+											}}
+										>
+											<Text style={{ fontSize: 14 }}>\u26a0\ufe0f</Text>
+											<Text
+												style={{
+													flex: 1,
+													fontSize: 12,
+													fontFamily: Fonts.body,
+													color: isDark ? "#fbbf24" : "#92400e",
+												}}
+											>
+												{t("edit.statusPublishedNotice")}
+											</Text>
+										</View>
+									)}
+
+									{s === "rejected" && (
+										<View
+											style={{
+												borderRadius: 10,
+												borderWidth: 1,
+												borderColor: isDark ? "#991b1b" : "#fecaca",
+												backgroundColor: isDark ? "#2d0707" : "#fef2f2",
+												padding: 10,
+												gap: 4,
+											}}
+										>
+											<Text
+												style={{
+													fontSize: 12,
+													fontFamily: Fonts.bodySemibold,
+													color: isDark ? "#f87171" : "#b91c1c",
+												}}
+											>
+												{t("edit.statusRejectedNotice")}
+											</Text>
+											{listing?.rejectionReason ? (
+												<Text
+													style={{
+														fontSize: 12,
+														fontFamily: Fonts.body,
+														color: isDark ? "#f87171" : "#b91c1c",
+													}}
+												>
+													{t("edit.statusRejectionReason", {
+														reason: listing.rejectionReason,
+													})}
+												</Text>
+											) : null}
+										</View>
+									)}
+								</View>
+							);
+						})()}
+
+					{/* Status options */}
+					<View style={{ gap: 10 }}>
+						{(
+							[
+								{
+									value: "draft" as const,
+									label: t("edit.statusDraft"),
+									desc: t("edit.statusDraftDesc"),
+									icon: "document-outline" as const,
+								},
+								{
+									value: "pending" as const,
+									label: t("edit.statusPending"),
+									desc: t("edit.statusPendingDesc"),
+									icon: "send-outline" as const,
+								},
+							] satisfies Array<{
+								value: "draft" | "pending";
+								label: string;
+								desc: string;
+								icon: "document-outline" | "send-outline";
+							}>
+						).map((opt) => {
+							const active = nextStatus === opt.value;
+							return (
+								<Pressable
+									key={opt.value}
+									onPress={() => setNextStatus(opt.value)}
+									style={{
+										borderRadius: 12,
+										borderWidth: 2,
+										borderColor: active ? primaryColor : borderColor,
+										backgroundColor: active
+											? isDark
+												? "rgba(59,130,246,0.1)"
+												: "rgba(30,64,175,0.05)"
+											: cardBg,
+										padding: 14,
+										flexDirection: "row",
+										alignItems: "center",
+										gap: 12,
+									}}
+								>
+									<View
+										style={{
+											width: 20,
+											height: 20,
+											borderRadius: 10,
+											borderWidth: 2,
+											borderColor: active ? primaryColor : mutedColor,
+											alignItems: "center",
+											justifyContent: "center",
+										}}
+									>
+										{active && (
+											<View
+												style={{
+													width: 10,
+													height: 10,
+													borderRadius: 5,
+													backgroundColor: primaryColor,
+												}}
+											/>
+										)}
+									</View>
+									<View style={{ flex: 1 }}>
+										<Text
+											style={{
+												fontSize: 14,
+												fontFamily: Fonts.bodySemibold,
+												color: textColor,
+											}}
+										>
+											{opt.label}
+										</Text>
+										<Text
+											style={{
+												fontSize: 12,
+												fontFamily: Fonts.body,
+												color: mutedColor,
+												marginTop: 2,
+											}}
+										>
+											{opt.desc}
+										</Text>
+									</View>
+									<Ionicons
+										name={opt.icon}
+										size={18}
+										color={active ? primaryColor : mutedColor}
+									/>
+								</Pressable>
+							);
+						})}
+					</View>
+				</SectionCard>
 
 				{/* Submit */}
 				<AnimatedPressable
