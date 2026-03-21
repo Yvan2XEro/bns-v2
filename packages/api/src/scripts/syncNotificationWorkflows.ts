@@ -37,6 +37,8 @@ function preferences(
 				email: bool(Boolean(channels.email)),
 				in_app: bool(Boolean(channels.inApp)),
 				push: bool(Boolean(channels.push)),
+				sms: bool(false),
+				chat: bool(false),
 			},
 		},
 		workflow: {
@@ -45,6 +47,8 @@ function preferences(
 				email: bool(Boolean(channels.email)),
 				in_app: bool(Boolean(channels.inApp)),
 				push: bool(Boolean(channels.push)),
+				sms: bool(false),
+				chat: bool(false),
 			},
 		},
 	};
@@ -142,14 +146,17 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Annonce publiee",
-					body: 'Votre annonce "{{listingTitle}}" est maintenant en ligne.',
-					redirect: redirect("/listing/{{listingId}}"),
-					primaryAction: action("Voir l'annonce", "/listing/{{listingId}}"),
-					data: { listingId: "{{listingId}}" },
+					body: 'Votre annonce "{{payload.listingTitle}}" est maintenant en ligne.',
+					redirect: redirect("/listing/{{payload.listingId}}"),
+					primaryAction: action(
+						"Voir l'annonce",
+						"/listing/{{payload.listingId}}",
+					),
+					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Annonce publiee",
-					body: 'Votre annonce "{{listingTitle}}" est maintenant en ligne.',
+					body: 'Votre annonce "{{payload.listingTitle}}" est maintenant en ligne.',
 				}),
 			],
 		},
@@ -176,17 +183,17 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Annonce refusee",
-					body: 'Votre annonce "{{listingTitle}}" a ete refusee. Raison : {{reason}}',
-					redirect: redirect("/listing/{{listingId}}/edit"),
+					body: 'Votre annonce "{{payload.listingTitle}}" a ete refusee. Raison : {{payload.reason}}',
+					redirect: redirect("/listing/{{payload.listingId}}/edit"),
 					primaryAction: action(
 						"Modifier l'annonce",
-						"/listing/{{listingId}}/edit",
+						"/listing/{{payload.listingId}}/edit",
 					),
-					data: { listingId: "{{listingId}}" },
+					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Annonce refusee",
-					body: 'Votre annonce "{{listingTitle}}" a ete refusee. Raison : {{reason}}',
+					body: 'Votre annonce "{{payload.listingTitle}}" a ete refusee. Raison : {{payload.reason}}',
 				}),
 			],
 		},
@@ -214,13 +221,13 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Mise a jour de votre annonce",
-					body: 'Le statut de "{{listingTitle}}" est passe a {{newStatus}}.',
-					redirect: redirect("/listing/{{listingId}}"),
-					data: { listingId: "{{listingId}}" },
+					body: 'Le statut de "{{payload.listingTitle}}" est passe a {{payload.newStatus}}.',
+					redirect: redirect("/listing/{{payload.listingId}}"),
+					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Mise a jour de votre annonce",
-					body: 'Le statut de "{{listingTitle}}" est passe a {{newStatus}}.',
+					body: 'Le statut de "{{payload.listingTitle}}" est passe a {{payload.newStatus}}.',
 				}),
 			],
 		},
@@ -246,14 +253,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Annonce expiree",
-					body: 'Votre annonce "{{listingTitle}}" a expire. Republiez-la pour continuer a vendre.',
-					redirect: redirect("/listing/{{listingId}}"),
-					primaryAction: action("Renouveler", "/listing/{{listingId}}"),
-					data: { listingId: "{{listingId}}" },
+					body: 'Votre annonce "{{payload.listingTitle}}" a expire. Republiez-la pour continuer a vendre.',
+					redirect: redirect("/listing/{{payload.listingId}}"),
+					primaryAction: action("Renouveler", "/listing/{{payload.listingId}}"),
+					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Annonce expiree",
-					body: 'Votre annonce "{{listingTitle}}" a expire. Republiez-la pour continuer a vendre.',
+					body: 'Votre annonce "{{payload.listingTitle}}" a expire. Republiez-la pour continuer a vendre.',
 				}),
 			],
 		},
@@ -279,14 +286,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Boost expire",
-					body: 'Le boost de "{{listingTitle}}" a expire. Reboostez pour plus de visibilite.',
-					redirect: redirect("/boost/{{listingId}}"),
-					primaryAction: action("Rebooster", "/boost/{{listingId}}"),
-					data: { listingId: "{{listingId}}" },
+					body: 'Le boost de "{{payload.listingTitle}}" a expire. Reboostez pour plus de visibilite.',
+					redirect: redirect("/boost/{{payload.listingId}}"),
+					primaryAction: action("Rebooster", "/boost/{{payload.listingId}}"),
+					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Boost expire",
-					body: 'Le boost de "{{listingTitle}}" a expire. Reboostez pour plus de visibilite.',
+					body: 'Le boost de "{{payload.listingTitle}}" a expire. Reboostez pour plus de visibilite.',
 				}),
 			],
 		},
@@ -313,15 +320,18 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Message de {{senderName}}",
-					body: "{{messagePreview}}",
-					redirect: redirect("/messages/{{conversationId}}"),
-					primaryAction: action("Repondre", "/messages/{{conversationId}}"),
-					data: { conversationId: "{{conversationId}}" },
+					subject: "Message de {{payload.senderName}}",
+					body: "{{payload.messagePreview}}",
+					redirect: redirect("/messages/{{payload.conversationId}}"),
+					primaryAction: action(
+						"Repondre",
+						"/messages/{{payload.conversationId}}",
+					),
+					data: { conversationId: "{{payload.conversationId}}" },
 				}),
 				pushStep("Push", "push", {
-					subject: "Message de {{senderName}}",
-					body: "{{messagePreview}}",
+					subject: "Message de {{payload.senderName}}",
+					body: "{{payload.messagePreview}}",
 				}),
 			],
 		},
@@ -347,12 +357,12 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
 				inAppStep("In-App", "in-app", {
-					subject: "Nouvel avis de {{reviewerName}}",
-					body: "{{reviewerName}} vous a laisse {{rating}} etoile(s) {{comment}}",
+					subject: "Nouvel avis de {{payload.reviewerName}}",
+					body: "{{payload.reviewerName}} vous a laisse {{payload.rating}} etoile(s) {{payload.comment}}",
 				}),
 				pushStep("Push", "push", {
-					subject: "Nouvel avis de {{reviewerName}}",
-					body: "{{reviewerName}} vous a laisse {{rating}} etoile(s) {{comment}}",
+					subject: "Nouvel avis de {{payload.reviewerName}}",
+					body: "{{payload.reviewerName}} vous a laisse {{payload.rating}} etoile(s) {{payload.comment}}",
 				}),
 			],
 		},
@@ -379,15 +389,15 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject:
-						'{{matchCount}} nouvelle(s) annonce(s) pour "{{searchName}}"',
-					body: 'De nouvelles annonces correspondent a votre alerte "{{searchName}}".',
-					redirect: redirect("{{searchUrl}}"),
-					primaryAction: action("Voir les annonces", "{{searchUrl}}"),
+						'{{payload.matchCount}} nouvelle(s) annonce(s) pour "{{payload.searchName}}"',
+					body: 'De nouvelles annonces correspondent a votre alerte "{{payload.searchName}}".',
+					redirect: redirect("{{payload.searchUrl}}"),
+					primaryAction: action("Voir les annonces", "{{payload.searchUrl}}"),
 				}),
 				pushStep("Push", "push", {
 					subject:
-						'{{matchCount}} nouvelle(s) annonce(s) pour "{{searchName}}"',
-					body: 'De nouvelles annonces correspondent a votre alerte "{{searchName}}".',
+						'{{payload.matchCount}} nouvelle(s) annonce(s) pour "{{payload.searchName}}"',
+					body: 'De nouvelles annonces correspondent a votre alerte "{{payload.searchName}}".',
 				}),
 			],
 		},
@@ -412,7 +422,7 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				pushStep("Push", "push", {
 					subject: "Compte verifie",
-					body: "Felicitations {{name}} ! Votre compte est maintenant verifie.",
+					body: "Felicitations {{payload.name}} ! Votre compte est maintenant verifie.",
 				}),
 			],
 		},
@@ -440,15 +450,14 @@ const workflowSpecs: WorkflowSpec[] = [
 			preferences: preferences({ email: true }),
 			steps: [
 				emailStep("Email", "email", {
-					subject: "[Contact] {{subject}}",
+					subject: "[Contact] {{payload.subject}}",
 					body: [
-						"<p><strong>De :</strong> {{name}} ({{email}})</p>",
-						"<p><strong>Sujet :</strong> {{subject}}</p>",
+						"<p><strong>De :</strong> {{payload.name}} ({{payload.email}})</p>",
+						"<p><strong>Sujet :</strong> {{payload.subject}}</p>",
 						"<hr />",
-						"<p>{{message}}</p>",
+						"<p>{{payload.message}}</p>",
 					].join(""),
 					editorType: "html",
-					rendererType: "html",
 				}),
 			],
 		},
