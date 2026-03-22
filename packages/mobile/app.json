@@ -4,7 +4,7 @@
 		"slug": "buynsellem",
 		"version": "1.0.0",
 		"orientation": "portrait",
-		"icon": "./assets/icon2.png",
+		"icon": "./assets/images/icon.png",
 		"scheme": "buynsellem",
 		"userInterfaceStyle": "automatic",
 		"newArchEnabled": true,
@@ -32,7 +32,7 @@
 			[
 				"expo-splash-screen",
 				{
-					"image": "./assets/icon2.png",
+					"image": "./assets/images/splash-icon.png",
 					"imageWidth": 200,
 					"resizeMode": "contain",
 					"backgroundColor": "#ffffff",
@@ -53,6 +53,12 @@
 			"eas": {
 				"projectId": "c5bebedf-e500-4243-8386-85cf6d62d233"
 			}
+		},
+		"runtimeVersion": {
+			"policy": "appVersion"
+		},
+		"updates": {
+			"url": "https://u.expo.dev/c5bebedf-e500-4243-8386-85cf6d62d233"
 		}
 	}
 }
