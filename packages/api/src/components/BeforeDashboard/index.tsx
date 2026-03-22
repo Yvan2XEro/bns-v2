@@ -2,6 +2,7 @@ import { Banner } from "@payloadcms/ui/elements/Banner";
 import type React from "react";
 
 import { SeedButton } from "./SeedButton";
+import { SeedTagsButton } from "./SeedTagsButton";
 
 const BeforeDashboard: React.FC = () => {
 	return (
@@ -14,6 +15,12 @@ const BeforeDashboard: React.FC = () => {
 					<SeedButton />
 					{
 						" to populate the database with categories, subcategories, attributes, and images."
+					}
+				</li>
+				<li>
+					<SeedTagsButton />
+					{
+						" to populate the database with the default tags (négociable, livraison, garantie, etc.)."
 					}
 				</li>
 			</ul>
