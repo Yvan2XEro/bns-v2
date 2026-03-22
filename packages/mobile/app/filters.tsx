@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
+import { TagPicker } from "@/src/components/TagPicker";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
@@ -73,7 +74,7 @@ export default function FiltersModal() {
 	});
 	const availableTags: any[] = Array.isArray(tagsData) ? tagsData : [];
 
-	const toggleTag = (slug: string) =>
+	const _toggleTag = (slug: string) =>
 		setSelectedTags((prev) =>
 			prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
 		);
@@ -305,39 +306,16 @@ export default function FiltersModal() {
 						<Text style={[styles.sectionTitle, { color: mutedColor }]}>
 							Tags
 						</Text>
-						<View style={styles.conditionGrid}>
-							{availableTags.map((tag: any) => {
-								const active = selectedTags.includes(tag.slug);
-								return (
-									<Pressable
-										key={tag.id}
-										onPress={() => toggleTag(tag.slug)}
-										style={[
-											styles.pill,
-											{
-												backgroundColor: active ? primaryColor : cardBg,
-												borderColor: active ? primaryColor : borderColor,
-											},
-										]}
-									>
-										{tag.emoji ? (
-											<Text style={{ fontSize: 12 }}>{tag.emoji}</Text>
-										) : null}
-										{active && !tag.emoji && (
-											<Ionicons name="checkmark" size={13} color="#fff" />
-										)}
-										<Text
-											style={[
-												styles.pillText,
-												{ color: active ? "#fff" : textColor },
-											]}
-										>
-											{tag.name}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
+						<TagPicker
+							selectedSlugs={selectedTags}
+							onChangeSlugs={setSelectedTags}
+							availableTags={availableTags}
+							inputBg={cardBg}
+							borderColor={borderColor}
+							textColor={textColor}
+							mutedColor={mutedColor}
+							primaryColor={primaryColor}
+						/>
 					</>
 				)}
 

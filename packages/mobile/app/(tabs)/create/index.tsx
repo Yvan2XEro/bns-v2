@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, usePathname } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Dimensions,
@@ -24,6 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
+import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -446,6 +447,12 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 		{ key: "poor", label: t("conditions.poor"), icon: "construct-outline" },
 	];
 
+	const { data: tagsData } = useQuery({
+		queryKey: ["tags"],
+		queryFn: () => api.get<any[]>("/api/public/tags"),
+	});
+	const availableTags: any[] = Array.isArray(tagsData) ? tagsData : [];
+
 	const update = (key: string, val: any) =>
 		setForm((f: any) => ({ ...f, [key]: val }));
 	const handleCitySelect = (city: CameroonCity) =>
@@ -617,7 +624,26 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 			</View>
 
 			{/* Card: Tags */}
-			<TagsCard form={form} setForm={setForm} colors={colors} />
+			{availableTags.length > 0 && (
+				<View
+					style={[
+						styles.fieldCard,
+						{ backgroundColor: cardBg, borderColor: border },
+					]}
+				>
+					<FieldHeader icon="pricetag-outline" label="Tags" colors={colors} />
+					<TagPicker
+						selectedIds={form.tags ?? []}
+						onChangeIds={(ids) => update("tags", ids)}
+						availableTags={availableTags}
+						inputBg={inputBg}
+						borderColor={border}
+						textColor={textColor}
+						mutedColor={mutedColor}
+						primaryColor={primary}
+					/>
+				</View>
+			)}
 
 			{/* Card: Localisation */}
 			<View
@@ -701,84 +727,6 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				colors={colors}
 			/>
 		</ScrollView>
-	);
-}
-
-// ─── Tags Card (used inside DetailsStep) ───────────────────────────────────────
-
-function TagsCard({ form, setForm, colors }: any) {
-	const { cardBg, border, primary, isDark, mutedColor, textColor } = colors;
-	const [tags, setTags] = useState<any[]>([]);
-
-	useEffect(() => {
-		api
-			.get<any[]>("/api/public/tags")
-			.then((data) => setTags(Array.isArray(data) ? data : []))
-			.catch(() => {});
-	}, []);
-
-	if (tags.length === 0) return null;
-
-	function toggle(tagId: string) {
-		const current: string[] = form.tags ?? [];
-		setForm((f: any) => ({
-			...f,
-			tags: current.includes(tagId)
-				? current.filter((id) => id !== tagId)
-				: [...current, tagId],
-		}));
-	}
-
-	return (
-		<View
-			style={[
-				styles.fieldCard,
-				{ backgroundColor: cardBg, borderColor: border },
-			]}
-		>
-			<FieldHeader icon="pricetag-outline" label="Tags" colors={colors} />
-			<View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-				{tags.map((tag) => {
-					const active = (form.tags ?? []).includes(tag.id);
-					return (
-						<Pressable
-							key={tag.id}
-							onPress={() => toggle(tag.id)}
-							style={{
-								flexDirection: "row",
-								alignItems: "center",
-								gap: 4,
-								borderRadius: 20,
-								borderWidth: 1.5,
-								borderColor: active ? primary : border,
-								backgroundColor: active
-									? isDark
-										? "rgba(59,130,246,0.15)"
-										: "rgba(30,64,175,0.08)"
-									: isDark
-										? "#162032"
-										: "#f8fafc",
-								paddingHorizontal: 10,
-								paddingVertical: 5,
-							}}
-						>
-							{tag.emoji ? (
-								<Text style={{ fontSize: 12 }}>{tag.emoji}</Text>
-							) : null}
-							<Text
-								style={{
-									fontSize: 13,
-									color: active ? primary : mutedColor,
-									fontFamily: active ? Fonts.bodySemibold : Fonts.body,
-								}}
-							>
-								{tag.name}
-							</Text>
-						</Pressable>
-					);
-				})}
-			</View>
-		</View>
 	);
 }
 

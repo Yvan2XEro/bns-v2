@@ -19,6 +19,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
+import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
@@ -538,42 +539,16 @@ export default function EditListingScreen() {
 					{availableTags.length > 0 && (
 						<View style={styles.fieldGroup}>
 							<FieldLabel label="Tags" mutedColor={mutedColor} />
-							<View style={styles.pillRow}>
-								{availableTags.map((tag) => {
-									const active = selectedTagIds.includes(String(tag.id));
-									return (
-										<Pressable
-											key={String(tag.id)}
-											onPress={() => {
-												setSelectedTagIds((prev) =>
-													prev.includes(String(tag.id))
-														? prev.filter((id) => id !== String(tag.id))
-														: [...prev, String(tag.id)],
-												);
-											}}
-											style={[
-												styles.pill,
-												{
-													backgroundColor: active ? primaryColor : inputBg,
-													borderColor: active ? primaryColor : borderColor,
-												},
-											]}
-										>
-											{tag.emoji ? (
-												<Text style={{ fontSize: 11 }}>{tag.emoji}</Text>
-											) : null}
-											<Text
-												style={[
-													styles.pillText,
-													{ color: active ? "#fff" : mutedColor },
-												]}
-											>
-												{tag.name}
-											</Text>
-										</Pressable>
-									);
-								})}
-							</View>
+							<TagPicker
+								selectedIds={selectedTagIds}
+								onChangeIds={setSelectedTagIds}
+								availableTags={availableTags}
+								inputBg={inputBg}
+								borderColor={borderColor}
+								textColor={textColor}
+								mutedColor={mutedColor}
+								primaryColor={primaryColor}
+							/>
 						</View>
 					)}
 
