@@ -52,6 +52,16 @@ export const syncListingToMeilisearch = async ({
 
 		const attributes = (doc.attributes as Record<string, unknown>) || {};
 
+		// Extract tag slugs from populated tags or raw IDs
+		const tagSlugs: string[] = [];
+		if (Array.isArray(doc.tags)) {
+			for (const t of doc.tags) {
+				if (typeof t === "object" && t !== null && (t as any).slug) {
+					tagSlugs.push((t as any).slug as string);
+				}
+			}
+		}
+
 		const searchableAttributes: Record<string, unknown> = {
 			id: doc.id,
 			title: doc.title,
@@ -62,6 +72,7 @@ export const syncListingToMeilisearch = async ({
 			categoryId: doc.category,
 			status: doc.status,
 			condition: doc.condition,
+			tags: tagSlugs,
 			boostedUntil: doc.boostedUntil,
 			views: doc.views,
 			images: doc.images,
@@ -90,11 +101,18 @@ export const configureMeilisearchIndex = async () => {
 
 	try {
 		await index.updateSettings({
-			searchableAttributes: ["title", "description", "location", "category"],
+			searchableAttributes: [
+				"title",
+				"description",
+				"location",
+				"category",
+				"tags",
+			],
 			filterableAttributes: [
 				"status",
 				"categoryId",
 				"condition",
+				"tags",
 				"price",
 				"location",
 				"boostedUntil",

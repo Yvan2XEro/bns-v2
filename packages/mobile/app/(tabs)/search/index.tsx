@@ -83,6 +83,7 @@ export default function SearchScreen() {
 		params.minPrice,
 		params.maxPrice,
 		params.conditions,
+		params.tags,
 		params.location,
 		...Object.values(attrParams),
 	].filter(Boolean).length;
@@ -96,6 +97,7 @@ export default function SearchScreen() {
 				minPrice: (params.minPrice as string) ?? "",
 				maxPrice: (params.maxPrice as string) ?? "",
 				conditions: (params.conditions as string) ?? "",
+				tags: (params.tags as string) ?? "",
 				location: (params.location as string) ?? "",
 				radius: (params.radius as string) ?? "",
 				...attrParams,
@@ -109,6 +111,7 @@ export default function SearchScreen() {
 		...(params.minPrice ? { minPrice: params.minPrice as string } : {}),
 		...(params.maxPrice ? { maxPrice: params.maxPrice as string } : {}),
 		...(params.conditions ? { condition: params.conditions as string } : {}),
+		...(params.tags ? { tags: params.tags as string } : {}),
 		...(params.location ? { location: params.location as string } : {}),
 		...(params.location && params.radius
 			? { radius: params.radius as string }

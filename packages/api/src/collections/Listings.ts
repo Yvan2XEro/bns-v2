@@ -273,6 +273,13 @@ export const Listings: CollectionConfig = {
 			],
 		},
 		{
+			name: "tags",
+			type: "relationship",
+			// biome-ignore lint/suspicious/noExplicitAny: tags collection not yet in generated types
+			relationTo: "tags" as any,
+			hasMany: true,
+		},
+		{
 			name: "createdAt",
 			type: "date",
 			admin: {

@@ -23,6 +23,7 @@ export async function GET(request: Request) {
 	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
 	const sortParam = searchParams.get("sort") || "newest";
 	const conditionParam = searchParams.get("condition");
+	const tagsParam = searchParams.get("tags");
 
 	const host = process.env.MEILI_HOST;
 	const key = process.env.MEILI_MASTER_KEY;
@@ -172,6 +173,17 @@ export async function GET(request: Request) {
 		if (conditions.length > 0) {
 			const conditionList = conditions.map((c) => `"${c}"`).join(", ");
 			filters.push(`condition IN [${conditionList}]`);
+		}
+	}
+
+	if (tagsParam) {
+		const tagSlugs = tagsParam
+			.split(",")
+			.map((s) => s.trim())
+			.filter(Boolean);
+		if (tagSlugs.length > 0) {
+			const tagList = tagSlugs.map((s) => `"${s}"`).join(", ");
+			filters.push(`tags IN [${tagList}]`);
 		}
 	}
 

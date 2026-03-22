@@ -62,6 +62,22 @@ export default function FiltersModal() {
 		rawParams.radius ? Number(rawParams.radius) : 10,
 	);
 
+	const [selectedTags, setSelectedTags] = useState<string[]>(
+		rawParams.tags ? (rawParams.tags as string).split(",").filter(Boolean) : [],
+	);
+
+	const { data: tagsData } = useQuery({
+		queryKey: ["tags"],
+		queryFn: () => api.get<any[]>("/api/public/tags"),
+		staleTime: 3600000,
+	});
+	const availableTags: any[] = Array.isArray(tagsData) ? tagsData : [];
+
+	const toggleTag = (slug: string) =>
+		setSelectedTags((prev) =>
+			prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
+		);
+
 	// Attributs dynamiques — initialisés depuis les params attr_*
 	const [attributeFilters, setAttributeFilters] = useState<
 		Record<string, string>
@@ -117,6 +133,7 @@ export default function FiltersModal() {
 		if (maxPrice) filterParams.maxPrice = maxPrice;
 		if (selectedConditions.length)
 			filterParams.conditions = selectedConditions.join(",");
+		if (selectedTags.length) filterParams.tags = selectedTags.join(",");
 		if (location) filterParams.location = location;
 		if (location) filterParams.radius = String(radius);
 		if (location && locationLat != null) filterParams.lat = String(locationLat);
@@ -137,6 +154,7 @@ export default function FiltersModal() {
 		setMinPrice("");
 		setMaxPrice("");
 		setSelectedConditions([]);
+		setSelectedTags([]);
 		setLocation("");
 		setRadius(10);
 		setAttributeFilters({});
@@ -147,6 +165,7 @@ export default function FiltersModal() {
 		minPrice,
 		maxPrice,
 		selectedConditions.length > 0,
+		selectedTags.length > 0,
 		location,
 		...Object.values(attributeFilters).filter(Boolean),
 	].filter(Boolean).length;
@@ -279,6 +298,48 @@ export default function FiltersModal() {
 						);
 					})}
 				</View>
+
+				{/* ── Tags ── */}
+				{availableTags.length > 0 && (
+					<>
+						<Text style={[styles.sectionTitle, { color: mutedColor }]}>
+							Tags
+						</Text>
+						<View style={styles.conditionGrid}>
+							{availableTags.map((tag: any) => {
+								const active = selectedTags.includes(tag.slug);
+								return (
+									<Pressable
+										key={tag.id}
+										onPress={() => toggleTag(tag.slug)}
+										style={[
+											styles.pill,
+											{
+												backgroundColor: active ? primaryColor : cardBg,
+												borderColor: active ? primaryColor : borderColor,
+											},
+										]}
+									>
+										{tag.emoji ? (
+											<Text style={{ fontSize: 12 }}>{tag.emoji}</Text>
+										) : null}
+										{active && !tag.emoji && (
+											<Ionicons name="checkmark" size={13} color="#fff" />
+										)}
+										<Text
+											style={[
+												styles.pillText,
+												{ color: active ? "#fff" : textColor },
+											]}
+										>
+											{tag.name}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
+					</>
+				)}
 
 				{/* ── Localisation ── */}
 				<Text style={[styles.sectionTitle, { color: mutedColor }]}>

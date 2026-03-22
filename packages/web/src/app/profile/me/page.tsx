@@ -26,9 +26,12 @@ import { ProfileEditForm } from "./profile-edit-form";
 
 async function getUserReviews(userId: string): Promise<Review[]> {
 	try {
-		const res = await serverFetch(`/api/reviews?userId=${userId}`);
+		const res = await serverFetch(
+			`/api/reviews?where[reviewedUser][equals]=${userId}&depth=1&limit=50&sort=-createdAt`,
+		);
 		if (!res.ok) return [];
-		return res.json();
+		const data = await res.json();
+		return data.docs || [];
 	} catch {
 		return [];
 	}

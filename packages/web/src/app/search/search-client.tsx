@@ -78,7 +78,19 @@ export function SearchClient({
 		location: initialParams.location || "",
 		sort: initialParams.sort || "newest",
 		condition: initialParams.condition || "",
+		tags: initialParams.tags || "",
 	});
+
+	const [availableTags, setAvailableTags] = useState<
+		{ id: string; name: string; slug: string; emoji?: string }[]
+	>([]);
+
+	useEffect(() => {
+		fetch("/api/public/tags")
+			.then((r) => r.json())
+			.then((data) => setAvailableTags(Array.isArray(data) ? data : []))
+			.catch(() => {});
+	}, []);
 
 	const [attributeFilters, setAttributeFilters] = useState<
 		Record<string, string>
@@ -105,6 +117,7 @@ export function SearchClient({
 		if (filters.sort && filters.sort !== "newest")
 			params.set("sort", filters.sort);
 		if (filters.condition) params.set("condition", filters.condition);
+		if (filters.tags) params.set("tags", filters.tags);
 		for (const [key, value] of Object.entries(attributeFilters)) {
 			if (value) params.set(`attr_${key}`, value);
 		}
@@ -152,6 +165,7 @@ export function SearchClient({
 			if (filters.location) params.set("location", filters.location);
 			if (filters.sort) params.set("sort", filters.sort);
 			if (filters.condition) params.set("condition", filters.condition);
+			if (filters.tags) params.set("tags", filters.tags);
 
 			for (const [key, value] of Object.entries(attributeFilters)) {
 				if (value) params.set(`attr_${key}`, value);
@@ -286,6 +300,7 @@ export function SearchClient({
 			location: "",
 			sort: "newest",
 			condition: "",
+			tags: "",
 		});
 		setAttributeFilters({});
 		router.push("/search");
@@ -299,9 +314,24 @@ export function SearchClient({
 			filters.maxPrice ||
 			filters.location ||
 			filters.condition ||
+			filters.tags ||
 			nearMe ||
 			Object.values(attributeFilters).some(Boolean)
 		);
+	}
+
+	const selectedTags = filters.tags
+		? filters.tags.split(",").filter(Boolean)
+		: [];
+
+	function toggleTag(slug: string) {
+		const current = new Set(selectedTags);
+		if (current.has(slug)) {
+			current.delete(slug);
+		} else {
+			current.add(slug);
+		}
+		updateFilter("tags", Array.from(current).join(","));
 	}
 
 	const activeFilterCount = [
@@ -310,6 +340,7 @@ export function SearchClient({
 		filters.maxPrice,
 		filters.location,
 		filters.condition,
+		filters.tags,
 		nearMe ? "nearMe" : "",
 		...Object.values(attributeFilters),
 	].filter(Boolean).length;
@@ -459,6 +490,35 @@ export function SearchClient({
 					))}
 				</div>
 			</div>
+
+			{/* Tags */}
+			{availableTags.length > 0 && (
+				<div className="space-y-2">
+					<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+						Tags
+					</Label>
+					<div className="flex flex-wrap gap-1.5">
+						{availableTags.map((tag) => {
+							const active = selectedTags.includes(tag.slug);
+							return (
+								<button
+									key={tag.id}
+									type="button"
+									onClick={() => toggleTag(tag.slug)}
+									className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition-colors ${
+										active
+											? "border-[#1E40AF] bg-[#1E40AF] text-white"
+											: "border-[#E2E8F0] bg-white text-[#475569] hover:border-[#1E40AF]/50"
+									}`}
+								>
+									{tag.emoji && <span>{tag.emoji}</span>}
+									{tag.name}
+								</button>
+							);
+						})}
+					</div>
+				</div>
+			)}
 
 			{/* Dynamic attributes */}
 			{attributes.length > 0 && (

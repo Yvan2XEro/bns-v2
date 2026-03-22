@@ -15,6 +15,7 @@ import { Messages } from "./collections/Messages";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
+import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
 import { AppSettings } from "./globals/AppSettings";
 import { isNotificationProviderConfigured } from "./services/notificationProvider";
@@ -75,6 +76,7 @@ export default buildConfig({
 		BoostPayments,
 		SavedSearches,
 		BlockedUsers,
+		Tags,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),

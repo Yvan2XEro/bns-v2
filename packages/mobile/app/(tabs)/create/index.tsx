@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, usePathname } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Dimensions,
@@ -64,6 +64,7 @@ interface FormData {
 	coordinates: { lat: number; lng: number } | null;
 	attributes: Record<string, any>;
 	images: UploadedImage[];
+	tags: string[];
 }
 
 export default function CreateScreen() {
@@ -127,6 +128,7 @@ export default function CreateScreen() {
 		coordinates: null,
 		attributes: {},
 		images: [],
+		tags: [],
 	});
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -614,6 +616,9 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				</View>
 			</View>
 
+			{/* Card: Tags */}
+			<TagsCard form={form} setForm={setForm} colors={colors} />
+
 			{/* Card: Localisation */}
 			<View
 				style={[
@@ -696,6 +701,84 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				colors={colors}
 			/>
 		</ScrollView>
+	);
+}
+
+// ─── Tags Card (used inside DetailsStep) ───────────────────────────────────────
+
+function TagsCard({ form, setForm, colors }: any) {
+	const { cardBg, border, primary, isDark, mutedColor, textColor } = colors;
+	const [tags, setTags] = useState<any[]>([]);
+
+	useEffect(() => {
+		api
+			.get<any[]>("/api/public/tags")
+			.then((data) => setTags(Array.isArray(data) ? data : []))
+			.catch(() => {});
+	}, []);
+
+	if (tags.length === 0) return null;
+
+	function toggle(tagId: string) {
+		const current: string[] = form.tags ?? [];
+		setForm((f: any) => ({
+			...f,
+			tags: current.includes(tagId)
+				? current.filter((id) => id !== tagId)
+				: [...current, tagId],
+		}));
+	}
+
+	return (
+		<View
+			style={[
+				styles.fieldCard,
+				{ backgroundColor: cardBg, borderColor: border },
+			]}
+		>
+			<FieldHeader icon="pricetag-outline" label="Tags" colors={colors} />
+			<View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+				{tags.map((tag) => {
+					const active = (form.tags ?? []).includes(tag.id);
+					return (
+						<Pressable
+							key={tag.id}
+							onPress={() => toggle(tag.id)}
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								gap: 4,
+								borderRadius: 20,
+								borderWidth: 1.5,
+								borderColor: active ? primary : border,
+								backgroundColor: active
+									? isDark
+										? "rgba(59,130,246,0.15)"
+										: "rgba(30,64,175,0.08)"
+									: isDark
+										? "#162032"
+										: "#f8fafc",
+								paddingHorizontal: 10,
+								paddingVertical: 5,
+							}}
+						>
+							{tag.emoji ? (
+								<Text style={{ fontSize: 12 }}>{tag.emoji}</Text>
+							) : null}
+							<Text
+								style={{
+									fontSize: 13,
+									color: active ? primary : mutedColor,
+									fontFamily: active ? Fonts.bodySemibold : Fonts.body,
+								}}
+							>
+								{tag.name}
+							</Text>
+						</Pressable>
+					);
+				})}
+			</View>
+		</View>
 	);
 }
 
@@ -1087,6 +1170,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 				...(form.coordinates ? { coordinates: form.coordinates } : {}),
 				category: form.category?.id,
 				seller: user?.id,
+				...(form.tags.length > 0 ? { tags: form.tags } : {}),
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
 				...(Object.keys(form.attributes).length > 0
 					? { attributes: form.attributes }

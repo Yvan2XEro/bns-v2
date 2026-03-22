@@ -123,6 +123,12 @@ export default async function ListingPage({ params }: PageProps) {
 		poor: "Poor",
 	};
 
+	const listingTags = Array.isArray((listing as any).tags)
+		? (listing as any).tags.filter(
+				(t: any) => typeof t === "object" && t !== null,
+			)
+		: [];
+
 	return (
 		<div className="min-h-screen bg-[#F8FAFC]">
 			<ViewTracker listingId={listing.id} currentViews={listing.views ?? 0} />
@@ -225,7 +231,7 @@ export default async function ListingPage({ params }: PageProps) {
 								)}
 							</div>
 
-							{/* Tags */}
+							{/* Badges */}
 							<div className="mt-4 flex flex-wrap gap-2">
 								{category && <Badge variant="secondary">{category.name}</Badge>}
 								{listing.condition && conditionMap[listing.condition] && (
@@ -239,6 +245,20 @@ export default async function ListingPage({ params }: PageProps) {
 										Boosted
 									</Badge>
 								)}
+								{listingTags.map((tag: any) => (
+									<Link
+										key={String(tag.id)}
+										href={`/search?tags=${encodeURIComponent(tag.slug)}`}
+									>
+										<Badge
+											variant="outline"
+											className="cursor-pointer border-primary/30 bg-primary/5 text-primary hover:bg-primary/15"
+										>
+											{tag.emoji && <span className="mr-1">{tag.emoji}</span>}
+											{tag.name}
+										</Badge>
+									</Link>
+								))}
 							</div>
 
 							{/* Description */}

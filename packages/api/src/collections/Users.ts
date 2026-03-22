@@ -64,12 +64,15 @@ export const Users: CollectionConfig = {
 				}
 
 				if (operation === "update") {
+					const isRatingUpdate = req.context?.ratingUpdate === true;
 					if (!isAdmin) {
 						data.email = originalDoc.email;
 						data.role = originalDoc?.role;
 						data.verified = originalDoc.verified;
-						data.rating = originalDoc?.rating;
-						data.totalReviews = originalDoc.totalReviews;
+						if (!isRatingUpdate) {
+							data.rating = originalDoc?.rating;
+							data.totalReviews = originalDoc.totalReviews;
+						}
 					}
 
 					if (!isAdmin && !isPhoneVerificationFlow) {

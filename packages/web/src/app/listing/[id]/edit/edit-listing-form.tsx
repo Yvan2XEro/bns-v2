@@ -7,6 +7,7 @@ import { useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { AttributeFields } from "~/components/listing/attribute-fields";
 import { ImagePicker } from "~/components/listing/image-picker";
+import { TagPicker } from "~/components/listing/tag-picker";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -108,6 +109,13 @@ export function EditListingForm({
 			})
 			.filter((img): img is ExistingImage => img !== null) || [];
 
+	const initialTagIds: string[] = Array.isArray((listing as any).tags)
+		? (listing as any).tags.map((t: any) =>
+				typeof t === "object" && t !== null ? String(t.id) : String(t),
+			)
+		: [];
+	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
+
 	const [keptImages, setKeptImages] = useState<ExistingImage[]>(existingImages);
 	const [newImages, setNewImages] = useState<File[]>([]);
 	const [newPreviews, setNewPreviews] = useState<string[]>([]);
@@ -195,6 +203,7 @@ export function EditListingForm({
 				attributes: attributeValues,
 				images: allImageIds.map((id) => ({ image: id })),
 				status: nextStatus,
+				tags: selectedTagIds,
 			};
 
 			if (coordinates) {
@@ -330,6 +339,14 @@ export function EditListingForm({
 								))}
 							</SelectContent>
 						</Select>
+					</div>
+
+					<div className="space-y-2">
+						<Label>Tags</Label>
+						<TagPicker
+							selectedIds={selectedTagIds}
+							onChange={setSelectedTagIds}
+						/>
 					</div>
 
 					<div className="space-y-2">

@@ -9,11 +9,13 @@ export const updateUserRating = async ({
 		find: (options: {
 			collection: string;
 			where: Record<string, unknown>;
+			limit?: number;
 		}) => Promise<{ docs: Array<{ rating: number }> }>;
 		update: (options: {
 			collection: string;
 			id: string;
 			overrideAccess?: boolean;
+			context?: Record<string, unknown>;
 			data: Record<string, unknown>;
 		}) => Promise<unknown>;
 	};
@@ -23,6 +25,7 @@ export const updateUserRating = async ({
 		where: {
 			reviewedUser: { equals: reviewedUserId },
 		},
+		limit: 1000,
 	});
 
 	if (reviews.docs.length === 0) return;
@@ -37,6 +40,7 @@ export const updateUserRating = async ({
 		collection: "users",
 		id: reviewedUserId,
 		overrideAccess: true,
+		context: { ratingUpdate: true },
 		data: {
 			rating: Math.round(averageRating * 10) / 10,
 			totalReviews: reviews.docs.length,

@@ -139,6 +139,8 @@ export default function EditListingScreen() {
 	const [images, setImages] = useState<ImageItem[]>([]);
 	const [uploading, setUploading] = useState(false);
 	const [nextStatus, setNextStatus] = useState<"draft" | "pending">("pending");
+	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+	const [availableTags, setAvailableTags] = useState<any[]>([]);
 
 	// Initialize once listing is loaded
 	useEffect(() => {
@@ -159,6 +161,15 @@ export default function EditListingScreen() {
 		setDuration(listing.duration ?? 30);
 		setAttributes(listing.attributes ?? {});
 
+		// Initialize tags
+		if (Array.isArray(listing.tags)) {
+			setSelectedTagIds(
+				listing.tags.map((t: any) =>
+					typeof t === "object" && t !== null ? String(t.id) : String(t),
+				),
+			);
+		}
+
 		// Normalize images from depth=2 response
 		const imgs: ImageItem[] = (listing.images ?? [])
 			.map((entry: any) => {
@@ -172,6 +183,14 @@ export default function EditListingScreen() {
 			.filter((img: ImageItem) => img.id);
 		setImages(imgs);
 	}, [listing?.id, listing]);
+
+	// Fetch available tags
+	useEffect(() => {
+		api
+			.get<any[]>("/api/public/tags")
+			.then((data) => setAvailableTags(Array.isArray(data) ? data : []))
+			.catch(() => {});
+	}, []);
 
 	const categoryAttributes: any[] = listing?.category?.attributes ?? [];
 
@@ -264,6 +283,9 @@ export default function EditListingScreen() {
 				images: images.map((img) => ({ image: img.id })),
 				...(Object.keys(attributes).length > 0 ? { attributes } : {}),
 				status: nextStatus,
+				...(selectedTagIds.length > 0
+					? { tags: selectedTagIds }
+					: { tags: [] }),
 			}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["listing", id] });
@@ -511,6 +533,49 @@ export default function EditListingScreen() {
 							})}
 						</View>
 					</View>
+
+					{/* Tags */}
+					{availableTags.length > 0 && (
+						<View style={styles.fieldGroup}>
+							<FieldLabel label="Tags" mutedColor={mutedColor} />
+							<View style={styles.pillRow}>
+								{availableTags.map((tag) => {
+									const active = selectedTagIds.includes(String(tag.id));
+									return (
+										<Pressable
+											key={String(tag.id)}
+											onPress={() => {
+												setSelectedTagIds((prev) =>
+													prev.includes(String(tag.id))
+														? prev.filter((id) => id !== String(tag.id))
+														: [...prev, String(tag.id)],
+												);
+											}}
+											style={[
+												styles.pill,
+												{
+													backgroundColor: active ? primaryColor : inputBg,
+													borderColor: active ? primaryColor : borderColor,
+												},
+											]}
+										>
+											{tag.emoji ? (
+												<Text style={{ fontSize: 11 }}>{tag.emoji}</Text>
+											) : null}
+											<Text
+												style={[
+													styles.pillText,
+													{ color: active ? "#fff" : mutedColor },
+												]}
+											>
+												{tag.name}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
+						</View>
+					)}
 
 					{/* Location */}
 					<View style={styles.fieldGroup}>

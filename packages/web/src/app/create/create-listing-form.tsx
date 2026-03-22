@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CategoryGrid } from "~/components/category-picker";
 import { AttributeFields } from "~/components/listing/attribute-fields";
 import { ImagePicker } from "~/components/listing/image-picker";
+import { TagPicker } from "~/components/listing/tag-picker";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -57,6 +58,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const [attributeValues, setAttributeValues] = useState<
 		Record<string, string>
 	>({});
+	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [images, setImages] = useState<File[]>([]);
 	const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 	const [coordinates, setCoordinates] = useState<{
@@ -148,6 +150,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				images: imageIds.map((id) => ({ image: id })),
 				status: status,
 				duration: Number(duration),
+				tags: selectedTags,
 			};
 
 			if (coordinates) {
@@ -289,6 +292,14 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										))}
 									</SelectContent>
 								</Select>
+							</div>
+
+							<div className="space-y-2">
+								<Label>Tags</Label>
+								<TagPicker
+									selectedIds={selectedTags}
+									onChange={setSelectedTags}
+								/>
 							</div>
 
 							<div className="space-y-2">

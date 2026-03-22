@@ -197,6 +197,10 @@ export default function ListingDetail() {
 
 	const actionBarInset = safeBottom + 120;
 
+	const listingTags = Array.isArray(listing.tags)
+		? listing.tags.filter((tag: any) => typeof tag === "object" && tag !== null)
+		: [];
+
 	return (
 		<View style={[styles.root, { backgroundColor: bg }]}>
 			{/* Fixed back button — always visible over image */}
@@ -437,6 +441,53 @@ export default function ListingDetail() {
 													: String(v)}
 										</Text>
 									</View>
+								))}
+							</View>
+						</View>
+					)}
+
+					{/* Tags */}
+					{listingTags.length > 0 && (
+						<View
+							style={[styles.card, { backgroundColor: cardBg, borderColor }]}
+						>
+							<Text style={[styles.sectionTitle, { color: textColor }]}>
+								Tags
+							</Text>
+							<View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+								{listingTags.map((tag: any) => (
+									<Pressable
+										key={String(tag.id)}
+										onPress={() =>
+											router.push(
+												`/(tabs)/search?tags=${encodeURIComponent(tag.slug)}` as any,
+											)
+										}
+										style={{
+											flexDirection: "row",
+											alignItems: "center",
+											gap: 4,
+											borderRadius: 20,
+											borderWidth: 1,
+											borderColor: isDark ? "#1e3a5f" : "#bfdbfe",
+											backgroundColor: isDark ? "#0f2544" : "#eff6ff",
+											paddingHorizontal: 10,
+											paddingVertical: 4,
+										}}
+									>
+										{tag.emoji ? (
+											<Text style={{ fontSize: 12 }}>{tag.emoji}</Text>
+										) : null}
+										<Text
+											style={{
+												fontSize: 12,
+												color: primaryColor,
+												fontFamily: Fonts.bodySemibold,
+											}}
+										>
+											{tag.name}
+										</Text>
+									</Pressable>
 								))}
 							</View>
 						</View>
