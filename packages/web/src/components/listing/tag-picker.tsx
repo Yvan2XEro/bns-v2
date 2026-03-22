@@ -45,6 +45,7 @@ export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
 
 	if (tags.length === 0) return null;
 
+	const atMax = selectedIds.length >= 5;
 	const selectedTags = tags.filter((t) => selectedIds.includes(t.id));
 	const availableTags = tags.filter((t) => !selectedIds.includes(t.id));
 
@@ -53,6 +54,7 @@ export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
 	}
 
 	function add(id: string) {
+		if (selectedIds.length >= 5) return;
 		onChange([...selectedIds, id]);
 	}
 
@@ -107,6 +109,10 @@ export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
 					{availableTags.length === 0 ? (
 						<p className="text-center text-muted-foreground text-xs">
 							Tous les tags sont sélectionnés
+						</p>
+					) : atMax ? (
+						<p className="text-center text-muted-foreground text-xs">
+							Maximum 5 tags atteint
 						</p>
 					) : (
 						<div className="flex flex-wrap gap-1.5">

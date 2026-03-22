@@ -12,6 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+const MAX_TAGS = 5;
+
 interface TagItem {
 	id: string;
 	name: string;
@@ -53,7 +55,6 @@ export function TagPicker({
 	const separatorColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const chipBg = isDark ? "#1e293b" : "#f1f5f9";
 
-	// Determine mode: id-based or slug-based
 	const useSlugMode =
 		selectedSlugs !== undefined && onChangeSlugs !== undefined;
 
@@ -62,62 +63,94 @@ export function TagPicker({
 		return (selectedIds ?? []).includes(tag.id);
 	}
 
-	function toggle(tag: TagItem) {
+	function remove(tag: TagItem) {
 		if (useSlugMode) {
-			const prev = selectedSlugs ?? [];
-			onChangeSlugs?.(
-				prev.includes(tag.slug)
-					? prev.filter((s) => s !== tag.slug)
-					: [...prev, tag.slug],
-			);
+			onChangeSlugs?.((selectedSlugs ?? []).filter((s) => s !== tag.slug));
 		} else {
-			const prev = selectedIds ?? [];
-			onChangeIds?.(
-				prev.includes(tag.id)
-					? prev.filter((id) => id !== tag.id)
-					: [...prev, tag.id],
-			);
+			onChangeIds?.((selectedIds ?? []).filter((id) => id !== tag.id));
+		}
+	}
+
+	function toggle(tag: TagItem) {
+		if (isSelected(tag)) {
+			remove(tag);
+			return;
+		}
+		if (selectedCount >= MAX_TAGS) return;
+		if (useSlugMode) {
+			onChangeSlugs?.([...(selectedSlugs ?? []), tag.slug]);
+		} else {
+			onChangeIds?.([...(selectedIds ?? []), tag.id]);
 		}
 	}
 
 	const selectedTags = availableTags.filter((t) => isSelected(t));
 	const selectedCount = selectedTags.length;
-
-	let triggerLabel: string;
-	if (selectedCount === 0) {
-		triggerLabel = "Ajouter des tags";
-	} else if (selectedCount === 1) {
-		const t = selectedTags[0];
-		triggerLabel = t.emoji ? `${t.emoji} ${t.name}` : t.name;
-	} else {
-		const first = selectedTags[0];
-		const prefix = first.emoji ? `${first.emoji} ${first.name}` : first.name;
-		triggerLabel = `${prefix}  +${selectedCount - 1}`;
-	}
+	const atMax = selectedCount >= MAX_TAGS;
 
 	return (
 		<>
+			{/* Trigger */}
 			<Pressable
 				onPress={() => setVisible(true)}
 				style={[styles.trigger, { backgroundColor: inputBg, borderColor }]}
 			>
-				<Ionicons
-					name="pricetag-outline"
-					size={16}
-					color={selectedCount > 0 ? primaryColor : mutedColor}
-				/>
-				<Text
-					style={[
-						styles.triggerText,
-						{ color: selectedCount > 0 ? primaryColor : mutedColor },
-					]}
-					numberOfLines={1}
-				>
-					{triggerLabel}
-				</Text>
-				<Ionicons name="chevron-down" size={16} color={mutedColor} />
+				{selectedCount === 0 ? (
+					<>
+						<Ionicons name="pricetag-outline" size={16} color={mutedColor} />
+						<Text style={[styles.placeholder, { color: mutedColor }]}>
+							Ajouter des tags…
+						</Text>
+						<Ionicons name="chevron-down" size={16} color={mutedColor} />
+					</>
+				) : (
+					<View style={styles.badgeWrap}>
+						{selectedTags.map((tag) => (
+							<View
+								key={tag.id}
+								style={[
+									styles.badge,
+									{
+										backgroundColor: `${primaryColor}18`,
+										borderColor: `${primaryColor}55`,
+									},
+								]}
+							>
+								{tag.emoji ? (
+									<Text style={styles.badgeEmoji}>{tag.emoji}</Text>
+								) : null}
+								<Text style={[styles.badgeText, { color: primaryColor }]}>
+									{tag.name}
+								</Text>
+								<Pressable
+									onPress={(e) => {
+										e.stopPropagation?.();
+										remove(tag);
+									}}
+									hitSlop={6}
+								>
+									<Ionicons name="close" size={12} color={primaryColor} />
+								</Pressable>
+							</View>
+						))}
+						<Pressable
+							onPress={() => setVisible(true)}
+							style={[
+								styles.addBtn,
+								{ borderColor: atMax ? separatorColor : primaryColor },
+							]}
+						>
+							<Ionicons
+								name="add"
+								size={14}
+								color={atMax ? mutedColor : primaryColor}
+							/>
+						</Pressable>
+					</View>
+				)}
 			</Pressable>
 
+			{/* Modal */}
 			<Modal
 				visible={visible}
 				animationType="slide"
@@ -131,9 +164,14 @@ export function TagPicker({
 					<View
 						style={[styles.modalHeader, { borderBottomColor: separatorColor }]}
 					>
-						<Text style={[styles.modalTitle, { color: textColor }]}>
-							Choisir des tags
-						</Text>
+						<View>
+							<Text style={[styles.modalTitle, { color: textColor }]}>
+								Choisir des tags
+							</Text>
+							<Text style={[styles.modalSub, { color: mutedColor }]}>
+								{selectedCount}/{MAX_TAGS} sélectionnés
+							</Text>
+						</View>
 						<Pressable onPress={() => setVisible(false)} hitSlop={8}>
 							<Ionicons name="close" size={24} color={textColor} />
 						</Pressable>
@@ -151,15 +189,18 @@ export function TagPicker({
 						) : (
 							availableTags.map((tag) => {
 								const active = isSelected(tag);
+								const disabled = !active && atMax;
 								return (
 									<Pressable
 										key={tag.id}
 										onPress={() => toggle(tag)}
+										disabled={disabled}
 										style={[
 											styles.chip,
 											{
 												backgroundColor: active ? `${primaryColor}20` : chipBg,
 												borderColor: active ? primaryColor : separatorColor,
+												opacity: disabled ? 0.4 : 1,
 											},
 										]}
 									>
@@ -206,19 +247,46 @@ export function TagPicker({
 
 const styles = StyleSheet.create({
 	trigger: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
 		borderRadius: 12,
 		borderWidth: 1.5,
 		paddingHorizontal: 12,
 		paddingVertical: 10,
 		minHeight: 48,
+		justifyContent: "center",
 	},
-	triggerText: {
+	placeholder: {
 		flex: 1,
 		fontSize: 14,
 		fontFamily: Fonts.body,
+	},
+	badgeWrap: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 6,
+		alignItems: "center",
+	},
+	badge: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		borderRadius: 20,
+		borderWidth: 1,
+		paddingHorizontal: 9,
+		paddingVertical: 4,
+	},
+	badgeEmoji: { fontSize: 11 },
+	badgeText: {
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
+	},
+	addBtn: {
+		width: 26,
+		height: 26,
+		borderRadius: 13,
+		borderWidth: 1.5,
+		borderStyle: "dashed",
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	modalSafe: { flex: 1 },
 	modalHeader: {
@@ -232,6 +300,11 @@ const styles = StyleSheet.create({
 	modalTitle: {
 		fontSize: 18,
 		fontFamily: Fonts.displayBold,
+	},
+	modalSub: {
+		fontSize: 12,
+		fontFamily: Fonts.body,
+		marginTop: 2,
 	},
 	chipsContainer: {
 		flexDirection: "row",
