@@ -83,10 +83,17 @@ export function TagPicker({
 	const selectedTags = availableTags.filter((t) => isSelected(t));
 	const selectedCount = selectedTags.length;
 
-	let triggerLabel = "Ajouter des tags";
-	if (selectedCount === 1) triggerLabel = selectedTags[0].name;
-	else if (selectedCount > 1)
-		triggerLabel = `${selectedCount} tags sélectionnés`;
+	let triggerLabel: string;
+	if (selectedCount === 0) {
+		triggerLabel = "Ajouter des tags";
+	} else if (selectedCount === 1) {
+		const t = selectedTags[0];
+		triggerLabel = t.emoji ? `${t.emoji} ${t.name}` : t.name;
+	} else {
+		const first = selectedTags[0];
+		const prefix = first.emoji ? `${first.emoji} ${first.name}` : first.name;
+		triggerLabel = `${prefix}  +${selectedCount - 1}`;
+	}
 
 	return (
 		<>
@@ -94,39 +101,20 @@ export function TagPicker({
 				onPress={() => setVisible(true)}
 				style={[styles.trigger, { backgroundColor: inputBg, borderColor }]}
 			>
-				<Ionicons name="pricetag-outline" size={16} color={mutedColor} />
-				{selectedCount > 0 ? (
-					<ScrollView
-						horizontal
-						showsHorizontalScrollIndicator={false}
-						style={styles.badgeScroll}
-						contentContainerStyle={styles.badgeContainer}
-					>
-						{selectedTags.map((tag) => (
-							<View
-								key={tag.id}
-								style={[
-									styles.badge,
-									{
-										backgroundColor: `${primaryColor}20`,
-										borderColor: `${primaryColor}50`,
-									},
-								]}
-							>
-								{tag.emoji ? (
-									<Text style={styles.badgeEmoji}>{tag.emoji}</Text>
-								) : null}
-								<Text style={[styles.badgeText, { color: primaryColor }]}>
-									{tag.name}
-								</Text>
-							</View>
-						))}
-					</ScrollView>
-				) : (
-					<Text style={[styles.triggerText, { color: mutedColor }]}>
-						{triggerLabel}
-					</Text>
-				)}
+				<Ionicons
+					name="pricetag-outline"
+					size={16}
+					color={selectedCount > 0 ? primaryColor : mutedColor}
+				/>
+				<Text
+					style={[
+						styles.triggerText,
+						{ color: selectedCount > 0 ? primaryColor : mutedColor },
+					]}
+					numberOfLines={1}
+				>
+					{triggerLabel}
+				</Text>
 				<Ionicons name="chevron-down" size={16} color={mutedColor} />
 			</Pressable>
 
@@ -231,22 +219,6 @@ const styles = StyleSheet.create({
 		flex: 1,
 		fontSize: 14,
 		fontFamily: Fonts.body,
-	},
-	badgeScroll: { flex: 1 },
-	badgeContainer: { flexDirection: "row", gap: 6, alignItems: "center" },
-	badge: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		borderRadius: 20,
-		borderWidth: 1,
-		paddingHorizontal: 8,
-		paddingVertical: 3,
-	},
-	badgeEmoji: { fontSize: 11 },
-	badgeText: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
 	},
 	modalSafe: { flex: 1 },
 	modalHeader: {
