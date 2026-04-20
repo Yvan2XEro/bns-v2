@@ -584,6 +584,41 @@ export function MessagesClient({
 							</div>
 
 							<div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
+								{selectedConversation.listing && (
+									<a
+										href={`/listing/${(selectedConversation.listing as Listing).id}`}
+										className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 transition-colors hover:bg-[#EFF6FF]"
+									>
+										{(
+											selectedConversation.listing as Listing & {
+												images?: Array<{ image?: { url?: string } }>;
+											}
+										).images?.[0]?.image?.url && (
+											<img
+												src={
+													(
+														selectedConversation.listing as Listing & {
+															images?: Array<{ image?: { url?: string } }>;
+														}
+													).images?.[0]?.image?.url ?? ""
+												}
+												alt={(selectedConversation.listing as Listing).title}
+												className="h-14 w-14 shrink-0 rounded-lg object-cover"
+											/>
+										)}
+										<div className="min-w-0 flex-1">
+											<p className="truncate font-medium text-[#0F172A] text-sm">
+												{(selectedConversation.listing as Listing).title}
+											</p>
+											<p className="font-bold text-[#1E40AF] text-sm">
+												{(
+													selectedConversation.listing as Listing
+												).price?.toLocaleString()}{" "}
+												XAF
+											</p>
+										</div>
+									</a>
+								)}
 								{messages.map((message) => {
 									const senderId =
 										typeof message.sender === "object"

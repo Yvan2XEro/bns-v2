@@ -120,9 +120,9 @@ export default function ListingDetail() {
 		if (!seller) return;
 		setContactLoading(true);
 		try {
-			// Check for an existing conversation about this listing
+			// Find any existing conversation with this seller (any listing)
 			const existing = await api.get<{ docs: any[] }>(
-				`/api/conversations?where[listing][equals]=${id}&where[participants][equals]=${user.id}&limit=1&depth=0`,
+				`/api/conversations?where[participants][equals]=${seller.id}&limit=1&depth=0`,
 			);
 			if (existing.docs?.length > 0) {
 				router.push(`/(tabs)/messages/${existing.docs[0].id}`);
@@ -134,7 +134,7 @@ export default function ListingDetail() {
 				listing: id,
 			});
 			const convId = created.doc?.id ?? created.doc;
-			// Send an initial message with the listing info
+			// Send initial message referencing the listing
 			try {
 				await api.post("/api/messages", {
 					conversation: convId,

@@ -51,13 +51,6 @@ async function findOrCreateConversation(
 	userId: string,
 	conversations: ConversationWithDetails[],
 ): Promise<ConversationWithDetails | null> {
-	// Check existing conversations for this listing
-	const existing = conversations.find((c) => {
-		const convListing = c.listing as Listing | undefined;
-		return convListing?.id === listingId;
-	});
-	if (existing) return existing;
-
 	// Fetch listing to get seller
 	const listing = await getListing(listingId);
 	if (!listing) return null;
@@ -69,6 +62,12 @@ async function findOrCreateConversation(
 
 	// Don't create conversation with yourself
 	if (!sellerId || sellerId === userId) return null;
+
+	// Find any existing conversation with this seller (regardless of listing)
+	const existing = conversations.find((c) =>
+		c.participants.some((p) => String(p.id) === String(sellerId)),
+	);
+	if (existing) return existing;
 
 	// Create a new conversation
 	try {
