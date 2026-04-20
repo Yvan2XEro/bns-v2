@@ -411,10 +411,10 @@ export function MessagesClient({
 
 	return (
 		<div className="container mx-auto flex h-[calc(100vh-4rem)] max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-			<div className="flex w-full gap-6">
+			<div className="flex h-full min-h-0 w-full gap-6">
 				{/* Conversation list */}
 				<div
-					className={`w-full md:w-1/3 ${selectedConversation ? "hidden md:block" : ""}`}
+					className={`flex min-h-0 w-full flex-col md:w-1/3 ${selectedConversation ? "hidden md:flex" : ""}`}
 				>
 					<div className="mb-4 flex items-center justify-between">
 						<h2 className="font-bold text-[#0F172A] text-xl">Messages</h2>
@@ -427,7 +427,7 @@ export function MessagesClient({
 							{connectionState}
 						</div>
 					</div>
-					<div className="space-y-2">
+					<div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
 						{conversations.length > 0 ? (
 							conversations.map((conv) => {
 								const other = getOtherParticipant(conv);
@@ -490,7 +490,7 @@ export function MessagesClient({
 
 				{/* Chat area */}
 				<div
-					className={`flex-1 ${!selectedConversation ? "hidden md:flex" : ""} flex-col`}
+					className={`flex min-h-0 flex-1 flex-col ${!selectedConversation ? "max-md:hidden" : ""}`}
 				>
 					{selectedConversation ? (
 						<>
@@ -583,7 +583,7 @@ export function MessagesClient({
 								</DropdownMenu>
 							</div>
 
-							<div className="mb-4 flex-1 space-y-4 overflow-y-auto">
+							<div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
 								{messages.map((message) => {
 									const senderId =
 										typeof message.sender === "object"
