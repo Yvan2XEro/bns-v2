@@ -55,6 +55,7 @@ interface MessagesClientProps {
 	preSelectedConversation: ConversationWithDetails | null;
 	initialMessages: Message[];
 	blockedUserIds?: string[];
+	contextListing?: Listing | null;
 }
 
 export function MessagesClient({
@@ -64,6 +65,7 @@ export function MessagesClient({
 	preSelectedConversation,
 	initialMessages,
 	blockedUserIds = [],
+	contextListing,
 }: MessagesClientProps) {
 	const { token } = useAuth();
 	const [conversations, setConversations] = useState(initialConversations);
@@ -584,41 +586,39 @@ export function MessagesClient({
 							</div>
 
 							<div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
-								{selectedConversation.listing && (
-									<a
-										href={`/listing/${(selectedConversation.listing as Listing).id}`}
-										className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 transition-colors hover:bg-[#EFF6FF]"
-									>
-										{(
-											selectedConversation.listing as Listing & {
-												images?: Array<{ image?: { url?: string } }>;
-											}
-										).images?.[0]?.image?.url && (
-											<img
-												src={
-													(
-														selectedConversation.listing as Listing & {
-															images?: Array<{ image?: { url?: string } }>;
-														}
-													).images?.[0]?.image?.url ?? ""
-												}
-												alt={(selectedConversation.listing as Listing).title}
-												className="h-14 w-14 shrink-0 rounded-lg object-cover"
-											/>
-										)}
-										<div className="min-w-0 flex-1">
-											<p className="truncate font-medium text-[#0F172A] text-sm">
-												{(selectedConversation.listing as Listing).title}
-											</p>
-											<p className="font-bold text-[#1E40AF] text-sm">
-												{(
-													selectedConversation.listing as Listing
-												).price?.toLocaleString()}{" "}
-												XAF
-											</p>
-										</div>
-									</a>
-								)}
+								{(() => {
+									const card =
+										contextListing ??
+										(selectedConversation.listing
+											? (selectedConversation.listing as Listing)
+											: null);
+									if (!card) return null;
+									const cardWithImages = card as Listing & {
+										images?: Array<{ image?: { url?: string } }>;
+									};
+									return (
+										<a
+											href={`/listing/${card.id}`}
+											className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 transition-colors hover:bg-[#EFF6FF]"
+										>
+											{cardWithImages.images?.[0]?.image?.url && (
+												<img
+													src={cardWithImages.images[0].image?.url ?? ""}
+													alt={card.title}
+													className="h-14 w-14 shrink-0 rounded-lg object-cover"
+												/>
+											)}
+											<div className="min-w-0 flex-1">
+												<p className="truncate font-medium text-[#0F172A] text-sm">
+													{card.title}
+												</p>
+												<p className="font-bold text-[#1E40AF] text-sm">
+													{card.price?.toLocaleString()} XAF
+												</p>
+											</div>
+										</a>
+									);
+								})()}
 								{messages.map((message) => {
 									const senderId =
 										typeof message.sender === "object"

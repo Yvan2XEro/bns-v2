@@ -125,7 +125,9 @@ export default function ListingDetail() {
 				`/api/conversations?where[participants][equals]=${seller.id}&limit=1&depth=0`,
 			);
 			if (existing.docs?.length > 0) {
-				router.push(`/(tabs)/messages/${existing.docs[0].id}`);
+				router.push(
+					`/(tabs)/messages/${existing.docs[0].id}?listing=${id}` as never,
+				);
 				return;
 			}
 			// Create a new conversation
@@ -134,15 +136,7 @@ export default function ListingDetail() {
 				listing: id,
 			});
 			const convId = created.doc?.id ?? created.doc;
-			// Send initial message referencing the listing
-			try {
-				await api.post("/api/messages", {
-					conversation: convId,
-					content: `Bonjour ! Je suis intéressé(e) par votre annonce :\n📦 ${listing?.title}\n💰 ${listing?.price?.toLocaleString()} XAF\n\nEst-il encore disponible ?`,
-					sender: user.id,
-				});
-			} catch (_) {}
-			router.push(`/(tabs)/messages/${convId}`);
+			router.push(`/(tabs)/messages/${convId}?listing=${id}` as never);
 		} catch (e) {
 			console.error("handleMessage error", e);
 		} finally {

@@ -130,6 +130,9 @@ export default async function MessagesPage({
 		initialMessages = await getMessages(preSelectedConversation.id);
 	}
 
+	// Fetch the listing the user came from (if any) to show as context card
+	const contextListing = listingId ? await getListing(listingId) : null;
+
 	const chatUrl = process.env.CHAT_PUBLIC_URL || "http://localhost:4000";
 	const blockedUserIds = await getBlockedUsers();
 
@@ -141,6 +144,7 @@ export default async function MessagesPage({
 			preSelectedConversation={preSelectedConversation}
 			initialMessages={initialMessages}
 			blockedUserIds={blockedUserIds}
+			contextListing={contextListing}
 		/>
 	);
 }

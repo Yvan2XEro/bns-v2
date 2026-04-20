@@ -23,7 +23,10 @@ import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function ConversationScreen() {
-	const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
+	const { conversationId, listing: listingParam } = useLocalSearchParams<{
+		conversationId: string;
+		listing?: string;
+	}>();
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
 	const { user } = useAuth();
@@ -49,6 +52,12 @@ export default function ConversationScreen() {
 		enabled: !!conversationId,
 	});
 
+	const { data: contextListingData } = useQuery({
+		queryKey: ["listing", listingParam],
+		queryFn: () => api.get<any>(`/api/listings/${listingParam}?depth=1`),
+		enabled: !!listingParam,
+	});
+
 	const { data: messagesData, isLoading } = useQuery({
 		queryKey: ["messages", conversationId],
 		queryFn: () =>
@@ -61,7 +70,9 @@ export default function ConversationScreen() {
 	const messages = messagesData?.docs ?? [];
 	const conv = convData?.doc ?? convData;
 	const otherUser = conv?.participants?.find((p: any) => p.id !== user?.id);
-	const listing = conv?.listing;
+	// Prefer listing passed via URL param (from listing page), fall back to stored on conversation
+	const contextListing =
+		contextListingData?.doc ?? contextListingData ?? conv?.listing ?? null;
 	const isOtherOnline = otherUser?.id ? onlineUsers.has(otherUser.id) : false;
 
 	// Initialise readByOther from loaded messages
@@ -400,15 +411,19 @@ export default function ConversationScreen() {
 							<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
 								{t("messages.online")}
 							</Text>
-						) : listing ? (
+						) : contextListing ? (
 							<Pressable
-								onPress={() => router.push(`/listing/${listing.id ?? listing}`)}
+								onPress={() =>
+									router.push(
+										`/listing/${contextListing.id ?? contextListing}` as never,
+									)
+								}
 							>
 								<Text
 									style={[styles.headerListing, { color: primaryColor }]}
 									numberOfLines={1}
 								>
-									{listing.title ?? t("messages.viewListing")}
+									{contextListing.title ?? t("messages.viewListing")}
 								</Text>
 							</Pressable>
 						) : null}
@@ -456,6 +471,45 @@ export default function ConversationScreen() {
 						keyboardDismissMode="interactive"
 						onContentSizeChange={() =>
 							listRef.current?.scrollToEnd({ animated: false })
+						}
+						ListHeaderComponent={
+							contextListing ? (
+								<Pressable
+									onPress={() =>
+										router.push(`/listing/${contextListing.id}` as never)
+									}
+									style={[
+										styles.listingCard,
+										{ backgroundColor: cardBg, borderColor },
+									]}
+								>
+									{contextListing.images?.[0]?.image?.url && (
+										<Image
+											source={{ uri: contextListing.images[0].image.url }}
+											style={styles.listingCardImg}
+											contentFit="cover"
+										/>
+									)}
+									<View style={styles.listingCardInfo}>
+										<Text
+											style={[styles.listingCardTitle, { color: textColor }]}
+											numberOfLines={2}
+										>
+											{contextListing.title}
+										</Text>
+										<Text
+											style={[styles.listingCardPrice, { color: primaryColor }]}
+										>
+											{contextListing.price?.toLocaleString()} XAF
+										</Text>
+									</View>
+									<Ionicons
+										name="chevron-forward"
+										size={16}
+										color={mutedColor}
+									/>
+								</Pressable>
+							) : null
 						}
 						ListFooterComponent={
 							isOtherTyping ? (
@@ -582,6 +636,19 @@ const styles = StyleSheet.create({
 	headerListing: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	onlineLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	msgList: { padding: 12, paddingBottom: 8 },
+	listingCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		borderRadius: 12,
+		borderWidth: 1,
+		padding: 10,
+		marginBottom: 12,
+	},
+	listingCardImg: { width: 52, height: 52, borderRadius: 8 },
+	listingCardInfo: { flex: 1, gap: 2 },
+	listingCardTitle: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	listingCardPrice: { fontSize: 13, fontFamily: Fonts.displayBold },
 	dateSep: { alignItems: "center", marginVertical: 12 },
 	dateLabel: {
 		fontSize: 12,
