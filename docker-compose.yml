@@ -160,6 +160,9 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       PAYLOAD_API_URL: http://api:3000/api
       CORS_ORIGIN: ${CORS_ORIGIN:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
+      CHAT_SERVICE_EMAIL: ${CHAT_SERVICE_EMAIL}
+      CHAT_SERVICE_PASSWORD: ${CHAT_SERVICE_PASSWORD}
+
       PORT: 4000
     depends_on:
       redis:
