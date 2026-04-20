@@ -68,6 +68,14 @@ export class ChatClient {
 			this.emit("message:new", msg);
 		});
 
+		this.socket.on("message:confirmed", (payload) => {
+			this.emit("message:confirmed", payload);
+		});
+
+		this.socket.on("message:failed", (payload) => {
+			this.emit("message:failed", payload);
+		});
+
 		this.socket.on("message:delivered", (payload) => {
 			this.emit("message:delivered", payload);
 		});
@@ -152,26 +160,20 @@ export class ChatClient {
 
 	// --- Messages ---
 
-	sendMessage(payload: SendMessagePayload): Promise<ChatMessage> {
-		return new Promise((resolve, reject) => {
-			if (!this.socket?.connected) {
-				const err = "Not connected";
-				this.emit("message:error", err);
-				reject(new Error(err));
-				return;
-			}
+	/**
+	 * Send a message. Returns the tempId immediately for optimistic UI.
+	 * Listen to "message:confirmed" and "message:failed" for final status.
+	 */
+	sendMessage(payload: SendMessagePayload): string {
+		if (!this.socket?.connected) {
+			const err = "Not connected";
+			this.emit("message:error", err);
+			throw new Error(err);
+		}
 
-			this.socket.emit("message:send", payload, (response) => {
-				if (response?.success && response.message) {
-					this.emit("message:sent", response.message);
-					resolve(response.message);
-				} else {
-					const err = response?.error || "Failed to send message";
-					this.emit("message:error", err);
-					reject(new Error(err));
-				}
-			});
-		});
+		const tempId = payload.tempId || crypto.randomUUID();
+		this.socket.emit("message:send", { ...payload, tempId });
+		return tempId;
 	}
 
 	markDelivered(conversationId: string, messageId: string): void {

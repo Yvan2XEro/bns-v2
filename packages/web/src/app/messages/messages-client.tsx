@@ -111,7 +111,21 @@ export function MessagesClient({
 			const currentConv = selectedConvRef.current;
 			if (currentConv && msg.conversationId === String(currentConv.id)) {
 				setMessages((prev) => {
-					// Deduplicate
+					// Replace optimistic message by tempId, or deduplicate by real id
+					if (msg.tempId && prev.some((m) => m.id === msg.tempId)) {
+						return prev.map((m) =>
+							m.id === msg.tempId
+								? ({
+										id: msg.id,
+										conversation: msg.conversationId,
+										sender: msg.sender as unknown as User | string,
+										content: msg.content,
+										createdAt: msg.createdAt,
+										updatedAt: msg.createdAt,
+									} as Message)
+								: m,
+						);
+					}
 					if (prev.some((m) => String(m.id) === msg.id)) return prev;
 					return [
 						...prev,
@@ -141,6 +155,29 @@ export function MessagesClient({
 					[msg.conversationId]: (prev[msg.conversationId] || 0) + 1,
 				}));
 			}
+		});
+
+		client.on("message:confirmed", ({ tempId, message }) => {
+			// Replace optimistic temp message with confirmed real message
+			setMessages((prev) =>
+				prev.map((m) =>
+					m.id === tempId
+						? ({
+								id: message.id,
+								conversation: message.conversationId,
+								sender: message.sender as unknown as User | string,
+								content: message.content,
+								createdAt: message.createdAt,
+								updatedAt: message.createdAt,
+							} as Message)
+						: m,
+				),
+			);
+		});
+
+		client.on("message:failed", ({ tempId }) => {
+			// Remove failed optimistic message
+			setMessages((prev) => prev.filter((m) => m.id !== tempId));
 		});
 
 		client.on("typing", (event) => {
@@ -266,7 +303,7 @@ export function MessagesClient({
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 	}, []);
 
-	async function sendMessage(e: React.FormEvent) {
+	function sendMessage(e: React.FormEvent) {
 		e.preventDefault();
 		const content = newMessage.trim();
 		if (!content || !selectedConversation || !chatRef.current) return;
@@ -276,12 +313,23 @@ export function MessagesClient({
 		chatRef.current.stopTyping(convId);
 
 		try {
-			await chatRef.current.sendMessage({
+			const tempId = chatRef.current.sendMessage({
 				conversationId: convId,
 				content,
 			});
+			// Add optimistic message immediately
+			setMessages((prev) => [
+				...prev,
+				{
+					id: tempId,
+					conversation: convId,
+					sender: user.id as unknown as User | string,
+					content,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				} as Message,
+			]);
 		} catch {
-			// Re-fill input on failure
 			setNewMessage(content);
 		}
 	}

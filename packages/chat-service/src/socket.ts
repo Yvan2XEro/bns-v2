@@ -34,7 +34,6 @@ export function registerSocketHandlers(io: Server): void {
 
 	io.on("connection", async (socket: Socket) => {
 		const userId = socket.data.userId as string;
-		const token = socket.data.token as string;
 
 		console.log(
 			JSON.stringify({
@@ -55,7 +54,7 @@ export function registerSocketHandlers(io: Server): void {
 			refreshPresence(userId);
 		}, 30_000);
 
-		registerMessageHandlers(io, socket, userId, token);
+		registerMessageHandlers(io, socket, userId);
 
 		socket.on(
 			"conversation:join",
@@ -63,12 +62,7 @@ export function registerSocketHandlers(io: Server): void {
 				payload: { conversationId: string },
 				ack?: (response: { success: boolean; error?: string }) => void,
 			) => {
-				const joined = await joinRoom(
-					socket,
-					payload.conversationId,
-					userId,
-					token,
-				);
+				const joined = await joinRoom(socket, payload.conversationId, userId);
 
 				if (!joined) {
 					ack?.({

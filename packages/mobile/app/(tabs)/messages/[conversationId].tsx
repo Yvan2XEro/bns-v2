@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -84,6 +84,15 @@ export default function ConversationScreen() {
 		const onNewMessage = (msg: any) => {
 			queryClient.setQueryData(["messages", conversationId], (old: any) => {
 				if (!old) return old;
+				// Replace optimistic message by tempId if present
+				if (msg.tempId) {
+					const idx = old.docs.findIndex((m: any) => m.id === msg.tempId);
+					if (idx !== -1) {
+						const next = [...old.docs];
+						next[idx] = msg;
+						return { ...old, docs: next };
+					}
+				}
 				const exists = old.docs.some((m: any) => m.id === msg.id);
 				if (exists) return old;
 				return { ...old, docs: [...old.docs, msg] };
@@ -92,6 +101,23 @@ export default function ConversationScreen() {
 			// Mark as read immediately since we're viewing the conversation
 			chatClient.markRead(conversationId, [msg.id]);
 			chatClient.markDelivered(conversationId, msg.id);
+		};
+
+		const onConfirmed = ({ tempId, message }: any) => {
+			queryClient.setQueryData(["messages", conversationId], (old: any) => {
+				if (!old) return old;
+				return {
+					...old,
+					docs: old.docs.map((m: any) => (m.id === tempId ? message : m)),
+				};
+			});
+		};
+
+		const onFailed = ({ tempId }: any) => {
+			queryClient.setQueryData(["messages", conversationId], (old: any) => {
+				if (!old) return old;
+				return { ...old, docs: old.docs.filter((m: any) => m.id !== tempId) };
+			});
 		};
 
 		const onTyping = (event: any) => {
@@ -109,6 +135,8 @@ export default function ConversationScreen() {
 		};
 
 		chatClient.on("message:new", onNewMessage);
+		chatClient.on("message:confirmed", onConfirmed);
+		chatClient.on("message:failed", onFailed);
 		chatClient.on("typing", onTyping);
 		chatClient.on("message:read", onMessageRead);
 
@@ -126,6 +154,8 @@ export default function ConversationScreen() {
 
 		return () => {
 			chatClient.off("message:new", onNewMessage);
+			chatClient.off("message:confirmed", onConfirmed);
+			chatClient.off("message:failed", onFailed);
 			chatClient.off("typing", onTyping);
 			chatClient.off("message:read", onMessageRead);
 			chatClient.leaveConversation(conversationId);
@@ -163,22 +193,44 @@ export default function ConversationScreen() {
 		}
 	};
 
-	const { mutate: sendMessage, isPending: sending } = useMutation({
-		mutationFn: () =>
-			api.post("/api/messages", {
-				conversation: conversationId,
-				content: text.trim(),
-				sender: user?.id,
-			}),
-		onSuccess: () => {
-			setText("");
-			if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-			chatClient?.stopTyping(conversationId!);
-			queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+	const [sending, setSending] = useState(false);
+
+	function sendMessage() {
+		const content = text.trim();
+		if (!content || !chatClient || !conversationId || !user) return;
+
+		setSending(true);
+		setText("");
+		if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+		chatClient.stopTyping(conversationId);
+
+		try {
+			const tempId = chatClient.sendMessage({ conversationId, content });
+			// Add optimistic message to query cache
+			queryClient.setQueryData(["messages", conversationId], (old: any) => {
+				if (!old) return old;
+				return {
+					...old,
+					docs: [
+						...old.docs,
+						{
+							id: tempId,
+							conversationId,
+							sender: user.id,
+							content,
+							createdAt: new Date().toISOString(),
+						},
+					],
+				};
+			});
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
-		},
-		onError: (err: any) => showError(t("common.error"), err.message),
-	});
+		} catch (err: any) {
+			setText(content);
+			showError(t("common.error"), err.message);
+		} finally {
+			setSending(false);
+		}
+	}
 
 	const formatTime = (dateStr: string) =>
 		new Date(dateStr).toLocaleTimeString("fr-FR", {

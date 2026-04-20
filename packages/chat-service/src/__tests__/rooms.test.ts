@@ -1,16 +1,14 @@
-import { afterEach, describe, expect, mock, test } from "bun:test";
-import {
-	getRoomId,
-	joinRoom,
-	leaveRoom,
-	verifyConversationAccess,
-} from "../rooms.ts";
+import { describe, expect, mock, test } from "bun:test";
+import { getRoomId, joinRoom, leaveRoom } from "../rooms.ts";
 
-const originalFetch = globalThis.fetch;
+mock.module("../cache.ts", () => ({
+	hasConversationAccess: mock(() => Promise.resolve(true)),
+	getParticipants: mock(() => Promise.resolve([])),
+	invalidateParticipants: mock(() => Promise.resolve()),
+	verifyTokenCached: mock(() => Promise.resolve({ userId: "user-1" })),
+}));
 
-afterEach(() => {
-	globalThis.fetch = originalFetch;
-});
+import { hasConversationAccess } from "../cache.ts";
 
 describe("getRoomId", () => {
 	test("formats room ID correctly", () => {
@@ -23,81 +21,9 @@ describe("getRoomId", () => {
 	});
 });
 
-describe("verifyConversationAccess", () => {
-	test("returns true when user is a participant", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.resolve(
-				new Response(JSON.stringify({ participants: ["user-1", "user-2"] }), {
-					status: 200,
-				}),
-			),
-		) as unknown as typeof fetch;
-
-		const result = await verifyConversationAccess("user-1", "conv-1", "tok");
-		expect(result).toBe(true);
-	});
-
-	test("returns false when user is not a participant", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.resolve(
-				new Response(JSON.stringify({ participants: ["user-1", "user-2"] }), {
-					status: 200,
-				}),
-			),
-		) as unknown as typeof fetch;
-
-		const result = await verifyConversationAccess("user-3", "conv-1", "tok");
-		expect(result).toBe(false);
-	});
-
-	test("returns false when API returns non-OK status", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.resolve(new Response("Not found", { status: 404 })),
-		) as unknown as typeof fetch;
-
-		const result = await verifyConversationAccess(
-			"user-1",
-			"nonexistent",
-			"tok",
-		);
-		expect(result).toBe(false);
-	});
-
-	test("returns false when fetch throws (network error)", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.reject(new Error("Network error")),
-		) as unknown as typeof fetch;
-
-		const result = await verifyConversationAccess("user-1", "conv-1", "tok");
-		expect(result).toBe(false);
-	});
-
-	test("calls the correct API endpoint", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.resolve(
-				new Response(JSON.stringify({ participants: ["user-1"] }), {
-					status: 200,
-				}),
-			),
-		) as unknown as typeof fetch;
-
-		await verifyConversationAccess("user-1", "conv-abc", "tok");
-
-		const fetchCall = (globalThis.fetch as unknown as ReturnType<typeof mock>)
-			.mock.calls[0] as unknown as [string];
-		expect(fetchCall[0]).toContain("/conversations/conv-abc?depth=0");
-	});
-});
-
 describe("joinRoom", () => {
 	test("joins the room when access is granted", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.resolve(
-				new Response(JSON.stringify({ participants: ["user-1"] }), {
-					status: 200,
-				}),
-			),
-		) as unknown as typeof fetch;
+		(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(true);
 
 		const joinedRooms: string[] = [];
 		const mockSocket = {
@@ -107,26 +33,20 @@ describe("joinRoom", () => {
 			}),
 		} as any;
 
-		const result = await joinRoom(mockSocket, "conv-1", "user-1", "tok");
+		const result = await joinRoom(mockSocket, "conv-1", "user-1");
 
 		expect(result).toBe(true);
 		expect(joinedRooms).toContain("conversation:conv-1");
 	});
 
 	test("rejects when access is denied", async () => {
-		globalThis.fetch = mock(() =>
-			Promise.resolve(
-				new Response(JSON.stringify({ participants: ["user-2"] }), {
-					status: 200,
-				}),
-			),
-		) as unknown as typeof fetch;
+		(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(false);
 
 		const mockSocket = {
 			join: mock(() => Promise.resolve()),
 		} as any;
 
-		const result = await joinRoom(mockSocket, "conv-1", "user-99", "tok");
+		const result = await joinRoom(mockSocket, "conv-1", "user-99");
 
 		expect(result).toBe(false);
 		expect(mockSocket.join).not.toHaveBeenCalled();

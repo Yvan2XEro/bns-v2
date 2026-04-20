@@ -5,10 +5,7 @@ export interface ClientToServerEvents {
 		ack?: (response: AckResponse) => void,
 	) => void;
 	"conversation:leave": (payload: { conversationId: string }) => void;
-	"message:send": (
-		payload: SendMessagePayload,
-		ack?: (response: SendMessageAck) => void,
-	) => void;
+	"message:send": (payload: SendMessagePayload) => void;
 	"message:delivered": (payload: {
 		conversationId: string;
 		messageId: string;
@@ -24,6 +21,11 @@ export interface ClientToServerEvents {
 /** Events the server can send to the client */
 export interface ServerToClientEvents {
 	"message:new": (message: ChatMessage) => void;
+	"message:confirmed": (payload: {
+		tempId: string;
+		message: ChatMessage;
+	}) => void;
+	"message:failed": (payload: { tempId: string; error: string }) => void;
 	"message:delivered": (payload: { messageId: string; userId: string }) => void;
 	"message:read": (payload: { messageIds: string[]; userId: string }) => void;
 	typing: (payload: TypingEvent) => void;
@@ -37,11 +39,13 @@ export interface ChatMessage {
 	sender: string;
 	content: string;
 	createdAt: string;
+	tempId?: string;
 }
 
 export interface SendMessagePayload {
 	conversationId: string;
 	content: string;
+	tempId?: string;
 }
 
 export interface AckResponse {
@@ -75,6 +79,11 @@ export interface ChatClientOptions {
 export type ChatEventMap = {
 	"connection:change": (state: ConnectionState) => void;
 	"message:new": (message: ChatMessage) => void;
+	"message:confirmed": (payload: {
+		tempId: string;
+		message: ChatMessage;
+	}) => void;
+	"message:failed": (payload: { tempId: string; error: string }) => void;
 	"message:delivered": (payload: { messageId: string; userId: string }) => void;
 	"message:read": (payload: { messageIds: string[]; userId: string }) => void;
 	"message:sent": (message: ChatMessage) => void;

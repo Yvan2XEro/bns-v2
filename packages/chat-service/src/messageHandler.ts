@@ -1,6 +1,8 @@
 import type { Server, Socket } from "socket.io";
+import { getParticipants } from "./cache.ts";
 import { getRedis } from "./redis.ts";
 import { getRoomId } from "./rooms.ts";
+import { getServiceToken, invalidateServiceToken } from "./serviceAuth.ts";
 
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
@@ -10,6 +12,7 @@ const RATE_LIMIT_WINDOW = 1;
 type SendMessagePayload = {
 	conversationId: string;
 	content: string;
+	tempId?: string;
 };
 
 type MessageResponse = {
@@ -24,11 +27,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
 	const redis = getRedis();
 	const key = `ratelimit:msg:${userId}`;
 	const count = await redis.incr(key);
-
-	if (count === 1) {
-		await redis.expire(key, RATE_LIMIT_WINDOW);
-	}
-
+	if (count === 1) await redis.expire(key, RATE_LIMIT_WINDOW);
 	return count <= RATE_LIMIT_MAX;
 }
 
@@ -36,8 +35,8 @@ async function persistMessage(
 	conversationId: string,
 	senderId: string,
 	content: string,
-	token: string,
 ): Promise<MessageResponse> {
+	const token = await getServiceToken();
 	const response = await fetch(`${PAYLOAD_API_URL}/messages`, {
 		method: "POST",
 		headers: {
@@ -52,118 +51,85 @@ async function persistMessage(
 	});
 
 	if (!response.ok) {
+		if (response.status === 401) invalidateServiceToken();
 		const error = await response.text();
 		throw new Error(`Failed to persist message: ${response.status} ${error}`);
 	}
 
-	const message = (await response.json()) as { doc: MessageResponse };
-	return message.doc;
-}
-
-async function updateConversationLastMessage(
-	conversationId: string,
-	messageId: string,
-	token: string,
-): Promise<void> {
-	await fetch(`${PAYLOAD_API_URL}/conversations/${conversationId}`, {
-		method: "PATCH",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `JWT ${token}`,
-		},
-		body: JSON.stringify({ lastMessage: messageId }),
-	});
-}
-
-async function markMessageRead(
-	messageId: string,
-	token: string,
-): Promise<void> {
-	await fetch(`${PAYLOAD_API_URL}/messages/${messageId}`, {
-		method: "PATCH",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `JWT ${token}`,
-		},
-		body: JSON.stringify({ read: true }),
-	});
+	const data = (await response.json()) as { doc: MessageResponse };
+	return data.doc;
 }
 
 export function registerMessageHandlers(
 	io: Server,
 	socket: Socket,
 	userId: string,
-	token: string,
 ): void {
-	socket.on(
-		"message:send",
-		async (
-			payload: SendMessagePayload,
-			ack?: (response: {
-				success: boolean;
-				message?: MessageResponse;
-				error?: string;
-			}) => void,
-		) => {
-			const { conversationId, content } = payload;
+	socket.on("message:send", async (payload: SendMessagePayload) => {
+		const { conversationId, content, tempId } = payload;
 
-			if (!conversationId || !content?.trim()) {
-				ack?.({ success: false, error: "Missing conversationId or content" });
-				return;
-			}
+		if (!conversationId || !content?.trim()) {
+			if (tempId)
+				socket.emit("message:failed", {
+					tempId,
+					error: "Missing conversationId or content",
+				});
+			return;
+		}
 
-			const allowed = await checkRateLimit(userId);
-			if (!allowed) {
-				ack?.({ success: false, error: "Rate limit exceeded" });
-				return;
-			}
+		const allowed = await checkRateLimit(userId);
+		if (!allowed) {
+			if (tempId)
+				socket.emit("message:failed", { tempId, error: "Rate limit exceeded" });
+			return;
+		}
 
-			try {
-				const message = await persistMessage(
-					conversationId,
-					userId,
-					content.trim(),
-					token,
-				);
+		// Fetch participants from cache (no HTTP if cached) for broadcast
+		const participants = await getParticipants(conversationId);
 
-				updateConversationLastMessage(conversationId, message.id, token).catch(
-					(err) => console.error("[chat] Failed to update lastMessage:", err),
-				);
-
-				const roomId = getRoomId(conversationId);
+		// Persist async — no blocking broadcast
+		persistMessage(conversationId, userId, content.trim())
+			.then((message) => {
 				const msgPayload = {
 					id: message.id,
 					conversationId,
 					sender: userId,
 					content: message.content,
 					createdAt: message.createdAt,
+					...(tempId ? { tempId } : {}),
 				};
 
-				// Emit to conversation room (for users who already joined it)
+				// Broadcast to conversation room
+				const roomId = getRoomId(conversationId);
 				io.to(roomId).emit("message:new", msgPayload);
 
-				// Also emit to each participant's personal room so recipients
-				// of a brand-new conversation receive the event in real-time.
-				try {
-					const convRes = await fetch(
-						`${PAYLOAD_API_URL}/conversations/${conversationId}?depth=0`,
-						{ headers: { Authorization: `JWT ${token}` } },
-					);
-					if (convRes.ok) {
-						const conv = (await convRes.json()) as {
-							participants: (string | number)[];
-						};
-						for (const participantId of conv.participants) {
-							if (String(participantId) !== userId) {
-								io.to(`user:${participantId}`).emit("message:new", msgPayload);
-							}
-						}
+				// Also notify participants via personal rooms (for new conversations)
+				for (const participantId of participants) {
+					if (participantId !== userId) {
+						io.to(`user:${participantId}`).emit("message:new", msgPayload);
 					}
-				} catch (err) {
-					console.error("[chat] Failed to notify participant rooms:", err);
 				}
 
-				ack?.({ success: true, message });
+				// Confirm to sender with real message id
+				if (tempId) {
+					socket.emit("message:confirmed", { tempId, message: msgPayload });
+				}
+
+				// Update conversation lastMessage (fire-and-forget)
+				getServiceToken()
+					.then((token) =>
+						fetch(`${PAYLOAD_API_URL}/conversations/${conversationId}`, {
+							method: "PATCH",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `JWT ${token}`,
+							},
+							body: JSON.stringify({ lastMessage: message.id }),
+						}),
+					)
+					.catch((err) =>
+						console.error("[chat] Failed to update lastMessage:", err),
+					);
 
 				console.log(
 					JSON.stringify({
@@ -174,7 +140,8 @@ export function registerMessageHandlers(
 						timestamp: new Date().toISOString(),
 					}),
 				);
-			} catch (error) {
+			})
+			.catch((error) => {
 				console.error(
 					JSON.stringify({
 						event: "message:send:error",
@@ -184,14 +151,18 @@ export function registerMessageHandlers(
 						timestamp: new Date().toISOString(),
 					}),
 				);
-				ack?.({ success: false, error: "Failed to send message" });
-			}
-		},
-	);
+				if (tempId) {
+					socket.emit("message:failed", {
+						tempId,
+						error: "Failed to send message",
+					});
+				}
+			});
+	});
 
 	socket.on(
 		"message:delivered",
-		async (payload: { conversationId: string; messageId: string }) => {
+		(payload: { conversationId: string; messageId: string }) => {
 			const roomId = getRoomId(payload.conversationId);
 			socket.to(roomId).emit("message:delivered", {
 				messageId: payload.messageId,
@@ -202,18 +173,32 @@ export function registerMessageHandlers(
 
 	socket.on(
 		"message:read",
-		async (payload: { conversationId: string; messageIds: string[] }) => {
+		(payload: { conversationId: string; messageIds: string[] }) => {
 			const roomId = getRoomId(payload.conversationId);
 			socket.to(roomId).emit("message:read", {
 				messageIds: payload.messageIds,
 				userId,
 			});
 
-			for (const messageId of payload.messageIds) {
-				markMessageRead(messageId, token).catch((err) =>
-					console.error("[chat] Failed to mark message as read:", err),
+			// Mark messages as read via service token (fire-and-forget)
+			getServiceToken()
+				.then((token) =>
+					Promise.all(
+						payload.messageIds.map((messageId) =>
+							fetch(`${PAYLOAD_API_URL}/messages/${messageId}`, {
+								method: "PATCH",
+								headers: {
+									"Content-Type": "application/json",
+									Authorization: `JWT ${token}`,
+								},
+								body: JSON.stringify({ read: true }),
+							}),
+						),
+					),
+				)
+				.catch((err) =>
+					console.error("[chat] Failed to mark messages as read:", err),
 				);
-			}
 		},
 	);
 }
