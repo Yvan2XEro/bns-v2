@@ -6,6 +6,7 @@ import {
 	Flag,
 	MapPin,
 	MessageCircle,
+	Pencil,
 	Shield,
 	Star,
 	Timer,
@@ -346,6 +347,20 @@ export default async function ListingPage({ params }: PageProps) {
 								)}
 
 								<div className="mt-5 flex flex-col gap-2">
+									{isOwner && (
+										<Link
+											href={`/listing/${listing.id}/edit`}
+											className="w-full"
+										>
+											<Button
+												variant="outline"
+												className="w-full rounded-lg border-[#E2E8F0] hover:border-[#1E40AF] hover:text-[#1E40AF]"
+											>
+												<Pencil className="mr-2 h-4 w-4" />
+												Modifier l'annonce
+											</Button>
+										</Link>
+									)}
 									{isOwner && listing.status === "published" && !isBoosted && (
 										<BoostDialog listingId={listing.id}>
 											<Button className="w-full rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] shadow-amber-500/20 shadow-md hover:shadow-lg">

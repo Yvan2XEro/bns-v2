@@ -9,7 +9,7 @@ import {
 	X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
@@ -80,6 +80,18 @@ export function SearchClient({
 		condition: initialParams.condition || "",
 		tags: initialParams.tags || "",
 	});
+
+	// Local state for the top search input — avoids router.push on every keystroke
+	const [searchInput, setSearchInput] = useState(initialParams.q || "");
+	const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const handleSearchInputChange = (value: string) => {
+		setSearchInput(value);
+		if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+		searchDebounceRef.current = setTimeout(() => {
+			updateFilter("q", value);
+		}, 350);
+	};
 
 	const [availableTags, setAvailableTags] = useState<
 		{ id: string; name: string; slug: string; emoji?: string }[]
@@ -601,10 +613,10 @@ export function SearchClient({
 					<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
 					<input
 						type="search"
-						placeholder="Search..."
+						placeholder="Rechercher..."
 						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
-						value={filters.q}
-						onChange={(e) => updateFilter("q", e.target.value)}
+						value={searchInput}
+						onChange={(e) => handleSearchInputChange(e.target.value)}
 					/>
 				</div>
 				<div className="flex items-center gap-2">
