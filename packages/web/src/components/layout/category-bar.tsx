@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronLeft, Grid3X3, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Category } from "~/types";
 
@@ -287,8 +288,9 @@ interface CategoryBarProps {
 }
 
 export function CategoryBar({ categories }: CategoryBarProps) {
+	const pathname = usePathname();
 	const tree = buildTree(categories);
-	if (tree.length === 0) return null;
+	if (tree.length === 0 || pathname.startsWith("/messages")) return null;
 
 	return (
 		<>
