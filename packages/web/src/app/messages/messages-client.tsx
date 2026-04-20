@@ -94,6 +94,12 @@ export function MessagesClient({
 
 	selectedConvRef.current = selectedConversation;
 
+	function selectConversation(conv: ConversationWithDetails | null) {
+		setSelectedConversation(conv);
+		const url = conv ? `/messages?conversation=${conv.id}` : "/messages";
+		window.history.replaceState(null, "", url);
+	}
+
 	// Connect chat client when token is available
 	useEffect(() => {
 		if (!token) return;
@@ -358,7 +364,7 @@ export function MessagesClient({
 			setConversations((prev) =>
 				prev.filter((c) => c.id !== selectedConversation.id),
 			);
-			setSelectedConversation(null);
+			selectConversation(null);
 			setMessages([]);
 			setDeleteDialogOpen(false);
 		}
@@ -436,7 +442,7 @@ export function MessagesClient({
 												? "border border-[#DBEAFE] bg-[#EFF6FF]"
 												: ""
 										}`}
-										onClick={() => setSelectedConversation(conv)}
+										onClick={() => selectConversation(conv)}
 									>
 										<div className="relative">
 											<Avatar>
@@ -493,7 +499,7 @@ export function MessagesClient({
 									variant="ghost"
 									size="icon"
 									className="md:hidden"
-									onClick={() => setSelectedConversation(null)}
+									onClick={() => selectConversation(null)}
 								>
 									<ArrowLeft className="h-5 w-5" />
 								</Button>

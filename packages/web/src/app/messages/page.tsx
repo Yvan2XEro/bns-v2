@@ -104,10 +104,14 @@ export default async function MessagesPage({
 	let conversations = await getConversations();
 
 	const listingId = params.listing;
+	const conversationId = params.conversation;
 	let preSelectedConversation: ConversationWithDetails | null = null;
 	let initialMessages: Message[] = [];
 
-	if (listingId) {
+	if (conversationId) {
+		preSelectedConversation =
+			conversations.find((c) => c.id === conversationId) ?? null;
+	} else if (listingId) {
 		preSelectedConversation = await findOrCreateConversation(
 			listingId,
 			user.id,
