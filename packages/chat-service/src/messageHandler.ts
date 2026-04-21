@@ -13,6 +13,14 @@ type SendMessagePayload = {
 	conversationId: string;
 	content: string;
 	tempId?: string;
+	listing?: string;
+};
+
+type ListingAttachment = {
+	id: string;
+	title: string;
+	price?: number;
+	thumbnailUrl?: string;
 };
 
 type MessageResponse = {
@@ -31,10 +39,47 @@ async function checkRateLimit(userId: string): Promise<boolean> {
 	return count <= RATE_LIMIT_MAX;
 }
 
+async function fetchListingAttachment(
+	listingId: string,
+	token: string,
+): Promise<ListingAttachment | undefined> {
+	try {
+		const res = await fetch(
+			`${PAYLOAD_API_URL}/listings/${listingId}?depth=1`,
+			{
+				headers: { Authorization: `JWT ${token}` },
+			},
+		);
+		if (!res.ok) return undefined;
+		const data = (await res.json()) as {
+			doc?: {
+				id: string;
+				title: string;
+				price?: number;
+				images?: Array<{ image?: { url?: string } }>;
+			};
+			id?: string;
+			title?: string;
+			price?: number;
+			images?: Array<{ image?: { url?: string } }>;
+		};
+		const l = data.doc ?? data;
+		return {
+			id: String(l.id),
+			title: String(l.title ?? ""),
+			price: l.price,
+			thumbnailUrl: l.images?.[0]?.image?.url,
+		};
+	} catch {
+		return undefined;
+	}
+}
+
 async function persistMessage(
 	conversationId: string,
 	senderId: string,
 	content: string,
+	listingId?: string,
 ): Promise<MessageResponse> {
 	const token = await getServiceToken();
 	const response = await fetch(`${PAYLOAD_API_URL}/messages`, {
@@ -47,6 +92,7 @@ async function persistMessage(
 			conversation: conversationId,
 			sender: senderId,
 			content,
+			...(listingId ? { listing: listingId } : {}),
 		}),
 	});
 
@@ -66,7 +112,7 @@ export function registerMessageHandlers(
 	userId: string,
 ): void {
 	socket.on("message:send", async (payload: SendMessagePayload) => {
-		const { conversationId, content, tempId } = payload;
+		const { conversationId, content, tempId, listing: listingId } = payload;
 
 		if (!conversationId || !content?.trim()) {
 			if (tempId)
@@ -88,8 +134,15 @@ export function registerMessageHandlers(
 		const participants = await getParticipants(conversationId);
 
 		// Persist async — no blocking broadcast
-		persistMessage(conversationId, userId, content.trim())
-			.then((message) => {
+		persistMessage(conversationId, userId, content.trim(), listingId)
+			.then(async (message) => {
+				// Fetch listing data to include in broadcast (only if listing attached)
+				let listing: ListingAttachment | undefined;
+				if (listingId) {
+					const token = await getServiceToken();
+					listing = await fetchListingAttachment(listingId, token);
+				}
+
 				const msgPayload = {
 					id: message.id,
 					conversationId,
@@ -97,6 +150,7 @@ export function registerMessageHandlers(
 					content: message.content,
 					createdAt: message.createdAt,
 					...(tempId ? { tempId } : {}),
+					...(listing ? { listing } : {}),
 				};
 
 				// Broadcast to conversation room

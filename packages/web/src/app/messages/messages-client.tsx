@@ -4,17 +4,20 @@ import {
 	ChatClient,
 	type ChatMessage,
 	type ConnectionState,
+	type ListingAttachment,
 } from "@bns/chat-client";
 import {
 	ArrowLeft,
 	Ban,
 	Circle,
 	MoreVertical,
+	Paperclip,
 	Send,
 	ShieldOff,
 	Trash2,
 	Wifi,
 	WifiOff,
+	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -84,6 +87,21 @@ export function MessagesClient({
 		new Set(blockedUserIds),
 	);
 	const [isBlocking, startBlockTransition] = useTransition();
+	const [attachedListing, setAttachedListing] =
+		useState<ListingAttachment | null>(
+			contextListing
+				? {
+						id: contextListing.id,
+						title: contextListing.title,
+						price: contextListing.price,
+						thumbnailUrl: (
+							contextListing as Listing & {
+								images?: Array<{ image?: { url?: string } }>;
+							}
+						).images?.[0]?.image?.url,
+					}
+				: null,
+		);
 
 	const chatRef = useRef<ChatClient | null>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -317,13 +335,16 @@ export function MessagesClient({
 		if (!content || !selectedConversation || !chatRef.current) return;
 
 		const convId = String(selectedConversation.id);
+		const listing = attachedListing;
 		setNewMessage("");
+		setAttachedListing(null);
 		chatRef.current.stopTyping(convId);
 
 		try {
 			const tempId = chatRef.current.sendMessage({
 				conversationId: convId,
 				content,
+				...(listing ? { listing: listing.id } : {}),
 			});
 			// Add optimistic message immediately
 			setMessages((prev) => [
@@ -335,10 +356,12 @@ export function MessagesClient({
 					content,
 					createdAt: new Date().toISOString(),
 					updatedAt: new Date().toISOString(),
+					...(listing ? { listing } : {}),
 				} as Message,
 			]);
 		} catch {
 			setNewMessage(content);
+			setAttachedListing(listing);
 		}
 	}
 
@@ -586,68 +609,75 @@ export function MessagesClient({
 							</div>
 
 							<div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
-								{(() => {
-									const card =
-										contextListing ??
-										(selectedConversation.listing
-											? (selectedConversation.listing as Listing)
-											: null);
-									if (!card) return null;
-									const cardWithImages = card as Listing & {
-										images?: Array<{ image?: { url?: string } }>;
-									};
-									return (
-										<a
-											href={`/listing/${card.id}`}
-											className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 transition-colors hover:bg-[#EFF6FF]"
-										>
-											{cardWithImages.images?.[0]?.image?.url && (
-												<img
-													src={cardWithImages.images[0].image?.url ?? ""}
-													alt={card.title}
-													className="h-14 w-14 shrink-0 rounded-lg object-cover"
-												/>
-											)}
-											<div className="min-w-0 flex-1">
-												<p className="truncate font-medium text-[#0F172A] text-sm">
-													{card.title}
-												</p>
-												<p className="font-bold text-[#1E40AF] text-sm">
-													{card.price?.toLocaleString()} XAF
-												</p>
-											</div>
-										</a>
-									);
-								})()}
 								{messages.map((message) => {
 									const senderId =
 										typeof message.sender === "object"
 											? (message.sender as User).id
 											: message.sender;
 									const isOwn = senderId === user.id;
+									const msgListing = (
+										message as Message & { listing?: ListingAttachment }
+									).listing;
 									return (
 										<div
 											key={message.id}
 											className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
 										>
 											<div
-												className={`max-w-[70%] px-4 py-2 ${
+												className={`max-w-[70%] overflow-hidden ${
 													isOwn
 														? "rounded-2xl rounded-br-md bg-[#1E40AF] text-white"
 														: "rounded-2xl rounded-bl-md bg-[#F1F5F9] text-[#0F172A]"
 												}`}
 											>
-												<p>{message.content}</p>
-												<p
-													className={`text-xs ${
-														isOwn ? "text-white/70" : "text-[#94A3B8]"
-													}`}
-												>
-													{new Date(message.createdAt).toLocaleTimeString([], {
-														hour: "2-digit",
-														minute: "2-digit",
-													})}
-												</p>
+												{msgListing && (
+													<a
+														href={`/listing/${msgListing.id}`}
+														className={`flex items-center gap-2 border-b p-2 transition-colors ${
+															isOwn
+																? "border-white/20 bg-white/10 hover:bg-white/20"
+																: "border-[#E2E8F0] bg-white hover:bg-[#EFF6FF]"
+														}`}
+													>
+														{msgListing.thumbnailUrl && (
+															<img
+																src={msgListing.thumbnailUrl}
+																alt={msgListing.title}
+																className="h-10 w-10 shrink-0 rounded-md object-cover"
+															/>
+														)}
+														<div className="min-w-0">
+															<p
+																className={`truncate font-semibold text-xs ${isOwn ? "text-white" : "text-[#0F172A]"}`}
+															>
+																{msgListing.title}
+															</p>
+															{msgListing.price != null && (
+																<p
+																	className={`text-xs ${isOwn ? "text-white/80" : "text-[#1E40AF]"}`}
+																>
+																	{msgListing.price.toLocaleString()} XAF
+																</p>
+															)}
+														</div>
+													</a>
+												)}
+												<div className="px-4 py-2">
+													<p>{message.content}</p>
+													<p
+														className={`text-xs ${
+															isOwn ? "text-white/70" : "text-[#94A3B8]"
+														}`}
+													>
+														{new Date(message.createdAt).toLocaleTimeString(
+															[],
+															{
+																hour: "2-digit",
+																minute: "2-digit",
+															},
+														)}
+													</p>
+												</div>
 											</div>
 										</div>
 									);
@@ -667,28 +697,56 @@ export function MessagesClient({
 									You have blocked this user
 								</div>
 							) : (
-								<form
-									onSubmit={sendMessage}
-									className="flex gap-2 border-[#E2E8F0] border-t pt-4"
-								>
-									<Input
-										placeholder="Type a message..."
-										value={newMessage}
-										onChange={handleInputChange}
-										disabled={connectionState !== "connected"}
-										className="rounded-xl border-[#E2E8F0] focus:border-[#1E40AF] focus:ring-[#1E40AF]"
-									/>
-									<Button
-										type="submit"
-										size="icon"
-										disabled={
-											connectionState !== "connected" || !newMessage.trim()
-										}
-										className="rounded-xl bg-[#1E40AF] text-white hover:bg-[#1E40AF]/90"
-									>
-										<Send className="h-4 w-4" />
-									</Button>
-								</form>
+								<div className="border-[#E2E8F0] border-t pt-3">
+									{attachedListing && (
+										<div className="mb-2 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-2">
+											<Paperclip className="h-4 w-4 shrink-0 text-[#64748B]" />
+											{attachedListing.thumbnailUrl && (
+												<img
+													src={attachedListing.thumbnailUrl}
+													alt={attachedListing.title}
+													className="h-8 w-8 shrink-0 rounded-md object-cover"
+												/>
+											)}
+											<div className="min-w-0 flex-1">
+												<p className="truncate font-semibold text-[#0F172A] text-xs">
+													{attachedListing.title}
+												</p>
+												{attachedListing.price != null && (
+													<p className="text-[#1E40AF] text-xs">
+														{attachedListing.price.toLocaleString()} XAF
+													</p>
+												)}
+											</div>
+											<button
+												type="button"
+												onClick={() => setAttachedListing(null)}
+												className="shrink-0 rounded-full p-1 text-[#94A3B8] hover:text-[#0F172A]"
+											>
+												<X className="h-3.5 w-3.5" />
+											</button>
+										</div>
+									)}
+									<form onSubmit={sendMessage} className="flex gap-2">
+										<Input
+											placeholder="Type a message..."
+											value={newMessage}
+											onChange={handleInputChange}
+											disabled={connectionState !== "connected"}
+											className="rounded-xl border-[#E2E8F0] focus:border-[#1E40AF] focus:ring-[#1E40AF]"
+										/>
+										<Button
+											type="submit"
+											size="icon"
+											disabled={
+												connectionState !== "connected" || !newMessage.trim()
+											}
+											className="rounded-xl bg-[#1E40AF] text-white hover:bg-[#1E40AF]/90"
+										>
+											<Send className="h-4 w-4" />
+										</Button>
+									</form>
+								</div>
 							)}
 						</>
 					) : (

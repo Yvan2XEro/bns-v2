@@ -62,7 +62,7 @@ export default function ConversationScreen() {
 		queryKey: ["messages", conversationId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
-				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=100`,
+				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&limit=100&depth=1`,
 			),
 		enabled: !!conversationId,
 	});
@@ -70,10 +70,27 @@ export default function ConversationScreen() {
 	const messages = messagesData?.docs ?? [];
 	const conv = convData?.doc ?? convData;
 	const otherUser = conv?.participants?.find((p: any) => p.id !== user?.id);
-	// Prefer listing passed via URL param (from listing page), fall back to stored on conversation
-	const contextListing =
-		contextListingData?.doc ?? contextListingData ?? conv?.listing ?? null;
+	const contextListingRaw =
+		contextListingData?.doc ?? contextListingData ?? null;
+	const [attachedListing, setAttachedListing] = useState<{
+		id: string;
+		title: string;
+		price?: number;
+		thumbnailUrl?: string;
+	} | null>(null);
 	const isOtherOnline = otherUser?.id ? onlineUsers.has(otherUser.id) : false;
+
+	// Init listing attachment from URL param once data loads
+	useEffect(() => {
+		if (contextListingRaw && listingParam) {
+			setAttachedListing({
+				id: contextListingRaw.id,
+				title: contextListingRaw.title,
+				price: contextListingRaw.price,
+				thumbnailUrl: contextListingRaw.images?.[0]?.image?.url,
+			});
+		}
+	}, [contextListingRaw, listingParam]);
 
 	// Initialise readByOther from loaded messages
 	useEffect(() => {
@@ -210,13 +227,19 @@ export default function ConversationScreen() {
 		const content = text.trim();
 		if (!content || !chatClient || !conversationId || !user) return;
 
+		const listing = attachedListing;
 		setSending(true);
 		setText("");
+		setAttachedListing(null);
 		if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 		chatClient.stopTyping(conversationId);
 
 		try {
-			const tempId = chatClient.sendMessage({ conversationId, content });
+			const tempId = chatClient.sendMessage({
+				conversationId,
+				content,
+				...(listing ? { listing: listing.id } : {}),
+			});
 			// Add optimistic message to query cache
 			queryClient.setQueryData(["messages", conversationId], (old: any) => {
 				if (!old) return old;
@@ -230,6 +253,7 @@ export default function ConversationScreen() {
 							sender: user.id,
 							content,
 							createdAt: new Date().toISOString(),
+							...(listing ? { listing } : {}),
 						},
 					],
 				};
@@ -237,6 +261,7 @@ export default function ConversationScreen() {
 			queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		} catch (err: any) {
 			setText(content);
+			setAttachedListing(listing);
 			showError(t("common.error"), err.message);
 		} finally {
 			setSending(false);
@@ -310,6 +335,60 @@ export default function ConversationScreen() {
 							},
 						]}
 					>
+						{item.listing && (
+							<Pressable
+								onPress={() =>
+									router.push(`/listing/${item.listing.id}` as never)
+								}
+								style={[
+									styles.msgListingCard,
+									{
+										borderBottomColor: isMe
+											? "rgba(255,255,255,0.2)"
+											: borderColor,
+										backgroundColor: isMe
+											? "rgba(255,255,255,0.12)"
+											: "#f8fafc",
+									},
+								]}
+							>
+								{item.listing.thumbnailUrl && (
+									<Image
+										source={{ uri: item.listing.thumbnailUrl }}
+										style={styles.msgListingImg}
+										contentFit="cover"
+									/>
+								)}
+								<View style={styles.msgListingInfo}>
+									<Text
+										style={[
+											styles.msgListingTitle,
+											{ color: isMe ? "#fff" : textColor },
+										]}
+										numberOfLines={2}
+									>
+										{item.listing.title}
+									</Text>
+									{item.listing.price != null && (
+										<Text
+											style={[
+												styles.msgListingPrice,
+												{
+													color: isMe ? "rgba(255,255,255,0.85)" : primaryColor,
+												},
+											]}
+										>
+											{item.listing.price.toLocaleString()} XAF
+										</Text>
+									)}
+								</View>
+								<Ionicons
+									name="chevron-forward"
+									size={14}
+									color={isMe ? "rgba(255,255,255,0.6)" : mutedColor}
+								/>
+							</Pressable>
+						)}
 						<Text
 							style={[styles.bubbleText, { color: isMe ? "#fff" : textColor }]}
 						>
@@ -411,19 +490,17 @@ export default function ConversationScreen() {
 							<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
 								{t("messages.online")}
 							</Text>
-						) : contextListing ? (
+						) : attachedListing ? (
 							<Pressable
 								onPress={() =>
-									router.push(
-										`/listing/${contextListing.id ?? contextListing}` as never,
-									)
+									router.push(`/listing/${attachedListing.id}` as never)
 								}
 							>
 								<Text
 									style={[styles.headerListing, { color: primaryColor }]}
 									numberOfLines={1}
 								>
-									{contextListing.title ?? t("messages.viewListing")}
+									{attachedListing.title}
 								</Text>
 							</Pressable>
 						) : null}
@@ -472,45 +549,6 @@ export default function ConversationScreen() {
 						onContentSizeChange={() =>
 							listRef.current?.scrollToEnd({ animated: false })
 						}
-						ListHeaderComponent={
-							contextListing ? (
-								<Pressable
-									onPress={() =>
-										router.push(`/listing/${contextListing.id}` as never)
-									}
-									style={[
-										styles.listingCard,
-										{ backgroundColor: cardBg, borderColor },
-									]}
-								>
-									{contextListing.images?.[0]?.image?.url && (
-										<Image
-											source={{ uri: contextListing.images[0].image.url }}
-											style={styles.listingCardImg}
-											contentFit="cover"
-										/>
-									)}
-									<View style={styles.listingCardInfo}>
-										<Text
-											style={[styles.listingCardTitle, { color: textColor }]}
-											numberOfLines={2}
-										>
-											{contextListing.title}
-										</Text>
-										<Text
-											style={[styles.listingCardPrice, { color: primaryColor }]}
-										>
-											{contextListing.price?.toLocaleString()} XAF
-										</Text>
-									</View>
-									<Ionicons
-										name="chevron-forward"
-										size={16}
-										color={mutedColor}
-									/>
-								</Pressable>
-							) : null
-						}
 						ListFooterComponent={
 							isOtherTyping ? (
 								<View style={[styles.msgRow, styles.msgLeft, { marginTop: 4 }]}>
@@ -550,50 +588,82 @@ export default function ConversationScreen() {
 				{/* Input bar */}
 				<View
 					style={[
-						styles.inputBar,
 						{ backgroundColor: cardBg, borderTopColor: borderColor },
+						styles.inputWrapper,
 					]}
 				>
-					<TextInput
-						value={text}
-						onChangeText={handleTextChange}
-						placeholder={t("messages.writePlaceholder")}
-						placeholderTextColor={mutedColor}
-						style={[
-							styles.msgInput,
-							{
-								color: textColor,
-								backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
-								borderColor,
-							},
-						]}
-						multiline
-						maxLength={1000}
-					/>
-					<Pressable
-						onPress={() => text.trim() && sendMessage()}
-						disabled={!text.trim() || sending}
-						style={[
-							styles.sendBtn,
-							{
-								backgroundColor: text.trim()
-									? primaryColor
-									: isDark
-										? "#1e293b"
-										: "#e2e8f0",
-							},
-						]}
-					>
-						{sending ? (
-							<ActivityIndicator size="small" color="#fff" />
-						) : (
-							<Ionicons
-								name="send"
-								size={18}
-								color={text.trim() ? "#fff" : mutedColor}
-							/>
-						)}
-					</Pressable>
+					{attachedListing && (
+						<View style={[styles.attachBar, { borderColor }]}>
+							{attachedListing.thumbnailUrl && (
+								<Image
+									source={{ uri: attachedListing.thumbnailUrl }}
+									style={styles.attachImg}
+									contentFit="cover"
+								/>
+							)}
+							<View style={styles.attachInfo}>
+								<Text
+									style={[styles.attachTitle, { color: textColor }]}
+									numberOfLines={1}
+								>
+									{attachedListing.title}
+								</Text>
+								{attachedListing.price != null && (
+									<Text style={[styles.attachPrice, { color: primaryColor }]}>
+										{attachedListing.price.toLocaleString()} XAF
+									</Text>
+								)}
+							</View>
+							<Pressable
+								onPress={() => setAttachedListing(null)}
+								style={styles.attachDismiss}
+							>
+								<Ionicons name="close" size={16} color={mutedColor} />
+							</Pressable>
+						</View>
+					)}
+					<View style={styles.inputBar}>
+						<TextInput
+							value={text}
+							onChangeText={handleTextChange}
+							placeholder={t("messages.writePlaceholder")}
+							placeholderTextColor={mutedColor}
+							style={[
+								styles.msgInput,
+								{
+									color: textColor,
+									backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
+									borderColor,
+								},
+							]}
+							multiline
+							maxLength={1000}
+						/>
+						<Pressable
+							onPress={() => text.trim() && sendMessage()}
+							disabled={!text.trim() || sending}
+							style={[
+								styles.sendBtn,
+								{
+									backgroundColor: text.trim()
+										? primaryColor
+										: isDark
+											? "#1e293b"
+											: "#e2e8f0",
+								},
+							]}
+						>
+							{sending ? (
+								<ActivityIndicator size="small" color="#fff" />
+							) : (
+								<Ionicons
+									name="send"
+									size={18}
+									color={text.trim() ? "#fff" : mutedColor}
+								/>
+							)}
+						</Pressable>
+					</View>
 				</View>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
@@ -636,19 +706,6 @@ const styles = StyleSheet.create({
 	headerListing: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	onlineLabel: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	msgList: { padding: 12, paddingBottom: 8 },
-	listingCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		borderRadius: 12,
-		borderWidth: 1,
-		padding: 10,
-		marginBottom: 12,
-	},
-	listingCardImg: { width: 52, height: 52, borderRadius: 8 },
-	listingCardInfo: { flex: 1, gap: 2 },
-	listingCardTitle: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	listingCardPrice: { fontSize: 13, fontFamily: Fonts.displayBold },
 	dateSep: { alignItems: "center", marginVertical: 12 },
 	dateLabel: {
 		fontSize: 12,
@@ -692,12 +749,42 @@ const styles = StyleSheet.create({
 	bubbleTime: { fontSize: 10, fontFamily: Fonts.body },
 	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	typingDots: { fontSize: 18, letterSpacing: 4 },
+	inputWrapper: { borderTopWidth: 1 },
+	attachBar: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 8,
+		borderBottomWidth: 1,
+	},
+	attachImg: { width: 36, height: 36, borderRadius: 6 },
+	attachInfo: { flex: 1 },
+	attachTitle: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	attachPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
+	attachDismiss: { padding: 4 },
+	msgListingCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		borderBottomWidth: 1,
+		paddingHorizontal: 10,
+		paddingVertical: 8,
+		marginHorizontal: -14,
+		marginTop: -10,
+		marginBottom: 6,
+		borderTopLeftRadius: 17,
+		borderTopRightRadius: 17,
+	},
+	msgListingImg: { width: 40, height: 40, borderRadius: 6 },
+	msgListingInfo: { flex: 1 },
+	msgListingTitle: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	msgListingPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
 	inputBar: {
 		flexDirection: "row",
 		alignItems: "flex-end",
 		gap: 8,
 		padding: 10,
-		borderTopWidth: 1,
 	},
 	msgInput: {
 		flex: 1,

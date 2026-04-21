@@ -104,6 +104,12 @@ export const Messages: CollectionConfig = {
 			required: true,
 		},
 		{
+			name: "listing",
+			type: "relationship",
+			relationTo: "listings",
+			required: false,
+		},
+		{
 			name: "read",
 			type: "checkbox",
 			defaultValue: false,

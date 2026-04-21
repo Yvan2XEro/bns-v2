@@ -6,6 +6,7 @@ export type {
 	ChatMessage,
 	ClientToServerEvents,
 	ConnectionState,
+	ListingAttachment,
 	SendMessageAck,
 	SendMessagePayload,
 	ServerToClientEvents,

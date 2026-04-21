@@ -33,6 +33,13 @@ export interface ServerToClientEvents {
 	"user:offline": (payload: { userId: string }) => void;
 }
 
+export interface ListingAttachment {
+	id: string;
+	title: string;
+	price?: number;
+	thumbnailUrl?: string;
+}
+
 export interface ChatMessage {
 	id: string;
 	conversationId: string;
@@ -40,12 +47,14 @@ export interface ChatMessage {
 	content: string;
 	createdAt: string;
 	tempId?: string;
+	listing?: ListingAttachment;
 }
 
 export interface SendMessagePayload {
 	conversationId: string;
 	content: string;
 	tempId?: string;
+	listing?: string;
 }
 
 export interface AckResponse {

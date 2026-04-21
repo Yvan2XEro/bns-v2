@@ -7,6 +7,7 @@ import { useState } from "react";
 import {
 	ActivityIndicator,
 	Dimensions,
+	Modal,
 	Pressable,
 	ScrollView,
 	Share,
@@ -41,6 +42,8 @@ export default function ListingDetail() {
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 	const [imageIndex, setImageIndex] = useState(0);
+	const [lightboxVisible, setLightboxVisible] = useState(false);
+	const [lightboxIdx, setLightboxIdx] = useState(0);
 	const [descExpanded, setDescExpanded] = useState(false);
 	const [contactLoading, setContactLoading] = useState(false);
 
@@ -224,13 +227,20 @@ export default function ListingDetail() {
 					>
 						{images.length > 0 ? (
 							images.map((img: any, i: number) => (
-								<Image
+								<Pressable
 									key={i}
-									source={{ uri: resolveListingImageUrl(img) ?? undefined }}
-									style={{ width, height: 300 }}
-									contentFit="cover"
-									placeholder={{ blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6." }}
-								/>
+									onPress={() => {
+										setLightboxIdx(i);
+										setLightboxVisible(true);
+									}}
+								>
+									<Image
+										source={{ uri: resolveListingImageUrl(img) ?? undefined }}
+										style={{ width, height: 300 }}
+										contentFit="cover"
+										placeholder={{ blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6." }}
+									/>
+								</Pressable>
 							))
 						) : (
 							<View
@@ -677,6 +687,61 @@ export default function ListingDetail() {
 					</View>
 				)}
 			</View>
+			<Modal
+				visible={lightboxVisible}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setLightboxVisible(false)}
+			>
+				<View style={styles.lightboxOverlay}>
+					<Pressable
+						style={styles.lightboxClose}
+						onPress={() => setLightboxVisible(false)}
+					>
+						<Ionicons name="close" size={24} color="#fff" />
+					</Pressable>
+					<ScrollView
+						style={{ flex: 1 }}
+						contentContainerStyle={styles.lightboxContent}
+						maximumZoomScale={4}
+						minimumZoomScale={1}
+						showsVerticalScrollIndicator={false}
+						showsHorizontalScrollIndicator={false}
+						centerContent
+					>
+						<Image
+							source={{
+								uri: resolveListingImageUrl(images[lightboxIdx]) ?? undefined,
+							}}
+							style={styles.lightboxImg}
+							contentFit="contain"
+						/>
+					</ScrollView>
+					{images.length > 1 && (
+						<View style={styles.lightboxNav}>
+							<Pressable
+								onPress={() =>
+									setLightboxIdx((i) => (i === 0 ? images.length - 1 : i - 1))
+								}
+								style={styles.lightboxNavBtn}
+							>
+								<Ionicons name="chevron-back" size={28} color="#fff" />
+							</Pressable>
+							<Text style={styles.lightboxCounter}>
+								{lightboxIdx + 1} / {images.length}
+							</Text>
+							<Pressable
+								onPress={() =>
+									setLightboxIdx((i) => (i === images.length - 1 ? 0 : i + 1))
+								}
+								style={styles.lightboxNavBtn}
+							>
+								<Ionicons name="chevron-forward" size={28} color="#fff" />
+							</Pressable>
+						</View>
+					)}
+				</View>
+			</Modal>
 		</View>
 	);
 }
@@ -872,4 +937,51 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 	},
 	editBtnText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	lightboxOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0,0,0,0.95)",
+		justifyContent: "center",
+	},
+	lightboxClose: {
+		position: "absolute",
+		top: 48,
+		right: 16,
+		zIndex: 10,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: "rgba(255,255,255,0.15)",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	lightboxContent: {
+		flex: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	lightboxImg: {
+		width,
+		height: Dimensions.get("window").height * 0.8,
+	},
+	lightboxNav: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		paddingHorizontal: 16,
+		paddingBottom: 48,
+		paddingTop: 12,
+	},
+	lightboxNavBtn: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: "rgba(255,255,255,0.15)",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	lightboxCounter: {
+		color: "#fff",
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+	},
 });
