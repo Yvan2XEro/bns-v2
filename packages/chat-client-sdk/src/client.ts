@@ -10,6 +10,21 @@ import type {
 	TypingEvent,
 } from "./types";
 
+function generateId(): string {
+	const bytes = new Uint8Array(16);
+	if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+		crypto.getRandomValues(bytes);
+	} else {
+		for (let i = 0; i < 16; i++) bytes[i] = Math.random() * 256;
+	}
+	bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+	bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+	const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
+		"",
+	);
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 type Listener<K extends keyof ChatEventMap> = ChatEventMap[K];
@@ -171,7 +186,7 @@ export class ChatClient {
 			throw new Error(err);
 		}
 
-		const tempId = payload.tempId || crypto.randomUUID();
+		const tempId = payload.tempId || generateId();
 		this.socket.emit("message:send", { ...payload, tempId });
 		return tempId;
 	}
