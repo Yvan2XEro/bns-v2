@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Outfit } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { CategoryBar } from "~/components/layout/category-bar";
 import { Footer } from "~/components/layout/footer";
@@ -41,21 +43,27 @@ export default async function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const categories = await getCategories();
+	const [categories, locale, messages] = await Promise.all([
+		getCategories(),
+		getLocale(),
+		getMessages(),
+	]);
 
 	return (
-		<html lang="en">
+		<html lang={locale}>
 			<body
 				className={`${dmSans.variable} ${outfit.variable} ${dmSans.className}`}
 			>
-				<AuthProvider>
-					<div className="relative flex min-h-screen flex-col">
-						<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
-						<CategoryBar categories={categories} />
-						<main className="flex-1">{children}</main>
-						<Footer />
-					</div>
-				</AuthProvider>
+				<NextIntlClientProvider locale={locale} messages={messages}>
+					<AuthProvider>
+						<div className="relative flex min-h-screen flex-col">
+							<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
+							<CategoryBar categories={categories} />
+							<main className="flex-1">{children}</main>
+							<Footer />
+						</div>
+					</AuthProvider>
+				</NextIntlClientProvider>
 			</body>
 		</html>
 	);

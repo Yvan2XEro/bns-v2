@@ -1,0 +1,10 @@
+{
+	"Demo": {
+		"serverTitle": "Composant Serveur — next-intl",
+		"serverDescription": "Ce texte est traduit côté serveur avec getTranslations() (zéro JS client).",
+		"clientTitle": "Composant Client — next-intl",
+		"clientDescription": "Ce texte est traduit côté client avec useTranslations() depuis le contexte React.",
+		"currentLocale": "Langue active : {locale}",
+		"switchTo": "Passer en {lang}"
+	}
+}
