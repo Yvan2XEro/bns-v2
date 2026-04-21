@@ -28,6 +28,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { useAuth } from "~/hooks/use-auth";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
+import { LocaleSwitcher } from "./locale-switcher";
 
 interface HeaderProps {
 	novuAppId?: string;
@@ -232,6 +233,11 @@ export function Header({ novuAppId }: HeaderProps) {
 						</>
 					)}
 
+					{/* Language switcher (desktop) */}
+					<div className="hidden md:block">
+						<LocaleSwitcher />
+					</div>
+
 					{/* Mobile menu toggle */}
 					<button
 						type="button"
@@ -306,6 +312,9 @@ export function Header({ novuAppId }: HeaderProps) {
 							</button>
 						)}
 					</nav>
+					<div className="mt-3 border-[#E2E8F0] border-t pt-3">
+						<LocaleSwitcher />
+					</div>
 				</div>
 			)}
 		</header>
