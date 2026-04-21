@@ -14,6 +14,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { NotificationInbox } from "~/components/layout/notification-inbox";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -38,6 +39,7 @@ export function Header({ novuAppId }: HeaderProps) {
 	const { user, logout } = useAuth();
 	const router = useRouter();
 	const pathname = usePathname();
+	const t = useTranslations("Header");
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [scrolled, setScrolled] = useState(false);
@@ -95,7 +97,7 @@ export function Header({ novuAppId }: HeaderProps) {
 						<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
 						<input
 							type="search"
-							placeholder="Search..."
+							placeholder={t("search")}
 							className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pr-3 pl-9 text-[#0F172A] text-sm transition-colors placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -114,7 +116,7 @@ export function Header({ novuAppId }: HeaderProps) {
 									className="h-9 rounded-lg bg-[#F59E0B] px-4 font-bold text-[#0F172A] text-xs hover:bg-[#D97706]"
 								>
 									<PlusCircle className="mr-1.5 h-4 w-4" />
-									Sell now
+									{t("sellNow")}
 								</Button>
 							</Link>
 
@@ -176,7 +178,7 @@ export function Header({ novuAppId }: HeaderProps) {
 									<DropdownMenuItem asChild>
 										<Link href="/profile/me" className="cursor-pointer">
 											<User className="mr-2 h-4 w-4" />
-											Profile
+											{t("profile")}
 										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuItem asChild>
@@ -185,19 +187,19 @@ export function Header({ novuAppId }: HeaderProps) {
 											className="cursor-pointer"
 										>
 											<PlusCircle className="mr-2 h-4 w-4" />
-											My Listings
+											{t("myListings")}
 										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuItem asChild>
 										<Link href="/favorites" className="cursor-pointer">
 											<Heart className="mr-2 h-4 w-4" />
-											Favorites
+											{t("favorites")}
 										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuItem asChild>
 										<Link href="/settings" className="cursor-pointer">
 											<Settings className="mr-2 h-4 w-4" />
-											Settings
+											{t("settings")}
 										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
@@ -206,7 +208,7 @@ export function Header({ novuAppId }: HeaderProps) {
 										className="cursor-pointer text-red-600 focus:text-red-600"
 									>
 										<LogOut className="mr-2 h-4 w-4" />
-										Log out
+										{t("logOut")}
 									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
@@ -219,7 +221,7 @@ export function Header({ novuAppId }: HeaderProps) {
 									size="sm"
 									className="h-9 rounded-lg text-[#475569] text-sm"
 								>
-									Log in
+									{t("logIn")}
 								</Button>
 							</Link>
 							<Link href="/auth/register">
@@ -227,7 +229,7 @@ export function Header({ novuAppId }: HeaderProps) {
 									size="sm"
 									className="h-9 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm hover:bg-[#1E3A8A]"
 								>
-									Sign up
+									{t("signUp")}
 								</Button>
 							</Link>
 						</>
@@ -261,7 +263,7 @@ export function Header({ novuAppId }: HeaderProps) {
 							<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
 							<input
 								type="search"
-								placeholder="Search..."
+								placeholder={t("search")}
 								className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
@@ -270,23 +272,23 @@ export function Header({ novuAppId }: HeaderProps) {
 					</form>
 					<nav className="flex flex-col">
 						{[
-							{ label: "Browse", href: "/search" },
+							{ label: t("browse"), href: "/search" },
 							...(user
 								? [
-										{ label: "Sell now", href: "/create" },
-										{ label: "Favorites", href: "/favorites" },
+										{ label: t("sellNow"), href: "/create" },
+										{ label: t("favorites"), href: "/favorites" },
 										{
 											label:
 												unreadCount > 0
-													? `Messages (${unreadCount > 99 ? "99+" : unreadCount})`
-													: "Messages",
+													? `${t("messages")} (${unreadCount > 99 ? "99+" : unreadCount})`
+													: t("messages"),
 											href: "/messages",
 										},
-										{ label: "Profile", href: "/profile/me" },
+										{ label: t("profile"), href: "/profile/me" },
 									]
 								: [
-										{ label: "Log in", href: "/auth/login" },
-										{ label: "Sign up", href: "/auth/register" },
+										{ label: t("logIn"), href: "/auth/login" },
+										{ label: t("signUp"), href: "/auth/register" },
 									]),
 						].map((item) => (
 							<Link
@@ -308,7 +310,7 @@ export function Header({ novuAppId }: HeaderProps) {
 								onClick={handleLogout}
 								className="rounded-lg px-3 py-2 text-left font-medium text-red-600 text-sm"
 							>
-								Log out
+								{t("logOut")}
 							</button>
 						)}
 					</nav>

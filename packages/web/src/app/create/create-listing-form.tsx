@@ -2,6 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CategoryGrid } from "~/components/category-picker";
 import { AttributeFields } from "~/components/listing/attribute-fields";
@@ -31,24 +32,26 @@ import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import type { Category, CategoryAttribute, ListingCondition } from "~/types";
 
-const STEPS = [
-	{ label: "Category", description: "What are you selling?" },
-	{ label: "Details", description: "Describe your item" },
-	{ label: "Photos", description: "Add images" },
-	{ label: "Review", description: "Confirm and publish" },
-];
-
-const CONDITIONS: { value: ListingCondition; label: string }[] = [
-	{ value: "new", label: "New" },
-	{ value: "like_new", label: "Like New" },
-	{ value: "good", label: "Good" },
-	{ value: "fair", label: "Fair" },
-	{ value: "poor", label: "Poor" },
-];
-
 export function CreateListingForm({ categories }: { categories: Category[] }) {
+	const t = useTranslations("CreateListing");
+	const tCond = useTranslations("Condition");
 	const router = useRouter();
 	const [step, setStep] = useState(0);
+
+	const STEPS = [
+		{ label: t("category"), description: t("categoryDesc") },
+		{ label: t("details"), description: t("detailsDesc") },
+		{ label: t("photos"), description: t("photosDesc") },
+		{ label: t("review"), description: t("reviewDesc") },
+	];
+
+	const CONDITIONS: { value: ListingCondition; label: string }[] = [
+		{ value: "new", label: tCond("new") },
+		{ value: "like_new", label: tCond("like_new") },
+		{ value: "good", label: tCond("good") },
+		{ value: "fair", label: tCond("fair") },
+		{ value: "poor", label: tCond("poor") },
+	];
 	const [isLoading, setIsLoading] = useState(false);
 
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -164,11 +167,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				credentials: "include",
 			});
 
-			if (!res.ok) throw new Error("Failed to create listing");
+			if (!res.ok) throw new Error(t("failedToCreate"));
 			const listing = await res.json();
 			router.push(`/listing/${listing.doc?.id || listing.id}`);
 		} catch {
-			alert("Failed to create listing. Please try again.");
+			alert(t("failedToCreate"));
 		} finally {
 			setIsLoading(false);
 		}

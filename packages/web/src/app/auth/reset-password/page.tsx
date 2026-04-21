@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Suspense, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -25,6 +26,7 @@ export default function ResetPasswordPage() {
 }
 
 function ResetPasswordForm() {
+	const t = useTranslations("Auth");
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const token = searchParams.get("token");
@@ -54,15 +56,13 @@ function ResetPasswordForm() {
 								<span className="font-bold text-sm text-white">B</span>
 							</div>
 						</Link>
-						<CardTitle className="text-2xl">Invalid link</CardTitle>
-						<CardDescription>
-							This password reset link is invalid or has expired.
-						</CardDescription>
+						<CardTitle className="text-2xl">{t("invalidLink")}</CardTitle>
+						<CardDescription>{t("invalidLinkDesc")}</CardDescription>
 					</CardHeader>
 					<CardFooter>
 						<Link href="/auth/forgot-password" className="w-full">
 							<Button variant="outline" className="w-full rounded-xl">
-								Request a new link
+								{t("requestNewLink")}
 							</Button>
 						</Link>
 					</CardFooter>
@@ -76,12 +76,12 @@ function ResetPasswordForm() {
 		setError("");
 
 		if (password !== confirmPassword) {
-			setError("Passwords do not match");
+			setError(t("passwordsDoNotMatch"));
 			return;
 		}
 
 		if (password.length < 8) {
-			setError("Password must be at least 8 characters");
+			setError(t("passwordMinLength"));
 			return;
 		}
 
@@ -138,8 +138,8 @@ function ResetPasswordForm() {
 							className="h-10 w-10 object-contain"
 						/>
 					</Link>
-					<CardTitle className="text-2xl">Reset password</CardTitle>
-					<CardDescription>Enter your new password below.</CardDescription>
+					<CardTitle className="text-2xl">{t("resetPassword")}</CardTitle>
+					<CardDescription>{t("enterNewPassword")}</CardDescription>
 				</CardHeader>
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
@@ -150,7 +150,7 @@ function ResetPasswordForm() {
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="password" className="text-[#0F172A]">
-								New Password
+								{t("newPassword")}
 							</Label>
 							<Input
 								id="password"
@@ -163,7 +163,7 @@ function ResetPasswordForm() {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="confirmPassword" className="text-[#0F172A]">
-								Confirm New Password
+								{t("confirmNewPassword")}
 							</Label>
 							<Input
 								id="confirmPassword"
@@ -181,7 +181,7 @@ function ResetPasswordForm() {
 							className="w-full rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#2563EB] font-medium shadow-blue-500/20 shadow-md"
 							disabled={isLoading}
 						>
-							{isLoading ? "Resetting..." : "Reset password"}
+							{isLoading ? t("resetting") : t("resetPassword")}
 						</Button>
 					</CardFooter>
 				</form>

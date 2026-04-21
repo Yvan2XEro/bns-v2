@@ -9,6 +9,7 @@ import {
 	Star,
 } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -51,6 +52,7 @@ async function getUserListings(userId: string): Promise<Listing[]> {
 }
 
 export default async function MyProfilePage() {
+	const t = await getTranslations("Profile");
 	const user = (await getAuthUser()) as User | null;
 	if (!user) return null;
 
@@ -67,7 +69,7 @@ export default async function MyProfilePage() {
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 			<div className="mb-6 flex items-center justify-between">
-				<h1 className="font-bold text-2xl text-[#0F172A]">My Profile</h1>
+				<h1 className="font-bold text-2xl text-[#0F172A]">{t("myProfile")}</h1>
 				<Link href="/settings">
 					<Button
 						variant="outline"
@@ -75,7 +77,7 @@ export default async function MyProfilePage() {
 						className="rounded-xl border-[#E2E8F0]"
 					>
 						<Settings className="mr-2 h-4 w-4" />
-						Account Settings
+						{t("accountSettings")}
 					</Button>
 				</Link>
 			</div>
@@ -84,12 +86,12 @@ export default async function MyProfilePage() {
 				<div className="mb-6 flex items-center gap-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3">
 					<Info className="h-5 w-5 shrink-0 text-[#1E40AF]" />
 					<p className="text-[#1E40AF] text-sm">
-						Verify your account to build trust with buyers.{" "}
+						{t("verifyAccount")}{" "}
 						<Link
 							href="/support"
 							className="font-medium underline hover:text-[#1E3A8A]"
 						>
-							Contact support
+							{t("contactSupport")}
 						</Link>
 					</p>
 				</div>
@@ -98,14 +100,16 @@ export default async function MyProfilePage() {
 			{user.verified && (
 				<div className="mb-6 flex items-center gap-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3">
 					<BadgeCheck className="h-5 w-5 shrink-0 text-[#16A34A]" />
-					<p className="font-medium text-[#16A34A] text-sm">Verified Seller</p>
+					<p className="font-medium text-[#16A34A] text-sm">
+						{t("verifiedSeller")}
+					</p>
 				</div>
 			)}
 
 			<Tabs defaultValue="profile">
 				<TabsList>
-					<TabsTrigger value="profile">Profile</TabsTrigger>
-					<TabsTrigger value="listings">My Listings</TabsTrigger>
+					<TabsTrigger value="profile">{t("profileTab")}</TabsTrigger>
+					<TabsTrigger value="listings">{t("listingsTab")}</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="profile">
@@ -118,7 +122,7 @@ export default async function MyProfilePage() {
 							<Card className="border-[#E2E8F0]">
 								<CardHeader>
 									<CardTitle className="text-[#0F172A]">
-										Profile Preview
+										{t("profilePreview")}
 									</CardTitle>
 								</CardHeader>
 								<CardContent>
@@ -137,7 +141,7 @@ export default async function MyProfilePage() {
 										{user.verified && (
 											<Badge variant="secondary" className="mt-2">
 												<ShieldCheck className="mr-1 h-3 w-3" />
-												Verified
+												{t("verified")}
 											</Badge>
 										)}
 										{user.location && (
@@ -148,7 +152,9 @@ export default async function MyProfilePage() {
 										)}
 										<p className="mt-2 flex items-center text-[#64748B] text-sm">
 											<Calendar className="mr-1 h-4 w-4" />
-											Joined {new Date(user.createdAt).toLocaleDateString()}
+											{t("joined", {
+												date: new Date(user.createdAt).toLocaleDateString(),
+											})}
 										</p>
 										<div className="mt-4 flex items-center gap-1">
 											<Star className="h-5 w-5 fill-[#F59E0B] text-[#F59E0B]" />
@@ -156,7 +162,7 @@ export default async function MyProfilePage() {
 												{averageRating.toFixed(1)}
 											</span>
 											<span className="text-[#94A3B8]">
-												({reviews.length} reviews)
+												({t("userReviews", { count: reviews.length })})
 											</span>
 										</div>
 										{user.bio && (
@@ -177,10 +183,10 @@ export default async function MyProfilePage() {
 								</div>
 								<div>
 									<p className="font-medium text-[#0F172A] text-sm">
-										Saved Searches
+										{t("savedSearches")}
 									</p>
 									<p className="text-[#64748B] text-xs">
-										View and manage your saved searches
+										{t("viewAndManageSearches")}
 									</p>
 								</div>
 							</Link>
@@ -191,8 +197,10 @@ export default async function MyProfilePage() {
 				<TabsContent value="listings">
 					<Card className="border-[#E2E8F0]">
 						<CardHeader>
-							<CardTitle className="text-[#0F172A]">My Listings</CardTitle>
-							<CardDescription>Manage your listings</CardDescription>
+							<CardTitle className="text-[#0F172A]">
+								{t("listingsTab")}
+							</CardTitle>
+							<CardDescription>{t("manageListings")}</CardDescription>
 						</CardHeader>
 						<CardContent>
 							{listings.length > 0 ? (
@@ -227,15 +235,15 @@ export default async function MyProfilePage() {
 										href="/profile/me/listings"
 										className="block pt-2 text-center font-medium text-[#1E40AF] text-sm hover:underline"
 									>
-										View all listings
+										{t("viewAllListings")}
 									</Link>
 								</div>
 							) : (
 								<div className="py-8 text-center">
-									<p className="text-[#64748B]">No listings yet</p>
+									<p className="text-[#64748B]">{t("noListingsYet")}</p>
 									<Link href="/create">
 										<Button className="mt-3 rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]">
-											Create Your First Listing
+											{t("createFirstListing")}
 										</Button>
 									</Link>
 								</div>

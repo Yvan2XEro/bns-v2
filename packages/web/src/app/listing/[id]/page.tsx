@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { BoostDialog } from "~/components/listing/boost-dialog";
 import { FavoriteButton } from "~/components/listing/favorite-button";
 import { ImageGallery } from "~/components/listing/image-gallery";
@@ -81,6 +82,8 @@ function timeAgo(date: string): string {
 }
 
 export default async function ListingPage({ params }: PageProps) {
+	const t = await getTranslations("Listing");
+	const tCond = await getTranslations("Condition");
 	const { id } = await params;
 	const [listing, isFavorited, similarListings, authUser] = await Promise.all([
 		getListing(id),
@@ -117,11 +120,11 @@ export default async function ListingPage({ params }: PageProps) {
 			.filter((url): url is string => Boolean(url)) || [];
 
 	const conditionMap: Record<string, string> = {
-		new: "New",
-		like_new: "Like new",
-		good: "Good",
-		fair: "Fair",
-		poor: "Poor",
+		new: tCond("new"),
+		like_new: tCond("like_new"),
+		good: tCond("good"),
+		fair: tCond("fair"),
+		poor: tCond("poor"),
 	};
 
 	const listingTags = Array.isArray((listing as any).tags)
@@ -141,7 +144,7 @@ export default async function ListingPage({ params }: PageProps) {
 						className="flex items-center gap-1 hover:text-[#1E40AF]"
 					>
 						<ArrowLeft className="h-4 w-4" />
-						Back to results
+						{t("backToResults")}
 					</Link>
 					{category && (
 						<>
@@ -208,7 +211,7 @@ export default async function ListingPage({ params }: PageProps) {
 								{listing.views !== undefined && (
 									<span className="flex items-center gap-1">
 										<Eye className="h-4 w-4" />
-										{listing.views} views
+										{listing.views} {t("views")}
 									</span>
 								)}
 								{expiresAt &&
@@ -220,14 +223,14 @@ export default async function ListingPage({ params }: PageProps) {
 										>
 											<Timer className="h-4 w-4" />
 											{daysUntilExpiry <= 1
-												? "Expires today"
-												: `Expires in ${daysUntilExpiry} days`}
+												? t("expiresToday")
+												: t("expiresIn", { days: daysUntilExpiry })}
 										</span>
 									)}
 								{listing.status === "expired" && (
 									<span className="flex items-center gap-1 text-red-500">
 										<AlertTriangle className="h-4 w-4" />
-										Expired
+										{t("listingExpired")}
 									</span>
 								)}
 							</div>
@@ -243,7 +246,7 @@ export default async function ListingPage({ params }: PageProps) {
 								{isBoosted && (
 									<Badge variant="boost">
 										<Zap className="mr-1 h-3 w-3" />
-										Boosted
+										{t("listingBoosted")}
 									</Badge>
 								)}
 								{listingTags.map((tag: any) => (
@@ -265,7 +268,7 @@ export default async function ListingPage({ params }: PageProps) {
 							{/* Description */}
 							<div className="mt-6 border-[#E2E8F0] border-t pt-5">
 								<h2 className="mb-2 font-bold text-[#64748B] text-sm uppercase tracking-wider">
-									Description
+									{t("listingDescription")}
 								</h2>
 								<p className="whitespace-pre-wrap text-[#334155] text-sm leading-relaxed">
 									{listing.description}
@@ -278,7 +281,7 @@ export default async function ListingPage({ params }: PageProps) {
 								Object.keys(listing.attributes).length > 0 && (
 									<div className="mt-6 border-[#E2E8F0] border-t pt-5">
 										<h2 className="mb-3 font-bold text-[#64748B] text-sm uppercase tracking-wider">
-											Details
+											{t("details")}
 										</h2>
 										<div className="grid grid-cols-2 gap-x-6 gap-y-3">
 											{Object.entries(listing.attributes).map(
@@ -292,9 +295,9 @@ export default async function ListingPage({ params }: PageProps) {
 														</span>
 														<span className="font-medium text-[#0F172A]">
 															{value === true || value === "true"
-																? "Oui"
+																? t("yes")
 																: value === false || value === "false"
-																	? "Non"
+																	? t("no")
 																	: String(value)}
 														</span>
 													</div>
@@ -343,7 +346,7 @@ export default async function ListingPage({ params }: PageProps) {
 										</div>
 									</Link>
 								) : (
-									<p className="text-[#64748B] text-sm">Unknown seller</p>
+									<p className="text-[#64748B] text-sm">{t("unknownSeller")}</p>
 								)}
 
 								<div className="mt-5 flex flex-col gap-2">
@@ -357,7 +360,7 @@ export default async function ListingPage({ params }: PageProps) {
 												className="w-full rounded-lg border-[#E2E8F0] hover:border-[#1E40AF] hover:text-[#1E40AF]"
 											>
 												<Pencil className="mr-2 h-4 w-4" />
-												Modifier l'annonce
+												{t("editThisListing")}
 											</Button>
 										</Link>
 									)}
@@ -365,14 +368,14 @@ export default async function ListingPage({ params }: PageProps) {
 										<BoostDialog listingId={listing.id}>
 											<Button className="w-full rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] shadow-amber-500/20 shadow-md hover:shadow-lg">
 												<Zap className="mr-2 h-4 w-4" />
-												Boost this listing
+												{t("boostThisListing")}
 											</Button>
 										</BoostDialog>
 									)}
 									{isOwner && isBoosted && (
 										<div className="flex items-center justify-center gap-1.5 rounded-lg border border-[#F59E0B]/30 bg-amber-50 px-3 py-2 font-semibold text-[#92400E] text-sm">
 											<Zap className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-											Currently boosted
+											{t("currentlyBoosted")}
 										</div>
 									)}
 									{!isOwner && (
@@ -382,7 +385,7 @@ export default async function ListingPage({ params }: PageProps) {
 										>
 											<Button className="w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]">
 												<MessageCircle className="mr-2 h-4 w-4" />
-												Message seller
+												{t("messageSeller")}
 											</Button>
 										</Link>
 									)}
@@ -402,12 +405,12 @@ export default async function ListingPage({ params }: PageProps) {
 							<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
 								<div className="flex items-center gap-2 font-semibold text-[#0F172A] text-sm">
 									<Shield className="h-4 w-4 text-[#1E40AF]" />
-									Safety tips
+									{t("safetyTips")}
 								</div>
 								<ul className="mt-2 space-y-1 text-[#64748B] text-xs">
-									<li>Meet in a public place</li>
-									<li>Check the item before paying</li>
-									<li>Never send money in advance</li>
+									<li>{t("safetyTip1")}</li>
+									<li>{t("safetyTip2")}</li>
+									<li>{t("safetyTip3")}</li>
 								</ul>
 							</div>
 
@@ -422,7 +425,7 @@ export default async function ListingPage({ params }: PageProps) {
 										className="inline-flex items-center gap-1 text-[#94A3B8] text-xs hover:text-red-500"
 									>
 										<Flag className="h-3 w-3" />
-										Report this listing
+										{t("reportThisListing")}
 									</button>
 								</ReportDialog>
 							</div>
@@ -434,7 +437,7 @@ export default async function ListingPage({ params }: PageProps) {
 				{similarListings.length > 0 && (
 					<div className="mt-8">
 						<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
-							Similar listings
+							{t("similarListings")}
 						</h2>
 						<ListingGrid listings={similarListings} />
 					</div>

@@ -2,6 +2,7 @@
 
 import { Camera, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import { updateProfile } from "~/lib/actions";
 import type { User } from "~/types";
 
 export function ProfileEditForm({ user }: { user: User }) {
+	const t = useTranslations("Profile");
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [success, setSuccess] = useState("");
@@ -82,7 +84,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 				: formData;
 			const result = await updateProfile(user.id, updateData);
 			if (result.success) {
-				setSuccess("Profile updated successfully!");
+				setSuccess(t("profileUpdated"));
 				router.refresh();
 			} else {
 				setError(result.error);
@@ -102,8 +104,8 @@ export function ProfileEditForm({ user }: { user: User }) {
 			)}
 			<Card>
 				<CardHeader>
-					<CardTitle>Edit Profile</CardTitle>
-					<CardDescription>Update your personal information</CardDescription>
+					<CardTitle>{t("editProfile")}</CardTitle>
+					<CardDescription>{t("updatePersonalInfo")}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit} className="space-y-4">
@@ -145,15 +147,13 @@ export function ProfileEditForm({ user }: { user: User }) {
 							</div>
 							<div>
 								<p className="font-medium text-[#0F172A] text-sm">
-									Profile photo
+									{t("profilePhoto")}
 								</p>
-								<p className="text-[#64748B] text-xs">
-									Click the camera icon to change
-								</p>
+								<p className="text-[#64748B] text-xs">{t("clickToChange")}</p>
 							</div>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="name">Name</Label>
+							<Label htmlFor="name">{t("name")}</Label>
 							<Input
 								id="name"
 								value={formData.name}
@@ -164,10 +164,10 @@ export function ProfileEditForm({ user }: { user: User }) {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="bio">Bio</Label>
+							<Label htmlFor="bio">{t("bio")}</Label>
 							<Textarea
 								id="bio"
-								placeholder="Tell us about yourself..."
+								placeholder={t("tellUsAboutYourself")}
 								value={formData.bio}
 								onChange={(e) =>
 									setFormData((prev) => ({ ...prev, bio: e.target.value }))
@@ -176,10 +176,10 @@ export function ProfileEditForm({ user }: { user: User }) {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="location">Location</Label>
+							<Label htmlFor="location">{t("locationField")}</Label>
 							<Input
 								id="location"
-								placeholder="City, Region"
+								placeholder={t("cityRegion")}
 								value={formData.location}
 								onChange={(e) =>
 									setFormData((prev) => ({
@@ -191,8 +191,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 						</div>
 
 						<div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-[#64748B] text-sm">
-							Phone numbers are managed from account settings and require OTP
-							verification before they are updated.
+							{t("phoneManagedElsewhere")}
 						</div>
 
 						<Button type="submit" disabled={isPending}>
@@ -201,7 +200,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 							) : (
 								<Save className="mr-2 h-4 w-4" />
 							)}
-							Save Changes
+							{t("saveChanges")}
 						</Button>
 					</form>
 				</CardContent>

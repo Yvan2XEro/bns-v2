@@ -1,7 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export function Footer() {
+export async function Footer() {
+	const t = await getTranslations("Footer");
+
 	return (
 		<footer className="border-[#E2E8F0] border-t bg-white">
 			<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -21,20 +24,20 @@ export function Footer() {
 							</span>
 						</Link>
 						<p className="mt-3 text-[#64748B] text-sm leading-relaxed">
-							The marketplace to buy and sell locally.
+							{t("brandTagline")}
 						</p>
 					</div>
 
 					{/* Marketplace */}
 					<div>
 						<h3 className="mb-3 font-bold text-[#94A3B8] text-xs uppercase tracking-wider">
-							Marketplace
+							{t("marketplace")}
 						</h3>
 						<nav className="flex flex-col gap-2">
 							{[
-								{ label: "Browse listings", href: "/search" },
-								{ label: "Sell an item", href: "/create" },
-								{ label: "Categories", href: "/search" },
+								{ label: t("browseListings"), href: "/search" },
+								{ label: t("sellItem"), href: "/create" },
+								{ label: t("categories"), href: "/search" },
 							].map((link) => (
 								<Link
 									key={link.label}
@@ -50,13 +53,13 @@ export function Footer() {
 					{/* Support */}
 					<div>
 						<h3 className="mb-3 font-bold text-[#94A3B8] text-xs uppercase tracking-wider">
-							Support
+							{t("support")}
 						</h3>
 						<nav className="flex flex-col gap-2">
 							{[
-								{ label: "Help center", href: "/help" },
-								{ label: "Safety tips", href: "/safety" },
-								{ label: "Contact us", href: "/contact" },
+								{ label: t("helpCenter"), href: "/help" },
+								{ label: t("safetyTips"), href: "/safety" },
+								{ label: t("contactUs"), href: "/contact" },
 							].map((link) => (
 								<Link
 									key={link.label}
@@ -72,13 +75,13 @@ export function Footer() {
 					{/* Legal */}
 					<div>
 						<h3 className="mb-3 font-bold text-[#94A3B8] text-xs uppercase tracking-wider">
-							Legal
+							{t("legal")}
 						</h3>
 						<nav className="flex flex-col gap-2">
 							{[
-								{ label: "Terms of service", href: "/terms" },
-								{ label: "Privacy policy", href: "/privacy" },
-								{ label: "Cookie policy", href: "/cookies" },
+								{ label: t("termsOfService"), href: "/terms" },
+								{ label: t("privacyPolicy"), href: "/privacy" },
+								{ label: t("cookiePolicy"), href: "/cookies" },
 							].map((link) => (
 								<Link
 									key={link.label}
@@ -97,10 +100,10 @@ export function Footer() {
 					<div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
 						<div>
 							<p className="font-semibold text-[#0F172A] text-sm">
-								Get the app
+								{t("getApp")}
 							</p>
 							<p className="mt-0.5 text-[#64748B] text-xs">
-								Buy and sell on the go
+								{t("buyAndSellOnTheGo")}
 							</p>
 						</div>
 						<div className="flex items-center gap-3">
@@ -120,10 +123,10 @@ export function Footer() {
 								</svg>
 								<div className="text-left">
 									<p className="text-[8px] text-white/70 leading-none">
-										Download on the
+										{t("downloadOnThe")}
 									</p>
 									<p className="font-semibold text-white text-xs leading-tight">
-										App Store
+										{t("appStore")}
 									</p>
 								</div>
 							</a>
@@ -143,10 +146,10 @@ export function Footer() {
 								</svg>
 								<div className="text-left">
 									<p className="text-[8px] text-white/70 leading-none">
-										Get it on
+										{t("getItOn")}
 									</p>
 									<p className="font-semibold text-white text-xs leading-tight">
-										Google Play
+										{t("googlePlay")}
 									</p>
 								</div>
 							</a>
@@ -156,8 +159,8 @@ export function Footer() {
 
 				<div className="mt-6 border-[#E2E8F0] border-t pt-6">
 					<p className="text-center text-[#94A3B8] text-xs">
-						&copy; {new Date().getFullYear()} Buy&apos;N&apos;Sellem. All rights
-						reserved.
+						&copy; {new Date().getFullYear()} Buy&apos;N&apos;Sellem.{" "}
+						{t("allRightsReserved")}
 					</p>
 				</div>
 			</div>

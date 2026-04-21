@@ -9,6 +9,7 @@ import {
 	X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ListingGrid } from "~/components/listing/listing-card";
@@ -51,6 +52,8 @@ export function SearchClient({
 	initialParams,
 	favoriteIds = [],
 }: SearchClientProps) {
+	const t = useTranslations("Search");
+	const tCond = useTranslations("Condition");
 	const router = useRouter();
 
 	const [listings, setListings] = useState(initialListings);
@@ -268,7 +271,7 @@ export function SearchClient({
 			return;
 		}
 		if (!navigator.geolocation) {
-			alert("Geolocation is not supported by your browser.");
+			alert(t("geolocationNotSupported"));
 			return;
 		}
 		setGeoLoading(true);
@@ -285,7 +288,7 @@ export function SearchClient({
 			},
 			(error) => {
 				console.error("Geolocation error:", error);
-				alert("Could not get your location. Please check your permissions.");
+				alert(t("couldNotGetLocation"));
 				setGeoLoading(false);
 			},
 		);
@@ -358,11 +361,11 @@ export function SearchClient({
 	].filter(Boolean).length;
 
 	const CONDITION_OPTIONS = [
-		{ value: "new", label: "New" },
-		{ value: "like_new", label: "Like New" },
-		{ value: "good", label: "Good" },
-		{ value: "fair", label: "Fair" },
-		{ value: "poor", label: "Poor" },
+		{ value: "new", label: tCond("new") },
+		{ value: "like_new", label: tCond("like_new") },
+		{ value: "good", label: tCond("good") },
+		{ value: "fair", label: tCond("fair") },
+		{ value: "poor", label: tCond("poor") },
 	] as const;
 
 	const selectedConditions = filters.condition
@@ -385,13 +388,13 @@ export function SearchClient({
 			{/* Category */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					Category
+					{t("category")}
 				</Label>
 				<CategoryDropdown
 					categories={categories}
 					value={filters.category || ""}
 					onChange={(v) => updateFilter("category", v)}
-					placeholder="All categories"
+					placeholder={t("allCategories")}
 					showAll
 				/>
 			</div>
@@ -399,12 +402,12 @@ export function SearchClient({
 			{/* Price range */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					Price (XAF)
+					{t("price")}
 				</Label>
 				<div className="flex gap-2">
 					<Input
 						type="number"
-						placeholder="Min"
+						placeholder={t("minPrice")}
 						className="h-9 rounded-lg text-sm"
 						value={filters.minPrice}
 						onChange={(e) => updateFilter("minPrice", e.target.value)}
@@ -412,7 +415,7 @@ export function SearchClient({
 					<span className="flex items-center text-[#94A3B8]">—</span>
 					<Input
 						type="number"
-						placeholder="Max"
+						placeholder={t("maxPrice")}
 						className="h-9 rounded-lg text-sm"
 						value={filters.maxPrice}
 						onChange={(e) => updateFilter("maxPrice", e.target.value)}
@@ -423,7 +426,7 @@ export function SearchClient({
 			{/* Location */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					Ville
+					{t("location")}
 				</Label>
 				<CitySelect
 					value={filters.location}
@@ -445,7 +448,7 @@ export function SearchClient({
 			{/* Near me */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					Near me
+					{t("nearMe")}
 				</Label>
 				<button
 					type="button"
@@ -459,10 +462,10 @@ export function SearchClient({
 				>
 					<MapPin className="h-4 w-4" />
 					{geoLoading
-						? "Locating..."
+						? t("locating")
 						: nearMe
-							? "Near me (on)"
-							: "Use my location"}
+							? t("nearMeOn")
+							: t("useMyLocation")}
 				</button>
 				{nearMe && (
 					<Select value={geoRadius} onValueChange={handleRadiusChange}>
@@ -483,7 +486,7 @@ export function SearchClient({
 			{/* Condition */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					Condition
+					{t("condition")}
 				</Label>
 				<div className="space-y-1.5">
 					{CONDITION_OPTIONS.map((opt) => (
@@ -507,7 +510,7 @@ export function SearchClient({
 			{availableTags.length > 0 && (
 				<div className="space-y-2">
 					<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-						Tags
+						{t("tags")}
 					</Label>
 					<div className="flex flex-wrap gap-1.5">
 						{availableTags.map((tag) => {
@@ -571,9 +574,9 @@ export function SearchClient({
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
-										<SelectItem value="true">Yes</SelectItem>
-										<SelectItem value="false">No</SelectItem>
+										<SelectItem value="any">{t("any")}</SelectItem>
+										<SelectItem value="true">{t("yes")}</SelectItem>
+										<SelectItem value="false">{t("no")}</SelectItem>
 									</SelectContent>
 								</Select>
 							) : (
@@ -599,7 +602,7 @@ export function SearchClient({
 					onClick={clearFilters}
 					className="w-full text-center font-medium text-red-600 text-sm hover:underline"
 				>
-					Clear all filters
+					{t("clearAllFilters")}
 				</button>
 			)}
 		</div>
@@ -613,7 +616,7 @@ export function SearchClient({
 					<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
 					<input
 						type="search"
-						placeholder="Rechercher..."
+						placeholder={t("search")}
 						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
 						value={searchInput}
 						onChange={(e) => handleSearchInputChange(e.target.value)}
@@ -628,10 +631,10 @@ export function SearchClient({
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="newest">Newest</SelectItem>
-							<SelectItem value="oldest">Oldest</SelectItem>
-							<SelectItem value="price_asc">Price: Low to High</SelectItem>
-							<SelectItem value="price_desc">Price: High to Low</SelectItem>
+							<SelectItem value="newest">{t("newest")}</SelectItem>
+							<SelectItem value="oldest">{t("oldest")}</SelectItem>
+							<SelectItem value="price_asc">{t("priceAsc")}</SelectItem>
+							<SelectItem value="price_desc">{t("priceDesc")}</SelectItem>
 						</SelectContent>
 					</Select>
 					<button
@@ -640,7 +643,7 @@ export function SearchClient({
 						onClick={() => setShowMobileFilters(true)}
 					>
 						<SlidersHorizontal className="h-4 w-4" />
-						Filters
+						{t("filters")}
 						{activeFilterCount > 0 && (
 							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E40AF] font-bold text-[10px] text-white">
 								{activeFilterCount}
@@ -655,7 +658,9 @@ export function SearchClient({
 				{/* Desktop sidebar (Leboncoin style) */}
 				<aside className="hidden w-56 shrink-0 lg:block">
 					<div className="sticky top-20 rounded-xl border border-[#E2E8F0] bg-white p-4">
-						<h3 className="mb-4 font-bold text-[#0F172A] text-sm">Filters</h3>
+						<h3 className="mb-4 font-bold text-[#0F172A] text-sm">
+							{t("filters")}
+						</h3>
 						{filterPanel}
 					</div>
 				</aside>
@@ -665,11 +670,11 @@ export function SearchClient({
 					<div className="mb-4 flex items-center justify-between">
 						<p className="text-[#64748B] text-sm">
 							{isLoading ? (
-								"Loading..."
+								t("loading")
 							) : (
 								<>
 									<span className="font-semibold text-[#0F172A]">{total}</span>{" "}
-									results
+									{t("results")}
 								</>
 							)}
 						</p>
@@ -691,26 +696,24 @@ export function SearchClient({
 									className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[#475569] text-sm transition-colors hover:bg-[#F8FAFC] hover:text-[#1E40AF]"
 								>
 									<Bookmark className="h-4 w-4" />
-									Save search
+									{t("saveSearch")}
 								</button>
 							</DialogTrigger>
 							<DialogContent className="sm:max-w-md">
 								<DialogHeader>
-									<DialogTitle>Save this search</DialogTitle>
-									<DialogDescription>
-										Give your search a name so you can easily find it later.
-									</DialogDescription>
+									<DialogTitle>{t("saveThisSearch")}</DialogTitle>
+									<DialogDescription>{t("saveSearchDesc")}</DialogDescription>
 								</DialogHeader>
 								<div className="space-y-3 py-2">
 									<div className="space-y-1.5">
 										<Label htmlFor="search-name" className="text-sm">
-											Name
+											{t("searchName")}
 										</Label>
 										<Input
 											id="search-name"
 											value={saveName}
 											onChange={(e) => setSaveName(e.target.value)}
-											placeholder="e.g. Cheap cars in Douala"
+											placeholder={t("searchNamePlaceholder")}
 											className="h-9 rounded-lg"
 										/>
 									</div>
@@ -725,14 +728,14 @@ export function SearchClient({
 										className="rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
 									>
 										{saveStatus === "saving" ? (
-											"Saving..."
+											t("saving")
 										) : saveStatus === "saved" ? (
 											<>
 												<Check className="mr-1.5 h-4 w-4" />
-												Saved!
+												{t("saved")}
 											</>
 										) : (
-											"Save search"
+											t("saveSearch")
 										)}
 									</Button>
 								</DialogFooter>
@@ -767,7 +770,7 @@ export function SearchClient({
 										}}
 										className="rounded-xl border border-[#E2E8F0] bg-white px-8 py-2.5 font-medium text-[#1E40AF] text-sm transition-colors hover:bg-[#F8FAFC]"
 									>
-										Load more ({listings.length} of {total})
+										{t("loadMore")} ({listings.length} {t("of")} {total})
 									</button>
 								</div>
 							)}
@@ -775,9 +778,9 @@ export function SearchClient({
 					) : (
 						<div className="py-20 text-center">
 							<Search className="mx-auto mb-3 h-10 w-10 text-[#CBD5E1]" />
-							<p className="font-medium text-[#0F172A]">No results</p>
+							<p className="font-medium text-[#0F172A]">{t("noResults")}</p>
 							<p className="mt-1 text-[#64748B] text-sm">
-								Try different keywords or filters
+								{t("tryDifferentKeywords")}
 							</p>
 							{hasActiveFilters() && (
 								<button
@@ -785,7 +788,7 @@ export function SearchClient({
 									onClick={clearFilters}
 									className="mt-3 font-medium text-[#1E40AF] text-sm hover:underline"
 								>
-									Clear filters
+									{t("clearAllFilters")}
 								</button>
 							)}
 						</div>
@@ -804,7 +807,9 @@ export function SearchClient({
 					/>
 					<div className="absolute right-0 bottom-0 left-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl">
 						<div className="mb-4 flex items-center justify-between">
-							<h3 className="font-bold text-[#0F172A] text-lg">Filters</h3>
+							<h3 className="font-bold text-[#0F172A] text-lg">
+								{t("filters")}
+							</h3>
 							<button
 								type="button"
 								onClick={() => setShowMobileFilters(false)}
@@ -818,7 +823,7 @@ export function SearchClient({
 							className="mt-5 w-full rounded-lg"
 							onClick={() => setShowMobileFilters(false)}
 						>
-							Show {total} results
+							{t("showResults", { count: total })}
 						</Button>
 					</div>
 				</div>

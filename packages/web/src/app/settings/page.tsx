@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -31,6 +32,7 @@ async function getErrorMessage(response: Response): Promise<string> {
 }
 
 export default function SettingsPage() {
+	const t = useTranslations("Settings");
 	const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
 	const router = useRouter();
 
@@ -135,12 +137,12 @@ export default function SettingsPage() {
 		setPasswordSuccess("");
 
 		if (newPassword !== confirmPassword) {
-			setPasswordError("Passwords do not match");
+			setPasswordError(t("passwordsDoNotMatch"));
 			return;
 		}
 
 		if (newPassword.length < 8) {
-			setPasswordError("Password must be at least 8 characters");
+			setPasswordError(t("passwordMinLength"));
 			return;
 		}
 
@@ -158,8 +160,10 @@ export default function SettingsPage() {
 			});
 
 			if (!loginRes.ok) {
-				throw new Error("Current password is incorrect");
+				throw new Error(t("currentPasswordIncorrect"));
 			}
+
+			setPasswordSuccess(t("passwordChanged"));
 
 			const res = await fetch(`/api/users/${currentUser.id}`, {
 				method: "PATCH",
@@ -266,29 +270,29 @@ export default function SettingsPage() {
 			});
 
 			if (!res.ok) {
-				throw new Error("Failed to delete account");
+				throw new Error(t("failedToDeleteAccount"));
 			}
 
 			await logout();
 			router.push("/");
 		} catch (err) {
-			alert(err instanceof Error ? err.message : "Failed to delete account");
+			alert(err instanceof Error ? err.message : t("failedToDeleteAccount"));
 		}
 	}
 
 	return (
 		<div className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
 			<h1 className="mb-6 font-bold text-2xl text-[#0F172A]">
-				Account Settings
+				{t("accountSettings")}
 			</h1>
 
 			<div className="space-y-6">
 				<Card className="border-[#E2E8F0]">
 					<CardHeader>
-						<CardTitle className="text-[#0F172A]">Change Password</CardTitle>
-						<CardDescription>
-							Update your password to keep your account secure.
-						</CardDescription>
+						<CardTitle className="text-[#0F172A]">
+							{t("changePassword")}
+						</CardTitle>
+						<CardDescription>{t("changePasswordDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<form onSubmit={handleChangePassword} className="space-y-4">
@@ -303,7 +307,7 @@ export default function SettingsPage() {
 								</div>
 							)}
 							<div className="space-y-2">
-								<Label htmlFor="currentPassword">Current Password</Label>
+								<Label htmlFor="currentPassword">{t("currentPassword")}</Label>
 								<Input
 									id="currentPassword"
 									type="password"
@@ -313,7 +317,7 @@ export default function SettingsPage() {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="newPassword">New Password</Label>
+								<Label htmlFor="newPassword">{t("newPassword")}</Label>
 								<Input
 									id="newPassword"
 									type="password"
@@ -323,7 +327,9 @@ export default function SettingsPage() {
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+								<Label htmlFor="confirmNewPassword">
+									{t("confirmNewPassword")}
+								</Label>
 								<Input
 									id="confirmNewPassword"
 									type="password"
@@ -340,7 +346,7 @@ export default function SettingsPage() {
 								{isChangingPassword ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
-								Change Password
+								{t("changePassword")}
 							</Button>
 						</form>
 					</CardContent>
@@ -348,15 +354,14 @@ export default function SettingsPage() {
 
 				<Card className="border-[#E2E8F0]">
 					<CardHeader>
-						<CardTitle className="text-[#0F172A]">Email address</CardTitle>
-						<CardDescription>
-							Email addresses are now managed by your sign-in method and can no
-							longer be edited from the app.
-						</CardDescription>
+						<CardTitle className="text-[#0F172A]">
+							{t("emailAddress")}
+						</CardTitle>
+						<CardDescription>{t("emailDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-							<p className="text-[#64748B] text-sm">Current email</p>
+							<p className="text-[#64748B] text-sm">{t("currentEmail")}</p>
 							<p className="mt-1 font-medium text-[#0F172A]">
 								{currentUser.email}
 							</p>
@@ -367,12 +372,9 @@ export default function SettingsPage() {
 				<Card className="border-[#E2E8F0]">
 					<CardHeader>
 						<CardTitle className="text-[#0F172A]">
-							Verify phone number
+							{t("verifyPhoneNumber")}
 						</CardTitle>
-						<CardDescription>
-							Phone changes now require an OTP verification code before they are
-							applied to your account.
-						</CardDescription>
+						<CardDescription>{t("verifyPhoneDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						<form onSubmit={handleSendPhoneCode} className="space-y-4">
@@ -388,19 +390,19 @@ export default function SettingsPage() {
 							)}
 							{phoneStatus?.phone && (
 								<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-									<p className="text-[#64748B] text-sm">Current phone</p>
+									<p className="text-[#64748B] text-sm">{t("currentPhone")}</p>
 									<p className="mt-1 font-medium text-[#0F172A]">
 										{phoneStatus.phone}
 									</p>
 									<p className="mt-1 text-[#64748B] text-xs">
 										{phoneStatus.isPhoneVerified
-											? "Verified"
-											: "Not verified yet"}
+											? t("verified")
+											: t("notVerifiedYet")}
 									</p>
 								</div>
 							)}
 							<div className="space-y-2">
-								<Label htmlFor="phoneNumber">Phone number</Label>
+								<Label htmlFor="phoneNumber">{t("phoneNumber")}</Label>
 								<Input
 									id="phoneNumber"
 									type="tel"
@@ -419,15 +421,15 @@ export default function SettingsPage() {
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
 								{phoneStatus?.hasPendingVerification
-									? "Resend verification code"
-									: "Send verification code"}
+									? t("resendVerificationCode")
+									: t("sendVerificationCode")}
 							</Button>
 						</form>
 
 						{phoneStatus?.hasPendingVerification && (
 							<form onSubmit={handleVerifyPhoneCode} className="space-y-4">
 								<div className="space-y-2">
-									<Label htmlFor="otpCode">Verification code</Label>
+									<Label htmlFor="otpCode">{t("verificationCode")}</Label>
 									<Input
 										id="otpCode"
 										inputMode="numeric"
@@ -446,7 +448,7 @@ export default function SettingsPage() {
 									{isVerifyingPhoneCode ? (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 									) : null}
-									Verify phone number
+									{t("verifyPhoneNumberBtn")}
 								</Button>
 							</form>
 						)}
@@ -455,10 +457,8 @@ export default function SettingsPage() {
 
 				<Card className="border-red-200">
 					<CardHeader>
-						<CardTitle className="text-red-600">Danger Zone</CardTitle>
-						<CardDescription>
-							Permanently delete your account and all associated data.
-						</CardDescription>
+						<CardTitle className="text-red-600">{t("dangerZone")}</CardTitle>
+						<CardDescription>{t("deleteAccountDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<Button
@@ -466,7 +466,7 @@ export default function SettingsPage() {
 							onClick={handleDeleteAccount}
 							className="rounded-xl"
 						>
-							Delete Account
+							{t("deleteAccount")}
 						</Button>
 					</CardContent>
 				</Card>

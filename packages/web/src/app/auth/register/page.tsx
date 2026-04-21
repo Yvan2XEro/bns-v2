@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { SocialAuthButtons } from "~/components/auth/social-auth-buttons";
 import { Button } from "~/components/ui/button";
@@ -19,6 +20,7 @@ import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
 
 export default function RegisterPage() {
+	const t = useTranslations("Auth");
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -32,21 +34,21 @@ export default function RegisterPage() {
 
 	useEffect(() => {
 		if (oauthError) {
-			setError("Social sign-up failed. Please try again.");
+			setError(t("socialSignupFailed"));
 		}
-	}, [oauthError]);
+	}, [oauthError, t]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
 
 		if (password !== confirmPassword) {
-			setError("Passwords do not match");
+			setError(t("passwordsDoNotMatch"));
 			return;
 		}
 
 		if (password.length < 8) {
-			setError("Password must be at least 8 characters");
+			setError(t("passwordMinLength"));
 			return;
 		}
 
@@ -56,7 +58,7 @@ export default function RegisterPage() {
 			await register(email, password, name);
 			router.push("/");
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Registration failed");
+			setError(err instanceof Error ? err.message : t("registrationFailed"));
 		} finally {
 			setIsLoading(false);
 		}
@@ -89,10 +91,8 @@ export default function RegisterPage() {
 							className="h-10 w-10 object-contain"
 						/>
 					</Link>
-					<CardTitle className="text-2xl">Create an account</CardTitle>
-					<CardDescription>
-						Join Buy&apos;N&apos;Sellem and start trading locally
-					</CardDescription>
+					<CardTitle className="text-2xl">{t("createAccount")}</CardTitle>
+					<CardDescription>{t("joinAndStartTrading")}</CardDescription>
 				</CardHeader>
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
@@ -104,7 +104,7 @@ export default function RegisterPage() {
 						<SocialAuthButtons />
 						<div className="space-y-2">
 							<Label htmlFor="name" className="text-[#0F172A]">
-								Name
+								{t("name")}
 							</Label>
 							<Input
 								id="name"
@@ -117,7 +117,7 @@ export default function RegisterPage() {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="email" className="text-[#0F172A]">
-								Email
+								{t("email")}
 							</Label>
 							<Input
 								id="email"
@@ -130,7 +130,7 @@ export default function RegisterPage() {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="password" className="text-[#0F172A]">
-								Password
+								{t("password")}
 							</Label>
 							<Input
 								id="password"
@@ -143,7 +143,7 @@ export default function RegisterPage() {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="confirmPassword" className="text-[#0F172A]">
-								Confirm Password
+								{t("confirmPassword")}
 							</Label>
 							<Input
 								id="confirmPassword"
@@ -161,15 +161,15 @@ export default function RegisterPage() {
 							className="w-full rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#2563EB] font-medium shadow-blue-500/20 shadow-md"
 							disabled={isLoading}
 						>
-							{isLoading ? "Creating account..." : "Create account"}
+							{isLoading ? t("creatingAccount") : t("createAccountBtn")}
 						</Button>
 						<p className="text-center text-[#64748B] text-sm">
-							Already have an account?{" "}
+							{t("alreadyHaveAccount")}{" "}
 							<Link
 								href="/auth/login"
 								className="font-medium text-[#1E40AF] hover:underline"
 							>
-								Sign in
+								{t("signIn")}
 							</Link>
 						</p>
 					</CardFooter>

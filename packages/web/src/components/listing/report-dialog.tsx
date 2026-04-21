@@ -1,6 +1,7 @@
 "use client";
 
 import { Flag } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -34,6 +35,7 @@ export function ReportDialog({
 	targetId,
 	children,
 }: ReportDialogProps) {
+	const t = useTranslations("Report");
 	const [open, setOpen] = useState(false);
 	const [reason, setReason] = useState<ReportReason | "">("");
 	const [description, setDescription] = useState("");
@@ -56,7 +58,7 @@ export function ReportDialog({
 				}),
 			});
 
-			if (!response.ok) throw new Error("Failed to submit report");
+			if (!response.ok) throw new Error(t("failedToSubmit"));
 
 			setSuccess(true);
 			setTimeout(() => {
@@ -78,57 +80,52 @@ export function ReportDialog({
 				{children || (
 					<Button variant="ghost" size="sm">
 						<Flag className="mr-2 h-4 w-4" />
-						Report
+						{t("submitReport")}
 					</Button>
 				)}
 			</DialogTrigger>
 			<DialogContent>
 				<form onSubmit={handleSubmit}>
 					<DialogHeader>
-						<DialogTitle>Report {targetType}</DialogTitle>
-						<DialogDescription>
-							Help us understand what&apos;s wrong with this {targetType}. Your
-							report will be reviewed by our moderation team.
-						</DialogDescription>
+						<DialogTitle>{t("submitReport")}</DialogTitle>
+						<DialogDescription>{t("reportSubmitted")}</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
 						{success ? (
 							<div className="rounded-md bg-green-50 p-4 text-green-900 dark:bg-green-900/20">
-								Report submitted successfully. Thank you!
+								{t("reportSubmitted")}
 							</div>
 						) : (
 							<>
 								<div className="space-y-2">
-									<Label htmlFor="reason">Reason</Label>
+									<Label htmlFor="reason">{t("reportReason")}</Label>
 									<Select
 										value={reason}
 										onValueChange={(value) => setReason(value as ReportReason)}
 										required
 									>
 										<SelectTrigger>
-											<SelectValue placeholder="Select a reason" />
+											<SelectValue placeholder={t("reportReason")} />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="spam">Spam</SelectItem>
+											<SelectItem value="spam">{t("spam")}</SelectItem>
 											<SelectItem value="inappropriate">
-												Inappropriate content
+												{t("inappropriate")}
 											</SelectItem>
-											<SelectItem value="fraud">Fraud or scam</SelectItem>
+											<SelectItem value="fraud">{t("reportScam")}</SelectItem>
 											<SelectItem value="prohibited">
-												Prohibited item
+												{t("prohibitedItem")}
 											</SelectItem>
-											<SelectItem value="harassment">Harassment</SelectItem>
-											<SelectItem value="other">Other</SelectItem>
+											<SelectItem value="harassment">{t("spam")}</SelectItem>
+											<SelectItem value="other">{t("otherReason")}</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="description">
-										Additional details (optional)
-									</Label>
+									<Label htmlFor="description">{t("reportDescription")}</Label>
 									<Input
 										id="description"
-										placeholder="Provide more context..."
+										placeholder={t("reportDescriptionPlaceholder")}
 										value={description}
 										onChange={(e) => setDescription(e.target.value)}
 									/>
@@ -143,10 +140,10 @@ export function ReportDialog({
 								variant="outline"
 								onClick={() => setOpen(false)}
 							>
-								Cancel
+								{t("cancel")}
 							</Button>
 							<Button type="submit" disabled={isLoading || !reason}>
-								{isLoading ? "Submitting..." : "Submit Report"}
+								{isLoading ? t("submitting") : t("submitReport")}
 							</Button>
 						</DialogFooter>
 					)}

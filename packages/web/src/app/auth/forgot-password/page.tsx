@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 
 export default function ForgotPasswordPage() {
+	const t = useTranslations("Auth");
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
@@ -71,16 +73,13 @@ export default function ForgotPasswordPage() {
 								<span className="font-bold text-sm text-white">B</span>
 							</div>
 						</Link>
-						<CardTitle className="text-2xl">Check your email</CardTitle>
-						<CardDescription>
-							If an account with that email exists, we&apos;ve sent a password
-							reset link. Check your inbox and spam folder.
-						</CardDescription>
+						<CardTitle className="text-2xl">{t("checkYourEmail")}</CardTitle>
+						<CardDescription>{t("checkYourEmailDesc")}</CardDescription>
 					</CardHeader>
 					<CardFooter>
 						<Link href="/auth/login" className="w-full">
 							<Button variant="outline" className="w-full rounded-xl">
-								Back to sign in
+								{t("backToSignIn")}
 							</Button>
 						</Link>
 					</CardFooter>
@@ -115,11 +114,8 @@ export default function ForgotPasswordPage() {
 							className="h-10 w-10 object-contain"
 						/>
 					</Link>
-					<CardTitle className="text-2xl">Forgot password</CardTitle>
-					<CardDescription>
-						Enter your email address and we&apos;ll send you a link to reset
-						your password.
-					</CardDescription>
+					<CardTitle className="text-2xl">{t("forgotPasswordTitle")}</CardTitle>
+					<CardDescription>{t("forgotPasswordDesc")}</CardDescription>
 				</CardHeader>
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
@@ -130,7 +126,7 @@ export default function ForgotPasswordPage() {
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="email" className="text-[#0F172A]">
-								Email
+								{t("email")}
 							</Label>
 							<Input
 								id="email"
@@ -148,15 +144,15 @@ export default function ForgotPasswordPage() {
 							className="w-full rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#2563EB] font-medium shadow-blue-500/20 shadow-md"
 							disabled={isLoading}
 						>
-							{isLoading ? "Sending..." : "Send reset link"}
+							{isLoading ? t("sending") : t("sendResetLink")}
 						</Button>
 						<p className="text-center text-[#64748B] text-sm">
-							Remember your password?{" "}
+							{t("rememberPassword")}{" "}
 							<Link
 								href="/auth/login"
 								className="font-medium text-[#1E40AF] hover:underline"
 							>
-								Sign in
+								{t("signIn")}
 							</Link>
 						</p>
 					</CardFooter>

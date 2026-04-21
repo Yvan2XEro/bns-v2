@@ -1,6 +1,7 @@
 import { Clock, MapPin, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
 import { FavoriteButton } from "./favorite-button";
@@ -23,6 +24,7 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, isFavorite }: ListingCardProps) {
+	const t = useTranslations("Listing");
 	const firstImage =
 		listing.images && listing.images.length > 0
 			? listing.images[0].image
@@ -74,7 +76,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						{isBoosted && (
 							<span className="flex items-center gap-1 rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[10px] text-white uppercase shadow-sm">
 								<Zap className="h-3 w-3" />
-								Featured
+								{t("listingBoosted")}
 							</span>
 						)}
 						{conditionLabel && (

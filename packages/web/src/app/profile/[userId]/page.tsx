@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { BlockUserButton } from "~/components/chat/block-user-button";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { ReportDialog } from "~/components/listing/report-dialog";
@@ -60,6 +61,7 @@ async function getUserReviews(userId: string): Promise<Review[]> {
 }
 
 export default async function ProfilePage({ params }: PageProps) {
+	const t = await getTranslations("Profile");
 	const { userId } = await params;
 	const [user, listings, reviews] = await Promise.all([
 		getUser(userId),
@@ -106,7 +108,7 @@ export default async function ProfilePage({ params }: PageProps) {
 									variant="secondary"
 									className="mt-2 border-[#BBF7D0] bg-[#F0FDF4] text-[#16A34A]"
 								>
-									Verified Seller
+									{t("verifiedSeller")}
 								</Badge>
 							)}
 							{user.location && (
@@ -117,7 +119,9 @@ export default async function ProfilePage({ params }: PageProps) {
 							)}
 							<p className="mt-2 flex items-center text-[#64748B] text-sm">
 								<Calendar className="mr-1 h-4 w-4" />
-								Joined {new Date(user.createdAt).toLocaleDateString()}
+								{t("joined", {
+									date: new Date(user.createdAt).toLocaleDateString(),
+								})}
 							</p>
 
 							<div className="mt-4 flex items-center gap-1">
@@ -126,7 +130,7 @@ export default async function ProfilePage({ params }: PageProps) {
 									{averageRating.toFixed(1)}
 								</span>
 								<span className="text-[#94A3B8]">
-									({reviews.length} reviews)
+									({t("userReviews", { count: reviews.length })})
 								</span>
 							</div>
 
@@ -140,7 +144,7 @@ export default async function ProfilePage({ params }: PageProps) {
 								<Link href={"/messages?listing="}>
 									<Button className="w-full rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]">
 										<MessageCircle className="mr-2 h-4 w-4" />
-										Message
+										{t("message")}
 									</Button>
 								</Link>
 							</div>
@@ -160,7 +164,7 @@ export default async function ProfilePage({ params }: PageProps) {
 										className="inline-flex items-center gap-1 text-[#94A3B8] text-xs hover:text-red-500"
 									>
 										<Flag className="h-3 w-3" />
-										Report this user
+										{t("reportThisUser")}
 									</button>
 								</ReportDialog>
 							</div>
@@ -172,20 +176,22 @@ export default async function ProfilePage({ params }: PageProps) {
 				<div className="space-y-8 lg:col-span-2">
 					<div>
 						<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
-							Listings by {user.name}
+							{t("listingsBy", { name: user.name })}
 						</h2>
 						{listings.length > 0 ? (
 							<ListingGrid listings={listings} />
 						) : (
 							<div className="rounded-xl border border-[#E2E8F0] bg-white py-12 text-center">
-								<p className="text-[#64748B]">No listings yet</p>
+								<p className="text-[#64748B]">{t("noListingsUser")}</p>
 							</div>
 						)}
 					</div>
 
 					{reviews.length > 0 && (
 						<div>
-							<h2 className="mb-4 font-bold text-[#0F172A] text-xl">Reviews</h2>
+							<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
+								{t("reviewsTitle")}
+							</h2>
 							<div className="space-y-3">
 								{reviews.map((review) => {
 									const reviewer = review.reviewer as User;

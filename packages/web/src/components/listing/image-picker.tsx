@@ -1,6 +1,7 @@
 "use client";
 
 import { Upload, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { ImageCropper } from "~/components/ui/image-cropper";
@@ -21,6 +22,7 @@ export function ImagePicker({
 	max = 10,
 	cropAspect = 4 / 3,
 }: ImagePickerProps) {
+	const t = useTranslations("Listing");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [cropQueue, setCropQueue] = useState<string[]>([]);
 	const [croppedFiles, setCroppedFiles] = useState<File[]>([]);
@@ -29,7 +31,7 @@ export function ImagePicker({
 	function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
 		const files = Array.from(e.target.files || []);
 		if (previews.length + files.length > max) {
-			alert(`Maximum ${max} images allowed`);
+			alert(t("maximumImagesAllowed", { max }));
 			if (fileInputRef.current) fileInputRef.current.value = "";
 			return;
 		}

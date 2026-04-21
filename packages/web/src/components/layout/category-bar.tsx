@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronLeft, Grid3X3, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Category } from "~/types";
 
@@ -47,6 +48,7 @@ function CategoryEmoji({ icon, name }: { icon?: string | null; name: string }) {
 // ── Desktop: horizontal bar with mega-menu dropdowns ──
 
 function DesktopCategoryBar({ tree }: { tree: CategoryNode[] }) {
+	const t = useTranslations("CategoryBar");
 	const [openId, setOpenId] = useState<string | null>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const barRef = useRef<HTMLDivElement>(null);
@@ -108,7 +110,7 @@ function DesktopCategoryBar({ tree }: { tree: CategoryNode[] }) {
 											href={`/search?category=${parent.id}`}
 											className="font-bold text-[#0F172A] text-sm hover:text-[#1E40AF]"
 										>
-											All {parent.name}
+											{t("all", { name: parent.name })}
 										</Link>
 									</div>
 									<div
@@ -154,9 +156,10 @@ function DesktopCategoryBar({ tree }: { tree: CategoryNode[] }) {
 // ── Mobile: drill-down drawer ──
 
 function MobileCategoryBar({ tree }: { tree: CategoryNode[] }) {
+	const t = useTranslations("CategoryBar");
 	const [open, setOpen] = useState(false);
 	const [stack, setStack] = useState<CategoryNode[][]>([tree]);
-	const [titles, setTitles] = useState<string[]>(["Categories"]);
+	const [titles, setTitles] = useState<string[]>([t("categories")]);
 	const [parentIds, setParentIds] = useState<string[]>([""]);
 
 	function drillDown(node: CategoryNode) {
@@ -179,7 +182,7 @@ function MobileCategoryBar({ tree }: { tree: CategoryNode[] }) {
 
 	function handleOpen() {
 		setStack([tree]);
-		setTitles(["Categories"]);
+		setTitles([t("categories")]);
 		setParentIds([""]);
 		setOpen(true);
 	}
@@ -198,7 +201,7 @@ function MobileCategoryBar({ tree }: { tree: CategoryNode[] }) {
 					className="flex w-full items-center gap-2 py-2.5 text-[#475569] text-sm transition-colors hover:text-[#0F172A]"
 				>
 					<Grid3X3 className="h-4 w-4" />
-					<span className="font-medium">Categories</span>
+					<span className="font-medium">{t("categories")}</span>
 					<ChevronDown className="h-3.5 w-3.5 opacity-50" />
 				</button>
 			</div>
@@ -249,7 +252,7 @@ function MobileCategoryBar({ tree }: { tree: CategoryNode[] }) {
 									onClick={() => setOpen(false)}
 									className="mb-1 flex items-center gap-3 rounded-xl bg-[#F1F5F9] px-4 py-3 font-semibold text-[#1E40AF] text-sm"
 								>
-									See all in {currentTitle}
+									{t("seeAllIn", { name: currentTitle })}
 								</Link>
 							)}
 							{currentItems.map((node) => (

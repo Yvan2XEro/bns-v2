@@ -8,6 +8,7 @@ import {
 	MessageCircle,
 	Phone,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -21,34 +22,8 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 
-const contactInfo = [
-	{
-		icon: Mail,
-		label: "Email",
-		value: "support@buynsellem.com",
-		href: "mailto:support@buynsellem.com",
-	},
-	{
-		icon: Phone,
-		label: "Phone",
-		value: "+237 652 761 931",
-		href: "tel:+237652761931",
-	},
-	{
-		icon: MapPin,
-		label: "Location",
-		value: "Douala, Cameroon",
-		href: null,
-	},
-	{
-		icon: Clock,
-		label: "Hours",
-		value: "Mon-Fri, 8AM - 6PM WAT",
-		href: null,
-	},
-];
-
 export default function ContactPage() {
+	const t = useTranslations("Contact");
 	const [formData, setFormData] = useState({
 		name: "",
 		email: "",
@@ -58,6 +33,33 @@ export default function ContactPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState("");
+
+	const contactInfo = [
+		{
+			icon: Mail,
+			label: t("email"),
+			value: "support@buynsellem.com",
+			href: "mailto:support@buynsellem.com",
+		},
+		{
+			icon: Phone,
+			label: t("phone"),
+			value: "+237 652 761 931",
+			href: "tel:+237652761931",
+		},
+		{
+			icon: MapPin,
+			label: t("location"),
+			value: t("locationValue"),
+			href: null,
+		},
+		{
+			icon: Clock,
+			label: t("hours"),
+			value: t("hoursValue"),
+			href: null,
+		},
+	];
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -74,14 +76,14 @@ export default function ContactPage() {
 			const data = await res.json();
 
 			if (!res.ok) {
-				setError(data.error || "Something went wrong. Please try again.");
+				setError(data.error || t("errorGeneric"));
 				return;
 			}
 
 			setSuccess(true);
 			setFormData({ name: "", email: "", subject: "", message: "" });
 		} catch {
-			setError("Could not send your message. Please try again later.");
+			setError(t("errorNetwork"));
 		} finally {
 			setIsLoading(false);
 		}
@@ -89,7 +91,6 @@ export default function ContactPage() {
 
 	return (
 		<div className="min-h-screen bg-[#F8FAFC]">
-			{/* Hero */}
 			<section className="relative overflow-hidden bg-[#1E40AF] py-12">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
@@ -97,21 +98,19 @@ export default function ContactPage() {
 				<div className="-right-20 absolute bottom-10 h-48 w-48 rounded-full bg-[#F59E0B]/15 blur-3xl" />
 				<div className="container relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
 					<MessageCircle className="mx-auto mb-4 h-10 w-10 text-white/80" />
-					<h1 className="font-extrabold text-3xl text-white">Contact Us</h1>
-					<p className="mt-2 text-blue-100">
-						Have a question or need help? We&apos;d love to hear from you.
-					</p>
+					<h1 className="font-extrabold text-3xl text-white">{t("title")}</h1>
+					<p className="mt-2 text-blue-100">{t("subtitle")}</p>
 				</div>
 			</section>
 
 			<div className="container mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
 				<div className="grid gap-8 lg:grid-cols-5">
-					{/* Contact info */}
 					<div className="space-y-4 lg:col-span-2">
-						<h2 className="font-bold text-[#0F172A] text-lg">Get in touch</h2>
+						<h2 className="font-bold text-[#0F172A] text-lg">
+							{t("getInTouch")}
+						</h2>
 						<p className="text-[#64748B] text-sm leading-relaxed">
-							Our support team typically responds within 24 hours during
-							business days.
+							{t("responseTime")}
 						</p>
 						<div className="space-y-3 pt-2">
 							{contactInfo.map((info) => (
@@ -141,7 +140,6 @@ export default function ContactPage() {
 						</div>
 					</div>
 
-					{/* Contact form */}
 					<div className="lg:col-span-3">
 						<div className="rounded-xl border border-[#E2E8F0] bg-white p-6">
 							{success ? (
@@ -150,27 +148,27 @@ export default function ContactPage() {
 										<MessageCircle className="h-6 w-6 text-emerald-600" />
 									</div>
 									<h3 className="font-bold text-[#0F172A] text-lg">
-										Message sent!
+										{t("messageSent")}
 									</h3>
 									<p className="mt-1 text-[#64748B] text-sm">
-										We&apos;ll get back to you as soon as possible.
+										{t("getBackSoon")}
 									</p>
 									<Button
 										onClick={() => setSuccess(false)}
 										variant="outline"
 										className="mt-4 rounded-xl"
 									>
-										Send another message
+										{t("sendAnother")}
 									</Button>
 								</div>
 							) : (
 								<form onSubmit={handleSubmit} className="space-y-4">
 									<div className="grid gap-4 sm:grid-cols-2">
 										<div className="space-y-2">
-											<Label htmlFor="name">Name</Label>
+											<Label htmlFor="name">{t("name")}</Label>
 											<Input
 												id="name"
-												placeholder="Your name"
+												placeholder={t("namePlaceholder")}
 												value={formData.name}
 												onChange={(e) =>
 													setFormData((p) => ({ ...p, name: e.target.value }))
@@ -179,11 +177,11 @@ export default function ContactPage() {
 											/>
 										</div>
 										<div className="space-y-2">
-											<Label htmlFor="email">Email</Label>
+											<Label htmlFor="email">{t("email")}</Label>
 											<Input
 												id="email"
 												type="email"
-												placeholder="you@example.com"
+												placeholder={t("emailPlaceholder")}
 												value={formData.email}
 												onChange={(e) =>
 													setFormData((p) => ({ ...p, email: e.target.value }))
@@ -193,7 +191,7 @@ export default function ContactPage() {
 										</div>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="subject">Subject</Label>
+										<Label htmlFor="subject">{t("subject")}</Label>
 										<Select
 											value={formData.subject}
 											onValueChange={(v) =>
@@ -201,31 +199,37 @@ export default function ContactPage() {
 											}
 										>
 											<SelectTrigger>
-												<SelectValue placeholder="What is this about?" />
+												<SelectValue placeholder={t("subjectPlaceholder")} />
 											</SelectTrigger>
 											<SelectContent>
 												<SelectItem value="general">
-													General question
+													{t("generalQuestion")}
 												</SelectItem>
-												<SelectItem value="account">Account issue</SelectItem>
-												<SelectItem value="listing">Listing problem</SelectItem>
+												<SelectItem value="account">
+													{t("accountIssue")}
+												</SelectItem>
+												<SelectItem value="listing">
+													{t("listingProblem")}
+												</SelectItem>
 												<SelectItem value="payment">
-													Payment & billing
+													{t("paymentBilling")}
 												</SelectItem>
 												<SelectItem value="report">
-													Report a user/scam
+													{t("reportScam")}
 												</SelectItem>
-												<SelectItem value="bug">Bug report</SelectItem>
-												<SelectItem value="feature">Feature request</SelectItem>
-												<SelectItem value="other">Other</SelectItem>
+												<SelectItem value="bug">{t("bugReport")}</SelectItem>
+												<SelectItem value="feature">
+													{t("featureRequest")}
+												</SelectItem>
+												<SelectItem value="other">{t("other")}</SelectItem>
 											</SelectContent>
 										</Select>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="message">Message</Label>
+										<Label htmlFor="message">{t("message")}</Label>
 										<Textarea
 											id="message"
-											placeholder="Describe your issue or question in detail..."
+											placeholder={t("messagePlaceholder")}
 											rows={5}
 											value={formData.message}
 											onChange={(e) =>
@@ -249,7 +253,7 @@ export default function ContactPage() {
 										) : (
 											<Mail className="mr-2 h-4 w-4" />
 										)}
-										Send message
+										{t("sendMessage")}
 									</Button>
 								</form>
 							)}

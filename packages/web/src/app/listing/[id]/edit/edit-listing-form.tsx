@@ -3,6 +3,7 @@
 import { LoaderCircle, Save, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { AttributeFields } from "~/components/listing/attribute-fields";
@@ -47,6 +48,17 @@ const CONDITIONS: { value: ListingCondition; label: string }[] = [
 	{ value: "poor", label: "Poor" },
 ];
 
+function _useTranslatedConditions() {
+	const t = useTranslations("Condition");
+	return [
+		{ value: "new" as ListingCondition, label: t("new") },
+		{ value: "like_new" as ListingCondition, label: t("like_new") },
+		{ value: "good" as ListingCondition, label: t("good") },
+		{ value: "fair" as ListingCondition, label: t("fair") },
+		{ value: "poor" as ListingCondition, label: t("poor") },
+	];
+}
+
 interface ExistingImage {
 	id: string;
 	url: string;
@@ -59,6 +71,7 @@ export function EditListingForm({
 	listing: Listing;
 	categories: Category[];
 }) {
+	const t = useTranslations("Listing");
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -217,11 +230,11 @@ export function EditListingForm({
 				credentials: "include",
 			});
 
-			if (!res.ok) throw new Error("Failed to update listing");
+			if (!res.ok) throw new Error(t("failedToUpdate"));
 			router.push(`/listing/${listing.id}`);
 			router.refresh();
 		} catch {
-			alert("Failed to update listing. Please try again.");
+			alert(t("failedToUpdate"));
 		} finally {
 			setIsSaving(false);
 		}
@@ -238,29 +251,29 @@ export function EditListingForm({
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
-				<h1 className="font-bold text-2xl">Edit Listing</h1>
+				<h1 className="font-bold text-2xl">{t("editListingTitle")}</h1>
 				<Button
 					variant="ghost"
 					size="sm"
 					onClick={() => router.push(`/listing/${listing.id}`)}
 				>
 					<X className="mr-2 h-4 w-4" />
-					Cancel
+					{t("cancel")}
 				</Button>
 			</div>
 
 			{/* Category */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Category</CardTitle>
-					<CardDescription>What type of item is this?</CardDescription>
+					<CardTitle>{t("category")}</CardTitle>
+					<CardDescription>{t("categoryDesc")}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<CategoryDropdown
 						categories={categories}
 						value={selectedCategory ? String(selectedCategory.id) : undefined}
 						onChange={handleCategoryChange}
-						placeholder="Select a category"
+						placeholder={t("selectACategory")}
 					/>
 				</CardContent>
 			</Card>
@@ -268,15 +281,15 @@ export function EditListingForm({
 			{/* Details */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Details</CardTitle>
-					<CardDescription>Basic information about your item</CardDescription>
+					<CardTitle>{t("details")}</CardTitle>
+					<CardDescription>{t("detailsDesc")}</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-5">
 					<div className="space-y-2">
-						<Label htmlFor="title">Title</Label>
+						<Label htmlFor="title">{t("title")}</Label>
 						<Input
 							id="title"
-							placeholder="What are you selling?"
+							placeholder={t("whatAreYouSelling")}
 							value={formData.title}
 							onChange={(e) =>
 								setFormData((p) => ({ ...p, title: e.target.value }))

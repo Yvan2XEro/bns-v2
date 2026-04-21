@@ -13,6 +13,7 @@ import {
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { CategoryIcon } from "~/components/category-icon";
 import { RotatingText } from "~/components/home/rotating-text";
 import { HomeSearchBar } from "~/components/home-search-bar";
@@ -71,6 +72,7 @@ async function getUserFavoriteIds(): Promise<string[]> {
 }
 
 export default async function HomePage() {
+	const t = await getTranslations("Home");
 	const [categories, recentListings, featuredListings, favoriteIds] =
 		await Promise.all([
 			getCategories(),
@@ -146,7 +148,7 @@ export default async function HomePage() {
 							<RotatingText />
 						</h1>
 						<p className="mb-8 text-base text-blue-100 sm:text-lg">
-							Thousands of listings near you. Find deals, sell fast.
+							{t("heroSubtitle")}
 						</p>
 
 						{/* Search bar */}
@@ -195,13 +197,13 @@ export default async function HomePage() {
 				<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 					<div className="mb-6 flex items-center justify-between">
 						<h2 className="font-bold text-[#0F172A] text-xl">
-							Browse by category
+							{t("browseByCategory")}
 						</h2>
 						<Link
 							href="/search"
 							className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
 						>
-							All categories
+							{t("allCategories")}
 							<ChevronRight className="h-4 w-4" />
 						</Link>
 					</div>

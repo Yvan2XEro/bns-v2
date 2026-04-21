@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Suspense, useEffect, useState } from "react";
 import { SocialAuthButtons } from "~/components/auth/social-auth-buttons";
 import { Button } from "~/components/ui/button";
@@ -27,6 +28,7 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
+	const t = useTranslations("Auth");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
@@ -40,9 +42,9 @@ function LoginForm() {
 
 	useEffect(() => {
 		if (oauthError) {
-			setError("Social login failed. Please try again.");
+			setError(t("socialLoginFailed"));
 		}
-	}, [oauthError]);
+	}, [oauthError, t]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -53,7 +55,7 @@ function LoginForm() {
 			await login(email, password);
 			router.push(redirectTo);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Login failed");
+			setError(err instanceof Error ? err.message : t("loginFailed"));
 		} finally {
 			setIsLoading(false);
 		}
@@ -86,17 +88,14 @@ function LoginForm() {
 							className="h-10 w-10 object-contain"
 						/>
 					</Link>
-					<CardTitle className="text-2xl">Welcome back</CardTitle>
-					<CardDescription>
-						Sign in to your Buy&apos;N&apos;Sellem account
-					</CardDescription>
+					<CardTitle className="text-2xl">{t("welcomeBack")}</CardTitle>
+					<CardDescription>{t("signInToYourAccount")}</CardDescription>
 				</CardHeader>
 				<form onSubmit={handleSubmit}>
 					<CardContent className="space-y-4">
 						{resetSuccess && (
 							<div className="rounded-xl bg-emerald-50 p-3 text-emerald-700 text-sm">
-								Password reset successfully. You can now sign in with your new
-								password.
+								{t("resetSuccess")}
 							</div>
 						)}
 						{error && (
@@ -106,7 +105,7 @@ function LoginForm() {
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="email" className="text-[#0F172A]">
-								Email
+								{t("email")}
 							</Label>
 							<Input
 								id="email"
@@ -120,13 +119,13 @@ function LoginForm() {
 						<div className="space-y-2">
 							<div className="flex items-center justify-between">
 								<Label htmlFor="password" className="text-[#0F172A]">
-									Password
+									{t("password")}
 								</Label>
 								<Link
 									href="/auth/forgot-password"
 									className="text-[#1E40AF] text-xs hover:underline"
 								>
-									Forgot password?
+									{t("forgotPassword")}
 								</Link>
 							</div>
 							<Input
@@ -146,15 +145,15 @@ function LoginForm() {
 							className="w-full rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#2563EB] font-medium shadow-blue-500/20 shadow-md"
 							disabled={isLoading}
 						>
-							{isLoading ? "Signing in..." : "Sign in"}
+							{isLoading ? t("signingIn") : t("signIn")}
 						</Button>
 						<p className="text-center text-[#64748B] text-sm">
-							Don&apos;t have an account?{" "}
+							{t("dontHaveAccount")}{" "}
 							<Link
 								href="/auth/register"
 								className="font-medium text-[#1E40AF] hover:underline"
 							>
-								Sign up
+								{t("signUp")}
 							</Link>
 						</p>
 					</CardFooter>
