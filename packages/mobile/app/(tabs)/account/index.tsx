@@ -315,6 +315,15 @@ export default function AccountScreen() {
 								borderColor={borderColor}
 							/>
 							<MenuItem
+								icon="shield-checkmark-outline"
+								label={t("account.security")}
+								onPress={() =>
+									router.push("/security" as Parameters<typeof router.push>[0])
+								}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
 								icon="notifications-outline"
 								label={t("account.notifications")}
 								onPress={() => router.push("/account/notifications")}

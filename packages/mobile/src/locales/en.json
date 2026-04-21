@@ -393,7 +393,8 @@
 		"profileViews_plural": "{{count}} profile views",
 		"sectionActivity": "MY ACTIVITY",
 		"sectionSettings": "SETTINGS",
-		"sectionSupport": "SUPPORT"
+		"sectionSupport": "SUPPORT",
+		"security": "Security"
 	},
 	"listings": {
 		"title": "My Listings",
@@ -854,5 +855,8 @@
 		"slide3Desc": "Post your listing in under 2 minutes and reach thousands of buyers.",
 		"slide4Title": "Chat\nsafely",
 		"slide4Desc": "Talk directly with buyers and sellers with full confidence."
+	},
+	"security": {
+		"title": "Security"
 	}
 }

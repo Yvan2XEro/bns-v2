@@ -458,7 +458,8 @@
 		"profileViews_plural": "{{count}} vues du profil",
 		"sectionActivity": "MON ACTIVITÉ",
 		"sectionSettings": "PARAMÈTRES",
-		"sectionSupport": "ASSISTANCE"
+		"sectionSupport": "ASSISTANCE",
+		"security": "Sécurité"
 	},
 	"listings": {
 		"title": "Mes annonces",
@@ -933,5 +934,8 @@
 		"slide3Desc": "Publiez votre annonce en moins de 2 minutes et touchez des milliers d'acheteurs.",
 		"slide4Title": "Échangez\nen toute sécurité",
 		"slide4Desc": "Discutez directement avec acheteurs et vendeurs en toute confiance."
+	},
+	"security": {
+		"title": "Sécurité"
 	}
 }

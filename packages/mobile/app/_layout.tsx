@@ -25,7 +25,9 @@ import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Linking } from "react-native";
+import { Appearance, Linking } from "react-native";
+import i18n from "../src/lib/i18n";
+import { LANG_STORAGE_KEY, THEME_STORAGE_KEY } from "./settings";
 import "react-native-reanimated";
 import { NovuProvider } from "@novu/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -59,6 +61,21 @@ export const unstable_settings = { anchor: "(tabs)" };
 // ─── Root layout ──────────────────────────────────────────────────────────────
 
 export default function RootLayout() {
+	// Load saved language + theme preferences before first render
+	useEffect(() => {
+		Promise.all([
+			AsyncStorage.getItem(LANG_STORAGE_KEY),
+			AsyncStorage.getItem(THEME_STORAGE_KEY),
+		]).then(([savedLang, savedTheme]) => {
+			if (savedLang === "fr" || savedLang === "en") {
+				i18n.changeLanguage(savedLang);
+			}
+			if (savedTheme === "dark" || savedTheme === "light") {
+				Appearance.setColorScheme(savedTheme);
+			}
+		});
+	}, []);
+
 	const [fontsLoaded] = useFonts({
 		...Ionicons.font,
 		DMSans_400Regular,
@@ -325,6 +342,7 @@ function RootLayoutNav() {
 					options={{ presentation: "modal", headerShown: false }}
 				/>
 				<Stack.Screen name="settings" options={{ headerShown: false }} />
+				<Stack.Screen name="security" options={{ headerShown: false }} />
 				<Stack.Screen name="contact" options={{ headerShown: false }} />
 				<Stack.Screen name="help" options={{ headerShown: false }} />
 				<Stack.Screen name="safety" options={{ headerShown: false }} />

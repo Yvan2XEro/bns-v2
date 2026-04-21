@@ -1,168 +1,82 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-	ActivityIndicator,
+	Appearance,
+	Modal,
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useAlert } from "@/src/contexts/AlertContext";
-import { api } from "@/src/lib/api";
-import { useAuth } from "@/src/lib/auth";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
 
-function getErrorMessage(error: unknown, fallback: string): string {
-	return error instanceof Error ? error.message : fallback;
-}
+export const LANG_STORAGE_KEY = "app_language";
+export const THEME_STORAGE_KEY = "app_theme";
+
+type Locale = "fr" | "en";
+
+const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
+	{ code: "fr", label: "Français", flag: "🇫🇷" },
+	{ code: "en", label: "English", flag: "🇬🇧" },
+];
 
 interface SectionProps {
 	title: string;
 	icon: keyof typeof Ionicons.glyphMap;
 	children: React.ReactNode;
-	danger?: boolean;
 	cardBg: string;
 	borderColor: string;
 	textColor: string;
 	isDark: boolean;
 }
 
-interface FieldProps {
-	label: string;
-	value: string;
-	onChange: (v: string) => void;
-	placeholder: string;
-	secure?: boolean;
-	icon?: keyof typeof Ionicons.glyphMap;
-	mutedColor: string;
-	inputBg: string;
-	borderColor: string;
-	textColor: string;
-}
-
-interface PhoneVerificationStatus {
-	expiresAt: null | string;
-	hasPendingVerification: boolean;
-	isPhoneVerified: boolean;
-	pendingPhone: null | string;
-	phone: null | string;
-	phoneVerifiedAt: null | string;
-	resendAvailableAt: null | string;
-}
-
 function Section({
 	title,
 	icon,
 	children,
-	danger,
 	cardBg,
 	borderColor,
 	textColor,
 	isDark,
 }: SectionProps) {
 	return (
-		<View
-			style={[
-				styles.section,
-				{
-					backgroundColor: danger ? (isDark ? "#1a0a0a" : "#fff5f5") : cardBg,
-					borderColor: danger ? "#dc262640" : borderColor,
-				},
-			]}
-		>
+		<View style={[styles.section, { backgroundColor: cardBg, borderColor }]}>
 			<View style={styles.sectionHeader}>
 				<View
 					style={[
 						styles.sectionIconBox,
-						{
-							backgroundColor: danger
-								? isDark
-									? "#3b1111"
-									: "#fee2e2"
-								: isDark
-									? "#1e293b"
-									: "#f1f5f9",
-						},
+						{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
 					]}
 				>
 					<Ionicons
 						name={icon}
 						size={15}
-						color={danger ? "#dc2626" : isDark ? "#94a3b8" : "#475569"}
+						color={isDark ? "#94a3b8" : "#475569"}
 					/>
 				</View>
-				<Text
-					style={[
-						styles.sectionTitle,
-						{ color: danger ? "#dc2626" : textColor },
-					]}
-				>
-					{title}
-				</Text>
+				<Text style={[styles.sectionTitle, { color: textColor }]}>{title}</Text>
 			</View>
 			<View style={styles.sectionBody}>{children}</View>
 		</View>
 	);
 }
 
-function Field({
-	label,
-	value,
-	onChange,
-	placeholder,
-	secure,
-	icon,
-	mutedColor,
-	inputBg,
-	borderColor,
-	textColor,
-}: FieldProps) {
-	return (
-		<View style={styles.fieldGroup}>
-			<Text style={[styles.fieldLabel, { color: mutedColor }]}>{label}</Text>
-			<View
-				style={[styles.inputRow, { backgroundColor: inputBg, borderColor }]}
-			>
-				{icon && (
-					<Ionicons
-						name={icon}
-						size={16}
-						color={mutedColor}
-						style={{ marginRight: 8 }}
-					/>
-				)}
-				<TextInput
-					value={value}
-					onChangeText={onChange}
-					placeholder={placeholder}
-					placeholderTextColor={mutedColor}
-					style={[styles.input, { color: textColor }]}
-					secureTextEntry={secure}
-					autoCapitalize="none"
-				/>
-			</View>
-		</View>
-	);
-}
-
 export default function SettingsScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { user, logout, refreshUser } = useAuth();
-	const { showSuccess, showError, showConfirm } = useAlert();
 	const { t } = useTranslation();
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
-	const [phoneInput, setPhoneInput] = useState("");
-	const [otpCode, setOtpCode] = useState("");
+	const [langPickerOpen, setLangPickerOpen] = useState(false);
+
+	const currentLang =
+		(i18n.language?.slice(0, 2) as Locale | undefined) ?? "fr";
+	const version = Constants.expoConfig?.version ?? "1.0.0";
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -172,134 +86,22 @@ export default function SettingsScreen() {
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const inputBg = isDark ? "#0b1120" : "#f8fafc";
 
-	const { mutate: changePassword, isPending: pwdLoading } = useMutation({
-		mutationFn: async () => {
-			if (newPassword !== confirmPassword) {
-				throw new Error(t("settings.passwordMismatchError"));
-			}
-
-			if (newPassword.length < 8) {
-				throw new Error(t("settings.passwordTooShortError"));
-			}
-
-			return api.patch(`/api/users/${user?.id}`, { password: newPassword });
-		},
-		onSuccess: () => {
-			showSuccess(
-				t("settings.passwordChangedTitle"),
-				t("settings.passwordChangedMessage"),
-			);
-			setNewPassword("");
-			setConfirmPassword("");
-		},
-		onError: (err: unknown) =>
-			showError(
-				t("settings.errorTitle"),
-				getErrorMessage(err, t("settings.errorTitle")),
-			),
-	});
-
-	const {
-		data: phoneStatus,
-		isLoading: phoneStatusLoading,
-		refetch: refetchPhoneStatus,
-	} = useQuery({
-		queryKey: ["phone-verification-status"],
-		queryFn: () =>
-			api.get<PhoneVerificationStatus>("/api/account/phone/status"),
-		enabled: !!user,
-	});
-
-	useEffect(() => {
-		setPhoneInput(phoneStatus?.pendingPhone ?? phoneStatus?.phone ?? "");
-	}, [phoneStatus?.pendingPhone, phoneStatus?.phone]);
-
-	const { mutate: startPhoneVerification, isPending: phoneStartLoading } =
-		useMutation({
-			mutationFn: () =>
-				api.post<{ message: string }>("/api/account/phone/start", {
-					phone: phoneInput,
-				}),
-			onSuccess: async (data) => {
-				await refetchPhoneStatus();
-				setOtpCode("");
-				showSuccess(
-					t("settings.phoneCodeSentTitle"),
-					data.message || t("settings.phoneCodeSentMessage"),
-				);
-			},
-			onError: (err: unknown) =>
-				showError(
-					t("settings.errorTitle"),
-					getErrorMessage(err, t("settings.errorTitle")),
-				),
-		});
-
-	const { mutate: verifyPhoneCode, isPending: phoneVerifyLoading } =
-		useMutation({
-			mutationFn: () =>
-				api.post<{ message: string }>("/api/account/phone/verify", {
-					code: otpCode,
-				}),
-			onSuccess: async (data) => {
-				await refetchPhoneStatus();
-				await refreshUser();
-				setOtpCode("");
-				showSuccess(
-					t("settings.phoneVerifiedTitle"),
-					data.message || t("settings.phoneVerifiedMessage"),
-				);
-			},
-			onError: (err: unknown) =>
-				showError(
-					t("settings.errorTitle"),
-					getErrorMessage(err, t("settings.errorTitle")),
-				),
-		});
-
-	const handleSendPhoneCode = () => {
-		if (!phoneInput) {
-			showError(
-				t("settings.errorTitle"),
-				t("settings.phoneNumberRequiredError"),
-			);
-			return;
-		}
-
-		startPhoneVerification();
-	};
-
-	const handleVerifyPhoneCode = () => {
-		if (!otpCode) {
-			showError(t("settings.errorTitle"), t("settings.phoneCodeRequiredError"));
-			return;
-		}
-
-		verifyPhoneCode();
-	};
-
-	const handleDeleteAccount = () => {
-		showConfirm(
-			t("settings.deleteConfirmTitle"),
-			t("settings.deleteConfirmMessage"),
-			async () => {
-				try {
-					await api.delete(`/api/users/${user?.id}`);
-					await logout();
-					router.replace("/(tabs)/home");
-				} catch (err) {
-					showError(
-						t("settings.errorTitle"),
-						getErrorMessage(err, t("settings.errorTitle")),
-					);
-				}
-			},
-		);
-	};
-
-	const version = Constants.expoConfig?.version ?? "1.0.0";
 	const sectionColors = { cardBg, borderColor, textColor, isDark };
-	const fieldColors = { mutedColor, inputBg, borderColor, textColor };
+
+	const changeLanguage = async (locale: Locale) => {
+		await i18n.changeLanguage(locale);
+		await AsyncStorage.setItem(LANG_STORAGE_KEY, locale);
+		setLangPickerOpen(false);
+	};
+
+	const toggleDarkMode = async (value: boolean) => {
+		const scheme = value ? "dark" : "light";
+		Appearance.setColorScheme(scheme);
+		await AsyncStorage.setItem(THEME_STORAGE_KEY, scheme);
+	};
+
+	const currentLangLabel =
+		LANGUAGES.find((l) => l.code === currentLang)?.label ?? "Français";
 
 	return (
 		<SafeAreaView
@@ -320,153 +122,59 @@ export default function SettingsScreen() {
 				contentContainerStyle={[styles.scroll, { backgroundColor: bg }]}
 				showsVerticalScrollIndicator={false}
 			>
+				{/* Language */}
 				<Section
-					title={t("settings.passwordSection")}
-					icon="lock-closed-outline"
+					title={t("settings.language")}
+					icon="globe-outline"
 					{...sectionColors}
 				>
-					<Field
-						label={t("settings.newPasswordLabel")}
-						value={newPassword}
-						onChange={setNewPassword}
-						placeholder={t("settings.newPasswordPlaceholder")}
-						secure
-						icon="lock-closed-outline"
-						{...fieldColors}
-					/>
-					<Field
-						label={t("settings.confirmPasswordLabel")}
-						value={confirmPassword}
-						onChange={setConfirmPassword}
-						placeholder={t("settings.confirmPasswordPlaceholder")}
-						secure
-						icon="lock-closed-outline"
-						{...fieldColors}
-					/>
 					<Pressable
-						onPress={() => changePassword()}
-						disabled={pwdLoading}
+						onPress={() => setLangPickerOpen(true)}
 						style={[
-							styles.btn,
-							{ backgroundColor: primaryColor, opacity: pwdLoading ? 0.7 : 1 },
+							styles.selectRow,
+							{ backgroundColor: inputBg, borderColor },
 						]}
 					>
-						{pwdLoading ? (
-							<ActivityIndicator color="#fff" />
-						) : (
-							<Text style={styles.btnText}>
-								{t("settings.changePasswordBtn")}
-							</Text>
-						)}
+						<Ionicons
+							name="language-outline"
+							size={17}
+							color={mutedColor}
+							style={{ marginRight: 10 }}
+						/>
+						<Text style={[styles.selectValue, { color: textColor }]}>
+							{currentLangLabel}
+						</Text>
+						<Ionicons name="chevron-down" size={16} color={mutedColor} />
 					</Pressable>
 				</Section>
 
+				{/* Appearance */}
 				<Section
-					title={t("settings.emailSection")}
-					icon="mail-outline"
+					title={t("settings.theme")}
+					icon="moon-outline"
 					{...sectionColors}
 				>
-					<View style={[styles.currentRow, { borderColor }]}>
-						<Text style={[styles.currentLabel, { color: mutedColor }]}>
-							{t("settings.currentLabel")}
+					<View style={[styles.switchRow, { borderColor }]}>
+						<Ionicons
+							name={isDark ? "moon" : "sunny-outline"}
+							size={17}
+							color={isDark ? "#94a3b8" : "#475569"}
+							style={{ marginRight: 10 }}
+						/>
+						<Text style={[styles.switchLabel, { color: textColor, flex: 1 }]}>
+							{t("settings.themeDark")}
 						</Text>
-						<Text style={[styles.currentValue, { color: textColor }]}>
-							{user?.email}
-						</Text>
+						<Switch
+							value={isDark}
+							onValueChange={toggleDarkMode}
+							trackColor={{ false: "#CBD5E1", true: primaryColor }}
+							thumbColor="#fff"
+							ios_backgroundColor="#CBD5E1"
+						/>
 					</View>
-					<Text style={[styles.helperText, { color: mutedColor }]}>
-						{t("settings.emailManagedMessage")}
-					</Text>
 				</Section>
 
-				<Section
-					title={t("settings.phoneSection")}
-					icon="call-outline"
-					{...sectionColors}
-				>
-					{phoneStatus?.phone && (
-						<View style={[styles.currentRow, { borderColor }]}>
-							<Text style={[styles.currentLabel, { color: mutedColor }]}>
-								{t("settings.currentLabel")}
-							</Text>
-							<View style={{ alignItems: "flex-end", gap: 4 }}>
-								<Text style={[styles.currentValue, { color: textColor }]}>
-									{phoneStatus.phone}
-								</Text>
-								<Text style={[styles.helperText, { color: mutedColor }]}>
-									{phoneStatus.isPhoneVerified
-										? t("settings.phoneVerifiedBadge")
-										: t("settings.phoneNotVerifiedBadge")}
-								</Text>
-							</View>
-						</View>
-					)}
-					<Field
-						label={t("settings.phoneNumberLabel")}
-						value={phoneInput}
-						onChange={setPhoneInput}
-						placeholder={t("settings.phoneNumberPlaceholder")}
-						icon="call-outline"
-						{...fieldColors}
-					/>
-					<Pressable
-						onPress={handleSendPhoneCode}
-						disabled={phoneStartLoading || phoneStatusLoading}
-						style={[
-							styles.btn,
-							{
-								backgroundColor: primaryColor,
-								opacity: phoneStartLoading || phoneStatusLoading ? 0.7 : 1,
-							},
-						]}
-					>
-						{phoneStartLoading ? (
-							<ActivityIndicator color="#fff" />
-						) : (
-							<Text style={styles.btnText}>
-								{phoneStatus?.hasPendingVerification
-									? t("settings.resendPhoneCodeBtn")
-									: t("settings.sendPhoneCodeBtn")}
-							</Text>
-						)}
-					</Pressable>
-
-					{phoneStatus?.hasPendingVerification && (
-						<>
-							<Field
-								label={t("settings.phoneCodeLabel")}
-								value={otpCode}
-								onChange={setOtpCode}
-								placeholder={t("settings.phoneCodePlaceholder")}
-								icon="key-outline"
-								{...fieldColors}
-							/>
-							<Pressable
-								onPress={handleVerifyPhoneCode}
-								disabled={phoneVerifyLoading}
-								style={[
-									styles.btnSecondary,
-									{
-										borderColor,
-										backgroundColor: cardBg,
-										opacity: phoneVerifyLoading ? 0.7 : 1,
-									},
-								]}
-							>
-								{phoneVerifyLoading ? (
-									<ActivityIndicator color={primaryColor} />
-								) : (
-									<Text
-										style={[styles.btnSecondaryText, { color: primaryColor }]}
-									>
-										{t("settings.verifyPhoneBtn")}
-									</Text>
-								)}
-							</Pressable>
-						</>
-					)}
-				</Section>
-
+				{/* App version */}
 				<Section
 					title={t("settings.aboutSection")}
 					icon="information-circle-outline"
@@ -488,24 +196,65 @@ export default function SettingsScreen() {
 						</View>
 					</View>
 				</Section>
-
-				<Section
-					title={t("settings.dangerZone")}
-					icon="warning-outline"
-					danger
-					{...sectionColors}
-				>
-					<Text style={[styles.dangerDesc, { color: mutedColor }]}>
-						{t("settings.dangerDesc")}
-					</Text>
-					<Pressable onPress={handleDeleteAccount} style={styles.deleteBtn}>
-						<Ionicons name="trash-outline" size={16} color="#dc2626" />
-						<Text style={styles.deleteText}>
-							{t("settings.deleteMyAccount")}
-						</Text>
-					</Pressable>
-				</Section>
 			</ScrollView>
+
+			{/* Language picker modal */}
+			<Modal
+				visible={langPickerOpen}
+				transparent
+				animationType="slide"
+				onRequestClose={() => setLangPickerOpen(false)}
+			>
+				<Pressable
+					style={styles.modalOverlay}
+					onPress={() => setLangPickerOpen(false)}
+				/>
+				<View style={[styles.modalSheet, { backgroundColor: cardBg }]}>
+					<View
+						style={[styles.modalHandle, { backgroundColor: borderColor }]}
+					/>
+					<Text style={[styles.modalTitle, { color: textColor }]}>
+						{t("settings.language")}
+					</Text>
+					{LANGUAGES.map((lang, i) => (
+						<Pressable
+							key={lang.code}
+							onPress={() => changeLanguage(lang.code)}
+							style={[
+								styles.langOption,
+								{
+									borderBottomColor:
+										i < LANGUAGES.length - 1 ? borderColor : "transparent",
+								},
+							]}
+						>
+							<Text style={styles.langFlag}>{lang.flag}</Text>
+							<Text style={[styles.langLabel, { color: textColor, flex: 1 }]}>
+								{lang.label}
+							</Text>
+							<View
+								style={[
+									styles.radioOuter,
+									{
+										borderColor:
+											currentLang === lang.code ? primaryColor : mutedColor,
+									},
+								]}
+							>
+								{currentLang === lang.code && (
+									<View
+										style={[
+											styles.radioInner,
+											{ backgroundColor: primaryColor },
+										]}
+									/>
+								)}
+							</View>
+						</Pressable>
+					))}
+					<View style={{ height: 24 }} />
+				</View>
+			</Modal>
 		</SafeAreaView>
 	);
 }
@@ -561,66 +310,29 @@ const styles = StyleSheet.create({
 		paddingBottom: 16,
 		gap: 12,
 	},
-	fieldGroup: { gap: 6 },
-	fieldLabel: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
-	},
-	inputRow: {
+	selectRow: {
 		flexDirection: "row",
 		alignItems: "center",
 		borderRadius: 10,
 		borderWidth: 1.5,
 		paddingHorizontal: 12,
-		paddingVertical: 11,
+		paddingVertical: 13,
 	},
-	input: {
+	selectValue: {
 		flex: 1,
 		fontSize: 15,
 		fontFamily: Fonts.body,
 	},
-	helperText: {
-		fontSize: 12,
-		fontFamily: Fonts.body,
-		lineHeight: 18,
-	},
-	btn: {
-		borderRadius: 10,
-		paddingVertical: 13,
-		alignItems: "center",
-		marginTop: 4,
-	},
-	btnText: {
-		color: "#fff",
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
-	},
-	btnSecondary: {
-		borderRadius: 10,
-		paddingVertical: 13,
-		alignItems: "center",
-		marginTop: 4,
-		borderWidth: 1,
-	},
-	btnSecondaryText: {
-		fontSize: 15,
-		fontFamily: Fonts.displayBold,
-	},
-	currentRow: {
+	switchRow: {
 		flexDirection: "row",
-		justifyContent: "space-between",
 		alignItems: "center",
 		borderWidth: 1,
 		borderRadius: 10,
 		paddingHorizontal: 12,
-		paddingVertical: 10,
+		paddingVertical: 11,
 	},
-	currentLabel: {
-		fontSize: 12,
-		fontFamily: Fonts.bodySemibold,
-	},
-	currentValue: {
-		fontSize: 13,
+	switchLabel: {
+		fontSize: 15,
 		fontFamily: Fonts.body,
 	},
 	infoRow: {
@@ -645,24 +357,59 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		fontFamily: Fonts.displayBold,
 	},
-	dangerDesc: {
-		fontSize: 13,
-		fontFamily: Fonts.body,
-		lineHeight: 20,
+	/* Modal */
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0,0,0,0.4)",
 	},
-	deleteBtn: {
+	modalSheet: {
+		borderTopLeftRadius: 20,
+		borderTopRightRadius: 20,
+		paddingHorizontal: 20,
+		paddingTop: 12,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: -4 },
+		shadowOpacity: 0.12,
+		shadowRadius: 12,
+		elevation: 16,
+	},
+	modalHandle: {
+		width: 36,
+		height: 4,
+		borderRadius: 2,
+		alignSelf: "center",
+		marginBottom: 16,
+	},
+	modalTitle: {
+		fontSize: 17,
+		fontFamily: Fonts.displayBold,
+		marginBottom: 12,
+	},
+	langOption: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 8,
-		borderWidth: 1.5,
-		borderColor: "#dc262650",
-		borderRadius: 10,
-		paddingHorizontal: 14,
-		paddingVertical: 11,
+		paddingVertical: 16,
+		borderBottomWidth: 1,
+		gap: 14,
 	},
-	deleteText: {
-		color: "#dc2626",
-		fontSize: 14,
-		fontFamily: Fonts.displayBold,
+	langFlag: {
+		fontSize: 22,
+	},
+	langLabel: {
+		fontSize: 16,
+		fontFamily: Fonts.body,
+	},
+	radioOuter: {
+		width: 20,
+		height: 20,
+		borderRadius: 10,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	radioInner: {
+		width: 10,
+		height: 10,
+		borderRadius: 5,
 	},
 });
