@@ -10,19 +10,29 @@ export function getProvider(name: ProviderName): PaymentProvider {
 		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 		if (!key || !webhookSecret) {
 			throw new Error(
-				"Stripe not configured: set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET",
+				"Stripe non configuré : définir STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET",
 			);
 		}
 		return new StripeProvider(key, webhookSecret);
 	}
 
-	const key = process.env.NOTCHPAY_API_KEY;
-	if (!key) {
-		throw new Error("NotchPay not configured: set NOTCHPAY_API_KEY");
+	const publicKey = process.env.NOTCHPAY_PUBLIC_KEY;
+	if (!publicKey) {
+		throw new Error("NotchPay non configuré : définir NOTCHPAY_PUBLIC_KEY");
 	}
 	return new NotchPayProvider(
-		key,
-		process.env.NOTCHPAY_WEBHOOK_SECRET,
+		publicKey,
+		process.env.NOTCHPAY_BASE_URL ?? "https://api.notchpay.co",
+	);
+}
+
+export function getNotchPayProvider(): NotchPayProvider {
+	const publicKey = process.env.NOTCHPAY_PUBLIC_KEY;
+	if (!publicKey) {
+		throw new Error("NotchPay non configuré : définir NOTCHPAY_PUBLIC_KEY");
+	}
+	return new NotchPayProvider(
+		publicKey,
 		process.env.NOTCHPAY_BASE_URL ?? "https://api.notchpay.co",
 	);
 }

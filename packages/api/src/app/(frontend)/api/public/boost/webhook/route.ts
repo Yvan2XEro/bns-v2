@@ -1,3 +1,3 @@
-// Legacy webhook endpoint — kept for in-flight NotchPay payments created before the
-// provider-specific routes were added. New payments use /webhook/notchpay instead.
-export { POST } from "./notchpay/route";
+// NotchPay n'utilise pas de POST webhook — voir /api/public/boost/callback (GET).
+// Ce fichier est conservé uniquement pour les paiements Stripe.
+export { POST } from "./stripe/route";

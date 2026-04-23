@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 			listingId?: string;
 			duration?: "7" | "14" | "30";
 			provider?: ProviderName;
-			/** Deep-link base URL, e.g. "buynsellem://boost/callback" */
+			/** Deep-link base URL, ex: "buynsellem://boost/callback" */
 			returnUrl?: string;
 		};
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
 		if (!listingId || !duration || !PRICES[duration]) {
 			return Response.json(
-				{ error: "Missing or invalid listingId / duration" },
+				{ error: "listingId et duration (7|14|30) sont requis" },
 				{ status: 400 },
 			);
 		}
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 		});
 
 		if (!listing) {
-			return Response.json({ error: "Listing not found" }, { status: 404 });
+			return Response.json({ error: "Annonce introuvable" }, { status: 404 });
 		}
 
 		const sellerId =
@@ -57,7 +57,6 @@ export async function POST(request: Request) {
 		const amount = PRICES[duration]!;
 		const serverUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? "";
 
-		// Resolve provider — fall back to notchpay if requested provider is not configured
 		let provider: ReturnType<typeof getProvider>;
 		try {
 			provider = getProvider(providerName);
@@ -78,25 +77,24 @@ export async function POST(request: Request) {
 		});
 
 		const reference = `BOOST-${boostPayment.id}`;
-		const callbackUrl = `${serverUrl}/api/public/boost/webhook/${provider.id}`;
 
-		// For browser-redirect flows: proxy the deep-link return through our server
-		// so the browser can safely open a custom URL scheme.
-		let resolvedReturnUrl: string | undefined;
-		if (returnUrl) {
-			const ret = new URL(`${serverUrl}/api/public/boost/return`);
-			ret.searchParams.set("appReturnUrl", returnUrl);
-			ret.searchParams.set("listingId", listingId);
-			resolvedReturnUrl = ret.toString();
-		}
+		// Pour NotchPay : le callback est une redirection GET vers notre serveur.
+		// On y inclut appReturnUrl et listingId pour le retour vers l'app.
+		const callbackUrl = buildNotchPayCallbackUrl(
+			serverUrl,
+			listingId,
+			returnUrl,
+		);
+
+		// Pour Stripe : le webhook est un POST vers notre endpoint dédié.
+		const stripeWebhookUrl = `${serverUrl}/api/public/boost/webhook/stripe`;
 
 		const result = await provider.createPayment({
 			reference,
 			amount,
 			currency: "XAF",
 			description: `Boost annonce: ${listing.title}`,
-			callbackUrl,
-			returnUrl: resolvedReturnUrl,
+			callbackUrl: provider.id === "stripe" ? stripeWebhookUrl : callbackUrl,
 			customer: { email: user.email },
 		});
 
@@ -117,9 +115,20 @@ export async function POST(request: Request) {
 		});
 	} catch (err) {
 		console.error("Boost payment error:", err);
-		return Response.json(
-			{ error: "Failed to create payment" },
-			{ status: 500 },
-		);
+		return Response.json({ error: "Erreur lors du paiement" }, { status: 500 });
 	}
+}
+
+function buildNotchPayCallbackUrl(
+	serverUrl: string,
+	listingId: string,
+	appReturnUrl: string | undefined,
+): string {
+	const url = new URL(`${serverUrl}/api/public/boost/callback`);
+	url.searchParams.set("listingId", listingId);
+	if (appReturnUrl) {
+		url.searchParams.set("appReturnUrl", appReturnUrl);
+	}
+	// NotchPay ajoute automatiquement ?reference=xxx à cette URL
+	return url.toString();
 }
