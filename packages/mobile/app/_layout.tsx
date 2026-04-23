@@ -18,14 +18,16 @@ import {
 	DefaultTheme,
 	ThemeProvider,
 } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { StripeProvider } from "@stripe/stripe-react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
+import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Appearance, Linking } from "react-native";
+import { Appearance } from "react-native";
 import i18n from "../src/lib/i18n";
 import { LANG_STORAGE_KEY, THEME_STORAGE_KEY } from "./settings";
 import "react-native-reanimated";
@@ -35,7 +37,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
-import { AlertProvider } from "@/src/contexts/AlertContext";
+import { AlertProvider, useAlert } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
 import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
@@ -44,6 +46,8 @@ import {
 	registerForPushNotificationsAsync,
 	syncPushTokenWithBackend,
 } from "@/src/lib/notifications";
+
+const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -101,15 +105,18 @@ export default function RootLayout() {
 			<KeyboardProvider>
 				<QueryClientProvider client={queryClient}>
 					<AuthProvider>
-						<NovuWrapper>
-							<ChatProvider>
-								<AlertProvider>
-									<PushTokenRegistrar />
-									<PushNotificationHandler />
-									<RootLayoutNav />
-								</AlertProvider>
-							</ChatProvider>
-						</NovuWrapper>
+						<StripeProvider publishableKey={STRIPE_PK}>
+							<NovuWrapper>
+								<ChatProvider>
+									<AlertProvider>
+										<PushTokenRegistrar />
+										<PushNotificationHandler />
+										<BoostDeepLinkHandler />
+										<RootLayoutNav />
+									</AlertProvider>
+								</ChatProvider>
+							</NovuWrapper>
+						</StripeProvider>
 					</AuthProvider>
 				</QueryClientProvider>
 			</KeyboardProvider>
@@ -253,6 +260,52 @@ function PushNotificationHandler() {
 			pendingUrlRef.current = null;
 		}
 	}, [isReady]);
+
+	return null;
+}
+
+// ─── BoostDeepLinkHandler ─────────────────────────────────────────────────────
+// Listens for boost payment return deep-links:
+//   buynsellem://boost/callback?status=success&listingId=xxx
+// These are triggered when the user finishes/cancels NotchPay checkout and our
+// /api/public/boost/return page redirects back to the app.
+
+function BoostDeepLinkHandler() {
+	const { showSuccess, showError } = useAlert();
+	const queryClient = useQueryClient();
+
+	const handleUrl = (url: string) => {
+		if (!url.includes("boost/callback")) return;
+
+		const parsed = Linking.parse(url);
+		const status = parsed.queryParams?.status as string | undefined;
+		const listingId = parsed.queryParams?.listingId as string | undefined;
+
+		if (status === "success") {
+			if (listingId) {
+				void queryClient.invalidateQueries({
+					queryKey: ["listing", listingId],
+				});
+			}
+			showSuccess(
+				"Boost activé 🚀",
+				"Votre annonce est maintenant mise en avant.",
+			);
+		} else if (status === "failed") {
+			showError("Paiement échoué", "Le paiement n'a pas pu être traité.");
+		}
+	};
+
+	useEffect(() => {
+		// Handle cold-start (app launched from deep link)
+		Linking.getInitialURL().then((url) => {
+			if (url) handleUrl(url);
+		});
+
+		// Handle foreground deep links
+		const sub = Linking.addEventListener("url", ({ url }) => handleUrl(url));
+		return () => sub.remove();
+	}, [handleUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return null;
 }

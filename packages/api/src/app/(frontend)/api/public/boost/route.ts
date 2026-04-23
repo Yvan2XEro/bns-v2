@@ -1,5 +1,12 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { getProvider, type ProviderName } from "@/lib/payments";
+
+const PRICES: Record<string, number> = {
+	"7": 500,
+	"14": 900,
+	"30": 1500,
+};
 
 export async function POST(request: Request) {
 	try {
@@ -8,9 +15,28 @@ export async function POST(request: Request) {
 		if (!user) {
 			return Response.json({ error: "Unauthorized" }, { status: 401 });
 		}
-		const body = await request.json();
-		const { listingId, duration } = body;
-		const userId = user.id;
+
+		const body = (await request.json()) as {
+			listingId?: string;
+			duration?: "7" | "14" | "30";
+			provider?: ProviderName;
+			/** Deep-link base URL, e.g. "buynsellem://boost/callback" */
+			returnUrl?: string;
+		};
+
+		const {
+			listingId,
+			duration,
+			provider: providerName = "notchpay",
+			returnUrl,
+		} = body;
+
+		if (!listingId || !duration || !PRICES[duration]) {
+			return Response.json(
+				{ error: "Missing or invalid listingId / duration" },
+				{ status: 400 },
+			);
+		}
 
 		const listing = await payload.findByID({
 			collection: "listings",
@@ -21,76 +47,76 @@ export async function POST(request: Request) {
 			return Response.json({ error: "Listing not found" }, { status: 404 });
 		}
 
-		const prices: Record<string, number> = {
-			"7": 500,
-			"14": 900,
-			"30": 1500,
-		};
+		const sellerId =
+			typeof listing.seller === "object" ? listing.seller?.id : listing.seller;
 
-		const amount = prices[duration] || 500;
+		if (sellerId !== user.id) {
+			return Response.json({ error: "Forbidden" }, { status: 403 });
+		}
+
+		const amount = PRICES[duration]!;
+		const serverUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? "";
+
+		// Resolve provider — fall back to notchpay if requested provider is not configured
+		let provider: ReturnType<typeof getProvider>;
+		try {
+			provider = getProvider(providerName);
+		} catch {
+			provider = getProvider("notchpay");
+		}
 
 		const boostPayment = await payload.create({
 			collection: "boost-payments",
 			data: {
 				listing: listingId,
-				user: userId,
+				user: user.id,
 				amount,
 				duration,
 				status: "pending",
-				paymentProvider: "notchpay",
+				paymentProvider: provider.id as "notchpay" | "stripe",
 			},
 		});
 
-		const notchPayApiKey = process.env.NOTCHPAY_API_KEY;
-		const notchPayBaseUrl =
-			process.env.NOTCHPAY_BASE_URL || "https://api.notchpay.co";
+		const reference = `BOOST-${boostPayment.id}`;
+		const callbackUrl = `${serverUrl}/api/public/boost/webhook/${provider.id}`;
 
-		if (!notchPayApiKey) {
-			return Response.json({
-				paymentId: boostPayment.id,
-				status: "pending",
-				message: "Payment configuration missing",
-			});
+		// For browser-redirect flows: proxy the deep-link return through our server
+		// so the browser can safely open a custom URL scheme.
+		let resolvedReturnUrl: string | undefined;
+		if (returnUrl) {
+			const ret = new URL(`${serverUrl}/api/public/boost/return`);
+			ret.searchParams.set("appReturnUrl", returnUrl);
+			ret.searchParams.set("listingId", listingId);
+			resolvedReturnUrl = ret.toString();
 		}
 
-		const paymentResponse = await fetch(`${notchPayBaseUrl}/payments`, {
-			method: "POST",
-			headers: {
-				Authorization: notchPayApiKey,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				reference: `BOOST-${boostPayment.id}`,
-				amount: amount,
-				currency: "XAF",
-				description: `Boost listing: ${listing.title}`,
-				callback_url: `${process.env.PAYLOAD_PUBLIC_SERVER_URL}/api/public/boost/webhook`,
-				customer: {
-					email: user.email,
-				},
-			}),
+		const result = await provider.createPayment({
+			reference,
+			amount,
+			currency: "XAF",
+			description: `Boost annonce: ${listing.title}`,
+			callbackUrl,
+			returnUrl: resolvedReturnUrl,
+			customer: { email: user.email },
 		});
 
-		const paymentData = await paymentResponse.json();
-
-		if (paymentData.checkout_url) {
-			await payload.update({
-				collection: "boost-payments",
-				id: boostPayment.id,
-				data: {
-					paymentReference: paymentData.reference,
-					paymentUrl: paymentData.checkout_url,
-				},
-			});
-		}
+		await payload.update({
+			collection: "boost-payments",
+			id: boostPayment.id,
+			data: {
+				paymentReference: result.providerReference,
+				paymentUrl: result.checkoutUrl ?? null,
+			},
+		});
 
 		return Response.json({
 			paymentId: boostPayment.id,
-			paymentUrl: paymentData.checkout_url,
-			paymentReference: paymentData.reference,
+			provider: provider.id,
+			checkoutUrl: result.checkoutUrl,
+			clientSecret: result.clientSecret ?? null,
 		});
-	} catch (error) {
-		console.error("Boost payment error:", error);
+	} catch (err) {
+		console.error("Boost payment error:", err);
 		return Response.json(
 			{ error: "Failed to create payment" },
 			{ status: 500 },

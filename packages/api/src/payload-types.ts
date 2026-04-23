@@ -374,7 +374,7 @@ export interface BoostPayment {
   amount: number;
   duration: '7' | '14' | '30';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
-  paymentProvider: 'notchpay';
+  paymentProvider: 'notchpay' | 'stripe';
   paymentReference?: string | null;
   paymentUrl?: string | null;
   createdAt: string;

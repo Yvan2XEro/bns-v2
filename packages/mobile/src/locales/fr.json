@@ -679,14 +679,20 @@
 		"mtnMoMo": "MTN Mobile Money",
 		"orangeMoney": "Orange Money",
 		"paymentSuccess": "Boost activé ! Votre annonce est maintenant mise en avant.",
-		"paymentFailed": "Paiement échoué. Veuillez réessayer.",
+		"paymentFailed": "Le paiement n'a pas pu être traité. Veuillez réessayer.",
 		"termsNote": "Aucun remboursement après activation du boost.",
 		"boostTitle": "Boostez votre annonce",
 		"boostSubtitle": "Mettez votre annonce en avant et obtenez plus de visibilité",
 		"cancelBtn": "Annuler",
 		"payBtn": "Payer {{amount}} XAF",
 		"popularBadge": "Populaire",
-		"errorTitle": "Erreur"
+		"errorTitle": "Erreur",
+		"noClientSecret": "Erreur de configuration du paiement.",
+		"noCheckoutUrl": "URL de paiement non disponible.",
+		"applePayLabel": "Boost Annonce",
+		"applePayBtn": "Payer avec Apple Pay",
+		"successTitle": "Boost activé 🚀",
+		"successMessage": "Votre annonce est maintenant mise en avant."
 	},
 	"report": {
 		"title": "Signaler",
