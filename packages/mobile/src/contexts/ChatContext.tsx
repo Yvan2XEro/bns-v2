@@ -1,9 +1,8 @@
 import { ChatClient } from "@bns/chat-client";
 import type React from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useAuth } from "@/src/lib/auth";
-
-const CHAT_URL = process.env.EXPO_PUBLIC_CHAT_URL ?? "http://localhost:4000";
 
 type ChatContextValue = {
 	chatClient: ChatClient | null;
@@ -17,6 +16,8 @@ const ChatContext = createContext<ChatContextValue>({
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
 	const { user, token } = useAuth();
+	const { chatUrl } = useAppConfig();
+	const CHAT_URL = chatUrl ?? "http://localhost:4000";
 	const [chatClient, setChatClient] = useState<ChatClient | null>(null);
 	const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 	const clientRef = useRef<ChatClient | null>(null);
@@ -53,7 +54,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 			clientRef.current = null;
 			setChatClient(null);
 		};
-	}, [user?.id, token, user]);
+	}, [user?.id, token, user, CHAT_URL]);
 
 	return (
 		<ChatContext.Provider value={{ chatClient, onlineUsers }}>

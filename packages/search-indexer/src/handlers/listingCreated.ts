@@ -81,6 +81,17 @@ export function transformListing(
 				.filter(Boolean)
 		: [];
 
+	// Tags are populated objects at depth=2: { id, name, slug, emoji }
+	const tags = Array.isArray(listing.tags)
+		? (listing.tags as unknown[])
+				.map((t) =>
+					typeof t === "object" && t !== null
+						? ((t as Record<string, unknown>).slug as string | undefined)
+						: undefined,
+				)
+				.filter((s): s is string => !!s)
+		: [];
+
 	const doc: ListingDocument = {
 		id: listing.id as string,
 		title: listing.title as string,
@@ -97,6 +108,7 @@ export function transformListing(
 				: (seller as string),
 		status: listing.status as string,
 		condition: (listing.condition as string) || null,
+		tags,
 		boostedUntil: (listing.boostedUntil as string) || null,
 		views: (listing.views as number) || 0,
 		images,

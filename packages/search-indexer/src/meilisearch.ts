@@ -35,6 +35,7 @@ export type ListingDocument = {
 	sellerId: string;
 	status: string;
 	condition: string | null;
+	tags: string[];
 	boostedUntil: string | null;
 	views: number;
 	images: unknown[];
@@ -143,12 +144,19 @@ export async function configureIndex(): Promise<void> {
 		"location",
 		"boostedUntil",
 		"sellerId",
+		"tags",
 		...dynamicAttrs,
 	];
 
 	try {
 		await index.updateSettings({
-			searchableAttributes: ["title", "description", "location", "category"],
+			searchableAttributes: [
+				"title",
+				"description",
+				"location",
+				"category",
+				"tags",
+			],
 			filterableAttributes,
 			sortableAttributes: [
 				"price",

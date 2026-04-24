@@ -18,7 +18,6 @@ import {
 	DefaultTheme,
 	ThemeProvider,
 } from "@react-navigation/native";
-import { StripeProvider } from "@stripe/stripe-react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
@@ -28,6 +27,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { Appearance } from "react-native";
+import {
+	AppConfigProvider,
+	useAppConfig,
+} from "@/src/contexts/AppConfigContext";
 import i18n from "../src/lib/i18n";
 import { LANG_STORAGE_KEY, THEME_STORAGE_KEY } from "./settings";
 import "react-native-reanimated";
@@ -46,8 +49,6 @@ import {
 	registerForPushNotificationsAsync,
 	syncPushTokenWithBackend,
 } from "@/src/lib/notifications";
-
-const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -105,7 +106,7 @@ export default function RootLayout() {
 			<KeyboardProvider>
 				<QueryClientProvider client={queryClient}>
 					<AuthProvider>
-						<StripeProvider publishableKey={STRIPE_PK}>
+						<AppConfigProvider>
 							<NovuWrapper>
 								<ChatProvider>
 									<AlertProvider>
@@ -116,7 +117,7 @@ export default function RootLayout() {
 									</AlertProvider>
 								</ChatProvider>
 							</NovuWrapper>
-						</StripeProvider>
+						</AppConfigProvider>
 					</AuthProvider>
 				</QueryClientProvider>
 			</KeyboardProvider>
@@ -132,7 +133,8 @@ export default function RootLayout() {
 
 function NovuWrapper({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
-	const appId = process.env.EXPO_PUBLIC_NOVU_APP_ID ?? "";
+	const { novuAppId } = useAppConfig();
+	const appId = novuAppId ?? "";
 	const [ready, setReady] = useState(false);
 
 	const { data } = useQuery({

@@ -26,6 +26,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "~/components/ui/dialog";
+import { useAppConfig } from "~/hooks/use-app-config";
 import type { BoostDuration } from "~/types";
 
 const boostPrices: Record<BoostDuration, number> = {
@@ -34,10 +35,16 @@ const boostPrices: Record<BoostDuration, number> = {
 	"30": 1500,
 };
 
-// Singleton — avoids re-creating the Stripe instance on every render
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-	? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-	: null;
+// Module-level cache keyed by publishable key — one Stripe instance per key
+const stripeInstances = new Map<string, ReturnType<typeof loadStripe>>();
+
+function getStripePromise(key: string | null) {
+	if (!key) return null;
+	if (!stripeInstances.has(key)) {
+		stripeInstances.set(key, loadStripe(key));
+	}
+	return stripeInstances.get(key)!;
+}
 
 type PaymentMethod = "mobilemoney" | "card";
 type Step = "select" | "stripe-form";
@@ -56,6 +63,8 @@ interface BoostDialogProps {
 
 export function BoostDialog({ listingId, children }: BoostDialogProps) {
 	const t = useTranslations("Boost");
+	const { stripePublishableKey } = useAppConfig();
+	const stripePromise = getStripePromise(stripePublishableKey);
 	const [open, setOpen] = useState(false);
 	const [duration, setDuration] = useState<BoostDuration>("14");
 	const [paymentMethod, setPaymentMethod] =

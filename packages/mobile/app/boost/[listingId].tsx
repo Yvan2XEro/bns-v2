@@ -17,11 +17,11 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
 
 const DEEP_LINK_RETURN = "buynsellem://boost/callback";
-const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 interface BoostPaymentResponse {
 	paymentId: string;
@@ -36,6 +36,7 @@ export default function BoostModal() {
 	const { showError, showSuccess } = useAlert();
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
+	const { stripePublishableKey } = useAppConfig();
 	const [selected, setSelected] = useState(1);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [applePayAvailable, setApplePayAvailable] = useState(false);
@@ -45,9 +46,9 @@ export default function BoostModal() {
 
 	// Detect Apple Pay availability once on mount (iOS + Stripe configured)
 	useEffect(() => {
-		if (Platform.OS !== "ios" || !STRIPE_PK) return;
+		if (Platform.OS !== "ios" || !stripePublishableKey) return;
 		isPlatformPaySupported().then(setApplePayAvailable);
-	}, [isPlatformPaySupported]);
+	}, [isPlatformPaySupported, stripePublishableKey]);
 
 	const canUseApplePay = applePayAvailable;
 
