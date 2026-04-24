@@ -54,11 +54,12 @@ export async function GET(request: Request) {
 		);
 	}
 
-	// Retour web
-	const webTarget = listingId
+	// Retour web — redirection vers le frontend (pas le backend)
+	const webUrl = process.env.PUBLIC_WEB_URL ?? "http://localhost:3001";
+	const webPath = listingId
 		? `/listing/${listingId}?boostStatus=${status}`
 		: "/";
-	return Response.redirect(webTarget, 302);
+	return Response.redirect(`${webUrl}${webPath}`, 302);
 }
 
 async function activateBoost(reference: string): Promise<void> {
