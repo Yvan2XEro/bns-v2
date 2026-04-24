@@ -106,6 +106,7 @@ services:
       NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
       NOVU_API_URL: ${NOVU_API_URL:-https://api.novu.co}
       NOVU_EXPO_INTEGRATION_IDENTIFIER: ${NOVU_EXPO_INTEGRATION_IDENTIFIER:-}
+      CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://${CHAT_DOMAIN:-chat.buynsellem.com}}
       PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-https://${WEB_DOMAIN:-buynsellem.com}}
     volumes:
       - api_media:/app/packages/api/media
