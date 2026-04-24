@@ -11,7 +11,7 @@ async function getFavorites(): Promise<{
 	favoriteIds: string[];
 }> {
 	try {
-		const res = await serverFetch("/api/favorites?depth=1&limit=100");
+		const res = await serverFetch("/api/favorites?depth=2&limit=100");
 		if (!res.ok) return { listings: [], favoriteIds: [] };
 
 		const json = await res.json();

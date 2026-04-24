@@ -37,7 +37,7 @@ export function useFavorites() {
 	return useQuery({
 		queryKey: ["favorites"],
 		queryFn: () =>
-			api.get<FavoritesResponse>("/api/favorites?limit=200&depth=1"),
+			api.get<FavoritesResponse>("/api/favorites?limit=200&depth=2"),
 		enabled: !!user && !isLoading,
 	});
 }

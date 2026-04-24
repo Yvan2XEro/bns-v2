@@ -670,6 +670,13 @@
 		"noCheckoutUrl": "Payment URL not available.",
 		"applePayLabel": "Listing Boost",
 		"applePayBtn": "Pay with Apple Pay",
+		"mobileMoney": "Mobile Money",
+		"mobileMoneyDesc": "Orange Money, MTN MoMo",
+		"card": "Credit / Debit Card",
+		"cardDesc": "Visa, Mastercard",
+		"cardUnavailable": "Unavailable",
+		"cardPayBtn": "Pay by card {{amount}} XAF",
+		"loginRequired": "You must be logged in to boost a listing.",
 		"successTitle": "Boost activated 🚀",
 		"successMessage": "Your listing is now featured."
 	},

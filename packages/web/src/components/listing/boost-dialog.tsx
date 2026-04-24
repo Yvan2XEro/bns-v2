@@ -103,6 +103,10 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 				});
 
 				if (!res.ok) {
+					if (res.status === 401) {
+						window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+						return;
+					}
 					const err = await res.json().catch(() => ({}));
 					setError(err.error ?? t("genericError"));
 					return;

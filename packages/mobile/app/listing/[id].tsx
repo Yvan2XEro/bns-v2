@@ -639,6 +639,18 @@ export default function ListingDetail() {
 				]}
 			>
 				<View style={styles.actionButtons}>
+					{listing.status === "published" &&
+						!(
+							listing.boostedUntil &&
+							new Date(listing.boostedUntil) > new Date()
+						) && (
+							<Pressable
+								onPress={() => router.push(`/boost/${id}`)}
+								style={styles.boostIconBtn}
+							>
+								<Ionicons name="rocket-outline" size={20} color="#fff" />
+							</Pressable>
+						)}
 					{!isOwner && (
 						<Pressable
 							onPress={handleMessage}
@@ -661,19 +673,6 @@ export default function ListingDetail() {
 							</Text>
 						</Pressable>
 					)}
-					{listing.status === "published" &&
-						!(
-							listing.boostedUntil &&
-							new Date(listing.boostedUntil) > new Date()
-						) && (
-							<Pressable
-								onPress={() => router.push(`/boost/${id}`)}
-								style={styles.boostBtn}
-							>
-								<Ionicons name="rocket-outline" size={18} color="#fff" />
-								<Text style={styles.boostBtnText}>{t("listing.boost")}</Text>
-							</Pressable>
-						)}
 					{isOwner && (
 						<Pressable
 							onPress={() => router.push(`/listing/${id}/edit`)}
@@ -929,7 +928,14 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 		backgroundColor: "#f59e0b",
 	},
-	boostBtnText: { color: "#fff", fontSize: 16, fontFamily: Fonts.displayBold },
+	boostIconBtn: {
+		width: 52,
+		height: 52,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: "#f59e0b",
+	},
 	editBtn: {
 		flex: 1,
 		flexDirection: "row",

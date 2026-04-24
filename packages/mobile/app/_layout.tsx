@@ -52,6 +52,7 @@ import {
 
 SplashScreen.preventAutoHideAsync();
 
+console.log(process.env.EXPO_PUBLIC_CHAT_URL, process.env.EXPO_PUBLIC_API_URL);
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {

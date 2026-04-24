@@ -1,5 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { PlatformPay, usePlatformPay } from "@stripe/stripe-react-native";
+import {
+	PlatformPay,
+	usePaymentSheet,
+	usePlatformPay,
+} from "@stripe/stripe-react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -18,7 +22,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
-import { api } from "@/src/lib/api";
+import { ApiError, api } from "@/src/lib/api";
+import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
 const DEEP_LINK_RETURN = "buynsellem://boost/callback";
@@ -30,6 +35,8 @@ interface BoostPaymentResponse {
 	clientSecret?: string;
 }
 
+type PaymentMethod = "notchpay" | "stripe";
+
 export default function BoostModal() {
 	const { listingId } = useLocalSearchParams<{ listingId: string }>();
 	const isDark = useColorScheme() === "dark";
@@ -37,14 +44,25 @@ export default function BoostModal() {
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const { stripePublishableKey } = useAppConfig();
+	const { user } = useAuth();
 	const [selected, setSelected] = useState(1);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [applePayAvailable, setApplePayAvailable] = useState(false);
+	const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("notchpay");
 
+	const stripeAvailable = !!stripePublishableKey;
 	const { isPlatformPaySupported, confirmPlatformPayPayment } =
 		usePlatformPay();
+	const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
 
-	// Detect Apple Pay availability once on mount (iOS + Stripe configured)
+	// Redirect to login if not authenticated
+	useEffect(() => {
+		if (!user) {
+			router.replace("/auth/login");
+		}
+	}, [user]);
+
+	// Detect Apple Pay availability (iOS + Stripe configured)
 	useEffect(() => {
 		if (Platform.OS !== "ios" || !stripePublishableKey) return;
 		isPlatformPaySupported().then(setApplePayAvailable);
@@ -72,7 +90,11 @@ export default function BoostModal() {
 
 	const selectedPlan = PLANS[selected]!;
 
-	// ── Apple Pay (Stripe) flow — iOS only ────────────────────────────────────
+	function handle401() {
+		router.replace("/auth/login");
+	}
+
+	// ── Apple Pay (Stripe) ────────────────────────────────────────────────────
 
 	const handleApplePay = async () => {
 		if (!listingId) return;
@@ -101,26 +123,78 @@ export default function BoostModal() {
 			});
 
 			if (error) {
-				// User cancelled the sheet — don't show an error toast
-				if (error.code !== "Canceled") {
+				if (error.code !== "Canceled")
 					showError(t("boost.errorTitle"), error.message);
-				}
 				return;
 			}
 
-			// Payment succeeded — webhook will activate the boost asynchronously
 			await queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
 			showSuccess(t("boost.successTitle"), t("boost.successMessage"));
 			router.dismiss();
 		} catch (err: unknown) {
-			const msg = err instanceof Error ? err.message : t("common.error");
-			showError(t("boost.errorTitle"), msg);
+			if (err instanceof ApiError && err.status === 401) {
+				handle401();
+				return;
+			}
+			showError(
+				t("boost.errorTitle"),
+				err instanceof Error ? err.message : t("common.error"),
+			);
 		} finally {
 			setIsProcessing(false);
 		}
 	};
 
-	// ── NotchPay browser flow — Android + iOS fallback ────────────────────────
+	// ── Stripe Payment Sheet (card, non-Apple Pay) ────────────────────────────
+
+	const handleStripeCard = async () => {
+		if (!listingId) return;
+		setIsProcessing(true);
+		try {
+			const data = await api.post<BoostPaymentResponse>("/api/public/boost", {
+				listingId,
+				duration: selectedPlan.duration,
+				provider: "stripe",
+			});
+
+			if (!data.clientSecret) throw new Error(t("boost.noClientSecret"));
+
+			const { error: initError } = await initPaymentSheet({
+				paymentIntentClientSecret: data.clientSecret,
+				merchantDisplayName: "Buy'N'Sellem",
+				returnURL: DEEP_LINK_RETURN,
+			});
+
+			if (initError) {
+				showError(t("boost.errorTitle"), initError.message);
+				return;
+			}
+
+			const { error: payError } = await presentPaymentSheet();
+			if (payError) {
+				if (payError.code !== "Canceled")
+					showError(t("boost.errorTitle"), payError.message);
+				return;
+			}
+
+			await queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
+			showSuccess(t("boost.successTitle"), t("boost.successMessage"));
+			router.dismiss();
+		} catch (err: unknown) {
+			if (err instanceof ApiError && err.status === 401) {
+				handle401();
+				return;
+			}
+			showError(
+				t("boost.errorTitle"),
+				err instanceof Error ? err.message : t("common.error"),
+			);
+		} finally {
+			setIsProcessing(false);
+		}
+	};
+
+	// ── NotchPay browser flow ─────────────────────────────────────────────────
 
 	const { mutate: boostWithNotchPay, isPending: isNotchPending } = useMutation({
 		mutationFn: async () => {
@@ -133,8 +207,6 @@ export default function BoostModal() {
 
 			if (!data.checkoutUrl) throw new Error(t("boost.noCheckoutUrl"));
 
-			// openAuthSessionAsync closes automatically when the browser navigates
-			// to a URL matching the scheme — our /boost/callback page triggers this.
 			const result = await WebBrowser.openAuthSessionAsync(
 				data.checkoutUrl,
 				DEEP_LINK_RETURN,
@@ -142,7 +214,6 @@ export default function BoostModal() {
 			);
 
 			if (result.type === "success") {
-				// Deep link was intercepted — parse status from callback URL
 				const qs = result.url.split("?")[1] ?? "";
 				const searchParams = new URLSearchParams(qs);
 				const status = searchParams.get("status");
@@ -155,10 +226,7 @@ export default function BoostModal() {
 				} else if (status === "failed") {
 					showError(t("boost.errorTitle"), t("boost.paymentFailed"));
 				}
-				// pending: no action, payment is still processing
 			} else {
-				// Browser closed without deep link interception (user closed manually
-				// or deep link wasn't caught). Query the real payment status.
 				try {
 					const payment = await api.get<{ status: string }>(
 						`/api/boost-payments/${data.paymentId}`,
@@ -170,21 +238,28 @@ export default function BoostModal() {
 						showSuccess(t("boost.successTitle"), t("boost.successMessage"));
 						router.dismiss();
 					}
-					// failed or pending → user cancelled or payment didn't complete; stay on screen
 				} catch {
-					// ignore — user cancelled and we have no status
+					// user cancelled, ignore
 				}
 			}
 		},
-		onError: (err: Error) =>
-			showError(t("boost.errorTitle"), err.message ?? t("common.error")),
+		onError: (err: unknown) => {
+			if (err instanceof ApiError && err.status === 401) {
+				handle401();
+				return;
+			}
+			showError(
+				t("boost.errorTitle"),
+				err instanceof Error ? err.message : t("common.error"),
+			);
+		},
 	});
 
 	const isPending = isProcessing || isNotchPending;
 
 	const handlePay = () => {
-		if (canUseApplePay) {
-			void handleApplePay();
+		if (paymentMethod === "stripe") {
+			canUseApplePay ? void handleApplePay() : void handleStripeCard();
 		} else {
 			boostWithNotchPay();
 		}
@@ -236,9 +311,7 @@ export default function BoostModal() {
 								<View
 									style={[
 										styles.radio,
-										{
-											borderColor: selected === i ? primaryColor : mutedColor,
-										},
+										{ borderColor: selected === i ? primaryColor : mutedColor },
 									]}
 								>
 									{selected === i && (
@@ -263,27 +336,119 @@ export default function BoostModal() {
 					))}
 				</View>
 
+				{/* Payment method selector */}
+				<Text style={[styles.sectionLabel, { color: mutedColor }]}>
+					{t("boost.paymentMethod")}
+				</Text>
+				<View style={styles.methodRow}>
+					{/* Mobile Money */}
+					<Pressable
+						onPress={() => setPaymentMethod("notchpay")}
+						style={[
+							styles.methodCard,
+							{
+								backgroundColor: cardBg,
+								borderColor:
+									paymentMethod === "notchpay" ? "#f59e0b" : borderColor,
+								borderWidth: paymentMethod === "notchpay" ? 2 : 1,
+							},
+						]}
+					>
+						<Ionicons
+							name="phone-portrait-outline"
+							size={22}
+							color={paymentMethod === "notchpay" ? "#f59e0b" : mutedColor}
+						/>
+						<Text
+							style={[
+								styles.methodLabel,
+								{ color: paymentMethod === "notchpay" ? "#f59e0b" : textColor },
+							]}
+						>
+							{t("boost.mobileMoney")}
+						</Text>
+						<Text style={[styles.methodDesc, { color: mutedColor }]}>
+							{t("boost.mobileMoneyDesc")}
+						</Text>
+					</Pressable>
+
+					{/* Card (Stripe) */}
+					<Pressable
+						onPress={() => stripeAvailable && setPaymentMethod("stripe")}
+						style={[
+							styles.methodCard,
+							{
+								backgroundColor: cardBg,
+								borderColor:
+									paymentMethod === "stripe" ? primaryColor : borderColor,
+								borderWidth: paymentMethod === "stripe" ? 2 : 1,
+								opacity: stripeAvailable ? 1 : 0.4,
+							},
+						]}
+					>
+						<Ionicons
+							name="card-outline"
+							size={22}
+							color={paymentMethod === "stripe" ? primaryColor : mutedColor}
+						/>
+						<Text
+							style={[
+								styles.methodLabel,
+								{
+									color: paymentMethod === "stripe" ? primaryColor : textColor,
+								},
+							]}
+						>
+							{t("boost.card")}
+						</Text>
+						<Text style={[styles.methodDesc, { color: mutedColor }]}>
+							{stripeAvailable
+								? t("boost.cardDesc")
+								: t("boost.cardUnavailable")}
+						</Text>
+					</Pressable>
+				</View>
+
 				{/* Pay Button */}
 				<AnimatedPressable
 					onPress={handlePay}
 					disabled={isPending}
 					scaleTo={0.97}
-					style={styles.payBtn}
+					style={[
+						styles.payBtn,
+						{
+							backgroundColor:
+								paymentMethod === "stripe" ? primaryColor : "#f59e0b",
+						},
+					]}
 				>
 					{isPending ? (
-						<ActivityIndicator color="#0f172a" />
-					) : canUseApplePay ? (
+						<ActivityIndicator color="#fff" />
+					) : paymentMethod === "stripe" && canUseApplePay ? (
 						<>
-							<Ionicons name="logo-apple" size={20} color="#0f172a" />
+							<Ionicons name="logo-apple" size={20} color="#fff" />
 							<Text style={styles.payBtnText}>{t("boost.applePayBtn")}</Text>
 						</>
 					) : (
 						<>
-							<Ionicons name="flash" size={18} color="#0f172a" />
-							<Text style={styles.payBtnText}>
-								{t("boost.payBtn", {
-									amount: selectedPlan.price.toLocaleString(),
-								})}
+							<Ionicons
+								name="flash"
+								size={18}
+								color={paymentMethod === "stripe" ? "#fff" : "#0f172a"}
+							/>
+							<Text
+								style={[
+									styles.payBtnText,
+									{ color: paymentMethod === "stripe" ? "#fff" : "#0f172a" },
+								]}
+							>
+								{paymentMethod === "stripe"
+									? t("boost.cardPayBtn", {
+											amount: selectedPlan.price.toLocaleString(),
+										})
+									: t("boost.payBtn", {
+											amount: selectedPlan.price.toLocaleString(),
+										})}
 							</Text>
 						</>
 					)}
@@ -303,7 +468,7 @@ export default function BoostModal() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	container: { flex: 1, padding: 24, justifyContent: "center" },
-	header: { alignItems: "center", marginBottom: 32 },
+	header: { alignItems: "center", marginBottom: 24 },
 	rocketIconWrap: {
 		width: 80,
 		height: 80,
@@ -325,7 +490,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		lineHeight: 20,
 	},
-	plans: { gap: 12, marginBottom: 24 },
+	plans: { gap: 10, marginBottom: 20 },
 	planCard: {
 		borderRadius: 14,
 		padding: 16,
@@ -355,6 +520,27 @@ const styles = StyleSheet.create({
 	planInfo: {},
 	planLabel: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 	planPrice: { fontSize: 18, fontFamily: Fonts.displayExtrabold },
+	sectionLabel: {
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
+		marginBottom: 8,
+		textTransform: "uppercase",
+		letterSpacing: 0.5,
+	},
+	methodRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
+	methodCard: {
+		flex: 1,
+		borderRadius: 14,
+		padding: 12,
+		alignItems: "center",
+		gap: 6,
+	},
+	methodLabel: {
+		fontSize: 13,
+		fontFamily: Fonts.bodySemibold,
+		textAlign: "center",
+	},
+	methodDesc: { fontSize: 11, fontFamily: Fonts.body, textAlign: "center" },
 	payBtn: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -363,13 +549,8 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		paddingVertical: 16,
 		marginBottom: 12,
-		backgroundColor: "#f59e0b",
 	},
-	payBtnText: {
-		color: "#0f172a",
-		fontSize: 17,
-		fontFamily: Fonts.displayExtrabold,
-	},
+	payBtnText: { fontSize: 17, fontFamily: Fonts.displayExtrabold },
 	cancelBtn: { alignItems: "center", padding: 12 },
 	cancelText: { fontSize: 14 },
 });

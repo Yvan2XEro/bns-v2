@@ -692,7 +692,14 @@
 		"applePayLabel": "Boost Annonce",
 		"applePayBtn": "Payer avec Apple Pay",
 		"successTitle": "Boost activé 🚀",
-		"successMessage": "Votre annonce est maintenant mise en avant."
+		"successMessage": "Votre annonce est maintenant mise en avant.",
+		"mobileMoney": "Mobile Money",
+		"mobileMoneyDesc": "Orange Money, MTN MoMo",
+		"card": "Carte bancaire",
+		"cardDesc": "Visa, Mastercard",
+		"cardUnavailable": "Non disponible",
+		"cardPayBtn": "Payer par carte {{amount}} XAF",
+		"loginRequired": "Connexion requise pour booster une annonce."
 	},
 	"report": {
 		"title": "Signaler",
