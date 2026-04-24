@@ -190,8 +190,9 @@ export async function createBoostPayment(
 		}
 
 		const data = await res.json();
-		if (data.paymentUrl) {
-			return { success: true, data: { paymentUrl: data.paymentUrl } };
+		console.log({ data });
+		if (data.checkoutUrl) {
+			return { success: true, data: { paymentUrl: data.checkoutUrl } };
 		}
 
 		return {

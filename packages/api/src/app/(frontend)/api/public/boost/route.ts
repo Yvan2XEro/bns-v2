@@ -124,7 +124,7 @@ function buildNotchPayCallbackUrl(
 	listingId: string,
 	appReturnUrl: string | undefined,
 ): string {
-	const url = new URL(`${serverUrl}/api/public/boost/callback`);
+	const url = new URL("/api/public/boost/callback", serverUrl);
 	url.searchParams.set("listingId", listingId);
 	if (appReturnUrl) {
 		url.searchParams.set("appReturnUrl", appReturnUrl);

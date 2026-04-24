@@ -133,7 +133,7 @@ export default function BoostModal() {
 			if (!data.checkoutUrl) throw new Error(t("boost.noCheckoutUrl"));
 
 			// openAuthSessionAsync closes automatically when the browser navigates
-			// to a URL matching the scheme — our /boost/return page triggers this.
+			// to a URL matching the scheme — our /boost/callback page triggers this.
 			const result = await WebBrowser.openAuthSessionAsync(
 				data.checkoutUrl,
 				DEEP_LINK_RETURN,
@@ -141,19 +141,37 @@ export default function BoostModal() {
 			);
 
 			if (result.type === "success") {
+				// Deep link was intercepted — parse status from callback URL
 				const qs = result.url.split("?")[1] ?? "";
-				const params = new URLSearchParams(qs);
-				const status = params.get("status");
-				const lid = params.get("listingId") ?? listingId;
+				const searchParams = new URLSearchParams(qs);
+				const status = searchParams.get("status");
+				const lid = searchParams.get("listingId") ?? listingId;
 
 				if (status === "success") {
-					await queryClient.invalidateQueries({
-						queryKey: ["listing", lid],
-					});
+					await queryClient.invalidateQueries({ queryKey: ["listing", lid] });
 					showSuccess(t("boost.successTitle"), t("boost.successMessage"));
 					router.dismiss();
 				} else if (status === "failed") {
 					showError(t("boost.errorTitle"), t("boost.paymentFailed"));
+				}
+				// pending: no action, payment is still processing
+			} else {
+				// Browser closed without deep link interception (user closed manually
+				// or deep link wasn't caught). Query the real payment status.
+				try {
+					const payment = await api.get<{ status: string }>(
+						`/api/boost-payments/${data.paymentId}`,
+					);
+					if (payment.status === "completed") {
+						await queryClient.invalidateQueries({
+							queryKey: ["listing", listingId],
+						});
+						showSuccess(t("boost.successTitle"), t("boost.successMessage"));
+						router.dismiss();
+					}
+					// failed or pending → user cancelled or payment didn't complete; stay on screen
+				} catch {
+					// ignore — user cancelled and we have no status
 				}
 			}
 		},

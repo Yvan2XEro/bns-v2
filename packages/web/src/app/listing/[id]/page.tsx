@@ -16,6 +16,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { BoostDialog } from "~/components/listing/boost-dialog";
+import { BoostStatusBanner } from "~/components/listing/boost-status-banner";
 import { FavoriteButton } from "~/components/listing/favorite-button";
 import { ImageGallery } from "~/components/listing/image-gallery";
 import { ListingGrid } from "~/components/listing/listing-card";
@@ -31,6 +32,7 @@ import type { Listing, User } from "~/types";
 
 interface PageProps {
 	params: Promise<{ id: string }>;
+	searchParams: Promise<{ boostStatus?: string }>;
 }
 
 async function getListing(id: string): Promise<Listing | null> {
@@ -81,10 +83,11 @@ function timeAgo(date: string): string {
 	return new Date(date).toLocaleDateString();
 }
 
-export default async function ListingPage({ params }: PageProps) {
+export default async function ListingPage({ params, searchParams }: PageProps) {
 	const t = await getTranslations("Listing");
 	const tCond = await getTranslations("Condition");
 	const { id } = await params;
+	const { boostStatus } = await searchParams;
 	const [listing, isFavorited, similarListings, authUser] = await Promise.all([
 		getListing(id),
 		isListingFavorited(id),
@@ -161,6 +164,7 @@ export default async function ListingPage({ params }: PageProps) {
 			</div>
 
 			<div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+				<BoostStatusBanner status={boostStatus} />
 				<div className="grid gap-6 lg:grid-cols-5">
 					{/* Left: images + details (3 cols) */}
 					<div className="lg:col-span-3">

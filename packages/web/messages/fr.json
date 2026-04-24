@@ -164,7 +164,7 @@
 		"messageSeller": "Envoyer un message",
 		"editThisListing": "Modifier l'annonce",
 		"boostThisListing": "Booster cette annonce",
-		"currentlyBoosted": "Currently boosted",
+		"currentlyBoosted": "Actuellement boosté",
 		"safetyTips": "Conseils de sécurité",
 		"safetyTip1": "Rencontrez-vous dans un lieu public",
 		"safetyTip2": "Vérifiez l'article avant de payer",
@@ -208,7 +208,10 @@
 		"saveChanges": "Enregistrer",
 		"savingChanges": "Enregistrement...",
 		"failedToUpdate": "Échec de la mise à jour. Veuillez réessayer.",
-		"failedToCreate": "Échec de la création. Veuillez réessayer."
+		"failedToCreate": "Échec de la création. Veuillez réessayer.",
+		"boostSuccess": "Paiement reçu ! Votre boost sera actif dans quelques instants.",
+		"boostPending": "Paiement en cours de traitement. Votre boost sera activé sous peu.",
+		"boostFailed": "Le paiement n'a pas pu être finalisé. Veuillez réessayer."
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -583,5 +586,32 @@
 		"prohibitedItem": "Article prohibé",
 		"falseInfo": "Information fausse ou trompeuse",
 		"otherReason": "Autre"
+	},
+	"Boost": {
+		"dialogTitle": "Booster cette annonce",
+		"dialogSubtitle": "Apparaissez en tête des résultats de recherche.",
+		"cardFormTitle": "Paiement par carte",
+		"cardFormSubtitle": "Entrez les informations de votre carte bancaire.",
+		"week1": "1 semaine",
+		"week2": "2 semaines",
+		"month1": "1 mois",
+		"daysVisibility": "{days} jours de visibilité",
+		"popular": "Populaire",
+		"paymentMethod": "Mode de paiement",
+		"mobileMoney": "Mobile Money",
+		"mobileMoneyDesc": "OM, MTN MoMo",
+		"card": "Carte bancaire",
+		"cardDesc": "Visa, Mastercard…",
+		"cardUnavailable": "Non disponible",
+		"payBtn": "Payer {amount} XAF",
+		"continueBtn": "Continuer — {amount} XAF",
+		"confirmPayBtn": "Confirmer le paiement",
+		"back": "Retour",
+		"cancel": "Annuler",
+		"noCheckoutUrl": "URL de paiement non disponible",
+		"networkError": "Erreur réseau. Vérifiez votre connexion.",
+		"initError": "Impossible d'initialiser le paiement",
+		"paymentDeclined": "Paiement refusé. Vérifiez vos informations.",
+		"genericError": "Erreur lors du paiement"
 	}
 }

@@ -79,6 +79,7 @@ export interface Config {
     'boost-payments': BoostPayment;
     'saved-searches': SavedSearch;
     'blocked-users': BlockedUser;
+    tags: Tag;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -99,6 +100,7 @@ export interface Config {
     'boost-payments': BoostPaymentsSelect<false> | BoostPaymentsSelect<true>;
     'saved-searches': SavedSearchesSelect<false> | SavedSearchesSelect<true>;
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
+    tags: TagsSelect<false> | TagsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -261,6 +263,7 @@ export interface Listing {
    */
   rejectionReason?: string | null;
   condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
+  tags?: (string | Tag)[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -298,6 +301,24 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: string;
+  name: string;
+  /**
+   * URL-safe identifier (e.g. negotiable, delivery, urgent)
+   */
+  slug: string;
+  /**
+   * Optional emoji to display with the tag (e.g. 🤝)
+   */
+  emoji?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "favorites".
  */
 export interface Favorite {
@@ -328,6 +349,7 @@ export interface Message {
   conversation: string | Conversation;
   sender: string | User;
   content: string;
+  listing?: (string | null) | Listing;
   read?: boolean | null;
   createdAt: string;
   updatedAt: string;
@@ -587,6 +609,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'blocked-users';
         value: string | BlockedUser;
+      } | null)
+    | ({
+        relationTo: 'tags';
+        value: string | Tag;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -724,6 +750,7 @@ export interface ListingsSelect<T extends boolean = true> {
       };
   rejectionReason?: T;
   condition?: T;
+  tags?: T;
   createdAt?: T;
   updatedAt?: T;
 }
@@ -787,6 +814,7 @@ export interface MessagesSelect<T extends boolean = true> {
   conversation?: T;
   sender?: T;
   content?: T;
+  listing?: T;
   read?: T;
   createdAt?: T;
   updatedAt?: T;
@@ -858,6 +886,17 @@ export interface SavedSearchesSelect<T extends boolean = true> {
 export interface BlockedUsersSelect<T extends boolean = true> {
   blocker?: T;
   blocked?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags_select".
+ */
+export interface TagsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  emoji?: T;
   updatedAt?: T;
   createdAt?: T;
 }

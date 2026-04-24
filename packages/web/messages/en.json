@@ -208,7 +208,10 @@
 		"saveChanges": "Save Changes",
 		"savingChanges": "Saving...",
 		"failedToUpdate": "Failed to update listing. Please try again.",
-		"failedToCreate": "Failed to create listing. Please try again."
+		"failedToCreate": "Failed to create listing. Please try again.",
+		"boostSuccess": "Payment received! Your boost will be active in a moment.",
+		"boostPending": "Payment processing. Your boost will be activated shortly.",
+		"boostFailed": "Payment could not be completed. Please try again."
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -583,5 +586,32 @@
 		"prohibitedItem": "Prohibited item",
 		"falseInfo": "False or misleading information",
 		"otherReason": "Other"
+	},
+	"Boost": {
+		"dialogTitle": "Boost this listing",
+		"dialogSubtitle": "Appear at the top of search results.",
+		"cardFormTitle": "Card payment",
+		"cardFormSubtitle": "Enter your card details.",
+		"week1": "1 week",
+		"week2": "2 weeks",
+		"month1": "1 month",
+		"daysVisibility": "{days} days of visibility",
+		"popular": "Popular",
+		"paymentMethod": "Payment method",
+		"mobileMoney": "Mobile Money",
+		"mobileMoneyDesc": "OM, MTN MoMo",
+		"card": "Credit / Debit card",
+		"cardDesc": "Visa, Mastercard…",
+		"cardUnavailable": "Unavailable",
+		"payBtn": "Pay {amount} XAF",
+		"continueBtn": "Continue — {amount} XAF",
+		"confirmPayBtn": "Confirm payment",
+		"back": "Back",
+		"cancel": "Cancel",
+		"noCheckoutUrl": "Payment URL not available",
+		"networkError": "Network error. Check your connection.",
+		"initError": "Could not initialize payment",
+		"paymentDeclined": "Payment declined. Please check your details.",
+		"genericError": "Payment error"
 	}
 }
