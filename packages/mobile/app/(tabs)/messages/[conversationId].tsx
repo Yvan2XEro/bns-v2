@@ -333,6 +333,7 @@ export default function ConversationScreen() {
 								backgroundColor: isMe ? primaryColor : cardBg,
 								borderColor: isMe ? primaryColor : borderColor,
 							},
+							item.listing ? { width: "86%", maxWidth: "86%" } : null,
 						]}
 					>
 						{item.listing && (
@@ -359,34 +360,38 @@ export default function ConversationScreen() {
 										contentFit="cover"
 									/>
 								)}
-								<View style={styles.msgListingInfo}>
-									<Text
-										style={[
-											styles.msgListingTitle,
-											{ color: isMe ? "#fff" : textColor },
-										]}
-										numberOfLines={2}
-									>
-										{item.listing.title}
-									</Text>
-									{item.listing.price != null && (
+								<View style={styles.msgListingBottom}>
+									<View style={styles.msgListingInfo}>
 										<Text
 											style={[
-												styles.msgListingPrice,
-												{
-													color: isMe ? "rgba(255,255,255,0.85)" : primaryColor,
-												},
+												styles.msgListingTitle,
+												{ color: isMe ? "#fff" : textColor },
 											]}
+											numberOfLines={2}
 										>
-											{item.listing.price.toLocaleString()} XAF
+											{item.listing.title}
 										</Text>
-									)}
+										{item.listing.price != null && (
+											<Text
+												style={[
+													styles.msgListingPrice,
+													{
+														color: isMe
+															? "rgba(255,255,255,0.85)"
+															: primaryColor,
+													},
+												]}
+											>
+												{item.listing.price.toLocaleString()} XAF
+											</Text>
+										)}
+									</View>
+									<Ionicons
+										name="chevron-forward"
+										size={14}
+										color={isMe ? "rgba(255,255,255,0.6)" : mutedColor}
+									/>
 								</View>
-								<Ionicons
-									name="chevron-forward"
-									size={14}
-									color={isMe ? "rgba(255,255,255,0.6)" : mutedColor}
-								/>
 							</Pressable>
 						)}
 						<Text
@@ -764,21 +769,24 @@ const styles = StyleSheet.create({
 	attachPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
 	attachDismiss: { padding: 4 },
 	msgListingCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
 		borderBottomWidth: 1,
-		paddingHorizontal: 10,
-		paddingVertical: 8,
 		marginHorizontal: -14,
 		marginTop: -10,
 		marginBottom: 6,
 		borderTopLeftRadius: 17,
 		borderTopRightRadius: 17,
+		overflow: "hidden",
 	},
-	msgListingImg: { width: 40, height: 40, borderRadius: 6 },
+	msgListingImg: { width: "100%", height: 110 },
+	msgListingBottom: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 8,
+	},
 	msgListingInfo: { flex: 1 },
-	msgListingTitle: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	msgListingTitle: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	msgListingPrice: { fontSize: 12, fontFamily: Fonts.displayBold },
 	inputBar: {
 		flexDirection: "row",

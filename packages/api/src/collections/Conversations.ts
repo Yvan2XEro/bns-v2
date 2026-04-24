@@ -10,6 +10,9 @@ export const Conversations: CollectionConfig = {
 	access: {
 		read: ({ req: { user } }) => {
 			if (!user) return false;
+			const userWithRole = user as { role?: string };
+			if (userWithRole.role === "admin" || userWithRole.role === "moderator")
+				return true;
 			return {
 				participants: {
 					equals: user.id,
@@ -19,6 +22,8 @@ export const Conversations: CollectionConfig = {
 		create: authenticated,
 		update: ({ req: { user } }) => {
 			if (!user) return false;
+			const userWithRole = user as { role?: string };
+			if (userWithRole.role === "admin") return true;
 			return {
 				participants: {
 					equals: user.id,

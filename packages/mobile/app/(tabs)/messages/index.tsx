@@ -291,14 +291,6 @@ export default function MessagesScreen() {
 								{item.updatedAt ? formatTime(item.updatedAt) : ""}
 							</Text>
 						</View>
-						{item.listing?.title && (
-							<Text
-								style={[styles.convListing, { color: primaryColor }]}
-								numberOfLines={1}
-							>
-								{item.listing.title}
-							</Text>
-						)}
 						<Text
 							style={[
 								styles.convLastMsg,
@@ -620,11 +612,6 @@ const styles = StyleSheet.create({
 	},
 	convName: { fontSize: 15, flex: 1, fontFamily: Fonts.displayMedium },
 	convTime: { fontSize: 12, fontFamily: Fonts.body },
-	convListing: {
-		fontSize: 12,
-		marginBottom: 2,
-		fontFamily: Fonts.bodySemibold,
-	},
 	convLastMsg: { fontSize: 13, fontFamily: Fonts.body },
 	unreadBadge: {
 		minWidth: 20,
