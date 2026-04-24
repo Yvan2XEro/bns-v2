@@ -638,8 +638,8 @@ export default function ListingDetail() {
 					},
 				]}
 			>
-				{!isOwner ? (
-					<View style={styles.actionButtons}>
+				<View style={styles.actionButtons}>
+					{!isOwner && (
 						<Pressable
 							onPress={handleMessage}
 							disabled={contactLoading}
@@ -660,10 +660,12 @@ export default function ListingDetail() {
 								{t("listing.contactSeller")}
 							</Text>
 						</Pressable>
-					</View>
-				) : (
-					<View style={styles.actionButtons}>
-						{listing._status === "published" && !listing.isBoosted && (
+					)}
+					{listing.status === "published" &&
+						!(
+							listing.boostedUntil &&
+							new Date(listing.boostedUntil) > new Date()
+						) && (
 							<Pressable
 								onPress={() => router.push(`/boost/${id}`)}
 								style={styles.boostBtn}
@@ -672,6 +674,7 @@ export default function ListingDetail() {
 								<Text style={styles.boostBtnText}>{t("listing.boost")}</Text>
 							</Pressable>
 						)}
+					{isOwner && (
 						<Pressable
 							onPress={() => router.push(`/listing/${id}/edit`)}
 							style={[
@@ -684,8 +687,8 @@ export default function ListingDetail() {
 								{t("listing.edit")}
 							</Text>
 						</Pressable>
-					</View>
-				)}
+					)}
+				</View>
 			</View>
 			<Modal
 				visible={lightboxVisible}

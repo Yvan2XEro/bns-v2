@@ -47,13 +47,6 @@ export async function POST(request: Request) {
 			return Response.json({ error: "Annonce introuvable" }, { status: 404 });
 		}
 
-		const sellerId =
-			typeof listing.seller === "object" ? listing.seller?.id : listing.seller;
-
-		if (sellerId !== user.id) {
-			return Response.json({ error: "Forbidden" }, { status: 403 });
-		}
-
 		const amount = PRICES[duration]!;
 		const serverUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? "";
 
