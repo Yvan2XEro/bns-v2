@@ -150,12 +150,22 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
-      # HTTPS
-      - "traefik.http.routers.bns-web.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`) || Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
+      # HTTPS apex — serves the app
+      - "traefik.http.routers.bns-web.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`)"
       - "traefik.http.routers.bns-web.entrypoints=websecure"
       - "traefik.http.routers.bns-web.tls.certresolver=letsencrypt"
       - "traefik.http.routers.bns-web.service=bns-web"
-      # HTTP -> HTTPS redirect
+      # HTTPS www — 301 redirect to apex
+      - "traefik.http.routers.bns-web-www.rule=Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
+      - "traefik.http.routers.bns-web-www.entrypoints=websecure"
+      - "traefik.http.routers.bns-web-www.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bns-web-www.middlewares=bns-www-to-apex"
+      - "traefik.http.routers.bns-web-www.service=bns-web"
+      # Middleware: www -> apex permanent redirect (preserves path and query)
+      - "traefik.http.middlewares.bns-www-to-apex.redirectregex.regex=^https://[^/]+(.*)"
+      - "traefik.http.middlewares.bns-www-to-apex.redirectregex.replacement=https://${WEB_DOMAIN:-buynsellem.com}$${1}"
+      - "traefik.http.middlewares.bns-www-to-apex.redirectregex.permanent=true"
+      # HTTP -> HTTPS redirect (both apex and www; www will then 301 to apex)
       - "traefik.http.routers.bns-web-http.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`) || Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
       - "traefik.http.routers.bns-web-http.entrypoints=web"
       - "traefik.http.routers.bns-web-http.middlewares=bns-redirect-https"
