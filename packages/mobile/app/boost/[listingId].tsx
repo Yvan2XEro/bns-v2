@@ -1,16 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-	PlatformPay,
-	usePaymentSheet,
-	usePlatformPay,
-} from "@stripe/stripe-react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
-	Platform,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -32,7 +26,6 @@ interface BoostPaymentResponse {
 	paymentId: string;
 	provider: "notchpay" | "stripe";
 	checkoutUrl?: string;
-	clientSecret?: string;
 }
 
 type PaymentMethod = "notchpay" | "stripe";
@@ -46,29 +39,15 @@ export default function BoostModal() {
 	const { stripePublishableKey } = useAppConfig();
 	const { user } = useAuth();
 	const [selected, setSelected] = useState(1);
-	const [isProcessing, setIsProcessing] = useState(false);
-	const [applePayAvailable, setApplePayAvailable] = useState(false);
 	const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("notchpay");
 
 	const stripeAvailable = !!stripePublishableKey;
-	const { isPlatformPaySupported, confirmPlatformPayPayment } =
-		usePlatformPay();
-	const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
 
-	// Redirect to login if not authenticated
 	useEffect(() => {
 		if (!user) {
 			router.replace("/auth/login");
 		}
 	}, [user]);
-
-	// Detect Apple Pay availability (iOS + Stripe configured)
-	useEffect(() => {
-		if (Platform.OS !== "ios" || !stripePublishableKey) return;
-		isPlatformPaySupported().then(setApplePayAvailable);
-	}, [isPlatformPaySupported, stripePublishableKey]);
-
-	const canUseApplePay = applePayAvailable;
 
 	const PLANS = [
 		{ duration: "7" as const, price: 500, label: t("boost.week1") },
@@ -90,118 +69,12 @@ export default function BoostModal() {
 
 	const selectedPlan = PLANS[selected]!;
 
-	function handle401() {
-		router.replace("/auth/login");
-	}
-
-	// ── Apple Pay (Stripe) ────────────────────────────────────────────────────
-
-	const handleApplePay = async () => {
-		if (!listingId) return;
-		setIsProcessing(true);
-		try {
-			const data = await api.post<BoostPaymentResponse>("/api/public/boost", {
-				listingId,
-				duration: selectedPlan.duration,
-				provider: "stripe",
-			});
-
-			if (!data.clientSecret) throw new Error(t("boost.noClientSecret"));
-
-			const { error } = await confirmPlatformPayPayment(data.clientSecret, {
-				applePay: {
-					cartItems: [
-						{
-							paymentType: PlatformPay.PaymentType.Immediate,
-							label: t("boost.applePayLabel"),
-							amount: String(selectedPlan.price),
-						},
-					],
-					merchantCountryCode: "CM",
-					currencyCode: "XAF",
-				},
-			});
-
-			if (error) {
-				if (error.code !== "Canceled")
-					showError(t("boost.errorTitle"), error.message);
-				return;
-			}
-
-			await queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
-			showSuccess(t("boost.successTitle"), t("boost.successMessage"));
-			router.dismiss();
-		} catch (err: unknown) {
-			if (err instanceof ApiError && err.status === 401) {
-				handle401();
-				return;
-			}
-			showError(
-				t("boost.errorTitle"),
-				err instanceof Error ? err.message : t("common.error"),
-			);
-		} finally {
-			setIsProcessing(false);
-		}
-	};
-
-	// ── Stripe Payment Sheet (card, non-Apple Pay) ────────────────────────────
-
-	const handleStripeCard = async () => {
-		if (!listingId) return;
-		setIsProcessing(true);
-		try {
-			const data = await api.post<BoostPaymentResponse>("/api/public/boost", {
-				listingId,
-				duration: selectedPlan.duration,
-				provider: "stripe",
-			});
-
-			if (!data.clientSecret) throw new Error(t("boost.noClientSecret"));
-
-			const { error: initError } = await initPaymentSheet({
-				paymentIntentClientSecret: data.clientSecret,
-				merchantDisplayName: "Buy'N'Sellem",
-				returnURL: DEEP_LINK_RETURN,
-			});
-
-			if (initError) {
-				showError(t("boost.errorTitle"), initError.message);
-				return;
-			}
-
-			const { error: payError } = await presentPaymentSheet();
-			if (payError) {
-				if (payError.code !== "Canceled")
-					showError(t("boost.errorTitle"), payError.message);
-				return;
-			}
-
-			await queryClient.invalidateQueries({ queryKey: ["listing", listingId] });
-			showSuccess(t("boost.successTitle"), t("boost.successMessage"));
-			router.dismiss();
-		} catch (err: unknown) {
-			if (err instanceof ApiError && err.status === 401) {
-				handle401();
-				return;
-			}
-			showError(
-				t("boost.errorTitle"),
-				err instanceof Error ? err.message : t("common.error"),
-			);
-		} finally {
-			setIsProcessing(false);
-		}
-	};
-
-	// ── NotchPay browser flow ─────────────────────────────────────────────────
-
-	const { mutate: boostWithNotchPay, isPending: isNotchPending } = useMutation({
+	const { mutate: handlePay, isPending } = useMutation({
 		mutationFn: async () => {
 			const data = await api.post<BoostPaymentResponse>("/api/public/boost", {
 				listingId,
 				duration: selectedPlan.duration,
-				provider: "notchpay",
+				provider: paymentMethod,
 				returnUrl: DEEP_LINK_RETURN,
 			});
 
@@ -215,37 +88,38 @@ export default function BoostModal() {
 
 			if (result.type === "success") {
 				const qs = result.url.split("?")[1] ?? "";
-				const searchParams = new URLSearchParams(qs);
-				const status = searchParams.get("status");
-				const lid = searchParams.get("listingId") ?? listingId;
+				const params = new URLSearchParams(qs);
+				const status = params.get("status");
+				const lid = params.get("listingId") ?? listingId ?? "";
 
 				if (status === "success") {
 					await queryClient.invalidateQueries({ queryKey: ["listing", lid] });
 					showSuccess(t("boost.successTitle"), t("boost.successMessage"));
 					router.dismiss();
-				} else if (status === "failed") {
+				} else if (status === "failed" || status === "cancelled") {
 					showError(t("boost.errorTitle"), t("boost.paymentFailed"));
 				}
 			} else {
+				// L'utilisateur a fermé le navigateur — vérifier si le paiement est passé
 				try {
 					const payment = await api.get<{ status: string }>(
 						`/api/boost-payments/${data.paymentId}`,
 					);
 					if (payment.status === "completed") {
 						await queryClient.invalidateQueries({
-							queryKey: ["listing", listingId],
+							queryKey: ["listing", listingId ?? ""],
 						});
 						showSuccess(t("boost.successTitle"), t("boost.successMessage"));
 						router.dismiss();
 					}
 				} catch {
-					// user cancelled, ignore
+					// annulé, on ignore
 				}
 			}
 		},
 		onError: (err: unknown) => {
 			if (err instanceof ApiError && err.status === 401) {
-				handle401();
+				router.replace("/auth/login");
 				return;
 			}
 			showError(
@@ -254,16 +128,6 @@ export default function BoostModal() {
 			);
 		},
 	});
-
-	const isPending = isProcessing || isNotchPending;
-
-	const handlePay = () => {
-		if (paymentMethod === "stripe") {
-			canUseApplePay ? void handleApplePay() : void handleStripeCard();
-		} else {
-			boostWithNotchPay();
-		}
-	};
 
 	return (
 		<SafeAreaView
@@ -372,7 +236,7 @@ export default function BoostModal() {
 						</Text>
 					</Pressable>
 
-					{/* Card (Stripe) */}
+					{/* Card (Stripe Checkout) */}
 					<Pressable
 						onPress={() => stripeAvailable && setPaymentMethod("stripe")}
 						style={[
@@ -411,7 +275,7 @@ export default function BoostModal() {
 
 				{/* Pay Button */}
 				<AnimatedPressable
-					onPress={handlePay}
+					onPress={() => handlePay()}
 					disabled={isPending}
 					scaleTo={0.97}
 					style={[
@@ -424,11 +288,6 @@ export default function BoostModal() {
 				>
 					{isPending ? (
 						<ActivityIndicator color="#fff" />
-					) : paymentMethod === "stripe" && canUseApplePay ? (
-						<>
-							<Ionicons name="logo-apple" size={20} color="#fff" />
-							<Text style={styles.payBtnText}>{t("boost.applePayBtn")}</Text>
-						</>
 					) : (
 						<>
 							<Ionicons

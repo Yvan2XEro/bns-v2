@@ -45,7 +45,7 @@ export const Listings: CollectionConfig = {
 	},
 	hooks: {
 		beforeChange: [
-			async ({ data, req, operation }) => {
+			async ({ data, req, operation, originalDoc }) => {
 				if (operation === "create") {
 					data.seller = req.user?.id;
 					if (data.status === "published") {
@@ -63,7 +63,15 @@ export const Listings: CollectionConfig = {
 					data.duration = undefined;
 				}
 
-				if (operation === "update" && data.status !== undefined) {
+				// Only enforce status restrictions when the status is actually changing.
+				// Payload merges the full document into `data` before beforeChange, so
+				// system updates (e.g. boostedUntil) would otherwise see the existing
+				// "published" status and incorrectly reset it to "pending".
+				if (
+					operation === "update" &&
+					data.status !== undefined &&
+					data.status !== originalDoc?.status
+				) {
 					const u = req.user as { role?: string } | undefined;
 					const isAdmin = u?.role === "admin" || u?.role === "moderator";
 					if (!isAdmin) {

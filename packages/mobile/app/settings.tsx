@@ -70,7 +70,8 @@ function Section({
 }
 
 export default function SettingsScreen() {
-	const isDark = useColorScheme() === "dark";
+	const colorScheme = useColorScheme();
+	const [isDark, setIsDark] = useState(colorScheme === "dark");
 	const { t } = useTranslation();
 	const [langPickerOpen, setLangPickerOpen] = useState(false);
 
@@ -94,10 +95,11 @@ export default function SettingsScreen() {
 		setLangPickerOpen(false);
 	};
 
-	const toggleDarkMode = async (value: boolean) => {
+	const toggleDarkMode = (value: boolean) => {
+		setIsDark(value); // update immediately — don't wait for Appearance event
 		const scheme = value ? "dark" : "light";
 		Appearance.setColorScheme(scheme);
-		await AsyncStorage.setItem(THEME_STORAGE_KEY, scheme);
+		AsyncStorage.setItem(THEME_STORAGE_KEY, scheme);
 	};
 
 	const currentLangLabel =

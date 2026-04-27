@@ -73,21 +73,19 @@ export async function POST(request: Request) {
 
 		// Pour NotchPay : le callback est une redirection GET vers notre serveur.
 		// On y inclut appReturnUrl et listingId pour le retour vers l'app.
-		const callbackUrl = buildNotchPayCallbackUrl(
+		const callbackUrl = buildCallbackUrl(
 			serverUrl,
 			listingId,
 			returnUrl,
+			provider.id,
 		);
-
-		// Pour Stripe : le webhook est un POST vers notre endpoint dédié.
-		const stripeWebhookUrl = `${serverUrl}/api/public/boost/webhook/stripe`;
 
 		const result = await provider.createPayment({
 			reference,
 			amount,
 			currency: "XAF",
 			description: `Boost annonce: ${listing.title}`,
-			callbackUrl: provider.id === "stripe" ? stripeWebhookUrl : callbackUrl,
+			callbackUrl,
 			customer: { email: user.email },
 		});
 
@@ -112,16 +110,18 @@ export async function POST(request: Request) {
 	}
 }
 
-function buildNotchPayCallbackUrl(
+function buildCallbackUrl(
 	serverUrl: string,
 	listingId: string,
 	appReturnUrl: string | undefined,
+	providerName: string,
 ): string {
 	const url = new URL("/api/public/boost/callback", serverUrl);
 	url.searchParams.set("listingId", listingId);
+	url.searchParams.set("provider", providerName);
 	if (appReturnUrl) {
 		url.searchParams.set("appReturnUrl", appReturnUrl);
 	}
-	// NotchPay ajoute automatiquement ?reference=xxx à cette URL
+	// NotchPay ajoute automatiquement &reference=xxx à cette URL
 	return url.toString();
 }

@@ -3,33 +3,40 @@ import { getPayload } from "payload";
 import { getNotchPayProvider } from "@/lib/payments";
 
 /**
- * NotchPay redirige le navigateur ici après le paiement (GET).
- * Query params : reference, appReturnUrl, listingId
- *
- * On vérifie le statut en rappelant l'API NotchPay, on active le boost si
- * le paiement est complet, puis on redirige vers l'app ou la page web.
+ * Callback GET après paiement (NotchPay et Stripe Checkout).
+ * Query params : provider, listingId, appReturnUrl
+ *   NotchPay ajoute aussi : reference
+ *   Stripe ajoute aussi  : status (success|cancelled)
  */
 export async function GET(request: Request) {
 	const url = new URL(request.url);
+	const provider = url.searchParams.get("provider") ?? "notchpay";
 	const reference = url.searchParams.get("reference") ?? "";
 	const appReturnUrl = url.searchParams.get("appReturnUrl") ?? "";
 	const listingId = url.searchParams.get("listingId") ?? "";
 
 	let status = "failed";
 
-	if (reference) {
-		try {
-			const notchpay = getNotchPayProvider();
-			const paymentStatus = await notchpay.verifyPayment(reference);
+	if (provider === "stripe") {
+		// L'activation est gérée par le webhook Stripe ; on relaie juste le statut
+		const stripeStatus = url.searchParams.get("status") ?? "";
+		status = stripeStatus === "success" ? "success" : "failed";
+	} else {
+		// NotchPay : vérifier le paiement et activer le boost
+		if (reference) {
+			try {
+				const notchpay = getNotchPayProvider();
+				const paymentStatus = await notchpay.verifyPayment(reference);
 
-			if (paymentStatus === "completed") {
-				status = "success";
-				await activateBoost(reference);
-			} else if (paymentStatus === "pending") {
-				status = "pending";
+				if (paymentStatus === "completed") {
+					status = "success";
+					await activateBoost(reference);
+				} else if (paymentStatus === "pending") {
+					status = "pending";
+				}
+			} catch (err) {
+				console.error("NotchPay callback error:", err);
 			}
-		} catch (err) {
-			console.error("NotchPay callback error:", err);
 		}
 	}
 
