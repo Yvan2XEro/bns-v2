@@ -145,6 +145,7 @@ export async function configureIndex(): Promise<void> {
 		"boostedUntil",
 		"sellerId",
 		"tags",
+		"_geo",
 		...dynamicAttrs,
 	];
 
