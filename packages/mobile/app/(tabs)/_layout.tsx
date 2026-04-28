@@ -130,7 +130,7 @@ export default function TabLayout() {
 		queryKey: ["unread-messages"],
 		queryFn: () => api.get<{ count: number }>("/api/public/messages/unread"),
 		enabled: !!user,
-		refetchInterval: 30000,
+		refetchInterval: 1200000,
 	});
 
 	// Refresh unread count instantly when a new message arrives via socket

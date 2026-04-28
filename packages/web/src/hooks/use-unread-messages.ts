@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 120_000; // 30 seconds
 
 export function useUnreadMessages(enabled: boolean) {
 	const [count, setCount] = useState(0);
