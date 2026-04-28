@@ -4,17 +4,17 @@ import { getPayload } from "payload";
 
 interface NotchPayWebhookEvent {
 	id: string;
-	type: string;
-	created_at: string;
+	event: string;
 	data: {
-		id: string;
+		merchant_reference: string;
+		trxref: string;
 		reference: string;
 		amount: number;
 		currency: string;
 		status: string;
 		customer: string;
 		created_at: string;
-		completed_at?: string;
+		updated_at?: string;
 	};
 }
 
@@ -59,24 +59,27 @@ export async function POST(request: Request) {
 		return Response.json({ error: "Payload invalide" }, { status: 400 });
 	}
 
-	const reference = event.data?.reference ?? "";
+	// merchant_reference is our "BOOST-{id}", trxref is a fallback
+	const reference = event.data?.merchant_reference || event.data?.trxref || "";
+	const eventType = event.event ?? "";
+
 	console.log(
-		`[NotchPay webhook] Received — type: ${event.type}, reference: ${reference}, status: ${event.data?.status}`,
+		`[NotchPay webhook] Received — event: ${eventType}, reference: ${reference}, status: ${event.data?.status}`,
 	);
 
-	if (event.type === "payment.complete") {
+	if (eventType === "payment.complete") {
 		await activateBoost(reference).catch((err) =>
 			console.error("[NotchPay webhook] activateBoost error:", err),
 		);
 	} else if (
-		event.type === "payment.failed" ||
-		event.type === "payment.cancelled"
+		eventType === "payment.failed" ||
+		eventType === "payment.cancelled"
 	) {
 		await markBoostFailed(reference).catch((err) =>
 			console.error("[NotchPay webhook] markBoostFailed error:", err),
 		);
 	} else {
-		console.log(`[NotchPay webhook] Ignored event type: ${event.type}`);
+		console.log(`[NotchPay webhook] Ignored event type: ${eventType}`);
 	}
 
 	return Response.json({ received: true });
