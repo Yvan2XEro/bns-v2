@@ -24,13 +24,14 @@ export async function POST(request: Request) {
 
 	const hashKey = process.env.NOTCHPAY_HASH_KEY;
 	if (!hashKey) {
-		console.error("NotchPay webhook: NOTCHPAY_HASH_KEY non configuré");
+		console.error("[NotchPay webhook] NOTCHPAY_HASH_KEY not configured");
 		return Response.json({ error: "Configuration manquante" }, { status: 500 });
 	}
 
 	// Vérification de la signature HMAC-SHA256
 	const signature = headers["x-notch-signature"];
 	if (!signature) {
+		console.warn("[NotchPay webhook] Missing signature header");
 		return Response.json({ error: "Signature manquante" }, { status: 400 });
 	}
 
@@ -40,9 +41,13 @@ export async function POST(request: Request) {
 		const sigBuf = Buffer.from(signature, "hex");
 		const expBuf = Buffer.from(expected, "hex");
 		if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+			console.warn(
+				`[NotchPay webhook] Invalid signature — received: ${signature}, expected: ${expected}`,
+			);
 			return Response.json({ error: "Signature invalide" }, { status: 400 });
 		}
 	} catch {
+		console.warn("[NotchPay webhook] Signature verification error");
 		return Response.json({ error: "Signature invalide" }, { status: 400 });
 	}
 
@@ -50,37 +55,64 @@ export async function POST(request: Request) {
 	try {
 		event = JSON.parse(rawBody) as NotchPayWebhookEvent;
 	} catch {
+		console.error("[NotchPay webhook] Invalid JSON payload");
 		return Response.json({ error: "Payload invalide" }, { status: 400 });
 	}
 
 	const reference = event.data?.reference ?? "";
+	console.log(
+		`[NotchPay webhook] Received — type: ${event.type}, reference: ${reference}, status: ${event.data?.status}`,
+	);
 
 	if (event.type === "payment.complete") {
 		await activateBoost(reference).catch((err) =>
-			console.error("NotchPay webhook activateBoost error:", err),
+			console.error("[NotchPay webhook] activateBoost error:", err),
 		);
 	} else if (
 		event.type === "payment.failed" ||
 		event.type === "payment.cancelled"
 	) {
 		await markBoostFailed(reference).catch((err) =>
-			console.error("NotchPay webhook markBoostFailed error:", err),
+			console.error("[NotchPay webhook] markBoostFailed error:", err),
 		);
+	} else {
+		console.log(`[NotchPay webhook] Ignored event type: ${event.type}`);
 	}
 
 	return Response.json({ received: true });
 }
 
 async function activateBoost(reference: string): Promise<void> {
-	if (!reference) return;
+	if (!reference) {
+		console.warn(
+			"[NotchPay webhook] activateBoost called with empty reference",
+		);
+		return;
+	}
+
 	const payload = await getPayload({ config });
 	const paymentId = reference.replace(/^BOOST-/, "");
+	console.log(
+		`[NotchPay webhook] Looking up payment — reference: ${reference}, paymentId: ${paymentId}`,
+	);
 
 	const payment = await payload
 		.findByID({ collection: "boost-payments", id: paymentId })
 		.catch(() => null);
 
-	if (!payment || payment.status === "completed") return;
+	if (!payment) {
+		console.error(
+			`[NotchPay webhook] Payment not found for paymentId: ${paymentId}`,
+		);
+		return;
+	}
+
+	if (payment.status === "completed") {
+		console.log(
+			`[NotchPay webhook] Payment ${paymentId} already completed, skipping`,
+		);
+		return;
+	}
 
 	await payload.update({
 		collection: "boost-payments",
@@ -102,6 +134,10 @@ async function activateBoost(reference: string): Promise<void> {
 		id: listingId,
 		data: { boostedUntil: boostedUntil.toISOString() },
 	});
+
+	console.log(
+		`[NotchPay webhook] Boost activated — listing: ${listingId}, boostedUntil: ${boostedUntil.toISOString()}`,
+	);
 }
 
 async function markBoostFailed(reference: string): Promise<void> {
@@ -115,4 +151,5 @@ async function markBoostFailed(reference: string): Promise<void> {
 			data: { status: "failed" },
 		})
 		.catch(() => null);
+	console.log(`[NotchPay webhook] Payment marked as failed: ${paymentId}`);
 }
