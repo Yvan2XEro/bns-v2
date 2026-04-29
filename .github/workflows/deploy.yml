@@ -1,36 +1,73 @@
-name: Deploy
+name: Deploy (Manual)
 
+# Force-deploy any image tag to any environment without going through CI.
+# Useful for rollbacks: make rollback TAG=v1.1.0 ENV=production
 on:
-  workflow_run:
-    workflows: ["Build & Push Docker Images"]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        required: true
+        options: [staging, production]
+      tag:
+        description: "Image tag to deploy (e.g. v1.2.3 or dev)"
+        type: string
+        required: true
+
+env:
+  REGISTRY: ghcr.io
 
 jobs:
   deploy:
+    name: Deploy ${{ inputs.tag }} → ${{ inputs.environment }}
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy docker-compose to server
+      - name: Resolve server secrets
+        id: server
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "host=${{ secrets.DEPLOY_HOST }}"     >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.DEPLOY_USER }}"     >> $GITHUB_OUTPUT
+            echo "path=${{ secrets.DEPLOY_PATH }}"     >> $GITHUB_OUTPUT
+            echo "key<<EOF"                             >> $GITHUB_OUTPUT
+            echo "${{ secrets.DEPLOY_SSH_KEY }}"       >> $GITHUB_OUTPUT
+            echo "EOF"                                  >> $GITHUB_OUTPUT
+          else
+            echo "host=${{ secrets.STAGING_HOST }}"   >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.STAGING_USER }}"   >> $GITHUB_OUTPUT
+            echo "path=${{ secrets.STAGING_PATH }}"   >> $GITHUB_OUTPUT
+            echo "key<<EOF"                            >> $GITHUB_OUTPUT
+            echo "${{ secrets.STAGING_SSH_KEY }}"     >> $GITHUB_OUTPUT
+            echo "EOF"                                 >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload compose file
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "docker-compose.yml,docker-compose.prod.yml"
-          target: ${{ secrets.DEPLOY_PATH }}
+          host: ${{ steps.server.outputs.host }}
+          username: ${{ steps.server.outputs.user }}
+          key: ${{ steps.server.outputs.key }}
+          source: deployments/docker-compose/docker-compose.yml
+          target: ${{ steps.server.outputs.path }}
+          strip_components: 2
 
-      - name: Deploy via SSH
+      - name: Pull & deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          host: ${{ steps.server.outputs.host }}
+          username: ${{ steps.server.outputs.user }}
+          key: ${{ steps.server.outputs.key }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
+            set -e
+            cd ${{ steps.server.outputs.path }}
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans
+            export IMAGE_REGISTRY=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export IMAGE_TAG=${{ inputs.tag }}
+            docker compose pull
+            docker compose up -d --remove-orphans
             docker image prune -f
+            echo "✓ [${{ inputs.environment }}] registry: $IMAGE_REGISTRY tag: $IMAGE_TAG"

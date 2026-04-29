@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-indexer
+  namespace: bns
+  labels:
+    app: search-indexer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: search-indexer
+  template:
+    metadata:
+      labels:
+        app: search-indexer
+    spec:
+      containers:
+        - name: search-indexer
+          image: REGISTRY/search-indexer:latest
+          envFrom:
+            - configMapRef:
+                name: bns-config
+            - secretRef:
+                name: bns-secrets
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            exec:
+              command: [bun, --version]
+            initialDelaySeconds: 10
+            periodSeconds: 30

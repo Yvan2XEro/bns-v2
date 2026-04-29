@@ -1,0 +1,69 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bns-ingress
+  namespace: bns
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    # www → apex redirect
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - api.buynsellem.com
+      secretName: bns-api-tls
+    - hosts:
+        - buynsellem.com
+        - www.buynsellem.com
+      secretName: bns-web-tls
+    - hosts:
+        - chat.buynsellem.com
+      secretName: bns-chat-tls
+  rules:
+    - host: api.buynsellem.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3000
+
+    - host: buynsellem.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 3001
+
+    - host: www.buynsellem.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 3001
+
+    - host: chat.buynsellem.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 4000

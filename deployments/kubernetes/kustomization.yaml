@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: bns
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  # Infrastructure (stateful — deploy once, manage separately in prod)
+  - mongodb.yaml
+  - redis.yaml
+  - meilisearch.yaml
+  # Application services
+  - api.yaml
+  - web.yaml
+  - chat-service.yaml
+  - search-indexer.yaml
+  # Ingress
+  - ingress.yaml
+
+# Image references — updated automatically by: make k8s-deploy v=1.2.3
+# The Makefile reads the git remote to compute the registry, no manual edit needed.
+images:
+  - name: REGISTRY/api
+    newName: ghcr.io/yvan2xero/bns-v2/api
+    newTag: latest
+  - name: REGISTRY/web
+    newName: ghcr.io/yvan2xero/bns-v2/web
+    newTag: latest
+  - name: REGISTRY/chat-service
+    newName: ghcr.io/yvan2xero/bns-v2/chat-service
+    newTag: latest
+  - name: REGISTRY/search-indexer
+    newName: ghcr.io/yvan2xero/bns-v2/search-indexer
+    newTag: latest

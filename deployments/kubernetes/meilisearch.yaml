@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meilisearch
+  namespace: bns
+  labels:
+    app: meilisearch
+spec:
+  serviceName: meilisearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meilisearch
+  template:
+    metadata:
+      labels:
+        app: meilisearch
+    spec:
+      containers:
+        - name: meilisearch
+          image: getmeili/meilisearch:latest
+          ports:
+            - containerPort: 7700
+          env:
+            - name: MEILI_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bns-secrets
+                  key: MEILI_MASTER_KEY
+            - name: MEILI_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: bns-config
+                  key: MEILI_ENV
+          volumeMounts:
+            - name: meili-data
+              mountPath: /meili_data
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 7700
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 7700
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: meili-data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: bns
+spec:
+  selector:
+    app: meilisearch
+  ports:
+    - port: 7700
+      targetPort: 7700
+  clusterIP: None

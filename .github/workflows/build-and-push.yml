@@ -2,19 +2,28 @@ name: Build & Push Docker Images
 
 on:
   push:
-    branches: [main]
+    branches: [dev]
     tags: ["v*"]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
-  build-api:
+  build:
+    name: Build / ${{ matrix.service }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, web, chat-service, search-indexer]
     steps:
       - uses: actions/checkout@v4
 
@@ -24,112 +33,107 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: docker/setup-buildx-action@v3
+
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/api
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
           tags: |
-            type=sha
-            type=ref,event=branch
+            # On dev branch → dev + dev-{sha}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=sha,prefix=dev-,enable=${{ github.ref == 'refs/heads/dev' }}
+            # On version tag → v1.2.3 + latest
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
 
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./packages/api/Dockerfile
+          file: packages/${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ github.ref == 'refs/heads/dev' && vars.STAGING_API_URL || vars.API_URL || 'https://api.buynsellem.com' }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-  build-web:
+  # ─── Staging deploy (on dev push) ──────────────────────────────────────
+  deploy-staging:
+    name: Deploy → Staging
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    needs: build
+    if: github.ref == 'refs/heads/dev'
+    environment: staging
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/login-action@v3
+      - name: Upload compose file to staging server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          source: deployments/docker-compose/docker-compose.yml
+          target: ${{ secrets.STAGING_PATH }}
+          strip_components: 2
 
-      - uses: docker/metadata-action@v5
-        id: meta
+      - name: Pull & restart on staging
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/web
-          tags: |
-            type=sha
-            type=ref,event=branch
-            type=semver,pattern={{version}}
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.STAGING_PATH }}
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export IMAGE_REGISTRY=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export IMAGE_TAG=dev
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            echo "✓ Staging deployed — registry: $IMAGE_REGISTRY tag: $IMAGE_TAG"
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./packages/web/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  build-chat-service:
+  # ─── Production deploy (on version tag) ────────────────────────────────────
+  deploy-production:
+    name: Deploy → Production
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract tag
+        id: tag
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - uses: docker/metadata-action@v5
-        id: meta
+      - name: Upload compose file to production server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/chat-service
-          tags: |
-            type=sha
-            type=ref,event=branch
-            type=semver,pattern={{version}}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: deployments/docker-compose/docker-compose.yml
+          target: ${{ secrets.DEPLOY_PATH }}
+          strip_components: 2
 
-      - uses: docker/build-push-action@v6
+      - name: Pull & restart on production
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          context: .
-          file: ./packages/chat-service/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  build-search-indexer:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/search-indexer
-          tags: |
-            type=sha
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./packages/search-indexer/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export IMAGE_REGISTRY=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            export IMAGE_TAG=${{ steps.tag.outputs.version }}
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            echo "✓ Production deployed — registry: $IMAGE_REGISTRY tag: $IMAGE_TAG"

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bns-config
+  namespace: bns
+data:
+  # Domains
+  API_DOMAIN: "api.buynsellem.com"
+  WEB_DOMAIN: "buynsellem.com"
+  CHAT_DOMAIN: "chat.buynsellem.com"
+
+  # URLs (inter-service — use K8s service names)
+  PAYLOAD_PUBLIC_SERVER_URL: "https://api.buynsellem.com"
+  PAYLOAD_ALLOWED_ORIGINS: "https://buynsellem.com,https://www.buynsellem.com"
+  PUBLIC_WEB_URL: "https://buynsellem.com"
+  CHAT_PUBLIC_URL: "https://chat.buynsellem.com"
+  NEXT_PUBLIC_API_URL: "https://api.buynsellem.com"
+  NOTCHPAY_BASE_URL: "https://api.notchpay.co"
+  NOVU_API_URL: "https://api.novu.co"
+  MEILI_ENV: "production"
+  MONGO_DB: "bns"
+  MONGO_USER: "bns"
+
+  # Internal service URLs (cluster DNS)
+  DATABASE_URI: "mongodb://$(MONGO_USER):$(MONGO_PASSWORD)@mongodb:27017/$(MONGO_DB)?authSource=admin"
+  REDIS_URL: "redis://:$(REDIS_PASSWORD)@redis:6379"
+  MEILI_HOST: "http://meilisearch:7700"
+  MEILISEARCH_HOST: "http://meilisearch:7700"
+  PAYLOAD_API_URL: "http://api:3000/api"
+  CORS_ORIGIN: "https://buynsellem.com,https://www.buynsellem.com"
+  PORT_API: "3000"
+  PORT_WEB: "3001"
+  PORT_CHAT: "4000"

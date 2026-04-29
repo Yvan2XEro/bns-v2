@@ -1,13 +1,18 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
+  push:
+    branches: [dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-typecheck:
+    name: Lint & Type check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +21,8 @@ jobs:
         with:
           bun-version: latest
 
-      - run: bun install --frozen-lockfile
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
       - name: Biome check
         run: bun run check
@@ -24,8 +30,13 @@ jobs:
       - name: Type check
         run: bun run check-types
 
-  test-chat-service:
+  test:
+    name: Test / ${{ matrix.package }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [chat-service, search-indexer]
     steps:
       - uses: actions/checkout@v4
 
@@ -33,17 +44,8 @@ jobs:
         with:
           bun-version: latest
 
-      - run: cd packages/chat-service && bun install --frozen-lockfile
-      - run: cd packages/chat-service && bun test
+      - name: Install dependencies
+        run: cd packages/${{ matrix.package }} && bun install --frozen-lockfile
 
-  test-search-indexer:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - run: cd packages/search-indexer && bun install --frozen-lockfile
-      - run: cd packages/search-indexer && bun test
+      - name: Run tests
+        run: cd packages/${{ matrix.package }} && bun test
