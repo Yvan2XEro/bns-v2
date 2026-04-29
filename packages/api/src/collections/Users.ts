@@ -43,6 +43,17 @@ export const Users: CollectionConfig = {
 	hooks: {
 		beforeChange: [
 			({ req, data, operation, originalDoc }) => {
+				// Payload v3 merges originalDoc into data before beforeChange on updates.
+				// If avatar was populated (depth > 0), data.avatar is the full media object
+				// which MongoDB cannot cast to ObjectId. Extract the ID explicitly.
+				if (
+					data.avatar &&
+					typeof data.avatar === "object" &&
+					"id" in (data.avatar as object)
+				) {
+					data.avatar = (data.avatar as { id: string }).id;
+				}
+
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
 				const isOAuthFlow = req.context?.oauthFlow === true;
