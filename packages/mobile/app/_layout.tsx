@@ -397,6 +397,10 @@ function RootLayoutNav() {
 					name="report"
 					options={{ presentation: "modal", headerShown: false }}
 				/>
+				<Stack.Screen
+					name="messages/[conversationId]"
+					options={{ headerShown: false, animation: "slide_from_right" }}
+				/>
 				<Stack.Screen name="settings" options={{ headerShown: false }} />
 				<Stack.Screen name="security" options={{ headerShown: false }} />
 				<Stack.Screen name="contact" options={{ headerShown: false }} />

@@ -88,6 +88,86 @@ export function SkeletonRow() {
 	);
 }
 
+export function SkeletonConversationRow() {
+	const isDark = useColorScheme() === "dark";
+	return (
+		<View
+			style={[
+				convStyles.row,
+				{
+					backgroundColor: isDark ? "#1e293b" : "#fff",
+					borderBottomColor: isDark ? "#1e3a5f" : "#f1f5f9",
+				},
+			]}
+		>
+			<SkeletonBlock width={50} height={50} borderRadius={25} />
+			<View style={convStyles.content}>
+				<View style={convStyles.topRow}>
+					<SkeletonBlock width="52%" height={14} />
+					<SkeletonBlock width={34} height={10} borderRadius={4} />
+				</View>
+				<SkeletonBlock
+					width="72%"
+					height={12}
+					style={{ marginTop: 7 } as object}
+				/>
+			</View>
+		</View>
+	);
+}
+
+export function SkeletonMessageBubbles() {
+	const bubbles = [
+		{ isMe: false, widthPct: "58%", height: 40 },
+		{ isMe: true, widthPct: "44%", height: 40 },
+		{ isMe: false, widthPct: "68%", height: 58 },
+		{ isMe: true, widthPct: "52%", height: 40 },
+		{ isMe: false, widthPct: "40%", height: 40 },
+		{ isMe: true, widthPct: "62%", height: 58 },
+	];
+	return (
+		<View style={{ paddingHorizontal: 12, paddingVertical: 16, gap: 8 }}>
+			{bubbles.map((b, i) => (
+				<View
+					key={i}
+					style={{
+						flexDirection: "row",
+						justifyContent: b.isMe ? "flex-end" : "flex-start",
+						alignItems: "flex-end",
+						gap: 6,
+					}}
+				>
+					{!b.isMe && (
+						<SkeletonBlock width={28} height={28} borderRadius={14} />
+					)}
+					<SkeletonBlock
+						width={b.widthPct as unknown as number}
+						height={b.height}
+						borderRadius={18}
+					/>
+				</View>
+			))}
+		</View>
+	);
+}
+
+const convStyles = StyleSheet.create({
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 14,
+		borderBottomWidth: 1,
+		gap: 12,
+	},
+	content: { flex: 1 },
+	topRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+	},
+});
+
 const styles = StyleSheet.create({
 	card: {
 		borderRadius: 14,

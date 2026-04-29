@@ -16,11 +16,38 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { SkeletonMessageBubbles } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
+
+function TypingDots({ color }: { color: string }) {
+	const [step, setStep] = useState(0);
+	useEffect(() => {
+		const id = setInterval(() => setStep((s) => (s + 1) % 3), 380);
+		return () => clearInterval(id);
+	}, []);
+	return (
+		<View
+			style={{ flexDirection: "row", gap: 5, alignItems: "center", paddingVertical: 4 }}
+		>
+			{[0, 1, 2].map((i) => (
+				<View
+					key={i}
+					style={{
+						width: 8,
+						height: 8,
+						borderRadius: 4,
+						backgroundColor: color,
+						opacity: step === i ? 1 : 0.28,
+					}}
+				/>
+			))}
+		</View>
+	);
+}
 
 export default function ConversationScreen() {
 	const { conversationId, listing: listingParam } = useLocalSearchParams<{
@@ -541,7 +568,7 @@ export default function ConversationScreen() {
 
 			<KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
 				{isLoading ? (
-					<ActivityIndicator style={{ margin: 32 }} color={primaryColor} />
+					<SkeletonMessageBubbles />
 				) : (
 					<FlatList
 						ref={listRef}
@@ -580,9 +607,7 @@ export default function ConversationScreen() {
 											{ backgroundColor: cardBg, borderColor },
 										]}
 									>
-										<Text style={[styles.typingDots, { color: mutedColor }]}>
-											• • •
-										</Text>
+										<TypingDots color={mutedColor} />
 									</View>
 								</View>
 							) : null
@@ -742,7 +767,7 @@ const styles = StyleSheet.create({
 	},
 	typingBubble: {
 		paddingHorizontal: 16,
-		paddingVertical: 12,
+		paddingVertical: 10,
 	},
 	bubbleText: { fontSize: 15, lineHeight: 20, fontFamily: Fonts.body },
 	bubbleMeta: {
@@ -753,7 +778,6 @@ const styles = StyleSheet.create({
 	},
 	bubbleTime: { fontSize: 10, fontFamily: Fonts.body },
 	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	typingDots: { fontSize: 18, letterSpacing: 4 },
 	inputWrapper: { borderTopWidth: 1 },
 	attachBar: {
 		flexDirection: "row",

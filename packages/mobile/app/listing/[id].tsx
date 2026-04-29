@@ -139,7 +139,7 @@ export default function ListingDetail() {
 				listing: id,
 			});
 			const convId = created.doc?.id ?? created.doc;
-			router.push(`/(tabs)/messages/${convId}?listing=${id}` as never);
+			router.push(`/messages/${convId}?listing=${id}` as never);
 		} catch (e) {
 			console.error("handleMessage error", e);
 		} finally {

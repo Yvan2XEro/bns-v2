@@ -10,7 +10,6 @@ import {
 	RefreshControl,
 	StyleSheet,
 	Text,
-	TextInput,
 	View,
 } from "react-native";
 import Swipeable from "react-native-gesture-handler/Swipeable";
@@ -18,6 +17,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { SearchBar } from "@/src/components/SearchBar";
+import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { api } from "@/src/lib/api";
@@ -86,7 +87,6 @@ export default function MessagesScreen() {
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const accentBg = isDark ? "#111827" : "#eef2ff";
-	const inputBg = isDark ? "#1e293b" : "#ffffff";
 
 	const unreadCount = useMemo(
 		() => conversations.filter((c) => (c.unreadCount ?? 0) > 0).length,
@@ -377,35 +377,14 @@ export default function MessagesScreen() {
 			</View>
 
 			{/* Search bar */}
-			<View style={[styles.searchRow, { backgroundColor: bg }]}>
-				<View
-					style={[styles.searchBox, { backgroundColor: inputBg, borderColor }]}
-				>
-					<Ionicons
-						name="search-outline"
-						size={18}
-						color={mutedColor}
-						style={{ marginRight: 8 }}
-					/>
-					<TextInput
-						value={search}
-						onChangeText={setSearch}
-						placeholder={t("messages.searchPlaceholder")}
-						placeholderTextColor={mutedColor}
-						style={[styles.searchInput, { color: textColor }]}
-						returnKeyType="search"
-						clearButtonMode="while-editing"
-					/>
-					{search.length > 0 && (
-						<Pressable onPress={() => setSearch("")} hitSlop={8}>
-							<Ionicons name="close-circle" size={18} color={mutedColor} />
-						</Pressable>
-					)}
-				</View>
-			</View>
+			<SearchBar
+				value={search}
+				onChangeText={setSearch}
+				placeholder={t("messages.searchPlaceholder")}
+			/>
 
-			{/* Filter tabs */}
-			<View style={[styles.filterRow, { borderBottomColor: borderColor }]}>
+			{/* Filter pills */}
+			<View style={[styles.filterRow, { backgroundColor: bg }]}>
 				{(["all", "unread"] as FilterTab[]).map((tab) => {
 					const active = filter === tab;
 					const label =
@@ -422,18 +401,21 @@ export default function MessagesScreen() {
 							key={tab}
 							onPress={() => setFilter(tab)}
 							style={[
-								styles.filterTab,
-								active && {
-									borderBottomColor: primaryColor,
-									borderBottomWidth: 2,
+								styles.filterPill,
+								{
+									backgroundColor: active
+										? primaryColor
+										: isDark
+											? "#1e293b"
+											: "#f1f5f9",
 								},
 							]}
 						>
 							<Text
 								style={[
-									styles.filterTabText,
+									styles.filterPillText,
 									{
-										color: active ? primaryColor : mutedColor,
+										color: active ? "#fff" : mutedColor,
 										fontFamily: active ? Fonts.displayBold : Fonts.body,
 									},
 								]}
@@ -446,7 +428,9 @@ export default function MessagesScreen() {
 			</View>
 
 			{/* List */}
-			{filtered.length === 0 && !isLoading ? (
+			{isLoading ? (
+				[...Array(7)].map((_, i) => <SkeletonConversationRow key={i} />)
+			) : filtered.length === 0 ? (
 				<EmptyState
 					icon="chatbubbles-outline"
 					title={
@@ -538,34 +522,18 @@ const styles = StyleSheet.create({
 	},
 	markReadText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	countBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-	searchRow: {
-		paddingHorizontal: 16,
-		paddingVertical: 10,
-	},
-	searchBox: {
-		flexDirection: "row",
-		alignItems: "center",
-		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-	},
-	searchInput: {
-		flex: 1,
-		fontSize: 14,
-		fontFamily: Fonts.body,
-	},
 	filterRow: {
 		flexDirection: "row",
-		borderBottomWidth: 1,
 		paddingHorizontal: 16,
+		paddingBottom: 12,
+		gap: 8,
 	},
-	filterTab: {
-		paddingVertical: 10,
-		paddingHorizontal: 4,
-		marginRight: 20,
+	filterPill: {
+		paddingVertical: 7,
+		paddingHorizontal: 16,
+		borderRadius: 20,
 	},
-	filterTabText: { fontSize: 14 },
+	filterPillText: { fontSize: 13 },
 	convItem: {
 		flexDirection: "row",
 		alignItems: "center",
