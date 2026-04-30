@@ -1,0 +1,14 @@
+config:
+  bns-infra:cloudProvider: aws
+  bns-infra:region: us-east-1
+  bns-infra:nodeCount: "3"
+  bns-infra:instanceType: t3.large
+  bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
+  bns-infra:imageTag: latest
+  bns-infra:domain: buynsellem.com
+  bns-infra:acmeEmail: your@email.com
+  bns-infra:googleClientId: ""
+  bns-infra:novuAppIdentifier: ""
+  bns-infra:stripePublishableKey: ""
+  bns-infra:notchpayPublicKey: ""
+  # Secrets — set with: pulumi config set --secret <key> <value> --stack aws-prod

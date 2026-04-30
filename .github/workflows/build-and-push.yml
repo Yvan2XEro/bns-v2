@@ -82,13 +82,69 @@ jobs:
 
       - name: Pull & restart on staging
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          MEILI_MASTER_KEY: ${{ secrets.MEILI_MASTER_KEY }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          FACEBOOK_OAUTH_APP_SECRET: ${{ secrets.FACEBOOK_OAUTH_APP_SECRET }}
+          NOVU_SECRET_KEY: ${{ secrets.NOVU_SECRET_KEY }}
+          CHAT_SERVICE_PASSWORD: ${{ secrets.CHAT_SERVICE_PASSWORD }}
+          MONGO_EXPRESS_PASSWORD: ${{ secrets.MONGO_EXPRESS_PASSWORD }}
+          NOTCHPAY_HASH_KEY: ${{ secrets.NOTCHPAY_HASH_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
+          envs: MONGO_PASSWORD,REDIS_PASSWORD,MEILI_MASTER_KEY,PAYLOAD_SECRET,GOOGLE_OAUTH_CLIENT_SECRET,FACEBOOK_OAUTH_APP_SECRET,NOVU_SECRET_KEY,CHAT_SERVICE_PASSWORD,MONGO_EXPRESS_PASSWORD,NOTCHPAY_HASH_KEY,STRIPE_SECRET_KEY,STRIPE_WEBHOOK_SECRET
           script: |
             set -e
             cd ${{ secrets.STAGING_PATH }}
+
+            # Write .env from GitHub secrets/vars — safe even with special chars
+            {
+              printf 'IMAGE_REGISTRY=%s\n' "$(echo 'ghcr.io/${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+              printf 'IMAGE_TAG=%s\n'               'dev'
+              printf 'MONGO_USER=%s\n'              '${{ vars.MONGO_USER }}'
+              printf 'MONGO_PASSWORD=%s\n'          "${MONGO_PASSWORD}"
+              printf 'MONGO_DB=%s\n'                '${{ vars.MONGO_DB }}'
+              printf 'REDIS_PASSWORD=%s\n'          "${REDIS_PASSWORD}"
+              printf 'MEILI_MASTER_KEY=%s\n'        "${MEILI_MASTER_KEY}"
+              printf 'MEILI_ENV=%s\n'               'production'
+              printf 'API_DOMAIN=%s\n'              '${{ vars.API_DOMAIN }}'
+              printf 'WEB_DOMAIN=%s\n'              '${{ vars.WEB_DOMAIN }}'
+              printf 'WEB_WWW_DOMAIN=%s\n'          '${{ vars.WEB_WWW_DOMAIN }}'
+              printf 'CHAT_DOMAIN=%s\n'             '${{ vars.CHAT_DOMAIN }}'
+              printf 'DB_DOMAIN=%s\n'              '${{ vars.DB_DOMAIN }}'
+              printf 'PAYLOAD_SECRET=%s\n'          "${PAYLOAD_SECRET}"
+              printf 'PAYLOAD_PUBLIC_SERVER_URL=%s\n' '${{ vars.PAYLOAD_PUBLIC_SERVER_URL }}'
+              printf 'PAYLOAD_ALLOWED_ORIGINS=%s\n'   '${{ vars.PAYLOAD_ALLOWED_ORIGINS }}'
+              printf 'GOOGLE_OAUTH_CLIENT_ID=%s\n'  '${{ vars.GOOGLE_OAUTH_CLIENT_ID }}'
+              printf 'GOOGLE_OAUTH_CLIENT_SECRET=%s\n' "${GOOGLE_OAUTH_CLIENT_SECRET}"
+              printf 'FACEBOOK_OAUTH_APP_ID=%s\n'   '${{ vars.FACEBOOK_OAUTH_APP_ID }}'
+              printf 'FACEBOOK_OAUTH_APP_SECRET=%s\n'  "${FACEBOOK_OAUTH_APP_SECRET}"
+              printf 'NOVU_SECRET_KEY=%s\n'         "${NOVU_SECRET_KEY}"
+              printf 'NOVU_APPLICATION_IDENTIFIER=%s\n' '${{ vars.NOVU_APPLICATION_IDENTIFIER }}'
+              printf 'NOVU_API_URL=%s\n'            'https://api.novu.co'
+              printf 'CHAT_SERVICE_EMAIL=%s\n'      '${{ vars.CHAT_SERVICE_EMAIL }}'
+              printf 'CHAT_SERVICE_PASSWORD=%s\n'   "${CHAT_SERVICE_PASSWORD}"
+              printf 'CORS_ORIGIN=%s\n'             '${{ vars.CORS_ORIGIN }}'
+              printf 'NEXT_PUBLIC_API_URL=%s\n'     '${{ vars.NEXT_PUBLIC_API_URL }}'
+              printf 'CHAT_PUBLIC_URL=%s\n'         '${{ vars.CHAT_PUBLIC_URL }}'
+              printf 'PUBLIC_WEB_URL=%s\n'          '${{ vars.PUBLIC_WEB_URL }}'
+              printf 'STRIPE_PUBLISHABLE_KEY=%s\n'  '${{ vars.STRIPE_PUBLISHABLE_KEY }}'
+              printf 'STRIPE_SECRET_KEY=%s\n'       "${STRIPE_SECRET_KEY}"
+              printf 'STRIPE_WEBHOOK_SECRET=%s\n'   "${STRIPE_WEBHOOK_SECRET}"
+              printf 'NOTCHPAY_PUBLIC_KEY=%s\n'     '${{ vars.NOTCHPAY_PUBLIC_KEY }}'
+              printf 'NOTCHPAY_HASH_KEY=%s\n'       "${NOTCHPAY_HASH_KEY}"
+              printf 'NOTCHPAY_BASE_URL=%s\n'       '${{ vars.NOTCHPAY_BASE_URL }}'
+              printf 'MONGO_EXPRESS_USER=%s\n'      'admin'
+              printf 'MONGO_EXPRESS_PASSWORD=%s\n'  "${MONGO_EXPRESS_PASSWORD}"
+            } > .env
+
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             export IMAGE_REGISTRY=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export IMAGE_TAG=dev

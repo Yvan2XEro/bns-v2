@@ -1,0 +1,20 @@
+{
+	"name": "bns-infra",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"build": "tsc"
+	},
+	"dependencies": {
+		"@pulumi/aws": "^6",
+		"@pulumi/awsx": "^2",
+		"@pulumi/azure-native": "^2",
+		"@pulumi/eks": "^3",
+		"@pulumi/kubernetes": "^4",
+		"@pulumi/pulumi": "^3"
+	},
+	"devDependencies": {
+		"@types/node": "^20",
+		"typescript": "^5"
+	}
+}

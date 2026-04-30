@@ -1,0 +1,6 @@
+name: bns-infra
+runtime:
+  name: nodejs
+  options:
+    typescript: true
+description: BNS cloud infrastructure — EKS (AWS) or AKS (Azure)

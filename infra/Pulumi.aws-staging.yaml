@@ -1,0 +1,20 @@
+config:
+  bns-infra:cloudProvider: aws
+  bns-infra:region: us-east-1
+  bns-infra:nodeCount: "2"
+  bns-infra:instanceType: t3.medium
+  bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
+  bns-infra:imageTag: dev
+  bns-infra:domain: staging.buynsellem.com
+  bns-infra:acmeEmail: your@email.com
+  bns-infra:googleClientId: ""
+  bns-infra:novuAppIdentifier: ""
+  bns-infra:stripePublishableKey: ""
+  bns-infra:notchpayPublicKey: ""
+  # Secrets — set with: pulumi config set --secret <key> <value> --stack aws-staging
+  # bns-infra:ghcrToken: (secret)
+  # bns-infra:mongoPassword: (secret)
+  # bns-infra:redisPassword: (secret)
+  # bns-infra:meiliMasterKey: (secret)
+  # bns-infra:payloadSecret: (secret)
+  # bns-infra:chatServicePassword: (secret)

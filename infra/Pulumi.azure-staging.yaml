@@ -1,0 +1,14 @@
+config:
+  bns-infra:cloudProvider: azure
+  bns-infra:region: westeurope
+  bns-infra:nodeCount: "2"
+  bns-infra:vmSize: Standard_B2s
+  bns-infra:imageRegistry: ghcr.io/yvan2xero/bns-v2
+  bns-infra:imageTag: dev
+  bns-infra:domain: staging.buynsellem.com
+  bns-infra:acmeEmail: your@email.com
+  bns-infra:googleClientId: ""
+  bns-infra:novuAppIdentifier: ""
+  bns-infra:stripePublishableKey: ""
+  bns-infra:notchpayPublicKey: ""
+  # Secrets — set with: pulumi config set --secret <key> <value> --stack azure-staging
