@@ -25,6 +25,15 @@ function makeRandomPassword(): string {
 	return randomBytes(32).toString("hex");
 }
 
+function toRelationId(val: unknown): string | null | undefined {
+	if (val === undefined) return undefined;
+	if (val === null) return null;
+	if (typeof val === "string") return val;
+	if (typeof val === "object" && "id" in (val as object))
+		return (val as { id: string }).id;
+	return undefined;
+}
+
 function withProviderLink(
 	user: PayloadUser,
 	identity: OAuthIdentity,
@@ -122,15 +131,21 @@ export async function resolveOAuthUser(
 			throw new Error("This account is not allowed to access admin");
 		}
 
-		const nextData: Partial<PayloadUser> = {
+		const nextData = {
 			...withProviderLink(linkedUser, identity),
 			...(identity.name ? { name: identity.name } : {}),
+			// Explicitly carry avatar as a plain ID so Payload's internal merge
+			// cannot inject a populated Media object (which MongoDB rejects as ObjectId).
+			// linkedUser was fetched with depth:0 so avatar is already a string,
+			// but toRelationId handles both forms defensively.
+			avatar: toRelationId(linkedUser.avatar),
 		};
 
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
-			data: nextData,
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			data: nextData as any,
 			id: linkedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;
@@ -142,10 +157,16 @@ export async function resolveOAuthUser(
 			throw new Error("This account is not allowed to access admin");
 		}
 
+		const emailMatchData = {
+			...withProviderLink(emailMatchedUser, identity),
+			avatar: toRelationId(emailMatchedUser.avatar),
+		};
+
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
-			data: withProviderLink(emailMatchedUser, identity),
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			data: emailMatchData as any,
 			id: emailMatchedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;

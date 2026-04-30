@@ -43,15 +43,28 @@ export const Users: CollectionConfig = {
 	hooks: {
 		beforeChange: [
 			({ req, data, operation, originalDoc }) => {
-				// Payload v3 merges originalDoc into data before beforeChange on updates.
-				// If avatar was populated (depth > 0), data.avatar is the full media object
-				// which MongoDB cannot cast to ObjectId. Extract the ID explicitly.
-				if (
-					data.avatar &&
-					typeof data.avatar === "object" &&
-					"id" in (data.avatar as object)
+				// Avatar must always reach MongoDB as a plain ObjectId string.
+				// Payload may merge originalDoc (populated, depth>0) into data either
+				// before or after this hook depending on the operation path.
+				// We normalise in both directions to be safe:
+				//   • data.avatar already set → normalise to ID if it's a full object
+				//   • data.avatar not set + update → pin it from originalDoc as an ID
+				//     so Payload cannot inject the populated object after this hook.
+				const toId = (v: unknown): string | null | undefined => {
+					if (v == null) return v as null | undefined;
+					if (typeof v === "string") return v;
+					if (typeof v === "object" && "id" in (v as object))
+						return (v as { id: string }).id;
+					return undefined;
+				};
+
+				if ("avatar" in data) {
+					data.avatar = toId(data.avatar) as typeof data.avatar;
+				} else if (
+					operation === "update" &&
+					originalDoc?.avatar !== undefined
 				) {
-					data.avatar = (data.avatar as { id: string }).id;
+					data.avatar = toId(originalDoc.avatar) as typeof data.avatar;
 				}
 
 				const user = req.user as { role?: string } | undefined;
