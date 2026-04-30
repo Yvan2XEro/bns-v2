@@ -25,7 +25,7 @@ function makeRandomPassword(): string {
 	return randomBytes(32).toString("hex");
 }
 
-function toRelationId(val: unknown): string | null | undefined {
+function _toRelationId(val: unknown): string | null | undefined {
 	if (val === undefined) return undefined;
 	if (val === null) return null;
 	if (typeof val === "string") return val;
@@ -134,18 +134,20 @@ export async function resolveOAuthUser(
 		const nextData = {
 			...withProviderLink(linkedUser, identity),
 			...(identity.name ? { name: identity.name } : {}),
-			// Explicitly carry avatar as a plain ID so Payload's internal merge
-			// cannot inject a populated Media object (which MongoDB rejects as ObjectId).
-			// linkedUser was fetched with depth:0 so avatar is already a string,
-			// but toRelationId handles both forms defensively.
-			avatar: toRelationId(linkedUser.avatar),
 		};
+
+		payload.logger.info({
+			msg: "[oauth] resolveOAuthUser — about to update linkedUser",
+			userId: linkedUser.id,
+			"linkedUser.avatar": linkedUser.avatar,
+			avatarType: typeof linkedUser.avatar,
+			nextDataKeys: Object.keys(nextData),
+		});
 
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			data: nextData as any,
+			data: nextData,
 			id: linkedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;
@@ -157,16 +159,17 @@ export async function resolveOAuthUser(
 			throw new Error("This account is not allowed to access admin");
 		}
 
-		const emailMatchData = {
-			...withProviderLink(emailMatchedUser, identity),
-			avatar: toRelationId(emailMatchedUser.avatar),
-		};
+		payload.logger.info({
+			msg: "[oauth] resolveOAuthUser — about to update emailMatchedUser",
+			userId: emailMatchedUser.id,
+			"emailMatchedUser.avatar": emailMatchedUser.avatar,
+			avatarType: typeof emailMatchedUser.avatar,
+		});
 
 		return (await payload.update({
 			collection: "users",
 			context: { oauthFlow: true },
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			data: emailMatchData as any,
+			data: withProviderLink(emailMatchedUser, identity),
 			id: emailMatchedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;
