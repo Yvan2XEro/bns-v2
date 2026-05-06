@@ -31,7 +31,12 @@ function TypingDots({ color }: { color: string }) {
 	}, []);
 	return (
 		<View
-			style={{ flexDirection: "row", gap: 5, alignItems: "center", paddingVertical: 4 }}
+			style={{
+				flexDirection: "row",
+				gap: 5,
+				alignItems: "center",
+				paddingVertical: 4,
+			}}
 		>
 			{[0, 1, 2].map((i) => (
 				<View
@@ -705,8 +710,8 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 12,
-		paddingVertical: 10,
+		paddingHorizontal: 16,
+		paddingVertical: 14,
 		borderBottomWidth: 1,
 	},
 	backBtn: { width: 40, alignItems: "center", justifyContent: "center" },

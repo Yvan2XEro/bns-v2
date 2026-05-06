@@ -2,8 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { router } from "expo-router";
+import * as Updates from "expo-updates";
 import { useState } from "react";
 import {
+	ActivityIndicator,
 	Appearance,
 	Modal,
 	Pressable,
@@ -74,6 +76,34 @@ export default function SettingsScreen() {
 	const [isDark, setIsDark] = useState(colorScheme === "dark");
 	const { t } = useTranslation();
 	const [langPickerOpen, setLangPickerOpen] = useState(false);
+	const [updateChecked, setUpdateChecked] = useState(false);
+	const [checkError, setCheckError] = useState(false);
+
+	const { isChecking, isDownloading, isUpdateAvailable, isUpdatePending } =
+		Updates.useUpdates();
+
+	const handleCheckUpdate = async () => {
+		setCheckError(false);
+		try {
+			await Updates.checkForUpdateAsync();
+			setUpdateChecked(true);
+		} catch {
+			setUpdateChecked(true);
+			setCheckError(true);
+		}
+	};
+
+	const handleDownloadUpdate = async () => {
+		try {
+			await Updates.fetchUpdateAsync();
+		} catch {
+			// download error surfaced via useUpdates().downloadError
+		}
+	};
+
+	const handleRestart = async () => {
+		await Updates.reloadAsync();
+	};
 
 	const currentLang =
 		(i18n.language?.slice(0, 2) as Locale | undefined) ?? "fr";
@@ -173,6 +203,138 @@ export default function SettingsScreen() {
 							thumbColor="#fff"
 							ios_backgroundColor="#CBD5E1"
 						/>
+					</View>
+				</Section>
+
+				{/* Updates */}
+				<Section
+					title={t("settings.updatesSection")}
+					icon="cloud-download-outline"
+					{...sectionColors}
+				>
+					<View style={[styles.updateRow, { borderColor }]}>
+						{/* Status line */}
+						<View style={styles.updateStatus}>
+							{isChecking || isDownloading ? (
+								<>
+									<ActivityIndicator
+										size="small"
+										color={primaryColor}
+										style={{ marginRight: 8 }}
+									/>
+									<Text
+										style={[styles.updateStatusText, { color: mutedColor }]}
+									>
+										{isDownloading
+											? t("settings.downloading")
+											: t("settings.checking")}
+									</Text>
+								</>
+							) : isUpdatePending ? (
+								<>
+									<Ionicons
+										name="checkmark-circle"
+										size={17}
+										color="#22c55e"
+										style={{ marginRight: 6 }}
+									/>
+									<Text style={[styles.updateStatusText, { color: "#22c55e" }]}>
+										{t("settings.readyToInstall")}
+									</Text>
+								</>
+							) : updateChecked && isUpdateAvailable ? (
+								<>
+									<Ionicons
+										name="arrow-up-circle-outline"
+										size={17}
+										color={primaryColor}
+										style={{ marginRight: 6 }}
+									/>
+									<Text
+										style={[styles.updateStatusText, { color: primaryColor }]}
+									>
+										{t("settings.updateAvailable")}
+									</Text>
+								</>
+							) : updateChecked && !checkError ? (
+								<>
+									<Ionicons
+										name="checkmark-circle-outline"
+										size={17}
+										color="#22c55e"
+										style={{ marginRight: 6 }}
+									/>
+									<Text style={[styles.updateStatusText, { color: "#22c55e" }]}>
+										{t("settings.upToDate")}
+									</Text>
+								</>
+							) : checkError ? (
+								<>
+									<Ionicons
+										name="alert-circle-outline"
+										size={17}
+										color="#ef4444"
+										style={{ marginRight: 6 }}
+									/>
+									<Text style={[styles.updateStatusText, { color: "#ef4444" }]}>
+										{t("settings.checkFailed")}
+									</Text>
+								</>
+							) : (
+								<Text style={[styles.updateStatusText, { color: mutedColor }]}>
+									v{version}
+								</Text>
+							)}
+						</View>
+
+						{/* Action button */}
+						{isUpdatePending ? (
+							<Pressable
+								onPress={handleRestart}
+								style={[styles.updateBtn, { backgroundColor: "#22c55e" }]}
+							>
+								<Text style={styles.updateBtnText}>
+									{t("settings.restartNow")}
+								</Text>
+							</Pressable>
+						) : isUpdateAvailable ? (
+							<Pressable
+								onPress={handleDownloadUpdate}
+								disabled={isDownloading}
+								style={[
+									styles.updateBtn,
+									{
+										backgroundColor: primaryColor,
+										opacity: isDownloading ? 0.6 : 1,
+									},
+								]}
+							>
+								<Text style={styles.updateBtnText}>
+									{t("settings.download")}
+								</Text>
+							</Pressable>
+						) : (
+							<Pressable
+								onPress={handleCheckUpdate}
+								disabled={isChecking}
+								style={[
+									styles.updateBtn,
+									{
+										backgroundColor: isDark ? "#1e3a5f" : "#e2e8f0",
+										opacity: isChecking ? 0.6 : 1,
+									},
+								]}
+							>
+								<Text
+									style={[
+										styles.updateBtnText,
+										{ color: isDark ? "#93c5fd" : "#475569" },
+									]}
+								>
+									{t("settings.checkForUpdates")}
+								</Text>
+							</Pressable>
+						)}
 					</View>
 				</Section>
 
@@ -345,6 +507,35 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		paddingHorizontal: 12,
 		paddingVertical: 11,
+	},
+	updateRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		borderWidth: 1,
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		gap: 10,
+	},
+	updateStatus: {
+		flexDirection: "row",
+		alignItems: "center",
+		flex: 1,
+	},
+	updateStatusText: {
+		fontSize: 13,
+		fontFamily: Fonts.body,
+	},
+	updateBtn: {
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 7,
+	},
+	updateBtnText: {
+		fontSize: 13,
+		fontFamily: Fonts.displayBold,
+		color: "#ffffff",
 	},
 	infoLabel: {
 		fontSize: 14,

@@ -148,6 +148,7 @@ export async function resolveOAuthUser(
 			collection: "users",
 			context: { oauthFlow: true },
 			data: nextData,
+			depth: 0,
 			id: linkedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;
@@ -170,6 +171,7 @@ export async function resolveOAuthUser(
 			collection: "users",
 			context: { oauthFlow: true },
 			data: withProviderLink(emailMatchedUser, identity),
+			depth: 0,
 			id: emailMatchedUser.id,
 			overrideAccess: true,
 		})) as PayloadUser;

@@ -10,7 +10,7 @@
 		"newArchEnabled": true,
 		"ios": {
 			"supportsTablet": true,
-			"bundleIdentifier": "com.buynsellem.mobilev2"
+			"bundleIdentifier": "com.buynsellem.mobile"
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -21,7 +21,7 @@
 			},
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false,
-			"package": "com.buynsellem.mobilev2"
+			"package": "com.buynsellem.mobile"
 		},
 		"web": {
 			"output": "static",

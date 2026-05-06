@@ -128,9 +128,7 @@ export default function ListingDetail() {
 				`/api/conversations?where[participants][equals]=${seller.id}&limit=1&depth=0`,
 			);
 			if (existing.docs?.length > 0) {
-				router.push(
-					`/(tabs)/messages/${existing.docs[0].id}?listing=${id}` as never,
-				);
+				router.push(`/messages/${existing.docs[0].id}?listing=${id}` as never);
 				return;
 			}
 			// Create a new conversation

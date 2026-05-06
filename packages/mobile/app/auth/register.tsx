@@ -203,16 +203,16 @@ export default function RegisterScreen() {
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
+			<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
+				<Ionicons name="close" size={24} color={textColor} />
+			</Pressable>
+
 			<KeyboardAwareScrollView
 				style={{ flex: 1 }}
-				contentContainerStyle={{ flexGrow: 1 }}
+				contentContainerStyle={{ paddingBottom: 32 }}
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={20}
 			>
-				<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
-					<Ionicons name="arrow-back" size={24} color={textColor} />
-				</Pressable>
-
 				<View style={styles.container}>
 					{/* Logo */}
 					<View style={styles.logoWrap}>
@@ -337,7 +337,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	closeBtn: { padding: 16, alignSelf: "flex-start" },
-	container: { flex: 1, padding: 24, paddingTop: 8 },
+	container: { padding: 24, paddingTop: 8 },
 	logoWrap: { alignItems: "center", marginBottom: 16 },
 	logoBlock: { alignItems: "center", gap: 10 },
 	logoImg: { width: 72, height: 72, borderRadius: 18 },

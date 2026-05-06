@@ -32,7 +32,7 @@ export default function HelpScreen() {
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			<View style={[styles.header, { borderBottomColor: borderColor }]}>
-				<Pressable onPress={() => router.back()}>
+				<Pressable onPress={() => router.back()} style={styles.backBtn}>
 					<Ionicons name="arrow-back" size={22} color={textColor} />
 				</Pressable>
 				<Text style={[styles.title, { color: textColor }]}>
@@ -108,6 +108,12 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 14,
 		borderBottomWidth: 1,
+	},
+	backBtn: {
+		width: 40,
+		height: 40,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	title: { fontSize: 17, fontFamily: Fonts.displayBold },
 	scroll: { padding: 20, gap: 10, paddingBottom: 40 },
