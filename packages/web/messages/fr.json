@@ -211,7 +211,17 @@
 		"failedToCreate": "Échec de la création. Veuillez réessayer.",
 		"boostSuccess": "Paiement reçu ! Votre boost sera actif dans quelques instants.",
 		"boostPending": "Paiement en cours de traitement. Votre boost sera activé sous peu.",
-		"boostFailed": "Le paiement n'a pas pu être finalisé. Veuillez réessayer."
+		"boostFailed": "Le paiement n'a pas pu être finalisé. Veuillez réessayer.",
+		"notFoundTitle": "Annonce non accessible",
+		"notFoundDescription": "Cette annonce n’est pas consultable depuis cette URL. Cela ne signifie pas forcément qu’elle n’existe pas.",
+		"notFoundReasonsTitle": "Cela peut arriver dans les cas suivants :",
+		"notFoundReasonPending": "L’annonce existe, mais elle est encore en attente d’approbation avant publication.",
+		"notFoundReasonSold": "L’article a déjà été vendu et l’annonce n’est plus ouverte au public.",
+		"notFoundReasonExpired": "La durée de publication de l’annonce est arrivée à son terme.",
+		"notFoundReasonModeration": "L’annonce a été refusée ou masquée après modération.",
+		"notFoundReasonRemoved": "L’annonce a été supprimée par son propriétaire ou retirée de la plateforme.",
+		"browseOtherListings": "Parcourir d’autres annonces",
+		"backHome": "Retour à l’accueil"
 	},
 	"CreateListing": {
 		"category": "Catégorie",

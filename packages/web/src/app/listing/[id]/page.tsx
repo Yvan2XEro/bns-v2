@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import type { Listing, User } from "~/types";
+import type { Listing, Tag, User } from "~/types";
 
 interface PageProps {
 	params: Promise<{ id: string }>;
@@ -130,9 +130,14 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		poor: tCond("poor"),
 	};
 
-	const listingTags = Array.isArray((listing as any).tags)
-		? (listing as any).tags.filter(
-				(t: any) => typeof t === "object" && t !== null,
+	const rawTags = (
+		listing as Listing & {
+			tags?: Array<string | Tag>;
+		}
+	).tags;
+	const listingTags = Array.isArray(rawTags)
+		? rawTags.filter(
+				(tag): tag is Tag => typeof tag === "object" && tag !== null,
 			)
 		: [];
 
@@ -253,17 +258,17 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										{t("listingBoosted")}
 									</Badge>
 								)}
-								{listingTags.map((tag: any) => (
+								{listingTags.map((tag) => (
 									<Link
-										key={String(tag.id)}
-										href={`/search?tags=${encodeURIComponent(tag.slug)}`}
+										key={String(tag.id ?? tag.slug ?? tag.name)}
+										href={`/search?tags=${encodeURIComponent(tag.slug ?? "")}`}
 									>
 										<Badge
 											variant="outline"
 											className="cursor-pointer border-primary/30 bg-primary/5 text-primary hover:bg-primary/15"
 										>
 											{tag.emoji && <span className="mr-1">{tag.emoji}</span>}
-											{tag.name}
+											{tag.name ?? tag.slug}
 										</Badge>
 									</Link>
 								))}

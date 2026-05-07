@@ -211,7 +211,17 @@
 		"failedToCreate": "Failed to create listing. Please try again.",
 		"boostSuccess": "Payment received! Your boost will be active in a moment.",
 		"boostPending": "Payment processing. Your boost will be activated shortly.",
-		"boostFailed": "Payment could not be completed. Please try again."
+		"boostFailed": "Payment could not be completed. Please try again.",
+		"notFoundTitle": "Listing not accessible",
+		"notFoundDescription": "This listing cannot be viewed from this URL. That does not necessarily mean it does not exist.",
+		"notFoundReasonsTitle": "This can happen for reasons such as:",
+		"notFoundReasonPending": "The listing exists, but it is still pending approval before publication.",
+		"notFoundReasonSold": "The item has already been sold and the listing is no longer publicly open.",
+		"notFoundReasonExpired": "The listing publication period has ended.",
+		"notFoundReasonModeration": "The listing was rejected or hidden after moderation.",
+		"notFoundReasonRemoved": "The listing was deleted by its owner or removed from the platform.",
+		"browseOtherListings": "Browse other listings",
+		"backHome": "Back home"
 	},
 	"CreateListing": {
 		"category": "Category",

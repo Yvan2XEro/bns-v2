@@ -9,6 +9,7 @@ export type {
 	Message,
 	Report,
 	Review,
+	Tag,
 	User,
 } from "../../../api/src/payload-types";
 
