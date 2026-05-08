@@ -134,6 +134,9 @@ export default function BoostModal() {
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
+			<Pressable onPress={() => router.dismiss()} style={styles.closeBtn}>
+				<Ionicons name="close" size={24} color={textColor} />
+			</Pressable>
 			<View style={styles.container}>
 				{/* Header */}
 				<View style={styles.header}>
@@ -326,6 +329,7 @@ export default function BoostModal() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
+	closeBtn: { padding: 16, alignSelf: "flex-end" },
 	container: { flex: 1, padding: 24, justifyContent: "center" },
 	header: { alignItems: "center", marginBottom: 24 },
 	rocketIconWrap: {

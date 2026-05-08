@@ -161,6 +161,7 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
+      NEXT_PUBLIC_WEB_URL: ${NEXT_PUBLIC_WEB_URL:-https://${WEB_DOMAIN:-buynsellem.com}}
       CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://${CHAT_DOMAIN:-chat.buynsellem.com}}
       NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
     depends_on:

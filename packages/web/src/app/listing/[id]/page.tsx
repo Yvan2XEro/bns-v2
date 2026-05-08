@@ -12,6 +12,7 @@ import {
 	Timer,
 	Zap,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -30,9 +31,75 @@ import { Button } from "~/components/ui/button";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Tag, User } from "~/types";
 
+export const revalidate = 3600;
+
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
 interface PageProps {
 	params: Promise<{ id: string }>;
 	searchParams: Promise<{ boostStatus?: string }>;
+}
+
+export async function generateStaticParams() {
+	try {
+		const res = await fetch(
+			`${API_URL}/api/listings?where[status][equals]=published&sort=-createdAt&limit=200&depth=0`,
+			{ next: { revalidate: 3600 } },
+		);
+		if (!res.ok) return [];
+		const data = await res.json();
+		return (data.docs ?? []).map((l: { id: string }) => ({ id: l.id }));
+	} catch {
+		return [];
+	}
+}
+
+export async function generateMetadata({
+	params,
+}: PageProps): Promise<Metadata> {
+	const { id } = await params;
+	const listing = await getListing(id);
+
+	if (!listing) {
+		return {
+			title: "Annonce introuvable",
+			robots: { index: false },
+		};
+	}
+
+	const title = `${listing.title} — ${listing.price.toLocaleString("fr-FR")} XAF`;
+	const description = (listing.description ?? "")
+		.slice(0, 155)
+		.replace(/\n/g, " ");
+	const canonical = `${WEB_URL}/listing/${id}`;
+	const imageUrls = (listing.images ?? [])
+		.map((img) => (img.image as { url?: string })?.url)
+		.filter((u): u is string => Boolean(u));
+	const firstImage = imageUrls[0];
+
+	return {
+		title,
+		description,
+		alternates: { canonical },
+		openGraph: {
+			title,
+			description,
+			url: canonical,
+			type: "website",
+			...(firstImage && {
+				images: [
+					{ url: firstImage, width: 1200, height: 630, alt: listing.title },
+				],
+			}),
+		},
+		twitter: {
+			card: firstImage ? "summary_large_image" : "summary",
+			title,
+			description,
+			...(firstImage && { images: [firstImage] }),
+		},
+	};
 }
 
 async function getListing(id: string): Promise<Listing | null> {
@@ -141,8 +208,81 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 			)
 		: [];
 
+	const canonical = `${WEB_URL}/listing/${listing.id}`;
+	const productJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "Product",
+		name: listing.title,
+		description: listing.description,
+		image: imageUrls,
+		url: canonical,
+		offers: {
+			"@type": "Offer",
+			price: listing.price,
+			priceCurrency: "XAF",
+			availability: "https://schema.org/InStock",
+			url: canonical,
+			...(seller && {
+				seller: { "@type": "Person", name: seller.name },
+			}),
+		},
+		...(category && { category: category.name }),
+	};
+
+	const breadcrumbJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "BreadcrumbList",
+		itemListElement: [
+			{
+				"@type": "ListItem",
+				position: 1,
+				name: "Accueil",
+				item: WEB_URL,
+			},
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: "Recherche",
+				item: `${WEB_URL}/search`,
+			},
+			...(category
+				? [
+						{
+							"@type": "ListItem",
+							position: 3,
+							name: category.name,
+							item: `${WEB_URL}/search?category=${category.id}`,
+						},
+						{
+							"@type": "ListItem",
+							position: 4,
+							name: listing.title,
+							item: canonical,
+						},
+					]
+				: [
+						{
+							"@type": "ListItem",
+							position: 3,
+							name: listing.title,
+							item: canonical,
+						},
+					]),
+		],
+	};
+
 	return (
 		<div className="min-h-screen bg-[#F8FAFC]">
+			<script
+				type="application/ld+json"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+			/>
+			<script
+				type="application/ld+json"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+			/>
 			<ViewTracker listingId={listing.id} currentViews={listing.views ?? 0} />
 			{/* Breadcrumb */}
 			<div className="border-[#E2E8F0] border-b bg-white">

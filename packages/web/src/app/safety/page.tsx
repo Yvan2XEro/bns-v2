@@ -8,7 +8,17 @@ import {
 	Shield,
 	Users,
 } from "lucide-react";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Safety");
+	return {
+		title: t("title"),
+		description: t("subtitle"),
+		robots: { index: true, follow: true },
+	};
+}
 
 export default async function SafetyPage() {
 	const t = await getTranslations("Safety");

@@ -1,5 +1,16 @@
 import { Lock } from "lucide-react";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Privacy");
+	return {
+		title: t("title"),
+		description:
+			"Découvrez comment Buy'N'Sellem collecte, utilise et protège vos données personnelles.",
+		robots: { index: true, follow: false },
+	};
+}
 
 export default async function PrivacyPage() {
 	const t = await getTranslations("Privacy");

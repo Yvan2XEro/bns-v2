@@ -6,6 +6,7 @@ import {
 	MessageCircle,
 	Star,
 } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -20,8 +21,52 @@ import { getBlockedUsers } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Review, User } from "~/types";
 
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
+
 interface PageProps {
 	params: Promise<{ userId: string }>;
+}
+
+export async function generateMetadata({
+	params,
+}: PageProps): Promise<Metadata> {
+	const { userId } = await params;
+	const user = await getUser(userId);
+
+	if (!user) {
+		return {
+			title: "Profil introuvable",
+			robots: { index: false },
+		};
+	}
+
+	const title = `${user.name} — Vendeur`;
+	const description = user.bio
+		? (user.bio as string).slice(0, 155)
+		: `Découvrez les annonces de ${user.name} sur Buy'N'Sellem${user.location ? ` à ${user.location}` : ""}.`;
+	const canonical = `${WEB_URL}/profile/${userId}`;
+	const avatarUrl = (user.avatar as { url?: string })?.url;
+
+	return {
+		title,
+		description,
+		alternates: { canonical },
+		openGraph: {
+			title,
+			description,
+			url: canonical,
+			type: "profile",
+			...(avatarUrl && {
+				images: [{ url: avatarUrl, width: 400, height: 400, alt: user.name }],
+			}),
+		},
+		twitter: {
+			card: "summary",
+			title,
+			description,
+			...(avatarUrl && { images: [avatarUrl] }),
+		},
+	};
 }
 
 async function getUser(userId: string): Promise<User | null> {
@@ -82,8 +127,34 @@ export default async function ProfilePage({ params }: PageProps) {
 			? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
 			: 0;
 
+	const personJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "Person",
+		name: user.name,
+		url: `${WEB_URL}/profile/${userId}`,
+		...(user.location && { address: user.location }),
+		...(user.bio && { description: user.bio }),
+		...((user.avatar as { url?: string })?.url && {
+			image: (user.avatar as { url?: string }).url,
+		}),
+		...(averageRating > 0 && {
+			aggregateRating: {
+				"@type": "AggregateRating",
+				ratingValue: averageRating.toFixed(1),
+				reviewCount: reviews.length,
+				bestRating: 5,
+				worstRating: 1,
+			},
+		}),
+	};
+
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+			<script
+				type="application/ld+json"
+				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+			/>
 			<div className="grid gap-6 lg:grid-cols-3">
 				{/* Seller card */}
 				<div className="lg:col-span-1">

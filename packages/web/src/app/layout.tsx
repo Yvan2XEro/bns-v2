@@ -22,10 +22,39 @@ const outfit = Outfit({
 	weight: ["500", "600", "700", "800"],
 });
 
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
+
 export const metadata: Metadata = {
-	title: "Buy'N'Sellem - Buy & Sell Near You",
+	metadataBase: new URL(WEB_URL),
+	title: {
+		default: "Buy'N'Sellem — Achetez et vendez près de chez vous",
+		template: "%s | Buy'N'Sellem",
+	},
 	description:
-		"Discover great deals on items near you. Buy and sell locally with ease.",
+		"La marketplace locale pour acheter et vendre facilement. Trouvez de bonnes affaires près de chez vous.",
+	openGraph: {
+		siteName: "Buy'N'Sellem",
+		locale: "fr_FR",
+		type: "website",
+		url: WEB_URL,
+		images: [
+			{
+				url: "/og-default.png",
+				width: 1200,
+				height: 630,
+				alt: "Buy'N'Sellem — Marketplace local",
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		site: "@buynsellem",
+	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: { index: true, follow: true, "max-image-preview": "large" },
+	},
 };
 
 async function getPublicConfig(): Promise<AppConfig> {
@@ -62,8 +91,27 @@ export default async function RootLayout({
 		getPublicConfig(),
 	]);
 
+	const organizationJsonLd = {
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		name: "Buy'N'Sellem",
+		url: WEB_URL,
+		logo: `${WEB_URL}/logo.png`,
+		description:
+			"La marketplace locale pour acheter et vendre facilement près de chez vous.",
+	};
+
 	return (
 		<html lang={locale}>
+			<head>
+				<script
+					type="application/ld+json"
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
+					dangerouslySetInnerHTML={{
+						__html: JSON.stringify(organizationJsonLd),
+					}}
+				/>
+			</head>
 			<body
 				className={`${dmSans.variable} ${outfit.variable} ${dmSans.className}`}
 			>

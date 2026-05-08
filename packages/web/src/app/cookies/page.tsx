@@ -1,5 +1,16 @@
 import { Cookie } from "lucide-react";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Cookies");
+	return {
+		title: t("title"),
+		description:
+			"En savoir plus sur l'utilisation des cookies sur Buy'N'Sellem.",
+		robots: { index: true, follow: false },
+	};
+}
 
 export default async function CookiePolicyPage() {
 	const t = await getTranslations("Cookies");

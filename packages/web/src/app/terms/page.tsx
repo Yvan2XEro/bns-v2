@@ -1,5 +1,16 @@
 import { FileText } from "lucide-react";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations("Terms");
+	return {
+		title: t("title"),
+		description:
+			"Lisez les conditions générales d'utilisation de la plateforme Buy'N'Sellem.",
+		robots: { index: true, follow: false },
+	};
+}
 
 export default async function TermsPage() {
 	const t = await getTranslations("Terms");
