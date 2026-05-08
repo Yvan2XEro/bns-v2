@@ -23,6 +23,7 @@ import { ListingCard } from "@/src/components/ListingCard";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -46,6 +47,7 @@ export default function ListingDetail() {
 	const [lightboxIdx, setLightboxIdx] = useState(0);
 	const [descExpanded, setDescExpanded] = useState(false);
 	const [contactLoading, setContactLoading] = useState(false);
+	const { webUrl } = useAppConfig();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -102,9 +104,7 @@ export default function ListingDetail() {
 	});
 
 	const handleShare = async () => {
-		const baseUrl =
-			process.env.EXPO_PUBLIC_API_URL?.replace(/\/api\/?$/, "") ?? "";
-		const url = `${baseUrl}/listing/${id}`;
+		const url = `${webUrl ?? ""}/listing/${id}`;
 		Share.share({
 			title: listing?.title,
 			url,

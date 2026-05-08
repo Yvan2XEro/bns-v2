@@ -7,12 +7,14 @@ export interface AppConfig {
 	stripePublishableKey: string | null;
 	chatUrl: string | null;
 	novuAppId: string | null;
+	webUrl: string | null;
 }
 
 const DEFAULT: AppConfig = {
 	stripePublishableKey: null,
 	chatUrl: null,
 	novuAppId: null,
+	webUrl: null,
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);

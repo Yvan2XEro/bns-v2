@@ -8,5 +8,6 @@ export async function GET() {
 		stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? null,
 		chatUrl: process.env.CHAT_PUBLIC_URL ?? null,
 		novuAppId: process.env.NOVU_APPLICATION_IDENTIFIER ?? null,
+		webUrl: process.env.PUBLIC_WEB_URL ?? null,
 	});
 }
