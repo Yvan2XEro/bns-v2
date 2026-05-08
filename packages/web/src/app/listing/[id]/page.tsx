@@ -34,25 +34,10 @@ import type { Listing, Tag, User } from "~/types";
 export const revalidate = 3600;
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 interface PageProps {
 	params: Promise<{ id: string }>;
 	searchParams: Promise<{ boostStatus?: string }>;
-}
-
-export async function generateStaticParams() {
-	try {
-		const res = await fetch(
-			`${API_URL}/api/listings?where[status][equals]=published&sort=-createdAt&limit=200&depth=0`,
-			{ next: { revalidate: 3600 } },
-		);
-		if (!res.ok) return [];
-		const data = await res.json();
-		return (data.docs ?? []).map((l: { id: string }) => ({ id: l.id }));
-	} catch {
-		return [];
-	}
 }
 
 export async function generateMetadata({
