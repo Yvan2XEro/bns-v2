@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Fonts } from "@/constants/theme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import type { SocialAuthProvider } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -31,8 +32,8 @@ function GoogleIcon() {
 
 function AppleIcon({ color }: { color: string }) {
 	return (
-		<Svg width={18} height={18} viewBox="0 0 814 1000" fill={color}>
-			<Path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 484 0 367.5 0 255.8c0-207.1 135.5-316.5 269.4-316.5 71 0 130.1 47.3 173.8 47.3 41.5 0 106.5-50.4 188.6-50.4zm-174-150.8c-11.2 47.5-41.5 95.3-74.1 124.9-33.9 30.8-82.5 54.3-131.1 54.3-5.8 0-11.5-.6-17.4-1.3 0-50.4 33.3-101.5 63-134.2 31.5-35.3 81.7-61.6 124.9-62.8 1.3 6.5 1.3 13 1.3 19.1z" />
+		<Svg width={18} height={18} viewBox="0 0 24 24" fill={color}>
+			<Path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
 		</Svg>
 	);
 }
@@ -45,7 +46,7 @@ function FacebookIcon() {
 	);
 }
 
-const providers: Array<{
+const ALL_PROVIDERS: Array<{
 	labelKey: string;
 	value: SocialAuthProvider;
 	Icon: (props: { color: string }) => React.ReactElement;
@@ -75,6 +76,13 @@ export function SocialAuthButtons({
 	primaryColor: string;
 }) {
 	const { t } = useTranslation();
+	const { enabledAuthProviders } = useAppConfig();
+
+	const visible = ALL_PROVIDERS.filter((p) =>
+		enabledAuthProviders.includes(p.value),
+	);
+
+	if (visible.length === 0) return null;
 
 	return (
 		<View style={styles.container}>
@@ -87,7 +95,7 @@ export function SocialAuthButtons({
 			</View>
 
 			<View style={styles.buttons}>
-				{providers.map(({ labelKey, value, Icon }) => (
+				{visible.map(({ labelKey, value, Icon }) => (
 					<AnimatedPressable
 						key={value}
 						onPress={() => onPress(value)}

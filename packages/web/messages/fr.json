@@ -150,7 +150,8 @@
 		"tryDifferentKeywords": "Essayez d'autres mots-clés ou filtres",
 		"showResults": "Afficher {count} résultats",
 		"geolocationNotSupported": "La géolocalisation n'est pas supportée",
-		"couldNotGetLocation": "Impossible d'obtenir votre position"
+		"couldNotGetLocation": "Impossible d'obtenir votre position",
+		"conditionFair": "Correct"
 	},
 	"Listing": {
 		"backToResults": "Retour aux résultats",
@@ -221,7 +222,9 @@
 		"notFoundReasonModeration": "L’annonce a été refusée ou masquée après modération.",
 		"notFoundReasonRemoved": "L’annonce a été supprimée par son propriétaire ou retirée de la plateforme.",
 		"browseOtherListings": "Parcourir d’autres annonces",
-		"backHome": "Retour à l’accueil"
+		"backHome": "Retour à l’accueil",
+		"details": "Caractéristiques",
+		"cancel": "Annuler"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -595,7 +598,9 @@
 		"inappropriate": "Contenu inapproprié",
 		"prohibitedItem": "Article prohibé",
 		"falseInfo": "Information fausse ou trompeuse",
-		"otherReason": "Autre"
+		"otherReason": "Autre",
+		"reportScam": "Signaler une arnaque / fraude",
+		"cancel": "Annuler"
 	},
 	"Boost": {
 		"dialogTitle": "Booster cette annonce",

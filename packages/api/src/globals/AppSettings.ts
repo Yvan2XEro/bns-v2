@@ -15,6 +15,31 @@ export const AppSettings: GlobalConfig = {
 	},
 	fields: [
 		{
+			name: "auth",
+			type: "group",
+			label: "Authentication",
+			fields: [
+				{
+					name: "enabledProviders",
+					type: "select",
+					hasMany: true,
+					label: "Enabled OAuth providers",
+					defaultValue: ["google", "apple", "facebook"],
+					options: [
+						{ label: "Google", value: "google" },
+						{ label: "Apple", value: "apple" },
+						{ label: "Facebook", value: "facebook" },
+					],
+				},
+				{
+					name: "enableLocalAuth",
+					type: "checkbox",
+					label: "Enable email / password authentication",
+					defaultValue: true,
+				},
+			],
+		},
+		{
 			name: "sms",
 			type: "group",
 			label: "SMS",

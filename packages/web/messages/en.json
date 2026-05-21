@@ -221,7 +221,9 @@
 		"notFoundReasonModeration": "The listing was rejected or hidden after moderation.",
 		"notFoundReasonRemoved": "The listing was deleted by its owner or removed from the platform.",
 		"browseOtherListings": "Browse other listings",
-		"backHome": "Back home"
+		"backHome": "Back home",
+		"details": "Details",
+		"cancel": "Cancel"
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -595,7 +597,9 @@
 		"inappropriate": "Inappropriate content",
 		"prohibitedItem": "Prohibited item",
 		"falseInfo": "False or misleading information",
-		"otherReason": "Other"
+		"otherReason": "Other",
+		"reportScam": "Report scam / fraud",
+		"cancel": "Cancel"
 	},
 	"Boost": {
 		"dialogTitle": "Boost this listing",

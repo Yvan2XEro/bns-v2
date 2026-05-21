@@ -8,6 +8,8 @@ export interface AppConfig {
 	chatUrl: string | null;
 	novuAppId: string | null;
 	webUrl: string | null;
+	enabledAuthProviders: string[];
+	localAuthEnabled: boolean;
 }
 
 const DEFAULT: AppConfig = {
@@ -15,6 +17,8 @@ const DEFAULT: AppConfig = {
 	chatUrl: null,
 	novuAppId: null,
 	webUrl: null,
+	enabledAuthProviders: ["google", "apple", "facebook"],
+	localAuthEnabled: true,
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);
