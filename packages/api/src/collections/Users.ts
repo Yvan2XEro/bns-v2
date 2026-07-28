@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
 import type { AuthProvider } from "../auth/oauth/types";
+import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 function ensureAuthProviders(data: Record<string, unknown>) {
@@ -158,6 +159,30 @@ export const Users: CollectionConfig = {
 				}
 			},
 		],
+		beforeDelete: [
+			async ({ req, id }) => {
+				const user = await req.payload.findByID({
+					collection: "users",
+					id,
+					depth: 0,
+					overrideAccess: true,
+				});
+
+				await deleteUserRelatedData(
+					req.payload as unknown as Parameters<typeof deleteUserRelatedData>[0],
+					{
+						authProviders: user.authProviders as
+							| Array<{
+									provider?: string;
+									providerAccountId?: string;
+									refreshToken?: string;
+							  }>
+							| undefined,
+						id: user.id,
+					},
+				);
+			},
+		],
 	},
 	fields: [
 		{
@@ -220,6 +245,13 @@ export const Users: CollectionConfig = {
 					name: "providerAccountId",
 					type: "text",
 					required: true,
+				},
+				{
+					name: "refreshToken",
+					type: "text",
+					access: {
+						read: () => false,
+					},
 				},
 			],
 		},

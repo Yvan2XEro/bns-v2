@@ -30,8 +30,63 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import type {
+	Conversation,
+	Favorite,
+	ListingDoc,
+	ListingImageItem,
+	PayloadDoc,
+	PayloadPage,
+	SimilarResponse,
+	UserDoc,
+} from "@/src/types/api";
 
 const { width } = Dimensions.get("window");
+
+type ListingTag = {
+	emoji?: null | string;
+	id: string;
+	name: string;
+	slug: string;
+};
+
+type ListingDetailDoc = ListingDoc & {
+	attributes?: Record<string, boolean | number | string>;
+	images?: ListingImageItem[];
+	isBoosted?: boolean;
+	seller?: null | string | UserDoc;
+	tags?: null | ListingTag[];
+	viewCount?: number;
+};
+
+type ListingResponse = ListingDetailDoc | PayloadDoc<ListingDetailDoc>;
+type ConversationCreateResponse = Conversation | PayloadDoc<Conversation>;
+
+function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
+	if (
+		typeof value === "object" &&
+		value !== null &&
+		"doc" in value &&
+		value.doc !== undefined
+	) {
+		return value.doc;
+	}
+
+	return value;
+}
+
+function isListingTag(value: unknown): value is ListingTag {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"id" in value &&
+		typeof value.id === "string" &&
+		"slug" in value &&
+		typeof value.slug === "string" &&
+		"name" in value &&
+		typeof value.name === "string"
+	);
+}
 
 export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -59,14 +114,14 @@ export default function ListingDetail() {
 
 	const { data: listingData, isLoading } = useQuery({
 		queryKey: ["listing", id],
-		queryFn: () => api.get<any>(`/api/listings/${id}?depth=2`),
+		queryFn: () => api.get<ListingResponse>(`/api/listings/${id}?depth=2`),
 		enabled: !!id,
 	});
 
 	const { data: favData } = useQuery({
 		queryKey: ["favorite", id],
 		queryFn: () =>
-			api.get<{ docs: any[] }>(
+			api.get<PayloadPage<Favorite>>(
 				`/api/favorites?where[listing][equals]=${id}&limit=1`,
 			),
 		enabled: !!user && !!id,
@@ -75,14 +130,12 @@ export default function ListingDetail() {
 	const { data: similarData } = useQuery({
 		queryKey: ["similar", id],
 		queryFn: () =>
-			api.get<{ hits: any[]; total: number }>(
-				`/api/public/similar?id=${id}&limit=6`,
-			),
+			api.get<SimilarResponse>(`/api/public/similar?id=${id}&limit=6`),
 		enabled: !!id,
 	});
 
-	const listing = listingData?.doc ?? listingData;
-	const images = listing?.images ?? [];
+	const listing = listingData ? unwrapDoc(listingData) : undefined;
+	const images: ListingImageItem[] = listing?.images ?? [];
 	const seller = listing?.seller;
 	const isOwner = user?.id === seller?.id;
 	const favDoc = favData?.docs?.[0];
@@ -124,7 +177,7 @@ export default function ListingDetail() {
 		setContactLoading(true);
 		try {
 			// Find any existing conversation with this seller (any listing)
-			const existing = await api.get<{ docs: any[] }>(
+			const existing = await api.get<PayloadPage<Conversation>>(
 				`/api/conversations?where[participants][equals]=${seller.id}&limit=1&depth=0`,
 			);
 			if (existing.docs?.length > 0) {
@@ -132,11 +185,14 @@ export default function ListingDetail() {
 				return;
 			}
 			// Create a new conversation
-			const created = await api.post<{ doc: any }>("/api/conversations", {
-				participants: [user.id, seller.id],
-				listing: id,
-			});
-			const convId = created.doc?.id ?? created.doc;
+			const created = await api.post<ConversationCreateResponse>(
+				"/api/conversations",
+				{
+					participants: [user.id, seller.id],
+					listing: id,
+				},
+			);
+			const convId = unwrapDoc(created).id;
 			router.push(`/messages/${convId}?listing=${id}` as never);
 		} catch (e) {
 			console.error("handleMessage error", e);
@@ -193,7 +249,7 @@ export default function ListingDetail() {
 	const actionBarInset = safeBottom + 120;
 
 	const listingTags = Array.isArray(listing.tags)
-		? listing.tags.filter((tag: any) => typeof tag === "object" && tag !== null)
+		? listing.tags.filter(isListingTag)
 		: [];
 
 	return (
@@ -224,7 +280,7 @@ export default function ListingDetail() {
 						}}
 					>
 						{images.length > 0 ? (
-							images.map((img: any, i: number) => (
+							images.map((img, i: number) => (
 								<Pressable
 									key={i}
 									onPress={() => {
@@ -255,7 +311,7 @@ export default function ListingDetail() {
 					{/* Image indicators */}
 					{images.length > 1 && (
 						<View style={styles.indicators}>
-							{images.map((_: any, i: number) => (
+							{images.map((_, i: number) => (
 								<View
 									key={i}
 									style={[
@@ -457,13 +513,14 @@ export default function ListingDetail() {
 								Tags
 							</Text>
 							<View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-								{listingTags.map((tag: any) => (
+								{listingTags.map((tag) => (
 									<Pressable
 										key={String(tag.id)}
 										onPress={() =>
-											router.push(
-												`/(tabs)/search?tags=${encodeURIComponent(tag.slug)}` as any,
-											)
+											router.push({
+												pathname: "/(tabs)/search",
+												params: { tags: tag.slug },
+											})
 										}
 										style={{
 											flexDirection: "row",
@@ -591,12 +648,18 @@ export default function ListingDetail() {
 								contentContainerStyle={{ gap: 12 }}
 							>
 								{(similarData?.hits ?? [])
-									.filter((l: any) => l.id !== id)
+									.filter((l) => l.id !== id)
 									.slice(0, 5)
-									.map((l: any) => (
+									.map((l) => (
 										<ListingCard
 											key={l.id}
-											listing={l}
+											listing={{
+												...l,
+												isBoosted: Boolean(
+													l.boostedUntil &&
+														new Date(l.boostedUntil) > new Date(),
+												),
+											}}
 											width={180}
 											isFavorite={favoriteIds.has(l.id)}
 											onToggleFavorite={() => toggleFavorite(l)}
@@ -637,18 +700,6 @@ export default function ListingDetail() {
 				]}
 			>
 				<View style={styles.actionButtons}>
-					{listing.status === "published" &&
-						!(
-							listing.boostedUntil &&
-							new Date(listing.boostedUntil) > new Date()
-						) && (
-							<Pressable
-								onPress={() => router.push(`/boost/${id}`)}
-								style={styles.boostIconBtn}
-							>
-								<Ionicons name="rocket-outline" size={20} color="#fff" />
-							</Pressable>
-						)}
 					{!isOwner && (
 						<Pressable
 							onPress={handleMessage}

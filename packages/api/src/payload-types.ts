@@ -127,8 +127,8 @@ export interface Config {
   jobs: {
     tasks: {
       expireListings: TaskExpireListings;
-      checkSearchAlerts: TaskCheckSearchAlerts;
       expireBoosts: TaskExpireBoosts;
+      checkSearchAlerts: TaskCheckSearchAlerts;
       inline: {
         input: unknown;
         output: unknown;
@@ -170,6 +170,7 @@ export interface User {
     | {
         provider: 'local' | 'google' | 'apple' | 'facebook';
         providerAccountId: string;
+        refreshToken?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -506,7 +507,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'expireListings' | 'checkSearchAlerts' | 'expireBoosts';
+        taskSlug: 'inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts';
         taskID: string;
         input?:
           | {
@@ -539,7 +540,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'expireListings' | 'checkSearchAlerts' | 'expireBoosts') | null;
+  taskSlug?: ('inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -671,6 +672,7 @@ export interface UsersSelect<T extends boolean = true> {
     | {
         provider?: T;
         providerAccountId?: T;
+        refreshToken?: T;
         id?: T;
       };
   rating?: T;
@@ -978,6 +980,10 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface AppSetting {
   id: string;
+  auth?: {
+    enabledProviders?: ('google' | 'apple' | 'facebook')[] | null;
+    enableLocalAuth?: boolean | null;
+  };
   sms: {
     provider: 'avlytext' | 'mtarget';
     defaultSender?: string | null;
@@ -1016,6 +1022,12 @@ export interface PayloadJobsStat {
  * via the `definition` "app-settings_select".
  */
 export interface AppSettingsSelect<T extends boolean = true> {
+  auth?:
+    | T
+    | {
+        enabledProviders?: T;
+        enableLocalAuth?: T;
+      };
   sms?:
     | T
     | {
@@ -1068,17 +1080,17 @@ export interface TaskExpireListings {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskCheckSearchAlerts".
+ * via the `definition` "TaskExpireBoosts".
  */
-export interface TaskCheckSearchAlerts {
+export interface TaskExpireBoosts {
   input?: unknown;
   output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskExpireBoosts".
+ * via the `definition` "TaskCheckSearchAlerts".
  */
-export interface TaskExpireBoosts {
+export interface TaskCheckSearchAlerts {
   input?: unknown;
   output?: unknown;
 }

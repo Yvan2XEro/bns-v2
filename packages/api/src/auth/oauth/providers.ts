@@ -4,6 +4,7 @@ import type { OAuthIdentity, OAuthProvider } from "./types";
 type TokenResponse = Record<string, unknown> & {
 	access_token?: string;
 	id_token?: string;
+	refresh_token?: string;
 };
 
 type CallbackParams = {
@@ -136,6 +137,8 @@ async function createAppleClientSecret(): Promise<string> {
 		.sign(privateKey);
 }
 
+export { createAppleClientSecret };
+
 async function getAppleIdentity({
 	code,
 	rawUser,
@@ -192,6 +195,9 @@ async function getAppleIdentity({
 		name: displayName || claims.email?.split("@")[0] || "Apple user",
 		provider: "apple",
 		providerAccountId: claims.sub,
+		providerData: token.refresh_token
+			? { refreshToken: token.refresh_token }
+			: undefined,
 	};
 }
 

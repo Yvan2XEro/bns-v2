@@ -688,7 +688,13 @@
 		"cardPayBtn": "Pay by card {{amount}} XAF",
 		"loginRequired": "You must be logged in to boost a listing.",
 		"successTitle": "Boost activated 🚀",
-		"successMessage": "Your listing is now featured."
+		"successMessage": "Your listing is now featured.",
+		"mobileUnavailableBadge": "Temporarily unavailable",
+		"mobileUnavailableTitle": "Boosting is not available in the mobile app right now.",
+		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app.",
+		"mobileUnavailableBrowserHint": "If you need the full listing page, you can open this listing in your browser.",
+		"openListingInBrowser": "Open listing in browser",
+		"listingReference": "Listing reference: {{listingId}}"
 	},
 	"report": {
 		"title": "Report",

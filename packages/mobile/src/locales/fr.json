@@ -709,7 +709,13 @@
 		"cardDesc": "Visa, Mastercard",
 		"cardUnavailable": "Non disponible",
 		"cardPayBtn": "Payer par carte {{amount}} XAF",
-		"loginRequired": "Connexion requise pour booster une annonce."
+		"loginRequired": "Connexion requise pour booster une annonce.",
+		"mobileUnavailableBadge": "Temporairement indisponible",
+		"mobileUnavailableTitle": "Le boost n'est pas disponible dans l'application mobile pour le moment.",
+		"mobileUnavailableMessage": "Cette fonctionnalité est en cours d'adaptation pour la publication mobile. Vous pouvez toujours gérer votre annonce normalement depuis l'application.",
+		"mobileUnavailableBrowserHint": "Si vous avez besoin de la page complete de l'annonce, vous pouvez ouvrir cette annonce dans votre navigateur.",
+		"openListingInBrowser": "Ouvrir l'annonce dans le navigateur",
+		"listingReference": "Référence de l'annonce : {{listingId}}"
 	},
 	"report": {
 		"title": "Signaler",

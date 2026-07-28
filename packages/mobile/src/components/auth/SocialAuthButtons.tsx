@@ -1,5 +1,5 @@
 import type React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { Fonts } from "@/constants/theme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
@@ -81,6 +81,14 @@ export function SocialAuthButtons({
 	const visible = ALL_PROVIDERS.filter((p) =>
 		enabledAuthProviders.includes(p.value),
 	);
+	const appleVisible = visible.some((provider) => provider.value === "apple");
+	const nonAppleVisible = visible.some(
+		(provider) => provider.value !== "apple",
+	);
+
+	if (Platform.OS === "ios" && nonAppleVisible && !appleVisible) {
+		return null;
+	}
 
 	if (visible.length === 0) return null;
 

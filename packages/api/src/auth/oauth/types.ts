@@ -11,6 +11,9 @@ export interface OAuthIdentity {
 	emailVerified?: boolean;
 	name?: string;
 	avatarUrl?: string;
+	providerData?: {
+		refreshToken?: string;
+	};
 }
 
 export type OAuthResolvedAudience = "admin" | "app";

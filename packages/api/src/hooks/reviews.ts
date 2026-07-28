@@ -28,7 +28,19 @@ export const updateUserRating = async ({
 		limit: 1000,
 	});
 
-	if (reviews.docs.length === 0) return;
+	if (reviews.docs.length === 0) {
+		await payload.update({
+			collection: "users",
+			id: reviewedUserId,
+			overrideAccess: true,
+			context: { ratingUpdate: true },
+			data: {
+				rating: 0,
+				totalReviews: 0,
+			},
+		});
+		return;
+	}
 
 	const totalRating = reviews.docs.reduce(
 		(sum, review) => sum + (review.rating || 0),

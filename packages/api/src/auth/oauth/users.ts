@@ -47,17 +47,32 @@ function withProviderLink(
 			link.providerAccountId === identity.providerAccountId,
 	);
 
+	const authProviders = alreadyLinked
+		? existingLinks.map((link) =>
+				link.provider === identity.provider &&
+				link.providerAccountId === identity.providerAccountId
+					? {
+							...link,
+							...(identity.providerData?.refreshToken
+								? { refreshToken: identity.providerData.refreshToken }
+								: {}),
+						}
+					: link,
+			)
+		: [
+				...existingLinks,
+				{
+					provider: identity.provider,
+					providerAccountId: identity.providerAccountId,
+					...(identity.providerData?.refreshToken
+						? { refreshToken: identity.providerData.refreshToken }
+						: {}),
+				},
+			];
+
 	return {
 		authProvider: identity.provider,
-		authProviders: alreadyLinked
-			? existingLinks
-			: [
-					...existingLinks,
-					{
-						provider: identity.provider,
-						providerAccountId: identity.providerAccountId,
-					},
-				],
+		authProviders,
 		providerAccountId: identity.providerAccountId,
 	};
 }
@@ -190,6 +205,9 @@ export async function resolveOAuthUser(
 			{
 				provider: identity.provider,
 				providerAccountId: identity.providerAccountId,
+				...(identity.providerData?.refreshToken
+					? { refreshToken: identity.providerData.refreshToken }
+					: {}),
 			},
 		],
 		email,

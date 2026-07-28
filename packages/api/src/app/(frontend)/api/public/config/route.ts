@@ -5,6 +5,7 @@
  */
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 
 export async function GET() {
@@ -26,7 +27,10 @@ export async function GET() {
 			"apple",
 			"facebook",
 		];
-		enabledAuthProviders = configured.filter((p) => enabledInAdmin.includes(p));
+		enabledAuthProviders = resolveEnabledOAuthProviders(
+			configured,
+			enabledInAdmin,
+		);
 		localAuthEnabled = authSettings?.enableLocalAuth ?? true;
 	} catch {
 		enabledAuthProviders = listConfiguredOAuthProviders();

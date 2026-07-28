@@ -10,7 +10,10 @@
 		"newArchEnabled": true,
 		"ios": {
 			"supportsTablet": true,
-			"bundleIdentifier": "com.buynsellem.mobile"
+			"bundleIdentifier": "com.buynsellem.mobile",
+			"config": {
+				"usesNonExemptEncryption": false
+			}
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -41,6 +44,26 @@
 					}
 				}
 			],
+			[
+				"expo-image-picker",
+				{
+					"photosPermission": "Allow BuyNSellem to access your photos so you can upload listing and profile images.",
+					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings."
+				}
+			],
+			[
+				"expo-location",
+				{
+					"locationWhenInUsePermission": "Allow BuyNSellem to access your location to show nearby listings and improve local search."
+				}
+			],
+			[
+				"expo-notifications",
+				{
+					"color": "#1e40af",
+					"defaultChannel": "default"
+				}
+			],
 			"expo-localization",
 			"expo-secure-store"
 		],
@@ -55,7 +78,7 @@
 			}
 		},
 		"runtimeVersion": {
-			"policy": "appVersion"
+			"policy": "fingerprint"
 		},
 		"updates": {
 			"url": "https://u.expo.dev/c5bebedf-e500-4243-8386-85cf6d62d233"
