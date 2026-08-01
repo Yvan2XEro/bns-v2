@@ -15,11 +15,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function ForgotPasswordScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
 	const [email, setEmail] = useState("");
@@ -92,7 +94,7 @@ export default function ForgotPasswordScreen() {
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={20}
 			>
-				<View style={styles.container}>
+				<View style={[styles.container, centeredContent]}>
 					<View style={styles.logoBlock}>
 						<Image
 							source={require("@/assets/icon2.png")}

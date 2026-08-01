@@ -21,6 +21,7 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
@@ -77,6 +78,7 @@ function FieldLabel({ label, required, mutedColor }: any) {
 export default function EditListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const queryClient = useQueryClient();
 	const { showSuccess, showError, showAlert, showWarning } = useAlert();
 	const { t } = useTranslation();
@@ -348,7 +350,11 @@ export default function EditListingScreen() {
 
 			<KeyboardAwareScrollView
 				style={{ flex: 1 }}
-				contentContainerStyle={[styles.scroll, { backgroundColor: bg }]}
+				contentContainerStyle={[
+					styles.scroll,
+					{ backgroundColor: bg },
+					centeredContent,
+				]}
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={20}
 				showsVerticalScrollIndicator={false}

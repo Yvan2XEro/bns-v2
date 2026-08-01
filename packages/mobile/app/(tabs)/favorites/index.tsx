@@ -25,6 +25,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 
@@ -46,6 +47,7 @@ export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const pathname = usePathname();
+	const { columns, cardWidth } = useResponsive();
 
 	const [query, setQuery] = React.useState("");
 	const [sortKey, setSortKey] = React.useState<SortKey>("recent");
@@ -138,9 +140,7 @@ export default function FavoritesScreen() {
 		return list;
 	}, [favorites, query, sortKey, getListing]);
 
-	const pairs: any[][] = [];
-	for (let i = 0; i < filtered.length; i += 2)
-		pairs.push(filtered.slice(i, i + 2));
+	const pairs = chunkIntoRows(filtered, columns);
 
 	// ── Not logged in ───────────────────────────────────────────────
 	if (!user) {
@@ -329,8 +329,8 @@ export default function FavoritesScreen() {
 				{/* List */}
 				{isLoading ? (
 					<View style={styles.skeletonGrid}>
-						{Array.from({ length: 6 }).map((_, i) => (
-							<SkeletonCard key={i} />
+						{Array.from({ length: columns * 3 }).map((_, i) => (
+							<SkeletonCard key={i} cardWidth={cardWidth} />
 						))}
 					</View>
 				) : favorites.length === 0 ? (
@@ -373,6 +373,7 @@ export default function FavoritesScreen() {
 									<ListingCard
 										key={fav.id}
 										listing={getListing(fav)}
+										width={cardWidth}
 										isFavorite
 										onToggleFavorite={() => toggleFavorite(getListing(fav))}
 										onPress={(id) => router.push(`/listing/${id}`)}

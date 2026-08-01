@@ -21,6 +21,7 @@ import { SearchBar } from "@/src/components/SearchBar";
 import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
@@ -42,6 +43,7 @@ type FilterTab = "all" | "unread";
 export default function MessagesScreen() {
 	const { showError, showConfirm } = useAlert();
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const pathname = usePathname();
@@ -72,7 +74,11 @@ export default function MessagesScreen() {
 		};
 	}, [chatClient, queryClient]);
 
-	const conversations = data?.docs ?? [];
+	// One null doc used to blow up every `c.unreadCount` read below and blank
+	// the Messages tab; drop them (and any non-array payload) up front.
+	const conversations = (Array.isArray(data?.docs) ? data.docs : []).filter(
+		Boolean,
+	);
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -225,7 +231,11 @@ export default function MessagesScreen() {
 
 		return (
 			<Swipeable
-				ref={(ref) => swipeableRefs.current.set(item.id, ref)}
+				// Braces required: under React 19 a ref callback that returns a
+				// value (here the Map from .set()) is an error.
+				ref={(ref) => {
+					swipeableRefs.current.set(item.id, ref);
+				}}
 				renderRightActions={() => renderRightActions(item.id)}
 				rightThreshold={60}
 				overshootRight={false}
@@ -466,6 +476,7 @@ export default function MessagesScreen() {
 					data={filtered}
 					renderItem={renderConversation}
 					keyExtractor={(item) => item.id}
+					contentContainerStyle={centeredContent}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}

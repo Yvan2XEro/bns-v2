@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { useEffect } from "react";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
@@ -12,8 +12,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-
-const { width } = Dimensions.get("window");
 
 export function LoadingScreen() {
 	const isDark = useColorScheme() === "dark";

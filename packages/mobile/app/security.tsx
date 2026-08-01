@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -156,6 +157,7 @@ function Field({
 
 export default function SecurityScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { user, logout, refreshUser } = useAuth();
 	const { showSuccess, showError, showConfirm } = useAlert();
 	const { t } = useTranslation();
@@ -317,7 +319,11 @@ export default function SecurityScreen() {
 			</View>
 
 			<ScrollView
-				contentContainerStyle={[styles.scroll, { backgroundColor: bg }]}
+				contentContainerStyle={[
+					styles.scroll,
+					{ backgroundColor: bg },
+					centeredContent,
+				]}
 				showsVerticalScrollIndicator={false}
 			>
 				<Section

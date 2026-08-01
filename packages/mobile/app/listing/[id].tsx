@@ -6,7 +6,6 @@ import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Dimensions,
 	Modal,
 	Pressable,
 	ScrollView,
@@ -25,9 +24,11 @@ import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type {
@@ -40,8 +41,6 @@ import type {
 	SimilarResponse,
 	UserDoc,
 } from "@/src/types/api";
-
-const { width } = Dimensions.get("window");
 
 type ListingTag = {
 	emoji?: null | string;
@@ -96,6 +95,11 @@ export default function ListingDetail() {
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
+	const { width, height, isTablet, centeredContent } = useResponsive();
+	// Gallery keeps a sane aspect instead of a 1024×300 letterbox on iPad.
+	const galleryHeight = isTablet
+		? Math.min(560, Math.round(width * 0.55))
+		: 300;
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 	const [imageIndex, setImageIndex] = useState(0);
 	const [lightboxVisible, setLightboxVisible] = useState(false);
@@ -238,13 +242,22 @@ export default function ListingDetail() {
 		);
 	}
 
+	// null when createdAt is missing/malformed — this used to render
+	// "Il y a NaN jours" on the listing meta row.
 	const timeAgo = (() => {
-		const diff = Date.now() - new Date(listing.createdAt).getTime();
+		const created = parseDate(listing.createdAt);
+		if (!created) return null;
+		const diff = Date.now() - created.getTime();
 		const days = Math.floor(diff / 86400000);
 		if (days === 0) return t("listing.today");
 		if (days === 1) return t("listing.yesterday");
 		return t("listing.daysAgo", { count: days });
 	})();
+
+	const sellerMemberSince = formatDate(
+		typeof seller === "object" ? seller?.createdAt : undefined,
+		{ year: "numeric", month: "long" },
+	);
 
 	const actionBarInset = safeBottom + 120;
 
@@ -290,7 +303,7 @@ export default function ListingDetail() {
 								>
 									<Image
 										source={{ uri: resolveListingImageUrl(img) ?? undefined }}
-										style={{ width, height: 300 }}
+										style={{ width, height: galleryHeight }}
 										contentFit="cover"
 										placeholder={{ blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6." }}
 									/>
@@ -300,7 +313,11 @@ export default function ListingDetail() {
 							<View
 								style={[
 									styles.imagePlaceholder,
-									{ backgroundColor: isDark ? "#1e293b" : "#e2e8f0" },
+									{
+										width,
+										height: galleryHeight,
+										backgroundColor: isDark ? "#1e293b" : "#e2e8f0",
+									},
 								]}
 							>
 								<Ionicons name="image-outline" size={60} color={mutedColor} />
@@ -349,8 +366,8 @@ export default function ListingDetail() {
 					)}
 				</View>
 
-				{/* Content */}
-				<View style={styles.content}>
+				{/* Content — capped + centred on tablets so text stays readable */}
+				<View style={[styles.content, centeredContent]}>
 					{/* Price & Title */}
 					<View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
 						{/* ── Actions row: share + favorite ── */}
@@ -428,12 +445,14 @@ export default function ListingDetail() {
 									{listing.location ?? "—"}
 								</Text>
 							</View>
-							<View style={styles.metaItem}>
-								<Ionicons name="time-outline" size={13} color={mutedColor} />
-								<Text style={[styles.metaText, { color: mutedColor }]}>
-									{timeAgo}
-								</Text>
-							</View>
+							{timeAgo && (
+								<View style={styles.metaItem}>
+									<Ionicons name="time-outline" size={13} color={mutedColor} />
+									<Text style={[styles.metaText, { color: mutedColor }]}>
+										{timeAgo}
+									</Text>
+								</View>
+							)}
 							{listing.viewCount > 0 && (
 								<View style={styles.metaItem}>
 									<Ionicons name="eye-outline" size={13} color={mutedColor} />
@@ -600,13 +619,11 @@ export default function ListingDetail() {
 										showCount
 										count={seller.totalReviews}
 									/>
-									<Text style={[styles.memberSince, { color: mutedColor }]}>
-										{t("listing.memberSinceLabel")}{" "}
-										{new Date(seller.createdAt).toLocaleDateString("fr-FR", {
-											year: "numeric",
-											month: "long",
-										})}
-									</Text>
+									{sellerMemberSince && (
+										<Text style={[styles.memberSince, { color: mutedColor }]}>
+											{t("listing.memberSinceLabel")} {sellerMemberSince}
+										</Text>
+									)}
 								</View>
 								<Ionicons name="chevron-forward" size={16} color={mutedColor} />
 							</View>
@@ -660,7 +677,7 @@ export default function ListingDetail() {
 														new Date(l.boostedUntil) > new Date(),
 												),
 											}}
-											width={180}
+											width={isTablet ? 220 : 180}
 											isFavorite={favoriteIds.has(l.id)}
 											onToggleFavorite={() => toggleFavorite(l)}
 											onPress={(lid) => router.push(`/listing/${lid}`)}
@@ -699,7 +716,7 @@ export default function ListingDetail() {
 					},
 				]}
 			>
-				<View style={styles.actionButtons}>
+				<View style={[styles.actionButtons, centeredContent]}>
 					{!isOwner && (
 						<Pressable
 							onPress={handleMessage}
@@ -764,7 +781,7 @@ export default function ListingDetail() {
 							source={{
 								uri: resolveListingImageUrl(images[lightboxIdx]) ?? undefined,
 							}}
-							style={styles.lightboxImg}
+							style={[styles.lightboxImg, { width, height: height * 0.8 }]}
 							contentFit="contain"
 						/>
 					</ScrollView>
@@ -815,8 +832,6 @@ const styles = StyleSheet.create({
 
 	gallery: { position: "relative" },
 	imagePlaceholder: {
-		width,
-		height: 300,
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -1017,10 +1032,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	lightboxImg: {
-		width,
-		height: Dimensions.get("window").height * 0.8,
-	},
+	lightboxImg: {},
 	lightboxNav: {
 		flexDirection: "row",
 		alignItems: "center",

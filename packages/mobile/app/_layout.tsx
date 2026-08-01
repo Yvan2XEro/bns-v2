@@ -13,20 +13,20 @@ import {
 	Outfit_800ExtraBold,
 } from "@expo-google-fonts/outfit";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-	DarkTheme,
-	DefaultTheme,
-	ThemeProvider,
-} from "@react-navigation/native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { router, Stack } from "expo-router";
+import {
+	DarkTheme,
+	DefaultTheme,
+	ThemeProvider,
+} from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { Appearance } from "react-native";
+import { Appearance, Pressable, StyleSheet, Text, View } from "react-native";
 import {
 	AppConfigProvider,
 	useAppConfig,
@@ -40,7 +40,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
-import { AlertProvider, useAlert } from "@/src/contexts/AlertContext";
+import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
 import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
 import { api } from "@/src/lib/api";
@@ -50,9 +50,68 @@ import {
 	syncPushTokenWithBackend,
 } from "@/src/lib/notifications";
 
-SplashScreen.preventAutoHideAsync();
+// Rejects if the splash is already hidden; never let that bubble up as an
+// unhandled rejection on the cold-start path.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-console.log(process.env.EXPO_PUBLIC_CHAT_URL, process.env.EXPO_PUBLIC_API_URL);
+/**
+ * expo-router picks this up automatically for the whole route tree. Without it,
+ * any unhandled render error unmounts everything and leaves a blank white
+ * screen with no way back — which is what turns a single broken screen into an
+ * "app crashed during review" rejection.
+ */
+export function ErrorBoundary({
+	error,
+	retry,
+}: {
+	error: Error;
+	retry: () => Promise<void>;
+}) {
+	return (
+		<View style={errorStyles.container}>
+			<Text style={errorStyles.title}>Une erreur est survenue</Text>
+			<Text style={errorStyles.message}>
+				{error?.message ?? "Erreur inconnue"}
+			</Text>
+			<Pressable
+				accessibilityRole="button"
+				onPress={() => {
+					void retry();
+				}}
+				style={errorStyles.button}
+			>
+				<Text style={errorStyles.buttonLabel}>Réessayer</Text>
+			</Pressable>
+		</View>
+	);
+}
+
+const errorStyles = StyleSheet.create({
+	container: {
+		alignItems: "center",
+		backgroundColor: "#ffffff",
+		flex: 1,
+		gap: 12,
+		justifyContent: "center",
+		padding: 32,
+	},
+	title: { fontSize: 20, fontWeight: "700", textAlign: "center" },
+	message: {
+		color: "#6b7280",
+		fontSize: 14,
+		maxWidth: 420,
+		textAlign: "center",
+	},
+	button: {
+		backgroundColor: "#1e40af",
+		borderRadius: 12,
+		marginTop: 12,
+		paddingHorizontal: 24,
+		paddingVertical: 12,
+	},
+	buttonLabel: { color: "#ffffff", fontSize: 15, fontWeight: "600" },
+});
+
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
@@ -82,7 +141,7 @@ export default function RootLayout() {
 		});
 	}, []);
 
-	const [fontsLoaded] = useFonts({
+	const [fontsLoaded, fontError] = useFonts({
 		...Ionicons.font,
 		DMSans_400Regular,
 		DMSans_500Medium,
@@ -94,13 +153,32 @@ export default function RootLayout() {
 		Outfit_800ExtraBold,
 	});
 
-	useEffect(() => {
-		if (fontsLoaded) {
-			SplashScreen.hideAsync();
-		}
-	}, [fontsLoaded]);
+	// A font that fails to resolve must not strand the user on the splash
+	// screen forever — render with system fonts rather than not at all.
+	const fontsSettled = fontsLoaded || Boolean(fontError);
 
-	if (!fontsLoaded) return null;
+	useEffect(() => {
+		if (fontsSettled) {
+			SplashScreen.hideAsync().catch(() => {});
+		}
+	}, [fontsSettled]);
+
+	// Backstop: if useFonts never settles at all (asset resolution wedged in a
+	// monorepo build), show the app anyway instead of hanging indefinitely.
+	const [fontTimedOut, setFontTimedOut] = useState(false);
+	useEffect(() => {
+		if (fontsSettled) return;
+		const id = setTimeout(() => setFontTimedOut(true), 8000);
+		return () => clearTimeout(id);
+	}, [fontsSettled]);
+
+	useEffect(() => {
+		if (fontTimedOut) {
+			SplashScreen.hideAsync().catch(() => {});
+		}
+	}, [fontTimedOut]);
+
+	if (!fontsSettled && !fontTimedOut) return null;
 
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
@@ -113,7 +191,6 @@ export default function RootLayout() {
 									<AlertProvider>
 										<PushTokenRegistrar />
 										<PushNotificationHandler />
-										<BoostDeepLinkHandler />
 										<RootLayoutNav />
 									</AlertProvider>
 								</ChatProvider>
@@ -263,52 +340,6 @@ function PushNotificationHandler() {
 			pendingUrlRef.current = null;
 		}
 	}, [isReady]);
-
-	return null;
-}
-
-// ─── BoostDeepLinkHandler ─────────────────────────────────────────────────────
-// Listens for boost payment return deep-links:
-//   buynsellem://boost/callback?status=success&listingId=xxx
-// These are triggered when the user finishes/cancels NotchPay checkout and our
-// /api/public/boost/return page redirects back to the app.
-
-function BoostDeepLinkHandler() {
-	const { showSuccess, showError } = useAlert();
-	const queryClient = useQueryClient();
-
-	const handleUrl = (url: string) => {
-		if (!url.includes("boost/callback")) return;
-
-		const parsed = Linking.parse(url);
-		const status = parsed.queryParams?.status as string | undefined;
-		const listingId = parsed.queryParams?.listingId as string | undefined;
-
-		if (status === "success") {
-			if (listingId) {
-				void queryClient.invalidateQueries({
-					queryKey: ["listing", listingId],
-				});
-			}
-			showSuccess(
-				"Boost activé 🚀",
-				"Votre annonce est maintenant mise en avant.",
-			);
-		} else if (status === "failed") {
-			showError("Paiement échoué", "Le paiement n'a pas pu être traité.");
-		}
-	};
-
-	useEffect(() => {
-		// Handle cold-start (app launched from deep link)
-		Linking.getInitialURL().then((url) => {
-			if (url) handleUrl(url);
-		});
-
-		// Handle foreground deep links
-		const sub = Linking.addEventListener("url", ({ url }) => handleUrl(url));
-		return () => sub.remove();
-	}, [handleUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return null;
 }

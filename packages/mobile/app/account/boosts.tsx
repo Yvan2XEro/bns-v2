@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import React, { useMemo } from "react";
 import {
 	ActivityIndicator,
-	Dimensions,
 	FlatList,
 	Pressable,
 	RefreshControl,
@@ -25,12 +24,13 @@ import Svg, {
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
-const CHART_W = Dimensions.get("window").width - 64;
 const CHART_H = 72;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -48,11 +48,13 @@ function formatDuration(days: number | undefined | null, t: TFunction): string {
 }
 
 function formatDateRange(
-	createdAt: string,
+	createdAt: string | undefined | null,
 	durationDays: number | undefined | null,
 ): string {
-	const start = new Date(createdAt);
-	const end = new Date(createdAt);
+	// A missing/malformed createdAt used to render "Invalid Date → Invalid Date".
+	const start = parseDate(createdAt);
+	if (!start) return "—";
+	const end = new Date(start);
 	if (durationDays) end.setDate(end.getDate() + durationDays);
 	const fmt = (d: Date) =>
 		d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -114,7 +116,11 @@ function BoostCard({
 	// Progress bar: % of boost period consumed
 	const progress = useMemo(() => {
 		if (!item.durationDays || item.status !== "pending") return 1;
-		const start = new Date(item.createdAt).getTime();
+		// Without this guard a missing createdAt produced NaN → width: "NaN%",
+		// which Yoga rejects.
+		const startDate = parseDate(item.createdAt);
+		if (!startDate) return 0;
+		const start = startDate.getTime();
 		const end = start + item.durationDays * 86400000;
 		const now = Date.now();
 		return Math.min(1, Math.max(0, (now - start) / (end - start)));
@@ -225,6 +231,9 @@ export default function BoostHistoryScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const { t } = useTranslation();
+	const { width, contentMaxWidth, centeredContent } = useResponsive();
+	// Sparkline follows the real card width (list column is capped on tablets).
+	const CHART_W = Math.min(width, contentMaxWidth) - 64;
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -290,7 +299,7 @@ export default function BoostHistoryScreen() {
 			y: CHART_H - (v / max) * (CHART_H - 10),
 			value: v,
 		}));
-	}, [payments]);
+	}, [payments, CHART_W]);
 
 	const monthLabels = useMemo(
 		() =>
@@ -530,7 +539,11 @@ export default function BoostHistoryScreen() {
 							</View>
 						</View>
 					}
-					contentContainerStyle={[styles.list, { backgroundColor: bg }]}
+					contentContainerStyle={[
+						styles.list,
+						{ backgroundColor: bg },
+						centeredContent,
+					]}
 					renderItem={({ item }) => <BoostCard item={item} {...cardProps} />}
 					onEndReached={() => {
 						if (hasNextPage && !isFetchingNextPage) fetchNextPage();

@@ -1,10 +1,8 @@
-import { StripeProvider } from "@stripe/stripe-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext } from "react";
 import { api } from "@/src/lib/api";
 
 export interface AppConfig {
-	stripePublishableKey: string | null;
 	chatUrl: string | null;
 	novuAppId: string | null;
 	webUrl: string | null;
@@ -13,7 +11,6 @@ export interface AppConfig {
 }
 
 const DEFAULT: AppConfig = {
-	stripePublishableKey: null,
 	chatUrl: null,
 	novuAppId: null,
 	webUrl: null,
@@ -33,11 +30,7 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 
 	return (
 		<AppConfigContext.Provider value={config}>
-			{/* StripeProvider lives here so children always have Stripe context.
-			    With an empty key, Stripe silently degrades — no crash. */}
-			<StripeProvider publishableKey={config.stripePublishableKey ?? ""}>
-				{children}
-			</StripeProvider>
+			{children}
 		</AppConfigContext.Provider>
 	);
 }

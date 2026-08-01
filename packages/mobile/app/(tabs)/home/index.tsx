@@ -12,7 +12,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	Dimensions,
 	FlatList,
 	KeyboardAvoidingView,
 	Modal,
@@ -42,6 +41,7 @@ import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -49,8 +49,6 @@ import {
 	resolveImageUrl,
 	resolveListingImageUrl,
 } from "@/src/lib/resolveImageUrl";
-
-const { width } = Dimensions.get("window");
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -91,6 +89,11 @@ export default function HomeScreen() {
 	const queryClient = useQueryClient();
 	const filterParams = useLocalSearchParams();
 	const scheme = useColorScheme();
+	const { width, isTablet, columns, cardWidth, dialogMaxWidth } =
+		useResponsive();
+	// Hero cards stay readable instead of becoming a 970pt letterbox on iPad.
+	const featuredWidth = isTablet ? Math.min(520, width - 48) : width - 48;
+	const featuredHeight = isTablet ? 260 : 190;
 
 	const SORTS = [
 		{
@@ -228,22 +231,29 @@ export default function HomeScreen() {
 		lat: number;
 		lng: number;
 	} | null>(null);
-	const [locationDenied, setLocationDenied] = useState(false);
+	// Starts true so the in-context "listings near you" prompt is what asks for
+	// the permission. Never prompt on mount: an unexplained location dialog on
+	// the very first screen is a documented App Review rejection pattern.
+	const [locationDenied, setLocationDenied] = useState(true);
 
 	useEffect(() => {
 		(async () => {
-			const { status } = await Location.requestForegroundPermissionsAsync();
-			if (status !== "granted") {
-				setLocationDenied(true);
-				return;
+			try {
+				// Non-prompting: only re-reads a decision the user already made.
+				const { status } = await Location.getForegroundPermissionsAsync();
+				if (status !== "granted") return;
+
+				setLocationDenied(false);
+				const pos = await Location.getCurrentPositionAsync({
+					accuracy: Location.Accuracy.Balanced,
+				});
+				setUserCoords({
+					lat: pos.coords.latitude,
+					lng: pos.coords.longitude,
+				});
+			} catch {
+				// Location is a nice-to-have here; never let it break the home screen.
 			}
-			const pos = await Location.getCurrentPositionAsync({
-				accuracy: Location.Accuracy.Balanced,
-			});
-			setUserCoords({
-				lat: pos.coords.latitude,
-				lng: pos.coords.longitude,
-			});
 		})();
 	}, []);
 
@@ -427,13 +437,23 @@ export default function HomeScreen() {
 			),
 		getNextPageParam: (lastPage, pages) => {
 			const offset = pages.length * 20;
-			return offset < lastPage.total ? offset : undefined;
+			// The endpoint can answer with a bare array (see rawHits above) and a
+			// page can be null; reading `.total` off either throws inside
+			// TanStack's pagination path and blanks the screen.
+			const total = Array.isArray(lastPage)
+				? lastPage.length
+				: (lastPage?.total ?? 0);
+			return offset < total ? offset : undefined;
 		},
 		initialPageParam: 0,
 		enabled: isSearchMode,
 	});
 
-	const searchListings = (searchData?.pages.flatMap((p) => p.hits) ?? [])
+	const searchListings = (
+		searchData?.pages.flatMap((p: any) =>
+			Array.isArray(p) ? p : (p?.hits ?? []),
+		) ?? []
+	)
 		.filter(Boolean)
 		.map((l: any) => ({
 			...l,
@@ -441,9 +461,7 @@ export default function HomeScreen() {
 		}));
 	const totalDocs = searchData?.pages[0]?.total ?? 0;
 
-	const searchPairs: any[][] = [];
-	for (let i = 0; i < searchListings.length; i += 2)
-		searchPairs.push(searchListings.slice(i, i + 2));
+	const searchPairs = chunkIntoRows(searchListings, columns);
 
 	// ── Render ────────────────────────────────────────────────────
 	return (
@@ -656,8 +674,8 @@ export default function HomeScreen() {
 
 						{searchLoading ? (
 							<View style={styles.skeletonGrid}>
-								{Array.from({ length: 6 }).map((_, i) => (
-									<SkeletonCard key={i} />
+								{Array.from({ length: columns * 3 }).map((_, i) => (
+									<SkeletonCard key={i} cardWidth={cardWidth} />
 								))}
 							</View>
 						) : searchListings.length === 0 ? (
@@ -680,6 +698,7 @@ export default function HomeScreen() {
 											<ListingCard
 												key={listing.id}
 												listing={listing}
+												width={cardWidth}
 												isFavorite={favoriteIds.has(listing.id)}
 												onToggleFavorite={() => toggleFavorite(listing)}
 												onPress={(id) => router.push(`/listing/${id}`)}
@@ -777,7 +796,7 @@ export default function HomeScreen() {
 								<ScrollView
 									horizontal
 									showsHorizontalScrollIndicator={false}
-									pagingEnabled
+									pagingEnabled={!isTablet}
 									contentContainerStyle={styles.featuredList}
 								>
 									{boostedListings.slice(0, 6).map((listing: any) => (
@@ -786,7 +805,7 @@ export default function HomeScreen() {
 											onPress={() => router.push(`/listing/${listing.id}`)}
 											style={[
 												styles.featuredCard,
-												{ backgroundColor: cardBg, width: width - 48 },
+												{ backgroundColor: cardBg, width: featuredWidth },
 											]}
 										>
 											<Image
@@ -795,7 +814,10 @@ export default function HomeScreen() {
 														resolveListingImageUrl(listing.images?.[0]) ??
 														undefined,
 												}}
-												style={styles.featuredImage}
+												style={[
+													styles.featuredImage,
+													{ height: featuredHeight },
+												]}
 												contentFit="cover"
 												placeholder={{
 													blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6.",
@@ -845,8 +867,8 @@ export default function HomeScreen() {
 							</View>
 							{recentLoading ? (
 								<View style={styles.grid}>
-									{Array.from({ length: 6 }).map((_, i) => (
-										<SkeletonCard key={i} />
+									{Array.from({ length: columns * 3 }).map((_, i) => (
+										<SkeletonCard key={i} cardWidth={cardWidth} />
 									))}
 								</View>
 							) : recentError ? (
@@ -871,6 +893,7 @@ export default function HomeScreen() {
 										<ListingCard
 											key={listing.id}
 											listing={listing}
+											width={cardWidth}
 											isFavorite={favoriteIds.has(listing.id)}
 											onToggleFavorite={() => toggleFavorite(listing)}
 											onPress={(id) => router.push(`/listing/${id}`)}
@@ -940,8 +963,8 @@ export default function HomeScreen() {
 								showsHorizontalScrollIndicator={false}
 								contentContainerStyle={styles.nearbyList}
 							>
-								{Array.from({ length: 4 }).map((_, i) => (
-									<SkeletonCard key={i} />
+								{Array.from({ length: columns + 2 }).map((_, i) => (
+									<SkeletonCard key={i} cardWidth={cardWidth} />
 								))}
 							</ScrollView>
 						) : nearbyListings.length === 0 ? (
@@ -969,6 +992,7 @@ export default function HomeScreen() {
 									<ListingCard
 										key={listing.id}
 										listing={listing}
+										width={cardWidth}
 										isFavorite={favoriteIds.has(listing.id)}
 										onToggleFavorite={() => toggleFavorite(listing)}
 										onPress={(id) => router.push(`/listing/${id}`)}
@@ -989,14 +1013,27 @@ export default function HomeScreen() {
 			>
 				<KeyboardAvoidingView
 					behavior={Platform.OS === "ios" ? "padding" : "height"}
-					style={styles.modalOverlay}
+					style={[
+						styles.modalOverlay,
+						// On iPad a full-bleed bottom sheet reads as broken — centre it.
+						isTablet && { justifyContent: "center", alignItems: "center" },
+					]}
 				>
 					<Pressable
 						style={StyleSheet.absoluteFill}
 						onPress={() => setSaveDialogOpen(false)}
 					/>
 					<View
-						style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}
+						style={[
+							styles.modalCard,
+							{ backgroundColor: cardBg, borderColor },
+							isTablet && {
+								width: "100%",
+								maxWidth: dialogMaxWidth,
+								borderRadius: 20,
+								borderWidth: 1,
+							},
+						]}
 					>
 						<Text style={[styles.modalTitle, { color: textColor }]}>
 							{t("search.saveSearchTitle")}

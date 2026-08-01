@@ -417,7 +417,12 @@
 		"noConversationsForSearch": "Aucune conversation pour « {{query}} »",
 		"allRead": "Vous avez tout lu !",
 		"contactSeller": "Contactez un vendeur pour commencer une discussion",
-		"noUnread": "Aucun message non lu"
+		"noUnread": "Aucun message non lu",
+		"block": "Bloquer l'utilisateur",
+		"unblock": "Débloquer l'utilisateur",
+		"blockConfirmTitle": "Bloquer cet utilisateur ?",
+		"blockConfirmBody": "Il ne pourra plus vous envoyer de messages, et vous ne pourrez plus lui en envoyer.",
+		"blockedNotice": "Vous avez bloqué cet utilisateur."
 	},
 	"account": {
 		"title": "Mon compte",
@@ -576,7 +581,9 @@
 		"commentLabel": "Commentaire (optionnel)",
 		"commentPlaceholder": "Partagez votre expérience…",
 		"publishReview": "Publier l'avis",
-		"memberSinceDate": "Membre depuis"
+		"memberSinceDate": "Membre depuis",
+		"blockConfirmTitle": "Bloquer cet utilisateur ?",
+		"blockConfirmBody": "Il ne pourra plus vous envoyer de messages, et vous ne pourrez plus lui en envoyer."
 	},
 	"settings": {
 		"title": "Paramètres",
@@ -676,7 +683,6 @@
 		"month1": "1 mois",
 		"popular": "Populaire",
 		"bestValue": "Meilleur rapport",
-		"pay": "Payer {{amount}} FCFA",
 		"cancel": "Pas maintenant",
 		"selectPlan": "Choisissez un forfait",
 		"currentBoost": "Boosté jusqu'au {{date}}",
@@ -685,36 +691,22 @@
 		"boostStats": "Statistiques du boost",
 		"impressions": "Impressions",
 		"clicks": "Clics",
-		"paymentMethod": "Moyen de paiement",
-		"mtnMoMo": "MTN Mobile Money",
-		"orangeMoney": "Orange Money",
-		"paymentSuccess": "Boost activé ! Votre annonce est maintenant mise en avant.",
-		"paymentFailed": "Le paiement n'a pas pu être traité. Veuillez réessayer.",
 		"termsNote": "Aucun remboursement après activation du boost.",
 		"boostTitle": "Boostez votre annonce",
 		"boostSubtitle": "Mettez votre annonce en avant et obtenez plus de visibilité",
 		"cancelBtn": "Annuler",
-		"payBtn": "Payer {{amount}} XAF",
 		"popularBadge": "Populaire",
 		"errorTitle": "Erreur",
-		"noClientSecret": "Erreur de configuration du paiement.",
-		"noCheckoutUrl": "URL de paiement non disponible.",
-		"applePayLabel": "Boost Annonce",
-		"applePayBtn": "Payer avec Apple Pay",
 		"successTitle": "Boost activé 🚀",
 		"successMessage": "Votre annonce est maintenant mise en avant.",
 		"mobileMoney": "Mobile Money",
-		"mobileMoneyDesc": "Orange Money, MTN MoMo",
 		"card": "Carte bancaire",
 		"cardDesc": "Visa, Mastercard",
 		"cardUnavailable": "Non disponible",
-		"cardPayBtn": "Payer par carte {{amount}} XAF",
 		"loginRequired": "Connexion requise pour booster une annonce.",
 		"mobileUnavailableBadge": "Temporairement indisponible",
 		"mobileUnavailableTitle": "Le boost n'est pas disponible dans l'application mobile pour le moment.",
 		"mobileUnavailableMessage": "Cette fonctionnalité est en cours d'adaptation pour la publication mobile. Vous pouvez toujours gérer votre annonce normalement depuis l'application.",
-		"mobileUnavailableBrowserHint": "Si vous avez besoin de la page complete de l'annonce, vous pouvez ouvrir cette annonce dans votre navigateur.",
-		"openListingInBrowser": "Ouvrir l'annonce dans le navigateur",
 		"listingReference": "Référence de l'annonce : {{listingId}}"
 	},
 	"report": {
@@ -873,10 +865,136 @@
 		"days_plural": "{{count}} jours"
 	},
 	"privacy": {
-		"title": "Politique de confidentialité"
+		"title": "Politique de confidentialité",
+		"lastUpdated": "Dernière mise à jour : 1er août 2026",
+		"sections": {
+			"intro": {
+				"title": "1. À propos de cette politique",
+				"body": "Cette politique explique ce que l'application mobile BuyNSellem collecte, pourquoi elle le collecte et ce qu'il advient de ces données. Chaque point ci-dessous correspond à une fonctionnalité réellement présente dans l'application. Lorsqu'une fonctionnalité est facultative, nous le précisons."
+			},
+			"account": {
+				"title": "2. Informations de compte",
+				"body": "Lorsque vous créez un compte, nous enregistrons votre nom et votre adresse e-mail. Votre mot de passe n'est jamais conservé en clair : il est haché avant d'être enregistré. Vous pouvez ajouter, si vous le souhaitez, une photo de profil, une courte biographie, une localisation (un nom de lieu que vous saisissez, et non des coordonnées GPS) et un numéro de téléphone. Votre note et votre nombre d'avis sont calculés à partir des avis laissés par les autres utilisateurs."
+			},
+			"phone": {
+				"title": "3. Numéro de téléphone et vérification par SMS",
+				"body": "L'ajout d'un numéro de téléphone est facultatif. Si vous en ajoutez un, nous vous envoyons un code à 6 chiffres par SMS afin de confirmer qu'il vous appartient. Le message est acheminé par notre prestataire SMS (AvlyText ou MTarget), qui reçoit votre numéro et le code. Le code expire au bout de 10 minutes, seule une version hachée est conservée, et nous cessons d'accepter les tentatives après 5 saisies erronées. Une fois vérifié, votre numéro peut être révélé aux acheteurs sur vos annonces."
+			},
+			"social": {
+				"title": "4. Connexion avec Google, Apple ou Facebook",
+				"body": "Si vous choisissez l'un de ces modes de connexion, nous recevons un identifiant de compte auprès du fournisseur ainsi que, lorsqu'il les transmet, votre nom et votre adresse e-mail. Si vous utilisez « Masquer mon adresse e-mail » d'Apple, nous ne voyons que l'adresse relais. Pour la connexion avec Apple, nous conservons également un jeton de rafraîchissement afin de pouvoir révoquer votre connexion Apple auprès d'Apple lorsque vous supprimez votre compte. Ce jeton ne peut pas être relu via notre API et n'est jamais partagé."
+			},
+			"photos": {
+				"title": "5. Photos et appareil photo",
+				"body": "L'application demande l'accès à l'appareil photo ou à la photothèque uniquement au moment où vous appuyez pour ajouter une image, lors de la création ou de la modification d'une annonce ou du changement de votre photo de profil. Seules les images que vous sélectionnez sont envoyées. L'application n'analyse ni ne lit votre photothèque en arrière-plan. Les photos d'annonces et de profil sont publiques : toute personne pouvant voir l'annonce ou le profil peut les voir."
+			},
+			"location": {
+				"title": "6. Localisation",
+				"body": "La localisation est facultative et reste désactivée tant que vous ne l'activez pas. L'application ne la demande jamais au démarrage. Elle ne la demande que lorsque vous appuyez sur l'invitation « annonces près de vous » de l'écran d'accueil. Si vous l'autorisez, l'application lit une fois votre position approximative pendant qu'elle est ouverte et envoie ces coordonnées avec une seule requête de recherche afin de trouver des annonces dans un rayon d'environ 50 km. Nous ne constituons pas d'historique de localisation et n'accédons jamais à votre position en arrière-plan."
+			},
+			"content": {
+				"title": "7. Ce que vous créez dans l'application",
+				"body": "Nous conservons ce que vous créez pour que le service fonctionne : vos annonces (titre, description, prix, catégorie, photos, lieu), vos messages, vos favoris, vos recherches enregistrées, les avis et notes que vous rédigez, ainsi que les signalements et blocages que vous effectuez. Les annonces sont vérifiées par notre équipe avant leur mise en ligne."
+			},
+			"messaging": {
+				"title": "8. Messagerie",
+				"body": "La messagerie fonctionne via une connexion authentifiée à nos serveurs. Le contenu des messages est conservé sur nos serveurs afin que votre historique de conversation soit toujours disponible à votre retour et que nous puissions donner suite aux signalements d'abus. Les personnes avec qui vous échangez peuvent voir si vous êtes actuellement en ligne."
+			},
+			"push": {
+				"title": "9. Notifications push",
+				"body": "Si vous autorisez les notifications, l'application obtient un jeton push auprès d'Expo et l'envoie à nos serveurs. Nous transmettons ce jeton, ainsi que votre identifiant utilisateur, votre nom, votre adresse e-mail et l'URL de votre photo de profil, à Novu, le service qui délivre nos notifications. Vous pouvez désactiver les notifications à tout moment dans les réglages de votre appareil, et le jeton est supprimé de Novu lorsque vous supprimez votre compte."
+			},
+			"device": {
+				"title": "10. Stockage sur votre appareil",
+				"body": "Votre jeton de session est conservé dans le stockage sécurisé de votre appareil (Keychain sur iOS, Keystore sur Android) afin que vous restiez connecté. Il est supprimé lorsque vous vous déconnectez ou supprimez votre compte. L'application n'utilise aucun cookie publicitaire ni identifiant comparable."
+			},
+			"noTracking": {
+				"title": "11. Aucun suivi, aucune publicité",
+				"body": "L'application ne contient aucun SDK d'analyse, de publicité ou d'attribution. Nous ne collectons pas l'identifiant publicitaire (IDFA sur iOS, Advertising ID sur Android), nous ne constituons pas de profils publicitaires et nous ne vous suivons pas à travers les applications ou sites d'autres sociétés. Nous ne vendons jamais vos données personnelles."
+			},
+			"visibility": {
+				"title": "12. Ce que les autres peuvent voir",
+				"body": "Les autres utilisateurs peuvent voir votre nom, votre photo de profil, votre biographie, la localisation affichée sur votre profil, votre note et vos avis, ainsi que vos annonces actives. Si vous avez ajouté et vérifié un numéro de téléphone, celui-ci peut être révélé aux acheteurs sur vos annonces. Votre mot de passe n'est jamais visible, et votre adresse e-mail n'est pas affichée aux autres utilisateurs dans l'application."
+			},
+			"sharing": {
+				"title": "13. Avec qui nous partageons vos données",
+				"body": "Nous ne partageons des données que lorsqu'une fonctionnalité l'exige : notre prestataire SMS (AvlyText ou MTarget) reçoit votre numéro de téléphone pour vous livrer un code de vérification ; Novu reçoit votre jeton push et des informations de profil de base pour délivrer les notifications ; Google, Apple ou Facebook ne sont impliqués que si vous choisissez de vous connecter avec eux ; et nos prestataires d'hébergement et de stockage de fichiers conservent les données pour notre compte. Nous divulguons également des données lorsque la loi nous y oblige. Nous ne vendons pas vos données personnelles et ne les partageons pas à des fins publicitaires."
+			},
+			"deletion": {
+				"title": "14. Suppression de votre compte",
+				"body": "Vous pouvez supprimer vous-même votre compte depuis Paramètres, rubrique Sécurité. La suppression est immédiate et irréversible. Elle efface votre fiche de compte, toutes vos annonces, les photos de ces annonces ainsi que votre photo de profil, vos conversations et messages, vos favoris, vos recherches enregistrées, les avis que vous avez rédigés et ceux rédigés à votre sujet, vos signalements et blocages, ainsi que vos enregistrements de paiement de boost. Votre fiche d'abonné est supprimée de Novu et, si vous vous êtes connecté avec Apple, votre jeton de rafraîchissement Apple est révoqué auprès d'Apple. Nous ne conservons aucune copie archivée de ces contenus."
+			},
+			"retention": {
+				"title": "15. Durée de conservation",
+				"body": "Nous conservons vos données tant que votre compte existe. Lorsque vous supprimez votre compte, la suppression décrite ci-dessus s'exécute immédiatement et définitivement. Si la loi nous impose de conserver un enregistrement précis, nous ne conservons que celui-ci et uniquement pour la durée exigée."
+			},
+			"rights": {
+				"title": "16. Vos choix et vos droits",
+				"body": "Vous pouvez consulter et modifier les informations de votre compte dans les Paramètres, ajouter ou retirer votre numéro de téléphone, et désactiver à tout moment les notifications et la localisation dans les réglages de votre appareil. Vous pouvez supprimer votre compte et ses données directement depuis l'application. Si vous souhaitez une copie de vos données ou avez une question sur leur traitement, écrivez à privacy@buynsellem.com et nous vous répondrons."
+			},
+			"children": {
+				"title": "17. Âge requis",
+				"body": "BuyNSellem s'adresse aux adultes. L'application n'est pas destinée aux personnes de moins de 18 ans et nous ne collectons pas sciemment d'informations personnelles concernant des enfants. Si vous pensez qu'un enfant a créé un compte, contactez-nous à support@buynsellem.com."
+			},
+			"security": {
+				"title": "18. Comment nous protégeons vos données",
+				"body": "Tous les échanges entre l'application et nos serveurs passent par HTTPS. Les mots de passe sont hachés, les sessions utilisent des jetons signés, et le jeton présent sur votre appareil est conservé dans le stockage sécurisé du système d'exploitation. Les champs sensibles tels que votre numéro en attente de vérification, le hachage de votre code de vérification et votre jeton de rafraîchissement Apple ne peuvent pas être relus via l'API. Aucun système n'est totalement sûr, nous ne pouvons donc pas garantir une sécurité absolue."
+			},
+			"changes": {
+				"title": "19. Modifications de cette politique",
+				"body": "Nous pouvons mettre à jour cette politique à mesure que l'application évolue. La date affichée en haut indique toujours la version en vigueur, et nous vous informerons dans l'application de tout changement important."
+			},
+			"contact": {
+				"title": "20. Nous contacter",
+				"body": "Pour toute question relative à la confidentialité ou pour exercer vos droits, écrivez à privacy@buynsellem.com. Pour toute autre demande, écrivez à support@buynsellem.com."
+			}
+		}
 	},
 	"terms": {
-		"title": "Conditions d'utilisation"
+		"title": "Conditions d'utilisation",
+		"lastUpdated": "Dernière mise à jour : 1er août 2026",
+		"sections": {
+			"acceptance": {
+				"title": "1. Acceptation des conditions",
+				"body": "En utilisant Buy'N'Sellem, vous acceptez les présentes conditions d'utilisation dans leur intégralité. Si vous n'acceptez pas ces conditions, veuillez cesser d'utiliser notre application."
+			},
+			"service": {
+				"title": "2. Description du service",
+				"body": "Buy'N'Sellem est une plateforme de petites annonces permettant aux utilisateurs d'acheter et vendre des articles entre particuliers au Cameroun et dans la sous-région."
+			},
+			"eligibility": {
+				"title": "3. Qui peut utiliser le service",
+				"body": "Vous devez avoir au moins 18 ans pour créer un compte. Vous êtes responsable de la confidentialité de vos identifiants et de tout ce qui est fait depuis votre compte."
+			},
+			"prohibited": {
+				"title": "4. Contenu interdit",
+				"body": "Il est strictement interdit de publier des annonces pour des articles illégaux, des armes, des drogues, des articles contrefaits, du contenu offensant, trompeur ou à caractère sexuel."
+			},
+			"responsibility": {
+				"title": "5. Responsabilité des utilisateurs",
+				"body": "Les utilisateurs sont entièrement responsables du contenu qu'ils publient et des transactions qu'ils effectuent. Buy'N'Sellem n'est pas partie prenante des échanges entre acheteurs et vendeurs."
+			},
+			"moderation": {
+				"title": "6. Modération des annonces",
+				"body": "Toute annonce est soumise à validation par notre équipe avant publication. Nous nous réservons le droit de refuser ou supprimer tout contenu non conforme à nos règles."
+			},
+			"intellectualProperty": {
+				"title": "7. Propriété intellectuelle",
+				"body": "Les photos et contenus publiés sur la plateforme restent la propriété de leurs auteurs. En les publiant, vous accordez à Buy'N'Sellem une licence d'affichage non exclusive au sein du service."
+			},
+			"dataProtection": {
+				"title": "8. Protection des données",
+				"body": "Vos données personnelles sont traitées comme décrit dans notre Politique de confidentialité, qui détaille précisément ce que l'application collecte et ce que la suppression de votre compte efface. Nous ne vendons jamais vos données à des tiers."
+			},
+			"suspension": {
+				"title": "9. Suspension de compte",
+				"body": "Nous nous réservons le droit de suspendre ou supprimer définitivement tout compte qui viole les présentes conditions ou qui adopte un comportement frauduleux."
+			},
+			"changes": {
+				"title": "10. Modification des conditions",
+				"body": "Buy'N'Sellem se réserve le droit de modifier ces conditions à tout moment. La date affichée en haut indique la version en vigueur, et les utilisateurs seront informés dans l'application des changements importants."
+			}
+		}
 	},
 	"favorites": {
 		"title": "Favoris",
@@ -907,7 +1025,7 @@
 		"q2": "Comment contacter un vendeur ?",
 		"a2": "Depuis la page de l'annonce, appuyez sur « Contacter le vendeur » pour envoyer un message directement.",
 		"q3": "Comment fonctionne le boost ?",
-		"a3": "Le boost met votre annonce en avant dans les résultats de recherche et sur la page d'accueil. Choisissez une durée (1 sem, 2 sem, 1 mois) et payez via NotchPay.",
+		"a3": "Le boost met votre annonce en avant dans les résultats de recherche et sur la page d'accueil. Cette option n'est pas disponible pour le moment dans l'application mobile.",
 		"q4": "Mon annonce n'est pas visible, pourquoi ?",
 		"a4": "Les annonces doivent être validées par notre équipe avant d'être publiées. Cela peut prendre jusqu'à 24h. Vérifiez votre statut dans « Mes annonces ».",
 		"q5": "Comment signaler une annonce suspecte ?",

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
 	Easing,
 	useAnimatedStyle,
@@ -8,9 +8,6 @@ import Animated, {
 	withTiming,
 } from "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 48) / 2;
 
 function SkeletonBlock({
 	width: w,
@@ -53,7 +50,9 @@ function SkeletonBlock({
 }
 
 export function SkeletonCard({ cardWidth }: { cardWidth?: number }) {
-	const w = cardWidth ?? CARD_WIDTH;
+	// Live width — keeps the placeholder in sync with ListingCard on rotation.
+	const { width } = useWindowDimensions();
+	const w = cardWidth ?? (width - 48) / 2;
 
 	return (
 		<View style={[styles.card, { width: w }]}>

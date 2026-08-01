@@ -1,7 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+	Pressable,
+	StyleSheet,
+	Text,
+	useWindowDimensions,
+	View,
+} from "react-native";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -10,10 +16,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { parseDate } from "@/src/lib/formatDate";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 48) / 2;
 
 const PRESS_SPRING = { damping: 18, stiffness: 300, mass: 0.6 };
 
@@ -25,10 +29,10 @@ const CONDITION_LABELS: Record<string, string> = {
 
 interface Listing {
 	id: string;
-	title: string;
+	title?: string;
 	price?: number;
 	location?: string;
-	createdAt: string;
+	createdAt?: string;
 	images?: Array<any>;
 	isBoosted?: boolean;
 	condition?: string;
@@ -36,15 +40,19 @@ interface Listing {
 }
 
 interface ListingCardProps {
-	listing: Listing;
+	/** An unpopulated relation arrives as a raw ID string. */
+	listing: Listing | string;
 	isFavorite: boolean;
 	onToggleFavorite: (id: string) => void;
 	onPress: (id: string) => void;
 	width?: number;
 }
 
-function timeAgo(dateStr: string): string {
-	const diff = Date.now() - new Date(dateStr).getTime();
+/** Relative age, or null when `createdAt` is missing/unparsable (was "NaNmois"). */
+function timeAgo(dateStr: string | undefined): string | null {
+	const date = parseDate(dateStr);
+	if (!date) return null;
+	const diff = Date.now() - date.getTime();
 	const mins = Math.floor(diff / 60000);
 	if (mins < 1) return "À l'instant";
 	if (mins < 60) return `${mins}min`;
@@ -56,14 +64,24 @@ function timeAgo(dateStr: string): string {
 }
 
 export function ListingCard({
-	listing,
+	listing: listingProp,
 	isFavorite,
 	onToggleFavorite,
 	onPress,
 	width: cardWidth,
 }: ListingCardProps) {
+	// Favorites can hand us a bare listing ID when the relation was not
+	// populated (or for an optimistic entry); render the card skeleton rather
+	// than crashing on `.images` / `.createdAt`.
+	const listing: Listing =
+		typeof listingProp === "string"
+			? { id: listingProp }
+			: (listingProp ?? { id: "" });
 	const isDark = useColorScheme() === "dark";
-	const w = cardWidth ?? CARD_WIDTH;
+	// Live window width so the fallback card size follows rotation /
+	// Stage Manager resizes instead of being frozen at first render.
+	const { width } = useWindowDimensions();
+	const w = cardWidth ?? (width - 48) / 2;
 	const imageH = Math.round(w * 0.75); // 4:3 ratio, same as web
 
 	// Card press
@@ -85,6 +103,7 @@ export function ListingCard({
 	const conditionLabel = listing.condition
 		? (CONDITION_LABELS[listing.condition] ?? null)
 		: null;
+	const age = timeAgo(listing.createdAt);
 
 	// Colors — matches web palette exactly
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -230,7 +249,7 @@ export function ListingCard({
 
 					{/* Title — 2-line clamp */}
 					<Text style={[styles.title, { color: textTitle }]} numberOfLines={2}>
-						{listing.title}
+						{listing.title ?? "—"}
 					</Text>
 
 					{/* Meta row: location (left) + time (right) */}
@@ -244,12 +263,14 @@ export function ListingCard({
 								{listing.location ?? "—"}
 							</Text>
 						</View>
-						<View style={styles.metaRight}>
-							<Ionicons name="time-outline" size={11} color={textMuted} />
-							<Text style={[styles.metaText, { color: textMuted }]}>
-								{timeAgo(listing.createdAt)}
-							</Text>
-						</View>
+						{age && (
+							<View style={styles.metaRight}>
+								<Ionicons name="time-outline" size={11} color={textMuted} />
+								<Text style={[styles.metaText, { color: textMuted }]}>
+									{age}
+								</Text>
+							</View>
+						)}
 					</View>
 				</View>
 			</Animated.View>

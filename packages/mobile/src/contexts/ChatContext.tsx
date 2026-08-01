@@ -17,13 +17,15 @@ const ChatContext = createContext<ChatContextValue>({
 export function ChatProvider({ children }: { children: React.ReactNode }) {
 	const { user, token } = useAuth();
 	const { chatUrl } = useAppConfig();
-	const CHAT_URL = chatUrl ?? "http://localhost:4000";
 	const [chatClient, setChatClient] = useState<ChatClient | null>(null);
 	const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 	const clientRef = useRef<ChatClient | null>(null);
 
 	useEffect(() => {
-		if (!user || !token) {
+		// `chatUrl` arrives from /api/public/config, so it is null on the first
+		// render. Falling back to a cleartext localhost URL meant every cold start
+		// opened a connection iOS App Transport Security blocks outright.
+		if (!user || !token || !chatUrl) {
 			clientRef.current?.disconnect();
 			clientRef.current = null;
 			setChatClient(null);
@@ -31,7 +33,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 			return;
 		}
 
-		const client = new ChatClient({ url: CHAT_URL, token });
+		const client = new ChatClient({ url: chatUrl, token });
 		clientRef.current = client;
 
 		client.on("user:online", ({ userId }) => {
@@ -54,7 +56,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 			clientRef.current = null;
 			setChatClient(null);
 		};
-	}, [user?.id, token, user, CHAT_URL]);
+	}, [user?.id, token, user, chatUrl]);
 
 	return (
 		<ChatContext.Provider value={{ chatClient, onlineUsers }}>

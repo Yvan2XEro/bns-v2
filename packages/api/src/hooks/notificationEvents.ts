@@ -43,7 +43,12 @@ function buildExpoPushData(
 					}
 				: undefined;
 		case "boost-expired":
-			return listingId ? { listingId, url: `/boost/${listingId}` } : undefined;
+			// Deliberately points at the listing, not at /boost/: routing a push
+			// notification to a purchase flow that ends in an external checkout is
+			// an App Review 3.1.1 link-out.
+			return listingId
+				? { listingId, url: `/listing/${listingId}` }
+				: undefined;
 		case "new-message":
 			return conversationId
 				? {

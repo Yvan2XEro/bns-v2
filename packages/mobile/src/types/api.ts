@@ -295,7 +295,10 @@ export interface Message {
 	updatedAt: string;
 }
 
-/** Response from GET /api/public/messages/unread */
+/**
+ * Response from GET /api/public/messages/unread and from
+ * GET /api/public/novu/notifications/unread-count — both return the same shape.
+ */
 export interface UnreadCountResponse {
 	count: number;
 }
@@ -353,11 +356,6 @@ export interface NotificationsResponse {
 	unreadCount: number;
 	page: number;
 	pageSize: number;
-}
-
-/** Response from GET /api/public/novu/notifications/unread-count */
-export interface UnreadCountResponse {
-	count: number;
 }
 
 // ─── Boost Payments ───────────────────────────────────────────────────────────

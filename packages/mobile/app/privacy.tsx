@@ -3,45 +3,38 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
-const SECTIONS = [
-	{
-		title: "1. Données collectées",
-		body: "Nous collectons les informations que vous nous fournissez lors de votre inscription (nom, email, mot de passe haché), les annonces que vous publiez, vos messages, vos favoris et les données d'utilisation de l'application.",
-	},
-	{
-		title: "2. Utilisation des données",
-		body: "Vos données sont utilisées pour faire fonctionner le service, personnaliser votre expérience, vous envoyer des notifications pertinentes (nouvelles annonces, messages) et améliorer la plateforme.",
-	},
-	{
-		title: "3. Partage des données",
-		body: "Nous ne vendons jamais vos données personnelles. Certaines informations (nom, photo de profil, annonces, avis) sont visibles par les autres utilisateurs dans le cadre normal du service.",
-	},
-	{
-		title: "4. Sécurité",
-		body: "Nous utilisons des mesures de sécurité standard (HTTPS, chiffrement des mots de passe, tokens JWT) pour protéger vos données. Les tokens sont stockés dans un stockage sécurisé sur votre appareil.",
-	},
-	{
-		title: "5. Vos droits",
-		body: "Vous avez le droit d'accéder à vos données, de les corriger ou de les supprimer. Pour exercer ces droits, rendez-vous dans Paramètres ou contactez-nous via la section « Nous contacter ».",
-	},
-	{
-		title: "6. Cookies et stockage local",
-		body: "L'application mobile utilise un stockage local sécurisé (SecureStore) pour maintenir votre session. Aucun cookie tiers n'est utilisé à des fins publicitaires.",
-	},
-	{
-		title: "7. Notifications push",
-		body: "Si vous autorisez les notifications, votre token d'appareil est transmis à nos serveurs pour vous envoyer des alertes pertinentes. Vous pouvez désactiver ces notifications à tout moment dans les paramètres.",
-	},
-	{
-		title: "8. Modifications de la politique",
-		body: "Nous pouvons mettre à jour cette politique de confidentialité. Vous serez notifié des changements significatifs via l'application. L'utilisation continue du service vaut acceptation des modifications.",
-	},
-];
+// Content lives in src/locales/{en,fr}.json under `privacy.sections.*` so the
+// policy exists in both app languages. Order here is the order on screen, and it
+// must stay in sync with the keys declared in the locale files.
+const SECTION_KEYS = [
+	"intro",
+	"account",
+	"phone",
+	"social",
+	"photos",
+	"location",
+	"content",
+	"messaging",
+	"push",
+	"device",
+	"noTracking",
+	"visibility",
+	"sharing",
+	"deletion",
+	"retention",
+	"rights",
+	"children",
+	"security",
+	"changes",
+	"contact",
+] as const;
 
 export default function PrivacyScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -64,18 +57,18 @@ export default function PrivacyScreen() {
 				<View style={{ width: 40 }} />
 			</View>
 
-			<ScrollView contentContainerStyle={styles.scroll}>
+			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
 				<Text style={[styles.updated, { color: mutedColor }]}>
-					Dernière mise à jour : janvier 2025
+					{t("privacy.lastUpdated")}
 				</Text>
 
-				{SECTIONS.map((section, i) => (
-					<View key={i} style={styles.section}>
+				{SECTION_KEYS.map((key) => (
+					<View key={key} style={styles.section}>
 						<Text style={[styles.sectionTitle, { color: textColor }]}>
-							{section.title}
+							{t(`privacy.sections.${key}.title`)}
 						</Text>
 						<Text style={[styles.paragraph, { color: mutedColor }]}>
-							{section.body}
+							{t(`privacy.sections.${key}.body`)}
 						</Text>
 					</View>
 				))}

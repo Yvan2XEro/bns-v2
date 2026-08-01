@@ -18,6 +18,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -100,6 +101,7 @@ function formatDate(dateStr: string) {
 
 export default function MyListingsScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { user } = useAuth();
 	const queryClient = useQueryClient();
 	const { showConfirm } = useAlert();
@@ -452,7 +454,7 @@ export default function MyListingsScreen() {
 						/>
 					}
 					renderItem={renderItem}
-					contentContainerStyle={styles.listContent}
+					contentContainerStyle={[styles.listContent, centeredContent]}
 					showsVerticalScrollIndicator={false}
 				/>
 			)}

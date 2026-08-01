@@ -4,11 +4,11 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import {
-	Dimensions,
 	FlatList,
 	Pressable,
 	StyleSheet,
 	Text,
+	useWindowDimensions,
 	View,
 	type ViewToken,
 } from "react-native";
@@ -36,8 +36,6 @@ import Svg, {
 import { Colors, Fonts, shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/src/lib/i18n";
-
-const { width: SW } = Dimensions.get("window");
 
 // ─── Animated SVG primitives ──────────────────────────────────────────────────
 const AnimatedG = Animated.createAnimatedComponent(G);
@@ -1425,6 +1423,9 @@ export default function OnboardingScreen() {
 	const isDark = useColorScheme() === "dark";
 	const colors = isDark ? Colors.dark : Colors.light;
 	const { t } = useTranslation();
+	// Live width — the pager measures each slide against it, so a stale
+	// module-scope value breaks paging after rotation / Stage Manager resize.
+	const { width: SW } = useWindowDimensions();
 	const SLIDES = getSlides(t);
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<FlatList>(null);
@@ -1524,10 +1525,16 @@ export default function OnboardingScreen() {
 				showsHorizontalScrollIndicator={false}
 				onViewableItemsChanged={onViewableItemsChanged}
 				viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+				extraData={SW}
 			/>
 
 			{/* Bottom controls */}
-			<View style={styles.bottomBar}>
+			<View
+				style={[
+					styles.bottomBar,
+					SW >= 768 && { alignSelf: "center", width: "100%", maxWidth: 520 },
+				]}
+			>
 				<View style={styles.dotsRow}>
 					{SLIDES.map((_, i) => (
 						<Dot

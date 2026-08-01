@@ -3,6 +3,8 @@ import * as SecureStore from "expo-secure-store";
 export const API_BASE_URL =
 	process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 async function getToken(): Promise<string | null> {
 	return SecureStore.getItemAsync("auth_token");
 }
@@ -39,7 +41,33 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 		headers.Authorization = `JWT ${token}`;
 	}
 
-	const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+	// Without a timeout a stalled-but-open socket (captive portal, corporate
+	// wifi) leaves the auth bootstrap pending forever and the app sits on a
+	// full-screen loader indefinitely.
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+	let res: Response;
+	try {
+		res = await fetch(`${API_BASE_URL}${path}`, {
+			...options,
+			headers,
+			signal: controller.signal,
+		});
+	} catch (error) {
+		if (error instanceof Error && error.name === "AbortError") {
+			throw new ApiError(
+				"La requête a expiré. Vérifiez votre connexion.",
+				408,
+				{
+					path,
+				},
+			);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 
 	if (!res.ok) {
 		const error = (await res.json().catch(() => ({}))) as { message?: string };

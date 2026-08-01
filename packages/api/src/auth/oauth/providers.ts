@@ -120,7 +120,13 @@ function normalizeApplePrivateKey(): string {
 	return requiredEnv("APPLE_OAUTH_PRIVATE_KEY").replace(/\\n/g, "\n");
 }
 
-async function createAppleClientSecret(): Promise<string> {
+/**
+ * The `sub` of Apple's client secret must be the client the token was issued
+ * to. That differs between the two flows: the web/browser flow uses a Services
+ * ID (`APPLE_OAUTH_CLIENT_ID`) while native Sign in with Apple uses the app's
+ * bundle identifier. Same team and key sign both.
+ */
+async function createAppleClientSecretFor(clientId: string): Promise<string> {
 	const privateKey = await importPKCS8(normalizeApplePrivateKey(), "ES256");
 	const now = Math.floor(Date.now() / 1000);
 
@@ -132,12 +138,99 @@ async function createAppleClientSecret(): Promise<string> {
 		.setIssuer(requiredEnv("APPLE_OAUTH_TEAM_ID"))
 		.setIssuedAt(now)
 		.setAudience("https://appleid.apple.com")
-		.setSubject(requiredEnv("APPLE_OAUTH_CLIENT_ID"))
+		.setSubject(clientId)
 		.setExpirationTime(now + 60 * 60)
 		.sign(privateKey);
 }
 
-export { createAppleClientSecret };
+async function createAppleClientSecret(): Promise<string> {
+	return createAppleClientSecretFor(requiredEnv("APPLE_OAUTH_CLIENT_ID"));
+}
+
+/** The iOS bundle identifier registered for native Sign in with Apple. */
+function getAppleNativeClientId(): string | undefined {
+	return process.env.APPLE_NATIVE_CLIENT_ID || undefined;
+}
+
+/**
+ * Resolves an Apple identity from a native `ASAuthorization` credential.
+ *
+ * The `identityToken` is verified against Apple's JWKS with the bundle id as
+ * audience. The `authorizationCode` is then exchanged so we capture a refresh
+ * token — without it, account deletion cannot revoke the Apple grant, which
+ * Apple's own deletion guidance requires.
+ */
+async function getAppleNativeIdentity({
+	authorizationCode,
+	fullName,
+	identityToken,
+}: {
+	authorizationCode?: string;
+	fullName?: string;
+	identityToken: string;
+}): Promise<OAuthIdentity> {
+	const clientId = getAppleNativeClientId();
+
+	if (!clientId) {
+		throw new Error(
+			"Native Sign in with Apple is not configured (APPLE_NATIVE_CLIENT_ID)",
+		);
+	}
+
+	const verified = await jwtVerify(identityToken, APPLE_JWKS, {
+		audience: clientId,
+		issuer: "https://appleid.apple.com",
+	});
+
+	const claims = verified.payload as {
+		email?: string;
+		email_verified?: boolean | string;
+		sub?: string;
+	};
+
+	if (!claims.sub) {
+		throw new Error("Apple identity token is missing sub");
+	}
+
+	let refreshToken: string | undefined;
+
+	if (authorizationCode) {
+		try {
+			const token = await exchangeCode(
+				"https://appleid.apple.com/auth/token",
+				new URLSearchParams({
+					client_id: clientId,
+					client_secret: await createAppleClientSecretFor(clientId),
+					code: authorizationCode,
+					grant_type: "authorization_code",
+				}),
+			);
+			refreshToken = token.refresh_token;
+		} catch {
+			// A failed exchange must not block sign-in; it only costs us the
+			// ability to revoke later, which we log rather than surface.
+		}
+	}
+
+	const displayName = fullName?.trim();
+
+	return {
+		email: claims.email?.toLowerCase(),
+		emailVerified:
+			claims.email_verified === true || claims.email_verified === "true",
+		name: displayName || claims.email?.split("@")[0] || "Apple user",
+		provider: "apple",
+		providerAccountId: claims.sub,
+		providerData: refreshToken ? { refreshToken } : undefined,
+	};
+}
+
+export {
+	createAppleClientSecret,
+	createAppleClientSecretFor,
+	getAppleNativeClientId,
+	getAppleNativeIdentity,
+};
 
 async function getAppleIdentity({
 	code,

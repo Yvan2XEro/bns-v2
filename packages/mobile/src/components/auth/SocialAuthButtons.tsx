@@ -1,3 +1,4 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import type React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
@@ -103,19 +104,36 @@ export function SocialAuthButtons({
 			</View>
 
 			<View style={styles.buttons}>
-				{visible.map(({ labelKey, value, Icon }) => (
-					<AnimatedPressable
-						key={value}
-						onPress={() => onPress(value)}
-						scaleTo={0.98}
-						style={[styles.button, { borderColor }]}
-					>
-						<Icon color={primaryColor} />
-						<Text style={[styles.buttonText, { color: primaryColor }]}>
-							{t(labelKey)}
-						</Text>
-					</AnimatedPressable>
-				))}
+				{visible.map(({ labelKey, value, Icon }) =>
+					// Apple requires its own button design for Sign in with Apple on
+					// iOS; a custom-styled button is itself a review finding.
+					value === "apple" && Platform.OS === "ios" ? (
+						<AppleAuthentication.AppleAuthenticationButton
+							key={value}
+							buttonType={
+								AppleAuthentication.AppleAuthenticationButtonType.CONTINUE
+							}
+							buttonStyle={
+								AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+							}
+							cornerRadius={12}
+							onPress={() => onPress(value)}
+							style={styles.appleButton}
+						/>
+					) : (
+						<AnimatedPressable
+							key={value}
+							onPress={() => onPress(value)}
+							scaleTo={0.98}
+							style={[styles.button, { borderColor }]}
+						>
+							<Icon color={primaryColor} />
+							<Text style={[styles.buttonText, { color: primaryColor }]}>
+								{t(labelKey)}
+							</Text>
+						</AnimatedPressable>
+					),
+				)}
 			</View>
 		</View>
 	);
@@ -138,6 +156,10 @@ const styles = StyleSheet.create({
 	},
 	buttons: {
 		gap: 10,
+	},
+	appleButton: {
+		height: 48,
+		width: "100%",
 	},
 	container: {
 		gap: 12,

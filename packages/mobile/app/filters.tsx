@@ -15,6 +15,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
@@ -23,6 +24,7 @@ const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
 export default function FiltersModal() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 
 	const CONDITIONS = [
@@ -192,7 +194,7 @@ export default function FiltersModal() {
 				</Pressable>
 			</View>
 
-			<ScrollView contentContainerStyle={styles.scroll}>
+			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
 				{/* ── Catégorie ── */}
 				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
 					{t("filters.category")}

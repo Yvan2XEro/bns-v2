@@ -5,7 +5,6 @@ import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Dimensions,
 	Modal,
 	Pressable,
 	ScrollView,
@@ -18,17 +17,18 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
-
-const { width } = Dimensions.get("window");
-const CARD_W = (width - 48) / 2;
 
 export default function PublicProfileScreen() {
 	const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -37,8 +37,47 @@ export default function PublicProfileScreen() {
 	const { user } = useAuth();
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
-	const { showSuccess, showError } = useAlert();
+	const { showSuccess, showError, showAlert } = useAlert();
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
+	const { isBlocked, blockId } = useIsBlocked(userId);
+	const { block, unblock } = useToggleBlock();
+
+	function confirmToggleBlock() {
+		if (!user) {
+			router.push({
+				pathname: "/auth/login",
+				params: getAuthModalParams(pathname),
+			});
+			return;
+		}
+		if (!userId) return;
+
+		if (isBlocked) {
+			if (blockId) unblock.mutate(blockId);
+			return;
+		}
+
+		showAlert(
+			t("profile.blockConfirmTitle"),
+			t("profile.blockConfirmBody"),
+			[
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("profile.block"),
+					style: "destructive",
+					onPress: () => block.mutate(userId),
+				},
+			],
+			"warning",
+		);
+	}
+	const {
+		isTablet,
+		columns,
+		cardWidth: CARD_W,
+		centeredContent,
+		dialogMaxWidth,
+	} = useResponsive();
 	const [activeTab, setActiveTab] = useState<"listings" | "reviews">(
 		"listings",
 	);
@@ -56,7 +95,12 @@ export default function PublicProfileScreen() {
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const isOwnProfile = user?.id === userId;
 
-	const { data: profileData, isLoading } = useQuery({
+	const {
+		data: profileData,
+		isLoading,
+		isError,
+		refetch,
+	} = useQuery({
 		queryKey: ["profile", userId],
 		queryFn: () => api.get<any>(`/api/users/${userId}`),
 		enabled: !!userId,
@@ -102,17 +146,47 @@ export default function PublicProfileScreen() {
 	const profile = profileData?.doc ?? profileData;
 	const listings = listingsData?.docs ?? [];
 	const reviews = reviewsData?.docs ?? [];
+	const memberSince = formatDate(profile?.createdAt, {
+		year: "numeric",
+		month: "long",
+	});
 
-	// 2-column grid pairs
-	const pairs: any[][] = [];
-	for (let i = 0; i < listings.length; i += 2)
-		pairs.push(listings.slice(i, i + 2));
+	// Responsive grid rows (2 on phone, 3–4 on tablet)
+	const pairs = chunkIntoRows(listings, columns);
 
 	if (isLoading) {
 		return (
 			<View style={[styles.loader, { backgroundColor: bg }]}>
 				<ActivityIndicator color={primaryColor} />
 			</View>
+		);
+	}
+
+	// Without this the screen rendered an empty profile card on a network
+	// failure / 401 / 500, with no way to recover.
+	if (isError) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
+				<View style={[styles.header, { borderBottomColor: borderColor }]}>
+					<Pressable onPress={() => router.back()} style={styles.backBtn}>
+						<Ionicons name="arrow-back" size={22} color={textColor} />
+					</Pressable>
+					<Text style={[styles.headerTitle, { color: textColor }]}>
+						{t("profile.title")}
+					</Text>
+					<View style={{ width: 40 }} />
+				</View>
+				<EmptyState
+					icon="alert-circle-outline"
+					title={t("common.error")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => refetch()}
+				/>
+			</SafeAreaView>
 		);
 	}
 
@@ -135,7 +209,11 @@ export default function PublicProfileScreen() {
 			<ScrollView showsVerticalScrollIndicator={false}>
 				{/* Profile card */}
 				<View
-					style={[styles.profileCard, { backgroundColor: cardBg, borderColor }]}
+					style={[
+						styles.profileCard,
+						{ backgroundColor: cardBg, borderColor },
+						centeredContent,
+					]}
 				>
 					{profile?.avatar?.url ? (
 						<Image
@@ -195,13 +273,9 @@ export default function PublicProfileScreen() {
 								</Text>
 							</View>
 						)}
-						{profile?.createdAt && (
+						{memberSince && (
 							<Text style={[styles.metaText, { color: mutedColor }]}>
-								{t("profile.memberSinceDate")}{" "}
-								{new Date(profile.createdAt).toLocaleDateString("fr-FR", {
-									year: "numeric",
-									month: "long",
-								})}
+								{t("profile.memberSinceDate")} {memberSince}
 							</Text>
 						)}
 					</View>
@@ -242,12 +316,34 @@ export default function PublicProfileScreen() {
 							>
 								<Ionicons name="flag-outline" size={16} color={mutedColor} />
 							</Pressable>
+							<Pressable
+								accessibilityLabel={
+									isBlocked ? t("profile.unblock") : t("profile.block")
+								}
+								onPress={confirmToggleBlock}
+								style={[
+									styles.iconBtn,
+									{ borderColor, backgroundColor: cardBg },
+								]}
+							>
+								<Ionicons
+									name={isBlocked ? "lock-open-outline" : "ban-outline"}
+									size={16}
+									color={mutedColor}
+								/>
+							</Pressable>
 						</View>
 					)}
 				</View>
 
 				{/* Tabs */}
-				<View style={[styles.tabs, { borderBottomColor: borderColor }]}>
+				<View
+					style={[
+						styles.tabs,
+						{ borderBottomColor: borderColor },
+						centeredContent,
+					]}
+				>
 					{(["listings", "reviews"] as const).map((tab) => (
 						<Pressable
 							key={tab}
@@ -318,7 +414,7 @@ export default function PublicProfileScreen() {
 
 				{/* Reviews tab */}
 				{activeTab === "reviews" && (
-					<View style={styles.reviewsList}>
+					<View style={[styles.reviewsList, centeredContent]}>
 						{/* Add review button (non-own profile, logged in) */}
 						{!isOwnProfile && user && (
 							<Pressable
@@ -360,9 +456,11 @@ export default function PublicProfileScreen() {
 											</Text>
 											<ReviewStars rating={review.rating} size={12} />
 										</View>
-										<Text style={[styles.reviewDate, { color: mutedColor }]}>
-											{new Date(review.createdAt).toLocaleDateString("fr-FR")}
-										</Text>
+										{formatDate(review.createdAt) && (
+											<Text style={[styles.reviewDate, { color: mutedColor }]}>
+												{formatDate(review.createdAt)}
+											</Text>
+										)}
 									</View>
 									{review.comment && (
 										<Text
@@ -402,7 +500,20 @@ export default function PublicProfileScreen() {
 					style={styles.modalOverlay}
 					onPress={() => setReviewModal(false)}
 				/>
-				<View style={[styles.modalSheet, { backgroundColor: cardBg }]}>
+				<View
+					style={[
+						styles.modalSheet,
+						{ backgroundColor: cardBg },
+						// Centred, width-capped dialog on iPad instead of a full-bleed sheet.
+						isTablet && {
+							alignSelf: "center",
+							width: "100%",
+							maxWidth: dialogMaxWidth,
+							borderRadius: 20,
+							marginBottom: 24,
+						},
+					]}
+				>
 					<View
 						style={[styles.modalHeader, { borderBottomColor: borderColor }]}
 					>

@@ -17,12 +17,15 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SkeletonRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function SavedSearchesScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { user, isLoading: authLoading } = useAuth();
 	const queryClient = useQueryClient();
@@ -104,7 +107,7 @@ export default function SavedSearchesScreen() {
 							tintColor={primaryColor}
 						/>
 					}
-					contentContainerStyle={{ padding: 16, gap: 10 }}
+					contentContainerStyle={[{ padding: 16, gap: 10 }, centeredContent]}
 					renderItem={({ item }) => (
 						<Pressable
 							onPress={() => {
@@ -122,9 +125,11 @@ export default function SavedSearchesScreen() {
 								<Text style={[styles.searchName, { color: textColor }]}>
 									{item.name}
 								</Text>
-								<Text style={[styles.searchDate, { color: mutedColor }]}>
-									{new Date(item.createdAt).toLocaleDateString("fr-FR")}
-								</Text>
+								{formatDate(item.createdAt) && (
+									<Text style={[styles.searchDate, { color: mutedColor }]}>
+										{formatDate(item.createdAt)}
+									</Text>
+								)}
 							</View>
 							<View style={styles.searchActions}>
 								<View style={{ alignItems: "center", gap: 2 }}>
