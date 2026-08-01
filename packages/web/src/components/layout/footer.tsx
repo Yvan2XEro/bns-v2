@@ -108,7 +108,7 @@ export async function Footer() {
 						</div>
 						<div className="flex items-center gap-3">
 							<a
-								href="https://apps.apple.com"
+								href="https://apps.apple.com/app/id6796297640"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex h-10 items-center gap-2 rounded-lg bg-[#0F172A] px-4 transition-opacity hover:opacity-90"
@@ -131,7 +131,7 @@ export async function Footer() {
 								</div>
 							</a>
 							<a
-								href="https://play.google.com"
+								href="https://play.google.com/store/apps/details?id=com.buynsellem.mobile"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex h-10 items-center gap-2 rounded-lg bg-[#0F172A] px-4 transition-opacity hover:opacity-90"
