@@ -8,12 +8,6 @@ import { getPayload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 
-// This handler takes no request argument and calls no dynamic API, so Next.js
-// would otherwise prerender it and serve a snapshot forever — freezing the
-// values read from process.env and from app-settings at render time. Changing
-// an environment variable and redeploying would have no visible effect.
-export const dynamic = "force-dynamic";
-
 export async function GET() {
 	let enabledAuthProviders: string[] = [];
 	let localAuthEnabled = true;
