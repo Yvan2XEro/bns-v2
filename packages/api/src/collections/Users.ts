@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { CollectionConfig } from "payload";
+import type { Access, CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
 import type { AuthProvider } from "../auth/oauth/types";
 import { deleteUserRelatedData } from "../services/accountDeletion";
@@ -28,6 +28,17 @@ function ensureAuthProviders(data: Record<string, unknown>) {
 	};
 }
 
+const selfOrAdmin: Access = ({ req: { user } }) => {
+	if (!user) return false;
+	if ((user as { role?: string }).role === "admin") return true;
+
+	return {
+		id: {
+			equals: user.id,
+		},
+	};
+};
+
 export const Users: CollectionConfig = {
 	slug: "users",
 	admin: {
@@ -38,6 +49,14 @@ export const Users: CollectionConfig = {
 	access: {
 		create: anyone,
 		read: anyone,
+		// Without explicit update/delete rules Payload falls back to
+		// "any authenticated user", which let any signed-in account reset another
+		// user's password (beforeChange pins email/role/phone but never password)
+		// or delete them outright, triggering the full destructive cascade.
+		// Server-side flows (OAuth, phone verification, rating sync, account
+		// deletion) all pass overrideAccess and are unaffected.
+		update: selfOrAdmin,
+		delete: selfOrAdmin,
 		admin: ({ req }) =>
 			req.user?.role === "admin" || req.user?.role === "moderator",
 	},
