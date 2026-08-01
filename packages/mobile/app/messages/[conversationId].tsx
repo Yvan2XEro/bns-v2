@@ -16,9 +16,12 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { EmptyState } from "@/src/components/EmptyState";
 import { SkeletonMessageBubbles } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
+import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -60,6 +63,7 @@ export default function ConversationScreen() {
 		listing?: string;
 	}>();
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const { chatClient, onlineUsers } = useChatClient();
@@ -90,7 +94,12 @@ export default function ConversationScreen() {
 		enabled: !!listingParam,
 	});
 
-	const { data: messagesData, isLoading } = useQuery({
+	const {
+		data: messagesData,
+		isLoading,
+		isError,
+		refetch,
+	} = useQuery({
 		queryKey: ["messages", conversationId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
@@ -111,6 +120,32 @@ export default function ConversationScreen() {
 		thumbnailUrl?: string;
 	} | null>(null);
 	const isOtherOnline = otherUser?.id ? onlineUsers.has(otherUser.id) : false;
+
+	const { isBlocked, blockId } = useIsBlocked(otherUser?.id);
+	const { block, unblock } = useToggleBlock();
+
+	function confirmToggleBlock() {
+		if (!otherUser?.id) return;
+
+		if (isBlocked) {
+			if (blockId) unblock.mutate(blockId);
+			return;
+		}
+
+		showAlert(
+			t("messages.blockConfirmTitle"),
+			t("messages.blockConfirmBody"),
+			[
+				{ text: t("common.cancel"), style: "cancel" },
+				{
+					text: t("messages.block"),
+					style: "destructive",
+					onPress: () => block.mutate(otherUser.id),
+				},
+			],
+			"warning",
+		);
+	}
 
 	// Init listing attachment from URL param once data loads
 	useEffect(() => {
@@ -561,6 +596,11 @@ export default function ConversationScreen() {
 											params: { targetType: "user", targetId: otherUser?.id },
 										}),
 								},
+								{
+									text: isBlocked ? t("messages.unblock") : t("messages.block"),
+									style: isBlocked ? "default" : "destructive",
+									onPress: confirmToggleBlock,
+								},
 								{ text: t("common.cancel"), style: "cancel" },
 							],
 							"info",
@@ -574,13 +614,22 @@ export default function ConversationScreen() {
 			<KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
 				{isLoading ? (
 					<SkeletonMessageBubbles />
+				) : isError ? (
+					// A failed history fetch used to leave a permanently blank thread.
+					<EmptyState
+						icon="chatbubbles-outline"
+						title={t("common.error")}
+						subtitle={t("home.errorSub")}
+						ctaLabel={t("common.retry")}
+						onCta={() => refetch()}
+					/>
 				) : (
 					<FlatList
 						ref={listRef}
 						data={messages}
 						renderItem={renderMessage}
 						keyExtractor={(item) => item.id}
-						contentContainerStyle={styles.msgList}
+						contentContainerStyle={[styles.msgList, centeredContent]}
 						showsVerticalScrollIndicator={false}
 						keyboardDismissMode="interactive"
 						onContentSizeChange={() =>
@@ -657,48 +706,61 @@ export default function ConversationScreen() {
 							</Pressable>
 						</View>
 					)}
-					<View style={styles.inputBar}>
-						<TextInput
-							value={text}
-							onChangeText={handleTextChange}
-							placeholder={t("messages.writePlaceholder")}
-							placeholderTextColor={mutedColor}
-							style={[
-								styles.msgInput,
-								{
-									color: textColor,
-									backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
-									borderColor,
-								},
-							]}
-							multiline
-							maxLength={1000}
-						/>
-						<Pressable
-							onPress={() => text.trim() && sendMessage()}
-							disabled={!text.trim() || sending}
-							style={[
-								styles.sendBtn,
-								{
-									backgroundColor: text.trim()
-										? primaryColor
-										: isDark
-											? "#1e293b"
-											: "#e2e8f0",
-								},
-							]}
-						>
-							{sending ? (
-								<ActivityIndicator size="small" color="#fff" />
-							) : (
-								<Ionicons
-									name="send"
-									size={18}
-									color={text.trim() ? "#fff" : mutedColor}
-								/>
-							)}
-						</Pressable>
-					</View>
+					{isBlocked ? (
+						<View style={[styles.inputBar, centeredContent]}>
+							<Text style={[styles.blockedNotice, { color: mutedColor }]}>
+								{t("messages.blockedNotice")}
+							</Text>
+							<Pressable onPress={confirmToggleBlock}>
+								<Text style={[styles.blockedAction, { color: primaryColor }]}>
+									{t("messages.unblock")}
+								</Text>
+							</Pressable>
+						</View>
+					) : (
+						<View style={[styles.inputBar, centeredContent]}>
+							<TextInput
+								value={text}
+								onChangeText={handleTextChange}
+								placeholder={t("messages.writePlaceholder")}
+								placeholderTextColor={mutedColor}
+								style={[
+									styles.msgInput,
+									{
+										color: textColor,
+										backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
+										borderColor,
+									},
+								]}
+								multiline
+								maxLength={1000}
+							/>
+							<Pressable
+								onPress={() => text.trim() && sendMessage()}
+								disabled={!text.trim() || sending}
+								style={[
+									styles.sendBtn,
+									{
+										backgroundColor: text.trim()
+											? primaryColor
+											: isDark
+												? "#1e293b"
+												: "#e2e8f0",
+									},
+								]}
+							>
+								{sending ? (
+									<ActivityIndicator size="small" color="#fff" />
+								) : (
+									<Ionicons
+										name="send"
+										size={18}
+										color={text.trim() ? "#fff" : mutedColor}
+									/>
+								)}
+							</Pressable>
+						</View>
+					)}
 				</View>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
@@ -822,6 +884,16 @@ const styles = StyleSheet.create({
 		alignItems: "flex-end",
 		gap: 8,
 		padding: 10,
+	},
+	blockedNotice: {
+		flex: 1,
+		fontSize: 13,
+		fontFamily: Fonts.body,
+	},
+	blockedAction: {
+		fontSize: 14,
+		fontWeight: "600",
+		fontFamily: Fonts.body,
 	},
 	msgInput: {
 		flex: 1,
