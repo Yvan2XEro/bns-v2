@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
+	ActivityIndicator,
 	FlatList,
 	Pressable,
 	RefreshControl,
@@ -15,20 +16,21 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function FavoritesScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { columns, cardWidth } = useResponsive();
 	const { t } = useTranslation();
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 
-	const { favorites, refetch, toggleFavorite } = useFavoriteActions();
-	const pairs: any[][] = [];
-	for (let i = 0; i < favorites.length; i += 2)
-		pairs.push(favorites.slice(i, i + 2));
+	const { favorites, isLoading, isError, refetch, toggleFavorite } =
+		useFavoriteActions();
+	const pairs = chunkIntoRows(favorites, columns);
 
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
@@ -52,7 +54,21 @@ export default function FavoritesScreen() {
 				<View style={{ width: 40 }} />
 			</View>
 
-			{favorites.length === 0 ? (
+			{isLoading ? (
+				// This screen previously showed "no favorites" on every cold load
+				// and on any API failure.
+				<View style={styles.loader}>
+					<ActivityIndicator color={primaryColor} />
+				</View>
+			) : isError ? (
+				<EmptyState
+					icon="alert-circle-outline"
+					title={t("common.error")}
+					subtitle={t("home.errorSub")}
+					ctaLabel={t("common.retry")}
+					onCta={() => refetch()}
+				/>
+			) : favorites.length === 0 ? (
 				<EmptyState
 					icon="heart-outline"
 					title={t("favorites.noFavorites")}
@@ -69,6 +85,7 @@ export default function FavoritesScreen() {
 								<ListingCard
 									key={fav.id}
 									listing={fav.listing ?? fav}
+									width={cardWidth}
 									isFavorite
 									onToggleFavorite={() => toggleFavorite(fav.listing ?? fav)}
 									onPress={(id) => router.push(`/listing/${id}`)}
@@ -102,5 +119,6 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	title: { fontSize: 18, fontFamily: Fonts.displayBold },
+	loader: { flex: 1, alignItems: "center", justifyContent: "center" },
 	row: { flexDirection: "row", gap: 12, marginBottom: 12 },
 });

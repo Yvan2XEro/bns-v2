@@ -3,10 +3,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, usePathname } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	Dimensions,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -26,13 +25,13 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
 
-const SCREEN_W = Dimensions.get("window").width;
 const DURATIONS = [30, 60, 90];
 
 // Blue + amber category tints (matches CategoryIcon palette)
@@ -73,6 +72,7 @@ export default function CreateScreen() {
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const pathname = usePathname();
+	const { width: SCREEN_W, centeredContent } = useResponsive();
 	const [step, setStep] = useState(0);
 
 	const STEPS = [
@@ -263,7 +263,9 @@ export default function CreateScreen() {
 			</View>
 
 			{/* ── Content ── */}
-			<View style={[styles.contentWrap, { backgroundColor: bg }]}>
+			<View
+				style={[styles.contentWrap, { backgroundColor: bg }, centeredContent]}
+			>
 				<Animated.View style={stepAnimStyle}>
 					{step === 0 && (
 						<CategoryStep
@@ -328,9 +330,11 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 		staleTime: 3600000,
 	});
 
-	const allCategories = data?.categories ?? [];
+	// A category with a null/missing `name` used to throw here and blank the
+	// whole Create tab — same `.filter(Boolean)` guard the home screen uses.
+	const allCategories = (data?.categories ?? []).filter(Boolean);
 	const categories = allCategories.filter((c: any) =>
-		c.name.toLowerCase().includes(search.toLowerCase()),
+		(c?.name ?? "").toLowerCase().includes(search.toLowerCase()),
 	);
 
 	return (
@@ -737,11 +741,20 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 		colors;
 	const { t } = useTranslation();
 	const attributes: any[] = form.category?.attributes ?? [];
+	const hasAttributes = attributes.length > 0;
 
-	if (attributes.length === 0) {
+	// Categories with no attributes auto-advance. This must not happen during
+	// render: onNext() writes Reanimated shared values and calls setState on the
+	// parent, both of which are illegal in the render phase under Reanimated 4.
+	// The ref guard keeps an unstable `onNext` identity from re-firing it.
+	const autoAdvanced = useRef(false);
+	useEffect(() => {
+		if (hasAttributes || autoAdvanced.current) return;
+		autoAdvanced.current = true;
 		onNext();
-		return null;
-	}
+	}, [hasAttributes, onNext]);
+
+	if (!hasAttributes) return null;
 
 	const updateAttr = (slug: string, value: any) =>
 		setForm((f: any) => ({

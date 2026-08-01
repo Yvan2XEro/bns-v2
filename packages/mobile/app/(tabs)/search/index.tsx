@@ -22,6 +22,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -31,6 +32,7 @@ export default function SearchScreen() {
 	const { t } = useTranslation();
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
+	const { isTablet, columns, cardWidth, dialogMaxWidth } = useResponsive();
 
 	const SORTS = [
 		{
@@ -128,6 +130,7 @@ export default function SearchScreen() {
 		hasNextPage,
 		isFetchingNextPage,
 		isLoading,
+		isError,
 		refetch,
 	} = useInfiniteQuery({
 		queryKey: ["search", searchParams],
@@ -137,14 +140,22 @@ export default function SearchScreen() {
 			),
 		getNextPageParam: (lastPage, pages) => {
 			const offset = pages.length * 20;
-			return offset < lastPage.total ? offset : undefined;
+			// The endpoint can answer with a bare array, and a page can be null;
+			// reading `.total` off either throws inside TanStack's pagination path.
+			const total = Array.isArray(lastPage)
+				? lastPage.length
+				: (lastPage?.total ?? 0);
+			return offset < total ? offset : undefined;
 		},
 		initialPageParam: 0,
 	});
 
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
-	const listings = (data?.pages.flatMap((p) => p.hits) ?? [])
+	const listings = (
+		data?.pages.flatMap((p: any) => (Array.isArray(p) ? p : (p?.hits ?? []))) ??
+		[]
+	)
 		.filter(Boolean)
 		.map((l: any) => ({
 			...l,
@@ -158,10 +169,7 @@ export default function SearchScreen() {
 		setRefreshing(false);
 	};
 
-	const pairs: any[][] = [];
-	for (let i = 0; i < listings.length; i += 2) {
-		pairs.push(listings.slice(i, i + 2));
-	}
+	const pairs = chunkIntoRows(listings, columns);
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -223,6 +231,7 @@ export default function SearchScreen() {
 				<ListingCard
 					key={listing.id}
 					listing={listing}
+					width={cardWidth}
 					isFavorite={favoriteIds.has(listing.id)}
 					onToggleFavorite={() => toggleFavorite(listing)}
 					onPress={(id: string) => router.push(`/listing/${id}`)}
@@ -405,10 +414,20 @@ export default function SearchScreen() {
 				{/* Results */}
 				{isLoading ? (
 					<View style={styles.skeletonGrid}>
-						{Array.from({ length: 8 }).map((_, i) => (
-							<SkeletonCard key={i} />
+						{Array.from({ length: columns * 4 }).map((_, i) => (
+							<SkeletonCard key={i} cardWidth={cardWidth} />
 						))}
 					</View>
+				) : isError ? (
+					// Without this a network failure / 401 / 500 rendered the
+					// "no results" state, which reads as "nothing matches".
+					<EmptyState
+						icon="cloud-offline-outline"
+						title={t("home.errorTitle")}
+						subtitle={t("home.errorSub")}
+						ctaLabel={t("common.retry")}
+						onCta={() => refetch()}
+					/>
 				) : listings.length === 0 ? (
 					<EmptyState
 						icon="search-outline"
@@ -472,14 +491,22 @@ export default function SearchScreen() {
 			>
 				<KeyboardAvoidingView
 					behavior={Platform.OS === "ios" ? "padding" : "height"}
-					style={styles.modalOverlay}
+					style={[
+						styles.modalOverlay,
+						// Centred dialog on iPad instead of a 1024pt-wide sheet.
+						isTablet && { justifyContent: "center", alignItems: "center" },
+					]}
 				>
 					<Pressable
 						style={StyleSheet.absoluteFill}
 						onPress={() => setSaveDialogOpen(false)}
 					/>
 					<View
-						style={[styles.modalCard, { backgroundColor: cardBg, borderColor }]}
+						style={[
+							styles.modalCard,
+							{ backgroundColor: cardBg, borderColor },
+							isTablet && { width: "100%", maxWidth: dialogMaxWidth },
+						]}
 					>
 						<Text style={[styles.modalTitle, { color: textColor }]}>
 							{t("search.saveSearchTitle")}

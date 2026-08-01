@@ -115,12 +115,16 @@ export function useToggleFavorite() {
 					};
 				}
 
-				// Add a placeholder to cache (will be replaced by server data on settle)
+				// Add a placeholder to cache (will be replaced by server data on settle).
+				// Never store a bare ID here: the favorites screens feed this straight
+				// to ListingCard, which then rendered a blank title/price and a
+				// "NaNmois" timestamp. Always carry at least { id, createdAt }.
+				const now = new Date().toISOString();
 				const placeholder: Favorite = {
 					id: `__optimistic__${listingId}`,
-					listing: listing ?? listingId,
+					listing: { id: listingId, createdAt: now, ...(listing ?? {}) },
 					user: "",
-					createdAt: new Date().toISOString(),
+					createdAt: now,
 				};
 				return {
 					...old,
@@ -212,6 +216,7 @@ export function useFavoriteActions() {
 		isFavorite: (listingId: string) => favoriteIds.has(listingId),
 		toggleFavorite,
 		isLoading: favoritesQuery.isLoading,
+		isError: favoritesQuery.isError,
 		isPending: toggleMutation.isPending,
 		refetch: favoritesQuery.refetch,
 	};

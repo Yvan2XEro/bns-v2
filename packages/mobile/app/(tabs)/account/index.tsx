@@ -11,8 +11,10 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -98,6 +100,7 @@ function NotificationsUnreadBadge() {
 
 export default function AccountScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { user, logout } = useAuth();
 	const { showConfirm } = useAlert();
 	const { t } = useTranslation();
@@ -171,12 +174,22 @@ export default function AccountScreen() {
 		showConfirm(t("account.logoutTitle"), t("account.logoutMessage"), logout);
 	};
 
+	// null when createdAt is missing/malformed — the row is skipped rather than
+	// showing "Membre depuis Invalid Date" at the top of the Account tab.
+	const memberSince = formatDate(user.createdAt, {
+		month: "long",
+		year: "numeric",
+	});
+
 	return (
 		<SafeAreaView
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: accentBg }]}
 		>
-			<ScrollView showsVerticalScrollIndicator={false}>
+			<ScrollView
+				showsVerticalScrollIndicator={false}
+				contentContainerStyle={centeredContent}
+			>
 				{/* ── Header (accent bg) ── */}
 				<View style={[styles.profileHeader, { backgroundColor: accentBg }]}>
 					<View style={styles.profileTopRow}>
@@ -222,13 +235,11 @@ export default function AccountScreen() {
 								showCount
 								count={user.totalReviews}
 							/>
-							<Text style={[styles.memberSince, { color: mutedColor }]}>
-								{t("account.memberSince")}{" "}
-								{new Date(user.createdAt).toLocaleDateString("fr-FR", {
-									month: "long",
-									year: "numeric",
-								})}
-							</Text>
+							{memberSince && (
+								<Text style={[styles.memberSince, { color: mutedColor }]}>
+									{t("account.memberSince")} {memberSince}
+								</Text>
+							)}
 						</View>
 
 						<AnimatedPressable
