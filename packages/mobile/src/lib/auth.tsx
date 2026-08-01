@@ -1,10 +1,12 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
-import { API_BASE_URL, api } from "./api";
+import { API_BASE_URL, ApiError, api } from "./api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -70,10 +72,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		setUser(data.user);
 	};
 
+	/**
+	 * Native Sign in with Apple (the Face ID sheet), used on iOS.
+	 *
+	 * Returns `false` when the flow is unavailable rather than throwing, so the
+	 * caller can fall back to the browser flow — e.g. when the backend has no
+	 * APPLE_NATIVE_CLIENT_ID configured and answers 501.
+	 */
+	const loginWithAppleNative = async (): Promise<boolean> => {
+		if (Platform.OS !== "ios") return false;
+		if (!(await AppleAuthentication.isAvailableAsync())) return false;
+
+		let credential: AppleAuthentication.AppleAuthenticationCredential;
+		try {
+			credential = await AppleAuthentication.signInAsync({
+				requestedScopes: [
+					AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+					AppleAuthentication.AppleAuthenticationScope.EMAIL,
+				],
+			});
+		} catch (error) {
+			// The user dismissing the sheet is not an error worth surfacing, and
+			// must not silently fall through to the browser flow either.
+			if ((error as { code?: string })?.code === "ERR_REQUEST_CANCELED") {
+				throw new Error("Social login was cancelled");
+			}
+			return false;
+		}
+
+		if (!credential.identityToken) return false;
+
+		// Apple sends the name only on the very first authorization; the backend
+		// keeps whatever it already stored on later sign-ins.
+		const fullName = [
+			credential.fullName?.givenName,
+			credential.fullName?.familyName,
+		]
+			.filter(Boolean)
+			.join(" ")
+			.trim();
+
+		let data: LoginResponse;
+		try {
+			data = await api.post<LoginResponse>(
+				"/api/public/auth/oauth/apple/native",
+				{
+					authorizationCode: credential.authorizationCode,
+					fullName: fullName || undefined,
+					identityToken: credential.identityToken,
+				},
+			);
+		} catch (error) {
+			if (error instanceof ApiError && error.status === 501) return false;
+			throw error;
+		}
+
+		await SecureStore.setItemAsync("auth_token", data.token);
+		setToken(data.token);
+		setUser(data.user);
+		return true;
+	};
+
 	const loginWithProvider = async (
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	): Promise<void> => {
+		if (provider === "apple" && (await loginWithAppleNative())) {
+			return;
+		}
+
 		const callbackPath = redirectTo
 			? `/auth/callback?redirect=${encodeURIComponent(redirectTo)}`
 			: "/auth/callback";
