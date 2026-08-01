@@ -286,14 +286,17 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Boost expire",
-					body: 'Le boost de "{{payload.listingTitle}}" a expire. Reboostez pour plus de visibilite.',
-					redirect: redirect("/boost/{{payload.listingId}}"),
-					primaryAction: action("Rebooster", "/boost/{{payload.listingId}}"),
+					body: 'Le boost de "{{payload.listingTitle}}" a expire.',
+					redirect: redirect("/listing/{{payload.listingId}}"),
+					primaryAction: action(
+						"Voir l'annonce",
+						"/listing/{{payload.listingId}}",
+					),
 					data: { listingId: "{{payload.listingId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Boost expire",
-					body: 'Le boost de "{{payload.listingTitle}}" a expire. Reboostez pour plus de visibilite.',
+					body: 'Le boost de "{{payload.listingTitle}}" a expire.',
 				}),
 			],
 		},
