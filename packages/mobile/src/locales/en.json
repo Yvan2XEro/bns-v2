@@ -894,7 +894,7 @@
 			},
 			"phone": {
 				"title": "3. Phone number and SMS verification",
-				"body": "Adding a phone number is optional. If you add one, we send a 6-digit code to it by SMS to confirm the number is yours. The message is delivered by an SMS provider, which receives your phone number and the code. The code expires after 10 minutes, only a hashed version of it is stored, and we stop accepting attempts after 5 wrong entries. Once verified, your phone number can be revealed to buyers on your listings."
+				"body": "Adding a phone number is optional. If you add one, we send a 6-digit code to it by SMS to confirm the number is yours. The message is delivered by our SMS provider (AvlyText or MTarget), which receives your phone number and the code. The code expires after 10 minutes, only a hashed version of it is stored, and we stop accepting attempts after 5 wrong entries. Once verified, your phone number can be revealed to buyers on your listings."
 			},
 			"social": {
 				"title": "4. Signing in with Google, Apple or Facebook",
@@ -934,7 +934,7 @@
 			},
 			"sharing": {
 				"title": "13. Who we share data with",
-				"body": "We share data only where a feature requires it: our SMS provider receives your phone number in order to deliver a verification code; Novu receives your push token and basic profile details in order to deliver notifications; Google, Apple or Facebook are involved only if you choose to sign in with them; and our hosting and file-storage providers hold the data on our behalf. We also disclose data where we are legally required to. We do not sell personal data and we do not share it for advertising."
+				"body": "We share data only where a feature requires it: our SMS provider (AvlyText or MTarget) receives your phone number in order to deliver a verification code; Novu receives your push token and basic profile details in order to deliver notifications; Google, Apple or Facebook are involved only if you choose to sign in with them; and our hosting and file-storage providers hold the data on our behalf. We also disclose data where we are legally required to. We do not sell personal data and we do not share it for advertising."
 			},
 			"deletion": {
 				"title": "14. Deleting your account",

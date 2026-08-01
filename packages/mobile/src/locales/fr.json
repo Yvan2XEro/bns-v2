@@ -878,7 +878,7 @@
 			},
 			"phone": {
 				"title": "3. Numéro de téléphone et vérification par SMS",
-				"body": "L'ajout d'un numéro de téléphone est facultatif. Si vous en ajoutez un, nous vous envoyons un code à 6 chiffres par SMS afin de confirmer qu'il vous appartient. Le message est acheminé par un prestataire SMS, qui reçoit votre numéro et le code. Le code expire au bout de 10 minutes, seule une version hachée est conservée, et nous cessons d'accepter les tentatives après 5 saisies erronées. Une fois vérifié, votre numéro peut être révélé aux acheteurs sur vos annonces."
+				"body": "L'ajout d'un numéro de téléphone est facultatif. Si vous en ajoutez un, nous vous envoyons un code à 6 chiffres par SMS afin de confirmer qu'il vous appartient. Le message est acheminé par notre prestataire SMS (AvlyText ou MTarget), qui reçoit votre numéro et le code. Le code expire au bout de 10 minutes, seule une version hachée est conservée, et nous cessons d'accepter les tentatives après 5 saisies erronées. Une fois vérifié, votre numéro peut être révélé aux acheteurs sur vos annonces."
 			},
 			"social": {
 				"title": "4. Connexion avec Google, Apple ou Facebook",
@@ -918,7 +918,7 @@
 			},
 			"sharing": {
 				"title": "13. Avec qui nous partageons vos données",
-				"body": "Nous ne partageons des données que lorsqu'une fonctionnalité l'exige : notre prestataire SMS reçoit votre numéro de téléphone pour vous livrer un code de vérification ; Novu reçoit votre jeton push et des informations de profil de base pour délivrer les notifications ; Google, Apple ou Facebook ne sont impliqués que si vous choisissez de vous connecter avec eux ; et nos prestataires d'hébergement et de stockage de fichiers conservent les données pour notre compte. Nous divulguons également des données lorsque la loi nous y oblige. Nous ne vendons pas vos données personnelles et ne les partageons pas à des fins publicitaires."
+				"body": "Nous ne partageons des données que lorsqu'une fonctionnalité l'exige : notre prestataire SMS (AvlyText ou MTarget) reçoit votre numéro de téléphone pour vous livrer un code de vérification ; Novu reçoit votre jeton push et des informations de profil de base pour délivrer les notifications ; Google, Apple ou Facebook ne sont impliqués que si vous choisissez de vous connecter avec eux ; et nos prestataires d'hébergement et de stockage de fichiers conservent les données pour notre compte. Nous divulguons également des données lorsque la loi nous y oblige. Nous ne vendons pas vos données personnelles et ne les partageons pas à des fins publicitaires."
 			},
 			"deletion": {
 				"title": "14. Suppression de votre compte",

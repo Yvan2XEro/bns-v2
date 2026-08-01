@@ -431,7 +431,7 @@
 		"sharing": "3. Partage d'informations",
 		"sharingIntro": "Nous ne vendons pas vos informations personnelles. Nous pouvons partager des informations avec :",
 		"share1": "Autres utilisateurs : votre profil public (nom, avatar, ville, note) est visible. Votre adresse email n'est jamais affichée. Si vous avez vérifié votre numéro de téléphone et choisi de l'associer à vos annonces, il peut être révélé aux personnes intéressées depuis la page de l'annonce.",
-		"share2": "Prestataires : NotchPay traite les paiements de boost effectués depuis le site web. Notre prestataire de notifications reçoit votre identifiant de compte afin d'acheminer les alertes. Notre prestataire d'envoi de SMS reçoit votre numéro lors de la vérification.",
+		"share2": "Prestataires : NotchPay traite les paiements de boost effectués depuis le site web. Notre prestataire de notifications reçoit votre identifiant de compte afin d'acheminer les alertes. Nos prestataires d'envoi de SMS, AvlyText (avlytext.com) et MTarget (m-target.com), reçoivent votre numéro lors de la vérification.",
 		"share3": "Forces de l'ordre : Lorsque requis par la loi ou pour protéger la sécurité.",
 		"security": "4. Sécurité des données",
 		"securityDesc": "Nous mettons en œuvre des mesures de sécurité conformes aux normes industrielles pour protéger vos données, y compris des connexions chiffrées (HTTPS), un hachage sécurisé des mots de passe et des contrôles d'accès. Cependant, aucun système n'est sécurisé à 100 % et nous ne pouvons garantir une sécurité absolue.",
