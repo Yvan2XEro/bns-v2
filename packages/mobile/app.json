@@ -58,7 +58,7 @@
 					"locationWhenInUsePermission": "Allow BuyNSellem to access your location to show nearby listings and improve local search.",
 					"locationAlwaysAndWhenInUsePermission": false,
 					"locationAlwaysPermission": false,
-					"motionUsagePermission": false
+					"motionUsagePermission": "BuyNSellem's location features may use motion activity to improve the accuracy of nearby listing results."
 				}
 			],
 			[
