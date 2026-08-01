@@ -352,7 +352,12 @@
 		"noConversationsForSearch": "No results for \"{{query}}\"",
 		"allRead": "You've read everything!",
 		"contactSeller": "Contact a seller to start a conversation",
-		"noUnread": "No unread messages"
+		"noUnread": "No unread messages",
+		"block": "Block user",
+		"unblock": "Unblock user",
+		"blockConfirmTitle": "Block this user?",
+		"blockConfirmBody": "They will no longer be able to message you, and you will not be able to message them.",
+		"blockedNotice": "You have blocked this user."
 	},
 	"account": {
 		"title": "Account",
@@ -555,7 +560,9 @@
 		"commentLabel": "Comment (optional)",
 		"commentPlaceholder": "Share your experience...",
 		"publishReview": "Publish review",
-		"memberSinceDate": "Member since"
+		"memberSinceDate": "Member since",
+		"blockConfirmTitle": "Block this user?",
+		"blockConfirmBody": "They will no longer be able to message you, and you will not be able to message them."
 	},
 	"settings": {
 		"title": "Settings",
@@ -655,7 +662,6 @@
 		"month1": "1 month",
 		"popular": "Popular",
 		"bestValue": "Best value",
-		"pay": "Pay {{amount}} XAF",
 		"cancel": "Not now",
 		"selectPlan": "Choose a plan",
 		"currentBoost": "Boosted until {{date}}",
@@ -664,36 +670,22 @@
 		"boostStats": "Boost stats",
 		"impressions": "Impressions",
 		"clicks": "Clicks",
-		"paymentMethod": "Payment method",
-		"mtnMoMo": "MTN Mobile Money",
-		"orangeMoney": "Orange Money",
-		"paymentSuccess": "Boost activated! Your listing is now highlighted.",
-		"paymentFailed": "Payment could not be processed. Please try again.",
 		"termsNote": "No refunds after boost activation.",
 		"boostTitle": "Boost your listing",
 		"boostSubtitle": "Put your listing in the spotlight and get more visibility",
 		"cancelBtn": "Cancel",
-		"payBtn": "Pay {{amount}} XAF",
 		"popularBadge": "Popular",
 		"errorTitle": "Error",
-		"noClientSecret": "Payment configuration error.",
-		"noCheckoutUrl": "Payment URL not available.",
-		"applePayLabel": "Listing Boost",
-		"applePayBtn": "Pay with Apple Pay",
 		"mobileMoney": "Mobile Money",
-		"mobileMoneyDesc": "Orange Money, MTN MoMo",
 		"card": "Credit / Debit Card",
 		"cardDesc": "Visa, Mastercard",
 		"cardUnavailable": "Unavailable",
-		"cardPayBtn": "Pay by card {{amount}} XAF",
 		"loginRequired": "You must be logged in to boost a listing.",
 		"successTitle": "Boost activated 🚀",
 		"successMessage": "Your listing is now featured.",
 		"mobileUnavailableBadge": "Temporarily unavailable",
 		"mobileUnavailableTitle": "Boosting is not available in the mobile app right now.",
 		"mobileUnavailableMessage": "This feature is being updated for the mobile release. You can still manage your listing normally from the app.",
-		"mobileUnavailableBrowserHint": "If you need the full listing page, you can open this listing in your browser.",
-		"openListingInBrowser": "Open listing in browser",
 		"listingReference": "Listing reference: {{listingId}}"
 	},
 	"report": {
@@ -828,7 +820,7 @@
 		"q2": "How do I contact a seller?",
 		"a2": "From the listing page, tap \"Contact the seller\" to send a message directly.",
 		"q3": "How does the boost work?",
-		"a3": "Boosting puts your listing at the top of search results and the home page. Choose a duration (1 week, 2 weeks, 1 month) and pay via NotchPay.",
+		"a3": "Boosting highlights your listing at the top of search results and on the home page. This option is not currently available in the mobile app.",
 		"q4": "My listing isn't visible, why?",
 		"a4": "Listings must be validated by our team before being published. This can take up to 24 hours. Check your status in \"My listings\".",
 		"q5": "How do I report a suspicious listing?",
@@ -887,5 +879,137 @@
 	},
 	"security": {
 		"title": "Security"
+	},
+	"privacy": {
+		"title": "Privacy Policy",
+		"lastUpdated": "Last updated: 1 August 2026",
+		"sections": {
+			"intro": {
+				"title": "1. About this policy",
+				"body": "This policy explains what the BuyNSellem mobile app collects, why it collects it, and what happens to it. Every item below matches a feature you can actually use in the app. Where a feature is optional, we say so."
+			},
+			"account": {
+				"title": "2. Account information",
+				"body": "When you create an account we store your name and email address. Your password is never stored in readable form: it is hashed before it is saved. You can optionally add a profile photo, a short bio, a location (a place name you type, not GPS coordinates) and a phone number. Your rating and review count are calculated from the reviews other users leave you."
+			},
+			"phone": {
+				"title": "3. Phone number and SMS verification",
+				"body": "Adding a phone number is optional. If you add one, we send a 6-digit code to it by SMS to confirm the number is yours. The message is delivered by an SMS provider, which receives your phone number and the code. The code expires after 10 minutes, only a hashed version of it is stored, and we stop accepting attempts after 5 wrong entries. Once verified, your phone number can be revealed to buyers on your listings."
+			},
+			"social": {
+				"title": "4. Signing in with Google, Apple or Facebook",
+				"body": "If you choose one of these sign-in options, we receive an account identifier from that provider and, when the provider shares them, your name and email address. If you use Apple's Hide My Email, we only ever see the relay address. For Sign in with Apple we also store a refresh token, so that we can revoke your Apple sign-in with Apple when you delete your account. That token cannot be read back through our API and is never shared."
+			},
+			"photos": {
+				"title": "5. Photos and camera",
+				"body": "The app asks for camera or photo library access only at the moment you tap to add a picture, when you create or edit a listing or change your profile photo. Only the images you pick are uploaded. The app does not scan or read your photo library in the background. Listing photos and profile photos are public: anyone who can see the listing or the profile can see them."
+			},
+			"location": {
+				"title": "6. Location",
+				"body": "Location is optional and stays off until you turn it on. The app never asks for it at startup. It asks only when you tap the \"listings near you\" prompt on the home screen. If you allow it, the app reads your approximate location once while the app is open and sends those coordinates with a single search request to find listings within about 50 km. We do not build a location history and we never access your location in the background."
+			},
+			"content": {
+				"title": "7. What you create in the app",
+				"body": "We store what you create so the service works: your listings (title, description, price, category, photos, place), your messages, your favourites, your saved searches, the reviews and ratings you write, and any reports or blocks you submit. Listings are reviewed by our team before they go live."
+			},
+			"messaging": {
+				"title": "8. Messages",
+				"body": "Chat runs over an authenticated connection to our servers. Message content is stored on our servers so your conversation history is still there when you come back, and so we can act on reports of abuse. People you are chatting with can see whether you are currently online."
+			},
+			"push": {
+				"title": "9. Push notifications",
+				"body": "If you allow notifications, the app obtains a push token from Expo and sends it to our servers. We pass that token, along with your user ID, name, email address and profile photo URL, to Novu, the service that delivers our notifications. You can switch notifications off at any time in your device settings, and the token is deleted from Novu when you delete your account."
+			},
+			"device": {
+				"title": "10. Storage on your device",
+				"body": "Your session token is kept in your device's secure storage (Keychain on iOS, Keystore on Android) so that you stay signed in. It is removed when you sign out or delete your account. The app uses no advertising cookies or comparable identifiers."
+			},
+			"noTracking": {
+				"title": "11. No tracking and no advertising",
+				"body": "The app contains no analytics, advertising or attribution SDK. We do not collect the advertising identifier (IDFA on iOS, Advertising ID on Android), we do not build advertising profiles, and we do not track you across other companies' apps or websites. We never sell your personal data."
+			},
+			"visibility": {
+				"title": "12. What other people can see",
+				"body": "Other users can see your name, profile photo, bio, the location shown on your profile, your rating and reviews, and your active listings. If you have added and verified a phone number, it can be revealed to buyers on your listings. Your password is never visible to anyone, and your email address is not shown to other users in the app."
+			},
+			"sharing": {
+				"title": "13. Who we share data with",
+				"body": "We share data only where a feature requires it: our SMS provider receives your phone number in order to deliver a verification code; Novu receives your push token and basic profile details in order to deliver notifications; Google, Apple or Facebook are involved only if you choose to sign in with them; and our hosting and file-storage providers hold the data on our behalf. We also disclose data where we are legally required to. We do not sell personal data and we do not share it for advertising."
+			},
+			"deletion": {
+				"title": "14. Deleting your account",
+				"body": "You can delete your account yourself in Settings, under Security. Deletion is immediate and cannot be undone. It removes your account record, all your listings, the photos on those listings and your profile photo, your conversations and messages, your favourites, your saved searches, the reviews you wrote and the reviews written about you, your reports and blocks, and your boost payment records. Your subscriber record is deleted from Novu, and if you signed in with Apple your Apple refresh token is revoked with Apple. We keep no archived copy of that content."
+			},
+			"retention": {
+				"title": "15. How long we keep your data",
+				"body": "We keep your data for as long as your account exists. When you delete your account, the removal described above runs immediately and permanently. If we are legally required to keep a specific record, we keep only that record and only for as long as the law requires."
+			},
+			"rights": {
+				"title": "16. Your choices and your rights",
+				"body": "You can view and change your account information in Settings, add or remove your phone number, and switch notifications and location off at any time in your device settings. You can delete your account and its data from within the app. If you want a copy of your data or have a question about how it is handled, write to privacy@buynsellem.com and we will respond."
+			},
+			"children": {
+				"title": "17. Age requirement",
+				"body": "BuyNSellem is intended for adults. The app is not meant for anyone under 18 and we do not knowingly collect personal information from children. If you believe a child has created an account, contact us at support@buynsellem.com."
+			},
+			"security": {
+				"title": "18. How we protect your data",
+				"body": "All traffic between the app and our servers uses HTTPS. Passwords are hashed, sessions use signed tokens, and the token on your device is held in the operating system's secure storage. Sensitive fields such as your pending phone number, your verification code hash and your Apple refresh token cannot be read back through the API. No system is completely secure, so we cannot promise absolute security."
+			},
+			"changes": {
+				"title": "19. Changes to this policy",
+				"body": "We may update this policy as the app changes. The date at the top always shows the current version, and we will tell you in the app about any significant change."
+			},
+			"contact": {
+				"title": "20. Contact us",
+				"body": "For privacy questions or to exercise your rights, write to privacy@buynsellem.com. For anything else, write to support@buynsellem.com."
+			}
+		}
+	},
+	"terms": {
+		"title": "Terms of Service",
+		"lastUpdated": "Last updated: 1 August 2026",
+		"sections": {
+			"acceptance": {
+				"title": "1. Acceptance of these terms",
+				"body": "By using Buy'N'Sellem you accept these terms of service in full. If you do not accept them, please stop using the app."
+			},
+			"service": {
+				"title": "2. What the service is",
+				"body": "Buy'N'Sellem is a classifieds platform that lets people buy and sell items directly with each other in Cameroon and the surrounding region."
+			},
+			"eligibility": {
+				"title": "3. Who can use it",
+				"body": "You must be at least 18 years old to create an account. You are responsible for keeping your login details private and for everything done through your account."
+			},
+			"prohibited": {
+				"title": "4. Prohibited content",
+				"body": "It is strictly forbidden to post listings for illegal items, weapons, drugs, counterfeit goods, or content that is offensive, misleading or sexual in nature."
+			},
+			"responsibility": {
+				"title": "5. User responsibility",
+				"body": "Users are entirely responsible for the content they publish and for the transactions they carry out. Buy'N'Sellem is not a party to exchanges between buyers and sellers."
+			},
+			"moderation": {
+				"title": "6. Listing moderation",
+				"body": "Every listing is reviewed by our team before it is published. We reserve the right to refuse or remove any content that does not comply with our rules."
+			},
+			"intellectualProperty": {
+				"title": "7. Intellectual property",
+				"body": "The photos and content you publish on the platform remain yours. By publishing them you grant Buy'N'Sellem a non-exclusive licence to display them within the service."
+			},
+			"dataProtection": {
+				"title": "8. Data protection",
+				"body": "Your personal data is handled as described in our Privacy Policy, which explains exactly what the app collects and what deleting your account removes. We never sell your data to third parties."
+			},
+			"suspension": {
+				"title": "9. Account suspension",
+				"body": "We reserve the right to suspend or permanently delete any account that breaches these terms or behaves fraudulently."
+			},
+			"changes": {
+				"title": "10. Changes to these terms",
+				"body": "Buy'N'Sellem may change these terms at any time. The date at the top shows the current version, and users will be told in the app about significant changes."
+			}
+		}
 	}
 }

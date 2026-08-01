@@ -49,6 +49,19 @@ export default async function PrivacyPage() {
 							<li>{t("locationData")}</li>
 						</ul>
 
+						<h2>{t("mobileTitle")}</h2>
+						<p>{t("mobileIntro")}</p>
+						<ul>
+							<li>{t("mobilePhotos")}</li>
+							<li>{t("mobileLocation")}</li>
+							<li>{t("mobilePush")}</li>
+							<li>{t("mobilePhone")}</li>
+							<li>{t("mobileSocial")}</li>
+						</ul>
+
+						<h2>{t("noTrackingTitle")}</h2>
+						<p>{t("noTrackingDesc")}</p>
+
 						<h2>{t("howUse")}</h2>
 						<p>{t("howUseIntro")}</p>
 						<ul>
