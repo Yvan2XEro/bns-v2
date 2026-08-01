@@ -96,6 +96,10 @@ services:
       APPLE_OAUTH_TEAM_ID: ${APPLE_OAUTH_TEAM_ID}
       APPLE_OAUTH_KEY_ID: ${APPLE_OAUTH_KEY_ID}
       APPLE_OAUTH_PRIVATE_KEY: ${APPLE_OAUTH_PRIVATE_KEY}
+      # The iOS bundle identifier, for native Sign in with Apple. Distinct from
+      # APPLE_OAUTH_CLIENT_ID above, which is the Services ID used by the web
+      # flow — Apple binds the client secret to whichever one issued the token.
+      APPLE_NATIVE_CLIENT_ID: ${APPLE_NATIVE_CLIENT_ID:-}
       FACEBOOK_OAUTH_APP_ID: ${FACEBOOK_OAUTH_APP_ID}
       FACEBOOK_OAUTH_APP_SECRET: ${FACEBOOK_OAUTH_APP_SECRET}
       NOTCHPAY_PUBLIC_KEY: ${NOTCHPAY_PUBLIC_KEY}
