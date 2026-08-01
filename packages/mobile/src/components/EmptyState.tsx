@@ -168,6 +168,9 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		textAlign: "center",
 		marginBottom: 8,
+		// Caps the line length on iPad; wider than any phone content box so
+		// phone rendering is untouched.
+		maxWidth: 420,
 	},
 	subtitle: {
 		fontFamily: Fonts.body,
@@ -175,6 +178,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		marginBottom: 24,
 		lineHeight: 20,
+		maxWidth: 420,
 	},
 	cta: {
 		borderRadius: 12,

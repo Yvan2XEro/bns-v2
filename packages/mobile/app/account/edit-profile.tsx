@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -29,6 +30,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 export default function EditProfileScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { user, refreshUser } = useAuth();
 	const { showSuccess, showError, showAlert } = useAlert();
 	const { t } = useTranslation();
@@ -186,7 +188,7 @@ export default function EditProfileScreen() {
 			</View>
 
 			<KeyboardAwareScrollView
-				contentContainerStyle={styles.scroll}
+				contentContainerStyle={[styles.scroll, centeredContent]}
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={80}
 			>

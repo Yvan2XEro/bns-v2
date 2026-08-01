@@ -27,6 +27,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
 import { registerForPushNotificationsAsync } from "@/src/lib/notifications";
@@ -404,6 +405,7 @@ function NotificationsContent({
 	accentBg: string;
 }) {
 	const { t } = useTranslation();
+	const { centeredContent } = useResponsive();
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -565,7 +567,11 @@ function NotificationsContent({
 								cardBg={cardBg}
 							/>
 						)}
-						contentContainerStyle={[styles.list, { backgroundColor: cardBg }]}
+						contentContainerStyle={[
+							styles.list,
+							{ backgroundColor: cardBg },
+							centeredContent,
+						]}
 						style={styles.flatList}
 						onEndReached={() => hasMore && fetchMore()}
 						onEndReachedThreshold={0.5}

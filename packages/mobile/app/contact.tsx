@@ -14,12 +14,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function ContactScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { user } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
@@ -96,7 +98,7 @@ export default function ContactScreen() {
 				</Text>
 				<View style={{ width: 40 }} />
 			</View>
-			<ScrollView contentContainerStyle={styles.scroll}>
+			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
 				{[
 					{
 						label: t("contact.nameLabel"),

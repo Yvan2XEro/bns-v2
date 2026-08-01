@@ -33,6 +33,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,17 @@ export default function CustomAlert({
 }: CustomAlertProps) {
 	const isDark = useColorScheme() === "dark";
 	const insets = useSafeAreaInsets();
+	const { isTablet, width, dialogMaxWidth } = useResponsive();
+	// On iPad the full-bleed sheet becomes a centred, width-capped dialog.
+	const tabletSheetStyle = isTablet
+		? {
+				left: Math.max(0, (width - dialogMaxWidth) / 2),
+				right: Math.max(0, (width - dialogMaxWidth) / 2),
+				borderBottomLeftRadius: 28,
+				borderBottomRightRadius: 28,
+				marginBottom: 24,
+			}
+		: null;
 
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
 	const textColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -229,6 +241,7 @@ export default function CustomAlert({
 						backgroundColor: cardBg,
 						paddingBottom: Math.max(insets.bottom + 16, 32),
 					},
+					tabletSheetStyle,
 					sheetAnim,
 				]}
 			>

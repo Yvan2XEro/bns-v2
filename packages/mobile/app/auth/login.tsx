@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useAuth } from "@/src/lib/auth";
 import {
 	getAuthModalParams,
@@ -52,6 +53,7 @@ export default function LoginScreen() {
 	const { login, loginWithProvider } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
+	const { centeredContent } = useResponsive();
 	const params = useLocalSearchParams<{
 		oauthError?: string;
 		redirect?: string;
@@ -137,7 +139,7 @@ export default function LoginScreen() {
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={20}
 			>
-				<View style={styles.container}>
+				<View style={[styles.container, centeredContent]}>
 					{/* Logo */}
 					<View style={styles.logoWrap}>
 						<AppLogo isDark={isDark} />

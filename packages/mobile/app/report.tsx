@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -33,6 +34,7 @@ export default function ReportModal() {
 		targetId: string;
 	}>();
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const [reason, setReason] = useState("");
@@ -72,7 +74,7 @@ export default function ReportModal() {
 				</Pressable>
 			</View>
 			<KeyboardAwareScrollView
-				contentContainerStyle={{ padding: 20, gap: 12 }}
+				contentContainerStyle={[{ padding: 20, gap: 12 }, centeredContent]}
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={24}
 			>

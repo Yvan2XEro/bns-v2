@@ -4,12 +4,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
 export default function SafetyScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -67,7 +69,7 @@ export default function SafetyScreen() {
 				<View style={{ width: 40 }} />
 			</View>
 
-			<ScrollView contentContainerStyle={styles.scroll}>
+			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
 				{/* Hero icon */}
 				<View
 					style={[

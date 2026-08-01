@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 
 export const LANG_STORAGE_KEY = "app_language";
@@ -73,6 +74,7 @@ function Section({
 
 export default function SettingsScreen() {
 	const colorScheme = useColorScheme();
+	const { centeredContent } = useResponsive();
 	const [isDark, setIsDark] = useState(colorScheme === "dark");
 	const { t } = useTranslation();
 	const [langPickerOpen, setLangPickerOpen] = useState(false);
@@ -151,7 +153,11 @@ export default function SettingsScreen() {
 			</View>
 
 			<ScrollView
-				contentContainerStyle={[styles.scroll, { backgroundColor: bg }]}
+				contentContainerStyle={[
+					styles.scroll,
+					{ backgroundColor: bg },
+					centeredContent,
+				]}
 				showsVerticalScrollIndicator={false}
 			>
 				{/* Language */}

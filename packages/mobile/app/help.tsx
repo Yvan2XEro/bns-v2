@@ -5,12 +5,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
 
 const FAQ_COUNT = 7;
 
 export default function HelpScreen() {
 	const isDark = useColorScheme() === "dark";
+	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
 	const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -41,7 +43,7 @@ export default function HelpScreen() {
 				<View style={{ width: 40 }} />
 			</View>
 
-			<ScrollView contentContainerStyle={styles.scroll}>
+			<ScrollView contentContainerStyle={[styles.scroll, centeredContent]}>
 				{/* Hero icon */}
 				<View
 					style={[

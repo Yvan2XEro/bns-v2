@@ -18,6 +18,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useResponsive } from "@/src/hooks/useResponsive";
 import { useAuth } from "@/src/lib/auth";
 import {
 	getAuthModalParams,
@@ -121,6 +122,7 @@ export default function RegisterScreen() {
 	const { loginWithProvider, register } = useAuth();
 	const { showError } = useAlert();
 	const { t } = useTranslation();
+	const { centeredContent } = useResponsive();
 	const params = useLocalSearchParams<{ redirect?: string }>();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
@@ -213,7 +215,7 @@ export default function RegisterScreen() {
 				keyboardShouldPersistTaps="handled"
 				bottomOffset={20}
 			>
-				<View style={styles.container}>
+				<View style={[styles.container, centeredContent]}>
 					{/* Logo */}
 					<View style={styles.logoWrap}>
 						<AppLogo isDark={isDark} />
