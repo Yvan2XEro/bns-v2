@@ -22,6 +22,7 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
+import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -85,16 +86,11 @@ export default function EditProfileScreen() {
 			if (result.canceled || !result.assets?.[0]) return;
 			const asset = result.assets[0];
 			setAvatarUploading(true);
-			const formData = new FormData();
-			formData.append("file", {
-				uri: asset.uri,
-				name: asset.fileName ?? `avatar_${Date.now()}.jpg`,
-				type: asset.mimeType ?? "image/jpeg",
-			} as Parameters<FormData["append"]>[1]);
-			formData.append(
-				"_payload",
-				JSON.stringify({ alt: asset.fileName ?? `avatar_${Date.now()}` }),
-			);
+			const defaultBaseName = `avatar_${Date.now()}`;
+			const formData = await createMediaUploadFormData(asset, {
+				defaultBaseName,
+				alt: asset.fileName ?? defaultBaseName,
+			});
 			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
 				"/api/media",
 				formData,

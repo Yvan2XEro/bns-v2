@@ -1,3 +1,4 @@
+import { fetch as expoFetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
 
 export const API_BASE_URL =
@@ -70,11 +71,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	}
 
 	if (!res.ok) {
-		const error = (await res.json().catch(() => ({}))) as { message?: string };
+		const error = (await res.json().catch(() => ({}))) as {
+			error?: string;
+			message?: string;
+		};
 
 		// Surface a typed error so callers can inspect `status`
 		throw new ApiError(
-			error.message ?? `Request failed with status ${res.status}`,
+			error.message ??
+				error.error ??
+				`Request failed with status ${res.status}`,
 			res.status,
 			error,
 		);
@@ -122,7 +128,7 @@ export const api = {
 
 		// Do NOT set Content-Type here — the browser/RN sets it with the correct
 		// multipart boundary automatically when body is FormData.
-		const res = await fetch(`${API_BASE_URL}${path}`, {
+		const res = await expoFetch(`${API_BASE_URL}${path}`, {
 			method: "POST",
 			body: formData,
 			headers,
@@ -130,11 +136,13 @@ export const api = {
 
 		if (!res.ok) {
 			const error = (await res.json().catch(() => ({}))) as {
+				error?: string;
 				message?: string;
 				errors?: { message: string }[];
 			};
 			const msg =
 				error.message ??
+				error.error ??
 				error.errors?.[0]?.message ??
 				`Upload failed (${res.status})`;
 			throw new ApiError(msg, res.status, error);

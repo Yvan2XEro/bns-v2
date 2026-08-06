@@ -25,6 +25,7 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
+import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const DURATIONS = [30, 60, 90];
@@ -232,18 +233,11 @@ export default function EditListingScreen() {
 			const asset = result.assets[0];
 
 			setUploading(true);
-			const formData = new FormData();
-			formData.append("file", {
-				uri: asset.uri,
-				name: asset.fileName ?? `photo_${Date.now()}.jpg`,
-				type: asset.mimeType ?? "image/jpeg",
-			} as any);
-			formData.append(
-				"_payload",
-				JSON.stringify({
-					alt: asset.fileName?.replace(/\.[^.]+$/, "") || `${title} image`,
-				}),
-			);
+			const defaultBaseName = `photo_${Date.now()}`;
+			const formData = await createMediaUploadFormData(asset, {
+				defaultBaseName,
+				alt: asset.fileName?.replace(/\.[^.]+$/, "") || `${title} image`,
+			});
 			const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
 				"/api/media",
 				formData,

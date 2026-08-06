@@ -31,6 +31,7 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
+import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 
 const DURATIONS = [30, 60, 90];
 
@@ -945,16 +946,11 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 
 			setUploading(true);
 			try {
-				const formData = new FormData();
-				formData.append("file", {
-					uri: asset.uri,
-					name: asset.fileName ?? `photo_${Date.now()}.jpg`,
-					type: asset.mimeType ?? "image/jpeg",
-				} as any);
-				formData.append(
-					"_payload",
-					JSON.stringify({ alt: asset.fileName ?? `photo_${Date.now()}` }),
-				);
+				const defaultBaseName = `photo_${Date.now()}`;
+				const formData = await createMediaUploadFormData(asset, {
+					defaultBaseName,
+					alt: asset.fileName ?? defaultBaseName,
+				});
 
 				const uploaded = await api.upload<{ doc: { id: string; url: string } }>(
 					"/api/media",
