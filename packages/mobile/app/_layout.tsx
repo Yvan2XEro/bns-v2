@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
-import { router, Stack } from "expo-router";
+import { Redirect, router, Stack, usePathname } from "expo-router";
 import {
 	DarkTheme,
 	DefaultTheme,
@@ -43,6 +43,10 @@ import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
 import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
+import {
+	OnboardingProvider,
+	useOnboarding,
+} from "@/src/contexts/OnboardingContext";
 import { api } from "@/src/lib/api";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
 import {
@@ -52,7 +56,9 @@ import {
 
 // Rejects if the splash is already hidden; never let that bubble up as an
 // unhandled rejection on the cold-start path.
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch(() => {
+	// noop
+});
 
 /**
  * expo-router picks this up automatically for the whole route tree. Without it,
@@ -157,12 +163,6 @@ export default function RootLayout() {
 	// screen forever — render with system fonts rather than not at all.
 	const fontsSettled = fontsLoaded || Boolean(fontError);
 
-	useEffect(() => {
-		if (fontsSettled) {
-			SplashScreen.hideAsync().catch(() => {});
-		}
-	}, [fontsSettled]);
-
 	// Backstop: if useFonts never settles at all (asset resolution wedged in a
 	// monorepo build), show the app anyway instead of hanging indefinitely.
 	const [fontTimedOut, setFontTimedOut] = useState(false);
@@ -173,10 +173,12 @@ export default function RootLayout() {
 	}, [fontsSettled]);
 
 	useEffect(() => {
-		if (fontTimedOut) {
-			SplashScreen.hideAsync().catch(() => {});
+		if (fontsSettled || fontTimedOut) {
+			SplashScreen.hideAsync().catch(() => {
+				// noop
+			});
 		}
-	}, [fontTimedOut]);
+	}, [fontTimedOut, fontsSettled]);
 
 	if (!fontsSettled && !fontTimedOut) return null;
 
@@ -185,17 +187,19 @@ export default function RootLayout() {
 			<KeyboardProvider>
 				<QueryClientProvider client={queryClient}>
 					<AuthProvider>
-						<AppConfigProvider>
-							<NovuWrapper>
-								<ChatProvider>
-									<AlertProvider>
-										<PushTokenRegistrar />
-										<PushNotificationHandler />
-										<RootLayoutNav />
-									</AlertProvider>
-								</ChatProvider>
-							</NovuWrapper>
-						</AppConfigProvider>
+						<OnboardingProvider>
+							<AppConfigProvider>
+								<NovuWrapper>
+									<ChatProvider>
+										<AlertProvider>
+											<PushTokenRegistrar />
+											<PushNotificationHandler />
+											<RootLayoutNav />
+										</AlertProvider>
+									</ChatProvider>
+								</NovuWrapper>
+							</AppConfigProvider>
+						</OnboardingProvider>
 					</AuthProvider>
 				</QueryClientProvider>
 			</KeyboardProvider>
@@ -349,24 +353,32 @@ function PushNotificationHandler() {
 function RootLayoutNav() {
 	const colorScheme = useColorScheme();
 	const { isLoading: authLoading } = useAuth();
+	const { hasSeenOnboarding, isLoading: onboardingLoading } = useOnboarding();
+	const pathname = usePathname();
+	const showLoader = authLoading || onboardingLoading;
+	const isOnboardingRoute = pathname === "/onboarding";
 
-	const [onboardingChecked, setOnboardingChecked] = useState(false);
-	const [isFirstLaunch, setIsFirstLaunch] = useState(false);
+	if (showLoader) {
+		return <LoadingScreen />;
+	}
 
-	useEffect(() => {
-		AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
-			setIsFirstLaunch(value === null);
-			setOnboardingChecked(true);
-		});
-	}, []);
+	if (!hasSeenOnboarding && !isOnboardingRoute) {
+		return (
+			<>
+				<LoadingScreen />
+				<Redirect href="/onboarding" />
+			</>
+		);
+	}
 
-	const showLoader = authLoading || !onboardingChecked;
-
-	useEffect(() => {
-		if (!showLoader && isFirstLaunch) {
-			router.replace("/onboarding");
-		}
-	}, [showLoader, isFirstLaunch]);
+	if (hasSeenOnboarding && isOnboardingRoute) {
+		return (
+			<>
+				<LoadingScreen />
+				<Redirect href="/(tabs)/home" />
+			</>
+		);
+	}
 
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -440,8 +452,6 @@ function RootLayoutNav() {
 				<Stack.Screen name="terms" options={{ headerShown: false }} />
 				<Stack.Screen name="privacy" options={{ headerShown: false }} />
 			</Stack>
-
-			{showLoader && <LoadingScreen />}
 
 			<StatusBar style="auto" />
 		</ThemeProvider>

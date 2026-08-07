@@ -343,7 +343,7 @@ export default function HomeScreen() {
 
 	const categories = (categoriesData?.categories ?? [])
 		.filter(Boolean)
-		.slice(0, 8);
+		.filter((cat: any) => !!cat?.id && !!cat?.name);
 	const rawHits = Array.isArray(recentData)
 		? recentData
 		: (recentData?.hits ?? []);

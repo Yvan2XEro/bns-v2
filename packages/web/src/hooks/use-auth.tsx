@@ -34,24 +34,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [token, setToken] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
+	const fetchAuthenticatedUser = useCallback(async () => {
+		const response = await fetch("/api/users/me", {
+			cache: "no-store",
+			credentials: "include",
+		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch current user (${response.status})`);
+		}
+
+		return response.json() as Promise<{ token?: string; user?: User }>;
+	}, []);
+
 	const checkAuth = useCallback(async () => {
 		try {
-			const response = await fetch("/api/users/me", {
-				credentials: "include",
-			});
-			if (response.ok) {
-				const data = await response.json();
-				if (data.user) {
-					setUser(data.user);
-					if (data.token) setToken(data.token);
-				}
+			const data = await fetchAuthenticatedUser();
+			if (data.user) {
+				setUser(data.user);
+				if (data.token) setToken(data.token);
 			}
 		} catch (error) {
 			console.error("Auth check failed:", error);
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
+	}, [fetchAuthenticatedUser]);
 
 	useEffect(() => {
 		checkAuth();
@@ -73,8 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 
 		const data = await response.json();
-		setUser(data.user);
 		if (data.token) setToken(data.token);
+
+		try {
+			const hydrated = await fetchAuthenticatedUser();
+			if (hydrated.user) {
+				setUser(hydrated.user);
+				if (hydrated.token) setToken(hydrated.token);
+				return;
+			}
+		} catch (error) {
+			console.error("Post-login user hydration failed:", error);
+		}
+
+		setUser(data.user);
 	}
 
 	async function register(email: string, password: string, name: string) {
@@ -124,20 +144,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	const refreshUser = useCallback(async () => {
 		try {
-			const response = await fetch("/api/users/me", {
-				credentials: "include",
-			});
-			if (response.ok) {
-				const data = await response.json();
-				if (data.user) {
-					setUser(data.user);
-					if (data.token) setToken(data.token);
-				}
+			const data = await fetchAuthenticatedUser();
+			if (data.user) {
+				setUser(data.user);
+				if (data.token) setToken(data.token);
 			}
 		} catch (error) {
 			console.error("Refresh user failed:", error);
 		}
-	}, []);
+	}, [fetchAuthenticatedUser]);
 
 	async function refreshToken() {
 		try {

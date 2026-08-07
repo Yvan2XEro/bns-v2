@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -35,6 +34,7 @@ import Svg, {
 } from "react-native-svg";
 import { Colors, Fonts, shadows } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useOnboarding } from "@/src/contexts/OnboardingContext";
 import { useTranslation } from "@/src/lib/i18n";
 
 // ─── Animated SVG primitives ──────────────────────────────────────────────────
@@ -1423,6 +1423,7 @@ export default function OnboardingScreen() {
 	const isDark = useColorScheme() === "dark";
 	const colors = isDark ? Colors.dark : Colors.light;
 	const { t } = useTranslation();
+	const { hasSeenOnboarding, isLoading, markOnboardingSeen } = useOnboarding();
 	// Live width — the pager measures each slide against it, so a stale
 	// module-scope value breaks paging after rotation / Stage Manager resize.
 	const { width: SW } = useWindowDimensions();
@@ -1432,10 +1433,10 @@ export default function OnboardingScreen() {
 
 	// Guard: if already seen, skip immediately (handles Expo Router state restore)
 	useEffect(() => {
-		AsyncStorage.getItem("hasSeenOnboarding").then((value) => {
-			if (value !== null) router.replace("/(tabs)/home");
-		});
-	}, []);
+		if (!isLoading && hasSeenOnboarding) {
+			router.replace("/(tabs)/home");
+		}
+	}, [hasSeenOnboarding, isLoading]);
 
 	const isLast = currentIndex === SLIDES.length - 1;
 
@@ -1456,7 +1457,7 @@ export default function OnboardingScreen() {
 	};
 
 	const handleComplete = async () => {
-		await AsyncStorage.setItem("hasSeenOnboarding", "true");
+		await markOnboardingSeen();
 		router.replace("/(tabs)/home");
 	};
 

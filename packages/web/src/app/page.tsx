@@ -133,7 +133,7 @@ export default async function HomePage() {
 	];
 
 	const displayCategories =
-		categories.length > 0 ? categories.slice(0, 6) : defaultCategories;
+		categories.length > 0 ? categories : defaultCategories;
 
 	return (
 		<div className="flex flex-col">

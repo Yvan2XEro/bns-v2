@@ -1,18 +1,28 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
 
+function parseDepth(value: string | null): number {
+	if (!value) return 1;
+
+	const parsed = Number(value);
+	if (!Number.isInteger(parsed) || parsed < 0) return 1;
+
+	return parsed;
+}
+
 export async function GET(request: Request) {
 	try {
 		const payload = await getPayload({ config });
 		const { searchParams } = new URL(request.url);
 		const id = searchParams.get("id");
 		const slug = searchParams.get("slug");
+		const depth = parseDepth(searchParams.get("depth"));
 
 		if (id) {
 			const category = await payload.findByID({
 				collection: "categories",
 				id,
-				depth: 1,
+				depth,
 			});
 
 			if (!category) {
@@ -39,7 +49,7 @@ export async function GET(request: Request) {
 					slug: { equals: slug },
 					active: { equals: true },
 				},
-				depth: 1,
+				depth,
 				limit: 1,
 			});
 
@@ -66,7 +76,9 @@ export async function GET(request: Request) {
 			where: {
 				active: { equals: true },
 			},
-			depth: 1,
+			depth,
+			limit: 0,
+			pagination: false,
 		});
 
 		const categories = result.docs.map((cat) => ({

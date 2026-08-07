@@ -3,7 +3,13 @@ import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
 import type React from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
 import { Platform } from "react-native";
 import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
 import { API_BASE_URL, ApiError, api } from "./api";
@@ -40,6 +46,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [token, setToken] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
+	const fetchAuthenticatedUser = useCallback(async (): Promise<UserDoc> => {
+		const data = await api.get<MeResponse>("/api/users/me");
+		return data.user;
+	}, []);
+
+	const applyAuthenticatedSession = async (
+		data: LoginResponse,
+	): Promise<void> => {
+		await SecureStore.setItemAsync("auth_token", data.token);
+		setToken(data.token);
+
+		try {
+			const hydratedUser = await fetchAuthenticatedUser();
+			setUser(hydratedUser);
+		} catch {
+			setUser(data.user);
+		}
+	};
+
 	// Restore session on mount
 	useEffect(() => {
 		(async () => {
@@ -47,9 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				const stored = await SecureStore.getItemAsync("auth_token");
 				if (stored) {
 					setToken(stored);
-					// Payload v3: /api/users/me returns { user: {...} }
-					const data = await api.get<MeResponse>("/api/users/me");
-					setUser(data.user);
+					setUser(await fetchAuthenticatedUser());
 				}
 			} catch {
 				// Token is invalid or expired — clear it silently
@@ -60,16 +83,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				setIsLoading(false);
 			}
 		})();
-	}, []);
+	}, [fetchAuthenticatedUser]);
 
 	const login = async (email: string, password: string): Promise<void> => {
 		const data = await api.post<LoginResponse>("/api/users/login", {
 			email,
 			password,
 		});
-		await SecureStore.setItemAsync("auth_token", data.token);
-		setToken(data.token);
-		setUser(data.user);
+		await applyAuthenticatedSession(data);
 	};
 
 	/**
@@ -127,9 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			throw error;
 		}
 
-		await SecureStore.setItemAsync("auth_token", data.token);
-		setToken(data.token);
-		setUser(data.user);
+		await applyAuthenticatedSession(data);
 		return true;
 	};
 
@@ -175,9 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			{ transferToken },
 		);
 
-		await SecureStore.setItemAsync("auth_token", data.token);
-		setToken(data.token);
-		setUser(data.user);
+		await applyAuthenticatedSession(data);
 	};
 
 	const register = async (
@@ -203,8 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const refreshUser = async (): Promise<void> => {
 		try {
-			const data = await api.get<MeResponse>("/api/users/me");
-			setUser(data.user);
+			setUser(await fetchAuthenticatedUser());
 		} catch {
 			// Silently fail — don't log out the user on a refresh error
 		}
