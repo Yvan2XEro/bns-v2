@@ -28,6 +28,7 @@ import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { formatListingPrice, hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Tag, User } from "~/types";
 
@@ -53,7 +54,10 @@ export async function generateMetadata({
 		};
 	}
 
-	const title = `${listing.title} — ${listing.price.toLocaleString("fr-FR")} XAF`;
+	const formattedPrice = formatListingPrice(listing.price, "fr-FR");
+	const title = formattedPrice
+		? `${listing.title} — ${formattedPrice} XAF`
+		: listing.title;
 	const description = (listing.description ?? "")
 		.slice(0, 155)
 		.replace(/\n/g, " ");
@@ -151,6 +155,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		notFound();
 	}
 
+	const formattedPrice = formatListingPrice(listing.price);
 	const isBoosted =
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
@@ -201,16 +206,18 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		description: listing.description,
 		image: imageUrls,
 		url: canonical,
-		offers: {
-			"@type": "Offer",
-			price: listing.price,
-			priceCurrency: "XAF",
-			availability: "https://schema.org/InStock",
-			url: canonical,
-			...(seller && {
-				seller: { "@type": "Person", name: seller.name },
-			}),
-		},
+		...(hasListingPrice(listing.price) && {
+			offers: {
+				"@type": "Offer",
+				price: listing.price,
+				priceCurrency: "XAF",
+				availability: "https://schema.org/InStock",
+				url: canonical,
+				...(seller && {
+					seller: { "@type": "Person", name: seller.name },
+				}),
+			},
+		}),
 		...(category && { category: category.name }),
 	};
 
@@ -316,10 +323,12 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										{listing.title}
 									</h1>
 									<p className="mt-1 font-bold text-2xl text-[#1E40AF]">
-										{listing.price.toLocaleString()}{" "}
-										<span className="font-medium text-[#64748B] text-sm">
-											XAF
-										</span>
+										{formattedPrice ?? t("noPrice")}{" "}
+										{formattedPrice && (
+											<span className="font-medium text-[#64748B] text-sm">
+												XAF
+											</span>
+										)}
 									</p>
 								</div>
 								<div className="flex gap-2">

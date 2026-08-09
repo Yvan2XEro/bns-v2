@@ -1,5 +1,6 @@
 import type { CollectionConfig } from "payload";
 import { anyone } from "../access/anyone";
+import { decorateCategoryWithFormPreset } from "../lib/listingFormPreset";
 
 export interface CategoryAttribute {
 	name: string;
@@ -34,6 +35,14 @@ export const Categories: CollectionConfig = {
 			const userWithRole = user as { role?: string } | undefined;
 			return userWithRole?.role === "admin";
 		},
+	},
+	hooks: {
+		afterRead: [
+			({ doc }) => {
+				if (!doc || typeof doc !== "object") return doc;
+				return decorateCategoryWithFormPreset(doc);
+			},
+		],
 	},
 	fields: [
 		{

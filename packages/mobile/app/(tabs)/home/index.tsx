@@ -41,6 +41,10 @@ import { ListingCard } from "@/src/components/ListingCard";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import {
+	CATEGORIES_QUERY_KEY,
+	CATEGORIES_STALE_TIME_MS,
+} from "@/src/hooks/useListings";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
@@ -305,9 +309,9 @@ export default function HomeScreen() {
 
 	// ── Queries (home) ────────────────────────────────────────────
 	const { data: categoriesData } = useQuery({
-		queryKey: ["categories"],
+		queryKey: CATEGORIES_QUERY_KEY,
 		queryFn: () => api.get<{ categories: any[] }>("/api/public/categories"),
-		staleTime: 60 * 60 * 1000,
+		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
 
 	const {
@@ -320,6 +324,13 @@ export default function HomeScreen() {
 		queryFn: () =>
 			api.get<{ hits: any[]; total: number }>(
 				"/api/public/search?limit=20&sort=newest&offset=0",
+			),
+	});
+	const { data: featuredData } = useQuery({
+		queryKey: ["listings", "featured"],
+		queryFn: () =>
+			api.get<{ hits: any[]; total: number }>(
+				"/api/public/search?limit=6&boosted=true&sort=boosted&offset=0",
 			),
 	});
 
@@ -351,10 +362,16 @@ export default function HomeScreen() {
 		...l,
 		isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
 	}));
-	const boostedListings = homeListings.filter((l: any) => l.isBoosted);
+	const boostedListings = (featuredData?.hits ?? [])
+		.filter(Boolean)
+		.map((l: any) => ({
+			...l,
+			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
+		}));
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
+		await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
 		await queryClient.invalidateQueries({ queryKey: ["listings"] });
 		await queryClient.invalidateQueries({ queryKey: ["favorites"] });
 		setRefreshing(false);
@@ -793,6 +810,81 @@ export default function HomeScreen() {
 										</Text>
 									</View>
 								</View>
+								<View
+									style={[
+										styles.featuredPromoBanner,
+										{
+											backgroundColor: isDark ? "#0f172a" : "#f8fbff",
+											borderColor: isDark ? "#334155" : "#dbeafe",
+										},
+									]}
+								>
+									<View style={styles.featuredPromoCopy}>
+										<View
+											style={[
+												styles.featuredPromoEyebrow,
+												{
+													backgroundColor: isDark
+														? "rgba(245, 158, 11, 0.18)"
+														: "#fff7ed",
+												},
+											]}
+										>
+											<Ionicons
+												name="megaphone-outline"
+												size={13}
+												color="#f59e0b"
+											/>
+											<Text style={styles.featuredPromoEyebrowText}>
+												{t("home.featuredPromoEyebrow")}
+											</Text>
+										</View>
+										<Text
+											style={[styles.featuredPromoTitle, { color: textColor }]}
+										>
+											{t("home.featuredPromoTitle")}
+										</Text>
+										<Text
+											style={[
+												styles.featuredPromoSubtitle,
+												{ color: mutedColor },
+											]}
+										>
+											{t("home.featuredPromoSubtitle")}
+										</Text>
+									</View>
+									<View style={styles.featuredPromoChips}>
+										{[
+											t("home.featuredPromoChipDeals"),
+											t("home.featuredPromoChipFast"),
+											t("home.featuredPromoChipFlash"),
+										].map((label) => (
+											<View
+												key={label}
+												style={[
+													styles.featuredPromoChip,
+													{
+														backgroundColor: isDark
+															? "rgba(255,255,255,0.08)"
+															: "rgba(255,255,255,0.92)",
+														borderColor: isDark
+															? "rgba(255,255,255,0.12)"
+															: "#e2e8f0",
+													},
+												]}
+											>
+												<Text
+													style={[
+														styles.featuredPromoChipText,
+														{ color: textColor },
+													]}
+												>
+													{label}
+												</Text>
+											</View>
+										))}
+									</View>
+								</View>
 								<ScrollView
 									horizontal
 									showsHorizontalScrollIndicator={false}
@@ -831,7 +923,9 @@ export default function HomeScreen() {
 													</Text>
 												</View>
 												<Text style={styles.featuredPrice}>
-													{listing.price?.toLocaleString()} XAF
+													{listing.price
+														? `${listing.price.toLocaleString()} XAF`
+														: "Sur demande"}
 												</Text>
 												<Text style={styles.featuredTitle} numberOfLines={1}>
 													{listing.title}
@@ -1231,6 +1325,59 @@ const styles = StyleSheet.create({
 
 	/* ── Featured ── */
 	featuredList: { paddingHorizontal: 16, gap: 12 },
+	featuredPromoBanner: {
+		marginHorizontal: 16,
+		marginBottom: 14,
+		borderRadius: 22,
+		borderWidth: 1,
+		padding: 16,
+		gap: 14,
+		shadowColor: "#0f172a",
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.08,
+		shadowRadius: 18,
+		elevation: 3,
+	},
+	featuredPromoCopy: { gap: 8 },
+	featuredPromoEyebrow: {
+		alignSelf: "flex-start",
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 6,
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		borderRadius: 999,
+	},
+	featuredPromoEyebrowText: {
+		color: "#b45309",
+		fontSize: 11,
+		fontFamily: Fonts.bodySemibold,
+	},
+	featuredPromoTitle: {
+		fontSize: 18,
+		lineHeight: 24,
+		fontFamily: Fonts.displayBold,
+	},
+	featuredPromoSubtitle: {
+		fontSize: 13,
+		lineHeight: 19,
+		fontFamily: Fonts.body,
+	},
+	featuredPromoChips: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 8,
+	},
+	featuredPromoChip: {
+		borderWidth: 1,
+		borderRadius: 999,
+		paddingHorizontal: 10,
+		paddingVertical: 7,
+	},
+	featuredPromoChipText: {
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
+	},
 	featuredCard: { borderRadius: 14, overflow: "hidden" },
 	featuredImage: { width: "100%", height: 190 },
 	featuredOverlay: {

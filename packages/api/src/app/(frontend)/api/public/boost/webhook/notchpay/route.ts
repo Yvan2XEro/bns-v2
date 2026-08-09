@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { activateBoostPayment } from "@/lib/boostPayments";
 
 interface NotchPayWebhookEvent {
 	id: string;
@@ -94,52 +95,23 @@ async function activateBoost(reference: string): Promise<void> {
 	}
 
 	const payload = await getPayload({ config });
-	const paymentId = reference.replace(/^BOOST-/, "");
 	console.log(
-		`[NotchPay webhook] Looking up payment — reference: ${reference}, paymentId: ${paymentId}`,
+		`[NotchPay webhook] Looking up payment — reference: ${reference}`,
 	);
+	const activation = await activateBoostPayment({
+		payload,
+		candidateReferences: [reference],
+	});
 
-	const payment = await payload
-		.findByID({ collection: "boost-payments", id: paymentId })
-		.catch(() => null);
-
-	if (!payment) {
+	if (!activation) {
 		console.error(
-			`[NotchPay webhook] Payment not found for paymentId: ${paymentId}`,
+			`[NotchPay webhook] Payment could not be resolved for reference: ${reference}`,
 		);
 		return;
 	}
-
-	if (payment.status === "completed") {
-		console.log(
-			`[NotchPay webhook] Payment ${paymentId} already completed, skipping`,
-		);
-		return;
-	}
-
-	await payload.update({
-		collection: "boost-payments",
-		id: paymentId,
-		data: { status: "completed" },
-	});
-
-	const days = Number.parseInt(String(payment.duration), 10);
-	const boostedUntil = new Date();
-	boostedUntil.setDate(boostedUntil.getDate() + days);
-
-	const listingId =
-		typeof payment.listing === "object"
-			? (payment.listing as { id: string }).id
-			: String(payment.listing);
-
-	await payload.update({
-		collection: "listings",
-		id: listingId,
-		data: { boostedUntil: boostedUntil.toISOString() },
-	});
 
 	console.log(
-		`[NotchPay webhook] Boost activated — listing: ${listingId}, boostedUntil: ${boostedUntil.toISOString()}`,
+		`[NotchPay webhook] Boost activated — listing: ${activation.listingId}, boostedUntil: ${activation.boostedUntil}`,
 	);
 }
 

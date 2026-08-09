@@ -46,12 +46,12 @@ async function getRecentListings(): Promise<Listing[]> {
 
 async function getFeaturedListings(): Promise<Listing[]> {
 	try {
-		const res = await serverFetch("/api/public/search?limit=4");
+		const res = await serverFetch(
+			"/api/public/search?limit=6&boosted=true&sort=boosted",
+		);
 		if (!res.ok) return [];
 		const data = await res.json();
-		return (data.hits || []).filter(
-			(l: Listing) => l.boostedUntil && new Date(l.boostedUntil) > new Date(),
-		);
+		return data.hits || [];
 	} catch {
 		return [];
 	}
@@ -233,10 +233,42 @@ export default async function HomePage() {
 					<div className="container relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 						<div className="mb-6 flex items-center gap-2">
 							<Zap className="h-5 w-5 text-[#F59E0B]" />
-							<h2 className="font-bold text-[#0F172A] text-xl">Featured</h2>
+							<h2 className="font-bold text-[#0F172A] text-xl">
+								{t("featured")}
+							</h2>
 							<span className="rounded-full bg-[#FEF3C7] px-2 py-0.5 font-medium text-[#92400E] text-xs">
-								Sponsored
+								{t("sponsored")}
 							</span>
+						</div>
+						<div className="mb-6 overflow-hidden rounded-[28px] border border-[#DBEAFE] bg-gradient-to-br from-[#EFF6FF] via-white to-[#FEF3C7] p-6 shadow-blue-500/5 shadow-lg">
+							<div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+								<div className="max-w-2xl">
+									<div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#FFF7ED] px-3 py-1 font-semibold text-[#B45309] text-xs">
+										<BadgeCheck className="h-3.5 w-3.5" />
+										{t("featuredPromoEyebrow")}
+									</div>
+									<h3 className="font-extrabold text-2xl text-[#0F172A] tracking-tight sm:text-[30px]">
+										{t("featuredPromoTitle")}
+									</h3>
+									<p className="mt-2 max-w-xl text-[#64748B] text-sm sm:text-base">
+										{t("featuredPromoSubtitle")}
+									</p>
+								</div>
+								<div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
+									{[
+										t("featuredPromoChipDeals"),
+										t("featuredPromoChipFast"),
+										t("featuredPromoChipFlash"),
+									].map((label) => (
+										<span
+											key={label}
+											className="rounded-full border border-white/70 bg-white/90 px-3 py-2 font-semibold text-[#0F172A] text-xs shadow-sm"
+										>
+											{label}
+										</span>
+									))}
+								</div>
+							</div>
 						</div>
 						<ListingGrid listings={featuredListings} favorites={favoriteIds} />
 					</div>

@@ -30,6 +30,10 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
+import {
+	getListingFormPreset,
+	isProductListingCategory,
+} from "~/lib/listing-form";
 import type { Category, CategoryAttribute, ListingCondition } from "~/types";
 
 export function CreateListingForm({ categories }: { categories: Category[] }) {
@@ -37,13 +41,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const tCond = useTranslations("Condition");
 	const router = useRouter();
 	const [step, setStep] = useState(0);
-
-	const STEPS = [
-		{ label: t("category"), description: t("categoryDesc") },
-		{ label: t("details"), description: t("detailsDesc") },
-		{ label: t("photos"), description: t("photosDesc") },
-		{ label: t("review"), description: t("reviewDesc") },
-	];
 
 	const CONDITIONS: { value: ListingCondition; label: string }[] = [
 		{ value: "new", label: tCond("new") },
@@ -77,11 +74,39 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		condition: "" as ListingCondition | "",
 	});
 
+	const categoryPreset = getListingFormPreset(selectedCategory);
+	const isProductCategory = isProductListingCategory(selectedCategory);
+	const requiresPrice = categoryPreset.fields.price.required;
+	const showsPrice = categoryPreset.fields.price.enabled;
+	const showsCondition = categoryPreset.fields.condition.enabled;
+	const STEPS = [
+		{
+			label: t("category"),
+			description: isProductCategory
+				? t("categoryDesc")
+				: t("categoryDescGeneric"),
+		},
+		{
+			label: t("details"),
+			description: isProductCategory
+				? t("detailsDesc")
+				: t("detailsDescGeneric"),
+		},
+		{ label: t("photos"), description: t("photosDesc") },
+		{ label: t("review"), description: t("reviewDesc") },
+	];
+
 	function handleCategoryChange(categoryId: string) {
 		const category = categories.find((c) => c.id === categoryId);
 		setSelectedCategory(category || null);
 		setAttributes(category?.attributes || []);
 		setAttributeValues({});
+		const nextPreset = getListingFormPreset(category || null);
+		setFormData((prev) => ({
+			...prev,
+			price: nextPreset.fields.price.enabled ? prev.price : "",
+			condition: nextPreset.fields.condition.enabled ? prev.condition : "",
+		}));
 	}
 
 	function handleAddImages(files: File[]) {
@@ -103,9 +128,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			case 1:
 				return !!(
 					formData.title &&
-					formData.price &&
 					formData.location &&
-					formData.description
+					formData.description &&
+					(!requiresPrice || formData.price)
 				);
 			case 2:
 				return true; // images are optional
@@ -145,16 +170,20 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			const listingData: Record<string, unknown> = {
 				title: formData.title,
 				description: formData.description,
-				price: Number(formData.price),
 				location: formData.location,
 				category: selectedCategory.id,
-				condition: formData.condition || undefined,
 				attributes: attributeValues,
 				images: imageIds.map((id) => ({ image: id })),
 				status: status,
 				duration: Number(duration),
 				tags: selectedTags,
 			};
+			if (showsPrice && formData.price) {
+				listingData.price = Number(formData.price);
+			}
+			if (showsCondition && formData.condition) {
+				listingData.condition = formData.condition;
+			}
 
 			if (coordinates) {
 				listingData.coordinates = coordinates;
@@ -232,7 +261,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								<Label htmlFor="title">Title</Label>
 								<Input
 									id="title"
-									placeholder="What are you selling?"
+									placeholder={
+										isProductCategory
+											? t("categoryDesc")
+											: t("titlePlaceholderGeneric")
+									}
 									value={formData.title}
 									onChange={(e) =>
 										setFormData((p) => ({ ...p, title: e.target.value }))
@@ -242,20 +275,22 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							</div>
 
 							<div className="grid gap-4 md:grid-cols-2">
-								<div className="space-y-2">
-									<Label htmlFor="price">Price (XAF)</Label>
-									<Input
-										id="price"
-										type="number"
-										placeholder="0"
-										min="0"
-										value={formData.price}
-										onChange={(e) =>
-											setFormData((p) => ({ ...p, price: e.target.value }))
-										}
-										required
-									/>
-								</div>
+								{showsPrice && (
+									<div className="space-y-2">
+										<Label htmlFor="price">Price (XAF)</Label>
+										<Input
+											id="price"
+											type="number"
+											placeholder="0"
+											min="0"
+											value={formData.price}
+											onChange={(e) =>
+												setFormData((p) => ({ ...p, price: e.target.value }))
+											}
+											required={requiresPrice}
+										/>
+									</div>
+								)}
 								<div className="space-y-2">
 									<Label htmlFor="location">Localisation</Label>
 									<CitySelect
@@ -273,29 +308,31 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								</div>
 							</div>
 
-							<div className="space-y-2">
-								<Label>Condition</Label>
-								<Select
-									value={formData.condition}
-									onValueChange={(v) =>
-										setFormData((p) => ({
-											...p,
-											condition: v as ListingCondition,
-										}))
-									}
-								>
-									<SelectTrigger>
-										<SelectValue placeholder="Select condition" />
-									</SelectTrigger>
-									<SelectContent>
-										{CONDITIONS.map((c) => (
-											<SelectItem key={c.value} value={c.value}>
-												{c.label}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
+							{showsCondition && (
+								<div className="space-y-2">
+									<Label>Condition</Label>
+									<Select
+										value={formData.condition}
+										onValueChange={(v) =>
+											setFormData((p) => ({
+												...p,
+												condition: v as ListingCondition,
+											}))
+										}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Select condition" />
+										</SelectTrigger>
+										<SelectContent>
+											{CONDITIONS.map((c) => (
+												<SelectItem key={c.value} value={c.value}>
+													{c.label}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
 
 							<div className="space-y-2">
 								<Label>Tags</Label>
@@ -326,7 +363,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								<Label htmlFor="description">Description</Label>
 								<Textarea
 									id="description"
-									placeholder="Describe your item in detail..."
+									placeholder={
+										isProductCategory
+											? "Describe your item in detail..."
+											: t("descriptionPlaceholderGeneric")
+									}
 									rows={5}
 									value={formData.description}
 									onChange={(e) =>
@@ -370,13 +411,15 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							<div className="space-y-3 rounded-lg border p-4">
 								<div className="flex items-center justify-between">
 									<h3 className="font-semibold text-lg">{formData.title}</h3>
-									<span className="font-bold text-lg text-primary">
-										{Number(formData.price).toLocaleString()} XAF
-									</span>
+									{showsPrice && formData.price && (
+										<span className="font-bold text-lg text-primary">
+											{Number(formData.price).toLocaleString()} XAF
+										</span>
+									)}
 								</div>
 								<div className="flex flex-wrap gap-2">
 									<Badge variant="secondary">{selectedCategory?.name}</Badge>
-									{formData.condition && (
+									{showsCondition && formData.condition && (
 										<Badge variant="outline">
 											{CONDITIONS.find((c) => c.value === formData.condition)
 												?.label || formData.condition}

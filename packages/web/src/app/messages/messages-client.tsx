@@ -93,7 +93,7 @@ export function MessagesClient({
 				? {
 						id: contextListing.id,
 						title: contextListing.title,
-						price: contextListing.price,
+						price: contextListing.price ?? undefined,
 						thumbnailUrl: (
 							contextListing as Listing & {
 								images?: Array<{ image?: { url?: string } }>;

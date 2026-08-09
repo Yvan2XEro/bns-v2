@@ -128,6 +128,20 @@ export interface Category {
 	image?: Media | null;
 	parent?: Category | string | null;
 	active?: boolean;
+	listingType?: "product" | "service" | "job" | "generic" | null;
+	formPreset?: {
+		categoryType: "product" | "service" | "job" | "generic";
+		fields: {
+			price: {
+				enabled: boolean;
+				required: boolean;
+			};
+			condition: {
+				enabled: boolean;
+				required: boolean;
+			};
+		};
+	} | null;
 	attributes?: CategoryAttribute[];
 }
 
@@ -178,7 +192,7 @@ export interface ListingHit {
 	id: string;
 	title: string;
 	description?: string;
-	price: number;
+	price?: number | null;
 	location: string;
 	images?: ListingImageItem[];
 	status: ListingStatus;

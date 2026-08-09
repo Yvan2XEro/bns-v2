@@ -31,6 +31,10 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
+import {
+	getListingFormPreset,
+	isProductListingCategory,
+} from "~/lib/listing-form";
 import { cn } from "~/lib/utils";
 import type {
 	Category,
@@ -87,7 +91,7 @@ export function EditListingForm({
 	);
 
 	const currentCategoryId =
-		typeof listing.category === "object"
+		listing.category && typeof listing.category === "object"
 			? listing.category.id
 			: listing.category;
 	const currentCategory =
@@ -145,16 +149,28 @@ export function EditListingForm({
 	const [formData, setFormData] = useState({
 		title: listing.title,
 		description: listing.description,
-		price: String(listing.price),
+		price: listing.price != null ? String(listing.price) : "",
 		location: listing.location,
 		condition: (listing.condition || "") as ListingCondition | "",
 	});
+
+	const categoryPreset = getListingFormPreset(selectedCategory);
+	const isProductCategory = isProductListingCategory(selectedCategory);
+	const requiresPrice = categoryPreset.fields.price.required;
+	const showsPrice = categoryPreset.fields.price.enabled;
+	const showsCondition = categoryPreset.fields.condition.enabled;
 
 	function handleCategoryChange(categoryId: string) {
 		const category = categories.find((c) => c.id === categoryId);
 		setSelectedCategory(category || null);
 		setAttributes(category?.attributes || []);
 		setAttributeValues({});
+		const nextPreset = getListingFormPreset(category || null);
+		setFormData((prev) => ({
+			...prev,
+			price: nextPreset.fields.price.enabled ? prev.price : "",
+			condition: nextPreset.fields.condition.enabled ? prev.condition : "",
+		}));
 	}
 
 	function handleRemoveExisting(index: number) {
@@ -178,7 +194,12 @@ export function EditListingForm({
 	}
 
 	async function handleSave() {
-		if (!selectedCategory || !formData.title || !formData.price) return;
+		if (
+			!selectedCategory ||
+			!formData.title ||
+			(requiresPrice && !formData.price)
+		)
+			return;
 		setIsSaving(true);
 
 		try {
@@ -209,15 +230,19 @@ export function EditListingForm({
 			const updateData: Record<string, unknown> = {
 				title: formData.title,
 				description: formData.description,
-				price: Number(formData.price),
 				location: formData.location,
 				category: selectedCategory.id,
-				condition: formData.condition || undefined,
 				attributes: attributeValues,
 				images: allImageIds.map((id) => ({ image: id })),
 				status: nextStatus,
 				tags: selectedTagIds,
 			};
+			if (showsPrice && formData.price) {
+				updateData.price = Number(formData.price);
+			}
+			if (showsCondition && formData.condition) {
+				updateData.condition = formData.condition;
+			}
 
 			if (coordinates) {
 				updateData.coordinates = coordinates;
@@ -242,10 +267,10 @@ export function EditListingForm({
 
 	const canSave = !!(
 		formData.title &&
-		formData.price &&
 		formData.location &&
 		formData.description &&
-		selectedCategory
+		selectedCategory &&
+		(!requiresPrice || formData.price)
 	);
 
 	return (
@@ -266,7 +291,9 @@ export function EditListingForm({
 			<Card>
 				<CardHeader>
 					<CardTitle>{t("category")}</CardTitle>
-					<CardDescription>{t("categoryDesc")}</CardDescription>
+					<CardDescription>
+						{isProductCategory ? t("categoryDesc") : t("categoryDescGeneric")}
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<CategoryDropdown
@@ -282,14 +309,20 @@ export function EditListingForm({
 			<Card>
 				<CardHeader>
 					<CardTitle>{t("details")}</CardTitle>
-					<CardDescription>{t("detailsDesc")}</CardDescription>
+					<CardDescription>
+						{isProductCategory ? t("detailsDesc") : t("detailsDescGeneric")}
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-5">
 					<div className="space-y-2">
 						<Label htmlFor="title">{t("title")}</Label>
 						<Input
 							id="title"
-							placeholder={t("whatAreYouSelling")}
+							placeholder={
+								isProductCategory
+									? t("whatAreYouSelling")
+									: t("whatAreYouOffering")
+							}
 							value={formData.title}
 							onChange={(e) =>
 								setFormData((p) => ({ ...p, title: e.target.value }))
@@ -299,20 +332,22 @@ export function EditListingForm({
 					</div>
 
 					<div className="grid gap-4 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label htmlFor="price">Price (XAF)</Label>
-							<Input
-								id="price"
-								type="number"
-								placeholder="0"
-								min="0"
-								value={formData.price}
-								onChange={(e) =>
-									setFormData((p) => ({ ...p, price: e.target.value }))
-								}
-								required
-							/>
-						</div>
+						{showsPrice && (
+							<div className="space-y-2">
+								<Label htmlFor="price">Price (XAF)</Label>
+								<Input
+									id="price"
+									type="number"
+									placeholder="0"
+									min="0"
+									value={formData.price}
+									onChange={(e) =>
+										setFormData((p) => ({ ...p, price: e.target.value }))
+									}
+									required={requiresPrice}
+								/>
+							</div>
+						)}
 						<div className="space-y-2">
 							<Label htmlFor="location">Localisation</Label>
 							<CitySelect
@@ -330,29 +365,31 @@ export function EditListingForm({
 						</div>
 					</div>
 
-					<div className="space-y-2">
-						<Label>Condition</Label>
-						<Select
-							value={formData.condition}
-							onValueChange={(v) =>
-								setFormData((p) => ({
-									...p,
-									condition: v as ListingCondition,
-								}))
-							}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select condition" />
-							</SelectTrigger>
-							<SelectContent>
-								{CONDITIONS.map((c) => (
-									<SelectItem key={c.value} value={c.value}>
-										{c.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
+					{showsCondition && (
+						<div className="space-y-2">
+							<Label>Condition</Label>
+							<Select
+								value={formData.condition}
+								onValueChange={(v) =>
+									setFormData((p) => ({
+										...p,
+										condition: v as ListingCondition,
+									}))
+								}
+							>
+								<SelectTrigger>
+									<SelectValue placeholder="Select condition" />
+								</SelectTrigger>
+								<SelectContent>
+									{CONDITIONS.map((c) => (
+										<SelectItem key={c.value} value={c.value}>
+											{c.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					)}
 
 					<div className="space-y-2">
 						<Label>Tags</Label>
@@ -366,7 +403,11 @@ export function EditListingForm({
 						<Label htmlFor="description">Description</Label>
 						<Textarea
 							id="description"
-							placeholder="Describe your item in detail..."
+							placeholder={
+								isProductCategory
+									? t("describeYourItem")
+									: t("describeYourListing")
+							}
 							rows={5}
 							value={formData.description}
 							onChange={(e) =>

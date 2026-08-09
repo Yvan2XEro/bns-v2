@@ -15,6 +15,10 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
+import {
+	CATEGORIES_QUERY_KEY,
+	CATEGORIES_STALE_TIME_MS,
+} from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
@@ -104,9 +108,9 @@ export default function FiltersModal() {
 
 	// ── Catégories + attributs ──────────────────────────────────
 	const { data: catsData } = useQuery({
-		queryKey: ["categories"],
+		queryKey: CATEGORIES_QUERY_KEY,
 		queryFn: () => api.get<{ categories: any[] }>("/api/public/categories"),
-		staleTime: 3600000,
+		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
 	const categories = catsData?.categories ?? [];
 

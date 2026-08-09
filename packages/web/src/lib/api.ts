@@ -128,9 +128,9 @@ export const listingsApi = {
 
 	getFeatured: async (limit = 6): Promise<Listing[]> => {
 		const result = await api.get<SearchResult>(
-			`/api/public/search?limit=${limit}`,
+			`/api/public/search?limit=${limit}&boosted=true&sort=boosted`,
 		);
-		return result.hits.filter((l) => l.boostedUntil);
+		return result.hits;
 	},
 
 	getByUser: async (userId: string): Promise<Listing[]> => {

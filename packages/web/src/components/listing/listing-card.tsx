@@ -2,6 +2,7 @@ import { Clock, MapPin, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { formatListingPrice } from "~/lib/price";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
 import { FavoriteButton } from "./favorite-button";
@@ -38,6 +39,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const imageCount = listing.images?.length || 0;
 	const _seller = listing.seller as User | null;
+	const formattedPrice = formatListingPrice(listing.price);
 	const conditionLabel =
 		listing.condition === "new"
 			? "New"
@@ -106,8 +108,10 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 				<div className="p-3">
 					{/* Price (prominent, like Leboncoin/Vinted) */}
 					<p className="font-bold text-[#0F172A] text-lg">
-						{listing.price.toLocaleString()}{" "}
-						<span className="font-medium text-[#64748B] text-xs">XAF</span>
+						{formattedPrice ?? t("noPrice")}{" "}
+						{formattedPrice && (
+							<span className="font-medium text-[#64748B] text-xs">XAF</span>
+						)}
 					</p>
 
 					{/* Title */}

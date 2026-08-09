@@ -25,12 +25,20 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
+import {
+	CATEGORIES_QUERY_KEY,
+	CATEGORIES_STALE_TIME_MS,
+} from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
+import {
+	getListingFormPreset,
+	isProductListingCategory,
+} from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 
 const DURATIONS = [30, 60, 90];
@@ -324,11 +332,12 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 	} = colors;
 	const { t } = useTranslation();
 	const [search, setSearch] = useState("");
+	const isProductCategory = isProductListingCategory(form.category);
 
 	const { data } = useQuery({
-		queryKey: ["categories"],
+		queryKey: CATEGORIES_QUERY_KEY,
 		queryFn: () => api.get<{ categories: any[] }>("/api/public/categories"),
-		staleTime: 3600000,
+		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
 
 	// A category with a null/missing `name` used to throw here and blank the
@@ -348,7 +357,9 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 				{t("create.stepCategoryTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				{t("create.stepCategoryHint")}
+				{isProductCategory
+					? t("create.stepCategoryHint")
+					: t("create.stepCategoryHintGeneric")}
 			</Text>
 
 			{/* Search */}
@@ -382,7 +393,15 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 						<Pressable
 							key={cat.id}
 							onPress={() => {
-								setForm((f: any) => ({ ...f, category: cat }));
+								const nextPreset = getListingFormPreset(cat);
+								setForm((f: any) => ({
+									...f,
+									category: cat,
+									price: nextPreset.fields.price.enabled ? f.price : "",
+									condition: nextPreset.fields.condition.enabled
+										? f.condition || "new"
+										: "",
+								}));
 								onNext();
 							}}
 							style={[
@@ -443,6 +462,11 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 		inputBg,
 	} = colors;
 	const { t } = useTranslation();
+	const categoryPreset = getListingFormPreset(form.category);
+	const isProductCategory = isProductListingCategory(form.category);
+	const showsPrice = categoryPreset.fields.price.enabled;
+	const requiresPrice = categoryPreset.fields.price.required;
+	const showsCondition = categoryPreset.fields.condition.enabled;
 
 	const CONDITIONS: { key: string; label: string; icon: string }[] = [
 		{ key: "new", label: t("conditions.new"), icon: "sparkles-outline" },
@@ -471,7 +495,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 	const canProceed =
 		form.title.trim() &&
 		form.description.trim() &&
-		form.price &&
+		(!requiresPrice || form.price) &&
 		form.location.trim();
 
 	return (
@@ -485,7 +509,9 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				{t("create.stepDetailsTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				{t("create.stepDetailsHint")}
+				{isProductCategory
+					? t("create.stepDetailsHint")
+					: t("create.stepDetailsHintGeneric")}
 			</Text>
 
 			{/* Card: Titre + Description */}
@@ -504,7 +530,11 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				<TextInput
 					value={form.title}
 					onChangeText={(v) => update("title", v)}
-					placeholder={t("create.titlePlaceholder")}
+					placeholder={
+						isProductCategory
+							? t("create.titlePlaceholder")
+							: t("create.titlePlaceholderGeneric")
+					}
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.fieldInput,
@@ -527,7 +557,11 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				<TextInput
 					value={form.description}
 					onChangeText={(v) => update("description", v)}
-					placeholder={t("create.descriptionPlaceholder")}
+					placeholder={
+						isProductCategory
+							? t("create.descriptionPlaceholder")
+							: t("create.descriptionPlaceholderGeneric")
+					}
 					placeholderTextColor={mutedColor}
 					style={[
 						styles.fieldInput,
@@ -540,93 +574,95 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				/>
 			</View>
 
-			{/* Card: Prix */}
-			<View
-				style={[
-					styles.fieldCard,
-					{ backgroundColor: cardBg, borderColor: border },
-				]}
-			>
-				<FieldHeader
-					icon="cash-outline"
-					label={t("create.priceFieldLabel")}
-					required
-					colors={colors}
-				/>
-				<View style={styles.priceRow}>
-					<TextInput
-						value={form.price}
-						onChangeText={(v) => update("price", v)}
-						placeholder="0"
-						placeholderTextColor={mutedColor}
-						style={[
-							styles.priceInput,
-							{
-								color: textColor,
-								borderColor: border,
-								backgroundColor: inputBg,
-							},
-						]}
-						keyboardType="numeric"
+			{showsPrice && (
+				<View
+					style={[
+						styles.fieldCard,
+						{ backgroundColor: cardBg, borderColor: border },
+					]}
+				>
+					<FieldHeader
+						icon="cash-outline"
+						label={t("create.priceFieldLabel")}
+						required={requiresPrice}
+						colors={colors}
 					/>
-					<View
-						style={[
-							styles.priceBadge,
-							{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
-						]}
-					>
-						<Text style={[styles.priceBadgeText, { color: "#b45309" }]}>
-							XAF
-						</Text>
+					<View style={styles.priceRow}>
+						<TextInput
+							value={form.price}
+							onChangeText={(v) => update("price", v)}
+							placeholder="0"
+							placeholderTextColor={mutedColor}
+							style={[
+								styles.priceInput,
+								{
+									color: textColor,
+									borderColor: border,
+									backgroundColor: inputBg,
+								},
+							]}
+							keyboardType="numeric"
+						/>
+						<View
+							style={[
+								styles.priceBadge,
+								{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
+							]}
+						>
+							<Text style={[styles.priceBadgeText, { color: "#b45309" }]}>
+								XAF
+							</Text>
+						</View>
 					</View>
 				</View>
-			</View>
+			)}
 
-			{/* Card: État */}
-			<View
-				style={[
-					styles.fieldCard,
-					{ backgroundColor: cardBg, borderColor: border },
-				]}
-			>
-				<FieldHeader
-					icon="shield-checkmark-outline"
-					label={t("create.conditionFieldLabel")}
-					colors={colors}
-				/>
-				<View style={styles.conditionWrap}>
-					{CONDITIONS.map((c) => {
-						const active = form.condition === c.key;
-						return (
-							<Pressable
-								key={c.key}
-								onPress={() => update("condition", c.key)}
-								style={[
-									styles.conditionPill,
-									{
-										backgroundColor: active ? primary : inputBg,
-										borderColor: active ? primary : border,
-									},
-								]}
-							>
-								<Ionicons
-									name={c.icon as any}
-									size={13}
-									color={active ? "#fff" : mutedColor}
-								/>
-								<Text
+			{showsCondition && (
+				<View
+					style={[
+						styles.fieldCard,
+						{ backgroundColor: cardBg, borderColor: border },
+					]}
+				>
+					<FieldHeader
+						icon="shield-checkmark-outline"
+						label={t("create.conditionFieldLabel")}
+						colors={colors}
+					/>
+					<View style={styles.conditionWrap}>
+						{CONDITIONS.map((c) => {
+							const active = form.condition === c.key;
+							return (
+								<Pressable
+									key={c.key}
+									onPress={() => update("condition", c.key)}
 									style={[
-										styles.conditionText,
-										{ color: active ? "#fff" : mutedColor },
+										styles.conditionPill,
+										{
+											backgroundColor: active ? primary : inputBg,
+											borderColor: active ? primary : border,
+										},
 									]}
 								>
-									{c.label}
-								</Text>
-							</Pressable>
-						);
-					})}
+									<Ionicons
+										name={c.icon as any}
+										size={13}
+										color={active ? "#fff" : mutedColor}
+									/>
+									<Text
+										style={[
+											styles.conditionText,
+											{ color: active ? "#fff" : mutedColor },
+										]}
+									>
+										{c.label}
+									</Text>
+								</Pressable>
+							);
+						})}
+					</View>
 				</View>
-			</View>
+			)}
 
 			{/* Card: Tags */}
 			{availableTags.length > 0 && (
@@ -1106,6 +1142,9 @@ function ReviewStep({ form, setStep, colors }: any) {
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+	const categoryPreset = getListingFormPreset(form.category);
+	const showsPrice = categoryPreset.fields.price.enabled;
+	const showsCondition = categoryPreset.fields.condition.enabled;
 
 	const CONDITION_LABELS: Record<string, string> = {
 		new: t("conditions.new"),
@@ -1120,13 +1159,15 @@ function ReviewStep({ form, setStep, colors }: any) {
 			api.post<any>("/api/listings", {
 				title: form.title,
 				description: form.description,
-				price: Number(form.price),
-				condition: form.condition,
 				duration: form.duration,
 				location: form.location,
 				...(form.coordinates ? { coordinates: form.coordinates } : {}),
 				category: form.category?.id,
 				seller: user?.id,
+				...(showsPrice && form.price ? { price: Number(form.price) } : {}),
+				...(showsCondition && form.condition
+					? { condition: form.condition }
+					: {}),
 				...(form.tags.length > 0 ? { tags: form.tags } : {}),
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
 				...(Object.keys(form.attributes).length > 0
@@ -1176,20 +1217,28 @@ function ReviewStep({ form, setStep, colors }: any) {
 			value: form.title || "—",
 			step: 1,
 		},
-		{
-			label: t("create.priceRowLabel"),
-			icon: "cash-outline",
-			value: form.price
-				? `${Number.parseInt(form.price, 10).toLocaleString()} XAF`
-				: "—",
-			step: 1,
-		},
-		{
-			label: t("create.conditionRowLabel"),
-			icon: "shield-checkmark-outline",
-			value: CONDITION_LABELS[form.condition] ?? form.condition,
-			step: 1,
-		},
+		...(showsPrice
+			? [
+					{
+						label: t("create.priceRowLabel"),
+						icon: "cash-outline",
+						value: form.price
+							? `${Number.parseInt(form.price, 10).toLocaleString()} XAF`
+							: "—",
+						step: 1,
+					},
+				]
+			: []),
+		...(showsCondition
+			? [
+					{
+						label: t("create.conditionRowLabel"),
+						icon: "shield-checkmark-outline",
+						value: CONDITION_LABELS[form.condition] ?? form.condition,
+						step: 1,
+					},
+				]
+			: []),
 		{
 			label: t("create.locationRowLabel"),
 			icon: "location-outline",

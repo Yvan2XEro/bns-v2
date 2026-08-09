@@ -1,6 +1,20 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
 
+type CategoryResponseShape = {
+	id: string;
+	name: string;
+	slug: string;
+	description?: string | null;
+	icon?: string | null;
+	image?: string | null;
+	parent?: unknown;
+	active?: boolean | null;
+	attributes?: unknown[];
+	listingType?: unknown;
+	formPreset?: unknown;
+};
+
 function parseDepth(value: string | null): number {
 	if (!value) return 1;
 
@@ -19,11 +33,11 @@ export async function GET(request: Request) {
 		const depth = parseDepth(searchParams.get("depth"));
 
 		if (id) {
-			const category = await payload.findByID({
+			const category = (await payload.findByID({
 				collection: "categories",
 				id,
 				depth,
-			});
+			})) as CategoryResponseShape | null;
 
 			if (!category) {
 				return Response.json({ error: "Category not found" }, { status: 404 });
@@ -38,6 +52,8 @@ export async function GET(request: Request) {
 				image: category.image,
 				parent: category.parent,
 				active: category.active,
+				listingType: category.listingType,
+				formPreset: category.formPreset,
 				attributes: category.attributes || [],
 			});
 		}
@@ -67,6 +83,8 @@ export async function GET(request: Request) {
 				image: category.image,
 				parent: category.parent,
 				active: category.active,
+				listingType: (category as CategoryResponseShape).listingType,
+				formPreset: (category as CategoryResponseShape).formPreset,
 				attributes: category.attributes || [],
 			});
 		}
@@ -89,6 +107,8 @@ export async function GET(request: Request) {
 			icon: cat.icon,
 			image: cat.image,
 			parent: cat.parent,
+			listingType: (cat as CategoryResponseShape).listingType,
+			formPreset: (cat as CategoryResponseShape).formPreset,
 			attributes: cat.attributes || [],
 		}));
 

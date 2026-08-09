@@ -252,7 +252,7 @@ export default function MyListingsScreen() {
 						{item.title}
 					</Text>
 					<Text style={[styles.price, { color: primaryColor }]}>
-						{item.price?.toLocaleString()} XAF
+						{item.price ? `${item.price.toLocaleString()} XAF` : "Sur demande"}
 					</Text>
 					<View style={styles.metaRow}>
 						<StatusBadge status={item.status ?? "pending"} t={t} />

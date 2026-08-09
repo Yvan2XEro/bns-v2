@@ -1,5 +1,6 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { activateBoostPayment } from "@/lib/boostPayments";
 import { getNotchPayProvider } from "@/lib/payments";
 
 /**
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const provider = url.searchParams.get("provider") ?? "notchpay";
 	const reference = url.searchParams.get("reference") ?? "";
+	const trxref = url.searchParams.get("trxref") ?? "";
 	const appReturnUrl = url.searchParams.get("appReturnUrl") ?? "";
 	const listingId = url.searchParams.get("listingId") ?? "";
 
@@ -29,8 +31,11 @@ export async function GET(request: Request) {
 				const paymentStatus = await notchpay.verifyPayment(reference);
 
 				if (paymentStatus === "completed") {
-					status = "success";
-					await activateBoost(reference);
+					const activated = await activateBoost({
+						providerReference: reference,
+						internalReference: trxref,
+					});
+					status = activated ? "success" : "failed";
 				} else if (paymentStatus === "pending") {
 					status = "pending";
 				}
@@ -69,34 +74,17 @@ export async function GET(request: Request) {
 	return Response.redirect(`${webUrl}${webPath}`, 302);
 }
 
-async function activateBoost(reference: string): Promise<void> {
+async function activateBoost({
+	providerReference,
+	internalReference,
+}: {
+	providerReference: string;
+	internalReference?: string;
+}): Promise<boolean> {
 	const payload = await getPayload({ config });
-	const paymentId = reference.replace(/^BOOST-/, "");
-
-	const payment = await payload
-		.findByID({ collection: "boost-payments", id: paymentId })
-		.catch(() => null);
-
-	if (!payment || payment.status === "completed") return; // idempotent
-
-	await payload.update({
-		collection: "boost-payments",
-		id: paymentId,
-		data: { status: "completed" },
+	const activation = await activateBoostPayment({
+		payload,
+		candidateReferences: [internalReference, providerReference],
 	});
-
-	const days = Number.parseInt(String(payment.duration), 10);
-	const boostedUntil = new Date();
-	boostedUntil.setDate(boostedUntil.getDate() + days);
-
-	const listingId =
-		typeof payment.listing === "object"
-			? (payment.listing as { id: string }).id
-			: String(payment.listing);
-
-	await payload.update({
-		collection: "listings",
-		id: listingId,
-		data: { boostedUntil: boostedUntil.toISOString() },
-	});
+	return Boolean(activation);
 }

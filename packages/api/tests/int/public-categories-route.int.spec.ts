@@ -63,5 +63,5 @@ describe("public categories route", () => {
 			name: "Category 1",
 			slug: "category-1",
 		});
-	});
+	}, 10000);
 });

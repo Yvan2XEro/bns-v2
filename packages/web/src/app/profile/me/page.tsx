@@ -21,6 +21,7 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { formatListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Review, User } from "~/types";
 import { ProfileEditForm } from "./profile-edit-form";
@@ -205,32 +206,35 @@ export default async function MyProfilePage() {
 						<CardContent>
 							{listings.length > 0 ? (
 								<div className="space-y-3">
-									{listings.map((listing) => (
-										<Link
-											key={listing.id}
-											href={`/listing/${listing.id}`}
-											className="flex items-center justify-between rounded-xl border border-[#E2E8F0] p-4 transition-colors hover:bg-[#F8FAFC]"
-										>
-											<div>
-												<p className="font-medium text-[#0F172A]">
-													{listing.title}
-												</p>
-												<p className="text-[#64748B] text-sm">
-													{listing.price.toLocaleString()} XAF •{" "}
-													{listing.location}
-												</p>
-											</div>
-											<Badge
-												variant={
-													listing.status === "published"
-														? "default"
-														: "secondary"
-												}
+									{listings.map((listing) => {
+										const formattedPrice = formatListingPrice(listing.price);
+										return (
+											<Link
+												key={listing.id}
+												href={`/listing/${listing.id}`}
+												className="flex items-center justify-between rounded-xl border border-[#E2E8F0] p-4 transition-colors hover:bg-[#F8FAFC]"
 											>
-												{listing.status}
-											</Badge>
-										</Link>
-									))}
+												<div>
+													<p className="font-medium text-[#0F172A]">
+														{listing.title}
+													</p>
+													<p className="text-[#64748B] text-sm">
+														{formattedPrice ? `${formattedPrice} XAF • ` : ""}
+														{listing.location}
+													</p>
+												</div>
+												<Badge
+													variant={
+														listing.status === "published"
+															? "default"
+															: "secondary"
+													}
+												>
+													{listing.status}
+												</Badge>
+											</Link>
+										);
+									})}
 									<Link
 										href="/profile/me/listings"
 										className="block pt-2 text-center font-medium text-[#1E40AF] text-sm hover:underline"

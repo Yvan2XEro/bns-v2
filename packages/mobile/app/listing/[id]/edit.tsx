@@ -25,6 +25,10 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
+import {
+	getListingFormPreset,
+	isProductListingCategory,
+} from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -127,6 +131,11 @@ export default function EditListingScreen() {
 	});
 
 	const listing = data?.doc ?? data;
+	const categoryPreset = getListingFormPreset(listing?.category);
+	const isProductCategory = isProductListingCategory(listing?.category);
+	const showsPrice = categoryPreset.fields.price.enabled;
+	const requiresPrice = categoryPreset.fields.price.required;
+	const showsCondition = categoryPreset.fields.condition.enabled;
 
 	// ── Form state ─────────────────────────────────────────────────
 	const [title, setTitle] = useState("");
@@ -153,7 +162,7 @@ export default function EditListingScreen() {
 		setNextStatus(s === "draft" ? "draft" : "pending");
 		setTitle(listing.title ?? "");
 		setDescription(listing.description ?? "");
-		setPrice(String(listing.price ?? ""));
+		setPrice(listing.price != null ? String(listing.price) : "");
 		setCondition(listing.condition ?? "new");
 		setLocation(listing.location ?? "");
 		if (listing.coordinates?.lat && listing.coordinates?.lng) {
@@ -272,12 +281,12 @@ export default function EditListingScreen() {
 			api.patch(`/api/listings/${id}`, {
 				title,
 				description,
-				price: Number(price),
-				condition,
 				location,
 				...(coordinates ? { coordinates } : {}),
 				duration,
 				images: images.map((img) => ({ image: img.id })),
+				...(showsPrice && price ? { price: Number(price) } : {}),
+				...(showsCondition && condition ? { condition } : {}),
 				...(Object.keys(attributes).length > 0 ? { attributes } : {}),
 				status: nextStatus,
 				...(selectedTagIds.length > 0
@@ -295,6 +304,13 @@ export default function EditListingScreen() {
 
 	const updateAttr = (slug: string, value: any) =>
 		setAttributes((prev) => ({ ...prev, [slug]: value }));
+	const handleSavePress = () => {
+		if (requiresPrice && !price) {
+			showError(t("edit.errorTitle"), t("create.priceRequired"));
+			return;
+		}
+		save();
+	};
 
 	if (isLoading) {
 		return (
@@ -327,7 +343,7 @@ export default function EditListingScreen() {
 					{t("edit.title")}
 				</Text>
 				<Pressable
-					onPress={() => save()}
+					onPress={handleSavePress}
 					disabled={isPending}
 					style={[
 						styles.saveBtn,
@@ -435,7 +451,11 @@ export default function EditListingScreen() {
 						<TextInput
 							value={title}
 							onChangeText={setTitle}
-							placeholder={t("edit.titlePlaceholder")}
+							placeholder={
+								isProductCategory
+									? t("edit.titlePlaceholder")
+									: t("create.titlePlaceholderGeneric")
+							}
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.input,
@@ -458,7 +478,11 @@ export default function EditListingScreen() {
 						<TextInput
 							value={description}
 							onChangeText={setDescription}
-							placeholder={t("edit.descriptionPlaceholder")}
+							placeholder={
+								isProductCategory
+									? t("edit.descriptionPlaceholder")
+									: t("edit.descriptionPlaceholderGeneric")
+							}
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.input,
@@ -470,70 +494,74 @@ export default function EditListingScreen() {
 						/>
 					</View>
 
-					{/* Price */}
-					<View style={styles.fieldGroup}>
-						<FieldLabel
-							label={t("edit.priceLabel")}
-							required
-							mutedColor={mutedColor}
-						/>
-						<View
-							style={[
-								styles.inputRow,
-								{ backgroundColor: inputBg, borderColor },
-							]}
-						>
-							<Text style={[styles.currency, { color: mutedColor }]}>XAF</Text>
-							<TextInput
-								value={price}
-								onChangeText={setPrice}
-								placeholder="0"
-								placeholderTextColor={mutedColor}
-								style={[styles.priceInput, { color: textColor }]}
-								keyboardType="numeric"
+					{showsPrice && (
+						<View style={styles.fieldGroup}>
+							<FieldLabel
+								label={t("edit.priceLabel")}
+								required={requiresPrice}
+								mutedColor={mutedColor}
 							/>
+							<View
+								style={[
+									styles.inputRow,
+									{ backgroundColor: inputBg, borderColor },
+								]}
+							>
+								<Text style={[styles.currency, { color: mutedColor }]}>
+									XAF
+								</Text>
+								<TextInput
+									value={price}
+									onChangeText={setPrice}
+									placeholder="0"
+									placeholderTextColor={mutedColor}
+									style={[styles.priceInput, { color: textColor }]}
+									keyboardType="numeric"
+								/>
+							</View>
 						</View>
-					</View>
+					)}
 
-					{/* Condition */}
-					<View style={styles.fieldGroup}>
-						<FieldLabel
-							label={t("edit.conditionLabel")}
-							mutedColor={mutedColor}
-						/>
-						<View style={styles.pillRow}>
-							{CONDITIONS.map((c) => {
-								const active = condition === c.key;
-								return (
-									<Pressable
-										key={c.key}
-										onPress={() => setCondition(c.key)}
-										style={[
-											styles.pill,
-											{
-												backgroundColor: active ? primaryColor : inputBg,
-												borderColor: active ? primaryColor : borderColor,
-											},
-										]}
-									>
-										<Ionicons
-											name={c.icon}
-											size={12}
-											color={active ? "#fff" : mutedColor}
-										/>
-										<Text
+					{showsCondition && (
+						<View style={styles.fieldGroup}>
+							<FieldLabel
+								label={t("edit.conditionLabel")}
+								mutedColor={mutedColor}
+							/>
+							<View style={styles.pillRow}>
+								{CONDITIONS.map((c) => {
+									const active = condition === c.key;
+									return (
+										<Pressable
+											key={c.key}
+											onPress={() => setCondition(c.key)}
 											style={[
-												styles.pillText,
-												{ color: active ? "#fff" : mutedColor },
+												styles.pill,
+												{
+													backgroundColor: active ? primaryColor : inputBg,
+													borderColor: active ? primaryColor : borderColor,
+												},
 											]}
 										>
-											{c.label}
-										</Text>
-									</Pressable>
-								);
-							})}
+											<Ionicons
+												name={c.icon}
+												size={12}
+												color={active ? "#fff" : mutedColor}
+											/>
+											<Text
+												style={[
+													styles.pillText,
+													{ color: active ? "#fff" : mutedColor },
+												]}
+											>
+												{c.label}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</View>
 						</View>
-					</View>
+					)}
 
 					{/* Tags */}
 					{availableTags.length > 0 && (

@@ -1,5 +1,15 @@
 import type { CategoryAttribute } from "../collections/Categories";
 
+type CategoryValidationShape = {
+	attributes?: Array<{
+		name: string;
+		slug: string;
+		type: string;
+		required?: boolean | null;
+		options?: unknown[] | null;
+	}> | null;
+};
+
 export interface ValidationError {
 	field: string;
 	message: string;
@@ -29,18 +39,10 @@ export const validateListingAttributes = async ({
 	categoryId: string;
 	payload: {
 		findByID: (options: {
-			collection: string;
+			collection: "categories";
 			id: string;
 			depth: number;
-		}) => Promise<{
-			attributes?: Array<{
-				name: string;
-				slug: string;
-				type: string;
-				required: boolean;
-				options?: unknown[];
-			}>;
-		}>;
+		}) => Promise<CategoryValidationShape>;
 	};
 }): Promise<ValidationError[]> => {
 	const errors: ValidationError[] = [];

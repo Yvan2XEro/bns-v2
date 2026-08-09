@@ -16,6 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { BoostDialog } from "~/components/listing/boost-dialog";
 import {
@@ -25,6 +26,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { deleteListing, markListingAsSold, renewListing } from "~/lib/actions";
+import { formatListingPrice } from "~/lib/price";
 import type { Listing, Media } from "~/types";
 
 function getListingImageUrl(listing: Listing): string | null {
@@ -34,6 +36,7 @@ function getListingImageUrl(listing: Listing): string | null {
 }
 
 export function MyListingsClient({ listings }: { listings: Listing[] }) {
+	const t = useTranslations("Listing");
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 
@@ -88,6 +91,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						)
 					: 0;
 				const imageCount = listing.images?.length || 0;
+				const formattedPrice = formatListingPrice(listing.price);
 				const expiresAt = listing.expiresAt
 					? new Date(listing.expiresAt)
 					: null;
@@ -186,10 +190,12 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						<div className="p-3.5">
 							<Link href={`/listing/${listing.id}`}>
 								<p className="font-bold text-[#0F172A] text-lg">
-									{listing.price.toLocaleString()}{" "}
-									<span className="font-medium text-[#64748B] text-xs">
-										XAF
-									</span>
+									{formattedPrice ?? t("noPrice")}{" "}
+									{formattedPrice && (
+										<span className="font-medium text-[#64748B] text-xs">
+											XAF
+										</span>
+									)}
 								</p>
 								<h3 className="mt-0.5 truncate text-[#334155] text-sm">
 									{listing.title}

@@ -1,5 +1,6 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { activateBoostPayment } from "@/lib/boostPayments";
 import { getProvider } from "@/lib/payments";
 
 export async function POST(request: Request) {
@@ -31,33 +32,9 @@ export async function POST(request: Request) {
 async function activateBoost(reference: string): Promise<void> {
 	if (!reference) return;
 	const payload = await getPayload({ config });
-	const paymentId = reference.replace(/^BOOST-/, "");
-
-	const payment = await payload
-		.findByID({ collection: "boost-payments", id: paymentId })
-		.catch(() => null);
-
-	if (!payment || payment.status === "completed") return;
-
-	await payload.update({
-		collection: "boost-payments",
-		id: paymentId,
-		data: { status: "completed" },
-	});
-
-	const days = Number.parseInt(String(payment.duration), 10);
-	const boostedUntil = new Date();
-	boostedUntil.setDate(boostedUntil.getDate() + days);
-
-	const listingId =
-		typeof payment.listing === "object"
-			? (payment.listing as { id: string }).id
-			: String(payment.listing);
-
-	await payload.update({
-		collection: "listings",
-		id: listingId,
-		data: { boostedUntil: boostedUntil.toISOString() },
+	await activateBoostPayment({
+		payload,
+		candidateReferences: [reference],
 	});
 }
 

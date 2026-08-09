@@ -19,6 +19,9 @@ import { api } from "../lib/api";
 // Re-export types consumers may need
 export type { ListingDoc as Listing, SearchQueryParams as SearchParams };
 
+export const CATEGORIES_QUERY_KEY = ["categories", "public", "active"] as const;
+export const CATEGORIES_STALE_TIME_MS = 5 * 60 * 1000;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Derive isBoosted from the boostedUntil date field */
@@ -100,14 +103,14 @@ export function useInfiniteListings(
 }
 
 /**
- * Fetches all active categories (stale for 1 hour).
+ * Fetches all active categories.
  * Response: { categories: Category[] }
  */
 export function useCategories() {
 	return useQuery({
-		queryKey: ["categories"],
+		queryKey: CATEGORIES_QUERY_KEY,
 		queryFn: () => api.get<CategoriesResponse>("/api/public/categories"),
-		staleTime: 60 * 60 * 1000,
+		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
 }
 

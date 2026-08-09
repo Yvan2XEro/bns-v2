@@ -422,10 +422,16 @@ export default function ListingDetail() {
 						</View>
 
 						<Text style={[styles.price, { color: priceColor }]}>
-							{listing.price?.toLocaleString() ?? "—"}{" "}
-							<Text style={[styles.priceSuffix, { color: mutedColor }]}>
-								XAF
-							</Text>
+							{listing.price ? (
+								<>
+									{listing.price.toLocaleString()}{" "}
+									<Text style={[styles.priceSuffix, { color: mutedColor }]}>
+										XAF
+									</Text>
+								</>
+							) : (
+								"Sur demande"
+							)}
 						</Text>
 						<Text style={[styles.title, { color: textColor }]}>
 							{listing.title}

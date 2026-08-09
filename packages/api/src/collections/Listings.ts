@@ -2,7 +2,76 @@ import type { CollectionConfig, Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
+import { validateListingAttributes } from "../hooks/validation";
+import { getListingFormPreset } from "../lib/listingFormPreset";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
+
+const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
+
+const getRelationshipId = (value: unknown): string | null => {
+	if (typeof value === "string" && value.length > 0) return value;
+	if (value && typeof value === "object" && "id" in value) {
+		const id = (value as { id?: unknown }).id;
+		if (typeof id === "string" && id.length > 0) return id;
+	}
+	return null;
+};
+
+const isEmptyValue = (value: unknown): boolean =>
+	value === undefined || value === null || value === "";
+
+const toAttributesRecord = (
+	value: unknown,
+): Record<string, unknown> | undefined => {
+	if (value && typeof value === "object" && !Array.isArray(value)) {
+		return value as Record<string, unknown>;
+	}
+	return undefined;
+};
+
+const toNormalizedPrice = (value: unknown): number | null => {
+	if (value === null || value === undefined || value === "") return null;
+	if (typeof value === "number") {
+		return Number.isFinite(value) ? value : Number.NaN;
+	}
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		return Number(trimmed);
+	}
+	return Number.NaN;
+};
+
+const shouldValidateListingForm = ({
+	data,
+	operation,
+	originalDoc,
+}: {
+	data: Record<string, unknown>;
+	operation: "create" | "update";
+	originalDoc?: Record<string, unknown> | null;
+}): boolean => {
+	if (operation === "create" || !originalDoc) return true;
+
+	const nextCategoryId = getRelationshipId(data.category);
+	const previousCategoryId = getRelationshipId(originalDoc.category);
+	if (nextCategoryId !== previousCategoryId) return true;
+
+	const nextPrice = toNormalizedPrice(data.price);
+	const previousPrice = toNormalizedPrice(originalDoc.price);
+	if (nextPrice !== previousPrice) return true;
+
+	const nextCondition = isEmptyValue(data.condition) ? null : data.condition;
+	const previousCondition = isEmptyValue(originalDoc.condition)
+		? null
+		: originalDoc.condition;
+	if (nextCondition !== previousCondition) return true;
+
+	const nextAttributes = toAttributesRecord(data.attributes) ?? {};
+	const previousAttributes = toAttributesRecord(originalDoc.attributes) ?? {};
+
+	return JSON.stringify(nextAttributes) !== JSON.stringify(previousAttributes);
+};
 
 export const Listings: CollectionConfig = {
 	slug: "listings",
@@ -46,6 +115,67 @@ export const Listings: CollectionConfig = {
 	hooks: {
 		beforeChange: [
 			async ({ data, req, operation, originalDoc }) => {
+				// System updates like boosts, view counters or background moderation
+				// should not revalidate the whole commercial form. Revalidating legacy
+				// listing content here can block unrelated updates such as boostedUntil.
+				if (
+					shouldValidateListingForm({
+						data,
+						operation,
+						originalDoc: originalDoc as Record<string, unknown> | null,
+					})
+				) {
+					const categoryId = getRelationshipId(data.category);
+					if (!categoryId) {
+						throw new Error("Category is required");
+					}
+
+					const category = await req.payload.findByID({
+						collection: "categories",
+						id: categoryId,
+						depth: 1,
+					});
+					const formPreset = getListingFormPreset(category);
+
+					if (!formPreset.fields.price.enabled) {
+						data.price = null;
+					} else {
+						const normalizedPrice = toNormalizedPrice(data.price);
+						if (
+							formPreset.fields.price.required &&
+							isEmptyValue(normalizedPrice)
+						) {
+							throw new Error("Price is required for this category");
+						}
+						if (normalizedPrice !== null && !Number.isFinite(normalizedPrice)) {
+							throw new Error("Price must be a valid number");
+						}
+						data.price = normalizedPrice;
+					}
+
+					if (!formPreset.fields.condition.enabled) {
+						data.condition = null;
+					} else if (isEmptyValue(data.condition)) {
+						data.condition = null;
+					} else if (
+						typeof data.condition !== "string" ||
+						!LISTING_CONDITIONS.has(data.condition)
+					) {
+						throw new Error("Condition is invalid for this listing");
+					}
+
+					const attributeErrors = await validateListingAttributes({
+						attributes: toAttributesRecord(data.attributes),
+						categoryId,
+						payload: req.payload,
+					});
+					if (attributeErrors.length > 0) {
+						throw new Error(
+							attributeErrors.map((error) => error.message).join("; "),
+						);
+					}
+				}
+
 				if (operation === "create") {
 					data.seller = req.user?.id;
 					if (data.status === "published") {
@@ -174,7 +304,7 @@ export const Listings: CollectionConfig = {
 		{
 			name: "price",
 			type: "number",
-			required: true,
+			required: false,
 			index: true,
 		},
 		{
