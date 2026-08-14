@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		}
 	}, [fetchAuthenticatedUser]);
 
-	async function refreshToken() {
+	const refreshToken = useCallback(async () => {
 		try {
 			const response = await fetch("/api/users/refresh-token", {
 				method: "POST",
@@ -170,7 +170,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		} catch (error) {
 			console.error("Token refresh failed:", error);
 		}
-	}
+	}, []);
+
+	// Proactively refresh the Payload session when the tab regains focus or
+	// becomes visible, keeping the rolling session alive as long as the user
+	// keeps the app in use.
+	useEffect(() => {
+		const onVisible = () => {
+			if (document.visibilityState === "visible") {
+				refreshToken();
+			}
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		window.addEventListener("focus", onVisible);
+		return () => {
+			document.removeEventListener("visibilitychange", onVisible);
+			window.removeEventListener("focus", onVisible);
+		};
+	}, [refreshToken]);
 
 	return (
 		<AuthContext.Provider

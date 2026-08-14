@@ -17,9 +17,29 @@ import type {
 
 class ApiClient {
 	private baseUrl: string;
+	private refreshing: Promise<boolean> | null = null;
 
 	constructor(baseUrl = "") {
 		this.baseUrl = baseUrl;
+	}
+
+	/** Single in-flight native Payload refresh; requires a still-valid cookie. */
+	private attemptRefresh(): Promise<boolean> {
+		if (this.refreshing) return this.refreshing;
+		this.refreshing = (async () => {
+			try {
+				const res = await fetch("/api/users/refresh-token", {
+					method: "POST",
+					credentials: "include",
+				});
+				return res.ok;
+			} catch {
+				return false;
+			} finally {
+				this.refreshing = null;
+			}
+		})();
+		return this.refreshing;
 	}
 
 	private async request<T>(
@@ -37,6 +57,21 @@ class ApiClient {
 		});
 
 		if (!response.ok) {
+			if (response.status === 401) {
+				// Try to recover a still-valid session with one refresh, then retry.
+				const recovered = await this.attemptRefresh();
+				if (recovered) {
+					const retry = await fetch(url, {
+						...options,
+						headers: {
+							"Content-Type": "application/json",
+							...options.headers,
+						},
+						credentials: "include",
+					});
+					if (retry.ok) return retry.json() as Promise<T>;
+				}
+			}
 			const error = await response.json().catch(() => ({}));
 			throw new Error(error.message || `API error: ${response.status}`);
 		}

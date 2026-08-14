@@ -18,6 +18,74 @@ async function removeToken(): Promise<void> {
 	await SecureStore.deleteItemAsync("auth_token");
 }
 
+/**
+ * Read the `exp` claim from a JWT without verifying it. Used only to decide
+ * whether a proactive refresh is worth attempting — the native /refresh-token
+ * endpoint requires the existing token to still be within its validity window.
+ */
+export function decodeJwtExp(token: string): number | null {
+	const parts = token.split(".");
+	if (parts.length < 2) return null;
+	try {
+		const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+		const bin = atob(b64);
+		const json = decodeURIComponent(
+			bin
+				.split("")
+				.map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, "0")}`)
+				.join(""),
+		);
+		const payload = JSON.parse(json) as { exp?: number };
+		return typeof payload.exp === "number" ? payload.exp : null;
+	} catch {
+		return null;
+	}
+}
+
+let refreshing: Promise<boolean> | null = null;
+let unauthorizedHandler: (() => void) | null = null;
+
+/** Register a callback fired when a request fails and cannot be recovered by refresh. */
+export function setUnauthorizedHandler(handler: () => void): void {
+	unauthorizedHandler = handler;
+}
+
+/**
+ * Attempt a native Payload token refresh. Returns true when a new token was
+ * stored. Guarded so concurrent requests share a single in-flight refresh.
+ * No-op (false) when there is no token or it has already expired.
+ */
+export function refreshToken(): Promise<boolean> {
+	if (refreshing) return refreshing;
+	refreshing = (async () => {
+		const token = await getToken();
+		if (!token) return false;
+		const exp = decodeJwtExp(token);
+		if (exp && exp * 1000 <= Date.now()) return false;
+		try {
+			const res = await fetch(`${API_BASE_URL}/api/users/refresh-token`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `JWT ${token}`,
+				},
+			});
+			if (!res.ok) return false;
+			const data = (await res.json()) as { refreshedToken?: string };
+			if (data.refreshedToken) {
+				await setToken(data.refreshedToken);
+				return true;
+			}
+			return false;
+		} catch {
+			return false;
+		} finally {
+			refreshing = null;
+		}
+	})();
+	return refreshing;
+}
+
 export class ApiError extends Error {
 	status: number;
 	data: unknown;
@@ -30,7 +98,11 @@ export class ApiError extends Error {
 	}
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+	path: string,
+	options: RequestInit = {},
+	retried = false,
+): Promise<T> {
 	const token = await getToken();
 
 	const headers: Record<string, string> = {
@@ -71,6 +143,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 	}
 
 	if (!res.ok) {
+		if (res.status === 401 && !retried) {
+			// Try to recover a still-valid session with a single refresh, then
+			// retry the original request once with the new token.
+			const recovered = await refreshToken();
+			if (recovered) {
+				return request<T>(path, options, true);
+			}
+			await removeToken();
+			unauthorizedHandler?.();
+		}
+
 		const error = (await res.json().catch(() => ({}))) as {
 			error?: string;
 			message?: string;

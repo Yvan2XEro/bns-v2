@@ -45,7 +45,12 @@ export const Users: CollectionConfig = {
 		useAsTitle: "email",
 		defaultColumns: ["email", "name", "role", "rating", "createdAt"],
 	},
-	auth: true,
+	// 4-day rolling session: the native /refresh-token endpoint re-issues a JWT
+	// as long as the previous one is still within this window, so returning users
+	// stay logged in. Beyond 4 days of inactivity they must re-authenticate.
+	auth: {
+		tokenExpiration: 345600,
+	},
 	access: {
 		create: anyone,
 		read: anyone,

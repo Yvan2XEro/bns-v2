@@ -10,9 +10,16 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import type { LoginResponse, MeResponse, UserDoc } from "@/src/types/api";
-import { API_BASE_URL, ApiError, api } from "./api";
+import {
+	API_BASE_URL,
+	ApiError,
+	api,
+	decodeJwtExp,
+	refreshToken as refreshApiToken,
+	setUnauthorizedHandler,
+} from "./api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,6 +39,7 @@ interface AuthContextType {
 	register: (name: string, email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
+	refreshToken: () => Promise<void>;
 	updateUser: (updates: Partial<UserDoc>) => void;
 }
 
@@ -226,6 +234,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 	};
 
+	/**
+	 * Proactively refresh the Payload JWT and persist the renewed token. Native
+	 * refresh only succeeds while the current token is still valid, so this is
+	 * called when the app returns to the foreground — keeping the rolling
+	 * 4-day session alive as long as the user keeps coming back.
+	 */
+	const refreshToken = useCallback(async (): Promise<void> => {
+		const stored = await SecureStore.getItemAsync("auth_token");
+		if (!stored) return;
+
+		const exp = decodeJwtExp(stored);
+		if (exp && exp * 1000 <= Date.now()) {
+			// Already expired — require re-authentication rather than looping.
+			await SecureStore.deleteItemAsync("auth_token");
+			setToken(null);
+			setUser(null);
+			return;
+		}
+
+		const refreshed = await refreshApiToken();
+		if (!refreshed) return;
+
+		const newToken = await SecureStore.getItemAsync("auth_token");
+		if (newToken) setToken(newToken);
+		try {
+			setUser(await fetchAuthenticatedUser());
+		} catch {
+			// Keep the refreshed token even if the user fetch fails.
+		}
+	}, [fetchAuthenticatedUser]);
+
+	// Proactively refresh on foreground and clear auth when a request is
+	// unrecoverable (token expired/revoked).
+	useEffect(() => {
+		setUnauthorizedHandler(() => {
+			SecureStore.deleteItemAsync("auth_token");
+			setToken(null);
+			setUser(null);
+		});
+		const sub = AppState.addEventListener("change", (state) => {
+			if (state === "active") {
+				void refreshToken();
+			}
+		});
+		return () => {
+			sub.remove();
+		};
+	}, [refreshToken]);
+
 	/** Optimistically update local user state (e.g. after profile edit) */
 	const updateUser = (updates: Partial<UserDoc>): void => {
 		setUser((prev) => (prev ? { ...prev, ...updates } : prev));
@@ -240,6 +297,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		register,
 		logout,
 		refreshUser,
+		refreshToken,
 		updateUser,
 	};
 
