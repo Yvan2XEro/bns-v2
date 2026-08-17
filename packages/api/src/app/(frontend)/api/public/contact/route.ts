@@ -1,3 +1,4 @@
+import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { triggerNotificationEvent } from "../../../../../hooks/notificationEvents";
 
 export async function POST(request: Request) {
@@ -6,15 +7,12 @@ export async function POST(request: Request) {
 		const { name, email, subject, message } = body;
 
 		if (!name || !email || !subject || !message) {
-			return Response.json(
-				{ error: "All fields are required: name, email, subject, message" },
-				{ status: 400 },
-			);
+			return errorResponse(ERROR_CODES.contactIncomplete, 400);
 		}
 
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		if (!emailRegex.test(email)) {
-			return Response.json({ error: "Invalid email address" }, { status: 400 });
+			return errorResponse(ERROR_CODES.invalidEmail, 400);
 		}
 
 		await triggerNotificationEvent({
@@ -29,6 +27,6 @@ export async function POST(request: Request) {
 		});
 	} catch (error) {
 		console.error("Contact form error:", error);
-		return Response.json({ error: "Failed to send message" }, { status: 500 });
+		return errorResponse(ERROR_CODES.server, 500);
 	}
 }

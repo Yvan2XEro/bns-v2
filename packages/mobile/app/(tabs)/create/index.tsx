@@ -31,6 +31,7 @@ import {
 } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
@@ -1181,7 +1182,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 		onError: (err: any) => {
 			showError(
 				t("create.publishError"),
-				err.message ?? t("create.publishErrorMsg"),
+				resolveErrorMessage(err, t, t("create.publishErrorMsg")),
 			);
 		},
 	});

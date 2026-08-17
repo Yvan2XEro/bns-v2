@@ -1095,5 +1095,52 @@
 	},
 	"security": {
 		"title": "Sécurité"
+	},
+	"apiErrors": {
+		"generic": {
+			"unknown": "Une erreur est survenue. Veuillez réessayer.",
+			"network": "Impossible de joindre le serveur. Vérifiez votre connexion.",
+			"timeout": "La requête a pris trop de temps. Veuillez réessayer.",
+			"server": "Un problème est survenu de notre côté. Réessayez dans un instant.",
+			"badRequest": "Certaines informations envoyées ne sont pas valides.",
+			"notFound": "Ce contenu n'est plus disponible.",
+			"forbidden": "Vous n'avez pas l'autorisation d'effectuer cette action.",
+			"unauthorized": "Veuillez vous connecter pour continuer.",
+			"validation": "Veuillez vérifier les champs signalés.",
+			"rateLimited": "Trop de tentatives. Veuillez patienter un instant."
+		},
+		"auth": {
+			"emailTaken": "Un compte existe déjà avec cette adresse email.",
+			"invalidCredentials": "Email ou mot de passe incorrect.",
+			"accountLocked": "Ce compte est temporairement bloqué après trop de tentatives échouées.",
+			"emailNotVerified": "Veuillez confirmer votre adresse email avant de vous connecter.",
+			"invalidEmail": "Cette adresse email n'est pas valide.",
+			"oauthFailed": "La connexion a échoué. Veuillez réessayer.",
+			"oauthCancelled": "Connexion annulée.",
+			"oauthNotConfigured": "Ce mode de connexion est indisponible pour le moment."
+		},
+		"phone": {
+			"invalid": "Ce numéro de téléphone n'est pas valide.",
+			"codeInvalid": "Ce code est incorrect.",
+			"codeExpired": "Ce code a expiré. Veuillez en demander un nouveau.",
+			"tooManyAttempts": "Trop de codes incorrects. Veuillez en demander un nouveau.",
+			"cooldown": "Veuillez patienter avant de demander un nouveau code.",
+			"notConfigured": "La vérification par SMS est indisponible pour le moment."
+		},
+		"messages": {
+			"blocked": "Vous ne pouvez plus échanger de messages avec cet utilisateur.",
+			"failed": "Le message n'a pas pu être envoyé."
+		},
+		"listing": {
+			"notFound": "Cette annonce n'est plus disponible.",
+			"categoryNotFound": "Cette catégorie n'est plus disponible."
+		},
+		"upload": {
+			"tooLarge": "Ce fichier est trop volumineux.",
+			"invalidType": "Ce type de fichier n'est pas pris en charge."
+		},
+		"contact": {
+			"incomplete": "Veuillez remplir tous les champs."
+		}
 	}
 }

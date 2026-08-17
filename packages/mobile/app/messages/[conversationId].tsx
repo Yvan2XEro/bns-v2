@@ -23,6 +23,7 @@ import { useChatClient } from "@/src/contexts/ChatContext";
 import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -329,7 +330,7 @@ export default function ConversationScreen() {
 		} catch (err: any) {
 			setText(content);
 			setAttachedListing(listing);
-			showError(t("common.error"), err.message);
+			showError(t("common.error"), resolveErrorMessage(err, t));
 		} finally {
 			setSending(false);
 		}

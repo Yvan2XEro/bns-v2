@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function ForgotPasswordScreen() {
@@ -44,7 +45,10 @@ export default function ForgotPasswordScreen() {
 			});
 			setSent(true);
 		} catch (err: any) {
-			showError(t("auth.errorTitle"), err.message ?? t("auth.errorGeneric"));
+			showError(
+				t("auth.errorTitle"),
+				resolveErrorMessage(err, t, t("auth.errorGeneric")),
+			);
 		} finally {
 			setLoading(false);
 		}

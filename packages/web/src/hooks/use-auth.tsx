@@ -8,6 +8,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
+import { apiErrorFrom } from "~/lib/apiError";
 import type { User } from "~/types";
 
 export type SocialAuthProvider = "apple" | "facebook" | "google";
@@ -74,10 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		});
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({}));
-			throw new Error(
-				error.errors?.[0]?.message || error.message || "Login failed",
-			);
+			const body = await response.json().catch(() => ({}));
+			throw apiErrorFrom(response.status, body);
 		}
 
 		const data = await response.json();
@@ -106,10 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		});
 
 		if (!response.ok) {
-			const error = await response.json().catch(() => ({}));
-			throw new Error(
-				error.errors?.[0]?.message || error.message || "Registration failed",
-			);
+			const body = await response.json().catch(() => ({}));
+			throw apiErrorFrom(response.status, body);
 		}
 
 		// After registration, log in to get the auth cookie

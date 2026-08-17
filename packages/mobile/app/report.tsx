@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 
 const REASON_KEYS = [
@@ -54,7 +55,8 @@ export default function ReportModal() {
 			showSuccess(t("report.successTitle"), t("report.successMessage"));
 			router.dismiss();
 		},
-		onError: (err: any) => showError(t("report.errorTitle"), err.message),
+		onError: (err: any) =>
+			showError(t("report.errorTitle"), resolveErrorMessage(err, t)),
 	});
 
 	return (

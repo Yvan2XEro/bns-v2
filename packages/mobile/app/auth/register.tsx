@@ -19,12 +19,13 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { SocialAuthButtons } from "@/src/components/auth/SocialAuthButtons";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import {
 	getAuthModalParams,
 	getSafeAuthRedirect,
 } from "@/src/lib/authRedirect";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
 
 function AppLogo({ isDark }: { isDark: boolean }) {
 	const baseColor = isDark ? "#e2e8f0" : "#0f172a";
@@ -114,7 +115,10 @@ function RegisterField({
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
-	return error instanceof Error ? error.message : fallback;
+	// `error instanceof Error` was always true for a failed request, so the
+	// fallback never fired and users saw raw API text. resolveErrorMessage maps
+	// the error code to translated copy and keeps the fallback for the rest.
+	return resolveErrorMessage(error, (key) => i18n.t(key), fallback);
 }
 
 export default function RegisterScreen() {

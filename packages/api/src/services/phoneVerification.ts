@@ -1,5 +1,6 @@
 import { createHash, randomInt } from "node:crypto";
 import type { Payload } from "payload";
+import { ERROR_CODES, type ErrorCode } from "@/lib/errors";
 import type { User } from "@/payload-types";
 import { sendSms } from "./smsProvider";
 
@@ -30,11 +31,18 @@ type PhoneVerificationStatus = {
 
 export class PhoneVerificationError extends Error {
 	status: number;
+	/** Shared client-facing code; see src/lib/errors.ts. */
+	code: ErrorCode;
 
-	constructor(message: string, status = 400) {
+	constructor(
+		message: string,
+		status = 400,
+		code: ErrorCode = ERROR_CODES.badRequest,
+	) {
 		super(message);
 		this.name = "PhoneVerificationError";
 		this.status = status;
+		this.code = code;
 	}
 }
 
@@ -48,6 +56,8 @@ function normalizePhoneNumber(input: string): string {
 	if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
 		throw new PhoneVerificationError(
 			"Phone number must use international format like +2376XXXXXXXX",
+			400,
+			ERROR_CODES.phoneInvalid,
 		);
 	}
 
@@ -143,6 +153,7 @@ export async function startPhoneVerification(
 			throw new PhoneVerificationError(
 				"Please wait before requesting another code",
 				429,
+				ERROR_CODES.phoneCooldown,
 			);
 		}
 	}
@@ -176,11 +187,19 @@ export async function verifyPhoneVerificationCode(
 	const pendingPhone = user.pendingPhone;
 
 	if (!pendingPhone || !user.phoneVerificationCodeHash) {
-		throw new PhoneVerificationError("No phone verification is pending");
+		throw new PhoneVerificationError(
+			"No phone verification is pending",
+			400,
+			ERROR_CODES.phoneCodeExpired,
+		);
 	}
 
 	if (!/^\d{6}$/.test(code)) {
-		throw new PhoneVerificationError("Verification code must contain 6 digits");
+		throw new PhoneVerificationError(
+			"Verification code must contain 6 digits",
+			400,
+			ERROR_CODES.phoneCodeInvalid,
+		);
 	}
 
 	const attempts = user.phoneVerificationAttempts || 0;
@@ -188,6 +207,7 @@ export async function verifyPhoneVerificationCode(
 		throw new PhoneVerificationError(
 			"Too many invalid attempts. Request a new code",
 			429,
+			ERROR_CODES.phoneTooManyAttempts,
 		);
 	}
 
@@ -198,6 +218,8 @@ export async function verifyPhoneVerificationCode(
 		await persistVerificationState(payload, user, clearVerificationFields());
 		throw new PhoneVerificationError(
 			"Verification code has expired. Request a new one",
+			400,
+			ERROR_CODES.phoneCodeExpired,
 		);
 	}
 
@@ -219,6 +241,9 @@ export async function verifyPhoneVerificationCode(
 				? "Too many invalid attempts. Request a new code"
 				: "Invalid verification code",
 			nextAttempts >= MAX_OTP_ATTEMPTS ? 429 : 400,
+			nextAttempts >= MAX_OTP_ATTEMPTS
+				? ERROR_CODES.phoneTooManyAttempts
+				: ERROR_CODES.phoneCodeInvalid,
 		);
 	}
 

@@ -16,6 +16,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -51,7 +52,8 @@ export default function ContactScreen() {
 		mutationFn: () =>
 			api.post("/api/public/contact", { name, email, subject, message }),
 		onSuccess: () => setSent(true),
-		onError: (err: any) => showError(t("contact.errorTitle"), err.message),
+		onError: (err: any) =>
+			showError(t("contact.errorTitle"), resolveErrorMessage(err, t)),
 	});
 
 	if (sent) {

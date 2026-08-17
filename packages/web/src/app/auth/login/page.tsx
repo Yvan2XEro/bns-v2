@@ -18,6 +18,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
+import { resolveErrorMessage } from "~/lib/apiError";
 
 export default function LoginPage() {
 	return (
@@ -29,6 +30,7 @@ export default function LoginPage() {
 
 function LoginForm() {
 	const t = useTranslations("Auth");
+	const tErrors = useTranslations();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
@@ -55,7 +57,7 @@ function LoginForm() {
 			await login(email, password);
 			router.push(redirectTo);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : t("loginFailed"));
+			setError(resolveErrorMessage(err, tErrors, t("loginFailed")));
 		} finally {
 			setIsLoading(false);
 		}

@@ -16,6 +16,7 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { resolveErrorMessage } from "~/lib/apiError";
 
 export default function ResetPasswordPage() {
 	return (
@@ -27,6 +28,7 @@ export default function ResetPasswordPage() {
 
 function ResetPasswordForm() {
 	const t = useTranslations("Auth");
+	const tErrors = useTranslations();
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const token = searchParams.get("token");
@@ -106,7 +108,7 @@ function ResetPasswordForm() {
 
 			router.push("/auth/login?reset=success");
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to reset password");
+			setError(resolveErrorMessage(err, tErrors));
 		} finally {
 			setIsLoading(false);
 		}

@@ -18,9 +18,11 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
+import { resolveErrorMessage } from "~/lib/apiError";
 
 export default function RegisterPage() {
 	const t = useTranslations("Auth");
+	const tErrors = useTranslations();
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -58,7 +60,7 @@ export default function RegisterPage() {
 			await register(email, password, name);
 			router.push("/");
 		} catch (err) {
-			setError(err instanceof Error ? err.message : t("registrationFailed"));
+			setError(resolveErrorMessage(err, tErrors, t("registrationFailed")));
 		} finally {
 			setIsLoading(false);
 		}

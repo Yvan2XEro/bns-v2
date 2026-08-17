@@ -1022,5 +1022,52 @@
 				"body": "Buy'N'Sellem may change these terms at any time. The date at the top shows the current version, and users will be told in the app about significant changes."
 			}
 		}
+	},
+	"apiErrors": {
+		"generic": {
+			"unknown": "Something went wrong. Please try again.",
+			"network": "Could not reach the server. Please check your connection.",
+			"timeout": "The request took too long. Please try again.",
+			"server": "Something went wrong on our side. Please try again shortly.",
+			"badRequest": "Some of the information sent was not valid.",
+			"notFound": "This content is no longer available.",
+			"forbidden": "You do not have permission to do this.",
+			"unauthorized": "Please sign in to continue.",
+			"validation": "Please check the highlighted fields.",
+			"rateLimited": "Too many attempts. Please wait a moment."
+		},
+		"auth": {
+			"emailTaken": "An account already exists with this email.",
+			"invalidCredentials": "Incorrect email or password.",
+			"accountLocked": "This account is temporarily locked after too many failed attempts.",
+			"emailNotVerified": "Please confirm your email address before signing in.",
+			"invalidEmail": "This email address is not valid.",
+			"oauthFailed": "Sign-in failed. Please try again.",
+			"oauthCancelled": "Sign-in was cancelled.",
+			"oauthNotConfigured": "This sign-in method is unavailable right now."
+		},
+		"phone": {
+			"invalid": "This phone number is not valid.",
+			"codeInvalid": "This code is incorrect.",
+			"codeExpired": "This code has expired. Please request a new one.",
+			"tooManyAttempts": "Too many incorrect codes. Please request a new one.",
+			"cooldown": "Please wait a moment before requesting another code.",
+			"notConfigured": "Phone verification is unavailable right now."
+		},
+		"messages": {
+			"blocked": "You can no longer exchange messages with this user.",
+			"failed": "The message could not be sent."
+		},
+		"listing": {
+			"notFound": "This listing is no longer available.",
+			"categoryNotFound": "This category is no longer available."
+		},
+		"upload": {
+			"tooLarge": "This file is too large.",
+			"invalidType": "This file type is not supported."
+		},
+		"contact": {
+			"incomplete": "Please fill in every field."
+		}
 	}
 }

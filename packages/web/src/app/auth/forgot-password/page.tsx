@@ -15,9 +15,11 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { resolveErrorMessage } from "~/lib/apiError";
 
 export default function ForgotPasswordPage() {
 	const t = useTranslations("Auth");
+	const tErrors = useTranslations();
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
 	const [success, setSuccess] = useState(false);
@@ -45,9 +47,7 @@ export default function ForgotPasswordPage() {
 
 			setSuccess(true);
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to send reset email",
-			);
+			setError(resolveErrorMessage(err, tErrors));
 		} finally {
 			setIsLoading(false);
 		}

@@ -20,13 +20,17 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 
 function getErrorMessage(error: unknown, fallback: string): string {
-	return error instanceof Error ? error.message : fallback;
+	// `error instanceof Error` was always true for a failed request, so the
+	// fallback never fired and users saw raw API text. resolveErrorMessage maps
+	// the error code to translated copy and keeps the fallback for the rest.
+	return resolveErrorMessage(error, (key) => i18n.t(key), fallback);
 }
 
 export default function EditProfileScreen() {

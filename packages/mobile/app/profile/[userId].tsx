@@ -25,6 +25,7 @@ import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
@@ -140,7 +141,8 @@ export default function PublicProfileScreen() {
 			setReviewComment("");
 			showSuccess(t("profile.reviewPublished"), t("profile.reviewSaved"));
 		},
-		onError: (err: any) => showError(t("common.error"), err.message),
+		onError: (err: any) =>
+			showError(t("common.error"), resolveErrorMessage(err, t)),
 	});
 
 	const profile = profileData?.doc ?? profileData;

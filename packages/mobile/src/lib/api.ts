@@ -1,5 +1,6 @@
 import { fetch as expoFetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
+import { ERROR_CODES, fallbackFor, normalizeApiError } from "./apiError";
 
 export const API_BASE_URL =
 	process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -89,12 +90,20 @@ export function refreshToken(): Promise<boolean> {
 export class ApiError extends Error {
 	status: number;
 	data: unknown;
+	/** Translation key; resolve with resolveErrorMessage() before display. */
+	code: string;
 
-	constructor(message: string, status: number, data: unknown) {
+	constructor(
+		message: string,
+		status: number,
+		data: unknown,
+		code: string = ERROR_CODES.unknown,
+	) {
 		super(message);
 		this.name = "ApiError";
 		this.status = status;
 		this.data = data;
+		this.code = code;
 	}
 }
 
@@ -130,14 +139,21 @@ async function request<T>(
 	} catch (error) {
 		if (error instanceof Error && error.name === "AbortError") {
 			throw new ApiError(
-				"La requête a expiré. Vérifiez votre connexion.",
+				fallbackFor(ERROR_CODES.timeout),
 				408,
-				{
-					path,
-				},
+				{ path },
+				ERROR_CODES.timeout,
 			);
 		}
-		throw error;
+		// Anything else thrown by fetch is a transport failure: no DNS, no
+		// route, TLS refused. The user needs "check your connection", not the
+		// underlying platform string.
+		throw new ApiError(
+			fallbackFor(ERROR_CODES.network),
+			0,
+			{ path },
+			ERROR_CODES.network,
+		);
 	} finally {
 		clearTimeout(timeoutId);
 	}
@@ -154,19 +170,11 @@ async function request<T>(
 			unauthorizedHandler?.();
 		}
 
-		const error = (await res.json().catch(() => ({}))) as {
-			error?: string;
-			message?: string;
-		};
+		const body = await res.json().catch(() => ({}));
+		const { code, message } = normalizeApiError(res.status, body);
 
-		// Surface a typed error so callers can inspect `status`
-		throw new ApiError(
-			error.message ??
-				error.error ??
-				`Request failed with status ${res.status}`,
-			res.status,
-			error,
-		);
+		// message is the English fallback; screens resolve `code` through i18n.
+		throw new ApiError(message, res.status, body, code);
 	}
 
 	// 204 No Content — return empty object cast to T
@@ -218,17 +226,9 @@ export const api = {
 		});
 
 		if (!res.ok) {
-			const error = (await res.json().catch(() => ({}))) as {
-				error?: string;
-				message?: string;
-				errors?: { message: string }[];
-			};
-			const msg =
-				error.message ??
-				error.error ??
-				error.errors?.[0]?.message ??
-				`Upload failed (${res.status})`;
-			throw new ApiError(msg, res.status, error);
+			const body = await res.json().catch(() => ({}));
+			const { code, message } = normalizeApiError(res.status, body);
+			throw new ApiError(message, res.status, body, code);
 		}
 
 		return res.json() as Promise<T>;

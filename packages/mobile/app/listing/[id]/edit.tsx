@@ -23,6 +23,7 @@ import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -257,7 +258,10 @@ export default function EditListingScreen() {
 
 			setImages((prev) => [...prev, { id: mediaId, uri: mediaUri }]);
 		} catch (err: any) {
-			showError(t("edit.errorTitle"), err.message ?? t("edit.uploadError"));
+			showError(
+				t("edit.errorTitle"),
+				resolveErrorMessage(err, t, t("edit.uploadError")),
+			);
 		} finally {
 			setUploading(false);
 		}
@@ -299,7 +303,8 @@ export default function EditListingScreen() {
 			showSuccess(t("edit.saveSuccess"), t("edit.saveSuccessMsg"));
 			router.back();
 		},
-		onError: (err: any) => showError(t("edit.errorTitle"), err.message),
+		onError: (err: any) =>
+			showError(t("edit.errorTitle"), resolveErrorMessage(err, t)),
 	});
 
 	const updateAttr = (slug: string, value: any) =>
