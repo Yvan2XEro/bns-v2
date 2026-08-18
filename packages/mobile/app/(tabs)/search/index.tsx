@@ -15,7 +15,10 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -30,6 +33,7 @@ import { useTranslation } from "@/src/lib/i18n";
 export default function SearchScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 	const { user } = useAuth();
 	const params = useLocalSearchParams();
 	const { isTablet, columns, cardWidth, dialogMaxWidth } = useResponsive();
@@ -493,6 +497,7 @@ export default function SearchScreen() {
 					behavior={Platform.OS === "ios" ? "padding" : "height"}
 					style={[
 						styles.modalOverlay,
+						{ paddingBottom: insets.bottom + 32 },
 						// Centred dialog on iPad instead of a 1024pt-wide sheet.
 						isTablet && { justifyContent: "center", alignItems: "center" },
 					]}
@@ -722,7 +727,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "rgba(0,0,0,0.5)",
 		justifyContent: "flex-end",
-		paddingBottom: 32,
+		// paddingBottom is applied inline from the safe-area insets.
 		paddingHorizontal: 16,
 	},
 	modalCard: {

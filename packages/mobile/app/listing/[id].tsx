@@ -769,7 +769,7 @@ export default function ListingDetail() {
 			>
 				<View style={styles.lightboxOverlay}>
 					<Pressable
-						style={styles.lightboxClose}
+						style={[styles.lightboxClose, { top: safeTop + 12 }]}
 						onPress={() => setLightboxVisible(false)}
 					>
 						<Ionicons name="close" size={24} color="#fff" />
@@ -792,7 +792,9 @@ export default function ListingDetail() {
 						/>
 					</ScrollView>
 					{images.length > 1 && (
-						<View style={styles.lightboxNav}>
+						<View
+							style={[styles.lightboxNav, { paddingBottom: safeBottom + 16 }]}
+						>
 							<Pressable
 								onPress={() =>
 									setLightboxIdx((i) => (i === 0 ? images.length - 1 : i - 1))
@@ -1023,7 +1025,7 @@ const styles = StyleSheet.create({
 	},
 	lightboxClose: {
 		position: "absolute",
-		top: 48,
+		// `top` is applied inline from the safe-area insets.
 		right: 16,
 		zIndex: 10,
 		width: 40,
@@ -1044,7 +1046,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "space-between",
 		paddingHorizontal: 16,
-		paddingBottom: 48,
+		// paddingBottom is applied inline from the safe-area insets.
 		paddingTop: 12,
 	},
 	lightboxNavBtn: {

@@ -14,7 +14,10 @@ import {
 	View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
@@ -35,6 +38,7 @@ export default function PublicProfileScreen() {
 	const { userId } = useLocalSearchParams<{ userId: string }>();
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 	const { user } = useAuth();
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
@@ -506,6 +510,9 @@ export default function PublicProfileScreen() {
 					style={[
 						styles.modalSheet,
 						{ backgroundColor: cardBg },
+						// Static padding is wrong on both gesture nav (~16dp) and 3-button
+						// nav (~48dp), and ignores the iOS home indicator.
+						{ paddingBottom: insets.bottom + 24 },
 						// Centred, width-capped dialog on iPad instead of a full-bleed sheet.
 						isTablet && {
 							alignSelf: "center",
@@ -742,7 +749,7 @@ const styles = StyleSheet.create({
 	modalSheet: {
 		borderTopLeftRadius: 20,
 		borderTopRightRadius: 20,
-		paddingBottom: 32,
+		// paddingBottom is applied inline from the safe-area insets.
 	},
 	modalHeader: {
 		flexDirection: "row",

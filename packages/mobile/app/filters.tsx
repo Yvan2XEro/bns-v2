@@ -10,7 +10,10 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
@@ -21,8 +24,8 @@ import {
 } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
-import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
+import type { Place } from "@/src/lib/places";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
@@ -30,6 +33,7 @@ export default function FiltersModal() {
 	const isDark = useColorScheme() === "dark";
 	const { centeredContent } = useResponsive();
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 
 	const CONDITIONS = [
 		{ key: "new", label: t("filters.conditionNew") },
@@ -331,10 +335,10 @@ export default function FiltersModal() {
 				</Text>
 				<CityPicker
 					value={location}
-					onSelect={(city: CameroonCity) => {
-						setLocation(city.name);
-						setLocationLat(city.lat);
-						setLocationLng(city.lng);
+					onSelect={(place: Place) => {
+						setLocation(place.name);
+						setLocationLat(place.lat ?? null);
+						setLocationLng(place.lng ?? null);
 					}}
 					onClear={() => {
 						setLocation("");
@@ -507,6 +511,9 @@ export default function FiltersModal() {
 				style={[
 					styles.footer,
 					{ borderTopColor: borderColor, backgroundColor: cardBg },
+					// Clears the Android navigation bar / iOS home indicator. Without
+					// this the Apply button sits under the system buttons.
+					{ paddingBottom: insets.bottom + 16 },
 				]}
 			>
 				<Pressable

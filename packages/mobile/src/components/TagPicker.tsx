@@ -8,9 +8,13 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
 
 const MAX_TAGS = 5;
 
@@ -48,6 +52,8 @@ export function TagPicker({
 	mutedColor,
 	primaryColor,
 }: TagPickerProps) {
+	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 	const isDark = useColorScheme() === "dark";
 	const [visible, setVisible] = useState(false);
 
@@ -155,21 +161,32 @@ export function TagPicker({
 				visible={visible}
 				animationType="slide"
 				onRequestClose={() => setVisible(false)}
+				statusBarTranslucent
+				navigationBarTranslucent
 			>
+				{/* `bottom` is excluded so the chips scroll under the system bar; the
+				    confirm footer gets the inset as padding instead, otherwise the
+				    button sits under the Android navigation buttons. */}
 				<SafeAreaView
 					style={[styles.modalSafe, { backgroundColor: modalBg }]}
-					edges={["top"]}
+					edges={["top", "left", "right"]}
 				>
 					{/* Header */}
 					<View
 						style={[styles.modalHeader, { borderBottomColor: separatorColor }]}
 					>
 						<View>
-							<Text style={[styles.modalTitle, { color: textColor }]}>
-								Choisir des tags
+							<Text
+								style={[styles.modalTitle, { color: textColor }]}
+								accessibilityRole="header"
+							>
+								{t("tagPicker.title")}
 							</Text>
 							<Text style={[styles.modalSub, { color: mutedColor }]}>
-								{selectedCount}/{MAX_TAGS} sélectionnés
+								{t("tagPicker.selectedCount", {
+									count: selectedCount,
+									max: MAX_TAGS,
+								})}
 							</Text>
 						</View>
 						<Pressable onPress={() => setVisible(false)} hitSlop={8}>
@@ -184,7 +201,7 @@ export function TagPicker({
 					>
 						{availableTags.length === 0 ? (
 							<Text style={[styles.emptyText, { color: mutedColor }]}>
-								Aucun tag disponible
+								{t("tagPicker.empty")}
 							</Text>
 						) : (
 							availableTags.map((tag) => {
@@ -229,13 +246,23 @@ export function TagPicker({
 					</ScrollView>
 
 					{/* Confirm */}
-					<View style={[styles.footer, { borderTopColor: separatorColor }]}>
+					<View
+						style={[
+							styles.footer,
+							{
+								borderTopColor: separatorColor,
+								paddingBottom: insets.bottom + 12,
+							},
+						]}
+					>
 						<Pressable
 							onPress={() => setVisible(false)}
 							style={[styles.doneBtn, { backgroundColor: primaryColor }]}
 						>
 							<Text style={styles.doneBtnText}>
-								{selectedCount > 0 ? `Confirmer (${selectedCount})` : "Fermer"}
+								{selectedCount > 0
+									? t("tagPicker.confirm", { count: selectedCount })
+									: t("common.close")}
 							</Text>
 						</Pressable>
 					</View>

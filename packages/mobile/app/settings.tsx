@@ -15,7 +15,10 @@ import {
 	Text,
 	View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -77,6 +80,7 @@ export default function SettingsScreen() {
 	const { centeredContent } = useResponsive();
 	const [isDark, setIsDark] = useState(colorScheme === "dark");
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 	const [langPickerOpen, setLangPickerOpen] = useState(false);
 	const [updateChecked, setUpdateChecked] = useState(false);
 	const [checkError, setCheckError] = useState(false);
@@ -379,7 +383,15 @@ export default function SettingsScreen() {
 					style={styles.modalOverlay}
 					onPress={() => setLangPickerOpen(false)}
 				/>
-				<View style={[styles.modalSheet, { backgroundColor: cardBg }]}>
+				<View
+					style={[
+						styles.modalSheet,
+						{ backgroundColor: cardBg },
+						// The language rows are the confirm control here; without this
+						// the last one sits under the system navigation.
+						{ paddingBottom: insets.bottom + 16 },
+					]}
+				>
 					<View
 						style={[styles.modalHandle, { backgroundColor: borderColor }]}
 					/>
