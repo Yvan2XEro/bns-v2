@@ -1,3 +1,14 @@
+/**
+ * The Cameroon seed list.
+ *
+ * This is no longer the app's only source of places — see `./places.ts`, which
+ * folds this list into a worldwide lookup (recent places + OS geocoder + free
+ * text). It stays here, unchanged and still exported under its original names,
+ * because it is the densest part of the marketplace and the only part that must
+ * work with no permission, no network and no geocoder.
+ *
+ * Prefer `Place` / `searchPlaces()` from `./places.ts` in new code.
+ */
 export interface CameroonCity {
 	name: string;
 	region: string;

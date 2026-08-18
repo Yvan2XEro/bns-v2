@@ -367,8 +367,62 @@ export const Users: CollectionConfig = {
 			},
 		},
 		{
+			// Free text the user typed into their profile ("Douala", "Bonabéri,
+			// derrière la mairie", …). Existing accounts hold arbitrary strings
+			// here, so its type never changes — the structured place lives in
+			// `homeLocation` beside it, and the two are independent.
 			name: "location",
 			type: "text",
+			admin: {
+				description:
+					"Free-text place shown on the public profile. Typed by the user; not derived from GPS.",
+			},
+		},
+		{
+			// The remembered location the mobile app pre-fills flows from: city
+			// selection, listing creation, search defaults. Written by the client
+			// (self-update is already allowed by `access.update`), so nothing here
+			// is pinned in `beforeChange` — but nothing here is trusted either: it
+			// is a convenience cache, never an authorisation input.
+			name: "homeLocation",
+			type: "group",
+			admin: {
+				description:
+					"Structured place last confirmed by the user, kept in sync with the mobile app.",
+			},
+			fields: [
+				{ name: "city", type: "text", index: true },
+				{ name: "region", type: "text" },
+				{ name: "country", type: "text" },
+				{
+					name: "countryCode",
+					type: "text",
+					maxLength: 2,
+					admin: { description: "ISO 3166-1 alpha-2, uppercase." },
+				},
+				// No lat/lng here on purpose. The privacy policy states the profile
+				// location is "a place name you enter, not GPS coordinates", and
+				// that coordinates travel only with a single search request with no
+				// history kept. Storing them would contradict both and would change
+				// the App Privacy declaration. Coordinates stay on the device, which
+				// is all the "listings near you" search needs.
+				{
+					name: "source",
+					type: "select",
+					options: [
+						{ label: "Device", value: "device" },
+						{ label: "Chosen by user", value: "manual" },
+					],
+				},
+				{
+					name: "updatedAt",
+					type: "date",
+					admin: {
+						description:
+							"Conflict resolution between the device copy and this one — last write wins.",
+					},
+				},
+			],
 		},
 		{
 			name: "verified",

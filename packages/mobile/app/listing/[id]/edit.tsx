@@ -24,16 +24,19 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
-import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	getListingFormPreset,
 	isProductListingCategory,
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
+import type { Place } from "@/src/lib/places";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const DURATIONS = [30, 60, 90];
+
+/** Maximum number of images a listing can carry (enforced server-side too). */
+const MAX_LISTING_IMAGES = 3;
 
 type ImageItem = { id: string; uri: string };
 
@@ -268,8 +271,11 @@ export default function EditListingScreen() {
 	};
 
 	const showImagePicker = () => {
-		if (images.length >= 10) {
-			showWarning(t("edit.limitReached"), t("edit.limitReachedMsg"));
+		if (images.length >= MAX_LISTING_IMAGES) {
+			showWarning(
+				t("edit.limitReached"),
+				t("edit.limitReachedMsg", { count: MAX_LISTING_IMAGES }),
+			);
 			return;
 		}
 		showAlert(t("edit.addPhotoTitle"), t("edit.addPhotoSource"), [
@@ -412,7 +418,7 @@ export default function EditListingScreen() {
 								</Pressable>
 							</View>
 						))}
-						{images.length < 10 && (
+						{images.length < MAX_LISTING_IMAGES && (
 							<Pressable
 								onPress={showImagePicker}
 								disabled={uploading}
@@ -594,9 +600,13 @@ export default function EditListingScreen() {
 						/>
 						<CityPicker
 							value={location}
-							onSelect={(city: CameroonCity) => {
-								setLocation(city.name);
-								setCoordinates({ lat: city.lat, lng: city.lng });
+							onSelect={(place: Place) => {
+								setLocation(place.name);
+								setCoordinates(
+									place.lat != null && place.lng != null
+										? { lat: place.lat, lng: place.lng }
+										: null,
+								);
 							}}
 							onClear={() => {
 								setLocation("");

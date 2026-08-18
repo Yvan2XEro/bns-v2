@@ -66,7 +66,24 @@ export interface UserDoc {
 	totalReviews: number;
 	bio?: string | null;
 	phone?: string | null;
+	/** Free-text place the user typed. Predates `homeLocation`; still shown. */
 	location?: string | null;
+	/**
+	 * Structured place the user last confirmed, kept in sync with the app so
+	 * city pickers and filters can pre-fill.
+	 *
+	 * Deliberately carries no coordinates: the privacy policy states the profile
+	 * location is a place name rather than GPS coordinates, and that coordinates
+	 * travel only with a single search request. They stay on the device.
+	 */
+	homeLocation?: {
+		city?: string | null;
+		region?: string | null;
+		country?: string | null;
+		countryCode?: string | null;
+		source?: string | null;
+		updatedAt?: string | null;
+	} | null;
 	verified: boolean;
 	createdAt: string;
 	updatedAt: string;

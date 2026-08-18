@@ -7,9 +7,8 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -32,7 +31,10 @@ import Animated, {
 	useSharedValue,
 	withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
@@ -53,6 +55,7 @@ import {
 	resolveImageUrl,
 	resolveListingImageUrl,
 } from "@/src/lib/resolveImageUrl";
+import { useUserLocation } from "@/src/lib/useUserLocation";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -88,6 +91,7 @@ const lightIcon = require("@/assets/icon2.png");
 export default function HomeScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
 	const { user } = useAuth();
 	const novuReady = useNotificationReady();
 	const queryClient = useQueryClient();
@@ -231,35 +235,27 @@ export default function HomeScreen() {
 	const accentBg = isDark ? "#111827" : "#eef2ff";
 
 	// ── Géolocalisation ───────────────────────────────────────────
-	const [userCoords, setUserCoords] = useState<{
-		lat: number;
-		lng: number;
-	} | null>(null);
-	// Starts true so the in-context "listings near you" prompt is what asks for
-	// the permission. Never prompt on mount: an unexplained location dialog on
-	// the very first screen is a documented App Review rejection pattern.
-	const [locationDenied, setLocationDenied] = useState(true);
+	// The remembered location: AsyncStorage when signed out, the user's profile
+	// when signed in. `useUserLocation` hydrates from storage and re-reads the
+	// permission with the non-prompting API — it never opens a dialog on mount.
+	// The in-context prompt below is still the only thing that can ask.
+	const {
+		coords: userCoords,
+		hydrated: locationHydrated,
+		permission: locationPermission,
+		detecting: locationDetecting,
+		requestDetection,
+	} = useUserLocation();
 
-	useEffect(() => {
-		(async () => {
-			try {
-				// Non-prompting: only re-reads a decision the user already made.
-				const { status } = await Location.getForegroundPermissionsAsync();
-				if (status !== "granted") return;
-
-				setLocationDenied(false);
-				const pos = await Location.getCurrentPositionAsync({
-					accuracy: Location.Accuracy.Balanced,
-				});
-				setUserCoords({
-					lat: pos.coords.latitude,
-					lng: pos.coords.longitude,
-				});
-			} catch {
-				// Location is a nice-to-have here; never let it break the home screen.
-			}
-		})();
-	}, []);
+	// A city the user picked by hand carries coordinates too, so "near you"
+	// works with no permission at all once a location is remembered.
+	const showLocationPrompt =
+		locationHydrated && !userCoords && locationPermission !== "granted";
+	const locationRefused = locationPermission === "denied";
+	// Skeletons only while something is actually in flight. With the permission
+	// granted but no fix obtainable (geocoder down, GPS off), fall through to the
+	// "nothing nearby" card rather than spinning forever.
+	const locationPending = !locationHydrated || locationDetecting;
 
 	// ── Save search dialog ─────────────────────────────────────────
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -933,21 +929,14 @@ export default function HomeScreen() {
 								</Text>
 							</View>
 						</View>
-						{locationDenied ? (
+						{showLocationPrompt ? (
 							<Pressable
-								onPress={async () => {
-									const { status } =
-										await Location.requestForegroundPermissionsAsync();
-									if (status === "granted") {
-										setLocationDenied(false);
-										const pos = await Location.getCurrentPositionAsync({
-											accuracy: Location.Accuracy.Balanced,
-										});
-										setUserCoords({
-											lat: pos.coords.latitude,
-											lng: pos.coords.longitude,
-										});
-									}
+								// The single permission request in this screen, and it only
+								// runs from this explicit press. A refusal or a dead geocoder
+								// resolves normally — the card just stays put.
+								disabled={locationDetecting}
+								onPress={() => {
+									void requestDetection();
 								}}
 								style={[
 									styles.locationPrompt,
@@ -971,12 +960,22 @@ export default function HomeScreen() {
 									<Text
 										style={[styles.locationPromptSub, { color: mutedColor }]}
 									>
-										{t("home.enableLocationSub")}
+										{locationRefused
+											? t("errors.locationPermission")
+											: t("home.enableLocationSub")}
 									</Text>
 								</View>
-								<Ionicons name="chevron-forward" size={16} color={mutedColor} />
+								{locationDetecting ? (
+									<ActivityIndicator size="small" color={primaryColor} />
+								) : (
+									<Ionicons
+										name="chevron-forward"
+										size={16}
+										color={mutedColor}
+									/>
+								)}
 							</Pressable>
-						) : !userCoords ? (
+						) : !userCoords && locationPending ? (
 							<ScrollView
 								horizontal
 								showsHorizontalScrollIndicator={false}
@@ -1046,6 +1045,9 @@ export default function HomeScreen() {
 						style={[
 							styles.modalCard,
 							{ backgroundColor: cardBg, borderColor },
+							// Static padding is wrong on both gesture nav (~16dp) and
+							// 3-button nav (~48dp); derive it from the insets.
+							{ paddingBottom: insets.bottom + 24 },
 							isTablet && {
 								width: "100%",
 								maxWidth: dialogMaxWidth,

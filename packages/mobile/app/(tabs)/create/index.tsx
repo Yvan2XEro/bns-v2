@@ -34,13 +34,14 @@ import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
-import type { CameroonCity } from "@/src/lib/cameroon-cities";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	getListingFormPreset,
 	isProductListingCategory,
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
+import type { Place } from "@/src/lib/places";
+import { useUserLocation } from "@/src/lib/useUserLocation";
 
 const DURATIONS = [30, 60, 90];
 
@@ -57,6 +58,9 @@ const CAT_TINTS = [
 	{ bg: "#dbeafe", icon: "#3b82f6" },
 	{ bg: "#fde68a", icon: "#b45309" },
 ];
+
+/** Maximum number of images a listing can carry (enforced server-side too). */
+const MAX_LISTING_IMAGES = 3;
 
 interface UploadedImage {
 	id: string; // Payload media document ID
@@ -83,6 +87,9 @@ export default function CreateScreen() {
 	const { user } = useAuth();
 	const pathname = usePathname();
 	const { width: SCREEN_W, centeredContent } = useResponsive();
+	const { asPlace: rememberedPlace, hydrated: locationHydrated } =
+		useUserLocation();
+	const didPrefillLocationRef = useRef(false);
 	const [step, setStep] = useState(0);
 
 	const STEPS = [
@@ -150,6 +157,29 @@ export default function CreateScreen() {
 	const border = isDark ? "#1e3a5f" : "#e2e8f0";
 	const accentBg = isDark ? "#111827" : "#eef2ff";
 	const inputBg = isDark ? "#162032" : "#f8fafc";
+
+	// Pre-fill the location from the remembered place, so a seller does not
+	// re-enter their city on every listing. Only ever fills an empty field, and
+	// never refills one the user deliberately cleared.
+	useEffect(() => {
+		if (!locationHydrated || !rememberedPlace?.name) return;
+		// Fill at most once per mount, so a location the user clears on purpose
+		// is never silently written back.
+		if (didPrefillLocationRef.current) return;
+		didPrefillLocationRef.current = true;
+		setForm((f: any) =>
+			f.location
+				? f
+				: {
+						...f,
+						location: rememberedPlace.name,
+						coordinates:
+							rememberedPlace.lat != null && rememberedPlace.lng != null
+								? { lat: rememberedPlace.lat, lng: rememberedPlace.lng }
+								: null,
+					},
+		);
+	}, [locationHydrated, rememberedPlace]);
 
 	if (!user) {
 		return (
@@ -485,14 +515,20 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 
 	const update = (key: string, val: any) =>
 		setForm((f: any) => ({ ...f, [key]: val }));
-	const handleCitySelect = (city: CameroonCity) =>
+	const handleCitySelect = (place: Place) =>
 		setForm((f: any) => ({
 			...f,
-			location: city.name,
-			coordinates: { lat: city.lat, lng: city.lng },
+			location: place.name,
+			// A place typed by hand has no coordinates; store null rather than
+			// an object of undefined, which would break the radius search.
+			coordinates:
+				place.lat != null && place.lng != null
+					? { lat: place.lat, lng: place.lng }
+					: null,
 		}));
 	const handleCityClear = () =>
 		setForm((f: any) => ({ ...f, location: "", coordinates: null }));
+
 	const canProceed =
 		form.title.trim() &&
 		form.description.trim() &&
@@ -1012,8 +1048,11 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 	};
 
 	const showPicker = () => {
-		if (form.images.length >= 10) {
-			showWarning(t("create.limitReached"), t("create.limitReachedMsg"));
+		if (form.images.length >= MAX_LISTING_IMAGES) {
+			showWarning(
+				t("create.limitReached"),
+				t("create.limitReachedMsg", { count: MAX_LISTING_IMAGES }),
+			);
 			return;
 		}
 		showAlert(t("create.addPhotoTitle"), t("create.addPhotoSource"), [
@@ -1088,7 +1127,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 					</View>
 				))}
 
-				{form.images.length < 10 && (
+				{form.images.length < MAX_LISTING_IMAGES && (
 					<Pressable
 						style={[
 							styles.addPhotoBtn,
