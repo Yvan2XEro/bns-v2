@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, {
 	Easing,
+	type SharedValue,
 	useAnimatedStyle,
 	useSharedValue,
 	withDelay,
@@ -10,12 +11,19 @@ import Animated, {
 	withSequence,
 	withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/src/lib/i18n";
+
+/** Drives both the logo box and the position of everything anchored to it. */
+const LOGO_SIZE = 150;
 
 export function LoadingScreen() {
 	const isDark = useColorScheme() === "dark";
 	const colors = isDark ? Colors.dark : Colors.light;
+	const insets = useSafeAreaInsets();
+	const { t } = useTranslation();
 
 	// Logo entrance
 	const logoScale = useSharedValue(0.7);
@@ -54,7 +62,8 @@ export function LoadingScreen() {
 			false,
 		);
 
-		const dotAnim = (sv: Animated.SharedValue<number>, delay: number) => {
+		// Reanimated 4 moved SharedValue out of the `Animated` namespace.
+		const dotAnim = (sv: SharedValue<number>, delay: number) => {
 			sv.value = withDelay(
 				delay,
 				withRepeat(
@@ -128,12 +137,12 @@ export function LoadingScreen() {
 					<Text style={{ color: "#f59e0b" }}>'</Text>Sellem
 				</Text>
 				<Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-					Acheter & Vendre, Simplement.
+					{t("common.tagline")}
 				</Text>
 			</Animated.View>
 
 			{/* Loading dots */}
-			<View style={styles.dotsRow}>
+			<View style={[styles.dotsRow, { bottom: insets.bottom + 64 }]}>
 				<Animated.View
 					style={[styles.dot, { backgroundColor: colors.primary }, dot1Style]}
 				/>
@@ -150,22 +159,32 @@ export function LoadingScreen() {
 
 const styles = StyleSheet.create({
 	container: {
-		...StyleSheet.absoluteFillObject,
+		// React Native 0.86 (Expo 57) removed `StyleSheet.absoluteFillObject`;
+		// only `absoluteFill` remains. Spreading the missing export silently
+		// yielded nothing, so this box lost its absolute positioning and its
+		// size, collapsed to fit its content, and the whole splash ended up
+		// squeezed against the top of the screen. Written out explicitly so it
+		// cannot break that way again.
+		position: "absolute",
+		top: 0,
+		right: 0,
+		bottom: 0,
+		left: 0,
 		alignItems: "center",
 		justifyContent: "center",
 		zIndex: 9999,
 	},
 	logoWrapper: {
-		width: 150,
-		height: 150,
+		width: LOGO_SIZE,
+		height: LOGO_SIZE,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	ring: {
 		position: "absolute",
-		width: 150,
-		height: 150,
-		borderRadius: 75,
+		width: LOGO_SIZE,
+		height: LOGO_SIZE,
+		borderRadius: LOGO_SIZE / 2,
 		borderWidth: 2,
 	},
 	logoCard: {
@@ -184,8 +203,18 @@ const styles = StyleSheet.create({
 		height: 80,
 	},
 	textBlock: {
+		// Anchored below the centred logo rather than stacked after it in the
+		// flow: keeping it in the flow pushed the logo above the screen centre
+		// and broke the handover from the native splash, which centres its icon.
+		position: "absolute",
+		top: "50%",
+		marginTop: LOGO_SIZE / 2 + 32,
+		// left/right are required: an absolutely positioned box no longer
+		// inherits the container's alignItems, so without them it would hug its
+		// content and sit against the left edge.
+		left: 0,
+		right: 0,
 		alignItems: "center",
-		marginTop: 32,
 	},
 	appName: {
 		fontFamily: Fonts.displayExtrabold,
@@ -198,9 +227,15 @@ const styles = StyleSheet.create({
 		marginTop: 6,
 	},
 	dotsRow: {
+		// Pinned near the bottom: a progress indicator does not belong in the
+		// vertical centring of the logo.
+		position: "absolute",
+		bottom: 0,
+		left: 0,
+		right: 0,
 		flexDirection: "row",
+		justifyContent: "center",
 		gap: 8,
-		marginTop: 60,
 	},
 	dot: {
 		width: 8,
