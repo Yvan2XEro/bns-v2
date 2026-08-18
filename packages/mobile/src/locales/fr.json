@@ -32,7 +32,8 @@
 		"required": "Obligatoire",
 		"all": "Tout",
 		"none": "Aucun",
-		"or": "ou"
+		"or": "ou",
+		"tagline": "Acheter & Vendre, Simplement."
 	},
 	"auth": {
 		"login": "Connexion",
@@ -235,7 +236,8 @@
 		"daysAgo": "Il y a {{count}} jours",
 		"featured": "À la une",
 		"yes": "Oui",
-		"no": "Non"
+		"no": "Non",
+		"distanceKm": "À {{km}} km"
 	},
 	"create": {
 		"title": "Publier une annonce",
@@ -320,7 +322,7 @@
 		"photoCount": "{{count}} photo(s)",
 		"editBtn": "Modifier",
 		"limitReached": "Limite atteinte",
-		"limitReachedMsg": "Vous pouvez ajouter jusqu'à 10 photos.",
+		"limitReachedMsg": "Vous pouvez ajouter jusqu'à {{count}} photos.",
 		"addPhotoTitle": "Ajouter une photo",
 		"addPhotoSource": "Choisissez une source",
 		"camera": "Appareil photo",
@@ -361,7 +363,7 @@
 		"cameraPermissionMsg": "L'accès à la caméra est nécessaire.",
 		"galleryPermissionMsg": "L'accès à la galerie est nécessaire.",
 		"limitReached": "Limite atteinte",
-		"limitReachedMsg": "Maximum 10 photos.",
+		"limitReachedMsg": "Maximum {{count}} photos.",
 		"addPhotoTitle": "Ajouter une photo",
 		"addPhotoSource": "Choisissez une source",
 		"camera": "Appareil photo",
@@ -1142,5 +1144,22 @@
 		"contact": {
 			"incomplete": "Veuillez remplir tous les champs."
 		}
+	},
+	"cityPicker": {
+		"title": "Choisir une ville",
+		"placeholder": "Choisir une ville",
+		"searchPlaceholder": "Rechercher une ville, une région ou un pays…",
+		"triggerHint": "Ouvre la liste des villes",
+		"empty": "Aucune ville trouvée",
+		"useTyped": "Utiliser « {{query}} »",
+		"useMyLocation": "Utiliser ma position",
+		"recent": "Récents",
+		"detected": "Position détectée"
+	},
+	"tagPicker": {
+		"title": "Choisir des tags",
+		"selectedCount": "{{count}}/{{max}} sélectionnés",
+		"empty": "Aucun tag disponible",
+		"confirm": "Confirmer ({{count}})"
 	}
 }

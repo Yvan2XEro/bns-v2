@@ -32,7 +32,8 @@
 		"required": "Required",
 		"all": "All",
 		"none": "None",
-		"or": "or"
+		"or": "or",
+		"tagline": "Buy & Sell, Simply."
 	},
 	"auth": {
 		"login": "Login",
@@ -214,7 +215,8 @@
 		"photosCount": "{{count}} photo",
 		"photosCount_plural": "{{count}} photos",
 		"noDescription": "No description provided.",
-		"callSeller": "Call seller"
+		"callSeller": "Call seller",
+		"distanceKm": "{{km}} km away"
 	},
 	"create": {
 		"title": "Post a Listing",
@@ -290,7 +292,7 @@
 		"cameraPermissionMsg": "Camera access is required.",
 		"galleryPermissionMsg": "Gallery access is required.",
 		"limitReached": "Limit reached",
-		"limitReachedMsg": "You can add up to 10 photos.",
+		"limitReachedMsg": "You can add up to {{count}} photos.",
 		"addPhotoTitle": "Add a photo",
 		"addPhotoSource": "Choose a source",
 		"camera": "Camera",
@@ -482,7 +484,7 @@
 		"cameraPermissionMsg": "Camera access is required.",
 		"galleryPermissionMsg": "Gallery access is required.",
 		"limitReached": "Limit reached",
-		"limitReachedMsg": "Maximum 10 photos.",
+		"limitReachedMsg": "Maximum {{count}} photos.",
 		"addPhotoTitle": "Add a photo",
 		"addPhotoSource": "Choose a source",
 		"camera": "Camera",
@@ -1069,5 +1071,22 @@
 		"contact": {
 			"incomplete": "Please fill in every field."
 		}
+	},
+	"cityPicker": {
+		"title": "Choose a city",
+		"placeholder": "Choose a city",
+		"searchPlaceholder": "Search a city, region or country…",
+		"triggerHint": "Opens the city list",
+		"empty": "No city found",
+		"useTyped": "Use \"{{query}}\"",
+		"useMyLocation": "Use my location",
+		"recent": "Recent",
+		"detected": "Detected location"
+	},
+	"tagPicker": {
+		"title": "Choose tags",
+		"selectedCount": "{{count}}/{{max}} selected",
+		"empty": "No tags available",
+		"confirm": "Confirm ({{count}})"
 	}
 }
