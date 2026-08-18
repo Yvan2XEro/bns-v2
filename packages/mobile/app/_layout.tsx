@@ -38,6 +38,10 @@ import { NovuProvider } from "@novu/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import {
+	initialWindowMetrics,
+	SafeAreaProvider,
+} from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { AlertProvider } from "@/src/contexts/AlertContext";
@@ -184,25 +188,34 @@ export default function RootLayout() {
 
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
-			<KeyboardProvider>
-				<QueryClientProvider client={queryClient}>
-					<AuthProvider>
-						<OnboardingProvider>
-							<AppConfigProvider>
-								<NovuWrapper>
-									<ChatProvider>
-										<AlertProvider>
-											<PushTokenRegistrar />
-											<PushNotificationHandler />
-											<RootLayoutNav />
-										</AlertProvider>
-									</ChatProvider>
-								</NovuWrapper>
-							</AppConfigProvider>
-						</OnboardingProvider>
-					</AuthProvider>
-				</QueryClientProvider>
-			</KeyboardProvider>
+			{/* Mounted above the loader on purpose. expo-router only provides a
+			    SafeAreaProvider inside the navigator, which does not exist yet
+			    while RootLayoutNav is returning <LoadingScreen />; the first
+			    frame of the next screen then rendered with zero insets and the
+			    header sat under the status bar until they arrived.
+			    `initialWindowMetrics` is synchronous, so the first render is
+			    already correct. */}
+			<SafeAreaProvider initialMetrics={initialWindowMetrics}>
+				<KeyboardProvider>
+					<QueryClientProvider client={queryClient}>
+						<AuthProvider>
+							<OnboardingProvider>
+								<AppConfigProvider>
+									<NovuWrapper>
+										<ChatProvider>
+											<AlertProvider>
+												<PushTokenRegistrar />
+												<PushNotificationHandler />
+												<RootLayoutNav />
+											</AlertProvider>
+										</ChatProvider>
+									</NovuWrapper>
+								</AppConfigProvider>
+							</OnboardingProvider>
+						</AuthProvider>
+					</QueryClientProvider>
+				</KeyboardProvider>
+			</SafeAreaProvider>
 		</GestureHandlerRootView>
 	);
 }
