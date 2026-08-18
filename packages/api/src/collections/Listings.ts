@@ -1,4 +1,4 @@
-import type { CollectionConfig, Where } from "payload";
+import { APIError, type CollectionConfig, type Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
@@ -7,6 +7,9 @@ import { getListingFormPreset } from "../lib/listingFormPreset";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
+
+/** Maximum number of images a listing can carry. */
+const MAX_LISTING_IMAGES = 3;
 
 const getRelationshipId = (value: unknown): string | null => {
 	if (typeof value === "string" && value.length > 0) return value;
@@ -115,6 +118,26 @@ export const Listings: CollectionConfig = {
 	hooks: {
 		beforeChange: [
 			async ({ data, req, operation, originalDoc }) => {
+				// Cap the image count without stranding listings created before the
+				// limit existed: reject only when this write would *increase* the
+				// count past the maximum. Legacy listings stay editable, their owners
+				// can still delete images, and system writes that merely carry the
+				// existing array through are unaffected.
+				if (Array.isArray(data.images)) {
+					const previous = Array.isArray(originalDoc?.images)
+						? originalDoc.images.length
+						: 0;
+					const isGrowing =
+						operation === "create" || data.images.length > previous;
+
+					if (data.images.length > MAX_LISTING_IMAGES && isGrowing) {
+						throw new APIError(
+							`A listing can carry at most ${MAX_LISTING_IMAGES} images.`,
+							400,
+						);
+					}
+				}
+
 				// System updates like boosts, view counters or background moderation
 				// should not revalidate the whole commercial form. Revalidating legacy
 				// listing content here can block unrelated updates such as boostedUntil.
@@ -310,6 +333,12 @@ export const Listings: CollectionConfig = {
 		{
 			name: "images",
 			type: "array",
+			// Deliberately no `maxRows`. Field validation runs on every write, and
+			// Payload merges the full document into `data`, so a legacy listing with
+			// more than MAX_LISTING_IMAGES rows would fail *any* update — including
+			// system ones like boost activation and the expiry crons. The limit is
+			// enforced in beforeChange instead, which can tell growth from a
+			// pre-existing count.
 			fields: [
 				{
 					name: "image",

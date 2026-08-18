@@ -36,6 +36,9 @@ import {
 } from "~/lib/listing-form";
 import type { Category, CategoryAttribute, ListingCondition } from "~/types";
 
+/** Maximum number of images a listing can carry (enforced server-side too). */
+const MAX_LISTING_IMAGES = 3;
+
 export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const t = useTranslations("CreateListing");
 	const tCond = useTranslations("Condition");
@@ -402,6 +405,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							previews={imagePreviews}
 							onAdd={handleAddImages}
 							onRemove={handleRemoveImage}
+							max={MAX_LISTING_IMAGES}
 						/>
 					)}
 

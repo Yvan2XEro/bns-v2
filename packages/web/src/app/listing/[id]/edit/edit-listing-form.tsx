@@ -63,6 +63,9 @@ function _useTranslatedConditions() {
 	];
 }
 
+/** Maximum number of images a listing can carry (enforced server-side too). */
+const MAX_LISTING_IMAGES = 3;
+
 interface ExistingImage {
 	id: string;
 	url: string;
@@ -477,7 +480,7 @@ export function EditListingForm({
 							previews={newPreviews}
 							onAdd={handleAddNewImages}
 							onRemove={handleRemoveNewImage}
-							max={10 - keptImages.length}
+							max={Math.max(0, MAX_LISTING_IMAGES - keptImages.length)}
 						/>
 					</div>
 				</CardContent>
