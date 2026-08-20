@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	Modal,
@@ -30,6 +30,7 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type {
 	Conversation,
@@ -91,7 +92,7 @@ export default function ListingDetail() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
@@ -144,6 +145,20 @@ export default function ListingDetail() {
 	const isOwner = user?.id === seller?.id;
 	const favDoc = favData?.docs?.[0];
 	const isFavorite = !!favDoc;
+
+	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
+	// name, type, unit and section all live on the category, so join the two.
+	// `listing.category` is a relationship — a bare id string at depth 0 — and
+	// the helper degrades to slugs rather than blank-screening on that.
+	const attributeGroups = useMemo(
+		() =>
+			buildListingAttributeGroups(listing?.attributes, listing?.category, {
+				yes: t("common.yes"),
+				no: t("common.no"),
+				locale: i18n.language?.startsWith("en") ? "en-US" : "fr-FR",
+			}),
+		[listing?.attributes, listing?.category, t, i18n.language],
+	);
 
 	const { mutate: toggleFav } = useMutation({
 		mutationFn: () =>
@@ -494,38 +509,45 @@ export default function ListingDetail() {
 					</View>
 
 					{/* Attributes */}
-					{listing.attributes && Object.keys(listing.attributes).length > 0 && (
+					{attributeGroups.length > 0 && (
 						<View
 							style={[styles.card, { backgroundColor: cardBg, borderColor }]}
 						>
 							<Text style={[styles.sectionTitle, { color: textColor }]}>
 								{t("listing.characteristics")}
 							</Text>
-							<View style={styles.attrsGrid}>
-								{Object.entries(listing.attributes).map(([k, v]) => (
-									<View
-										key={k}
-										style={[
-											styles.attrItem,
-											{
-												backgroundColor: isDark ? "#0b1120" : "#f8fafc",
-												borderColor,
-											},
-										]}
-									>
-										<Text style={[styles.attrKey, { color: mutedColor }]}>
-											{k}
+							{attributeGroups.map((group) => (
+								<View key={group.key} style={styles.attrGroup}>
+									{group.title && (
+										<Text
+											style={[styles.attrGroupTitle, { color: mutedColor }]}
+										>
+											{group.title}
 										</Text>
-										<Text style={[styles.attrVal, { color: textColor }]}>
-											{v === true || v === "true"
-												? t("listing.yes")
-												: v === false || v === "false"
-													? t("listing.no")
-													: String(v)}
-										</Text>
+									)}
+									<View style={styles.attrsGrid}>
+										{group.items.map((attr) => (
+											<View
+												key={attr.slug}
+												style={[
+													styles.attrItem,
+													{
+														backgroundColor: isDark ? "#0b1120" : "#f8fafc",
+														borderColor,
+													},
+												]}
+											>
+												<Text style={[styles.attrKey, { color: mutedColor }]}>
+													{attr.label}
+												</Text>
+												<Text style={[styles.attrVal, { color: textColor }]}>
+													{attr.value}
+												</Text>
+											</View>
+										))}
 									</View>
-								))}
-							</View>
+								</View>
+							))}
 						</View>
 					)}
 
@@ -922,6 +944,14 @@ const styles = StyleSheet.create({
 	},
 	description: { fontSize: 14, lineHeight: 22, fontFamily: Fonts.body },
 	readMore: { marginTop: 8, fontSize: 14, fontFamily: Fonts.bodySemibold },
+	attrGroup: { marginBottom: 12 },
+	attrGroupTitle: {
+		fontSize: 11,
+		fontFamily: Fonts.bodySemibold,
+		textTransform: "uppercase",
+		letterSpacing: 0.6,
+		marginBottom: 6,
+	},
 	attrsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	attrItem: {
 		borderRadius: 8,

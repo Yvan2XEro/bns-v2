@@ -3,9 +3,8 @@
 import { ArrowLeft, ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CategoryGrid } from "~/components/category-picker";
-import { AttributeFields } from "~/components/listing/attribute-fields";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { Badge } from "~/components/ui/badge";
@@ -30,17 +29,34 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
+import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
-	getListingFormPreset,
-	isProductListingCategory,
-} from "~/lib/listing-form";
-import type { Category, CategoryAttribute, ListingCondition } from "~/types";
+	type CategoryAttributeSpec,
+	collectAttributeIssues,
+	collectCoreFieldIssues,
+	formatAttributeValue,
+	isProductCategory,
+	LISTING_CURRENCY,
+	pruneAttributeValues,
+	resolveCategoryAttributes,
+	resolveFormPreset,
+	titlePlaceholderCopy,
+} from "~/lib/category-form";
+import { formatListingPrice } from "~/lib/price";
+import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
+import type { Category, ListingCondition } from "~/types";
 
 /** Maximum number of images a listing can carry (enforced server-side too). */
 const MAX_LISTING_IMAGES = 3;
 
+const DURATIONS = ["30", "60", "90"] as const;
+
+type StepId = "category" | "details" | "photos" | "review";
+
 export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const t = useTranslations("CreateListing");
+	const tListing = asFallbackTranslator(useTranslations("Listing"));
+	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
 	const router = useRouter();
 	const [step, setStep] = useState(0);
@@ -57,10 +73,12 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
 		null,
 	);
-	const [attributes, setAttributes] = useState<CategoryAttribute[]>([]);
+	const [attributes, setAttributes] = useState<CategoryAttributeSpec[]>([]);
 	const [attributeValues, setAttributeValues] = useState<
 		Record<string, string>
 	>({});
+	/** Set once the user tries to move on, so "required" errors stay unobtrusive. */
+	const [showErrors, setShowErrors] = useState(false);
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [images, setImages] = useState<File[]>([]);
 	const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -77,39 +95,83 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		condition: "" as ListingCondition | "",
 	});
 
-	const categoryPreset = getListingFormPreset(selectedCategory);
-	const isProductCategory = isProductListingCategory(selectedCategory);
-	const requiresPrice = categoryPreset.fields.price.required;
-	const showsPrice = categoryPreset.fields.price.enabled;
-	const showsCondition = categoryPreset.fields.condition.enabled;
-	const STEPS = [
+	const categoryPreset = resolveFormPreset(selectedCategory);
+	const isProduct = isProductCategory(selectedCategory);
+	const priceField = categoryPreset.fields.price;
+	const conditionField = categoryPreset.fields.condition;
+	const photosField = categoryPreset.fields.photos;
+	// A category may rename the price, e.g. "Loyer mensuel" for a rental. The
+	// currency stays attached either way.
+	const priceLabel = priceField.label
+		? `${priceField.label} (${LISTING_CURRENCY})`
+		: tListing("priceXaf");
+
+	const attributeIssues = useMemo(
+		() => collectAttributeIssues(attributes, attributeValues),
+		[attributes, attributeValues],
+	);
+	const missingCoreFields = collectCoreFieldIssues(categoryPreset, {
+		price: formData.price,
+		condition: formData.condition,
+		photoCount: images.length,
+	});
+
+	const titleCopy = titlePlaceholderCopy(categoryPreset.categoryType);
+
+	// The photo step is part of the form only when the category asks for
+	// pictures, so a job offer never walks through a step it has no use for.
+	// Steps are addressed by id rather than by index because the list changes
+	// length with the category.
+	const STEPS: { id: StepId; label: string; description: string }[] = [
 		{
+			id: "category",
 			label: t("category"),
-			description: isProductCategory
-				? t("categoryDesc")
-				: t("categoryDescGeneric"),
+			description: isProduct ? t("categoryDesc") : t("categoryDescGeneric"),
 		},
 		{
+			id: "details",
 			label: t("details"),
-			description: isProductCategory
-				? t("detailsDesc")
-				: t("detailsDescGeneric"),
+			description: isProduct ? t("detailsDesc") : t("detailsDescGeneric"),
 		},
-		{ label: t("photos"), description: t("photosDesc") },
-		{ label: t("review"), description: t("reviewDesc") },
+		...(photosField.enabled
+			? [
+					{
+						id: "photos" as const,
+						label: t("photos"),
+						description: t("photosDesc"),
+					},
+				]
+			: []),
+		{ id: "review", label: t("review"), description: t("reviewDesc") },
 	];
+	const currentStep = STEPS[Math.min(step, STEPS.length - 1)];
+	const photosRequiredMessage = translateOr(
+		tListing,
+		"photosRequired",
+		"Ajoutez au moins une photo.",
+	);
 
 	function handleCategoryChange(categoryId: string) {
-		const category = categories.find((c) => c.id === categoryId);
-		setSelectedCategory(category || null);
-		setAttributes(category?.attributes || []);
+		const category = categories.find((c) => c.id === categoryId) || null;
+		setSelectedCategory(category);
+		setAttributes(resolveCategoryAttributes(category));
 		setAttributeValues({});
-		const nextPreset = getListingFormPreset(category || null);
+		setShowErrors(false);
+		const nextPreset = resolveFormPreset(category);
 		setFormData((prev) => ({
 			...prev,
+			// Drop values for fields this category does not show, so a hidden
+			// field can never be submitted or block submission.
 			price: nextPreset.fields.price.enabled ? prev.price : "",
 			condition: nextPreset.fields.condition.enabled ? prev.condition : "",
 		}));
+		// Same rule for pictures: the step disappears with the category, so keeping
+		// the files would attach images the seller can no longer see or remove.
+		// Nothing is lost that is not still on their disk.
+		if (!nextPreset.fields.photos.enabled) {
+			setImages([]);
+			setImagePreviews([]);
+		}
 	}
 
 	function handleAddImages(files: File[]) {
@@ -125,27 +187,60 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	}
 
 	function canProceed(): boolean {
-		switch (step) {
-			case 0:
+		switch (currentStep.id) {
+			case "category":
 				return !!selectedCategory;
-			case 1:
+			case "details":
 				return !!(
 					formData.title &&
 					formData.location &&
 					formData.description &&
-					(!requiresPrice || formData.price)
+					// The photo issue belongs to the photo step, not to this one.
+					missingCoreFields.filter((field) => field !== "photos").length ===
+						0 &&
+					attributeIssues.length === 0
 				);
-			case 2:
-				return true; // images are optional
-			case 3:
+			case "photos":
+				// Only the categories that ask for a picture insist on one.
+				return !missingCoreFields.includes("photos");
+			case "review":
 				return true;
 			default:
 				return false;
 		}
 	}
 
+	function handleNext() {
+		if (!canProceed()) {
+			setShowErrors(true);
+			return;
+		}
+		setShowErrors(false);
+		setStep((s) => s + 1);
+	}
+
 	async function handleSubmit(status: "published" | "draft" = "published") {
 		if (!selectedCategory) return;
+		// The details step may have been left before an attribute was filled in
+		// (e.g. via the stepper), so re-check everything before sending.
+		if (
+			missingCoreFields.length > 0 ||
+			attributeIssues.length > 0 ||
+			!formData.title ||
+			!formData.location ||
+			!formData.description
+		) {
+			setShowErrors(true);
+			// Send the seller to the step that carries the problem: a missing photo
+			// cannot be fixed on the details step.
+			const blockingStep: StepId =
+				missingCoreFields.length === 1 && missingCoreFields[0] === "photos"
+					? "photos"
+					: "details";
+			const index = STEPS.findIndex((s) => s.id === blockingStep);
+			setStep(index === -1 ? 1 : index);
+			return;
+		}
 		setIsLoading(true);
 
 		try {
@@ -175,16 +270,16 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				description: formData.description,
 				location: formData.location,
 				category: selectedCategory.id,
-				attributes: attributeValues,
+				attributes: pruneAttributeValues(attributes, attributeValues),
 				images: imageIds.map((id) => ({ image: id })),
 				status: status,
 				duration: Number(duration),
 				tags: selectedTags,
 			};
-			if (showsPrice && formData.price) {
+			if (priceField.enabled && formData.price) {
 				listingData.price = Number(formData.price);
 			}
-			if (showsCondition && formData.condition) {
+			if (conditionField.enabled && formData.condition) {
 				listingData.condition = formData.condition;
 			}
 
@@ -199,11 +294,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				credentials: "include",
 			});
 
-			if (!res.ok) throw new Error(t("failedToCreate"));
+			if (!res.ok) throw new Error(tListing("failedToCreate"));
 			const listing = await res.json();
 			router.push(`/listing/${listing.doc?.id || listing.id}`);
 		} catch {
-			alert(t("failedToCreate"));
+			alert(tListing("failedToCreate"));
 		} finally {
 			setIsLoading(false);
 		}
@@ -244,12 +339,12 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>{STEPS[step].label}</CardTitle>
-					<CardDescription>{STEPS[step].description}</CardDescription>
+					<CardTitle>{currentStep.label}</CardTitle>
+					<CardDescription>{currentStep.description}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{/* Step 0: Category */}
-					{step === 0 && (
+					{/* Category */}
+					{currentStep.id === "category" && (
 						<CategoryGrid
 							categories={categories}
 							value={selectedCategory ? String(selectedCategory.id) : undefined}
@@ -257,18 +352,18 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 						/>
 					)}
 
-					{/* Step 1: Details */}
-					{step === 1 && (
+					{/* Details */}
+					{currentStep.id === "details" && (
 						<div className="space-y-5">
 							<div className="space-y-2">
-								<Label htmlFor="title">Title</Label>
+								<Label htmlFor="title">{tListing("title")}</Label>
 								<Input
 									id="title"
-									placeholder={
-										isProductCategory
-											? t("categoryDesc")
-											: t("titlePlaceholderGeneric")
-									}
+									placeholder={translateOr(
+										tListing,
+										titleCopy.key,
+										titleCopy.fallback,
+									)}
 									value={formData.title}
 									onChange={(e) =>
 										setFormData((p) => ({ ...p, title: e.target.value }))
@@ -278,9 +373,14 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							</div>
 
 							<div className="grid gap-4 md:grid-cols-2">
-								{showsPrice && (
+								{priceField.enabled && (
 									<div className="space-y-2">
-										<Label htmlFor="price">Price (XAF)</Label>
+										<Label htmlFor="price">
+											{priceLabel}
+											{priceField.required && (
+												<span className="text-destructive"> *</span>
+											)}
+										</Label>
 										<Input
 											id="price"
 											type="number"
@@ -290,12 +390,12 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 											onChange={(e) =>
 												setFormData((p) => ({ ...p, price: e.target.value }))
 											}
-											required={requiresPrice}
+											required={priceField.required}
 										/>
 									</div>
 								)}
 								<div className="space-y-2">
-									<Label htmlFor="location">Localisation</Label>
+									<Label htmlFor="location">{tListing("localisation")}</Label>
 									<CitySelect
 										value={formData.location}
 										onChange={(city: CameroonCity | null) => {
@@ -311,9 +411,14 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								</div>
 							</div>
 
-							{showsCondition && (
+							{conditionField.enabled && (
 								<div className="space-y-2">
-									<Label>Condition</Label>
+									<Label>
+										{tListing("conditionLabel")}
+										{conditionField.required && (
+											<span className="text-destructive"> *</span>
+										)}
+									</Label>
 									<Select
 										value={formData.condition}
 										onValueChange={(v) =>
@@ -324,7 +429,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										}
 									>
 										<SelectTrigger>
-											<SelectValue placeholder="Select condition" />
+											<SelectValue placeholder={tListing("selectCondition")} />
 										</SelectTrigger>
 										<SelectContent>
 											{CONDITIONS.map((c) => (
@@ -334,11 +439,20 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 											))}
 										</SelectContent>
 									</Select>
+									{showErrors && missingCoreFields.includes("condition") && (
+										<p className="text-destructive text-xs">
+											{translateOr(
+												tListing,
+												"attributeRequired",
+												"Ce champ est obligatoire.",
+											)}
+										</p>
+									)}
 								</div>
 							)}
 
 							<div className="space-y-2">
-								<Label>Tags</Label>
+								<Label>{translateOr(tListing, "tags", "Tags")}</Label>
 								<TagPicker
 									selectedIds={selectedTags}
 									onChange={setSelectedTags}
@@ -346,30 +460,38 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							</div>
 
 							<div className="space-y-2">
-								<Label>Listing duration</Label>
+								<Label>{tListing("listingDuration")}</Label>
 								<Select value={duration} onValueChange={setDuration}>
 									<SelectTrigger>
-										<SelectValue placeholder="Select duration" />
+										<SelectValue placeholder={tListing("selectDuration")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="30">30 days</SelectItem>
-										<SelectItem value="60">60 days</SelectItem>
-										<SelectItem value="90">90 days</SelectItem>
+										{DURATIONS.map((value) => (
+											<SelectItem key={value} value={value}>
+												{`${value} ${tCommon("days")}`}
+											</SelectItem>
+										))}
 									</SelectContent>
 								</Select>
 								<p className="text-muted-foreground text-xs">
-									How long your listing will be visible before it expires.
+									{translateOr(
+										tListing,
+										"durationHint",
+										"Durée de visibilité de votre annonce avant expiration.",
+									)}
 								</p>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="description">Description</Label>
+								<Label htmlFor="description">
+									{tListing("itemDescription")}
+								</Label>
 								<Textarea
 									id="description"
 									placeholder={
-										isProductCategory
-											? "Describe your item in detail..."
-											: t("descriptionPlaceholderGeneric")
+										isProduct
+											? tListing("describeYourItem")
+											: tListing("describeYourListing")
 									}
 									rows={5}
 									value={formData.description}
@@ -386,68 +508,94 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							{attributes.length > 0 && (
 								<>
 									<Separator />
-									<AttributeFields
+									<h3 className="font-semibold text-lg">
+										{tListing("details")}
+									</h3>
+									<CategoryAttributeFields
 										attributes={attributes}
 										values={attributeValues}
 										onChange={(slug, v) =>
 											setAttributeValues((p) => ({ ...p, [slug]: v }))
 										}
-										categoryName={selectedCategory?.name}
+										showRequiredErrors={showErrors}
 									/>
 								</>
 							)}
 						</div>
 					)}
 
-					{/* Step 2: Images */}
-					{step === 2 && (
-						<ImagePicker
-							previews={imagePreviews}
-							onAdd={handleAddImages}
-							onRemove={handleRemoveImage}
-							max={MAX_LISTING_IMAGES}
-						/>
+					{/* Images */}
+					{currentStep.id === "photos" && (
+						<div className="space-y-2">
+							<ImagePicker
+								previews={imagePreviews}
+								onAdd={handleAddImages}
+								onRemove={handleRemoveImage}
+								max={MAX_LISTING_IMAGES}
+							/>
+							{photosField.required && (
+								<p
+									className={
+										showErrors && missingCoreFields.includes("photos")
+											? "text-destructive text-xs"
+											: "text-muted-foreground text-xs"
+									}
+								>
+									{photosRequiredMessage}
+								</p>
+							)}
+						</div>
 					)}
 
-					{/* Step 3: Review */}
-					{step === 3 && (
+					{/* Review */}
+					{currentStep.id === "review" && (
 						<div className="space-y-4">
 							<div className="space-y-3 rounded-lg border p-4">
 								<div className="flex items-center justify-between">
 									<h3 className="font-semibold text-lg">{formData.title}</h3>
-									{showsPrice && formData.price && (
+									{priceField.enabled && (
 										<span className="font-bold text-lg text-primary">
-											{Number(formData.price).toLocaleString()} XAF
+											{formatListingPrice(Number(formData.price)) &&
+											formData.price
+												? `${formatListingPrice(Number(formData.price))} ${LISTING_CURRENCY}`
+												: tListing("noPrice")}
 										</span>
 									)}
 								</div>
 								<div className="flex flex-wrap gap-2">
 									<Badge variant="secondary">{selectedCategory?.name}</Badge>
-									{showsCondition && formData.condition && (
+									{conditionField.enabled && formData.condition && (
 										<Badge variant="outline">
 											{CONDITIONS.find((c) => c.value === formData.condition)
 												?.label || formData.condition}
 										</Badge>
 									)}
 									<Badge variant="outline">{formData.location}</Badge>
-									<Badge variant="outline">{duration} days</Badge>
+									<Badge variant="outline">{`${duration} ${tCommon("days")}`}</Badge>
 								</div>
 								<p className="whitespace-pre-wrap text-muted-foreground text-sm">
 									{formData.description}
 								</p>
 
-								{Object.keys(attributeValues).length > 0 && (
+								{attributes.some(
+									(attribute) => attributeValues[attribute.slug],
+								) && (
 									<>
 										<Separator />
 										<dl className="grid grid-cols-2 gap-2 text-sm">
-											{Object.entries(attributeValues).map(([key, value]) => {
-												const attr = attributes.find((a) => a.slug === key);
+											{attributes.map((attribute) => {
+												const display = formatAttributeValue(
+													attribute,
+													attributeValues[attribute.slug],
+													{ yes: tListing("yes"), no: tListing("no") },
+												);
+												if (!display) return null;
 												return (
-													<div key={key}>
+													<div key={attribute.slug}>
 														<dt className="text-muted-foreground">
-															{attr?.name || key}
+															{attribute.name}
 														</dt>
-														<dd className="font-medium">{value}</dd>
+														<dd className="font-medium">{display}</dd>
 													</div>
 												);
 											})}
@@ -462,9 +610,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 											{imagePreviews.map((preview, i) => (
 												// biome-ignore lint/performance/noImgElement: blob preview URL, not optimizable by next/image
 												<img
-													key={i}
+													key={preview}
 													src={preview}
-													alt={`Preview ${i + 1}`}
+													alt={`${tListing("photos")} ${i + 1}`}
 													className="h-20 w-20 flex-shrink-0 rounded-md object-cover"
 												/>
 											))}
@@ -473,9 +621,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								)}
 							</div>
 
-							{imagePreviews.length === 0 && (
+							{photosField.enabled && imagePreviews.length === 0 && (
 								<p className="text-muted-foreground text-sm">
-									No images added. You can go back to add some.
+									{t("noImagesAdded")}
 								</p>
 							)}
 						</div>
@@ -492,16 +640,16 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					disabled={step === 0}
 				>
 					<ArrowLeft className="mr-2 h-4 w-4" />
-					Back
+					{tCommon("back")}
 				</Button>
 
 				{step < STEPS.length - 1 ? (
 					<Button
 						type="button"
-						onClick={() => setStep((s) => s + 1)}
-						disabled={!canProceed()}
+						onClick={handleNext}
+						disabled={currentStep.id === "category" && !selectedCategory}
 					>
-						Next
+						{tCommon("next")}
 						<ArrowRight className="ml-2 h-4 w-4" />
 					</Button>
 				) : (
@@ -510,22 +658,22 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							type="button"
 							variant="outline"
 							onClick={() => handleSubmit("draft")}
-							disabled={isLoading || !canProceed()}
+							disabled={isLoading}
 						>
-							Save as draft
+							{t("saveAsDraft")}
 						</Button>
 						<Button
 							type="button"
 							onClick={() => handleSubmit("published")}
-							disabled={isLoading || !canProceed()}
+							disabled={isLoading}
 						>
 							{isLoading ? (
 								<>
 									<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-									Submitting...
+									{t("submitting")}
 								</>
 							) : (
-								"Submit for review"
+								t("submitForReviewBtn")
 							)}
 						</Button>
 					</div>

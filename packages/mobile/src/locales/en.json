@@ -33,7 +33,10 @@
 		"all": "All",
 		"none": "None",
 		"or": "or",
-		"tagline": "Buy & Sell, Simply."
+		"tagline": "Buy & Sell, Simply.",
+		"currency": "XAF",
+		"min": "Min",
+		"max": "Max"
 	},
 	"auth": {
 		"login": "Login",
@@ -244,7 +247,7 @@
 		"priceLabel": "Price (XAF)",
 		"negotiableLabel": "Negotiable price",
 		"photosMinHint": "Add at least 1 photo",
-		"photosMaxHint": "Up to 10 photos",
+		"photosMaxHint": "Up to {{count}} photos",
 		"coverPhoto": "Cover photo",
 		"tapToSetCover": "Tap to set as cover",
 		"removePhoto": "Remove",
@@ -284,7 +287,7 @@
 		"continue": "Continue",
 		"stepAttributesHint": "This information helps buyers find your listing.",
 		"stepPhotosTitle": "Listing photos",
-		"stepPhotosHint": "Add up to 10 photos. The first will be the main photo.",
+		"stepPhotosHint": "Add up to {{count}} photos. The first one is the main photo.",
 		"stepPhotosQualityTip": "Sharp, well-lit photos increase your chances of selling.",
 		"main": "Main",
 		"addPhoto": "Add",
@@ -314,7 +317,17 @@
 		"publishBtn": "Publish listing",
 		"publishNote": "Your listing will be reviewed before publication (under 24h).",
 		"stepReviewTitle": "Review and publish",
-		"stepReviewHint": "Review your listing before publishing it."
+		"stepReviewHint": "Review your listing before publishing it.",
+		"saveDraftBtn": "Save as draft",
+		"draftSavedTitle": "Draft saved",
+		"draftSavedMsg": "Your listing is saved. It stays private until you submit it for review.",
+		"tagsFieldLabel": "Tags",
+		"dateFormatHint": "DD/MM/YYYY",
+		"attributeMin": "Minimum value: {{value}}",
+		"attributeMax": "Maximum value: {{value}}",
+		"attributeInvalidDate": "Invalid date (DD/MM/YYYY)",
+		"attributeInvalidNumber": "Invalid number",
+		"stepPhotosQualityTipGeneric": "Clear, well-lit photos make your listing more convincing."
 	},
 	"messages": {
 		"title": "Messages",
@@ -456,14 +469,15 @@
 		"bulkSelect": "Select",
 		"bulkDelete": "Delete selected",
 		"bulkDeleteConfirm": "Delete {{count}} listing?",
-		"bulkDeleteConfirm_plural": "Delete {{count}} listings?"
+		"bulkDeleteConfirm_plural": "Delete {{count}} listings?",
+		"statusDraft": "Draft"
 	},
 	"edit": {
 		"title": "Edit listing",
 		"save": "Save",
 		"saveChanges": "Save changes",
 		"photos": "Photos",
-		"photosHint": "The first photo will be the main photo. Max 10 photos.",
+		"photosHint": "The first photo is the main one. Max {{count}} photos.",
 		"details": "Details",
 		"titleLabel": "Title",
 		"titlePlaceholder": "Listing title",

@@ -25,6 +25,7 @@ import {
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatAttributeOptionLabel } from "@/src/lib/listingAttributes";
 import type { Place } from "@/src/lib/places";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
@@ -435,7 +436,7 @@ export default function FiltersModal() {
 															{ color: active ? "#fff" : textColor },
 														]}
 													>
-														{opt.value}
+														{formatAttributeOptionLabel(opt)}
 													</Text>
 												</Pressable>
 											);

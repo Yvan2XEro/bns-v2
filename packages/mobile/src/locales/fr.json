@@ -33,7 +33,10 @@
 		"all": "Tout",
 		"none": "Aucun",
 		"or": "ou",
-		"tagline": "Acheter & Vendre, Simplement."
+		"tagline": "Acheter & Vendre, Simplement.",
+		"currency": "XAF",
+		"min": "Min",
+		"max": "Max"
 	},
 	"auth": {
 		"login": "Connexion",
@@ -259,7 +262,7 @@
 		"stepPhotos": "Ajouter des photos",
 		"stepPhotosSubtitle": "Les bonnes photos vendent plus vite",
 		"stepPhotosTitle": "Photos de l'annonce",
-		"stepPhotosHint": "Ajoutez jusqu'à 10 photos. La première sera la photo principale.",
+		"stepPhotosHint": "Ajoutez jusqu'à {{count}} photos. La première sera la photo principale.",
 		"stepPhotosQualityTip": "Des photos nettes et bien éclairées augmentent vos chances de vente.",
 		"stepReview": "Vérifier et publier",
 		"stepReviewSubtitle": "Assurez-vous que tout est correct",
@@ -292,7 +295,7 @@
 		"priceLabel": "Prix (FCFA)",
 		"negotiableLabel": "Prix négociable",
 		"photosMinHint": "Ajoutez au moins 1 photo",
-		"photosMaxHint": "Jusqu'à 10 photos",
+		"photosMaxHint": "Jusqu'à {{count}} photos",
 		"photoRequired": "Au moins une photo est requise",
 		"coverPhoto": "Photo principale",
 		"main": "Principal",
@@ -335,14 +338,24 @@
 		"uploadFailed": "Upload échoué",
 		"publishSuccessMsg": "Votre annonce est en attente de validation.",
 		"publishError": "Erreur",
-		"publishErrorMsg": "Une erreur est survenue"
+		"publishErrorMsg": "Une erreur est survenue",
+		"saveDraftBtn": "Enregistrer comme brouillon",
+		"draftSavedTitle": "Brouillon enregistré",
+		"draftSavedMsg": "Votre annonce est enregistrée. Elle ne sera visible qu'après envoi en validation.",
+		"tagsFieldLabel": "Tags",
+		"dateFormatHint": "JJ/MM/AAAA",
+		"attributeMin": "Valeur minimale : {{value}}",
+		"attributeMax": "Valeur maximale : {{value}}",
+		"attributeInvalidDate": "Date invalide (JJ/MM/AAAA)",
+		"attributeInvalidNumber": "Valeur numérique invalide",
+		"stepPhotosQualityTipGeneric": "Des photos nettes et bien éclairées rendent votre annonce plus convaincante."
 	},
 	"edit": {
 		"title": "Modifier l'annonce",
 		"save": "Enregistrer",
 		"saveChanges": "Sauvegarder les modifications",
 		"photos": "Photos",
-		"photosHint": "La première photo sera la photo principale. Max 10 photos.",
+		"photosHint": "La première photo sera la photo principale. Max {{count}} photos.",
 		"details": "Détails",
 		"titleLabel": "Titre",
 		"titlePlaceholder": "Titre de l'annonce",
@@ -522,7 +535,8 @@
 		"bulkSelect": "Sélectionner",
 		"bulkDelete": "Supprimer la sélection",
 		"bulkDeleteConfirm": "Supprimer {{count}} annonce ?",
-		"bulkDeleteConfirm_plural": "Supprimer {{count}} annonces ?"
+		"bulkDeleteConfirm_plural": "Supprimer {{count}} annonces ?",
+		"statusDraft": "Brouillon"
 	},
 	"profile": {
 		"bio": "Biographie",

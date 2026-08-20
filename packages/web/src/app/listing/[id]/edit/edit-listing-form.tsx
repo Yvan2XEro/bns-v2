@@ -4,9 +4,8 @@ import { LoaderCircle, Save, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
-import { AttributeFields } from "~/components/listing/attribute-fields";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { Badge } from "~/components/ui/badge";
@@ -31,37 +30,22 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
+import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
-	getListingFormPreset,
-	isProductListingCategory,
-} from "~/lib/listing-form";
+	type CategoryAttributeSpec,
+	collectAttributeIssues,
+	collectCoreFieldIssues,
+	isProductCategory,
+	LISTING_CURRENCY,
+	pruneAttributeValues,
+	relaxPhotoRequirement,
+	resolveCategoryAttributes,
+	resolveFormPreset,
+	titlePlaceholderCopy,
+} from "~/lib/category-form";
+import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
-import type {
-	Category,
-	CategoryAttribute,
-	Listing,
-	ListingCondition,
-	Media,
-} from "~/types";
-
-const CONDITIONS: { value: ListingCondition; label: string }[] = [
-	{ value: "new", label: "New" },
-	{ value: "like_new", label: "Like New" },
-	{ value: "good", label: "Good" },
-	{ value: "fair", label: "Fair" },
-	{ value: "poor", label: "Poor" },
-];
-
-function _useTranslatedConditions() {
-	const t = useTranslations("Condition");
-	return [
-		{ value: "new" as ListingCondition, label: t("new") },
-		{ value: "like_new" as ListingCondition, label: t("like_new") },
-		{ value: "good" as ListingCondition, label: t("good") },
-		{ value: "fair" as ListingCondition, label: t("fair") },
-		{ value: "poor" as ListingCondition, label: t("poor") },
-	];
-}
+import type { Category, Listing, ListingCondition, Media } from "~/types";
 
 /** Maximum number of images a listing can carry (enforced server-side too). */
 const MAX_LISTING_IMAGES = 3;
@@ -78,9 +62,19 @@ export function EditListingForm({
 	listing: Listing;
 	categories: Category[];
 }) {
-	const t = useTranslations("Listing");
+	const t = asFallbackTranslator(useTranslations("Listing"));
+	const tCommon = useTranslations("Common");
+	const tCond = useTranslations("Condition");
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
+
+	const CONDITIONS: { value: ListingCondition; label: string }[] = [
+		{ value: "new", label: tCond("new") },
+		{ value: "like_new", label: tCond("like_new") },
+		{ value: "good", label: tCond("good") },
+		{ value: "fair", label: tCond("fair") },
+		{ value: "poor", label: tCond("poor") },
+	];
 
 	type UserStatus = "draft" | "pending";
 
@@ -103,9 +97,10 @@ export function EditListingForm({
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
 		currentCategory,
 	);
-	const [attributes, setAttributes] = useState<CategoryAttribute[]>(
-		currentCategory?.attributes || [],
+	const [attributes, setAttributes] = useState<CategoryAttributeSpec[]>(() =>
+		resolveCategoryAttributes(currentCategory),
 	);
+	const [showErrors, setShowErrors] = useState(false);
 
 	const initialAttrs: Record<string, string> = {};
 	if (
@@ -130,8 +125,8 @@ export function EditListingForm({
 			.filter((img): img is ExistingImage => img !== null) || [];
 
 	const initialTagIds: string[] = Array.isArray((listing as any).tags)
-		? (listing as any).tags.map((t: any) =>
-				typeof t === "object" && t !== null ? String(t.id) : String(t),
+		? (listing as any).tags.map((tag: any) =>
+				typeof tag === "object" && tag !== null ? String(tag.id) : String(tag),
 			)
 		: [];
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
@@ -157,23 +152,50 @@ export function EditListingForm({
 		condition: (listing.condition || "") as ListingCondition | "",
 	});
 
-	const categoryPreset = getListingFormPreset(selectedCategory);
-	const isProductCategory = isProductListingCategory(selectedCategory);
-	const requiresPrice = categoryPreset.fields.price.required;
-	const showsPrice = categoryPreset.fields.price.enabled;
-	const showsCondition = categoryPreset.fields.condition.enabled;
+	// An ad that was published before its category asked for a picture must stay
+	// editable, so the requirement only bites when there is a picture to lose.
+	const categoryPreset = relaxPhotoRequirement(
+		resolveFormPreset(selectedCategory),
+		existingImages.length > 0,
+	);
+	const isProduct = isProductCategory(selectedCategory);
+	const priceField = categoryPreset.fields.price;
+	const conditionField = categoryPreset.fields.condition;
+	const photosField = categoryPreset.fields.photos;
+	const photoCount = keptImages.length + newImages.length;
+	// A category may rename the price, e.g. "Loyer mensuel" for a rental.
+	const priceLabel = priceField.label
+		? `${priceField.label} (${LISTING_CURRENCY})`
+		: t("priceXaf");
+
+	const attributeIssues = useMemo(
+		() => collectAttributeIssues(attributes, attributeValues),
+		[attributes, attributeValues],
+	);
+	const missingCoreFields = collectCoreFieldIssues(categoryPreset, {
+		price: formData.price,
+		condition: formData.condition,
+		photoCount,
+	});
+
+	const titleCopy = titlePlaceholderCopy(categoryPreset.categoryType);
 
 	function handleCategoryChange(categoryId: string) {
-		const category = categories.find((c) => c.id === categoryId);
-		setSelectedCategory(category || null);
-		setAttributes(category?.attributes || []);
+		const category = categories.find((c) => c.id === categoryId) || null;
+		setSelectedCategory(category);
+		setAttributes(resolveCategoryAttributes(category));
 		setAttributeValues({});
-		const nextPreset = getListingFormPreset(category || null);
+		setShowErrors(false);
+		const nextPreset = resolveFormPreset(category);
 		setFormData((prev) => ({
 			...prev,
+			// Drop values for fields this category does not show.
 			price: nextPreset.fields.price.enabled ? prev.price : "",
 			condition: nextPreset.fields.condition.enabled ? prev.condition : "",
 		}));
+		// Pictures are deliberately kept when the new category hides them: hiding a
+		// field must not delete what the seller already uploaded. They are saved
+		// back untouched, exactly as the server leaves them alone.
 	}
 
 	function handleRemoveExisting(index: number) {
@@ -196,13 +218,20 @@ export function EditListingForm({
 		setNewPreviews((prev) => prev.filter((_, i) => i !== index));
 	}
 
+	const canSave = !!(
+		formData.title &&
+		formData.location &&
+		formData.description &&
+		selectedCategory &&
+		missingCoreFields.length === 0 &&
+		attributeIssues.length === 0
+	);
+
 	async function handleSave() {
-		if (
-			!selectedCategory ||
-			!formData.title ||
-			(requiresPrice && !formData.price)
-		)
+		if (!canSave || !selectedCategory) {
+			setShowErrors(true);
 			return;
+		}
 		setIsSaving(true);
 
 		try {
@@ -235,15 +264,15 @@ export function EditListingForm({
 				description: formData.description,
 				location: formData.location,
 				category: selectedCategory.id,
-				attributes: attributeValues,
+				attributes: pruneAttributeValues(attributes, attributeValues),
 				images: allImageIds.map((id) => ({ image: id })),
 				status: nextStatus,
 				tags: selectedTagIds,
 			};
-			if (showsPrice && formData.price) {
+			if (priceField.enabled && formData.price) {
 				updateData.price = Number(formData.price);
 			}
-			if (showsCondition && formData.condition) {
+			if (conditionField.enabled && formData.condition) {
 				updateData.condition = formData.condition;
 			}
 
@@ -268,14 +297,6 @@ export function EditListingForm({
 		}
 	}
 
-	const canSave = !!(
-		formData.title &&
-		formData.location &&
-		formData.description &&
-		selectedCategory &&
-		(!requiresPrice || formData.price)
-	);
-
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
@@ -295,7 +316,7 @@ export function EditListingForm({
 				<CardHeader>
 					<CardTitle>{t("category")}</CardTitle>
 					<CardDescription>
-						{isProductCategory ? t("categoryDesc") : t("categoryDescGeneric")}
+						{isProduct ? t("categoryDesc") : t("categoryDescGeneric")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -313,7 +334,7 @@ export function EditListingForm({
 				<CardHeader>
 					<CardTitle>{t("details")}</CardTitle>
 					<CardDescription>
-						{isProductCategory ? t("detailsDesc") : t("detailsDescGeneric")}
+						{isProduct ? t("detailsDesc") : t("detailsDescGeneric")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-5">
@@ -321,11 +342,7 @@ export function EditListingForm({
 						<Label htmlFor="title">{t("title")}</Label>
 						<Input
 							id="title"
-							placeholder={
-								isProductCategory
-									? t("whatAreYouSelling")
-									: t("whatAreYouOffering")
-							}
+							placeholder={translateOr(t, titleCopy.key, titleCopy.fallback)}
 							value={formData.title}
 							onChange={(e) =>
 								setFormData((p) => ({ ...p, title: e.target.value }))
@@ -335,9 +352,14 @@ export function EditListingForm({
 					</div>
 
 					<div className="grid gap-4 md:grid-cols-2">
-						{showsPrice && (
+						{priceField.enabled && (
 							<div className="space-y-2">
-								<Label htmlFor="price">Price (XAF)</Label>
+								<Label htmlFor="price">
+									{priceLabel}
+									{priceField.required && (
+										<span className="text-destructive"> *</span>
+									)}
+								</Label>
 								<Input
 									id="price"
 									type="number"
@@ -347,12 +369,12 @@ export function EditListingForm({
 									onChange={(e) =>
 										setFormData((p) => ({ ...p, price: e.target.value }))
 									}
-									required={requiresPrice}
+									required={priceField.required}
 								/>
 							</div>
 						)}
 						<div className="space-y-2">
-							<Label htmlFor="location">Localisation</Label>
+							<Label htmlFor="location">{t("localisation")}</Label>
 							<CitySelect
 								value={formData.location}
 								onChange={(city: CameroonCity | null) => {
@@ -368,9 +390,14 @@ export function EditListingForm({
 						</div>
 					</div>
 
-					{showsCondition && (
+					{conditionField.enabled && (
 						<div className="space-y-2">
-							<Label>Condition</Label>
+							<Label>
+								{t("conditionLabel")}
+								{conditionField.required && (
+									<span className="text-destructive"> *</span>
+								)}
+							</Label>
 							<Select
 								value={formData.condition}
 								onValueChange={(v) =>
@@ -381,7 +408,7 @@ export function EditListingForm({
 								}
 							>
 								<SelectTrigger>
-									<SelectValue placeholder="Select condition" />
+									<SelectValue placeholder={t("selectCondition")} />
 								</SelectTrigger>
 								<SelectContent>
 									{CONDITIONS.map((c) => (
@@ -391,11 +418,20 @@ export function EditListingForm({
 									))}
 								</SelectContent>
 							</Select>
+							{showErrors && missingCoreFields.includes("condition") && (
+								<p className="text-destructive text-xs">
+									{translateOr(
+										t,
+										"attributeRequired",
+										"Ce champ est obligatoire.",
+									)}
+								</p>
+							)}
 						</div>
 					)}
 
 					<div className="space-y-2">
-						<Label>Tags</Label>
+						<Label>{translateOr(t, "tags", "Tags")}</Label>
 						<TagPicker
 							selectedIds={selectedTagIds}
 							onChange={setSelectedTagIds}
@@ -403,13 +439,11 @@ export function EditListingForm({
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="description">Description</Label>
+						<Label htmlFor="description">{t("itemDescription")}</Label>
 						<Textarea
 							id="description"
 							placeholder={
-								isProductCategory
-									? t("describeYourItem")
-									: t("describeYourListing")
+								isProduct ? t("describeYourItem") : t("describeYourListing")
 							}
 							rows={5}
 							value={formData.description}
@@ -423,81 +457,102 @@ export function EditListingForm({
 					{attributes.length > 0 && (
 						<>
 							<Separator />
-							<AttributeFields
+							<CategoryAttributeFields
 								attributes={attributes}
 								values={attributeValues}
 								onChange={(slug, v) =>
 									setAttributeValues((p) => ({ ...p, [slug]: v }))
 								}
-								categoryName={selectedCategory?.name}
+								showRequiredErrors={showErrors}
 							/>
 						</>
 					)}
 				</CardContent>
 			</Card>
 
-			{/* Photos */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Photos</CardTitle>
-					<CardDescription>
-						{keptImages.length + newImages.length} image(s) total
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					{/* Existing images */}
-					{keptImages.length > 0 && (
-						<div>
-							<Label className="mb-2 block">Current images</Label>
-							<div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
-								{keptImages.map((img, index) => (
-									<div key={img.id} className="relative aspect-square">
-										<Image
-											src={img.url}
-											alt={`Image ${index + 1}`}
-											fill
-											className="rounded-md object-cover"
-										/>
-										<Button
-											type="button"
-											variant="destructive"
-											size="icon"
-											className="-top-2 -right-2 absolute h-6 w-6"
-											onClick={() => handleRemoveExisting(index)}
-										>
-											<Trash2 className="h-3 w-3" />
-										</Button>
-									</div>
-								))}
+			{/* Photos — only for categories that ask for pictures. */}
+			{photosField.enabled && (
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							{t("photos")}
+							{photosField.required && (
+								<span className="text-destructive"> *</span>
+							)}
+						</CardTitle>
+						<CardDescription>
+							{t("imagesTotal", { count: photoCount })}
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						{/* Existing images */}
+						{keptImages.length > 0 && (
+							<div>
+								<Label className="mb-2 block">{t("currentImages")}</Label>
+								<div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+									{keptImages.map((img, index) => (
+										<div key={img.id} className="relative aspect-square">
+											<Image
+												src={img.url}
+												alt={`${t("photos")} ${index + 1}`}
+												fill
+												className="rounded-md object-cover"
+											/>
+											<Button
+												type="button"
+												variant="destructive"
+												size="icon"
+												className="-top-2 -right-2 absolute h-6 w-6"
+												onClick={() => handleRemoveExisting(index)}
+											>
+												<Trash2 className="h-3 w-3" />
+											</Button>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
-					{/* New images */}
-					<div>
-						<Label className="mb-2 block">Add new images</Label>
-						<ImagePicker
-							previews={newPreviews}
-							onAdd={handleAddNewImages}
-							onRemove={handleRemoveNewImage}
-							max={Math.max(0, MAX_LISTING_IMAGES - keptImages.length)}
-						/>
-					</div>
-				</CardContent>
-			</Card>
+						{/* New images */}
+						<div>
+							<Label className="mb-2 block">{t("addNewImages")}</Label>
+							<ImagePicker
+								previews={newPreviews}
+								onAdd={handleAddNewImages}
+								onRemove={handleRemoveNewImage}
+								max={Math.max(0, MAX_LISTING_IMAGES - keptImages.length)}
+							/>
+						</div>
+
+						{photosField.required && missingCoreFields.includes("photos") && (
+							<p className="text-destructive text-xs">
+								{translateOr(
+									t,
+									"photosRequired",
+									"Ajoutez au moins une photo.",
+								)}
+							</p>
+						)}
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Status */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Publication</CardTitle>
+					<CardTitle>{t("publication")}</CardTitle>
 					<CardDescription>
-						Gérez la visibilité de votre annonce
+						{translateOr(
+							t,
+							"publicationDesc",
+							"Gérez la visibilité de votre annonce",
+						)}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{/* Current status */}
 					<div className="flex items-center gap-2 text-sm">
-						<span className="text-muted-foreground">Statut actuel :</span>
+						<span className="text-muted-foreground">{t("currentStatus")}</span>
 						<Badge
 							variant={
 								listing.status === "published"
@@ -517,29 +572,29 @@ export function EditListingForm({
 									"border-orange-300 bg-orange-50 text-orange-700",
 							)}
 						>
-							{listing.status === "draft" && "Brouillon"}
-							{listing.status === "pending" && "En attente de révision"}
-							{listing.status === "published" && "Publié"}
-							{listing.status === "rejected" && "Rejeté"}
-							{listing.status === "sold" && "Vendu"}
-							{listing.status === "expired" && "Expiré"}
-							{listing.status === "deleted" && "Supprimé"}
+							{listing.status === "draft" && t("statusDraft")}
+							{listing.status === "pending" && t("statusPending")}
+							{listing.status === "published" && t("statusPublished")}
+							{listing.status === "rejected" && t("statusRejected")}
+							{listing.status === "sold" && t("statusSold")}
+							{listing.status === "expired" && t("statusExpired")}
+							{listing.status === "deleted" && t("statusDeleted")}
 						</Badge>
 					</div>
 
 					{/* Published notice */}
 					{listing.status === "published" && (
 						<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
-							⚠️ Modifier cette annonce la soumettra à nouveau pour révision.
+							{t("editWarning")}
 						</div>
 					)}
 
 					{/* Rejection reason */}
 					{listing.status === "rejected" && (
 						<div className="space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-red-800 text-sm">
-							<p className="font-medium">Votre annonce a été rejetée.</p>
+							<p className="font-medium">{t("rejectionNotice")}</p>
 							{(listing as any).rejectionReason && (
-								<p>Raison : {(listing as any).rejectionReason}</p>
+								<p>{`${t("reason")} ${(listing as any).rejectionReason}`}</p>
 							)}
 						</div>
 					)}
@@ -569,10 +624,12 @@ export function EditListingForm({
 										<div className="h-2 w-2 rounded-full bg-primary" />
 									)}
 								</div>
-								<span className="font-semibold text-sm">Brouillon</span>
+								<span className="font-semibold text-sm">
+									{t("statusDraft")}
+								</span>
 							</div>
 							<p className="pl-6 text-muted-foreground text-xs">
-								Non visible par les acheteurs
+								{t("draftDesc")}
 							</p>
 						</button>
 
@@ -600,11 +657,11 @@ export function EditListingForm({
 									)}
 								</div>
 								<span className="font-semibold text-sm">
-									Soumettre pour révision
+									{t("submitForReview")}
 								</span>
 							</div>
 							<p className="pl-6 text-muted-foreground text-xs">
-								Sera examiné par notre équipe sous 24h
+								{t("reviewTimeframe")}
 							</p>
 						</button>
 					</div>
@@ -617,18 +674,18 @@ export function EditListingForm({
 					variant="outline"
 					onClick={() => router.push(`/listing/${listing.id}`)}
 				>
-					Cancel
+					{tCommon("cancel")}
 				</Button>
 				<Button onClick={handleSave} disabled={isSaving || !canSave}>
 					{isSaving ? (
 						<>
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-							Saving...
+							{t("savingChanges")}
 						</>
 					) : (
 						<>
 							<Save className="mr-2 h-4 w-4" />
-							Save Changes
+							{t("saveChanges")}
 						</>
 					)}
 				</Button>

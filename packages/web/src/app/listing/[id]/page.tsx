@@ -15,7 +15,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { BoostDialog } from "~/components/listing/boost-dialog";
 import { BoostStatusBanner } from "~/components/listing/boost-status-banner";
 import { FavoriteButton } from "~/components/listing/favorite-button";
@@ -28,6 +28,7 @@ import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { buildListingAttributeGroups } from "~/lib/listing-attributes";
 import { formatListingPrice, hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Tag, User } from "~/types";
@@ -93,7 +94,9 @@ export async function generateMetadata({
 
 async function getListing(id: string): Promise<Listing | null> {
 	try {
-		const res = await serverFetch(`/api/listings/${id}`);
+		// depth=2 is Payload's default, but the attribute labels below depend on
+		// `category` coming back populated, so say so rather than inherit it.
+		const res = await serverFetch(`/api/listings/${id}?depth=2`);
 		if (!res.ok) return null;
 		return res.json();
 	} catch {
@@ -142,6 +145,7 @@ function timeAgo(date: string): string {
 export default async function ListingPage({ params, searchParams }: PageProps) {
 	const t = await getTranslations("Listing");
 	const tCond = await getTranslations("Condition");
+	const locale = await getLocale();
 	const { id } = await params;
 	const { boostStatus } = await searchParams;
 	const [listing, isFavorited, similarListings, authUser] = await Promise.all([
@@ -165,6 +169,16 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		String(authUser.id) === String(seller.id)
 	);
 	const category = listing.category as { id: string; name: string } | undefined;
+
+	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
+	// name, type, unit and section all live on the category, so join the two.
+	// `listing.category` is a relationship — a bare id string when unpopulated —
+	// and the helper degrades to slugs rather than throwing on that.
+	const attributeGroups = buildListingAttributeGroups(
+		listing.attributes,
+		listing.category,
+		{ yes: t("yes"), no: t("no"), locale },
+	);
 
 	const expiresAt = listing.expiresAt ? new Date(listing.expiresAt) : null;
 	const isExpired = expiresAt ? expiresAt <= new Date() : false;
@@ -419,36 +433,35 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							</div>
 
 							{/* Attributes */}
-							{listing.attributes &&
-								typeof listing.attributes === "object" &&
-								Object.keys(listing.attributes).length > 0 && (
-									<div className="mt-6 border-[#E2E8F0] border-t pt-5">
-										<h2 className="mb-3 font-bold text-[#64748B] text-sm uppercase tracking-wider">
-											{t("details")}
-										</h2>
-										<div className="grid grid-cols-2 gap-x-6 gap-y-3">
-											{Object.entries(listing.attributes).map(
-												([key, value]) => (
+							{attributeGroups.length > 0 && (
+								<div className="mt-6 border-[#E2E8F0] border-t pt-5">
+									<h2 className="mb-3 font-bold text-[#64748B] text-sm uppercase tracking-wider">
+										{t("details")}
+									</h2>
+									{attributeGroups.map((group) => (
+										<div key={group.key} className="mb-4 last:mb-0">
+											{group.title && (
+												<h3 className="mb-2 font-semibold text-[#94A3B8] text-xs uppercase tracking-wider">
+													{group.title}
+												</h3>
+											)}
+											<div className="grid grid-cols-2 gap-x-6 gap-y-3">
+												{group.items.map((attr) => (
 													<div
-														key={key}
+														key={attr.slug}
 														className="flex justify-between text-sm"
 													>
-														<span className="text-[#64748B]">
-															{key.charAt(0).toUpperCase() + key.slice(1)}
-														</span>
+														<span className="text-[#64748B]">{attr.label}</span>
 														<span className="font-medium text-[#0F172A]">
-															{value === true || value === "true"
-																? t("yes")
-																: value === false || value === "false"
-																	? t("no")
-																	: String(value)}
+															{attr.value}
 														</span>
 													</div>
-												),
-											)}
+												))}
+											</div>
 										</div>
-									</div>
-								)}
+									))}
+								</div>
+							)}
 						</div>
 					</div>
 

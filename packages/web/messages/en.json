@@ -226,7 +226,19 @@
 		"browseOtherListings": "Browse other listings",
 		"backHome": "Back home",
 		"details": "Details",
-		"cancel": "Cancel"
+		"cancel": "Cancel",
+		"attributeRequired": "This field is required.",
+		"attributeInvalidNumber": "Enter a valid number.",
+		"attributeMin": "Minimum: {min}.",
+		"attributeMax": "Maximum: {max}.",
+		"selectAttribute": "Select: {name}",
+		"tags": "Tags",
+		"durationHint": "How long your listing stays visible before it expires.",
+		"publicationDesc": "Manage your listing's visibility",
+		"whatServiceAreYouOffering": "What service are you offering?",
+		"whatRoleAreYouHiring": "What role are you hiring for?",
+		"whatAreYouRenting": "What are you renting out?",
+		"photosRequired": "Add at least one photo."
 	},
 	"CreateListing": {
 		"category": "Category",

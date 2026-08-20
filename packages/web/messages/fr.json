@@ -227,7 +227,19 @@
 		"browseOtherListings": "Parcourir d’autres annonces",
 		"backHome": "Retour à l’accueil",
 		"details": "Caractéristiques",
-		"cancel": "Annuler"
+		"cancel": "Annuler",
+		"attributeRequired": "Ce champ est obligatoire.",
+		"attributeInvalidNumber": "Saisissez un nombre valide.",
+		"attributeMin": "Minimum : {min}.",
+		"attributeMax": "Maximum : {max}.",
+		"selectAttribute": "Sélectionner : {name}",
+		"tags": "Tags",
+		"durationHint": "Durée de visibilité de votre annonce avant expiration.",
+		"publicationDesc": "Gérez la visibilité de votre annonce",
+		"whatServiceAreYouOffering": "Quel service proposez-vous ?",
+		"whatRoleAreYouHiring": "Quel poste recrutez-vous ?",
+		"whatAreYouRenting": "Que louez-vous ?",
+		"photosRequired": "Ajoutez au moins une photo."
 	},
 	"CreateListing": {
 		"category": "Catégorie",
