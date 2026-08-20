@@ -184,7 +184,27 @@ export interface User {
   phoneVerificationExpiresAt?: string | null;
   phoneVerificationAttempts?: number | null;
   phoneVerificationLastSentAt?: string | null;
+  /**
+   * Free-text place shown on the public profile. Typed by the user; not derived from GPS.
+   */
   location?: string | null;
+  /**
+   * Structured place last confirmed by the user, kept in sync with the mobile app.
+   */
+  homeLocation?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    /**
+     * ISO 3166-1 alpha-2, uppercase.
+     */
+    countryCode?: string | null;
+    source?: ('device' | 'manual') | null;
+    /**
+     * Conflict resolution between the device copy and this one — last write wins.
+     */
+    updatedAt?: string | null;
+  };
   verified?: boolean | null;
   createdAt: string;
   updatedAt: string;
@@ -232,7 +252,7 @@ export interface Listing {
   id: string;
   title: string;
   description: string;
-  price: number;
+  price?: number | null;
   images?:
     | {
         image: string | Media;
@@ -281,6 +301,34 @@ export interface Category {
   image?: (string | null) | Media;
   parent?: (string | null) | Category;
   active?: boolean | null;
+  /**
+   * Decides which of the three built-in fields — price, condition and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one.
+   */
+  listingForm?: {
+    /**
+     * Pick the closest match and the three fields below follow automatically. Set this on a top-level category and every category underneath inherits it.
+     */
+    type?: ('auto' | 'product' | 'service' | 'job' | 'rental' | 'generic') | null;
+    /**
+     * Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.
+     */
+    price?: ('auto' | 'hidden' | 'optional' | 'required') | null;
+    /**
+     * Whether the seller is asked how worn the item is (new, like new, good…). Hide it wherever the question makes no sense, such as a holiday rental or a plot of land.
+     */
+    condition?: ('auto' | 'hidden' | 'optional' | 'required') | null;
+    /**
+     * Whether the seller is asked for pictures. Hide it where there is nothing to photograph, such as a job offer, and choose “Optional” where a picture is welcome but not expected, such as a service. Changing this only changes what the form asks for — pictures already added to existing ads are kept.
+     */
+    photos?: ('auto' | 'hidden' | 'optional' | 'required') | null;
+    /**
+     * Wording shown above the price box, when “Price” is not the right word — for example “Loyer mensuel”, “Salaire” or “Tarif”. Leave empty for the default.
+     */
+    priceLabel?: string | null;
+  };
+  /**
+   * Extra fields specific to this category. They appear in the ad form in the order listed here — drag a row to move it.
+   */
   attributes?:
     | {
         name: string;
@@ -294,6 +342,22 @@ export interface Category {
               id?: string | null;
             }[]
           | null;
+        /**
+         * Shown after the value, e.g. “km”, “m²”, “ch”. Leave empty when the field needs no unit.
+         */
+        unit?: string | null;
+        /**
+         * Heading this field is filed under in the form and on the ad, e.g. “Engine” or “Surface”. Fields sharing a section are shown together. Leave empty to keep it ungrouped.
+         */
+        group?: string | null;
+        /**
+         * Smallest value accepted, inclusive. Leave empty for no lower bound.
+         */
+        min?: number | null;
+        /**
+         * Largest value accepted, inclusive. Leave empty for no upper bound.
+         */
+        max?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -686,6 +750,16 @@ export interface UsersSelect<T extends boolean = true> {
   phoneVerificationAttempts?: T;
   phoneVerificationLastSentAt?: T;
   location?: T;
+  homeLocation?:
+    | T
+    | {
+        city?: T;
+        region?: T;
+        country?: T;
+        countryCode?: T;
+        source?: T;
+        updatedAt?: T;
+      };
   verified?: T;
   createdAt?: T;
   updatedAt?: T;
@@ -768,6 +842,15 @@ export interface CategoriesSelect<T extends boolean = true> {
   image?: T;
   parent?: T;
   active?: T;
+  listingForm?:
+    | T
+    | {
+        type?: T;
+        price?: T;
+        condition?: T;
+        photos?: T;
+        priceLabel?: T;
+      };
   attributes?:
     | T
     | {
@@ -782,6 +865,10 @@ export interface CategoriesSelect<T extends boolean = true> {
               value?: T;
               id?: T;
             };
+        unit?: T;
+        group?: T;
+        min?: T;
+        max?: T;
         id?: T;
       };
   createdAt?: T;

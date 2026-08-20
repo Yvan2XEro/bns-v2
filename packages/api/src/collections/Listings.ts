@@ -153,10 +153,18 @@ export const Listings: CollectionConfig = {
 						throw new Error("Category is required");
 					}
 
+					// `depth` decides how much of the parent chain comes back
+					// populated, and the form preset is inherited from ancestors, so
+					// anything shallower than the tree silently loses the inherited
+					// setting. `depth: 1` only populated the immediate parent, which
+					// covers today's two-level tree but breaks the moment a
+					// sub-sub-category is added in the admin. Two levels of headroom
+					// costs one extra lookup on a code path that already hits the
+					// database.
 					const category = await req.payload.findByID({
 						collection: "categories",
 						id: categoryId,
-						depth: 1,
+						depth: 3,
 					});
 					const formPreset = getListingFormPreset(category);
 
@@ -339,6 +347,23 @@ export const Listings: CollectionConfig = {
 			// system ones like boost activation and the expiry crons. The limit is
 			// enforced in beforeChange instead, which can tell growth from a
 			// pre-existing count.
+			//
+			// For the same reason there is no *minimum* either, and beforeChange
+			// deliberately does not enforce the category's `photos` rule the way it
+			// enforces `price` and `condition`:
+			//   • "photos: required" would strand every listing that predates the
+			//     rule. Price and condition can be typed into the form that is
+			//     failing; a missing photo on a listing whose category was
+			//     re-typed later blocks writes that never touched the images.
+			//   • "photos: hidden" would mean clearing `data.images` the way a
+			//     hidden price is nulled — silently deleting uploaded media on an
+			//     unrelated edit. Hiding a field must not destroy data, and a job
+			//     offer that carries a company logo harms nobody.
+			//   • Nothing downstream breaks on a photoless listing (cards already
+			//     render a placeholder), so the rule is about what the *form* asks
+			//     for, not about data integrity. It is served to clients through
+			//     `category.formPreset` and enforced there; moderation remains the
+			//     human gate on ad quality.
 			fields: [
 				{
 					name: "image",

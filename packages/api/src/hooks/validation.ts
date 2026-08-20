@@ -7,6 +7,10 @@ type CategoryValidationShape = {
 		type: string;
 		required?: boolean | null;
 		options?: unknown[] | null;
+		unit?: string | null;
+		group?: string | null;
+		min?: number | null;
+		max?: number | null;
 	}> | null;
 };
 
@@ -90,6 +94,22 @@ export const validateListingAttributes = async ({
 					errors.push({
 						field: attr.slug,
 						message: `${attr.name} must be a number`,
+					});
+					break;
+				}
+				// Bounds are optional and only enforced once an admin sets them, so
+				// attributes defined before they existed keep accepting what they
+				// always accepted.
+				if (typeof attr.min === "number" && value < attr.min) {
+					errors.push({
+						field: attr.slug,
+						message: `${attr.name} must be at least ${attr.min}`,
+					});
+				}
+				if (typeof attr.max === "number" && value > attr.max) {
+					errors.push({
+						field: attr.slug,
+						message: `${attr.name} must be at most ${attr.max}`,
 					});
 				}
 				break;
