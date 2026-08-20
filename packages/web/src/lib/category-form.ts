@@ -328,15 +328,43 @@ export function collectAttributeIssues(
  * Drop values that do not belong to this category, and empty ones, so a
  * category switch never submits orphaned keys.
  */
+/**
+ * Drops empty and off-category values, and converts what is left to the type
+ * the attribute declares.
+ *
+ * The inputs hold strings, but the API validates against the declared type, so
+ * a boolean sent as "true" or a number sent as "120" is rejected outright — no
+ * category with such an attribute could be published. Values that cannot be
+ * converted are omitted rather than sent as something the server will refuse;
+ * `collectAttributeIssues` is what tells the seller about them, before we get
+ * this far.
+ */
 export function pruneAttributeValues(
 	attributes: CategoryAttributeSpec[],
 	values: Record<string, string>,
-): Record<string, string> {
-	const pruned: Record<string, string> = {};
+): Record<string, boolean | number | string> {
+	const pruned: Record<string, boolean | number | string> = {};
+
 	for (const attribute of attributes) {
 		const value = values[attribute.slug];
-		if (!isAttributeValueEmpty(value)) pruned[attribute.slug] = value.trim();
+		if (isAttributeValueEmpty(value)) continue;
+
+		const trimmed = value.trim();
+
+		switch (attribute.type) {
+			case "number": {
+				const parsed = Number(trimmed.replace(",", "."));
+				if (Number.isFinite(parsed)) pruned[attribute.slug] = parsed;
+				break;
+			}
+			case "boolean":
+				pruned[attribute.slug] = trimmed === "true";
+				break;
+			default:
+				pruned[attribute.slug] = trimmed;
+		}
 	}
+
 	return pruned;
 }
 
