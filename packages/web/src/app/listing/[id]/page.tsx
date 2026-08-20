@@ -445,19 +445,21 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 													{group.title}
 												</h3>
 											)}
-											<div className="grid grid-cols-2 gap-x-6 gap-y-3">
+											<dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
 												{group.items.map((attr) => (
 													<div
 														key={attr.slug}
-														className="flex justify-between text-sm"
+														className="border-[#F1F5F9] border-b py-1.5 last:border-b-0 sm:[&:nth-last-child(-n+1)]:border-b-0"
 													>
-														<span className="text-[#64748B]">{attr.label}</span>
-														<span className="font-medium text-[#0F172A]">
+														<dt className="text-[#94A3B8] text-xs">
+															{attr.label}
+														</dt>
+														<dd className="font-medium text-[#0F172A] text-sm">
 															{attr.value}
-														</span>
+														</dd>
 													</div>
 												))}
-											</div>
+											</dl>
 										</div>
 									))}
 								</div>
