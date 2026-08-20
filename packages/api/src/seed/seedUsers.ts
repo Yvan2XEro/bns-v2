@@ -28,6 +28,7 @@ export const seedUsers = async (payload: unknown) => {
 			payload as {
 				create: (options: {
 					collection: string;
+					context?: Record<string, unknown>;
 					data: {
 						email: string;
 						password: string;
@@ -40,6 +41,9 @@ export const seedUsers = async (payload: unknown) => {
 			}
 		).create({
 			collection: "users",
+			// Without this the beforeChange hook demotes every seeded admin and
+			// moderator to "user".
+			context: { seed: true },
 			data: {
 				email,
 				password: "password123",

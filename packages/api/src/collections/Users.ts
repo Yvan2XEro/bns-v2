@@ -92,6 +92,11 @@ export const Users: CollectionConfig = {
 				const user = req.user as { role?: string } | undefined;
 				const isAdmin = user?.role === "admin";
 				const isOAuthFlow = req.context?.oauthFlow === true;
+				// Seeding runs through the local API with no authenticated user, so
+				// `isAdmin` is false and the guards below would strip the very roles
+				// the seed is trying to create. `context` is server-side only — a REST
+				// client cannot set it — so this is not a way to self-promote.
+				const isSeed = req.context?.seed === true;
 				const isPhoneVerificationFlow =
 					req.context?.phoneVerificationFlow === true;
 
@@ -101,7 +106,7 @@ export const Users: CollectionConfig = {
 					data.authProviders = authData.authProviders;
 					data.providerAccountId = authData.providerAccountId;
 
-					if (!isAdmin) {
+					if (!isAdmin && !isSeed) {
 						data.role = "user";
 						data.verified = undefined;
 						data.rating = undefined;
