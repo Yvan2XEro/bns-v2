@@ -114,6 +114,14 @@ export interface MeResponse {
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 
+/** Shape of ad a category describes. Drives which core fields the form shows. */
+export type ListingCategoryType =
+	| "product"
+	| "service"
+	| "job"
+	| "rental"
+	| "generic";
+
 /** Dynamic filterable attribute defined on a category. */
 export interface CategoryAttribute {
 	id?: string;
@@ -122,8 +130,21 @@ export interface CategoryAttribute {
 	type: "text" | "number" | "select" | "boolean" | "date";
 	required?: boolean;
 	filterable?: boolean;
-	/** Only present when type === "select" */
-	options?: string[];
+	/**
+	 * Only present when type === "select".
+	 *
+	 * Payload stores an array field, so every option arrives as an object — not
+	 * as a bare string, whatever earlier versions of this file claimed. `label`
+	 * is optional; fall back to `value` when it is absent.
+	 */
+	options?: { value: string; label?: string | null; id?: string | null }[];
+	/** Suffix rendered after the value, e.g. "km", "m²". */
+	unit?: string | null;
+	/** Section heading this attribute is filed under. */
+	group?: string | null;
+	/** Inclusive bounds, `number` attributes only. */
+	min?: number | null;
+	max?: number | null;
 }
 
 /**
@@ -145,15 +166,22 @@ export interface Category {
 	image?: Media | null;
 	parent?: Category | string | null;
 	active?: boolean;
-	listingType?: "product" | "service" | "job" | "generic" | null;
+	listingType?: ListingCategoryType | null;
+	/** Which core fields the ad form must show. Mirrors the API's resolver. */
 	formPreset?: {
-		categoryType: "product" | "service" | "job" | "generic";
+		categoryType: ListingCategoryType;
 		fields: {
 			price: {
 				enabled: boolean;
 				required: boolean;
+				/** Category-supplied wording, e.g. "Loyer mensuel". */
+				label?: string;
 			};
 			condition: {
+				enabled: boolean;
+				required: boolean;
+			};
+			photos: {
 				enabled: boolean;
 				required: boolean;
 			};

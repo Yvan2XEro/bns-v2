@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -21,13 +21,25 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
+	type AttributeIssue,
+	areAttributesValid,
+	deserializeAttributeValues,
+	getAttributeIssue,
+	getCategoryAttributes,
 	getListingFormPreset,
+	groupListingAttributes,
 	isProductListingCategory,
+	type ListingAttribute,
+	maskDateInput,
+	sanitizeNumberInput,
+	sanitizePriceInput,
+	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import type { Place } from "@/src/lib/places";
@@ -84,6 +96,203 @@ function FieldLabel({ label, required, mutedColor }: any) {
 	);
 }
 
+/** Translates one attribute validation issue. */
+function attributeIssueMessage(
+	issue: AttributeIssue,
+	t: (key: string, options?: any) => string,
+): string {
+	switch (issue.code) {
+		case "required":
+			return t("common.required");
+		case "min":
+			return t("create.attributeMin", {
+				defaultValue: "Valeur minimale : {{value}}",
+				value: issue.bound,
+			});
+		case "max":
+			return t("create.attributeMax", {
+				defaultValue: "Valeur maximale : {{value}}",
+				value: issue.bound,
+			});
+		case "date":
+			return t("create.attributeInvalidDate", {
+				defaultValue: "Date invalide (JJ/MM/AAAA)",
+			});
+		default:
+			return t("create.attributeInvalidNumber", {
+				defaultValue: "Valeur numérique invalide",
+			});
+	}
+}
+
+/**
+ * One category attribute. Handles every type an admin can define, including
+ * `date`, which the form used to drop silently, and shows the unit and bounds
+ * the category declares.
+ */
+function EditAttributeField({
+	attribute,
+	value,
+	onChange,
+	textColor,
+	mutedColor,
+	primaryColor,
+	borderColor,
+	inputBg,
+}: {
+	attribute: ListingAttribute;
+	value: string;
+	onChange: (value: string) => void;
+	textColor: string;
+	mutedColor: string;
+	primaryColor: string;
+	borderColor: string;
+	inputBg: string;
+}) {
+	const { t } = useTranslation();
+	const issue = getAttributeIssue(attribute, value);
+	// A field left empty is not an error the user made yet; bad input is.
+	const showIssue = issue !== null && issue.code !== "required";
+
+	const bounds = [
+		attribute.min !== undefined
+			? `${t("common.min", { defaultValue: "Min" })} ${attribute.min}`
+			: null,
+		attribute.max !== undefined
+			? `${t("common.max", { defaultValue: "Max" })} ${attribute.max}`
+			: null,
+	]
+		.filter(Boolean)
+		.join(" · ");
+
+	return (
+		<View style={styles.fieldGroup}>
+			<FieldLabel
+				label={attribute.name}
+				required={attribute.required}
+				mutedColor={mutedColor}
+			/>
+
+			{attribute.type === "select" && attribute.options.length > 0 ? (
+				<View style={styles.pillRow}>
+					{attribute.options.map((opt) => {
+						const active = value === opt.value;
+						return (
+							<Pressable
+								key={opt.value}
+								onPress={() => onChange(active ? "" : opt.value)}
+								style={[
+									styles.pill,
+									{
+										backgroundColor: active ? primaryColor : inputBg,
+										borderColor: active ? primaryColor : borderColor,
+									},
+								]}
+							>
+								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								<Text
+									style={[
+										styles.pillText,
+										{ color: active ? "#fff" : mutedColor },
+									]}
+								>
+									{opt.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			) : attribute.type === "boolean" ? (
+				<View style={styles.pillRow}>
+					{[
+						{ label: t("common.yes"), value: "true" },
+						{ label: t("common.no"), value: "false" },
+					].map((opt) => {
+						const active = value === opt.value;
+						return (
+							<Pressable
+								key={opt.value}
+								onPress={() => onChange(active ? "" : opt.value)}
+								style={[
+									styles.pill,
+									{
+										backgroundColor: active ? primaryColor : inputBg,
+										borderColor: active ? primaryColor : borderColor,
+									},
+								]}
+							>
+								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								<Text
+									style={[
+										styles.pillText,
+										{ color: active ? "#fff" : mutedColor },
+									]}
+								>
+									{opt.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			) : (
+				<View
+					style={[
+						styles.inputRow,
+						{
+							backgroundColor: inputBg,
+							borderColor: showIssue ? "#ef4444" : borderColor,
+						},
+					]}
+				>
+					<TextInput
+						value={value}
+						onChangeText={(v) =>
+							onChange(
+								attribute.type === "number"
+									? sanitizeNumberInput(v)
+									: attribute.type === "date"
+										? maskDateInput(v)
+										: v,
+							)
+						}
+						placeholder={
+							attribute.type === "date"
+								? t("create.dateFormatHint", { defaultValue: "JJ/MM/AAAA" })
+								: attribute.name
+						}
+						placeholderTextColor={mutedColor}
+						keyboardType={
+							attribute.type === "number"
+								? // "numeric" rather than "number-pad": an attribute may allow
+									// decimals or a negative minimum.
+									"numeric"
+								: attribute.type === "date"
+									? "number-pad"
+									: "default"
+						}
+						maxLength={attribute.type === "date" ? 10 : undefined}
+						style={[styles.rowInput, { color: textColor }]}
+					/>
+					{/* The unit sits with the value, e.g. "120 km". */}
+					{attribute.unit ? (
+						<Text style={[styles.attrUnit, { color: mutedColor }]}>
+							{attribute.unit}
+						</Text>
+					) : null}
+				</View>
+			)}
+
+			{showIssue ? (
+				<Text style={[styles.attrError, { color: "#ef4444" }]}>
+					{attributeIssueMessage(issue, t)}
+				</Text>
+			) : bounds ? (
+				<Text style={[styles.attrHint, { color: mutedColor }]}>{bounds}</Text>
+			) : null}
+		</View>
+	);
+}
+
 export default function EditListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const isDark = useColorScheme() === "dark";
@@ -135,11 +344,35 @@ export default function EditListingScreen() {
 	});
 
 	const listing = data?.doc ?? data;
-	const categoryPreset = getListingFormPreset(listing?.category);
-	const isProductCategory = isProductListingCategory(listing?.category);
+
+	// `/api/listings/:id?depth=2` normally embeds the whole category, preset and
+	// attributes included. When it comes back as a bare id — a shallower depth, a
+	// cached payload — the form would otherwise fall back to a generic preset and
+	// lose every category attribute, so the category is fetched on its own.
+	const embeddedCategory =
+		listing?.category && typeof listing.category === "object"
+			? listing.category
+			: null;
+	const categoryId =
+		typeof listing?.category === "string"
+			? listing.category
+			: (embeddedCategory?.id ?? null);
+	const { data: fetchedCategory } = useQuery({
+		queryKey: ["category", categoryId],
+		queryFn: () => api.get<any>(`/api/public/categories?id=${categoryId}`),
+		enabled: !!categoryId && !embeddedCategory?.formPreset,
+		staleTime: CATEGORIES_STALE_TIME_MS,
+	});
+	const category = embeddedCategory?.formPreset
+		? embeddedCategory
+		: (fetchedCategory ?? embeddedCategory);
+
+	const categoryPreset = getListingFormPreset(category);
+	const isProductCategory = isProductListingCategory(category);
 	const showsPrice = categoryPreset.fields.price.enabled;
 	const requiresPrice = categoryPreset.fields.price.required;
 	const showsCondition = categoryPreset.fields.condition.enabled;
+	const priceLabel = categoryPreset.fields.price.label ?? t("edit.priceLabel");
 
 	// ── Form state ─────────────────────────────────────────────────
 	const [title, setTitle] = useState("");
@@ -176,7 +409,6 @@ export default function EditListingScreen() {
 			});
 		}
 		setDuration(listing.duration ?? 30);
-		setAttributes(listing.attributes ?? {});
 
 		// Initialize tags
 		if (Array.isArray(listing.tags)) {
@@ -209,7 +441,29 @@ export default function EditListingScreen() {
 			.catch(() => {});
 	}, []);
 
-	const categoryAttributes: any[] = listing?.category?.attributes ?? [];
+	const categoryAttributes = useMemo(
+		() => getCategoryAttributes(category),
+		[category],
+	);
+	const attributeSections = useMemo(
+		() => groupListingAttributes(categoryAttributes),
+		[categoryAttributes],
+	);
+
+	// The inputs edit strings; the stored JSON holds real numbers and booleans.
+	// Hydration is keyed so it runs once per listing *and* once more if the
+	// attribute list only arrives with the separately fetched category — never on
+	// every refetch, which would throw away what the user is typing.
+	const attributesKey = `${listing?.id ?? ""}:${categoryAttributes.length}`;
+	const hydratedAttributesRef = useRef<string | null>(null);
+	useEffect(() => {
+		if (!listing) return;
+		if (hydratedAttributesRef.current === attributesKey) return;
+		hydratedAttributesRef.current = attributesKey;
+		setAttributes(
+			deserializeAttributeValues(categoryAttributes, listing.attributes),
+		);
+	}, [listing, attributesKey, categoryAttributes]);
 
 	// ── Image picker ───────────────────────────────────────────────
 	const pickImage = async (fromCamera: boolean) => {
@@ -297,7 +551,18 @@ export default function EditListingScreen() {
 				images: images.map((img) => ({ image: img.id })),
 				...(showsPrice && price ? { price: Number(price) } : {}),
 				...(showsCondition && condition ? { condition } : {}),
-				...(Object.keys(attributes).length > 0 ? { attributes } : {}),
+				// Typed per the category definition: the API rejects a number
+				// attribute sent as a string and a boolean sent as "true". Omitted
+				// entirely when the category is unknown, so a failed category lookup
+				// can never blank the attributes already stored.
+				...(categoryAttributes.length > 0
+					? {
+							attributes: serializeAttributeValues(
+								categoryAttributes,
+								attributes,
+							),
+						}
+					: {}),
 				status: nextStatus,
 				...(selectedTagIds.length > 0
 					? { tags: selectedTagIds }
@@ -316,8 +581,14 @@ export default function EditListingScreen() {
 	const updateAttr = (slug: string, value: any) =>
 		setAttributes((prev) => ({ ...prev, [slug]: value }));
 	const handleSavePress = () => {
-		if (requiresPrice && !price) {
+		// Only a field the preset actually shows may block the save: a hidden
+		// price must never be "required".
+		if (showsPrice && requiresPrice && !price) {
 			showError(t("edit.errorTitle"), t("create.priceRequired"));
+			return;
+		}
+		if (!areAttributesValid(categoryAttributes, attributes)) {
+			showError(t("edit.errorTitle"), t("errors.validation"));
 			return;
 		}
 		save();
@@ -387,7 +658,7 @@ export default function EditListingScreen() {
 					{...sharedSection}
 				>
 					<Text style={[styles.hint, { color: mutedColor }]}>
-						{t("edit.photosHint")}
+						{t("edit.photosHint", { count: MAX_LISTING_IMAGES })}
 					</Text>
 					<ScrollView
 						horizontal
@@ -508,7 +779,7 @@ export default function EditListingScreen() {
 					{showsPrice && (
 						<View style={styles.fieldGroup}>
 							<FieldLabel
-								label={t("edit.priceLabel")}
+								label={priceLabel}
 								required={requiresPrice}
 								mutedColor={mutedColor}
 							/>
@@ -519,15 +790,17 @@ export default function EditListingScreen() {
 								]}
 							>
 								<Text style={[styles.currency, { color: mutedColor }]}>
-									XAF
+									{t("common.currency", { defaultValue: "XAF" })}
 								</Text>
 								<TextInput
 									value={price}
-									onChangeText={setPrice}
-									placeholder="0"
+									// Whole XAF amounts only: a separator typed on the numeric
+									// keypad reached the API as NaN.
+									onChangeText={(v) => setPrice(sanitizePriceInput(v))}
+									placeholder={t("create.pricePlaceholder")}
 									placeholderTextColor={mutedColor}
 									style={[styles.priceInput, { color: textColor }]}
-									keyboardType="numeric"
+									keyboardType="number-pad"
 								/>
 							</View>
 						</View>
@@ -577,7 +850,10 @@ export default function EditListingScreen() {
 					{/* Tags */}
 					{availableTags.length > 0 && (
 						<View style={styles.fieldGroup}>
-							<FieldLabel label="Tags" mutedColor={mutedColor} />
+							<FieldLabel
+								label={t("create.tagsFieldLabel", { defaultValue: "Tags" })}
+								mutedColor={mutedColor}
+							/>
 							<TagPicker
 								selectedIds={selectedTagIds}
 								onChangeIds={setSelectedTagIds}
@@ -670,105 +946,29 @@ export default function EditListingScreen() {
 				{categoryAttributes.length > 0 && (
 					<SectionCard
 						icon="pricetag-outline"
-						title={`${t("edit.characteristics")} — ${listing?.category?.name ?? ""}`}
+						title={`${t("edit.characteristics")} — ${category?.name ?? ""}`}
 						{...sharedSection}
 					>
-						{categoryAttributes.map((attr: any) => (
-							<View key={attr.slug} style={styles.fieldGroup}>
-								<FieldLabel
-									label={attr.name}
-									required={attr.required}
-									mutedColor={mutedColor}
-								/>
-
-								{attr.type === "select" && attr.options ? (
-									<View style={styles.pillRow}>
-										{attr.options.map((opt: any) => {
-											const active = attributes[attr.slug] === opt.value;
-											return (
-												<Pressable
-													key={opt.value}
-													onPress={() =>
-														updateAttr(attr.slug, active ? "" : opt.value)
-													}
-													style={[
-														styles.pill,
-														{
-															backgroundColor: active ? primaryColor : inputBg,
-															borderColor: active ? primaryColor : borderColor,
-														},
-													]}
-												>
-													{active && (
-														<Ionicons name="checkmark" size={12} color="#fff" />
-													)}
-													<Text
-														style={[
-															styles.pillText,
-															{ color: active ? "#fff" : mutedColor },
-														]}
-													>
-														{opt.value}
-													</Text>
-												</Pressable>
-											);
-										})}
-									</View>
-								) : attr.type === "boolean" ? (
-									<View style={styles.pillRow}>
-										{[
-											{ label: t("common.yes"), value: "true" },
-											{ label: t("common.no"), value: "false" },
-										].map((opt) => {
-											const active = attributes[attr.slug] === opt.value;
-											return (
-												<Pressable
-													key={opt.value}
-													onPress={() =>
-														updateAttr(attr.slug, active ? "" : opt.value)
-													}
-													style={[
-														styles.pill,
-														{
-															backgroundColor: active ? primaryColor : inputBg,
-															borderColor: active ? primaryColor : borderColor,
-														},
-													]}
-												>
-													{active && (
-														<Ionicons name="checkmark" size={12} color="#fff" />
-													)}
-													<Text
-														style={[
-															styles.pillText,
-															{ color: active ? "#fff" : mutedColor },
-														]}
-													>
-														{opt.label}
-													</Text>
-												</Pressable>
-											);
-										})}
-									</View>
-								) : (
-									<View
-										style={[
-											styles.inputRow,
-											{ backgroundColor: inputBg, borderColor },
-										]}
-									>
-										<TextInput
-											value={String(attributes[attr.slug] ?? "")}
-											onChangeText={(v) => updateAttr(attr.slug, v)}
-											placeholder={attr.name}
-											placeholderTextColor={mutedColor}
-											keyboardType={
-												attr.type === "number" ? "numeric" : "default"
-											}
-											style={[styles.rowInput, { color: textColor }]}
-										/>
-									</View>
-								)}
+						{attributeSections.map((section) => (
+							<View key={section.key} style={styles.attrSection}>
+								{section.title ? (
+									<Text style={[styles.groupHeading, { color: textColor }]}>
+										{section.title}
+									</Text>
+								) : null}
+								{section.attributes.map((attr) => (
+									<EditAttributeField
+										key={attr.slug}
+										attribute={attr}
+										value={attributes[attr.slug] ?? ""}
+										onChange={(v: string) => updateAttr(attr.slug, v)}
+										textColor={textColor}
+										mutedColor={mutedColor}
+										primaryColor={primaryColor}
+										borderColor={borderColor}
+										inputBg={inputBg}
+									/>
+								))}
 							</View>
 						))}
 					</SectionCard>
@@ -820,16 +1020,18 @@ export default function EditListingScreen() {
 								},
 							};
 							const colors = statusColors[s] ?? statusColors.draft;
+							// Sniffing the French translation to pick a language was both a
+							// t() bypass and wrong for every other status, which stayed
+							// French in English.
 							const statusLabel: Record<string, string> = {
-								draft:
-									t("listings.statusPublished") === "Publi\u00e9"
-										? "Brouillon"
-										: "Draft",
-								pending: "En attente",
-								published: "Publi\u00e9",
-								rejected: "Rejet\u00e9",
-								sold: "Vendu",
-								expired: "Expir\u00e9",
+								draft: t("listings.statusDraft", {
+									defaultValue: "Brouillon",
+								}),
+								pending: t("listings.statusPending"),
+								published: t("listings.statusPublished"),
+								rejected: t("listings.statusRejected"),
+								sold: t("listings.statusSold"),
+								expired: t("listings.statusExpired"),
 							};
 							return (
 								<View style={{ gap: 8 }}>
@@ -1030,7 +1232,9 @@ export default function EditListingScreen() {
 
 				{/* Submit */}
 				<AnimatedPressable
-					onPress={() => save()}
+					// Goes through the same guard as the header button — this one used
+					// to save straight past the validation.
+					onPress={handleSavePress}
 					disabled={isPending}
 					scaleTo={0.97}
 					style={[
@@ -1128,6 +1332,26 @@ const styles = StyleSheet.create({
 
 	/* Fields */
 	fieldGroup: { gap: 6 },
+	attrSection: { gap: 14 },
+	groupHeading: {
+		fontSize: 12,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: 0.4,
+		textTransform: "uppercase",
+	},
+	attrUnit: {
+		fontSize: 13,
+		fontFamily: Fonts.bodySemibold,
+		marginLeft: 8,
+	},
+	attrError: {
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
+	},
+	attrHint: {
+		fontSize: 11,
+		fontFamily: Fonts.body,
+	},
 	fieldLabel: {
 		fontSize: 13,
 		fontFamily: Fonts.bodySemibold,

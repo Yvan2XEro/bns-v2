@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, usePathname } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -36,14 +36,42 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
 import {
+	type AttributeIssue,
+	areAttributesValid,
+	formatAttributeValue,
+	getAttributeIssue,
+	getCategoryAttributes,
+	getListingCategoryIcon,
 	getListingFormPreset,
+	groupListingAttributes,
 	isProductListingCategory,
+	type ListingAttribute,
+	maskDateInput,
+	sanitizeNumberInput,
+	sanitizePriceInput,
+	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 
 const DURATIONS = [30, 60, 90];
+
+/**
+ * Steps are addressed by id, never by position: which ones exist depends on the
+ * category, so an index means nothing on its own.
+ */
+type StepId = "attributes" | "category" | "details" | "photos" | "review";
+
+/**
+ * `category.icon` is a free text field: an emoji for most categories, but the
+ * admin may also have typed an icon class name. Only the former is renderable.
+ */
+function categoryEmoji(category: any): string | null {
+	const icon = typeof category?.icon === "string" ? category.icon.trim() : "";
+	if (!icon || /^[\w.:-]+$/.test(icon)) return null;
+	return icon;
+}
 
 // Blue + amber category tints (matches CategoryIcon palette)
 const CAT_TINTS = [
@@ -90,28 +118,79 @@ export default function CreateScreen() {
 	const { asPlace: rememberedPlace, hydrated: locationHydrated } =
 		useUserLocation();
 	const didPrefillLocationRef = useRef(false);
-	const [step, setStep] = useState(0);
+	const [step, setStep] = useState<StepId>("category");
+	const [form, setForm] = useState<FormData>({
+		category: null,
+		title: "",
+		description: "",
+		price: "",
+		condition: "new",
+		duration: 30,
+		location: "",
+		coordinates: null,
+		attributes: {},
+		images: [],
+		tags: [],
+	});
 
-	const STEPS = [
-		t("create.stepCategory"),
-		t("create.stepDetails"),
-		t("create.stepAttributes"),
-		t("create.stepPhotos"),
-		t("create.stepReview"),
-	];
+	// The extra-details step exists only for categories that define attributes.
+	// Categories without any (most services and job offers) used to land on an
+	// empty step that bounced forward, which made the back button unusable; the
+	// step is now skipped in both directions instead.
+	const categoryAttributes = useMemo(
+		() => getCategoryAttributes(form.category),
+		[form.category],
+	);
+	const hasAttributes = categoryAttributes.length > 0;
+	// Drives which steps exist, so it belongs to the wizard rather than to a
+	// single step component.
+	const preset = useMemo(
+		() => getListingFormPreset(form.category),
+		[form.category],
+	);
+
+	// The wizard for this category: a step only exists when it has something
+	// to ask. A category with no attributes never shows an attributes step, and
+	// one that does not want photos never shows a photos step — rather than
+	// showing them and skipping past, which left the counter describing pages
+	// the seller never saw.
+	const steps = useMemo<StepId[]>(() => {
+		const list: StepId[] = ["category", "details"];
+		if (hasAttributes) list.push("attributes");
+		if (preset.fields.photos?.enabled !== false) list.push("photos");
+		list.push("review");
+		return list;
+	}, [hasAttributes, preset]);
+
+	const STEP_LABELS: Record<StepId, string> = {
+		category: t("create.stepCategory"),
+		details: t("create.stepDetails"),
+		attributes: t("create.stepAttributes"),
+		photos: t("create.stepPhotos"),
+		review: t("create.stepReview"),
+	};
+
+	// Changing category can remove the step being displayed; fall back to the
+	// last one that still exists rather than rendering nothing.
+	const stepIndex = Math.max(0, steps.indexOf(step));
+	const currentStep = steps[stepIndex] ?? "category";
+	const totalSteps = steps.length;
 
 	// ── Animations ────────────────────────────────────────────────
 	const translateX = useSharedValue(0);
 	const opacity = useSharedValue(1);
-	const progressAnim = useSharedValue((1 / STEPS.length) * 100);
-	const stepRef = useRef(0);
+	const progressAnim = useSharedValue(20);
+	const stepRef = useRef<StepId>("category");
 
-	const goToStep = (next: number) => {
-		const dir = next > stepRef.current ? 1 : -1;
+	const goToStep = (next: StepId) => {
+		const target = steps.includes(next) ? next : "category";
+		const from = steps.indexOf(stepRef.current);
+		const to = steps.indexOf(target);
+		const dir = to > from ? 1 : -1;
 		translateX.value = dir * SCREEN_W * 0.4;
 		opacity.value = 0;
-		stepRef.current = next;
-		setStep(next);
+		stepRef.current = target;
+		setStep(target);
 		translateX.value = withTiming(0, {
 			duration: 320,
 			easing: Easing.out(Easing.cubic),
@@ -120,7 +199,7 @@ export default function CreateScreen() {
 			duration: 260,
 			easing: Easing.out(Easing.ease),
 		});
-		progressAnim.value = withTiming(((next + 1) / STEPS.length) * 100, {
+		progressAnim.value = withTiming(((to + 1) / steps.length) * 100, {
 			duration: 380,
 			easing: Easing.out(Easing.cubic),
 		});
@@ -135,19 +214,6 @@ export default function CreateScreen() {
 	const progressBarStyle = useAnimatedStyle(() => ({
 		width: `${progressAnim.value}%` as any,
 	}));
-	const [form, setForm] = useState<FormData>({
-		category: null,
-		title: "",
-		description: "",
-		price: "",
-		condition: "new",
-		duration: 30,
-		location: "",
-		coordinates: null,
-		attributes: {},
-		images: [],
-		tags: [],
-	});
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -245,7 +311,7 @@ export default function CreateScreen() {
 		inputBg,
 	};
 
-	const _progressPct = ((step + 1) / STEPS.length) * 100;
+	const goNext = () => goToStep(steps[stepIndex + 1] ?? "review");
 
 	return (
 		<SafeAreaView
@@ -255,7 +321,9 @@ export default function CreateScreen() {
 			{/* ── Header ── */}
 			<View style={[styles.header, { backgroundColor: accentBg }]}>
 				<Pressable
-					onPress={() => (step > 0 ? goToStep(step - 1) : router.back())}
+					onPress={() =>
+						stepIndex > 0 ? goToStep(steps[stepIndex - 1]) : router.back()
+					}
 					style={[styles.backBtn, { backgroundColor: cardBg }]}
 				>
 					<Ionicons name="arrow-back" size={18} color={textColor} />
@@ -267,9 +335,9 @@ export default function CreateScreen() {
 					</Text>
 					<Text style={[styles.headerStep, { color: mutedColor }]}>
 						{t("create.stepLabel", {
-							current: step + 1,
-							total: STEPS.length,
-							name: STEPS[step],
+							current: stepIndex + 1,
+							total: totalSteps,
+							name: STEP_LABELS[currentStep],
 						})}
 					</Text>
 				</View>
@@ -281,7 +349,7 @@ export default function CreateScreen() {
 					]}
 				>
 					<Text style={[styles.stepBadgeText, { color: primary }]}>
-						{step + 1}/{STEPS.length}
+						{stepIndex + 1}/{totalSteps}
 					</Text>
 				</View>
 			</View>
@@ -307,40 +375,46 @@ export default function CreateScreen() {
 				style={[styles.contentWrap, { backgroundColor: bg }, centeredContent]}
 			>
 				<Animated.View style={stepAnimStyle}>
-					{step === 0 && (
+					{currentStep === "category" && (
 						<CategoryStep
 							form={form}
 							setForm={setForm}
-							onNext={() => goToStep(1)}
+							onNext={goNext}
 							colors={colors}
 						/>
 					)}
-					{step === 1 && (
+					{currentStep === "details" && (
 						<DetailsStep
 							form={form}
 							setForm={setForm}
-							onNext={() => goToStep(2)}
+							onNext={goNext}
 							colors={colors}
 						/>
 					)}
-					{step === 2 && (
+					{currentStep === "attributes" && (
 						<AttributesStep
 							form={form}
 							setForm={setForm}
-							onNext={() => goToStep(3)}
+							attributes={categoryAttributes}
+							onNext={goNext}
 							colors={colors}
 						/>
 					)}
-					{step === 3 && (
+					{currentStep === "photos" && (
 						<PhotosStep
 							form={form}
 							setForm={setForm}
-							onNext={() => goToStep(4)}
+							onNext={goNext}
 							colors={colors}
 						/>
 					)}
-					{step === 4 && (
-						<ReviewStep form={form} setStep={goToStep} colors={colors} />
+					{currentStep === "review" && (
+						<ReviewStep
+							form={form}
+							attributes={categoryAttributes}
+							setStep={goToStep}
+							colors={colors}
+						/>
 					)}
 				</Animated.View>
 			</View>
@@ -432,6 +506,11 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 									condition: nextPreset.fields.condition.enabled
 										? f.condition || "new"
 										: "",
+									// Attributes are keyed by slugs that belong to one category;
+									// keeping them across a category change would submit answers
+									// to questions the new category never asked.
+									attributes:
+										f.category?.id === cat.id ? (f.attributes ?? {}) : {},
 								}));
 								onNext();
 							}}
@@ -454,11 +533,18 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 									{ backgroundColor: selected ? primary : tint.bg },
 								]}
 							>
-								<Ionicons
-									name="cube-outline"
-									size={20}
-									color={selected ? "#fff" : tint.icon}
-								/>
+								{/* The admin can give a category an emoji; only when it has
+								    none do we fall back to an icon, and that icon follows the
+								    kind of ad — a cube is wrong for a job offer or a rental. */}
+								{categoryEmoji(cat) ? (
+									<Text style={styles.catEmoji}>{categoryEmoji(cat)}</Text>
+								) : (
+									<Ionicons
+										name={getListingCategoryIcon(cat) as any}
+										size={20}
+										color={selected ? "#fff" : tint.icon}
+									/>
+								)}
 							</View>
 							<Text
 								style={[styles.catName, { color: textColor }]}
@@ -498,6 +584,10 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 	const showsPrice = categoryPreset.fields.price.enabled;
 	const requiresPrice = categoryPreset.fields.price.required;
 	const showsCondition = categoryPreset.fields.condition.enabled;
+	// A rental says "Loyer mensuel", a job "Salaire" — the category owns the
+	// wording, and only when it says nothing do we use the translated default.
+	const priceLabel =
+		categoryPreset.fields.price.label ?? t("create.priceFieldLabel");
 
 	const CONDITIONS: { key: string; label: string; icon: string }[] = [
 		{ key: "new", label: t("conditions.new"), icon: "sparkles-outline" },
@@ -620,15 +710,17 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				>
 					<FieldHeader
 						icon="cash-outline"
-						label={t("create.priceFieldLabel")}
+						label={priceLabel}
 						required={requiresPrice}
 						colors={colors}
 					/>
 					<View style={styles.priceRow}>
 						<TextInput
 							value={form.price}
-							onChangeText={(v) => update("price", v)}
-							placeholder="0"
+							// Prices are whole XAF amounts: a decimal separator typed on the
+							// "numeric" keypad used to reach the server as NaN.
+							onChangeText={(v) => update("price", sanitizePriceInput(v))}
+							placeholder={t("create.pricePlaceholder")}
 							placeholderTextColor={mutedColor}
 							style={[
 								styles.priceInput,
@@ -638,7 +730,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 									backgroundColor: inputBg,
 								},
 							]}
-							keyboardType="numeric"
+							keyboardType="number-pad"
 						/>
 						<View
 							style={[
@@ -647,7 +739,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 							]}
 						>
 							<Text style={[styles.priceBadgeText, { color: "#b45309" }]}>
-								XAF
+								{t("common.currency", { defaultValue: "XAF" })}
 							</Text>
 						</View>
 					</View>
@@ -709,7 +801,11 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 						{ backgroundColor: cardBg, borderColor: border },
 					]}
 				>
-					<FieldHeader icon="pricetag-outline" label="Tags" colors={colors} />
+					<FieldHeader
+						icon="pricetag-outline"
+						label={t("create.tagsFieldLabel", { defaultValue: "Tags" })}
+						colors={colors}
+					/>
 					<TagPicker
 						selectedIds={form.tags ?? []}
 						onChangeIds={(ids) => update("tags", ids)}
@@ -810,25 +906,14 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 
 // ─── Attributes Step ───────────────────────────────────────────────────────────
 
-function AttributesStep({ form, setForm, onNext, colors }: any) {
-	const { bg, cardBg, textColor, mutedColor, primary, border, inputBg } =
-		colors;
+function AttributesStep({ form, setForm, attributes, onNext, colors }: any) {
+	const { bg, textColor, mutedColor, border } = colors;
 	const { t } = useTranslation();
-	const attributes: any[] = form.category?.attributes ?? [];
-	const hasAttributes = attributes.length > 0;
+	const list: ListingAttribute[] = attributes ?? [];
 
-	// Categories with no attributes auto-advance. This must not happen during
-	// render: onNext() writes Reanimated shared values and calls setState on the
-	// parent, both of which are illegal in the render phase under Reanimated 4.
-	// The ref guard keeps an unstable `onNext` identity from re-firing it.
-	const autoAdvanced = useRef(false);
-	useEffect(() => {
-		if (hasAttributes || autoAdvanced.current) return;
-		autoAdvanced.current = true;
-		onNext();
-	}, [hasAttributes, onNext]);
-
-	if (!hasAttributes) return null;
+	// The parent skips this step entirely when the category defines no
+	// attributes, so this is only a guard against an unexpected render.
+	if (list.length === 0) return null;
 
 	const updateAttr = (slug: string, value: any) =>
 		setForm((f: any) => ({
@@ -836,12 +921,8 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 			attributes: { ...f.attributes, [slug]: value },
 		}));
 
-	const canProceed = attributes
-		.filter((a) => a.required)
-		.every((a) => {
-			const v = form.attributes[a.slug];
-			return v !== undefined && v !== "" && v !== null;
-		});
+	const sections = groupListingAttributes(list);
+	const canProceed = areAttributesValid(list, form.attributes ?? {});
 
 	return (
 		<ScrollView
@@ -856,107 +937,26 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 				{t("create.stepAttributesHint")}
 			</Text>
 
-			{attributes.map((attr: any) => (
-				<View
-					key={attr.slug}
-					style={[
-						styles.fieldCard,
-						{ backgroundColor: cardBg, borderColor: border },
-					]}
-				>
-					<FieldHeader
-						icon="pricetag-outline"
-						label={attr.name}
-						required={attr.required}
-						colors={colors}
-					/>
+			{sections.map((section) => (
+				<View key={section.key}>
+					{section.title ? (
+						<View style={styles.groupHeadingRow}>
+							<Text style={[styles.groupHeading, { color: textColor }]}>
+								{section.title}
+							</Text>
+							<View style={[styles.groupRule, { backgroundColor: border }]} />
+						</View>
+					) : null}
 
-					{attr.type === "select" && attr.options ? (
-						<View style={styles.conditionWrap}>
-							{attr.options.map((opt: any) => {
-								const active = form.attributes[attr.slug] === opt.value;
-								return (
-									<Pressable
-										key={opt.value}
-										onPress={() =>
-											updateAttr(attr.slug, active ? "" : opt.value)
-										}
-										style={[
-											styles.conditionPill,
-											{
-												backgroundColor: active ? primary : inputBg,
-												borderColor: active ? primary : border,
-											},
-										]}
-									>
-										{active && (
-											<Ionicons name="checkmark" size={12} color="#fff" />
-										)}
-										<Text
-											style={[
-												styles.conditionText,
-												{ color: active ? "#fff" : mutedColor },
-											]}
-										>
-											{opt.value}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-					) : attr.type === "boolean" ? (
-						<View style={[styles.conditionWrap, { gap: 8 }]}>
-							{[
-								{ label: t("common.yes"), value: "true" },
-								{ label: t("common.no"), value: "false" },
-							].map((opt) => {
-								const active = form.attributes[attr.slug] === opt.value;
-								return (
-									<Pressable
-										key={opt.value}
-										onPress={() =>
-											updateAttr(attr.slug, active ? "" : opt.value)
-										}
-										style={[
-											styles.conditionPill,
-											{
-												backgroundColor: active ? primary : inputBg,
-												borderColor: active ? primary : border,
-											},
-										]}
-									>
-										{active && (
-											<Ionicons name="checkmark" size={12} color="#fff" />
-										)}
-										<Text
-											style={[
-												styles.conditionText,
-												{ color: active ? "#fff" : mutedColor },
-											]}
-										>
-											{opt.label}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-					) : (
-						<TextInput
-							value={form.attributes[attr.slug] ?? ""}
-							onChangeText={(v) => updateAttr(attr.slug, v)}
-							placeholder={attr.name}
-							placeholderTextColor={mutedColor}
-							keyboardType={attr.type === "number" ? "numeric" : "default"}
-							style={[
-								styles.fieldInput,
-								{
-									color: textColor,
-									borderColor: border,
-									backgroundColor: inputBg,
-								},
-							]}
+					{section.attributes.map((attr) => (
+						<AttributeField
+							key={attr.slug}
+							attribute={attr}
+							value={form.attributes?.[attr.slug] ?? ""}
+							onChange={(v: string) => updateAttr(attr.slug, v)}
+							colors={colors}
 						/>
-					)}
+					))}
 				</View>
 			))}
 
@@ -970,11 +970,204 @@ function AttributesStep({ form, setForm, onNext, colors }: any) {
 	);
 }
 
+/**
+ * One category attribute. Every type the admin can define is handled here —
+ * a type this does not know about would silently vanish from the form, which is
+ * exactly how `date` went missing.
+ */
+function AttributeField({ attribute, value, onChange, colors }: any) {
+	const { cardBg, textColor, mutedColor, primary, border, inputBg } = colors;
+	const { t } = useTranslation();
+	const attr: ListingAttribute = attribute;
+	const issue = getAttributeIssue(attr, value);
+	// "Required" is a state the field starts in, not a mistake the user made:
+	// only bad input is shown in red, and only once something was typed.
+	const showIssue = issue !== null && issue.code !== "required";
+
+	const boundsHint = [
+		attr.min !== undefined
+			? `${t("common.min", { defaultValue: "Min" })} ${attr.min}`
+			: null,
+		attr.max !== undefined
+			? `${t("common.max", { defaultValue: "Max" })} ${attr.max}`
+			: null,
+	]
+		.filter(Boolean)
+		.join(" · ");
+
+	return (
+		<View
+			style={[
+				styles.fieldCard,
+				{ backgroundColor: cardBg, borderColor: border },
+			]}
+		>
+			<FieldHeader
+				icon="pricetag-outline"
+				label={attr.name}
+				required={attr.required}
+				colors={colors}
+			/>
+
+			{attr.type === "select" && attr.options.length > 0 ? (
+				<View style={styles.conditionWrap}>
+					{attr.options.map((opt) => {
+						const active = value === opt.value;
+						return (
+							<Pressable
+								key={opt.value}
+								onPress={() => onChange(active ? "" : opt.value)}
+								style={[
+									styles.conditionPill,
+									{
+										backgroundColor: active ? primary : inputBg,
+										borderColor: active ? primary : border,
+									},
+								]}
+							>
+								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								<Text
+									style={[
+										styles.conditionText,
+										{ color: active ? "#fff" : mutedColor },
+									]}
+								>
+									{opt.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			) : attr.type === "boolean" ? (
+				<View style={[styles.conditionWrap, { gap: 8 }]}>
+					{[
+						{ label: t("common.yes"), value: "true" },
+						{ label: t("common.no"), value: "false" },
+					].map((opt) => {
+						const active = value === opt.value;
+						return (
+							<Pressable
+								key={opt.value}
+								onPress={() => onChange(active ? "" : opt.value)}
+								style={[
+									styles.conditionPill,
+									{
+										backgroundColor: active ? primary : inputBg,
+										borderColor: active ? primary : border,
+									},
+								]}
+							>
+								{active && <Ionicons name="checkmark" size={12} color="#fff" />}
+								<Text
+									style={[
+										styles.conditionText,
+										{ color: active ? "#fff" : mutedColor },
+									]}
+								>
+									{opt.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			) : (
+				<View style={styles.attrInputRow}>
+					<TextInput
+						value={value}
+						onChangeText={(v) =>
+							onChange(
+								attr.type === "number"
+									? sanitizeNumberInput(v)
+									: attr.type === "date"
+										? maskDateInput(v)
+										: v,
+							)
+						}
+						placeholder={
+							attr.type === "date"
+								? t("create.dateFormatHint", { defaultValue: "JJ/MM/AAAA" })
+								: attr.name
+						}
+						placeholderTextColor={mutedColor}
+						keyboardType={
+							attr.type === "number"
+								? // "numeric" rather than "number-pad": an attribute may allow
+									// decimals or a negative minimum.
+									"numeric"
+								: attr.type === "date"
+									? "number-pad"
+									: "default"
+						}
+						maxLength={attr.type === "date" ? 10 : undefined}
+						style={[
+							styles.fieldInput,
+							styles.attrInput,
+							{
+								color: textColor,
+								borderColor: showIssue ? "#ef4444" : border,
+								backgroundColor: inputBg,
+							},
+						]}
+					/>
+					{/* Units belong next to the value, not in the label: "120 km". */}
+					{attr.unit ? (
+						<Text style={[styles.attrUnit, { color: mutedColor }]}>
+							{attr.unit}
+						</Text>
+					) : null}
+				</View>
+			)}
+
+			{showIssue ? (
+				<Text style={[styles.attrError, { color: "#ef4444" }]}>
+					{attributeIssueMessage(issue, t)}
+				</Text>
+			) : boundsHint ? (
+				<Text style={[styles.attrHint, { color: mutedColor }]}>
+					{boundsHint}
+				</Text>
+			) : null}
+		</View>
+	);
+}
+
+/** Turns a validation issue into a translated sentence. */
+function attributeIssueMessage(
+	issue: AttributeIssue,
+	t: (key: string, options?: any) => string,
+): string {
+	switch (issue.code) {
+		case "required":
+			return t("common.required");
+		case "min":
+			return t("create.attributeMin", {
+				defaultValue: "Valeur minimale : {{value}}",
+				value: issue.bound,
+			});
+		case "max":
+			return t("create.attributeMax", {
+				defaultValue: "Valeur maximale : {{value}}",
+				value: issue.bound,
+			});
+		case "date":
+			return t("create.attributeInvalidDate", {
+				defaultValue: "Date invalide (JJ/MM/AAAA)",
+			});
+		default:
+			return t("create.attributeInvalidNumber", {
+				defaultValue: "Valeur numérique invalide",
+			});
+	}
+}
+
 // ─── Photos Step ───────────────────────────────────────────────────────────────
 
 function PhotosStep({ form, setForm, onNext, colors }: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
 	const { t } = useTranslation();
+	// Whether a photo is mandatory is the category's call, not this screen's.
+	const photosRequired = getListingFormPreset(form.category).fields.photos
+		.required;
 	const { showAlert, showError, showWarning } = useAlert();
 	const [uploading, setUploading] = useState(false);
 
@@ -1078,7 +1271,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 				{t("create.stepPhotosTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				{t("create.stepPhotosHint")}
+				{t("create.stepPhotosHint", { count: MAX_LISTING_IMAGES })}
 			</Text>
 
 			{/* Tip card */}
@@ -1093,7 +1286,12 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			>
 				<Ionicons name="information-circle-outline" size={16} color={primary} />
 				<Text style={[styles.tipText, { color: primary }]}>
-					{t("create.stepPhotosQualityTip")}
+					{isProductListingCategory(form.category)
+						? t("create.stepPhotosQualityTip")
+						: t("create.stepPhotosQualityTipGeneric", {
+								defaultValue:
+									"Des photos nettes et bien éclairées rendent votre annonce plus convaincante.",
+							})}
 				</Text>
 			</View>
 
@@ -1160,7 +1358,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 				)}
 			</View>
 
-			{form.images.length === 0 && (
+			{photosRequired && form.images.length === 0 && (
 				<Text style={[styles.photoRequired, { color: "#ef4444" }]}>
 					{t("create.photoRequired")}
 				</Text>
@@ -1168,7 +1366,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 			<NextButton
 				label={t("create.continue")}
 				onPress={onNext}
-				active={form.images.length > 0}
+				active={!photosRequired || form.images.length > 0}
 				colors={colors}
 			/>
 		</ScrollView>
@@ -1177,7 +1375,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 
 // ─── Review Step ───────────────────────────────────────────────────────────────
 
-function ReviewStep({ form, setStep, colors }: any) {
+function ReviewStep({ form, attributes, setStep, colors }: any) {
 	const { user } = useAuth();
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
@@ -1185,6 +1383,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 	const categoryPreset = getListingFormPreset(form.category);
 	const showsPrice = categoryPreset.fields.price.enabled;
 	const showsCondition = categoryPreset.fields.condition.enabled;
+	const categoryAttributes: ListingAttribute[] = attributes ?? [];
 
 	const CONDITION_LABELS: Record<string, string> = {
 		new: t("conditions.new"),
@@ -1194,9 +1393,17 @@ function ReviewStep({ form, setStep, colors }: any) {
 		poor: t("conditions.poor"),
 	};
 
+	const serializedAttributes = serializeAttributeValues(
+		categoryAttributes,
+		form.attributes ?? {},
+	);
+
 	const { mutate: publish, isPending } = useMutation({
-		mutationFn: async () =>
+		mutationFn: async (status: "draft" | "pending") =>
 			api.post<any>("/api/listings", {
+				// Without this the server applies the field default ("draft") and
+				// the listing never reaches moderation.
+				status,
 				title: form.title,
 				description: form.description,
 				duration: form.duration,
@@ -1210,12 +1417,21 @@ function ReviewStep({ form, setStep, colors }: any) {
 					: {}),
 				...(form.tags.length > 0 ? { tags: form.tags } : {}),
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
-				...(Object.keys(form.attributes).length > 0
-					? { attributes: form.attributes }
+				// The API validates attribute types strictly (a number sent as a
+				// string is rejected), so the form's strings are typed here.
+				...(Object.keys(serializedAttributes).length > 0
+					? { attributes: serializedAttributes }
 					: {}),
 			}),
-		onSuccess: () => {
-			showSuccess(t("create.publishSuccess"), t("create.publishSuccessMsg"));
+		onSuccess: (_data, status) => {
+			showSuccess(
+				status === "draft"
+					? t("create.draftSavedTitle")
+					: t("create.publishSuccess"),
+				status === "draft"
+					? t("create.draftSavedMsg")
+					: t("create.publishSuccessMsg"),
+			);
 			router.push("/(tabs)/account");
 		},
 		onError: (err: any) => {
@@ -1226,71 +1442,97 @@ function ReviewStep({ form, setStep, colors }: any) {
 		},
 	});
 
-	const categoryAttributes: any[] = form.category?.attributes ?? [];
+	// The server runs the same checks on drafts as on submissions, so both
+	// buttons go through this. Only fields the preset actually shows can block:
+	// a hidden price is never "missing", and the wizard is rewound to the step
+	// that owns the problem rather than failing with a server error.
+	const submit = (status: "draft" | "pending") => {
+		if (showsPrice && categoryPreset.fields.price.required && !form.price) {
+			showError(t("create.publishError"), t("create.priceRequired"));
+			setStep("details");
+			return;
+		}
+		if (!areAttributesValid(categoryAttributes, form.attributes ?? {})) {
+			showError(t("create.publishError"), t("errors.validation"));
+			setStep("attributes");
+			return;
+		}
+		publish(status);
+	};
+
 	const attrRows = categoryAttributes
-		.filter(
-			(a) =>
-				form.attributes[a.slug] !== undefined && form.attributes[a.slug] !== "",
-		)
-		.map((a) => {
-			let value = form.attributes[a.slug];
-			if (value === "true") value = t("common.yes");
-			else if (value === "false") value = t("common.no");
-			return {
-				label: a.name,
-				icon: "pricetag-outline",
-				value: String(value),
-				step: 2,
-			};
-		});
+		.map((a) => ({
+			attribute: a,
+			// Booleans, select labels, units and dates are all rendered the way the
+			// category defined them — never as the raw stored string.
+			value: formatAttributeValue(a, form.attributes?.[a.slug], {
+				yes: t("common.yes"),
+				no: t("common.no"),
+			}),
+		}))
+		.filter((row) => row.value !== "")
+		.map((row) => ({
+			// Slugs are unique per category; names are not, and can clash with
+			// a fixed row's translated label.
+			id: `attr-${row.attribute.slug}`,
+			label: row.attribute.name,
+			icon: "pricetag-outline",
+			value: row.value,
+			step: "attributes",
+		}));
 
 	const rows = [
 		{
+			id: "category",
 			label: t("create.categoryFieldLabel"),
 			icon: "grid-outline",
 			value: form.category?.name ?? "—",
-			step: 0,
+			step: "category",
 		},
 		{
+			id: "title",
 			label: t("create.titleRowLabel"),
 			icon: "text-outline",
 			value: form.title || "—",
-			step: 1,
+			step: "details",
 		},
 		...(showsPrice
 			? [
 					{
-						label: t("create.priceRowLabel"),
+						id: "price",
+						label:
+							categoryPreset.fields.price.label ?? t("create.priceRowLabel"),
 						icon: "cash-outline",
-						value: form.price
-							? `${Number.parseInt(form.price, 10).toLocaleString()} XAF`
-							: "—",
-						step: 1,
+						value: formatPrice(form.price, t),
+						step: "details",
 					},
 				]
 			: []),
 		...(showsCondition
 			? [
 					{
+						id: "condition",
 						label: t("create.conditionRowLabel"),
 						icon: "shield-checkmark-outline",
-						value: CONDITION_LABELS[form.condition] ?? form.condition,
-						step: 1,
+						value: CONDITION_LABELS[form.condition] || form.condition || "—",
+						step: "details",
 					},
 				]
 			: []),
 		{
+			id: "location",
 			label: t("create.locationRowLabel"),
 			icon: "location-outline",
 			value: form.location || "—",
-			step: 1,
+			step: "details",
 		},
 		...attrRows,
 		{
+			id: "photos",
 			label: t("create.photosRowLabel"),
 			icon: "camera-outline",
 			value: t("create.photoCount", { count: form.images.length }),
-			step: 3,
+			step: "photos",
 		},
 	];
 
@@ -1314,7 +1556,7 @@ function ReviewStep({ form, setStep, colors }: any) {
 			>
 				{rows.map((row, i) => (
 					<View
-						key={row.label}
+						key={row.id}
 						style={[
 							styles.reviewRow,
 							{
@@ -1356,10 +1598,11 @@ function ReviewStep({ form, setStep, colors }: any) {
 				))}
 			</View>
 
-			{/* Publish button */}
+			{/* Submit for review */}
 			<Pressable
-				onPress={() => publish()}
+				onPress={() => submit("pending")}
 				disabled={isPending}
+				accessibilityRole="button"
 				style={[styles.publishBtn, { backgroundColor: "#f59e0b" }]}
 			>
 				{isPending ? (
@@ -1372,11 +1615,34 @@ function ReviewStep({ form, setStep, colors }: any) {
 				)}
 			</Pressable>
 
+			{/* Save as a draft — the listing stays private until submitted. */}
+			<Pressable
+				onPress={() => submit("draft")}
+				disabled={isPending}
+				accessibilityRole="button"
+				style={styles.draftBtn}
+			>
+				<Ionicons name="document-outline" size={18} color={mutedColor} />
+				<Text style={[styles.draftBtnText, { color: mutedColor }]}>
+					{t("create.saveDraftBtn")}
+				</Text>
+			</Pressable>
+
 			<Text style={[styles.publishNote, { color: mutedColor }]}>
 				{t("create.publishNote")}
 			</Text>
 		</ScrollView>
 	);
+}
+
+/** Grouped amount plus the currency, or an em dash when nothing was entered. */
+function formatPrice(
+	raw: string,
+	t: (key: string, options?: any) => string,
+): string {
+	const amount = Number.parseInt(raw, 10);
+	if (!Number.isFinite(amount)) return "—";
+	return `${amount.toLocaleString()} ${t("common.currency", { defaultValue: "XAF" })}`;
 }
 
 // ─── Shared sub-components ─────────────────────────────────────────────────────
@@ -1600,6 +1866,10 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		lineHeight: 15,
 	},
+	catEmoji: {
+		fontSize: 22,
+		lineHeight: 26,
+	},
 	catCheck: {
 		position: "absolute",
 		top: 6,
@@ -1650,6 +1920,45 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 		textAlign: "right",
 		marginTop: -6,
+	},
+
+	/* ── Category attributes ── */
+	groupHeadingRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		marginTop: 6,
+		marginBottom: 10,
+	},
+	groupHeading: {
+		fontSize: 13,
+		fontFamily: Fonts.displayBold,
+		letterSpacing: 0.4,
+		textTransform: "uppercase",
+	},
+	groupRule: {
+		flex: 1,
+		height: 1,
+	},
+	attrInputRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	attrInput: {
+		flex: 1,
+	},
+	attrUnit: {
+		fontSize: 13,
+		fontFamily: Fonts.bodySemibold,
+	},
+	attrError: {
+		fontSize: 12,
+		fontFamily: Fonts.bodySemibold,
+	},
+	attrHint: {
+		fontSize: 11,
+		fontFamily: Fonts.body,
 	},
 
 	/* ── Price ── */
@@ -1889,6 +2198,18 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 17,
 		fontFamily: Fonts.displayBold,
+	},
+	draftBtn: {
+		alignItems: "center",
+		flexDirection: "row",
+		gap: 8,
+		justifyContent: "center",
+		marginTop: 12,
+		paddingVertical: 12,
+	},
+	draftBtnText: {
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 14,
 	},
 	publishNote: {
 		fontSize: 12,
