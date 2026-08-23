@@ -6,6 +6,7 @@ type CategoryResponseShape = {
 	name: string;
 	slug: string;
 	description?: string | null;
+	searchAliases?: string | null;
 	icon?: string | null;
 	image?: string | null;
 	parent?: unknown;
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
 				name: category.name,
 				slug: category.slug,
 				description: category.description,
+				searchAliases: category.searchAliases,
 				icon: category.icon,
 				image: category.image,
 				parent: category.parent,
@@ -79,6 +81,7 @@ export async function GET(request: Request) {
 				name: category.name,
 				slug: category.slug,
 				description: category.description,
+				searchAliases: (category as CategoryResponseShape).searchAliases,
 				icon: category.icon,
 				image: category.image,
 				parent: category.parent,
@@ -104,6 +107,7 @@ export async function GET(request: Request) {
 			name: cat.name,
 			slug: cat.slug,
 			description: cat.description,
+			searchAliases: (cat as CategoryResponseShape).searchAliases,
 			icon: cat.icon,
 			image: cat.image,
 			parent: cat.parent,

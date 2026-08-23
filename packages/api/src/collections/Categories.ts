@@ -83,6 +83,16 @@ export const Categories: CollectionConfig = {
 			type: "textarea",
 		},
 		{
+			name: "searchAliases",
+			type: "textarea",
+			required: false,
+			label: "Search aliases",
+			admin: {
+				description:
+					"Words a seller is likely to type in an ad title for this category, separated by commas — brands, slang and the other language: “voiture, bagnole, toyota, hyundai”. They are what lets the ad form guess the category from the title, and they also widen the category search. Nothing here is ever shown to buyers.",
+			},
+		},
+		{
 			name: "icon",
 			type: "text",
 		},

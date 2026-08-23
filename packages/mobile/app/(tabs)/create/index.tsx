@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, usePathname } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -22,6 +22,7 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -34,6 +35,7 @@ import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { createCategorySuggester } from "@/src/lib/categorySuggest";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type AttributeIssue,
@@ -41,7 +43,6 @@ import {
 	formatAttributeValue,
 	getAttributeIssue,
 	getCategoryAttributes,
-	getListingCategoryIcon,
 	getListingFormPreset,
 	groupListingAttributes,
 	isProductListingCategory,
@@ -60,32 +61,14 @@ const DURATIONS = [30, 60, 90];
 /**
  * Steps are addressed by id, never by position: which ones exist depends on the
  * category, so an index means nothing on its own.
+ *
+ * `describe` comes first and asks what the seller is selling, in their own
+ * words. The category used to be the opening question, which meant choosing a
+ * taxonomy before having said anything — and once chosen it left the screen for
+ * good, so a wrong pick was neither visible nor correctable. It is now guessed
+ * from the title and shown on every step that can change it.
  */
-type StepId = "attributes" | "category" | "details" | "photos" | "review";
-
-/**
- * `category.icon` is a free text field: an emoji for most categories, but the
- * admin may also have typed an icon class name. Only the former is renderable.
- */
-function categoryEmoji(category: any): string | null {
-	const icon = typeof category?.icon === "string" ? category.icon.trim() : "";
-	if (!icon || /^[\w.:-]+$/.test(icon)) return null;
-	return icon;
-}
-
-// Blue + amber category tints (matches CategoryIcon palette)
-const CAT_TINTS = [
-	{ bg: "#dbeafe", icon: "#1e40af" },
-	{ bg: "#fef3c7", icon: "#b45309" },
-	{ bg: "#bfdbfe", icon: "#1e3a8a" },
-	{ bg: "#fde68a", icon: "#92400e" },
-	{ bg: "#eff6ff", icon: "#2563eb" },
-	{ bg: "#fef9c3", icon: "#a16207" },
-	{ bg: "#e0f2fe", icon: "#0369a1" },
-	{ bg: "#fef3c7", icon: "#d97706" },
-	{ bg: "#dbeafe", icon: "#3b82f6" },
-	{ bg: "#fde68a", icon: "#b45309" },
-];
+type StepId = "attributes" | "describe" | "details" | "photos" | "review";
 
 /** Maximum number of images a listing can carry (enforced server-side too). */
 const MAX_LISTING_IMAGES = 3;
@@ -109,17 +92,13 @@ interface FormData {
 	tags: string[];
 }
 
-export default function CreateScreen() {
-	const isDark = useColorScheme() === "dark";
-	const { t } = useTranslation();
-	const { user } = useAuth();
-	const pathname = usePathname();
-	const { width: SCREEN_W, centeredContent } = useResponsive();
-	const { asPlace: rememberedPlace, hydrated: locationHydrated } =
-		useUserLocation();
-	const didPrefillLocationRef = useRef(false);
-	const [step, setStep] = useState<StepId>("category");
-	const [form, setForm] = useState<FormData>({
+/**
+ * A blank ad. Built fresh each time rather than shared from a constant, so a
+ * reset can never hand back the `attributes` object or `images` array a
+ * previous draft was using.
+ */
+function createEmptyForm(): FormData {
+	return {
 		category: null,
 		title: "",
 		description: "",
@@ -131,7 +110,49 @@ export default function CreateScreen() {
 		attributes: {},
 		images: [],
 		tags: [],
+	};
+}
+
+export default function CreateScreen() {
+	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
+	const { user } = useAuth();
+	const pathname = usePathname();
+	const { width: SCREEN_W, centeredContent } = useResponsive();
+	const { asPlace: rememberedPlace, hydrated: locationHydrated } =
+		useUserLocation();
+	const { showAlert } = useAlert();
+	const didPrefillLocationRef = useRef(false);
+	const [step, setStep] = useState<StepId>("describe");
+	const [form, setForm] = useState<FormData>(createEmptyForm);
+
+	// Owned by the wizard rather than by a step: the category drives which steps
+	// exist, the header, and the guess made from the title.
+	const { data: categoriesData } = useQuery({
+		queryKey: CATEGORIES_QUERY_KEY,
+		queryFn: () => api.get<{ categories: any[] }>("/api/public/categories"),
+		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
+
+	// A category with a null/missing `name` used to throw downstream and blank
+	// the whole Create tab — same `.filter(Boolean)` guard the home screen uses.
+	const categories = useMemo(
+		() => (categoriesData?.categories ?? []).filter(Boolean),
+		[categoriesData],
+	);
+
+	/**
+	 * Set the moment the seller opens the category sheet themselves. From then on
+	 * the title no longer moves the category: a guess may replace a guess, never
+	 * an answer.
+	 */
+	const categoryChosenRef = useRef(false);
+	const [categoryWasGuessed, setCategoryWasGuessed] = useState(false);
+
+	const suggestFromTitle = useMemo(
+		() => createCategorySuggester(categories),
+		[categories],
+	);
 
 	// The extra-details step exists only for categories that define attributes.
 	// Categories without any (most services and job offers) used to land on an
@@ -155,7 +176,7 @@ export default function CreateScreen() {
 	// showing them and skipping past, which left the counter describing pages
 	// the seller never saw.
 	const steps = useMemo<StepId[]>(() => {
-		const list: StepId[] = ["category", "details"];
+		const list: StepId[] = ["describe", "details"];
 		if (hasAttributes) list.push("attributes");
 		if (preset.fields.photos?.enabled !== false) list.push("photos");
 		list.push("review");
@@ -163,7 +184,7 @@ export default function CreateScreen() {
 	}, [hasAttributes, preset]);
 
 	const STEP_LABELS: Record<StepId, string> = {
-		category: t("create.stepCategory"),
+		describe: t("create.stepDescribe"),
 		details: t("create.stepDetails"),
 		attributes: t("create.stepAttributes"),
 		photos: t("create.stepPhotos"),
@@ -173,17 +194,17 @@ export default function CreateScreen() {
 	// Changing category can remove the step being displayed; fall back to the
 	// last one that still exists rather than rendering nothing.
 	const stepIndex = Math.max(0, steps.indexOf(step));
-	const currentStep = steps[stepIndex] ?? "category";
+	const currentStep = steps[stepIndex] ?? "describe";
 	const totalSteps = steps.length;
 
 	// ── Animations ────────────────────────────────────────────────
 	const translateX = useSharedValue(0);
 	const opacity = useSharedValue(1);
 	const progressAnim = useSharedValue(20);
-	const stepRef = useRef<StepId>("category");
+	const stepRef = useRef<StepId>("describe");
 
 	const goToStep = (next: StepId) => {
-		const target = steps.includes(next) ? next : "category";
+		const target = steps.includes(next) ? next : "describe";
 		const from = steps.indexOf(stepRef.current);
 		const to = steps.indexOf(target);
 		const dir = to > from ? 1 : -1;
@@ -246,6 +267,91 @@ export default function CreateScreen() {
 					},
 		);
 	}, [locationHydrated, rememberedPlace]);
+
+	/**
+	 * Moves the form to a category, dropping whatever belonged to the previous
+	 * one. Attributes are keyed by slugs that belong to a single category, and a
+	 * price or condition the new category hides can neither be seen nor removed
+	 * by the seller — keeping either would submit answers to questions this
+	 * category never asked.
+	 */
+	const applyCategory = useCallback((next: any, guessed: boolean) => {
+		setCategoryWasGuessed(guessed);
+		setForm((f: any) => {
+			if (f.category?.id === next?.id) return f;
+			const nextPreset = getListingFormPreset(next);
+			return {
+				...f,
+				category: next,
+				price: nextPreset.fields.price.enabled ? f.price : "",
+				condition: nextPreset.fields.condition.enabled
+					? f.condition || "new"
+					: "",
+				attributes: {},
+				// The photo step disappears with the category, so keeping the files
+				// would attach pictures the seller can no longer see or remove.
+				images: nextPreset.fields.photos?.enabled === false ? [] : f.images,
+			};
+		});
+	}, []);
+
+	const handleCategoryPick = useCallback(
+		(next: any) => {
+			categoryChosenRef.current = true;
+			applyCategory(next, false);
+		},
+		[applyCategory],
+	);
+
+	/**
+	 * The title the seller last rejected a guess for.
+	 *
+	 * Clearing the category has to survive the very next render, or the effect
+	 * below would put the same suggestion straight back and the cross would look
+	 * broken. Rejecting a guess means "not for this title" — editing the title at
+	 * all is what asks for another one.
+	 */
+	const dismissedTitleRef = useRef<string | null>(null);
+
+	const handleCategoryClear = useCallback(() => {
+		// Back to guessing: clearing is how a seller asks the title to decide
+		// again, so it must undo their earlier trip to the sheet as well.
+		categoryChosenRef.current = false;
+		dismissedTitleRef.current = form.title;
+		applyCategory(null, false);
+	}, [applyCategory, form.title]);
+
+	// Emptying the title is starting the ad over. The category was chosen for a
+	// subject that no longer exists, so it goes with it — and the next title may
+	// suggest freely, even if the last one was answered by hand. Without this,
+	// one trip to the sheet silenced the guess for the rest of the session and
+	// rewriting the title appeared to do nothing.
+	useEffect(() => {
+		if (form.title.trim() !== "") return;
+		categoryChosenRef.current = false;
+		dismissedTitleRef.current = null;
+		if (form.category) applyCategory(null, false);
+	}, [form.title, form.category, applyCategory]);
+
+	// Guess the category from the title, the way leboncoin does. Only ever
+	// replaces another guess: once the seller has opened the sheet themselves,
+	// `categoryChosenRef` is set and the title stops moving the category.
+	//
+	// A guess only ever describes the title it was made from. Rewrite the title
+	// into something the corpus does not recognise and the guess goes with it,
+	// rather than sitting in the field looking like a deliberate answer — which
+	// is exactly how a seller ends up publishing a fridge under Cars.
+	useEffect(() => {
+		if (categoryChosenRef.current || categories.length === 0) return;
+		if (dismissedTitleRef.current === form.title) return;
+
+		const match = suggestFromTitle(form.title);
+		const nextId = match ? match.category.id : null;
+		const currentId = form.category?.id ?? null;
+		if (nextId === currentId) return;
+
+		applyCategory(match ? match.category : null, match != null);
+	}, [form.title, form.category, categories, suggestFromTitle, applyCategory]);
 
 	if (!user) {
 		return (
@@ -313,6 +419,46 @@ export default function CreateScreen() {
 
 	const goNext = () => goToStep(steps[stepIndex + 1] ?? "review");
 
+	/** Anything the seller would be sorry to lose. */
+	const hasDraft = Boolean(
+		form.title.trim() ||
+			form.description.trim() ||
+			form.category ||
+			form.price ||
+			form.images.length > 0 ||
+			form.tags.length > 0,
+	);
+
+	const resetForm = () => {
+		const blank = createEmptyForm();
+		// The remembered city is a preference, not part of the draft: asking for
+		// it again on every new ad is the thing `useUserLocation` exists to avoid.
+		if (rememberedPlace?.name) {
+			blank.location = rememberedPlace.name;
+			blank.coordinates =
+				rememberedPlace.lat != null && rememberedPlace.lng != null
+					? { lat: rememberedPlace.lat, lng: rememberedPlace.lng }
+					: null;
+		}
+		setForm(blank);
+		categoryChosenRef.current = false;
+		dismissedTitleRef.current = null;
+		setCategoryWasGuessed(false);
+		goToStep("describe");
+	};
+
+	const discardDraft = () => {
+		if (!hasDraft) return;
+		showAlert(t("create.discardTitle"), t("create.discardMsg"), [
+			{ text: t("common.cancel"), style: "cancel" },
+			{
+				text: t("create.discardConfirm"),
+				style: "destructive",
+				onPress: resetForm,
+			},
+		]);
+	};
+
 	return (
 		<SafeAreaView
 			edges={["top"]}
@@ -329,29 +475,52 @@ export default function CreateScreen() {
 					<Ionicons name="arrow-back" size={18} color={textColor} />
 				</Pressable>
 
+				{/* Four steps in, "Nouvelle annonce" tells the seller nothing they do
+				    not know, while the thing they are describing has long left the
+				    screen. The title takes its place as soon as there is one, with the
+				    category beside the step so both stay answerable at a glance. */}
 				<View style={styles.headerCenter}>
-					<Text style={[styles.headerTitle, { color: textColor }]}>
-						{t("create.newListing")}
+					<Text
+						style={[styles.headerTitle, { color: textColor }]}
+						numberOfLines={1}
+					>
+						{form.title.trim() || t("create.newListing")}
 					</Text>
-					<Text style={[styles.headerStep, { color: mutedColor }]}>
-						{t("create.stepLabel", {
-							current: stepIndex + 1,
-							total: totalSteps,
-							name: STEP_LABELS[currentStep],
-						})}
+					<Text
+						style={[styles.headerStep, { color: mutedColor }]}
+						numberOfLines={1}
+					>
+						{form.category?.name
+							? t("create.stepLabelWithCategory", {
+									current: stepIndex + 1,
+									total: totalSteps,
+									name: STEP_LABELS[currentStep],
+									category: form.category.name,
+								})
+							: t("create.stepLabel", {
+									current: stepIndex + 1,
+									total: totalSteps,
+									name: STEP_LABELS[currentStep],
+								})}
 					</Text>
 				</View>
 
-				<View
+				{/* Replaces the "1/5" badge, which repeated the step line directly
+				    above it. This tab is never unmounted, so without a way out a
+				    half-written ad followed the seller around until they deleted it
+				    character by character or restarted the app. */}
+				<Pressable
+					onPress={discardDraft}
+					disabled={!hasDraft}
 					style={[
-						styles.stepBadge,
-						{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+						styles.discardBtn,
+						{ backgroundColor: cardBg, opacity: hasDraft ? 1 : 0.4 },
 					]}
+					accessibilityRole="button"
+					accessibilityLabel={t("create.discardTitle")}
 				>
-					<Text style={[styles.stepBadgeText, { color: primary }]}>
-						{stepIndex + 1}/{totalSteps}
-					</Text>
-				</View>
+					<Ionicons name="trash-outline" size={18} color={mutedColor} />
+				</Pressable>
 			</View>
 
 			{/* ── Progress bar ── */}
@@ -375,10 +544,14 @@ export default function CreateScreen() {
 				style={[styles.contentWrap, { backgroundColor: bg }, centeredContent]}
 			>
 				<Animated.View style={stepAnimStyle}>
-					{currentStep === "category" && (
-						<CategoryStep
+					{currentStep === "describe" && (
+						<DescribeStep
 							form={form}
 							setForm={setForm}
+							categories={categories}
+							onCategoryPick={handleCategoryPick}
+							onCategoryClear={handleCategoryClear}
+							categoryWasGuessed={categoryWasGuessed}
 							onNext={goNext}
 							colors={colors}
 						/>
@@ -413,6 +586,7 @@ export default function CreateScreen() {
 							form={form}
 							attributes={categoryAttributes}
 							setStep={goToStep}
+							onPublished={resetForm}
 							colors={colors}
 						/>
 					)}
@@ -422,34 +596,36 @@ export default function CreateScreen() {
 	);
 }
 
-// ─── Category Step ─────────────────────────────────────────────────────────────
+// ─── Describe Step ─────────────────────────────────────────────────────────────
 
-function CategoryStep({ form, setForm, onNext, colors }: any) {
-	const {
-		bg,
-		cardBg,
-		textColor,
-		mutedColor,
-		primary,
-		border,
-		isDark,
-		inputBg,
-	} = colors;
+/**
+ * The opening step: what are you selling, in your own words.
+ *
+ * The title comes first because it is the one question a seller can always
+ * answer, and because it is enough to guess the category from — which is the
+ * only reason the category is no longer a wall to climb before starting.
+ */
+function DescribeStep({
+	form,
+	setForm,
+	categories,
+	onCategoryPick,
+	onCategoryClear,
+	categoryWasGuessed,
+	onNext,
+	colors,
+}: any) {
+	const { bg, cardBg, textColor, mutedColor, border, inputBg } = colors;
 	const { t } = useTranslation();
-	const [search, setSearch] = useState("");
 	const isProductCategory = isProductListingCategory(form.category);
 
-	const { data } = useQuery({
-		queryKey: CATEGORIES_QUERY_KEY,
-		queryFn: () => api.get<{ categories: any[] }>("/api/public/categories"),
-		staleTime: CATEGORIES_STALE_TIME_MS,
-	});
+	const update = (key: string, val: any) =>
+		setForm((f: any) => ({ ...f, [key]: val }));
 
-	// A category with a null/missing `name` used to throw here and blank the
-	// whole Create tab — same `.filter(Boolean)` guard the home screen uses.
-	const allCategories = (data?.categories ?? []).filter(Boolean);
-	const categories = allCategories.filter((c: any) =>
-		(c?.name ?? "").toLowerCase().includes(search.toLowerCase()),
+	// The category is the whole point of this step's second half, so moving on
+	// without one is not allowed — but it is usually already filled by then.
+	const canProceed = Boolean(
+		form.title.trim() && form.description.trim() && form.category,
 	);
 
 	return (
@@ -457,110 +633,110 @@ function CategoryStep({ form, setForm, onNext, colors }: any) {
 			style={{ flex: 1, backgroundColor: bg }}
 			contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 			showsVerticalScrollIndicator={false}
+			keyboardShouldPersistTaps="handled"
 		>
 			<Text style={[styles.stepTitle, { color: textColor }]}>
-				{t("create.stepCategoryTitle")}
+				{t("create.stepDescribeTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				{isProductCategory
-					? t("create.stepCategoryHint")
-					: t("create.stepCategoryHintGeneric")}
+				{t("create.stepDescribeHint")}
 			</Text>
 
-			{/* Search */}
 			<View
 				style={[
-					styles.searchWrap,
-					{ backgroundColor: inputBg, borderColor: border },
+					styles.fieldCard,
+					{ backgroundColor: cardBg, borderColor: border },
 				]}
 			>
-				<Ionicons name="search-outline" size={16} color={mutedColor} />
-				<TextInput
-					value={search}
-					onChangeText={setSearch}
-					placeholder={t("create.searchCategory")}
-					placeholderTextColor={mutedColor}
-					style={[styles.searchInput, { color: textColor }]}
+				<FieldHeader
+					icon="text-outline"
+					label={t("create.titleFieldLabel")}
+					required
+					colors={colors}
 				/>
-				{search.length > 0 && (
-					<Pressable onPress={() => setSearch("")}>
-						<Ionicons name="close-circle" size={16} color={mutedColor} />
-					</Pressable>
-				)}
+				<TextInput
+					value={form.title}
+					onChangeText={(v) => update("title", v)}
+					placeholder={
+						isProductCategory
+							? t("create.titlePlaceholder")
+							: t("create.titlePlaceholderGeneric")
+					}
+					placeholderTextColor={mutedColor}
+					style={[
+						styles.fieldInput,
+						{ color: textColor, borderColor: border, backgroundColor: inputBg },
+					]}
+					maxLength={100}
+					autoFocus
+				/>
+				<Text style={[styles.charCount, { color: mutedColor }]}>
+					{form.title.length}/100
+				</Text>
+
+				<View style={[styles.fieldDivider, { backgroundColor: border }]} />
+
+				<FieldHeader
+					icon="document-text-outline"
+					label={t("create.descriptionFieldLabel")}
+					required
+					colors={colors}
+				/>
+				<TextInput
+					value={form.description}
+					onChangeText={(v) => update("description", v)}
+					placeholder={
+						isProductCategory
+							? t("create.descriptionPlaceholder")
+							: t("create.descriptionPlaceholderGeneric")
+					}
+					placeholderTextColor={mutedColor}
+					style={[
+						styles.fieldInput,
+						styles.multiline,
+						{ color: textColor, borderColor: border, backgroundColor: inputBg },
+					]}
+					multiline
+					numberOfLines={5}
+					textAlignVertical="top"
+				/>
 			</View>
 
-			{/* Grid */}
-			<View style={styles.catGrid}>
-				{categories.map((cat: any, idx: number) => {
-					const tint = CAT_TINTS[idx % CAT_TINTS.length];
-					const selected = form.category?.id === cat.id;
-					return (
-						<Pressable
-							key={cat.id}
-							onPress={() => {
-								const nextPreset = getListingFormPreset(cat);
-								setForm((f: any) => ({
-									...f,
-									category: cat,
-									price: nextPreset.fields.price.enabled ? f.price : "",
-									condition: nextPreset.fields.condition.enabled
-										? f.condition || "new"
-										: "",
-									// Attributes are keyed by slugs that belong to one category;
-									// keeping them across a category change would submit answers
-									// to questions the new category never asked.
-									attributes:
-										f.category?.id === cat.id ? (f.attributes ?? {}) : {},
-								}));
-								onNext();
-							}}
-							style={[
-								styles.catCard,
-								{
-									backgroundColor: selected
-										? isDark
-											? "#1e3a5f"
-											: "#dbeafe"
-										: cardBg,
-									borderColor: selected ? primary : border,
-									borderWidth: selected ? 2 : 1,
-								},
-							]}
-						>
-							<View
-								style={[
-									styles.catIconCircle,
-									{ backgroundColor: selected ? primary : tint.bg },
-								]}
-							>
-								{/* The admin can give a category an emoji; only when it has
-								    none do we fall back to an icon, and that icon follows the
-								    kind of ad — a cube is wrong for a job offer or a rental. */}
-								{categoryEmoji(cat) ? (
-									<Text style={styles.catEmoji}>{categoryEmoji(cat)}</Text>
-								) : (
-									<Ionicons
-										name={getListingCategoryIcon(cat) as any}
-										size={20}
-										color={selected ? "#fff" : tint.icon}
-									/>
-								)}
-							</View>
-							<Text
-								style={[styles.catName, { color: textColor }]}
-								numberOfLines={2}
-							>
-								{cat.name}
-							</Text>
-							{selected && (
-								<View style={[styles.catCheck, { backgroundColor: primary }]}>
-									<Ionicons name="checkmark" size={10} color="#fff" />
-								</View>
-							)}
-						</Pressable>
-					);
-				})}
+			<View
+				style={[
+					styles.fieldCard,
+					{ backgroundColor: cardBg, borderColor: border },
+				]}
+			>
+				<FieldHeader
+					icon="grid-outline"
+					label={t("create.categoryFieldLabel")}
+					required
+					colors={colors}
+				/>
+				<CategoryField
+					categories={categories}
+					value={form.category}
+					onSelect={onCategoryPick}
+					onClear={onCategoryClear}
+					// Saying the category was guessed is what makes it safe to fill in
+					// for the seller: a wrong guess reads as a wrong guess, not as
+					// something they chose and can stop reading.
+					hint={
+						form.category && categoryWasGuessed
+							? t("create.categoryGuessedFromTitle")
+							: null
+					}
+					colors={colors}
+				/>
 			</View>
+
+			<NextButton
+				label={t("common.next")}
+				onPress={onNext}
+				active={canProceed}
+				colors={colors}
+			/>
 		</ScrollView>
 	);
 }
@@ -622,6 +798,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 	const canProceed =
 		form.title.trim() &&
 		form.description.trim() &&
+		form.category &&
 		(!requiresPrice || form.price) &&
 		form.location.trim();
 
@@ -641,65 +818,9 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 					: t("create.stepDetailsHintGeneric")}
 			</Text>
 
-			{/* Card: Titre + Description */}
-			<View
-				style={[
-					styles.fieldCard,
-					{ backgroundColor: cardBg, borderColor: border },
-				]}
-			>
-				<FieldHeader
-					icon="text-outline"
-					label={t("create.titleFieldLabel")}
-					required
-					colors={colors}
-				/>
-				<TextInput
-					value={form.title}
-					onChangeText={(v) => update("title", v)}
-					placeholder={
-						isProductCategory
-							? t("create.titlePlaceholder")
-							: t("create.titlePlaceholderGeneric")
-					}
-					placeholderTextColor={mutedColor}
-					style={[
-						styles.fieldInput,
-						{ color: textColor, borderColor: border, backgroundColor: inputBg },
-					]}
-					maxLength={100}
-				/>
-				<Text style={[styles.charCount, { color: mutedColor }]}>
-					{form.title.length}/100
-				</Text>
-
-				<View style={[styles.fieldDivider, { backgroundColor: border }]} />
-
-				<FieldHeader
-					icon="document-text-outline"
-					label={t("create.descriptionFieldLabel")}
-					required
-					colors={colors}
-				/>
-				<TextInput
-					value={form.description}
-					onChangeText={(v) => update("description", v)}
-					placeholder={
-						isProductCategory
-							? t("create.descriptionPlaceholder")
-							: t("create.descriptionPlaceholderGeneric")
-					}
-					placeholderTextColor={mutedColor}
-					style={[
-						styles.fieldInput,
-						styles.multiline,
-						{ color: textColor, borderColor: border, backgroundColor: inputBg },
-					]}
-					multiline
-					numberOfLines={5}
-					textAlignVertical="top"
-				/>
-			</View>
+			{/* The category is not repeated here: it is chosen on the previous step
+			    and the header carries it on every step, so a second copy of the
+			    same field only added a row to scroll past. */}
 
 			{showsPrice && (
 				<View
@@ -1251,7 +1372,9 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 		showAlert(t("create.addPhotoTitle"), t("create.addPhotoSource"), [
 			{ text: t("create.camera"), onPress: () => pickImage(true) },
 			{ text: t("create.gallery"), onPress: () => pickImage(false) },
-			{ text: t("create.cancel"), style: "cancel" },
+			// `create.cancel` was never translated, so the French build showed the
+			// key itself on this button. The word already exists under `common`.
+			{ text: t("common.cancel"), style: "cancel" },
 		]);
 	};
 
@@ -1375,7 +1498,7 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 
 // ─── Review Step ───────────────────────────────────────────────────────────────
 
-function ReviewStep({ form, attributes, setStep, colors }: any) {
+function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 	const { user } = useAuth();
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
@@ -1432,6 +1555,9 @@ function ReviewStep({ form, attributes, setStep, colors }: any) {
 					? t("create.draftSavedMsg")
 					: t("create.publishSuccessMsg"),
 			);
+			// The Create tab is never unmounted, so without this the ad that was
+			// just published is still sitting in the form the next time it opens.
+			onPublished?.();
 			router.push("/(tabs)/account");
 		},
 		onError: (err: any) => {
@@ -1487,14 +1613,14 @@ function ReviewStep({ form, attributes, setStep, colors }: any) {
 			label: t("create.categoryFieldLabel"),
 			icon: "grid-outline",
 			value: form.category?.name ?? "—",
-			step: "category",
+			step: "describe",
 		},
 		{
 			id: "title",
 			label: t("create.titleRowLabel"),
 			icon: "text-outline",
 			value: form.title || "—",
-			step: "details",
+			step: "describe",
 		},
 		...(showsPrice
 			? [
@@ -1789,14 +1915,12 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 		marginTop: 1,
 	},
-	stepBadge: {
-		borderRadius: 8,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-	},
-	stepBadgeText: {
-		fontSize: 12,
-		fontFamily: Fonts.displayBold,
+	discardBtn: {
+		width: 36,
+		height: 36,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 
 	/* ── Progress ── */
@@ -1820,65 +1944,6 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 		lineHeight: 20,
 		marginBottom: 20,
-	},
-
-	/* ── Category ── */
-	searchWrap: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		borderRadius: 12,
-		borderWidth: 1.5,
-		paddingHorizontal: 12,
-		paddingVertical: 10,
-		marginBottom: 16,
-	},
-	searchInput: {
-		flex: 1,
-		fontSize: 14,
-		fontFamily: Fonts.body,
-	},
-	catGrid: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		gap: 10,
-	},
-	catCard: {
-		width: "30%",
-		aspectRatio: 0.95,
-		borderRadius: 14,
-		alignItems: "center",
-		justifyContent: "center",
-		padding: 10,
-		gap: 8,
-		position: "relative",
-	},
-	catIconCircle: {
-		width: 44,
-		height: 44,
-		borderRadius: 14,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	catName: {
-		fontSize: 11,
-		fontFamily: Fonts.bodySemibold,
-		textAlign: "center",
-		lineHeight: 15,
-	},
-	catEmoji: {
-		fontSize: 22,
-		lineHeight: 26,
-	},
-	catCheck: {
-		position: "absolute",
-		top: 6,
-		right: 6,
-		width: 18,
-		height: 18,
-		borderRadius: 9,
-		alignItems: "center",
-		justifyContent: "center",
 	},
 
 	/* ── Field card ── */

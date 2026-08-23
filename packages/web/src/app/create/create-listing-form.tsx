@@ -3,8 +3,8 @@
 import { ArrowLeft, ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import { CategoryGrid } from "~/components/category-picker";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CategoryDialogField } from "~/components/category-picker";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { Badge } from "~/components/ui/badge";
@@ -42,6 +42,7 @@ import {
 	resolveFormPreset,
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
+import { createCategorySuggester } from "~/lib/category-suggest";
 import { formatListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import type { Category, ListingCondition } from "~/types";
@@ -51,7 +52,13 @@ const MAX_LISTING_IMAGES = 3;
 
 const DURATIONS = ["30", "60", "90"] as const;
 
-type StepId = "category" | "details" | "photos" | "review";
+/**
+ * `describe` opens the form and asks what is being sold, in the seller's own
+ * words. The category was the opening question until now, which meant choosing
+ * a taxonomy before having said anything — and once chosen it left the screen,
+ * so a wrong pick was neither visible nor correctable.
+ */
+type StepId = "describe" | "details" | "photos" | "review";
 
 export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const t = useTranslations("CreateListing");
@@ -95,8 +102,32 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		condition: "" as ListingCondition | "",
 	});
 
+	/**
+	 * Set the moment the seller opens the category modal themselves. From then on
+	 * the title no longer moves the category.
+	 */
+	const categoryChosenRef = useRef(false);
+	const [categoryWasGuessed, setCategoryWasGuessed] = useState(false);
+
+	const suggestFromTitle = useMemo(
+		() => createCategorySuggester(categories),
+		[categories],
+	);
+
 	const categoryPreset = resolveFormPreset(selectedCategory);
 	const isProduct = isProductCategory(selectedCategory);
+
+	const categoryLabels = useMemo(
+		() => ({
+			placeholder: t("chooseCategory"),
+			title: t("chooseCategory"),
+			description: isProduct ? t("categoryDesc") : t("categoryDescGeneric"),
+			search: t("searchCategories"),
+			empty: t("noCategoriesFound"),
+			clear: t("clearCategory"),
+		}),
+		[t, isProduct],
+	);
 	const priceField = categoryPreset.fields.price;
 	const conditionField = categoryPreset.fields.condition;
 	const photosField = categoryPreset.fields.photos;
@@ -124,9 +155,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	// length with the category.
 	const STEPS: { id: StepId; label: string; description: string }[] = [
 		{
-			id: "category",
-			label: t("category"),
-			description: isProduct ? t("categoryDesc") : t("categoryDescGeneric"),
+			id: "describe",
+			label: t("describe"),
+			description: t("describeDesc"),
 		},
 		{
 			id: "details",
@@ -151,8 +182,82 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		"Ajoutez au moins une photo.",
 	);
 
+	/**
+	 * Applies a category the seller picked themselves. From here on the title no
+	 * longer moves it: a guess may replace a guess, never an answer.
+	 */
 	function handleCategoryChange(categoryId: string) {
 		const category = categories.find((c) => c.id === categoryId) || null;
+		categoryChosenRef.current = true;
+		setCategoryWasGuessed(false);
+		applyCategory(category);
+	}
+
+	/**
+	 * The title the seller last rejected a guess for.
+	 *
+	 * Clearing the category has to survive the very next render, or the effect
+	 * below would put the same suggestion straight back and the cross would look
+	 * broken. Rejecting a guess means "not for this title" — editing the title at
+	 * all is what asks for another one.
+	 */
+	const dismissedTitleRef = useRef<string | null>(null);
+
+	function handleCategoryClear() {
+		// Back to guessing: clearing is how a seller asks the title to decide
+		// again, so it must undo their earlier trip to the modal as well.
+		categoryChosenRef.current = false;
+		dismissedTitleRef.current = formData.title;
+		setCategoryWasGuessed(false);
+		applyCategory(null);
+	}
+
+	// Emptying the title is starting the ad over. The category was chosen for a
+	// subject that no longer exists, so it goes with it — and the next title may
+	// suggest freely, even if the last one was answered by hand.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: applyCategory is
+	// redeclared every render; this depends on the title and the selection only.
+	useEffect(() => {
+		if (formData.title.trim() !== "") return;
+		categoryChosenRef.current = false;
+		dismissedTitleRef.current = null;
+		if (selectedCategory) applyCategory(null);
+	}, [formData.title, selectedCategory, applyCategory]);
+
+	// Guess the category from the title, the way leboncoin does. Only ever
+	// replaces another guess: once the seller has opened the modal themselves,
+	// `categoryChosenRef` is set and the title stops moving the category.
+	//
+	// A guess only ever describes the title it was made from. Rewrite the title
+	// into something the corpus does not recognise and the guess goes with it,
+	// rather than sitting in the field looking like a deliberate answer — which
+	// is exactly how a seller ends up publishing a fridge under Cars.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: applyCategory is
+	// redeclared every render; the guess depends on the title and the list only.
+	useEffect(() => {
+		if (categoryChosenRef.current || categories.length === 0) return;
+		if (dismissedTitleRef.current === formData.title) return;
+
+		const match = suggestFromTitle(formData.title);
+		const nextId = match ? match.category.id : null;
+		const currentId = selectedCategory?.id ?? null;
+		if (nextId === currentId) return;
+
+		setCategoryWasGuessed(match != null);
+		applyCategory(match ? match.category : null);
+	}, [
+		formData.title,
+		selectedCategory,
+		categories,
+		suggestFromTitle,
+		applyCategory,
+	]);
+
+	function applyCategory(category: Category | null) {
+		// Re-picking the category already selected would wipe the attributes
+		// answered under it, which is not what clicking it again asks for.
+		// `null` always goes through: that is the cross, asking to clear.
+		if (category && selectedCategory?.id === category.id) return;
 		setSelectedCategory(category);
 		setAttributes(resolveCategoryAttributes(category));
 		setAttributeValues({});
@@ -188,13 +293,14 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 
 	function canProceed(): boolean {
 		switch (currentStep.id) {
-			case "category":
-				return !!selectedCategory;
+			case "describe":
+				return !!(formData.title && formData.description && selectedCategory);
 			case "details":
 				return !!(
 					formData.title &&
 					formData.location &&
 					formData.description &&
+					selectedCategory &&
 					// The photo issue belongs to the photo step, not to this one.
 					missingCoreFields.filter((field) => field !== "photos").length ===
 						0 &&
@@ -236,7 +342,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			const blockingStep: StepId =
 				missingCoreFields.length === 1 && missingCoreFields[0] === "photos"
 					? "photos"
-					: "details";
+					: !formData.title || !formData.description
+						? "describe"
+						: "details";
 			const index = STEPS.findIndex((s) => s.id === blockingStep);
 			setStep(index === -1 ? 1 : index);
 			return;
@@ -343,17 +451,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					<CardDescription>{currentStep.description}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{/* Category */}
-					{currentStep.id === "category" && (
-						<CategoryGrid
-							categories={categories}
-							value={selectedCategory ? String(selectedCategory.id) : undefined}
-							onChange={handleCategoryChange}
-						/>
-					)}
-
-					{/* Details */}
-					{currentStep.id === "details" && (
+					{/* Describe */}
+					{currentStep.id === "describe" && (
 						<div className="space-y-5">
 							<div className="space-y-2">
 								<Label htmlFor="title">{tListing("title")}</Label>
@@ -369,9 +468,62 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										setFormData((p) => ({ ...p, title: e.target.value }))
 									}
 									required
+									autoFocus
 								/>
 							</div>
 
+							<div className="space-y-2">
+								<Label htmlFor="description">
+									{tListing("itemDescription")}
+								</Label>
+								<Textarea
+									id="description"
+									placeholder={
+										isProduct
+											? tListing("describeYourItem")
+											: tListing("describeYourListing")
+									}
+									rows={5}
+									value={formData.description}
+									onChange={(e) =>
+										setFormData((p) => ({
+											...p,
+											description: e.target.value,
+										}))
+									}
+									required
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label>
+									{t("category")}
+									<span className="text-destructive"> *</span>
+								</Label>
+								<CategoryDialogField
+									categories={categories}
+									value={selectedCategory}
+									onChange={handleCategoryChange}
+									onClear={handleCategoryClear}
+									// Saying the category was guessed is what makes it safe to
+									// fill in: a wrong guess reads as a wrong guess, not as
+									// something the seller chose and can stop reading.
+									hint={
+										selectedCategory && categoryWasGuessed
+											? t("categoryGuessedFromTitle")
+											: null
+									}
+									labels={categoryLabels}
+								/>
+							</div>
+						</div>
+					)}
+
+					{/* Details — the category is not repeated here: it is chosen on the
+					    previous step and a second copy of the same field only added a
+					    row to scroll past. */}
+					{currentStep.id === "details" && (
+						<div className="space-y-5">
 							<div className="grid gap-4 md:grid-cols-2">
 								{priceField.enabled && (
 									<div className="space-y-2">
@@ -480,29 +632,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 										"Durée de visibilité de votre annonce avant expiration.",
 									)}
 								</p>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="description">
-									{tListing("itemDescription")}
-								</Label>
-								<Textarea
-									id="description"
-									placeholder={
-										isProduct
-											? tListing("describeYourItem")
-											: tListing("describeYourListing")
-									}
-									rows={5}
-									value={formData.description}
-									onChange={(e) =>
-										setFormData((p) => ({
-											...p,
-											description: e.target.value,
-										}))
-									}
-									required
-								/>
 							</div>
 
 							{attributes.length > 0 && (
@@ -647,7 +776,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					<Button
 						type="button"
 						onClick={handleNext}
-						disabled={currentStep.id === "category" && !selectedCategory}
+						disabled={currentStep.id === "describe" && !selectedCategory}
 					>
 						{tCommon("next")}
 						<ArrowRight className="ml-2 h-4 w-4" />

@@ -297,6 +297,10 @@ export interface Category {
   name: string;
   slug: string;
   description?: string | null;
+  /**
+   * Words a seller is likely to type in an ad title for this category, separated by commas — brands, slang and the other language: “voiture, bagnole, toyota, hyundai”. They are what lets the ad form guess the category from the title, and they also widen the category search. Nothing here is ever shown to buyers.
+   */
+  searchAliases?: string | null;
   icon?: string | null;
   image?: (string | null) | Media;
   parent?: (string | null) | Category;
@@ -838,6 +842,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   description?: T;
+  searchAliases?: T;
   icon?: T;
   image?: T;
   parent?: T;

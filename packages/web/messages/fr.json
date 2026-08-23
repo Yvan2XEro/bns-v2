@@ -106,7 +106,9 @@
 		"socialSignupFailed": "L'inscription sociale a échoué. Veuillez réessayer.",
 		"loginFailed": "Échec de la connexion",
 		"registrationFailed": "Échec de l'inscription",
-		"resetSuccess": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
+		"resetSuccess": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
+		"newPassword": "Nouveau mot de passe",
+		"confirmNewPassword": "Confirmer le nouveau mot de passe"
 	},
 	"Search": {
 		"search": "Rechercher...",
@@ -151,7 +153,11 @@
 		"showResults": "Afficher {count} résultats",
 		"geolocationNotSupported": "La géolocalisation n'est pas supportée",
 		"couldNotGetLocation": "Impossible d'obtenir votre position",
-		"conditionFair": "Correct"
+		"conditionFair": "Correct",
+		"any": "Indifférent",
+		"yes": "Oui",
+		"no": "Non",
+		"loading": "Chargement…"
 	},
 	"Listing": {
 		"backToResults": "Retour aux résultats",
@@ -239,14 +245,19 @@
 		"whatServiceAreYouOffering": "Quel service proposez-vous ?",
 		"whatRoleAreYouHiring": "Quel poste recrutez-vous ?",
 		"whatAreYouRenting": "Que louez-vous ?",
-		"photosRequired": "Ajoutez au moins une photo."
+		"photosRequired": "Ajoutez au moins une photo.",
+		"category": "Catégorie",
+		"categoryDesc": "Choisissez la catégorie qui correspond le mieux à votre article.",
+		"categoryDescGeneric": "Choisissez la catégorie la plus adaptée à cette annonce.",
+		"detailsDesc": "Titre, prix, description et localisation de votre annonce.",
+		"detailsDescGeneric": "Les informations essentielles de cette annonce."
 	},
 	"CreateListing": {
 		"category": "Catégorie",
 		"categoryDesc": "Que vendez-vous ?",
 		"categoryDescGeneric": "Choisissez la catégorie la plus adaptée à cette annonce.",
 		"details": "Détails",
-		"detailsDesc": "Décrivez votre article",
+		"detailsDesc": "Prix, état et localisation de votre annonce.",
 		"detailsDescGeneric": "Ajoutez les informations clés de cette annonce.",
 		"photos": "Photos",
 		"photosDesc": "Ajoutez des images",
@@ -258,7 +269,14 @@
 		"saveAsDraft": "Enregistrer comme brouillon",
 		"submitForReviewBtn": "Soumettre pour révision",
 		"submitting": "Soumission...",
-		"cancel": "Annuler"
+		"cancel": "Annuler",
+		"describe": "Votre annonce",
+		"describeDesc": "Décrivez ce que vous vendez. Nous vous proposons une catégorie à partir du titre.",
+		"chooseCategory": "Choisir une catégorie",
+		"categoryGuessedFromTitle": "Suggéré d'après votre titre",
+		"searchCategories": "Rechercher une catégorie...",
+		"noCategoriesFound": "Aucune catégorie ne correspond",
+		"clearCategory": "Retirer la catégorie"
 	},
 	"Profile": {
 		"myProfile": "Mon profil",
@@ -293,7 +311,9 @@
 		"message": "Message",
 		"reportThisUser": "Signaler cet utilisateur",
 		"reviewsTitle": "Avis",
-		"unknownUser": "Inconnu"
+		"unknownUser": "Inconnu",
+		"name": "Nom",
+		"saveChanges": "Enregistrer les modifications"
 	},
 	"Settings": {
 		"accountSettings": "Paramètres du compte",
@@ -324,7 +344,9 @@
 		"confirmDelete1": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
 		"confirmDelete2": "Cela supprimera définitivement votre compte et toutes vos données. Continuer ?",
 		"currentPasswordIncorrect": "Le mot de passe actuel est incorrect",
-		"failedToDeleteAccount": "Échec de la suppression du compte. Veuillez réessayer."
+		"failedToDeleteAccount": "Échec de la suppression du compte. Veuillez réessayer.",
+		"passwordsDoNotMatch": "Les deux mots de passe ne correspondent pas.",
+		"passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères."
 	},
 	"Favorites": {
 		"favorites": "Favoris",

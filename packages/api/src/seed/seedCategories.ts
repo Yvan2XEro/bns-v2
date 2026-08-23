@@ -45,6 +45,18 @@ interface CategoryData {
 	name: string;
 	slug: string;
 	description: string;
+	/**
+	 * Words a seller actually types in an ad title, comma-separated: French and
+	 * English, singular and plural, slang, and the brands that only ever belong
+	 * to this category. This is the corpus the ad form matches a typed title
+	 * against to pre-select a category, so it is worth being generous — an alias
+	 * that never matches costs nothing, a missing one costs a suggestion.
+	 *
+	 * Brands are deliberately only listed where they are unambiguous: "toyota"
+	 * means a car, but "apple" could be a phone, a computer or a watch, so it is
+	 * left out rather than made to pick.
+	 */
+	searchAliases?: string;
 	icon?: string;
 	imageUrl?: string;
 	/** Omitted when the category is happy to inherit its parent's form. */
@@ -82,6 +94,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Vehicles",
 		slug: "vehicles",
 		description: "Cars, motorcycles, trucks, and other vehicles",
+		searchAliases:
+			"vehicule, vehicules, voiture, auto, automobile, engin, transport, car, vehicle",
 		icon: "car",
 		imageUrl:
 			"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop",
@@ -147,6 +161,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Cars",
 		slug: "cars",
 		description: "Used and new cars for sale",
+		searchAliases:
+			"voiture, voitures, auto, automobile, bagnole, berline, citadine, 4x4, suv, toyota, hyundai, nissan, mercedes, bmw, peugeot, renault, kia, honda, ford, volkswagen, mazda, corolla, hilux, rav4, prado, carina, car, sedan",
 		icon: "car-front",
 		imageUrl:
 			"https://images.unsplash.com/photo-1549924231-f129b911e442?w=800&h=600&fit=crop",
@@ -398,6 +414,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Motorcycles",
 		slug: "motorcycles",
 		description: "Motorcycles, scooters, and ATVs",
+		searchAliases:
+			"moto, motos, scooter, motocyclette, mototaxi, benskin, cylindree, yamaha, suzuki, ktm, motorcycle, motorbike",
 		icon: "bike",
 		imageUrl:
 			"https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&h=600&fit=crop",
@@ -560,6 +578,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Trucks & Utility",
 		slug: "trucks-utility",
 		description: "Trucks, vans, and utility vehicles",
+		searchAliases:
+			"camion, camions, camionnette, fourgon, fourgonnette, utilitaire, benne, remorque, tracteur, poids lourd, truck, van, pickup, lorry",
 		icon: "truck",
 		imageUrl:
 			"https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=800&h=600&fit=crop",
@@ -734,6 +754,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Real Estate",
 		slug: "real-estate",
 		description: "Properties for sale and rent",
+		searchAliases:
+			"immobilier, immo, logement, bien immobilier, propriete, real estate, property, housing",
 		icon: "home",
 		imageUrl:
 			"https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop",
@@ -795,6 +817,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Apartments",
 		slug: "apartments",
 		description: "Apartments and flats for sale or rent",
+		searchAliases:
+			"appartement, appartements, appart, studio, duplex, chambre, meuble, non meuble, f2, f3, f4, apartment, flat",
 		icon: "building",
 		imageUrl:
 			"https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop",
@@ -985,6 +1009,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Houses & Villas",
 		slug: "houses",
 		description: "Houses, villas, and townhouses",
+		searchAliases:
+			"maison, maisons, villa, villas, pavillon, residence, house, home",
 		icon: "house",
 		imageUrl:
 			"https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=600&fit=crop",
@@ -1185,6 +1211,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Commercial Property",
 		slug: "commercial-property",
 		description: "Offices, shops, and commercial spaces",
+		searchAliases:
+			"local, local commercial, boutique, magasin, bureau, bureaux, entrepot, hangar, commerce, shop, office, warehouse, commercial",
 		icon: "store",
 		imageUrl:
 			"https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=600&fit=crop",
@@ -1320,6 +1348,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Land",
 		slug: "land",
 		description: "Agricultural and building land",
+		searchAliases:
+			"terrain, terrains, parcelle, lot, titre foncier, hectare, land, plot",
 		icon: "mountain",
 		imageUrl:
 			"https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=600&fit=crop",
@@ -1435,6 +1465,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Electronics",
 		slug: "electronics",
 		description: "Phones, computers, TVs, and gadgets",
+		searchAliases:
+			"electronique, electro, appareil, gadget, high tech, hightech, electronics, device",
 		icon: "cpu",
 		imageUrl:
 			"https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&h=600&fit=crop",
@@ -1480,6 +1512,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Phones & Tablets",
 		slug: "phones",
 		description: "Mobile phones, smartphones, and tablets",
+		searchAliases:
+			"telephone, telephones, tel, portable, smartphone, tablette, iphone, samsung galaxy, galaxy, tecno, infinix, itel, xiaomi, redmi, huawei, oppo, nokia, ipad, phone, tablet",
 		icon: "smartphone",
 		imageUrl:
 			"https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&h=600&fit=crop",
@@ -1634,6 +1668,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Computers",
 		slug: "computers",
 		description: "Laptops, desktops, and accessories",
+		searchAliases:
+			"ordinateur, ordinateurs, ordi, pc, laptop, macbook, imac, desktop, dell, hp, lenovo, asus, acer, toshiba, thinkpad, ram, ssd, processeur, computer",
 		icon: "laptop",
 		imageUrl:
 			"https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&h=600&fit=crop",
@@ -1810,6 +1846,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "TVs & Monitors",
 		slug: "tvs-monitors",
 		description: "Televisions, monitors, and screens",
+		searchAliases:
+			"tv, television, televiseur, ecran, moniteur, smart tv, led, oled, hisense, monitor, screen, projecteur, projector",
 		icon: "monitor",
 		imageUrl:
 			"https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=800&h=600&fit=crop",
@@ -1930,6 +1968,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Gaming",
 		slug: "gaming",
 		description: "Consoles, video games, and gaming accessories",
+		searchAliases:
+			"jeu video, jeux video, gaming, console, manette, playstation, ps3, ps4, ps5, xbox, nintendo, switch, gamepad, game, video game",
 		icon: "gamepad-2",
 		imageUrl:
 			"https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?w=800&h=600&fit=crop",
@@ -2031,6 +2071,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Home & Garden",
 		slug: "home-garden",
 		description: "Furniture, appliances, and garden equipment",
+		searchAliases:
+			"maison, jardin, deco, decoration, menage, interieur, home, garden, household",
 		icon: "sofa",
 		imageUrl:
 			"https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&h=600&fit=crop",
@@ -2083,6 +2125,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Furniture",
 		slug: "furniture",
 		description: "Sofas, beds, tables, and chairs",
+		searchAliases:
+			"meuble, meubles, mobilier, canape, fauteuil, table, chaise, lit, armoire, matelas, etagere, buffet, furniture, sofa, bed, wardrobe",
 		icon: "armchair",
 		imageUrl:
 			"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600&fit=crop",
@@ -2242,6 +2286,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Appliances",
 		slug: "appliances",
 		description: "Kitchen and household appliances",
+		searchAliases:
+			"electromenager, frigo, refrigerateur, congelateur, cuisiniere, four, micro onde, microonde, machine a laver, climatiseur, clim, ventilateur, fer a repasser, mixeur, appliance, fridge, freezer, cooker, washing machine",
 		icon: "refrigerator",
 		imageUrl:
 			"https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?w=800&h=600&fit=crop",
@@ -2392,6 +2438,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Garden & DIY",
 		slug: "garden-diy",
 		description: "Garden tools, plants, and DIY supplies",
+		searchAliases:
+			"jardin, jardinage, bricolage, outil, outils, tondeuse, perceuse, plante, plantes, groupe electrogene, echelle, garden, diy, tool, tools, generator",
 		icon: "flower",
 		imageUrl:
 			"https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop",
@@ -2481,6 +2529,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Fashion & Clothing",
 		slug: "fashion",
 		description: "Clothing, shoes, and accessories",
+		searchAliases:
+			"mode, vetement, vetements, habit, habits, fringue, fringues, style, fashion, clothing, clothes",
 		icon: "shirt",
 		imageUrl:
 			"https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=600&fit=crop",
@@ -2530,6 +2580,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Men's Clothing",
 		slug: "mens-clothing",
 		description: "Shirts, pants, jackets, and more for men",
+		searchAliases:
+			"homme, hommes, chemise, pantalon, costume, veste, tshirt, t shirt, polo, jean, chaussure homme, basket homme, men, mens, shirt, trousers, suit",
 		icon: "shirt",
 		imageUrl:
 			"https://images.unsplash.com/photo-1507680434567-5739c80be1ac?w=800&h=600&fit=crop",
@@ -2646,6 +2698,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Women's Clothing",
 		slug: "womens-clothing",
 		description: "Dresses, tops, pants, and more for women",
+		searchAliases:
+			"femme, femmes, robe, jupe, chemisier, pagne, kaba, tailleur, sac a main, talon, escarpin, women, womens, dress, skirt, handbag, blouse",
 		icon: "shirt",
 		imageUrl:
 			"https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=600&fit=crop",
@@ -2762,6 +2816,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Watches & Jewelry",
 		slug: "watches-jewelry",
 		description: "Watches, rings, necklaces, and bracelets",
+		searchAliases:
+			"montre, montres, bijou, bijoux, bague, collier, bracelet, boucle d oreille, or, argent, diamant, rolex, watch, jewelry, jewellery, ring, necklace",
 		icon: "watch",
 		imageUrl:
 			"https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=800&h=600&fit=crop",
@@ -2912,6 +2968,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Jobs & Services",
 		slug: "jobs-services",
 		description: "Job offers, freelance services, and professional help",
+		searchAliases:
+			"emploi, job, travail, boulot, service, services, prestation, work",
 		icon: "briefcase",
 		imageUrl:
 			"https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&h=600&fit=crop",
@@ -2966,6 +3024,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Job Offers",
 		slug: "job-offers",
 		description: "Full-time and part-time job opportunities",
+		searchAliases:
+			"offre emploi, offre d emploi, recrutement, recrute, recherche, poste, embauche, cdi, cdd, stage, stagiaire, salaire, hiring, job offer, vacancy, recruitment",
 		icon: "briefcase",
 		imageUrl:
 			"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop",
@@ -3139,6 +3199,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Services",
 		slug: "services",
 		description: "Professional and personal services",
+		searchAliases:
+			"service, services, prestation, reparation, depannage, plomberie, plombier, electricien, menuisier, macon, coiffure, couture, nettoyage, menage, cours, repetiteur, traiteur, photographe, demenagement, repair, cleaning, tutoring, freelance",
 		icon: "wrench",
 		imageUrl:
 			"https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop",
@@ -3252,6 +3314,7 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Leisure & Sports",
 		slug: "leisure-sports",
 		description: "Sports equipment, hobbies, and entertainment",
+		searchAliases: "loisir, loisirs, sport, sports, detente, hobby, leisure",
 		icon: "dumbbell",
 		imageUrl:
 			"https://images.unsplash.com/photo-1461896836934-bd45ba3bdb78?w=800&h=600&fit=crop",
@@ -3290,6 +3353,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Sports Equipment",
 		slug: "sports-equipment",
 		description: "Fitness gear, bikes, and sports accessories",
+		searchAliases:
+			"sport, fitness, musculation, haltere, halteres, velo, bicyclette, ballon, football, basket, tapis de course, gym, bike, bicycle, weights, treadmill",
 		icon: "dumbbell",
 		imageUrl:
 			"https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=600&fit=crop",
@@ -3394,6 +3459,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Books & Media",
 		slug: "books-media",
 		description: "Books, music, movies, and collectibles",
+		searchAliases:
+			"livre, livres, bd, roman, manuel, cd, dvd, vinyle, musique, film, revue, magazine, book, books, media, movie, music",
 		icon: "book-open",
 		imageUrl:
 			"https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=800&h=600&fit=crop",
@@ -3514,6 +3581,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Travel & Vacation",
 		slug: "travel-vacation",
 		description: "Holiday rentals, trips, and luggage",
+		searchAliases:
+			"voyage, vacance, vacances, sejour, hotel, auberge, gite, location vacances, billet, tourisme, excursion, travel, holiday, vacation, trip",
 		icon: "plane",
 		imageUrl:
 			"https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=600&fit=crop",
@@ -3666,6 +3735,8 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Kids & Baby",
 		slug: "kids-baby",
 		description: "Toys, baby gear, and children's clothing",
+		searchAliases:
+			"enfant, enfants, bebe, bebes, puericulture, jouet, jouets, kids, baby, child, toy",
 		icon: "baby",
 		imageUrl:
 			"https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=800&h=600&fit=crop",
@@ -3765,6 +3836,7 @@ const categoryDefinitions: CategoryData[] = [
 		name: "Other",
 		slug: "other",
 		description: "Miscellaneous items and everything else",
+		searchAliases: "autre, autres, divers, misc, other",
 		icon: "package",
 		imageUrl:
 			"https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=800&h=600&fit=crop",
@@ -3900,6 +3972,7 @@ export const seedCategories = async (payload: unknown) => {
 				name: catDef.name,
 				slug: catDef.slug,
 				description: catDef.description,
+				searchAliases: catDef.searchAliases,
 				icon: catDef.icon,
 				active: true,
 				parent: parentId,

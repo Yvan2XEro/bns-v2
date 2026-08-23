@@ -106,7 +106,9 @@
 		"socialSignupFailed": "Social sign-up failed. Please try again.",
 		"loginFailed": "Login failed",
 		"registrationFailed": "Registration failed",
-		"resetSuccess": "Password reset successfully. You can now sign in with your new password."
+		"resetSuccess": "Password reset successfully. You can now sign in with your new password.",
+		"newPassword": "New password",
+		"confirmNewPassword": "Confirm new password"
 	},
 	"Search": {
 		"search": "Search...",
@@ -150,7 +152,11 @@
 		"tryDifferentKeywords": "Try different keywords or filters",
 		"showResults": "Show {count} results",
 		"geolocationNotSupported": "Geolocation is not supported",
-		"couldNotGetLocation": "Could not get your location"
+		"couldNotGetLocation": "Could not get your location",
+		"any": "Any",
+		"yes": "Yes",
+		"no": "No",
+		"loading": "Loading…"
 	},
 	"Listing": {
 		"backToResults": "Back to results",
@@ -238,14 +244,19 @@
 		"whatServiceAreYouOffering": "What service are you offering?",
 		"whatRoleAreYouHiring": "What role are you hiring for?",
 		"whatAreYouRenting": "What are you renting out?",
-		"photosRequired": "Add at least one photo."
+		"photosRequired": "Add at least one photo.",
+		"category": "Category",
+		"categoryDesc": "Choose the category that best fits your item.",
+		"categoryDescGeneric": "Choose the category that best fits this listing.",
+		"detailsDesc": "Title, price, description and location of your ad.",
+		"detailsDescGeneric": "The key information for this listing."
 	},
 	"CreateListing": {
 		"category": "Category",
 		"categoryDesc": "What are you selling?",
 		"categoryDescGeneric": "Choose the category that best fits this listing.",
 		"details": "Details",
-		"detailsDesc": "Describe your item",
+		"detailsDesc": "Price, condition and location of your ad.",
 		"detailsDescGeneric": "Add the key information for this listing.",
 		"photos": "Photos",
 		"photosDesc": "Add images",
@@ -257,7 +268,14 @@
 		"saveAsDraft": "Save as draft",
 		"submitForReviewBtn": "Submit for review",
 		"submitting": "Submitting...",
-		"cancel": "Cancel"
+		"cancel": "Cancel",
+		"describe": "Your ad",
+		"describeDesc": "Describe what you are selling. We suggest a category from the title.",
+		"chooseCategory": "Choose a category",
+		"categoryGuessedFromTitle": "Suggested from your title",
+		"searchCategories": "Search a category...",
+		"noCategoriesFound": "No category matches",
+		"clearCategory": "Remove the category"
 	},
 	"Profile": {
 		"myProfile": "My Profile",
@@ -292,7 +310,9 @@
 		"message": "Message",
 		"reportThisUser": "Report this user",
 		"reviewsTitle": "Reviews",
-		"unknownUser": "Unknown"
+		"unknownUser": "Unknown",
+		"name": "Name",
+		"saveChanges": "Save changes"
 	},
 	"Settings": {
 		"accountSettings": "Account Settings",
@@ -323,7 +343,9 @@
 		"confirmDelete1": "Are you sure you want to delete your account? This action cannot be undone.",
 		"confirmDelete2": "This will permanently delete your account and all your data. Continue?",
 		"currentPasswordIncorrect": "Current password is incorrect",
-		"failedToDeleteAccount": "Failed to delete account. Please try again."
+		"failedToDeleteAccount": "Failed to delete account. Please try again.",
+		"passwordsDoNotMatch": "The two passwords do not match.",
+		"passwordMinLength": "The password must be at least 8 characters long."
 	},
 	"Favorites": {
 		"favorites": "Favorites",

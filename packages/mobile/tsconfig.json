@@ -6,5 +6,10 @@
 			"@/*": ["./*"]
 		}
 	},
-	"include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+	"include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+	// Tests run under `bun test`, not Metro, and import from `bun:test`. Pulling
+	// @types/bun in to satisfy them would drop Bun's runtime globals next to
+	// React Native's in every app file; the tests are left out of the app
+	// typecheck instead.
+	"exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }

@@ -64,4 +64,36 @@ describe("public categories route", () => {
 			slug: "category-1",
 		});
 	}, 10000);
+
+	it("passes searchAliases through to the clients", async () => {
+		// The ad form guesses a category from the typed title by matching it
+		// against these aliases. Dropping the field from the response would not
+		// fail anywhere — the guess would just quietly stop working.
+		findMock.mockResolvedValue({
+			docs: [
+				{
+					id: "cat-cars",
+					name: "Cars",
+					slug: "cars",
+					description: "Used and new cars for sale",
+					searchAliases: "voiture, bagnole, toyota",
+					icon: null,
+					image: null,
+					parent: "cat-vehicles",
+					attributes: [],
+				},
+			],
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/categories/route"
+		);
+
+		const response = await GET(
+			new Request("http://localhost:3000/api/public/categories"),
+		);
+		const body = await response.json();
+
+		expect(body.categories[0].searchAliases).toBe("voiture, bagnole, toyota");
+	}, 10000);
 });

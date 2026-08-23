@@ -36,7 +36,8 @@
 		"tagline": "Buy & Sell, Simply.",
 		"currency": "XAF",
 		"min": "Min",
-		"max": "Max"
+		"max": "Max",
+		"choose": "Choose"
 	},
 	"auth": {
 		"login": "Login",
@@ -223,10 +224,8 @@
 	},
 	"create": {
 		"title": "Post a Listing",
-		"stepCategory": "Select a category",
-		"stepCategorySubtitle": "What are you selling?",
 		"stepDetails": "Listing details",
-		"stepDetailsSubtitle": "Title, price and description",
+		"stepDetailsSubtitle": "Price, condition and location",
 		"stepAttributes": "Additional details",
 		"stepAttributesSubtitle": "Help buyers find your listing",
 		"stepPhotos": "Add photos",
@@ -266,12 +265,9 @@
 		"sell": "Sell",
 		"loginRequired": "Login required",
 		"loginRequiredSubtitle": "Sign in to post a listing",
-		"stepCategoryTitle": "Which category?",
-		"stepCategoryHint": "Choose the category that best fits your item.",
-		"stepCategoryHintGeneric": "Choose the category that best fits this listing.",
 		"searchCategory": "Search a category...",
 		"stepDetailsTitle": "Listing details",
-		"stepDetailsHint": "The more detailed your listing, the more buyers it attracts.",
+		"stepDetailsHint": "These are what decide where your ad shows up in results.",
 		"stepDetailsHintGeneric": "Add the key information people need to understand this listing.",
 		"titleFieldLabel": "Listing title",
 		"titlePlaceholder": "e.g. iPhone 13 Pro 256 GB, black...",
@@ -327,7 +323,20 @@
 		"attributeMax": "Maximum value: {{value}}",
 		"attributeInvalidDate": "Invalid date (DD/MM/YYYY)",
 		"attributeInvalidNumber": "Invalid number",
-		"stepPhotosQualityTipGeneric": "Clear, well-lit photos make your listing more convincing."
+		"stepPhotosQualityTipGeneric": "Clear, well-lit photos make your listing more convincing.",
+		"stepDescribe": "Your ad",
+		"stepDescribeTitle": "What are you selling?",
+		"stepDescribeHint": "Describe your item in a few words. We suggest a category from the title.",
+		"stepLabelWithCategory": "Step {{current}} of {{total}} — {{name}} · {{category}}",
+		"categoryGuessedFromTitle": "Suggested from your title",
+		"noCategoryMatch": "No category matches",
+		"categoryItself": "The whole category",
+		"openSubcategories": "Show subcategories",
+		"openCategorySheet": "Opens the list of categories",
+		"clearCategory": "Remove the category",
+		"discardTitle": "Discard this ad?",
+		"discardMsg": "Everything you have entered will be erased.",
+		"discardConfirm": "Discard"
 	},
 	"messages": {
 		"title": "Messages",
