@@ -99,55 +99,117 @@ export async function indexDocuments(docs: ListingDocument[]): Promise<void> {
 const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 
-async function fetchFilterableAttributeSlugs(): Promise<string[]> {
-	try {
-		const res = await fetch(`${PAYLOAD_API_URL}/categories?limit=200&depth=0`);
-		if (!res.ok) return [];
-		const data = (await res.json()) as {
-			docs: Array<{
-				attributes?: Array<{ slug: string; filterable?: boolean }>;
-			}>;
-		};
-		const slugs = new Set<string>();
-		for (const cat of data.docs) {
-			for (const attr of cat.attributes || []) {
-				if (attr.filterable) {
-					slugs.add(attr.slug);
+const sleep = (ms: number) =>
+	new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Every attribute slug a category declares filterable.
+ *
+ * Returns `null` when Payload could not be reached at all, which is a very
+ * different thing from "no category declares one" — and conflating the two is
+ * what broke search filtering in production. This worker starts alongside the
+ * API (compose only waits for the container to *start*, not for Next to
+ * listen), so the first request here regularly lands before anything answers.
+ * The old version swallowed that, returned an empty list, and the index was
+ * configured with only the static attributes — every category filter then made
+ * Meilisearch reject the query for the lifetime of the deployment.
+ */
+async function fetchFilterableAttributeSlugs(
+	attempts = 10,
+	delayMs = 3000,
+): Promise<string[] | null> {
+	for (let attempt = 1; attempt <= attempts; attempt++) {
+		try {
+			const res = await fetch(`${PAYLOAD_API_URL}/categories?limit=0&depth=0`);
+			if (res.ok) {
+				const data = (await res.json()) as {
+					docs: Array<{
+						attributes?: Array<{ slug: string; filterable?: boolean }>;
+					}>;
+				};
+				const slugs = new Set<string>();
+				for (const cat of data.docs) {
+					for (const attr of cat.attributes || []) {
+						if (attr.filterable && attr.slug) {
+							slugs.add(attr.slug);
+						}
+					}
 				}
+				return Array.from(slugs);
 			}
+			console.warn(
+				`[search-indexer] categories request returned ${res.status} (attempt ${attempt}/${attempts})`,
+			);
+		} catch (error) {
+			console.warn(
+				`[search-indexer] cannot reach Payload at ${PAYLOAD_API_URL} (attempt ${attempt}/${attempts}):`,
+				error instanceof Error ? error.message : error,
+			);
 		}
-		return Array.from(slugs);
-	} catch (error) {
-		console.warn(
-			"[search-indexer] failed to fetch category attributes:",
-			error,
-		);
-		return [];
+
+		if (attempt < attempts) await sleep(delayMs);
 	}
+
+	return null;
 }
 
-export async function configureIndex(): Promise<void> {
+/** Filterable regardless of what the categories declare. */
+const STATIC_FILTERABLE_ATTRIBUTES = [
+	"status",
+	"categoryId",
+	"condition",
+	"price",
+	"location",
+	"boostedUntil",
+	"sellerId",
+	"tags",
+	"_geo",
+];
+
+/** What the index was last configured with, to skip no-op settings updates. */
+let configuredAttributes: string[] | null = null;
+
+export async function configureIndex(
+	attempts = 10,
+	delayMs = 3000,
+): Promise<void> {
 	const index = getIndex();
 
-	const dynamicAttrs = await fetchFilterableAttributeSlugs();
+	const dynamicAttrs = await fetchFilterableAttributeSlugs(attempts, delayMs);
+	if (dynamicAttrs === null) {
+		// Crashing is the honest outcome: this worker cannot index a listing
+		// without Payload either, and carrying on would quietly publish an index
+		// that rejects every category filter. Docker restarts us, and by then the
+		// API is usually up.
+		throw new Error(
+			`Could not read category attributes from ${PAYLOAD_API_URL}. Refusing to configure the index without them — every category filter would fail.`,
+		);
+	}
+
 	if (dynamicAttrs.length > 0) {
 		console.log(
 			`[search-indexer] meilisearch dynamic filterable attributes: ${dynamicAttrs.join(", ")}`,
 		);
+	} else {
+		console.warn(
+			"[search-indexer] no category declares a filterable attribute — category filters will match nothing",
+		);
 	}
 
 	const filterableAttributes = [
-		"status",
-		"categoryId",
-		"condition",
-		"price",
-		"location",
-		"boostedUntil",
-		"sellerId",
-		"tags",
-		"_geo",
+		...STATIC_FILTERABLE_ATTRIBUTES,
 		...dynamicAttrs,
 	];
+
+	// A settings update makes Meilisearch reindex, so it is worth not repeating
+	// one that changes nothing.
+	if (
+		configuredAttributes !== null &&
+		configuredAttributes.length === filterableAttributes.length &&
+		configuredAttributes.every((slug, i) => slug === filterableAttributes[i])
+	) {
+		return;
+	}
 
 	try {
 		await index.updateSettings({
@@ -167,6 +229,7 @@ export async function configureIndex(): Promise<void> {
 				"_geo",
 			],
 		});
+		configuredAttributes = filterableAttributes;
 		console.log(
 			`[search-indexer] meilisearch index "${INDEX_NAME}" configured with ${filterableAttributes.length} filterable attributes`,
 		);
@@ -177,6 +240,32 @@ export async function configureIndex(): Promise<void> {
 		);
 		throw error;
 	}
+}
+
+/**
+ * Re-reads the categories periodically and updates the index settings when the
+ * filterable attributes have changed.
+ *
+ * An attribute added in the admin is otherwise invisible to Meilisearch until
+ * this worker restarts, and the symptom is not an error but a filter that
+ * quietly matches nothing. One attempt per tick — the next tick is the retry.
+ */
+export function startFilterableAttributeRefresh(
+	intervalMs = 15 * 60 * 1000,
+): () => void {
+	const timer = setInterval(() => {
+		configureIndex(1, 0).catch((error) => {
+			console.warn(
+				"[search-indexer] filterable attribute refresh failed:",
+				error instanceof Error ? error.message : error,
+			);
+		});
+	}, intervalMs);
+
+	// Never hold the process open on account of the refresh alone.
+	timer.unref?.();
+
+	return () => clearInterval(timer);
 }
 
 export async function clearIndex(): Promise<void> {

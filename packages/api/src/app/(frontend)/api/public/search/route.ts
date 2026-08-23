@@ -11,6 +11,46 @@ console.log(
 const isTruthyQueryParam = (value: string | null): boolean =>
 	value === "true" || value === "1";
 
+/**
+ * Quotes a value for Meilisearch's filter expression.
+ *
+ * These came straight from the query string into the expression before, so a
+ * value carrying a double quote either broke the whole search or extended the
+ * filter with whatever followed it.
+ */
+const quoteFilterValue = (value: string): string =>
+	`"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+
+/**
+ * Turns one `attr_<slug>=<value>` parameter into a filter clause, or `null`
+ * when the value does not describe one.
+ *
+ * A leading comparison operator means a numeric bound; a comma means "any of
+ * these"; anything else is an exact match. A bound that is not a number is
+ * dropped rather than sent as `NaN`, which Meilisearch rejects outright.
+ */
+function buildAttributeFilter(slug: string, raw: string): string | null {
+	const value = raw.trim();
+	if (!value) return null;
+
+	for (const operator of [">=", "<=", ">", "<"] as const) {
+		if (!value.startsWith(operator)) continue;
+		const bound = Number(value.slice(operator.length).trim());
+		return Number.isFinite(bound) ? `${slug} ${operator} ${bound}` : null;
+	}
+
+	if (value.includes(",")) {
+		const options = value
+			.split(",")
+			.map((option) => option.trim())
+			.filter(Boolean)
+			.map(quoteFilterValue);
+		return options.length > 0 ? `${slug} IN [${options.join(", ")}]` : null;
+	}
+
+	return `${slug} = ${quoteFilterValue(value)}`;
+}
+
 const serializeListingHit = (doc: Record<string, unknown>) => ({
 	id: doc.id,
 	title: doc.title,
@@ -48,36 +88,15 @@ export async function GET(request: Request) {
 
 	const dynamicFilters: string[] = [];
 	for (const [key, value] of searchParams.entries()) {
-		if (key.startsWith("attr_")) {
-			const attrSlug = key.replace("attr_", "");
-			const attrFilter = decodeURIComponent(value);
+		if (!key.startsWith("attr_")) continue;
 
-			if (attrFilter.startsWith(">=")) {
-				dynamicFilters.push(
-					`${attrSlug} >= ${Number.parseInt(attrFilter.replace(">=", ""), 10)}`,
-				);
-			} else if (attrFilter.startsWith("<=")) {
-				dynamicFilters.push(
-					`${attrSlug} <= ${Number.parseInt(attrFilter.replace("<=", ""), 10)}`,
-				);
-			} else if (attrFilter.startsWith(">")) {
-				dynamicFilters.push(
-					`${attrSlug} > ${Number.parseInt(attrFilter.replace(">", ""), 10)}`,
-				);
-			} else if (attrFilter.startsWith("<")) {
-				dynamicFilters.push(
-					`${attrSlug} < ${Number.parseInt(attrFilter.replace("<", ""), 10)}`,
-				);
-			} else if (attrFilter.includes(",")) {
-				const options = attrFilter
-					.split(",")
-					.map((o) => `"${o.trim()}"`)
-					.join(", ");
-				dynamicFilters.push(`${attrSlug} IN [${options}]`);
-			} else {
-				dynamicFilters.push(`${attrSlug} = "${attrFilter}"`);
-			}
-		}
+		const attrSlug = key.slice("attr_".length);
+		// Attribute slugs are generated, lowercase and hyphenated. Anything else
+		// is not one of ours and has no business reaching the filter expression.
+		if (!/^[a-z0-9][a-z0-9-]*$/.test(attrSlug)) continue;
+
+		const built = buildAttributeFilter(attrSlug, value);
+		if (built) dynamicFilters.push(built);
 	}
 
 	if (!host || boostedOnly) {
@@ -248,12 +267,30 @@ export async function GET(request: Request) {
 			break;
 	}
 
-	const result = await index.search(query, {
-		filter: filters.join(" AND "),
-		sort: sort.length > 0 ? sort : undefined,
-		limit,
-		offset,
-	});
+	const filter = filters.join(" AND ");
+
+	let result: Awaited<ReturnType<typeof index.search>>;
+	try {
+		result = await index.search(query, {
+			filter,
+			sort: sort.length > 0 ? sort : undefined,
+			limit,
+			offset,
+		});
+	} catch (error) {
+		// Meilisearch rejects a filter on an attribute it was never told is
+		// filterable, and the index settings are only as fresh as the last run of
+		// the indexer's `configureIndex`. That used to surface as a bare 500 with
+		// no clue as to which filter caused it.
+		console.error(
+			`[search] Meilisearch rejected the query. filter=${filter} sort=${sort.join(",")}`,
+			error,
+		);
+		return Response.json(
+			{ error: "Search is unavailable", code: "search.unavailable" },
+			{ status: 503 },
+		);
+	}
 
 	console.log(
 		`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`,

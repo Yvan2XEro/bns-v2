@@ -1,7 +1,10 @@
 import { handleListingCreated } from "./handlers/listingCreated.ts";
 import { handleListingDeleted } from "./handlers/listingDeleted.ts";
 import { handleListingUpdated } from "./handlers/listingUpdated.ts";
-import { configureIndex } from "./meilisearch.ts";
+import {
+	configureIndex,
+	startFilterableAttributeRefresh,
+} from "./meilisearch.ts";
 import { createSubscriber, type SearchEvent } from "./redis.ts";
 
 async function handleEvent(event: SearchEvent): Promise<void> {
@@ -35,6 +38,9 @@ async function main(): Promise<void> {
 	await configureIndex();
 	console.log("[search-indexer] Meilisearch index configured");
 
+	// Categories change from the admin, without anything restarting this worker.
+	const stopRefresh = startFilterableAttributeRefresh();
+
 	const subscriber = createSubscriber(handleEvent);
 	await subscriber.start();
 
@@ -42,6 +48,7 @@ async function main(): Promise<void> {
 
 	const shutdown = async () => {
 		console.log("[search-indexer] Shutting down...");
+		stopRefresh();
 		await subscriber.stop();
 		process.exit(0);
 	};
