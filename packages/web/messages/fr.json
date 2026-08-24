@@ -250,7 +250,9 @@
 		"categoryDesc": "Choisissez la catégorie qui correspond le mieux à votre article.",
 		"categoryDescGeneric": "Choisissez la catégorie la plus adaptée à cette annonce.",
 		"detailsDesc": "Titre, prix, description et localisation de votre annonce.",
-		"detailsDescGeneric": "Les informations essentielles de cette annonce."
+		"detailsDescGeneric": "Les informations essentielles de cette annonce.",
+		"characteristics": "Caractéristiques",
+		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer."
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -276,7 +278,9 @@
 		"categoryGuessedFromTitle": "Suggéré d'après votre titre",
 		"searchCategories": "Rechercher une catégorie...",
 		"noCategoriesFound": "Aucune catégorie ne correspond",
-		"clearCategory": "Retirer la catégorie"
+		"clearCategory": "Retirer la catégorie",
+		"characteristics": "Caractéristiques",
+		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer."
 	},
 	"Profile": {
 		"myProfile": "Mon profil",

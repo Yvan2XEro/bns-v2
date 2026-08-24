@@ -176,8 +176,13 @@ export default function CreateScreen() {
 	// showing them and skipping past, which left the counter describing pages
 	// the seller never saw.
 	const steps = useMemo<StepId[]>(() => {
-		const list: StepId[] = ["describe", "details"];
+		// Characteristics follow the category directly: they are the questions
+		// that category asks, and answering them right after choosing it keeps
+		// one train of thought. Price, condition and duration are about selling
+		// rather than about the thing, so they come after.
+		const list: StepId[] = ["describe"];
 		if (hasAttributes) list.push("attributes");
+		list.push("details");
 		if (preset.fields.photos?.enabled !== false) list.push("photos");
 		list.push("review");
 		return list;

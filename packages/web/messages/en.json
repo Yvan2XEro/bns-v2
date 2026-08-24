@@ -249,7 +249,9 @@
 		"categoryDesc": "Choose the category that best fits your item.",
 		"categoryDescGeneric": "Choose the category that best fits this listing.",
 		"detailsDesc": "Title, price, description and location of your ad.",
-		"detailsDescGeneric": "The key information for this listing."
+		"detailsDescGeneric": "The key information for this listing.",
+		"characteristics": "Characteristics",
+		"characteristicsDesc": "The details buyers use to filter."
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -275,7 +277,9 @@
 		"categoryGuessedFromTitle": "Suggested from your title",
 		"searchCategories": "Search a category...",
 		"noCategoriesFound": "No category matches",
-		"clearCategory": "Remove the category"
+		"clearCategory": "Remove the category",
+		"characteristics": "Characteristics",
+		"characteristicsDesc": "The details buyers use to filter."
 	},
 	"Profile": {
 		"myProfile": "My Profile",

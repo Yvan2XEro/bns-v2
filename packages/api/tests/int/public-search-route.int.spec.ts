@@ -95,7 +95,9 @@ describe("public search route", () => {
 			title: "Boosted listing",
 			boostedUntil: "2026-08-20T12:00:00.000Z",
 		});
-	});
+		// First test in the file, so it pays for importing the route and its
+		// Payload config; that alone can outlast the 5s default.
+	}, 10000);
 
 	describe("category attribute filters", () => {
 		it("matches an exact value", async () => {

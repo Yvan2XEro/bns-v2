@@ -402,7 +402,8 @@
 		"statusPendingDesc": "Sera examiné par notre équipe sous 24h",
 		"statusPublishedNotice": "Modifier cette annonce la soumettra à nouveau pour révision.",
 		"statusRejectedNotice": "Votre annonce a été rejetée.",
-		"statusRejectionReason": "Raison : {{reason}}"
+		"statusRejectionReason": "Raison : {{reason}}",
+		"saleSection": "Vente"
 	},
 	"messages": {
 		"title": "Messages",

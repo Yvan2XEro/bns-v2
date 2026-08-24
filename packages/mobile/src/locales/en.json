@@ -524,7 +524,8 @@
 		"statusPendingDesc": "Will be reviewed by our team within 24h",
 		"statusPublishedNotice": "Editing this listing will re-submit it for review.",
 		"statusRejectedNotice": "Your listing was rejected.",
-		"statusRejectionReason": "Reason: {{reason}}"
+		"statusRejectionReason": "Reason: {{reason}}",
+		"saleSection": "Sale"
 	},
 	"profile": {
 		"bio": "Bio",

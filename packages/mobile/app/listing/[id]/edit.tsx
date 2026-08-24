@@ -775,7 +775,46 @@ export default function EditListingScreen() {
 							numberOfLines={5}
 						/>
 					</View>
+				</SectionCard>
 
+				{/* ── Attributs dynamiques ── */}
+				{categoryAttributes.length > 0 && (
+					<SectionCard
+						icon="pricetag-outline"
+						title={`${t("edit.characteristics")} — ${category?.name ?? ""}`}
+						{...sharedSection}
+					>
+						{attributeSections.map((section) => (
+							<View key={section.key} style={styles.attrSection}>
+								{section.title ? (
+									<Text style={[styles.groupHeading, { color: textColor }]}>
+										{section.title}
+									</Text>
+								) : null}
+								{section.attributes.map((attr) => (
+									<EditAttributeField
+										key={attr.slug}
+										attribute={attr}
+										value={attributes[attr.slug] ?? ""}
+										onChange={(v: string) => updateAttr(attr.slug, v)}
+										textColor={textColor}
+										mutedColor={mutedColor}
+										primaryColor={primaryColor}
+										borderColor={borderColor}
+										inputBg={inputBg}
+									/>
+								))}
+							</View>
+						))}
+					</SectionCard>
+				)}
+
+				{/* ── Vente ── */}
+				<SectionCard
+					icon="pricetag-outline"
+					title={t("edit.saleSection")}
+					{...sharedSection}
+				>
 					{showsPrice && (
 						<View style={styles.fieldGroup}>
 							<FieldLabel
@@ -941,38 +980,6 @@ export default function EditListingScreen() {
 						</View>
 					</View>
 				</SectionCard>
-
-				{/* ── Attributs dynamiques ── */}
-				{categoryAttributes.length > 0 && (
-					<SectionCard
-						icon="pricetag-outline"
-						title={`${t("edit.characteristics")} — ${category?.name ?? ""}`}
-						{...sharedSection}
-					>
-						{attributeSections.map((section) => (
-							<View key={section.key} style={styles.attrSection}>
-								{section.title ? (
-									<Text style={[styles.groupHeading, { color: textColor }]}>
-										{section.title}
-									</Text>
-								) : null}
-								{section.attributes.map((attr) => (
-									<EditAttributeField
-										key={attr.slug}
-										attribute={attr}
-										value={attributes[attr.slug] ?? ""}
-										onChange={(v: string) => updateAttr(attr.slug, v)}
-										textColor={textColor}
-										mutedColor={mutedColor}
-										primaryColor={primaryColor}
-										borderColor={borderColor}
-										inputBg={inputBg}
-									/>
-								))}
-							</View>
-						))}
-					</SectionCard>
-				)}
 
 				{/* \u2500\u2500 Publication \u2500\u2500 */}
 				<SectionCard

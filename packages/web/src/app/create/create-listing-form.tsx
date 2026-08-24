@@ -58,7 +58,7 @@ const DURATIONS = ["30", "60", "90"] as const;
  * a taxonomy before having said anything — and once chosen it left the screen,
  * so a wrong pick was neither visible nor correctable.
  */
-type StepId = "describe" | "details" | "photos" | "review";
+type StepId = "describe" | "attributes" | "details" | "photos" | "review";
 
 export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const t = useTranslations("CreateListing");
@@ -159,6 +159,16 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			label: t("describe"),
 			description: t("describeDesc"),
 		},
+		// Only categories that ask something get the step; the rest never see it.
+		...(attributes.length > 0
+			? [
+					{
+						id: "attributes" as const,
+						label: t("characteristics"),
+						description: t("characteristicsDesc"),
+					},
+				]
+			: []),
 		{
 			id: "details",
 			label: t("details"),
@@ -295,6 +305,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		switch (currentStep.id) {
 			case "describe":
 				return !!(formData.title && formData.description && selectedCategory);
+			case "attributes":
+				return attributeIssues.length === 0;
 			case "details":
 				return !!(
 					formData.title &&
@@ -302,9 +314,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					formData.description &&
 					selectedCategory &&
 					// The photo issue belongs to the photo step, not to this one.
-					missingCoreFields.filter((field) => field !== "photos").length ===
-						0 &&
-					attributeIssues.length === 0
+					missingCoreFields.filter((field) => field !== "photos").length === 0
 				);
 			case "photos":
 				// Only the categories that ask for a picture insist on one.
@@ -344,7 +354,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					? "photos"
 					: !formData.title || !formData.description
 						? "describe"
-						: "details";
+						: attributeIssues.length > 0
+							? "attributes"
+							: "details";
 			const index = STEPS.findIndex((s) => s.id === blockingStep);
 			setStep(index === -1 ? 1 : index);
 			return;
@@ -633,24 +645,19 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 									)}
 								</p>
 							</div>
-
-							{attributes.length > 0 && (
-								<>
-									<Separator />
-									<h3 className="font-semibold text-lg">
-										{tListing("details")}
-									</h3>
-									<CategoryAttributeFields
-										attributes={attributes}
-										values={attributeValues}
-										onChange={(slug, v) =>
-											setAttributeValues((p) => ({ ...p, [slug]: v }))
-										}
-										showRequiredErrors={showErrors}
-									/>
-								</>
-							)}
 						</div>
+					)}
+
+					{/* Characteristics */}
+					{currentStep.id === "attributes" && (
+						<CategoryAttributeFields
+							attributes={attributes}
+							values={attributeValues}
+							onChange={(slug, v) =>
+								setAttributeValues((p) => ({ ...p, [slug]: v }))
+							}
+							showRequiredErrors={showErrors}
+						/>
 					)}
 
 					{/* Images */}

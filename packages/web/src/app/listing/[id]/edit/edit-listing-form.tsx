@@ -27,7 +27,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
-import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
@@ -329,6 +328,35 @@ export function EditListingForm({
 				</CardContent>
 			</Card>
 
+			{/* Characteristics — the questions this category asks, kept with it
+			    rather than buried under the sale fields. */}
+			{attributes.length > 0 && (
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							{translateOr(t, "characteristics", "Caractéristiques")}
+						</CardTitle>
+						<CardDescription>
+							{translateOr(
+								t,
+								"characteristicsDesc",
+								"Les précisions que les acheteurs utilisent pour filtrer.",
+							)}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<CategoryAttributeFields
+							attributes={attributes}
+							values={attributeValues}
+							onChange={(slug, v) =>
+								setAttributeValues((p) => ({ ...p, [slug]: v }))
+							}
+							showRequiredErrors={showErrors}
+						/>
+					</CardContent>
+				</Card>
+			)}
+
 			{/* Details */}
 			<Card>
 				<CardHeader>
@@ -453,20 +481,6 @@ export function EditListingForm({
 							required
 						/>
 					</div>
-
-					{attributes.length > 0 && (
-						<>
-							<Separator />
-							<CategoryAttributeFields
-								attributes={attributes}
-								values={attributeValues}
-								onChange={(slug, v) =>
-									setAttributeValues((p) => ({ ...p, [slug]: v }))
-								}
-								showRequiredErrors={showErrors}
-							/>
-						</>
-					)}
 				</CardContent>
 			</Card>
 
