@@ -24,6 +24,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
+import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
@@ -53,6 +54,7 @@ import {
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
+import { isSuspended } from "@/src/lib/moderation";
 import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 
@@ -357,6 +359,36 @@ export default function CreateScreen() {
 
 		applyCategory(match ? match.category : null, match != null);
 	}, [form.title, form.category, categories, suggestFromTitle, applyCategory]);
+
+	// A suspended seller reaching the form would fill it in and only learn of
+	// the sanction when publishing fails, so the guard comes before the form.
+	if (user && isSuspended(user)) {
+		return (
+			<SafeAreaView
+				edges={["top"]}
+				style={[styles.safe, { backgroundColor: bg }]}
+			>
+				<View style={[styles.noUserHeader, { backgroundColor: accentBg }]}>
+					<View
+						style={[
+							styles.sellIconWrap,
+							{ backgroundColor: isDark ? "#422006" : "#fef3c7" },
+						]}
+					>
+						<Ionicons name="pricetag" size={22} color="#d97706" />
+					</View>
+					<Text style={[styles.noUserTitle, { color: textColor }]}>
+						{t("create.sell")}
+					</Text>
+				</View>
+				<View
+					style={[styles.contentWrap, { backgroundColor: bg, padding: 20 }]}
+				>
+					<SuspensionBanner />
+				</View>
+			</SafeAreaView>
+		);
+	}
 
 	if (!user) {
 		return (

@@ -65,6 +65,15 @@ export const ERROR_CODES = {
 
 	// Contact form
 	contactIncomplete: "contact.incomplete",
+
+	// Moderation
+	accountSuspended: "moderation.accountSuspended",
+	moderationForbidden: "moderation.forbidden",
+	moderationRankTooLow: "moderation.rankTooLow",
+	moderationTargetNotFound: "moderation.targetNotFound",
+	moderationReasonRequired: "moderation.reasonRequired",
+	moderationDurationInvalid: "moderation.durationInvalid",
+	moderationInvalidTransition: "moderation.invalidTransition",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -116,6 +125,20 @@ const FALLBACKS: Record<ErrorCode, string> = {
 	[ERROR_CODES.uploadInvalidType]: "This file type is not supported.",
 
 	[ERROR_CODES.contactIncomplete]: "Please fill in every field.",
+
+	[ERROR_CODES.accountSuspended]:
+		"Your account is suspended. You cannot publish listings or send messages right now.",
+	[ERROR_CODES.moderationForbidden]:
+		"You do not have permission to moderate this content.",
+	[ERROR_CODES.moderationRankTooLow]:
+		"You cannot take this action against this account.",
+	[ERROR_CODES.moderationTargetNotFound]:
+		"The content you are trying to moderate no longer exists.",
+	[ERROR_CODES.moderationReasonRequired]: "A reason is required.",
+	[ERROR_CODES.moderationDurationInvalid]:
+		"This suspension length is not allowed for your role.",
+	[ERROR_CODES.moderationInvalidTransition]:
+		"This item is not in a state where that action applies.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {

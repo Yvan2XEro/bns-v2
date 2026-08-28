@@ -2,6 +2,10 @@ import { APIError, type CollectionConfig, type Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
+import {
+	assertNotSuspended,
+	type SuspensionCheckable,
+} from "../hooks/suspensionGuard";
 import { validateListingAttributes } from "../hooks/validation";
 import { getListingFormPreset } from "../lib/listingFormPreset";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
@@ -118,6 +122,17 @@ export const Listings: CollectionConfig = {
 	hooks: {
 		beforeChange: [
 			async ({ data, req, operation, originalDoc }) => {
+				// Skipped for moderation writes: suspending an account cascades
+				// onto its listings, and that cascade must not be blocked by the
+				// suspension it is applying.
+				if (req.user && req.context?.moderationAction !== true) {
+					await assertNotSuspended(
+						req.payload,
+						String(req.user.id),
+						req.user as SuspensionCheckable,
+					);
+				}
+
 				// Cap the image count without stranding listings created before the
 				// limit existed: reject only when this write would *increase* the
 				// count past the maximum. Legacy listings stay editable, their owners

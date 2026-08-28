@@ -80,6 +80,7 @@ export interface Config {
     'saved-searches': SavedSearch;
     'blocked-users': BlockedUser;
     tags: Tag;
+    'moderation-log': ModerationLog;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -101,6 +102,7 @@ export interface Config {
     'saved-searches': SavedSearchesSelect<false> | SavedSearchesSelect<true>;
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
+    'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -206,6 +208,23 @@ export interface User {
     updatedAt?: string | null;
   };
   verified?: boolean | null;
+  /**
+   * When the current suspension was applied. Empty means the account has never been suspended, or the sanction was lifted.
+   */
+  suspendedAt?: string | null;
+  /**
+   * When the suspension lifts. Empty while suspendedAt is set means the suspension is indefinite.
+   */
+  suspendedUntil?: string | null;
+  /**
+   * Shared with the suspended account.
+   */
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  /**
+   * Internal. Never shown to the suspended account.
+   */
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
   createdAt: string;
   updatedAt: string;
   email: string;
@@ -507,6 +526,43 @@ export interface BlockedUser {
   createdAt: string;
 }
 /**
+ * Immutable history of moderation actions. Written by the moderation endpoints; cannot be edited or removed.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-log".
+ */
+export interface ModerationLog {
+  id: string;
+  actor: string | User;
+  actorRole: string;
+  action:
+    | 'listing.approve'
+    | 'listing.reject'
+    | 'listing.takedown'
+    | 'user.suspend'
+    | 'user.unsuspend'
+    | 'report.resolve'
+    | 'report.dismiss';
+  targetType: 'listing' | 'user' | 'report';
+  targetId: string;
+  reason?: string | null;
+  /**
+   * Internal. Never surfaced to the affected account.
+   */
+  note?: string | null;
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -682,6 +738,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'tags';
         value: string | Tag;
+      } | null)
+    | ({
+        relationTo: 'moderation-log';
+        value: string | ModerationLog;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -765,6 +825,11 @@ export interface UsersSelect<T extends boolean = true> {
         updatedAt?: T;
       };
   verified?: T;
+  suspendedAt?: T;
+  suspendedUntil?: T;
+  suspendedReason?: T;
+  suspendedNote?: T;
+  suspendedBy?: T;
   createdAt?: T;
   updatedAt?: T;
   email?: T;
@@ -991,6 +1056,22 @@ export interface TagsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   emoji?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "moderation-log_select".
+ */
+export interface ModerationLogSelect<T extends boolean = true> {
+  actor?: T;
+  actorRole?: T;
+  action?: T;
+  targetType?: T;
+  targetId?: T;
+  reason?: T;
+  note?: T;
+  metadata?: T;
   updatedAt?: T;
   createdAt?: T;
 }

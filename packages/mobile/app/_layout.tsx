@@ -457,6 +457,22 @@ function RootLayoutNav() {
 					name="messages/[conversationId]"
 					options={{ headerShown: false, animation: "slide_from_right" }}
 				/>
+				<Stack.Screen
+					name="moderation/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/listing/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/report/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/user/[id]"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen name="settings" options={{ headerShown: false }} />
 				<Stack.Screen name="security" options={{ headerShown: false }} />
 				<Stack.Screen name="contact" options={{ headerShown: false }} />

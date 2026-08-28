@@ -85,6 +85,11 @@ export interface UserDoc {
 		updatedAt?: string | null;
 	} | null;
 	verified: boolean;
+	/** Set while the account is under sanction. See `suspensionOf()`. */
+	suspendedAt?: string | null;
+	/** Null alongside a set `suspendedAt` means the suspension is indefinite. */
+	suspendedUntil?: string | null;
+	suspendedReason?: SuspensionReason | null;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -447,4 +452,84 @@ export interface BoostCreateResponse {
 	paymentId: string;
 	paymentUrl: string;
 	paymentReference: string;
+}
+
+// ─── Moderation ───────────────────────────────────────────────────────────────
+
+export type SuspensionReason =
+	| "spam"
+	| "inappropriate"
+	| "fraud"
+	| "prohibited"
+	| "harassment"
+	| "other";
+
+export interface SuspensionSummary {
+	active: boolean;
+	expired: boolean;
+	indefinite: boolean;
+	since: string | null;
+	until: string | null;
+}
+
+export interface ModerationSummary {
+	pendingListings: number;
+	pendingReports: number;
+	total: number;
+}
+
+export type ModerationActionName =
+	| "listing.approve"
+	| "listing.reject"
+	| "listing.takedown"
+	| "user.suspend"
+	| "user.unsuspend"
+	| "report.resolve"
+	| "report.dismiss";
+
+export interface ModerationLogEntry {
+	id: string;
+	actor: UserDoc | string;
+	actorRole: string;
+	action: ModerationActionName;
+	targetType: "listing" | "user" | "report";
+	targetId: string;
+	reason?: string | null;
+	note?: string | null;
+	metadata?: Record<string, unknown> | null;
+	createdAt: string;
+}
+
+export type ReportReason = SuspensionReason;
+
+export interface ReportDoc {
+	id: string;
+	reporter: UserDoc | string;
+	targetType: "listing" | "user" | "message";
+	targetId: string;
+	reason: ReportReason;
+	description?: string | null;
+	status: "pending" | "reviewed" | "resolved";
+	resolution?: string | null;
+	resolvedBy?: UserDoc | string | null;
+	createdAt: string;
+}
+
+/** GET /api/moderation/users/:id */
+export interface ModerationUserSheet {
+	user: Pick<
+		UserDoc,
+		"id" | "name" | "email" | "role" | "avatar" | "verified" | "createdAt"
+	>;
+	suspension: SuspensionSummary & {
+		reason: SuspensionReason | null;
+		note: string | null;
+		by: UserDoc | string | null;
+	};
+	counts: {
+		publishedListings: number;
+		pendingListings: number;
+		reportsAgainst: number;
+	};
+	history: ModerationLogEntry[];
 }

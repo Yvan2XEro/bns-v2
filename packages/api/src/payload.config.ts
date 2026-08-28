@@ -12,6 +12,7 @@ import { Favorites } from "./collections/Favorites";
 import { Listings } from "./collections/Listings";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
+import { ModerationLog } from "./collections/ModerationLog";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
@@ -80,6 +81,7 @@ export default buildConfig({
 		SavedSearches,
 		BlockedUsers,
 		Tags,
+		ModerationLog,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),

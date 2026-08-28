@@ -1,5 +1,9 @@
 import { APIError, type CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
+import {
+	assertNotSuspended,
+	type SuspensionCheckable,
+} from "../hooks/suspensionGuard";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 export const Messages: CollectionConfig = {
@@ -13,8 +17,21 @@ export const Messages: CollectionConfig = {
 			async ({ req, data, operation }) => {
 				if (operation !== "create") return data;
 
-				const userId = req.user?.id;
-				if (!userId) return data;
+				// chat-service persists websocket messages under its own service
+				// account and names the real sender in the body, so reading
+				// req.user here would compare the wrong pair of users below.
+				const senderId =
+					(typeof data.sender === "string" ? data.sender : data.sender?.id) ??
+					req.user?.id;
+				if (!senderId) return data;
+
+				const userId = senderId;
+
+				await assertNotSuspended(
+					req.payload,
+					userId,
+					req.user as SuspensionCheckable | null,
+				);
 
 				const conversationId =
 					typeof data.conversation === "string"

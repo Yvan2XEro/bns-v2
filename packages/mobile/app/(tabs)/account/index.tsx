@@ -8,9 +8,14 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
+import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import {
+	useIsModerator,
+	useModerationSummary,
+} from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
@@ -102,6 +107,9 @@ export default function AccountScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { centeredContent } = useResponsive();
 	const { user, logout } = useAuth();
+	const isModerator = useIsModerator();
+	const { data: moderationSummary } = useModerationSummary();
+	const pendingCount = moderationSummary?.total ?? 0;
 	const { showConfirm } = useAlert();
 	const { t } = useTranslation();
 	const pathname = usePathname();
@@ -257,6 +265,49 @@ export default function AccountScreen() {
 
 				{/* ── Content (main bg, rounded top) ── */}
 				<View style={[styles.content, { backgroundColor: bg }]}>
+					<SuspensionBanner />
+
+					{isModerator && (
+						<View style={styles.section}>
+							<Text style={[styles.sectionLabel, { color: mutedColor }]}>
+								{t("account.sectionModeration")}
+							</Text>
+							<View
+								style={[
+									styles.sectionCard,
+									{
+										backgroundColor: cardBg,
+										borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									},
+								]}
+							>
+								<MenuItem
+									icon="shield-half-outline"
+									label={t("account.moderation")}
+									sublabel={
+										pendingCount > 0
+											? t("account.moderationPending", { count: pendingCount })
+											: t("account.moderationIdle")
+									}
+									iconBg={isDark ? "#451a03" : "#fef3c7"}
+									iconColor="#d97706"
+									rightElement={
+										pendingCount > 0 ? (
+											<View style={styles.notifBadge}>
+												<Text style={styles.notifBadgeText}>
+													{pendingCount > 9 ? "9+" : pendingCount}
+												</Text>
+											</View>
+										) : undefined
+									}
+									onPress={() => router.push("/moderation")}
+									isDark={isDark}
+									borderColor={borderColor}
+								/>
+							</View>
+						</View>
+					)}
+
 					{/* Mon activité */}
 					<View style={styles.section}>
 						<Text style={[styles.sectionLabel, { color: mutedColor }]}>

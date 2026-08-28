@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Access, CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
+import { suspensionSummary } from "../access/roles";
 import type { AuthProvider } from "../auth/oauth/types";
 import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
@@ -99,6 +100,7 @@ export const Users: CollectionConfig = {
 				const isSeed = req.context?.seed === true;
 				const isPhoneVerificationFlow =
 					req.context?.phoneVerificationFlow === true;
+				const isModerationWrite = req.context?.moderationAction === true;
 
 				if (operation === "create") {
 					const authData = ensureAuthProviders(data as Record<string, unknown>);
@@ -123,6 +125,26 @@ export const Users: CollectionConfig = {
 						if (!isRatingUpdate) {
 							data.rating = originalDoc?.rating;
 							data.totalReviews = originalDoc.totalReviews;
+						}
+					}
+
+					// Pinned for admins too: lifting a sanction from the panel must
+					// not bypass the audit log. `context` is server-side only.
+					if (!isModerationWrite) {
+						data.suspendedAt = originalDoc?.suspendedAt;
+						data.suspendedUntil = originalDoc?.suspendedUntil;
+						data.suspendedReason = originalDoc?.suspendedReason;
+						data.suspendedNote = originalDoc?.suspendedNote;
+						data.suspendedBy = originalDoc?.suspendedBy;
+
+						// Idempotent cleanup piggybacking on a write that was happening
+						// anyway, so screens stop showing a sanction that is over.
+						if (suspensionSummary(originalDoc as never).expired) {
+							data.suspendedAt = null;
+							data.suspendedUntil = null;
+							data.suspendedReason = null;
+							data.suspendedNote = null;
+							data.suspendedBy = null;
 						}
 					}
 
@@ -435,6 +457,66 @@ export const Users: CollectionConfig = {
 			defaultValue: false,
 			admin: {
 				position: "sidebar",
+			},
+		},
+		// Written only by services/moderation.ts; beforeChange pins all five
+		// against every other write. No `suspended` boolean on purpose:
+		// suspendedAt is the flag and whether it still applies is derived from
+		// suspendedUntil at read time, so no scheduled job can lag behind it.
+		{
+			name: "suspendedAt",
+			type: "date",
+			index: true,
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description:
+					"When the current suspension was applied. Empty means the account has never been suspended, or the sanction was lifted.",
+			},
+		},
+		{
+			name: "suspendedUntil",
+			type: "date",
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description:
+					"When the suspension lifts. Empty while suspendedAt is set means the suspension is indefinite.",
+			},
+		},
+		{
+			name: "suspendedReason",
+			type: "select",
+			options: [
+				{ label: "Spam", value: "spam" },
+				{ label: "Inappropriate content", value: "inappropriate" },
+				{ label: "Fraud", value: "fraud" },
+				{ label: "Prohibited item", value: "prohibited" },
+				{ label: "Harassment", value: "harassment" },
+				{ label: "Other", value: "other" },
+			],
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description: "Shared with the suspended account.",
+			},
+		},
+		{
+			name: "suspendedNote",
+			type: "textarea",
+			admin: {
+				position: "sidebar",
+				readOnly: true,
+				description: "Internal. Never shown to the suspended account.",
+			},
+		},
+		{
+			name: "suspendedBy",
+			type: "relationship",
+			relationTo: "users",
+			admin: {
+				position: "sidebar",
+				readOnly: true,
 			},
 		},
 		{
