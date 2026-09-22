@@ -62,10 +62,10 @@ export function deriveListingData(
 	const description =
 		typeof product.description === "string" && product.description.trim()
 			? product.description
-			: String(product.title);
+			: product.title;
 
 	return {
-		title: String(product.title),
+		title: product.title,
 		description,
 		images: (product.images ?? []).flatMap((entry) => {
 			const image = relationId(entry?.image);
@@ -76,8 +76,8 @@ export function deriveListingData(
 		attributes: toAttributes(product.attributes),
 		condition: product.condition ?? null,
 		location: shop.location?.city || shop.location?.country || DEFAULT_LOCATION,
-		shop: String(shop.id),
-		product: String(product.id),
+		shop: shop.id,
+		product: product.id,
 		productSummary: {
 			priceMin: summary.priceMin,
 			priceMax: summary.priceMax,

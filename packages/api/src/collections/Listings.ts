@@ -92,6 +92,16 @@ const shouldValidateListingForm = ({
 	return JSON.stringify(nextAttributes) !== JSON.stringify(previousAttributes);
 };
 
+/**
+ * One listing per product is a raw-driver partial unique index on `product`,
+ * built by migration 20260922_000000_p1_listing_product — Payload's `indexes`
+ * config has no partial filter, and a plain unique index would collide on the
+ * `product: null` every non-product listing stores. `syncProductListing` reads
+ * the winner's listing when that index rejects its insert; if the migration
+ * skipped building the index (legacy duplicates), two concurrent first
+ * publishes can still leave a product with two listings. Check its logs.
+ */
+
 export const Listings: CollectionConfig = {
 	slug: "listings",
 	admin: {
@@ -420,6 +430,32 @@ export const Listings: CollectionConfig = {
 						error,
 					);
 				}
+			},
+		],
+		beforeDelete: [
+			async ({ id, req }) => {
+				const listing = await req.payload
+					.findByID({
+						collection: "listings",
+						id,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null);
+				if (!relationId(listing?.product)) return;
+				// The product owns its listing's lifecycle. Without this, a seller
+				// deletes their own rejected listing — `delete` is owner-or-admin and
+				// the seller of a product listing is the shopkeeper — the product's
+				// pointer dangles, and the next product edit republishes it as if the
+				// moderator had never ruled. Unpublishing goes through the product's
+				// status, which `listingStatusFor` keeps subordinate to a rejection.
+				// Moderators are refused too: moderation moves the status, it does
+				// not delete rows.
+				throw new APIError(
+					"A product's listing is unpublished through its product, not deleted.",
+					403,
+				);
 			},
 		],
 		afterDelete: [

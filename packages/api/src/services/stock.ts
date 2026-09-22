@@ -431,7 +431,11 @@ export async function recordMovement(
 				...parsed,
 				actorId: user.id,
 			});
-			await syncProductListing(req, relationId(variant.product));
+			// Refresh only: bookkeeping keeps a listing honest, it never decides
+			// that a product is on sale. See `SyncListingOptions.create`.
+			await syncProductListing(req, relationId(variant.product), {
+				create: false,
+			});
 			const [movement] = await toMovementRows(payload, [applied.movement], req);
 			return {
 				movement,
@@ -520,9 +524,9 @@ export async function recordStockCount(
 			}
 
 			// One refresh per product, after the whole count: a listing never shows
-			// a half-counted inventory.
+			// a half-counted inventory. Refresh only, like a single movement.
 			for (const productId of touched) {
-				await syncProductListing(req, productId);
+				await syncProductListing(req, productId, { create: false });
 			}
 
 			return { results };

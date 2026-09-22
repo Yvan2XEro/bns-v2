@@ -12,11 +12,11 @@ import {
 } from "../lib/productListing";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { withTransaction } from "../lib/transactions";
+import { RetryTransaction, withTransaction } from "../lib/transactions";
 import { combinationKey, type OptionDef } from "../lib/variants";
-import type { Product, ProductVariant, Shop } from "../payload-types";
+import type { Listing, Product, ProductVariant, Shop } from "../payload-types";
 import { requireShopMember } from "./shopGuards";
-import type { ServiceUser } from "./shops";
+import { isUniqueViolation, type ServiceUser } from "./shops";
 import { applyMovement, findVariant } from "./stock";
 
 export const PRODUCT_STATUSES = ["draft", "active", "archived"] as const;
@@ -384,19 +384,28 @@ async function findProductListing(
 				req,
 			})
 			.catch(() => null);
-		if (listing) return { id: String(listing.id), status: listing.status };
+		if (listing) return { id: listing.id, status: listing.status };
 	}
 
 	const orphan = await req.payload.find({
 		collection: "listings",
-		where: { product: { equals: String(product.id) } },
+		where: { product: { equals: product.id } },
 		depth: 0,
 		limit: 1,
 		overrideAccess: true,
 		req,
 	});
 	const found = orphan.docs[0];
-	return found ? { id: String(found.id), status: found.status } : null;
+	return found ? { id: found.id, status: found.status } : null;
+}
+
+export interface SyncListingOptions {
+	/**
+	 * False refreshes an existing listing but never publishes a missing one.
+	 * Bookkeeping passes it: a stock movement must not be what decides a
+	 * product is on sale.
+	 */
+	create?: boolean;
 }
 
 /**
@@ -407,8 +416,10 @@ async function findProductListing(
 export async function syncProductListing(
 	req: PayloadRequest,
 	productId: string | null,
+	options: SyncListingOptions = {},
 ): Promise<string | null> {
 	if (!productId) return null;
+	const mayCreate = options.create !== false;
 	const product = await req.payload.findByID({
 		collection: "products",
 		id: productId,
@@ -417,9 +428,9 @@ export async function syncProductListing(
 		req,
 	});
 	const current = await findProductListing(req, product);
-	// Nothing published and nothing to publish: no shop or variant read, and no
-	// listing left behind either — the lookup above ran before this returned.
-	if (!current && product.status !== "active") return null;
+	// Nothing published, and nothing this caller may publish: no shop or variant
+	// read, and no listing left behind either — the lookup above ran first.
+	if (!current && (!mayCreate || product.status !== "active")) return null;
 
 	const shopId = relationId(product.shop);
 	if (!shopId) throw new ServiceError(ERROR_CODES.shopNotFound, 404);
@@ -443,17 +454,28 @@ export async function syncProductListing(
 		if (shop.status !== "active") {
 			throw new ServiceError(ERROR_CODES.shopInactive, 409);
 		}
-		const listing = await req.payload.create({
-			collection: "listings",
-			req,
-			overrideAccess: true,
-			context: PRODUCT_SERVICE_CONTEXT,
-			data: {
-				...derived,
-				category,
-				status: listingStatusFor(product.status, null),
-			},
-		});
+		let listing: Listing;
+		try {
+			listing = await req.payload.create({
+				collection: "listings",
+				req,
+				overrideAccess: true,
+				context: PRODUCT_SERVICE_CONTEXT,
+				data: {
+					...derived,
+					category,
+					status: listingStatusFor(product.status, null),
+				},
+			});
+		} catch (error) {
+			// Two first publishes raced and the partial unique index on
+			// `listings.product` refused the second row. The winner's listing is
+			// the one this product has, so the body re-runs and adopts it: the
+			// claim guard on `products` cannot catch this, since each writer
+			// claims a listing no *other* product owns.
+			if (!isUniqueViolation(error)) throw error;
+			throw new RetryTransaction("another writer published this product first");
+		}
 		await req.payload.update({
 			collection: "products",
 			id: productId,
@@ -462,7 +484,7 @@ export async function syncProductListing(
 			context: PRODUCT_SERVICE_CONTEXT,
 			data: { listing: listing.id },
 		});
-		return String(listing.id);
+		return listing.id;
 	}
 
 	await req.payload.update({
@@ -516,7 +538,7 @@ export async function createProduct(
 				data: { shop: shopId, ...productData(input) },
 			});
 
-			const productId = String(product.id);
+			const productId = product.id;
 			for (const variant of input.variants) {
 				await createVariant(
 					req,
@@ -596,7 +618,7 @@ export async function updateProduct(
 						variant,
 						costAllowed,
 					);
-					kept.add(String(created.id));
+					kept.add(created.id);
 					continue;
 				}
 				const existing = await findVariant(req, variant.id);
@@ -615,6 +637,12 @@ export async function updateProduct(
 						sku: variant.sku,
 						price: variant.price,
 						cost: costAllowed ? variant.cost : existing.cost,
+						// Sticky on purpose, and only ever upward: `applyMovement`
+						// turns tracking on for every variant it writes a movement
+						// for, so a variant with a ledger that could be switched back
+						// to untracked would show a stock figure nothing maintains
+						// while its movements kept accumulating. Untracking one means
+						// archiving it and adding a fresh variant.
 						trackInventory:
 							variant.trackInventory || existing.trackInventory === true,
 						lowStockThreshold: variant.lowStockThreshold,
@@ -626,10 +654,10 @@ export async function updateProduct(
 			// A variant left out of the input is archived, never deleted: its movements stay.
 			const now = new Date().toISOString();
 			for (const existing of await liveVariants(req, productId)) {
-				if (kept.has(String(existing.id))) continue;
+				if (kept.has(existing.id)) continue;
 				await req.payload.update({
 					collection: "product-variants",
-					id: String(existing.id),
+					id: existing.id,
 					req,
 					overrideAccess: true,
 					context: PRODUCT_SERVICE_CONTEXT,

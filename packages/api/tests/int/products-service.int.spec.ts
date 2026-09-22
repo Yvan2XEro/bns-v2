@@ -17,25 +17,38 @@ import { fakePayload } from "./helpers/fakePayload";
 const U1 = { id: "u-1" };
 
 function seed() {
-	return fakePayload({
-		users: [{ id: "u-1", name: "Aïcha" }],
-		categories: [{ id: "cat-1", name: "Téléphones" }],
-		shops: [
-			{
-				id: "s-1",
-				status: "active",
-				owner: "u-1",
-				location: { city: "Douala" },
-			},
-		],
-		"shop-members": [
-			{ id: "m-1", shop: "s-1", user: "u-1", role: "owner", status: "active" },
-		],
-		products: [],
-		"product-variants": [],
-		"stock-movements": [],
-		listings: [],
-	});
+	return fakePayload(
+		{
+			users: [{ id: "u-1", name: "Aïcha" }],
+			categories: [{ id: "cat-1", name: "Téléphones" }],
+			shops: [
+				{
+					id: "s-1",
+					status: "active",
+					owner: "u-1",
+					location: { city: "Douala" },
+				},
+			],
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+			],
+			products: [],
+			"product-variants": [],
+			"stock-movements": [],
+			listings: [],
+		},
+		{
+			// The partial unique index migration 20260922_000000_p1_listing_product
+			// builds: one listing per product, and any number without one.
+			uniques: { listings: [["product"]] },
+		},
+	);
 }
 
 const input = (overrides: Record<string, unknown> = {}) => ({
@@ -74,12 +87,16 @@ const input = (overrides: Record<string, unknown> = {}) => ({
 });
 
 /** Feeds the variants a create returned back into an update, unchanged. */
-const asInput = (variants: Array<Record<string, unknown>>) =>
+const asInput = (
+	variants: Array<Record<string, unknown>>,
+	overrides: Record<string, unknown> = {},
+) =>
 	variants.map((v) => ({
 		id: v.id,
 		optionValues: v.optionValues,
 		sku: v.sku,
 		price: v.price,
+		...overrides,
 	}));
 
 describe("createProduct", () => {
@@ -232,14 +249,11 @@ describe("updateProduct", () => {
 			product.id,
 			input({
 				title: "Galaxy S24",
-				variants: variants.map((v) => ({
-					id: v.id,
-					optionValues: v.optionValues,
-					sku: v.sku,
+				variants: asInput(variants, {
 					price: 400000,
 					cost: 382000,
 					lowStockThreshold: 1,
-				})),
+				}),
 			}),
 		);
 
@@ -265,12 +279,7 @@ describe("updateProduct", () => {
 			product.id,
 			input({
 				status: "archived",
-				variants: variants.map((v) => ({
-					id: v.id,
-					optionValues: v.optionValues,
-					sku: v.sku,
-					price: v.price,
-				})),
+				variants: asInput(variants),
 			}),
 		);
 		expect(payload.store.listings[0].status).toBe("draft");
@@ -325,12 +334,7 @@ describe("updateProduct", () => {
 			U1,
 			product.id,
 			input({
-				variants: variants.map((v) => ({
-					id: v.id,
-					optionValues: v.optionValues,
-					sku: v.sku,
-					price: v.price,
-				})),
+				variants: asInput(variants),
 			}),
 		);
 		expect(payload.store.listings[0].status).toBe("rejected");
@@ -464,6 +468,73 @@ describe("updateProduct", () => {
 		expect(payload.store.products[0].listing).toBe(
 			payload.store.listings[0].id,
 		);
+	});
+
+	it("publishes one listing when two writers publish the same product at once", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({ status: "draft" }),
+		);
+
+		await Promise.all([
+			updateProduct(
+				payload,
+				U1,
+				product.id,
+				input({ variants: asInput(variants) }),
+			),
+			updateProduct(
+				payload,
+				U1,
+				product.id,
+				input({ variants: asInput(variants) }),
+			),
+		]);
+
+		expect(payload.store.listings).toHaveLength(1);
+		expect(payload.store.listings[0]).toMatchObject({
+			product: product.id,
+			status: "published",
+		});
+		expect(payload.store.products[0].listing).toBe(
+			payload.store.listings[0].id,
+		);
+	});
+
+	it("does not publish a missing listing from a stock movement, and republishes on the next edit", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		// A moderator deleted the listing before the guard existed, say.
+		payload.store.listings.length = 0;
+		payload.store.products[0].listing = null;
+
+		await recordMovement(payload, U1, variants[0].id, {
+			type: "loss",
+			quantity: -1,
+		});
+		expect(payload.store.listings).toHaveLength(0);
+
+		await recordStockCount(payload, U1, "s-1", {
+			counts: [{ variantId: variants[0].id, counted: 5 }],
+		});
+		expect(payload.store.listings).toHaveLength(0);
+
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({ variants: asInput(variants) }),
+		);
+		expect(payload.store.listings).toHaveLength(1);
+		expect(payload.store.listings[0].status).toBe("published");
 	});
 
 	it("refuses a variant that belongs to another product", async () => {

@@ -234,3 +234,42 @@ describe("a listing cannot borrow another shop's product", () => {
 		expect(result.product).toBe("p-1");
 	});
 });
+
+describe("deleting a product listing", () => {
+	const beforeDelete = Listings.hooks?.beforeDelete?.[0] as (
+		args: unknown,
+	) => Promise<void>;
+
+	const withListings = (listing: Record<string, unknown>) =>
+		fakePayload({ listings: [listing] });
+
+	it("refuses to delete a listing that carries a product", async () => {
+		const payload = withListings({ ...productListing, status: "rejected" });
+		await expect(
+			beforeDelete({ id: "l-1", req: req(payload, { id: "u-1" }) }),
+		).rejects.toThrow(/through its product/);
+	});
+
+	it("refuses a moderator too, so a rejection cannot be escaped", async () => {
+		const payload = withListings({ ...productListing, status: "rejected" });
+		await expect(
+			beforeDelete({
+				id: "l-1",
+				req: req(
+					payload,
+					{ id: "u-9", role: "moderator" },
+					{
+						moderationAction: true,
+					},
+				),
+			}),
+		).rejects.toThrow(/through its product/);
+	});
+
+	it("still lets a plain listing be deleted", async () => {
+		const payload = withListings({ ...base, product: null });
+		await expect(
+			beforeDelete({ id: "l-1", req: req(payload, { id: "u-1" }) }),
+		).resolves.toBeUndefined();
+	});
+});

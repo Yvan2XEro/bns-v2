@@ -1,6 +1,7 @@
 import * as migration_20260915_000000_p0_payment_intents from "./20260915_000000_p0_payment_intents";
 import * as migration_20260915_000100_p0_reviews_audit from "./20260915_000100_p0_reviews_audit";
 import * as migration_20260915_000200_p0_contact_reveal_windows from "./20260915_000200_p0_contact_reveal_windows";
+import * as migration_20260922_000000_p1_listing_product from "./20260922_000000_p1_listing_product";
 
 export const migrations = [
 	{
@@ -17,5 +18,10 @@ export const migrations = [
 		up: migration_20260915_000200_p0_contact_reveal_windows.up,
 		down: migration_20260915_000200_p0_contact_reveal_windows.down,
 		name: "20260915_000200_p0_contact_reveal_windows",
+	},
+	{
+		up: migration_20260922_000000_p1_listing_product.up,
+		down: migration_20260922_000000_p1_listing_product.down,
+		name: "20260922_000000_p1_listing_product",
 	},
 ];

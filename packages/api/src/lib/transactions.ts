@@ -76,6 +76,29 @@ export function onCommit(
 	return true;
 }
 
+const TRANSIENT_LABEL = "TransientTransactionError";
+
+/**
+ * "Re-run the body: the state it was decided against has changed." A service
+ * raises this when a conditional write loses to a concurrent writer whose
+ * result it can use — a unique index rejecting a second row someone else just
+ * inserted, for instance. It carries Mongo's own transient label because the
+ * answer is the same one Mongo asks for: roll back, re-read, decide again.
+ *
+ * Continuing inside the failed transaction instead is not on offer. A duplicate
+ * key raised against a row another transaction has not committed yet comes back
+ * as a write conflict, and the session may already be gone — the retry is the
+ * only recovery that holds in both cases.
+ */
+export class RetryTransaction extends Error {
+	readonly errorLabels = [TRANSIENT_LABEL];
+
+	constructor(reason: string) {
+		super(`[transaction] ${reason}`);
+		this.name = "RetryTransaction";
+	}
+}
+
 function hasErrorLabel(error: unknown, label: string): boolean {
 	if (!error || typeof error !== "object") return false;
 	const e = error as {
@@ -90,7 +113,7 @@ function hasErrorLabel(error: unknown, label: string): boolean {
 
 /** Mongo aborted this transaction; re-running the body re-reads the new state. */
 function isTransient(error: unknown): boolean {
-	if (hasErrorLabel(error, "TransientTransactionError")) return true;
+	if (hasErrorLabel(error, TRANSIENT_LABEL)) return true;
 	return (
 		typeof error === "object" &&
 		error !== null &&
