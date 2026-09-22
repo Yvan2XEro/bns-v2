@@ -687,7 +687,8 @@
 		"networkError": "Erreur réseau. Vérifiez votre connexion.",
 		"initError": "Impossible d'initialiser le paiement",
 		"paymentDeclined": "Paiement refusé. Vérifiez vos informations.",
-		"genericError": "Erreur lors du paiement"
+		"genericError": "Erreur lors du paiement",
+		"pricesUnavailable": "Les tarifs de mise en avant n'ont pas pu être chargés. Veuillez réessayer plus tard."
 	},
 	"ApiErrors": {
 		"generic": {

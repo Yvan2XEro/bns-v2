@@ -686,7 +686,8 @@
 		"networkError": "Network error. Check your connection.",
 		"initError": "Could not initialize payment",
 		"paymentDeclined": "Payment declined. Please check your details.",
-		"genericError": "Payment error"
+		"genericError": "Payment error",
+		"pricesUnavailable": "Boost prices could not be loaded. Please try again later."
 	},
 	"ApiErrors": {
 		"generic": {

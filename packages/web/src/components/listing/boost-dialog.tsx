@@ -12,6 +12,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "~/components/ui/dialog";
+import type { BoostPrice } from "~/hooks/use-app-config";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { apiErrorFrom, resolveErrorMessage } from "~/lib/apiError";
 import type { BoostDuration } from "~/types";
@@ -24,6 +25,36 @@ const PLAN_LABELS: Record<number, "week1" | "week2" | "month1"> = {
 const POPULAR_DAYS = 14;
 // One key per attempt: a double click replays the same checkout instead of paying twice.
 const newIdempotencyKey = () => crypto.randomUUID();
+
+/** Known duration values, keyed by the server's `days`. */
+const DURATION_BY_DAYS = new Map<number, BoostDuration>([
+	[7, "7"],
+	[14, "14"],
+	[30, "30"],
+]);
+
+interface BoostPlan {
+	duration: BoostDuration;
+	days: number;
+	amount: number;
+	currency: string;
+}
+
+/** Narrows the server's price list to plans with a recognized duration, dropping the rest. */
+function toBoostPlans(boostPricing: BoostPrice[]): BoostPlan[] {
+	const plans: BoostPlan[] = [];
+	for (const price of boostPricing) {
+		const duration = DURATION_BY_DAYS.get(price.days);
+		if (!duration) continue;
+		plans.push({
+			duration,
+			days: price.days,
+			amount: price.amount,
+			currency: price.currency,
+		});
+	}
+	return plans;
+}
 
 type PaymentMethod = "mobilemoney" | "card";
 
@@ -42,7 +73,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 	const t = useTranslations("Boost");
 	const tRoot = useTranslations();
 	const { stripePublishableKey, boostPricing } = useAppConfig();
-	const plans = boostPricing.filter((plan) => PLAN_LABELS[plan.days]);
+	const plans = toBoostPlans(boostPricing);
 	const [open, setOpen] = useState(false);
 	const [duration, setDuration] = useState<BoostDuration>("14");
 	const [paymentMethod, setPaymentMethod] =
@@ -52,7 +83,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 	const [isPending, startTransition] = useTransition();
 
 	const stripeAvailable = !!stripePublishableKey;
-	const price = plans.find((plan) => String(plan.days) === duration)?.amount;
+	const price = plans.find((plan) => plan.duration === duration)?.amount;
 
 	function handleOpenChange(v: boolean) {
 		setOpen(v);
@@ -108,6 +139,10 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 
 				window.location.href = data.checkoutUrl;
 			} catch {
+				// Network-level failure: the client never learned whether the server
+				// received this attempt, so the idempotency key is kept — a retry
+				// replays the same attempt instead of risking a second charge. Only
+				// an HTTP-level response (handled above) regenerates the key.
 				setError(t("networkError"));
 			}
 		});
@@ -142,127 +177,137 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 				</DialogHeader>
 
 				<div className="space-y-5">
-					{/* Plans */}
-					<div className="space-y-2">
-						{plans.map((plan) => {
-							const value = String(plan.days) as BoostDuration;
-							const selected = duration === value;
-							return (
-								<label
-									key={value}
-									className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-4 transition-all ${
-										selected
-											? "border-[#F59E0B] bg-amber-50/50 shadow-sm"
-											: "border-[#E2E8F0] hover:border-[#F59E0B]/40 hover:bg-[#FFFBEB]/30"
-									}`}
-								>
-									{plan.days === POPULAR_DAYS && (
-										<span className="-top-2.5 absolute right-3 rounded-full bg-[#F59E0B] px-2 py-0.5 font-bold text-[10px] text-white">
-											{t("popular")}
-										</span>
-									)}
-									<div className="flex items-center gap-3">
-										<div
-											className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+					{plans.length === 0 ? (
+						<p className="rounded-xl border border-[#E2E8F0] border-dashed p-4 text-center text-[#64748B] text-sm">
+							{t("pricesUnavailable")}
+						</p>
+					) : (
+						<>
+							{/* Plans */}
+							<div className="space-y-2">
+								{plans.map((plan) => {
+									const value = plan.duration;
+									const selected = duration === value;
+									return (
+										<label
+											key={value}
+											className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-4 transition-all ${
 												selected
-													? "border-[#F59E0B] bg-[#F59E0B]"
-													: "border-[#CBD5E1]"
+													? "border-[#F59E0B] bg-amber-50/50 shadow-sm"
+													: "border-[#E2E8F0] hover:border-[#F59E0B]/40 hover:bg-[#FFFBEB]/30"
 											}`}
 										>
-											{selected && (
-												<div className="h-2 w-2 rounded-full bg-white" />
+											{plan.days === POPULAR_DAYS && (
+												<span className="-top-2.5 absolute right-3 rounded-full bg-[#F59E0B] px-2 py-0.5 font-bold text-[10px] text-white">
+													{t("popular")}
+												</span>
 											)}
-										</div>
-										<input
-											type="radio"
-											name="boost-duration"
-											value={value}
-											checked={selected}
-											onChange={() => setDuration(value)}
-											className="sr-only"
+											<div className="flex items-center gap-3">
+												<div
+													className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+														selected
+															? "border-[#F59E0B] bg-[#F59E0B]"
+															: "border-[#CBD5E1]"
+													}`}
+												>
+													{selected && (
+														<div className="h-2 w-2 rounded-full bg-white" />
+													)}
+												</div>
+												<input
+													type="radio"
+													name="boost-duration"
+													value={value}
+													checked={selected}
+													onChange={() => setDuration(value)}
+													className="sr-only"
+												/>
+												<div>
+													<p className="font-semibold text-[#0F172A] text-sm">
+														{t(PLAN_LABELS[plan.days])}
+													</p>
+													<p className="text-[#64748B] text-xs">
+														{t("daysVisibility", { days: plan.days })}
+													</p>
+												</div>
+											</div>
+											<p className="font-bold text-[#0F172A] text-base">
+												{plan.amount.toLocaleString()}{" "}
+												<span className="font-medium text-[#64748B] text-xs">
+													{plan.currency}
+												</span>
+											</p>
+										</label>
+									);
+								})}
+							</div>
+
+							{/* Payment method */}
+							<div className="space-y-2">
+								<p className="font-semibold text-[#0F172A] text-sm">
+									{t("paymentMethod")}
+								</p>
+								<div className="grid grid-cols-2 gap-2">
+									<PaymentMethodCard
+										active={paymentMethod === "mobilemoney"}
+										onClick={() => setPaymentMethod("mobilemoney")}
+										icon={<Smartphone className="h-6 w-6" />}
+										label={t("mobileMoney")}
+										desc={t("mobileMoneyDesc")}
+										activeColor="amber"
+									/>
+
+									{stripeAvailable ? (
+										<PaymentMethodCard
+											active={paymentMethod === "card"}
+											onClick={() => setPaymentMethod("card")}
+											icon={<CreditCard className="h-6 w-6" />}
+											label={t("card")}
+											desc={t("cardDesc")}
+											activeColor="blue"
 										/>
-										<div>
-											<p className="font-semibold text-[#0F172A] text-sm">
-												{t(PLAN_LABELS[plan.days])}
-											</p>
-											<p className="text-[#64748B] text-xs">
-												{t("daysVisibility", { days: plan.days })}
-											</p>
+									) : (
+										<div className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl border-2 border-[#E2E8F0] border-dashed px-4 py-3 opacity-40">
+											<CreditCard className="h-6 w-6 text-[#64748B]" />
+											<div className="text-center">
+												<p className="font-semibold text-[#0F172A] text-sm">
+													{t("card")}
+												</p>
+												<p className="text-[#94A3B8] text-xs">
+													{t("cardUnavailable")}
+												</p>
+											</div>
 										</div>
-									</div>
-									<p className="font-bold text-[#0F172A] text-base">
-										{plan.amount.toLocaleString()}{" "}
-										<span className="font-medium text-[#64748B] text-xs">
-											{plan.currency}
-										</span>
-									</p>
-								</label>
-							);
-						})}
-					</div>
-
-					{/* Payment method */}
-					<div className="space-y-2">
-						<p className="font-semibold text-[#0F172A] text-sm">
-							{t("paymentMethod")}
-						</p>
-						<div className="grid grid-cols-2 gap-2">
-							<PaymentMethodCard
-								active={paymentMethod === "mobilemoney"}
-								onClick={() => setPaymentMethod("mobilemoney")}
-								icon={<Smartphone className="h-6 w-6" />}
-								label={t("mobileMoney")}
-								desc={t("mobileMoneyDesc")}
-								activeColor="amber"
-							/>
-
-							{stripeAvailable ? (
-								<PaymentMethodCard
-									active={paymentMethod === "card"}
-									onClick={() => setPaymentMethod("card")}
-									icon={<CreditCard className="h-6 w-6" />}
-									label={t("card")}
-									desc={t("cardDesc")}
-									activeColor="blue"
-								/>
-							) : (
-								<div className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl border-2 border-[#E2E8F0] border-dashed px-4 py-3 opacity-40">
-									<CreditCard className="h-6 w-6 text-[#64748B]" />
-									<div className="text-center">
-										<p className="font-semibold text-[#0F172A] text-sm">
-											{t("card")}
-										</p>
-										<p className="text-[#94A3B8] text-xs">
-											{t("cardUnavailable")}
-										</p>
-									</div>
+									)}
 								</div>
+							</div>
+
+							{error && (
+								<p className="text-center text-red-500 text-sm">{error}</p>
 							)}
-						</div>
-					</div>
 
-					{error && <p className="text-center text-red-500 text-sm">{error}</p>}
-
-					<Button
-						className={`w-full rounded-xl font-bold shadow-md hover:shadow-lg ${
-							paymentMethod === "card"
-								? "bg-[#1E40AF] text-white hover:bg-[#1E3A8A]"
-								: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-[#0F172A] shadow-amber-500/20"
-						}`}
-						onClick={handlePay}
-						disabled={isPending || price === undefined}
-					>
-						{isPending ? (
-							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-						) : paymentMethod === "card" ? (
-							<CreditCard className="mr-2 h-4 w-4" />
-						) : (
-							<Smartphone className="mr-2 h-4 w-4" />
-						)}
-						{paymentMethod === "card"
-							? t("continueBtn", { amount: (price ?? 0).toLocaleString() })
-							: t("payBtn", { amount: (price ?? 0).toLocaleString() })}
-					</Button>
+							<Button
+								className={`w-full rounded-xl font-bold shadow-md hover:shadow-lg ${
+									paymentMethod === "card"
+										? "bg-[#1E40AF] text-white hover:bg-[#1E3A8A]"
+										: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-[#0F172A] shadow-amber-500/20"
+								}`}
+								onClick={handlePay}
+								disabled={isPending || price === undefined}
+							>
+								{isPending ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : paymentMethod === "card" ? (
+									<CreditCard className="mr-2 h-4 w-4" />
+								) : (
+									<Smartphone className="mr-2 h-4 w-4" />
+								)}
+								{paymentMethod === "card"
+									? t("continueBtn", { amount: (price ?? 0).toLocaleString() })
+									: t("payBtn", { amount: (price ?? 0).toLocaleString() })}
+							</Button>
+						</>
+					)}
 				</div>
 			</DialogContent>
 		</Dialog>
