@@ -9,7 +9,7 @@ import {
 	Phone,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -22,6 +22,17 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 
+const SUBJECTS = [
+	"general",
+	"account",
+	"listing",
+	"payment",
+	"report",
+	"bug",
+	"feature",
+	"other",
+] as const;
+
 export default function ContactPage() {
 	const t = useTranslations("Contact");
 	const [formData, setFormData] = useState({
@@ -33,6 +44,15 @@ export default function ContactPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState("");
+
+	useEffect(() => {
+		const subject = new URLSearchParams(window.location.search).get("subject");
+		if (subject && (SUBJECTS as readonly string[]).includes(subject)) {
+			setFormData((current) =>
+				current.subject ? current : { ...current, subject },
+			);
+		}
+	}, []);
 
 	const contactInfo = [
 		{

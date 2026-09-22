@@ -3,10 +3,8 @@ import type {
 	BoostPayment,
 	Category,
 	CategoryAttribute,
-	Conversation,
 	Favorite,
 	Listing,
-	Message,
 	Report,
 	ReportReason,
 	Review,
@@ -216,48 +214,6 @@ export const favoritesApi = {
 			`/api/favorites?listingId=${listingId}`,
 		);
 		return favs.length > 0;
-	},
-};
-
-export const conversationsApi = {
-	getAll: async (): Promise<Conversation[]> => {
-		return api.get<Conversation[]>("/api/public/conversations");
-	},
-
-	getById: async (id: string): Promise<Conversation> => {
-		return api.get<Conversation>(`/api/public/conversations/${id}`);
-	},
-
-	getMessages: async (conversationId: string): Promise<Message[]> => {
-		return api.get<Message[]>(
-			`/api/public/conversations/${conversationId}/messages`,
-		);
-	},
-
-	sendMessage: async (
-		conversationId: string,
-		content: string,
-	): Promise<Message> => {
-		return api.post<Message>(
-			`/api/public/conversations/${conversationId}/messages`,
-			{
-				content,
-			},
-		);
-	},
-
-	create: async (
-		listingId: string,
-		sellerId: string,
-	): Promise<Conversation> => {
-		return api.post<Conversation>("/api/public/conversations", {
-			listingId,
-			sellerId,
-		});
-	},
-
-	markAsRead: async (conversationId: string): Promise<void> => {
-		return api.post(`/api/public/conversations/${conversationId}/read`);
 	},
 };
 

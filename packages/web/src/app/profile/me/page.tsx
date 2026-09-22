@@ -89,7 +89,7 @@ export default async function MyProfilePage() {
 					<p className="text-[#1E40AF] text-sm">
 						{t("verifyAccount")}{" "}
 						<Link
-							href="/support"
+							href="/contact?subject=account"
 							className="font-medium underline hover:text-[#1E3A8A]"
 						>
 							{t("contactSupport")}
