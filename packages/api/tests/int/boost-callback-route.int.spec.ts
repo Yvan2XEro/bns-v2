@@ -46,7 +46,13 @@ describe("boost callback route", () => {
 	});
 
 	it("activates boost via trxref when provider reference is returned in callback", async () => {
-		verifyPaymentMock.mockResolvedValue("completed");
+		verifyPaymentMock.mockResolvedValue({
+			reference: "",
+			status: "succeeded",
+			amount: 900,
+			currency: "XAF",
+			providerTransactionId: "trx.123456",
+		});
 		findByIDMock
 			.mockResolvedValueOnce({
 				id: "payment-1",
@@ -93,7 +99,13 @@ describe("boost callback route", () => {
 	});
 
 	it("returns failed when payment is completed but boost activation cannot resolve the payment", async () => {
-		verifyPaymentMock.mockResolvedValue("completed");
+		verifyPaymentMock.mockResolvedValue({
+			reference: "",
+			status: "succeeded",
+			amount: 900,
+			currency: "XAF",
+			providerTransactionId: "trx.123456",
+		});
 		findByIDMock.mockResolvedValueOnce(null);
 		findMock.mockResolvedValue({
 			docs: [],

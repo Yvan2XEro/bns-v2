@@ -1,13 +1,27 @@
 import Stripe from "stripe";
-import type {
-	CreatePaymentParams,
-	CreatePaymentResult,
-	PaymentProvider,
-	WebhookEvent,
+import {
+	type CreatePaymentParams,
+	type CreatePaymentResult,
+	type NormalizedPayment,
+	type NormalizedWebhookEvent,
+	type PaymentProvider,
+	type ProviderPaymentStatus,
+	WebhookSignatureError,
 } from "./types";
 
+export function stripeSessionStatus(
+	type: string,
+	session: Pick<Stripe.Checkout.Session, "payment_status" | "status">,
+): ProviderPaymentStatus {
+	if (type === "checkout.session.expired" || session.status === "expired")
+		return "expired";
+	if (type === "checkout.session.async_payment_failed") return "failed";
+	if (type === "checkout.session.async_payment_succeeded") return "succeeded";
+	return session.payment_status === "paid" ? "succeeded" : "pending";
+}
+
 export class StripeProvider implements PaymentProvider {
-	readonly id = "stripe";
+	readonly id = "stripe" as const;
 
 	private readonly stripe: Stripe;
 
@@ -48,35 +62,52 @@ export class StripeProvider implements PaymentProvider {
 	async verifyWebhook(
 		rawBody: string,
 		headers: Record<string, string | undefined>,
-	): Promise<WebhookEvent> {
-		const sig = headers["stripe-signature"];
-		if (!sig)
-			throw new Error("Stripe webhook: missing Stripe-Signature header");
+	): Promise<NormalizedWebhookEvent> {
+		const signature = headers["stripe-signature"];
+		if (!signature) throw new WebhookSignatureError();
 
-		const event = this.stripe.webhooks.constructEvent(
-			rawBody,
-			sig,
-			this.webhookSecret,
-		);
-
-		if (event.type === "checkout.session.completed") {
-			const session = event.data.object as Stripe.Checkout.Session;
-			return {
-				reference: session.metadata?.reference ?? "",
-				status: "completed",
-				providerTransactionId: session.id,
-			};
+		let event: Stripe.Event;
+		try {
+			event = this.stripe.webhooks.constructEvent(
+				rawBody,
+				signature,
+				this.webhookSecret,
+			);
+		} catch {
+			throw new WebhookSignatureError();
 		}
+		return this.parseWebhookEvent(event);
+	}
 
-		if (event.type === "checkout.session.expired") {
-			const session = event.data.object as Stripe.Checkout.Session;
-			return {
-				reference: session.metadata?.reference ?? "",
-				status: "failed",
-				providerTransactionId: session.id,
-			};
-		}
+	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
+		const event = raw as {
+			id: string;
+			type: string;
+			data?: { object?: unknown };
+		};
+		const session = event.type.startsWith("checkout.session.")
+			? (event.data?.object as Stripe.Checkout.Session)
+			: null;
+		return {
+			providerEventId: event.id,
+			type: event.type,
+			reference: session?.metadata?.reference ?? "",
+			status: session ? stripeSessionStatus(event.type, session) : "pending",
+			amount: session?.amount_total ?? null,
+			currency: session?.currency ? session.currency.toUpperCase() : null,
+			providerTransactionId: session?.id ?? null,
+		};
+	}
 
-		return { reference: "", status: "pending" };
+	async verifyPayment(providerReference: string): Promise<NormalizedPayment> {
+		const session =
+			await this.stripe.checkout.sessions.retrieve(providerReference);
+		return {
+			reference: session.metadata?.reference ?? "",
+			status: stripeSessionStatus("", session),
+			amount: session.amount_total ?? null,
+			currency: session.currency ? session.currency.toUpperCase() : null,
+			providerTransactionId: session.id,
+		};
 	}
 }

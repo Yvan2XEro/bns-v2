@@ -1,17 +1,56 @@
-import type {
-	CreatePaymentParams,
-	CreatePaymentResult,
-	PaymentProvider,
-	PaymentStatus,
-	WebhookEvent,
+import { createHmac, timingSafeEqual } from "node:crypto";
+import {
+	type CreatePaymentParams,
+	type CreatePaymentResult,
+	type NormalizedPayment,
+	type NormalizedWebhookEvent,
+	type PaymentProvider,
+	type ProviderPaymentStatus,
+	WebhookSignatureError,
 } from "./types";
 
+const EVENT_STATUSES: Record<string, ProviderPaymentStatus> = {
+	"payment.complete": "succeeded",
+	"payment.failed": "failed",
+	"payment.canceled": "cancelled",
+	"payment.cancelled": "cancelled",
+	"payment.expired": "expired",
+};
+
+export function mapNotchPayStatus(value: string): ProviderPaymentStatus {
+	const lower = value.toLowerCase();
+	if (["complete", "completed", "approved", "success"].includes(lower))
+		return "succeeded";
+	if (["failed", "error"].includes(lower)) return "failed";
+	if (lower === "expired") return "expired";
+	if (["cancelled", "canceled"].includes(lower)) return "cancelled";
+	return "pending";
+}
+
+const toText = (value: unknown): string =>
+	typeof value === "string" ? value : "";
+
+const toAmount = (value: unknown): number | null => {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (
+		typeof value === "string" &&
+		value.trim() !== "" &&
+		Number.isFinite(Number(value))
+	)
+		return Number(value);
+	return null;
+};
+
+const toCurrency = (value: unknown): string | null =>
+	typeof value === "string" && value ? value.toUpperCase() : null;
+
 export class NotchPayProvider implements PaymentProvider {
-	readonly id = "notchpay";
+	readonly id = "notchpay" as const;
 
 	constructor(
 		private readonly publicKey: string,
 		private readonly baseUrl = "https://api.notchpay.co",
+		private readonly hashKey?: string,
 	) {}
 
 	async createPayment(
@@ -60,46 +99,73 @@ export class NotchPayProvider implements PaymentProvider {
 		return { checkoutUrl, providerReference };
 	}
 
-	/** Vérifie le statut d'un paiement en rappelant l'API NotchPay */
-	async verifyPayment(reference: string): Promise<PaymentStatus> {
-		const res = await fetch(`${this.baseUrl}/payments/${reference}`, {
-			headers: {
-				Authorization: this.publicKey,
-				Accept: "application/json",
+	async verifyPayment(providerReference: string): Promise<NormalizedPayment> {
+		const res = await fetch(
+			`${this.baseUrl}/payments/${encodeURIComponent(providerReference)}`,
+			{
+				headers: { Authorization: this.publicKey, Accept: "application/json" },
 			},
-		});
-
+		);
 		if (!res.ok) {
-			throw new Error(`NotchPay verify (${res.status}): ${res.statusText}`);
+			throw new Error(`NotchPay verify (${res.status})`);
 		}
 
 		const data = (await res.json()) as Record<string, unknown>;
-		const transaction = data.transaction as Record<string, unknown> | undefined;
-		const status = String(
-			(transaction?.status as string | undefined) ??
-				(data.status as string | undefined) ??
-				"",
-		);
-
-		return this.mapStatus(status);
+		const trx = (data.transaction ?? data) as Record<string, unknown>;
+		return {
+			reference: toText(trx.merchant_reference) || toText(trx.trxref),
+			status: mapNotchPayStatus(toText(trx.status)),
+			amount: toAmount(trx.amount),
+			currency: toCurrency(trx.currency),
+			providerTransactionId: toText(trx.reference) || providerReference,
+		};
 	}
 
-	// NotchPay n'utilise pas de POST webhook signé. La vérification se fait
-	// en rappelant GET /payments/{reference}. Cette méthode n'est pas utilisée
-	// pour NotchPay — elle existe uniquement pour satisfaire l'interface.
 	async verifyWebhook(
-		_rawBody: string,
-		_headers: Record<string, string | undefined>,
-	): Promise<WebhookEvent> {
-		throw new Error("NotchPay ne supporte pas les webhooks POST signés");
+		rawBody: string,
+		headers: Record<string, string | undefined>,
+	): Promise<NormalizedWebhookEvent> {
+		if (!this.hashKey) {
+			throw new Error("NotchPay webhook: NOTCHPAY_HASH_KEY is not configured");
+		}
+
+		// A SHA-256 HMAC is exactly 64 hex characters, which also guarantees
+		// equal buffer lengths for timingSafeEqual.
+		const signature = headers["x-notch-signature"] ?? "";
+		if (!/^[0-9a-f]{64}$/i.test(signature)) throw new WebhookSignatureError();
+
+		const expected = createHmac("sha256", this.hashKey)
+			.update(rawBody)
+			.digest();
+		if (!timingSafeEqual(Buffer.from(signature, "hex"), expected)) {
+			throw new WebhookSignatureError();
+		}
+
+		let raw: unknown;
+		try {
+			raw = JSON.parse(rawBody);
+		} catch {
+			throw new WebhookSignatureError();
+		}
+		return this.parseWebhookEvent(raw);
 	}
 
-	private mapStatus(s: string): PaymentStatus {
-		const lower = s.toLowerCase();
-		if (["complete", "completed", "approved", "success"].includes(lower))
-			return "completed";
-		if (["failed", "expired", "error"].includes(lower)) return "failed";
-		if (["cancelled", "canceled"].includes(lower)) return "cancelled";
-		return "pending";
+	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
+		const event = (raw ?? {}) as {
+			id?: unknown;
+			event?: unknown;
+			data?: Record<string, unknown>;
+		};
+		const data = event.data ?? {};
+		const type = toText(event.event);
+		return {
+			providerEventId: toText(event.id),
+			type,
+			reference: toText(data.merchant_reference) || toText(data.trxref),
+			status: EVENT_STATUSES[type] ?? mapNotchPayStatus(toText(data.status)),
+			amount: toAmount(data.amount),
+			currency: toCurrency(data.currency),
+			providerTransactionId: toText(data.reference) || null,
+		};
 	}
 }

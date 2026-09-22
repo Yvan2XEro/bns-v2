@@ -28,15 +28,15 @@ export async function GET(request: Request) {
 		if (reference) {
 			try {
 				const notchpay = getNotchPayProvider();
-				const paymentStatus = await notchpay.verifyPayment(reference);
+				const verified = await notchpay.verifyPayment(reference);
 
-				if (paymentStatus === "completed") {
+				if (verified.status === "succeeded") {
 					const activated = await activateBoost({
 						providerReference: reference,
 						internalReference: trxref,
 					});
 					status = activated ? "success" : "failed";
-				} else if (paymentStatus === "pending") {
+				} else if (verified.status === "pending") {
 					status = "pending";
 				}
 			} catch (err) {

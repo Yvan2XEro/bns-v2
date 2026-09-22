@@ -11,9 +11,13 @@ export async function POST(request: Request) {
 		const provider = getProvider("stripe");
 		const event = await provider.verifyWebhook(rawBody, headers);
 
-		if (event.status === "completed") {
+		if (event.status === "succeeded") {
 			await activateBoost(event.reference);
-		} else if (event.status === "failed" || event.status === "cancelled") {
+		} else if (
+			event.status === "failed" ||
+			event.status === "cancelled" ||
+			event.status === "expired"
+		) {
 			await markBoostFailed(event.reference);
 		}
 
