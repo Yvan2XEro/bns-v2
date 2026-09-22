@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { processWebhookEventTask } from "../../src/jobs/processWebhookEvent";
 import { NotchPayProvider } from "../../src/lib/payments/notchpay";
+import { parseStripeWebhookEvent } from "../../src/lib/payments/stripe";
 import {
 	hashPayload,
 	processWebhookEvent,
@@ -136,6 +137,61 @@ describe("recordWebhookEvent", () => {
 		});
 	});
 
+	it("keeps nothing identifying from a verified body that names no payment", async () => {
+		const payload = world();
+		// A Stripe event outside `checkout.session.*`: no metadata reference and
+		// no session id, so neither row key can ever be matched by the deletion
+		// sweep — and the body carries the buyer's details anyway.
+		const charge = {
+			id: "evt_charge_1",
+			type: "charge.succeeded",
+			data: {
+				object: {
+					object: "charge",
+					id: "ch_1",
+					amount: 900,
+					currency: "xaf",
+					receipt_email: "a@example.com",
+					billing_details: {
+						email: "a@example.com",
+						name: "Awa",
+						phone: "+237600000001",
+						address: { line1: "12 rue Bonanjo", city: "Douala" },
+					},
+				},
+			},
+		};
+		const chargeBody = JSON.stringify(charge);
+
+		await recordWebhookEvent(payload, {
+			provider: "stripe",
+			event: parseStripeWebhookEvent(charge),
+			raw: charge,
+			rawBody: chargeBody,
+		});
+
+		const stored = payload.store["webhook-events"][0];
+		// The delivery itself stays on record — only the body is rebuilt.
+		expect(stored).toMatchObject({
+			provider: "stripe",
+			providerEventId: "evt_charge_1",
+			type: "charge.succeeded",
+			payloadHash: hashPayload(chargeBody),
+		});
+		expect(stored.receivedAt).toEqual(expect.any(String));
+
+		const serialized = JSON.stringify(stored.raw);
+		for (const identifying of [
+			"a@example.com",
+			"Awa",
+			"+237600000001",
+			"rue Bonanjo",
+			"Douala",
+		]) {
+			expect(serialized).not.toContain(identifying);
+		}
+	});
+
 	it("redacts a body that arrives after the customer's account is deleted", async () => {
 		const payload = world();
 		deleteCustomer(payload);
@@ -216,6 +272,23 @@ describe("processWebhookEvent", () => {
 		expect(stored.raw).toMatchObject({ redacted: true });
 		expect(JSON.stringify(stored.raw)).not.toContain("a@example.com");
 		expect(stored.processedAt).toEqual(expect.any(String));
+	});
+
+	it("still settles an event whose intent only appears after it was stored", async () => {
+		const payload = world();
+		const intent = payload.store["payment-intents"].pop();
+		const { id } = await record(payload);
+
+		expect(payload.store["webhook-events"][0].raw).toMatchObject({
+			redacted: true,
+			reference: "PI-pi-1",
+		});
+
+		if (intent) payload.store["payment-intents"].push(intent);
+		expect(await processWebhookEvent(payload, id, deps)).toEqual({
+			outcome: "applied",
+		});
+		expect(payload.store["payment-intents"][0].status).toBe("succeeded");
 	});
 
 	it("does nothing for an event already processed", async () => {

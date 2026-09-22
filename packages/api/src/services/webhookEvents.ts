@@ -75,12 +75,23 @@ export async function recordWebhookEvent(
 	const existing = await findExisting();
 	if (existing) return { id: String(existing.id), duplicate: true };
 
+	// An event that resolves to no intent at all is the same hole seen from the
+	// other end: both row keys are empty (every Stripe event outside
+	// `checkout.session.*` carries neither our reference nor a session id) so
+	// the deletion sweep can never find it, and no customer is named to
+	// trigger one. `charge.*` and `payment_intent.*` bodies carry
+	// `receipt_email` and `billing_details`, so an unlinkable body is stored in
+	// the retained shape from the start. The row itself — provider, event id,
+	// hash, timestamps — is kept whole; only the body is rebuilt, and a
+	// reference that becomes resolvable later survives it, so a late-settling
+	// intent still processes.
 	const intent = await intentFor(payload, input.event);
-	const raw = intent?.customerDeletedAt
-		? redactedBody(input.provider, input.raw)
-		: isRecord(input.raw)
-			? input.raw
-			: undefined;
+	const raw =
+		!intent || intent.customerDeletedAt
+			? redactedBody(input.provider, input.raw)
+			: isRecord(input.raw)
+				? input.raw
+				: undefined;
 
 	try {
 		const created = await payload.create({
