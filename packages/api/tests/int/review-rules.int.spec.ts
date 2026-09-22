@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { auditLegacyReviews } from "../../src/services/reviewAudit";
-import { assertReviewAllowed } from "../../src/services/reviewRules";
+import {
+	assertReviewAllowed,
+	translateReviewWriteConflict,
+} from "../../src/services/reviewRules";
 import { fakePayload } from "./helpers/fakePayload";
 
 vi.mock("payload", () => ({
@@ -18,17 +21,18 @@ vi.mock("payload", () => ({
 }));
 
 let enforceReviewRules: (args: any) => Promise<any>;
+let translateReviewWriteConflicts: (args: any) => Promise<any>;
 beforeAll(async () => {
-	({ enforceReviewRules } = await import("../../src/hooks/reviews"));
+	({ enforceReviewRules, translateReviewWriteConflicts } = await import(
+		"../../src/hooks/reviews"
+	));
 });
 
 function world(seed: Record<string, any[]> = {}) {
-	return fakePayload({
-		reviews: [],
-		conversations: [],
-		"contact-reveals": [],
-		...seed,
-	});
+	return fakePayload(
+		{ reviews: [], conversations: [], "contact-reveals": [], ...seed },
+		{ uniques: { reviews: [["reviewer", "reviewedUser"]] } },
+	);
 }
 
 const allowed = (
@@ -135,6 +139,142 @@ describe("enforceReviewRules hook", () => {
 				req: { user: { id: "b" }, payload },
 			}),
 		).toEqual(seeded);
+	});
+});
+
+describe("translateReviewWriteConflict", () => {
+	const reviewerId = "buyer";
+	const reviewedUserId = "seller";
+
+	it("leaves an error that is not a unique-index violation alone", async () => {
+		const payload = world();
+		const conflict = await translateReviewWriteConflict(
+			payload,
+			{ reviewerId, reviewedUserId },
+			new Error("connection reset"),
+		);
+		expect(conflict).toBeUndefined();
+	});
+
+	it("leaves a duplicate-key-shaped error alone when the pair does not actually exist", async () => {
+		const payload = world();
+		const conflict = await translateReviewWriteConflict(
+			payload,
+			{ reviewerId, reviewedUserId },
+			Object.assign(new Error("E11000"), { code: 11000 }),
+		);
+		expect(conflict).toBeUndefined();
+	});
+
+	it("translates a confirmed duplicate-key error into review.duplicate", async () => {
+		const payload = world({
+			reviews: [
+				{ id: "r-1", reviewer: reviewerId, reviewedUser: reviewedUserId },
+			],
+		});
+		const conflict = await translateReviewWriteConflict(
+			payload,
+			{ reviewerId, reviewedUserId },
+			Object.assign(new Error("E11000"), { code: 11000 }),
+		);
+		expect(conflict).toMatchObject({ code: "review.duplicate", status: 409 });
+	});
+
+	it("recognises the ValidationError shape Payload's mongodb adapter wraps E11000 in", async () => {
+		const payload = world({
+			reviews: [
+				{ id: "r-1", reviewer: reviewerId, reviewedUser: reviewedUserId },
+			],
+		});
+		const wrapped = Object.assign(new Error("Value must be unique"), {
+			name: "ValidationError",
+			data: {
+				collection: "reviews",
+				errors: [{ message: "Value must be unique", path: "reviewer" }],
+			},
+		});
+		const conflict = await translateReviewWriteConflict(
+			payload,
+			{ reviewerId, reviewedUserId },
+			wrapped,
+		);
+		expect(conflict).toMatchObject({ code: "review.duplicate", status: 409 });
+	});
+});
+
+describe("two creates racing past the pre-check", () => {
+	// Mirrors the full request flow: enforceReviewRules validates and stamps
+	// the reviewer, then the collection's own create runs, guarded by the
+	// unique index declared on the fake; translateReviewWriteConflict is what
+	// production's afterError hook uses to translate the loser's raw
+	// duplicate-key error into the same review.duplicate the pre-check throws.
+	async function submitReview(
+		payload: ReturnType<typeof world>,
+		reviewerId: string,
+		reviewedUserId: string,
+	) {
+		const req = { user: { id: reviewerId }, payload };
+		const data = await enforceReviewRules({
+			operation: "create",
+			data: { reviewedUser: reviewedUserId, rating: 5 },
+			req,
+		});
+		try {
+			return await payload.create({ collection: "reviews", data });
+		} catch (error) {
+			const conflict = await translateReviewWriteConflict(
+				payload,
+				{ reviewerId, reviewedUserId },
+				error,
+			);
+			throw conflict ?? error;
+		}
+	}
+
+	it("settles one winner and turns the loser's duplicate-key error into review.duplicate", async () => {
+		const payload = world({
+			conversations: [{ id: "c-1", participants: ["buyer", "seller"] }],
+		});
+
+		const results = await Promise.allSettled([
+			submitReview(payload, "buyer", "seller"),
+			submitReview(payload, "buyer", "seller"),
+		]);
+
+		expect(results.map((result) => result.status)).toEqual([
+			"fulfilled",
+			"rejected",
+		]);
+		const rejected = results.find((result) => result.status === "rejected");
+		expect(rejected).toMatchObject({
+			reason: { code: "review.duplicate", status: 409 },
+		});
+		expect(payload.store.reviews).toHaveLength(1);
+	});
+});
+
+describe("translateReviewWriteConflicts hook", () => {
+	it("rewrites the response for a confirmed duplicate", async () => {
+		const payload = world({
+			reviews: [{ id: "r-1", reviewer: "buyer", reviewedUser: "seller" }],
+		});
+		const result = await translateReviewWriteConflicts({
+			error: Object.assign(new Error("E11000"), { code: 11000 }),
+			req: { user: { id: "buyer" }, payload, data: { reviewedUser: "seller" } },
+		});
+		expect(result).toMatchObject({
+			status: 409,
+			response: { errors: [{ data: { code: "review.duplicate" } }] },
+		});
+	});
+
+	it("leaves the response alone without a signed-in user", async () => {
+		const payload = world();
+		const result = await translateReviewWriteConflicts({
+			error: Object.assign(new Error("E11000"), { code: 11000 }),
+			req: { payload, data: { reviewedUser: "seller" } },
+		});
+		expect(result).toBeUndefined();
 	});
 });
 

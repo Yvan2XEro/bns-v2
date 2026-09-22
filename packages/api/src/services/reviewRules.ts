@@ -86,7 +86,73 @@ export async function assertReviewAllowed(
 		req,
 	);
 	if (duplicate) throw new ReviewRuleError(ERROR_CODES.reviewDuplicate, 409);
+	// Cheap to bypass in P0: any signed-in user can open a conversation with the
+	// target and review immediately afterwards, since a conversation only has
+	// to include both participants, not carry any real exchange. P4 replaces
+	// this branch with a delivered order, which is not self-servable the same
+	// way.
 	if (!(await haveInteracted(payload, reviewerId, reviewedUserId, req))) {
 		throw new ReviewRuleError(ERROR_CODES.reviewNoInteraction, 403);
 	}
+}
+
+/**
+ * True for the two shapes a (reviewer, reviewedUser) unique-index violation
+ * can take: the raw Mongo driver error, and the `ValidationError` Payload's
+ * mongodb adapter wraps it in before it reaches a collection hook.
+ */
+export function isReviewUniqueViolation(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const err = error as {
+		code?: unknown;
+		name?: string;
+		data?: { errors?: { path?: string }[] };
+	};
+	if (err.code === 11000) return true;
+	if (err.name === "ValidationError") {
+		return Boolean(
+			err.data?.errors?.some(
+				(fieldError) =>
+					fieldError.path === "reviewer" || fieldError.path === "reviewedUser",
+			),
+		);
+	}
+	return false;
+}
+
+/**
+ * Closes the race the pre-check above cannot: two creates can both pass it
+ * before either is written, and only one survives the database's unique
+ * (reviewer, reviewedUser) index (migration 20260915_000100_p0_reviews_audit,
+ * when it was able to create it). Called with the error the write itself
+ * raised; re-reads to confirm the pair now exists before translating it into
+ * the same review.duplicate the pre-check throws, so the caller cannot tell
+ * which path rejected them. Anything else — a write that failed for an
+ * unrelated reason, or an index hit the re-read cannot confirm — is left
+ * alone (returns `undefined`) so the original error keeps its own response.
+ */
+export async function translateReviewWriteConflict(
+	payload: Payload,
+	{
+		reviewerId,
+		reviewedUserId,
+	}: { reviewerId: string; reviewedUserId: string },
+	error: unknown,
+	req?: TxReq,
+): Promise<ReviewRuleError | undefined> {
+	if (!isReviewUniqueViolation(error)) return undefined;
+	const duplicate = await exists(
+		payload,
+		"reviews",
+		{
+			and: [
+				{ reviewer: { equals: reviewerId } },
+				{ reviewedUser: { equals: reviewedUserId } },
+			],
+		},
+		req,
+	);
+	return duplicate
+		? new ReviewRuleError(ERROR_CODES.reviewDuplicate, 409)
+		: undefined;
 }

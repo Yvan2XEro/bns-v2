@@ -1,6 +1,14 @@
-import { APIError, type CollectionBeforeChangeHook } from "payload";
+import type {
+	CollectionAfterErrorHook,
+	CollectionBeforeChangeHook,
+} from "payload";
+import { APIError } from "payload";
 import { relationId } from "../lib/relationId";
-import { assertReviewAllowed, ReviewRuleError } from "../services/reviewRules";
+import {
+	assertReviewAllowed,
+	ReviewRuleError,
+	translateReviewWriteConflict,
+} from "../services/reviewRules";
 
 /**
  * The reviewer is whoever is signed in, never what the client sent. Writes
@@ -35,6 +43,43 @@ export const enforceReviewRules: CollectionBeforeChangeHook = async ({
 		throw error;
 	}
 	return data;
+};
+
+/**
+ * Two creates can both pass `enforceReviewRules`'s pre-check before either is
+ * written; the database's unique index then rejects the loser. Payload
+ * surfaces that as a raw write error here, after the request has already
+ * failed — this only rewrites the response so the caller sees the same
+ * review.duplicate the pre-check would have produced.
+ */
+export const translateReviewWriteConflicts: CollectionAfterErrorHook = async ({
+	error,
+	req,
+}) => {
+	if (!req.user) return;
+	const reviewedUserId = relationId(req.data?.reviewedUser);
+	if (!reviewedUserId) return;
+
+	const conflict = await translateReviewWriteConflict(
+		req.payload,
+		{ reviewerId: String(req.user.id), reviewedUserId },
+		error,
+		req,
+	);
+	if (!conflict) return;
+
+	return {
+		status: conflict.status,
+		response: {
+			errors: [
+				{
+					name: conflict.name,
+					message: conflict.message,
+					data: { code: conflict.code },
+				},
+			],
+		},
+	};
 };
 
 export const updateUserRating = async ({

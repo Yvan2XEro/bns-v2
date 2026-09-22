@@ -20,8 +20,13 @@ export async function up({ payload, req }: MigrateUpArgs): Promise<void> {
 		});
 	}
 	if (audit.duplicateGroups.length > 0) {
-		payload.logger.warn({
-			msg: "[migration] duplicate reviews kept for staff review; the unique (reviewer, reviewedUser) index is not created until they are resolved",
+		// error, not warn: this environment is running, and will keep running,
+		// without the database-level guard against a duplicate review. The
+		// application-level checks (enforceReviewRules, translateReviewWriteConflicts)
+		// still apply, but the race between two concurrent creates stays open
+		// until staff resolve these groups and this migration runs again.
+		payload.logger.error({
+			msg: "[migration] duplicate reviews kept for staff review; the unique (reviewer, reviewedUser) index was NOT created — re-run this migration once they are resolved",
 			groups: audit.duplicateGroups,
 		});
 		return;
