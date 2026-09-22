@@ -45,6 +45,28 @@ const toAmount = (value: unknown): number | null => {
 const toCurrency = (value: unknown): string | null =>
 	typeof value === "string" && value ? value.toUpperCase() : null;
 
+/**
+ * Pure so it can also run outside a configured provider instance — the
+ * account-deletion cascade rebuilds a kept webhook body from exactly this
+ * shape, without needing NOTCHPAY_PUBLIC_KEY/NOTCHPAY_HASH_KEY to exist.
+ */
+export function parseNotchPayWebhookEvent(
+	raw: unknown,
+): NormalizedWebhookEvent {
+	const event = isRecord(raw) ? raw : {};
+	const data = isRecord(event.data) ? event.data : {};
+	const type = toText(event.event);
+	return {
+		providerEventId: toText(event.id),
+		type,
+		reference: toText(data.merchant_reference) || toText(data.trxref),
+		status: EVENT_STATUSES[type] ?? mapNotchPayStatus(toText(data.status)),
+		amount: toAmount(data.amount),
+		currency: toCurrency(data.currency),
+		providerTransactionId: toText(data.reference) || null,
+	};
+}
+
 export class NotchPayProvider implements PaymentProvider {
 	readonly id = "notchpay" as const;
 
@@ -153,17 +175,6 @@ export class NotchPayProvider implements PaymentProvider {
 	}
 
 	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
-		const event = isRecord(raw) ? raw : {};
-		const data = isRecord(event.data) ? event.data : {};
-		const type = toText(event.event);
-		return {
-			providerEventId: toText(event.id),
-			type,
-			reference: toText(data.merchant_reference) || toText(data.trxref),
-			status: EVENT_STATUSES[type] ?? mapNotchPayStatus(toText(data.status)),
-			amount: toAmount(data.amount),
-			currency: toCurrency(data.currency),
-			providerTransactionId: toText(data.reference) || null,
-		};
+		return parseNotchPayWebhookEvent(raw);
 	}
 }

@@ -1,5 +1,7 @@
+import type { Payload } from "payload";
 import { createAppleClientSecretFor } from "@/auth/oauth/providers";
-import { redactPersonalData } from "../lib/redact";
+import { anonymizeIdentifier, retainedWebhookRaw } from "../lib/redact";
+import { type TxReq, withTransaction } from "../lib/transactions";
 import {
 	getNotificationProvider,
 	isNotificationProviderConfigured,
@@ -21,6 +23,7 @@ type PayloadLike = {
 		collection: string;
 		id: string;
 		overrideAccess?: boolean;
+		req?: TxReq;
 	}) => Promise<unknown>;
 	find: (options: {
 		collection: string;
@@ -29,6 +32,7 @@ type PayloadLike = {
 		overrideAccess?: boolean;
 		page?: number;
 		where: Record<string, unknown>;
+		req?: TxReq;
 	}) => Promise<{
 		docs: Array<Record<string, unknown> & { id: string }>;
 		hasNextPage?: boolean;
@@ -43,6 +47,7 @@ type PayloadLike = {
 		id: string;
 		data: Record<string, unknown>;
 		overrideAccess?: boolean;
+		req?: TxReq;
 	}) => Promise<unknown>;
 };
 
@@ -50,6 +55,7 @@ async function findAllDocs(
 	payload: PayloadLike,
 	collection: string,
 	where: Record<string, unknown>,
+	req?: TxReq,
 ): Promise<Array<Record<string, unknown> & { id: string }>> {
 	const docs: Array<Record<string, unknown> & { id: string }> = [];
 	let page = 1;
@@ -63,6 +69,7 @@ async function findAllDocs(
 			overrideAccess: true,
 			page,
 			where,
+			req,
 		});
 		docs.push(...result.docs);
 		hasNextPage = Boolean(result.hasNextPage);
@@ -76,8 +83,11 @@ async function findAllIds(
 	payload: PayloadLike,
 	collection: string,
 	where: Record<string, unknown>,
+	req?: TxReq,
 ): Promise<string[]> {
-	return (await findAllDocs(payload, collection, where)).map((doc) => doc.id);
+	return (await findAllDocs(payload, collection, where, req)).map(
+		(doc) => doc.id,
+	);
 }
 
 function toRelationId(value: unknown): string | undefined {
@@ -99,6 +109,7 @@ async function findOwnedMediaIds(
 	payload: PayloadLike,
 	userId: string,
 	listingIds: string[],
+	req?: TxReq,
 ): Promise<string[]> {
 	const mediaIds = new Set<string>();
 
@@ -108,6 +119,7 @@ async function findOwnedMediaIds(
 		limit: 1,
 		overrideAccess: true,
 		where: { id: { equals: userId } },
+		req,
 	});
 	for (const doc of userResult.docs) {
 		const avatarId = toRelationId(doc.avatar);
@@ -130,6 +142,7 @@ async function findOwnedMediaIds(
 			overrideAccess: true,
 			page,
 			where: { id: { in: listingIds } },
+			req,
 		});
 
 		for (const doc of result.docs) {
@@ -155,14 +168,28 @@ async function deleteByIds(
 	payload: PayloadLike,
 	collection: string,
 	ids: string[],
+	req?: TxReq,
 ): Promise<void> {
 	for (const id of ids) {
 		await payload.delete({
 			collection,
 			id,
 			overrideAccess: true,
+			req,
 		});
 	}
+}
+
+/**
+ * The idempotency key is `boost:${userId}:…` (services/boostPurchase.ts):
+ * unique and required, and the one place besides `customer` that names the
+ * person on a kept payment intent. The user segment is swapped for its
+ * one-way anonymised form so the key stays unique and stable across retries
+ * without naming anyone.
+ */
+function anonymizeIdempotencyKey(key: unknown, userId: string): unknown {
+	if (typeof key !== "string" || !key.includes(userId)) return key;
+	return key.split(userId).join(anonymizeIdentifier(userId));
 }
 
 /**
@@ -173,23 +200,31 @@ async function deleteByIds(
 async function retainPaymentRecords(
 	payload: PayloadLike,
 	userId: string,
+	req?: TxReq,
 ): Promise<void> {
 	const customerDeletedAt = new Date().toISOString();
 
-	for (const id of await findAllIds(payload, "boost-payments", {
-		user: { equals: userId },
-	})) {
+	for (const id of await findAllIds(
+		payload,
+		"boost-payments",
+		{ user: { equals: userId } },
+		req,
+	)) {
 		await payload.update({
 			collection: "boost-payments",
 			id,
 			overrideAccess: true,
 			data: { user: null, customerDeletedAt },
+			req,
 		});
 	}
 
-	const intents = await findAllDocs(payload, "payment-intents", {
-		customer: { equals: userId },
-	});
+	const intents = await findAllDocs(
+		payload,
+		"payment-intents",
+		{ customer: { equals: userId } },
+		req,
+	);
 	const references = intents
 		.map((intent) => intent.reference)
 		.filter(
@@ -202,19 +237,35 @@ async function retainPaymentRecords(
 			collection: "payment-intents",
 			id: intent.id,
 			overrideAccess: true,
-			data: { customer: null, customerDeletedAt },
+			data: {
+				customer: null,
+				customerDeletedAt,
+				idempotencyKey: anonymizeIdempotencyKey(intent.idempotencyKey, userId),
+			},
+			req,
 		});
 	}
 
 	if (references.length === 0) return;
-	for (const event of await findAllDocs(payload, "webhook-events", {
-		reference: { in: references },
-	})) {
+	for (const event of await findAllDocs(
+		payload,
+		"webhook-events",
+		{ reference: { in: references } },
+		req,
+	)) {
 		await payload.update({
 			collection: "webhook-events",
 			id: event.id,
 			overrideAccess: true,
-			data: { raw: redactPersonalData(event.raw) as Record<string, unknown> },
+			data: {
+				// payloadHash is left untouched: it attests to the body the
+				// provider actually sent, not to what we still store after this
+				// rewrite, and re-verifying it against `raw` post-redaction was
+				// never the point — proving the record has not been tampered
+				// with since receipt is.
+				raw: retainedWebhookRaw(String(event.provider ?? ""), event.raw),
+			},
+			req,
 		});
 	}
 }
@@ -306,120 +357,186 @@ async function deleteNotificationSubscriber(
 	}
 }
 
+/**
+ * Every document that changes together lives in one transaction, the way
+ * boostPurchase.ts wraps its multi-document writes: a crash partway through
+ * must never leave the account half-anonymised (customer nulled on one
+ * collection but not another). Each step is re-derived from a fresh `find`
+ * gated on fields the previous run would have already cleared (`customer`,
+ * `user`), so a retry after a rollback converges on the same end state
+ * instead of double-processing or skipping documents.
+ */
+async function runDeletionCascade(
+	payload: PayloadLike,
+	userId: string,
+	req: TxReq,
+): Promise<void> {
+	const listingIds = await findAllIds(
+		payload,
+		"listings",
+		{ seller: { equals: userId } },
+		req,
+	);
+	const conversationIds = await findAllIds(
+		payload,
+		"conversations",
+		{ participants: { equals: userId } },
+		req,
+	);
+	const messageIds = await findAllIds(
+		payload,
+		"messages",
+		{
+			or: [
+				{ sender: { equals: userId } },
+				...(conversationIds.length > 0
+					? [{ conversation: { in: conversationIds } }]
+					: []),
+			],
+		},
+		req,
+	);
+
+	await deleteByIds(
+		payload,
+		"favorites",
+		await findAllIds(
+			payload,
+			"favorites",
+			{
+				or: [
+					{ user: { equals: userId } },
+					...(listingIds.length > 0 ? [{ listing: { in: listingIds } }] : []),
+				],
+			},
+			req,
+		),
+		req,
+	);
+
+	await deleteByIds(
+		payload,
+		"saved-searches",
+		await findAllIds(
+			payload,
+			"saved-searches",
+			{ user: { equals: userId } },
+			req,
+		),
+		req,
+	);
+
+	await retainPaymentRecords(payload, userId, req);
+
+	await deleteByIds(
+		payload,
+		"contact-reveals",
+		await findAllIds(
+			payload,
+			"contact-reveals",
+			{ or: [{ viewer: { equals: userId } }, { seller: { equals: userId } }] },
+			req,
+		),
+		req,
+	);
+
+	await deleteByIds(
+		payload,
+		"blocked-users",
+		await findAllIds(
+			payload,
+			"blocked-users",
+			{
+				or: [{ blocker: { equals: userId } }, { blocked: { equals: userId } }],
+			},
+			req,
+		),
+		req,
+	);
+
+	await deleteByIds(
+		payload,
+		"reports",
+		await findAllIds(
+			payload,
+			"reports",
+			{
+				or: [
+					{ reporter: { equals: userId } },
+					{ resolvedBy: { equals: userId } },
+					{
+						and: [
+							{ targetType: { equals: "user" } },
+							{ targetId: { equals: userId } },
+						],
+					},
+					...(listingIds.length > 0
+						? [
+								{
+									and: [
+										{ targetType: { equals: "listing" } },
+										{ targetId: { in: listingIds } },
+									],
+								},
+							]
+						: []),
+					...(messageIds.length > 0
+						? [
+								{
+									and: [
+										{ targetType: { equals: "message" } },
+										{ targetId: { in: messageIds } },
+									],
+								},
+							]
+						: []),
+				],
+			},
+			req,
+		),
+		req,
+	);
+
+	await deleteByIds(
+		payload,
+		"reviews",
+		await findAllIds(
+			payload,
+			"reviews",
+			{
+				or: [
+					{ reviewer: { equals: userId } },
+					{ reviewedUser: { equals: userId } },
+				],
+			},
+			req,
+		),
+		req,
+	);
+
+	// Resolved before the listings go away — the image references live on them.
+	const mediaIds = await findOwnedMediaIds(payload, userId, listingIds, req);
+
+	await deleteByIds(payload, "messages", messageIds, req);
+	await deleteByIds(payload, "conversations", conversationIds, req);
+	await deleteByIds(payload, "listings", listingIds, req);
+	await deleteByIds(payload, "media", mediaIds, req);
+}
+
 export async function deleteUserRelatedData(
 	payload: PayloadLike,
 	user: UserWithAuthProviders,
 ): Promise<void> {
 	const userId = user.id;
 
-	const listingIds = await findAllIds(payload, "listings", {
-		seller: { equals: userId },
-	});
-	const conversationIds = await findAllIds(payload, "conversations", {
-		participants: { equals: userId },
-	});
-	const messageIds = await findAllIds(payload, "messages", {
-		or: [
-			{ sender: { equals: userId } },
-			...(conversationIds.length > 0
-				? [{ conversation: { in: conversationIds } }]
-				: []),
-		],
-	});
-
-	await deleteByIds(
-		payload,
-		"favorites",
-		await findAllIds(payload, "favorites", {
-			or: [
-				{ user: { equals: userId } },
-				...(listingIds.length > 0 ? [{ listing: { in: listingIds } }] : []),
-			],
-		}),
+	await withTransaction(payload as unknown as Payload, (req) =>
+		runDeletionCascade(payload, userId, req),
 	);
 
-	await deleteByIds(
-		payload,
-		"saved-searches",
-		await findAllIds(payload, "saved-searches", {
-			user: { equals: userId },
-		}),
-	);
-
-	await retainPaymentRecords(payload, userId);
-
-	await deleteByIds(
-		payload,
-		"contact-reveals",
-		await findAllIds(payload, "contact-reveals", {
-			or: [{ viewer: { equals: userId } }, { seller: { equals: userId } }],
-		}),
-	);
-
-	await deleteByIds(
-		payload,
-		"blocked-users",
-		await findAllIds(payload, "blocked-users", {
-			or: [{ blocker: { equals: userId } }, { blocked: { equals: userId } }],
-		}),
-	);
-
-	await deleteByIds(
-		payload,
-		"reports",
-		await findAllIds(payload, "reports", {
-			or: [
-				{ reporter: { equals: userId } },
-				{ resolvedBy: { equals: userId } },
-				{
-					and: [
-						{ targetType: { equals: "user" } },
-						{ targetId: { equals: userId } },
-					],
-				},
-				...(listingIds.length > 0
-					? [
-							{
-								and: [
-									{ targetType: { equals: "listing" } },
-									{ targetId: { in: listingIds } },
-								],
-							},
-						]
-					: []),
-				...(messageIds.length > 0
-					? [
-							{
-								and: [
-									{ targetType: { equals: "message" } },
-									{ targetId: { in: messageIds } },
-								],
-							},
-						]
-					: []),
-			],
-		}),
-	);
-
-	await deleteByIds(
-		payload,
-		"reviews",
-		await findAllIds(payload, "reviews", {
-			or: [
-				{ reviewer: { equals: userId } },
-				{ reviewedUser: { equals: userId } },
-			],
-		}),
-	);
-
-	// Resolved before the listings go away — the image references live on them.
-	const mediaIds = await findOwnedMediaIds(payload, userId, listingIds);
-
-	await deleteByIds(payload, "messages", messageIds);
-	await deleteByIds(payload, "conversations", conversationIds);
-	await deleteByIds(payload, "listings", listingIds);
-	await deleteByIds(payload, "media", mediaIds);
-
+	// Outside the transaction: both are network calls to a third party and
+	// must not hold a database transaction open while they run. Neither
+	// writes a Payload document, so they carry no transactional requirement
+	// of their own; each is already best-effort and logs rather than throws.
 	await revokeAppleRefreshToken(user, payload);
 	await deleteNotificationSubscriber(userId, payload);
 }

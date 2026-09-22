@@ -26,6 +26,31 @@ export function stripeSessionStatus(
 	return session.payment_status === "paid" ? "succeeded" : "pending";
 }
 
+/**
+ * Pure so it can also run outside a configured provider instance — the
+ * account-deletion cascade rebuilds a kept webhook body from exactly this
+ * shape, without needing STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET to exist.
+ */
+export function parseStripeWebhookEvent(raw: unknown): NormalizedWebhookEvent {
+	const event = isRecord(raw) ? raw : {};
+	const id = typeof event.id === "string" ? event.id : "";
+	const type = typeof event.type === "string" ? event.type : "";
+	const dataObject = isRecord(event.data) ? event.data.object : undefined;
+	const session =
+		type.startsWith("checkout.session.") && isCheckoutSession(dataObject)
+			? dataObject
+			: null;
+	return {
+		providerEventId: id,
+		type,
+		reference: session?.metadata?.reference ?? "",
+		status: session ? stripeSessionStatus(type, session) : "pending",
+		amount: session?.amount_total ?? null,
+		currency: session?.currency ? session.currency.toUpperCase() : null,
+		providerTransactionId: session?.id ?? null,
+	};
+}
+
 export class StripeProvider implements PaymentProvider {
 	readonly id = "stripe" as const;
 
@@ -86,23 +111,7 @@ export class StripeProvider implements PaymentProvider {
 	}
 
 	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
-		const event = isRecord(raw) ? raw : {};
-		const id = typeof event.id === "string" ? event.id : "";
-		const type = typeof event.type === "string" ? event.type : "";
-		const dataObject = isRecord(event.data) ? event.data.object : undefined;
-		const session =
-			type.startsWith("checkout.session.") && isCheckoutSession(dataObject)
-				? dataObject
-				: null;
-		return {
-			providerEventId: id,
-			type,
-			reference: session?.metadata?.reference ?? "",
-			status: session ? stripeSessionStatus(type, session) : "pending",
-			amount: session?.amount_total ?? null,
-			currency: session?.currency ? session.currency.toUpperCase() : null,
-			providerTransactionId: session?.id ?? null,
-		};
+		return parseStripeWebhookEvent(raw);
 	}
 
 	async verifyPayment(providerReference: string): Promise<NormalizedPayment> {

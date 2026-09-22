@@ -1,5 +1,5 @@
-import { NotchPayProvider } from "./notchpay";
-import { StripeProvider } from "./stripe";
+import { NotchPayProvider, parseNotchPayWebhookEvent } from "./notchpay";
+import { parseStripeWebhookEvent, StripeProvider } from "./stripe";
 import type { PaymentProvider, ProviderName } from "./types";
 
 export function getProvider(name: ProviderName): PaymentProvider {
@@ -25,7 +25,12 @@ export function getProvider(name: ProviderName): PaymentProvider {
 	);
 }
 
-export { NotchPayProvider, StripeProvider };
+export {
+	NotchPayProvider,
+	StripeProvider,
+	parseNotchPayWebhookEvent,
+	parseStripeWebhookEvent,
+};
 export type {
 	CreatePaymentParams,
 	CreatePaymentResult,
