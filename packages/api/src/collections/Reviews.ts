@@ -1,6 +1,6 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
-import { updateUserRating } from "../hooks/reviews";
+import { enforceReviewRules, updateUserRating } from "../hooks/reviews";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 export const Reviews: CollectionConfig = {
@@ -24,6 +24,7 @@ export const Reviews: CollectionConfig = {
 		},
 	},
 	hooks: {
+		beforeChange: [enforceReviewRules],
 		afterChange: [
 			async ({ doc, req, operation }) => {
 				const reviewedUserId =

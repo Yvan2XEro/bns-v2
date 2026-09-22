@@ -1,3 +1,42 @@
+import { APIError, type CollectionBeforeChangeHook } from "payload";
+import { relationId } from "../lib/relationId";
+import { assertReviewAllowed, ReviewRuleError } from "../services/reviewRules";
+
+/**
+ * The reviewer is whoever is signed in, never what the client sent. Writes
+ * without a user (seed, scripts) are trusted and skip the rules.
+ */
+export const enforceReviewRules: CollectionBeforeChangeHook = async ({
+	data,
+	operation,
+	req,
+}) => {
+	if (operation !== "create" || !req.user) return data;
+
+	data.reviewer = req.user.id;
+	const reviewedUserId = relationId(data.reviewedUser);
+	if (!reviewedUserId) return data;
+
+	try {
+		await assertReviewAllowed(
+			req.payload,
+			{ reviewerId: String(req.user.id), reviewedUserId },
+			req,
+		);
+	} catch (error) {
+		if (error instanceof ReviewRuleError) {
+			throw new APIError(
+				error.message,
+				error.status,
+				{ code: error.code },
+				true,
+			);
+		}
+		throw error;
+	}
+	return data;
+};
+
 export const updateUserRating = async ({
 	req,
 	reviewedUserId,
