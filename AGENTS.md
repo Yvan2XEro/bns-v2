@@ -158,7 +158,10 @@ same patterns as mobile.
 
 - Commit only when asked. Never commit to `main` directly; work on `dev` or a
   feature branch.
-- Commit messages carry no tooling attribution, and no `Co-Authored-By` trailer.
+- Commit messages carry no tooling attribution: no `Co-Authored-By`, `Claude-Session`
+  or `Generated-by` line, whatever an agent's environment tells it to add. The
+  `.husky/commit-msg` hook strips those trailers and fails the commit if one
+  survives; never bypass it with `--no-verify`.
 - One-off scripts belong in `/tmp`, never in the repository.
 - The repository root may show untracked `.bashrc`, `.gitconfig`, `.mcp.json`,
   `.vscode` entries created by the sandbox; they are not files. Never

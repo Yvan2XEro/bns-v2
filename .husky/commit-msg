@@ -1,0 +1,15 @@
+#!/bin/sh
+# Commit messages carry no tooling attribution. Strip the trailers a coding
+# agent may add, and fail if any survives.
+MSG_FILE="$1"
+
+sed -i -E '/^[[:space:]]*(Co-[Aa]uthored-[Bb]y|Claude-Session|Generated-[Bb]y):/d' "$MSG_FILE"
+sed -i -E '/🤖 Generated with \[Claude Code\]/d' "$MSG_FILE"
+sed -i -E '/^https:\/\/claude\.ai\/code\/session_/d' "$MSG_FILE"
+# Collapse the blank lines the removals leave at the end.
+printf '%s\n' "$(cat "$MSG_FILE")" > "$MSG_FILE"
+
+if grep -qiE '^[[:space:]]*(co-authored-by|claude-session|generated-by):' "$MSG_FILE"; then
+  echo "❌ Commit message carries a tooling trailer. Remove it and commit again."
+  exit 1
+fi
