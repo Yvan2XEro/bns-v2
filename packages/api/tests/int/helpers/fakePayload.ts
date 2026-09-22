@@ -101,6 +101,14 @@ export function fakePayload(
 	// `db.updateOne` with a `where` is one `findOneAndUpdate` in Mongo, so it
 	// matches and writes without yielding — the only conditional write the
 	// services can rely on.
+	//
+	// `beginTransaction`/`commitTransaction`/`rollbackTransaction` snapshot and
+	// restore the whole store: a real `replicaSet` deployment gets this from
+	// Mongo itself, and `withTransaction` (lib/transactions.ts) runs unwrapped
+	// without one — this fake is the one place tests can see that a rollback
+	// actually undoes every write a transaction made, not just some of them.
+	const snapshots = new Map<string, Record<string, Doc[]>>();
+	let txSeq = 0;
 	const db = {
 		updateOne({ collection, id, where, data }: WriteArgs) {
 			const target =
@@ -116,6 +124,24 @@ export function fakePayload(
 			checkUnique(collection, next);
 			Object.assign(target, next);
 			return Promise.resolve(structuredClone(target));
+		},
+		beginTransaction() {
+			const id = `tx-${++txSeq}`;
+			snapshots.set(id, structuredClone(store));
+			return Promise.resolve(id);
+		},
+		commitTransaction(id: string) {
+			snapshots.delete(id);
+			return Promise.resolve();
+		},
+		rollbackTransaction(id: string) {
+			const snapshot = snapshots.get(id);
+			if (snapshot) {
+				for (const key of Object.keys(store)) delete store[key];
+				Object.assign(store, structuredClone(snapshot));
+			}
+			snapshots.delete(id);
+			return Promise.resolve();
 		},
 	};
 

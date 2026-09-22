@@ -193,6 +193,53 @@ export async function findIntentByReference(
 	return null;
 }
 
+async function moveIntentToPending(
+	payload: Payload,
+	intentId: string,
+	details: {
+		providerReference: string;
+		checkoutUrl: string | null;
+		now?: Date;
+	},
+	req: TxReq,
+): Promise<IntentDoc> {
+	const intent = await loadIntent(payload, intentId, req);
+	const data: Partial<PaymentIntent> = {
+		providerReference: details.providerReference,
+		checkoutUrl: details.checkoutUrl,
+	};
+	if (transitionPath(intent.status, "pending").length > 0) {
+		const moved = await saveIntentIf(
+			payload,
+			intentId,
+			intent.status,
+			{
+				...data,
+				status: "pending",
+				statusHistory: [
+					...(intent.statusHistory ?? []),
+					{
+						status: "pending",
+						source: "system",
+						at: (details.now ?? new Date()).toISOString(),
+					},
+				],
+			},
+			req,
+		);
+		if (moved) return moved;
+	}
+	// A fast webhook may already have settled the intent; keep its status and
+	// record only what the provider call told us.
+	return saveIntent(payload, intentId, data, req);
+}
+
+/**
+ * Moves the intent to `pending` with the provider's checkout details. Pass an
+ * existing `req` to fold this into a caller's own transaction (so a sibling
+ * write, e.g. the legacy `boost-payments` fields, lands atomically with it);
+ * without one, it opens and commits its own.
+ */
 export function markIntentPending(
 	payload: Payload,
 	intentId: string,
@@ -201,38 +248,12 @@ export function markIntentPending(
 		checkoutUrl: string | null;
 		now?: Date;
 	},
+	req?: TxReq,
 ): Promise<IntentDoc> {
-	return withTransaction(payload, async (req) => {
-		const intent = await loadIntent(payload, intentId, req);
-		const data: Partial<PaymentIntent> = {
-			providerReference: details.providerReference,
-			checkoutUrl: details.checkoutUrl,
-		};
-		if (transitionPath(intent.status, "pending").length > 0) {
-			const moved = await saveIntentIf(
-				payload,
-				intentId,
-				intent.status,
-				{
-					...data,
-					status: "pending",
-					statusHistory: [
-						...(intent.statusHistory ?? []),
-						{
-							status: "pending",
-							source: "system",
-							at: (details.now ?? new Date()).toISOString(),
-						},
-					],
-				},
-				req,
-			);
-			if (moved) return moved;
-		}
-		// A fast webhook may already have settled the intent; keep its status and
-		// record only what the provider call told us.
-		return saveIntent(payload, intentId, data, req);
-	});
+	if (req) return moveIntentToPending(payload, intentId, details, req);
+	return withTransaction(payload, (txReq) =>
+		moveIntentToPending(payload, intentId, details, txReq),
+	);
 }
 
 /** Kept out of `statusHistory`: a customer can read their own intent in full. */

@@ -197,20 +197,32 @@ export async function startBoostPurchase(
 		throw new BoostPurchaseError(ERROR_CODES.paymentProviderUnavailable, 502);
 	}
 
-	await markIntentPending(payload, String(intent.id), {
-		providerReference: checkout.providerReference,
-		checkoutUrl: checkout.checkoutUrl ?? null,
-	});
-	// Legacy fields: released app versions still read them.
-	await payload.update({
-		collection: "boost-payments",
-		id: boostPaymentId,
-		depth: 0,
-		overrideAccess: true,
-		data: {
-			paymentReference: checkout.providerReference,
-			paymentUrl: checkout.checkoutUrl ?? null,
-		},
+	// One transaction: the intent's move to `pending` and the legacy field
+	// write land together, so a crash between them can never leave the intent
+	// pending with a checkout while released app versions still read a null
+	// `paymentReference`/`paymentUrl` off the boost payment.
+	await withTransaction(payload, async (req) => {
+		await markIntentPending(
+			payload,
+			String(intent.id),
+			{
+				providerReference: checkout.providerReference,
+				checkoutUrl: checkout.checkoutUrl ?? null,
+			},
+			req,
+		);
+		// Legacy fields: released app versions still read them.
+		await payload.update({
+			collection: "boost-payments",
+			id: boostPaymentId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+			data: {
+				paymentReference: checkout.providerReference,
+				paymentUrl: checkout.checkoutUrl ?? null,
+			},
+		});
 	});
 
 	return {

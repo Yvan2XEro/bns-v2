@@ -173,6 +173,32 @@ describe("startBoostPurchase", () => {
 		expect(payload.store["boost-payments"][0].status).toBe("failed");
 	});
 
+	it("leaves neither the intent pending nor the boost payment referenced when the legacy field write fails", async () => {
+		const payload = world();
+		const p = provider();
+		const originalUpdate = payload.update.bind(payload);
+		payload.update = (async (args: Parameters<typeof originalUpdate>[0]) => {
+			const data = args.data as Record<string, unknown>;
+			if ("paymentReference" in data) throw new Error("Mongo write failed");
+			return originalUpdate(args);
+		}) as typeof payload.update;
+
+		await expect(
+			startBoostPurchase(payload, input, { getProvider: () => p }),
+		).rejects.toThrow("Mongo write failed");
+
+		const intent = payload.store["payment-intents"][0];
+		const boost = payload.store["boost-payments"][0];
+		// The provider call already returned a real checkout: an intent left
+		// `pending` with that checkout, next to a boost payment whose legacy
+		// `paymentReference`/`paymentUrl` never landed, is exactly the state a
+		// released app version cannot act on.
+		expect(intent.status).not.toBe("pending");
+		expect(intent.checkoutUrl ?? null).toBeNull();
+		expect(boost.paymentReference ?? null).toBeNull();
+		expect(boost.paymentUrl ?? null).toBeNull();
+	});
+
 	it("replays a pending purchase for the same idempotency key", async () => {
 		const payload = world();
 		const p = provider();
