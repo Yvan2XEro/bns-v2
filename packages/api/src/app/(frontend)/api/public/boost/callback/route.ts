@@ -14,11 +14,6 @@ function callbackStatus(result: SettleOutcome): CallbackStatus {
 }
 
 /**
- * Callback GET après paiement (NotchPay et Stripe Checkout).
- * Query params : provider, listingId, appReturnUrl
- *   NotchPay ajoute aussi : reference
- *   Stripe ajoute aussi  : status (success|cancelled)
- *
  * GET redirect after a hosted checkout. It never activates anything by
  * itself: NotchPay payments are verified with the provider and go through
  * the same idempotent settlement as the webhook, in whichever order the two
@@ -28,7 +23,6 @@ export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const provider = url.searchParams.get("provider") ?? "notchpay";
 	const providerReference = url.searchParams.get("reference") ?? "";
-	const ourReference = url.searchParams.get("trxref") ?? "";
 	const appReturnUrl = url.searchParams.get("appReturnUrl") ?? "";
 	const listingId = url.searchParams.get("listingId") ?? "";
 
@@ -45,7 +39,6 @@ export async function GET(request: Request) {
 				await getProvider("notchpay").verifyPayment(providerReference);
 			const result = await settlePayment(payload, {
 				...verified,
-				reference: verified.reference || ourReference,
 				source: "callback",
 			});
 			status = callbackStatus(result);

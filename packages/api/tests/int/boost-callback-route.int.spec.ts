@@ -81,7 +81,7 @@ describe("boost callback route", () => {
 		);
 	});
 
-	it("does not boost twice when the webhook already settled the intent", async () => {
+	it("does not boost twice when the callback is replayed", async () => {
 		verifyPaymentMock.mockResolvedValue(verified("succeeded"));
 		await callback("provider=notchpay&reference=trx.1&listingId=l-1");
 		const boosted = payload.store.listings[0].boostedUntil;
@@ -91,6 +91,48 @@ describe("boost callback route", () => {
 		);
 		expect(payload.store.listings[0].boostedUntil).toBe(boosted);
 		expect(response.headers.get("location")).toContain("boostStatus=success");
+	});
+
+	it("never settles an intent the provider did not itself confirm, even when trxref names one", async () => {
+		payload = fakePayload({
+			listings: [{ id: "l-2", status: "published", boostedUntil: null }],
+			"boost-payments": [
+				{ id: "bp-2", listing: "l-2", duration: "14", status: "pending" },
+			],
+			"payment-intents": [
+				{
+					id: "pi-2",
+					purpose: "boost",
+					targetId: "bp-2",
+					amount: 900,
+					currency: "XAF",
+					status: "pending",
+					reference: "PI-pi-2",
+					providerReference: "trx.2",
+					statusHistory: [],
+				},
+			],
+		});
+		getPayloadMock.mockResolvedValue(payload);
+		// The provider confirms a payment but echoes neither a merchant
+		// reference nor a provider transaction id that matches any intent.
+		verifyPaymentMock.mockResolvedValue({
+			reference: "",
+			status: "succeeded",
+			amount: 900,
+			currency: "XAF",
+			providerTransactionId: "trx.unknown",
+		});
+
+		const response = await callback(
+			"provider=notchpay&reference=trx.unknown&trxref=PI-pi-2&listingId=l-2",
+		);
+
+		expect(payload.store["payment-intents"][0].status).toBe("pending");
+		expect(payload.store["payment-intents"][0].statusHistory).toHaveLength(0);
+		expect(payload.store["boost-payments"][0].status).toBe("pending");
+		expect(payload.store.listings[0].boostedUntil).toBeNull();
+		expect(response.headers.get("location")).toContain("boostStatus=failed");
 	});
 
 	it("reports pending while the provider has not confirmed", async () => {
