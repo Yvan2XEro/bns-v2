@@ -101,6 +101,14 @@ export const BoostPayments: CollectionConfig = {
 			type: "text",
 		},
 		{
+			// The window this purchase paid for, reserved on the first activation
+			// so replaying it converges on the same end instead of stacking a
+			// second window on top of the first.
+			name: "boostedUntil",
+			type: "date",
+			admin: { readOnly: true },
+		},
+		{
 			name: "paymentIntent",
 			type: "relationship",
 			relationTo: "payment-intents",

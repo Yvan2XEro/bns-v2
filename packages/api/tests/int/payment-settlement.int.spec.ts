@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	activateBoostPayment,
 	computeBoostedUntil,
+	failBoostPayment,
 } from "../../src/services/boostActivation";
 import {
 	applyStatus,
@@ -436,6 +437,37 @@ describe("boost activation", () => {
 		expect(computeBoostedUntil(at(-DAY), NOW, 7)).toBe(at(7 * DAY));
 		expect(computeBoostedUntil(null, NOW, 7)).toBe(at(7 * DAY));
 		expect(computeBoostedUntil("not a date", NOW, 7)).toBe(at(7 * DAY));
+	});
+
+	it("heals an activation interrupted before the purchase was completed", async () => {
+		const payload = world();
+		const realUpdateOne = payload.db.updateOne;
+		const crash = vi
+			.spyOn(payload.db, "updateOne")
+			.mockImplementation(async (args: { data: Record<string, unknown> }) => {
+				if (args.data.status === "completed") throw new Error("crash");
+				return realUpdateOne(args);
+			});
+
+		await expect(activateBoostPayment(payload, "bp-1")).rejects.toThrow(
+			"crash",
+		);
+		expect(listingOf(payload).boostedUntil).toBe(at(14 * DAY));
+		expect(boostOf(payload).status).toBe("pending");
+
+		crash.mockRestore();
+		const replay = await activateBoostPayment(payload, "bp-1");
+
+		expect(replay).toEqual({ activated: true, boostedUntil: at(14 * DAY) });
+		expect(listingOf(payload).boostedUntil).toBe(at(14 * DAY));
+		expect(boostOf(payload).status).toBe("completed");
+	});
+
+	it("never fails a boost payment that does not exist", async () => {
+		const payload = world();
+		await expect(failBoostPayment(payload, "bp-nope")).rejects.toThrow(
+			"Not Found",
+		);
 	});
 
 	it("claims the purchase once when two activations interleave", async () => {

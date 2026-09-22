@@ -491,6 +491,7 @@ export interface BoostPayment {
   paymentProvider: 'notchpay' | 'stripe';
   paymentReference?: string | null;
   paymentUrl?: string | null;
+  boostedUntil?: string | null;
   paymentIntent?: (string | null) | PaymentIntent;
   customerDeletedAt?: string | null;
   createdAt: string;
@@ -1095,6 +1096,7 @@ export interface BoostPaymentsSelect<T extends boolean = true> {
   paymentProvider?: T;
   paymentReference?: T;
   paymentUrl?: T;
+  boostedUntil?: T;
   paymentIntent?: T;
   customerDeletedAt?: T;
   createdAt?: T;

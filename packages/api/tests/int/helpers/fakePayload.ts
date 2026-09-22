@@ -98,7 +98,29 @@ export function fakePayload(
 		}
 	};
 
+	// `db.updateOne` with a `where` is one `findOneAndUpdate` in Mongo, so it
+	// matches and writes without yielding — the only conditional write the
+	// services can rely on.
+	const db = {
+		updateOne({ collection, id, where, data }: WriteArgs) {
+			const target =
+				id === undefined
+					? col(collection).find((doc) => matches(doc, where))
+					: byId(collection, id);
+			if (!target) return Promise.resolve(null);
+			const next: Doc = {
+				...target,
+				...structuredClone(data),
+				updatedAt: new Date().toISOString(),
+			};
+			checkUnique(collection, next);
+			Object.assign(target, next);
+			return Promise.resolve(structuredClone(target));
+		},
+	};
+
 	const payload = {
+		db,
 		store,
 		logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 		jobs: { queue: vi.fn(async () => ({ id: `job-${++seq}` })) },
@@ -142,10 +164,13 @@ export function fakePayload(
 				Object.assign(doc, next);
 				return structuredClone(doc);
 			};
-			// `where` without an id is Payload's bulk update: it returns the
-			// documents it matched, which is what a compare-and-swap reads.
+			// Payload's bulk update finds and then writes by id
+			// (`collections/operations/update.js`), so the predicate is gone by
+			// the time it writes. The await reproduces that window: a caller that
+			// relies on `where` to serialise two racers has to fail here.
 			if (id === undefined) {
 				const matched = col(collection).filter((doc) => matches(doc, where));
+				await Promise.resolve();
 				return { docs: matched.map(apply), errors: [] };
 			}
 			const doc = byId(collection, id);

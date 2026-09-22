@@ -95,10 +95,12 @@ async function findOne(
 
 /**
  * Compare-and-swap: the write applies only while the intent still holds the
- * status it was read with. Without `replicaSet` the settlement runs unwrapped
- * (see `lib/transactions.ts`), so this is what keeps a webhook and a callback
- * arriving together from both moving the same intent. Returns null when the
- * intent moved under us and the caller has to decide again.
+ * status it was read with. `db.updateOne` with a `where` is a single
+ * `findOneAndUpdate`, unlike the collection-level bulk update, which finds and
+ * then writes by id — the predicate has to reach the database to serialise two
+ * reports arriving together, which is the case on a deployment without
+ * `replicaSet` (see `lib/transactions.ts`). Returns null when the intent moved
+ * under us and the caller has to decide again.
  */
 async function saveIntentIf(
 	payload: Payload,
@@ -107,17 +109,17 @@ async function saveIntentIf(
 	data: Partial<PaymentIntent>,
 	req?: TxReq,
 ): Promise<IntentDoc | null> {
-	const result = await payload.update({
+	const swapped = await payload.db.updateOne({
 		collection: COLLECTION,
 		where: {
 			and: [{ id: { equals: id } }, { status: { equals: expectedStatus } }],
 		},
-		data,
-		depth: 0,
-		overrideAccess: true,
+		data: { ...data },
 		req,
 	});
-	return result.docs[0] ?? null;
+	// The adapter returns the raw document; read it back through the collection
+	// so the caller gets the same shape every other read gives.
+	return swapped ? loadIntent(payload, id, req) : null;
 }
 
 export async function createPaymentIntent(
