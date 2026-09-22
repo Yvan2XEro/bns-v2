@@ -71,41 +71,54 @@ export async function revealContactPhone(
 				.catch(() => null)
 		: null;
 	const phone = typeof seller?.phone === "string" ? seller.phone.trim() : "";
-	if (!seller || !sellerId || !phone || suspensionSummary(seller, now).active) {
+	if (!sellerId || !phone || suspensionSummary(seller, now).active) {
 		throw new ContactRevealError(ERROR_CODES.contactPhoneUnavailable, 404);
 	}
 
 	if (sellerId !== input.viewerId) {
-		const recent = await payload.find({
-			collection: "contact-reveals",
-			where: {
-				and: [
-					{ viewer: { equals: input.viewerId } },
-					{ listing: { equals: String(listing.id) } },
-					{
-						createdAt: {
-							greater_than: new Date(
-								now.getTime() - REVEAL_DEDUP_MS,
-							).toISOString(),
-						},
-					},
-				],
-			},
-			limit: 1,
-			depth: 0,
-			overrideAccess: true,
-		});
-		if (recent.docs.length === 0) {
-			await payload.create({
+		const listingId = String(listing.id);
+		const findRecent = async () => {
+			const recent = await payload.find({
 				collection: "contact-reveals",
+				where: {
+					and: [
+						{ viewer: { equals: input.viewerId } },
+						{ listing: { equals: listingId } },
+						{
+							createdAt: {
+								greater_than: new Date(
+									now.getTime() - REVEAL_DEDUP_MS,
+								).toISOString(),
+							},
+						},
+					],
+				},
+				limit: 1,
 				depth: 0,
 				overrideAccess: true,
-				data: {
-					listing: String(listing.id),
-					seller: sellerId,
-					viewer: input.viewerId,
-				},
 			});
+			return recent.docs[0];
+		};
+
+		if (!(await findRecent())) {
+			try {
+				await payload.create({
+					collection: "contact-reveals",
+					depth: 0,
+					overrideAccess: true,
+					data: {
+						listing: listingId,
+						seller: sellerId,
+						viewer: input.viewerId,
+						revealWindow: Math.floor(now.getTime() / REVEAL_DEDUP_MS),
+					},
+				});
+			} catch (error) {
+				// Two reveals from the same viewer can race past the lookup; the
+				// unique index lets one win, and the loser is not a failure — the
+				// number is still handed over.
+				if (!(await findRecent().catch(() => undefined))) throw error;
+			}
 		}
 	}
 

@@ -10,16 +10,26 @@ export interface RateLimitWindow {
 	windowSeconds: number;
 }
 
+/** How often the in-memory store walks its map looking for elapsed windows. */
+const SWEEP_INTERVAL_MS = 60_000;
+
 export class MemoryCounterStore implements CounterStore {
 	private readonly counters = new Map<
 		string,
 		{ count: number; expiresAt: number }
 	>();
+	private lastSweep = 0;
 
 	constructor(private readonly clock: () => number = Date.now) {}
 
+	/** Live entries; the counters are private, this is what a test can observe. */
+	get size(): number {
+		return this.counters.size;
+	}
+
 	async increment(key: string, ttlSeconds: number): Promise<number> {
 		const now = this.clock();
+		this.sweep(now);
 		const current = this.counters.get(key);
 		if (!current || current.expiresAt <= now) {
 			this.counters.set(key, { count: 1, expiresAt: now + ttlSeconds * 1000 });
@@ -27,6 +37,20 @@ export class MemoryCounterStore implements CounterStore {
 		}
 		current.count += 1;
 		return current.count;
+	}
+
+	/**
+	 * Keys carry their window number, so an elapsed window's key is never read
+	 * again and its `expiresAt` check would never fire: without this sweep the
+	 * map grows by roughly two entries per active viewer per hour, for the
+	 * lifetime of the process.
+	 */
+	private sweep(now: number): void {
+		if (now - this.lastSweep < SWEEP_INTERVAL_MS) return;
+		this.lastSweep = now;
+		for (const [key, entry] of this.counters) {
+			if (entry.expiresAt <= now) this.counters.delete(key);
+		}
 	}
 }
 
@@ -39,6 +63,14 @@ class RedisCounterStore implements CounterStore {
 	private async getClient(): Promise<RedisClientType> {
 		if (this.client?.isOpen) return this.client;
 		this.connecting ??= (async () => {
+			// A client that dropped out of `isOpen` still owns its socket and its
+			// error listener; reconnecting without closing it leaks both.
+			const stale = this.client;
+			this.client = null;
+			if (stale) {
+				await stale.disconnect().catch(() => undefined);
+				stale.removeAllListeners();
+			}
 			const client = createClient({ url: this.url }) as RedisClientType;
 			client.on("error", (error) =>
 				console.error("[rate-limit] Redis error:", error),

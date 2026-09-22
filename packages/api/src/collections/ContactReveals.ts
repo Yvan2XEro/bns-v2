@@ -36,6 +36,15 @@ export const ContactReveals: CollectionConfig = {
 			required: true,
 			index: true,
 		},
+		{
+			// 24-hour bucket number. Stored so the unique index below can settle
+			// two concurrent reveals; the service still decides what to write
+			// from a rolling 24-hour lookup.
+			name: "revealWindow",
+			type: "number",
+			required: true,
+		},
 	],
+	indexes: [{ fields: ["viewer", "listing", "revealWindow"], unique: true }],
 	timestamps: true,
 };

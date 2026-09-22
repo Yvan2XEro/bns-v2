@@ -571,6 +571,7 @@ export interface ContactReveal {
   listing: string | Listing;
   seller: string | User;
   viewer: string | User;
+  revealWindow: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -1196,6 +1197,7 @@ export interface ContactRevealsSelect<T extends boolean = true> {
   listing?: T;
   seller?: T;
   viewer?: T;
+  revealWindow?: T;
   updatedAt?: T;
   createdAt?: T;
 }
