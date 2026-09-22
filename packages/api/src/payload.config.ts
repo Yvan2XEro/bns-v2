@@ -26,6 +26,7 @@ import {
 	expireBoostsTask,
 	expireListingsTask,
 } from "./jobs";
+import { migrations } from "./migrations";
 import { buildStoragePlugin } from "./plugins/storage";
 
 const filename = fileURLToPath(import.meta.url);
@@ -95,6 +96,9 @@ export default buildConfig({
 	},
 	db: mongooseAdapter({
 		url: process.env.DATABASE_URI || "",
+		migrationDir: path.resolve(dirname, "migrations"),
+		// Applied at startup when NODE_ENV=production, before the API serves traffic.
+		prodMigrations: migrations,
 	}),
 	sharp,
 	plugins: storagePlugin ? [storagePlugin] : [],
