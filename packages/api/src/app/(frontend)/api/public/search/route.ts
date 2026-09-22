@@ -185,7 +185,7 @@ export async function GET(request: Request) {
 	const filters: string[] = ["status = published"];
 
 	if (category) {
-		filters.push(`categoryId = "${category}"`);
+		filters.push(`categoryId = ${quoteFilterValue(category)}`);
 	}
 
 	if (minPrice) {
@@ -197,7 +197,7 @@ export async function GET(request: Request) {
 	}
 
 	if (location) {
-		filters.push(`location = "${location}"`);
+		filters.push(`location = ${quoteFilterValue(location)}`);
 	}
 
 	if (conditionParam) {

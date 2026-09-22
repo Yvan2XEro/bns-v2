@@ -7,6 +7,12 @@ const searchMock = vi.fn();
 vi.mock("@payload-config", () => ({
 	default: {},
 }));
+// The alias above does not resolve to the same module id as the real
+// `import config from "@payload-config"` in route.ts inside this test's
+// module graph, so it never intercepts; mock the concrete file too.
+vi.mock("../../src/payload.config.ts", () => ({
+	default: {},
+}));
 
 vi.mock("meilisearch", () => ({
 	MeiliSearch: class {
@@ -16,14 +22,7 @@ vi.mock("meilisearch", () => ({
 	},
 }));
 
-vi.mock("payload", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("payload")>();
-
-	return {
-		...actual,
-		getPayload: getPayloadMock,
-	};
-});
+vi.mock("payload", () => ({ getPayload: getPayloadMock }));
 
 describe("public search route", () => {
 	beforeEach(() => {
@@ -135,6 +134,20 @@ describe("public search route", () => {
 		it("ignores a parameter whose slug is not one of ours", async () => {
 			const filter = await filterFor("attr_DROP%20TABLE=x");
 			expect(filter).not.toContain("DROP");
+		});
+
+		it("quotes a category id instead of splicing it into the filter", async () => {
+			const filter = await filterFor(
+				`category=${encodeURIComponent('abc" OR status = draft')}`,
+			);
+			expect(filter).toContain('categoryId = "abc\\" OR status = draft"');
+		});
+
+		it("quotes a location instead of splicing it into the filter", async () => {
+			const filter = await filterFor(
+				`location=${encodeURIComponent('Douala" OR x = 1')}`,
+			);
+			expect(filter).toContain('location = "Douala\\" OR x = 1"');
 		});
 
 		it("answers 503 rather than crashing when the filter is refused", async () => {
