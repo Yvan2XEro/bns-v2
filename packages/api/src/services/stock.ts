@@ -40,6 +40,21 @@ export const CLIENT_MOVEMENT_TYPES = [
 export type ClientMovementType = (typeof CLIENT_MOVEMENT_TYPES)[number];
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
+/**
+ * The types this service knows how to apply: every one of them moves
+ * `stockOnHand`. `reservation` and `release` move `stockReserved` instead, and
+ * that arithmetic belongs to the orders phase — applying them here would
+ * silently decrement on-hand stock for a sale that has not happened yet.
+ */
+export const ON_HAND_MOVEMENT_TYPES = [
+	"receipt",
+	"adjustment",
+	"loss",
+	"return",
+	"sale",
+] as const satisfies readonly MovementType[];
+export type OnHandMovementType = (typeof ON_HAND_MOVEMENT_TYPES)[number];
+
 export interface MovementRow {
 	id: string;
 	type: MovementType;
@@ -74,8 +89,10 @@ const trimmedNote = (value: unknown): string | null =>
 export function parseMovementInput(
 	input: Record<string, unknown>,
 ): MovementInput {
-	const type = input.type as ClientMovementType;
-	if (!CLIENT_MOVEMENT_TYPES.includes(type)) throw invalid();
+	const type = CLIENT_MOVEMENT_TYPES.find(
+		(candidate) => candidate === input.type,
+	);
+	if (!type) throw invalid();
 
 	const quantity = Number(input.quantity);
 	if (!Number.isInteger(quantity) || quantity === 0) throw invalid();
@@ -84,12 +101,14 @@ export function parseMovementInput(
 	if (type === "loss" && quantity > 0) throw invalid();
 
 	let unitCost: number | null = null;
-	if (
-		type === "receipt" &&
+	const hasUnitCost =
 		input.unitCost !== undefined &&
 		input.unitCost !== null &&
-		input.unitCost !== ""
-	) {
+		input.unitCost !== "";
+	// Only a receipt buys stock. Refusing the field elsewhere tells the caller
+	// its number was wrong, where dropping it would look accepted and be lost.
+	if (hasUnitCost && type !== "receipt") throw invalid();
+	if (hasUnitCost) {
 		unitCost = Number(input.unitCost);
 		if (!Number.isInteger(unitCost) || unitCost < 0) throw invalid();
 	}
@@ -114,24 +133,90 @@ export async function findVariant(
 	}
 }
 
+const optionalNumber = (value: unknown): boolean =>
+	value === null || value === undefined || typeof value === "number";
+
 /**
  * The adapter declares `updateOne` as returning the DOM's `Document`, so its
  * row arrives untyped. That row is the authoritative post-write state — reading
  * the variant again would race with the next movement — so it is narrowed here
- * rather than re-read.
+ * rather than re-read, and every counter this function goes on to read is part
+ * of the check.
  */
 function isVariantRow(row: unknown): row is ProductVariant {
-	return typeof row === "object" && row !== null && "stockOnHand" in row;
+	if (typeof row !== "object" || row === null) return false;
+	if (!("id" in row) || !("stockOnHand" in row)) return false;
+	if (typeof row.stockOnHand !== "number") return false;
+	if ("stockReserved" in row && !optionalNumber(row.stockReserved))
+		return false;
+	return !("lowStockThreshold" in row) || optionalNumber(row.lowStockThreshold);
+}
+
+/**
+ * A stored `null` and a missing field both mean "no units", and neither matches
+ * `equals: 0` in Mongo — the same shape `NOT_ARCHIVED` needs for dates.
+ */
+function counterEquals(
+	field: "stockOnHand" | "stockReserved",
+	value: number,
+): Where {
+	if (value !== 0) return { [field]: { equals: value } };
+	return { or: [{ [field]: { equals: 0 } }, { [field]: { equals: null } }] };
+}
+
+/**
+ * Says which rule refused, at the cost of one read on the refusal path only.
+ * The conditional write reports nothing but "no match", and a caller who is
+ * told the wrong reason acts on it: a stale count has to be recounted, whereas
+ * reserved units are someone else's and will not come back by retrying.
+ */
+async function refusal(
+	req: PayloadRequest,
+	variantId: string,
+	quantity: number,
+	expectedStockOnHand: number | null,
+): Promise<ServiceError> {
+	const current = await req.payload
+		.findByID({
+			collection: "product-variants",
+			id: variantId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+	if (!current) return new ServiceError(ERROR_CODES.notFound, 404);
+
+	const onHand = Number(current.stockOnHand ?? 0);
+	if (expectedStockOnHand !== null && onHand !== expectedStockOnHand) {
+		return new ServiceError(ERROR_CODES.stockCountStale, 409);
+	}
+	if (quantity < 0) {
+		if (onHand + quantity < 0) {
+			return new ServiceError(ERROR_CODES.stockNegative, 409);
+		}
+		return new ServiceError(ERROR_CODES.stockInsufficient, 409);
+	}
+	// The filter held nothing this movement could have broken.
+	return new ServiceError(ERROR_CODES.server, 500);
 }
 
 /**
  * The conditional update is the whole concurrency story: Mongo applies the
- * filter and the increment in one `findOneAndUpdate`, so two losses racing for
- * the last unit cannot both match and neither can overwrite the other's count.
- * A null result means the filter no longer held — the stock moved under us and
- * the movement is refused rather than applied to a stale number. Inside a
- * transaction a loser may instead get a write conflict, which `withTransaction`
- * retries against the new value.
+ * filter and the increment in one `findOneAndUpdate`, so two movements racing
+ * for the last unit cannot both match and neither can overwrite the other's
+ * count. Every value this movement was decided against travels in the filter:
+ *
+ * - a consuming movement may only take from what is not reserved, so it carries
+ *   both the reserved figure it was checked against and the on-hand floor that
+ *   figure implies;
+ * - `expectedStockOnHand` turns an absolute instruction — a physical count —
+ *   into a compare-and-swap, so the second of two people counting the same
+ *   variant is refused instead of having their difference applied twice.
+ *
+ * A null result means one of those no longer held; `refusal` then says which.
+ * Inside a transaction a loser may instead get a write conflict, which
+ * `withTransaction` retries against the new value.
  *
  * The ledger entry is written after the counter, in the same transaction: a
  * failure there rolls the counter back, so a movement and its row land together
@@ -141,8 +226,10 @@ export async function applyMovement(
 	req: PayloadRequest,
 	args: {
 		variant: ProductVariant;
-		type: MovementType;
+		type: OnHandMovementType;
 		quantity: number;
+		/** The on-hand value the caller's instruction was computed from. */
+		expectedStockOnHand?: number | null;
 		unitCost?: number | null;
 		note?: string | null;
 		actorId: string | null;
@@ -154,34 +241,43 @@ export async function applyMovement(
 	crossedLowStock: boolean;
 }> {
 	const { variant, type, quantity } = args;
+	if (!ON_HAND_MOVEMENT_TYPES.includes(type)) {
+		throw new ServiceError(
+			ERROR_CODES.validation,
+			400,
+			`A ${type} movement does not move on-hand stock`,
+		);
+	}
 	const shopId = relationId(variant.shop);
 	if (!shopId) throw invalid();
 
-	const where: Where = {
-		and: [
-			{ id: { equals: String(variant.id) } },
-			...(quantity < 0
-				? [{ stockOnHand: { greater_than_equal: -quantity } }]
-				: []),
-		],
-	};
+	const expectedStockOnHand = args.expectedStockOnHand ?? null;
+	const reserved = Number(variant.stockReserved ?? 0);
+	const conditions: Where[] = [{ id: { equals: String(variant.id) } }];
+	if (expectedStockOnHand !== null) {
+		conditions.push(counterEquals("stockOnHand", expectedStockOnHand));
+	}
+	if (quantity < 0) {
+		conditions.push(counterEquals("stockReserved", reserved));
+		conditions.push({
+			stockOnHand: { greater_than_equal: reserved - quantity },
+		});
+	}
 
 	const updated: unknown = await req.payload.db.updateOne({
 		collection: "product-variants",
-		where,
+		where: { and: conditions },
 		data: { stockOnHand: { $inc: quantity }, trackInventory: true },
 		req,
 		returning: true,
 	});
-	// Nothing came back: the filter no longer held, so the stock moved under us
-	// and this movement would have been applied to a number that is already
-	// stale. Refusing here is what keeps the count off the floor.
-	if (!isVariantRow(updated)) {
-		throw new ServiceError(ERROR_CODES.stockNegative, 409);
+	if (updated === null || updated === undefined) {
+		throw await refusal(req, String(variant.id), quantity, expectedStockOnHand);
 	}
+	if (!isVariantRow(updated)) throw new ServiceError(ERROR_CODES.server, 500);
 
 	const stockAfter = Number(updated.stockOnHand);
-	const reserved = Number(updated.stockReserved ?? 0);
+	const reservedAfter = Number(updated.stockReserved ?? 0);
 	// The ledger hook re-reads the variant to check its shop; hand it the row we
 	// already hold so a count of N lines stays N reads, not 2N.
 	trustLoadedVariant(req.context, { id: variant.id, shop: variant.shop });
@@ -207,12 +303,18 @@ export async function applyMovement(
 		typeof updated.lowStockThreshold === "number"
 			? updated.lowStockThreshold
 			: null;
+	// Both ends of the crossing are measured the way `isLowStock` and
+	// `stockSummary` measure availability, so an alert and the figure a
+	// shopkeeper is shown never disagree.
 	return {
 		movement,
 		variant: updated,
 		crossedLowStock: crossedLowStock(
-			stockAfter - quantity - reserved,
-			stockAfter - reserved,
+			availableOf({
+				stockOnHand: stockAfter - quantity,
+				stockReserved: reservedAfter,
+			}),
+			availableOf({ stockOnHand: stockAfter, stockReserved: reservedAfter }),
 			threshold,
 		),
 	};
@@ -360,6 +462,12 @@ function parseCounts(
  * A physical count is a batch of adjustments in one transaction: either the
  * whole count lands or none of it does, so the ledger never shows half an
  * inventory. A line that already matches writes nothing.
+ *
+ * A counted number is absolute, but it reaches the database as a difference, so
+ * each line carries the on-hand value that difference was computed from. Two
+ * people counting the same variant would otherwise both succeed and both apply
+ * their difference, leaving a number neither of them counted and a ledger that
+ * agrees with it.
  */
 export async function recordStockCount(
 	payload: Payload,
@@ -382,7 +490,8 @@ export async function recordStockCount(
 					throw invalid();
 				}
 
-				const delta = counted - Number(variant.stockOnHand ?? 0);
+				const countedFrom = Number(variant.stockOnHand ?? 0);
+				const delta = counted - countedFrom;
 				if (delta === 0) {
 					results.push({ variantId, delta: 0, stockAfter: counted });
 					continue;
@@ -391,6 +500,7 @@ export async function recordStockCount(
 					variant,
 					type: "adjustment",
 					quantity: delta,
+					expectedStockOnHand: countedFrom,
 					note,
 					actorId: user.id,
 				});
