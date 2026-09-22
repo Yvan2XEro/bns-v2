@@ -1,3 +1,5 @@
+import { toDate } from "./dates";
+
 export const HANDLE_MIN_LENGTH = 3;
 export const HANDLE_MAX_LENGTH = 30;
 export const HANDLE_COOLDOWN_DAYS = 30;
@@ -87,12 +89,6 @@ export function validateHandle(raw: unknown): HandleValidation {
 		return { ok: false, handle, reason: "reserved" };
 	}
 	return { ok: true, handle };
-}
-
-function toDate(value: Date | string | null | undefined): Date | null {
-	if (!value) return null;
-	const date = value instanceof Date ? value : new Date(value);
-	return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function addDays(date: Date | string, days: number): Date {

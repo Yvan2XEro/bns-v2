@@ -4,6 +4,8 @@
  * both of which are asked from hooks, routes and scripts.
  */
 
+import { toDate } from "../lib/dates";
+
 export type Role = "user" | "moderator" | "admin";
 
 const RANKS: Record<Role, number> = {
@@ -68,12 +70,6 @@ export function canSuspendIndefinitely(
 	actor: ActorLike | null | undefined,
 ): boolean {
 	return isAdmin(actor);
-}
-
-function toDate(value: string | Date | null | undefined): Date | null {
-	if (!value) return null;
-	const date = value instanceof Date ? value : new Date(value);
-	return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export interface SuspensionSummary {
