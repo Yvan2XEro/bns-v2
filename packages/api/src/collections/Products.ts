@@ -1,6 +1,7 @@
 import { APIError, type CollectionConfig, type Where } from "payload";
 import { isAdmin } from "../access/roles";
 import { shopField, shopScopedRead } from "../access/shopRoles";
+import { updateProductEndpoint } from "../endpoints/products";
 import { relationId } from "../lib/relationId";
 
 export const PRODUCT_SERVICE_CONTEXT = { productService: true } as const;
@@ -19,6 +20,7 @@ export const Products: CollectionConfig = {
 		delete: () => false,
 		admin: ({ req: { user } }) => isAdmin(user),
 	},
+	endpoints: [updateProductEndpoint],
 	hooks: {
 		beforeChange: [
 			async ({ data, originalDoc, req }) => {

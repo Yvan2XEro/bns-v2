@@ -1,8 +1,11 @@
 import type { Payload, PayloadRequest } from "payload";
-import { isSuspended } from "../access/roles";
+import { isSuspended, suspensionSummary } from "../access/roles";
+import type { ShopRole } from "../access/shopRoles";
+import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { type PublicShop, serializePublicShop } from "../lib/publicShop";
+import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
 	addDays,
@@ -17,8 +20,12 @@ import {
 } from "../lib/shopHandle";
 import { getShopSettings } from "../lib/shopSettings";
 import { withTransaction } from "../lib/transactions";
+import { isLowStock } from "../lib/variants";
 import type { Shop } from "../payload-types";
 import { loadPublicShop, requireShopMember } from "./shopGuards";
+
+// biome-ignore lint/suspicious/noExplicitAny: Payload documents arrive at varying depths
+type Doc = Record<string, any>;
 
 export interface ServiceUser {
 	id: string;
@@ -358,5 +365,146 @@ export async function changeShopHandle(
 	return {
 		shop: await loadPublicShop(payload, String(shop.id)),
 		nextHandleChangeAt: addDays(now, HANDLE_COOLDOWN_DAYS).toISOString(),
+	};
+}
+
+export interface MyShopResponse {
+	shop:
+		| (PublicShop & {
+				status: string;
+				handleChangedAt: string | null;
+				nextHandleChangeAt: string | null;
+				suspension: {
+					active: boolean;
+					indefinite: boolean;
+					until: string | null;
+					reason: string | null;
+				} | null;
+		  })
+		| null;
+	role: ShopRole | null;
+	counts: {
+		activeProducts: number;
+		draftProducts: number;
+		lowStockVariants: number;
+		lowStockSample: string | null;
+		personalListings: number;
+	} | null;
+}
+
+/**
+ * The owner keeps seeing a suspended shop, with its reason, so the management
+ * screens can explain what happened. A closed shop is gone for the owner too.
+ */
+export async function getMyShop(
+	payload: Payload,
+	user: ServiceUser,
+	now: Date = new Date(),
+): Promise<MyShopResponse> {
+	const memberships = await payload.find({
+		collection: "shop-members",
+		where: {
+			and: [{ user: { equals: user.id } }, { status: { equals: "active" } }],
+		},
+		depth: 0,
+		limit: 10,
+		overrideAccess: true,
+	});
+
+	let shop: Doc | null = null;
+	let role: ShopRole | null = null;
+	for (const membership of memberships.docs as Doc[]) {
+		const candidate = (await payload
+			.findByID({
+				collection: "shops",
+				id: relationId(membership.shop) ?? "",
+				depth: 0,
+				overrideAccess: true,
+			})
+			.catch(() => null)) as Doc | null;
+		if (candidate && candidate.status !== "closed") {
+			shop = candidate;
+			role = membership.role as ShopRole;
+			break;
+		}
+	}
+	if (!shop) return { shop: null, role: null, counts: null };
+
+	const shopId = String(shop.id);
+	const [publicShop, active, drafts, variants, personal] = await Promise.all([
+		loadPublicShop(payload, shopId),
+		payload.count({
+			collection: "products",
+			where: {
+				and: [{ shop: { equals: shopId } }, { status: { equals: "active" } }],
+			},
+			overrideAccess: true,
+		}),
+		payload.count({
+			collection: "products",
+			where: {
+				and: [{ shop: { equals: shopId } }, { status: { equals: "draft" } }],
+			},
+			overrideAccess: true,
+		}),
+		payload.find({
+			collection: "product-variants",
+			where: { and: [{ shop: { equals: shopId } }, NOT_ARCHIVED] },
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+		}),
+		payload.count({
+			collection: "listings",
+			where: {
+				and: [
+					{ seller: { equals: user.id } },
+					{ shop: { exists: false } },
+					{ status: { in: ["draft", "pending", "published"] } },
+				],
+			},
+			overrideAccess: true,
+		}),
+	]);
+
+	const low = (variants.docs as Doc[]).filter(isLowStock);
+	const sampleProduct = low[0]
+		? ((await payload
+				.findByID({
+					collection: "products",
+					id: relationId(low[0].product) ?? "",
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null)) as Doc | null)
+		: null;
+	const summary = suspensionSummary(shop);
+
+	return {
+		shop: {
+			...publicShop,
+			status: String(shop.status),
+			handleChangedAt: shop.handleChangedAt ?? null,
+			nextHandleChangeAt:
+				nextHandleChangeAt(shop.handleChangedAt, now)?.toISOString() ?? null,
+			suspension:
+				shop.status === "suspended"
+					? {
+							active: summary.active,
+							indefinite: summary.indefinite,
+							until: summary.until,
+							reason: shop.suspendedReason ?? null,
+						}
+					: null,
+		},
+		role,
+		counts: {
+			activeProducts: active.totalDocs,
+			draftProducts: drafts.totalDocs,
+			lowStockVariants: low.length,
+			lowStockSample: sampleProduct ? String(sampleProduct.title) : null,
+			personalListings: personal.totalDocs,
+		},
 	};
 }
