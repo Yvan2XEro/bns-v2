@@ -5,6 +5,7 @@ import type {
 	PayloadRequest,
 	Where,
 } from "payload";
+import { canManageShop } from "../access/shopRoles";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import {
 	MOVEMENT_TYPES,
@@ -83,6 +84,39 @@ export interface StockCountResult {
 	variantId: string;
 	delta: number;
 	stockAfter: number;
+}
+
+/** What a stock-movement screen shows for the variant it just moved; `cost` is a shop secret. */
+export interface StockVariantView {
+	id: string;
+	sku: string | null;
+	price: number;
+	stockOnHand: number;
+	stockReserved: number;
+	available: number;
+	trackInventory: boolean;
+	lowStockThreshold: number | null;
+	cost?: number | null;
+}
+
+function toVariantView(
+	variant: ProductVariant,
+	canSeeCost: boolean,
+): StockVariantView {
+	return {
+		id: String(variant.id),
+		sku: variant.sku ?? null,
+		price: variant.price,
+		stockOnHand: Number(variant.stockOnHand ?? 0),
+		stockReserved: Number(variant.stockReserved ?? 0),
+		available: availableOf(variant),
+		trackInventory: variant.trackInventory === true,
+		lowStockThreshold:
+			typeof variant.lowStockThreshold === "number"
+				? variant.lowStockThreshold
+				: null,
+		...(canSeeCost ? { cost: variant.cost ?? null } : {}),
+	};
 }
 
 const invalid = () => new ServiceError(ERROR_CODES.validation, 400);
@@ -347,8 +381,9 @@ async function findByIds<TSlug extends CollectionSlug>(
 export async function toMovementRows(
 	payload: Payload,
 	docs: StockMovement[],
-	req?: PayloadRequest,
+	options: { req?: PayloadRequest; redactCost?: boolean } = {},
 ): Promise<MovementRow[]> {
+	const { req, redactCost = false } = options;
 	const unique = (pick: (doc: StockMovement) => unknown) => [
 		...new Set(
 			docs
@@ -388,7 +423,8 @@ export async function toMovementRows(
 			type: doc.type,
 			quantity: Number(doc.quantity),
 			stockAfter: Number(doc.stockAfter),
-			unitCost: typeof doc.unitCost === "number" ? doc.unitCost : null,
+			unitCost:
+				redactCost || typeof doc.unitCost !== "number" ? null : doc.unitCost,
 			note: doc.note ?? null,
 			createdAt: String(doc.createdAt),
 			actor: actor
@@ -411,7 +447,7 @@ export async function recordMovement(
 	input: Record<string, unknown>,
 ): Promise<{
 	movement: MovementRow;
-	variant: ProductVariant;
+	variant: StockVariantView;
 	crossedLowStock: boolean;
 }> {
 	const parsed = parseMovementInput(input);
@@ -420,10 +456,12 @@ export async function recordMovement(
 		payload,
 		async (req) => {
 			const variant = await findVariant(req, variantId);
-			await requireShopMember(payload, user, relationId(variant.shop) ?? "", {
-				writable: true,
-				req,
-			});
+			const { role } = await requireShopMember(
+				payload,
+				user,
+				relationId(variant.shop) ?? "",
+				{ writable: true, req },
+			);
 			if (variant.archivedAt) throw invalid();
 
 			const applied = await applyMovement(req, {
@@ -436,10 +474,14 @@ export async function recordMovement(
 			await syncProductListing(req, relationId(variant.product), {
 				create: false,
 			});
-			const [movement] = await toMovementRows(payload, [applied.movement], req);
+			// Never redacted: the mover set this unit cost (or none) themselves —
+			// this is the one place a movement echoes its own author's input back.
+			const [movement] = await toMovementRows(payload, [applied.movement], {
+				req,
+			});
 			return {
 				movement,
-				variant: applied.variant,
+				variant: toVariantView(applied.variant, canManageShop(role)),
 				crossedLowStock: applied.crossedLowStock,
 			};
 		},
@@ -547,7 +589,7 @@ export async function listMovements(
 		limit?: number;
 	},
 ) {
-	await requireShopMember(payload, user, shopId);
+	const { role } = await requireShopMember(payload, user, shopId);
 
 	const and: Where[] = [{ shop: { equals: shopId } }];
 	if (query.variant) and.push({ variant: { equals: query.variant } });
@@ -576,7 +618,9 @@ export async function listMovements(
 	});
 
 	return {
-		docs: await toMovementRows(payload, result.docs),
+		docs: await toMovementRows(payload, result.docs, {
+			redactCost: !canManageShop(role),
+		}),
 		totalDocs: result.totalDocs,
 		page: result.page ?? page,
 		totalPages: result.totalPages,

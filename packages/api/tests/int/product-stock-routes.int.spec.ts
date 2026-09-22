@@ -30,7 +30,11 @@ vi.mock("payload", async (importOriginal) => ({
 	getPayload: getPayloadMock,
 	addDataAndFileToRequest: vi.fn(async () => undefined),
 }));
-vi.mock("../../src/services/products", () => ({
+// Spread importOriginal: the routes' zod schemas reference the real
+// PRODUCT_STATUSES / CLIENT_MOVEMENT_TYPES enums, which a bare replacement
+// mock would otherwise leave undefined.
+vi.mock("../../src/services/products", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../../src/services/products")>()),
 	createProduct: services.createProduct,
 	updateProduct: services.updateProduct,
 }));
@@ -38,7 +42,8 @@ vi.mock("../../src/services/catalogue", () => ({
 	listCatalogue: services.listCatalogue,
 	getProductDetail: services.getProductDetail,
 }));
-vi.mock("../../src/services/stock", () => ({
+vi.mock("../../src/services/stock", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../../src/services/stock")>()),
 	recordMovement: services.recordMovement,
 	recordStockCount: services.recordStockCount,
 	listMovements: services.listMovements,
@@ -133,6 +138,18 @@ describe("products", () => {
 		);
 	});
 
+	it("rejects an unknown stock filter before calling the service", async () => {
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/products/route"
+		);
+		const res = await GET(
+			new Request("http://x/api/shops/s-1/products?stock=negative"),
+			params("s-1"),
+		);
+		expect(res.status).toBe(400);
+		expect(services.listCatalogue).not.toHaveBeenCalled();
+	});
+
 	it("updates through the Payload endpoint", async () => {
 		services.updateProduct.mockResolvedValue({
 			product: { id: "p-1" },
@@ -154,6 +171,41 @@ describe("products", () => {
 			"p-1",
 			{ title: "Y" },
 		);
+	});
+});
+
+describe("GET /api/products/[id]/detail", () => {
+	it("returns the shaped detail", async () => {
+		services.getProductDetail.mockResolvedValue({
+			product: { id: "p-1" },
+			variants: [],
+			listing: null,
+			movements: [],
+			role: "owner",
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/products/[id]/detail/route"
+		);
+		const res = await GET(new Request("http://x/api/products/p-1/detail"), {
+			params: Promise.resolve({ id: "p-1" }),
+		});
+		expect(res.status).toBe(200);
+		expect(services.getProductDetail).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ id: "u-1" }),
+			"p-1",
+		);
+	});
+
+	it("rejects a blank id before calling the service", async () => {
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/products/[id]/detail/route"
+		);
+		const res = await GET(new Request("http://x/api/products//detail"), {
+			params: Promise.resolve({ id: "" }),
+		});
+		expect(res.status).toBe(400);
+		expect(services.getProductDetail).not.toHaveBeenCalled();
 	});
 });
 
@@ -191,6 +243,18 @@ describe("stock", () => {
 			movement: { id: "sm-1" },
 			variant: { id: "v-1" },
 		});
+	});
+
+	it("rejects an unknown movement type before calling the service", async () => {
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/variants/[id]/stock-movements/route"
+		);
+		const res = await POST(
+			post("http://x", { type: "teleport", quantity: 1 }),
+			params("v-1"),
+		);
+		expect(res.status).toBe(400);
+		expect(services.recordMovement).not.toHaveBeenCalled();
 	});
 
 	it("lists movements with parsed query", async () => {

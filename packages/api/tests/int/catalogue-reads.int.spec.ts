@@ -37,7 +37,15 @@ function seed() {
 		products: [
 			{
 				id: "p-1",
-				shop: "s-1",
+				// Shaped like a depth-populated relation, the way a real Payload
+				// read would return it: a leak here means the fix stopped shaping
+				// the response and started handing the raw document back.
+				shop: {
+					id: "s-1",
+					status: "active",
+					suspendedNote: "Reported for counterfeit goods",
+					suspendedBy: "u-mod",
+				},
 				title: "iPhone 13 Pro",
 				status: "active",
 				listing: "l-1",
@@ -138,6 +146,7 @@ function seed() {
 				shop: "s-1",
 				type: "receipt",
 				quantity: 4,
+				unitCost: 200000,
 				stockAfter: 4,
 				actor: "u-1",
 				createdAt: "2026-09-12T09:15:00.000Z",
@@ -251,6 +260,7 @@ describe("getProductDetail", () => {
 			favorites: 1,
 		});
 		expect(detail.movements).toHaveLength(1);
+		expect(detail.movements[0].unitCost).toBe(200000);
 		expect(detail.role).toBe("owner");
 	});
 
@@ -266,6 +276,21 @@ describe("getProductDetail", () => {
 		for (const variant of detail.variants) {
 			expect(Object.hasOwn(variant, "cost")).toBe(false);
 		}
+	});
+
+	it("hides the movements' unit cost from a staff member", async () => {
+		const detail = await getProductDetail(seed(), { id: "u-3" }, "p-1");
+		expect(detail.movements).toHaveLength(1);
+		expect(detail.movements[0].unitCost).toBeNull();
+	});
+
+	it("never serves the shop's suspension details through the product", async () => {
+		const detail = await getProductDetail(seed(), U1, "p-1");
+		expect(detail.product).not.toHaveProperty("shop");
+		expect(JSON.stringify(detail.product)).not.toContain(
+			"Reported for counterfeit goods",
+		);
+		expect(JSON.stringify(detail.product)).not.toContain("u-mod");
 	});
 
 	it("refuses a non-member entirely", async () => {

@@ -21,11 +21,8 @@ import {
 import { getShopSettings } from "../lib/shopSettings";
 import { withTransaction } from "../lib/transactions";
 import { isLowStock } from "../lib/variants";
-import type { Shop } from "../payload-types";
+import type { Product, Shop } from "../payload-types";
 import { loadPublicShop, requireShopMember } from "./shopGuards";
-
-// biome-ignore lint/suspicious/noExplicitAny: Payload documents arrive at varying depths
-type Doc = Record<string, any>;
 
 export interface ServiceUser {
 	id: string;
@@ -411,17 +408,17 @@ export async function getMyShop(
 		overrideAccess: true,
 	});
 
-	let shop: Doc | null = null;
+	let shop: Shop | null = null;
 	let role: ShopRole | null = null;
-	for (const membership of memberships.docs as Doc[]) {
-		const candidate = (await payload
+	for (const membership of memberships.docs) {
+		const candidate = await payload
 			.findByID({
 				collection: "shops",
 				id: relationId(membership.shop) ?? "",
 				depth: 0,
 				overrideAccess: true,
 			})
-			.catch(() => null)) as Doc | null;
+			.catch(() => null);
 		if (candidate && candidate.status !== "closed") {
 			shop = candidate;
 			role = membership.role as ShopRole;
@@ -468,16 +465,16 @@ export async function getMyShop(
 		}),
 	]);
 
-	const low = (variants.docs as Doc[]).filter(isLowStock);
-	const sampleProduct = low[0]
-		? ((await payload
+	const low = variants.docs.filter(isLowStock);
+	const sampleProduct: Product | null = low[0]
+		? await payload
 				.findByID({
 					collection: "products",
 					id: relationId(low[0].product) ?? "",
 					depth: 0,
 					overrideAccess: true,
 				})
-				.catch(() => null)) as Doc | null)
+				.catch(() => null)
 		: null;
 	const summary = suspensionSummary(shop);
 

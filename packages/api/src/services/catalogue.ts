@@ -6,12 +6,10 @@ import { type MediaRef, toMediaRef } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { isLowStock, isOutOfStock, summarizeVariants } from "../lib/variants";
+import type { Listing, Media, Product, ProductVariant } from "../payload-types";
 import { requireShopMember } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 import { toMovementRows } from "./stock";
-
-// biome-ignore lint/suspicious/noExplicitAny: Payload documents arrive at varying depths
-type Doc = Record<string, any>;
 
 export interface CatalogueRow {
 	id: string;
@@ -33,8 +31,8 @@ export interface CatalogueRow {
 }
 
 function toRow(
-	product: Doc,
-	variants: Doc[],
+	product: Product,
+	variants: ProductVariant[],
 	listingStatus: string | null,
 ): CatalogueRow {
 	const summary = summarizeVariants(variants);
@@ -94,13 +92,13 @@ export async function listCatalogue(
 		}),
 	]);
 
-	const byProduct = new Map<string, Doc[]>();
-	for (const variant of variants.docs as Doc[]) {
+	const byProduct = new Map<string, ProductVariant[]>();
+	for (const variant of variants.docs) {
 		const key = relationId(variant.product) ?? "";
 		byProduct.set(key, [...(byProduct.get(key) ?? []), variant]);
 	}
 
-	const listingIds = (products.docs as Doc[])
+	const listingIds = products.docs
 		.map((p) => relationId(p.listing))
 		.filter((id): id is string => Boolean(id));
 	const listings = listingIds.length
@@ -112,12 +110,12 @@ export async function listCatalogue(
 				pagination: false,
 				overrideAccess: true,
 			})
-		: { docs: [] };
+		: { docs: [] as Listing[] };
 	const listingStatus = new Map(
-		(listings.docs as Doc[]).map((l) => [String(l.id), String(l.status)]),
+		listings.docs.map((l) => [String(l.id), String(l.status)]),
 	);
 
-	const rows = (products.docs as Doc[]).map((p) =>
+	const rows = products.docs.map((p) =>
 		toRow(
 			p,
 			byProduct.get(String(p.id)) ?? [],
@@ -163,19 +161,80 @@ export async function listCatalogue(
 	};
 }
 
+/** What the product-detail screen shows; never the raw document — see `toProductDetailView`. */
+export interface ProductDetailView {
+	id: string;
+	shopId: string;
+	title: string;
+	description: string | null;
+	category: string | null;
+	condition: Product["condition"] | null;
+	attributes: Product["attributes"] | null;
+	images: MediaRef[];
+	status: Product["status"];
+	options: { name: string; values: string[] }[];
+	delivery: {
+		handlingHours: number | null;
+		weightGrams: number | null;
+		codAllowed: boolean;
+		pickupAllowed: boolean;
+	};
+	returnPolicy: string | null;
+	updatedAt: string;
+	createdAt: string;
+}
+
+/**
+ * Shapes the product deliberately instead of handing back the raw document:
+ * a depth-1 read of `products` would populate `shop` into the full `Shop`
+ * document, including the moderator-only suspension note and the moderator
+ * who wrote it — neither belongs in front of a shop member, let alone staff.
+ */
+function toProductDetailView(
+	product: Product,
+	images: MediaRef[],
+): ProductDetailView {
+	return {
+		id: String(product.id),
+		shopId: relationId(product.shop) ?? "",
+		title: product.title,
+		description: product.description ?? null,
+		category: relationId(product.category),
+		condition: product.condition ?? null,
+		attributes: product.attributes ?? null,
+		images,
+		status: product.status,
+		options: (product.options ?? []).map((option) => ({
+			name: option.name,
+			values: option.values,
+		})),
+		delivery: {
+			handlingHours: product.delivery?.handlingHours ?? null,
+			weightGrams: product.delivery?.weightGrams ?? null,
+			codAllowed: product.delivery?.codAllowed !== false,
+			pickupAllowed: product.delivery?.pickupAllowed === true,
+		},
+		returnPolicy: product.returnPolicy ?? null,
+		updatedAt: product.updatedAt,
+		createdAt: product.createdAt,
+	};
+}
+
 export async function getProductDetail(
 	payload: Payload,
 	user: ServiceUser,
 	productId: string,
 ) {
-	let product: Doc;
+	let product: Product;
 	try {
-		product = (await payload.findByID({
+		// depth 0: relations stay ids. Anything the screen needs is resolved
+		// explicitly below, so nothing gets served just because it was populated.
+		product = await payload.findByID({
 			collection: "products",
 			id: productId,
-			depth: 1,
+			depth: 0,
 			overrideAccess: true,
-		})) as Doc;
+		});
 	} catch {
 		throw new ServiceError(ERROR_CODES.notFound, 404);
 	}
@@ -184,6 +243,7 @@ export async function getProductDetail(
 		user,
 		relationId(product.shop) ?? "",
 	);
+	const canSeeCost = canManageShop(role);
 
 	const variants = (
 		await payload.find({
@@ -195,12 +255,33 @@ export async function getProductDetail(
 			pagination: false,
 			overrideAccess: true,
 		})
-	).docs as Doc[];
+	).docs;
 	// The field must be gone, not merely undefined: JSON.stringify keeps an
 	// undefined-valued key off the wire too, but callers should never be able
 	// to detect the key existed on the source document.
 	// biome-ignore lint/performance/noDelete: correctness over micro-perf on a small array
-	if (!canManageShop(role)) for (const variant of variants) delete variant.cost;
+	if (!canSeeCost) for (const variant of variants) delete variant.cost;
+
+	const imageIds = (product.images ?? [])
+		.map((entry) => relationId(entry.image))
+		.filter((id): id is string => Boolean(id));
+	const mediaById: Map<string, Media> = imageIds.length
+		? new Map(
+				(
+					await payload.find({
+						collection: "media",
+						where: { id: { in: imageIds } },
+						depth: 0,
+						limit: 0,
+						pagination: false,
+						overrideAccess: true,
+					})
+				).docs.map((doc) => [String(doc.id), doc]),
+			)
+		: new Map();
+	const images = imageIds
+		.map((id) => toMediaRef(mediaById.get(id)))
+		.filter((ref): ref is MediaRef => ref !== null);
 
 	const listingId = relationId(product.listing);
 	let listing: {
@@ -210,14 +291,14 @@ export async function getProductDetail(
 		favorites: number;
 	} | null = null;
 	if (listingId) {
-		const doc = (await payload
+		const doc = await payload
 			.findByID({
 				collection: "listings",
 				id: listingId,
 				depth: 0,
 				overrideAccess: true,
 			})
-			.catch(() => null)) as Doc | null;
+			.catch(() => null);
 		if (doc) {
 			const favorites = await payload.count({
 				collection: "favorites",
@@ -242,10 +323,12 @@ export async function getProductDetail(
 		overrideAccess: true,
 	});
 	return {
-		product,
+		product: toProductDetailView(product, images),
 		variants,
 		listing,
-		movements: await toMovementRows(payload, movements.docs),
+		movements: await toMovementRows(payload, movements.docs, {
+			redactCost: !canSeeCost,
+		}),
 		role,
 	};
 }

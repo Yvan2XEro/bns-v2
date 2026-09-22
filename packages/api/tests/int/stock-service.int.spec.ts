@@ -210,6 +210,31 @@ describe("recordMovement", () => {
 		await recordMovement(payload, U1, "v-1", { type: "receipt", quantity: 3 });
 		expect(variant(payload)?.trackInventory).toBe(true);
 	});
+
+	it("hides the variant's cost from a staff member", async () => {
+		const payload = seed();
+		payload.store["shop-members"].push({
+			id: "m-3",
+			shop: "s-1",
+			user: "u-3",
+			role: "staff",
+			status: "active",
+		});
+		const result = await recordMovement(payload, { id: "u-3" }, "v-1", {
+			type: "receipt",
+			quantity: 5,
+		});
+		expect(Object.hasOwn(result.variant, "cost")).toBe(false);
+	});
+
+	it("shows the variant's cost to the owner", async () => {
+		const payload = seed();
+		const result = await recordMovement(payload, U1, "v-1", {
+			type: "receipt",
+			quantity: 5,
+		});
+		expect(result.variant.cost).toBe(78000);
+	});
 });
 
 describe("recordStockCount", () => {
@@ -276,6 +301,28 @@ describe("reads", () => {
 			type: "loss",
 			variant: { id: "v-1", sku: "AT-APP2" },
 		});
+	});
+
+	it("redacts unit cost from a staff member's movement list", async () => {
+		const payload = seed();
+		payload.store["shop-members"].push({
+			id: "m-3",
+			shop: "s-1",
+			user: "u-3",
+			role: "staff",
+			status: "active",
+		});
+		await recordMovement(payload, U1, "v-1", {
+			type: "receipt",
+			quantity: 1,
+			unitCost: 78000,
+		});
+
+		const staffPage = await listMovements(payload, { id: "u-3" }, "s-1", {});
+		expect(staffPage.docs[0].unitCost).toBeNull();
+
+		const ownerPage = await listMovements(payload, U1, "s-1", {});
+		expect(ownerPage.docs[0].unitCost).toBe(78000);
 	});
 
 	it("summarises cost value and alerts", async () => {
