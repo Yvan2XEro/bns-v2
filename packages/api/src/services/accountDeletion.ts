@@ -1,4 +1,5 @@
 import { createAppleClientSecretFor } from "@/auth/oauth/providers";
+import { redactPersonalData } from "../lib/redact";
 import {
 	getNotificationProvider,
 	isNotificationProviderConfigured,
@@ -37,14 +38,20 @@ type PayloadLike = {
 		error: (message: string, meta?: Record<string, unknown>) => void;
 		warn: (message: string, meta?: Record<string, unknown>) => void;
 	};
+	update: (options: {
+		collection: string;
+		id: string;
+		data: Record<string, unknown>;
+		overrideAccess?: boolean;
+	}) => Promise<unknown>;
 };
 
-async function findAllIds(
+async function findAllDocs(
 	payload: PayloadLike,
 	collection: string,
 	where: Record<string, unknown>,
-): Promise<string[]> {
-	const ids: string[] = [];
+): Promise<Array<Record<string, unknown> & { id: string }>> {
+	const docs: Array<Record<string, unknown> & { id: string }> = [];
 	let page = 1;
 	let hasNextPage = true;
 
@@ -57,13 +64,20 @@ async function findAllIds(
 			page,
 			where,
 		});
-
-		ids.push(...result.docs.map((doc) => doc.id));
+		docs.push(...result.docs);
 		hasNextPage = Boolean(result.hasNextPage);
 		page = result.nextPage ?? page + 1;
 	}
 
-	return ids;
+	return docs;
+}
+
+async function findAllIds(
+	payload: PayloadLike,
+	collection: string,
+	where: Record<string, unknown>,
+): Promise<string[]> {
+	return (await findAllDocs(payload, collection, where)).map((doc) => doc.id);
 }
 
 function toRelationId(value: unknown): string | undefined {
@@ -147,6 +161,60 @@ async function deleteByIds(
 			collection,
 			id,
 			overrideAccess: true,
+		});
+	}
+}
+
+/**
+ * Payment records are transaction data the law requires us to keep (Law
+ * 2010/021 art. 32): they lose the customer, never the amounts or references.
+ * Ids are collected before any update, so paging never skips a record.
+ */
+async function retainPaymentRecords(
+	payload: PayloadLike,
+	userId: string,
+): Promise<void> {
+	const customerDeletedAt = new Date().toISOString();
+
+	for (const id of await findAllIds(payload, "boost-payments", {
+		user: { equals: userId },
+	})) {
+		await payload.update({
+			collection: "boost-payments",
+			id,
+			overrideAccess: true,
+			data: { user: null, customerDeletedAt },
+		});
+	}
+
+	const intents = await findAllDocs(payload, "payment-intents", {
+		customer: { equals: userId },
+	});
+	const references = intents
+		.map((intent) => intent.reference)
+		.filter(
+			(reference): reference is string =>
+				typeof reference === "string" && reference.length > 0,
+		);
+
+	for (const intent of intents) {
+		await payload.update({
+			collection: "payment-intents",
+			id: intent.id,
+			overrideAccess: true,
+			data: { customer: null, customerDeletedAt },
+		});
+	}
+
+	if (references.length === 0) return;
+	for (const event of await findAllDocs(payload, "webhook-events", {
+		reference: { in: references },
+	})) {
+		await payload.update({
+			collection: "webhook-events",
+			id: event.id,
+			overrideAccess: true,
+			data: { raw: redactPersonalData(event.raw) as Record<string, unknown> },
 		});
 	}
 }
@@ -278,14 +346,13 @@ export async function deleteUserRelatedData(
 		}),
 	);
 
+	await retainPaymentRecords(payload, userId);
+
 	await deleteByIds(
 		payload,
-		"boost-payments",
-		await findAllIds(payload, "boost-payments", {
-			or: [
-				{ user: { equals: userId } },
-				...(listingIds.length > 0 ? [{ listing: { in: listingIds } }] : []),
-			],
+		"contact-reveals",
+		await findAllIds(payload, "contact-reveals", {
+			or: [{ viewer: { equals: userId } }, { seller: { equals: userId } }],
 		}),
 	);
 
