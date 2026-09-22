@@ -4,6 +4,10 @@ import { isModerator } from "./roles";
 export const staffOnly: Access = ({ req: { user } }) =>
 	isModerator(user as { role?: string } | null);
 
+/** Field-level twin of `staffOnly`, for fields only staff may read. */
+export const staffOnlyField: FieldAccess = ({ req: { user } }) =>
+	isModerator(user as { role?: string } | null);
+
 /** For records only a service may write, with overrideAccess. */
 export const nobody: Access = () => false;
 

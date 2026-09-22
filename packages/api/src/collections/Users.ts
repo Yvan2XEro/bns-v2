@@ -68,6 +68,14 @@ export const Users: CollectionConfig = {
 			req.user?.role === "admin" || req.user?.role === "moderator",
 	},
 	hooks: {
+		// Computed before field access runs: `phoneVerifiedAt` is unreadable to
+		// everyone, so a field-level afterRead would already see it stripped.
+		beforeRead: [
+			({ doc }) => {
+				doc.phoneVerified = Boolean(doc.phoneVerifiedAt);
+				return doc;
+			},
+		],
 		beforeChange: [
 			({ req, data, operation, originalDoc }) => {
 				// DEBUG — remove once root cause is confirmed
@@ -337,6 +345,17 @@ export const Users: CollectionConfig = {
 			// which is rate limited and recorded; the public user document never carries it.
 			access: {
 				read: selfOrStaffField,
+			},
+		},
+		{
+			name: "phoneVerified",
+			type: "checkbox",
+			virtual: true,
+			access: {
+				read: selfOrStaffField,
+			},
+			admin: {
+				readOnly: true,
 			},
 		},
 		{

@@ -84,6 +84,8 @@ export interface Config {
     'blocked-users': BlockedUser;
     tags: Tag;
     'moderation-log': ModerationLog;
+    shops: Shop;
+    'shop-members': ShopMember;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -109,6 +111,8 @@ export interface Config {
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
+    shops: ShopsSelect<false> | ShopsSelect<true>;
+    'shop-members': ShopMembersSelect<false> | ShopMembersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -188,6 +192,7 @@ export interface User {
   totalReviews?: number | null;
   bio?: string | null;
   phone?: string | null;
+  phoneVerified?: boolean | null;
   pendingPhone?: string | null;
   phoneVerifiedAt?: string | null;
   phoneVerificationCodeHash?: string | null;
@@ -650,6 +655,63 @@ export interface ModerationLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops".
+ */
+export interface Shop {
+  id: string;
+  handle: string;
+  previousHandles?:
+    | {
+        handle: string;
+        until: string;
+        id?: string | null;
+      }[]
+    | null;
+  handleChangedAt?: string | null;
+  name: string;
+  description?: string | null;
+  logo?: (string | null) | Media;
+  banner?: (string | null) | Media;
+  contact?: {
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+  };
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    countryCode?: string | null;
+  };
+  categories?: (string | Category)[] | null;
+  owner: string | User;
+  status: 'active' | 'suspended' | 'closed';
+  level?: number | null;
+  closedAt?: string | null;
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
+  publishedListingCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-members".
+ */
+export interface ShopMember {
+  id: string;
+  shop: string | Shop;
+  user: string | User;
+  role: 'owner' | 'manager' | 'staff';
+  status: 'active' | 'revoked';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -855,6 +917,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'moderation-log';
         value: string | ModerationLog;
+      } | null)
+    | ({
+        relationTo: 'shops';
+        value: string | Shop;
+      } | null)
+    | ({
+        relationTo: 'shop-members';
+        value: string | ShopMember;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -920,6 +990,7 @@ export interface UsersSelect<T extends boolean = true> {
   totalReviews?: T;
   bio?: T;
   phone?: T;
+  phoneVerified?: T;
   pendingPhone?: T;
   phoneVerifiedAt?: T;
   phoneVerificationCodeHash?: T;
@@ -1257,6 +1328,65 @@ export interface ModerationLogSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops_select".
+ */
+export interface ShopsSelect<T extends boolean = true> {
+  handle?: T;
+  previousHandles?:
+    | T
+    | {
+        handle?: T;
+        until?: T;
+        id?: T;
+      };
+  handleChangedAt?: T;
+  name?: T;
+  description?: T;
+  logo?: T;
+  banner?: T;
+  contact?:
+    | T
+    | {
+        phone?: T;
+        whatsapp?: T;
+        email?: T;
+      };
+  location?:
+    | T
+    | {
+        city?: T;
+        region?: T;
+        country?: T;
+        countryCode?: T;
+      };
+  categories?: T;
+  owner?: T;
+  status?: T;
+  level?: T;
+  closedAt?: T;
+  suspendedAt?: T;
+  suspendedUntil?: T;
+  suspendedReason?: T;
+  suspendedNote?: T;
+  suspendedBy?: T;
+  publishedListingCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-members_select".
+ */
+export interface ShopMembersSelect<T extends boolean = true> {
+  shop?: T;
+  user?: T;
+  role?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -1349,6 +1479,13 @@ export interface AppSetting {
       sender?: string | null;
     };
   };
+  shops?: {
+    /**
+     * Off: clients hide shop entry points and POST /api/shops returns shop.disabled. Existing shop pages keep resolving.
+     */
+    enabled?: boolean | null;
+    maxPerUser?: number | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1398,6 +1535,12 @@ export interface AppSettingsSelect<T extends boolean = true> {
               apiKey?: T;
               sender?: T;
             };
+      };
+  shops?:
+    | T
+    | {
+        enabled?: T;
+        maxPerUser?: T;
       };
   updatedAt?: T;
   createdAt?: T;

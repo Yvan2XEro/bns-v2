@@ -18,6 +18,8 @@ import { PaymentIntents } from "./collections/PaymentIntents";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
+import { ShopMembers } from "./collections/ShopMembers";
+import { Shops } from "./collections/Shops";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
 import { WebhookEvents } from "./collections/WebhookEvents";
@@ -91,6 +93,8 @@ export default buildConfig({
 		BlockedUsers,
 		Tags,
 		ModerationLog,
+		Shops,
+		ShopMembers,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),
