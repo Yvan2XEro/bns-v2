@@ -264,12 +264,12 @@ export const Listings: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc, operation, previousDoc }) => {
+			async ({ doc, operation, previousDoc, req }) => {
 				if (process.env.REDIS_URL) {
-					const { publishSearchEvent } = await import("../hooks/searchEvents");
+					const { queueSearchEvent } = await import("../hooks/searchEvents");
 					const event =
 						operation === "create" ? "listing.created" : "listing.updated";
-					await publishSearchEvent(event, doc.id as string);
+					await queueSearchEvent(req, event, doc.id as string);
 				}
 
 				if (!isNotificationProviderConfigured()) return;
@@ -327,10 +327,10 @@ export const Listings: CollectionConfig = {
 			},
 		],
 		afterDelete: [
-			async ({ doc }) => {
+			async ({ doc, req }) => {
 				if (process.env.REDIS_URL) {
-					const { publishSearchEvent } = await import("../hooks/searchEvents");
-					await publishSearchEvent("listing.deleted", doc.id as string);
+					const { queueSearchEvent } = await import("../hooks/searchEvents");
+					await queueSearchEvent(req, "listing.deleted", doc.id as string);
 				}
 			},
 		],
