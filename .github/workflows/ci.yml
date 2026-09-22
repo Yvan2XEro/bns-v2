@@ -71,6 +71,10 @@ jobs:
             docker exec mongo mongosh --quiet --eval 'db.adminCommand("ping").ok' && break
             sleep 1
           done
+          for i in $(seq 1 30); do
+            docker exec mongo-standalone mongosh --quiet --eval 'db.adminCommand("ping").ok' && break
+            sleep 1
+          done
           docker exec mongo mongosh --quiet --eval 'rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] })'
           for i in $(seq 1 30); do
             docker exec mongo mongosh --quiet --eval 'rs.status().myState' | grep -qx 1 && break
@@ -85,10 +89,17 @@ jobs:
           DATABASE_URI: mongodb://localhost:27018/bns-ci
           PAYLOAD_SECRET: ci-transaction-probe
         run: |
-          if bun run src/scripts/transactionProbe.ts; then
+          set -o pipefail
+          if bun run src/scripts/transactionProbe.ts 2>&1 | tee "$RUNNER_TEMP/standalone.log"; then
             echo "The probe passed without a replica set: it is not proving anything."
             exit 1
           fi
+          # A crash for any other reason (bad config, unreachable database) would
+          # also exit non-zero, so require the message this case must produce.
+          grep -q "Transactions are disabled" "$RUNNER_TEMP/standalone.log" || {
+            echo "The probe failed against the standalone for the wrong reason."
+            exit 1
+          }
 
       - name: Run the transaction probe
         working-directory: packages/api

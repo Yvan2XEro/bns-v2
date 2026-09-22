@@ -2,6 +2,10 @@
  * Proves multi-document transactions are live: writes to two collections in
  * one transaction, aborts it, and checks that neither write survived.
  *
+ * It proves the rollback half only: a transaction that commits is never
+ * exercised here, because rollback is what tells a real transaction apart from
+ * Payload's no-op fallback, which cannot undo anything.
+ *
  * Usage (from packages/api): bun run src/scripts/transactionProbe.ts
  * Exits 1 when DATABASE_URI has no replicaSet (transactions disabled) or when
  * an aborted write is visible.

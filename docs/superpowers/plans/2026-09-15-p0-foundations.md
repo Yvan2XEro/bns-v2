@@ -6399,13 +6399,15 @@ Start a local replica set (the `bns-probe-rs` commands of Task 18 Step 2, on por
 
 - [ ] **Step 5: Open the pull request into `dev`**
 
-Push the branch and open the PR. Keep Task 18's commit out of `dev` until Task 20 Step 4 is done on staging: either merge Tasks 1 to 17 first and Task 18 in a second PR, or merge the single PR only after Task 20 Steps 1 to 4.
+Push the branch and open the PR. Task 18 no longer gates the merge: as implemented, the replica set is off unless a host sets `MONGO_REPLICA_SET`, so the deployed compose file keeps running the standalone `mongod` it runs today. The first deploy after the merge does recreate the `mongodb` container (its `command`, volumes and healthcheck changed), which is a restart of a few seconds.
 
 ---
 
 ### Task 20: Staging replica-set runbook (manual verification)
 
 Run on the staging host, in `$STAGING_PATH` (the directory CI deploys into). The staging `.env` already defines `MONGO_USER`, `MONGO_PASSWORD`, `MONGO_DB`.
+
+The operator-facing version of this, with the prerequisites, the downtime, the failure modes and the rollback, is `docs/superpowers/plans/2026-09-15-p0-mongo-replica-set-runbook.md`. The steps below are the staging pass of it.
 
 - [ ] **Step 1: Back up, off the host**
 
@@ -6428,18 +6430,23 @@ ls -l mongo-keyfile
 
 Expected: `-r-------- 1 999 999 … mongo-keyfile`.
 
-- [ ] **Step 3: Deploy the compose change and initiate the replica set**
+- [ ] **Step 3: Turn the switch on and initiate the replica set**
 
-From your workstation: `scp deployments/docker-compose/docker-compose.yml <staging>:"$STAGING_PATH"/docker-compose.yml` (the branch version). Then on the host:
+From your workstation: `scp deployments/docker-compose/docker-compose.yml <staging>:"$STAGING_PATH"/docker-compose.yml` (the branch version). The compose file alone changes nothing: `mongod` stays standalone until `MONGO_REPLICA_SET` is set, so `rs.initiate` would fail on a standalone if you skipped this.
+
+Set the two variables as **GitHub repository or `staging` environment variables** — `MONGO_REPLICA_SET=rs0` and `MONGO_KEYFILE_PATH=./mongo-keyfile` — because the deploy job rewrites the host `.env` from GitHub on every push to `dev`. To finish the window now, write the same two lines into the host `.env` as well; the GitHub variables are what keeps them there.
+
+The site is down from the restart below until `rs.initiate` has run: `api` and `mongo-express` wait on `mongodb` being healthy, and a replica-set member with no configuration is deliberately unhealthy. Run the commands back to back. A deploy that happens to run inside that gap goes red; that is expected, re-run it afterwards.
 
 ```bash
+docker compose config | grep -E "replSet|keyfile|replicaSet="
 docker compose up -d mongodb
 docker compose exec mongodb sh -c 'mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "rs.initiate({ _id: \"rs0\", members: [{ _id: 0, host: \"mongodb:27017\" }] })"'
 docker compose exec mongodb sh -c 'mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "rs.status().members[0].stateStr"'
 docker compose ps mongodb
 ```
 
-Expected: `{ ok: 1 }`, then `PRIMARY`, then `healthy` within a minute.
+Expected: the `config` line shows `--replSet rs0`, the key file bind mount and a `DATABASE_URI` ending in `&replicaSet=rs0`; then `{ ok: 1 }`, `PRIMARY`, and `healthy` within a minute. `rs.initiate` is run once per host, ever.
 
 - [ ] **Step 4: Restart the services that use the database**
 
@@ -6488,13 +6495,13 @@ Then, in the staging web app with NotchPay sandbox keys: boost one of your publi
 
 For at least 24 hours on staging: create and edit listings, run moderation actions, delete a test account that has a boost payment, reveal phones, post reviews. Check daily: `docker compose logs --since 24h api | grep -Ei "WriteConflict|NoSuchTransaction|TransientTransactionError|payment.amountMismatch"`. Expected: no matches, or matches you have explained.
 
-- [ ] **Step 8: Merge Task 18 to `dev`**
+- [ ] **Step 8: Confirm the next deploy is uneventful**
 
-Merge (or push) Task 18's commit. CI copies the same compose file and restarts; nothing should change. Expected: CI green, `docker compose ps` all healthy.
+Task 18's commit no longer waits on this runbook — it can be merged before any of it. What to confirm here is the first `dev` push after the switch was turned on: the deploy rewrites the host `.env` from the GitHub variables, so `MONGO_REPLICA_SET=rs0` must survive it. Expected: CI green, `docker compose exec api printenv DATABASE_URI` still ends in `&replicaSet=rs0`, `docker compose ps` all healthy.
 
 Rollback, if needed at any step:
-- Transactions only: set `DATABASE_URI` in the staging `.env` to the old value without `replicaSet=rs0`, then `docker compose up -d api`. MongoDB keeps running as a replica set.
-- Full: also restore the previous compose file (no `command`, old healthcheck) and `docker compose up -d mongodb api chat-service search-indexer`. Data files stay compatible. As a last resort, `mongorestore --archive --gzip --drop` from the Step 1 archive.
+- Transactions only: empty `MONGO_REPLICA_SET` in the GitHub variables **and** in the host `.env` (editing only the host `.env` is undone by the next deploy, which rewrites it from GitHub), then `docker compose up -d mongodb api chat-service search-indexer`. `mongod` comes back standalone with the data intact; the replica-set configuration stays in the `local` database and a later re-enable does not need a second `rs.initiate`.
+- Full: as a last resort, `mongorestore --archive --gzip --drop` from the Step 1 archive. The compose file itself does not need reverting — with the switch empty it renders the standalone service it rendered before.
 
 ---
 
@@ -6508,7 +6515,7 @@ Same commands as Task 20 Step 1 in `$DEPLOY_PATH`, archive named `bns-prod-…`,
 
 - [ ] **Step 2: Key file and replica set**
 
-Task 20 Steps 2 and 3 in `$DEPLOY_PATH`, with the compose file from the release commit. Expected: `PRIMARY`, `healthy`.
+Task 20 Steps 2 and 3 in `$DEPLOY_PATH`, with the compose file from the release commit, with one difference: no job rewrites the production `.env`, so the switch goes into that file directly (`MONGO_REPLICA_SET=rs0`, `MONGO_KEYFILE_PATH=./mongo-keyfile`) and stays there. Same downtime as on staging — `api` and `mongo-express` are down from the `mongodb` restart until `rs.initiate` has run, so this belongs inside the announced window. Expected: `PRIMARY`, `healthy`.
 
 - [ ] **Step 3: Release**
 
@@ -6522,7 +6529,7 @@ Task 20 Step 5 (expect `PROBE OK`) and the media and search checks of Task 20 St
 
 From the API log of the first start, copy the `[migration] self-reviews kept for staff review` and `[migration] duplicate reviews kept for staff review` entries into a ticket for the moderation team. When they have resolved the duplicates, a follow-up migration creates the unique index (the one in `20260915_000100_p0_reviews_audit.ts` skipped it).
 
-Rollback: the two levels of Task 20 apply unchanged, with `$DEPLOY_PATH`.
+Rollback: the two levels of Task 20 apply in `$DEPLOY_PATH`, with the switch emptied in the production `.env` alone — there are no GitHub variables to undo here.
 
 ---
 
