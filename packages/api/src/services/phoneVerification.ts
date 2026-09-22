@@ -1,6 +1,7 @@
 import { createHash, randomInt } from "node:crypto";
 import type { Payload } from "payload";
 import { ERROR_CODES, type ErrorCode } from "@/lib/errors";
+import { ServiceError } from "@/lib/serviceError";
 import type { User } from "@/payload-types";
 import { sendSms } from "./smsProvider";
 
@@ -29,20 +30,15 @@ type PhoneVerificationStatus = {
 	resendAvailableAt: null | string;
 };
 
-export class PhoneVerificationError extends Error {
-	status: number;
-	/** Shared client-facing code; see src/lib/errors.ts. */
-	code: ErrorCode;
-
+/** Message-first, unlike its siblings: its messages are written per call site. */
+export class PhoneVerificationError extends ServiceError {
 	constructor(
 		message: string,
 		status = 400,
 		code: ErrorCode = ERROR_CODES.badRequest,
 	) {
-		super(message);
+		super(code, status, message);
 		this.name = "PhoneVerificationError";
-		this.status = status;
-		this.code = code;
 	}
 }
 

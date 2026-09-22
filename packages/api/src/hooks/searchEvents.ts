@@ -64,7 +64,15 @@ export async function publishSearchEvent(
 	}
 }
 
-/** Publishes after commit when `req` is inside `withTransaction`, now otherwise. */
+/**
+ * Publishes after commit when `req` is inside `withTransaction`, now otherwise.
+ *
+ * "Otherwise" covers two cases, and `onCommit` tells them apart: no transaction
+ * at all, where publishing now is exact, and a transaction this process does
+ * not own — Payload opens one per admin-panel save — where publishing now can
+ * beat the adapter's commit by a few milliseconds. See `onCommit` for why that
+ * is the best available option and what it costs.
+ */
 export async function queueSearchEvent(
 	req: { context?: Record<string, unknown> } | undefined | null,
 	event: SearchEventName,

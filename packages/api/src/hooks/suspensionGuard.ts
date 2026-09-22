@@ -1,12 +1,11 @@
-import { APIError, type Payload } from "payload";
+import type { Payload } from "payload";
 import { isSuspended } from "../access/roles";
-import { ERROR_CODES, fallbackMessage } from "../lib/errors";
+import { ERROR_CODES } from "../lib/errors";
+import { CodedAPIError } from "../lib/serviceError";
 
-export class SuspendedAccountError extends APIError {
+export class SuspendedAccountError extends CodedAPIError {
 	constructor() {
-		super(fallbackMessage(ERROR_CODES.accountSuspended), 403, {
-			code: ERROR_CODES.accountSuspended,
-		});
+		super(ERROR_CODES.accountSuspended, 403);
 	}
 }
 

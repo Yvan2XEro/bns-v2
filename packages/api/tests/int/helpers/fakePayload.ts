@@ -1,8 +1,7 @@
 import type { Payload } from "payload";
 import { vi } from "vitest";
 
-// biome-ignore lint/suspicious/noExplicitAny: test double for loosely typed documents
-export type Doc = Record<string, any>;
+export type Doc = Record<string, unknown>;
 
 interface Options {
 	/** Compound unique keys per collection, e.g. `{ shops: [["handle"]] }`. */
@@ -11,6 +10,23 @@ interface Options {
 }
 
 type Undo = { collection: string; id: string; before: Doc | null };
+
+type Req = { transactionID?: string } | undefined;
+
+/** The union of every option the services pass; the fake reads what it needs. */
+interface Args {
+	collection: string;
+	context?: Doc;
+	data?: Doc;
+	id?: unknown;
+	limit?: number;
+	page?: number;
+	pagination?: boolean;
+	req?: Req;
+	slug?: string;
+	sort?: unknown;
+	where?: Doc;
+}
 
 const idOf = (value: unknown): unknown =>
 	value && typeof value === "object" && "id" in (value as Doc)
@@ -162,14 +178,14 @@ export function fakePayload(
 	const notFound = () => Object.assign(new Error("Not Found"), { status: 404 });
 
 	const journal = (
-		req: Doc | undefined,
+		req: Req,
 		collection: string,
-		id: string,
+		id: unknown,
 		before: Doc | null,
 	) => {
-		const txId = req?.transactionID as string | undefined;
+		const txId = req?.transactionID;
 		if (txId && journals.has(txId))
-			journals.get(txId)?.push({ collection, id, before });
+			journals.get(txId)?.push({ collection, id: String(id), before });
 	};
 
 	const assertUnique = (collection: string, doc: Doc) => {
@@ -194,20 +210,20 @@ export function fakePayload(
 		globals,
 		writes,
 		/** Return true to make the matching call throw, to test rollbacks. */
-		failWhen: null as null | ((method: string, args: Doc) => boolean),
+		failWhen: null as null | ((method: string, args: Args) => boolean),
 		logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 		jobs: { queue: vi.fn(async () => ({ id: `job-${++seq}` })) },
 		auth: vi.fn(async () => ({ user: null as unknown })),
-		maybeFail(method: string, args: Doc) {
+		maybeFail(method: string, args: Args) {
 			if (payload.failWhen?.(method, args))
 				throw new Error(`forced failure: ${method}`);
 		},
-		async findByID({ collection, id }: Doc) {
+		async findByID({ collection, id }: Args) {
 			const doc = byId(collection, id);
 			if (!doc) throw notFound();
 			return clone(doc);
 		},
-		async find({ collection, where, sort, limit, page = 1, pagination }: Doc) {
+		async find({ collection, where, sort, limit, page = 1, pagination }: Args) {
 			const all = sortDocs(
 				table(collection).filter((d) => matches(d, where)),
 				sort,
@@ -226,21 +242,21 @@ export function fakePayload(
 				nextPage: page < totalPages ? page + 1 : null,
 			};
 		},
-		async count({ collection, where }: Doc) {
+		async count({ collection, where }: Args) {
 			return {
 				totalDocs: table(collection).filter((d) => matches(d, where)).length,
 			};
 		},
-		async create(args: Doc) {
+		async create(args: Args) {
 			const { collection, data, req, context } = args;
 			payload.maybeFail("create", args);
 			seq += 1;
 			const now = stamp();
-			const doc = {
+			const doc: Doc = {
 				id: `${collection}-${seq}`,
 				createdAt: now,
 				updatedAt: now,
-				...clone(data),
+				...clone(data ?? {}),
 			};
 			assertUnique(collection, doc);
 			table(collection).push(doc);
@@ -248,26 +264,26 @@ export function fakePayload(
 			writes.push({
 				op: "create",
 				collection,
-				id: doc.id,
+				id: String(doc.id),
 				data,
 				context,
 				transactionID: req?.transactionID,
 			});
 			return clone(doc);
 		},
-		async update(args: Doc) {
+		async update(args: Args) {
 			const { collection, id, where, data, req, context } = args;
 			payload.maybeFail("update", args);
 			const apply = (doc: Doc) => {
 				const before = clone(doc);
-				const next = { ...doc, ...clone(data), updatedAt: stamp() };
+				const next = { ...doc, ...clone(data ?? {}), updatedAt: stamp() };
 				assertUnique(collection, next);
 				Object.assign(doc, next);
 				journal(req, collection, doc.id, before);
 				writes.push({
 					op: "update",
 					collection,
-					id: doc.id,
+					id: String(doc.id),
 					data,
 					context,
 					transactionID: req?.transactionID,
@@ -287,18 +303,25 @@ export function fakePayload(
 			if (!doc) throw notFound();
 			return apply(doc);
 		},
-		async delete(args: Doc) {
-			const { collection, id, req } = args;
+		async delete(args: Args) {
+			const { collection, id, req, context } = args;
+			payload.maybeFail("delete", args);
 			const rows = table(collection);
 			const index = rows.findIndex((d) => String(d.id) === String(id));
 			if (index < 0) throw notFound();
 			const [removed] = rows.splice(index, 1);
 			journal(req, collection, removed.id, removed);
-			writes.push({ op: "delete", collection, id: removed.id });
+			writes.push({
+				op: "delete",
+				collection,
+				id: String(removed.id),
+				context,
+				transactionID: req?.transactionID,
+			});
 			return clone(removed);
 		},
-		async findGlobal({ slug }: Doc) {
-			return clone(globals[slug] ?? {});
+		async findGlobal({ slug }: Args) {
+			return clone(globals[String(slug)] ?? {});
 		},
 		db: {
 			async beginTransaction() {
@@ -314,7 +337,7 @@ export function fakePayload(
 				journals.delete(id);
 				for (const entry of undo.reverse()) {
 					const rows = table(entry.collection);
-					const index = rows.findIndex((d) => d.id === entry.id);
+					const index = rows.findIndex((d) => String(d.id) === entry.id);
 					if (entry.before === null) {
 						if (index >= 0) rows.splice(index, 1);
 					} else if (index >= 0) {
@@ -325,7 +348,7 @@ export function fakePayload(
 				}
 			},
 			/** Mirrors the Mongo adapter: one `findOneAndUpdate` by `where` or `id`, `$inc` support, null when nothing matches. */
-			async updateOne(args: Doc) {
+			async updateOne(args: Args) {
 				const { collection, id, where, data, req } = args;
 				payload.maybeFail("db.updateOne", args);
 				const doc =
@@ -335,7 +358,7 @@ export function fakePayload(
 				if (!doc) return null;
 				const before = clone(doc);
 				const next: Doc = { ...doc };
-				for (const [key, value] of Object.entries(data as Doc)) {
+				for (const [key, value] of Object.entries(data ?? {})) {
 					if (value && typeof value === "object" && "$inc" in value) {
 						next[key] = Number(next[key] ?? 0) + Number(value.$inc);
 					} else {
@@ -349,7 +372,7 @@ export function fakePayload(
 				writes.push({
 					op: "db.updateOne",
 					collection,
-					id: doc.id,
+					id: String(doc.id),
 					data,
 					transactionID: req?.transactionID,
 				});

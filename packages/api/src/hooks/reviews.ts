@@ -2,8 +2,8 @@ import type {
 	CollectionAfterErrorHook,
 	CollectionBeforeChangeHook,
 } from "payload";
-import { APIError } from "payload";
 import { relationId } from "../lib/relationId";
+import { CodedAPIError } from "../lib/serviceError";
 import {
 	assertReviewAllowed,
 	ReviewRuleError,
@@ -33,12 +33,7 @@ export const enforceReviewRules: CollectionBeforeChangeHook = async ({
 		);
 	} catch (error) {
 		if (error instanceof ReviewRuleError) {
-			throw new APIError(
-				error.message,
-				error.status,
-				{ code: error.code },
-				true,
-			);
+			throw new CodedAPIError(error.code, error.status);
 		}
 		throw error;
 	}

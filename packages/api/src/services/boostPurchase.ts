@@ -9,6 +9,7 @@ import type {
 	ProviderName,
 } from "../lib/payments/types";
 import { relationId } from "../lib/relationId";
+import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
 import {
 	applyStatus,
@@ -17,15 +18,10 @@ import {
 	markIntentPending,
 } from "./payments";
 
-export class BoostPurchaseError extends Error {
-	code: ErrorCode;
-	status: number;
-
+export class BoostPurchaseError extends ServiceError {
 	constructor(code: ErrorCode, status: number) {
-		super(code);
+		super(code, status);
 		this.name = "BoostPurchaseError";
-		this.code = code;
-		this.status = status;
 	}
 }
 

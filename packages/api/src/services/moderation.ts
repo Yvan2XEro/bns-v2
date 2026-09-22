@@ -9,6 +9,7 @@ import {
 } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
+import { ServiceError } from "../lib/serviceError";
 
 export const SUSPENSION_REASONS = [
 	"spam",
@@ -31,15 +32,10 @@ function parseSuspensionReason(value: unknown): SuspensionReason {
 	throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
 }
 
-export class ModerationError extends Error {
-	code: ErrorCode;
-	status: number;
-
+export class ModerationError extends ServiceError {
 	constructor(code: ErrorCode, status: number, message?: string) {
-		super(message ?? code);
+		super(code, status, message);
 		this.name = "ModerationError";
-		this.code = code;
-		this.status = status;
 	}
 }
 
