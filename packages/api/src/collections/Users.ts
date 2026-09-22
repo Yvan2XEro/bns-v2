@@ -232,6 +232,7 @@ export const Users: CollectionConfig = {
 							| undefined,
 						id: user.id,
 					},
+					req,
 				);
 			},
 		],

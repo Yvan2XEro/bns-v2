@@ -196,6 +196,29 @@ function anonymizeIdempotencyKey(key: unknown, userId: string): unknown {
  * Payment records are transaction data the law requires us to keep (Law
  * 2010/021 art. 32): they lose the customer, never the amounts or references.
  * Ids are collected before any update, so paging never skips a record.
+ *
+ * Without a replicaSet (pre-Task 18) `withTransaction` is a no-op and each
+ * write here lands immediately, so a mid-function crash must still leave a
+ * re-runnable state: the webhook bodies are rewritten *before* the intents
+ * that name them are anonymised, because the retry gate for "which webhook
+ * events still need this" is "the intents that still have this customer" —
+ * clear the intent first and a re-run can no longer find its own events to
+ * redact, and the person's email/phone/name in `raw` would survive forever.
+ * `retainedWebhookRaw` is itself idempotent (a body already rewritten is
+ * returned as-is), so redacting the same event twice on a retry is safe.
+ *
+ * What a crash leaves behind, step by step:
+ * - before boost-payments: nothing changed, re-run starts clean.
+ * - mid boost-payments loop: some rows already lost their `user`; re-run
+ *   only finds and finishes the rest (per-row gate).
+ * - after boost-payments, before/mid webhook-events: intents still have
+ *   `customer`, so a re-run finds the same intents, the same references, and
+ *   redacts any body it has not already redacted.
+ * - after webhook-events, before/mid payment-intents: bodies are already
+ *   safe; a re-run redacts them again as a no-op and finishes anonymising
+ *   the remaining intents (per-row gate).
+ * - after payment-intents: `customer` is cleared, so a re-run's `find`
+ *   returns nothing and the function is a no-op — fully converged.
  */
 async function retainPaymentRecords(
 	payload: PayloadLike,
@@ -232,6 +255,30 @@ async function retainPaymentRecords(
 				typeof reference === "string" && reference.length > 0,
 		);
 
+	if (references.length > 0) {
+		for (const event of await findAllDocs(
+			payload,
+			"webhook-events",
+			{ reference: { in: references } },
+			req,
+		)) {
+			await payload.update({
+				collection: "webhook-events",
+				id: event.id,
+				overrideAccess: true,
+				data: {
+					// payloadHash is left untouched: it attests to the body the
+					// provider actually sent, not to what we still store after
+					// this rewrite, and re-verifying it against `raw`
+					// post-redaction was never the point — proving the record
+					// has not been tampered with since receipt is.
+					raw: retainedWebhookRaw(String(event.provider ?? ""), event.raw),
+				},
+				req,
+			});
+		}
+	}
+
 	for (const intent of intents) {
 		await payload.update({
 			collection: "payment-intents",
@@ -241,29 +288,6 @@ async function retainPaymentRecords(
 				customer: null,
 				customerDeletedAt,
 				idempotencyKey: anonymizeIdempotencyKey(intent.idempotencyKey, userId),
-			},
-			req,
-		});
-	}
-
-	if (references.length === 0) return;
-	for (const event of await findAllDocs(
-		payload,
-		"webhook-events",
-		{ reference: { in: references } },
-		req,
-	)) {
-		await payload.update({
-			collection: "webhook-events",
-			id: event.id,
-			overrideAccess: true,
-			data: {
-				// payloadHash is left untouched: it attests to the body the
-				// provider actually sent, not to what we still store after this
-				// rewrite, and re-verifying it against `raw` post-redaction was
-				// never the point — proving the record has not been tampered
-				// with since receipt is.
-				raw: retainedWebhookRaw(String(event.provider ?? ""), event.raw),
 			},
 			req,
 		});
@@ -526,12 +550,26 @@ async function runDeletionCascade(
 export async function deleteUserRelatedData(
 	payload: PayloadLike,
 	user: UserWithAuthProviders,
+	req?: TxReq,
 ): Promise<void> {
 	const userId = user.id;
 
-	await withTransaction(payload as unknown as Payload, (req) =>
-		runDeletionCascade(payload, userId, req),
-	);
+	if (req?.transactionID) {
+		// The caller — Users.ts's beforeDelete hook — already opened a
+		// transaction for the surrounding delete operation. Starting a second,
+		// independent one here would let this cascade commit while the user
+		// delete it belongs to fails (or vice versa), and neither session could
+		// see the other's uncommitted writes in the meantime. Run inside the
+		// same transaction instead of opening our own.
+		await runDeletionCascade(payload, userId, req);
+	} else {
+		// Called standalone (as in tests, or a caller with no ambient
+		// transaction): open one so every write here still lands or rolls
+		// back together.
+		await withTransaction(payload as unknown as Payload, (txReq) =>
+			runDeletionCascade(payload, userId, txReq),
+		);
+	}
 
 	// Outside the transaction: both are network calls to a third party and
 	// must not hold a database transaction open while they run. Neither

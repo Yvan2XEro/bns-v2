@@ -1,7 +1,9 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NotchPayProvider } from "../../src/lib/payments/notchpay";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../../src/lib/redact";
 import { deleteUserRelatedData } from "../../src/services/accountDeletion";
+import { processWebhookEvent } from "../../src/services/webhookEvents";
 import { fakePayload } from "./helpers/fakePayload";
 
 vi.mock("../../src/auth/oauth/providers", () => ({
@@ -123,6 +125,14 @@ describe("anonymizeIdentifier", () => {
 	it("gives different users different replacements", () => {
 		expect(anonymizeIdentifier("u-1")).not.toBe(anonymizeIdentifier("u-2"));
 	});
+
+	it("refuses to degrade to an unsalted digest when the secret is unset", () => {
+		vi.stubEnv("PAYLOAD_SECRET", "");
+		expect(() => anonymizeIdentifier("u-1")).toThrow(
+			"PAYLOAD_SECRET environment variable is not set",
+		);
+		vi.unstubAllEnvs();
+	});
 });
 
 describe("retainedWebhookRaw", () => {
@@ -148,6 +158,7 @@ describe("retainedWebhookRaw", () => {
 			amount: 900,
 			currency: "XAF",
 			providerTransactionId: "trx.1",
+			redacted: true,
 		});
 	});
 
@@ -179,6 +190,7 @@ describe("retainedWebhookRaw", () => {
 			amount: 900,
 			currency: "XAF",
 			providerTransactionId: "cs_1",
+			redacted: true,
 		});
 	});
 
@@ -204,7 +216,22 @@ describe("retainedWebhookRaw", () => {
 			amount: 900,
 			currency: "XAF",
 			providerTransactionId: null,
+			redacted: true,
 		});
+	});
+
+	it("is idempotent: a body already rebuilt is returned unchanged, not re-parsed", () => {
+		const already = {
+			providerEventId: "evt_1",
+			type: "payment.complete",
+			reference: "PI-pi-1",
+			status: "succeeded" as const,
+			amount: 900,
+			currency: "XAF",
+			providerTransactionId: "trx.1",
+			redacted: true as const,
+		};
+		expect(retainedWebhookRaw("notchpay", already)).toEqual(already);
 	});
 });
 
@@ -217,6 +244,10 @@ describe("deleteUserRelatedData payment retention", () => {
 		payload = world();
 		await deleteUserRelatedData(payload as never, { id: "u-1" });
 		vi.useRealTimers();
+	});
+
+	afterEach(() => {
+		vi.unstubAllEnvs();
 	});
 
 	it("keeps the boost payment without its customer", () => {
@@ -264,6 +295,7 @@ describe("deleteUserRelatedData payment retention", () => {
 			amount: 900,
 			currency: "XAF",
 			providerTransactionId: "trx.1",
+			redacted: true,
 		});
 		const serialized = JSON.stringify(event?.raw);
 		expect(serialized).not.toContain("a@example.com");
@@ -340,5 +372,191 @@ describe("deleteUserRelatedData transactional cascade", () => {
 			failing.store["webhook-events"].find((e) => e.id === "we-1")?.raw.data
 				.customer.email,
 		).toBe("a@example.com");
+	});
+
+	it("joins the caller's ambient transaction instead of opening a second one", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = world();
+		const beginTransaction = vi.spyOn(payload.db, "beginTransaction");
+		const ambientReq = { payload, transactionID: "ambient-tx-1" };
+
+		await deleteUserRelatedData(
+			payload as never,
+			{ id: "u-1" },
+			ambientReq as never,
+		);
+		vi.useRealTimers();
+
+		expect(beginTransaction).not.toHaveBeenCalled();
+		expect(
+			payload.store["payment-intents"].find((i) => i.id === "pi-1")?.customer,
+		).toBeNull();
+	});
+
+	it("opens its own transaction when called standalone", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = world();
+		const beginTransaction = vi.spyOn(payload.db, "beginTransaction");
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		vi.useRealTimers();
+
+		expect(beginTransaction).toHaveBeenCalledTimes(1);
+	});
+
+	it("(no replicaSet) converges on re-run from a crash between redacting webhooks and anonymising intents", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = world();
+		// Mirrors production without Task 18's replicaSet: transactions are a
+		// no-op, so every write here lands immediately and is never rolled back.
+		const noTx = {
+			...payload,
+			db: { ...payload.db, beginTransaction: async () => undefined },
+		};
+		const realUpdate = payload.update.bind(payload);
+		let crashed = false;
+		const wrapped = {
+			...noTx,
+			update: (options: { collection: string; [key: string]: unknown }) => {
+				if (!crashed && options.collection === "payment-intents") {
+					crashed = true;
+					return Promise.reject(new Error("boom"));
+				}
+				return realUpdate(options as Parameters<typeof realUpdate>[0]);
+			},
+		};
+
+		await expect(
+			deleteUserRelatedData(wrapped as never, { id: "u-1" }),
+		).rejects.toThrow("boom");
+
+		// The webhook body is already safe; the intent has not been reached yet.
+		expect(
+			payload.store["webhook-events"].find((e) => e.id === "we-1")?.raw,
+		).toMatchObject({ redacted: true, reference: "PI-pi-1" });
+		expect(
+			payload.store["payment-intents"].find((i) => i.id === "pi-1")?.customer,
+		).toBe("u-1");
+
+		// A re-run (same lack of a transaction) finds the same intent — its
+		// customer is still set — redacts the already-safe webhook body as a
+		// no-op, and finishes anonymising the intent.
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		vi.useRealTimers();
+
+		expect(
+			payload.store["payment-intents"].find((i) => i.id === "pi-1"),
+		).toMatchObject({
+			customer: null,
+			idempotencyKey: `boost:${anonymizeIdentifier("u-1")}:key-1`,
+		});
+		expect(
+			payload.store["webhook-events"].find((e) => e.id === "we-1")?.raw,
+		).toEqual({
+			providerEventId: "evt_1",
+			type: "payment.complete",
+			reference: "PI-pi-1",
+			status: "succeeded",
+			amount: 900,
+			currency: "XAF",
+			providerTransactionId: "trx.1",
+			redacted: true,
+		});
+	});
+});
+
+describe("replaying an unprocessed webhook after the account is deleted", () => {
+	it("still settles the intent from the redacted, already-normalised body", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = fakePayload(
+			{
+				listings: [{ id: "l-3", status: "published", boostedUntil: null }],
+				"boost-payments": [
+					{
+						id: "bp-3",
+						listing: "l-3",
+						duration: "7",
+						status: "pending",
+						amount: 900,
+					},
+				],
+				"payment-intents": [
+					{
+						id: "pi-3",
+						customer: "u-1",
+						purpose: "boost",
+						targetType: "boost-payment",
+						targetId: "bp-3",
+						amount: 900,
+						currency: "XAF",
+						status: "pending",
+						reference: "PI-pi-3",
+						idempotencyKey: "boost:u-1:replay-key",
+						statusHistory: [],
+					},
+				],
+				"webhook-events": [
+					{
+						id: "we-3",
+						provider: "notchpay",
+						reference: "PI-pi-3",
+						payloadHash: "hash-3",
+						raw: {
+							id: "evt_3",
+							event: "payment.complete",
+							data: {
+								merchant_reference: "PI-pi-3",
+								reference: "trx.3",
+								amount: 900,
+								currency: "XAF",
+								status: "complete",
+								customer: {
+									email: "c@example.com",
+									name: "Chantal",
+									phone: "+237600000099",
+								},
+							},
+						},
+					},
+				],
+			},
+			{ uniques: { "webhook-events": [["provider", "providerEventId"]] } },
+		);
+
+		// The user deletes their account while the event is still in flight,
+		// unprocessed — a real race, not a contrived one.
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		vi.useRealTimers();
+
+		const redactedEvent = payload.store["webhook-events"].find(
+			(e) => e.id === "we-3",
+		);
+		expect(redactedEvent?.processedAt).toBeUndefined();
+		expect(redactedEvent?.raw).toMatchObject({
+			redacted: true,
+			reference: "PI-pi-3",
+		});
+		expect(JSON.stringify(redactedEvent?.raw)).not.toContain("c@example.com");
+
+		const notchpay = new NotchPayProvider(
+			"pk",
+			"https://notchpay.test",
+			"hash",
+		);
+		const result = await processWebhookEvent(payload, "we-3", {
+			getProvider: () => notchpay,
+		});
+
+		expect(result).toEqual({ outcome: "applied" });
+		expect(
+			payload.store["payment-intents"].find((i) => i.id === "pi-3")?.status,
+		).toBe("succeeded");
+		expect(
+			payload.store["webhook-events"].find((e) => e.id === "we-3")?.processedAt,
+		).toEqual(expect.any(String));
 	});
 });

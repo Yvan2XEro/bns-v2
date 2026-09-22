@@ -7,6 +7,7 @@ import {
 	type PaymentProvider,
 	type ProviderName,
 } from "../lib/payments/types";
+import { isRetainedWebhookRaw } from "../lib/redact";
 import type { WebhookEvent } from "../payload-types";
 import { settlePayment } from "./payments";
 
@@ -94,9 +95,15 @@ export async function processWebhookEvent(
 
 	const attempts = (event.attempts ?? 0) + 1;
 	try {
-		const normalized = deps
-			.getProvider(event.provider)
-			.parseWebhookEvent(event.raw);
+		// The account-deletion cascade may have already rewritten this event's
+		// body into the same normalised shape `parseWebhookEvent` would
+		// otherwise produce (lib/redact.ts). Re-parsing that flat shape through
+		// a provider's original-wire-format parser finds nothing — a queued
+		// retry for a payment that settles the moment its owner's account is
+		// deleted must still resolve, not silently stop replaying.
+		const normalized = isRetainedWebhookRaw(event.raw)
+			? event.raw
+			: deps.getProvider(event.provider).parseWebhookEvent(event.raw);
 
 		let outcome = "ignored_without_reference";
 		if (normalized.reference || normalized.providerTransactionId) {
