@@ -26,6 +26,7 @@ import {
 	expireBoostsTask,
 	expireListingsTask,
 	processWebhookEventTask,
+	reconcilePendingPaymentsTask,
 } from "./jobs";
 import { migrations } from "./migrations";
 import { buildStoragePlugin } from "./plugins/storage";
@@ -110,6 +111,7 @@ export default buildConfig({
 			expireBoostsTask,
 			checkSearchAlertsTask,
 			processWebhookEventTask,
+			reconcilePendingPaymentsTask,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },

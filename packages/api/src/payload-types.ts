@@ -136,6 +136,7 @@ export interface Config {
       expireBoosts: TaskExpireBoosts;
       checkSearchAlerts: TaskCheckSearchAlerts;
       processWebhookEvent: TaskProcessWebhookEvent;
+      reconcilePendingPayments: TaskReconcilePendingPayments;
       inline: {
         input: unknown;
         output: unknown;
@@ -700,7 +701,13 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts' | 'processWebhookEvent';
+        taskSlug:
+          | 'inline'
+          | 'expireListings'
+          | 'expireBoosts'
+          | 'checkSearchAlerts'
+          | 'processWebhookEvent'
+          | 'reconcilePendingPayments';
         taskID: string;
         input?:
           | {
@@ -733,7 +740,16 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts' | 'processWebhookEvent') | null;
+  taskSlug?:
+    | (
+        | 'inline'
+        | 'expireListings'
+        | 'expireBoosts'
+        | 'checkSearchAlerts'
+        | 'processWebhookEvent'
+        | 'reconcilePendingPayments'
+      )
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1408,6 +1424,19 @@ export interface TaskProcessWebhookEvent {
   };
   output: {
     outcome?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReconcilePendingPayments".
+ */
+export interface TaskReconcilePendingPayments {
+  input?: unknown;
+  output: {
+    checked?: number | null;
+    settled?: number | null;
+    expired?: number | null;
+    errors?: number | null;
   };
 }
 /**
