@@ -90,6 +90,19 @@ export const ERROR_CODES = {
 
 	// Seller contact
 	contactPhoneUnavailable: "contact.phoneUnavailable",
+
+	// Shops and stock
+	shopDisabled: "shop.disabled",
+	shopPhoneNotVerified: "shop.phoneNotVerified",
+	shopLimitReached: "shop.limitReached",
+	shopHandleInvalid: "shop.handleInvalid",
+	shopHandleReserved: "shop.handleReserved",
+	shopHandleTaken: "shop.handleTaken",
+	shopHandleCooldown: "shop.handleCooldown",
+	shopNotMember: "shop.notMember",
+	shopInactive: "shop.inactive",
+	shopNotFound: "shop.notFound",
+	stockNegative: "stock.negative",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -169,6 +182,21 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"You can review a user only after contacting them.",
 	[ERROR_CODES.contactPhoneUnavailable]:
 		"This seller has not shared a phone number.",
+
+	[ERROR_CODES.shopDisabled]: "Shops are not available yet.",
+	[ERROR_CODES.shopPhoneNotVerified]:
+		"Verify your phone number to open a shop.",
+	[ERROR_CODES.shopLimitReached]: "You already have a shop.",
+	[ERROR_CODES.shopHandleInvalid]:
+		"Use 3 to 30 lowercase letters, digits or single hyphens.",
+	[ERROR_CODES.shopHandleReserved]: "This address is reserved.",
+	[ERROR_CODES.shopHandleTaken]: "This address is already taken.",
+	[ERROR_CODES.shopHandleCooldown]:
+		"The shop address can change once every 30 days.",
+	[ERROR_CODES.shopNotMember]: "You do not manage this shop.",
+	[ERROR_CODES.shopInactive]: "This shop is not active.",
+	[ERROR_CODES.shopNotFound]: "This shop does not exist.",
+	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {
