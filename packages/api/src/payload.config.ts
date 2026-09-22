@@ -13,11 +13,13 @@ import { Listings } from "./collections/Listings";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
+import { PaymentIntents } from "./collections/PaymentIntents";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
+import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
 import {
 	checkSearchAlertsTask,
@@ -78,6 +80,8 @@ export default buildConfig({
 		Reviews,
 		Reports,
 		BoostPayments,
+		PaymentIntents,
+		WebhookEvents,
 		SavedSearches,
 		BlockedUsers,
 		Tags,

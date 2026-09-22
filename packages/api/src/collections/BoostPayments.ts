@@ -1,5 +1,5 @@
 import type { CollectionConfig } from "payload";
-import { authenticated } from "../access/authenticated";
+import { nobody } from "../access/staff";
 
 export const BoostPayments: CollectionConfig = {
 	slug: "boost-payments",
@@ -27,7 +27,7 @@ export const BoostPayments: CollectionConfig = {
 				},
 			};
 		},
-		create: authenticated,
+		create: nobody,
 		update: ({ req: { user } }) => {
 			if (!user) return false;
 			const userWithRole = user as { role?: string };
@@ -47,10 +47,11 @@ export const BoostPayments: CollectionConfig = {
 			required: true,
 		},
 		{
+			// Nulled when the customer deletes their account; the record is kept.
 			name: "user",
 			type: "relationship",
 			relationTo: "users",
-			required: true,
+			required: false,
 			admin: {
 				readOnly: true,
 			},
@@ -98,6 +99,17 @@ export const BoostPayments: CollectionConfig = {
 		{
 			name: "paymentUrl",
 			type: "text",
+		},
+		{
+			name: "paymentIntent",
+			type: "relationship",
+			relationTo: "payment-intents",
+			admin: { readOnly: true },
+		},
+		{
+			name: "customerDeletedAt",
+			type: "date",
+			admin: { readOnly: true },
 		},
 		{
 			name: "createdAt",

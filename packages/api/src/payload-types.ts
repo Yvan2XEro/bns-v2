@@ -77,6 +77,8 @@ export interface Config {
     reviews: Review;
     reports: Report;
     'boost-payments': BoostPayment;
+    'payment-intents': PaymentIntent;
+    'webhook-events': WebhookEvent;
     'saved-searches': SavedSearch;
     'blocked-users': BlockedUser;
     tags: Tag;
@@ -99,6 +101,8 @@ export interface Config {
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     reports: ReportsSelect<false> | ReportsSelect<true>;
     'boost-payments': BoostPaymentsSelect<false> | BoostPaymentsSelect<true>;
+    'payment-intents': PaymentIntentsSelect<false> | PaymentIntentsSelect<true>;
+    'webhook-events': WebhookEventsSelect<false> | WebhookEventsSelect<true>;
     'saved-searches': SavedSearchesSelect<false> | SavedSearchesSelect<true>;
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -480,15 +484,78 @@ export interface Report {
 export interface BoostPayment {
   id: string;
   listing: string | Listing;
-  user: string | User;
+  user?: (string | null) | User;
   amount: number;
   duration: '7' | '14' | '30';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   paymentProvider: 'notchpay' | 'stripe';
   paymentReference?: string | null;
   paymentUrl?: string | null;
+  paymentIntent?: (string | null) | PaymentIntent;
+  customerDeletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-intents".
+ */
+export interface PaymentIntent {
+  id: string;
+  purpose: 'boost';
+  targetType: 'boost-payment';
+  targetId: string;
+  customer?: (string | null) | User;
+  customerDeletedAt?: string | null;
+  amount: number;
+  currency: string;
+  provider: 'notchpay' | 'stripe';
+  providerReference?: string | null;
+  reference?: string | null;
+  status: 'created' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
+  statusHistory?:
+    | {
+        status: 'created' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired';
+        source: 'webhook' | 'callback' | 'reconcile' | 'system';
+        at: string;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  idempotencyKey: string;
+  checkoutUrl?: string | null;
+  expiresAt?: string | null;
+  settledAmount?: number | null;
+  settledCurrency?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "webhook-events".
+ */
+export interface WebhookEvent {
+  id: string;
+  provider: 'notchpay' | 'stripe';
+  providerEventId: string;
+  type?: string | null;
+  reference?: string | null;
+  payloadHash: string;
+  raw?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  receivedAt: string;
+  processedAt?: string | null;
+  attempts?: number | null;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -726,6 +793,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'boost-payments';
         value: string | BoostPayment;
+      } | null)
+    | ({
+        relationTo: 'payment-intents';
+        value: string | PaymentIntent;
+      } | null)
+    | ({
+        relationTo: 'webhook-events';
+        value: string | WebhookEvent;
       } | null)
     | ({
         relationTo: 'saved-searches';
@@ -1020,8 +1095,61 @@ export interface BoostPaymentsSelect<T extends boolean = true> {
   paymentProvider?: T;
   paymentReference?: T;
   paymentUrl?: T;
+  paymentIntent?: T;
+  customerDeletedAt?: T;
   createdAt?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-intents_select".
+ */
+export interface PaymentIntentsSelect<T extends boolean = true> {
+  purpose?: T;
+  targetType?: T;
+  targetId?: T;
+  customer?: T;
+  customerDeletedAt?: T;
+  amount?: T;
+  currency?: T;
+  provider?: T;
+  providerReference?: T;
+  reference?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        source?: T;
+        at?: T;
+        note?: T;
+        id?: T;
+      };
+  idempotencyKey?: T;
+  checkoutUrl?: T;
+  expiresAt?: T;
+  settledAmount?: T;
+  settledCurrency?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "webhook-events_select".
+ */
+export interface WebhookEventsSelect<T extends boolean = true> {
+  provider?: T;
+  providerEventId?: T;
+  type?: T;
+  reference?: T;
+  payloadHash?: T;
+  raw?: T;
+  receivedAt?: T;
+  processedAt?: T;
+  attempts?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
