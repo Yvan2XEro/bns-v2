@@ -11,8 +11,6 @@ const AFTER_COMMIT_TX = "afterCommitTransactionID";
 
 /** First back-off between body retries; doubled per attempt and jittered. */
 const RETRY_BASE_MS = 25;
-/** Mongo's advice on a lost commit acknowledgement is to retry the commit. */
-const COMMIT_ATTEMPTS = 3;
 
 type TransactionID = number | string;
 
@@ -131,37 +129,38 @@ async function rollback(
 }
 
 /**
- * Commits, retrying only the commit. `UnknownTransactionCommitResult` means the
- * server may already have committed, so the body must never run again and the
- * transaction must never be rolled back from here; `commitTransaction` is
- * idempotent, which is what makes retrying it the documented recovery.
+ * Commits, once. The body must never run again from here and the transaction
+ * must never be rolled back: the writes may already be durable.
+ *
+ * `UnknownTransactionCommitResult` means the server may have committed and only
+ * the acknowledgement was lost. There is no second attempt to make. The driver
+ * has already retried the commit once on the session before surfacing the
+ * label, and this helper cannot reach that session:
+ * `@payloadcms/db-mongodb`'s `commitTransaction` deletes the session from its
+ * registry *before* awaiting `session.commitTransaction()`, so calling it again
+ * with the same id finds nothing and returns as a silent no-op. A retry here
+ * would only pretend to retry, and would turn "unknown" into "committed"
+ * without asking the server. Reaching the `ClientSession` itself would mean
+ * reading the adapter's private `sessions` map and taking over `endSession`.
+ *
+ * So the transaction is treated as committed: the after-commit work runs and
+ * the caller is told it succeeded. Reporting failure instead would send callers
+ * into a re-run of work that has most likely landed, and rolling back is not on
+ * offer. The uncertainty is logged at error level, in those words.
  */
 async function commit(
 	payload: Payload,
 	commitTransaction: (id: TransactionID) => Promise<void>,
 	transactionID: TransactionID,
 ): Promise<void> {
-	for (let attempt = 1; ; attempt++) {
-		try {
-			await commitTransaction(transactionID);
-			return;
-		} catch (error) {
-			if (attempt < COMMIT_ATTEMPTS && isUnknownCommitResult(error)) {
-				await backoff(attempt);
-				continue;
-			}
-			if (isUnknownCommitResult(error)) {
-				// Out of retries with the outcome still unknown. The after-commit
-				// work is skipped: the caller is told the transaction failed, and
-				// a caller that believes that must not also see its side effects.
-				// Re-running the operation republishes them if the writes landed.
-				payload.logger.error(
-					{ err: error, transactionID },
-					"[transaction] commit result still unknown after retries; after-commit work skipped",
-				);
-			}
-			throw error;
-		}
+	try {
+		await commitTransaction(transactionID);
+	} catch (error) {
+		if (!isUnknownCommitResult(error)) throw error;
+		payload.logger.error(
+			{ err: error, transactionID },
+			"[transaction] commit result unknown; the driver has already retried it once, proceeding as if it committed",
+		);
 	}
 }
 

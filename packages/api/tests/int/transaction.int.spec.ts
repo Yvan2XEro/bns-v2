@@ -118,23 +118,33 @@ describe("withTransaction", () => {
 		expect(callback).not.toHaveBeenCalled();
 	});
 
-	it("retries the commit alone when its result is unknown", async () => {
+	it("treats an unknown commit result as committed, without pretending to retry", async () => {
 		const payload = fakePayload();
-		const committed = payload.db.commitTransaction.bind(payload.db);
+		// Mirrors @payloadcms/db-mongodb's commitTransaction: the session leaves
+		// the registry *before* the commit is awaited, so a second call for the
+		// same id finds nothing and returns as a no-op. A retry would only look
+		// like one, which is why there is none.
+		const begin = payload.db.beginTransaction.bind(payload.db);
+		const live = new Set<string>();
+		vi.spyOn(payload.db, "beginTransaction").mockImplementation(async () => {
+			const id = await begin();
+			live.add(id);
+			return id;
+		});
 		let commits = 0;
-		let bodies = 0;
 		vi.spyOn(payload.db, "commitTransaction").mockImplementation(
 			async (id: string) => {
 				commits += 1;
-				if (commits === 1) {
-					throw Object.assign(new Error("commit acknowledgement lost"), {
-						errorLabels: ["UnknownTransactionCommitResult"],
-					});
-				}
-				await committed(id);
+				if (!live.has(id)) return;
+				live.delete(id);
+				throw Object.assign(new Error("commit acknowledgement lost"), {
+					errorLabels: ["UnknownTransactionCommitResult"],
+				});
 			},
 		);
+		const rollback = vi.spyOn(payload.db, "rollbackTransaction");
 		const callback = vi.fn();
+		let bodies = 0;
 
 		const result = await withTransaction(payload, async (req) => {
 			bodies += 1;
@@ -145,34 +155,13 @@ describe("withTransaction", () => {
 
 		expect(result).toBe("done");
 		expect(bodies).toBe(1);
-		expect(commits).toBe(2);
+		expect(commits).toBe(1);
+		expect(rollback).not.toHaveBeenCalled();
 		expect(callback).toHaveBeenCalledTimes(1);
 		expect(payload.store.things).toHaveLength(1);
-	});
-
-	it("gives up on a commit whose result stays unknown, without rolling back", async () => {
-		const payload = fakePayload();
-		const rollback = vi.spyOn(payload.db, "rollbackTransaction");
-		vi.spyOn(payload.db, "commitTransaction").mockRejectedValue(
-			Object.assign(new Error("commit acknowledgement lost"), {
-				errorLabels: ["UnknownTransactionCommitResult"],
-			}),
-		);
-		const callback = vi.fn();
-
-		await expect(
-			withTransaction(payload, async (req) => {
-				onCommit(req, callback);
-			}),
-		).rejects.toThrow("commit acknowledgement lost");
-
-		// The writes may be durable, so undoing them is not an option; the
-		// after-commit work is skipped because the caller is told this failed.
-		expect(rollback).not.toHaveBeenCalled();
-		expect(callback).not.toHaveBeenCalled();
 		expect(payload.logger.error).toHaveBeenCalledWith(
 			expect.objectContaining({ transactionID: expect.any(String) }),
-			expect.stringContaining("still unknown"),
+			expect.stringContaining("proceeding as if it committed"),
 		);
 	});
 
