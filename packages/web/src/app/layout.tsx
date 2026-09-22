@@ -6,6 +6,7 @@ import "./globals.css";
 import { CategoryBar } from "~/components/layout/category-bar";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
+import { QueryProvider } from "~/components/query-provider";
 import {
 	type AppConfig,
 	AppConfigProvider,
@@ -119,16 +120,18 @@ export default async function RootLayout({
 				className={`${dmSans.variable} ${outfit.variable} ${dmSans.className}`}
 			>
 				<NextIntlClientProvider locale={locale} messages={messages}>
-					<AppConfigProvider initialConfig={config}>
-						<AuthProvider>
-							<div className="relative flex min-h-screen flex-col">
-								<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
-								<CategoryBar categories={categories} />
-								<main className="flex-1">{children}</main>
-								<Footer />
-							</div>
-						</AuthProvider>
-					</AppConfigProvider>
+					<QueryProvider>
+						<AppConfigProvider initialConfig={config}>
+							<AuthProvider>
+								<div className="relative flex min-h-screen flex-col">
+									<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
+									<CategoryBar categories={categories} />
+									<main className="flex-1">{children}</main>
+									<Footer />
+								</div>
+							</AuthProvider>
+						</AppConfigProvider>
+					</QueryProvider>
 				</NextIntlClientProvider>
 			</body>
 		</html>
