@@ -111,6 +111,11 @@ jobs:
               printf 'MONGO_USER=%s\n'              '${{ vars.MONGO_USER }}'
               printf 'MONGO_PASSWORD=%s\n'          "${MONGO_PASSWORD}"
               printf 'MONGO_DB=%s\n'                '${{ vars.MONGO_DB }}'
+              # This file is rewritten on every deploy, so the replica-set
+              # switch lives in repository variables, not in the server .env.
+              # Empty MONGO_REPLICA_SET keeps mongod standalone.
+              printf 'MONGO_REPLICA_SET=%s\n'       '${{ vars.MONGO_REPLICA_SET }}'
+              printf 'MONGO_KEYFILE_PATH=%s\n'      '${{ vars.MONGO_KEYFILE_PATH }}'
               printf 'REDIS_PASSWORD=%s\n'          "${REDIS_PASSWORD}"
               printf 'MEILI_MASTER_KEY=%s\n'        "${MEILI_MASTER_KEY}"
               printf 'MEILI_ENV=%s\n'               'production'

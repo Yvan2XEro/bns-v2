@@ -49,3 +49,50 @@ jobs:
 
       - name: Run tests
         run: cd packages/${{ matrix.package }} && bun test
+
+  mongo-transactions:
+    name: Mongo transaction probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Start a single-node replica set and a standalone
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
+          docker run -d --name mongo-standalone -p 27018:27017 mongo:7
+          for i in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval 'db.adminCommand("ping").ok' && break
+            sleep 1
+          done
+          docker exec mongo mongosh --quiet --eval 'rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] })'
+          for i in $(seq 1 30); do
+            docker exec mongo mongosh --quiet --eval 'rs.status().myState' | grep -qx 1 && break
+            sleep 1
+          done
+
+      # Guards the probe itself: without a replica set Payload disables
+      # transactions, so a probe that still passes is proving nothing.
+      - name: The probe must fail against a standalone
+        working-directory: packages/api
+        env:
+          DATABASE_URI: mongodb://localhost:27018/bns-ci
+          PAYLOAD_SECRET: ci-transaction-probe
+        run: |
+          if bun run src/scripts/transactionProbe.ts; then
+            echo "The probe passed without a replica set: it is not proving anything."
+            exit 1
+          fi
+
+      - name: Run the transaction probe
+        working-directory: packages/api
+        env:
+          DATABASE_URI: mongodb://localhost:27017/bns-ci?replicaSet=rs0
+          PAYLOAD_SECRET: ci-transaction-probe
+        run: bun run src/scripts/transactionProbe.ts

@@ -45,3 +45,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # SDD workspaces
 .superpowers/
+
+# MongoDB replica-set key file
+mongo-keyfile
