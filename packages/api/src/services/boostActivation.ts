@@ -38,6 +38,25 @@ export async function activateBoostPayment(
 	if (!listingId)
 		throw new Error(`Boost payment ${boostPaymentId} has no listing`);
 
+	// Claim the purchase before extending the listing: the update applies only
+	// while the purchase is still uncompleted, so two reports racing on a
+	// deployment without transactions cannot extend the same boost twice.
+	const claimed = await payload.update({
+		collection: "boost-payments",
+		where: {
+			and: [
+				{ id: { equals: boostPaymentId } },
+				{ status: { not_equals: "completed" } },
+			],
+		},
+		data: { status: "completed" },
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (claimed.docs.length === 0)
+		return { activated: false, boostedUntil: null };
+
 	const listing = await payload.findByID({
 		collection: "listings",
 		id: listingId,
@@ -56,14 +75,6 @@ export async function activateBoostPayment(
 		overrideAccess: true,
 		req,
 	});
-	await payload.update({
-		collection: "boost-payments",
-		id: boostPaymentId,
-		data: { status: "completed" },
-		depth: 0,
-		overrideAccess: true,
-		req,
-	});
 	return { activated: true, boostedUntil };
 }
 
@@ -73,17 +84,14 @@ export async function failBoostPayment(
 	boostPaymentId: string,
 	req?: TxReq,
 ): Promise<void> {
-	const boost = await payload.findByID({
-		collection: "boost-payments",
-		id: boostPaymentId,
-		depth: 0,
-		overrideAccess: true,
-		req,
-	});
-	if (boost.status !== "pending") return;
 	await payload.update({
 		collection: "boost-payments",
-		id: boostPaymentId,
+		where: {
+			and: [
+				{ id: { equals: boostPaymentId } },
+				{ status: { equals: "pending" } },
+			],
+		},
 		data: { status: "failed" },
 		depth: 0,
 		overrideAccess: true,

@@ -80,6 +80,7 @@ async function findOne(
 	payload: Payload,
 	field: "reference" | "providerReference" | "idempotencyKey",
 	value: string,
+	req?: TxReq,
 ): Promise<IntentDoc | null> {
 	const result = await payload.find({
 		collection: COLLECTION,
@@ -87,6 +88,34 @@ async function findOne(
 		limit: 1,
 		depth: 0,
 		overrideAccess: true,
+		req,
+	});
+	return result.docs[0] ?? null;
+}
+
+/**
+ * Compare-and-swap: the write applies only while the intent still holds the
+ * status it was read with. Without `replicaSet` the settlement runs unwrapped
+ * (see `lib/transactions.ts`), so this is what keeps a webhook and a callback
+ * arriving together from both moving the same intent. Returns null when the
+ * intent moved under us and the caller has to decide again.
+ */
+async function saveIntentIf(
+	payload: Payload,
+	id: string,
+	expectedStatus: IntentStatus,
+	data: Partial<PaymentIntent>,
+	req?: TxReq,
+): Promise<IntentDoc | null> {
+	const result = await payload.update({
+		collection: COLLECTION,
+		where: {
+			and: [{ id: { equals: id } }, { status: { equals: expectedStatus } }],
+		},
+		data,
+		depth: 0,
+		overrideAccess: true,
+		req,
 	});
 	return result.docs[0] ?? null;
 }
@@ -111,7 +140,7 @@ export async function createPaymentIntent(
 			targetId: input.targetId,
 			customer: input.customerId,
 			amount: input.amount,
-			currency: input.currency,
+			currency: input.currency.toUpperCase(),
 			provider: input.provider,
 			idempotencyKey: input.idempotencyKey,
 			status: "created",
@@ -133,8 +162,9 @@ export async function createPaymentIntent(
 export function findIntentByIdempotencyKey(
 	payload: Payload,
 	key: string,
+	req?: TxReq,
 ): Promise<IntentDoc | null> {
-	return findOne(payload, "idempotencyKey", key);
+	return findOne(payload, "idempotencyKey", key, req);
 }
 
 /** Resolves `PI-{id}`, legacy `BOOST-{id}`, then the provider's own id. */
@@ -144,19 +174,20 @@ export async function findIntentByReference(
 		reference,
 		providerReference,
 	}: { reference?: string | null; providerReference?: string | null },
+	req?: TxReq,
 ): Promise<IntentDoc | null> {
 	if (reference?.startsWith("PI-")) {
-		const byId = await loadIntent(payload, reference.slice(3)).catch(
+		const byId = await loadIntent(payload, reference.slice(3), req).catch(
 			() => null,
 		);
 		if (byId) return byId;
 	}
 	if (reference) {
-		const byReference = await findOne(payload, "reference", reference);
+		const byReference = await findOne(payload, "reference", reference, req);
 		if (byReference) return byReference;
 	}
 	if (providerReference)
-		return findOne(payload, "providerReference", providerReference);
+		return findOne(payload, "providerReference", providerReference, req);
 	return null;
 }
 
@@ -175,20 +206,145 @@ export function markIntentPending(
 			providerReference: details.providerReference,
 			checkoutUrl: details.checkoutUrl,
 		};
-		// A fast webhook may already have settled the intent; keep its status.
 		if (transitionPath(intent.status, "pending").length > 0) {
-			data.status = "pending";
-			data.statusHistory = [
-				...(intent.statusHistory ?? []),
+			const moved = await saveIntentIf(
+				payload,
+				intentId,
+				intent.status,
 				{
+					...data,
 					status: "pending",
-					source: "system",
-					at: (details.now ?? new Date()).toISOString(),
+					statusHistory: [
+						...(intent.statusHistory ?? []),
+						{
+							status: "pending",
+							source: "system",
+							at: (details.now ?? new Date()).toISOString(),
+						},
+					],
 				},
-			];
+				req,
+			);
+			if (moved) return moved;
 		}
+		// A fast webhook may already have settled the intent; keep its status and
+		// record only what the provider call told us.
 		return saveIntent(payload, intentId, data, req);
 	});
+}
+
+/** Kept out of `statusHistory`: a customer can read their own intent in full. */
+const MISMATCH_NOTE = "the provider reported a different amount";
+
+async function attemptStatus(
+	payload: Payload,
+	intentId: string,
+	report: StatusReport,
+	req: TxReq,
+): Promise<AppliedOutcome | null> {
+	const intent = await loadIntent(payload, intentId, req);
+	const at = (report.at ?? new Date()).toISOString();
+	const history: HistoryEntry[] = [...(intent.statusHistory ?? [])];
+	const target = report.status;
+	const handler = PURPOSE_HANDLERS[intent.purpose];
+	const path = transitionPath(intent.status, target);
+
+	// Only a report that could actually settle the intent is worth comparing:
+	// on a closed intent the success belongs to the ignored branch below, which
+	// alerts staff instead of writing a settled amount.
+	if (target === "succeeded" && path.length > 0) {
+		const currency = report.currency?.toUpperCase() ?? null;
+		if (report.amount !== intent.amount || currency !== intent.currency) {
+			payload.logger.error({
+				msg: "[payments] provider amount does not match the intent",
+				code: ERROR_CODES.paymentAmountMismatch,
+				intentId,
+				expected: { amount: intent.amount, currency: intent.currency },
+				reported: { amount: report.amount ?? null, currency },
+			});
+			history.push({
+				status: "succeeded",
+				source: report.source,
+				at,
+				note: MISMATCH_NOTE,
+			});
+			const updated = await saveIntentIf(
+				payload,
+				intentId,
+				intent.status,
+				{
+					statusHistory: history,
+					settledAmount: report.amount ?? null,
+					settledCurrency: currency,
+				},
+				req,
+			);
+			return updated ? { outcome: "amount_mismatch", intent: updated } : null;
+		}
+	}
+
+	// Replaying a report re-runs its purpose handler, which is idempotent, so a
+	// crash between the two writes heals on the next report — for a failure as
+	// much as for a success.
+	if (intent.status === target) {
+		if (target === "succeeded") await handler.onSucceeded(payload, intent, req);
+		else if (target !== "created" && target !== "pending")
+			await handler.onFailed(payload, intent, req);
+		return { outcome: "unchanged", intent };
+	}
+
+	if (path.length === 0) {
+		if (target === "succeeded") {
+			payload.logger.error({
+				msg: "[payments] provider reports a success on a closed intent",
+				intentId,
+				status: intent.status,
+			});
+		}
+		history.push({
+			status: target,
+			source: report.source,
+			at,
+			note: `ignored: intent is ${intent.status}`,
+		});
+		const updated = await saveIntentIf(
+			payload,
+			intentId,
+			intent.status,
+			{ statusHistory: history },
+			req,
+		);
+		return updated ? { outcome: "ignored", intent: updated } : null;
+	}
+
+	for (const status of path) {
+		history.push({
+			status,
+			source: report.source,
+			at,
+			note: report.note ?? null,
+		});
+	}
+	const data: Partial<PaymentIntent> = {
+		status: target,
+		statusHistory: history,
+	};
+	if (target === "succeeded") {
+		data.settledAmount = report.amount ?? null;
+		data.settledCurrency = report.currency?.toUpperCase() ?? null;
+	}
+	const updated = await saveIntentIf(
+		payload,
+		intentId,
+		intent.status,
+		data,
+		req,
+	);
+	if (!updated) return null;
+
+	if (target === "succeeded") await handler.onSucceeded(payload, updated, req);
+	else if (target !== "pending") await handler.onFailed(payload, updated, req);
+	return { outcome: "applied", intent: updated };
 }
 
 export function applyStatus(
@@ -197,95 +353,15 @@ export function applyStatus(
 	report: StatusReport,
 ): Promise<AppliedOutcome> {
 	return withTransaction(payload, async (req) => {
-		const intent = await loadIntent(payload, intentId, req);
-		const at = (report.at ?? new Date()).toISOString();
-		const history: HistoryEntry[] = [...(intent.statusHistory ?? [])];
-		const target = report.status;
-		const handler = PURPOSE_HANDLERS[intent.purpose];
-
-		if (target === "succeeded" && intent.status !== "succeeded") {
-			const currency = report.currency?.toUpperCase() ?? null;
-			if (report.amount !== intent.amount || currency !== intent.currency) {
-				payload.logger.error({
-					msg: "[payments] provider amount does not match the intent",
-					code: ERROR_CODES.paymentAmountMismatch,
-					intentId,
-					expected: { amount: intent.amount, currency: intent.currency },
-					reported: { amount: report.amount ?? null, currency },
-				});
-				history.push({
-					status: "succeeded",
-					source: report.source,
-					at,
-					note: ERROR_CODES.paymentAmountMismatch,
-				});
-				const updated = await saveIntent(
-					payload,
-					intentId,
-					{
-						statusHistory: history,
-						settledAmount: report.amount ?? null,
-						settledCurrency: currency,
-					},
-					req,
-				);
-				return { outcome: "amount_mismatch", intent: updated };
-			}
+		// A swap that matched nothing means another report moved the intent
+		// between the read and the write, so the decision is taken again.
+		for (let attempt = 0; attempt < 3; attempt += 1) {
+			const outcome = await attemptStatus(payload, intentId, report, req);
+			if (outcome) return outcome;
 		}
-
-		if (intent.status === target) {
-			if (target === "succeeded")
-				await handler.onSucceeded(payload, intent, req);
-			return { outcome: "unchanged", intent };
-		}
-
-		const path = transitionPath(intent.status, target);
-		if (path.length === 0) {
-			if (target === "succeeded") {
-				payload.logger.error({
-					msg: "[payments] provider reports a success on a closed intent",
-					intentId,
-					status: intent.status,
-				});
-			}
-			history.push({
-				status: target,
-				source: report.source,
-				at,
-				note: `ignored: intent is ${intent.status}`,
-			});
-			const updated = await saveIntent(
-				payload,
-				intentId,
-				{ statusHistory: history },
-				req,
-			);
-			return { outcome: "ignored", intent: updated };
-		}
-
-		for (const status of path) {
-			history.push({
-				status,
-				source: report.source,
-				at,
-				note: report.note ?? null,
-			});
-		}
-		const data: Partial<PaymentIntent> = {
-			status: target,
-			statusHistory: history,
-		};
-		if (target === "succeeded") {
-			data.settledAmount = report.amount ?? null;
-			data.settledCurrency = report.currency?.toUpperCase() ?? null;
-		}
-		const updated = await saveIntent(payload, intentId, data, req);
-
-		if (target === "succeeded")
-			await handler.onSucceeded(payload, updated, req);
-		else if (target !== "pending")
-			await handler.onFailed(payload, updated, req);
-		return { outcome: "applied", intent: updated };
+		throw new Error(
+			`Could not apply status ${report.status} to intent ${intentId}`,
+		);
 	});
 }
 

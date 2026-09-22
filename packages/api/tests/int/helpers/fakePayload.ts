@@ -20,6 +20,7 @@ function matches(doc: Doc, where: unknown): boolean {
 		const value = doc[field];
 		const values = Array.isArray(value) ? value.map(String) : [String(value)];
 		if ("equals" in cond) return values.includes(String(cond.equals));
+		if ("not_equals" in cond) return !values.includes(String(cond.not_equals));
 		if ("in" in cond)
 			return (
 				Array.isArray(cond.in) &&
@@ -49,6 +50,7 @@ interface FindArgs {
 	limit?: number;
 }
 interface WriteArgs extends ByIDArgs {
+	where?: unknown;
 	data: Doc;
 }
 
@@ -129,17 +131,26 @@ export function fakePayload(
 			col(collection).push(doc);
 			return structuredClone(doc);
 		},
-		async update({ collection, id, data }: WriteArgs) {
+		async update({ collection, id, where, data }: WriteArgs) {
+			const apply = (doc: Doc) => {
+				const next: Doc = {
+					...doc,
+					...structuredClone(data),
+					updatedAt: new Date().toISOString(),
+				};
+				checkUnique(collection, next);
+				Object.assign(doc, next);
+				return structuredClone(doc);
+			};
+			// `where` without an id is Payload's bulk update: it returns the
+			// documents it matched, which is what a compare-and-swap reads.
+			if (id === undefined) {
+				const matched = col(collection).filter((doc) => matches(doc, where));
+				return { docs: matched.map(apply), errors: [] };
+			}
 			const doc = byId(collection, id);
 			if (!doc) throw notFound();
-			const next: Doc = {
-				...doc,
-				...structuredClone(data),
-				updatedAt: new Date().toISOString(),
-			};
-			checkUnique(collection, next);
-			Object.assign(doc, next);
-			return structuredClone(doc);
+			return apply(doc);
 		},
 		async delete({ collection, id }: ByIDArgs) {
 			const list = col(collection);
