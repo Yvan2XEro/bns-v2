@@ -15,11 +15,14 @@ import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
 import { PaymentIntents } from "./collections/PaymentIntents";
+import { Products } from "./collections/Products";
+import { ProductVariants } from "./collections/ProductVariants";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
 import { ShopMembers } from "./collections/ShopMembers";
 import { Shops } from "./collections/Shops";
+import { StockMovements } from "./collections/StockMovements";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
 import { WebhookEvents } from "./collections/WebhookEvents";
@@ -95,6 +98,9 @@ export default buildConfig({
 		ModerationLog,
 		Shops,
 		ShopMembers,
+		Products,
+		ProductVariants,
+		StockMovements,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),

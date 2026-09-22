@@ -2,18 +2,39 @@ import { APIError, type CollectionConfig, type Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
+import { resolveShopRole, shopField } from "../access/shopRoles";
 import {
 	assertNotSuspended,
 	type SuspensionCheckable,
 } from "../hooks/suspensionGuard";
 import { validateListingAttributes } from "../hooks/validation";
+import { ERROR_CODES } from "../lib/errors";
 import { getListingFormPreset } from "../lib/listingFormPreset";
+import { relationId } from "../lib/relationId";
+import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
 
 /** Maximum number of images a listing can carry. */
 const MAX_LISTING_IMAGES = 3;
+
+/** Owned by services/products.ts on a product listing; pinned against every other writer. */
+export const PRODUCT_DERIVED_FIELDS = [
+	"title",
+	"description",
+	"images",
+	"price",
+	"category",
+	"attributes",
+	"condition",
+	"location",
+	"status",
+	"expiresAt",
+	"shop",
+	"product",
+	"productSummary",
+] as const;
 
 const getRelationshipId = (value: unknown): string | null => {
 	if (typeof value === "string" && value.length > 0) return value;
@@ -133,12 +154,80 @@ export const Listings: CollectionConfig = {
 					);
 				}
 
+				const productService = req.context?.productService === true;
+				const moderationWrite = req.context?.moderationAction === true;
+
+				if (!productService) {
+					if (relationId(originalDoc?.product) && !moderationWrite) {
+						for (const field of PRODUCT_DERIVED_FIELDS) {
+							data[field] = originalDoc?.[field];
+						}
+					} else {
+						data.product = originalDoc?.product ?? null;
+						data.productSummary = originalDoc?.productSummary ?? null;
+					}
+				}
+
+				const nextShop = relationId(data.shop);
+				if (
+					nextShop &&
+					nextShop !== relationId(originalDoc?.shop) &&
+					!moderationWrite &&
+					!productService
+				) {
+					const role = req.user
+						? await resolveShopRole(
+								req.payload,
+								String(req.user.id),
+								nextShop,
+								req.context,
+							)
+						: null;
+					if (!role) throw new CodedAPIError(ERROR_CODES.shopNotMember, 403);
+					const shop = await req.payload
+						.findByID({
+							collection: "shops",
+							id: nextShop,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null);
+					if (shop?.status !== "active") {
+						throw new CodedAPIError(ERROR_CODES.shopInactive, 409);
+					}
+				}
+
+				const nextProduct = relationId(data.product);
+				if (nextProduct && nextProduct !== relationId(originalDoc?.product)) {
+					const product = await req.payload
+						.findByID({
+							collection: "products",
+							id: nextProduct,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null);
+					if (!product) {
+						throw new APIError("The product does not exist.", 400);
+					}
+					if (!nextShop || relationId(product.shop) !== nextShop) {
+						throw new APIError(
+							"A listing cannot carry a product from another shop.",
+							400,
+						);
+					}
+				}
+
+				const isProductListing = productService || Boolean(nextProduct);
+
 				// Cap the image count without stranding listings created before the
 				// limit existed: reject only when this write would *increase* the
 				// count past the maximum. Legacy listings stay editable, their owners
 				// can still delete images, and system writes that merely carry the
 				// existing array through are unaffected.
-				if (Array.isArray(data.images)) {
+				if (Array.isArray(data.images) && !isProductListing) {
 					const previous = Array.isArray(originalDoc?.images)
 						? originalDoc.images.length
 						: 0;
@@ -224,19 +313,25 @@ export const Listings: CollectionConfig = {
 
 				if (operation === "create") {
 					data.seller = req.user?.id;
-					if (data.status === "published") {
-						data.status = "pending";
+					if (productService) {
+						// Product listings mirror their product and never expire.
+						data.expiresAt = null;
+						data.duration = undefined;
+					} else {
+						if (data.status === "published") {
+							data.status = "pending";
+						}
+						// Set expiry date based on duration (default 30 days)
+						const durationDays =
+							data.duration && [30, 60, 90].includes(Number(data.duration))
+								? Number(data.duration)
+								: 30;
+						const expiresAt = new Date();
+						expiresAt.setDate(expiresAt.getDate() + durationDays);
+						data.expiresAt = expiresAt.toISOString();
+						// Remove duration from data as it's not a persisted field
+						data.duration = undefined;
 					}
-					// Set expiry date based on duration (default 30 days)
-					const durationDays =
-						data.duration && [30, 60, 90].includes(Number(data.duration))
-							? Number(data.duration)
-							: 30;
-					const expiresAt = new Date();
-					expiresAt.setDate(expiresAt.getDate() + durationDays);
-					data.expiresAt = expiresAt.toISOString();
-					// Remove duration from data as it's not a persisted field
-					data.duration = undefined;
 				}
 
 				// Only enforce status restrictions when the status is actually changing.
@@ -245,6 +340,7 @@ export const Listings: CollectionConfig = {
 				// "published" status and incorrectly reset it to "pending".
 				if (
 					operation === "update" &&
+					!productService &&
 					data.status !== undefined &&
 					data.status !== originalDoc?.status
 				) {
@@ -271,6 +367,9 @@ export const Listings: CollectionConfig = {
 						operation === "create" ? "listing.created" : "listing.updated";
 					await queueSearchEvent(req, event, doc.id as string);
 				}
+
+				// Product publication is the seller's own action, not a moderation decision.
+				if (req.context?.productService === true) return;
 
 				if (!isNotificationProviderConfigured()) return;
 				if (operation !== "update") return;
@@ -485,6 +584,30 @@ export const Listings: CollectionConfig = {
 			// biome-ignore lint/suspicious/noExplicitAny: tags collection not yet in generated types
 			relationTo: "tags" as any,
 			hasMany: true,
+		},
+		shopField({ picker: false }),
+		{
+			name: "product",
+			type: "relationship",
+			relationTo: "products",
+			index: true,
+			admin: { readOnly: true },
+		},
+		{
+			name: "productSummary",
+			type: "group",
+			admin: {
+				readOnly: true,
+				description:
+					"Derived from the product's variants by the product service.",
+			},
+			fields: [
+				{ name: "priceMin", type: "number" },
+				{ name: "priceMax", type: "number" },
+				{ name: "available", type: "number" },
+				{ name: "variantCount", type: "number" },
+				{ name: "trackInventory", type: "checkbox" },
+			],
 		},
 		{
 			name: "createdAt",

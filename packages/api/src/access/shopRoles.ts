@@ -6,6 +6,7 @@ import type {
 	Where,
 } from "payload";
 import { relationId } from "../lib/relationId";
+import { isModerator } from "./roles";
 
 export const SHOP_ROLES = ["owner", "manager", "staff"] as const;
 export type ShopRole = (typeof SHOP_ROLES)[number];
@@ -116,20 +117,48 @@ export function withShopAccess(
 }
 
 /**
+ * Read access for a shop-owned collection: staff read everything, a member
+ * reads every row of their shops on top of whatever `base` exposes publicly.
+ * The union twin of `withShopAccess`, which intersects — both exist so no
+ * collection repeats the member-scoping `where`.
+ */
+export function shopScopedRead(base: Access, fieldName = "shop"): Access {
+	return async (args) => {
+		if (isModerator(args.req.user)) return true;
+		const result = await base(args);
+		if (result === true) return true;
+		if (!relationId(args.req.user)) return result;
+		const scope = {
+			[fieldName]: { in: await memberShopIds(args.req) },
+		} as Where;
+		return result === false ? scope : ({ or: [result, scope] } as Where);
+	};
+}
+
+/**
  * The one `shop` relationship definition. `filterOptions` scopes the admin
  * picker to the caller's shops; access control stays in `withShopAccess`.
+ *
+ * `picker: false` drops `filterOptions`: Payload validates it on every write,
+ * so a collection a service writes on behalf of someone who is not a member
+ * (moderation, a buyer's order) cannot carry it.
  */
 export function shopField(
-	overrides: { name?: string; required?: boolean } = {},
+	overrides: { name?: string; required?: boolean; picker?: boolean } = {},
 ): RelationshipField {
+	const { picker = true, ...rest } = overrides;
 	return {
 		name: "shop",
 		type: "relationship",
 		relationTo: "shops",
 		index: true,
-		filterOptions: async ({ req }) => ({
-			id: { in: await memberShopIds(req) },
-		}),
-		...overrides,
+		...(picker
+			? {
+					filterOptions: async ({ req }: { req: PayloadRequest }) => ({
+						id: { in: await memberShopIds(req) },
+					}),
+				}
+			: {}),
+		...rest,
 	};
 }

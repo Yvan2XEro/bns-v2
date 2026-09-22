@@ -86,6 +86,9 @@ export interface Config {
     'moderation-log': ModerationLog;
     shops: Shop;
     'shop-members': ShopMember;
+    products: Product;
+    'product-variants': ProductVariant;
+    'stock-movements': StockMovement;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -113,6 +116,9 @@ export interface Config {
     'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
     shops: ShopsSelect<false> | ShopsSelect<true>;
     'shop-members': ShopMembersSelect<false> | ShopMembersSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
+    'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -317,6 +323,18 @@ export interface Listing {
   rejectionReason?: string | null;
   condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   tags?: (string | Tag)[] | null;
+  shop?: (string | null) | Shop;
+  product?: (string | null) | Product;
+  /**
+   * Derived from the product's variants by the product service.
+   */
+  productSummary?: {
+    priceMin?: number | null;
+    priceMax?: number | null;
+    available?: number | null;
+    variantCount?: number | null;
+    trackInventory?: boolean | null;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -415,6 +433,98 @@ export interface Tag {
    * Optional emoji to display with the tag (e.g. 🤝)
    */
   emoji?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops".
+ */
+export interface Shop {
+  id: string;
+  handle: string;
+  previousHandles?:
+    | {
+        handle: string;
+        until: string;
+        id?: string | null;
+      }[]
+    | null;
+  handleChangedAt?: string | null;
+  name: string;
+  description?: string | null;
+  logo?: (string | null) | Media;
+  banner?: (string | null) | Media;
+  contact?: {
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+  };
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    countryCode?: string | null;
+  };
+  categories?: (string | Category)[] | null;
+  owner: string | User;
+  status: 'active' | 'suspended' | 'closed';
+  level?: number | null;
+  closedAt?: string | null;
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
+  publishedListingCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  shop: string | Shop;
+  title: string;
+  description?: string | null;
+  category: string | Category;
+  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
+  attributes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  images?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  status: 'draft' | 'active' | 'archived';
+  options?:
+    | {
+        name: string;
+        values: string[];
+        id?: string | null;
+      }[]
+    | null;
+  delivery?: {
+    handlingHours?: number | null;
+    weightGrams?: number | null;
+    codAllowed?: boolean | null;
+    pickupAllowed?: boolean | null;
+  };
+  returnPolicy?: string | null;
+  /**
+   * The published listing, written by the product service.
+   */
+  listing?: (string | null) | Listing;
   updatedAt: string;
   createdAt: string;
 }
@@ -655,50 +765,6 @@ export interface ModerationLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shops".
- */
-export interface Shop {
-  id: string;
-  handle: string;
-  previousHandles?:
-    | {
-        handle: string;
-        until: string;
-        id?: string | null;
-      }[]
-    | null;
-  handleChangedAt?: string | null;
-  name: string;
-  description?: string | null;
-  logo?: (string | null) | Media;
-  banner?: (string | null) | Media;
-  contact?: {
-    phone?: string | null;
-    whatsapp?: string | null;
-    email?: string | null;
-  };
-  location?: {
-    city?: string | null;
-    region?: string | null;
-    country?: string | null;
-    countryCode?: string | null;
-  };
-  categories?: (string | Category)[] | null;
-  owner: string | User;
-  status: 'active' | 'suspended' | 'closed';
-  level?: number | null;
-  closedAt?: string | null;
-  suspendedAt?: string | null;
-  suspendedUntil?: string | null;
-  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
-  suspendedNote?: string | null;
-  suspendedBy?: (string | null) | User;
-  publishedListingCount?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "shop-members".
  */
 export interface ShopMember {
@@ -707,6 +773,56 @@ export interface ShopMember {
   user: string | User;
   role: 'owner' | 'manager' | 'staff';
   status: 'active' | 'revoked';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants".
+ */
+export interface ProductVariant {
+  id: string;
+  product: string | Product;
+  shop: string | Shop;
+  optionValues?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sku?: string | null;
+  price: number;
+  cost?: number | null;
+  trackInventory?: boolean | null;
+  stockOnHand?: number | null;
+  stockReserved?: number | null;
+  lowStockThreshold?: number | null;
+  /**
+   * Set when the variant is removed from its product; movements are kept.
+   */
+  archivedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements".
+ */
+export interface StockMovement {
+  id: string;
+  variant: string | ProductVariant;
+  product?: (string | null) | Product;
+  shop: string | Shop;
+  type: 'receipt' | 'adjustment' | 'loss' | 'return' | 'sale' | 'reservation' | 'release';
+  quantity: number;
+  unitCost?: number | null;
+  stockAfter: number;
+  note?: string | null;
+  actor?: (string | null) | User;
+  orderRef?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -925,6 +1041,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'shop-members';
         value: string | ShopMember;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: string | Product;
+      } | null)
+    | ({
+        relationTo: 'product-variants';
+        value: string | ProductVariant;
+      } | null)
+    | ({
+        relationTo: 'stock-movements';
+        value: string | StockMovement;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1080,6 +1208,17 @@ export interface ListingsSelect<T extends boolean = true> {
   rejectionReason?: T;
   condition?: T;
   tags?: T;
+  shop?: T;
+  product?: T;
+  productSummary?:
+    | T
+    | {
+        priceMin?: T;
+        priceMax?: T;
+        available?: T;
+        variantCount?: T;
+        trackInventory?: T;
+      };
   createdAt?: T;
   updatedAt?: T;
 }
@@ -1382,6 +1521,81 @@ export interface ShopMembersSelect<T extends boolean = true> {
   user?: T;
   role?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  shop?: T;
+  title?: T;
+  description?: T;
+  category?: T;
+  condition?: T;
+  attributes?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  status?: T;
+  options?:
+    | T
+    | {
+        name?: T;
+        values?: T;
+        id?: T;
+      };
+  delivery?:
+    | T
+    | {
+        handlingHours?: T;
+        weightGrams?: T;
+        codAllowed?: T;
+        pickupAllowed?: T;
+      };
+  returnPolicy?: T;
+  listing?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants_select".
+ */
+export interface ProductVariantsSelect<T extends boolean = true> {
+  product?: T;
+  shop?: T;
+  optionValues?: T;
+  sku?: T;
+  price?: T;
+  cost?: T;
+  trackInventory?: T;
+  stockOnHand?: T;
+  stockReserved?: T;
+  lowStockThreshold?: T;
+  archivedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements_select".
+ */
+export interface StockMovementsSelect<T extends boolean = true> {
+  variant?: T;
+  product?: T;
+  shop?: T;
+  type?: T;
+  quantity?: T;
+  unitCost?: T;
+  stockAfter?: T;
+  note?: T;
+  actor?: T;
+  orderRef?: T;
   updatedAt?: T;
   createdAt?: T;
 }
