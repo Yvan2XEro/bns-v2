@@ -57,6 +57,16 @@ export const ERROR_CODES = {
 	uploadInvalidType: "upload.invalidType",
 
 	contactIncomplete: "contact.incomplete",
+	contactPhoneUnavailable: "contact.phoneUnavailable",
+
+	paymentProviderUnavailable: "payment.providerUnavailable",
+	boostNotOwner: "boost.notOwner",
+	boostListingNotPublished: "boost.listingNotPublished",
+	boostInvalidDuration: "boost.invalidDuration",
+
+	reviewSelf: "review.self",
+	reviewDuplicate: "review.duplicate",
+	reviewNoInteraction: "review.noInteraction",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -104,6 +114,18 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.uploadTooLarge]: "This file is too large.",
 	[ERROR_CODES.uploadInvalidType]: "This file type is not supported.",
 	[ERROR_CODES.contactIncomplete]: "Please fill in every field.",
+	[ERROR_CODES.contactPhoneUnavailable]:
+		"This seller has not shared a phone number.",
+	[ERROR_CODES.paymentProviderUnavailable]:
+		"Payment is unavailable right now. Please try again later.",
+	[ERROR_CODES.boostNotOwner]: "You can only boost your own listings.",
+	[ERROR_CODES.boostListingNotPublished]:
+		"Only published listings can be boosted.",
+	[ERROR_CODES.boostInvalidDuration]: "This boost duration is not available.",
+	[ERROR_CODES.reviewSelf]: "You cannot review yourself.",
+	[ERROR_CODES.reviewDuplicate]: "You have already reviewed this user.",
+	[ERROR_CODES.reviewNoInteraction]:
+		"You can review a user only after contacting them.",
 };
 
 export function fallbackFor(code: string): string {
@@ -176,9 +198,16 @@ export function normalizeApiError(
 	// are searched, innermost first.
 	if (Array.isArray(b.errors) && b.errors.length > 0) {
 		const first = b.errors[0] as {
-			data?: { errors?: Array<{ message?: unknown }> };
+			data?: { code?: unknown; errors?: Array<{ message?: unknown }> };
 			message?: unknown;
 		};
+
+		// Our collection hooks throw APIError with `data.code`; Payload passes
+		// `data` through untouched, so the code survives the REST layer.
+		const dataCode = first?.data?.code;
+		if (typeof dataCode === "string" && dataCode in FALLBACKS) {
+			return { code: dataCode, message: fallbackFor(dataCode) };
+		}
 
 		const nested = first?.data?.errors;
 		const nestedText =
