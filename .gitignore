@@ -42,3 +42,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.apk
 *.aab
 *.service.json
+
+# SDD workspaces
+.superpowers/
