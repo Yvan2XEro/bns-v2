@@ -1,130 +1,141 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// @vitest-environment node
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { fakePayload } from "./helpers/fakePayload";
 
-const authMock = vi.fn();
-const findByIDMock = vi.fn();
-const findMock = vi.fn();
-const updateMock = vi.fn();
 const getPayloadMock = vi.fn();
 const verifyPaymentMock = vi.fn();
 
-vi.mock("@payload-config", () => ({
-	default: {},
-}));
-
+vi.mock("@payload-config", () => ({ default: {} }));
 vi.mock("payload", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("payload")>();
-
-	return {
-		...actual,
-		getPayload: getPayloadMock,
-	};
+	return { ...actual, getPayload: getPayloadMock };
 });
-
 vi.mock("../../src/lib/payments", () => ({
-	getNotchPayProvider: () => ({
-		verifyPayment: verifyPaymentMock,
-	}),
+	getProvider: () => ({ verifyPayment: verifyPaymentMock }),
 }));
 
+let GET: (request: Request) => Promise<Response>;
+
+beforeAll(async () => {
+	({ GET } = await import(
+		"../../src/app/(frontend)/api/public/boost/callback/route"
+	));
+}, 30_000);
+
+const verified = (status: string, amount = 900) => ({
+	reference: "PI-pi-1",
+	status,
+	amount,
+	currency: "XAF",
+	providerTransactionId: "trx.1",
+});
+
+const callback = (query: string) =>
+	GET(new Request(`http://localhost:3000/api/public/boost/callback?${query}`));
+
 describe("boost callback route", () => {
+	let payload: ReturnType<typeof fakePayload>;
+
 	beforeEach(() => {
-		authMock.mockReset();
-		findByIDMock.mockReset();
-		findMock.mockReset();
-		updateMock.mockReset();
-		getPayloadMock.mockReset();
-		verifyPaymentMock.mockReset();
-
-		getPayloadMock.mockResolvedValue({
-			auth: authMock,
-			findByID: findByIDMock,
-			find: findMock,
-			update: updateMock,
-		});
-
 		process.env.PUBLIC_WEB_URL = "https://buynsellem.com";
+		verifyPaymentMock.mockReset();
+		payload = fakePayload({
+			listings: [{ id: "l-1", status: "published", boostedUntil: null }],
+			"boost-payments": [
+				{ id: "bp-1", listing: "l-1", duration: "14", status: "pending" },
+			],
+			"payment-intents": [
+				{
+					id: "pi-1",
+					purpose: "boost",
+					targetId: "bp-1",
+					amount: 900,
+					currency: "XAF",
+					status: "pending",
+					reference: "PI-pi-1",
+					providerReference: "trx.1",
+					statusHistory: [],
+				},
+			],
+		});
+		getPayloadMock.mockResolvedValue(payload);
 	});
 
-	it("activates boost via trxref when provider reference is returned in callback", async () => {
-		verifyPaymentMock.mockResolvedValue({
-			reference: "",
+	it("settles a verified payment with source callback and redirects with success", async () => {
+		verifyPaymentMock.mockResolvedValue(verified("succeeded"));
+		const response = await callback(
+			"provider=notchpay&reference=trx.1&trxref=PI-pi-1&listingId=l-1",
+		);
+
+		expect(verifyPaymentMock).toHaveBeenCalledWith("trx.1");
+		expect(
+			payload.store["payment-intents"][0].statusHistory.at(-1),
+		).toMatchObject({
 			status: "succeeded",
-			amount: 900,
-			currency: "XAF",
-			providerTransactionId: "trx.123456",
+			source: "callback",
 		});
-		findByIDMock
-			.mockResolvedValueOnce({
-				id: "payment-1",
-				status: "pending",
-				duration: "14",
-				listing: "listing-1",
-			})
-			.mockResolvedValueOnce({
-				id: "listing-1",
-				boostedUntil: null,
-			});
-
-		const { GET } = await import(
-			"../../src/app/(frontend)/api/public/boost/callback/route"
-		);
-
-		const response = await GET(
-			new Request(
-				"http://localhost:3000/api/public/boost/callback?provider=notchpay&reference=trx.123456&trxref=BOOST-payment-1&listingId=listing-1",
-			),
-		);
-
-		expect(verifyPaymentMock).toHaveBeenCalledWith("trx.123456");
-		expect(findByIDMock).toHaveBeenCalledWith({
-			collection: "boost-payments",
-			id: "payment-1",
-		});
-		expect(updateMock).toHaveBeenNthCalledWith(1, {
-			collection: "listings",
-			id: "listing-1",
-			data: {
-				boostedUntil: expect.any(String),
-			},
-		});
-		expect(updateMock).toHaveBeenNthCalledWith(2, {
-			collection: "boost-payments",
-			id: "payment-1",
-			data: { status: "completed" },
-		});
+		expect(payload.store["boost-payments"][0].status).toBe("completed");
 		expect(response.status).toBe(302);
-		expect(response.headers.get("location")).toContain(
-			"https://buynsellem.com/listing/listing-1?boostStatus=success",
+		expect(response.headers.get("location")).toBe(
+			"https://buynsellem.com/listing/l-1?boostStatus=success",
 		);
 	});
 
-	it("returns failed when payment is completed but boost activation cannot resolve the payment", async () => {
+	it("does not boost twice when the webhook already settled the intent", async () => {
+		verifyPaymentMock.mockResolvedValue(verified("succeeded"));
+		await callback("provider=notchpay&reference=trx.1&listingId=l-1");
+		const boosted = payload.store.listings[0].boostedUntil;
+
+		const response = await callback(
+			"provider=notchpay&reference=trx.1&listingId=l-1",
+		);
+		expect(payload.store.listings[0].boostedUntil).toBe(boosted);
+		expect(response.headers.get("location")).toContain("boostStatus=success");
+	});
+
+	it("reports pending while the provider has not confirmed", async () => {
+		verifyPaymentMock.mockResolvedValue(verified("pending"));
+		const response = await callback(
+			"provider=notchpay&reference=trx.1&listingId=l-1",
+		);
+		expect(response.headers.get("location")).toContain("boostStatus=pending");
+	});
+
+	it("reports pending on an amount mismatch and failed on an unknown reference", async () => {
+		verifyPaymentMock.mockResolvedValue(verified("succeeded", 100));
+		expect(
+			(
+				await callback("provider=notchpay&reference=trx.1&listingId=l-1")
+			).headers.get("location"),
+		).toContain("boostStatus=pending");
+
 		verifyPaymentMock.mockResolvedValue({
-			reference: "",
-			status: "succeeded",
-			amount: 900,
-			currency: "XAF",
-			providerTransactionId: "trx.123456",
+			...verified("succeeded"),
+			reference: "PI-nope",
+			providerTransactionId: "trx.nope",
 		});
-		findByIDMock.mockResolvedValueOnce(null);
-		findMock.mockResolvedValue({
-			docs: [],
-		});
+		expect(
+			(
+				await callback("provider=notchpay&reference=trx.nope&listingId=l-1")
+			).headers.get("location"),
+		).toContain("boostStatus=failed");
+	});
 
-		const { GET } = await import(
-			"../../src/app/(frontend)/api/public/boost/callback/route"
+	it("reports failed when verification throws", async () => {
+		verifyPaymentMock.mockRejectedValue(new Error("NotchPay verify (503)"));
+		const response = await callback(
+			"provider=notchpay&reference=trx.1&listingId=l-1",
 		);
+		expect(response.headers.get("location")).toContain("boostStatus=failed");
+	});
 
-		const response = await GET(
-			new Request(
-				"http://localhost:3000/api/public/boost/callback?provider=notchpay&reference=trx.404&listingId=listing-404",
-			),
+	it("returns to the app through the deep link", async () => {
+		verifyPaymentMock.mockResolvedValue(verified("succeeded"));
+		const response = await callback(
+			"provider=notchpay&reference=trx.1&listingId=l-1&appReturnUrl=buynsellem%3A%2F%2Fboost%2Fcallback",
 		);
-
-		expect(updateMock).not.toHaveBeenCalled();
-		expect(response.status).toBe(302);
-		expect(response.headers.get("location")).toContain(
-			"https://buynsellem.com/listing/listing-404?boostStatus=failed",
+		expect(await response.text()).toContain(
+			"buynsellem://boost/callback?status=success&listingId=l-1",
 		);
 	});
 });
