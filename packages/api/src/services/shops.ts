@@ -292,11 +292,13 @@ export async function createShop(
 }
 
 /**
- * Only the owner or a manager may move a shop's handle, and only once the
- * cooldown from the shop's own `handleChangedAt` has elapsed. The old handle
- * is kept in `previousHandles` for `PREVIOUS_HANDLE_TTL_DAYS` so links people
- * already shared keep resolving; `checkHandleAvailability` refuses a handle
- * still held there by another shop.
+ * Owner only — matching the shop-close rule and the P3 team design, which
+ * keeps this endpoint owner-only once managers exist
+ * (docs/superpowers/specs/2026-09-15-p3-team-design.md:123). Also gated by
+ * the cooldown from the shop's own `handleChangedAt`. The old handle is kept
+ * in `previousHandles` for `PREVIOUS_HANDLE_TTL_DAYS` so links people already
+ * shared keep resolving; `checkHandleAvailability` refuses a handle still
+ * held there by another shop.
  */
 export async function changeShopHandle(
 	payload: Payload,
@@ -306,7 +308,7 @@ export async function changeShopHandle(
 	now: Date = new Date(),
 ): Promise<{ shop: PublicShop; nextHandleChangeAt: string }> {
 	const { shop } = await requireShopMember(payload, user, shopId, {
-		manage: true,
+		owner: true,
 		writable: true,
 	});
 

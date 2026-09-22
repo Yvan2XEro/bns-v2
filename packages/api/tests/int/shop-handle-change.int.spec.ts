@@ -15,6 +15,7 @@ function seed(shop: Record<string, unknown> = {}) {
 			users: [
 				{ id: "u-1", name: "Aïcha", createdAt: iso(-400) },
 				{ id: "u-2", name: "Other" },
+				{ id: "u-3", name: "Manager" },
 			],
 			shops: [
 				{
@@ -50,6 +51,13 @@ function seed(shop: Record<string, unknown> = {}) {
 					shop: "s-2",
 					user: "u-2",
 					role: "owner",
+					status: "active",
+				},
+				{
+					id: "m-3",
+					shop: "s-1",
+					user: "u-3",
+					role: "manager",
 					status: "active",
 				},
 			],
@@ -150,6 +158,24 @@ describe("changeShopHandle", () => {
 		await expect(
 			changeShopHandle(seed(), { id: "u-2" }, "s-1", "fresh", NOW),
 		).rejects.toMatchObject({ code: "shop.notMember" });
+	});
+
+	it("refuses a manager with the same code as a non-member", async () => {
+		await expect(
+			changeShopHandle(seed(), { id: "u-3" }, "s-1", "fresh", NOW),
+		).rejects.toMatchObject({ code: "shop.notMember", status: 403 });
+	});
+
+	it("refuses the current handle unchanged", async () => {
+		await expect(
+			changeShopHandle(seed(), U1, "s-1", "akwatech", NOW),
+		).rejects.toMatchObject({ code: "generic.validation", status: 400 });
+	});
+
+	it("refuses a differently-spelled variant that normalises to the current handle", async () => {
+		await expect(
+			changeShopHandle(seed(), U1, "s-1", "@Akwatech", NOW),
+		).rejects.toMatchObject({ code: "generic.validation", status: 400 });
 	});
 
 	it("lets a shop take back its own previous handle and drops that entry", async () => {

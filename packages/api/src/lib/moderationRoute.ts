@@ -31,18 +31,7 @@ export async function requireModerator(
 	};
 }
 
-export async function readJson(
-	request: Request,
-): Promise<Record<string, unknown>> {
-	try {
-		const body = await request.json();
-		return body && typeof body === "object"
-			? (body as Record<string, unknown>)
-			: {};
-	} catch {
-		return {};
-	}
-}
+export { readJsonBody as readJson } from "./readJsonBody";
 
 /**
  * Business failures keep their code so the clients can translate them;

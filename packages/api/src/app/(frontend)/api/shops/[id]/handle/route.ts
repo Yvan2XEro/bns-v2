@@ -5,6 +5,7 @@ import { changeShopHandle } from "@/services/shops";
 
 const paramsSchema = z.object({ id: z.string().trim().min(1) });
 
+/** Owner only; `changeShopHandle` enforces it. */
 export async function POST(
 	request: Request,
 	{ params }: { params: Promise<{ id: string }> },
