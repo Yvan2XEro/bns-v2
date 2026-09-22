@@ -157,6 +157,22 @@ describe("processWebhookEvent", () => {
 		expect(payload.store["webhook-events"][0].processedAt).toBeUndefined();
 	});
 
+	it("marks an unknown reference processed instead of retrying forever", async () => {
+		const payload = fakePayload(
+			{},
+			{ uniques: { "webhook-events": [["provider", "providerEventId"]] } },
+		);
+		const { id } = await record(payload);
+
+		expect(await processWebhookEvent(payload, id, deps)).toEqual({
+			outcome: "unknown_reference",
+		});
+		expect(payload.logger.warn).toHaveBeenCalled();
+		expect(payload.store["webhook-events"][0].processedAt).toEqual(
+			expect.any(String),
+		);
+	});
+
 	it("is retried up to five times with backoff", () => {
 		expect(processWebhookEventTask.retries).toMatchObject({
 			attempts: 5,

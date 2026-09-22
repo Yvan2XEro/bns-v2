@@ -135,6 +135,15 @@ describe("payment webhook routes", () => {
 		expect((await notchpayPOST(notchRequest(validSignature))).status).toBe(500);
 	});
 
+	it("answers 500 when the stored event cannot be queued", async () => {
+		payload.jobs.queue.mockRejectedValueOnce(new Error("queue is down"));
+
+		const response = await notchpayPOST(notchRequest(validSignature));
+
+		expect(response.status).toBe(500);
+		expect(payload.store["webhook-events"]).toHaveLength(1);
+	});
+
 	it("stores a signed Stripe event", async () => {
 		const body = JSON.stringify({
 			id: "evt_stripe_1",
