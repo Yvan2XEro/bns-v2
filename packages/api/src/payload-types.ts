@@ -135,6 +135,7 @@ export interface Config {
       expireListings: TaskExpireListings;
       expireBoosts: TaskExpireBoosts;
       checkSearchAlerts: TaskCheckSearchAlerts;
+      processWebhookEvent: TaskProcessWebhookEvent;
       inline: {
         input: unknown;
         output: unknown;
@@ -699,7 +700,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts';
+        taskSlug: 'inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts' | 'processWebhookEvent';
         taskID: string;
         input?:
           | {
@@ -732,7 +733,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts') | null;
+  taskSlug?: ('inline' | 'expireListings' | 'expireBoosts' | 'checkSearchAlerts' | 'processWebhookEvent') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1396,6 +1397,18 @@ export interface TaskExpireBoosts {
 export interface TaskCheckSearchAlerts {
   input?: unknown;
   output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessWebhookEvent".
+ */
+export interface TaskProcessWebhookEvent {
+  input: {
+    eventId: string;
+  };
+  output: {
+    outcome?: string | null;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -25,6 +25,7 @@ import {
 	checkSearchAlertsTask,
 	expireBoostsTask,
 	expireListingsTask,
+	processWebhookEventTask,
 } from "./jobs";
 import { migrations } from "./migrations";
 import { buildStoragePlugin } from "./plugins/storage";
@@ -104,10 +105,16 @@ export default buildConfig({
 	plugins: storagePlugin ? [storagePlugin] : [],
 	cors: ["*", ...(process.env.PAYLOAD_ALLOWED_ORIGINS?.split(",") || [])],
 	jobs: {
-		tasks: [expireListingsTask, expireBoostsTask, checkSearchAlertsTask],
+		tasks: [
+			expireListingsTask,
+			expireBoostsTask,
+			checkSearchAlertsTask,
+			processWebhookEventTask,
+		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
 			{ cron: "0 */6 * * *", queue: "nightly", limit: 10 },
+			{ cron: "* * * * *", queue: "payments", limit: 20 },
 		],
 	},
 });
