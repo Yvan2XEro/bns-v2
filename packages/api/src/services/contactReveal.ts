@@ -16,6 +16,20 @@ export const CONTACT_PHONE_LIMITS: readonly RateLimitWindow[] = [
 
 const REVEAL_DEDUP_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * The 24-hour bucket a reveal falls in, and the third column of the unique
+ * index on `contact-reveals`.
+ *
+ * Buckets are fixed, so two reveals whose timestamps straddle a bucket edge get
+ * different values and the unique index does not fire — inside the race window
+ * that leaves two rows in one rolling 24 hours. Known and accepted: it can
+ * happen at most once per viewer, listing and day, and its whole cost is one
+ * extra audit row.
+ */
+export function revealWindowFor(at: Date): number {
+	return Math.floor(at.getTime() / REVEAL_DEDUP_MS);
+}
+
 export class ContactRevealError extends Error {
 	code: ErrorCode;
 	status: number;
@@ -110,7 +124,7 @@ export async function revealContactPhone(
 						listing: listingId,
 						seller: sellerId,
 						viewer: input.viewerId,
-						revealWindow: Math.floor(now.getTime() / REVEAL_DEDUP_MS),
+						revealWindow: revealWindowFor(now),
 					},
 				});
 			} catch (error) {
