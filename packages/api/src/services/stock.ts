@@ -27,6 +27,10 @@ import type {
 	StockMovement,
 	User,
 } from "../payload-types";
+// A movement changes what the product's listing advertises, so the two
+// services call each other. The cycle is resolved at call time, never at
+// module load, so neither import has to be deferred.
+import { syncProductListing } from "./products";
 import { requireShopMember } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 
@@ -427,6 +431,7 @@ export async function recordMovement(
 				...parsed,
 				actorId: user.id,
 			});
+			await syncProductListing(req, relationId(variant.product));
 			const [movement] = await toMovementRows(payload, [applied.movement], req);
 			return {
 				movement,
@@ -483,6 +488,7 @@ export async function recordStockCount(
 		async (req) => {
 			await requireShopMember(payload, user, shopId, { writable: true, req });
 			const results: StockCountResult[] = [];
+			const touched = new Set<string>();
 
 			for (const { variantId, counted } of counts) {
 				const variant = await findVariant(req, variantId);
@@ -509,6 +515,14 @@ export async function recordStockCount(
 					delta,
 					stockAfter: Number(applied.variant.stockOnHand),
 				});
+				const productId = relationId(variant.product);
+				if (productId) touched.add(productId);
+			}
+
+			// One refresh per product, after the whole count: a listing never shows
+			// a half-counted inventory.
+			for (const productId of touched) {
+				await syncProductListing(req, productId);
 			}
 
 			return { results };

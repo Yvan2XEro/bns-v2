@@ -1,0 +1,499 @@
+// @vitest-environment node
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// vi.hoisted: the mock factory below is hoisted above the imports, so the spy
+// it returns has to be created there too.
+const { validateListingAttributes } = vi.hoisted(() => ({
+	validateListingAttributes: vi.fn(
+		async () => [] as Array<{ message: string }>,
+	),
+}));
+vi.mock("../../src/hooks/validation", () => ({ validateListingAttributes }));
+
+import { createProduct, updateProduct } from "../../src/services/products";
+import { recordMovement, recordStockCount } from "../../src/services/stock";
+import { fakePayload } from "./helpers/fakePayload";
+
+const U1 = { id: "u-1" };
+
+function seed() {
+	return fakePayload({
+		users: [{ id: "u-1", name: "Aïcha" }],
+		categories: [{ id: "cat-1", name: "Téléphones" }],
+		shops: [
+			{
+				id: "s-1",
+				status: "active",
+				owner: "u-1",
+				location: { city: "Douala" },
+			},
+		],
+		"shop-members": [
+			{ id: "m-1", shop: "s-1", user: "u-1", role: "owner", status: "active" },
+		],
+		products: [],
+		"product-variants": [],
+		"stock-movements": [],
+		listings: [],
+	});
+}
+
+const input = (overrides: Record<string, unknown> = {}) => ({
+	title: "Samsung Galaxy S24 256 Go",
+	description: "Neuf, scellé.",
+	category: "cat-1",
+	condition: "new",
+	attributes: { brand: "Samsung" },
+	images: ["m-1", "m-2"],
+	status: "active",
+	options: [
+		{ name: "Couleur", values: ["Noir", "Violet"] },
+		{ name: "Stockage", values: ["256 Go"] },
+	],
+	variants: [
+		{
+			optionValues: { Couleur: "Noir", Stockage: "256 Go" },
+			sku: "SGS24-NO256",
+			price: 435000,
+			cost: 382000,
+			lowStockThreshold: 1,
+			initialStock: 3,
+		},
+		{
+			optionValues: { Couleur: "Violet", Stockage: "256 Go" },
+			sku: "SGS24-VI256",
+			price: 450000,
+			cost: 382000,
+			lowStockThreshold: 1,
+			initialStock: 2,
+		},
+	],
+	delivery: { codAllowed: true, pickupAllowed: true, handlingHours: 24 },
+	returnPolicy: "Rétractation 15 jours",
+	...overrides,
+});
+
+/** Feeds the variants a create returned back into an update, unchanged. */
+const asInput = (variants: Array<Record<string, unknown>>) =>
+	variants.map((v) => ({
+		id: v.id,
+		optionValues: v.optionValues,
+		sku: v.sku,
+		price: v.price,
+	}));
+
+describe("createProduct", () => {
+	beforeEach(() => validateListingAttributes.mockClear());
+
+	it("publishes exactly one listing for an active product", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+
+		expect(variants).toHaveLength(2);
+		expect(payload.store.listings).toHaveLength(1);
+		const listing = payload.store.listings[0];
+		expect(listing).toMatchObject({
+			shop: "s-1",
+			product: product.id,
+			status: "published",
+			title: "Samsung Galaxy S24 256 Go",
+			price: 435000,
+			location: "Douala",
+			productSummary: {
+				priceMin: 435000,
+				priceMax: 450000,
+				available: 5,
+				variantCount: 2,
+				trackInventory: true,
+			},
+		});
+		expect(payload.store.products[0].listing).toBe(listing.id);
+		expect(
+			payload.writes.find(
+				(w) => w.op === "create" && w.collection === "listings",
+			)?.context,
+		).toMatchObject({ productService: true });
+	});
+
+	it("records initial stock as receipts", async () => {
+		const payload = seed();
+		await createProduct(payload, U1, "s-1", input());
+		expect(
+			payload.store["stock-movements"].map((m) => [
+				m.type,
+				m.quantity,
+				m.unitCost,
+			]),
+		).toEqual([
+			["receipt", 3, 382000],
+			["receipt", 2, 382000],
+		]);
+		expect(payload.store["product-variants"].map((v) => v.stockOnHand)).toEqual(
+			[3, 2],
+		);
+	});
+
+	it("publishes nothing for a draft", async () => {
+		const payload = seed();
+		await createProduct(payload, U1, "s-1", input({ status: "draft" }));
+		expect(payload.store.listings).toHaveLength(0);
+	});
+
+	it("accepts a product without options as one default variant", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				options: [],
+				variants: [{ optionValues: {}, price: 9000, trackInventory: false }],
+			}),
+		);
+		expect(variants[0]).toMatchObject({
+			optionValues: {},
+			price: 9000,
+			trackInventory: false,
+		});
+	});
+
+	it("refuses variants that do not match the options", async () => {
+		await expect(
+			createProduct(
+				seed(),
+				U1,
+				"s-1",
+				input({
+					variants: [
+						{
+							optionValues: { Couleur: "Rouge", Stockage: "256 Go" },
+							price: 1,
+						},
+					],
+				}),
+			),
+		).rejects.toMatchObject({ code: "generic.validation", status: 400 });
+	});
+
+	it("refuses a duplicate SKU in the shop", async () => {
+		const payload = seed();
+		await createProduct(payload, U1, "s-1", input());
+		await expect(
+			createProduct(payload, U1, "s-1", input({ title: "Autre produit" })),
+		).rejects.toMatchObject({ code: "generic.validation", status: 409 });
+	});
+
+	it("refuses attribute errors from the category", async () => {
+		validateListingAttributes.mockResolvedValueOnce([
+			{ message: "brand is required" },
+		]);
+		await expect(
+			createProduct(seed(), U1, "s-1", input()),
+		).rejects.toMatchObject({ code: "generic.validation" });
+	});
+
+	it("refuses a non-member", async () => {
+		await expect(
+			createProduct(seed(), { id: "u-9" }, "s-1", input()),
+		).rejects.toMatchObject({ code: "shop.notMember" });
+	});
+
+	it("leaves no product, variant, stock or listing behind when the listing cannot be written", async () => {
+		const payload = seed();
+		payload.failWhen = (method, args) =>
+			method === "create" && args.collection === "listings";
+		await expect(createProduct(payload, U1, "s-1", input())).rejects.toThrow();
+		expect(payload.store.products).toHaveLength(0);
+		expect(payload.store["product-variants"]).toHaveLength(0);
+		expect(payload.store["stock-movements"]).toHaveLength(0);
+		expect(payload.store.listings).toHaveLength(0);
+	});
+});
+
+describe("updateProduct", () => {
+	beforeEach(() => validateListingAttributes.mockClear());
+
+	it("updates the same listing when the product changes", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({
+				title: "Galaxy S24",
+				variants: variants.map((v) => ({
+					id: v.id,
+					optionValues: v.optionValues,
+					sku: v.sku,
+					price: 400000,
+					cost: 382000,
+					lowStockThreshold: 1,
+				})),
+			}),
+		);
+
+		expect(payload.store.listings).toHaveLength(1);
+		expect(payload.store.listings[0]).toMatchObject({
+			title: "Galaxy S24",
+			price: 400000,
+			productSummary: { priceMin: 400000, priceMax: 400000 },
+		});
+	});
+
+	it("unpublishes the listing when the product is archived", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({
+				status: "archived",
+				variants: variants.map((v) => ({
+					id: v.id,
+					optionValues: v.optionValues,
+					sku: v.sku,
+					price: v.price,
+				})),
+			}),
+		);
+		expect(payload.store.listings[0].status).toBe("draft");
+	});
+
+	it("archives a removed variant and keeps its movements", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({
+				options: [
+					{ name: "Couleur", values: ["Noir"] },
+					{ name: "Stockage", values: ["256 Go"] },
+				],
+				variants: [
+					{
+						id: variants[0].id,
+						optionValues: variants[0].optionValues,
+						sku: variants[0].sku,
+						price: 435000,
+					},
+				],
+			}),
+		);
+		const removed = payload.store["product-variants"].find(
+			(v) => v.id === variants[1].id,
+		);
+		expect(removed?.archivedAt).toBeTruthy();
+		expect(payload.store["stock-movements"]).toHaveLength(2);
+		expect(payload.store.listings[0].productSummary.variantCount).toBe(1);
+	});
+
+	it("keeps a moderator's rejection", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		payload.store.listings[0].status = "rejected";
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({
+				variants: variants.map((v) => ({
+					id: v.id,
+					optionValues: v.optionValues,
+					sku: v.sku,
+					price: v.price,
+				})),
+			}),
+		);
+		expect(payload.store.listings[0].status).toBe("rejected");
+	});
+
+	it("refreshes availability after a stock movement", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(payload, U1, "s-1", input());
+		await recordMovement(payload, U1, variants[0].id, {
+			type: "loss",
+			quantity: -3,
+		});
+		expect(payload.store.listings[0].productSummary.available).toBe(2);
+	});
+
+	it("refreshes availability after a physical count", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(payload, U1, "s-1", input());
+		await recordStockCount(payload, U1, "s-1", {
+			counts: [
+				{ variantId: variants[0].id, counted: 1 },
+				{ variantId: variants[1].id, counted: 0 },
+			],
+		});
+		expect(payload.store.listings[0].productSummary.available).toBe(1);
+	});
+
+	it("drops an archived variant's units from the published availability", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({
+				options: [
+					{ name: "Couleur", values: ["Noir"] },
+					{ name: "Stockage", values: ["256 Go"] },
+				],
+				variants: [
+					{
+						id: variants[0].id,
+						optionValues: variants[0].optionValues,
+						sku: variants[0].sku,
+						price: 435000,
+					},
+				],
+			}),
+		);
+		expect(payload.store.listings[0].productSummary).toMatchObject({
+			available: 3,
+			priceMax: 435000,
+		});
+	});
+
+	it("carries a photo change through to the listing", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({ images: ["m-3"], variants: asInput(variants) }),
+		);
+		expect(payload.store.listings[0].images).toEqual([{ image: "m-3" }]);
+	});
+
+	it("publishes one listing however often the product is saved active", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({ status: "draft" }),
+		);
+		expect(payload.store.listings).toHaveLength(0);
+
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({ variants: asInput(variants) }),
+		);
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({ variants: asInput(variants) }),
+		);
+
+		expect(payload.store.listings).toHaveLength(1);
+		expect(payload.store.listings[0].status).toBe("published");
+		expect(payload.store.products[0].listing).toBe(
+			payload.store.listings[0].id,
+		);
+	});
+
+	it("re-adopts the listing that already carries the product instead of publishing a second one", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		// The product lost its pointer; the listing still names the product.
+		payload.store.products[0].listing = null;
+
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({ title: "Galaxy S24", variants: asInput(variants) }),
+		);
+
+		expect(payload.store.listings).toHaveLength(1);
+		expect(payload.store.listings[0]).toMatchObject({
+			title: "Galaxy S24",
+			product: product.id,
+		});
+		expect(payload.store.products[0].listing).toBe(
+			payload.store.listings[0].id,
+		);
+	});
+
+	it("refuses a variant that belongs to another product", async () => {
+		const payload = seed();
+		const first = await createProduct(payload, U1, "s-1", input());
+		const second = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				title: "Autre produit",
+				variants: [
+					{
+						optionValues: { Couleur: "Noir", Stockage: "256 Go" },
+						price: 1000,
+					},
+					{
+						optionValues: { Couleur: "Violet", Stockage: "256 Go" },
+						price: 1200,
+					},
+				],
+			}),
+		);
+		await expect(
+			updateProduct(
+				payload,
+				U1,
+				second.product.id,
+				input({ title: "Autre produit", variants: asInput(first.variants) }),
+			),
+		).rejects.toMatchObject({ code: "generic.validation" });
+	});
+});
