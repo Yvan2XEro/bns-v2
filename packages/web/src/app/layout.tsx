@@ -6,7 +6,11 @@ import "./globals.css";
 import { CategoryBar } from "~/components/layout/category-bar";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
-import { type AppConfig, AppConfigProvider } from "~/hooks/use-app-config";
+import {
+	type AppConfig,
+	AppConfigProvider,
+	EMPTY_APP_CONFIG,
+} from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
 import { serverFetch } from "~/lib/server-api";
 import type { Category } from "~/types";
@@ -60,11 +64,10 @@ export const metadata: Metadata = {
 async function getPublicConfig(): Promise<AppConfig> {
 	try {
 		const res = await serverFetch("/api/public/config");
-		if (!res.ok)
-			return { stripePublishableKey: null, chatUrl: null, novuAppId: null };
-		return res.json();
+		if (!res.ok) return EMPTY_APP_CONFIG;
+		return { ...EMPTY_APP_CONFIG, ...(await res.json()) };
 	} catch {
-		return { stripePublishableKey: null, chatUrl: null, novuAppId: null };
+		return EMPTY_APP_CONFIG;
 	}
 }
 

@@ -13,13 +13,17 @@ import {
 	DialogTrigger,
 } from "~/components/ui/dialog";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { apiErrorFrom, resolveErrorMessage } from "~/lib/apiError";
 import type { BoostDuration } from "~/types";
 
-const boostPrices: Record<BoostDuration, number> = {
-	"7": 500,
-	"14": 900,
-	"30": 1500,
+const PLAN_LABELS: Record<number, "week1" | "week2" | "month1"> = {
+	7: "week1",
+	14: "week2",
+	30: "month1",
 };
+const POPULAR_DAYS = 14;
+// One key per attempt: a double click replays the same checkout instead of paying twice.
+const newIdempotencyKey = () => crypto.randomUUID();
 
 type PaymentMethod = "mobilemoney" | "card";
 
@@ -36,15 +40,19 @@ interface BoostDialogProps {
 
 export function BoostDialog({ listingId, children }: BoostDialogProps) {
 	const t = useTranslations("Boost");
-	const { stripePublishableKey } = useAppConfig();
+	const tRoot = useTranslations();
+	const { stripePublishableKey, boostPricing } = useAppConfig();
+	const plans = boostPricing.filter((plan) => PLAN_LABELS[plan.days]);
 	const [open, setOpen] = useState(false);
 	const [duration, setDuration] = useState<BoostDuration>("14");
 	const [paymentMethod, setPaymentMethod] =
 		useState<PaymentMethod>("mobilemoney");
 	const [error, setError] = useState<string | null>(null);
+	const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
 	const [isPending, startTransition] = useTransition();
 
 	const stripeAvailable = !!stripePublishableKey;
+	const price = plans.find((plan) => String(plan.days) === duration)?.amount;
 
 	function handleOpenChange(v: boolean) {
 		setOpen(v);
@@ -52,6 +60,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 			setError(null);
 			setDuration("14");
 			setPaymentMethod("mobilemoney");
+			setIdempotencyKey(newIdempotencyKey());
 		}
 	}
 
@@ -61,7 +70,10 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 			try {
 				const res = await fetch("/api/public/boost", {
 					method: "POST",
-					headers: { "Content-Type": "application/json" },
+					headers: {
+						"Content-Type": "application/json",
+						"Idempotency-Key": idempotencyKey,
+					},
 					credentials: "include",
 					body: JSON.stringify({
 						listingId,
@@ -75,8 +87,15 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 						window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
 						return;
 					}
-					const err = await res.json().catch(() => ({}));
-					setError(err.error ?? t("genericError"));
+					const body = await res.json().catch(() => ({}));
+					setIdempotencyKey(newIdempotencyKey());
+					setError(
+						resolveErrorMessage(
+							apiErrorFrom(res.status, body),
+							tRoot,
+							t("genericError"),
+						),
+					);
 					return;
 				}
 
@@ -93,8 +112,6 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 			}
 		});
 	}
-
-	const price = boostPrices[duration];
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
@@ -127,34 +144,19 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 				<div className="space-y-5">
 					{/* Plans */}
 					<div className="space-y-2">
-						{(
-							[
-								{ value: "7" as const, labelKey: "week1" as const, days: 7 },
-								{
-									value: "14" as const,
-									labelKey: "week2" as const,
-									days: 14,
-									popular: true,
-								},
-								{ value: "30" as const, labelKey: "month1" as const, days: 30 },
-							] satisfies {
-								value: BoostDuration;
-								labelKey: "week1" | "week2" | "month1";
-								days: number;
-								popular?: boolean;
-							}[]
-						).map((plan) => {
-							const selected = duration === plan.value;
+						{plans.map((plan) => {
+							const value = String(plan.days) as BoostDuration;
+							const selected = duration === value;
 							return (
 								<label
-									key={plan.value}
+									key={value}
 									className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-4 transition-all ${
 										selected
 											? "border-[#F59E0B] bg-amber-50/50 shadow-sm"
 											: "border-[#E2E8F0] hover:border-[#F59E0B]/40 hover:bg-[#FFFBEB]/30"
 									}`}
 								>
-									{plan.popular && (
+									{plan.days === POPULAR_DAYS && (
 										<span className="-top-2.5 absolute right-3 rounded-full bg-[#F59E0B] px-2 py-0.5 font-bold text-[10px] text-white">
 											{t("popular")}
 										</span>
@@ -174,14 +176,14 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 										<input
 											type="radio"
 											name="boost-duration"
-											value={plan.value}
+											value={value}
 											checked={selected}
-											onChange={() => setDuration(plan.value)}
+											onChange={() => setDuration(value)}
 											className="sr-only"
 										/>
 										<div>
 											<p className="font-semibold text-[#0F172A] text-sm">
-												{t(plan.labelKey)}
+												{t(PLAN_LABELS[plan.days])}
 											</p>
 											<p className="text-[#64748B] text-xs">
 												{t("daysVisibility", { days: plan.days })}
@@ -189,9 +191,9 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 										</div>
 									</div>
 									<p className="font-bold text-[#0F172A] text-base">
-										{boostPrices[plan.value].toLocaleString()}{" "}
+										{plan.amount.toLocaleString()}{" "}
 										<span className="font-medium text-[#64748B] text-xs">
-											XAF
+											{plan.currency}
 										</span>
 									</p>
 								</label>
@@ -248,7 +250,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 								: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-[#0F172A] shadow-amber-500/20"
 						}`}
 						onClick={handlePay}
-						disabled={isPending}
+						disabled={isPending || price === undefined}
 					>
 						{isPending ? (
 							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -258,8 +260,8 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 							<Smartphone className="mr-2 h-4 w-4" />
 						)}
 						{paymentMethod === "card"
-							? t("continueBtn", { amount: price.toLocaleString() })
-							: t("payBtn", { amount: price.toLocaleString() })}
+							? t("continueBtn", { amount: (price ?? 0).toLocaleString() })
+							: t("payBtn", { amount: (price ?? 0).toLocaleString() })}
 					</Button>
 				</div>
 			</DialogContent>
