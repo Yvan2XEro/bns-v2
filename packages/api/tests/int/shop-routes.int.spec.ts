@@ -32,6 +32,7 @@ vi.mock("../../src/lib/clientIp", () => ({ clientIp: () => "1.2.3.4" }));
 
 import { createShopEndpoint } from "../../src/endpoints/shops";
 import { ServiceError } from "../../src/lib/serviceError";
+import { requireUser } from "../../src/lib/shopRoute";
 
 describe("POST /api/shops", () => {
 	beforeEach(() => {
@@ -143,5 +144,47 @@ describe("GET /api/public/shops/handle-available", () => {
 		);
 		expect(res.status).toBe(429);
 		expect(await res.json()).toMatchObject({ code: "generic.rateLimited" });
+	});
+
+	it("fails closed behind generic.server when the rate limiter itself throws", async () => {
+		hitRateLimit.mockRejectedValue(new Error("redis down"));
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/shops/handle-available/route"
+		);
+		const res = await GET(
+			new Request("http://x/api/public/shops/handle-available?handle=a"),
+		);
+		expect(res.status).toBe(500);
+		expect(await res.json()).toMatchObject({ code: "generic.server" });
+	});
+});
+
+describe("requireUser", () => {
+	beforeEach(() => {
+		getPayloadMock.mockReset();
+	});
+
+	it("returns 401 when there is no session", async () => {
+		getPayloadMock.mockResolvedValue({
+			auth: vi.fn(async () => ({ user: null })),
+		});
+		const result = await requireUser(new Request("http://x"));
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(401);
+	});
+
+	it("resolves the payload and the service user for an authenticated session", async () => {
+		const payload = {
+			auth: vi.fn(async () => ({ user: { id: "u-1", role: "user" } })),
+		};
+		getPayloadMock.mockResolvedValue(payload);
+		const result = await requireUser(new Request("http://x"));
+		if (result instanceof Response)
+			throw new Error("expected a context, not a Response");
+		expect(result.payload).toBe(payload);
+		expect(result.user).toEqual(
+			expect.objectContaining({ id: "u-1", role: "user" }),
+		);
 	});
 });
