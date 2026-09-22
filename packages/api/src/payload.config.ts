@@ -7,6 +7,7 @@ import sharp from "sharp";
 import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
 import { Categories } from "./collections/Categories";
+import { ContactReveals } from "./collections/ContactReveals";
 import { Conversations } from "./collections/Conversations";
 import { Favorites } from "./collections/Favorites";
 import { Listings } from "./collections/Listings";
@@ -85,6 +86,7 @@ export default buildConfig({
 		BoostPayments,
 		PaymentIntents,
 		WebhookEvents,
+		ContactReveals,
 		SavedSearches,
 		BlockedUsers,
 		Tags,

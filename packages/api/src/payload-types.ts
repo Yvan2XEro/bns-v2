@@ -79,6 +79,7 @@ export interface Config {
     'boost-payments': BoostPayment;
     'payment-intents': PaymentIntent;
     'webhook-events': WebhookEvent;
+    'contact-reveals': ContactReveal;
     'saved-searches': SavedSearch;
     'blocked-users': BlockedUser;
     tags: Tag;
@@ -103,6 +104,7 @@ export interface Config {
     'boost-payments': BoostPaymentsSelect<false> | BoostPaymentsSelect<true>;
     'payment-intents': PaymentIntentsSelect<false> | PaymentIntentsSelect<true>;
     'webhook-events': WebhookEventsSelect<false> | WebhookEventsSelect<true>;
+    'contact-reveals': ContactRevealsSelect<false> | ContactRevealsSelect<true>;
     'saved-searches': SavedSearchesSelect<false> | SavedSearchesSelect<true>;
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
@@ -562,6 +564,18 @@ export interface WebhookEvent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-reveals".
+ */
+export interface ContactReveal {
+  id: string;
+  listing: string | Listing;
+  seller: string | User;
+  viewer: string | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "saved-searches".
  */
 export interface SavedSearch {
@@ -819,6 +833,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'webhook-events';
         value: string | WebhookEvent;
+      } | null)
+    | ({
+        relationTo: 'contact-reveals';
+        value: string | ContactReveal;
       } | null)
     | ({
         relationTo: 'saved-searches';
@@ -1167,6 +1185,17 @@ export interface WebhookEventsSelect<T extends boolean = true> {
   processedAt?: T;
   attempts?: T;
   lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-reveals_select".
+ */
+export interface ContactRevealsSelect<T extends boolean = true> {
+  listing?: T;
+  seller?: T;
+  viewer?: T;
   updatedAt?: T;
   createdAt?: T;
 }
