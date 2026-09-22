@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import {
 	type CreatePaymentParams,
 	type CreatePaymentResult,
+	isRecord,
 	type NormalizedPayment,
 	type NormalizedWebhookEvent,
 	type PaymentProvider,
@@ -110,8 +111,9 @@ export class NotchPayProvider implements PaymentProvider {
 			throw new Error(`NotchPay verify (${res.status})`);
 		}
 
-		const data = (await res.json()) as Record<string, unknown>;
-		const trx = (data.transaction ?? data) as Record<string, unknown>;
+		const parsed: unknown = await res.json();
+		const data = isRecord(parsed) ? parsed : {};
+		const trx = isRecord(data.transaction) ? data.transaction : data;
 		return {
 			reference: toText(trx.merchant_reference) || toText(trx.trxref),
 			status: mapNotchPayStatus(toText(trx.status)),
@@ -151,12 +153,8 @@ export class NotchPayProvider implements PaymentProvider {
 	}
 
 	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
-		const event = (raw ?? {}) as {
-			id?: unknown;
-			event?: unknown;
-			data?: Record<string, unknown>;
-		};
-		const data = event.data ?? {};
+		const event = isRecord(raw) ? raw : {};
+		const data = isRecord(event.data) ? event.data : {};
 		const type = toText(event.event);
 		return {
 			providerEventId: toText(event.id),

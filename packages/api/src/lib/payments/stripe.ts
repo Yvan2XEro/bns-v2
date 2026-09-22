@@ -2,12 +2,18 @@ import Stripe from "stripe";
 import {
 	type CreatePaymentParams,
 	type CreatePaymentResult,
+	isRecord,
 	type NormalizedPayment,
 	type NormalizedWebhookEvent,
 	type PaymentProvider,
 	type ProviderPaymentStatus,
 	WebhookSignatureError,
 } from "./types";
+
+/** Narrows to a Checkout Session, distinguishing it from other event payload shapes. */
+function isCheckoutSession(value: unknown): value is Stripe.Checkout.Session {
+	return isRecord(value) && value.object === "checkout.session";
+}
 
 export function stripeSessionStatus(
 	type: string,
@@ -80,19 +86,19 @@ export class StripeProvider implements PaymentProvider {
 	}
 
 	parseWebhookEvent(raw: unknown): NormalizedWebhookEvent {
-		const event = raw as {
-			id: string;
-			type: string;
-			data?: { object?: unknown };
-		};
-		const session = event.type.startsWith("checkout.session.")
-			? (event.data?.object as Stripe.Checkout.Session)
-			: null;
+		const event = isRecord(raw) ? raw : {};
+		const id = typeof event.id === "string" ? event.id : "";
+		const type = typeof event.type === "string" ? event.type : "";
+		const dataObject = isRecord(event.data) ? event.data.object : undefined;
+		const session =
+			type.startsWith("checkout.session.") && isCheckoutSession(dataObject)
+				? dataObject
+				: null;
 		return {
-			providerEventId: event.id,
-			type: event.type,
+			providerEventId: id,
+			type,
 			reference: session?.metadata?.reference ?? "",
-			status: session ? stripeSessionStatus(event.type, session) : "pending",
+			status: session ? stripeSessionStatus(type, session) : "pending",
 			amount: session?.amount_total ?? null,
 			currency: session?.currency ? session.currency.toUpperCase() : null,
 			providerTransactionId: session?.id ?? null,

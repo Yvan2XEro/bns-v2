@@ -51,6 +51,10 @@ export class WebhookSignatureError extends Error {
 	}
 }
 
+export function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
 export interface PaymentProvider {
 	readonly id: ProviderName;
 	createPayment(params: CreatePaymentParams): Promise<CreatePaymentResult>;
