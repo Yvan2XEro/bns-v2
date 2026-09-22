@@ -106,6 +106,31 @@ function world() {
 					},
 				},
 			},
+			{
+				// No merchant reference and no trxref: the body is keyed on the
+				// provider's transaction id alone, the way every Stripe event
+				// that is not `checkout.session.*` is stored.
+				id: "we-3",
+				provider: "notchpay",
+				providerReference: "trx.1",
+				payloadHash: "hash-3",
+				raw: {
+					id: "evt_3",
+					event: "payment.failed",
+					data: {
+						reference: "trx.1",
+						amount: 900,
+						currency: "XAF",
+						status: "failed",
+						customer: {
+							id: "cus_notch_1",
+							email: "a@example.com",
+							name: "Awa",
+							phone: "+237600000001",
+						},
+					},
+				},
+			},
 		],
 		"contact-reveals": [
 			{ id: "cr-1", viewer: "u-1", seller: "u-2", listing: "l-9" },
@@ -272,6 +297,16 @@ describe("deleteUserRelatedData payment retention", () => {
 			providerReference: "trx.1",
 			statusHistory: [{ status: "succeeded", source: "webhook" }],
 		});
+	});
+
+	it("redacts a body the intent names only by the provider transaction id", () => {
+		const event = payload.store["webhook-events"].find((e) => e.id === "we-3");
+		const serialized = JSON.stringify(event?.raw);
+		expect(event?.raw).toMatchObject({ redacted: true });
+		expect(serialized).not.toContain("a@example.com");
+		expect(serialized).not.toContain("Awa");
+		expect(serialized).not.toContain("+237600000001");
+		expect(serialized).not.toContain("cus_notch_1");
 	});
 
 	it("replaces the deleted user's raw id inside the kept intent's idempotency key", () => {

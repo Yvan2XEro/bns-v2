@@ -10,6 +10,7 @@ export const WebhookEvents: CollectionConfig = {
 			"provider",
 			"type",
 			"reference",
+			"providerReference",
 			"receivedAt",
 			"processedAt",
 			"attempts",
@@ -35,6 +36,14 @@ export const WebhookEvents: CollectionConfig = {
 		{ name: "providerEventId", type: "text", required: true },
 		{ name: "type", type: "text" },
 		{ name: "reference", type: "text", index: true },
+		/**
+		 * The provider's own transaction id, kept beside our reference because
+		 * the account-deletion sweep has to find this row by either one: our
+		 * reference is absent from any Stripe event that is not
+		 * `checkout.session.*` and from a NotchPay body with no merchant
+		 * reference, and those bodies still carry the customer's details.
+		 */
+		{ name: "providerReference", type: "text", index: true },
 		{ name: "payloadHash", type: "text", required: true },
 		{ name: "raw", type: "json" },
 		{ name: "receivedAt", type: "date", required: true },

@@ -545,6 +545,7 @@ export interface WebhookEvent {
   providerEventId: string;
   type?: string | null;
   reference?: string | null;
+  providerReference?: string | null;
   payloadHash: string;
   raw?:
     | {
@@ -1180,6 +1181,7 @@ export interface WebhookEventsSelect<T extends boolean = true> {
   providerEventId?: T;
   type?: T;
   reference?: T;
+  providerReference?: T;
   payloadHash?: T;
   raw?: T;
   receivedAt?: T;

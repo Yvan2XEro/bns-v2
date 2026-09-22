@@ -25,6 +25,37 @@ const raw = {
 };
 const rawBody = JSON.stringify(raw);
 
+/** The shape the provider actually sends: a customer object rides along. */
+const rawWithCustomer = {
+	...raw,
+	id: "evt_2",
+	data: {
+		...raw.data,
+		customer: {
+			id: "cus_notch_1",
+			email: "a@example.com",
+			name: "Awa",
+			phone: "+237600000001",
+		},
+	},
+};
+
+const DELETED_AT = "2026-09-15T10:00:00.000Z";
+
+function deleteCustomer(payload: ReturnType<typeof world>) {
+	const intent = payload.store["payment-intents"][0];
+	intent.customer = null;
+	intent.customerDeletedAt = DELETED_AT;
+}
+
+const recordWithCustomer = (payload: ReturnType<typeof world>) =>
+	recordWebhookEvent(payload, {
+		provider: "notchpay",
+		event: notchpay.parseWebhookEvent(rawWithCustomer),
+		raw: rawWithCustomer,
+		rawBody: JSON.stringify(rawWithCustomer),
+	});
+
 function world() {
 	return fakePayload(
 		{
@@ -47,6 +78,8 @@ function world() {
 					currency: "XAF",
 					status: "pending",
 					reference: "PI-pi-1",
+					providerReference: "trx.1",
+					customer: "u-1",
 					statusHistory: [],
 				},
 			],
@@ -77,9 +110,57 @@ describe("recordWebhookEvent", () => {
 			providerEventId: "evt_1",
 			type: "payment.complete",
 			reference: "PI-pi-1",
+			providerReference: "trx.1",
 			payloadHash: hashPayload(rawBody),
 			attempts: 0,
 		});
+	});
+
+	it("keys an event on the provider transaction id when the body carries no reference", async () => {
+		const payload = world();
+		const bare = {
+			id: "evt_bare",
+			event: "payment.complete",
+			data: { reference: "trx.1", amount: 900, currency: "XAF" },
+		};
+		await recordWebhookEvent(payload, {
+			provider: "notchpay",
+			event: notchpay.parseWebhookEvent(bare),
+			raw: bare,
+			rawBody: JSON.stringify(bare),
+		});
+
+		expect(payload.store["webhook-events"][0]).toMatchObject({
+			reference: undefined,
+			providerReference: "trx.1",
+		});
+	});
+
+	it("redacts a body that arrives after the customer's account is deleted", async () => {
+		const payload = world();
+		deleteCustomer(payload);
+
+		await recordWithCustomer(payload);
+
+		const stored = payload.store["webhook-events"][0];
+		expect(stored.raw).toMatchObject({
+			redacted: true,
+			reference: "PI-pi-1",
+			providerTransactionId: "trx.1",
+		});
+		const serialized = JSON.stringify(stored.raw);
+		expect(serialized).not.toContain("a@example.com");
+		expect(serialized).not.toContain("Awa");
+		expect(serialized).not.toContain("+237600000001");
+		expect(serialized).not.toContain("cus_notch_1");
+	});
+
+	it("keeps the provider body as sent while the customer still exists", async () => {
+		const payload = world();
+		await recordWithCustomer(payload);
+		expect(JSON.stringify(payload.store["webhook-events"][0].raw)).toContain(
+			"a@example.com",
+		);
 	});
 
 	it("treats a lost insert race as a duplicate", async () => {
@@ -122,6 +203,19 @@ describe("processWebhookEvent", () => {
 		expect(payload.store["webhook-events"][0].processedAt).toEqual(
 			expect.any(String),
 		);
+	});
+
+	it("redacts the stored body when the account is deleted between delivery and processing", async () => {
+		const payload = world();
+		const { id } = await recordWithCustomer(payload);
+		deleteCustomer(payload);
+
+		await processWebhookEvent(payload, id, deps);
+
+		const stored = payload.store["webhook-events"][0];
+		expect(stored.raw).toMatchObject({ redacted: true });
+		expect(JSON.stringify(stored.raw)).not.toContain("a@example.com");
+		expect(stored.processedAt).toEqual(expect.any(String));
 	});
 
 	it("does nothing for an event already processed", async () => {

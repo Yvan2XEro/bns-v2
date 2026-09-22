@@ -248,18 +248,33 @@ async function retainPaymentRecords(
 		{ customer: { equals: userId } },
 		req,
 	);
-	const references = intents
-		.map((intent) => intent.reference)
-		.filter(
-			(reference): reference is string =>
-				typeof reference === "string" && reference.length > 0,
-		);
+	const keys = (field: "providerReference" | "reference"): string[] =>
+		intents
+			.map((intent) => intent[field])
+			.filter(
+				(value): value is string =>
+					typeof value === "string" && value.length > 0,
+			);
+	const references = keys("reference");
+	const providerReferences = keys("providerReference");
 
-	if (references.length > 0) {
+	// Matched on either key: an event whose body carries no merchant reference
+	// (any Stripe event that is not `checkout.session.*`, a NotchPay body
+	// without one) is stored under the provider's transaction id alone, and a
+	// sweep on `reference` would walk straight past it while it still holds the
+	// customer's email, name and phone.
+	const matchers = [
+		...(references.length > 0 ? [{ reference: { in: references } }] : []),
+		...(providerReferences.length > 0
+			? [{ providerReference: { in: providerReferences } }]
+			: []),
+	];
+
+	if (matchers.length > 0) {
 		for (const event of await findAllDocs(
 			payload,
 			"webhook-events",
-			{ reference: { in: references } },
+			{ or: matchers },
 			req,
 		)) {
 			await payload.update({

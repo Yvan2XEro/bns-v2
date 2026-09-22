@@ -7,14 +7,37 @@ import {
 	type PaymentProvider,
 	type ProviderName,
 } from "../lib/payments/types";
-import { isRetainedWebhookRaw } from "../lib/redact";
-import type { WebhookEvent } from "../payload-types";
-import { settlePayment } from "./payments";
+import { isRetainedWebhookRaw, retainedWebhookRaw } from "../lib/redact";
+import type { PaymentIntent, WebhookEvent } from "../payload-types";
+import { findIntentByReference, settlePayment } from "./payments";
 
 const COLLECTION = "webhook-events" as const;
 
 export function hashPayload(rawBody: string): string {
 	return createHash("sha256").update(rawBody).digest("hex");
+}
+
+/**
+ * The account-deletion sweep passes over an intent's stored bodies exactly
+ * once, while the intent still names its customer. An event recorded — or
+ * processed — after that point is the one thing the sweep can never come back
+ * for, so its body is rebuilt through the same `retainedWebhookRaw` path on
+ * the spot instead of being kept as the provider sent it, customer object
+ * included.
+ */
+async function intentFor(
+	payload: Payload,
+	event: Pick<NormalizedWebhookEvent, "providerTransactionId" | "reference">,
+): Promise<PaymentIntent | null> {
+	return findIntentByReference(payload, {
+		reference: event.reference,
+		providerReference: event.providerTransactionId,
+	}).catch(() => null);
+}
+
+/** Spread so the rebuilt body satisfies the json field's index signature. */
+function redactedBody(provider: string, raw: unknown): WebhookEvent["raw"] {
+	return { ...retainedWebhookRaw(provider, raw) };
 }
 
 export interface RecordWebhookEventInput {
@@ -52,6 +75,13 @@ export async function recordWebhookEvent(
 	const existing = await findExisting();
 	if (existing) return { id: String(existing.id), duplicate: true };
 
+	const intent = await intentFor(payload, input.event);
+	const raw = intent?.customerDeletedAt
+		? redactedBody(input.provider, input.raw)
+		: isRecord(input.raw)
+			? input.raw
+			: undefined;
+
 	try {
 		const created = await payload.create({
 			collection: COLLECTION,
@@ -62,8 +92,9 @@ export async function recordWebhookEvent(
 				providerEventId,
 				type: input.event.type,
 				reference: input.event.reference || undefined,
+				providerReference: input.event.providerTransactionId || undefined,
 				payloadHash,
-				raw: isRecord(input.raw) ? input.raw : undefined,
+				raw,
 				receivedAt: (input.receivedAt ?? new Date()).toISOString(),
 				attempts: 0,
 			},
@@ -106,12 +137,26 @@ export async function processWebhookEvent(
 			: deps.getProvider(event.provider).parseWebhookEvent(event.raw);
 
 		let outcome = "ignored_without_reference";
+		let intent: PaymentIntent | null = null;
 		if (normalized.reference || normalized.providerTransactionId) {
 			const settled = await settlePayment(payload, {
 				...normalized,
 				source: "webhook",
 			});
 			outcome = settled.outcome;
+			if ("intent" in settled) intent = settled.intent;
+		}
+
+		const data: Partial<WebhookEvent> = {
+			attempts,
+			processedAt: new Date().toISOString(),
+			lastError: null,
+		};
+		// The owner's account went away between this event being stored and
+		// this run: the sweep has already been and gone, so the body is
+		// redacted here or never.
+		if (intent?.customerDeletedAt && !isRetainedWebhookRaw(event.raw)) {
+			data.raw = redactedBody(event.provider, event.raw);
 		}
 
 		await payload.update({
@@ -119,11 +164,7 @@ export async function processWebhookEvent(
 			id: eventId,
 			depth: 0,
 			overrideAccess: true,
-			data: {
-				attempts,
-				processedAt: new Date().toISOString(),
-				lastError: null,
-			},
+			data,
 		});
 		return { outcome };
 	} catch (error) {
