@@ -20,13 +20,16 @@ export async function up({ payload, req }: MigrateUpArgs): Promise<void> {
 		});
 	}
 	if (audit.duplicateGroups.length > 0) {
-		// error, not warn: this environment is running, and will keep running,
-		// without the database-level guard against a duplicate review. The
+		// Skipped, not thrown: duplicates are the state every pre-P0 database is
+		// in, and blocking a deploy on data that predates this branch costs more
+		// than the race it closes. error, not warn: this environment is running,
+		// and will keep running, without the database-level guard. The
 		// application-level checks (enforceReviewRules, translateReviewWriteConflicts)
 		// still apply, but the race between two concurrent creates stays open
-		// until staff resolve these groups and this migration runs again.
+		// until staff resolve these groups and this migration runs again — which
+		// needs this migration's row deleted from `payload-migrations` by hand.
 		payload.logger.error({
-			msg: "[migration] duplicate reviews kept for staff review; the unique (reviewer, reviewedUser) index was NOT created — re-run this migration once they are resolved",
+			msg: "[migration] duplicate reviews kept for staff review; the unique (reviewer, reviewedUser) index was NOT created — recovery steps: docs/superpowers/plans/2026-09-15-p0-verification.md, 'Reviews unique index: recovery after a skipped migration'",
 			groups: audit.duplicateGroups,
 		});
 		return;
