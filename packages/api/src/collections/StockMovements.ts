@@ -1,7 +1,43 @@
-import { APIError, type CollectionConfig } from "payload";
+import { APIError, type CollectionConfig, type RequestContext } from "payload";
 import { isAdmin } from "../access/roles";
 import { shopField, shopScopedRead } from "../access/shopRoles";
 import { relationId } from "../lib/relationId";
+
+/**
+ * A module-private symbol, not a context flag: `req.context` reaching the API
+ * from outside is JSON, and JSON has no symbol keys, so only code that can
+ * import this module can claim a variant is already loaded.
+ */
+const LOADED_VARIANT = Symbol("stock-movements.loadedVariant");
+
+export interface LoadedVariant {
+	id: string | number;
+	shop?: unknown;
+}
+
+/**
+ * Lets services/stock.ts hand the hook the variant it just read, so appending a
+ * movement costs one read instead of two. The shop check below still runs — the
+ * service only saves the lookup, it does not skip the guard.
+ */
+export function trustLoadedVariant(
+	context: RequestContext,
+	variant: LoadedVariant,
+): void {
+	Reflect.set(context, LOADED_VARIANT, variant);
+}
+
+function loadedVariant(
+	context: RequestContext | undefined,
+	variantId: string,
+): LoadedVariant | null {
+	if (!context) return null;
+	const raw: unknown = Reflect.get(context, LOADED_VARIANT);
+	if (!raw || typeof raw !== "object") return null;
+	const candidate = raw as LoadedVariant;
+	// A stale entry from an earlier append in the same request is ignored.
+	return relationId(candidate.id) === variantId ? candidate : null;
+}
 
 export const MOVEMENT_TYPES = [
 	"receipt",
@@ -41,15 +77,17 @@ export const StockMovements: CollectionConfig = {
 				if (!variantId) {
 					throw new APIError("A movement must name its variant.", 400);
 				}
-				const variant = await req.payload
-					.findByID({
-						collection: "product-variants",
-						id: variantId,
-						depth: 0,
-						overrideAccess: true,
-						req,
-					})
-					.catch(() => null);
+				const variant =
+					loadedVariant(req.context, variantId) ??
+					(await req.payload
+						.findByID({
+							collection: "product-variants",
+							id: variantId,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null));
 				if (!variant) {
 					throw new APIError("The variant does not exist.", 400);
 				}

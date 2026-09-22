@@ -15,6 +15,20 @@ export const NOT_ARCHIVED: Where = {
 	or: [{ archivedAt: { exists: false } }, { archivedAt: { equals: null } }],
 };
 
+/**
+ * What anyone outside the shop may see: a live variant of a product that is
+ * itself published. Stock levels and an unreleased catalogue are shop data, so
+ * a draft or archived product hides its variants from the public API.
+ *
+ * `product.status` is a relationship path: the Mongo adapter resolves it into a
+ * sub-query on `products` and rewrites the constraint to `product: { $in }`
+ * (`db-mongodb/queries/buildSearchParams.js`), so it filters for real rather
+ * than matching nothing.
+ */
+export const PUBLIC_VARIANTS: Where = {
+	and: [NOT_ARCHIVED, { "product.status": { equals: "active" } }],
+};
+
 export const ProductVariants: CollectionConfig = {
 	slug: "product-variants",
 	admin: {
@@ -22,7 +36,7 @@ export const ProductVariants: CollectionConfig = {
 		defaultColumns: ["product", "sku", "price", "stockOnHand", "archivedAt"],
 	},
 	access: {
-		read: shopScopedRead(() => NOT_ARCHIVED),
+		read: shopScopedRead(() => PUBLIC_VARIANTS),
 		create: () => false,
 		update: () => false,
 		delete: () => false,

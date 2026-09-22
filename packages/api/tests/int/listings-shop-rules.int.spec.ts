@@ -221,7 +221,7 @@ describe("a listing cannot borrow another shop's product", () => {
 				data: { ...base, product: "p-1" },
 				req: req(catalogue(), { id: "u-1" }, { productService: true }),
 			}),
-		).rejects.toThrow(/another shop/);
+		).rejects.toThrow(/must belong to a shop/);
 	});
 
 	it("accepts a product of the listing's own shop", async () => {

@@ -36,15 +36,6 @@ export const PRODUCT_DERIVED_FIELDS = [
 	"productSummary",
 ] as const;
 
-const getRelationshipId = (value: unknown): string | null => {
-	if (typeof value === "string" && value.length > 0) return value;
-	if (value && typeof value === "object" && "id" in value) {
-		const id = (value as { id?: unknown }).id;
-		if (typeof id === "string" && id.length > 0) return id;
-	}
-	return null;
-};
-
 const isEmptyValue = (value: unknown): boolean =>
 	value === undefined || value === null || value === "";
 
@@ -81,8 +72,8 @@ const shouldValidateListingForm = ({
 }): boolean => {
 	if (operation === "create" || !originalDoc) return true;
 
-	const nextCategoryId = getRelationshipId(data.category);
-	const previousCategoryId = getRelationshipId(originalDoc.category);
+	const nextCategoryId = relationId(data.category);
+	const previousCategoryId = relationId(originalDoc.category);
 	if (nextCategoryId !== previousCategoryId) return true;
 
 	const nextPrice = toNormalizedPrice(data.price);
@@ -212,7 +203,13 @@ export const Listings: CollectionConfig = {
 					if (!product) {
 						throw new APIError("The product does not exist.", 400);
 					}
-					if (!nextShop || relationId(product.shop) !== nextShop) {
+					if (!nextShop) {
+						throw new APIError(
+							"A listing that carries a product must belong to a shop.",
+							400,
+						);
+					}
+					if (relationId(product.shop) !== nextShop) {
 						throw new APIError(
 							"A listing cannot carry a product from another shop.",
 							400,
@@ -252,7 +249,7 @@ export const Listings: CollectionConfig = {
 						originalDoc: originalDoc as Record<string, unknown> | null,
 					})
 				) {
-					const categoryId = getRelationshipId(data.category);
+					const categoryId = relationId(data.category);
 					if (!categoryId) {
 						throw new Error("Category is required");
 					}

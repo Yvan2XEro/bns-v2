@@ -6,7 +6,10 @@ import type {
 	Where,
 } from "payload";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
-import { MOVEMENT_TYPES } from "../collections/StockMovements";
+import {
+	MOVEMENT_TYPES,
+	trustLoadedVariant,
+} from "../collections/StockMovements";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -179,6 +182,9 @@ export async function applyMovement(
 
 	const stockAfter = Number(updated.stockOnHand);
 	const reserved = Number(updated.stockReserved ?? 0);
+	// The ledger hook re-reads the variant to check its shop; hand it the row we
+	// already hold so a count of N lines stays N reads, not 2N.
+	trustLoadedVariant(req.context, { id: variant.id, shop: variant.shop });
 	const movement = await req.payload.create({
 		collection: "stock-movements",
 		req,

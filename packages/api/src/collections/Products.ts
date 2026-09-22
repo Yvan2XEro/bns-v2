@@ -49,8 +49,10 @@ export const Products: CollectionConfig = {
 				}
 
 				const claimedBy = relationId(listing.product);
+				// On a create there is no id yet — Mongo assigns it after this hook —
+				// so an unknown id cannot be read as "the claim is mine".
 				const productId = relationId(originalDoc?.id ?? data.id);
-				if (claimedBy && productId && claimedBy !== productId) {
+				if (claimedBy && claimedBy !== productId) {
 					throw new APIError(
 						"This listing already belongs to another product.",
 						400,

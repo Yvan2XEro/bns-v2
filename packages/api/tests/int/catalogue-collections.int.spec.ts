@@ -8,6 +8,7 @@ import {
 import {
 	MOVEMENT_TYPES,
 	StockMovements,
+	trustLoadedVariant,
 } from "../../src/collections/StockMovements";
 import { type Doc, fakePayload, matches } from "./helpers/fakePayload";
 
@@ -49,23 +50,37 @@ type HookFn = (args: unknown) => Promise<Doc>;
 const read = (collection: { access?: { read?: unknown } }) =>
 	collection.access?.read as AccessFn;
 
+/** Which of `rows` an access rule actually lets through. */
+const visible = (rule: unknown, rows: Doc[]): unknown[] => {
+	if (rule === true) return rows.map((row) => row.id);
+	if (rule === false || typeof rule !== "object" || rule === null) return [];
+	return rows.filter((row) => matches(row, rule as Doc)).map((row) => row.id);
+};
+
+const PRODUCT_ROWS: Doc[] = [
+	{ id: "p-1", shop: "s-1", status: "active" },
+	{ id: "p-draft", shop: "s-1", status: "draft" },
+	{ id: "p-2", shop: "s-2", status: "active" },
+	{ id: "p-other-draft", shop: "s-2", status: "archived" },
+];
+
 describe("products access", () => {
-	it("shows only active products to a visitor", async () => {
-		expect(await read(Products)({ req: req(null) })).toEqual({
-			status: { equals: "active" },
-		});
+	it("shows a visitor the active products and nothing else", async () => {
+		expect(
+			visible(await read(Products)({ req: req(null) }), PRODUCT_ROWS),
+		).toEqual(["p-1", "p-2"]);
 	});
 
-	it("adds the caller's own shops to what they can read", async () => {
-		expect(await read(Products)({ req: req(member) })).toEqual({
-			or: [{ status: { equals: "active" } }, { shop: { in: ["s-1"] } }],
-		});
+	it("adds the caller's own drafts to what they can read", async () => {
+		expect(
+			visible(await read(Products)({ req: req(member) }), PRODUCT_ROWS),
+		).toEqual(["p-1", "p-draft", "p-2"]);
 	});
 
-	it("leaves a signed-in stranger with the public scope only", async () => {
-		expect(await read(Products)({ req: req(stranger) })).toEqual({
-			or: [{ status: { equals: "active" } }, { shop: { in: [] } }],
-		});
+	it("leaves a signed-in stranger with the public rows only", async () => {
+		expect(
+			visible(await read(Products)({ req: req(stranger) }), PRODUCT_ROWS),
+		).toEqual(["p-1", "p-2"]);
 	});
 
 	it("lets staff read every product", async () => {
@@ -81,16 +96,52 @@ describe("products access", () => {
 });
 
 describe("product variants access", () => {
-	it("hides archived variants from everyone but the shop", async () => {
-		expect(await read(ProductVariants)({ req: req(null) })).toEqual(
-			NOT_ARCHIVED,
-		);
-		expect(await read(ProductVariants)({ req: req(member) })).toEqual({
-			or: [NOT_ARCHIVED, { shop: { in: ["s-1"] } }],
-		});
+	// The Mongo adapter resolves `product.status` into a sub-query on `products`
+	// and rewrites it to `product: { $in }`; the in-memory fake walks a populated
+	// relation instead, so these rows carry their product inline.
+	const VARIANT_ROWS: Doc[] = [
+		{ id: "v-1", shop: "s-1", product: { id: "p-1", status: "active" } },
+		{ id: "v-draft", shop: "s-1", product: { id: "p-draft", status: "draft" } },
+		{ id: "v-2", shop: "s-2", product: { id: "p-2", status: "active" } },
+		{
+			id: "v-other-draft",
+			shop: "s-2",
+			product: { id: "p-other-draft", status: "draft" },
+		},
+		{
+			id: "v-archived",
+			shop: "s-1",
+			archivedAt: "2026-01-01T00:00:00.000Z",
+			product: { id: "p-1", status: "active" },
+		},
+	];
+
+	it("shows a visitor only live variants of published products", async () => {
+		expect(
+			visible(await read(ProductVariants)({ req: req(null) }), VARIANT_ROWS),
+		).toEqual(["v-1", "v-2"]);
 	});
 
-	it("matches a live variant and not an archived one", () => {
+	it("hides another shop's draft catalogue from a signed-in stranger", async () => {
+		expect(
+			visible(
+				await read(ProductVariants)({ req: req(stranger) }),
+				VARIANT_ROWS,
+			),
+		).toEqual(["v-1", "v-2"]);
+	});
+
+	it("shows a member their own shop's drafts and archived variants", async () => {
+		expect(
+			visible(await read(ProductVariants)({ req: req(member) }), VARIANT_ROWS),
+		).toEqual(["v-1", "v-draft", "v-2", "v-archived"]);
+	});
+
+	it("lets staff read everything", async () => {
+		expect(await read(ProductVariants)({ req: req(moderator) })).toBe(true);
+	});
+
+	it("keeps NOT_ARCHIVED matching both shapes of a live variant", () => {
 		expect(matches({ id: "v-1" }, NOT_ARCHIVED)).toBe(true);
 		expect(matches({ id: "v-2", archivedAt: null }, NOT_ARCHIVED)).toBe(true);
 		expect(
@@ -148,16 +199,24 @@ describe("stock movements access", () => {
 		expect(await read(StockMovements)({ req: req(null) })).toBe(false);
 	});
 
+	const MOVEMENT_ROWS: Doc[] = [
+		{ id: "sm-1", shop: "s-1", type: "receipt" },
+		{ id: "sm-2", shop: "s-2", type: "sale" },
+	];
+
 	it("shows a member their own shops' ledger", async () => {
-		expect(await read(StockMovements)({ req: req(member) })).toEqual({
-			shop: { in: ["s-1"] },
-		});
+		expect(
+			visible(await read(StockMovements)({ req: req(member) }), MOVEMENT_ROWS),
+		).toEqual(["sm-1"]);
 	});
 
 	it("leaves a stranger with nothing to match", async () => {
-		expect(await read(StockMovements)({ req: req(stranger) })).toEqual({
-			shop: { in: [] },
-		});
+		expect(
+			visible(
+				await read(StockMovements)({ req: req(stranger) }),
+				MOVEMENT_ROWS,
+			),
+		).toEqual([]);
 	});
 
 	it("lets staff audit the whole ledger", async () => {
@@ -243,6 +302,78 @@ describe("the stock ledger is append-only", () => {
 	});
 });
 
+describe("the ledger can trust a variant the stock service already loaded", () => {
+	const beforeChange = StockMovements.hooks?.beforeChange?.[0] as HookFn;
+
+	// An empty store: anything the hook lets through here was checked without a
+	// second read of the variant.
+	const emptyStore = () => fakePayload({});
+
+	const movement = (shop: string) => ({
+		variant: "v-1",
+		product: "p-1",
+		shop,
+		type: "receipt",
+		quantity: 3,
+		stockAfter: 3,
+	});
+
+	it("appends without reading the variant back", async () => {
+		const context: Record<string, unknown> = {};
+		trustLoadedVariant(context, { id: "v-1", shop: "s-1" });
+		const payload = emptyStore();
+		const result = await beforeChange({
+			operation: "create",
+			data: movement("s-1"),
+			req: { payload, user: member, context },
+		});
+		expect(result.stockAfter).toBe(3);
+		expect(payload.writes).toHaveLength(0);
+	});
+
+	it("still refuses a shop the loaded variant does not belong to", async () => {
+		const context: Record<string, unknown> = {};
+		trustLoadedVariant(context, { id: "v-1", shop: "s-1" });
+		await expect(
+			beforeChange({
+				operation: "create",
+				data: movement("s-2"),
+				req: { payload: emptyStore(), user: member, context },
+			}),
+		).rejects.toThrow(/another shop/);
+	});
+
+	it("ignores a loaded variant that is not the one being appended", async () => {
+		const context: Record<string, unknown> = {};
+		trustLoadedVariant(context, { id: "v-9", shop: "s-1" });
+		await expect(
+			beforeChange({
+				operation: "create",
+				data: movement("s-1"),
+				req: { payload: emptyStore(), user: member, context },
+			}),
+		).rejects.toThrow(/does not exist/);
+	});
+
+	it("ignores a forged context flag: only a symbol key is trusted", async () => {
+		await expect(
+			beforeChange({
+				operation: "create",
+				data: movement("s-1"),
+				req: {
+					payload: emptyStore(),
+					user: member,
+					context: {
+						loadedVariant: { id: "v-1", shop: "s-1" },
+						"stock-movements.loadedVariant": { id: "v-1", shop: "s-1" },
+						stockService: true,
+					},
+				},
+			}),
+		).rejects.toThrow(/does not exist/);
+	});
+});
+
 describe("a product and its listing stay in the same shop", () => {
 	const beforeChange = Products.hooks?.beforeChange?.[0] as HookFn;
 
@@ -266,6 +397,27 @@ describe("a product and its listing stay in the same shop", () => {
 				req: req(member),
 			}),
 		).rejects.toThrow(/another product/);
+	});
+
+	// A create has no id yet — Mongo assigns it after the hook — so the claim
+	// can never be "mine" and a new product must not be able to take it.
+	it("refuses a claimed listing on a product that is being created", async () => {
+		await expect(
+			beforeChange({
+				operation: "create",
+				data: { shop: "s-1", listing: "l-3" },
+				req: req(member),
+			}),
+		).rejects.toThrow(/another product/);
+	});
+
+	it("still lets a product being created claim a free listing", async () => {
+		const result = await beforeChange({
+			operation: "create",
+			data: { shop: "s-1", listing: "l-1" },
+			req: req(member),
+		});
+		expect(result.listing).toBe("l-1");
 	});
 
 	it("accepts a listing of the product's own shop", async () => {
