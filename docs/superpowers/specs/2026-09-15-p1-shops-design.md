@@ -356,6 +356,32 @@ Added to `lib/errors.ts`, with fallbacks and translations in both clients:
 
 Every new string is added in English and French on web (next-intl) and mobile (i18next) in the same change. Shop content (name, description) is user-written in a single language, like listings. Bilingual obligations apply to order documents and terms in P4.
 
+## Considered and rejected: `@payloadcms/plugin-multi-tenant`
+
+Evaluated 2026-09-22 against this design. Not adopted. The plugin assumes every document in an
+enabled collection belongs to exactly one tenant and that a signed-in user only sees their own
+tenants; a public marketplace is the inverse. Specifically: its access wrapper AND-s
+`{ tenant: { in: userTenantIDs } }` onto every result, so a signed-in buyer with no shop would see
+no listings; its tenant field is always required, while most listings here are shop-less classifieds;
+its relationship `filterOptions` scope a picker to one tenant, which blocks P8 resale, where a
+listing points at another shop's product; and its delete cleanup hard-deletes a tenant's documents,
+while shops are closed, never deleted. It also saves almost nothing this phase needs — handles,
+products, variants, the stock ledger, listing publication, public shop pages, the moderation cascade
+and search indexing are all out of its scope — and its admin tenant selector is dead weight, since
+sellers never enter the Payload admin.
+
+Two ideas are worth copying without the dependency, as additive refinements to `access/shopRoles.ts`:
+
+- `withShopAccess(baseAccess, fieldName)`: run the collection's own access function, short-circuit on
+  `false`, and AND a `Where` onto an object result — instead of repeating the same member-scoping body
+  in products, product-variants, stock-movements and the stock summary.
+- `shopField()`: one factory for the `shop` relationship (`index: true`, `filterOptions` limited to the
+  caller's member shops), so the admin picker is scoped without touching access.
+
+The membership array the plugin puts on the user document is deliberately not copied: `shop-members`
+already carries `role` and `status` with a unique `(shop, user)` index, and a second copy of the same
+fact would be a second source of truth.
+
 ## Testing
 
 **Unit tests:**
