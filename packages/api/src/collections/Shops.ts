@@ -2,6 +2,7 @@ import type { CollectionConfig, Where } from "payload";
 import { isAdmin, isModerator } from "../access/roles";
 import { memberShopIds } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
+import { createShopEndpoint } from "../endpoints/shops";
 import {
 	assertNotSuspended,
 	type SuspensionCheckable,
@@ -68,6 +69,7 @@ export const Shops: CollectionConfig = {
 		admin: ({ req: { user } }) =>
 			isModerator(user as { role?: string } | undefined),
 	},
+	endpoints: [createShopEndpoint],
 	hooks: {
 		beforeChange: [
 			async ({ data, originalDoc, operation, req }) => {
