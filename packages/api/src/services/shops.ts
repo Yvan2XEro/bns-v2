@@ -5,14 +5,20 @@ import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { type PublicShop, serializePublicShop } from "../lib/publicShop";
 import { ServiceError } from "../lib/serviceError";
 import {
+	addDays,
 	closedHandleReleased,
+	HANDLE_COOLDOWN_DAYS,
 	isPreviousHandleActive,
+	nextHandleChangeAt,
+	PREVIOUS_HANDLE_TTL_DAYS,
+	pruneExpiredHandles,
 	releasedHandleFor,
 	validateHandle,
 } from "../lib/shopHandle";
 import { getShopSettings } from "../lib/shopSettings";
 import { withTransaction } from "../lib/transactions";
 import type { Shop } from "../payload-types";
+import { loadPublicShop, requireShopMember } from "./shopGuards";
 
 export interface ServiceUser {
 	id: string;
@@ -283,4 +289,72 @@ export async function createShop(
 			throw new ServiceError(ERROR_CODES.shopHandleTaken, 409);
 		throw error;
 	}
+}
+
+/**
+ * Only the owner or a manager may move a shop's handle, and only once the
+ * cooldown from the shop's own `handleChangedAt` has elapsed. The old handle
+ * is kept in `previousHandles` for `PREVIOUS_HANDLE_TTL_DAYS` so links people
+ * already shared keep resolving; `checkHandleAvailability` refuses a handle
+ * still held there by another shop.
+ */
+export async function changeShopHandle(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	rawHandle: unknown,
+	now: Date = new Date(),
+): Promise<{ shop: PublicShop; nextHandleChangeAt: string }> {
+	const { shop } = await requireShopMember(payload, user, shopId, {
+		manage: true,
+		writable: true,
+	});
+
+	if (nextHandleChangeAt(shop.handleChangedAt, now)) {
+		throw new ServiceError(ERROR_CODES.shopHandleCooldown, 409);
+	}
+
+	const availability = await checkHandleAvailability(payload, rawHandle, {
+		now,
+		excludeShopId: String(shop.id),
+	});
+	if (!availability.available && availability.reason)
+		throw handleError(availability.reason);
+	const handle = availability.handle;
+	if (handle === shop.handle)
+		throw new ServiceError(ERROR_CODES.validation, 400);
+
+	const previousHandles = [
+		...pruneExpiredHandles(shop.previousHandles ?? [], now)
+			.filter((entry) => entry.handle !== handle)
+			.map((entry) => ({ handle: entry.handle, until: entry.until })),
+		{
+			handle: shop.handle,
+			until: addDays(now, PREVIOUS_HANDLE_TTL_DAYS).toISOString(),
+		},
+	];
+
+	try {
+		await withTransaction(
+			payload,
+			async (req) => {
+				await releaseClosedHandle(req, handle, now);
+				await writeShop(req, String(shop.id), {
+					handle,
+					handleChangedAt: now.toISOString(),
+					previousHandles,
+				});
+			},
+			{ user },
+		);
+	} catch (error) {
+		if (isUniqueViolation(error))
+			throw new ServiceError(ERROR_CODES.shopHandleTaken, 409);
+		throw error;
+	}
+
+	return {
+		shop: await loadPublicShop(payload, String(shop.id)),
+		nextHandleChangeAt: addDays(now, HANDLE_COOLDOWN_DAYS).toISOString(),
+	};
 }

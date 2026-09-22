@@ -35,6 +35,20 @@ export async function requireUser(
 	return { payload, user: toServiceUser(user) };
 }
 
+/** A malformed or missing JSON body reads as an empty object; the service validates its fields. */
+export async function readBody(
+	request: Request,
+): Promise<Record<string, unknown>> {
+	try {
+		const data = await request.json();
+		return data && typeof data === "object"
+			? (data as Record<string, unknown>)
+			: {};
+	} catch {
+		return {};
+	}
+}
+
 /**
  * Business failures keep their code; anything else is logged and reported as
  * generic.server so driver text never reaches a client.
