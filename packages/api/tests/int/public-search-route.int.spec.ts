@@ -150,6 +150,20 @@ describe("public search route", () => {
 			expect(filter).toContain('location = "Douala\\" OR x = 1"');
 		});
 
+		it("quotes each condition instead of splicing it into the filter", async () => {
+			const filter = await filterFor(
+				`condition=${encodeURIComponent('new" OR 1=1 --')}`,
+			);
+			expect(filter).toContain('condition IN ["new\\" OR 1=1 --"]');
+		});
+
+		it("quotes each tag instead of splicing it into the filter", async () => {
+			const filter = await filterFor(
+				`tags=${encodeURIComponent('deal" OR 1=1 --')}`,
+			);
+			expect(filter).toContain('tags IN ["deal\\" OR 1=1 --"]');
+		});
+
 		it("answers 503 rather than crashing when the filter is refused", async () => {
 			// Meilisearch refuses a filter on an attribute the index does not list
 			// as filterable — which is what every category filter did in production.
