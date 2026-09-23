@@ -3,6 +3,7 @@ import { APIError, type CollectionConfig, type Where } from "payload";
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 import { resolveShopRole, shopField } from "../access/shopRoles";
+import { refreshShopListingCount } from "../hooks/shopListingCount";
 import {
 	assertNotSuspended,
 	type SuspensionCheckable,
@@ -384,6 +385,18 @@ export const Listings: CollectionConfig = {
 					await queueSearchEvent(req, event, doc.id as string);
 				}
 
+				const previousShop = relationId(previousDoc?.shop);
+				const currentShop = relationId(doc.shop);
+				if (
+					operation === "create" ||
+					previousDoc?.status !== doc.status ||
+					previousShop !== currentShop
+				) {
+					for (const shopId of new Set([previousShop, currentShop])) {
+						if (shopId) await refreshShopListingCount(req, shopId);
+					}
+				}
+
 				// Product publication is the seller's own action, not a moderation decision.
 				if (req.context?.productService === true) return;
 
@@ -479,6 +492,9 @@ export const Listings: CollectionConfig = {
 					const { queueSearchEvent } = await import("../hooks/searchEvents");
 					await queueSearchEvent(req, "listing.deleted", doc.id as string);
 				}
+
+				const shopId = relationId(doc.shop);
+				if (shopId) await refreshShopListingCount(req, shopId);
 			},
 		],
 	},

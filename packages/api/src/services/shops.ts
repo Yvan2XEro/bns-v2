@@ -13,6 +13,7 @@ import {
 	HANDLE_COOLDOWN_DAYS,
 	isPreviousHandleActive,
 	nextHandleChangeAt,
+	normalizeHandle,
 	PREVIOUS_HANDLE_TTL_DAYS,
 	pruneExpiredHandles,
 	releasedHandleFor,
@@ -504,4 +505,48 @@ export async function getMyShop(
 			personalListings: personal.totalDocs,
 		},
 	};
+}
+
+/** Suspended and closed shops are 404 to the public; an old handle answers with its successor. */
+export async function resolvePublicShop(
+	payload: Payload,
+	rawHandle: unknown,
+	now: Date = new Date(),
+): Promise<{ shop: PublicShop } | { redirectTo: string } | null> {
+	const handle = normalizeHandle(rawHandle);
+	if (!handle) return null;
+
+	const current = await payload.find({
+		collection: "shops",
+		where: { handle: { equals: handle } },
+		depth: 0,
+		limit: 1,
+		overrideAccess: true,
+	});
+	const shop = current.docs[0] as Shop | undefined;
+	if (shop) {
+		return shop.status === "active"
+			? { shop: await loadPublicShop(payload, String(shop.id)) }
+			: null;
+	}
+
+	const previous = await payload.find({
+		collection: "shops",
+		where: {
+			and: [
+				{ "previousHandles.handle": { equals: handle } },
+				{ status: { equals: "active" } },
+			],
+		},
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	const successor = (previous.docs as Shop[]).find((doc) =>
+		(doc.previousHandles ?? []).some(
+			(entry) => entry.handle === handle && isPreviousHandleActive(entry, now),
+		),
+	);
+	return successor ? { redirectTo: String(successor.handle) } : null;
 }

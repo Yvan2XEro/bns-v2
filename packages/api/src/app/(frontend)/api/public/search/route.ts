@@ -3,6 +3,7 @@ import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
 import { quoteFilterValue } from "@/lib/meiliFilter";
+import { relationId } from "@/lib/relationId";
 
 const meiliConfigured = !!process.env.MEILI_HOST;
 console.log(
@@ -42,18 +43,34 @@ function buildAttributeFilter(slug: string, raw: string): string | null {
 	return `${slug} = ${quoteFilterValue(value)}`;
 }
 
-const serializeListingHit = (doc: Record<string, unknown>) => ({
-	id: doc.id,
-	title: doc.title,
-	description: doc.description,
-	price: doc.price,
-	location: doc.location,
-	images: doc.images,
-	status: doc.status,
-	boostedUntil: doc.boostedUntil,
-	attributes: doc.attributes,
-	createdAt: doc.createdAt,
-});
+const serializeListingHit = (doc: Record<string, unknown>) => {
+	const shop =
+		doc.shop && typeof doc.shop === "object"
+			? (doc.shop as Record<string, unknown>)
+			: null;
+	const summary = (doc.productSummary ?? null) as {
+		priceMax?: number | null;
+		available?: number | null;
+	} | null;
+	return {
+		id: doc.id,
+		title: doc.title,
+		description: doc.description,
+		price: doc.price,
+		location: doc.location,
+		images: doc.images,
+		status: doc.status,
+		boostedUntil: doc.boostedUntil,
+		attributes: doc.attributes,
+		createdAt: doc.createdAt,
+		shopId: relationId(doc.shop),
+		shopHandle: shop?.handle ?? null,
+		shopName: shop?.name ?? null,
+		shopLevel: shop?.level ?? null,
+		priceMax: summary?.priceMax ?? null,
+		available: summary?.available ?? null,
+	};
+};
 
 export async function GET(request: Request) {
 	const start = Date.now();
@@ -72,6 +89,7 @@ export async function GET(request: Request) {
 	const boostedOnly = isTruthyQueryParam(searchParams.get("boosted"));
 	const conditionParam = searchParams.get("condition");
 	const tagsParam = searchParams.get("tags");
+	const shopParam = searchParams.get("shop");
 	const nowIso = new Date().toISOString();
 
 	const host = process.env.MEILI_HOST;
@@ -105,6 +123,10 @@ export async function GET(request: Request) {
 
 		if (category) {
 			where.category = { equals: category };
+		}
+
+		if (shopParam) {
+			where.shop = { equals: shopParam };
 		}
 
 		if (minPrice || maxPrice) {
@@ -177,6 +199,10 @@ export async function GET(request: Request) {
 
 	if (category) {
 		filters.push(`categoryId = ${quoteFilterValue(category)}`);
+	}
+
+	if (shopParam) {
+		filters.push(`shopId = ${quoteFilterValue(shopParam)}`);
 	}
 
 	if (minPrice) {

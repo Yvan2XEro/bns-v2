@@ -104,3 +104,44 @@ export function serializePublicShop(
 		},
 	};
 }
+
+type Doc = Record<string, unknown>;
+
+export interface ShopSearchHit {
+	id: string;
+	handle: string;
+	name: string;
+	description: string | null;
+	city: string | null;
+	level: number;
+	publishedListingCount: number;
+	logoUrl: string | null;
+	ownerRating: number;
+	ownerReviews: number;
+	createdAt: string;
+}
+
+/** Accepts the indexer's shop document or a Payload shop populated at depth 1. */
+export function toShopSearchHit(doc: Doc): ShopSearchHit {
+	const owner =
+		doc.owner && typeof doc.owner === "object" ? (doc.owner as Doc) : null;
+	const location =
+		doc.location && typeof doc.location === "object"
+			? (doc.location as Doc)
+			: null;
+	const logo =
+		doc.logo && typeof doc.logo === "object" ? (doc.logo as Doc) : null;
+	return {
+		id: String(doc.id),
+		handle: String(doc.handle),
+		name: String(doc.name),
+		description: str(doc.description),
+		city: str(doc.city) ?? str(location?.city),
+		level: typeof doc.level === "number" ? doc.level : 1,
+		publishedListingCount: Number(doc.publishedListingCount ?? 0),
+		logoUrl: str(doc.logoUrl) ?? str(logo?.url),
+		ownerRating: Number(doc.ownerRating ?? owner?.rating ?? 0),
+		ownerReviews: Number(doc.ownerReviews ?? owner?.totalReviews ?? 0),
+		createdAt: String(doc.createdAt ?? ""),
+	};
+}

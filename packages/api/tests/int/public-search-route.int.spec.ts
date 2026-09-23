@@ -93,6 +93,12 @@ describe("public search route", () => {
 			id: "listing-1",
 			title: "Boosted listing",
 			boostedUntil: "2026-08-20T12:00:00.000Z",
+			shopId: null,
+			shopHandle: null,
+			shopName: null,
+			shopLevel: null,
+			priceMax: null,
+			available: null,
 		});
 		// First test in the file, so it pays for importing the route and its
 		// Payload config; that alone can outlast the 5s default.
@@ -182,6 +188,71 @@ describe("public search route", () => {
 
 			expect(response.status).toBe(503);
 			expect((await response.json()).code).toBe("search.unavailable");
+		});
+
+		it("filters by shop with the value quoted", async () => {
+			expect(await filterFor('shop=abc"def')).toContain('shopId = "abc\\"def"');
+		});
+	});
+});
+
+describe("public shops search route", () => {
+	beforeEach(() => {
+		searchMock.mockReset();
+		searchMock.mockResolvedValue({
+			hits: [
+				{
+					id: "s-1",
+					handle: "akwatech",
+					name: "Akwa",
+					description: null,
+					city: "Douala",
+					level: 1,
+					publishedListingCount: 3,
+					logoUrl: null,
+					ownerRating: 4,
+					ownerReviews: 2,
+					createdAt: "x",
+					categoryIds: [],
+				},
+			],
+			estimatedTotalHits: 1,
+		});
+		process.env.MEILI_HOST = "http://meili.example.test";
+	});
+
+	it("quotes city and category and maps hits", async () => {
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/shops/route"
+		);
+		const res = await GET(
+			new Request(
+				'http://x/api/public/search/shops?q=tel&city=Dou"ala&category=c-1',
+			),
+		);
+		const body = await res.json();
+		expect(searchMock.mock.calls.at(-1)?.[1]?.filter).toBe(
+			'city = "Dou\\"ala" AND categoryIds = "c-1"',
+		);
+		expect(body).toEqual({
+			hits: [
+				{
+					id: "s-1",
+					handle: "akwatech",
+					name: "Akwa",
+					description: null,
+					city: "Douala",
+					level: 1,
+					publishedListingCount: 3,
+					logoUrl: null,
+					ownerRating: 4,
+					ownerReviews: 2,
+					createdAt: "x",
+				},
+			],
+			total: 1,
+			limit: 20,
+			offset: 0,
 		});
 	});
 });
