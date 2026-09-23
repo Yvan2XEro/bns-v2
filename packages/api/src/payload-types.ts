@@ -477,6 +477,7 @@ export interface Shop {
   suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
   suspendedNote?: string | null;
   suspendedBy?: (string | null) | User;
+  suspensionLogId?: string | null;
   publishedListingCount?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -1513,6 +1514,7 @@ export interface ShopsSelect<T extends boolean = true> {
   suspendedReason?: T;
   suspendedNote?: T;
   suspendedBy?: T;
+  suspensionLogId?: T;
   publishedListingCount?: T;
   updatedAt?: T;
   createdAt?: T;

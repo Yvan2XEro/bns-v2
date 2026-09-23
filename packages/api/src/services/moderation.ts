@@ -63,8 +63,8 @@ async function writeLog(
 	payload: Payload,
 	input: LogInput,
 	req?: PayloadRequest,
-): Promise<void> {
-	await payload.create({
+): Promise<{ id: string }> {
+	const created = await payload.create({
 		collection: "moderation-log",
 		overrideAccess: true,
 		context: MODERATION_CONTEXT,
@@ -80,6 +80,7 @@ async function writeLog(
 			metadata: input.metadata ?? undefined,
 		},
 	});
+	return { id: String(created.id) };
 }
 
 function assertModerator(actor: Actor): void {
@@ -111,16 +112,17 @@ function suspensionUntil(
 }
 
 /**
- * The metadata of the most recent log entry for a target/action pair — the
- * source every restore reads to know exactly what its counterpart took down.
+ * The most recent log entry for a target/action pair, id included — the
+ * source every restore reads to know exactly what its counterpart took down,
+ * and (for shops) the identity a later suspension can be told apart from.
  */
-async function lastEntryMetadata(
+async function lastEntry(
 	payload: Payload,
 	targetType: "user" | "shop",
 	targetId: string,
 	action: ModerationAction,
 	req?: PayloadRequest,
-): Promise<Record<string, unknown> | null> {
+): Promise<{ id: string; metadata: Record<string, unknown> | null } | null> {
 	const last = await payload.find({
 		collection: "moderation-log",
 		depth: 0,
@@ -136,8 +138,24 @@ async function lastEntryMetadata(
 			],
 		},
 	});
+	const doc = last.docs[0];
+	if (!doc) return null;
+	return {
+		id: String(doc.id),
+		metadata: (doc.metadata as Record<string, unknown> | undefined) ?? null,
+	};
+}
+
+async function lastEntryMetadata(
+	payload: Payload,
+	targetType: "user" | "shop",
+	targetId: string,
+	action: ModerationAction,
+	req?: PayloadRequest,
+): Promise<Record<string, unknown> | null> {
 	return (
-		(last.docs[0]?.metadata as Record<string, unknown> | undefined) ?? null
+		(await lastEntry(payload, targetType, targetId, action, req))?.metadata ??
+		null
 	);
 }
 
@@ -281,7 +299,7 @@ export async function suspendUser(
 	}
 
 	const until = suspensionUntil(actor, input.durationDays);
-	const suspension: ShopSuspension = {
+	const suspension: SuspensionFields = {
 		suspendedAt: new Date().toISOString(),
 		suspendedUntil: until ? until.toISOString() : null,
 		suspendedReason: reason,
@@ -352,9 +370,35 @@ export async function suspendUser(
 					],
 				},
 			});
-			const suspendedShopIds = ownedShops.docs.map((doc) => String(doc.id));
-			for (const shopId of suspendedShopIds) {
-				await applyShopSuspension(payload, req, shopId, suspension);
+			const suspendedShopIds: string[] = [];
+			// Each cascaded shop gets its own `shop.suspend` entry — the shop's own
+			// history should say why it went down, and its id is what
+			// `unsuspendUser` later matches against to tell "still on this cascade's
+			// suspension" from "independently re-suspended since".
+			const shopSuspensionLogIds: Record<string, string> = {};
+			for (const doc of ownedShops.docs) {
+				const shopId = String(doc.id);
+				const shopLog = await writeLog(
+					payload,
+					{
+						actor,
+						action: "shop.suspend",
+						targetType: "shop",
+						targetId: shopId,
+						reason,
+						note: suspension.suspendedNote,
+						metadata: {
+							until: suspension.suspendedUntil,
+							durationDays: input.durationDays ?? null,
+							unpublishedListingIds: [],
+							cascadedFromUser: targetId,
+						},
+					},
+					req,
+				);
+				await applyShopSuspension(payload, req, shopId, suspension, shopLog.id);
+				suspendedShopIds.push(shopId);
+				shopSuspensionLogIds[shopId] = shopLog.id;
 			}
 
 			await writeLog(
@@ -371,6 +415,7 @@ export async function suspendUser(
 						durationDays: input.durationDays ?? null,
 						unpublishedListingIds,
 						suspendedShopIds,
+						shopSuspensionLogIds,
 					},
 				},
 				req,
@@ -425,10 +470,15 @@ export async function unsuspendUser(
 				"user.suspend",
 				req,
 			);
-			// Guarded by the suspension timestamp, not just `status === "suspended"`:
-			// a shop this cascade suspended may since have been unsuspended and
-			// independently re-suspended by a fresh moderation action, which must
-			// not be undone by lifting the user's own suspension.
+			// Guarded by the shop's own `shop.suspend` log entry id, not just
+			// `status === "suspended"`: a shop this cascade suspended may since
+			// have been unsuspended and independently re-suspended by a fresh
+			// moderation action (its own entry, its own id), which must not be
+			// undone by lifting the user's own suspension.
+			const shopSuspensionLogIds =
+				(metadata?.shopSuspensionLogIds as
+					| Record<string, unknown>
+					| undefined) ?? {};
 			const restoredShopIds: string[] = [];
 			for (const shopId of Array.isArray(metadata?.suspendedShopIds)
 				? metadata.suspendedShopIds.map(String)
@@ -443,9 +493,10 @@ export async function unsuspendUser(
 					})
 					.catch(() => null);
 				if (shop?.status !== "suspended") continue;
+				const expected = shopSuspensionLogIds[shopId];
 				if (
-					Date.parse(String(shop.suspendedAt)) !==
-					Date.parse(String(target.suspendedAt))
+					!expected ||
+					String(shop.suspensionLogId ?? "") !== String(expected)
 				) {
 					continue;
 				}
@@ -562,7 +613,7 @@ const SHOP_MODERATION_CONTEXT = {
 	shopService: true,
 } as const;
 
-interface ShopSuspension {
+interface SuspensionFields {
 	suspendedAt: string;
 	suspendedUntil: string | null;
 	suspendedReason: SuspensionReason;
@@ -587,7 +638,8 @@ async function applyShopSuspension(
 	payload: Payload,
 	req: PayloadRequest,
 	shopId: string,
-	suspension: ShopSuspension,
+	suspension: SuspensionFields,
+	suspensionLogId: string,
 ) {
 	await payload.update({
 		collection: "shops",
@@ -595,7 +647,7 @@ async function applyShopSuspension(
 		req,
 		overrideAccess: true,
 		context: SHOP_MODERATION_CONTEXT,
-		data: { status: "suspended", ...suspension },
+		data: { status: "suspended", ...suspension, suspensionLogId },
 	});
 }
 
@@ -617,6 +669,7 @@ async function clearShopSuspension(
 			suspendedReason: null,
 			suspendedNote: null,
 			suspendedBy: null,
+			suspensionLogId: null,
 		},
 	});
 }
@@ -631,23 +684,19 @@ async function restoreShopListings(
 	req: PayloadRequest,
 	shop: Shop,
 ): Promise<string[]> {
-	const metadata = await lastEntryMetadata(
+	if (!shop.suspensionLogId) return [];
+	const entry = await lastEntry(
 		payload,
 		"shop",
 		String(shop.id),
 		"shop.suspend",
 		req,
 	);
-	if (
-		!metadata ||
-		Date.parse(String(metadata.suspendedAt)) !==
-			Date.parse(String(shop.suspendedAt))
-	) {
-		return [];
-	}
+	if (!entry || entry.id !== String(shop.suspensionLogId)) return [];
+	const metadata = entry.metadata;
 
 	const restored: string[] = [];
-	for (const id of Array.isArray(metadata.unpublishedListingIds)
+	for (const id of Array.isArray(metadata?.unpublishedListingIds)
 		? metadata.unpublishedListingIds.map(String)
 		: []) {
 		const listing = await payload
@@ -708,7 +757,7 @@ export async function suspendShop(
 	}
 
 	const until = suspensionUntil(actor, input.durationDays);
-	const suspension: ShopSuspension = {
+	const suspension: SuspensionFields = {
 		suspendedAt: new Date().toISOString(),
 		suspendedUntil: until ? until.toISOString() : null,
 		suspendedReason: reason,
@@ -719,6 +768,24 @@ export async function suspendShop(
 	return withTransaction(
 		payload,
 		async (req) => {
+			// Re-checked here, not just before the transaction opened: the read
+			// above and this one can straddle another suspend that lands in
+			// between, and without this re-check both would proceed, the second
+			// overwriting the first's suspension fields and orphaning its restore
+			// set (its own `unpublishedListingIds` would never be looked at again).
+			const current = await payload
+				.findByID({
+					collection: "shops",
+					id: shopId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null);
+			if (!current || current.status !== "active") {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+
 			const published = await payload.find({
 				collection: "listings",
 				depth: 0,
@@ -745,8 +812,7 @@ export async function suspendShop(
 				});
 			}
 
-			await applyShopSuspension(payload, req, shopId, suspension);
-			await writeLog(
+			const logEntry = await writeLog(
 				payload,
 				{
 					actor,
@@ -759,11 +825,11 @@ export async function suspendShop(
 						until: suspension.suspendedUntil,
 						durationDays: input.durationDays ?? null,
 						unpublishedListingIds,
-						suspendedAt: suspension.suspendedAt,
 					},
 				},
 				req,
 			);
+			await applyShopSuspension(payload, req, shopId, suspension, logEntry.id);
 			return {
 				shopId: String(shopId),
 				until: suspension.suspendedUntil,
@@ -819,6 +885,15 @@ export async function unsuspendShop(
  * The log entry is attributed to the moderator who set the end date, marked
  * `actorRole: "system"` so history can tell an automatic lift from a manual
  * one.
+ *
+ * The candidate list below is read once, outside any transaction, purely to
+ * find shops worth looking at. Nothing from it is trusted afterwards: a
+ * moderator can unsuspend (or unsuspend and independently re-suspend) a shop
+ * in the window between that read and a given shop's own transaction, and two
+ * overlapping runs of this job race the same window against each other. Each
+ * shop is re-read inside its own transaction and only acted on if it is still
+ * suspended under the exact suspension the candidate list saw, identified by
+ * `suspensionLogId` rather than by timestamp.
  */
 export async function liftExpiredShopSuspensions(
 	payload: Payload,
@@ -838,28 +913,68 @@ export async function liftExpiredShopSuspensions(
 	});
 
 	const lifted: string[] = [];
-	for (const shop of due.docs) {
-		const shopId = String(shop.id);
-		await withTransaction(payload, async (req) => {
+	for (const candidate of due.docs) {
+		const shopId = String(candidate.id);
+		const expectedSuspensionLogId = candidate.suspensionLogId
+			? String(candidate.suspensionLogId)
+			: null;
+
+		const acted = await withTransaction(payload, async (req) => {
+			const shop = await payload
+				.findByID({
+					collection: "shops",
+					id: shopId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null);
+			if (!shop || shop.status !== "suspended") return false;
+			const currentSuspensionLogId = shop.suspensionLogId
+				? String(shop.suspensionLogId)
+				: null;
+			// Not the suspension the candidate list saw: either lifted and
+			// re-suspended since, or (with a real transactional adapter) already
+			// lifted by an overlapping run of this same job.
+			if (
+				!expectedSuspensionLogId ||
+				currentSuspensionLogId !== expectedSuspensionLogId
+			) {
+				return false;
+			}
+
+			const by = relationId(shop.suspendedBy);
+			if (!by) {
+				// The log's `actor` is a required relationship to a real user;
+				// there is no system account to attribute this to instead. Rather
+				// than clear the suspension and break the "every action is
+				// logged" rule, leave it in place — this shop needs a human to
+				// look at how it lost its `suspendedBy` in the first place.
+				payload.logger.error(
+					{ shopId },
+					"[moderation] suspended shop has no suspendedBy; the expiry job will not lift it",
+				);
+				return false;
+			}
+
 			const restoredListingIds = await restoreShopListings(payload, req, shop);
 			await clearShopSuspension(payload, req, shopId);
-			const by = relationId(shop.suspendedBy);
-			if (by) {
-				await writeLog(
-					payload,
-					{
-						actor: { id: by, role: "system" },
-						action: "shop.unsuspend",
-						targetType: "shop",
-						targetId: shopId,
-						note: "Suspension expired",
-						metadata: { expired: true, restoredListingIds },
-					},
-					req,
-				);
-			}
+			await writeLog(
+				payload,
+				{
+					actor: { id: by, role: "system" },
+					action: "shop.unsuspend",
+					targetType: "shop",
+					targetId: shopId,
+					note: "Suspension expired",
+					metadata: { expired: true, restoredListingIds },
+				},
+				req,
+			);
+			return true;
 		});
-		lifted.push(shopId);
+
+		if (acted) lifted.push(shopId);
 	}
 	return { lifted };
 }

@@ -3,7 +3,7 @@ import { suspensionSummary } from "@/access/roles";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import {
 	handleModerationError,
-	readJson,
+	parseSuspensionAction,
 	requireModerator,
 } from "@/lib/moderationRoute";
 import { toMediaRef } from "@/lib/publicShop";
@@ -149,33 +149,18 @@ export async function POST(request: Request, { params }: Params) {
 	const ctx = await requireModerator(request);
 	if (ctx instanceof Response) return ctx;
 	const { id } = await params;
-	const body = await readJson(request);
-	const note = typeof body.note === "string" ? body.note : null;
+	const parsed = await parseSuspensionAction(request);
+	if (parsed instanceof Response) return parsed;
 
 	try {
-		if (body.action === "suspend") {
-			if (!("durationDays" in body)) {
-				return errorResponse(ERROR_CODES.moderationDurationInvalid, 400);
-			}
-			const durationDays =
-				body.durationDays === null ? null : Number(body.durationDays);
+		if (parsed.action === "suspend") {
 			return Response.json(
-				await suspendShop(ctx.payload, ctx.actor, id, {
-					reason: typeof body.reason === "string" ? body.reason : "",
-					durationDays,
-					note,
-				}),
+				await suspendShop(ctx.payload, ctx.actor, id, parsed),
 			);
 		}
-		if (body.action === "unsuspend") {
-			return Response.json(
-				await unsuspendShop(ctx.payload, ctx.actor, id, {
-					note,
-					restoreListings: body.restoreListings !== false,
-				}),
-			);
-		}
-		return errorResponse(ERROR_CODES.badRequest, 400);
+		return Response.json(
+			await unsuspendShop(ctx.payload, ctx.actor, id, parsed),
+		);
 	} catch (error) {
 		return handleModerationError("shops:post", error);
 	}

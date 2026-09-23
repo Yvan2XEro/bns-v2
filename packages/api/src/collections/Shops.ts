@@ -26,6 +26,7 @@ export const SHOP_SERVICE_FIELDS = [
 	"suspendedReason",
 	"suspendedNote",
 	"suspendedBy",
+	"suspensionLogId",
 	"publishedListingCount",
 ] as const;
 
@@ -223,6 +224,18 @@ export const Shops: CollectionConfig = {
 			name: "suspendedBy",
 			type: "relationship",
 			relationTo: "users",
+			access: { read: staffOnlyField },
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			// The `moderation-log` entry that produced the current suspension —
+			// millisecond timestamps can tie under a frozen clock or fast
+			// concurrent writes, an id cannot. Every restore path (direct
+			// unsuspend, the user cascade, the expiry job) matches on this
+			// instead of `suspendedAt` before touching anything.
+			name: "suspensionLogId",
+			type: "text",
+			index: true,
 			access: { read: staffOnlyField },
 			admin: { readOnly: true, position: "sidebar" },
 		},
