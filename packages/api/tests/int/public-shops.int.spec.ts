@@ -39,6 +39,12 @@ function seed() {
 				name: "Bad",
 				owner: "u-1",
 				status: "suspended",
+				// Held by an inactive shop: exercises the status guard on the
+				// previous-handle lookup, not just the vacuous case where nothing
+				// else holds the handle at all.
+				previousHandles: [
+					{ handle: "oldbad", until: "2099-01-01T00:00:00.000Z" },
+				],
 			},
 			{
 				id: "s-3",
@@ -80,6 +86,10 @@ describe("resolvePublicShop", () => {
 		expect(await resolvePublicShop(seed(), "suspended", NOW)).toBeNull();
 		expect(await resolvePublicShop(seed(), "closed", NOW)).toBeNull();
 	});
+
+	it("does not redirect to a previous handle held by an inactive shop", async () => {
+		expect(await resolvePublicShop(seed(), "oldbad", NOW)).toBeNull();
+	});
 });
 
 describe("publishedListingCount", () => {
@@ -109,6 +119,38 @@ describe("publishedListingCount", () => {
 			req: { payload, context: {} },
 		});
 		expect(payload.store.shops[0].publishedListingCount).toBe(0);
+	});
+
+	it("never mutates the caller's request context", async () => {
+		const payload = seed();
+		payload.store.listings.push({
+			id: "l-1",
+			shop: "s-1",
+			status: "published",
+		});
+		// Payload's real `createLocalReq` reassigns `req.context` in place when a
+		// local API call is given both `req` and `context` — the bug this guards
+		// against. A getter-only `context` makes that reassignment throw instead
+		// of silently widening the caller's request for every write that follows.
+		const context = {};
+		const req: { payload: typeof payload; context: unknown } = {
+			payload,
+			context: undefined,
+		};
+		Object.defineProperty(req, "context", {
+			get: () => context,
+			configurable: true,
+		});
+
+		await afterChange({
+			operation: "create",
+			doc: { id: "l-1", shop: "s-1", status: "published" },
+			previousDoc: undefined,
+			req,
+		});
+
+		expect(payload.store.shops[0].publishedListingCount).toBe(1);
+		expect(req.context).toBe(context);
 	});
 });
 
@@ -177,5 +219,17 @@ describe("GET /api/public/shops/{handle}", () => {
 			params: Promise.resolve({ handle: "akwa" }),
 		});
 		expect(await res.json()).toEqual({ redirectTo: "akwatech" });
+	});
+
+	it("answers 404 rather than 500 on a malformed percent-escape", async () => {
+		getPayloadMock.mockResolvedValue(seed());
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/shops/[handle]/route"
+		);
+		const res = await GET(new Request("http://x"), {
+			params: Promise.resolve({ handle: "%" }),
+		});
+		expect(res.status).toBe(404);
+		expect(await res.json()).toMatchObject({ code: "shop.notFound" });
 	});
 });

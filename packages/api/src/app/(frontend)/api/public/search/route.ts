@@ -43,11 +43,17 @@ function buildAttributeFilter(slug: string, raw: string): string | null {
 	return `${slug} = ${quoteFilterValue(value)}`;
 }
 
-const serializeListingHit = (doc: Record<string, unknown>) => {
+/** Takes `unknown` so a caller passes its `Listing`/hit value straight through, with no cast of its own. */
+const serializeListingHit = (input: unknown) => {
+	const doc = (input ?? {}) as Record<string, unknown>;
 	const shop =
 		doc.shop && typeof doc.shop === "object"
 			? (doc.shop as Record<string, unknown>)
 			: null;
+	// Nothing unpublishes a listing when its shop is suspended or closed yet,
+	// so a listing hit only surfaces its shop's name and handle while that
+	// shop is still active — the same rule `/s/{handle}` enforces by 404ing.
+	const activeShop = shop && shop.status === "active" ? shop : null;
 	const summary = (doc.productSummary ?? null) as {
 		priceMax?: number | null;
 		available?: number | null;
@@ -64,13 +70,142 @@ const serializeListingHit = (doc: Record<string, unknown>) => {
 		attributes: doc.attributes,
 		createdAt: doc.createdAt,
 		shopId: relationId(doc.shop),
-		shopHandle: shop?.handle ?? null,
-		shopName: shop?.name ?? null,
-		shopLevel: shop?.level ?? null,
+		shopHandle: activeShop?.handle ?? null,
+		shopName: activeShop?.name ?? null,
+		shopLevel: activeShop?.level ?? null,
 		priceMax: summary?.priceMax ?? null,
 		available: summary?.available ?? null,
 	};
 };
+
+interface FallbackParams {
+	query: string;
+	category: string | null;
+	shopParam: string | null;
+	minPrice: string | null;
+	maxPrice: string | null;
+	location: string | null;
+	conditionParam: string | null;
+	boostedOnly: boolean;
+	sortParam: string;
+	limit: number;
+	offset: number;
+	nowIso: string;
+}
+
+/**
+ * The Payload path: source of truth for every filter, including `shop`,
+ * which only this path can enforce against the shop's own status (Shops'
+ * read access already answers "not found" for a suspended or closed shop to
+ * an anonymous caller, so reusing it here is cheaper and safer than
+ * re-deriving the rule). Shared by the two callers below so a page computed
+ * from `offset` always means the same thing in both.
+ */
+async function runPayloadListingSearch(
+	params: FallbackParams,
+): Promise<Response> {
+	const {
+		query,
+		category,
+		shopParam,
+		minPrice,
+		maxPrice,
+		location,
+		conditionParam,
+		boostedOnly,
+		sortParam,
+		limit,
+		offset,
+		nowIso,
+	} = params;
+	const payload = await getPayload({ config });
+	const where: Where = {
+		status: { equals: "published" },
+	};
+
+	if (query) {
+		where.or = [
+			{ title: { contains: query } },
+			{ description: { contains: query } },
+		];
+	}
+
+	if (category) {
+		where.category = { equals: category };
+	}
+
+	if (shopParam) {
+		const shops = await payload.find({
+			collection: "shops",
+			where: { id: { equals: shopParam } },
+			depth: 0,
+			limit: 1,
+		});
+		if (!shops.docs[0]) {
+			return Response.json({ hits: [], total: 0, limit, offset });
+		}
+		where.shop = { equals: shopParam };
+	}
+
+	if (minPrice || maxPrice) {
+		const priceFilter: Record<string, number> = {};
+		if (minPrice) priceFilter.greater_than = Number.parseInt(minPrice, 10);
+		if (maxPrice) priceFilter.less_than = Number.parseInt(maxPrice, 10);
+		where.price = priceFilter;
+	}
+
+	if (location) {
+		where.location = { contains: location };
+	}
+
+	if (conditionParam) {
+		const conditions = conditionParam
+			.split(",")
+			.map((c) => c.trim())
+			.filter(Boolean);
+		if (conditions.length > 0) {
+			where.condition = { in: conditions };
+		}
+	}
+
+	if (boostedOnly) {
+		where.boostedUntil = { greater_than: nowIso };
+	}
+
+	let payloadSort: string;
+	switch (sortParam) {
+		case "oldest":
+			payloadSort = "createdAt";
+			break;
+		case "price_asc":
+			payloadSort = "price";
+			break;
+		case "price_desc":
+			payloadSort = "-price";
+			break;
+		case "boosted":
+			payloadSort = "-boostedUntil";
+			break;
+		default:
+			payloadSort = boostedOnly ? "-boostedUntil" : "-createdAt";
+			break;
+	}
+
+	const result = await payload.find({
+		collection: "listings",
+		where,
+		limit,
+		page: Math.floor(offset / limit) + 1,
+		sort: payloadSort,
+	});
+
+	return Response.json({
+		hits: result.docs.map((doc) => serializeListingHit(doc)),
+		total: result.totalDocs,
+		limit,
+		offset,
+	});
+}
 
 export async function GET(request: Request) {
 	const start = Date.now();
@@ -95,6 +230,21 @@ export async function GET(request: Request) {
 	const host = process.env.MEILI_HOST;
 	const key = process.env.MEILI_MASTER_KEY;
 
+	const fallbackParams: FallbackParams = {
+		query,
+		category,
+		shopParam,
+		minPrice,
+		maxPrice,
+		location,
+		conditionParam,
+		boostedOnly,
+		sortParam,
+		limit,
+		offset,
+		nowIso,
+	};
+
 	const dynamicFilters: string[] = [];
 	for (const [key, value] of searchParams.entries()) {
 		if (!key.startsWith("attr_")) continue;
@@ -109,86 +259,7 @@ export async function GET(request: Request) {
 	}
 
 	if (!host || boostedOnly) {
-		const payload = await getPayload({ config });
-		const where: Where = {
-			status: { equals: "published" },
-		};
-
-		if (query) {
-			where.or = [
-				{ title: { contains: query } },
-				{ description: { contains: query } },
-			];
-		}
-
-		if (category) {
-			where.category = { equals: category };
-		}
-
-		if (shopParam) {
-			where.shop = { equals: shopParam };
-		}
-
-		if (minPrice || maxPrice) {
-			const priceFilter: Record<string, number> = {};
-			if (minPrice) priceFilter.greater_than = Number.parseInt(minPrice, 10);
-			if (maxPrice) priceFilter.less_than = Number.parseInt(maxPrice, 10);
-			where.price = priceFilter;
-		}
-
-		if (location) {
-			where.location = { contains: location };
-		}
-
-		if (conditionParam) {
-			const conditions = conditionParam
-				.split(",")
-				.map((c) => c.trim())
-				.filter(Boolean);
-			if (conditions.length > 0) {
-				where.condition = { in: conditions };
-			}
-		}
-
-		if (boostedOnly) {
-			where.boostedUntil = { greater_than: nowIso };
-		}
-
-		let payloadSort: string;
-		switch (sortParam) {
-			case "oldest":
-				payloadSort = "createdAt";
-				break;
-			case "price_asc":
-				payloadSort = "price";
-				break;
-			case "price_desc":
-				payloadSort = "-price";
-				break;
-			case "boosted":
-				payloadSort = "-boostedUntil";
-				break;
-			default:
-				payloadSort = boostedOnly ? "-boostedUntil" : "-createdAt";
-				break;
-		}
-
-		const result = await payload.find({
-			collection: "listings",
-			where,
-			limit,
-			page: Math.floor(offset / limit) + 1,
-			sort: payloadSort,
-		});
-
-		return Response.json({
-			hits: result.docs.map((doc) =>
-				serializeListingHit(doc as unknown as Record<string, unknown>),
-			),
-			total: result.totalDocs,
-			limit,
-			offset,
-		});
+		return runPayloadListingSearch(fallbackParams);
 	}
 
 	console.log("[search] Using Meilisearch");
@@ -303,6 +374,15 @@ export async function GET(request: Request) {
 			`[search] Meilisearch rejected the query. filter=${filter} sort=${sort.join(",")}`,
 			error,
 		);
+		if (shopParam) {
+			// `shopId` is not a filterable attribute in the index yet — the
+			// indexer and the `shops` filter are Task 14's work. Until then, a
+			// shop-filtered search fails safe to the Payload path instead of
+			// taking every other search down with a 503; once Task 14 makes the
+			// index carry `shopId`, this query simply stops throwing and the
+			// fallback stops firing, no further change needed here.
+			return runPayloadListingSearch(fallbackParams);
+		}
 		return Response.json(
 			{ error: "Search is unavailable", code: "search.unavailable" },
 			{ status: 503 },
@@ -313,7 +393,11 @@ export async function GET(request: Request) {
 		`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`,
 	);
 	return Response.json({
-		hits: result.hits,
+		// Same shape as the Payload path. The shop and product-summary fields
+		// stay null here until Task 14 teaches the indexer to write them —
+		// `serializeListingHit` reads `doc.shop`/`doc.productSummary`, which
+		// today's indexed listing document does not carry.
+		hits: result.hits.map((hit: unknown) => serializeListingHit(hit)),
 		total: result.estimatedTotalHits,
 		limit,
 		offset,

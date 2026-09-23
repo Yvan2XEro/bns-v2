@@ -121,8 +121,13 @@ export interface ShopSearchHit {
 	createdAt: string;
 }
 
-/** Accepts the indexer's shop document or a Payload shop populated at depth 1. */
-export function toShopSearchHit(doc: Doc): ShopSearchHit {
+/**
+ * Accepts the indexer's shop document or a Payload shop populated at depth
+ * 1 — takes `unknown` so a caller passes its `Shop`/hit value straight
+ * through, with no cast of its own to keep correct at each call site.
+ */
+export function toShopSearchHit(input: unknown): ShopSearchHit {
+	const doc = (input ?? {}) as Doc;
 	const owner =
 		doc.owner && typeof doc.owner === "object" ? (doc.owner as Doc) : null;
 	const location =
@@ -132,9 +137,9 @@ export function toShopSearchHit(doc: Doc): ShopSearchHit {
 	const logo =
 		doc.logo && typeof doc.logo === "object" ? (doc.logo as Doc) : null;
 	return {
-		id: String(doc.id),
-		handle: String(doc.handle),
-		name: String(doc.name),
+		id: String(doc.id ?? ""),
+		handle: String(doc.handle ?? ""),
+		name: String(doc.name ?? ""),
 		description: str(doc.description),
 		city: str(doc.city) ?? str(location?.city),
 		level: typeof doc.level === "number" ? doc.level : 1,

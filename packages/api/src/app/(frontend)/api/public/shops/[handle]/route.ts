@@ -9,9 +9,18 @@ export async function GET(
 	{ params }: { params: Promise<{ handle: string }> },
 ) {
 	const { handle } = await params;
+	let decoded: string;
+	try {
+		decoded = decodeURIComponent(handle);
+	} catch {
+		// A malformed percent-escape is never a real handle: answer the same
+		// "not found" a stranger gets for any other handle that doesn't exist,
+		// not a 500.
+		return errorResponse(ERROR_CODES.shopNotFound, 404);
+	}
 	try {
 		const payload = await getPayload({ config });
-		const result = await resolvePublicShop(payload, decodeURIComponent(handle));
+		const result = await resolvePublicShop(payload, decoded);
 		if (!result) return errorResponse(ERROR_CODES.shopNotFound, 404);
 		return Response.json(result);
 	} catch (error) {

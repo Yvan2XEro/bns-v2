@@ -193,6 +193,152 @@ describe("public search route", () => {
 		it("filters by shop with the value quoted", async () => {
 			expect(await filterFor('shop=abc"def')).toContain('shopId = "abc\\"def"');
 		});
+
+		it("falls back to Payload when Meilisearch cannot satisfy the shop filter", async () => {
+			// `shopId` is not filterable on the real index yet (Task 14's job) —
+			// this is what that rejection looks like today.
+			searchMock.mockRejectedValueOnce(
+				new Error("Attribute `shopId` is not filterable"),
+			);
+			findMock.mockImplementation(async (args: { collection: string }) => {
+				if (args.collection === "shops") {
+					return { docs: [{ id: "s-1", status: "active" }], totalDocs: 1 };
+				}
+				return {
+					docs: [{ id: "listing-1", title: "From the shop", shop: "s-1" }],
+					totalDocs: 1,
+				};
+			});
+
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search?shop=s-1"),
+			);
+
+			expect(response.status).toBe(200);
+			const body = await response.json();
+			expect(body.hits).toHaveLength(1);
+			expect(body.hits[0]).toMatchObject({ id: "listing-1" });
+		});
+	});
+
+	describe("shop filter", () => {
+		beforeEach(() => {
+			// `process.env.X = undefined` coerces to the string "undefined", which
+			// stays truthy for `!host` — only `delete` genuinely unsets it.
+			// biome-ignore lint/performance/noDelete: see above
+			delete process.env.MEILI_HOST;
+		});
+
+		it("queries Payload directly, guarded by the shop's active status", async () => {
+			findMock.mockImplementation(async (args: { collection: string }) => {
+				if (args.collection === "shops") {
+					return { docs: [{ id: "s-1", status: "active" }], totalDocs: 1 };
+				}
+				return {
+					docs: [
+						{
+							id: "listing-1",
+							title: "From the shop",
+							shop: {
+								id: "s-1",
+								handle: "akwatech",
+								name: "Akwa Tech",
+								level: 2,
+								status: "active",
+							},
+						},
+					],
+					totalDocs: 1,
+				};
+			});
+
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search?shop=s-1"),
+			);
+			const body = await response.json();
+
+			expect(findMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					collection: "shops",
+					where: { id: { equals: "s-1" } },
+				}),
+			);
+			expect(findMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					collection: "listings",
+					where: expect.objectContaining({ shop: { equals: "s-1" } }),
+				}),
+			);
+			expect(body.hits[0]).toMatchObject({
+				shopId: "s-1",
+				shopHandle: "akwatech",
+				shopName: "Akwa Tech",
+				shopLevel: 2,
+			});
+		});
+
+		it("answers no hits, and never queries listings, when the shop is missing or not active", async () => {
+			findMock.mockImplementation(async (args: { collection: string }) => {
+				if (args.collection === "shops") return { docs: [], totalDocs: 0 };
+				throw new Error(
+					"must not query listings once the shop failed the active check",
+				);
+			});
+
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search?shop=s-suspended"),
+			);
+
+			expect(await response.json()).toEqual({
+				hits: [],
+				total: 0,
+				limit: 20,
+				offset: 0,
+			});
+		});
+
+		it("never surfaces a listing's shop name or handle once that shop is no longer active", async () => {
+			findMock.mockResolvedValue({
+				docs: [
+					{
+						id: "listing-1",
+						title: "Stale hit",
+						shop: {
+							id: "s-2",
+							handle: "closedshop",
+							name: "Closed Shop",
+							level: 1,
+							status: "suspended",
+						},
+					},
+				],
+				totalDocs: 1,
+			});
+
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search"),
+			);
+			const body = await response.json();
+
+			expect(body.hits[0]).toMatchObject({
+				shopId: "s-2",
+				shopHandle: null,
+				shopName: null,
+				shopLevel: null,
+			});
+		});
 	});
 });
 
@@ -254,5 +400,65 @@ describe("public shops search route", () => {
 			limit: 20,
 			offset: 0,
 		});
+	});
+
+	it("queries Payload directly when MEILI_HOST is unset", async () => {
+		// biome-ignore lint/performance/noDelete: an undefined assignment coerces to the string "undefined", which stays truthy
+		delete process.env.MEILI_HOST;
+		findMock.mockReset();
+		getPayloadMock.mockResolvedValue({ find: findMock });
+		findMock.mockResolvedValue({
+			docs: [
+				{ id: "s-1", handle: "akwatech", name: "Akwa Tech", status: "active" },
+			],
+			totalDocs: 1,
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/shops/route"
+		);
+		const res = await GET(
+			new Request("http://x/api/public/search/shops?city=Douala"),
+		);
+		const body = await res.json();
+
+		expect(searchMock).not.toHaveBeenCalled();
+		expect(findMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				collection: "shops",
+				where: {
+					and: [
+						{ status: { equals: "active" } },
+						{ "location.city": { equals: "Douala" } },
+					],
+				},
+			}),
+		);
+		expect(body.hits).toEqual([
+			expect.objectContaining({ id: "s-1", handle: "akwatech" }),
+		]);
+	});
+
+	it("falls back to Payload when Meilisearch has no shops index to search", async () => {
+		searchMock.mockRejectedValueOnce(new Error("Index `shops` not found"));
+		findMock.mockReset();
+		getPayloadMock.mockResolvedValue({ find: findMock });
+		findMock.mockResolvedValue({
+			docs: [
+				{ id: "s-1", handle: "akwatech", name: "Akwa Tech", status: "active" },
+			],
+			totalDocs: 1,
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/shops/route"
+		);
+		const res = await GET(new Request("http://x/api/public/search/shops"));
+
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.hits).toEqual([
+			expect.objectContaining({ id: "s-1", handle: "akwatech" }),
+		]);
 	});
 });

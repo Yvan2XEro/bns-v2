@@ -3,7 +3,7 @@ import { APIError, type CollectionConfig, type Where } from "payload";
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 import { resolveShopRole, shopField } from "../access/shopRoles";
-import { refreshShopListingCount } from "../hooks/shopListingCount";
+import { queueShopRecount } from "../hooks/shopListingCount";
 import {
 	assertNotSuspended,
 	type SuspensionCheckable,
@@ -393,7 +393,7 @@ export const Listings: CollectionConfig = {
 					previousShop !== currentShop
 				) {
 					for (const shopId of new Set([previousShop, currentShop])) {
-						if (shopId) await refreshShopListingCount(req, shopId);
+						if (shopId) await queueShopRecount(req, shopId);
 					}
 				}
 
@@ -494,7 +494,7 @@ export const Listings: CollectionConfig = {
 				}
 
 				const shopId = relationId(doc.shop);
-				if (shopId) await refreshShopListingCount(req, shopId);
+				if (shopId) await queueShopRecount(req, shopId);
 			},
 		],
 	},
