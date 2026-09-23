@@ -1,14 +1,10 @@
 import type { Payload } from "payload";
 import { relationId } from "../lib/relationId";
+import type { Shop } from "../payload-types";
 import { isNotificationProviderConfigured } from "./notificationProvider";
 
 type Value = string | number | boolean | null;
-type ShopRef = {
-	id: unknown;
-	handle?: unknown;
-	name?: unknown;
-	owner?: unknown;
-};
+type ShopRef = Pick<Shop, "id" | "handle" | "name" | "owner">;
 
 const webUrl = () => process.env.PUBLIC_WEB_URL ?? "https://buynsellem.com";
 

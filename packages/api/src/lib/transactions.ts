@@ -82,6 +82,11 @@ export function onCommit(
  * a service body ever sees the request, so a caller passing that request
  * straight to `onCommit` narrows it here rather than widening `CommitContext`
  * to a shape `withTransaction` never actually produces.
+ *
+ * That assumption is load-bearing: if an adapter ever did resolve
+ * `transactionID` lazily, this narrows it away to `undefined`, and `onCommit`
+ * would then run the callback immediately instead of queuing it for after
+ * the commit.
  */
 export function commitContextOf(req: PayloadRequest): CommitContext {
 	const { transactionID } = req;
