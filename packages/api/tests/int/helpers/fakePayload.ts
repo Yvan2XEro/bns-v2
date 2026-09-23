@@ -11,7 +11,7 @@ interface Options {
 
 type Undo = { collection: string; id: string; before: Doc | null };
 
-type Req = { transactionID?: string } | undefined;
+type Req = { context?: Doc; transactionID?: string } | undefined;
 
 /** The union of every option the services pass; the fake reads what it needs. */
 interface Args {
@@ -132,6 +132,26 @@ function sortDocs(docs: Doc[], sort: unknown): Doc[] {
 const clone = <T>(value: T): T => structuredClone(value);
 
 /**
+ * Mirrors `createLocalReq`'s `getRequestContext`: every local API call
+ * reassigns `req.context` in place to the merge of what was already there
+ * and whatever `context` this call carries (defaulting to `{}`), rather
+ * than leaving the caller's object untouched. A caller that threads the
+ * same `req` through several calls — `withTransaction`'s whole point — sees
+ * a flag set on one call still set on the next, whether that call asked for
+ * it or not. That is the real behaviour a service relying on isolation
+ * between calls on a shared `req` would be wrong to assume.
+ */
+function applyRequestContext(req: Req, context: Doc | undefined): void {
+	if (!req || typeof req !== "object") return;
+	const target = req as { context?: Doc };
+	const incoming = context ?? {};
+	target.context =
+		target.context && Object.keys(target.context).length > 0
+			? { ...target.context, ...incoming }
+			: incoming;
+}
+
+/**
  * In-memory stand-in for the Payload local API: just the methods the services
  * call. `uniques` declares compound unique keys per collection and makes
  * `create`/`update` fail like Mongo's E11000.
@@ -218,12 +238,23 @@ export function fakePayload(
 			if (payload.failWhen?.(method, args))
 				throw new Error(`forced failure: ${method}`);
 		},
-		async findByID({ collection, id }: Args) {
+		async findByID({ collection, id, req, context }: Args) {
+			applyRequestContext(req, context);
 			const doc = byId(collection, id);
 			if (!doc) throw notFound();
 			return clone(doc);
 		},
-		async find({ collection, where, sort, limit, page = 1, pagination }: Args) {
+		async find({
+			collection,
+			where,
+			sort,
+			limit,
+			page = 1,
+			pagination,
+			req,
+			context,
+		}: Args) {
+			applyRequestContext(req, context);
 			const all = sortDocs(
 				table(collection).filter((d) => matches(d, where)),
 				sort,
@@ -242,13 +273,15 @@ export function fakePayload(
 				nextPage: page < totalPages ? page + 1 : null,
 			};
 		},
-		async count({ collection, where }: Args) {
+		async count({ collection, where, req, context }: Args) {
+			applyRequestContext(req, context);
 			return {
 				totalDocs: table(collection).filter((d) => matches(d, where)).length,
 			};
 		},
 		async create(args: Args) {
 			const { collection, data, req, context } = args;
+			applyRequestContext(req, context);
 			payload.maybeFail("create", args);
 			seq += 1;
 			const now = stamp();
@@ -273,6 +306,7 @@ export function fakePayload(
 		},
 		async update(args: Args) {
 			const { collection, id, where, data, req, context } = args;
+			applyRequestContext(req, context);
 			payload.maybeFail("update", args);
 			const apply = (doc: Doc) => {
 				const before = clone(doc);
@@ -305,6 +339,7 @@ export function fakePayload(
 		},
 		async delete(args: Args) {
 			const { collection, id, req, context } = args;
+			applyRequestContext(req, context);
 			payload.maybeFail("delete", args);
 			const rows = table(collection);
 			const index = rows.findIndex((d) => String(d.id) === String(id));
