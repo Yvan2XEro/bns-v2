@@ -5,11 +5,17 @@ export type {
 	Favorite,
 	Media,
 	Message,
+	Product,
+	ProductVariant,
 	Report,
 	Review,
+	Shop,
+	ShopMember,
+	StockMovement,
 	Tag,
 	User,
 } from "../../../api/src/payload-types";
+export * from "./shop";
 
 import type {
 	Category as GeneratedCategory,

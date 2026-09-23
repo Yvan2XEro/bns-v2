@@ -5,7 +5,9 @@ const protectedRoutes = [
 	"/favorites",
 	"/messages",
 	"/profile/me",
+	"/seller",
 	"/settings",
+	"/shop",
 ];
 
 const authRoutes = ["/auth/login", "/auth/register"];
@@ -41,7 +43,9 @@ export const config = {
 		"/favorites/:path*",
 		"/messages/:path*",
 		"/profile/me/:path*",
+		"/seller/:path*",
 		"/settings/:path*",
+		"/shop/:path*",
 		"/auth/:path*",
 	],
 };

@@ -691,6 +691,16 @@
 		"genericError": "Erreur lors du paiement",
 		"pricesUnavailable": "Les tarifs de mise en avant n'ont pas pu être chargés. Veuillez réessayer plus tard."
 	},
+	"Shop": {
+		"levelPhone": "Téléphone vérifié",
+		"status": {
+			"active": "En vente",
+			"draft": "Brouillon",
+			"archived": "Masqué",
+			"low": "Stock faible",
+			"out": "Rupture"
+		}
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Une erreur est survenue. Veuillez réessayer.",
@@ -750,6 +760,24 @@
 			"self": "Vous ne pouvez pas vous évaluer vous-même.",
 			"duplicate": "Vous avez déjà évalué cet utilisateur.",
 			"noInteraction": "Vous pouvez évaluer un utilisateur seulement après l'avoir contacté."
+		},
+		"moderation": {
+			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment."
+		},
+		"shop": {
+			"disabled": "Les boutiques ne sont pas encore disponibles.",
+			"phoneNotVerified": "Vérifiez votre numéro de téléphone pour ouvrir une boutique.",
+			"limitReached": "Vous avez déjà une boutique.",
+			"handleInvalid": "Cette adresse n'est pas valide. Utilisez 3 à 30 lettres minuscules, chiffres ou tirets.",
+			"handleReserved": "Cette adresse est réservée.",
+			"handleTaken": "Cette adresse est déjà prise.",
+			"handleCooldown": "L'adresse de la boutique ne peut changer qu'une fois tous les 30 jours.",
+			"notMember": "Vous n'êtes pas membre de cette boutique.",
+			"inactive": "Cette boutique n'est pas active.",
+			"notFound": "Cette boutique n'existe pas."
+		},
+		"stock": {
+			"negative": "Le stock ne peut pas passer sous zéro."
 		}
 	}
 }

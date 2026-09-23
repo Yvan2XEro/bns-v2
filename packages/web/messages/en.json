@@ -690,6 +690,16 @@
 		"genericError": "Payment error",
 		"pricesUnavailable": "Boost prices could not be loaded. Please try again later."
 	},
+	"Shop": {
+		"levelPhone": "Phone verified",
+		"status": {
+			"active": "On sale",
+			"draft": "Draft",
+			"archived": "Hidden",
+			"low": "Low stock",
+			"out": "Out of stock"
+		}
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Something went wrong. Please try again.",
@@ -749,6 +759,24 @@
 			"self": "You cannot review yourself.",
 			"duplicate": "You have already reviewed this user.",
 			"noInteraction": "You can review a user only after contacting them."
+		},
+		"moderation": {
+			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now."
+		},
+		"shop": {
+			"disabled": "Shops are not available yet.",
+			"phoneNotVerified": "Verify your phone number to open a shop.",
+			"limitReached": "You already have a shop.",
+			"handleInvalid": "This address is not valid. Use 3 to 30 lowercase letters, digits or hyphens.",
+			"handleReserved": "This address is reserved.",
+			"handleTaken": "This address is already taken.",
+			"handleCooldown": "The shop address can change only once every 30 days.",
+			"notMember": "You are not a member of this shop.",
+			"inactive": "This shop is not active.",
+			"notFound": "This shop does not exist."
+		},
+		"stock": {
+			"negative": "Stock cannot go below zero."
 		}
 	}
 }
