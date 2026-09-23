@@ -719,6 +719,35 @@
 		"previous": "Previous",
 		"next": "Next"
 	},
+	"ShopCreate": {
+		"title": "Open my shop",
+		"subtitle": "Free. Logo, banner and contacts can be added afterwards.",
+		"previewLabel": "Preview of your page",
+		"name": "Shop name",
+		"namePlaceholder": "Akwa Tech Store",
+		"nameHint": "2 to 60 characters",
+		"handle": "Your page address",
+		"city": "City",
+		"cityPlaceholder": "Choose a city",
+		"categories": "What you sell · up to 5 ({count}/5)",
+		"phoneVerified": "Phone verified {phone} · required to open a shop",
+		"gateTitle": "Verify your phone to open a shop",
+		"gateBody": "A shop puts your name in front of buyers. One SMS code is enough, only once.",
+		"gateCta": "Verify my phone",
+		"gatePrivacy": "This number stays private. You can show a business number in the shop settings.",
+		"submit": "Create my shop",
+		"submitHint": "Free. Logo, banner and contacts are added next.",
+		"handleStatus": {
+			"idle": "",
+			"checking": "Checking…",
+			"available": "Available · can change once every 30 days",
+			"current": "Current address",
+			"invalid": "3 to 30 lowercase letters, digits or hyphens, no double hyphen",
+			"reserved": "This address is reserved",
+			"taken": "Already taken",
+			"error": "Could not check right now. Try again in a moment."
+		}
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Something went wrong. Please try again.",

@@ -6,6 +6,8 @@ import { CAMEROON_CITIES, type CameroonCity } from "~/lib/cameroon-cities";
 import { cn } from "~/lib/utils";
 
 interface CitySelectProps {
+	/** Set it when a <label htmlFor> points at the trigger. */
+	id?: string;
 	value: string;
 	onChange: (city: CameroonCity | null) => void;
 	placeholder?: string;
@@ -15,6 +17,7 @@ interface CitySelectProps {
 }
 
 export function CitySelect({
+	id,
 	value,
 	onChange,
 	placeholder = "Choisir une ville",
@@ -70,6 +73,7 @@ export function CitySelect({
 	return (
 		<div ref={containerRef} className={cn("relative", className)}>
 			<button
+				id={id}
 				type="button"
 				onClick={() => setOpen((o) => !o)}
 				aria-expanded={open}

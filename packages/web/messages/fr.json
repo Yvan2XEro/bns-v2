@@ -720,6 +720,35 @@
 		"previous": "Précédent",
 		"next": "Suivant"
 	},
+	"ShopCreate": {
+		"title": "Ouvrir ma boutique",
+		"subtitle": "Gratuit. Logo, bannière et contacts s'ajoutent ensuite.",
+		"previewLabel": "Aperçu de votre page",
+		"name": "Nom de la boutique",
+		"namePlaceholder": "Akwa Tech Store",
+		"nameHint": "2 à 60 caractères",
+		"handle": "Adresse de votre page",
+		"city": "Ville",
+		"cityPlaceholder": "Choisir une ville",
+		"categories": "Ce que vous vendez · 5 au plus ({count}/5)",
+		"phoneVerified": "Téléphone vérifié {phone} · requis pour ouvrir une boutique",
+		"gateTitle": "Vérifiez votre téléphone pour ouvrir une boutique",
+		"gateBody": "Une boutique engage votre nom auprès des acheteurs. Un code par SMS suffit, une seule fois.",
+		"gateCta": "Vérifier mon téléphone",
+		"gatePrivacy": "Ce numéro reste privé. Vous pourrez afficher un numéro pro dans les paramètres de la boutique.",
+		"submit": "Créer ma boutique",
+		"submitHint": "Gratuit. Logo, bannière et contacts s'ajoutent ensuite.",
+		"handleStatus": {
+			"idle": "",
+			"checking": "Vérification…",
+			"available": "Disponible · modifiable une fois tous les 30 jours",
+			"current": "Adresse actuelle",
+			"invalid": "3 à 30 lettres minuscules, chiffres ou tirets, sans double tiret",
+			"reserved": "Cette adresse est réservée",
+			"taken": "Déjà prise",
+			"error": "Vérification impossible pour le moment. Réessayez dans un instant."
+		}
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Une erreur est survenue. Veuillez réessayer.",
