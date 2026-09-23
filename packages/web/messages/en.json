@@ -801,6 +801,47 @@
 			"other": "other"
 		}
 	},
+	"Catalogue": {
+		"title": "Catalogue",
+		"summary": "{all, plural, one {# product} other {# products}} · {active} on sale · {draft, plural, one {# draft} other {# drafts}}",
+		"import": "Import a file",
+		"soon": "Soon",
+		"add": "Add a product",
+		"moveListings": "Move my listings",
+		"filters": "Filters",
+		"filter": {
+			"all": "All",
+			"active": "On sale",
+			"draft": "Drafts",
+			"archived": "Hidden",
+			"low": "Low stock",
+			"out": "Out of stock"
+		},
+		"searchPlaceholder": "Name or SKU",
+		"colProduct": "Product",
+		"colPrice": "Price (XAF)",
+		"colStock": "Stock",
+		"colStatus": "Status and listing",
+		"variantsCount": "{count} variants",
+		"noSku": "No SKU",
+		"noVariants": "No variant yet",
+		"notTracked": "Not tracked",
+		"availableUnit": "{count, plural, one {available} other {available}}",
+		"reservedCount": "{count, plural, one {# reserved} other {# reserved}}",
+		"viewListing": "Listing",
+		"listingRejected": "Removed by moderation",
+		"listingPending": "Awaiting review",
+		"emptyTitle": "No products yet",
+		"emptyBody": "Add your first product or move your existing listings.",
+		"noMatch": "No product matches these filters.",
+		"loading": "Loading…",
+		"errorTitle": "Could not load the catalogue",
+		"errorBody": "The connection failed. Check your mobile data or Wi-Fi, then try again.",
+		"retry": "Try again",
+		"range": "{from}–{to} of {total}",
+		"previous": "Previous",
+		"next": "Next"
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Something went wrong. Please try again.",

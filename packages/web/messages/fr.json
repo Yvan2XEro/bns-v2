@@ -802,6 +802,47 @@
 			"other": "autre"
 		}
 	},
+	"Catalogue": {
+		"title": "Catalogue",
+		"summary": "{all, plural, one {# produit} other {# produits}} · {active} en vente · {draft, plural, one {# brouillon} other {# brouillons}}",
+		"import": "Importer un fichier",
+		"soon": "Bientôt",
+		"add": "Ajouter un produit",
+		"moveListings": "Transférer mes annonces",
+		"filters": "Filtres",
+		"filter": {
+			"all": "Tous",
+			"active": "En vente",
+			"draft": "Brouillons",
+			"archived": "Masqués",
+			"low": "Stock faible",
+			"out": "Rupture"
+		},
+		"searchPlaceholder": "Nom ou SKU",
+		"colProduct": "Produit",
+		"colPrice": "Prix (XAF)",
+		"colStock": "Stock",
+		"colStatus": "Statut et annonce",
+		"variantsCount": "{count} variantes",
+		"noSku": "Sans SKU",
+		"noVariants": "Aucune variante",
+		"notTracked": "Non suivi",
+		"availableUnit": "{count, plural, one {disponible} other {disponibles}}",
+		"reservedCount": "{count, plural, one {# réservé} other {# réservés}}",
+		"viewListing": "Annonce",
+		"listingRejected": "Retirée par la modération",
+		"listingPending": "En attente de validation",
+		"emptyTitle": "Aucun produit pour l'instant",
+		"emptyBody": "Ajoutez votre premier produit ou transférez vos annonces existantes.",
+		"noMatch": "Aucun produit ne correspond à ces filtres.",
+		"loading": "Chargement…",
+		"errorTitle": "Impossible de charger le catalogue",
+		"errorBody": "La connexion a échoué. Vérifiez vos données mobiles ou le Wi-Fi, puis réessayez.",
+		"retry": "Réessayer",
+		"range": "{from}–{to} sur {total}",
+		"previous": "Précédent",
+		"next": "Suivant"
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Une erreur est survenue. Veuillez réessayer.",
