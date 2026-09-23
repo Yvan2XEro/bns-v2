@@ -81,6 +81,8 @@ export const ERROR_CODES = {
 	shopInactive: "shop.inactive",
 	shopNotFound: "shop.notFound",
 	stockNegative: "stock.negative",
+	stockInsufficient: "stock.insufficient",
+	stockCountStale: "stock.countStale",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -156,6 +158,10 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.shopInactive]: "This shop is not active.",
 	[ERROR_CODES.shopNotFound]: "This shop does not exist.",
 	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
+	[ERROR_CODES.stockInsufficient]:
+		"Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
+	[ERROR_CODES.stockCountStale]:
+		"The stock changed while you were counting. Reload the page and count again.",
 };
 
 export function fallbackFor(code: string): string {

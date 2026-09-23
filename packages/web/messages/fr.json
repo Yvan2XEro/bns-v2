@@ -796,7 +796,9 @@
 			"notFound": "Cette boutique n'existe pas."
 		},
 		"stock": {
-			"negative": "Le stock ne peut pas passer sous zéro."
+			"negative": "Le stock ne peut pas passer sous zéro.",
+			"insufficient": "Stock insuffisant : certaines unités sont déjà réservées. Réduisez la quantité ou libérez d'abord une réservation.",
+			"countStale": "Le stock a changé pendant votre comptage. Rechargez la page et recommencez le comptage."
 		}
 	}
 }
