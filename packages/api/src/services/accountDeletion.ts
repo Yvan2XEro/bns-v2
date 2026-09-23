@@ -577,6 +577,14 @@ export async function deleteUserRelatedData(
 ): Promise<void> {
 	const userId = user.id;
 
+	// Dynamic import: `Users.ts` → `accountDeletion.ts` must stay free of the
+	// product/shop service graph at config load, and this pulls in both.
+	const { closeOwnedShops } = await import("./shopListings");
+	await closeOwnedShops(
+		payload as unknown as import("payload").Payload,
+		userId,
+	);
+
 	if (req?.transactionID) {
 		// The caller — Users.ts's beforeDelete hook — already opened a
 		// transaction for the surrounding delete operation. Starting a second,
