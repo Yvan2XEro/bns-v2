@@ -11,8 +11,16 @@ import type { ModerationAction } from "../collections/ModerationLog";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { withTransaction } from "../lib/transactions";
+import {
+	commitContextOf,
+	onCommit,
+	withTransaction,
+} from "../lib/transactions";
 import type { Shop } from "../payload-types";
+import {
+	notifyShopSuspended,
+	notifyShopUnsuspended,
+} from "./shopNotifications";
 
 export const SUSPENSION_REASONS = [
 	"spam",
@@ -881,6 +889,9 @@ export async function suspendShop(
 				req,
 			);
 			await applyShopSuspension(payload, req, shopId, suspension, logEntry.id);
+			onCommit(commitContextOf(req), () =>
+				notifyShopSuspended(shop, suspension.suspendedUntil, reason),
+			);
 			return {
 				shopId: String(shopId),
 				until: suspension.suspendedUntil,
@@ -924,6 +935,7 @@ export async function unsuspendShop(
 				},
 				req,
 			);
+			onCommit(commitContextOf(req), () => notifyShopUnsuspended(shop));
 			return { shopId: String(shopId), restoredListingIds };
 		},
 		{ user: actor },
@@ -1019,6 +1031,7 @@ export async function liftExpiredShopSuspensions(
 				},
 				req,
 			);
+			onCommit(commitContextOf(req), () => notifyShopUnsuspended(shop));
 			return true;
 		});
 

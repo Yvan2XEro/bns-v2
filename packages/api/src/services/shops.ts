@@ -20,10 +20,15 @@ import {
 	validateHandle,
 } from "../lib/shopHandle";
 import { getShopSettings } from "../lib/shopSettings";
-import { withTransaction } from "../lib/transactions";
+import {
+	commitContextOf,
+	onCommit,
+	withTransaction,
+} from "../lib/transactions";
 import { isLowStock } from "../lib/variants";
 import type { Product, Shop } from "../payload-types";
 import { loadPublicShop, requireShopMember } from "./shopGuards";
+import { notifyShopCreated } from "./shopNotifications";
 
 export interface ServiceUser {
 	id: string;
@@ -284,6 +289,7 @@ export async function createShop(
 						status: "active",
 					},
 				});
+				onCommit(commitContextOf(req), () => notifyShopCreated(created));
 				return created;
 			},
 			{ user },

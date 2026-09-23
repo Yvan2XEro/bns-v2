@@ -76,6 +76,24 @@ export function onCommit(
 	return true;
 }
 
+/**
+ * `PayloadRequest#transactionID` is typed to allow a `Promise`, for adapters
+ * that resolve it lazily; `withTransaction` always assigns a plain id before
+ * a service body ever sees the request, so a caller passing that request
+ * straight to `onCommit` narrows it here rather than widening `CommitContext`
+ * to a shape `withTransaction` never actually produces.
+ */
+export function commitContextOf(req: PayloadRequest): CommitContext {
+	const { transactionID } = req;
+	return {
+		context: req.context,
+		transactionID:
+			typeof transactionID === "number" || typeof transactionID === "string"
+				? transactionID
+				: undefined,
+	};
+}
+
 const TRANSIENT_LABEL = "TransientTransactionError";
 
 /**

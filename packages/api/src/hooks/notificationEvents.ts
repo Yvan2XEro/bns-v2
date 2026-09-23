@@ -27,6 +27,7 @@ function buildExpoPushData(
 	const listingId = getStringValue(payload, "listingId");
 	const conversationId = getStringValue(payload, "conversationId");
 	const searchUrl = getStringValue(payload, "searchUrl");
+	const productId = getStringValue(payload, "productId");
 
 	switch (event) {
 		case "listing-approved":
@@ -58,6 +59,14 @@ function buildExpoPushData(
 				: undefined;
 		case "search-alert":
 			return searchUrl ? { url: searchUrl } : undefined;
+		case "shop-created":
+		case "shop-suspended":
+		case "shop-unsuspended":
+			return { url: "/seller" };
+		case "stock-low":
+			return productId
+				? { productId, url: `/seller/product/${productId}` }
+				: undefined;
 		default:
 			return undefined;
 	}

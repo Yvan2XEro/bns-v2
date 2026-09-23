@@ -465,6 +465,157 @@ const workflowSpecs: WorkflowSpec[] = [
 			],
 		},
 	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Shop Created",
+			description: "Welcomes a new shop owner with the link to share.",
+			workflowId: "shop-created",
+			tags: ["shop"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop name"),
+					handle: stringProperty("Shop handle"),
+					shopUrl: stringProperty("Public shop URL"),
+				},
+				["shopId", "shopName", "handle", "shopUrl"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Votre boutique est en ligne",
+					body: '"{{payload.shopName}}" est ouverte. Partagez {{payload.shopUrl}} sur WhatsApp et Facebook.',
+					redirect: redirect("/seller"),
+					primaryAction: action("Ouvrir ma boutique", "/seller"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Votre boutique est en ligne",
+					body: '"{{payload.shopName}}" est ouverte. Ajoutez votre premier produit.',
+				}),
+				emailStep("Email", "email", {
+					subject: "Votre boutique {{payload.shopName}} est en ligne",
+					body: "Bienvenue ! Votre page publique : {{payload.shopUrl}}. Ajoutez vos produits et partagez le lien.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Shop Suspended",
+			description: "Tells the owner their shop was suspended by moderation.",
+			workflowId: "shop-suspended",
+			tags: ["shop", "moderation"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop name"),
+					reason: stringProperty("Suspension reason code"),
+					until: stringProperty("End date (ISO) or empty when indefinite"),
+				},
+				["shopId", "shopName", "reason", "until"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Boutique suspendue",
+					body: '"{{payload.shopName}}" est suspendue ({{payload.reason}}). Vos produits ne sont plus visibles.',
+					redirect: redirect("/seller"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Boutique suspendue",
+					body: '"{{payload.shopName}}" est suspendue par la moderation.',
+				}),
+				emailStep("Email", "email", {
+					subject: "Votre boutique {{payload.shopName}} est suspendue",
+					body: "Motif : {{payload.reason}}. Fin prevue : {{payload.until}}. Contactez le support pour toute question.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shop Unsuspended",
+			description: "Tells the owner their shop suspension was lifted.",
+			workflowId: "shop-unsuspended",
+			tags: ["shop", "moderation"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop name"),
+				},
+				["shopId", "shopName"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Boutique retablie",
+					body: '"{{payload.shopName}}" est de nouveau en ligne.',
+					redirect: redirect("/seller"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Boutique retablie",
+					body: '"{{payload.shopName}}" est de nouveau en ligne.',
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Stock Low",
+			description:
+				"Alerts shop owners and managers when a variant reaches its low-stock threshold.",
+			workflowId: "stock-low",
+			tags: ["shop", "stock"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					productId: stringProperty("Product identifier"),
+					productTitle: stringProperty("Product title"),
+					variantLabel: stringProperty(
+						"Variant label, empty for a default variant",
+					),
+					available: numberProperty("Units available"),
+				},
+				["shopId", "productId", "productTitle", "variantLabel", "available"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Stock faible",
+					body: '"{{payload.productTitle}}" {{payload.variantLabel}} : plus que {{payload.available}} en stock.',
+					redirect: redirect("/seller/catalogue/{{payload.productId}}"),
+					primaryAction: action(
+						"Reapprovisionner",
+						"/seller/catalogue/{{payload.productId}}",
+					),
+					data: { productId: "{{payload.productId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Stock faible",
+					body: '"{{payload.productTitle}}" : plus que {{payload.available}} en stock.',
+				}),
+			],
+		},
+	},
 ];
 
 function toUpdateDefinition(

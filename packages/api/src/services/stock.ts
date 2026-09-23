@@ -14,7 +14,11 @@ import {
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { withTransaction } from "../lib/transactions";
+import {
+	commitContextOf,
+	onCommit,
+	withTransaction,
+} from "../lib/transactions";
 import {
 	availableOf,
 	crossedLowStock,
@@ -33,6 +37,7 @@ import type {
 // module load, so neither import has to be deferred.
 import { syncProductListing } from "./products";
 import { requireShopMember } from "./shopGuards";
+import { notifyStockLow } from "./shopNotifications";
 import type { ServiceUser } from "./shops";
 
 /** What a shopkeeper may write by hand; sales and reservations come from orders. */
@@ -344,18 +349,35 @@ export async function applyMovement(
 	// Both ends of the crossing are measured the way `isLowStock` and
 	// `stockSummary` measure availability, so an alert and the figure a
 	// shopkeeper is shown never disagree.
-	return {
-		movement,
-		variant: updated,
-		crossedLowStock: crossedLowStock(
-			availableOf({
-				stockOnHand: stockAfter - quantity,
-				stockReserved: reservedAfter,
-			}),
-			availableOf({ stockOnHand: stockAfter, stockReserved: reservedAfter }),
-			threshold,
-		),
-	};
+	const availableBefore = availableOf({
+		stockOnHand: stockAfter - quantity,
+		stockReserved: reservedAfter,
+	});
+	const availableAfter = availableOf({
+		stockOnHand: stockAfter,
+		stockReserved: reservedAfter,
+	});
+	const crossed = crossedLowStock(availableBefore, availableAfter, threshold);
+	if (crossed) {
+		onCommit(commitContextOf(req), async () => {
+			const product = await req.payload
+				.findByID({
+					collection: "products",
+					id: relationId(variant.product) ?? "",
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null);
+			await notifyStockLow(req.payload, {
+				shopId: relationId(variant.shop) ?? "",
+				productId: relationId(variant.product) ?? "",
+				productTitle: String(product?.title ?? ""),
+				variantLabel: variantLabel(updated.optionValues),
+				available: availableAfter,
+			});
+		});
+	}
+	return { movement, variant: updated, crossedLowStock: crossed };
 }
 
 async function findByIds<TSlug extends CollectionSlug>(
