@@ -667,3 +667,92 @@ describe("deleting a shopkeeper who still has a product listing", () => {
 		expect(payload.store.listings.map((l) => l.id)).toContain("l-2");
 	});
 });
+
+describe("closing an owned shop atomically with account deletion", () => {
+	function ownedShopWorld() {
+		const payload = world();
+		payload.store.shops = [
+			{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+		];
+		payload.store.products = [
+			{
+				id: "p-1",
+				shop: "s-1",
+				title: "Product",
+				status: "active",
+				listing: "l-2",
+			},
+		];
+		payload.store.listings.push({
+			id: "l-2",
+			seller: "u-1",
+			shop: "s-1",
+			product: "p-1",
+			status: "published",
+			images: [],
+		});
+		return payload;
+	}
+
+	it("closes the shop and archives its product in the same transaction as the rest of the cascade", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = ownedShopWorld();
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		vi.useRealTimers();
+
+		expect(payload.store.shops[0]).toMatchObject({
+			status: "closed",
+			closedAt: NOW.toISOString(),
+		});
+		expect(payload.store.products[0]).toMatchObject({
+			status: "archived",
+			listing: null,
+		});
+		expect(payload.store.listings).toHaveLength(0);
+
+		// The direct proof this is one transaction, not one per shop plus the
+		// cascade's own: every write the run made — closing the shop, archiving
+		// the product, detaching then deleting the listing, and the rest of the
+		// cascade — carries the same transaction id.
+		const transactionIds = new Set(payload.writes.map((w) => w.transactionID));
+		expect(transactionIds.size).toBe(1);
+		expect([...transactionIds][0]).toBeTruthy();
+	});
+
+	it("rolls back the shop closure too when the cascade fails", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = ownedShopWorld();
+		const realDelete = payload.delete;
+		const wrapped = {
+			...payload,
+			delete: (options: { collection: string; id: unknown }) => {
+				if (options.collection === "listings") {
+					return Promise.reject(new Error("boom"));
+				}
+				return realDelete(options as Parameters<typeof realDelete>[0]);
+			},
+		};
+
+		await expect(
+			deleteUserRelatedData(wrapped as never, { id: "u-1" }),
+		).rejects.toThrow("boom");
+		vi.useRealTimers();
+
+		// Had the closure run in its own, already-committed transaction, this
+		// would still show the shop closed and the product archived even though
+		// the account and its cascade failed to delete.
+		expect(payload.store.shops[0]).toMatchObject({ status: "active" });
+		expect(payload.store.shops[0].closedAt).toBeFalsy();
+		expect(payload.store.products[0]).toMatchObject({
+			status: "active",
+			listing: "l-2",
+		});
+		expect(payload.store.listings.find((l) => l.id === "l-2")).toMatchObject({
+			shop: "s-1",
+			product: "p-1",
+		});
+	});
+});

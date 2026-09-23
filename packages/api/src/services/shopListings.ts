@@ -4,11 +4,11 @@ import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { addDays, normalizeHandle } from "../lib/shopHandle";
-import { withTransaction } from "../lib/transactions";
-import type { Listing, Shop } from "../payload-types";
+import { RetryTransaction, withTransaction } from "../lib/transactions";
+import type { Listing, Product, Shop } from "../payload-types";
 import { syncProductListing } from "./products";
 import { requireShopMember } from "./shopGuards";
-import { type ServiceUser, writeShop } from "./shops";
+import { isUniqueViolation, type ServiceUser, writeShop } from "./shops";
 
 type SkipReason = "notOwner" | "otherShop" | "alreadyAttached" | "status";
 
@@ -45,31 +45,44 @@ async function attachOne(
 	shopId: string,
 	listing: Listing,
 ): Promise<string> {
-	const product = await req.payload.create({
-		collection: "products",
-		req,
-		overrideAccess: true,
-		context: PRODUCT_SERVICE_CONTEXT,
-		data: {
-			shop: shopId,
-			title: listing.title.slice(0, 120),
-			description: listing.description ?? null,
-			category: relationId(listing.category) ?? "",
-			condition: listing.condition ?? null,
-			attributes: listing.attributes ?? {},
-			images: (listing.images ?? [])
-				.map((entry) => relationId(entry.image))
-				.filter((id): id is string => Boolean(id))
-				.map((image) => ({ image })),
-			status:
-				listing.status === "published" || listing.status === "pending"
-					? "active"
-					: "draft",
-			options: [],
-			delivery: { codAllowed: true, pickupAllowed: false },
-			listing: listing.id,
-		},
-	});
+	let product: Product;
+	try {
+		product = await req.payload.create({
+			collection: "products",
+			req,
+			overrideAccess: true,
+			context: PRODUCT_SERVICE_CONTEXT,
+			data: {
+				shop: shopId,
+				title: listing.title.slice(0, 120),
+				description: listing.description ?? null,
+				category: relationId(listing.category) ?? "",
+				condition: listing.condition ?? null,
+				attributes: listing.attributes ?? {},
+				images: (listing.images ?? [])
+					.map((entry) => relationId(entry.image))
+					.filter((id): id is string => Boolean(id))
+					.map((image) => ({ image })),
+				status:
+					listing.status === "published" || listing.status === "pending"
+						? "active"
+						: "draft",
+				options: [],
+				delivery: { codAllowed: true, pickupAllowed: false },
+				listing: listing.id,
+			},
+		});
+	} catch (error) {
+		// Two concurrent attaches of the same never-attached listing: the partial
+		// unique index on `products.listing` (migration
+		// 20260923_000000_p1_product_listing) refuses the second insert — the same
+		// shape as `syncProductListing`'s own race on `listings.product`. Retrying
+		// the whole transaction re-reads the listing fresh, and the caller's loop
+		// finds `product` already set and reports it as "alreadyAttached" instead
+		// of creating a second product for it.
+		if (!isUniqueViolation(error)) throw error;
+		throw new RetryTransaction("another writer already attached this listing");
+	}
 
 	await req.payload.create({
 		collection: "product-variants",
@@ -123,16 +136,17 @@ async function detachOne(
 		req,
 		overrideAccess: true,
 		context: PRODUCT_SERVICE_CONTEXT,
-		// `productSummary` is a non-nullable group in the generated type, but the
-		// field genuinely goes empty once the listing is no longer a product's —
-		// same loose cast `writeShop` (services/shops.ts) uses for its own
-		// service-owned fields.
 		data: {
 			shop: null,
 			product: null,
-			productSummary: null,
+			// `productSummary` is a non-nullable group in the generated type — a
+			// type-gen gap, not a constraint Mongo enforces — but the field
+			// genuinely goes empty once the listing is no longer a product's.
+			// Narrowed to this one field so `shop`/`product`/`expiresAt` above
+			// still type-check normally.
+			productSummary: null as unknown as Listing["productSummary"],
 			expiresAt: addDays(now, DETACHED_LISTING_DAYS).toISOString(),
-		} as unknown as Partial<Listing>,
+		},
 	});
 }
 
@@ -318,11 +332,20 @@ export async function closeShop(
 	return { closed: true as const, detachedListingIds };
 }
 
-/** Account deletion: the shop goes before the cascade deletes the owner's listings. */
+/**
+ * Account deletion: the shop goes before the cascade deletes the owner's
+ * listings. Pass the cascade's own `req` so this joins its transaction
+ * instead of opening one per shop — a shop closed and committed ahead of a
+ * cascade that then fails would leave the account intact but its shop
+ * closed, its listings detached and its products archived, with nothing left
+ * to roll that back. Called without `req` (e.g. directly, outside a cascade),
+ * each shop still gets its own transaction, same as before.
+ */
 export async function closeOwnedShops(
 	payload: Payload,
 	userId: string,
 	now: Date = new Date(),
+	req?: PayloadRequest,
 ): Promise<string[]> {
 	const shops = (
 		await payload.find({
@@ -337,11 +360,18 @@ export async function closeOwnedShops(
 			limit: 0,
 			pagination: false,
 			overrideAccess: true,
+			req,
 		})
 	).docs;
+
+	if (req) {
+		for (const shop of shops) await closeShopInTransaction(req, shop, now);
+		return shops.map((shop) => String(shop.id));
+	}
+
 	for (const shop of shops) {
-		await withTransaction(payload, (req) =>
-			closeShopInTransaction(req, shop, now),
+		await withTransaction(payload, (txReq) =>
+			closeShopInTransaction(txReq, shop, now),
 		);
 	}
 	return shops.map((shop) => String(shop.id));

@@ -17,97 +17,116 @@ const U1 = { id: "u-1" };
 const NOW = new Date("2026-09-15T12:00:00.000Z");
 
 function seed() {
-	return fakePayload({
-		users: [
-			{ id: "u-1", name: "Aïcha" },
-			{ id: "u-2", name: "Other" },
-		],
-		categories: [{ id: "cat-1", name: "Téléphones" }],
-		shops: [
-			{
-				id: "s-1",
-				handle: "akwatech",
-				status: "active",
-				owner: "u-1",
-				location: { city: "Douala" },
-			},
-			{ id: "s-2", handle: "other", status: "active", owner: "u-2" },
-		],
-		"shop-members": [
-			{ id: "m-1", shop: "s-1", user: "u-1", role: "owner", status: "active" },
-			{ id: "m-2", shop: "s-2", user: "u-2", role: "owner", status: "active" },
-		],
-		listings: [
-			{
-				id: "l-1",
-				title: "iPhone 12 128 Go",
-				description: "Batterie 88 %",
-				price: 195000,
-				category: "cat-1",
-				condition: "good",
-				attributes: {},
-				images: [{ image: "m-1" }],
-				status: "published",
-				seller: "u-1",
-				shop: null,
-				product: null,
-				location: "Douala",
-				expiresAt: "2026-10-01T00:00:00.000Z",
-			},
-			{
-				id: "l-2",
-				title: "Chargeur MagSafe",
-				description: "",
-				price: 22000,
-				category: "cat-1",
-				images: [],
-				status: "pending",
-				seller: "u-1",
-				shop: null,
-				product: null,
-				location: "Douala",
-			},
-			{
-				id: "l-3",
-				title: "Casque JBL",
-				price: 28000,
-				category: "cat-1",
-				images: [],
-				status: "sold",
-				seller: "u-1",
-				shop: null,
-				product: null,
-				location: "Douala",
-			},
-			{
-				id: "l-4",
-				title: "Not mine",
-				price: 1,
-				category: "cat-1",
-				images: [],
-				status: "published",
-				seller: "u-2",
-				shop: null,
-				product: null,
-				location: "Douala",
-			},
-			{
-				id: "l-5",
-				title: "Elsewhere",
-				price: 1,
-				category: "cat-1",
-				images: [],
-				status: "published",
-				seller: "u-1",
-				shop: "s-2",
-				product: null,
-				location: "Douala",
-			},
-		],
-		products: [],
-		"product-variants": [],
-		"stock-movements": [],
-	});
+	return fakePayload(
+		{
+			users: [
+				{ id: "u-1", name: "Aïcha" },
+				{ id: "u-2", name: "Other" },
+			],
+			categories: [{ id: "cat-1", name: "Téléphones" }],
+			shops: [
+				{
+					id: "s-1",
+					handle: "akwatech",
+					status: "active",
+					owner: "u-1",
+					location: { city: "Douala" },
+				},
+				{ id: "s-2", handle: "other", status: "active", owner: "u-2" },
+			],
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+				{
+					id: "m-2",
+					shop: "s-2",
+					user: "u-2",
+					role: "owner",
+					status: "active",
+				},
+			],
+			listings: [
+				{
+					id: "l-1",
+					title: "iPhone 12 128 Go",
+					description: "Batterie 88 %",
+					price: 195000,
+					category: "cat-1",
+					condition: "good",
+					attributes: {},
+					images: [{ image: "m-1" }],
+					status: "published",
+					seller: "u-1",
+					shop: null,
+					product: null,
+					location: "Douala",
+					expiresAt: "2026-10-01T00:00:00.000Z",
+				},
+				{
+					id: "l-2",
+					title: "Chargeur MagSafe",
+					description: "",
+					price: 22000,
+					category: "cat-1",
+					images: [],
+					status: "pending",
+					seller: "u-1",
+					shop: null,
+					product: null,
+					location: "Douala",
+				},
+				{
+					id: "l-3",
+					title: "Casque JBL",
+					price: 28000,
+					category: "cat-1",
+					images: [],
+					status: "sold",
+					seller: "u-1",
+					shop: null,
+					product: null,
+					location: "Douala",
+				},
+				{
+					id: "l-4",
+					title: "Not mine",
+					price: 1,
+					category: "cat-1",
+					images: [],
+					status: "published",
+					seller: "u-2",
+					shop: null,
+					product: null,
+					location: "Douala",
+				},
+				{
+					id: "l-5",
+					title: "Elsewhere",
+					price: 1,
+					category: "cat-1",
+					images: [],
+					status: "published",
+					seller: "u-1",
+					shop: "s-2",
+					product: null,
+					location: "Douala",
+				},
+			],
+			products: [],
+			"product-variants": [],
+			"stock-movements": [],
+		},
+		{
+			// The partial unique index migration 20260923_000000_p1_product_listing
+			// builds: one product per listing, and any number without one.
+			uniques: { products: [["listing"]] },
+		},
+	);
 }
 
 describe("attachListings", () => {
@@ -160,6 +179,26 @@ describe("attachListings", () => {
 		await expect(
 			attachListings(seed(), { id: "u-2" }, "s-1", { all: true }),
 		).rejects.toMatchObject({ code: "shop.notMember" });
+	});
+
+	it("does not create two products for two concurrent attaches of the same listing", async () => {
+		const payload = seed();
+		const [first, second] = await Promise.all([
+			attachListings(payload, U1, "s-1", { listingIds: ["l-1"] }),
+			attachListings(payload, U1, "s-1", { listingIds: ["l-1"] }),
+		]);
+
+		const winner = [first, second].find((r) => r.attached.length > 0);
+		const loser = [first, second].find((r) => r.skipped.length > 0);
+		expect(winner?.attached).toHaveLength(1);
+		expect(loser?.skipped).toEqual([
+			{ listingId: "l-1", reason: "alreadyAttached" },
+		]);
+
+		expect(payload.store.products).toHaveLength(1);
+		expect(payload.store.listings.find((l) => l.id === "l-1")?.product).toBe(
+			winner?.attached[0].productId,
+		);
 	});
 });
 

@@ -418,6 +418,19 @@ async function runDeletionCascade(
 	userId: string,
 	req: TxReq,
 ): Promise<void> {
+	// Dynamic import: `Users.ts` → `accountDeletion.ts` must stay free of the
+	// product/shop service graph at config load, and this pulls in both.
+	// `req` here is always the transaction this cascade itself runs in — the
+	// caller's ambient one, or the one `deleteUserRelatedData` opened below —
+	// so this closure lands or rolls back with the rest of the cascade.
+	const { closeOwnedShops } = await import("./shopListings");
+	await closeOwnedShops(
+		payload as unknown as import("payload").Payload,
+		userId,
+		new Date(),
+		req as unknown as import("payload").PayloadRequest,
+	);
+
 	const listingIds = await findAllIds(
 		payload,
 		"listings",
@@ -576,14 +589,6 @@ export async function deleteUserRelatedData(
 	req?: TxReq,
 ): Promise<void> {
 	const userId = user.id;
-
-	// Dynamic import: `Users.ts` → `accountDeletion.ts` must stay free of the
-	// product/shop service graph at config load, and this pulls in both.
-	const { closeOwnedShops } = await import("./shopListings");
-	await closeOwnedShops(
-		payload as unknown as import("payload").Payload,
-		userId,
-	);
 
 	if (req?.transactionID) {
 		// The caller — Users.ts's beforeDelete hook — already opened a
