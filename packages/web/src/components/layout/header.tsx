@@ -8,6 +8,7 @@ import {
 	PlusCircle,
 	Search,
 	Settings,
+	Store,
 	User,
 	X,
 } from "lucide-react";
@@ -27,7 +28,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { useAppConfig } from "~/hooks/use-app-config";
 import { useAuth } from "~/hooks/use-auth";
+import { useMyShop } from "~/hooks/use-my-shop";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
 import { LocaleSwitcher } from "./locale-switcher";
 
@@ -44,6 +47,13 @@ export function Header({ novuAppId }: HeaderProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [scrolled, setScrolled] = useState(false);
 	const unreadCount = useUnreadMessages(!!user);
+	const { shopsEnabled } = useAppConfig();
+	const { data: myShop } = useMyShop();
+	const shopEntry = shopsEnabled
+		? myShop?.shop && myShop.shop.status !== "closed"
+			? { href: "/seller", label: t("myShop") }
+			: { href: "/shop/new", label: t("openShop") }
+		: null;
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -181,6 +191,14 @@ export function Header({ novuAppId }: HeaderProps) {
 											{t("profile")}
 										</Link>
 									</DropdownMenuItem>
+									{shopEntry && (
+										<DropdownMenuItem asChild>
+											<Link href={shopEntry.href} className="cursor-pointer">
+												<Store className="mr-2 h-4 w-4" />
+												{shopEntry.label}
+											</Link>
+										</DropdownMenuItem>
+									)}
 									<DropdownMenuItem asChild>
 										<Link
 											href="/profile/me/listings"
@@ -285,6 +303,7 @@ export function Header({ novuAppId }: HeaderProps) {
 											href: "/messages",
 										},
 										{ label: t("profile"), href: "/profile/me" },
+										...(shopEntry ? [shopEntry] : []),
 									]
 								: [
 										{ label: t("logIn"), href: "/auth/login" },

@@ -40,7 +40,9 @@
 		"settings": "Paramètres",
 		"logOut": "Déconnexion",
 		"logIn": "Connexion",
-		"signUp": "S'inscrire"
+		"signUp": "S'inscrire",
+		"myShop": "Ma boutique",
+		"openShop": "Ouvrir une boutique"
 	},
 	"Footer": {
 		"brandTagline": "La marketplace pour acheter et vendre localement.",
@@ -747,6 +749,57 @@
 			"reserved": "Cette adresse est réservée",
 			"taken": "Déjà prise",
 			"error": "Vérification impossible pour le moment. Réessayez dans un instant."
+		}
+	},
+	"Seller": {
+		"space": "Espace vendeur",
+		"nav": {
+			"dashboard": "Tableau de bord",
+			"catalogue": "Catalogue",
+			"stock": "Stock",
+			"messages": "Messages",
+			"settings": "Paramètres"
+		},
+		"viewShop": "Voir ma boutique",
+		"buyerMode": "Revenir en mode acheteur",
+		"dashboard": "Tableau de bord",
+		"shareShop": "Partager ma boutique",
+		"addProduct": "Ajouter un produit",
+		"publicPage": "Votre page publique",
+		"copyLink": "Copier le lien",
+		"linkCopied": "Lien copié",
+		"tiles": {
+			"active": "Produits en vente",
+			"drafts": "Brouillons",
+			"lowStock": "Alertes de stock"
+		},
+		"checklist": {
+			"title": "Pour bien démarrer",
+			"logo": "Ajouter le logo",
+			"logoDone": "Fait · visible sur votre page",
+			"logoTodo": "Carré, visible sur votre page et dans la recherche",
+			"product": "Ajouter un premier produit",
+			"productDetail": "Photos, variantes et stock",
+			"move": "Transférer mes annonces",
+			"moveDetail": "{count, plural, one {# annonce personnelle} other {# annonces personnelles}} à reprendre",
+			"moveDone": "Rien à transférer",
+			"share": "Partager le lien",
+			"shareDetail": "WhatsApp, Facebook ou SMS"
+		},
+		"myShop": "Ma boutique",
+		"openShop": "Ouvrir une boutique",
+		"openShopHint": "Gratuit, avec un téléphone vérifié",
+		"suspendedUntil": "Boutique suspendue jusqu'au {date}",
+		"suspendedIndefinitely": "Boutique suspendue",
+		"suspendedReason": "Motif : {reason}",
+		"suspendedBody": "Vos annonces sont masquées et vous ne pouvez ni publier ni modifier de produit jusqu'à la fin de la suspension.",
+		"suspensionReason": {
+			"spam": "spam",
+			"inappropriate": "contenu inapproprié",
+			"fraud": "fraude",
+			"prohibited": "article interdit",
+			"harassment": "harcèlement",
+			"other": "autre"
 		}
 	},
 	"ApiErrors": {

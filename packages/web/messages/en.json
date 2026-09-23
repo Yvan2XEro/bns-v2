@@ -40,7 +40,9 @@
 		"settings": "Settings",
 		"logOut": "Log out",
 		"logIn": "Log in",
-		"signUp": "Sign up"
+		"signUp": "Sign up",
+		"myShop": "My shop",
+		"openShop": "Open a shop"
 	},
 	"Footer": {
 		"brandTagline": "The marketplace to buy and sell locally.",
@@ -746,6 +748,57 @@
 			"reserved": "This address is reserved",
 			"taken": "Already taken",
 			"error": "Could not check right now. Try again in a moment."
+		}
+	},
+	"Seller": {
+		"space": "Seller space",
+		"nav": {
+			"dashboard": "Dashboard",
+			"catalogue": "Catalogue",
+			"stock": "Stock",
+			"messages": "Messages",
+			"settings": "Settings"
+		},
+		"viewShop": "View my shop",
+		"buyerMode": "Back to buyer mode",
+		"dashboard": "Dashboard",
+		"shareShop": "Share my shop",
+		"addProduct": "Add a product",
+		"publicPage": "Your public page",
+		"copyLink": "Copy the link",
+		"linkCopied": "Link copied",
+		"tiles": {
+			"active": "Products on sale",
+			"drafts": "Drafts",
+			"lowStock": "Stock alerts"
+		},
+		"checklist": {
+			"title": "Getting started",
+			"logo": "Add the logo",
+			"logoDone": "Done · visible on your page",
+			"logoTodo": "Square, visible on your page and in search",
+			"product": "Add a first product",
+			"productDetail": "Photos, variants and stock",
+			"move": "Move my listings",
+			"moveDetail": "{count, plural, one {# personal listing} other {# personal listings}} to bring in",
+			"moveDone": "Nothing to move",
+			"share": "Share the link",
+			"shareDetail": "WhatsApp, Facebook or SMS"
+		},
+		"myShop": "My shop",
+		"openShop": "Open a shop",
+		"openShopHint": "Free, with a verified phone",
+		"suspendedUntil": "Shop suspended until {date}",
+		"suspendedIndefinitely": "Shop suspended",
+		"suspendedReason": "Reason: {reason}",
+		"suspendedBody": "Your listings are hidden and you cannot publish or edit products until the suspension ends.",
+		"suspensionReason": {
+			"spam": "spam",
+			"inappropriate": "inappropriate content",
+			"fraud": "fraud",
+			"prohibited": "prohibited item",
+			"harassment": "harassment",
+			"other": "other"
 		}
 	},
 	"ApiErrors": {
