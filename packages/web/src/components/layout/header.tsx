@@ -32,6 +32,7 @@ import { useAppConfig } from "~/hooks/use-app-config";
 import { useAuth } from "~/hooks/use-auth";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
+import { shopEntryFor } from "~/lib/shop-entry";
 import { LocaleSwitcher } from "./locale-switcher";
 
 interface HeaderProps {
@@ -49,11 +50,8 @@ export function Header({ novuAppId }: HeaderProps) {
 	const unreadCount = useUnreadMessages(!!user);
 	const { shopsEnabled } = useAppConfig();
 	const { data: myShop } = useMyShop();
-	const shopEntry = shopsEnabled
-		? myShop?.shop && myShop.shop.status !== "closed"
-			? { href: "/seller", label: t("myShop") }
-			: { href: "/shop/new", label: t("openShop") }
-		: null;
+	const entry = shopEntryFor(myShop, shopsEnabled);
+	const shopEntry = entry ? { href: entry.href, label: t(entry.key) } : null;
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 10);

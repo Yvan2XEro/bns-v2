@@ -43,6 +43,10 @@ export default async function SellerDashboardPage() {
 		},
 	];
 
+	// A suspended shop cannot publish and its public page is hidden, so the
+	// actions that would lead there are left out rather than shown as usual.
+	const suspended = shop.status === "suspended";
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-wrap items-center justify-between gap-3">
@@ -52,28 +56,32 @@ export default async function SellerDashboardPage() {
 					</h1>
 					<p className="text-[#64748B] text-sm">{shop.name}</p>
 				</div>
-				<div className="flex gap-2">
-					<ShareShopButton
-						handle={shop.handle}
-						name={shop.name}
-						label={t("shareShop")}
-					/>
-					<Link
-						href="/seller/catalogue/new"
-						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
-					>
-						<Plus aria-hidden="true" className="h-4 w-4" />
-						{t("addProduct")}
-					</Link>
-				</div>
+				{!suspended && (
+					<div className="flex gap-2">
+						<ShareShopButton
+							handle={shop.handle}
+							name={shop.name}
+							label={t("shareShop")}
+						/>
+						<Link
+							href="/seller/catalogue/new"
+							className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						>
+							<Plus aria-hidden="true" className="h-4 w-4" />
+							{t("addProduct")}
+						</Link>
+					</div>
+				)}
 			</div>
 
-			<FirstRunChecklist
-				hasLogo={Boolean(shop.logo)}
-				productCount={counts.activeProducts + counts.draftProducts}
-				personalListings={counts.personalListings}
-				handle={shop.handle}
-			/>
+			{!suspended && (
+				<FirstRunChecklist
+					hasLogo={Boolean(shop.logo)}
+					productCount={counts.activeProducts + counts.draftProducts}
+					personalListings={counts.personalListings}
+					handle={shop.handle}
+				/>
+			)}
 
 			<div className="grid gap-4 sm:grid-cols-3">
 				{tiles.map(({ icon: Icon, label, value, hint, href }) => (
@@ -92,7 +100,7 @@ export default async function SellerDashboardPage() {
 				))}
 			</div>
 
-			<PublicLinkCard handle={shop.handle} name={shop.name} />
+			{!suspended && <PublicLinkCard handle={shop.handle} name={shop.name} />}
 		</div>
 	);
 }

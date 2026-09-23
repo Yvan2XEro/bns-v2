@@ -179,7 +179,7 @@ export default async function MyProfilePage() {
 								</CardContent>
 							</Card>
 
-							{shopsEnabled && <MyShopEntry mine={mine} />}
+							<MyShopEntry mine={mine} shopsEnabled={shopsEnabled} />
 
 							<Link
 								href="/profile/me/searches"
