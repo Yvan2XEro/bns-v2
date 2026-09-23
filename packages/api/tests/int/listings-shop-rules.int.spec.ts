@@ -10,7 +10,10 @@ vi.mock("../../src/hooks/validation", () => ({
 	validateListingAttributes: validateListingAttributesMock,
 }));
 
-import { Listings } from "../../src/collections/Listings";
+import {
+	ACCOUNT_DELETION_CONTEXT,
+	Listings,
+} from "../../src/collections/Listings";
 import { fakePayload } from "./helpers/fakePayload";
 
 const beforeChange = Listings.hooks?.beforeChange?.[0] as (
@@ -264,6 +267,16 @@ describe("deleting a product listing", () => {
 				),
 			}),
 		).rejects.toThrow(/through its product/);
+	});
+
+	it("lets the account-deletion cascade take it", async () => {
+		const payload = withListings({ ...productListing, status: "published" });
+		await expect(
+			beforeDelete({
+				id: "l-1",
+				req: req(payload, { id: "u-1" }, ACCOUNT_DELETION_CONTEXT),
+			}),
+		).resolves.toBeUndefined();
 	});
 
 	it("still lets a plain listing be deleted", async () => {

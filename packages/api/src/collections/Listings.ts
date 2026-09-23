@@ -19,6 +19,15 @@ const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
 /** Maximum number of images a listing can carry. */
 const MAX_LISTING_IMAGES = 3;
 
+/**
+ * Set by services/accountDeletion.ts on the deletes its cascade makes. It is
+ * the one way past the `beforeDelete` guard below, and it is unforgeable from
+ * outside the server: Payload builds `req.context` only from a local API
+ * `context` option (`utilities/createLocalReq.js`) — nothing in it reads a
+ * `context` key out of a request body or query string.
+ */
+export const ACCOUNT_DELETION_CONTEXT = { accountDeletion: true } as const;
+
 /** Owned by services/products.ts on a product listing; pinned against every other writer. */
 export const PRODUCT_DERIVED_FIELDS = [
 	"title",
@@ -444,6 +453,12 @@ export const Listings: CollectionConfig = {
 					})
 					.catch(() => null);
 				if (!relationId(listing?.product)) return;
+				// The account-deletion cascade deletes every listing the departing
+				// user sells, and a product listing's seller is the shopkeeper, so
+				// without this branch the guard below would block them from ever
+				// closing their account. The account is going: there is no product
+				// lifecycle left to defer to.
+				if (req.context?.accountDeletion === true) return;
 				// The product owns its listing's lifecycle. Without this, a seller
 				// deletes their own rejected listing — `delete` is owner-or-admin and
 				// the seller of a product listing is the shopkeeper — the product's

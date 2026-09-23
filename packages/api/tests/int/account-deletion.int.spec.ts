@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Listings } from "../../src/collections/Listings";
 import { NotchPayProvider } from "../../src/lib/payments/notchpay";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../../src/lib/redact";
 import { deleteUserRelatedData } from "../../src/services/accountDeletion";
@@ -593,5 +594,76 @@ describe("replaying an unprocessed webhook after the account is deleted", () => 
 		expect(
 			payload.store["webhook-events"].find((e) => e.id === "we-3")?.processedAt,
 		).toEqual(expect.any(String));
+	});
+});
+
+describe("deleting a shopkeeper who still has a product listing", () => {
+	const beforeDelete = Listings.hooks?.beforeDelete?.[0] as (
+		args: unknown,
+	) => Promise<void>;
+
+	/**
+	 * `payload.delete` runs `beforeDelete` even under `overrideAccess`, and the
+	 * fake does not run hooks, so the cascade's one real obstacle is wired in
+	 * here by hand. Without it this file cannot see the guard at all.
+	 */
+	function guarded(payload: ReturnType<typeof world>) {
+		const realDelete = payload.delete;
+		return {
+			...payload,
+			delete: async (options: {
+				collection: string;
+				id: unknown;
+				context?: Record<string, unknown>;
+			}) => {
+				if (options.collection === "listings") {
+					await beforeDelete({
+						id: options.id,
+						req: {
+							payload,
+							user: { id: "u-1" },
+							context: options.context ?? {},
+						},
+					});
+				}
+				return realDelete(options as Parameters<typeof realDelete>[0]);
+			},
+		};
+	}
+
+	function shopWorld() {
+		const payload = world();
+		payload.store.listings.push({
+			id: "l-2",
+			seller: "u-1",
+			shop: "s-1",
+			product: "p-1",
+			status: "published",
+			images: [],
+		});
+		return payload;
+	}
+
+	it("completes, and the product listing goes with the account", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		const payload = shopWorld();
+
+		await deleteUserRelatedData(guarded(payload) as never, { id: "u-1" });
+		vi.useRealTimers();
+
+		expect(payload.store.listings).toHaveLength(0);
+		expect(
+			payload.store["payment-intents"].find((i) => i.id === "pi-1")?.customer,
+		).toBeNull();
+	});
+
+	it("still refuses the shopkeeper deleting that same listing by hand", async () => {
+		const payload = shopWorld();
+
+		await expect(
+			guarded(payload).delete({ collection: "listings", id: "l-2" }),
+		).rejects.toThrow(/through its product/);
+		expect(payload.store.listings.map((l) => l.id)).toContain("l-2");
 	});
 });
