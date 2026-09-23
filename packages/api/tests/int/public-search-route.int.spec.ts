@@ -121,6 +121,57 @@ describe("public search route", () => {
 			],
 			estimatedTotalHits: 1,
 		});
+		// The live insurance check behind the index confirms shop-9 is active.
+		findMock.mockResolvedValueOnce({
+			docs: [{ id: "shop-9", status: "active" }],
+			totalDocs: 1,
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/route"
+		);
+		const response = await GET(
+			new Request("http://localhost:3000/api/public/search"),
+		);
+		const body = await response.json();
+
+		expect(findMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				collection: "shops",
+				where: {
+					and: [{ id: { in: ["shop-9"] } }, { status: { equals: "active" } }],
+				},
+			}),
+		);
+		expect(body.hits[0]).toMatchObject({
+			shopId: "shop-9",
+			shopHandle: "akwatech",
+			shopName: "Akwa Tech",
+			shopLevel: 2,
+			priceMax: 5000,
+			available: 3,
+		});
+	});
+
+	it("blanks a Meilisearch hit's shop fields when a live check finds the shop no longer active", async () => {
+		// A stale index document: the shop was suspended after it was indexed,
+		// and the `shop.updated` event that should have corrected it never
+		// arrived (the publish is fire-and-forget — see searchEvents.ts).
+		searchMock.mockResolvedValueOnce({
+			hits: [
+				{
+					id: "listing-10",
+					title: "Stale index entry",
+					status: "published",
+					shopId: "shop-suspended",
+					shopHandle: "wasactive",
+					shopName: "Was Active Shop",
+					shopLevel: 3,
+				},
+			],
+			estimatedTotalHits: 1,
+		});
+		findMock.mockResolvedValueOnce({ docs: [], totalDocs: 0 });
 
 		const { GET } = await import(
 			"../../src/app/(frontend)/api/public/search/route"
@@ -131,13 +182,24 @@ describe("public search route", () => {
 		const body = await response.json();
 
 		expect(body.hits[0]).toMatchObject({
-			shopId: "shop-9",
-			shopHandle: "akwatech",
-			shopName: "Akwa Tech",
-			shopLevel: 2,
-			priceMax: 5000,
-			available: 3,
+			shopHandle: null,
+			shopName: null,
+			shopLevel: null,
 		});
+	});
+
+	it("never queries Payload for the live shop check when no hit carries a shop id", async () => {
+		searchMock.mockResolvedValueOnce({
+			hits: [{ id: "listing-11", title: "Classified", status: "published" }],
+			estimatedTotalHits: 1,
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/route"
+		);
+		await GET(new Request("http://localhost:3000/api/public/search"));
+
+		expect(findMock).not.toHaveBeenCalled();
 	});
 
 	describe("category attribute filters", () => {
@@ -400,6 +462,14 @@ describe("public shops search route", () => {
 			],
 			estimatedTotalHits: 1,
 		});
+		// The live insurance check confirms s-1 is active by default; individual
+		// tests override this to simulate a stale index document.
+		findMock.mockReset();
+		getPayloadMock.mockResolvedValue({ find: findMock });
+		findMock.mockResolvedValue({
+			docs: [{ id: "s-1", status: "active" }],
+			totalDocs: 1,
+		});
 		process.env.MEILI_HOST = "http://meili.example.test";
 	});
 
@@ -436,6 +506,29 @@ describe("public shops search route", () => {
 			limit: 20,
 			offset: 0,
 		});
+	});
+
+	it("drops a stale index document once a live check finds the shop no longer active", async () => {
+		// The shop was suspended or closed after it was indexed, and the
+		// `shop.updated`/`shop.deleted` event that should have corrected the
+		// index never arrived (the publish is fire-and-forget).
+		findMock.mockResolvedValueOnce({ docs: [], totalDocs: 0 });
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/shops/route"
+		);
+		const res = await GET(new Request("http://x/api/public/search/shops"));
+		const body = await res.json();
+
+		expect(findMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				collection: "shops",
+				where: {
+					and: [{ id: { in: ["s-1"] } }, { status: { equals: "active" } }],
+				},
+			}),
+		);
+		expect(body.hits).toEqual([]);
 	});
 
 	it("queries Payload directly when MEILI_HOST is unset", async () => {

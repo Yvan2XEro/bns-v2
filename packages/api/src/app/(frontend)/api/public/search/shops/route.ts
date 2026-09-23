@@ -1,6 +1,7 @@
 import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import { getPayload, type Where } from "payload";
+import { activeShopIds } from "@/lib/activeShopIds";
 import { quoteFilterValue } from "@/lib/meiliFilter";
 import { toShopSearchHit } from "@/lib/publicShop";
 
@@ -86,8 +87,29 @@ export async function GET(request: Request) {
 			limit,
 			offset,
 		});
+
+		// The same insurance as the listing route: a lost `shop.*` publish can
+		// leave a suspended or closed shop's document in the index (nothing
+		// retries a dropped publish, and the bulk reindex runs on no schedule),
+		// so a page of hits gets one live status check before it goes out —
+		// dropped here rather than blanked, since the hit *is* the shop record.
+		const ids = result.hits
+			.map((hit) => (hit as { id?: unknown }).id)
+			.filter((id): id is string => typeof id === "string");
+		const active =
+			ids.length > 0
+				? await activeShopIds(await getPayload({ config }), ids)
+				: null;
+		const hits = (
+			active
+				? result.hits.filter((hit) =>
+						active.has(String((hit as { id?: unknown }).id)),
+					)
+				: result.hits
+		).map((hit) => toShopSearchHit(hit));
+
 		return Response.json({
-			hits: result.hits.map((hit) => toShopSearchHit(hit)),
+			hits,
 			total: result.estimatedTotalHits ?? result.hits.length,
 			limit,
 			offset,

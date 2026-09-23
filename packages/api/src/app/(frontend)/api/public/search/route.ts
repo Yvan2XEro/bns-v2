@@ -2,6 +2,7 @@ import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
+import { activeShopIds } from "@/lib/activeShopIds";
 import { quoteFilterValue } from "@/lib/meiliFilter";
 import { relationId } from "@/lib/relationId";
 
@@ -57,13 +58,12 @@ const asNumber = (value: unknown): number | null =>
  *   `/s/{handle}` enforces by 404ing.
  * - The Meilisearch path indexes flat `shopId`/`shopHandle`/`shopName`/
  *   `shopLevel`/`priceMax`/`available` fields (`ListingDocument`) with no
- *   status to re-check. That is safe because a listing can only carry a
- *   stale shop association when the shop is suspended — `moderation.
- *   suspendShop` unpublishes every one of its listings in the same
- *   transaction that flips the shop's status, which pulls the listing
- *   document out of the index via its own `listing.updated` event. Closing a
- *   shop (`shopListings.closeShop`) instead clears `shop` on each listing, so
- *   a closed shop leaves no shop fields on the index at all.
+ *   status to re-check here. The indexing rule (suspending unpublishes —
+ *   pulling the listing out via its own `listing.updated` event; closing
+ *   clears `shop` on the listing) keeps this path correct as long as every
+ *   event lands, but the publish is fire-and-forget (`searchEvents.ts` drops
+ *   a failed publish, no retry), so the caller batches a live status check
+ *   over a page of hits behind this — see `blankStaleShops`.
  */
 const serializeListingHit = (input: unknown) => {
 	const doc = (input ?? {}) as Record<string, unknown>;
@@ -95,6 +95,34 @@ const serializeListingHit = (input: unknown) => {
 		available: asNumber(summary?.available) ?? asNumber(doc.available),
 	};
 };
+
+type ListingHit = ReturnType<typeof serializeListingHit>;
+
+/**
+ * The insurance behind the Meilisearch path's trust in its own shop fields:
+ * one query for every distinct `shopId` a page of hits carries, and blank
+ * the display fields of any shop that query does not confirm active —
+ * exactly what the Payload path already gets for free from its populated
+ * relation. Skipped entirely when the page carries no shop ids.
+ */
+async function blankStaleShops(hits: ListingHit[]): Promise<ListingHit[]> {
+	const shopIds = Array.from(
+		new Set(
+			hits
+				.map((hit) => hit.shopId)
+				.filter((id): id is string => typeof id === "string"),
+		),
+	);
+	if (shopIds.length === 0) return hits;
+
+	const payload = await getPayload({ config });
+	const active = await activeShopIds(payload, shopIds);
+	return hits.map((hit) =>
+		hit.shopId && !active.has(hit.shopId)
+			? { ...hit, shopHandle: null, shopName: null, shopLevel: null }
+			: hit,
+	);
+}
 
 interface FallbackParams {
 	query: string;
@@ -411,8 +439,11 @@ export async function GET(request: Request) {
 	return Response.json({
 		// Same shape as the Payload path — `serializeListingHit` reads the
 		// indexer's flat `shopId`/`shopHandle`/`shopName`/`shopLevel`/`priceMax`/
-		// `available` fields for a Meilisearch hit.
-		hits: result.hits.map((hit: unknown) => serializeListingHit(hit)),
+		// `available` fields for a Meilisearch hit, and `blankStaleShops`
+		// re-checks each one against a shop the index might not know is gone.
+		hits: await blankStaleShops(
+			result.hits.map((hit: unknown) => serializeListingHit(hit)),
+		),
 		total: result.estimatedTotalHits,
 		limit,
 		offset,

@@ -84,6 +84,11 @@ async function main(): Promise<void> {
 		`[search-indexer] reindex complete: indexed=${documents.length} skipped=${skipped} total=${total}`,
 	);
 
+	await reindexShops();
+}
+
+/** Active shops only — a suspended or closed one has no business in the shops index. */
+export async function reindexShops(): Promise<number> {
 	console.log("[search-indexer] reindex shops...");
 	await configureShopsIndex();
 	await clearShopsIndex();
@@ -108,9 +113,14 @@ async function main(): Promise<void> {
 		shopPage++;
 	}
 	console.log(`[search-indexer] reindex shops complete: indexed=${shopCount}`);
+	return shopCount;
 }
 
-main().catch((error) => {
-	console.error("[search-indexer] reindex fatal error:", error);
-	process.exit(1);
-});
+// `import.meta.main` keeps a test import of this module from firing the
+// bulk reindex against a real (or absent) Payload API.
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error("[search-indexer] reindex fatal error:", error);
+		process.exit(1);
+	});
+}

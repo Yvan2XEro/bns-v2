@@ -91,12 +91,11 @@ export async function handleShopUpdated(
 	} else if (!response.ok) {
 		throw new Error(`Failed to fetch shop ${shopId}: ${response.status}`);
 	} else {
+		// The public read's `status = active` filter (see Shops' `access.read`)
+		// means a 200 here is always an active shop — there is no "200 with a
+		// suspended shop" response to branch on.
 		const shop = (await response.json()) as Record<string, unknown>;
-		if (shop.status === "active") {
-			await indexShopDocument(transformShop(shop));
-		} else {
-			await deleteShopDocument(shopId);
-		}
+		await indexShopDocument(transformShop(shop));
 	}
 
 	if (options.reindexListings) {
