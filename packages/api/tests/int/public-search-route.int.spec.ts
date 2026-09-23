@@ -202,6 +202,67 @@ describe("public search route", () => {
 		expect(findMock).not.toHaveBeenCalled();
 	});
 
+	it("falls back to Payload when the live shop status check itself fails", async () => {
+		// A database hiccup during the insurance check is not a Meilisearch
+		// failure and should not 500 a search that otherwise succeeded.
+		searchMock.mockResolvedValueOnce({
+			hits: [
+				{
+					id: "listing-12",
+					title: "From Meilisearch",
+					status: "published",
+					shopId: "shop-12",
+					shopHandle: "akwatech",
+					shopName: "Akwa Tech",
+					shopLevel: 1,
+				},
+			],
+			estimatedTotalHits: 1,
+		});
+		findMock.mockImplementation(async (args: { collection: string }) => {
+			if (args.collection === "shops") {
+				throw new Error("connection reset");
+			}
+			return {
+				docs: [
+					{
+						id: "listing-12",
+						title: "From Payload fallback",
+						status: "published",
+					},
+				],
+				totalDocs: 1,
+			};
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/route"
+		);
+		const response = await GET(
+			new Request("http://localhost:3000/api/public/search"),
+		);
+
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.hits).toHaveLength(1);
+		expect(body.hits[0].id).toBe("listing-12");
+	});
+
+	it("clamps an oversized limit like the shops route caps its own", async () => {
+		searchMock.mockResolvedValueOnce({ hits: [], estimatedTotalHits: 0 });
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/route"
+		);
+		const response = await GET(
+			new Request("http://localhost:3000/api/public/search?limit=999999"),
+		);
+		const body = await response.json();
+
+		expect(body.limit).toBe(50);
+		expect(searchMock.mock.calls.at(-1)?.[1]?.limit).toBe(50);
+	});
+
 	describe("category attribute filters", () => {
 		it("matches an exact value", async () => {
 			expect(await filterFor("attr_fuel-type=Diesel")).toContain(

@@ -264,7 +264,12 @@ export async function GET(request: Request) {
 	const lat = searchParams.get("lat");
 	const lng = searchParams.get("lng");
 	const radius = Number.parseInt(searchParams.get("radius") || "50", 10);
-	const limit = Number.parseInt(searchParams.get("limit") || "20", 10);
+	// Clamped like the shops route: an unbounded limit reaches Meilisearch
+	// directly, and now also sizes the live shop-status check's `in` filter.
+	const limit = Math.min(
+		50,
+		Math.max(1, Number.parseInt(searchParams.get("limit") || "20", 10) || 20),
+	);
 	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
 	const sortParam = searchParams.get("sort") || "newest";
 	const boostedOnly = isTruthyQueryParam(searchParams.get("boosted"));
@@ -436,16 +441,26 @@ export async function GET(request: Request) {
 	console.log(
 		`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`,
 	);
-	return Response.json({
+	const hits = result.hits.map((hit: unknown) => serializeListingHit(hit));
+
+	try {
 		// Same shape as the Payload path — `serializeListingHit` reads the
 		// indexer's flat `shopId`/`shopHandle`/`shopName`/`shopLevel`/`priceMax`/
 		// `available` fields for a Meilisearch hit, and `blankStaleShops`
 		// re-checks each one against a shop the index might not know is gone.
-		hits: await blankStaleShops(
-			result.hits.map((hit: unknown) => serializeListingHit(hit)),
-		),
-		total: result.estimatedTotalHits,
-		limit,
-		offset,
-	});
+		return Response.json({
+			hits: await blankStaleShops(hits),
+			total: result.estimatedTotalHits,
+			limit,
+			offset,
+		});
+	} catch (error) {
+		// The live check hits the database, not Meilisearch — a search that
+		// otherwise succeeded should not 500 because of it. Degrade the way a
+		// Meilisearch failure already does for the shop filter: fail safe to
+		// the Payload path instead, same as the sibling shops route does
+		// unconditionally for its own live check.
+		console.error("[search] Live shop status check failed", error);
+		return runPayloadListingSearch(fallbackParams);
+	}
 }
