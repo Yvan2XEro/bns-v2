@@ -92,6 +92,17 @@ export function transformListing(
 				.filter((s): s is string => !!s)
 		: [];
 
+	const shopValue = listing.shop as
+		| Record<string, unknown>
+		| string
+		| null
+		| undefined;
+	const shop = shopValue && typeof shopValue === "object" ? shopValue : null;
+	const summary = (listing.productSummary ?? null) as {
+		priceMax?: number | null;
+		available?: number | null;
+	} | null;
+
 	const doc: ListingDocument = {
 		id: listing.id as string,
 		title: listing.title as string,
@@ -114,6 +125,17 @@ export function transformListing(
 		images,
 		createdAt: listing.createdAt as string,
 		updatedAt: listing.updatedAt as string,
+		shopId: shop
+			? String(shop.id)
+			: typeof shopValue === "string"
+				? shopValue
+				: null,
+		shopHandle: shop && typeof shop.handle === "string" ? shop.handle : null,
+		shopName: shop && typeof shop.name === "string" ? shop.name : null,
+		shopLevel: shop && typeof shop.level === "number" ? shop.level : null,
+		priceMax: typeof summary?.priceMax === "number" ? summary.priceMax : null,
+		available:
+			typeof summary?.available === "number" ? summary.available : null,
 	};
 
 	const coordinates = listing.coordinates as

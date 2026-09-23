@@ -104,6 +104,42 @@ describe("public search route", () => {
 		// Payload config; that alone can outlast the 5s default.
 	}, 10000);
 
+	it("surfaces a listing's flat shop fields from a Meilisearch hit", async () => {
+		searchMock.mockResolvedValueOnce({
+			hits: [
+				{
+					id: "listing-9",
+					title: "From the shop, via Meilisearch",
+					status: "published",
+					shopId: "shop-9",
+					shopHandle: "akwatech",
+					shopName: "Akwa Tech",
+					shopLevel: 2,
+					priceMax: 5000,
+					available: 3,
+				},
+			],
+			estimatedTotalHits: 1,
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/route"
+		);
+		const response = await GET(
+			new Request("http://localhost:3000/api/public/search"),
+		);
+		const body = await response.json();
+
+		expect(body.hits[0]).toMatchObject({
+			shopId: "shop-9",
+			shopHandle: "akwatech",
+			shopName: "Akwa Tech",
+			shopLevel: 2,
+			priceMax: 5000,
+			available: 3,
+		});
+	});
+
 	describe("category attribute filters", () => {
 		it("matches an exact value", async () => {
 			expect(await filterFor("attr_fuel-type=Diesel")).toContain(

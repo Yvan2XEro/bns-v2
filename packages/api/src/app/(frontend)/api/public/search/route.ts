@@ -43,16 +43,34 @@ function buildAttributeFilter(slug: string, raw: string): string | null {
 	return `${slug} = ${quoteFilterValue(value)}`;
 }
 
-/** Takes `unknown` so a caller passes its `Listing`/hit value straight through, with no cast of its own. */
+const asString = (value: unknown): string | null =>
+	typeof value === "string" ? value : null;
+const asNumber = (value: unknown): number | null =>
+	typeof value === "number" ? value : null;
+
+/**
+ * Takes `unknown` so a caller passes its `Listing`/hit value straight through,
+ * with no cast of its own — it accepts two shapes for the same fields:
+ *
+ * - The Payload path populates `doc.shop` as a full relation, carrying the
+ *   shop's live `status`, so it re-checks it directly — the same rule
+ *   `/s/{handle}` enforces by 404ing.
+ * - The Meilisearch path indexes flat `shopId`/`shopHandle`/`shopName`/
+ *   `shopLevel`/`priceMax`/`available` fields (`ListingDocument`) with no
+ *   status to re-check. That is safe because a listing can only carry a
+ *   stale shop association when the shop is suspended — `moderation.
+ *   suspendShop` unpublishes every one of its listings in the same
+ *   transaction that flips the shop's status, which pulls the listing
+ *   document out of the index via its own `listing.updated` event. Closing a
+ *   shop (`shopListings.closeShop`) instead clears `shop` on each listing, so
+ *   a closed shop leaves no shop fields on the index at all.
+ */
 const serializeListingHit = (input: unknown) => {
 	const doc = (input ?? {}) as Record<string, unknown>;
 	const shop =
 		doc.shop && typeof doc.shop === "object"
 			? (doc.shop as Record<string, unknown>)
 			: null;
-	// Nothing unpublishes a listing when its shop is suspended or closed yet,
-	// so a listing hit only surfaces its shop's name and handle while that
-	// shop is still active — the same rule `/s/{handle}` enforces by 404ing.
 	const activeShop = shop && shop.status === "active" ? shop : null;
 	const summary = (doc.productSummary ?? null) as {
 		priceMax?: number | null;
@@ -69,12 +87,12 @@ const serializeListingHit = (input: unknown) => {
 		boostedUntil: doc.boostedUntil,
 		attributes: doc.attributes,
 		createdAt: doc.createdAt,
-		shopId: relationId(doc.shop),
-		shopHandle: activeShop?.handle ?? null,
-		shopName: activeShop?.name ?? null,
-		shopLevel: activeShop?.level ?? null,
-		priceMax: summary?.priceMax ?? null,
-		available: summary?.available ?? null,
+		shopId: relationId(doc.shop) ?? asString(doc.shopId),
+		shopHandle: asString(activeShop?.handle) ?? asString(doc.shopHandle),
+		shopName: asString(activeShop?.name) ?? asString(doc.shopName),
+		shopLevel: asNumber(activeShop?.level) ?? asNumber(doc.shopLevel),
+		priceMax: asNumber(summary?.priceMax) ?? asNumber(doc.priceMax),
+		available: asNumber(summary?.available) ?? asNumber(doc.available),
 	};
 };
 
@@ -375,12 +393,10 @@ export async function GET(request: Request) {
 			error,
 		);
 		if (shopParam) {
-			// `shopId` is not a filterable attribute in the index yet — the
-			// indexer and the `shops` filter are Task 14's work. Until then, a
-			// shop-filtered search fails safe to the Payload path instead of
-			// taking every other search down with a 503; once Task 14 makes the
-			// index carry `shopId`, this query simply stops throwing and the
-			// fallback stops firing, no further change needed here.
+			// `shopId` is filterable, but an index a deploy has not yet reconfigured
+			// (or a shop-filtered query Meilisearch otherwise refuses) should not
+			// take every other search down with a 503 — fail safe to the Payload
+			// path instead.
 			return runPayloadListingSearch(fallbackParams);
 		}
 		return Response.json(
@@ -393,10 +409,9 @@ export async function GET(request: Request) {
 		`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`,
 	);
 	return Response.json({
-		// Same shape as the Payload path. The shop and product-summary fields
-		// stay null here until Task 14 teaches the indexer to write them —
-		// `serializeListingHit` reads `doc.shop`/`doc.productSummary`, which
-		// today's indexed listing document does not carry.
+		// Same shape as the Payload path — `serializeListingHit` reads the
+		// indexer's flat `shopId`/`shopHandle`/`shopName`/`shopLevel`/`priceMax`/
+		// `available` fields for a Meilisearch hit.
 		hits: result.hits.map((hit: unknown) => serializeListingHit(hit)),
 		total: result.estimatedTotalHits,
 		limit,

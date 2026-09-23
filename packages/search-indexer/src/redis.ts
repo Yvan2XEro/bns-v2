@@ -3,10 +3,16 @@ import { RedisClient } from "bun";
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const CHANNEL = "search:index";
 
-export type SearchEvent = {
-	event: "listing.created" | "listing.updated" | "listing.deleted";
-	listingId: string;
-};
+export type SearchEvent =
+	| {
+			event: "listing.created" | "listing.updated" | "listing.deleted";
+			listingId: string;
+	  }
+	| {
+			event: "shop.created" | "shop.updated" | "shop.deleted";
+			shopId: string;
+			reindexListings?: boolean;
+	  };
 
 export function createSubscriber(
 	onMessage: (event: SearchEvent) => Promise<void>,

@@ -93,10 +93,9 @@ export async function GET(request: Request) {
 			offset,
 		});
 	} catch (error) {
-		// Nothing creates the `shops` index yet (Task 14's job), so with
-		// MEILI_HOST set this always lands here today. Fail safe to the
-		// Payload path instead of 503ing the whole route; once Task 14 builds
-		// the index, this query simply stops throwing.
+		// The `shops` index can be missing (a deploy that has not run the
+		// indexer's reindex yet) or reject the query outright. Fail safe to the
+		// Payload path instead of 503ing the whole route.
 		console.error(
 			`[search:shops] Meilisearch rejected the query. filter=${filters.join(" AND ")}`,
 			error,
