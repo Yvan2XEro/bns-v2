@@ -392,6 +392,7 @@ export async function suspendUser(
 							durationDays: input.durationDays ?? null,
 							unpublishedListingIds: [],
 							cascadedFromUser: targetId,
+							suspendedAt: suspension.suspendedAt,
 						},
 					},
 					req,
@@ -493,13 +494,20 @@ export async function unsuspendUser(
 					})
 					.catch(() => null);
 				if (shop?.status !== "suspended") continue;
-				const expected = shopSuspensionLogIds[shopId];
-				if (
-					!expected ||
-					String(shop.suspensionLogId ?? "") !== String(expected)
-				) {
-					continue;
-				}
+				const expectedId = shopSuspensionLogIds[shopId];
+				const matches = sameSuspension(
+					payload,
+					shopId,
+					{
+						id: expectedId ? String(expectedId) : null,
+						suspendedAt: target.suspendedAt,
+					},
+					{
+						id: shop.suspensionLogId ? String(shop.suspensionLogId) : null,
+						suspendedAt: shop.suspendedAt,
+					},
+				);
+				if (!matches) continue;
 				await clearShopSuspension(payload, req, shopId);
 				restoredShopIds.push(shopId);
 			}
@@ -675,6 +683,39 @@ async function clearShopSuspension(
 }
 
 /**
+ * True if `current` is still under the exact suspension `expected` describes.
+ * Every suspension written through this service sets `suspensionLogId`, the
+ * id of the `shop.suspend` entry that produced it, so that is the primary
+ * match. `shops` ships in this same release, so no row can predate the
+ * field and no backfill is owed — but nothing here should ever be trusted to
+ * guarantee a non-null id either, so a missing one is never a silent
+ * mismatch: it is logged loudly and the match falls back to `suspendedAt`,
+ * the identity this guard used before `suspensionLogId` existed, so an
+ * unexpected null still lets a genuinely-expired or genuinely-restorable
+ * shop through instead of freezing it suspended forever.
+ */
+function sameSuspension(
+	payload: Payload,
+	shopId: string,
+	expected: { id: string | null; suspendedAt: unknown },
+	current: { id: string | null; suspendedAt: unknown },
+): boolean {
+	if (expected.id && current.id) return expected.id === current.id;
+	payload.logger.error(
+		{
+			shopId,
+			expectedSuspensionLogId: expected.id,
+			currentSuspensionLogId: current.id,
+		},
+		"[moderation] shop suspension is missing its suspensionLogId; falling back to suspendedAt to match it",
+	);
+	return (
+		Date.parse(String(current.suspendedAt)) ===
+		Date.parse(String(expected.suspendedAt))
+	);
+}
+
+/**
  * Only the listings the current suspension took down, matched on its start
  * date so an older entry can never drive a restore, and only while they are
  * still drafts in this shop.
@@ -684,7 +725,6 @@ async function restoreShopListings(
 	req: PayloadRequest,
 	shop: Shop,
 ): Promise<string[]> {
-	if (!shop.suspensionLogId) return [];
 	const entry = await lastEntry(
 		payload,
 		"shop",
@@ -692,7 +732,17 @@ async function restoreShopListings(
 		"shop.suspend",
 		req,
 	);
-	if (!entry || entry.id !== String(shop.suspensionLogId)) return [];
+	if (!entry) return [];
+	const matches = sameSuspension(
+		payload,
+		String(shop.id),
+		{ id: entry.id, suspendedAt: entry.metadata?.suspendedAt },
+		{
+			id: shop.suspensionLogId ? String(shop.suspensionLogId) : null,
+			suspendedAt: shop.suspendedAt,
+		},
+	);
+	if (!matches) return [];
 	const metadata = entry.metadata;
 
 	const restored: string[] = [];
@@ -825,6 +875,7 @@ export async function suspendShop(
 						until: suspension.suspendedUntil,
 						durationDays: input.durationDays ?? null,
 						unpublishedListingIds,
+						suspendedAt: suspension.suspendedAt,
 					},
 				},
 				req,
@@ -915,9 +966,10 @@ export async function liftExpiredShopSuspensions(
 	const lifted: string[] = [];
 	for (const candidate of due.docs) {
 		const shopId = String(candidate.id);
-		const expectedSuspensionLogId = candidate.suspensionLogId
-			? String(candidate.suspensionLogId)
-			: null;
+		const expected = {
+			id: candidate.suspensionLogId ? String(candidate.suspensionLogId) : null,
+			suspendedAt: candidate.suspendedAt,
+		};
 
 		const acted = await withTransaction(payload, async (req) => {
 			const shop = await payload
@@ -930,18 +982,14 @@ export async function liftExpiredShopSuspensions(
 				})
 				.catch(() => null);
 			if (!shop || shop.status !== "suspended") return false;
-			const currentSuspensionLogId = shop.suspensionLogId
-				? String(shop.suspensionLogId)
-				: null;
 			// Not the suspension the candidate list saw: either lifted and
 			// re-suspended since, or (with a real transactional adapter) already
 			// lifted by an overlapping run of this same job.
-			if (
-				!expectedSuspensionLogId ||
-				currentSuspensionLogId !== expectedSuspensionLogId
-			) {
-				return false;
-			}
+			const current = {
+				id: shop.suspensionLogId ? String(shop.suspensionLogId) : null,
+				suspendedAt: shop.suspendedAt,
+			};
+			if (!sameSuspension(payload, shopId, expected, current)) return false;
 
 			const by = relationId(shop.suspendedBy);
 			if (!by) {

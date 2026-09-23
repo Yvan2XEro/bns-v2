@@ -268,6 +268,25 @@ describe("user suspension cascade", () => {
 		expect(shop(payload, "s-1")?.status).toBe("active");
 		expect(shop(payload, "s-4")?.status).toBe("suspended");
 	});
+
+	it("falls back to the user's suspendedAt when a cascaded shop is missing its suspensionLogId, and logs loudly", async () => {
+		const payload = seed();
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		// Should never happen through this service, but must not silently strand
+		// the shop suspended if it ever does.
+		shop(payload, "s-1")!.suspensionLogId = null;
+
+		const result = await unsuspendUser(payload, MOD, "u-1");
+		expect(result.restoredShopIds).toEqual(["s-1"]);
+		expect(shop(payload, "s-1")?.status).toBe("active");
+		expect(payload.logger.error).toHaveBeenCalledWith(
+			expect.objectContaining({ shopId: "s-1", currentSuspensionLogId: null }),
+			expect.any(String),
+		);
+	});
 });
 
 describe("liftExpiredShopSuspensions", () => {
@@ -402,6 +421,64 @@ describe("liftExpiredShopSuspensions", () => {
 		).toBe(false);
 		expect(payload.logger.error).toHaveBeenCalledWith(
 			expect.objectContaining({ shopId: "s-1" }),
+			expect.any(String),
+		);
+	});
+
+	it('skips a shop that was independently re-suspended inside the race window, even though it is still "suspended"', async () => {
+		const payload = seed();
+		await suspendShop(payload, MOD, "s-1", { reason: "spam", durationDays: 1 });
+		const later = new Date(Date.now() + 2 * 86_400_000);
+
+		const originalFindByID = payload.findByID.bind(payload);
+		let intercepted = false;
+		payload.findByID = (async (
+			args: Parameters<typeof originalFindByID>[0],
+		) => {
+			const req = (args as { req?: { transactionID?: string } }).req;
+			if (
+				!intercepted &&
+				args.collection === "shops" &&
+				String(args.id) === "s-1" &&
+				req?.transactionID
+			) {
+				intercepted = true;
+				// Status ends up "suspended" again, but under a different
+				// suspension entirely — the status re-check alone cannot catch
+				// this, only the identity match can.
+				await unsuspendShop(payload, MOD, "s-1");
+				await suspendShop(payload, ADMIN, "s-1", {
+					reason: "prohibited",
+					durationDays: 3,
+				});
+			}
+			return originalFindByID(args);
+		}) as typeof originalFindByID;
+
+		expect(await liftExpiredShopSuspensions(payload, later)).toEqual({
+			lifted: [],
+		});
+		expect(shop(payload, "s-1")).toMatchObject({
+			status: "suspended",
+			suspendedReason: "prohibited",
+		});
+	});
+
+	it("falls back to suspendedAt and lifts when suspensionLogId is unexpectedly null, logging loudly", async () => {
+		const payload = seed();
+		await suspendShop(payload, MOD, "s-1", { reason: "spam", durationDays: 1 });
+		// Should never happen through this service (no row predates the field),
+		// but must not silently strand the shop suspended if it ever does.
+		shop(payload, "s-1")!.suspensionLogId = null;
+		const later = new Date(Date.now() + 2 * 86_400_000);
+
+		expect(await liftExpiredShopSuspensions(payload, later)).toEqual({
+			lifted: ["s-1"],
+		});
+		expect(shop(payload, "s-1")?.status).toBe("active");
+		expect(listing(payload, "l-1")?.status).toBe("published");
+		expect(payload.logger.error).toHaveBeenCalledWith(
+			expect.objectContaining({ shopId: "s-1", currentSuspensionLogId: null }),
 			expect.any(String),
 		);
 	});
