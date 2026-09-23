@@ -7,6 +7,8 @@ export const MODERATION_ACTIONS = [
 	"listing.takedown",
 	"user.suspend",
 	"user.unsuspend",
+	"shop.suspend",
+	"shop.unsuspend",
 	"report.resolve",
 	"report.dismiss",
 ] as const;
@@ -67,6 +69,7 @@ export const ModerationLog: CollectionConfig = {
 				{ label: "Listing", value: "listing" },
 				{ label: "User", value: "user" },
 				{ label: "Report", value: "report" },
+				{ label: "Shop", value: "shop" },
 			],
 			admin: { readOnly: true },
 		},

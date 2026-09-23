@@ -149,6 +149,7 @@ export interface Config {
       checkSearchAlerts: TaskCheckSearchAlerts;
       processWebhookEvent: TaskProcessWebhookEvent;
       reconcilePendingPayments: TaskReconcilePendingPayments;
+      liftExpiredShopSuspensions: TaskLiftExpiredShopSuspensions;
       inline: {
         input: unknown;
         output: unknown;
@@ -586,7 +587,7 @@ export interface Review {
 export interface Report {
   id: string;
   reporter: string | User;
-  targetType: 'listing' | 'user' | 'message';
+  targetType: 'listing' | 'user' | 'message' | 'shop';
   targetId: string;
   reason: 'spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other';
   description?: string | null;
@@ -742,9 +743,11 @@ export interface ModerationLog {
     | 'listing.takedown'
     | 'user.suspend'
     | 'user.unsuspend'
+    | 'shop.suspend'
+    | 'shop.unsuspend'
     | 'report.resolve'
     | 'report.dismiss';
-  targetType: 'listing' | 'user' | 'report';
+  targetType: 'listing' | 'user' | 'report' | 'shop';
   targetId: string;
   reason?: string | null;
   /**
@@ -901,7 +904,8 @@ export interface PayloadJob {
           | 'expireBoosts'
           | 'checkSearchAlerts'
           | 'processWebhookEvent'
-          | 'reconcilePendingPayments';
+          | 'reconcilePendingPayments'
+          | 'liftExpiredShopSuspensions';
         taskID: string;
         input?:
           | {
@@ -942,6 +946,7 @@ export interface PayloadJob {
         | 'checkSearchAlerts'
         | 'processWebhookEvent'
         | 'reconcilePendingPayments'
+        | 'liftExpiredShopSuspensions'
       )
     | null;
   queue?: string | null;
@@ -1828,6 +1833,14 @@ export interface TaskReconcilePendingPayments {
     expired?: number | null;
     errors?: number | null;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskLiftExpiredShopSuspensions".
+ */
+export interface TaskLiftExpiredShopSuspensions {
+  input?: unknown;
+  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

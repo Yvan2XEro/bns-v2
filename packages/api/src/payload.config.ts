@@ -31,6 +31,7 @@ import {
 	checkSearchAlertsTask,
 	expireBoostsTask,
 	expireListingsTask,
+	liftExpiredShopSuspensionsTask,
 	processWebhookEventTask,
 	reconcilePendingPaymentsTask,
 } from "./jobs";
@@ -124,6 +125,7 @@ export default buildConfig({
 			checkSearchAlertsTask,
 			processWebhookEventTask,
 			reconcilePendingPaymentsTask,
+			liftExpiredShopSuspensionsTask,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },

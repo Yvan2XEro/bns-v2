@@ -1,4 +1,4 @@
-import type { Payload } from "payload";
+import type { Payload, PayloadRequest } from "payload";
 import {
 	type ActorLike,
 	canActOn,
@@ -9,7 +9,10 @@ import {
 } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
+import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
+import { withTransaction } from "../lib/transactions";
+import type { Shop } from "../payload-types";
 
 export const SUSPENSION_REASONS = [
 	"spam",
@@ -49,18 +52,23 @@ const MODERATION_CONTEXT = { moderationAction: true } as const;
 interface LogInput {
 	actor: Actor;
 	action: ModerationAction;
-	targetType: "listing" | "user" | "report";
+	targetType: "listing" | "user" | "report" | "shop";
 	targetId: string;
 	reason?: string | null;
 	note?: string | null;
 	metadata?: Record<string, unknown>;
 }
 
-async function writeLog(payload: Payload, input: LogInput): Promise<void> {
+async function writeLog(
+	payload: Payload,
+	input: LogInput,
+	req?: PayloadRequest,
+): Promise<void> {
 	await payload.create({
 		collection: "moderation-log",
 		overrideAccess: true,
 		context: MODERATION_CONTEXT,
+		req,
 		data: {
 			actor: input.actor.id,
 			actorRole: input.actor.role ?? "user",
@@ -82,6 +90,55 @@ function assertModerator(actor: Actor): void {
 
 function trimmed(value: unknown): string | null {
 	return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function suspensionUntil(
+	actor: Actor,
+	durationDays: number | null,
+): Date | null {
+	try {
+		return resolveSuspensionUntil(actor, durationDays);
+	} catch (error) {
+		if (error instanceof ModerationRuleError) {
+			throw new ModerationError(
+				ERROR_CODES.moderationDurationInvalid,
+				403,
+				error.message,
+			);
+		}
+		throw error;
+	}
+}
+
+/**
+ * The metadata of the most recent log entry for a target/action pair — the
+ * source every restore reads to know exactly what its counterpart took down.
+ */
+async function lastEntryMetadata(
+	payload: Payload,
+	targetType: "user" | "shop",
+	targetId: string,
+	action: ModerationAction,
+	req?: PayloadRequest,
+): Promise<Record<string, unknown> | null> {
+	const last = await payload.find({
+		collection: "moderation-log",
+		depth: 0,
+		limit: 1,
+		sort: "-createdAt",
+		overrideAccess: true,
+		req,
+		where: {
+			and: [
+				{ targetType: { equals: targetType } },
+				{ targetId: { equals: String(targetId) } },
+				{ action: { equals: action } },
+			],
+		},
+	});
+	return (
+		(last.docs[0]?.metadata as Record<string, unknown> | undefined) ?? null
+	);
 }
 
 // ─── Listings ────────────────────────────────────────────────────────────────
@@ -223,83 +280,110 @@ export async function suspendUser(
 		throw new ModerationError(ERROR_CODES.moderationRankTooLow, 403);
 	}
 
-	let until: Date | null;
-	try {
-		until = resolveSuspensionUntil(actor, input.durationDays);
-	} catch (error) {
-		if (error instanceof ModerationRuleError) {
-			throw new ModerationError(
-				ERROR_CODES.moderationDurationInvalid,
-				403,
-				error.message,
-			);
-		}
-		throw error;
-	}
-
-	// Listings come down before the account is flagged. If the second write
-	// fails, the worst outcome is a few listings hidden without a sanction —
-	// recoverable, and visible in the log. The reverse order would leave a
-	// suspended seller with live listings and no record of why.
-	const unpublished = await payload.find({
-		collection: "listings",
-		depth: 0,
-		limit: 0,
-		pagination: false,
-		overrideAccess: true,
-		where: {
-			and: [
-				{ seller: { equals: targetId } },
-				{ status: { equals: "published" } },
-			],
-		},
-	});
-
-	const unpublishedListingIds = unpublished.docs.map((doc) => String(doc.id));
-
-	for (const id of unpublishedListingIds) {
-		await payload.update({
-			collection: "listings",
-			id,
-			overrideAccess: true,
-			context: MODERATION_CONTEXT,
-			data: { status: "draft" },
-		});
-	}
-
-	await payload.update({
-		collection: "users",
-		id: targetId,
-		overrideAccess: true,
-		context: MODERATION_CONTEXT,
-		data: {
-			suspendedAt: new Date().toISOString(),
-			suspendedUntil: until ? until.toISOString() : null,
-			suspendedReason: reason,
-			suspendedNote: trimmed(input.note),
-			suspendedBy: actor.id,
-		},
-	});
-
-	await writeLog(payload, {
-		actor,
-		action: "user.suspend",
-		targetType: "user",
-		targetId,
-		reason,
-		note: trimmed(input.note),
-		metadata: {
-			until: until ? until.toISOString() : null,
-			durationDays: input.durationDays ?? null,
-			unpublishedListingIds,
-		},
-	});
-
-	return {
-		userId: String(targetId),
-		until: until ? until.toISOString() : null,
-		unpublishedListingIds,
+	const until = suspensionUntil(actor, input.durationDays);
+	const suspension: ShopSuspension = {
+		suspendedAt: new Date().toISOString(),
+		suspendedUntil: until ? until.toISOString() : null,
+		suspendedReason: reason,
+		suspendedNote: trimmed(input.note),
+		suspendedBy: actor.id,
 	};
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			// Listings come down before the account is flagged. If the second write
+			// fails, the worst outcome is a few listings hidden without a sanction —
+			// recoverable, and visible in the log. The reverse order would leave a
+			// suspended seller with live listings and no record of why.
+			const unpublished = await payload.find({
+				collection: "listings",
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+				req,
+				where: {
+					and: [
+						{ seller: { equals: targetId } },
+						{ status: { equals: "published" } },
+					],
+				},
+			});
+
+			const unpublishedListingIds = unpublished.docs.map((doc) =>
+				String(doc.id),
+			);
+
+			for (const id of unpublishedListingIds) {
+				await payload.update({
+					collection: "listings",
+					id,
+					req,
+					overrideAccess: true,
+					context: MODERATION_CONTEXT,
+					data: { status: "draft" },
+				});
+			}
+
+			await payload.update({
+				collection: "users",
+				id: targetId,
+				req,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				data: suspension,
+			});
+
+			// The user's own listings (shop listings included, `seller` is the
+			// user) are already drafted above, so the shop cascade below never
+			// touches listings — only the shop's own status.
+			const ownedShops = await payload.find({
+				collection: "shops",
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+				req,
+				where: {
+					and: [
+						{ owner: { equals: targetId } },
+						{ status: { equals: "active" } },
+					],
+				},
+			});
+			const suspendedShopIds = ownedShops.docs.map((doc) => String(doc.id));
+			for (const shopId of suspendedShopIds) {
+				await applyShopSuspension(payload, req, shopId, suspension);
+			}
+
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "user.suspend",
+					targetType: "user",
+					targetId,
+					reason,
+					note: suspension.suspendedNote,
+					metadata: {
+						until: suspension.suspendedUntil,
+						durationDays: input.durationDays ?? null,
+						unpublishedListingIds,
+						suspendedShopIds,
+					},
+				},
+				req,
+			);
+
+			return {
+				userId: String(targetId),
+				until: suspension.suspendedUntil,
+				unpublishedListingIds,
+			};
+		},
+		{ user: actor },
+	);
 }
 
 export async function unsuspendUser(
@@ -307,7 +391,11 @@ export async function unsuspendUser(
 	actor: Actor,
 	targetId: string,
 	input: { note?: string | null; restoreListings?: boolean } = {},
-): Promise<{ userId: string; restoredListingIds: string[] }> {
+): Promise<{
+	userId: string;
+	restoredListingIds: string[];
+	restoredShopIds: string[];
+}> {
 	assertModerator(actor);
 
 	const target = await findUser(payload, targetId);
@@ -320,35 +408,87 @@ export async function unsuspendUser(
 		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
 	}
 
-	const restore = input.restoreListings !== false;
-	const restoredListingIds = restore
-		? await restoreSuspendedListings(payload, targetId)
-		: [];
+	return withTransaction(
+		payload,
+		async (req) => {
+			const restore = input.restoreListings !== false;
+			const restoredListingIds = restore
+				? await restoreSuspendedListings(payload, targetId, req)
+				: [];
 
-	await payload.update({
-		collection: "users",
-		id: targetId,
-		overrideAccess: true,
-		context: MODERATION_CONTEXT,
-		data: {
-			suspendedAt: null,
-			suspendedUntil: null,
-			suspendedReason: null,
-			suspendedNote: null,
-			suspendedBy: null,
+			// Read before the new `user.unsuspend` entry below is written, which
+			// would otherwise become the "most recent" one for this target/action.
+			const metadata = await lastEntryMetadata(
+				payload,
+				"user",
+				targetId,
+				"user.suspend",
+				req,
+			);
+			// Guarded by the suspension timestamp, not just `status === "suspended"`:
+			// a shop this cascade suspended may since have been unsuspended and
+			// independently re-suspended by a fresh moderation action, which must
+			// not be undone by lifting the user's own suspension.
+			const restoredShopIds: string[] = [];
+			for (const shopId of Array.isArray(metadata?.suspendedShopIds)
+				? metadata.suspendedShopIds.map(String)
+				: []) {
+				const shop = await payload
+					.findByID({
+						collection: "shops",
+						id: shopId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null);
+				if (shop?.status !== "suspended") continue;
+				if (
+					Date.parse(String(shop.suspendedAt)) !==
+					Date.parse(String(target.suspendedAt))
+				) {
+					continue;
+				}
+				await clearShopSuspension(payload, req, shopId);
+				restoredShopIds.push(shopId);
+			}
+
+			await payload.update({
+				collection: "users",
+				id: targetId,
+				req,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				data: {
+					suspendedAt: null,
+					suspendedUntil: null,
+					suspendedReason: null,
+					suspendedNote: null,
+					suspendedBy: null,
+				},
+			});
+
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "user.unsuspend",
+					targetType: "user",
+					targetId,
+					note: trimmed(input.note),
+					metadata: {
+						restoredListingIds,
+						wasExpired: summary.expired,
+						restoredShopIds,
+					},
+				},
+				req,
+			);
+
+			return { userId: String(targetId), restoredListingIds, restoredShopIds };
 		},
-	});
-
-	await writeLog(payload, {
-		actor,
-		action: "user.unsuspend",
-		targetType: "user",
-		targetId,
-		note: trimmed(input.note),
-		metadata: { restoredListingIds, wasExpired: summary.expired },
-	});
-
-	return { userId: String(targetId), restoredListingIds };
+		{ user: actor },
+	);
 }
 
 /**
@@ -359,25 +499,15 @@ export async function unsuspendUser(
 async function restoreSuspendedListings(
 	payload: Payload,
 	targetId: string,
+	req?: PayloadRequest,
 ): Promise<string[]> {
-	const lastSuspend = await payload.find({
-		collection: "moderation-log",
-		depth: 0,
-		limit: 1,
-		sort: "-createdAt",
-		overrideAccess: true,
-		where: {
-			and: [
-				{ targetType: { equals: "user" } },
-				{ targetId: { equals: String(targetId) } },
-				{ action: { equals: "user.suspend" } },
-			],
-		},
-	});
-
-	const metadata = lastSuspend.docs[0]?.metadata as
-		| { unpublishedListingIds?: unknown }
-		| undefined;
+	const metadata = await lastEntryMetadata(
+		payload,
+		"user",
+		targetId,
+		"user.suspend",
+		req,
+	);
 	const ids = Array.isArray(metadata?.unpublishedListingIds)
 		? metadata.unpublishedListingIds.map(String)
 		: [];
@@ -390,12 +520,14 @@ async function restoreSuspendedListings(
 				id,
 				depth: 0,
 				overrideAccess: true,
+				req,
 			});
 			if (listing.status !== "draft") continue;
 
 			await payload.update({
 				collection: "listings",
 				id,
+				req,
 				overrideAccess: true,
 				context: MODERATION_CONTEXT,
 				data: { status: "published" },
@@ -420,6 +552,316 @@ async function findUser(payload: Payload, id: string) {
 	} catch {
 		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
 	}
+}
+
+// ─── Shops ───────────────────────────────────────────────────────────────────
+
+/** Shops' own beforeChange lets both flags through; `shopService` also covers P2's field list. */
+const SHOP_MODERATION_CONTEXT = {
+	moderationAction: true,
+	shopService: true,
+} as const;
+
+interface ShopSuspension {
+	suspendedAt: string;
+	suspendedUntil: string | null;
+	suspendedReason: SuspensionReason;
+	suspendedNote: string | null;
+	suspendedBy: string;
+}
+
+async function findShopForModeration(payload: Payload, id: string) {
+	try {
+		return await payload.findByID({
+			collection: "shops",
+			id,
+			depth: 0,
+			overrideAccess: true,
+		});
+	} catch {
+		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+	}
+}
+
+async function applyShopSuspension(
+	payload: Payload,
+	req: PayloadRequest,
+	shopId: string,
+	suspension: ShopSuspension,
+) {
+	await payload.update({
+		collection: "shops",
+		id: shopId,
+		req,
+		overrideAccess: true,
+		context: SHOP_MODERATION_CONTEXT,
+		data: { status: "suspended", ...suspension },
+	});
+}
+
+async function clearShopSuspension(
+	payload: Payload,
+	req: PayloadRequest,
+	shopId: string,
+) {
+	await payload.update({
+		collection: "shops",
+		id: shopId,
+		req,
+		overrideAccess: true,
+		context: SHOP_MODERATION_CONTEXT,
+		data: {
+			status: "active",
+			suspendedAt: null,
+			suspendedUntil: null,
+			suspendedReason: null,
+			suspendedNote: null,
+			suspendedBy: null,
+		},
+	});
+}
+
+/**
+ * Only the listings the current suspension took down, matched on its start
+ * date so an older entry can never drive a restore, and only while they are
+ * still drafts in this shop.
+ */
+async function restoreShopListings(
+	payload: Payload,
+	req: PayloadRequest,
+	shop: Shop,
+): Promise<string[]> {
+	const metadata = await lastEntryMetadata(
+		payload,
+		"shop",
+		String(shop.id),
+		"shop.suspend",
+		req,
+	);
+	if (
+		!metadata ||
+		Date.parse(String(metadata.suspendedAt)) !==
+			Date.parse(String(shop.suspendedAt))
+	) {
+		return [];
+	}
+
+	const restored: string[] = [];
+	for (const id of Array.isArray(metadata.unpublishedListingIds)
+		? metadata.unpublishedListingIds.map(String)
+		: []) {
+		const listing = await payload
+			.findByID({
+				collection: "listings",
+				id,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+			.catch(() => null);
+		if (
+			!listing ||
+			listing.status !== "draft" ||
+			relationId(listing.shop) !== String(shop.id)
+		) {
+			continue;
+		}
+		await payload.update({
+			collection: "listings",
+			id,
+			req,
+			overrideAccess: true,
+			context: MODERATION_CONTEXT,
+			data: { status: "published" },
+		});
+		restored.push(id);
+	}
+	return restored;
+}
+
+async function assertCanActOnShop(payload: Payload, actor: Actor, shop: Shop) {
+	const owner = await findUser(payload, relationId(shop.owner) ?? "");
+	if (
+		String(owner.id) === String(actor.id) ||
+		!canActOn(actor, owner as ActorLike)
+	) {
+		throw new ModerationError(ERROR_CODES.moderationRankTooLow, 403);
+	}
+}
+
+export async function suspendShop(
+	payload: Payload,
+	actor: Actor,
+	shopId: string,
+	input: { reason: string; durationDays: number | null; note?: string | null },
+): Promise<{
+	shopId: string;
+	until: string | null;
+	unpublishedListingIds: string[];
+}> {
+	assertModerator(actor);
+	const reason = parseSuspensionReason(input.reason);
+	const shop = await findShopForModeration(payload, shopId);
+	await assertCanActOnShop(payload, actor, shop);
+	if (shop.status !== "active") {
+		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+	}
+
+	const until = suspensionUntil(actor, input.durationDays);
+	const suspension: ShopSuspension = {
+		suspendedAt: new Date().toISOString(),
+		suspendedUntil: until ? until.toISOString() : null,
+		suspendedReason: reason,
+		suspendedNote: trimmed(input.note),
+		suspendedBy: actor.id,
+	};
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const published = await payload.find({
+				collection: "listings",
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+				req,
+				where: {
+					and: [
+						{ shop: { equals: shopId } },
+						{ status: { equals: "published" } },
+					],
+				},
+			});
+			const unpublishedListingIds = published.docs.map((doc) => String(doc.id));
+			for (const id of unpublishedListingIds) {
+				await payload.update({
+					collection: "listings",
+					id,
+					req,
+					overrideAccess: true,
+					context: MODERATION_CONTEXT,
+					data: { status: "draft" },
+				});
+			}
+
+			await applyShopSuspension(payload, req, shopId, suspension);
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "shop.suspend",
+					targetType: "shop",
+					targetId: shopId,
+					reason,
+					note: suspension.suspendedNote,
+					metadata: {
+						until: suspension.suspendedUntil,
+						durationDays: input.durationDays ?? null,
+						unpublishedListingIds,
+						suspendedAt: suspension.suspendedAt,
+					},
+				},
+				req,
+			);
+			return {
+				shopId: String(shopId),
+				until: suspension.suspendedUntil,
+				unpublishedListingIds,
+			};
+		},
+		{ user: actor },
+	);
+}
+
+export async function unsuspendShop(
+	payload: Payload,
+	actor: Actor,
+	shopId: string,
+	input: { note?: string | null; restoreListings?: boolean } = {},
+): Promise<{ shopId: string; restoredListingIds: string[] }> {
+	assertModerator(actor);
+	const shop = await findShopForModeration(payload, shopId);
+	await assertCanActOnShop(payload, actor, shop);
+	if (shop.status !== "suspended") {
+		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+	}
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const restoredListingIds =
+				input.restoreListings === false
+					? []
+					: await restoreShopListings(payload, req, shop);
+			await clearShopSuspension(payload, req, shopId);
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "shop.unsuspend",
+					targetType: "shop",
+					targetId: shopId,
+					note: trimmed(input.note),
+					metadata: { restoredListingIds },
+				},
+				req,
+			);
+			return { shopId: String(shopId), restoredListingIds };
+		},
+		{ user: actor },
+	);
+}
+
+/**
+ * Users need no job because their suspension is derived from dates at read
+ * time; a shop's `status` is stored, so a lapsed suspension is lifted here.
+ * The log entry is attributed to the moderator who set the end date, marked
+ * `actorRole: "system"` so history can tell an automatic lift from a manual
+ * one.
+ */
+export async function liftExpiredShopSuspensions(
+	payload: Payload,
+	now: Date = new Date(),
+): Promise<{ lifted: string[] }> {
+	const due = await payload.find({
+		collection: "shops",
+		depth: 0,
+		limit: 100,
+		overrideAccess: true,
+		where: {
+			and: [
+				{ status: { equals: "suspended" } },
+				{ suspendedUntil: { less_than_equal: now.toISOString() } },
+			],
+		},
+	});
+
+	const lifted: string[] = [];
+	for (const shop of due.docs) {
+		const shopId = String(shop.id);
+		await withTransaction(payload, async (req) => {
+			const restoredListingIds = await restoreShopListings(payload, req, shop);
+			await clearShopSuspension(payload, req, shopId);
+			const by = relationId(shop.suspendedBy);
+			if (by) {
+				await writeLog(
+					payload,
+					{
+						actor: { id: by, role: "system" },
+						action: "shop.unsuspend",
+						targetType: "shop",
+						targetId: shopId,
+						note: "Suspension expired",
+						metadata: { expired: true, restoredListingIds },
+					},
+					req,
+				);
+			}
+		});
+		lifted.push(shopId);
+	}
+	return { lifted };
 }
 
 // ─── Reports ─────────────────────────────────────────────────────────────────

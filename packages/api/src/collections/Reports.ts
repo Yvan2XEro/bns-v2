@@ -60,6 +60,7 @@ export const Reports: CollectionConfig = {
 				{ label: "Listing", value: "listing" },
 				{ label: "User", value: "user" },
 				{ label: "Message", value: "message" },
+				{ label: "Shop", value: "shop" },
 			],
 		},
 		{
