@@ -927,6 +927,78 @@
 		"fullHistory": "Full history",
 		"noMovements": "No stock movement yet."
 	},
+	"Stock": {
+		"title": "Stock",
+		"startInventory": "Start a stock count",
+		"adjustTitle": "Adjust stock",
+		"adjustSubtitle": "Every movement is recorded with its reason.",
+		"costValue": "Stock value at cost",
+		"unitsOnHand": "Units in stock",
+		"trackedVariants": "across {count, plural, one {# tracked variant} other {# tracked variants}}",
+		"unitsReserved": "Reserved for orders",
+		"reservedHint": "released if the order is cancelled",
+		"alerts": "Alerts",
+		"alertsValue": "{low} low · {out} out",
+		"filter": {
+			"all": "All",
+			"receipt": "Receipts",
+			"adjustment": "Corrections",
+			"loss": "Losses",
+			"return": "Returns"
+		},
+		"colDate": "Date",
+		"colProduct": "Product",
+		"colType": "Type",
+		"colQty": "Qty",
+		"colAfter": "Stock after",
+		"colReference": "Reference",
+		"noMovements": "No movement matches this filter.",
+		"errorTitle": "Could not load the stock",
+		"previous": "Previous",
+		"next": "Next",
+		"pickPlaceholder": "Find a product",
+		"noProduct": "No product matches this search.",
+		"loadingVariant": "Loading the variant…",
+		"defaultVariant": "Single variant",
+		"variantsCount": "{count} variants",
+		"inStock": "{count} in stock",
+		"currentStock": "In stock: {count}",
+		"currentStockWithAlert": "In stock: {count} · alert if ≤ {threshold}",
+		"changeVariant": "Choose another product",
+		"movementType": "Movement type",
+		"types": {
+			"receipt": {
+				"title": "Receipt",
+				"hint": "Goods arrived",
+				"amountLabel": "Quantity received"
+			},
+			"adjustment": {
+				"title": "Correction",
+				"hint": "After a count",
+				"amountLabel": "Counted stock"
+			},
+			"loss": {
+				"title": "Loss or damage",
+				"hint": "Remove from stock",
+				"amountLabel": "Quantity lost"
+			},
+			"return": {
+				"title": "Customer return",
+				"hint": "Put back in stock",
+				"amountLabel": "Quantity returned"
+			}
+		},
+		"unitCost": "Unit cost",
+		"note": "Note",
+		"notePlaceholder": "Delivery of 15 September",
+		"stockAfter": "Stock after saving",
+		"amountInvalid": "Enter a whole number of units.",
+		"noChange": "This would not change the stock.",
+		"negative": "Stock cannot go below zero.",
+		"cancel": "Cancel",
+		"save": "Save",
+		"saveWithDelta": "Save {delta}"
+	},
 	"StockMovement": {
 		"type": {
 			"receipt": "Receipt",

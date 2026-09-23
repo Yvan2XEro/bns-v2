@@ -928,6 +928,78 @@
 		"fullHistory": "Tout l'historique",
 		"noMovements": "Aucun mouvement de stock pour l'instant."
 	},
+	"Stock": {
+		"title": "Stock",
+		"startInventory": "Lancer un inventaire",
+		"adjustTitle": "Ajuster le stock",
+		"adjustSubtitle": "Chaque mouvement est enregistré avec son motif.",
+		"costValue": "Valeur du stock au coût",
+		"unitsOnHand": "Unités en stock",
+		"trackedVariants": "sur {count, plural, one {# variante suivie} other {# variantes suivies}}",
+		"unitsReserved": "Réservées pour des commandes",
+		"reservedHint": "libérées si la commande est annulée",
+		"alerts": "Alertes",
+		"alertsValue": "{low} faible · {out} rupture",
+		"filter": {
+			"all": "Tous",
+			"receipt": "Réceptions",
+			"adjustment": "Corrections",
+			"loss": "Pertes",
+			"return": "Retours"
+		},
+		"colDate": "Date",
+		"colProduct": "Produit",
+		"colType": "Type",
+		"colQty": "Qté",
+		"colAfter": "Stock après",
+		"colReference": "Référence",
+		"noMovements": "Aucun mouvement ne correspond à ce filtre.",
+		"errorTitle": "Impossible de charger le stock",
+		"previous": "Précédent",
+		"next": "Suivant",
+		"pickPlaceholder": "Chercher un produit",
+		"noProduct": "Aucun produit ne correspond à cette recherche.",
+		"loadingVariant": "Chargement de la variante…",
+		"defaultVariant": "Variante unique",
+		"variantsCount": "{count} variantes",
+		"inStock": "{count} en stock",
+		"currentStock": "En stock : {count}",
+		"currentStockWithAlert": "En stock : {count} · alerte si ≤ {threshold}",
+		"changeVariant": "Choisir un autre produit",
+		"movementType": "Type de mouvement",
+		"types": {
+			"receipt": {
+				"title": "Réception",
+				"hint": "Arrivage de marchandise",
+				"amountLabel": "Quantité reçue"
+			},
+			"adjustment": {
+				"title": "Correction",
+				"hint": "Après un comptage",
+				"amountLabel": "Stock compté"
+			},
+			"loss": {
+				"title": "Perte ou casse",
+				"hint": "Retirer du stock",
+				"amountLabel": "Quantité perdue"
+			},
+			"return": {
+				"title": "Retour client",
+				"hint": "Remettre en stock",
+				"amountLabel": "Quantité retournée"
+			}
+		},
+		"unitCost": "Coût unitaire",
+		"note": "Note",
+		"notePlaceholder": "Arrivage du 15 septembre",
+		"stockAfter": "Stock après enregistrement",
+		"amountInvalid": "Saisissez un nombre entier d'unités.",
+		"noChange": "Cela ne changerait pas le stock.",
+		"negative": "Le stock ne peut pas passer sous zéro.",
+		"cancel": "Annuler",
+		"save": "Enregistrer",
+		"saveWithDelta": "Enregistrer {delta}"
+	},
 	"StockMovement": {
 		"type": {
 			"receipt": "Réception",
