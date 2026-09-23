@@ -25,7 +25,7 @@ import {
 import type { ReportReason } from "~/types";
 
 interface ReportDialogProps {
-	targetType: "listing" | "user" | "message";
+	targetType: "listing" | "user" | "message" | "shop";
 	targetId: string;
 	children?: React.ReactNode;
 }

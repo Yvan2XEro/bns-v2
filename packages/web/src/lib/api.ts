@@ -234,7 +234,7 @@ export const reviewsApi = {
 
 export const reportsApi = {
 	create: async (data: {
-		targetType: "listing" | "user" | "message";
+		targetType: "listing" | "user" | "message" | "shop";
 		targetId: string;
 		reason: ReportReason;
 		description?: string;
