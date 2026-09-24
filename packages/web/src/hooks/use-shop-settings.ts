@@ -1,7 +1,9 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { catalogueRootKey } from "~/hooks/use-catalogue";
 import { handleAvailabilityRootKey } from "~/hooks/use-handle-availability";
+import { personalListingsRootKey } from "~/hooks/use-listings-move";
 import { myShopKey } from "~/hooks/use-my-shop";
 import type { ApiError } from "~/lib/apiError";
 import { type ShopUpdateInput, shopApi } from "~/lib/shop-api";
@@ -44,7 +46,11 @@ export function useChangeHandle(shopId: string) {
 	});
 }
 
-/** Owner only, and transactional on the server: listings detach and the shop closes together. */
+/**
+ * Owner only, and transactional on the server: every listing detaches back to
+ * personal, every product archives, and the shop itself closes — all in one
+ * write, so the client drops the caches for all three.
+ */
 export function useCloseShop(shopId: string) {
 	const queryClient = useQueryClient();
 	return useMutation<
@@ -57,6 +63,12 @@ export function useCloseShop(shopId: string) {
 		retry: false,
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: myShopKey });
+			void queryClient.invalidateQueries({
+				queryKey: catalogueRootKey(shopId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: personalListingsRootKey,
+			});
 		},
 	});
 }

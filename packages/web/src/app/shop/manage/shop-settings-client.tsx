@@ -10,6 +10,7 @@ import { MoveListingsDialog } from "~/components/shop/move-listings-dialog";
 import { ProfileForm } from "~/components/shop/profile-form";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { isShopOwner } from "~/lib/shop-roles";
 import type { Category, MyShop, ShopRole } from "~/types";
 
 type Tab = "profile" | "address" | "contacts" | "listings" | "close";
@@ -33,6 +34,9 @@ export function ShopSettingsClient({
 	const [tab, setTab] = useState<Tab>(initialTab);
 	const [moveOpen, setMoveOpen] = useState(openMove);
 	const suspended = shop.status !== "active";
+	// The address change and the close form are owner-only levers the server
+	// refuses for anyone else, so their tabs are not offered either.
+	const owner = isShopOwner(role);
 
 	return (
 		<div className="space-y-5">
@@ -53,18 +57,22 @@ export function ShopSettingsClient({
 			<Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
 				<TabsList>
 					<TabsTrigger value="profile">{t("tabProfile")}</TabsTrigger>
-					<TabsTrigger value="address">{t("tabAddress")}</TabsTrigger>
+					{owner && (
+						<TabsTrigger value="address">{t("tabAddress")}</TabsTrigger>
+					)}
 					<TabsTrigger value="contacts">{t("tabContacts")}</TabsTrigger>
 					<TabsTrigger value="listings">{t("tabListings")}</TabsTrigger>
-					<TabsTrigger value="close">{t("tabClose")}</TabsTrigger>
+					{owner && <TabsTrigger value="close">{t("tabClose")}</TabsTrigger>}
 				</TabsList>
 				<div className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-6">
 					<TabsContent value="profile">
 						<ProfileForm shop={shop} categories={categories} />
 					</TabsContent>
-					<TabsContent value="address">
-						<HandleForm shop={shop} role={role} />
-					</TabsContent>
+					{owner && (
+						<TabsContent value="address">
+							<HandleForm shop={shop} role={role} />
+						</TabsContent>
+					)}
 					<TabsContent value="contacts">
 						<ContactsForm shop={shop} />
 					</TabsContent>
@@ -85,9 +93,11 @@ export function ShopSettingsClient({
 							)}
 						</div>
 					</TabsContent>
-					<TabsContent value="close">
-						<CloseShopForm shop={shop} role={role} />
-					</TabsContent>
+					{owner && (
+						<TabsContent value="close">
+							<CloseShopForm shop={shop} role={role} />
+						</TabsContent>
+					)}
 				</div>
 			</Tabs>
 			<MoveListingsDialog

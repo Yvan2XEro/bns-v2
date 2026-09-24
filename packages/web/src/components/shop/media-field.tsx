@@ -4,6 +4,7 @@ import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRef } from "react";
 import { useUploadMedia } from "~/hooks/use-upload-media";
+import { resolveErrorMessage } from "~/lib/apiError";
 
 /** Uploads on pick and reports the new media id; the parent saves it with the form. */
 export function MediaField({
@@ -22,6 +23,7 @@ export function MediaField({
 	shape: "square" | "banner";
 }) {
 	const t = useTranslations("ShopManage");
+	const tRoot = useTranslations();
 	const input = useRef<HTMLInputElement>(null);
 	const uploadMedia = useUploadMedia();
 
@@ -74,7 +76,9 @@ export function MediaField({
 					)}
 				</div>
 				{uploadMedia.isError && (
-					<p className="text-red-600 text-xs">{t("uploadFailed")}</p>
+					<p className="text-red-600 text-xs">
+						{resolveErrorMessage(uploadMedia.error, tRoot, t("uploadFailed"))}
+					</p>
 				)}
 			</div>
 			<input

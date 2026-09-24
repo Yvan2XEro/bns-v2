@@ -19,8 +19,7 @@ import {
 	usePersonalListings,
 } from "~/hooks/use-listings-move";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatXaf } from "~/lib/money";
-import type { Media } from "~/types";
+import { MoveListingRow } from "./move-listing-row";
 
 export function MoveListingsDialog({
 	shopId,
@@ -136,50 +135,20 @@ function MoveListingsBody({
 					</label>
 					<ul className="max-h-72 space-y-2 overflow-y-auto">
 						{listings.map((listing) => {
-							const image = listing.images?.[0]?.image as
-								| Media
-								| string
-								| undefined;
-							const url =
-								typeof image === "object"
-									? (image.thumbnailURL ?? image.url)
-									: null;
 							const checked = selected.includes(listing.id);
 							return (
-								<li key={listing.id}>
-									<label className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#E2E8F0] p-2">
-										<input
-											type="checkbox"
-											className="h-4 w-4 accent-[#1E40AF]"
-											checked={checked}
-											onChange={() =>
-												setSelected((prev) =>
-													checked
-														? prev.filter((id) => id !== listing.id)
-														: [...prev, listing.id],
-												)
-											}
-										/>
-										<div className="h-11 w-11 shrink-0 overflow-hidden rounded bg-[#F1F5F9]">
-											{url && (
-												// biome-ignore lint/performance/noImgElement: thumbnails from arbitrary storage hosts
-												<img
-													src={url}
-													alt=""
-													className="h-full w-full object-cover"
-												/>
-											)}
-										</div>
-										<div className="min-w-0">
-											<p className="truncate font-medium text-[#0F172A] text-sm">
-												{listing.title}
-											</p>
-											<p className="text-[#64748B] text-xs">
-												{formatXaf(listing.price)}
-											</p>
-										</div>
-									</label>
-								</li>
+								<MoveListingRow
+									key={listing.id}
+									listing={listing}
+									checked={checked}
+									onToggle={() =>
+										setSelected((prev) =>
+											checked
+												? prev.filter((id) => id !== listing.id)
+												: [...prev, listing.id],
+										)
+									}
+								/>
 							);
 						})}
 					</ul>
