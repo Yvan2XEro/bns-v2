@@ -302,6 +302,16 @@ export async function closeShopInTransaction(
 		});
 	}
 
+	// Variants of these products are intentionally left with `archivedAt: null`.
+	// `PUBLIC_VARIANTS` and the `products` read access both gate on the parent
+	// product's `status: "active"`, so an archived product's variants are
+	// already unreachable to a buyer or non-member (list, direct id, or a
+	// stale link alike); every route that can write to a variant requires an
+	// `active` shop (`requireShopMember(..., { writable: true })` -> 409), so
+	// nothing can act on their stock while the shop is closed; and handle
+	// re-adoption after the hold period creates a brand-new shop document, so
+	// there is no reopen path that would resurrect this stale stock under a
+	// live product again.
 	await writeShop(req, shopId, {
 		status: "closed",
 		closedAt: now.toISOString(),
