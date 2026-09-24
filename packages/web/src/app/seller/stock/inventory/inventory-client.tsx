@@ -2,8 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useReducer, useRef } from "react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { useEffect, useReducer } from "react";
+import {
+	type SubmitErrorHandler,
+	useFieldArray,
+	useForm,
+	useWatch,
+} from "react-hook-form";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useShopVariants } from "~/hooks/use-stock";
 import { useStockCount } from "~/hooks/use-stock-count";
@@ -15,15 +20,17 @@ import {
 	countDeltas,
 	countFormSchema,
 	draftFromRows,
-	loadDraft,
+	hasAnyInput,
 	rowsFromVariants,
 	saveDraft,
 } from "~/lib/inventory";
 import { parseAmount } from "~/lib/product-form";
 import { InventoryFilters } from "./inventory-filters";
 import { InventoryHeader } from "./inventory-header";
+import { InventoryNotices } from "./inventory-notices";
 import { InventoryStats } from "./inventory-stats";
 import { type FILTERS, InventoryTable } from "./inventory-table";
+import { useInventoryHydration } from "./use-inventory-hydration";
 
 interface State {
 	filter: (typeof FILTERS)[number];
@@ -31,6 +38,8 @@ interface State {
 	startedAt: string;
 	/** A transient success notice; a server refusal instead goes to formState.errors.root. */
 	notice: string | null;
+	/** Set by a failed submit, to move focus to the first row that needs fixing. */
+	focusVariantId: string | null;
 }
 
 function reducer(state: State, patch: Partial<State>): State {
@@ -55,6 +64,7 @@ export function InventoryClient({
 		q: "",
 		startedAt: new Date().toISOString(),
 		notice: null,
+		focusVariantId: null,
 	});
 
 	const {
@@ -73,27 +83,21 @@ export function InventoryClient({
 	const { fields } = useFieldArray({ control, name: "rows" });
 	const rows = useWatch({ control, name: "rows" }) ?? [];
 
-	// Hydrates the form once, from whichever arrives: the saved draft (read
-	// synchronously) plus the variant list (a query). A later background
-	// refetch of the same query (e.g. on window focus) must not wipe counts
-	// the seller is mid-typing, hence the one-shot guard.
-	const initialized = useRef(false);
+	useInventoryHydration({
+		shopId,
+		variants: variantsQuery.data?.docs,
+		defaultLabel: t("defaultVariant"),
+		reset,
+		onDraftLoaded: (startedAt) => patch({ startedAt }),
+	});
+
+	// Moves focus to the first row a failed submit flagged, once the filter
+	// and search that might have hidden it have cleared and it is on screen.
 	useEffect(() => {
-		if (initialized.current || !variantsQuery.data) return;
-		initialized.current = true;
-		const draft = loadDraft(shopId) ?? {
-			startedAt: new Date().toISOString(),
-			counts: {},
-		};
-		patch({ startedAt: draft.startedAt });
-		reset({
-			rows: rowsFromVariants(
-				variantsQuery.data.docs,
-				draft,
-				t("defaultVariant"),
-			),
-		});
-	}, [variantsQuery.data, shopId, reset, t]);
+		if (!state.focusVariantId) return;
+		document.getElementById(`count-${state.focusVariantId}`)?.focus();
+		patch({ focusVariantId: null });
+	}, [state.focusVariantId]);
 
 	const lines: CountLine[] = rows.map((row) => ({
 		variantId: row.variantId,
@@ -102,6 +106,26 @@ export function InventoryClient({
 		cost: row.cost,
 	}));
 	const stats = countDeltas(lines);
+	const invalidRows = Array.isArray(formState.errors.rows)
+		? formState.errors.rows.filter(Boolean).length
+		: 0;
+
+	// A malformed count (non-numeric, non-blank text a pasted value or a
+	// physical keyboard can produce despite inputMode="numeric") must never
+	// make "Save the gaps" silently do nothing: it widens the filter/search so
+	// the offending row is visible, focuses it, and a banner explains why
+	// nothing was saved.
+	const onInvalid: SubmitErrorHandler<CountFormState> = (errors) => {
+		const rowErrors = errors.rows;
+		const index = Array.isArray(rowErrors)
+			? rowErrors.findIndex((entry) => entry?.counted)
+			: -1;
+		patch({
+			filter: "all",
+			q: "",
+			focusVariantId: index >= 0 ? (rows[index]?.variantId ?? null) : null,
+		});
+	};
 
 	async function onValid(values: CountFormState) {
 		clearErrors("root");
@@ -149,33 +173,28 @@ export function InventoryClient({
 		day: "numeric",
 		month: "long",
 	});
-	const errorMessage = formState.errors.root?.message ?? null;
 
 	return (
-		<form onSubmit={handleSubmit(onValid)} noValidate className="space-y-5">
+		<form
+			onSubmit={handleSubmit(onValid, onInvalid)}
+			noValidate
+			className="space-y-5"
+		>
 			<InventoryHeader
 				startedLabel={startedLabel}
 				submitting={stockCount.isPending}
-				submitDisabled={stockCount.isPending || stats.counted === 0}
+				submitDisabled={stockCount.isPending || !hasAnyInput(rows)}
 				onSaveDraft={() => {
 					saveDraft(shopId, draftFromRows(state.startedAt, getValues("rows")));
 					patch({ notice: t("draftSaved") });
 				}}
 			/>
 
-			{state.notice && (
-				<p className="rounded-lg bg-[#F0FDF4] px-3 py-2 text-[#166534] text-sm">
-					{state.notice}
-				</p>
-			)}
-			{errorMessage && (
-				<p
-					role="alert"
-					className="rounded-lg bg-red-50 px-3 py-2 text-red-700 text-sm"
-				>
-					{errorMessage}
-				</p>
-			)}
+			<InventoryNotices
+				notice={state.notice}
+				invalidRows={invalidRows}
+				errorMessage={formState.errors.root?.message ?? null}
+			/>
 
 			<InventoryStats stats={stats} total={fields.length} showCost={showCost} />
 
@@ -198,6 +217,7 @@ export function InventoryClient({
 					fields={fields}
 					rows={rows}
 					register={register}
+					errors={formState.errors.rows}
 					filter={state.filter}
 					query={state.q}
 					showCost={showCost}

@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { FieldArrayWithId, UseFormRegister } from "react-hook-form";
+import type {
+	FieldArrayWithId,
+	FieldErrors,
+	UseFormRegister,
+} from "react-hook-form";
 import type { CountFormState, CountRow } from "~/lib/inventory";
 import { formatXaf } from "~/lib/money";
 import { parseAmount } from "~/lib/product-form";
@@ -25,6 +29,7 @@ export function InventoryTable({
 	fields,
 	rows,
 	register,
+	errors,
 	filter,
 	query,
 	showCost,
@@ -32,6 +37,8 @@ export function InventoryTable({
 	fields: FieldArrayWithId<CountFormState, "rows", "id">[];
 	rows: CountRow[];
 	register: UseFormRegister<CountFormState>;
+	/** Per-row validation errors from a failed submit; drives the invalid highlight. */
+	errors: FieldErrors<CountFormState>["rows"];
 	filter: Filter;
 	query: string;
 	/** Owner and manager only; the purchase cost is a shop secret. */
@@ -71,6 +78,7 @@ export function InventoryTable({
 						if (q && !haystack.includes(q)) return null;
 						if (!matchesFilter(filter, row.expected, counted)) return null;
 						const delta = counted === null ? null : counted - row.expected;
+						const invalid = Boolean(errors?.[index]?.counted);
 						return (
 							<tr
 								key={field.id}
@@ -92,8 +100,12 @@ export function InventoryTable({
 									<input
 										id={`count-${row.variantId}`}
 										inputMode="numeric"
+										aria-invalid={invalid}
 										{...register(`rows.${index}.counted`)}
-										className="h-9 w-full rounded-md border border-[#E2E8F0] px-2 text-right outline-none focus:border-[#93C5FD]"
+										className={cn(
+											"h-9 w-full rounded-md border px-2 text-right outline-none focus:border-[#93C5FD]",
+											invalid ? "border-red-400 bg-red-50" : "border-[#E2E8F0]",
+										)}
 									/>
 								</td>
 								<td

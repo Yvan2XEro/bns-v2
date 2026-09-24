@@ -38,7 +38,8 @@ export function parseAmount(value: string): number | null {
 const requiredAmount = z
 	.string()
 	.refine((value) => parseAmount(value) !== null);
-const optionalAmount = z
+/** Blank means "not entered yet"; anything else must be a plain amount. Shared with inventory.ts. */
+export const optionalAmount = z
 	.string()
 	.refine((value) => value.trim() === "" || parseAmount(value) !== null);
 

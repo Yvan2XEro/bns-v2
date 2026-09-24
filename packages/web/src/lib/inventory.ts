@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseAmount } from "./product-form";
+import { optionalAmount } from "./product-form";
 import type { PopulatedVariant } from "./shop-api";
 import { variantLabel } from "./variants";
 
@@ -90,10 +90,7 @@ export const countFormSchema = z.object({
 			sku: z.string().nullable(),
 			expected: z.number(),
 			cost: z.number().nullable(),
-			// Blank means "not counted yet"; anything else must be a plain amount.
-			counted: z
-				.string()
-				.refine((value) => value.trim() === "" || parseAmount(value) !== null),
+			counted: optionalAmount,
 		}),
 	),
 });
@@ -132,4 +129,15 @@ export function draftFromRows(
 		if (row.counted.trim() !== "") counts[row.variantId] = row.counted;
 	}
 	return { startedAt, counts };
+}
+
+/**
+ * Any row with a non-blank count, valid or not. This is what gates the
+ * submit button: a row a seller typed garbage into (a paste, or a physical
+ * keyboard ignoring `inputMode="numeric"`) must still let them press submit
+ * and find out why, via the form's own validation — never be indistinguishable
+ * from an empty screen with nothing to save.
+ */
+export function hasAnyInput(rows: Pick<CountRow, "counted">[]): boolean {
+	return rows.some((row) => row.counted.trim() !== "");
 }
