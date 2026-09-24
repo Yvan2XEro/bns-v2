@@ -23,6 +23,7 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { SearchSegments } from "@/src/components/SearchSegments";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { ShopResults } from "@/src/components/shop/ShopResults";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
@@ -31,6 +32,11 @@ import { useShopSearch } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
+import type {
+	ListingHit,
+	ListingHitMapped,
+	SearchResponse,
+} from "@/src/types/api";
 
 export default function SearchScreen() {
 	const isDark = useColorScheme() === "dark";
@@ -155,7 +161,7 @@ export default function SearchScreen() {
 	} = useInfiniteQuery({
 		queryKey: ["search", searchParams],
 		queryFn: ({ pageParam = 0 }) =>
-			api.get<{ hits: any[]; total: number }>(
+			api.get<SearchResponse | ListingHit[]>(
 				`/api/public/search?${queryString}&limit=20&offset=${pageParam}`,
 			),
 		getNextPageParam: (lastPage, pages) => {
@@ -172,16 +178,22 @@ export default function SearchScreen() {
 
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
-	const listings = (
-		data?.pages.flatMap((p: any) => (Array.isArray(p) ? p : (p?.hits ?? []))) ??
-		[]
+	const listings: ListingHitMapped[] = (
+		data?.pages.flatMap((p) => (Array.isArray(p) ? p : (p?.hits ?? []))) ?? []
 	)
 		.filter(Boolean)
-		.map((l: any) => ({
-			...l,
-			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
+		.map((hit) => ({
+			...hit,
+			isBoosted: !!(
+				hit.boostedUntil && new Date(hit.boostedUntil) > new Date()
+			),
 		}));
-	const totalDocs = data?.pages[0]?.total ?? 0;
+	const firstPage = data?.pages[0];
+	const totalDocs = firstPage
+		? Array.isArray(firstPage)
+			? firstPage.length
+			: (firstPage.total ?? 0)
+		: 0;
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -245,15 +257,15 @@ export default function SearchScreen() {
 		setSaveDialogOpen(true);
 	};
 
-	const renderRow = ({ item }: { item: any[] }) => (
+	const renderRow = ({ item }: { item: ListingHitMapped[] }) => (
 		<View style={styles.row}>
-			{item.map((listing: any) => (
+			{item.map((listing) => (
 				<ListingCard
 					key={listing.id}
 					listing={listing}
 					width={cardWidth}
 					isFavorite={favoriteIds.has(listing.id)}
-					onToggleFavorite={() => toggleFavorite(listing)}
+					onToggleFavorite={() => toggleFavorite({ ...listing })}
 					onPress={(id: string) => router.push(`/listing/${id}`)}
 				/>
 			))}
@@ -351,40 +363,12 @@ export default function SearchScreen() {
 
 			{/* ── Content area ── */}
 			<View style={[styles.content, { backgroundColor: bg }]}>
-				<View style={[styles.segments, { borderBottomColor: borderColor }]}>
-					{(["listings", "shops"] as const).map((key) => {
-						const active = segment === key;
-						return (
-							<Pressable
-								key={key}
-								onPress={() => setSegment(key)}
-								style={[
-									styles.segment,
-									active && { borderBottomColor: primaryColor },
-								]}
-								accessibilityRole="tab"
-								accessibilityState={{ selected: active }}
-								accessibilityLabel={`${t(`search.segment_${key}`)} ${(key === "listings" ? totalDocs : shopTotal).toLocaleString()}`}
-							>
-								<Text
-									style={[
-										styles.segmentText,
-										{
-											color: active ? primaryColor : mutedColor,
-											fontFamily: Fonts.bodySemibold,
-										},
-									]}
-								>
-									{t(`search.segment_${key}`)}{" "}
-									{(key === "listings"
-										? totalDocs
-										: shopTotal
-									).toLocaleString()}
-								</Text>
-							</Pressable>
-						);
-					})}
-				</View>
+				<SearchSegments
+					active={segment}
+					onChange={setSegment}
+					listingsCount={totalDocs}
+					shopsCount={shopTotal}
+				/>
 
 				{segment === "listings" && (
 					<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
@@ -725,21 +709,6 @@ const styles = StyleSheet.create({
 		borderTopRightRadius: 20,
 		overflow: "hidden",
 	},
-	segments: {
-		flexDirection: "row",
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		paddingHorizontal: 16,
-	},
-	segment: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-		paddingVertical: 12,
-		minHeight: 44,
-		borderBottomWidth: 2,
-		borderBottomColor: "transparent",
-	},
-	segmentText: { fontSize: 14 },
 	sortBar: {
 		flexDirection: "row",
 		alignItems: "center",

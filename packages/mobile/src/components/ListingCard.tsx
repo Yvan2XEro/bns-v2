@@ -17,6 +17,7 @@ import Animated, {
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { parseDate } from "@/src/lib/formatDate";
+import { listingShopName } from "@/src/lib/listingShop";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const PRESS_SPRING = { damping: 18, stiffness: 300, mass: 0.6 };
@@ -30,14 +31,13 @@ const CONDITION_LABELS: Record<string, string> = {
 interface Listing {
 	id: string;
 	title?: string;
-	price?: number;
+	price?: number | null;
 	location?: string;
 	createdAt?: string;
 	images?: Array<any>;
 	isBoosted?: boolean;
 	condition?: string;
 	status?: string;
-	shopName?: string | null;
 }
 
 interface ListingCardProps {
@@ -105,6 +105,7 @@ export function ListingCard({
 		? (CONDITION_LABELS[listing.condition] ?? null)
 		: null;
 	const age = timeAgo(listing.createdAt);
+	const shopName = listingShopName(listing);
 
 	// Colors — matches web palette exactly
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -274,11 +275,11 @@ export function ListingCard({
 						)}
 					</View>
 
-					{listing.shopName ? (
+					{shopName ? (
 						<View style={styles.shopRow}>
 							<Ionicons name="storefront-outline" size={11} color="#1e40af" />
 							<Text style={styles.shopText} numberOfLines={1}>
-								{listing.shopName}
+								{shopName}
 							</Text>
 						</View>
 					) : null}
