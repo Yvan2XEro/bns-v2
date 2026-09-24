@@ -21,6 +21,14 @@ const seed = () =>
 		"shop-members": [
 			{ id: "m-1", shop: "s-1", user: "u-1", role: "staff", status: "active" },
 			{ id: "m-2", shop: "s-2", user: "u-2", role: "owner", status: "active" },
+			{
+				id: "m-3",
+				shop: "s-1",
+				user: "u-3",
+				role: "manager",
+				status: "active",
+			},
+			{ id: "m-4", shop: "s-1", user: "u-4", role: "owner", status: "active" },
 		],
 		products: [
 			{ id: "p-1", shop: "s-1", title: "Own", status: "active" },
@@ -42,6 +50,8 @@ const req = (user: unknown) => ({
 const member = { id: "u-1" };
 const stranger = { id: "u-9" };
 const moderator = { id: "mod-1", role: "moderator" };
+const manager = { id: "u-3" };
+const owner = { id: "u-4" };
 
 type AccessFn = (args: unknown) => unknown;
 type FieldAccessFn = (args: unknown) => unknown;
@@ -161,6 +171,11 @@ describe("product variants access", () => {
 });
 
 describe("cost price stays a shop secret", () => {
+	// This is the exact function Payload's REST handler calls per document to
+	// decide whether `cost` is serialized — so exercising it directly covers
+	// `GET /api/product-variants?where[shop][equals]=…`, the path the web
+	// client actually uses, the same way `read(ProductVariants)` above covers
+	// the collection-level REST read.
 	const cost = () => {
 		const field = ProductVariants.fields.find(
 			(f) => "name" in f && f.name === "cost",
@@ -181,16 +196,34 @@ describe("cost price stays a shop secret", () => {
 		expect(await cost()({ req: req({ id: "u-2" }), doc })).toBe(false);
 	});
 
-	it("is readable by a member of the owning shop", async () => {
-		expect(await cost()({ req: req(member), doc })).toBe(true);
+	// Staff is an active member of the owning shop, and plain membership is
+	// enough to read the variant document itself — but not its cost.
+	it("is hidden from a staff member of the owning shop", async () => {
+		expect(await cost()({ req: req(member), doc })).toBe(false);
 	});
 
-	it("is readable by staff", async () => {
+	it("is readable by a manager of the owning shop", async () => {
+		expect(await cost()({ req: req(manager), doc })).toBe(true);
+	});
+
+	it("is readable by an owner of the owning shop", async () => {
+		expect(await cost()({ req: req(owner), doc })).toBe(true);
+	});
+
+	it("is readable by platform staff", async () => {
 		expect(await cost()({ req: req(moderator), doc })).toBe(true);
 	});
 
 	it("is hidden when the variant carries no shop", async () => {
 		expect(await cost()({ req: req(member), doc: { id: "v-1" } })).toBe(false);
+	});
+
+	// The collection closes every direct write (see "refuses every direct
+	// write" above), so a staff member cannot set `cost` through the REST API
+	// either — no separate field-level write rule is needed to say it twice.
+	it("cannot be set directly: the collection refuses every write", () => {
+		const access = ProductVariants.access as Record<string, AccessFn>;
+		expect(access.update({ req: req(member) })).toBe(false);
 	});
 });
 

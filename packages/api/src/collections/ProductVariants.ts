@@ -1,6 +1,7 @@
 import { APIError, type CollectionConfig, type Where } from "payload";
 import { isAdmin, isModerator } from "../access/roles";
 import {
+	canManageShop,
 	resolveShopRole,
 	shopField,
 	shopScopedRead,
@@ -101,7 +102,7 @@ export const ProductVariants: CollectionConfig = {
 						relationId(doc?.shop),
 						req.context,
 					);
-					return role !== null;
+					return canManageShop(role);
 				},
 			},
 		},
