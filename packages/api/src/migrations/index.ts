@@ -3,6 +3,7 @@ import * as migration_20260915_000100_p0_reviews_audit from "./20260915_000100_p
 import * as migration_20260915_000200_p0_contact_reveal_windows from "./20260915_000200_p0_contact_reveal_windows";
 import * as migration_20260922_000000_p1_listing_product from "./20260922_000000_p1_listing_product";
 import * as migration_20260923_000000_p1_product_listing from "./20260923_000000_p1_product_listing";
+import * as migration_20260924_000000_p1_variant_sku from "./20260924_000000_p1_variant_sku";
 
 export const migrations = [
 	{
@@ -29,5 +30,10 @@ export const migrations = [
 		up: migration_20260923_000000_p1_product_listing.up,
 		down: migration_20260923_000000_p1_product_listing.down,
 		name: "20260923_000000_p1_product_listing",
+	},
+	{
+		up: migration_20260924_000000_p1_variant_sku.up,
+		down: migration_20260924_000000_p1_variant_sku.down,
+		name: "20260924_000000_p1_variant_sku",
 	},
 ];
