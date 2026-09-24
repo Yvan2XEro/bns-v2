@@ -235,6 +235,33 @@ describe("recordMovement", () => {
 		});
 		expect(result.variant.cost).toBe(78000);
 	});
+
+	// The collection gates lowStockThreshold to canManageShop the same way it
+	// gates cost — the shaped route must agree, not be the more permissive one.
+	it("hides the variant's low-stock threshold from a staff member", async () => {
+		const payload = seed();
+		payload.store["shop-members"].push({
+			id: "m-3",
+			shop: "s-1",
+			user: "u-3",
+			role: "staff",
+			status: "active",
+		});
+		const result = await recordMovement(payload, { id: "u-3" }, "v-1", {
+			type: "receipt",
+			quantity: 5,
+		});
+		expect(Object.hasOwn(result.variant, "lowStockThreshold")).toBe(false);
+	});
+
+	it("shows the variant's low-stock threshold to the owner", async () => {
+		const payload = seed();
+		const result = await recordMovement(payload, U1, "v-1", {
+			type: "receipt",
+			quantity: 5,
+		});
+		expect(result.variant.lowStockThreshold).toBe(1);
+	});
 });
 
 describe("recordStockCount", () => {

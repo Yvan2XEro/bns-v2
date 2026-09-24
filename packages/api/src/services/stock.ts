@@ -91,7 +91,14 @@ export interface StockCountResult {
 	stockAfter: number;
 }
 
-/** What a stock-movement screen shows for the variant it just moved; `cost` is a shop secret. */
+/**
+ * What a stock-movement screen shows for the variant it just moved. `cost`
+ * and `lowStockThreshold` are both manager/owner-only shop data — the same
+ * predicate the collection's own field access uses
+ * (`shopRoleFieldAccess(canManageShop)`) — so both are omitted the same way
+ * for a caller `canSeeCost` excludes, not just defaulted to null: this shaped
+ * route must never be more permissive than the raw collection beside it.
+ */
 export interface StockVariantView {
 	id: string;
 	sku: string | null;
@@ -100,7 +107,7 @@ export interface StockVariantView {
 	stockReserved: number;
 	available: number;
 	trackInventory: boolean;
-	lowStockThreshold: number | null;
+	lowStockThreshold?: number | null;
 	cost?: number | null;
 }
 
@@ -116,11 +123,15 @@ function toVariantView(
 		stockReserved: Number(variant.stockReserved ?? 0),
 		available: availableOf(variant),
 		trackInventory: variant.trackInventory === true,
-		lowStockThreshold:
-			typeof variant.lowStockThreshold === "number"
-				? variant.lowStockThreshold
-				: null,
-		...(canSeeCost ? { cost: variant.cost ?? null } : {}),
+		...(canSeeCost
+			? {
+					lowStockThreshold:
+						typeof variant.lowStockThreshold === "number"
+							? variant.lowStockThreshold
+							: null,
+					cost: variant.cost ?? null,
+				}
+			: {}),
 	};
 }
 
