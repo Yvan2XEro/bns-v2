@@ -332,7 +332,7 @@ function rowFromVariant(variant: VariantDoc): VariantRow {
 				? ""
 				: String(variant.cost),
 		threshold:
-			variant.lowStockThreshold === null
+			variant.lowStockThreshold == null
 				? ""
 				: String(variant.lowStockThreshold),
 		initialStock: "",

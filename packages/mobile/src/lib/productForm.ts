@@ -282,7 +282,7 @@ export function fromProductDetail(
 				cost: v.cost === null || v.cost === undefined ? "" : String(v.cost),
 				initialStock: "",
 				lowStockThreshold:
-					v.lowStockThreshold === null ? "" : String(v.lowStockThreshold),
+					v.lowStockThreshold == null ? "" : String(v.lowStockThreshold),
 				trackInventory: v.trackInventory,
 				stockOnHand: v.stockOnHand,
 			})),
