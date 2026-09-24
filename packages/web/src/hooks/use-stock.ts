@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { shopApi } from "~/lib/shop-api";
+import { type PopulatedVariant, shopApi } from "~/lib/shop-api";
 import type { ClientMovementType, MovementPage, StockSummary } from "~/types";
 
 export interface MovementsParams {
@@ -19,6 +19,9 @@ export const movementsRootKey = (shopId: string) =>
 
 export const movementsKey = (shopId: string, params: MovementsParams) =>
 	[...movementsRootKey(shopId), params] as const;
+
+export const shopVariantsKey = (shopId: string) =>
+	["shops", shopId, "variants"] as const;
 
 /**
  * The counters the ledger keeps up to date. It exposes the purchase cost, so
@@ -45,6 +48,15 @@ export function useMovements(shopId: string, params: MovementsParams) {
 			}),
 		// Keeps the history on screen while the next page or filter loads.
 		placeholderData: keepPreviousData,
+		retry: false,
+	});
+}
+
+/** Every non-archived variant of the shop, product populated, for the count screen. */
+export function useShopVariants(shopId: string) {
+	return useQuery<{ docs: PopulatedVariant[] }>({
+		queryKey: shopVariantsKey(shopId),
+		queryFn: () => shopApi.shopVariants(shopId),
 		retry: false,
 	});
 }

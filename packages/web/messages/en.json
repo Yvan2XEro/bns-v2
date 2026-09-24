@@ -1000,6 +1000,36 @@
 		"save": "Save",
 		"saveWithDelta": "Save {delta}"
 	},
+	"Inventory": {
+		"breadcrumb": "Stock",
+		"title": "Stock count",
+		"heading": "Stock count of {date}",
+		"subtitle": "Enter the quantities on the shelf; gaps are computed live.",
+		"print": "Print the list",
+		"resumeLater": "Resume later",
+		"draftSaved": "Count saved on this device.",
+		"submit": "Save the gaps",
+		"progress": "Variants counted",
+		"gaps": "Variants with a gap · missing / extra",
+		"gapValue": "Gap value at cost",
+		"filter": {
+			"all": "All",
+			"todo": "To count",
+			"counted": "Counted",
+			"gap": "With a gap"
+		},
+		"searchPlaceholder": "Name or SKU",
+		"colVariant": "Product and variant",
+		"colExpected": "Expected",
+		"colCounted": "Counted",
+		"colGap": "Gap",
+		"colGapValue": "Gap at cost (XAF)",
+		"defaultVariant": "Single variant",
+		"errorTitle": "Could not load the variants",
+		"note": "Stock count of {date}",
+		"saved": "{count, plural, =0 {No gap to record.} one {# correction recorded.} other {# corrections recorded.}}",
+		"footnote": "Saving creates {count, plural, one {# correction movement} other {# correction movements}} dated today. Variants left blank keep their stock."
+	},
 	"StockMovement": {
 		"type": {
 			"receipt": "Receipt",

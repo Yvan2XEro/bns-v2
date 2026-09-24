@@ -1001,6 +1001,36 @@
 		"save": "Enregistrer",
 		"saveWithDelta": "Enregistrer {delta}"
 	},
+	"Inventory": {
+		"breadcrumb": "Stock",
+		"title": "Inventaire",
+		"heading": "Inventaire du {date}",
+		"subtitle": "Saisissez les quantités présentes ; les écarts se calculent en direct.",
+		"print": "Imprimer la liste",
+		"resumeLater": "Reprendre plus tard",
+		"draftSaved": "Comptage enregistré sur cet appareil.",
+		"submit": "Enregistrer les écarts",
+		"progress": "Variantes comptées",
+		"gaps": "Variantes avec écart · manquantes / en trop",
+		"gapValue": "Valeur des écarts au coût",
+		"filter": {
+			"all": "Toutes",
+			"todo": "À compter",
+			"counted": "Comptées",
+			"gap": "Avec écart"
+		},
+		"searchPlaceholder": "Nom ou SKU",
+		"colVariant": "Produit et variante",
+		"colExpected": "Stock attendu",
+		"colCounted": "Compté",
+		"colGap": "Écart",
+		"colGapValue": "Écart au coût (XAF)",
+		"defaultVariant": "Variante unique",
+		"errorTitle": "Impossible de charger les variantes",
+		"note": "Inventaire du {date}",
+		"saved": "{count, plural, =0 {Aucun écart à enregistrer.} one {# correction enregistrée.} other {# corrections enregistrées.}}",
+		"footnote": "L'enregistrement crée {count, plural, one {# mouvement de correction} other {# mouvements de correction}} datés d'aujourd'hui. Les variantes non comptées gardent leur stock."
+	},
 	"StockMovement": {
 		"type": {
 			"receipt": "Réception",
