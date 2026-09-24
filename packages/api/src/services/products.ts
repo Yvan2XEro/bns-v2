@@ -13,7 +13,7 @@ import {
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { RetryTransaction, withTransaction } from "../lib/transactions";
-import { combinationKey, type OptionDef } from "../lib/variants";
+import { combinationKey, type OptionDef, redactCost } from "../lib/variants";
 import type { Listing, Product, ProductVariant, Shop } from "../payload-types";
 import { requireShopMember } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
@@ -559,7 +559,10 @@ export async function createProduct(
 					overrideAccess: true,
 					req,
 				}),
-				variants: await liveVariants(req, productId),
+				variants: redactCost(
+					await liveVariants(req, productId),
+					canManageShop(role),
+				),
 			};
 		},
 		{ user },
@@ -674,7 +677,7 @@ export async function updateProduct(
 					overrideAccess: true,
 					req,
 				}),
-				variants: await liveVariants(req, productId),
+				variants: redactCost(await liveVariants(req, productId), costAllowed),
 			};
 		},
 		{ user },

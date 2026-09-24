@@ -99,3 +99,21 @@ export function marginPercent(
 	if (cost === null || cost === undefined || !(price > 0)) return null;
 	return Math.round(((price - cost) / price) * 1000) / 10;
 }
+
+/**
+ * The purchase cost is a shop secret. It leaves the API only for a member who
+ * can manage the shop, on reads and on the answer to a write alike.
+ *
+ * The field must be gone, not merely undefined: `JSON.stringify` keeps an
+ * undefined-valued key off the wire too, but callers should never be able to
+ * detect the key existed on the source document.
+ */
+export function redactCost<T extends { cost?: number | null }>(
+	variants: T[],
+	canSeeCost: boolean,
+): T[] {
+	if (canSeeCost) return variants;
+	// biome-ignore lint/performance/noDelete: correctness over micro-perf on a small array
+	for (const variant of variants) delete variant.cost;
+	return variants;
+}

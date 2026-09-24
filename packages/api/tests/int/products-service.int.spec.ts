@@ -15,11 +15,15 @@ import { recordMovement, recordStockCount } from "../../src/services/stock";
 import { fakePayload } from "./helpers/fakePayload";
 
 const U1 = { id: "u-1" };
+const STAFF = { id: "u-2" };
 
 function seed() {
 	return fakePayload(
 		{
-			users: [{ id: "u-1", name: "Aïcha" }],
+			users: [
+				{ id: "u-1", name: "Aïcha" },
+				{ id: "u-2", name: "Blaise" },
+			],
 			categories: [{ id: "cat-1", name: "Téléphones" }],
 			shops: [
 				{
@@ -35,6 +39,13 @@ function seed() {
 					shop: "s-1",
 					user: "u-1",
 					role: "owner",
+					status: "active",
+				},
+				{
+					id: "m-2",
+					shop: "s-1",
+					user: "u-2",
+					role: "staff",
 					status: "active",
 				},
 			],
@@ -566,5 +577,55 @@ describe("updateProduct", () => {
 				input({ title: "Autre produit", variants: asInput(first.variants) }),
 			),
 		).rejects.toMatchObject({ code: "generic.validation" });
+	});
+});
+
+describe("the purchase cost a save answers with", () => {
+	it("is absent from what a staff member's create returns, and unwritten", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(payload, STAFF, "s-1", input());
+
+		expect(variants).toHaveLength(2);
+		for (const variant of variants) {
+			expect(Object.hasOwn(variant, "cost")).toBe(false);
+		}
+		expect(payload.store["product-variants"].map((v) => v.cost)).toEqual([
+			null,
+			null,
+		]);
+	});
+
+	it("is absent from what a staff member's update returns", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		expect(variants.map((v) => v.cost)).toEqual([382000, 382000]);
+
+		const saved = await updateProduct(
+			payload,
+			STAFF,
+			product.id,
+			input({
+				variants: asInput(variants, { cost: 1, lowStockThreshold: 1 }),
+			}),
+		);
+
+		for (const variant of saved.variants) {
+			expect(Object.hasOwn(variant, "cost")).toBe(false);
+		}
+		// The owner's costs are untouched: staff can neither read nor rewrite them.
+		expect(payload.store["product-variants"].map((v) => v.cost)).toEqual([
+			382000, 382000,
+		]);
+	});
+
+	it("is still there for a manager", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(payload, U1, "s-1", input());
+		expect(variants.map((v) => v.cost)).toEqual([382000, 382000]);
 	});
 });

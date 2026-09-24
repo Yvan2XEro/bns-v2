@@ -5,7 +5,12 @@ import { ERROR_CODES } from "../lib/errors";
 import { type MediaRef, toMediaRef } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { isLowStock, isOutOfStock, summarizeVariants } from "../lib/variants";
+import {
+	isLowStock,
+	isOutOfStock,
+	redactCost,
+	summarizeVariants,
+} from "../lib/variants";
 import type { Listing, Media, Product, ProductVariant } from "../payload-types";
 import { requireShopMember } from "./shopGuards";
 import type { ServiceUser } from "./shops";
@@ -256,11 +261,7 @@ export async function getProductDetail(
 			overrideAccess: true,
 		})
 	).docs;
-	// The field must be gone, not merely undefined: JSON.stringify keeps an
-	// undefined-valued key off the wire too, but callers should never be able
-	// to detect the key existed on the source document.
-	// biome-ignore lint/performance/noDelete: correctness over micro-perf on a small array
-	if (!canSeeCost) for (const variant of variants) delete variant.cost;
+	redactCost(variants, canSeeCost);
 
 	const imageIds = (product.images ?? [])
 		.map((entry) => relationId(entry.image))
