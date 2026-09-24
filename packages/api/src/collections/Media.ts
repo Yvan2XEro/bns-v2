@@ -1,6 +1,10 @@
 import path from "node:path";
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
+import {
+	ALLOWED_MEDIA_MIME_TYPES,
+	enforceMediaFileLimits,
+} from "../hooks/mediaLimits";
 
 const adminOnly = ({ req: { user } }: { req: { user?: unknown } }) => {
 	if (!user) return false;
@@ -19,6 +23,12 @@ export const Media: CollectionConfig = {
 		update: adminOnly,
 		delete: adminOnly,
 	},
+	hooks: {
+		// Catches both the REST upload and the local API (category seed
+		// script), and answers with the shared error codes rather than
+		// Payload's own validation string — see hooks/mediaLimits.ts.
+		beforeOperation: [enforceMediaFileLimits],
+	},
 	fields: [
 		{
 			name: "alt",
@@ -28,5 +38,8 @@ export const Media: CollectionConfig = {
 	],
 	upload: {
 		staticDir: path.resolve(process.cwd(), "media"),
+		// Also restricts the admin panel's file picker; enforceMediaFileLimits
+		// is what actually produces the shared error code for API clients.
+		mimeTypes: [...ALLOWED_MEDIA_MIME_TYPES],
 	},
 };
