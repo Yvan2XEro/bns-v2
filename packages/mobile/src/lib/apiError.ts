@@ -71,6 +71,7 @@ export const ERROR_CODES = {
 	shopInactive: "shop.inactive",
 	shopNotFound: "shop.notFound",
 	stockNegative: "stock.negative",
+	stockInsufficient: "stock.insufficient",
 	accountSuspended: "moderation.accountSuspended",
 	moderationForbidden: "moderation.forbidden",
 	moderationRankTooLow: "moderation.rankTooLow",
@@ -150,6 +151,8 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.shopInactive]: "This shop is not active.",
 	[ERROR_CODES.shopNotFound]: "This shop does not exist or is unavailable.",
 	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
+	[ERROR_CODES.stockInsufficient]:
+		"Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
 	[ERROR_CODES.accountSuspended]:
 		"Your account is suspended. You cannot publish listings or send messages right now.",
 	[ERROR_CODES.moderationForbidden]:

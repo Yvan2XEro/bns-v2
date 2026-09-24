@@ -1126,7 +1126,8 @@
 			"notFound": "This shop does not exist or is unavailable."
 		},
 		"stock": {
-			"negative": "Stock cannot go below zero."
+			"negative": "Stock cannot go below zero.",
+			"insufficient": "Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first."
 		},
 		"moderation": {
 			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now.",

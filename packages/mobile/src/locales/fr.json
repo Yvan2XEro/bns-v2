@@ -1199,7 +1199,8 @@
 			"notFound": "Cette boutique n'existe pas ou n'est pas disponible."
 		},
 		"stock": {
-			"negative": "Le stock ne peut pas passer sous zéro."
+			"negative": "Le stock ne peut pas passer sous zéro.",
+			"insufficient": "Stock insuffisant : certaines unités sont déjà réservées. Réduisez la quantité ou libérez d'abord une réservation."
 		},
 		"moderation": {
 			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment.",
