@@ -96,7 +96,17 @@ export const ProductVariants: CollectionConfig = {
 		// Denormalised from the product so stock queries and field access need no join.
 		shopField({ required: true, picker: false }),
 		{ name: "optionValues", type: "json" },
-		{ name: "sku", type: "text", index: true, maxLength: 60 },
+		{
+			name: "sku",
+			type: "text",
+			index: true,
+			maxLength: 60,
+			// Shop data, same as the stock counters below: any active member
+			// (staff records receipts against a SKU, not just owner/manager), but
+			// nobody outside the shop — `listPublicVariants`' buyer-facing view
+			// omits it on purpose.
+			access: { read: shopRoleFieldAccess((role) => role !== null) },
+		},
 		{ name: "price", type: "number", required: true, min: 0 },
 		{
 			name: "cost",
@@ -123,7 +133,15 @@ export const ProductVariants: CollectionConfig = {
 			admin: { readOnly: true },
 			access: { read: shopRoleFieldAccess((role) => role !== null) },
 		},
-		{ name: "lowStockThreshold", type: "number", min: 0 },
+		{
+			name: "lowStockThreshold",
+			type: "number",
+			min: 0,
+			// Tells a reader how close to running dry a shop is: a shop secret,
+			// same predicate as `cost` — manage-only. `stockSummary` (the shaped
+			// route that surfaces it) already requires `{ manage: true }`.
+			access: { read: shopRoleFieldAccess(canManageShop) },
+		},
 		{
 			name: "available",
 			type: "checkbox",

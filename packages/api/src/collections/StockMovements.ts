@@ -1,6 +1,11 @@
 import { APIError, type CollectionConfig, type RequestContext } from "payload";
 import { isAdmin } from "../access/roles";
-import { shopField, shopScopedRead } from "../access/shopRoles";
+import {
+	canManageShop,
+	shopField,
+	shopRoleFieldAccess,
+	shopScopedRead,
+} from "../access/shopRoles";
 import { relationId } from "../lib/relationId";
 
 /**
@@ -129,7 +134,17 @@ export const StockMovements: CollectionConfig = {
 			options: MOVEMENT_TYPES.map((value) => ({ label: value, value })),
 		},
 		{ name: "quantity", type: "number", required: true },
-		{ name: "unitCost", type: "number", min: 0 },
+		{
+			name: "unitCost",
+			type: "number",
+			min: 0,
+			// A shop secret, same predicate as `product-variants.cost`. The
+			// service redacts it for `listMovements` on top of this
+			// (`redactCost: !canManageShop(role)`), but the raw REST collection
+			// needs the same gate: latent while P1 creates owner rows only, live
+			// the moment a manager or staff membership exists.
+			access: { read: shopRoleFieldAccess(canManageShop) },
+		},
 		{ name: "stockAfter", type: "number", required: true },
 		{ name: "note", type: "text", maxLength: 500 },
 		{ name: "actor", type: "relationship", relationTo: "users" },

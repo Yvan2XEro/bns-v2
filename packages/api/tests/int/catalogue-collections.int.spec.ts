@@ -290,6 +290,81 @@ describe("stock counters stay shop data", () => {
 	});
 });
 
+// Same shape as `stockOnHand`/`stockReserved` above: any active member needs
+// the SKU (staff looks receipts up by it, `listMovements` shows it to
+// everyone), while an outsider gets nothing — `listPublicVariants`' buyer-
+// facing view omits it on purpose.
+describe("sku stays shop data", () => {
+	const fieldAccess = () => {
+		const field = ProductVariants.fields.find(
+			(f) => "name" in f && f.name === "sku",
+		) as { access?: { read?: FieldAccessFn } };
+		return field.access?.read as FieldAccessFn;
+	};
+	const doc = { id: "v-1", shop: "s-1", product: "p-1" };
+
+	it("is hidden from a visitor", async () => {
+		expect(await fieldAccess()({ req: req(null), doc })).toBe(false);
+	});
+
+	it("is hidden from a signed-in stranger", async () => {
+		expect(await fieldAccess()({ req: req(stranger), doc })).toBe(false);
+	});
+
+	it("is hidden from a member of another shop", async () => {
+		expect(await fieldAccess()({ req: req({ id: "u-2" }), doc })).toBe(false);
+	});
+
+	it("is readable by a staff member of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(member), doc })).toBe(true);
+	});
+
+	it("is readable by a manager of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(manager), doc })).toBe(true);
+	});
+
+	it("is readable by an owner of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(owner), doc })).toBe(true);
+	});
+
+	it("is readable by platform staff", async () => {
+		expect(await fieldAccess()({ req: req(moderator), doc })).toBe(true);
+	});
+});
+
+// Same shape as `cost`: it tells a reader how close to running dry the shop
+// is, so it is manager/owner-only — `stockSummary` (the shaped route that
+// surfaces it) already requires `{ manage: true }`.
+describe("low stock threshold is manager-only", () => {
+	const fieldAccess = () => {
+		const field = ProductVariants.fields.find(
+			(f) => "name" in f && f.name === "lowStockThreshold",
+		) as { access?: { read?: FieldAccessFn } };
+		return field.access?.read as FieldAccessFn;
+	};
+	const doc = { id: "v-1", shop: "s-1", product: "p-1" };
+
+	it("is hidden from a visitor", async () => {
+		expect(await fieldAccess()({ req: req(null), doc })).toBe(false);
+	});
+
+	it("is hidden from a staff member of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(member), doc })).toBe(false);
+	});
+
+	it("is readable by a manager of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(manager), doc })).toBe(true);
+	});
+
+	it("is readable by an owner of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(owner), doc })).toBe(true);
+	});
+
+	it("is readable by platform staff", async () => {
+		expect(await fieldAccess()({ req: req(moderator), doc })).toBe(true);
+	});
+});
+
 describe("the public availability signal", () => {
 	// `beforeRead` runs on the raw doc, before `stockOnHand`/`stockReserved`
 	// field access strips anything — the same slot `Users.phoneVerified` is
@@ -347,6 +422,44 @@ describe("stock movements access", () => {
 	it("declares the movement types the ledger accepts", () => {
 		expect([...MOVEMENT_TYPES]).toContain("sale");
 		expect([...MOVEMENT_TYPES]).toContain("receipt");
+	});
+});
+
+// `listMovements` (services/stock.ts) redacts `unitCost` in its own shaped
+// row for anyone `canManageShop` excludes — the same predicate `cost` on
+// `product-variants` uses. Latent while P1 only ever creates `owner` rows;
+// live the moment a `manager`/`staff` membership exists.
+describe("stock movement unit cost stays a shop secret", () => {
+	const fieldAccess = () => {
+		const field = StockMovements.fields.find(
+			(f) => "name" in f && f.name === "unitCost",
+		) as { access?: { read?: FieldAccessFn } };
+		return field.access?.read as FieldAccessFn;
+	};
+	const doc = { id: "sm-1", shop: "s-1" };
+
+	it("is hidden from a visitor", async () => {
+		expect(await fieldAccess()({ req: req(null), doc })).toBe(false);
+	});
+
+	it("is hidden from a member of another shop", async () => {
+		expect(await fieldAccess()({ req: req({ id: "u-2" }), doc })).toBe(false);
+	});
+
+	it("is hidden from a staff member of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(member), doc })).toBe(false);
+	});
+
+	it("is readable by a manager of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(manager), doc })).toBe(true);
+	});
+
+	it("is readable by an owner of the owning shop", async () => {
+		expect(await fieldAccess()({ req: req(owner), doc })).toBe(true);
+	});
+
+	it("is readable by platform staff", async () => {
+		expect(await fieldAccess()({ req: req(moderator), doc })).toBe(true);
 	});
 });
 
