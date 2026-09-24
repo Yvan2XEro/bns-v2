@@ -100,7 +100,7 @@ export function transformListing(
 	const shop = shopValue && typeof shopValue === "object" ? shopValue : null;
 	const summary = (listing.productSummary ?? null) as {
 		priceMax?: number | null;
-		available?: number | null;
+		available?: boolean | null;
 	} | null;
 
 	const doc: ListingDocument = {
@@ -135,7 +135,7 @@ export function transformListing(
 		shopLevel: shop && typeof shop.level === "number" ? shop.level : null,
 		priceMax: typeof summary?.priceMax === "number" ? summary.priceMax : null,
 		available:
-			typeof summary?.available === "number" ? summary.available : null,
+			typeof summary?.available === "boolean" ? summary.available : null,
 	};
 
 	const coordinates = listing.coordinates as

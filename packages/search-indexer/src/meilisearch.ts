@@ -49,7 +49,8 @@ export type ListingDocument = {
 	shopName: string | null;
 	shopLevel: number | null;
 	priceMax: number | null;
-	available: number | null;
+	/** Buyer-safe purchasability signal, not the exact unit count — see the API's `isProductAvailable`. */
+	available: boolean | null;
 	[key: string]: unknown;
 };
 

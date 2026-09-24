@@ -189,14 +189,27 @@ describe("transformListing", () => {
 				name: "Akwa Tech Store",
 				level: 1,
 			},
-			productSummary: { priceMin: 285000, priceMax: 330000, available: 13 },
+			productSummary: { priceMin: 285000, priceMax: 330000, available: true },
 		});
 		expect(doc.shopId).toBe("shop-1");
 		expect(doc.shopHandle).toBe("akwatech");
 		expect(doc.shopName).toBe("Akwa Tech Store");
 		expect(doc.shopLevel).toBe(1);
 		expect(doc.priceMax).toBe(330000);
-		expect(doc.available).toBe(13);
+		expect(doc.available).toBe(true);
+	});
+
+	// C1: the aggregate stock count used to reach the public index verbatim.
+	// A stale/legacy document carrying a number for `available` must not be
+	// forwarded as one — only a real boolean survives.
+	test("drops a leftover numeric available instead of forwarding it", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "Téléphones", attributes: [] },
+			seller: "user-1",
+			productSummary: { priceMin: 285000, priceMax: 330000, available: 13 },
+		});
+		expect(doc.available).toBeNull();
 	});
 
 	test("leaves shop fields null for a classified listing", () => {
