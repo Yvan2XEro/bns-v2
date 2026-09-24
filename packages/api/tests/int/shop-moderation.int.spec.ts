@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { Listings } from "../../src/collections/Listings";
 import {
 	liftExpiredShopSuspensions,
 	suspendShop,
@@ -7,6 +8,11 @@ import {
 	unsuspendUser,
 } from "../../src/services/moderation";
 import { syncProductListing } from "../../src/services/products";
+import {
+	attachListings,
+	closeShop,
+	detachListings,
+} from "../../src/services/shopListings";
 import { recordMovement } from "../../src/services/stock";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -368,6 +374,107 @@ describe("a moderator's hold survives an ordinary seller action", () => {
 		await syncProductListing(req, "p-1", { create: false });
 
 		expect(listing(payload, "l-1")?.status).toBe("published");
+	});
+
+	const listingsBeforeChange = Listings.hooks?.beforeChange?.[0] as (
+		args: unknown,
+	) => Promise<Record<string, unknown>>;
+
+	// Round 2's escape: detaching a held listing clears `product`, which took
+	// it out of the branch that pins `status`/`moderationHold` — two ordinary
+	// calls (detach, then a direct PATCH) used to be enough to undo the
+	// moderator's decision with nothing written to the log.
+	it("cannot be lifted by detaching the held listing, then patching it directly", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+		expect(listing(payload, "l-1")?.status).toBe("draft");
+		expect(listing(payload, "l-1")?.moderationHold).toBe(true);
+
+		// Call 1: the seller detaches their own held listing — `writable`
+		// passes, the shop is active again after unsuspend.
+		await detachListings(payload, SELLER, "s-1", { listingIds: ["l-1"] });
+		const afterDetach = listing(payload, "l-1")!;
+		expect(afterDetach.product).toBeNull();
+		expect(afterDetach.status).toBe("draft");
+		expect(afterDetach.moderationHold).toBe(true);
+
+		// Call 2: a direct PATCH through the collection. The listing is now a
+		// plain classified ad the seller owns outright — isOwnerOrAdmin alone
+		// would let this straight through without the beforeChange pin.
+		const result = await listingsBeforeChange({
+			operation: "update",
+			originalDoc: afterDetach,
+			data: { ...afterDetach, status: "published", moderationHold: false },
+			req: { payload, user: SELLER, context: {} },
+		});
+
+		expect(result.status).toBe("draft");
+		expect(result.moderationHold).toBe(true);
+	});
+
+	// The same escape, reached through closeShop instead of detachListings
+	// directly — closeShopInTransaction detaches every listing the same way.
+	it("cannot be lifted by closing the shop, then patching the detached listing directly", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+
+		await closeShop(payload, SELLER, "s-1", { confirmation: "akwatech" });
+		const afterClose = listing(payload, "l-1")!;
+		expect(afterClose.product).toBeNull();
+		expect(afterClose.status).toBe("draft");
+		expect(afterClose.moderationHold).toBe(true);
+
+		const result = await listingsBeforeChange({
+			operation: "update",
+			originalDoc: afterClose,
+			data: { ...afterClose, status: "published", moderationHold: false },
+			req: { payload, user: SELLER, context: {} },
+		});
+
+		expect(result.status).toBe("draft");
+		expect(result.moderationHold).toBe(true);
+	});
+
+	// attach is the mirror path: does re-attaching a held, detached listing to
+	// a (possibly different) product/shop revive it without the hold? No —
+	// `attachOne` never touches `moderationHold`, and the moment the listing
+	// carries a product again it falls back under the PRODUCT_DERIVED_FIELDS
+	// pin, which already protects `status`/`moderationHold` unconditionally.
+	it("is not revived by re-attaching the detached listing to a new product", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+		await detachListings(payload, SELLER, "s-1", { listingIds: ["l-1"] });
+
+		const result = await attachListings(payload, SELLER, "s-1", {
+			listingIds: ["l-1"],
+		});
+		expect(result.attached).toHaveLength(1);
+
+		const afterAttach = listing(payload, "l-1")!;
+		expect(afterAttach.status).toBe("draft");
+		expect(afterAttach.moderationHold).toBe(true);
+
+		// And a direct PATCH is blocked again too, now via the product branch.
+		const patched = await listingsBeforeChange({
+			operation: "update",
+			originalDoc: afterAttach,
+			data: { ...afterAttach, status: "published", moderationHold: false },
+			req: { payload, user: SELLER, context: {} },
+		});
+		expect(patched.status).toBe("draft");
+		expect(patched.moderationHold).toBe(true);
 	});
 });
 

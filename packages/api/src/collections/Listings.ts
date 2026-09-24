@@ -3,6 +3,7 @@ import { APIError, type CollectionConfig, type Where } from "payload";
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 import { resolveShopRole, shopField } from "../access/shopRoles";
+import { staffOnlyField } from "../access/staff";
 import { queueShopRecount } from "../hooks/shopListingCount";
 import {
 	assertNotSuspended,
@@ -177,6 +178,22 @@ export const Listings: CollectionConfig = {
 					} else {
 						data.product = originalDoc?.product ?? null;
 						data.productSummary = originalDoc?.productSummary ?? null;
+						// A listing that lost its product (detach, or the closeShop
+						// cascade that detaches every listing) still carries whatever
+						// moderation hold it had — `moderationHold` is moderation-owned
+						// in every branch, not just the product-linked one above, and a
+						// held listing's `status` stays pinned too. Without this, the
+						// PRODUCT_DERIVED_FIELDS pin above stops applying the moment
+						// `product` goes null, and the seller who just detached (or
+						// whose shop just closed) can PATCH `status`/`moderationHold`
+						// directly and undo the moderator's decision in one call, with
+						// nothing written to the log.
+						if (!moderationWrite) {
+							data.moderationHold = originalDoc?.moderationHold ?? false;
+							if (originalDoc?.moderationHold === true) {
+								data.status = originalDoc?.status;
+							}
+						}
 					}
 				}
 
@@ -685,6 +702,10 @@ export const Listings: CollectionConfig = {
 			name: "moderationHold",
 			type: "checkbox",
 			defaultValue: false,
+			// Read-gated the same way Shops.suspendedNote is: staff only. The
+			// subject of the decision this flag records must not even see it,
+			// let alone read it back to confirm a write succeeded.
+			access: { read: staffOnlyField },
 			admin: {
 				readOnly: true,
 				description:

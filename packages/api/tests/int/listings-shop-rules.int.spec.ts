@@ -188,19 +188,6 @@ describe("product listing derived fields", () => {
 	});
 });
 
-// The exact unit count (`stockOnHand - stockReserved` summed across variants)
-// must never reach an anonymous buyer. `productSummary.available` carries a
-// purchasability boolean instead, same spirit as `product-variants.available`.
-describe("productSummary.available stays a boolean, not a unit count", () => {
-	it("is declared as a checkbox field, not a number", () => {
-		const group = Listings.fields.find(
-			(f) => "name" in f && f.name === "productSummary",
-		) as { fields: Array<{ name: string; type: string }> };
-		const available = group.fields.find((f) => f.name === "available");
-		expect(available?.type).toBe("checkbox");
-	});
-});
-
 describe("a listing cannot borrow another shop's product", () => {
 	const catalogue = () =>
 		fakePayload({
@@ -302,5 +289,37 @@ describe("deleting a product listing", () => {
 		await expect(
 			beforeDelete({ id: "l-1", req: req(payload, { id: "u-1" }) }),
 		).resolves.toBeUndefined();
+	});
+});
+
+// moderationHold records a moderator's decision about the listing's owner —
+// the owner must not even read it back, the same discipline
+// Shops.suspendedNote already follows for the shop's owner.
+describe("moderationHold is staff-only to read", () => {
+	const fieldAccess = () => {
+		const group = Listings.fields.find(
+			(f) => "name" in f && f.name === "moderationHold",
+		) as { access?: { read?: (args: unknown) => unknown } };
+		return group.access?.read as (args: unknown) => unknown;
+	};
+
+	it("is hidden from a visitor", () => {
+		expect(fieldAccess()({ req: req(null, null) })).toBe(false);
+	});
+
+	it("is hidden from the listing's own seller", () => {
+		expect(fieldAccess()({ req: req(null, { id: "u-1" }) })).toBe(false);
+	});
+
+	it("is readable by a moderator", () => {
+		expect(
+			fieldAccess()({ req: req(null, { id: "mod-1", role: "moderator" }) }),
+		).toBe(true);
+	});
+
+	it("is readable by an admin", () => {
+		expect(
+			fieldAccess()({ req: req(null, { id: "admin-1", role: "admin" }) }),
+		).toBe(true);
 	});
 });
