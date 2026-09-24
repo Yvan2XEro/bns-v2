@@ -1173,6 +1173,24 @@
 			"incomplete": "Veuillez remplir tous les champs.",
 			"phoneUnavailable": "Ce vendeur n'a pas partagé de numéro de téléphone."
 		},
+		"shop": {
+			"disabled": "Les boutiques ne sont pas encore disponibles.",
+			"phoneNotVerified": "Vérifiez votre numéro de téléphone pour ouvrir une boutique.",
+			"limitReached": "Vous avez déjà une boutique.",
+			"handleInvalid": "Utilisez 3 à 30 lettres minuscules, chiffres ou tirets simples.",
+			"handleReserved": "Cette adresse est réservée.",
+			"handleTaken": "Cette adresse est déjà prise.",
+			"handleCooldown": "L'adresse de la boutique ne peut changer qu'une fois tous les 30 jours.",
+			"notMember": "Vous n'êtes pas membre de cette boutique.",
+			"inactive": "Cette boutique n'est pas active.",
+			"notFound": "Cette boutique n'existe pas ou n'est pas disponible."
+		},
+		"stock": {
+			"negative": "Le stock ne peut pas passer sous zéro."
+		},
+		"moderation": {
+			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier ni modifier pour le moment."
+		},
 		"payment": {
 			"providerUnavailable": "Le paiement est indisponible pour le moment. Réessayez plus tard."
 		},
@@ -1291,5 +1309,16 @@
 		"bannerTitle": "Votre compte est suspendu",
 		"bannerIndefinite": "Vous pouvez consulter BuyNSellem, mais vous ne pouvez ni publier d'annonce ni envoyer de message. Contactez le support pour un réexamen.",
 		"bannerUntil": "Vous pouvez consulter BuyNSellem, mais vous ne pouvez ni publier d'annonce ni envoyer de message jusqu'au {{date}}."
+	},
+	"shop": {
+		"levelPhone": "Téléphone vérifié",
+		"notFoundTitle": "Boutique introuvable",
+		"notFoundSubtitle": "Cette boutique n'existe pas ou n'est plus disponible."
+	},
+	"stock": {
+		"notTracked": "Stock non suivi",
+		"outOfStock": "Rupture",
+		"lowCount": "{{count}} · stock faible",
+		"inStockCount": "{{count}} en stock"
 	}
 }

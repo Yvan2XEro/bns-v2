@@ -60,6 +60,19 @@ export const ERROR_CODES = {
 	contactIncomplete: "contact.incomplete",
 	contactPhoneUnavailable: "contact.phoneUnavailable",
 
+	shopDisabled: "shop.disabled",
+	shopPhoneNotVerified: "shop.phoneNotVerified",
+	shopLimitReached: "shop.limitReached",
+	shopHandleInvalid: "shop.handleInvalid",
+	shopHandleReserved: "shop.handleReserved",
+	shopHandleTaken: "shop.handleTaken",
+	shopHandleCooldown: "shop.handleCooldown",
+	shopNotMember: "shop.notMember",
+	shopInactive: "shop.inactive",
+	shopNotFound: "shop.notFound",
+	stockNegative: "stock.negative",
+	accountSuspended: "moderation.accountSuspended",
+
 	paymentProviderUnavailable: "payment.providerUnavailable",
 	boostNotOwner: "boost.notOwner",
 	boostListingNotPublished: "boost.listingNotPublished",
@@ -117,6 +130,22 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.contactIncomplete]: "Please fill in every field.",
 	[ERROR_CODES.contactPhoneUnavailable]:
 		"This seller has not shared a phone number.",
+	[ERROR_CODES.shopDisabled]: "Shops are not available yet.",
+	[ERROR_CODES.shopPhoneNotVerified]:
+		"Verify your phone number to open a shop.",
+	[ERROR_CODES.shopLimitReached]: "You already have a shop.",
+	[ERROR_CODES.shopHandleInvalid]:
+		"Use 3 to 30 lowercase letters, digits or single hyphens.",
+	[ERROR_CODES.shopHandleReserved]: "This address is reserved.",
+	[ERROR_CODES.shopHandleTaken]: "This address is already taken.",
+	[ERROR_CODES.shopHandleCooldown]:
+		"The shop address can only change once every 30 days.",
+	[ERROR_CODES.shopNotMember]: "You are not a member of this shop.",
+	[ERROR_CODES.shopInactive]: "This shop is not active.",
+	[ERROR_CODES.shopNotFound]: "This shop does not exist or is unavailable.",
+	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
+	[ERROR_CODES.accountSuspended]:
+		"Your account is suspended. You cannot publish listings or send messages right now.",
 	[ERROR_CODES.paymentProviderUnavailable]:
 		"Payment is unavailable right now. Please try again later.",
 	[ERROR_CODES.boostNotOwner]: "You can only boost your own listings.",
@@ -203,11 +232,16 @@ export function normalizeApiError(
 			message?: unknown;
 		};
 
-		// Our collection hooks throw APIError with `data.code`; Payload passes
-		// `data` through untouched, so the code survives the REST layer.
-		const dataCode = first?.data?.code;
-		if (typeof dataCode === "string" && dataCode in FALLBACKS) {
-			return { code: dataCode, message: fallbackFor(dataCode) };
+		// Hook errors (APIError with `{ code }`) keep their code; their message
+		// is our own English fallback, so it is safe to show.
+		if (typeof first?.data?.code === "string" && first.data.code) {
+			return {
+				code: first.data.code,
+				message:
+					typeof first.message === "string" && first.message
+						? first.message
+						: fallbackFor(first.data.code),
+			};
 		}
 
 		const nested = first?.data?.errors;
