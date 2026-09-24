@@ -225,7 +225,7 @@ export async function detachListings(
 	return withTransaction(
 		payload,
 		async (req) => {
-			await requireShopMember(payload, user, shopId, { req });
+			await requireShopMember(payload, user, shopId, { writable: true, req });
 			const listings = (
 				await payload.find({
 					collection: "listings",

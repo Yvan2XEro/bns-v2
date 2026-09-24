@@ -224,6 +224,33 @@ describe("detachListings", () => {
 			listing: null,
 		});
 	});
+
+	// `writable: true` is what makes `requireShopMember` run
+	// `assertNotSuspended` and check the shop's own status — the same guard
+	// `attachListings` already carries. Without it, detaching moved listings
+	// out from under a suspended shop's restore set, and out from under a
+	// suspended account's own moderation review.
+	it("refuses to detach from a suspended shop", async () => {
+		const payload = seed();
+		await attachListings(payload, U1, "s-1", { listingIds: ["l-1"] });
+		payload.store.shops[0].status = "suspended";
+		await expect(
+			detachListings(payload, U1, "s-1", { listingIds: ["l-1"] }),
+		).rejects.toMatchObject({ code: "shop.inactive", status: 409 });
+	});
+
+	it("refuses a caller whose own account is suspended", async () => {
+		const payload = seed();
+		await attachListings(payload, U1, "s-1", { listingIds: ["l-1"] });
+		const suspendedCaller = {
+			id: "u-1",
+			suspendedAt: "2026-01-01T00:00:00.000Z",
+			suspendedUntil: "2099-01-01T00:00:00.000Z",
+		};
+		await expect(
+			detachListings(payload, suspendedCaller, "s-1", { listingIds: ["l-1"] }),
+		).rejects.toMatchObject({ data: { code: "moderation.accountSuspended" } });
+	});
 });
 
 describe("closeShop", () => {
