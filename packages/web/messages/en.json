@@ -254,7 +254,12 @@
 		"detailsDesc": "Title, price, description and location of your ad.",
 		"detailsDescGeneric": "The key information for this listing.",
 		"characteristics": "Characteristics",
-		"characteristicsDesc": "The details buyers use to filter."
+		"characteristicsDesc": "The details buyers use to filter.",
+		"variantInStock": "In stock",
+		"variantAvailable": "{count, plural, one {# available} other {# available}}",
+		"variantSoldOut": "Sold out",
+		"codAvailable": "Cash on delivery",
+		"pickupAvailable": "Pickup possible"
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -719,7 +724,12 @@
 		"emptyShop": "This shop has not published anything yet.",
 		"metaDescription": "{name} on Buy'N'Sellem: browse the shop and contact the seller.",
 		"previous": "Previous",
-		"next": "Next"
+		"next": "Next",
+		"runBy": "Run by {name}",
+		"visitShop": "Visit the shop",
+		"publishIn": "Publish in {shop}",
+		"publishInHint": "The listing appears on your shop page. It stays a simple listing, without stock.",
+		"detachWarning": "This removes the listing from your shop page. It stays published, without stock."
 	},
 	"ShopCreate": {
 		"title": "Open my shop",

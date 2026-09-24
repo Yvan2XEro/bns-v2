@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
+import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
+import { useMyShop } from "~/hooks/use-my-shop";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
@@ -64,8 +66,14 @@ export function EditListingForm({
 	const t = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
+	const tShop = useTranslations("Shop");
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
+
+	const { data: myShop } = useMyShop();
+	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
+	const wasInShop = Boolean(listing.shop);
+	const [publishInShop, setPublishInShop] = useState(wasInShop);
 
 	const CONDITIONS: { value: ListingCondition; label: string }[] = [
 		{ value: "new", label: tCond("new") },
@@ -277,6 +285,11 @@ export function EditListingForm({
 
 			if (coordinates) {
 				updateData.coordinates = coordinates;
+			}
+			// Only a member can move the listing in or out; otherwise the field is
+			// left alone so a suspended shop does not silently lose its listings.
+			if (activeShop) {
+				updateData.shop = publishInShop ? activeShop.id : null;
 			}
 
 			const res = await fetch(`/api/listings/${listing.id}`, {
@@ -681,6 +694,20 @@ export function EditListingForm({
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* Shop */}
+			{activeShop && (
+				<div className="space-y-2">
+					<PublishInShopToggle
+						shopName={activeShop.name}
+						checked={publishInShop}
+						onChange={setPublishInShop}
+					/>
+					{wasInShop && !publishInShop && (
+						<p className="text-amber-700 text-xs">{tShop("detachWarning")}</p>
+					)}
+				</div>
+			)}
 
 			{/* Save */}
 			<div className="flex justify-end gap-3">

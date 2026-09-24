@@ -255,7 +255,12 @@
 		"detailsDesc": "Titre, prix, description et localisation de votre annonce.",
 		"detailsDescGeneric": "Les informations essentielles de cette annonce.",
 		"characteristics": "Caractéristiques",
-		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer."
+		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer.",
+		"variantInStock": "En stock",
+		"variantAvailable": "{count, plural, one {# disponible} other {# disponibles}}",
+		"variantSoldOut": "Épuisé",
+		"codAvailable": "Paiement à la livraison",
+		"pickupAvailable": "Retrait possible"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -720,7 +725,12 @@
 		"emptyShop": "Cette boutique n'a encore rien publié.",
 		"metaDescription": "{name} sur Buy'N'Sellem : parcourez la boutique et contactez le vendeur.",
 		"previous": "Précédent",
-		"next": "Suivant"
+		"next": "Suivant",
+		"runBy": "Tenue par {name}",
+		"visitShop": "Voir la boutique",
+		"publishIn": "Publier dans {shop}",
+		"publishInHint": "L'annonce apparaît sur la page de votre boutique. Elle reste une annonce simple, sans stock.",
+		"detachWarning": "Cela retire l'annonce de la page de votre boutique. Elle reste publiée, sans stock."
 	},
 	"ShopCreate": {
 		"title": "Ouvrir ma boutique",

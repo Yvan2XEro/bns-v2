@@ -24,11 +24,20 @@ import { ListingGrid } from "~/components/listing/listing-card";
 import { PhoneReveal } from "~/components/listing/phone-reveal";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ShareButton } from "~/components/listing/share-button";
+import { ShopSellerCard } from "~/components/listing/shop-seller-card";
+import { VariantSelector } from "~/components/listing/variant-selector";
 import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { buildListingAttributeGroups } from "~/lib/listing-attributes";
+import {
+	listingProduct,
+	listingProductId,
+	listingShop,
+	productSummaryOf,
+} from "~/lib/listing-shop";
+import { formatXafRange } from "~/lib/money";
 import { formatListingPrice, hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, Tag, User } from "~/types";
@@ -163,6 +172,18 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 	const isBoosted =
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
+	const shop = listingShop(listing);
+	const productId = listingProductId(listing);
+	const product = listingProduct(listing);
+	const summary = productSummaryOf(listing);
+	const delivery = product?.delivery ?? {};
+	const priceRange =
+		summary &&
+		summary.priceMin !== null &&
+		summary.priceMax !== null &&
+		summary.priceMin !== summary.priceMax
+			? formatXafRange(summary.priceMin, summary.priceMax)
+			: null;
 	const isOwner = !!(
 		authUser &&
 		seller &&
@@ -227,9 +248,15 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 				priceCurrency: "XAF",
 				availability: "https://schema.org/InStock",
 				url: canonical,
-				...(seller && {
-					seller: { "@type": "Person", name: seller.name },
-				}),
+				...(shop
+					? {
+							seller: {
+								"@type": "Organization",
+								name: shop.name,
+								url: `${WEB_URL}/s/${shop.handle}`,
+							},
+						}
+					: seller && { seller: { "@type": "Person", name: seller.name } }),
 			},
 		}),
 		...(category && { category: category.name }),
@@ -337,11 +364,15 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										{listing.title}
 									</h1>
 									<p className="mt-1 font-bold text-2xl text-[#1E40AF]">
-										{formattedPrice ?? t("noPrice")}{" "}
-										{formattedPrice && (
-											<span className="font-medium text-[#64748B] text-sm">
-												XAF
-											</span>
+										{priceRange ?? (
+											<>
+												{formattedPrice ?? t("noPrice")}{" "}
+												{formattedPrice && (
+													<span className="font-medium text-[#64748B] text-sm">
+														XAF
+													</span>
+												)}
+											</>
 										)}
 									</p>
 								</div>
@@ -465,6 +496,13 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								</div>
 							)}
 						</div>
+						{productId && (
+							<VariantSelector
+								productId={productId}
+								codAllowed={delivery.codAllowed === true}
+								pickupAllowed={delivery.pickupAllowed === true}
+							/>
+						)}
 					</div>
 
 					{/* Right: seller card (2 cols) */}
@@ -472,7 +510,12 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 						<div className="sticky top-20 space-y-4">
 							{/* Seller card */}
 							<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
-								{seller ? (
+								{shop ? (
+									<ShopSellerCard
+										shop={shop}
+										ownerName={seller?.name ?? null}
+									/>
+								) : seller ? (
 									<Link
 										href={`/profile/${seller.id}`}
 										className="flex items-center gap-3"
