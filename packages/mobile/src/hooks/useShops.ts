@@ -46,13 +46,17 @@ export function useShopsEnabled(): boolean {
 	return useAppConfig().shopsEnabled;
 }
 
+/**
+ * `shopsEnabled` gates creating a *new* shop, never an existing one — an
+ * owner must keep full access with the flag off. This query is therefore
+ * never conditioned on the flag, only on being signed in.
+ */
 export function useMyShop() {
 	const { user } = useAuth();
-	const enabled = useShopsEnabled();
 	return useQuery({
 		queryKey: shopKeys.mine,
 		queryFn: () => api.get<MyShopResponse>("/api/shops/mine"),
-		enabled: Boolean(user) && enabled,
+		enabled: Boolean(user),
 		staleTime: 30_000,
 	});
 }
