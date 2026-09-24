@@ -5,6 +5,13 @@ export interface ProductOption {
 	values: string[];
 }
 
+/**
+ * Unlike `generateCombinations` in `packages/api/src/lib/variants.ts`, this
+ * silently skips an option with a blank name or no values instead of
+ * collapsing the whole preview to zero combinations — the seller is still
+ * mid-edit on the create/edit form when this runs on every keystroke, so an
+ * incomplete option must not blank out the rows for options already filled in.
+ */
 export function generateCombinations(
 	options: ProductOption[],
 ): Record<string, string>[] {

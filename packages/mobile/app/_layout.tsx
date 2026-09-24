@@ -428,6 +428,7 @@ function RootLayoutNav() {
 					name="profile/[userId]"
 					options={{ headerShown: false }}
 				/>
+				<Stack.Screen name="s/[handle]" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="auth/login"
 					options={{ presentation: "modal", headerShown: false }}

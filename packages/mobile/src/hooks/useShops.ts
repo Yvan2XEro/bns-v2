@@ -5,7 +5,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { useAppConfig } from "../contexts/AppConfigContext";
-import { api } from "../lib/api";
+import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type {
 	AttachResponse,
@@ -66,7 +66,7 @@ export function usePublicShop(handle: string | undefined) {
 			),
 		enabled: Boolean(handle),
 		retry: (count, error) =>
-			(error as { status?: number }).status !== 404 && count < 2,
+			!(error instanceof ApiError && error.status === 404) && count < 2,
 	});
 }
 

@@ -1189,7 +1189,7 @@
 			"negative": "Le stock ne peut pas passer sous zéro."
 		},
 		"moderation": {
-			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier ni modifier pour le moment."
+			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment."
 		},
 		"payment": {
 			"providerUnavailable": "Le paiement est indisponible pour le moment. Réessayez plus tard."
@@ -1313,7 +1313,15 @@
 	"shop": {
 		"levelPhone": "Téléphone vérifié",
 		"notFoundTitle": "Boutique introuvable",
-		"notFoundSubtitle": "Cette boutique n'existe pas ou n'est plus disponible."
+		"notFoundSubtitle": "Cette boutique n'existe pas ou n'est plus disponible.",
+		"shareLabel": "Partager {{name}}",
+		"reviewsCount": "{{count}} avis",
+		"productsLabel": "produits",
+		"listingsTitle": "Annonces · {{count}}",
+		"noListings": "Cette boutique n'a encore rien en vente.",
+		"report": "Signaler la boutique",
+		"call": "Appeler",
+		"whatsapp": "WhatsApp"
 	},
 	"stock": {
 		"notTracked": "Stock non suivi",
