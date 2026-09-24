@@ -1326,5 +1326,32 @@
 		"outOfStock": "Out of stock",
 		"lowCount": "{{count}} · low stock",
 		"inStockCount": "{{count}} in stock"
+	},
+	"catalogue": {
+		"title": "Catalogue",
+		"productsCount": "{{count}} products",
+		"filter_all": "All",
+		"filter_low": "Low stock",
+		"filter_draft": "Drafts",
+		"filter_out": "Out of stock",
+		"status_draft": "Draft",
+		"status_archived": "Hidden",
+		"status_active": "On sale",
+		"fromPrice": "from {{price}}",
+		"variantsPrice": "{{count}} variants · {{price}}",
+		"loading": "Loading…",
+		"errorTitle": "The catalogue could not be loaded",
+		"errorBody": "The connection failed. Check your mobile data or Wi-Fi, then try again.",
+		"emptyTitle": "No product yet",
+		"emptyBody": "Add your first product or move your existing listings.",
+		"addProduct": "Add a product",
+		"moveListings": "Move my listings",
+		"filterEmpty": "Nothing matches this filter.",
+		"offline": "Offline. Data from {{date}}",
+		"offlineFooter": "Changes are possible once you are back online.",
+		"quickStepNote": "Quick adjustment from the catalogue",
+		"stepError": "Stock was not updated",
+		"decreaseStockFor": "Decrease stock for {{title}}",
+		"increaseStockFor": "Increase stock for {{title}}"
 	}
 }

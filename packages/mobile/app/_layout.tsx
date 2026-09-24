@@ -435,6 +435,10 @@ function RootLayoutNav() {
 				/>
 				<Stack.Screen name="seller/index" options={{ headerShown: false }} />
 				<Stack.Screen
+					name="seller/catalogue"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
 					name="auth/login"
 					options={{ presentation: "modal", headerShown: false }}
 				/>

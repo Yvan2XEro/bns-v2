@@ -1399,5 +1399,32 @@
 		"outOfStock": "Rupture",
 		"lowCount": "{{count}} · stock faible",
 		"inStockCount": "{{count}} en stock"
+	},
+	"catalogue": {
+		"title": "Catalogue",
+		"productsCount": "{{count}} produits",
+		"filter_all": "Tous",
+		"filter_low": "Stock faible",
+		"filter_draft": "Brouillons",
+		"filter_out": "Rupture",
+		"status_draft": "Brouillon",
+		"status_archived": "Masqué",
+		"status_active": "En vente",
+		"fromPrice": "dès {{price}}",
+		"variantsPrice": "{{count}} variantes · {{price}}",
+		"loading": "Chargement…",
+		"errorTitle": "Impossible de charger le catalogue",
+		"errorBody": "La connexion a échoué. Vérifiez vos données mobiles ou le Wi-Fi, puis réessayez.",
+		"emptyTitle": "Aucun produit pour l'instant",
+		"emptyBody": "Ajoutez votre premier produit ou transférez vos annonces existantes.",
+		"addProduct": "Ajouter un produit",
+		"moveListings": "Transférer mes annonces",
+		"filterEmpty": "Aucun produit ne correspond à ce filtre.",
+		"offline": "Hors ligne. Données du {{date}}",
+		"offlineFooter": "Modifications possibles au retour du réseau.",
+		"quickStepNote": "Ajustement rapide depuis le catalogue",
+		"stepError": "Le stock n'a pas été mis à jour",
+		"decreaseStockFor": "Diminuer le stock de {{title}}",
+		"increaseStockFor": "Augmenter le stock de {{title}}"
 	}
 }
