@@ -27,6 +27,7 @@ export function ProductEditorLoader({
 		<ProductEditor
 			shopId={shopId}
 			categories={categories}
+			role={data.role}
 			detail={{ productId, response: data }}
 		/>
 	);

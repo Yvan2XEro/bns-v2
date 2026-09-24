@@ -19,17 +19,34 @@ export function ProductListingPreview({
 }) {
 	const t = useTranslations("ProductEditor");
 	const locale = useLocale();
-	const state = useWatch({ control });
+	// Named fields, not the whole form: only what the card actually draws.
+	const [
+		title,
+		variants,
+		codAllowed,
+		pickupAllowed,
+		existingImages,
+		newImages,
+	] = useWatch({
+		control,
+		name: [
+			"title",
+			"variants",
+			"codAllowed",
+			"pickupAllowed",
+			"existingImages",
+			"newImages",
+		],
+	});
 
-	const prices = (state.variants ?? [])
-		.map((row) => parseAmount(row?.price ?? ""))
+	const prices = variants
+		.map((row) => parseAmount(row.price))
 		.filter((price): price is number => price !== null);
-	const units = (state.variants ?? []).reduce(
-		(sum, row) => sum + (parseAmount(row?.initialStock ?? "") ?? 0),
+	const units = variants.reduce(
+		(sum, row) => sum + (parseAmount(row.initialStock) ?? 0),
 		0,
 	);
-	const cover =
-		state.existingImages?.[0]?.url || state.newImages?.[0]?.preview || "";
+	const cover = existingImages[0]?.url || newImages[0]?.preview || "";
 
 	return (
 		<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
@@ -53,14 +70,14 @@ export function ProductListingPreview({
 							: "—"}
 					</p>
 					<p className="text-[#334155] text-sm">
-						{state.title?.trim() || t("untitled")}
+						{title.trim() || t("untitled")}
 					</p>
 				</div>
 			</div>
 			<ul className="mt-3 space-y-1 text-[#334155] text-sm">
 				<li>{t("unitsInStock", { count: units })}</li>
-				{state.codAllowed && <li>{t("cod")}</li>}
-				{state.pickupAllowed && <li>{t("pickup")}</li>}
+				{codAllowed && <li>{t("cod")}</li>}
+				{pickupAllowed && <li>{t("pickup")}</li>}
 			</ul>
 		</div>
 	);

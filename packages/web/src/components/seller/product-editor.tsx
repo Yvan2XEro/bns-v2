@@ -26,17 +26,26 @@ import {
 	stateFromDetail,
 	toProductInput,
 } from "~/lib/product-form";
-import type { Category, ProductDetailResponse, ProductStatus } from "~/types";
+import { canSeeCost } from "~/lib/shop-roles";
+import type {
+	Category,
+	ProductDetailResponse,
+	ProductStatus,
+	ShopRole,
+} from "~/types";
 
 export interface ProductEditorProps {
 	shopId: string;
 	categories: Category[];
+	/** The caller's role in this shop; it decides whether cost is shown at all. */
+	role: ShopRole | null;
 	detail?: { productId: string; response: ProductDetailResponse };
 }
 
 export function ProductEditor({
 	shopId,
 	categories,
+	role,
 	detail,
 }: ProductEditorProps) {
 	const t = useTranslations("ProductEditor");
@@ -69,11 +78,10 @@ export function ProductEditor({
 		[categories, categoryId],
 	);
 
-	// The purchase cost is a shop secret: the detail omits it for members who
-	// may not see it, and the editor then neither shows nor sends it.
-	const showCost = detail
-		? detail.response.variants.some((variant) => variant.cost !== undefined)
-		: true;
+	// The purchase cost is a shop secret, so the role decides — not whether a
+	// cost happens to be set. An owner whose variants have no cost yet still
+	// gets the column, and a staff member never does, on either page.
+	const showCost = canSeeCost(role);
 
 	const onValid = async (values: ProductFormState) => {
 		clearErrors("root");
@@ -107,13 +115,16 @@ export function ProductEditor({
 
 	const heading = detail ? title || t("untitled") : t("newProduct");
 	const saved = saveProduct.isSuccess && !formState.isDirty;
+	// The zod resolver runs before the mutation starts, so the mutation's own
+	// flag leaves a window in which a second click creates a second product.
+	const pending = formState.isSubmitting || saveProduct.isPending;
 
 	return (
 		<form onSubmit={submit} className="space-y-5" noValidate>
 			<ProductEditorHeader
 				heading={heading}
 				isEdit={Boolean(detail)}
-				pending={saveProduct.isPending}
+				pending={pending}
 				onSubmitAs={submitAs}
 			/>
 

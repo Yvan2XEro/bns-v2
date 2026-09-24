@@ -16,5 +16,11 @@ export default async function NewProductPage() {
 	]);
 	if (!mine?.shop) redirect("/shop/new");
 
-	return <ProductEditor shopId={mine.shop.id} categories={categories} />;
+	return (
+		<ProductEditor
+			shopId={mine.shop.id}
+			categories={categories}
+			role={mine.role}
+		/>
+	);
 }

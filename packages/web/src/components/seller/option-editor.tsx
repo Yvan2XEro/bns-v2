@@ -31,6 +31,67 @@ function ValueAdder({ onAdd }: { onAdd: (value: string) => void }) {
 	);
 }
 
+/**
+ * The option name, committed on blur or Enter rather than on every keystroke.
+ *
+ * Renaming an option rebuilds every combination, so a per-keystroke commit
+ * would walk the variants through a half-typed name — and through the empty
+ * name in between, which has no combinations at all. It also refuses a name
+ * another option already holds, which the server would reject on save, and an
+ * empty one: the X button is how an option goes away.
+ */
+function NameField({
+	name,
+	taken,
+	onCommit,
+}: {
+	name: string;
+	taken: string[];
+	onCommit: (name: string) => void;
+}) {
+	const t = useTranslations("ProductEditor");
+	const [draft, setDraft] = useState(name);
+	const [duplicate, setDuplicate] = useState(false);
+
+	const commit = () => {
+		const next = draft.trim();
+		if (!next || next === name) {
+			setDuplicate(false);
+			setDraft(name);
+			return;
+		}
+		if (taken.some((other) => other.toLowerCase() === next.toLowerCase())) {
+			setDuplicate(true);
+			return;
+		}
+		setDuplicate(false);
+		onCommit(next);
+	};
+
+	return (
+		<div className="flex-1">
+			<input
+				value={draft}
+				onChange={(event) => setDraft(event.target.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") {
+						event.preventDefault();
+						commit();
+					}
+				}}
+				onBlur={commit}
+				placeholder={t("optionName")}
+				aria-label={t("optionName")}
+				aria-invalid={duplicate}
+				className="h-9 w-full rounded-md border border-[#E2E8F0] px-3 font-semibold text-sm outline-none focus:border-[#93C5FD]"
+			/>
+			{duplicate && (
+				<p className="mt-1 text-red-600 text-xs">{t("optionNameDuplicate")}</p>
+			)}
+		</div>
+	);
+}
+
 export function OptionEditor({
 	options,
 	onChange,
@@ -49,15 +110,17 @@ export function OptionEditor({
 				// An option has no id until it is saved, and its inputs are
 				// controlled, so the position is the only identity available.
 				<div key={index} className="rounded-lg border border-[#E2E8F0] p-3">
-					<div className="flex items-center gap-2">
-						<input
-							value={option.name}
-							onChange={(event) =>
-								update(index, { ...option, name: event.target.value })
-							}
-							placeholder={t("optionName")}
-							aria-label={t("optionName")}
-							className="h-9 flex-1 rounded-md border border-[#E2E8F0] px-3 font-semibold text-sm outline-none focus:border-[#93C5FD]"
+					<div className="flex items-start gap-2">
+						<NameField
+							// Reseeds the draft when this position starts holding
+							// another option, after one above it was removed.
+							key={option.name}
+							name={option.name}
+							taken={options
+								.filter((_, i) => i !== index)
+								.map((other) => other.name.trim())
+								.filter(Boolean)}
+							onCommit={(name) => update(index, { ...option, name })}
 						/>
 						<button
 							type="button"

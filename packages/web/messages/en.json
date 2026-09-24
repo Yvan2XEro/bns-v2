@@ -875,6 +875,7 @@
 		"removeOption": "Remove this option",
 		"removeValue": "Remove {value}",
 		"addOption": "Add an option",
+		"optionNameDuplicate": "Two options cannot share a name.",
 		"variantsGenerated": "{count} variants generated",
 		"samePrice": "Same price for all",
 		"colVariant": "Variant and SKU",

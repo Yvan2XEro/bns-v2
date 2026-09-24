@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import type { ChangeEvent } from "react";
 import type {
 	Control,
 	UseFormRegister,
@@ -167,7 +168,18 @@ export function VariantTable({
 									</td>
 									<td className="w-16 px-3 py-2 pt-4 text-center">
 										<input
-											{...register(`variants.${index}.trackInventory`)}
+											{...register(`variants.${index}.trackInventory`, {
+												// An untracked variant holds no stock, so the
+												// quantity typed into the disabled cell must not
+												// travel with the save as an opening receipt.
+												onChange: (event: ChangeEvent<HTMLInputElement>) => {
+													if (event.target.checked || row.id) return;
+													setValue(`variants.${index}.initialStock`, "", {
+														shouldDirty: true,
+														shouldValidate: true,
+													});
+												},
+											})}
 											type="checkbox"
 											className="h-4 w-4 accent-[#1E40AF]"
 											aria-label={t("colTracked")}

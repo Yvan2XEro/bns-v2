@@ -13,27 +13,42 @@ export function ProductChecklistCard({
 	control: Control<ProductFormState>;
 }) {
 	const t = useTranslations("ProductEditor");
-	const state = useWatch({ control });
+	// Named fields, not the whole form: a keystroke in the description or in a
+	// SKU has no business re-rendering the checklist.
+	const [
+		title,
+		categoryId,
+		variants,
+		codAllowed,
+		pickupAllowed,
+		existingImages,
+		newImages,
+	] = useWatch({
+		control,
+		name: [
+			"title",
+			"categoryId",
+			"variants",
+			"codAllowed",
+			"pickupAllowed",
+			"existingImages",
+			"newImages",
+		],
+	});
 
-	const variants = state.variants ?? [];
-	const photoCount =
-		(state.existingImages?.length ?? 0) + (state.newImages?.length ?? 0);
-
+	const photoCount = existingImages.length + newImages.length;
 	const items = [
 		{
-			ok:
-				(state.title?.trim().length ?? 0) >= TITLE_MIN &&
-				Boolean(state.categoryId),
+			ok: title.trim().length >= TITLE_MIN && Boolean(categoryId),
 			label: t("checkTitle"),
 		},
 		{
 			ok:
-				variants.length > 0 &&
-				variants.every((row) => (row?.price ?? "").trim() !== ""),
+				variants.length > 0 && variants.every((row) => row.price.trim() !== ""),
 			label: t("checkPrice", { count: variants.length }),
 		},
 		{
-			ok: Boolean(state.codAllowed) || Boolean(state.pickupAllowed),
+			ok: codAllowed || pickupAllowed,
 			label: t("checkDelivery"),
 		},
 		{

@@ -12,7 +12,7 @@ import {
 	resolveCategoryAttributes,
 	resolveFormPreset,
 } from "./category-form";
-import { generateCombinations, optionValuesKey } from "./variants";
+import { generateCombinations } from "./variants";
 
 export const MAX_OPTIONS = 3;
 export const MAX_IMAGES = 10;
@@ -20,14 +20,19 @@ export const TITLE_MIN = 3;
 export const TITLE_MAX = 120;
 export const DESCRIPTION_MAX = 5000;
 
-/** "435 000" or "435000" → 435000; empty or invalid → null. */
+/**
+ * "435 000" or "435000" → 435000; empty or invalid → null.
+ *
+ * Only plain digits are an amount. `Number` would also read "0x1f", "1e6",
+ * "+5" and "-5", and every one of those would reach the server as a price
+ * nobody typed. `\s` already covers the non-breaking and narrow spaces XAF
+ * amounts are printed with.
+ */
 export function parseAmount(value: string): number | null {
-	// `\s` already covers the non-breaking and narrow spaces XAF amounts are
-	// printed with.
 	const cleaned = value.replace(/\s/g, "");
-	if (!cleaned) return null;
+	if (!/^\d+$/.test(cleaned)) return null;
 	const parsed = Number(cleaned);
-	return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+	return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
 const requiredAmount = z
@@ -124,8 +129,14 @@ export function resolveProductCategory(
 	};
 }
 
+/**
+ * A row is identified by its values in option order, never by the option
+ * names: renaming "Couleur" must not turn "Noir · 256 Go" into a different
+ * variant. `optionValuesKey` keys by name and value, which is what the catalogue
+ * compares; here only the position matters.
+ */
 function rowKey(values: Record<string, string>): string {
-	return optionValuesKey(values);
+	return JSON.stringify(Object.values(values));
 }
 
 export function emptyVariant(
@@ -178,7 +189,11 @@ export function reconcileVariants(
 	const template = rows[0];
 	return combos.map((combo) => {
 		const existing = byKey.get(rowKey(combo));
-		if (existing) return existing;
+		// The row keeps its id, its price and its stock, and takes the option
+		// names the combination now carries — the server matches a variant on
+		// its id, but validates the values against the current options.
+		if (existing)
+			return { ...existing, key: rowKey(combo), optionValues: combo };
 		const fresh = emptyVariant(combo);
 		if (template) {
 			fresh.price = template.price;
@@ -277,10 +292,11 @@ function liveRows(variants: VariantDoc[]): VariantRow[] {
 	return rows.length > 0 ? rows : [emptyVariant()];
 }
 
-export function stateFromDetail(
-	detail: ProductDetailResponse,
+/** The form as the server describes the product, images included. */
+function stateFromProduct(
+	product: Loose,
+	variants: VariantDoc[],
 ): ProductFormState {
-	const product = detail.product as unknown as Loose;
 	const delivery = (product.delivery ?? {}) as Loose;
 	return {
 		title: String(product.title ?? ""),
@@ -291,7 +307,7 @@ export function stateFromDetail(
 		existingImages: readImages(product),
 		newImages: [],
 		options: readOptions(product),
-		variants: liveRows(detail.variants),
+		variants: liveRows(variants),
 		codAllowed: delivery.codAllowed !== false,
 		pickupAllowed: delivery.pickupAllowed === true,
 		handlingHours:
@@ -303,10 +319,19 @@ export function stateFromDetail(
 	};
 }
 
+export function stateFromDetail(
+	detail: ProductDetailResponse,
+): ProductFormState {
+	return stateFromProduct(detail.product as unknown as Loose, detail.variants);
+}
+
 /**
- * The form as it should read once the server has answered: variants, options
- * and image order come back from the save, while the picture URLs we already
- * know locally are kept — a save answers with image ids, not with media.
+ * The form as it should read once the server has answered.
+ *
+ * Everything is taken from the save: the seller must see what was stored, not
+ * what they typed — the server trims, drops empty values and renumbers the
+ * variants. Only the picture URLs are local knowledge, because a save answers
+ * with image ids and not with media.
  */
 export function stateAfterSave(
 	submitted: ProductFormState,
@@ -314,30 +339,32 @@ export function stateAfterSave(
 	uploadedIds: string[],
 ): ProductFormState {
 	const product = response.product as unknown as Loose;
-	const fromServer = readImages(product);
+	const saved = stateFromProduct(product, response.variants);
+
 	const known = new Map<string, string>();
 	const remember = (id: string, url: string) => {
 		if (url && !known.get(id)) known.set(id, url);
 	};
-	for (const image of fromServer) remember(image.id, image.url);
+	for (const image of saved.existingImages) remember(image.id, image.url);
 	for (const image of submitted.existingImages) remember(image.id, image.url);
 	uploadedIds.forEach((id, index) => {
 		remember(id, submitted.newImages[index]?.preview ?? "");
 	});
 
 	const order =
-		fromServer.length > 0
-			? fromServer.map((image) => image.id)
+		saved.existingImages.length > 0
+			? saved.existingImages.map((image) => image.id)
 			: [...submitted.existingImages.map((image) => image.id), ...uploadedIds];
-	const serverOptions = readOptions(product);
 
 	return {
-		...submitted,
+		...saved,
 		existingImages: order.map((id) => ({ id, url: known.get(id) ?? "" })),
-		newImages: [],
+		// A product with no option has no `options` on the document, so an empty
+		// answer is the truth; only a shape we could not read falls back.
 		options:
-			serverOptions.length > 0 ? serverOptions : usableOptions(submitted),
-		variants: liveRows(response.variants),
+			saved.options.length > 0 || usableOptions(submitted).length === 0
+				? saved.options
+				: usableOptions(submitted),
 	};
 }
 
