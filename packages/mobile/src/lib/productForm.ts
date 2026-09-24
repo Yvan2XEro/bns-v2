@@ -69,15 +69,38 @@ export function parseAmount(value: string): number | null {
 }
 
 /**
- * A row's identity is the option VALUES in option order, never the option
- * names. Web's product form keyed rows by name, so a keystroke while
- * renaming an option rebuilt every row and dropped its id, SKU, price, cost,
- * threshold and stock. Values are inserted into `optionValues` in option
- * order (see `generateCombinations`), so this stays stable across a rename
- * and only changes when the actual combination changes.
+ * A row's identity string, used only as its React `key` (and as a display
+ * label for `fromProductDetail`) — never for matching, see `syncVariantRows`.
+ * Built from the option VALUES in option order, never the option names: web's
+ * product form keyed rows by name, so a keystroke while renaming an option
+ * rebuilt every row and dropped its id, SKU, price, cost, threshold and stock.
  */
 function rowIdentity(optionValues: Record<string, string>): string {
 	return Object.values(optionValues).join("\u0001");
+}
+
+/** The values a row or a combination carries, in option order. */
+function valueTuple(values: Record<string, string>): string[] {
+	return Object.values(values);
+}
+
+function sameTuple(a: string[], b: string[]): boolean {
+	return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+/**
+ * Whether `short` appears inside `long` in order, gaps allowed. Adding or
+ * removing one option leaves the other values in place and in order, so this
+ * is what "still the same variant, with one more (or one fewer) option"
+ * means — including the empty tuple of a product that has no options at all.
+ */
+function isSubsequence(short: string[], long: string[]): boolean {
+	if (short.length > long.length) return false;
+	let next = 0;
+	for (const value of long) {
+		if (next < short.length && short[next] === value) next++;
+	}
+	return next === short.length;
 }
 
 export function emptyVariantRow(
@@ -125,30 +148,63 @@ function cleanOptions(options: ProductOption[]): ProductOption[] {
 		.filter((o) => o.name && o.values.length > 0);
 }
 
-/** Rows follow the option combinations; a surviving combination keeps its row. */
+/**
+ * Rows follow the option combinations; a surviving combination keeps its
+ * row, its id, its price and its stock.
+ *
+ * Matching runs in two passes, and each row is claimed at most once — mirrors
+ * `reconcileVariants` in `packages/web/src/lib/product-form.ts`, converged on
+ * deliberately after both clients hit the same defect independently:
+ *
+ *  1. the identical tuple of values, which covers a rename and a value added
+ *     or removed beside the ones already there;
+ *  2. failing that, one tuple contained in the other (as a subsequence),
+ *     which covers an option added or removed anywhere in the set — a simple
+ *     product's single `{}` row becoming the first combination, the mirror
+ *     collapse back to it, and an option inserted or dropped in the middle.
+ *
+ * Without the second pass, adding the first option to a simple product left
+ * the live variant unmatched: the save created a duplicate and abandoned the
+ * real one, stock and all.
+ */
 export function syncVariantRows(state: ProductFormState): VariantRow[] {
 	const combos = state.hasVariants
 		? generateCombinations(cleanOptions(state.options))
 		: [{}];
-	const byKey = new Map(
-		state.variants.map((row) => [rowIdentity(row.optionValues), row]),
-	);
+	const tuples = combos.map(valueTuple);
+	const unclaimed = [...state.variants];
 	const template = state.variants[0];
 
-	return combos.map((combo) => {
-		const key = rowIdentity(combo);
-		const existing = byKey.get(key);
+	const claim = (
+		matches: (tuple: string[]) => boolean,
+	): VariantRow | undefined => {
+		const index = unclaimed.findIndex((row) =>
+			matches(valueTuple(row.optionValues)),
+		);
+		return index === -1 ? undefined : unclaimed.splice(index, 1)[0];
+	};
+
+	const claimed = tuples.map((tuple) => claim((row) => sameTuple(row, tuple)));
+	tuples.forEach((tuple, index) => {
+		claimed[index] ??= claim(
+			(row) => isSubsequence(row, tuple) || isSubsequence(tuple, row),
+		);
+	});
+
+	return combos.map((combo, index) => {
+		const existing = claimed[index];
 		// Keep every other field, but refresh `optionValues` from the combo so a
 		// renamed option's new name reaches the payload, not the stale one.
-		if (existing) return { ...existing, key, optionValues: combo };
+		if (existing)
+			return { ...existing, key: rowIdentity(combo), optionValues: combo };
 
-		const row = emptyVariantRow(combo);
+		const fresh = emptyVariantRow(combo);
 		if (template) {
-			row.price = template.price;
-			row.cost = template.cost;
-			row.lowStockThreshold = template.lowStockThreshold;
+			fresh.price = template.price;
+			fresh.cost = template.cost;
+			fresh.lowStockThreshold = template.lowStockThreshold;
 		}
-		return row;
+		return fresh;
 	});
 }
 

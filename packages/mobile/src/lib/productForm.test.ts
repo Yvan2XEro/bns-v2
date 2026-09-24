@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { ListingAttribute } from "./listingForm";
 import {
 	emptyProductForm,
+	emptyVariantRow,
 	fromProductDetail,
 	infoIssues,
 	parseAmount,
@@ -158,6 +159,144 @@ describe("syncVariantRows", () => {
 		});
 		expect(kept?.key).toBe(keyBefore);
 		expect(kept?.optionValues).toEqual({ Coloris: "Noir" });
+	});
+
+	test("turning a simple product into a variant product keeps the existing row", () => {
+		const form = filled();
+		form.variants[0] = {
+			...form.variants[0],
+			id: "v1",
+			sku: "SIMPLE",
+			price: "435000",
+			stockOnHand: 5,
+		};
+
+		// Toggling the switch on with no value typed yet: the sole combo is
+		// still `{}`, so the row must not move.
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: [] }];
+		form.variants = syncVariantRows(form);
+		expect(form.variants).toHaveLength(1);
+		expect(form.variants[0].id).toBe("v1");
+
+		// The first value is committed: the sole combo's identity changes from
+		// "" to "Noir", but it is still the same one row.
+		form.options = [{ name: "Couleur", values: ["Noir"] }];
+		const rows = syncVariantRows(form);
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({
+			id: "v1",
+			sku: "SIMPLE",
+			price: "435000",
+			stockOnHand: 5,
+		});
+		expect(rows[0].optionValues).toEqual({ Couleur: "Noir" });
+	});
+
+	test("collapsing a variant product back to simple keeps the surviving row", () => {
+		const form = filled();
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: ["Noir"] }];
+		form.variants = syncVariantRows(form);
+		form.variants[0] = {
+			...form.variants[0],
+			id: "v1",
+			sku: "NO",
+			price: "435000",
+			stockOnHand: 3,
+		};
+
+		// The option is removed entirely: the form is a simple product again.
+		form.hasVariants = false;
+		const rows = syncVariantRows(form);
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({
+			id: "v1",
+			sku: "NO",
+			price: "435000",
+			stockOnHand: 3,
+		});
+		expect(rows[0].optionValues).toEqual({});
+	});
+
+	test("inserting an option in the middle keeps a single-combination row", () => {
+		const form = filled();
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: ["Noir"] }];
+		form.variants = syncVariantRows(form);
+		form.variants[0] = {
+			...form.variants[0],
+			id: "v1",
+			sku: "NO",
+			price: "435000",
+		};
+
+		// A "Stockage" option is inserted between what will become two options;
+		// with a single value it still leaves exactly one combination.
+		form.options = [
+			{ name: "Couleur", values: ["Noir"] },
+			{ name: "Stockage", values: ["256 Go"] },
+		];
+		const rows = syncVariantRows(form);
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ id: "v1", sku: "NO", price: "435000" });
+		expect(rows[0].optionValues).toEqual({
+			Couleur: "Noir",
+			Stockage: "256 Go",
+		});
+	});
+
+	test("removing an option in the middle keeps a single-combination row", () => {
+		const form = filled();
+		form.hasVariants = true;
+		form.options = [
+			{ name: "Couleur", values: ["Noir"] },
+			{ name: "Stockage", values: ["256 Go"] },
+			{ name: "Etat", values: ["Neuf"] },
+		];
+		form.variants = syncVariantRows(form);
+		form.variants[0] = {
+			...form.variants[0],
+			id: "v1",
+			sku: "NO",
+			price: "435000",
+		};
+
+		// The middle option is deleted; one combination remains, as before.
+		form.options = [
+			{ name: "Couleur", values: ["Noir"] },
+			{ name: "Etat", values: ["Neuf"] },
+		];
+		const rows = syncVariantRows(form);
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({ id: "v1", sku: "NO", price: "435000" });
+		expect(rows[0].optionValues).toEqual({ Couleur: "Noir", Etat: "Neuf" });
+	});
+
+	test("prefers an exact match over a longer subsequence match", () => {
+		const form = filled();
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: ["Noir"] }];
+		// The longer row is listed first, so a subsequence-only search (without
+		// the exact-match pass running first) would claim it for the shorter
+		// combo below purely because it happens to be scanned first.
+		form.variants = [
+			{
+				...emptyVariantRow({ Couleur: "Noir", Stockage: "256 Go" }),
+				id: "vLong",
+				sku: "LONG",
+			},
+			{ ...emptyVariantRow({ Couleur: "Noir" }), id: "vExact", sku: "EXACT" },
+		];
+
+		const rows = syncVariantRows(form);
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0].id).toBe("vExact");
 	});
 });
 
