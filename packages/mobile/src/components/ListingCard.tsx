@@ -37,6 +37,7 @@ interface Listing {
 	isBoosted?: boolean;
 	condition?: string;
 	status?: string;
+	shopName?: string | null;
 }
 
 interface ListingCardProps {
@@ -272,6 +273,15 @@ export function ListingCard({
 							</View>
 						)}
 					</View>
+
+					{listing.shopName ? (
+						<View style={styles.shopRow}>
+							<Ionicons name="storefront-outline" size={11} color="#1e40af" />
+							<Text style={styles.shopText} numberOfLines={1}>
+								{listing.shopName}
+							</Text>
+						</View>
+					) : null}
 				</View>
 			</Animated.View>
 		</Pressable>
@@ -417,6 +427,13 @@ const styles = StyleSheet.create({
 	metaText: {
 		fontFamily: Fonts.body,
 		fontSize: 11,
+		flexShrink: 1,
+	},
+	shopRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+	shopText: {
+		fontSize: 11,
+		fontFamily: Fonts.bodySemibold,
+		color: "#1e40af",
 		flexShrink: 1,
 	},
 });
