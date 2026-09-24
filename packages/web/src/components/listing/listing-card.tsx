@@ -1,7 +1,8 @@
-import { Clock, MapPin, Zap } from "lucide-react";
+import { Clock, MapPin, Store, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { listingShop, productSummaryOf } from "~/lib/listing-shop";
 import { formatListingPrice } from "~/lib/price";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
@@ -40,6 +41,14 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 	const imageCount = listing.images?.length || 0;
 	const _seller = listing.seller as User | null;
 	const formattedPrice = formatListingPrice(listing.price);
+	// Search hits carry flattened shop fields; Payload docs carry the relation.
+	const hit = listing as { shopName?: string | null; priceMax?: number | null };
+	const shopName = hit.shopName ?? listingShop(listing)?.name ?? null;
+	const priceMax = hit.priceMax ?? productSummaryOf(listing)?.priceMax ?? null;
+	const isFromPrice =
+		typeof listing.price === "number" &&
+		typeof priceMax === "number" &&
+		priceMax > listing.price;
 	const conditionLabel =
 		listing.condition === "new"
 			? "New"
@@ -108,6 +117,11 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 				<div className="p-3">
 					{/* Price (prominent, like Leboncoin/Vinted) */}
 					<p className="font-bold text-[#0F172A] text-lg">
+						{isFromPrice && (
+							<span className="font-medium text-[#64748B] text-xs">
+								{t("fromPrice")}{" "}
+							</span>
+						)}
 						{formattedPrice ?? t("noPrice")}{" "}
 						{formattedPrice && (
 							<span className="font-medium text-[#64748B] text-xs">XAF</span>
@@ -130,6 +144,12 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 							{timeAgo(listing.createdAt)}
 						</span>
 					</div>
+					{shopName && (
+						<p className="mt-1.5 flex items-center gap-1 truncate font-medium text-[#1E40AF] text-xs">
+							<Store className="h-3 w-3 shrink-0" />
+							<span className="truncate">{shopName}</span>
+						</p>
+					)}
 				</div>
 			</div>
 		</Link>

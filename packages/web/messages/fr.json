@@ -159,7 +159,17 @@
 		"any": "Indifférent",
 		"yes": "Oui",
 		"no": "Non",
-		"loading": "Chargement…"
+		"loading": "Chargement…",
+		"tabListings": "Annonces",
+		"tabShops": "Boutiques",
+		"shopSearchPlaceholder": "Rechercher une boutique",
+		"allCities": "Toutes les villes",
+		"shopCount": "{count, plural, =0 {Aucune boutique} one {# boutique} other {# boutiques}}",
+		"shopCountIn": "{count, plural, =0 {Aucune boutique} one {# boutique} other {# boutiques}} à {city}",
+		"shopSearchError": "La recherche de boutiques est indisponible",
+		"noShopsTitle": "Aucune boutique trouvée",
+		"noShopsBody": "Essayez un autre mot ou élargissez la ville.",
+		"clearFilters": "Effacer les filtres"
 	},
 	"Listing": {
 		"backToResults": "Retour aux résultats",
@@ -198,6 +208,7 @@
 		"describeYourItem": "Décrivez votre article en détail...",
 		"describeYourListing": "Décrivez cette annonce de façon claire et précise...",
 		"noPrice": "Prix sur demande",
+		"fromPrice": "Dès",
 		"photos": "Photos",
 		"imagesTotal": "{count} image(s) au total",
 		"maximumImagesAllowed": "Maximum {max} images autorisées",
@@ -730,7 +741,9 @@
 		"visitShop": "Voir la boutique",
 		"publishIn": "Publier dans {shop}",
 		"publishInHint": "L'annonce apparaît sur la page de votre boutique. Elle reste une annonce simple, sans stock.",
-		"detachWarning": "Cela retire l'annonce de la page de votre boutique. Elle reste publiée, sans stock."
+		"detachWarning": "Cela retire l'annonce de la page de votre boutique. Elle reste publiée, sans stock.",
+		"newShop": "Nouvelle",
+		"view": "Voir"
 	},
 	"ShopCreate": {
 		"title": "Ouvrir ma boutique",
