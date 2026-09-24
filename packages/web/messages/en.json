@@ -267,7 +267,7 @@
 		"characteristics": "Characteristics",
 		"characteristicsDesc": "The details buyers use to filter.",
 		"variantInStock": "In stock",
-		"variantAvailable": "{count, plural, one {# available} other {# available}}",
+		"variantAvailable": "Available",
 		"variantSoldOut": "Sold out",
 		"codAvailable": "Cash on delivery",
 		"pickupAvailable": "Pickup possible"

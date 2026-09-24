@@ -51,19 +51,41 @@ export function marginPercent(
 	return Math.round(((price - cost) / price) * 1000) / 10;
 }
 
+/**
+ * Exact stock-on-hand, shop-member/staff only: `stockOnHand`/`stockReserved`
+ * are field-restricted on a buyer's payload (`PublicVariantDoc` does not even
+ * declare them), so this must never run against one — nothing in this file
+ * calls it for the buyer path, which reads `available` instead.
+ */
 export function availableOf(
 	variant: Pick<VariantDoc, "stockOnHand" | "stockReserved">,
 ): number {
 	return (variant.stockOnHand ?? 0) - (variant.stockReserved ?? 0);
 }
 
-type SelectableVariant = Pick<
-	VariantDoc,
-	"optionValues" | "trackInventory" | "stockOnHand" | "stockReserved"
->;
+/**
+ * The shape the combination helpers below need. Both `VariantDoc` (shop
+ * member/staff, raw collection) and `PublicVariantDoc` (buyer, public
+ * endpoint) satisfy it: the API's `beforeRead` hook derives `available` for
+ * every reader before field access strips the raw counters, so it is never
+ * missing on either payload.
+ */
+export interface SelectableVariant {
+	optionValues: Record<string, string> | null;
+	available: boolean;
+}
 
-export function isVariantInStock(variant: SelectableVariant): boolean {
-	return !variant.trackInventory || availableOf(variant) > 0;
+/**
+ * One predicate, honest for both a shop member's payload (which also carries
+ * `stockOnHand`/`stockReserved`, unused here) and a buyer's (which does not):
+ * both always carry the server-derived `available` boolean, so there is
+ * nothing to compute client-side and no risk of a buyer payload's absent
+ * counters being silently read as zero stock.
+ */
+export function isVariantInStock(
+	variant: Pick<SelectableVariant, "available">,
+): boolean {
+	return variant.available;
 }
 
 /** The variant whose option values match exactly, or null. */

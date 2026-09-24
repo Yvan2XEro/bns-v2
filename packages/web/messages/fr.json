@@ -268,7 +268,7 @@
 		"characteristics": "Caractéristiques",
 		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer.",
 		"variantInStock": "En stock",
-		"variantAvailable": "{count, plural, one {# disponible} other {# disponibles}}",
+		"variantAvailable": "Disponible",
 		"variantSoldOut": "Épuisé",
 		"codAvailable": "Paiement à la livraison",
 		"pickupAvailable": "Retrait possible"

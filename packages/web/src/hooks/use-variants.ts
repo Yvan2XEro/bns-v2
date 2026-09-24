@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { type PopulatedVariant, shopApi } from "~/lib/shop-api";
-import type { VariantDoc } from "~/types";
+import type { PublicVariantDoc, VariantDoc } from "~/types";
 
 export const variantKey = (variantId: string) =>
 	["variants", variantId] as const;
@@ -30,5 +30,21 @@ export function productVariantsQuery(productId: string) {
 		queryKey: productVariantsKey(productId),
 		queryFn: (): Promise<{ docs: VariantDoc[] }> =>
 			shopApi.productVariants(productId),
+	};
+}
+
+export const publicVariantsKey = (productId: string) =>
+	["products", productId, "public-variants"] as const;
+
+/**
+ * The buyer's variant list for a listing's detail page — always the public,
+ * live-only view, never the shop member's widened one `productVariantsQuery`
+ * (above) serves the seller-facing `VariantPicker`.
+ */
+export function publicVariantsQuery(productId: string) {
+	return {
+		queryKey: publicVariantsKey(productId),
+		queryFn: (): Promise<{ docs: PublicVariantDoc[] }> =>
+			shopApi.publicProductVariants(productId),
 	};
 }

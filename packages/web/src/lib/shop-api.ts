@@ -11,6 +11,7 @@ import type {
 	ProductInput,
 	ProductSaveResponse,
 	PublicShop,
+	PublicVariantDoc,
 	ShopSearchResponse,
 	StockCountResult,
 	StockSummary,
@@ -236,6 +237,16 @@ export const shopApi = {
 		).then((page) => ({
 			docs: page.docs.filter((variant) => !variant.archivedAt),
 		})),
+
+	/**
+	 * The buyer's view of a product's variants: always live, never a draft or
+	 * archived row regardless of who is asking, unlike `productVariants` above
+	 * (which a shop member's own draft product legitimately needs to widen for).
+	 */
+	publicProductVariants: (productId: string) =>
+		request<{ docs: PublicVariantDoc[] }>(
+			`/api/public/products/${productId}/variants`,
+		),
 
 	/** Uploads one image to the media collection and returns its id. */
 	uploadMedia: async (file: File, alt: string): Promise<string> => {

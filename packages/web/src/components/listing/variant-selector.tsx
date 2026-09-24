@@ -3,11 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-import { productVariantsQuery } from "~/hooks/use-variants";
+import { publicVariantsQuery } from "~/hooks/use-variants";
 import { formatXaf } from "~/lib/money";
 import { cn } from "~/lib/utils";
 import {
-	availableOf,
 	isOptionValueUnavailable,
 	isVariantInStock,
 	matchVariant,
@@ -15,13 +14,15 @@ import {
 } from "~/lib/variants";
 
 /**
- * Buyer-facing. The API only ever returns live variants of a published
- * product (`PUBLIC_VARIANTS` in ProductVariants.ts), and `cost` is stripped
- * at the field level — but `stockOnHand`/`stockReserved` are not yet, so an
- * anonymous visitor's network response currently carries the raw counts (an
- * API-side fix is tracked separately). This component never reads those
- * fields itself: it only goes through `isVariantInStock`/`availableOf`, so it
- * keeps working once a buyer response stops carrying the raw numbers.
+ * Buyer-facing. Reads `GET /api/public/products/:id/variants`, which always
+ * applies `PUBLIC_VARIANTS` (live product, unarchived variant) no matter who
+ * is asking — unlike the raw `/api/product-variants` the seller-facing
+ * `VariantPicker` uses, which legitimately widens for a shop member's own
+ * draft product. The response carries no `cost` and no `stockOnHand`/
+ * `stockReserved`, only the server-derived `available` boolean, so this
+ * component never computes stock client-side — it only ever reads
+ * `isVariantInStock`, which is honest for that boolean on this payload and
+ * for a shop member's raw payload alike (see `lib/variants.ts`).
  */
 export function VariantSelector({
 	productId,
@@ -34,7 +35,7 @@ export function VariantSelector({
 }) {
 	const t = useTranslations("Listing");
 	const locale = useLocale();
-	const { data } = useQuery(productVariantsQuery(productId));
+	const { data } = useQuery(publicVariantsQuery(productId));
 	const variants = useMemo(() => data?.docs ?? [], [data]);
 
 	// The buyer picks a value per click; the starting point is derived from
@@ -140,8 +141,8 @@ export function VariantSelector({
 					>
 						{!current.trackInventory
 							? t("variantInStock")
-							: availableOf(current) > 0
-								? t("variantAvailable", { count: availableOf(current) })
+							: isVariantInStock(current)
+								? t("variantAvailable")
 								: t("variantSoldOut")}
 					</span>
 					<span className="font-bold text-[#0F172A]">

@@ -150,7 +150,23 @@ export interface VariantDoc {
 	stockOnHand: number;
 	stockReserved: number;
 	lowStockThreshold: number | null;
+	/** Server-derived purchasability signal, set before field access runs — present for every reader, shop member or not. */
+	available: boolean;
 	archivedAt: string | null;
+}
+
+/**
+ * A buyer's view of a variant, from `GET /api/public/products/:id/variants`.
+ * Leaner than `VariantDoc` on purpose: no `cost`, no `stockOnHand`/
+ * `stockReserved`, no `shop`/`sku`/`archivedAt` — `available` is the only
+ * purchasability signal a non-member ever receives.
+ */
+export interface PublicVariantDoc {
+	id: string;
+	optionValues: Record<string, string> | null;
+	price: number;
+	trackInventory: boolean;
+	available: boolean;
 }
 
 export interface MovementRow {
