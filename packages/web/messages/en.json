@@ -989,6 +989,7 @@
 		"currentStock": "In stock: {count}",
 		"currentStockWithAlert": "In stock: {count} · alert if ≤ {threshold}",
 		"changeVariant": "Choose another product",
+		"trackingNote": "This variant does not track stock yet. Recording this movement turns stock tracking on for it.",
 		"movementType": "Movement type",
 		"types": {
 			"receipt": {
@@ -1180,7 +1181,13 @@
 			"noInteraction": "You can review a user only after contacting them."
 		},
 		"moderation": {
-			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now."
+			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now.",
+			"forbidden": "You do not have permission to moderate this content.",
+			"rankTooLow": "You cannot take this action against this account.",
+			"targetNotFound": "The content you are trying to moderate no longer exists.",
+			"reasonRequired": "A reason is required.",
+			"durationInvalid": "This suspension length is not allowed for your role.",
+			"invalidTransition": "This item is not in a state where that action applies."
 		},
 		"shop": {
 			"disabled": "Shops are not available yet.",

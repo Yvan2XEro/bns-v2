@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { catalogueRootKey } from "~/lib/query-keys";
 import { shopApi } from "~/lib/shop-api";
 import type { CatalogueResponse } from "~/types";
 
@@ -12,9 +13,12 @@ export interface CatalogueParams {
 	limit: number;
 }
 
-/** Every page and filter of one shop's catalogue, so a product write drops them all. */
-export const catalogueRootKey = (shopId: string) =>
-	["shops", shopId, "products"] as const;
+/**
+ * Every page and filter of one shop's catalogue, so a product write drops
+ * them all. Re-exported from `~/lib/query-keys`, the shared root that
+ * `productDetailKey` also nests under — see that module for why.
+ */
+export { catalogueRootKey };
 
 export const catalogueKey = (shopId: string, params: CatalogueParams) =>
 	[...catalogueRootKey(shopId), params] as const;

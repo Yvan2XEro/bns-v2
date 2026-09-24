@@ -1,5 +1,3 @@
-import type { VariantDoc } from "~/types";
-
 export interface OptionSpec {
 	name: string;
 	values: string[];
@@ -42,18 +40,6 @@ export function marginPercent(
 		return null;
 	}
 	return Math.round(((price - cost) / price) * 1000) / 10;
-}
-
-/**
- * Exact stock-on-hand, shop-member/staff only: `stockOnHand`/`stockReserved`
- * are field-restricted on a buyer's payload (`PublicVariantDoc` does not even
- * declare them), so this must never run against one — nothing in this file
- * calls it for the buyer path, which reads `available` instead.
- */
-export function availableOf(
-	variant: Pick<VariantDoc, "stockOnHand" | "stockReserved">,
-): number {
-	return (variant.stockOnHand ?? 0) - (variant.stockReserved ?? 0);
 }
 
 /**

@@ -3,7 +3,8 @@ import type { Listing, Product, Shop } from "~/types";
 export interface ProductSummary {
 	priceMin: number | null;
 	priceMax: number | null;
-	available: number | null;
+	/** Purchasability only, never a unit count — see `Listings.productSummary.available` on the API. */
+	available: boolean | null;
 	variantCount: number | null;
 	trackInventory: boolean | null;
 }

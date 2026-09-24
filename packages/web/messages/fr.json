@@ -990,6 +990,7 @@
 		"currentStock": "En stock : {count}",
 		"currentStockWithAlert": "En stock : {count} · alerte si ≤ {threshold}",
 		"changeVariant": "Choisir un autre produit",
+		"trackingNote": "Le suivi du stock n'est pas encore activé pour cette variante. Enregistrer ce mouvement l'active.",
 		"movementType": "Type de mouvement",
 		"types": {
 			"receipt": {
@@ -1181,7 +1182,13 @@
 			"noInteraction": "Vous pouvez évaluer un utilisateur seulement après l'avoir contacté."
 		},
 		"moderation": {
-			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment."
+			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment.",
+			"forbidden": "Vous n'avez pas la permission de modérer ce contenu.",
+			"rankTooLow": "Vous ne pouvez pas effectuer cette action sur ce compte.",
+			"targetNotFound": "Le contenu que vous essayez de modérer n'existe plus.",
+			"reasonRequired": "Un motif est requis.",
+			"durationInvalid": "Cette durée de suspension n'est pas autorisée pour votre rôle.",
+			"invalidTransition": "Cet élément n'est pas dans un état permettant cette action."
 		},
 		"shop": {
 			"disabled": "Les boutiques ne sont pas encore disponibles.",

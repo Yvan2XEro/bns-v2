@@ -16,7 +16,7 @@ export function ProductEditorLoader({
 	categories: Category[];
 }) {
 	const t = useTranslations("ProductEditor");
-	const { data, isError, refetch } = useProductDetail(productId);
+	const { data, isError, refetch } = useProductDetail(shopId, productId);
 
 	if (isError) {
 		return <LoadError title={t("loadError")} onRetry={() => void refetch()} />;

@@ -7,7 +7,6 @@ import {
 } from "@tanstack/react-query";
 import { catalogueRootKey } from "~/hooks/use-catalogue";
 import { myShopKey } from "~/hooks/use-my-shop";
-import { productDetailKey } from "~/hooks/use-product-detail";
 import type { ApiError } from "~/lib/apiError";
 import { shopApi } from "~/lib/shop-api";
 import type { ProductInput, ProductSaveResponse } from "~/types";
@@ -29,8 +28,10 @@ export interface SaveProductResult extends ProductSaveResponse {
  * Creates or updates a product, uploading its new photos first.
  *
  * A product publishes exactly one listing, and the catalogue counts follow the
- * product's status, so a save drops the catalogue, this product's detail and
- * the shop's dashboard counts.
+ * product's status, so a save drops the catalogue and the shop's dashboard
+ * counts. `catalogueRootKey` is also the prefix `productDetailKey` nests
+ * under (see `~/lib/query-keys`), so this invalidates the product's detail
+ * query too without naming it separately.
  */
 export function useSaveProduct(
 	shopId: string,
@@ -55,14 +56,11 @@ export function useSaveProduct(
 			return { ...response, uploadedIds };
 		},
 		retry: false,
-		onSuccess: (result) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({
 				queryKey: catalogueRootKey(shopId),
 			});
 			void queryClient.invalidateQueries({ queryKey: myShopKey });
-			void queryClient.invalidateQueries({
-				queryKey: productDetailKey(productId ?? result.product.id),
-			});
 		},
 	});
 }

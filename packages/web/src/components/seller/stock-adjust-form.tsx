@@ -109,6 +109,12 @@ export function StockAdjustForm({
 				)}
 			</div>
 
+			{!variant.trackInventory && (
+				<p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800 text-xs">
+					{t("trackingNote")}
+				</p>
+			)}
+
 			<MovementTypePicker
 				value={type}
 				onChange={(next) =>

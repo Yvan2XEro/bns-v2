@@ -20,6 +20,7 @@ export interface PickedVariant {
 	stockOnHand: number;
 	stockReserved: number;
 	lowStockThreshold: number | null;
+	trackInventory: boolean;
 }
 
 export function toPicked(
@@ -30,6 +31,7 @@ export function toPicked(
 		| "stockOnHand"
 		| "stockReserved"
 		| "lowStockThreshold"
+		| "trackInventory"
 	>,
 	productTitle: string,
 	fallback: string,
@@ -41,6 +43,7 @@ export function toPicked(
 		stockOnHand: variant.stockOnHand,
 		stockReserved: variant.stockReserved,
 		lowStockThreshold: variant.lowStockThreshold,
+		trackInventory: variant.trackInventory,
 	};
 }
 

@@ -69,6 +69,12 @@ export const ERROR_CODES = {
 	reviewNoInteraction: "review.noInteraction",
 
 	accountSuspended: "moderation.accountSuspended",
+	moderationForbidden: "moderation.forbidden",
+	moderationRankTooLow: "moderation.rankTooLow",
+	moderationTargetNotFound: "moderation.targetNotFound",
+	moderationReasonRequired: "moderation.reasonRequired",
+	moderationDurationInvalid: "moderation.durationInvalid",
+	moderationInvalidTransition: "moderation.invalidTransition",
 
 	shopDisabled: "shop.disabled",
 	shopPhoneNotVerified: "shop.phoneNotVerified",
@@ -144,6 +150,17 @@ const FALLBACKS: Record<string, string> = {
 		"You can review a user only after contacting them.",
 	[ERROR_CODES.accountSuspended]:
 		"Your account is suspended. You cannot publish listings or send messages right now.",
+	[ERROR_CODES.moderationForbidden]:
+		"You do not have permission to moderate this content.",
+	[ERROR_CODES.moderationRankTooLow]:
+		"You cannot take this action against this account.",
+	[ERROR_CODES.moderationTargetNotFound]:
+		"The content you are trying to moderate no longer exists.",
+	[ERROR_CODES.moderationReasonRequired]: "A reason is required.",
+	[ERROR_CODES.moderationDurationInvalid]:
+		"This suspension length is not allowed for your role.",
+	[ERROR_CODES.moderationInvalidTransition]:
+		"This item is not in a state where that action applies.",
 	[ERROR_CODES.shopDisabled]: "Shops are not available yet.",
 	[ERROR_CODES.shopPhoneNotVerified]:
 		"Verify your phone number to open a shop.",
