@@ -85,6 +85,8 @@ export interface UserDoc {
 		updatedAt?: string | null;
 	} | null;
 	verified: boolean;
+	/** Virtual, read by the user themselves (P1). Absent on old API versions. */
+	phoneVerified?: boolean;
 	/** Set while the account is under sanction. See `suspensionOf()`. */
 	suspendedAt?: string | null;
 	/** Null alongside a set `suspendedAt` means the suspension is indefinite. */
