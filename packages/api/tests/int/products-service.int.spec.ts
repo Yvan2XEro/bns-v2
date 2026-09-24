@@ -548,6 +548,60 @@ describe("updateProduct", () => {
 		expect(payload.store.listings[0].status).toBe("published");
 	});
 
+	// The editor's half of this — matching the live row to the new combination
+	// so the id travels with it — is client-side; what the server must do with
+	// that id is here: keep the variant, its stock and its ledger.
+	it("keeps the variant and its stock when a simple product gains its first option", async () => {
+		const payload = seed();
+		const created = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				options: [],
+				variants: [
+					{
+						optionValues: {},
+						sku: "AT-PLAIN",
+						price: 9000,
+						initialStock: 7,
+					},
+				],
+			}),
+		);
+		const plain = created.variants[0];
+		expect(plain.stockOnHand).toBe(7);
+
+		const { variants } = await updateProduct(
+			payload,
+			U1,
+			created.product.id,
+			input({
+				options: [{ name: "Couleur", values: ["Noir"] }],
+				variants: [
+					{
+						id: plain.id,
+						optionValues: { Couleur: "Noir" },
+						sku: "AT-PLAIN",
+						price: 9000,
+					},
+				],
+			}),
+		);
+
+		expect(variants).toHaveLength(1);
+		expect(variants[0]).toMatchObject({
+			id: plain.id,
+			optionValues: { Couleur: "Noir" },
+			stockOnHand: 7,
+		});
+		// Nothing was archived and nothing was created beside it.
+		expect(payload.store["product-variants"]).toHaveLength(1);
+		expect(
+			payload.store["stock-movements"].filter((m) => m.type === "receipt"),
+		).toHaveLength(1);
+	});
+
 	it("refuses a variant that belongs to another product", async () => {
 		const payload = seed();
 		const first = await createProduct(payload, U1, "s-1", input());

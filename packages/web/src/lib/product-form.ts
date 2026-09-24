@@ -133,11 +133,35 @@ export function resolveProductCategory(
 /**
  * A row is identified by its values in option order, never by the option
  * names: renaming "Couleur" must not turn "Noir · 256 Go" into a different
- * variant. `optionValuesKey` keys by name and value, which is what the catalogue
- * compares; here only the position matters.
+ * variant. Keying by name and value — the shape a `name=value` sort produces —
+ * is exactly the trap that made a rename archive every live variant.
  */
 function rowKey(values: Record<string, string>): string {
-	return JSON.stringify(Object.values(values));
+	return JSON.stringify(valueTuple(values));
+}
+
+/** The values a row or a combination carries, in option order. */
+function valueTuple(values: Record<string, string>): string[] {
+	return Object.values(values);
+}
+
+function sameTuple(a: string[], b: string[]): boolean {
+	return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+/**
+ * Whether `short` appears inside `long` in order, gaps allowed. Adding or
+ * removing one option leaves the other values in place and in order, so this is
+ * what "still the same variant, with one more (or one fewer) option" means —
+ * including the empty tuple of a product that has no options at all.
+ */
+function isSubsequence(short: string[], long: string[]): boolean {
+	if (short.length > long.length) return false;
+	let next = 0;
+	for (const value of long) {
+		if (next < short.length && short[next] === value) next++;
+	}
+	return next === short.length;
 }
 
 export function emptyVariant(
@@ -180,16 +204,47 @@ export function emptyState(): ProductFormState {
  * updates rather than recreates it), adds rows for new combinations copying
  * the first row's price and cost, and drops the rest — the server archives a
  * variant that is no longer sent.
+ *
+ * Matching runs in two passes, and each row is claimed at most once:
+ *
+ *  1. the identical tuple of values, which covers an option rename and a value
+ *     added or removed beside the ones already there;
+ *  2. failing that, one tuple contained in the other, which covers an option
+ *     added or removed anywhere in the set — the simple product whose single
+ *     `{}` row becomes the first combination, the mirror collapse back to it,
+ *     and an option inserted or dropped in the middle.
+ *
+ * Without the second pass, adding the first option to a simple product left
+ * the live variant unmatched: the save created a duplicate and abandoned the
+ * real one, stock and all.
  */
 export function reconcileVariants(
 	options: OptionRow[],
 	rows: VariantRow[],
 ): VariantRow[] {
 	const combos = generateCombinations(options);
-	const byKey = new Map(rows.map((row) => [rowKey(row.optionValues), row]));
+	const tuples = combos.map(valueTuple);
+	const unclaimed = [...rows];
 	const template = rows[0];
-	return combos.map((combo) => {
-		const existing = byKey.get(rowKey(combo));
+
+	const claim = (
+		matches: (row: string[]) => boolean,
+	): VariantRow | undefined => {
+		const index = unclaimed.findIndex((row) =>
+			matches(valueTuple(row.optionValues)),
+		);
+		return index === -1 ? undefined : unclaimed.splice(index, 1)[0];
+	};
+
+	const claimed = tuples.map((tuple) => claim((row) => sameTuple(row, tuple)));
+	tuples.forEach((tuple, index) => {
+		claimed[index] ??= claim(
+			(row) => isSubsequence(row, tuple) || isSubsequence(tuple, row),
+		);
+	});
+
+	return combos.map((combo, index) => {
+		const existing = claimed[index];
 		// The row keeps its id, its price and its stock, and takes the option
 		// names the combination now carries — the server matches a variant on
 		// its id, but validates the values against the current options.

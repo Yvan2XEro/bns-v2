@@ -25,13 +25,6 @@ export function generateCombinations(
 	return combos;
 }
 
-/** Stable identity of a combination, independent of key order. */
-export function optionValuesKey(values: Record<string, string>): string {
-	return JSON.stringify(
-		Object.entries(values).sort(([a], [b]) => a.localeCompare(b)),
-	);
-}
-
 export function variantLabel(
 	values: Record<string, string> | null | undefined,
 	fallback: string,
