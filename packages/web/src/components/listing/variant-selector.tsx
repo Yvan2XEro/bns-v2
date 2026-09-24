@@ -6,12 +6,13 @@ import { useMemo, useState } from "react";
 import { productVariantsQuery } from "~/hooks/use-variants";
 import { formatXaf } from "~/lib/money";
 import { cn } from "~/lib/utils";
-import { availableOf } from "~/lib/variants";
-import type { VariantDoc } from "~/types";
-
-function inStock(variant: VariantDoc): boolean {
-	return !variant.trackInventory || availableOf(variant) > 0;
-}
+import {
+	availableOf,
+	isOptionValueUnavailable,
+	isVariantInStock,
+	matchVariant,
+	resolveSelection,
+} from "~/lib/variants";
 
 /**
  * Buyer-facing. The API only ever returns live variants of a published
@@ -19,8 +20,8 @@ function inStock(variant: VariantDoc): boolean {
  * at the field level — but `stockOnHand`/`stockReserved` are not yet, so an
  * anonymous visitor's network response currently carries the raw counts (an
  * API-side fix is tracked separately). This component never reads those
- * fields itself: it only goes through `inStock`/`availableOf`, so it keeps
- * working once a buyer response stops carrying the raw numbers.
+ * fields itself: it only goes through `isVariantInStock`/`availableOf`, so it
+ * keeps working once a buyer response stops carrying the raw numbers.
  */
 export function VariantSelector({
 	productId,
@@ -36,16 +37,7 @@ export function VariantSelector({
 	const { data } = useQuery(productVariantsQuery(productId));
 	const variants = useMemo(() => data?.docs ?? [], [data]);
 
-	const match = useMemo(() => {
-		return (values: Record<string, string>) =>
-			variants.find((variant) =>
-				Object.entries(variant.optionValues ?? {}).every(
-					([name, value]) => values[name] === value,
-				),
-			) ?? null;
-	}, [variants]);
-
-	// The seller picks a value per click; the starting point is derived from
+	// The buyer picks a value per click; the starting point is derived from
 	// the loaded variants rather than synced through an effect. If a refetch
 	// makes the manual pick unavailable (or it no longer matches any variant),
 	// the derivation falls back to the default rather than keeping a stale,
@@ -55,11 +47,13 @@ export function VariantSelector({
 		string
 	> | null>(null);
 	const defaultVariant = useMemo(
-		() => variants.find(inStock) ?? variants[0] ?? null,
+		() => variants.find(isVariantInStock) ?? variants[0] ?? null,
 		[variants],
 	);
-	const manualMatch = manualSelection ? match(manualSelection) : null;
-	const manualValid = manualMatch !== null && inStock(manualMatch);
+	const manualMatch = manualSelection
+		? matchVariant(variants, manualSelection)
+		: null;
+	const manualValid = manualMatch !== null && isVariantInStock(manualMatch);
 	const selected =
 		manualValid && manualSelection
 			? manualSelection
@@ -81,7 +75,7 @@ export function VariantSelector({
 		return names.map((name) => ({ name, values: values.get(name) ?? [] }));
 	}, [variants]);
 
-	const current = match(selected);
+	const current = matchVariant(variants, selected);
 
 	if (variants.length === 0) return null;
 
@@ -97,27 +91,36 @@ export function VariantSelector({
 					</p>
 					<div className="mt-2 flex flex-wrap gap-2">
 						{option.values.map((value) => {
-							const candidate = match({ ...selected, [option.name]: value });
-							const soldOut = !candidate || !inStock(candidate);
+							// Unavailable everywhere → genuinely unselectable. Available in
+							// some other combination → selectable; picking it resolves the
+							// rest of the selection to a combination that is actually in
+							// stock, rather than a dead end the buyer cannot buy from.
+							const unavailable = isOptionValueUnavailable(
+								variants,
+								option.name,
+								value,
+							);
 							const active = selected[option.name] === value;
 							return (
 								<button
 									key={value}
 									type="button"
-									disabled={soldOut}
+									disabled={unavailable}
 									aria-pressed={active}
 									aria-label={
-										soldOut ? `${value} — ${t("variantSoldOut")}` : value
+										unavailable ? `${value} — ${t("variantSoldOut")}` : value
 									}
 									onClick={() =>
-										setManualSelection({ ...selected, [option.name]: value })
+										setManualSelection(
+											resolveSelection(variants, selected, option.name, value),
+										)
 									}
 									className={cn(
 										"rounded-lg border px-3 py-1.5 font-medium text-sm",
 										active
 											? "border-[#1E40AF] bg-[#EFF6FF] text-[#1E40AF]"
 											: "border-[#E2E8F0] text-[#334155]",
-										soldOut &&
+										unavailable &&
 											"cursor-not-allowed text-[#94A3B8] line-through opacity-60",
 									)}
 								>
@@ -131,7 +134,9 @@ export function VariantSelector({
 			{current && (
 				<div className="flex items-center justify-between rounded-lg bg-[#F8FAFC] px-3 py-2 text-sm">
 					<span
-						className={inStock(current) ? "text-[#166534]" : "text-[#991b1b]"}
+						className={
+							isVariantInStock(current) ? "text-[#166534]" : "text-[#991b1b]"
+						}
 					>
 						{!current.trackInventory
 							? t("variantInStock")

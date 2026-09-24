@@ -56,3 +56,85 @@ export function availableOf(
 ): number {
 	return (variant.stockOnHand ?? 0) - (variant.stockReserved ?? 0);
 }
+
+type SelectableVariant = Pick<
+	VariantDoc,
+	"optionValues" | "trackInventory" | "stockOnHand" | "stockReserved"
+>;
+
+export function isVariantInStock(variant: SelectableVariant): boolean {
+	return !variant.trackInventory || availableOf(variant) > 0;
+}
+
+/** The variant whose option values match exactly, or null. */
+export function matchVariant<T extends SelectableVariant>(
+	variants: T[],
+	values: Record<string, string>,
+): T | null {
+	return (
+		variants.find((variant) =>
+			Object.entries(variant.optionValues ?? {}).every(
+				([name, value]) => values[name] === value,
+			),
+		) ?? null
+	);
+}
+
+/**
+ * True when no in-stock variant carries this value for this option, no
+ * matter what is currently selected for the other options. Drives whether a
+ * buyer-facing chip is genuinely unselectable, as opposed to merely pointing
+ * at a combination that happens to be out of stock right now.
+ */
+export function isOptionValueUnavailable<T extends SelectableVariant>(
+	variants: T[],
+	optionName: string,
+	value: string,
+): boolean {
+	return !variants.some(
+		(variant) =>
+			variant.optionValues?.[optionName] === value && isVariantInStock(variant),
+	);
+}
+
+/**
+ * The selection to move to once the buyer picks `value` for `optionName`.
+ * The exact combination is kept when it exists and is in stock (no change of
+ * plan needed) or when it does not exist in stock anywhere at all (nothing
+ * better to offer — the summary reports it as unavailable). Otherwise — the
+ * exact combination exists but is sold out, or never existed — it resolves to
+ * an in-stock variant that does carry `value`, picked to keep as many of the
+ * other currently selected values as possible. This is what lets a buyer on
+ * Blue/M reach Red/L by clicking Red, instead of landing on a sold-out Red/M.
+ */
+export function resolveSelection<T extends SelectableVariant>(
+	variants: T[],
+	current: Record<string, string>,
+	optionName: string,
+	value: string,
+): Record<string, string> {
+	const desired = { ...current, [optionName]: value };
+	const exact = matchVariant(variants, desired);
+	if (exact && isVariantInStock(exact)) return desired;
+
+	const candidates = variants.filter(
+		(variant) =>
+			variant.optionValues?.[optionName] === value && isVariantInStock(variant),
+	);
+	if (candidates.length === 0) return desired;
+
+	let best = candidates[0];
+	let bestScore = -1;
+	for (const candidate of candidates) {
+		let score = 0;
+		for (const [name, val] of Object.entries(current)) {
+			if (name === optionName) continue;
+			if (candidate.optionValues?.[name] === val) score++;
+		}
+		if (score > bestScore) {
+			bestScore = score;
+			best = candidate;
+		}
+	}
+	return best.optionValues ?? desired;
+}
