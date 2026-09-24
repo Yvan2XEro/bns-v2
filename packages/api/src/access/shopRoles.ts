@@ -1,5 +1,6 @@
 import type {
 	Access,
+	FieldAccess,
 	Payload,
 	PayloadRequest,
 	RelationshipField,
@@ -55,6 +56,29 @@ export async function resolveShopRole(
 
 export function canManageShop(role: ShopRole | null | undefined): boolean {
 	return role === "owner" || role === "manager";
+}
+
+/**
+ * Field-level access for a shop-owned document: resolves the caller's role in
+ * the field's shop and lets `allow` decide from it. `cost` (manage-only) and
+ * the stock counters (any active member) are both just this with a different
+ * predicate, so neither field re-implements "resolve role, then decide".
+ */
+export function shopRoleFieldAccess(
+	allow: (role: ShopRole | null) => boolean,
+	fieldName = "shop",
+): FieldAccess {
+	return async ({ req, doc }) => {
+		if (!req.user) return false;
+		if (isModerator(req.user)) return true;
+		const role = await resolveShopRole(
+			req.payload,
+			String(req.user.id),
+			relationId((doc as Record<string, unknown> | undefined)?.[fieldName]),
+			req.context,
+		);
+		return allow(role);
+	};
 }
 
 /** Shops where the caller holds an active membership; used by access `Where`s. */

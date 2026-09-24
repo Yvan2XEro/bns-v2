@@ -1,6 +1,6 @@
 import type { Payload } from "payload";
 import { canManageShop } from "../access/shopRoles";
-import { NOT_ARCHIVED } from "../collections/ProductVariants";
+import { NOT_ARCHIVED, PUBLIC_VARIANTS } from "../collections/ProductVariants";
 import { ERROR_CODES } from "../lib/errors";
 import { type MediaRef, toMediaRef } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
@@ -332,4 +332,53 @@ export async function getProductDetail(
 		}),
 		role,
 	};
+}
+
+/** What a buyer's variant selector shows: never `cost`, never a raw stock count. */
+export interface PublicVariantView {
+	id: string;
+	optionValues: Record<string, string> | null;
+	price: number;
+	trackInventory: boolean;
+	available: boolean;
+}
+
+function toPublicVariantView(variant: ProductVariant): PublicVariantView {
+	const values = variant.optionValues;
+	return {
+		id: String(variant.id),
+		optionValues:
+			values && typeof values === "object" && !Array.isArray(values)
+				? (values as Record<string, string>)
+				: null,
+		price: variant.price,
+		trackInventory: variant.trackInventory === true,
+		available: !isOutOfStock(variant),
+	};
+}
+
+/**
+ * The buyer-facing twin of the collection's own `GET /api/product-variants`:
+ * that route's `shopScopedRead` deliberately unions in the caller's own shop
+ * rows (a staff member picking a variant to receive stock needs to see a
+ * draft product's variants too), so a signed-in owner browsing their own
+ * product's public listing page would otherwise see draft and archived
+ * variants a stranger never would. This always applies `PUBLIC_VARIANTS`,
+ * with no caller identity to widen it, so every viewer of a listing page —
+ * owner included — sees the same catalogue.
+ */
+export async function listPublicVariants(
+	payload: Payload,
+	productId: string,
+): Promise<{ docs: PublicVariantView[] }> {
+	const result = await payload.find({
+		collection: "product-variants",
+		where: { and: [{ product: { equals: productId } }, PUBLIC_VARIANTS] },
+		sort: "createdAt",
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	return { docs: result.docs.map(toPublicVariantView) };
 }

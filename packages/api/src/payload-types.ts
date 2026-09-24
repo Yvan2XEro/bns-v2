@@ -805,6 +805,10 @@ export interface ProductVariant {
   stockReserved?: number | null;
   lowStockThreshold?: number | null;
   /**
+   * Buyer-safe purchasability signal: true when the variant can be bought right now.
+   */
+  available?: boolean | null;
+  /**
    * Set when the variant is removed from its product; movements are kept.
    */
   archivedAt?: string | null;
@@ -1584,6 +1588,7 @@ export interface ProductVariantsSelect<T extends boolean = true> {
   stockOnHand?: T;
   stockReserved?: T;
   lowStockThreshold?: T;
+  available?: T;
   archivedAt?: T;
   updatedAt?: T;
   createdAt?: T;

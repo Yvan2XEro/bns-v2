@@ -227,6 +227,94 @@ describe("cost price stays a shop secret", () => {
 	});
 });
 
+// Same shape as the `cost` suite above, but the exact stock counters are shop
+// data every active member needs (staff records receipts, not just managers),
+// while an outsider — a buyer, an anonymous visitor, a signed-in stranger —
+// gets `available` (below) instead of the number.
+describe("stock counters stay shop data", () => {
+	const fieldAccess = (name: "stockOnHand" | "stockReserved") => {
+		const field = ProductVariants.fields.find(
+			(f) => "name" in f && f.name === name,
+		) as { access?: { read?: FieldAccessFn } };
+		return field.access?.read as FieldAccessFn;
+	};
+	const doc = { id: "v-1", shop: "s-1", product: "p-1" };
+
+	for (const name of ["stockOnHand", "stockReserved"] as const) {
+		describe(name, () => {
+			it("is hidden from a visitor", async () => {
+				expect(await fieldAccess(name)({ req: req(null), doc })).toBe(false);
+			});
+
+			it("is hidden from a signed-in stranger", async () => {
+				expect(await fieldAccess(name)({ req: req(stranger), doc })).toBe(
+					false,
+				);
+			});
+
+			it("is hidden from a member of another shop", async () => {
+				expect(await fieldAccess(name)({ req: req({ id: "u-2" }), doc })).toBe(
+					false,
+				);
+			});
+
+			it("is readable by a staff member of the owning shop", async () => {
+				expect(await fieldAccess(name)({ req: req(member), doc })).toBe(true);
+			});
+
+			it("is readable by a manager of the owning shop", async () => {
+				expect(await fieldAccess(name)({ req: req(manager), doc })).toBe(true);
+			});
+
+			it("is readable by an owner of the owning shop", async () => {
+				expect(await fieldAccess(name)({ req: req(owner), doc })).toBe(true);
+			});
+
+			it("is readable by platform staff", async () => {
+				expect(await fieldAccess(name)({ req: req(moderator), doc })).toBe(
+					true,
+				);
+			});
+
+			it("is hidden when the variant carries no shop", async () => {
+				expect(
+					await fieldAccess(name)({ req: req(member), doc: { id: "v-1" } }),
+				).toBe(false);
+			});
+		});
+	}
+
+	it("cannot be set directly: the collection refuses every write", () => {
+		const access = ProductVariants.access as Record<string, AccessFn>;
+		expect(access.update({ req: req(owner) })).toBe(false);
+	});
+});
+
+describe("the public availability signal", () => {
+	// `beforeRead` runs on the raw doc, before `stockOnHand`/`stockReserved`
+	// field access strips anything — the same slot `Users.phoneVerified` is
+	// computed in, so a buyer response can say "in stock" without carrying
+	// the counters it is derived from.
+	const beforeRead = ProductVariants.hooks?.beforeRead?.[0] as (args: {
+		doc: Doc;
+	}) => Doc;
+
+	it("is true for a tracked variant with stock available", () => {
+		const doc = { trackInventory: true, stockOnHand: 3, stockReserved: 1 };
+		expect(beforeRead({ doc }).available).toBe(true);
+	});
+
+	it("is false once reservations consume the last unit", () => {
+		const doc = { trackInventory: true, stockOnHand: 1, stockReserved: 1 };
+		expect(beforeRead({ doc }).available).toBe(false);
+	});
+
+	it("is true for a variant that does not track inventory, regardless of counters", () => {
+		const doc = { trackInventory: false, stockOnHand: 0, stockReserved: 0 };
+		expect(beforeRead({ doc }).available).toBe(true);
+	});
+});
+
 describe("stock movements access", () => {
 	it("is closed to visitors", async () => {
 		expect(await read(StockMovements)({ req: req(null) })).toBe(false);

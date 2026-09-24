@@ -1,12 +1,13 @@
 import { APIError, type CollectionConfig, type Where } from "payload";
-import { isAdmin, isModerator } from "../access/roles";
+import { isAdmin } from "../access/roles";
 import {
 	canManageShop,
-	resolveShopRole,
 	shopField,
+	shopRoleFieldAccess,
 	shopScopedRead,
 } from "../access/shopRoles";
 import { relationId } from "../lib/relationId";
+import { isOutOfStock } from "../lib/variants";
 
 /**
  * `exists: false` on a date field does not match a stored null in Mongo, and a
@@ -44,6 +45,17 @@ export const ProductVariants: CollectionConfig = {
 		admin: ({ req: { user } }) => isAdmin(user),
 	},
 	hooks: {
+		// Runs before field access, on every doc a caller's document-level read
+		// already let through (anonymous or not): `available` is derived from
+		// the raw counters here so a buyer response can carry a purchasability
+		// signal without carrying `stockOnHand`/`stockReserved` themselves, the
+		// same way `Users.phoneVerified` is derived from a field nobody reads.
+		beforeRead: [
+			({ doc }) => {
+				doc.available = !isOutOfStock(doc);
+				return doc;
+			},
+		],
 		beforeChange: [
 			async ({ data, originalDoc, req }) => {
 				const productId = relationId(data.product);
@@ -90,21 +102,9 @@ export const ProductVariants: CollectionConfig = {
 			name: "cost",
 			type: "number",
 			min: 0,
-			// A shop secret: nobody outside the shop's team reads it, through this
-			// collection or through a populated relation.
-			access: {
-				read: async ({ req, doc }) => {
-					if (!req.user) return false;
-					if (isModerator(req.user)) return true;
-					const role = await resolveShopRole(
-						req.payload,
-						String(req.user.id),
-						relationId(doc?.shop),
-						req.context,
-					);
-					return canManageShop(role);
-				},
-			},
+			// A shop secret: nobody outside the shop's management reads it,
+			// through this collection or through a populated relation.
+			access: { read: shopRoleFieldAccess(canManageShop) },
 		},
 		{ name: "trackInventory", type: "checkbox", defaultValue: true },
 		{
@@ -112,14 +112,31 @@ export const ProductVariants: CollectionConfig = {
 			type: "number",
 			defaultValue: 0,
 			admin: { readOnly: true },
+			// Exact counts are shop data: an outsider gets `available` below,
+			// never the raw number a competitor could read off every listing.
+			access: { read: shopRoleFieldAccess((role) => role !== null) },
 		},
 		{
 			name: "stockReserved",
 			type: "number",
 			defaultValue: 0,
 			admin: { readOnly: true },
+			access: { read: shopRoleFieldAccess((role) => role !== null) },
 		},
 		{ name: "lowStockThreshold", type: "number", min: 0 },
+		{
+			name: "available",
+			type: "checkbox",
+			virtual: true,
+			// Set in `beforeRead`, before field access runs, from the raw
+			// counters — so this survives for every reader who can see the
+			// document at all, including the ones `stockOnHand` is hidden from.
+			admin: {
+				readOnly: true,
+				description:
+					"Buyer-safe purchasability signal: true when the variant can be bought right now.",
+			},
+		},
 		{
 			name: "archivedAt",
 			type: "date",
