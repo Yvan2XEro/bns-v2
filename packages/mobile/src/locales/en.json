@@ -171,7 +171,15 @@
 		"activeFilters": "Active filters",
 		"recentSearches": "Recent Searches",
 		"clearHistory": "Clear history",
-		"suggestions": "Suggestions"
+		"suggestions": "Suggestions",
+		"segment_listings": "Listings",
+		"segment_shops": "Shops",
+		"shopsCount": "{{count}} shops",
+		"shopsCountIn": "{{count}} shops in {{city}}",
+		"noShopsTitle": "No shop found",
+		"noShopsQuery": "No shop sells “{{q}}” in {{city}}. Widen the city.",
+		"noShopsHint": "Try another word or another city.",
+		"everywhere": "any city"
 	},
 	"listing": {
 		"price": "Price",
@@ -1319,6 +1327,8 @@
 		"savedMessage": "Your page is updated.",
 		"saveError": "The change was not saved",
 		"moveIntro": "Your personal listings become products of {{shop}}, with a single variant.",
+		"moveConfirmTitle": "Move these listings?",
+		"moveConfirmMessage": "{{count}} listings will become products of {{shop}}. You can remove them from the shop later.",
 		"selectAll": "Select all",
 		"selectedCount": "{{count}} of {{total}}",
 		"moveKeep": "Favourites, views and conversations kept",
@@ -1330,7 +1340,19 @@
 		"moveEmptyBody": "All your listings are already in your shop.",
 		"movedTitle": "Listings moved",
 		"movedMessage": "{{count}} moved · {{skipped}} skipped",
-		"moveError": "The listings were not moved"
+		"moveError": "The listings were not moved",
+		"viewShopLabel": "View {{name}}'s shop",
+		"managedBy": "Run by {{name}}",
+		"publishIn": "Publish in {{shop}}",
+		"publishInHint": "The listing appears on your shop page",
+		"publishInDetachWarning": "Turning this off removes the listing from your shop page.",
+		"variantInStock": "In stock",
+		"variantAvailable": "Available",
+		"variantSoldOut": "Sold out",
+		"variantCombinationUnavailable": "This combination is not offered",
+		"newShop": "New",
+		"view": "View",
+		"productsCount": "{{count}} products"
 	},
 	"seller": {
 		"space": "Seller space",

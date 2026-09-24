@@ -32,7 +32,7 @@ export default function MoveListingsScreen() {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const { user } = useAuth();
-	const { showError, showSuccess } = useAlert();
+	const { showError, showSuccess, showConfirm } = useAlert();
 	const { data: mine } = useMyShop();
 	const shop = mine?.shop;
 	const attach = useAttachListings(shop?.id);
@@ -50,23 +50,35 @@ export default function MoveListingsScreen() {
 			return next;
 		});
 
+	// Attaching moves several listings into the shop in one write — a
+	// destructive-enough, multi-document action that a stray tap must not
+	// trigger, though (unlike closing) it is reversible, so a plain confirm
+	// stating the count is proportionate; no retype needed.
 	const submit = () =>
-		attach.mutate(
-			{ listingIds: [...selected] },
-			{
-				onSuccess: (result) => {
-					showSuccess(
-						t("shop.movedTitle"),
-						t("shop.movedMessage", {
-							count: result.attached.length,
-							skipped: result.skipped.length,
-						}),
-					);
-					router.back();
-				},
-				onError: (error) =>
-					showError(t("shop.moveError"), resolveErrorMessage(error, t)),
-			},
+		showConfirm(
+			t("shop.moveConfirmTitle"),
+			t("shop.moveConfirmMessage", {
+				count: selected.size,
+				shop: shop?.name ?? "",
+			}),
+			() =>
+				attach.mutate(
+					{ listingIds: [...selected] },
+					{
+						onSuccess: (result) => {
+							showSuccess(
+								t("shop.movedTitle"),
+								t("shop.movedMessage", {
+									count: result.attached.length,
+									skipped: result.skipped.length,
+								}),
+							);
+							router.back();
+						},
+						onError: (error) =>
+							showError(t("shop.moveError"), resolveErrorMessage(error, t)),
+					},
+				),
 		);
 
 	return (

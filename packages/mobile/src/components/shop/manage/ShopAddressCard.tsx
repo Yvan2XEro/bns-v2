@@ -93,6 +93,7 @@ function OwnerHandleForm({
 				onChange={(v) => form.setValue("handle", v, { shouldValidate: true })}
 				onStatus={onStatus}
 				current={shop.handle}
+				disabled={readOnly || isPending}
 			/>
 			<Text style={[f.hint, { color: c.muted }]}>
 				{t("shop.handleChangeHint")}

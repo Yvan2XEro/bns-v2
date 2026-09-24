@@ -171,7 +171,15 @@
 		"activeFilters": "Filtres actifs",
 		"recentSearches": "Recherches récentes",
 		"clearHistory": "Effacer l'historique",
-		"suggestions": "Suggestions"
+		"suggestions": "Suggestions",
+		"segment_listings": "Annonces",
+		"segment_shops": "Boutiques",
+		"shopsCount": "{{count}} boutiques",
+		"shopsCountIn": "{{count}} boutiques à {{city}}",
+		"noShopsTitle": "Aucune boutique trouvée",
+		"noShopsQuery": "Aucune boutique ne vend « {{q}} » à {{city}}. Élargissez la ville.",
+		"noShopsHint": "Essayez un autre mot ou une autre ville.",
+		"everywhere": "toutes les villes"
 	},
 	"listing": {
 		"price": "Prix",
@@ -1392,6 +1400,8 @@
 		"savedMessage": "Votre page est à jour.",
 		"saveError": "La modification n'a pas été enregistrée",
 		"moveIntro": "Vos annonces personnelles deviennent des produits de {{shop}}, avec une seule variante.",
+		"moveConfirmTitle": "Transférer ces annonces ?",
+		"moveConfirmMessage": "{{count}} annonces deviendront des produits de {{shop}}. Vous pourrez les retirer de la boutique plus tard.",
 		"selectAll": "Tout sélectionner",
 		"selectedCount": "{{count}} sur {{total}}",
 		"moveKeep": "Favoris, vues et conversations conservés",
@@ -1403,7 +1413,19 @@
 		"moveEmptyBody": "Toutes vos annonces sont déjà dans votre boutique.",
 		"movedTitle": "Annonces transférées",
 		"movedMessage": "{{count}} transférées · {{skipped}} ignorées",
-		"moveError": "Les annonces n'ont pas été transférées"
+		"moveError": "Les annonces n'ont pas été transférées",
+		"viewShopLabel": "Voir la boutique de {{name}}",
+		"managedBy": "Tenue par {{name}}",
+		"publishIn": "Publier dans {{shop}}",
+		"publishInHint": "L'annonce apparaît sur la page de votre boutique",
+		"publishInDetachWarning": "Désactiver ceci retire l'annonce de la page de votre boutique.",
+		"variantInStock": "En stock",
+		"variantAvailable": "Disponible",
+		"variantSoldOut": "Épuisé",
+		"variantCombinationUnavailable": "Cette combinaison n'est pas proposée",
+		"newShop": "Nouvelle",
+		"view": "Voir",
+		"productsCount": "{{count}} produits"
 	},
 	"seller": {
 		"space": "Espace vendeur",

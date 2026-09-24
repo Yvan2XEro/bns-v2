@@ -26,12 +26,15 @@ export function HandleField({
 	onChange,
 	onStatus,
 	current,
+	disabled,
 }: {
 	value: string;
 	onChange: (handle: string) => void;
 	onStatus: (status: HandleStatus) => void;
 	/** The shop's own handle, treated as "available" when editing. */
 	current?: string;
+	/** A read-only shop (suspended) or a caller the API would refuse anyway. */
+	disabled?: boolean;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -85,11 +88,12 @@ export function HandleField({
 				<TextInput
 					value={value}
 					onChangeText={(v) => onChange(normalizeHandle(v))}
+					editable={!disabled}
 					autoCapitalize="none"
 					autoCorrect={false}
 					maxLength={30}
 					accessibilityLabel={t("shop.handleLabel")}
-					style={[styles.input, { color: c.text }]}
+					style={[styles.input, { color: c.text, opacity: disabled ? 0.5 : 1 }]}
 				/>
 				{status === "checking" ? (
 					<ActivityIndicator size="small" color={c.muted} />
