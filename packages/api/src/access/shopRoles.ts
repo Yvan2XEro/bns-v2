@@ -121,30 +121,10 @@ export async function memberShopIds(
 }
 
 /**
- * Runs a collection's own access rule, then narrows the result to the caller's
- * shops — so shop-owned collections never repeat the member-scoping body.
- * A `false` short-circuits: narrowing cannot widen a refusal.
- */
-export function withShopAccess(
-	base: Access,
-	fieldName = "shop",
-	options: { manage?: boolean } = {},
-): Access {
-	return async (args) => {
-		const result = await base(args);
-		if (result === false) return false;
-		const scope = {
-			[fieldName]: { in: await memberShopIds(args.req, options) },
-		} as Where;
-		return result === true ? scope : ({ and: [result, scope] } as Where);
-	};
-}
-
-/**
  * Read access for a shop-owned collection: staff read everything, a member
- * reads every row of their shops on top of whatever `base` exposes publicly.
- * The union twin of `withShopAccess`, which intersects — both exist so no
- * collection repeats the member-scoping `where`.
+ * reads every row of their shops on top of whatever `base` exposes publicly —
+ * it unions the member scope onto `base` rather than narrowing it, which is
+ * what every shop-owned collection actually needs.
  */
 export function shopScopedRead(base: Access, fieldName = "shop"): Access {
 	return async (args) => {
@@ -161,7 +141,8 @@ export function shopScopedRead(base: Access, fieldName = "shop"): Access {
 
 /**
  * The one `shop` relationship definition. `filterOptions` scopes the admin
- * picker to the caller's shops; access control stays in `withShopAccess`.
+ * picker to the caller's shops; access control stays in each collection's own
+ * `access.read` (typically `shopScopedRead`) and `shopRoleFieldAccess`.
  *
  * `picker: false` drops `filterOptions`: Payload validates it on every write,
  * so a collection a service writes on behalf of someone who is not a member

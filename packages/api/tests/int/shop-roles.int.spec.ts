@@ -5,7 +5,6 @@ import {
 	memberShopIds,
 	resolveShopRole,
 	shopField,
-	withShopAccess,
 } from "../../src/access/shopRoles";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -93,42 +92,6 @@ describe("memberShopIds", () => {
 	it("is empty for a stranger with no membership at all", async () => {
 		const req = { payload: seed(), user: { id: "u-9" }, context: {} } as never;
 		expect(await memberShopIds(req)).toEqual([]);
-	});
-});
-
-describe("withShopAccess", () => {
-	const req = () =>
-		({ payload: seed(), user: { id: "u-1" }, context: {} }) as never;
-
-	it("keeps a refusal a refusal", async () => {
-		const access = withShopAccess(() => false);
-		expect(await access({ req: req() } as never)).toBe(false);
-	});
-
-	it("narrows a granted rule to the caller's shops", async () => {
-		const access = withShopAccess(() => true);
-		expect(await access({ req: req() } as never)).toEqual({
-			shop: { in: ["s-1"] },
-		});
-	});
-
-	it("ands the narrowing onto the rule's own where", async () => {
-		const access = withShopAccess(() => ({ status: { equals: "draft" } }));
-		expect(await access({ req: req() } as never)).toEqual({
-			and: [{ status: { equals: "draft" } }, { shop: { in: ["s-1"] } }],
-		});
-	});
-
-	it("leaves a stranger with no shop to match", async () => {
-		const access = withShopAccess(() => true);
-		const stranger = {
-			payload: seed(),
-			user: { id: "u-9" },
-			context: {},
-		} as never;
-		expect(await access({ req: stranger } as never)).toEqual({
-			shop: { in: [] },
-		});
 	});
 });
 
