@@ -10,6 +10,7 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { ReviewStars } from "@/src/components/ReviewStars";
+import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import {
@@ -17,6 +18,7 @@ import {
 	useModerationSummary,
 } from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { useMyShop, useShopsEnabled } from "@/src/hooks/useShops";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
@@ -110,6 +112,12 @@ export default function AccountScreen() {
 	const isModerator = useIsModerator();
 	const { data: moderationSummary } = useModerationSummary();
 	const pendingCount = moderationSummary?.total ?? 0;
+	// The flag gates opening a NEW shop only; an owner keeps their shop entry
+	// regardless of it, which is why `ownShop` — not `shopsEnabled` — decides
+	// whether the row below shows a shop or the "open a shop" invite.
+	const shopsEnabled = useShopsEnabled();
+	const { data: myShop } = useMyShop();
+	const ownShop = myShop?.shop ?? null;
 	const { showConfirm } = useAlert();
 	const { t } = useTranslation();
 	const pathname = usePathname();
@@ -304,6 +312,54 @@ export default function AccountScreen() {
 									isDark={isDark}
 									borderColor={borderColor}
 								/>
+							</View>
+						</View>
+					)}
+
+					{(shopsEnabled || ownShop) && (
+						<View style={styles.section}>
+							<Text style={[styles.sectionLabel, { color: mutedColor }]}>
+								{t("account.sectionShop")}
+							</Text>
+							<View
+								style={[
+									styles.sectionCard,
+									{
+										backgroundColor: cardBg,
+										borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+									},
+								]}
+							>
+								{ownShop ? (
+									<MenuItem
+										icon="storefront-outline"
+										label={ownShop.name}
+										sublabel={
+											ownShop.status === "suspended"
+												? t("account.shopSuspended")
+												: t("account.myShop")
+										}
+										iconBg={isDark ? "#172554" : "#dbeafe"}
+										iconColor={primaryColor}
+										rightElement={
+											<LevelBadge level={ownShop.level} size="sm" />
+										}
+										onPress={() => router.push("/seller" as never)}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+								) : (
+									<MenuItem
+										icon="storefront-outline"
+										label={t("account.openShop")}
+										sublabel={t("account.openShopSublabel")}
+										iconBg={isDark ? "#451a03" : "#fef3c7"}
+										iconColor="#d97706"
+										onPress={() => router.push("/shop/create" as never)}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+								)}
 							</View>
 						</View>
 					)}
