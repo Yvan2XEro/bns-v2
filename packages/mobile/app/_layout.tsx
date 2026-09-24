@@ -439,6 +439,14 @@ function RootLayoutNav() {
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen
+					name="seller/stock-adjust"
+					options={{ presentation: "modal", headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/product/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
 					name="auth/login"
 					options={{ presentation: "modal", headerShown: false }}
 				/>
