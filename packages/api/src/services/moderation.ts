@@ -348,7 +348,7 @@ export async function suspendUser(
 					req,
 					overrideAccess: true,
 					context: MODERATION_CONTEXT,
-					data: { status: "draft" },
+					data: { status: "draft", moderationHold: true },
 				});
 			}
 
@@ -597,7 +597,7 @@ async function restoreSuspendedListings(
 				req,
 				overrideAccess: true,
 				context: MODERATION_CONTEXT,
-				data: { status: "published" },
+				data: { status: "published", moderationHold: false },
 			});
 			restored.push(id);
 		} catch {
@@ -779,7 +779,7 @@ async function restoreShopListings(
 			req,
 			overrideAccess: true,
 			context: MODERATION_CONTEXT,
-			data: { status: "published" },
+			data: { status: "published", moderationHold: false },
 		});
 		restored.push(id);
 	}
@@ -866,7 +866,7 @@ export async function suspendShop(
 					req,
 					overrideAccess: true,
 					context: MODERATION_CONTEXT,
-					data: { status: "draft" },
+					data: { status: "draft", moderationHold: true },
 				});
 			}
 

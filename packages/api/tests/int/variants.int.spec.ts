@@ -28,6 +28,24 @@ describe("generateCombinations", () => {
 			{ Couleur: "Violet", Stockage: "256 Go" },
 		]);
 	});
+
+	it("skips an option with no values instead of collapsing the whole set", () => {
+		expect(
+			generateCombinations([
+				{ name: "Couleur", values: ["Noir", "Violet"] },
+				{ name: "Stockage", values: [] },
+			]),
+		).toEqual([{ Couleur: "Noir" }, { Couleur: "Violet" }]);
+	});
+
+	it("skips an option with a blank name", () => {
+		expect(
+			generateCombinations([
+				{ name: "  ", values: ["x"] },
+				{ name: "Couleur", values: ["Noir"] },
+			]),
+		).toEqual([{ Couleur: "Noir" }]);
+	});
 });
 
 describe("labels and keys", () => {

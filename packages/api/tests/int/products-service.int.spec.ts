@@ -135,7 +135,7 @@ describe("createProduct", () => {
 			productSummary: {
 				priceMin: 435000,
 				priceMax: 450000,
-				available: 5,
+				available: true,
 				variantCount: 2,
 				trackInventory: true,
 			},
@@ -358,7 +358,7 @@ describe("updateProduct", () => {
 			type: "loss",
 			quantity: -3,
 		});
-		expect(payload.store.listings[0].productSummary.available).toBe(2);
+		expect(payload.store.listings[0].productSummary.available).toBe(true);
 	});
 
 	it("refreshes availability after a physical count", async () => {
@@ -370,7 +370,7 @@ describe("updateProduct", () => {
 				{ variantId: variants[1].id, counted: 0 },
 			],
 		});
-		expect(payload.store.listings[0].productSummary.available).toBe(1);
+		expect(payload.store.listings[0].productSummary.available).toBe(true);
 	});
 
 	it("drops an archived variant's units from the published availability", async () => {
@@ -401,7 +401,7 @@ describe("updateProduct", () => {
 			}),
 		);
 		expect(payload.store.listings[0].productSummary).toMatchObject({
-			available: 3,
+			available: true,
 			priceMax: 435000,
 		});
 	});

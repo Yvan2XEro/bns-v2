@@ -1,7 +1,11 @@
 import type { Listing } from "../payload-types";
 import { isRecord } from "./payments/types";
 import { relationId } from "./relationId";
-import { summarizeVariants, type VariantLike } from "./variants";
+import {
+	isProductAvailable,
+	summarizeVariants,
+	type VariantLike,
+} from "./variants";
 
 export type ListingCondition = NonNullable<Listing["condition"]>;
 
@@ -35,7 +39,13 @@ export interface ListingDerivedData {
 	productSummary: {
 		priceMin: number | null;
 		priceMax: number | null;
-		available: number | null;
+		/**
+		 * Buyer-safe purchasability signal, not a unit count — see
+		 * `isProductAvailable`. The exact aggregate stock figure a privileged
+		 * shop-side view needs (the catalogue table) is computed straight from
+		 * `summarizeVariants` there, never stored on the listing a buyer reads.
+		 */
+		available: boolean | null;
 		variantCount: number;
 		trackInventory: boolean;
 	};
@@ -81,7 +91,7 @@ export function deriveListingData(
 		productSummary: {
 			priceMin: summary.priceMin,
 			priceMax: summary.priceMax,
-			available: summary.available,
+			available: isProductAvailable(variants),
 			variantCount: summary.variantCount,
 			trackInventory: summary.trackInventory,
 		},
@@ -93,12 +103,23 @@ export function deriveListingData(
  * for review (moved in while pending) stays in the queue. Anything but an
  * active product is unpublished, so a draft or archived product never leaves a
  * live listing behind.
+ *
+ * `heldByModeration` subordinates the same way `rejected` does: a `draft`
+ * listing a moderator took down and chose not to restore
+ * (`unsuspendShop({ restoreListings: false })`, or a partial restore that
+ * skipped it) must not be republished by the next ordinary product sync —
+ * `syncProductListing` runs on every stock movement, `create: false` only
+ * stops it from *creating* a missing listing, not from rewriting an existing
+ * one's status. A product the seller genuinely drafted (not moderation) never
+ * sets the flag, so it still republishes normally once set active again.
  */
 export function listingStatusFor(
 	productStatus: string,
 	current: string | null,
+	heldByModeration = false,
 ): Listing["status"] {
 	if (current === "rejected") return "rejected";
+	if (current === "draft" && heldByModeration) return "draft";
 	if (productStatus === "active")
 		return current === "pending" ? "pending" : "published";
 	return "draft";

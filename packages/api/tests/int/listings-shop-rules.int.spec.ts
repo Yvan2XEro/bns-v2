@@ -44,10 +44,11 @@ const productListing = {
 	productSummary: {
 		priceMin: 285000,
 		priceMax: 330000,
-		available: 13,
+		available: true,
 		variantCount: 4,
 		trackInventory: true,
 	},
+	moderationHold: true,
 	expiresAt: null,
 };
 
@@ -128,6 +129,7 @@ describe("product listing derived fields", () => {
 				status: "sold",
 				shop: null,
 				product: null,
+				moderationHold: false,
 			},
 			req: req(payloadWith(), { id: "u-1" }),
 		});
@@ -136,6 +138,9 @@ describe("product listing derived fields", () => {
 		expect(result.status).toBe("published");
 		expect(result.shop).toBe("s-1");
 		expect(result.product).toBe("p-1");
+		// A moderator's hold is exactly as pinned as `status`: a seller's own
+		// write cannot lift it back off — only a moderation write can.
+		expect(result.moderationHold).toBe(true);
 	});
 
 	it("accepts the product service's writes", async () => {
@@ -180,6 +185,19 @@ describe("product listing derived fields", () => {
 				req: req(payloadWith(), { id: "u-1" }),
 			}),
 		).rejects.toThrow(/at most 3 images/);
+	});
+});
+
+// The exact unit count (`stockOnHand - stockReserved` summed across variants)
+// must never reach an anonymous buyer. `productSummary.available` carries a
+// purchasability boolean instead, same spirit as `product-variants.available`.
+describe("productSummary.available stays a boolean, not a unit count", () => {
+	it("is declared as a checkbox field, not a number", () => {
+		const group = Listings.fields.find(
+			(f) => "name" in f && f.name === "productSummary",
+		) as { fields: Array<{ name: string; type: string }> };
+		const available = group.fields.find((f) => f.name === "available");
+		expect(available?.type).toBe("checkbox");
 	});
 });
 

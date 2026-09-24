@@ -12,14 +12,25 @@ export interface VariantLike {
 	archivedAt?: string | Date | null;
 }
 
+/**
+ * Every combination of option values, in option order. Mirrors both clients'
+ * copies (`packages/web/src/lib/variants.ts`, `packages/mobile/src/lib/variants.ts`):
+ * silently skips an option with a blank name or no values instead of
+ * collapsing the whole combination set to `[]` — one incomplete option must
+ * not blank out combinations for options already filled in.
+ */
 export function generateCombinations(
 	options: OptionDef[],
 ): Record<string, string>[] {
 	return options.reduce<Record<string, string>[]>(
-		(combos, option) =>
-			combos.flatMap((combo) =>
-				option.values.map((value) => ({ ...combo, [option.name]: value })),
-			),
+		(combos, option) => {
+			const name = option.name.trim();
+			const values = option.values.filter((value) => value.trim().length > 0);
+			if (!name || values.length === 0) return combos;
+			return combos.flatMap((combo) =>
+				values.map((value) => ({ ...combo, [name]: value })),
+			);
+		},
 		[{}],
 	);
 }
@@ -52,6 +63,20 @@ export function availableOf(variant: VariantLike): number {
 
 export function isOutOfStock(variant: VariantLike): boolean {
 	return variant.trackInventory === true && availableOf(variant) <= 0;
+}
+
+/**
+ * Buyer-safe purchasability signal for a whole product: true when at least
+ * one live variant can be bought right now, the same spirit as the
+ * per-variant `available` boolean (`ProductVariants.beforeRead`) — a buyer
+ * needs to know whether the product is purchasable, not how many units are
+ * left across its variants. `null` when the product carries no live variant
+ * at all, matching `priceMin`/`priceMax`'s null-when-empty shape.
+ */
+export function isProductAvailable(variants: VariantLike[]): boolean | null {
+	const live = variants.filter((variant) => !variant.archivedAt);
+	if (live.length === 0) return null;
+	return live.some((variant) => !isOutOfStock(variant));
 }
 
 export function isLowStock(variant: VariantLike): boolean {

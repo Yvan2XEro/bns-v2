@@ -44,6 +44,7 @@ export const PRODUCT_DERIVED_FIELDS = [
 	"shop",
 	"product",
 	"productSummary",
+	"moderationHold",
 ] as const;
 
 const isEmptyValue = (value: unknown): boolean =>
@@ -668,10 +669,27 @@ export const Listings: CollectionConfig = {
 			fields: [
 				{ name: "priceMin", type: "number" },
 				{ name: "priceMax", type: "number" },
-				{ name: "available", type: "number" },
+				{
+					name: "available",
+					type: "checkbox",
+					admin: {
+						description:
+							"Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.",
+					},
+				},
 				{ name: "variantCount", type: "number" },
 				{ name: "trackInventory", type: "checkbox" },
 			],
+		},
+		{
+			name: "moderationHold",
+			type: "checkbox",
+			defaultValue: false,
+			admin: {
+				readOnly: true,
+				description:
+					"Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.",
+			},
 		},
 		{
 			name: "createdAt",

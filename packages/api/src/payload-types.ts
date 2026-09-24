@@ -332,10 +332,17 @@ export interface Listing {
   productSummary?: {
     priceMin?: number | null;
     priceMax?: number | null;
-    available?: number | null;
+    /**
+     * Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.
+     */
+    available?: boolean | null;
     variantCount?: number | null;
     trackInventory?: boolean | null;
   };
+  /**
+   * Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.
+   */
+  moderationHold?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1229,6 +1236,7 @@ export interface ListingsSelect<T extends boolean = true> {
         variantCount?: T;
         trackInventory?: T;
       };
+  moderationHold?: T;
   createdAt?: T;
   updatedAt?: T;
 }

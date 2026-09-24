@@ -48,6 +48,8 @@ const asString = (value: unknown): string | null =>
 	typeof value === "string" ? value : null;
 const asNumber = (value: unknown): number | null =>
 	typeof value === "number" ? value : null;
+const asBoolean = (value: unknown): boolean | null =>
+	typeof value === "boolean" ? value : null;
 
 /**
  * Takes `unknown` so a caller passes its `Listing`/hit value straight through,
@@ -64,6 +66,10 @@ const asNumber = (value: unknown): number | null =>
  *   event lands, but the publish is fire-and-forget (`searchEvents.ts` drops
  *   a failed publish, no retry), so the caller batches a live status check
  *   over a page of hits behind this — see `blankStaleShops`.
+ *
+ * `available` is a purchasability boolean, not the exact unit count — see
+ * `isProductAvailable` — the same spirit as `product-variants.available`, so
+ * this route never reads or forwards a number for it.
  */
 const serializeListingHit = (input: unknown) => {
 	const doc = (input ?? {}) as Record<string, unknown>;
@@ -74,7 +80,7 @@ const serializeListingHit = (input: unknown) => {
 	const activeShop = shop && shop.status === "active" ? shop : null;
 	const summary = (doc.productSummary ?? null) as {
 		priceMax?: number | null;
-		available?: number | null;
+		available?: boolean | null;
 	} | null;
 	return {
 		id: doc.id,
@@ -92,7 +98,7 @@ const serializeListingHit = (input: unknown) => {
 		shopName: asString(activeShop?.name) ?? asString(doc.shopName),
 		shopLevel: asNumber(activeShop?.level) ?? asNumber(doc.shopLevel),
 		priceMax: asNumber(summary?.priceMax) ?? asNumber(doc.priceMax),
-		available: asNumber(summary?.available) ?? asNumber(doc.available),
+		available: asBoolean(summary?.available) ?? asBoolean(doc.available),
 	};
 };
 

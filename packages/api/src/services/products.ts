@@ -372,7 +372,7 @@ async function createVariant(
 async function findProductListing(
 	req: PayloadRequest,
 	product: Product,
-): Promise<{ id: string; status: string } | null> {
+): Promise<{ id: string; status: string; moderationHold: boolean } | null> {
 	const listingId = relationId(product.listing);
 	if (listingId) {
 		const listing = await req.payload
@@ -384,7 +384,13 @@ async function findProductListing(
 				req,
 			})
 			.catch(() => null);
-		if (listing) return { id: listing.id, status: listing.status };
+		if (listing) {
+			return {
+				id: listing.id,
+				status: listing.status,
+				moderationHold: listing.moderationHold === true,
+			};
+		}
 	}
 
 	const orphan = await req.payload.find({
@@ -396,7 +402,13 @@ async function findProductListing(
 		req,
 	});
 	const found = orphan.docs[0];
-	return found ? { id: found.id, status: found.status } : null;
+	return found
+		? {
+				id: found.id,
+				status: found.status,
+				moderationHold: found.moderationHold === true,
+			}
+		: null;
 }
 
 export interface SyncListingOptions {
@@ -496,7 +508,11 @@ export async function syncProductListing(
 		data: {
 			...derived,
 			category,
-			status: listingStatusFor(product.status, current.status),
+			status: listingStatusFor(
+				product.status,
+				current.status,
+				current.moderationHold === true,
+			),
 		},
 	});
 	if (relationId(product.listing) !== current.id) {

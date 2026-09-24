@@ -116,7 +116,7 @@ describe("public search route", () => {
 					shopName: "Akwa Tech",
 					shopLevel: 2,
 					priceMax: 5000,
-					available: 3,
+					available: true,
 				},
 			],
 			estimatedTotalHits: 1,
@@ -149,8 +149,38 @@ describe("public search route", () => {
 			shopName: "Akwa Tech",
 			shopLevel: 2,
 			priceMax: 5000,
-			available: 3,
+			available: true,
 		});
+	});
+
+	// C1: `productSummary.available` used to carry the exact unit count. A
+	// stale index document or a regression that reintroduces the number must
+	// not have it reach an anonymous buyer — `asBoolean` drops anything that
+	// is not literally `true`/`false`, including a leftover number.
+	it("never forwards a numeric available, even from a stale document", async () => {
+		findMock.mockResolvedValue({
+			docs: [
+				{
+					id: "listing-2",
+					title: "Stale document with a leftover unit count",
+					status: "published",
+					productSummary: { priceMax: 5000, available: 7 },
+				},
+			],
+			totalDocs: 1,
+		});
+
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/route"
+		);
+		const response = await GET(
+			new Request(
+				"http://localhost:3000/api/public/search?boosted=true&sort=boosted",
+			),
+		);
+		const body = await response.json();
+
+		expect(body.hits[0].available).toBeNull();
 	});
 
 	it("blanks a Meilisearch hit's shop fields when a live check finds the shop no longer active", async () => {

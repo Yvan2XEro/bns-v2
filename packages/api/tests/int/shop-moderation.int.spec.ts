@@ -6,6 +6,8 @@ import {
 	unsuspendShop,
 	unsuspendUser,
 } from "../../src/services/moderation";
+import { syncProductListing } from "../../src/services/products";
+import { recordMovement } from "../../src/services/stock";
 import { fakePayload } from "./helpers/fakePayload";
 
 const MOD = { id: "mod-1", role: "moderator" };
@@ -163,6 +165,7 @@ describe("unsuspendShop", () => {
 		});
 		expect(result.restoredListingIds).toEqual(["l-1"]);
 		expect(listing(payload, "l-1")?.status).toBe("published");
+		expect(listing(payload, "l-1")?.moderationHold).toBe(false);
 		expect(shop(payload)).toMatchObject({
 			status: "active",
 			suspendedAt: null,
@@ -184,6 +187,7 @@ describe("unsuspendShop", () => {
 				.restoredListingIds,
 		).toEqual([]);
 		expect(listing(payload, "l-1")?.status).toBe("draft");
+		expect(listing(payload, "l-1")?.moderationHold).toBe(true);
 	});
 
 	it("refuses an active shop", async () => {
@@ -236,6 +240,134 @@ describe("unsuspendShop", () => {
 		expect(shop(payload, "s-1")?.status).toBe("active");
 		expect(listing(payload, "l-1")?.status).toBe("draft");
 		expect(listing(payload, "l-2")?.status).toBe("draft");
+	});
+});
+
+describe("a moderator's hold survives an ordinary seller action", () => {
+	const SELLER = { id: "u-1" };
+
+	function seedProductBacked() {
+		return fakePayload({
+			users: [
+				{ id: "u-1", role: "user", name: "Aïcha" },
+				{ id: "mod-1", role: "moderator", name: "Grâce" },
+			],
+			categories: [{ id: "cat-1", name: "Audio" }],
+			shops: [
+				{
+					id: "s-1",
+					handle: "akwatech",
+					name: "Akwa",
+					owner: "u-1",
+					status: "active",
+				},
+			],
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+			],
+			products: [
+				{
+					id: "p-1",
+					shop: "s-1",
+					title: "AirPods Pro",
+					category: "cat-1",
+					status: "active",
+					listing: "l-1",
+				},
+			],
+			"product-variants": [
+				{
+					id: "v-1",
+					product: "p-1",
+					shop: "s-1",
+					optionValues: {},
+					price: 95000,
+					trackInventory: true,
+					stockOnHand: 5,
+					stockReserved: 0,
+					archivedAt: null,
+				},
+			],
+			listings: [
+				{
+					id: "l-1",
+					shop: "s-1",
+					product: "p-1",
+					seller: "u-1",
+					title: "AirPods Pro",
+					description: "d",
+					price: 95000,
+					category: "cat-1",
+					attributes: {},
+					images: [],
+					location: "Douala",
+					status: "published",
+					moderationHold: false,
+					productSummary: {
+						priceMin: 95000,
+						priceMax: 95000,
+						available: true,
+						variantCount: 1,
+						trackInventory: true,
+					},
+				},
+			],
+			"stock-movements": [],
+			"moderation-log": [],
+		});
+	}
+
+	const listing = (p: ReturnType<typeof seedProductBacked>, id: string) =>
+		p.store.listings.find((l) => l.id === id);
+
+	// The exact defect: `unsuspendShop({ restoreListings: false })` leaves the
+	// listing deliberately drafted, but `recordMovement` calls
+	// `syncProductListing(..., { create: false })` on every stock movement —
+	// before this fix that unconditionally republished the listing the
+	// moderator chose to leave down, with nothing written to the log.
+	it("is not undone by the seller's next stock movement", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		expect(listing(payload, "l-1")?.status).toBe("draft");
+		expect(listing(payload, "l-1")?.moderationHold).toBe(true);
+
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+		const logLengthBeforeMovement = payload.store["moderation-log"].length;
+
+		await recordMovement(payload, SELLER, "v-1", {
+			type: "receipt",
+			quantity: 3,
+		});
+
+		expect(listing(payload, "l-1")?.status).toBe("draft");
+		expect(listing(payload, "l-1")?.moderationHold).toBe(true);
+		expect(payload.store["moderation-log"]).toHaveLength(
+			logLengthBeforeMovement,
+		);
+	});
+
+	// The earlier ruling's case, still open: a listing the seller themselves
+	// drafted (never touched by moderation) still republishes once the product
+	// goes active again — a normal sync, not a moderator's decision, put it
+	// down.
+	it("still republishes a listing the seller drafted themselves", async () => {
+		const payload = seedProductBacked();
+		listing(payload, "l-1")!.status = "draft";
+		listing(payload, "l-1")!.moderationHold = false;
+
+		const req = { payload, user: SELLER, context: {} } as never;
+		await syncProductListing(req, "p-1", { create: false });
+
+		expect(listing(payload, "l-1")?.status).toBe("published");
 	});
 });
 
