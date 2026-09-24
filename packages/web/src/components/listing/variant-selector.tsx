@@ -15,8 +15,12 @@ function inStock(variant: VariantDoc): boolean {
 
 /**
  * Buyer-facing. The API only ever returns live variants of a published
- * product (`PUBLIC_VARIANTS` in ProductVariants.ts) with `cost` stripped at
- * the field level, so nothing here needs to re-check role or redact a value.
+ * product (`PUBLIC_VARIANTS` in ProductVariants.ts), and `cost` is stripped
+ * at the field level — but `stockOnHand`/`stockReserved` are not yet, so an
+ * anonymous visitor's network response currently carries the raw counts (an
+ * API-side fix is tracked separately). This component never reads those
+ * fields itself: it only goes through `inStock`/`availableOf`, so it keeps
+ * working once a buyer response stops carrying the raw numbers.
  */
 export function VariantSelector({
 	productId,
@@ -32,8 +36,20 @@ export function VariantSelector({
 	const { data } = useQuery(productVariantsQuery(productId));
 	const variants = useMemo(() => data?.docs ?? [], [data]);
 
+	const match = useMemo(() => {
+		return (values: Record<string, string>) =>
+			variants.find((variant) =>
+				Object.entries(variant.optionValues ?? {}).every(
+					([name, value]) => values[name] === value,
+				),
+			) ?? null;
+	}, [variants]);
+
 	// The seller picks a value per click; the starting point is derived from
-	// the loaded variants rather than synced through an effect.
+	// the loaded variants rather than synced through an effect. If a refetch
+	// makes the manual pick unavailable (or it no longer matches any variant),
+	// the derivation falls back to the default rather than keeping a stale,
+	// now-unselectable combination on screen.
 	const [manualSelection, setManualSelection] = useState<Record<
 		string,
 		string
@@ -42,7 +58,12 @@ export function VariantSelector({
 		() => variants.find(inStock) ?? variants[0] ?? null,
 		[variants],
 	);
-	const selected = manualSelection ?? defaultVariant?.optionValues ?? {};
+	const manualMatch = manualSelection ? match(manualSelection) : null;
+	const manualValid = manualMatch !== null && inStock(manualMatch);
+	const selected =
+		manualValid && manualSelection
+			? manualSelection
+			: (defaultVariant?.optionValues ?? {});
 
 	const options = useMemo(() => {
 		const names: string[] = [];
@@ -60,12 +81,6 @@ export function VariantSelector({
 		return names.map((name) => ({ name, values: values.get(name) ?? [] }));
 	}, [variants]);
 
-	const match = (values: Record<string, string>) =>
-		variants.find((variant) =>
-			Object.entries(variant.optionValues ?? {}).every(
-				([name, value]) => values[name] === value,
-			),
-		) ?? null;
 	const current = match(selected);
 
 	if (variants.length === 0) return null;
@@ -89,6 +104,11 @@ export function VariantSelector({
 								<button
 									key={value}
 									type="button"
+									disabled={soldOut}
+									aria-pressed={active}
+									aria-label={
+										soldOut ? `${value} — ${t("variantSoldOut")}` : value
+									}
 									onClick={() =>
 										setManualSelection({ ...selected, [option.name]: value })
 									}
@@ -97,7 +117,8 @@ export function VariantSelector({
 										active
 											? "border-[#1E40AF] bg-[#EFF6FF] text-[#1E40AF]"
 											: "border-[#E2E8F0] text-[#334155]",
-										soldOut && "text-[#94A3B8] line-through",
+										soldOut &&
+											"cursor-not-allowed text-[#94A3B8] line-through opacity-60",
 									)}
 								>
 									{value}

@@ -44,6 +44,7 @@ import {
 	resolveFormPreset,
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
+import { listingShopId } from "~/lib/listing-shop";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
 import type { Category, Listing, ListingCondition, Media } from "~/types";
@@ -72,7 +73,12 @@ export function EditListingForm({
 
 	const { data: myShop } = useMyShop();
 	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
-	const wasInShop = Boolean(listing.shop);
+	// The listing's own shop, not the caller's current one: P1 is one shop per
+	// seller so the two coincide in practice, but a listing already filed under
+	// a shop must stay there rather than silently follow the account to
+	// whichever shop it happens to hold when the form is saved.
+	const originalShopId = listingShopId(listing);
+	const wasInShop = originalShopId !== null;
 	const [publishInShop, setPublishInShop] = useState(wasInShop);
 
 	const CONDITIONS: { value: ListingCondition; label: string }[] = [
@@ -288,8 +294,13 @@ export function EditListingForm({
 			}
 			// Only a member can move the listing in or out; otherwise the field is
 			// left alone so a suspended shop does not silently lose its listings.
+			// Checking the toggle keeps a listing that already has a shop where it
+			// is; it only ever attaches an unshopped listing to the caller's own
+			// shop, so it can never reassign a listing to a different shop.
 			if (activeShop) {
-				updateData.shop = publishInShop ? activeShop.id : null;
+				updateData.shop = publishInShop
+					? (originalShopId ?? activeShop.id)
+					: null;
 			}
 
 			const res = await fetch(`/api/listings/${listing.id}`, {
