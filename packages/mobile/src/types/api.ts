@@ -304,7 +304,10 @@ export interface ListingDoc extends ListingHit {
 	coordinates?: { lat?: number | null; lng?: number | null };
 	updatedAt: string;
 	shop?: ListingShopRef | string | null;
-	product?: { id: string } | string | null;
+	// A relationship id at shallow depth, populated to `ProductDoc` at
+	// `depth=2` (the listing detail fetch uses it) since `Products.read`
+	// allows an anonymous read of an active product.
+	product?: ProductDoc | { id: string } | string | null;
 	productSummary?: ProductSummary | null;
 }
 
@@ -706,6 +709,20 @@ export interface VariantDoc {
 	stockReserved: number;
 	lowStockThreshold: number | null;
 	archivedAt: string | null;
+}
+
+/**
+ * A buyer's view of a variant, from `GET /api/public/products/:id/variants`.
+ * Leaner than `VariantDoc` on purpose: no `cost`, no `stockOnHand`/
+ * `stockReserved`, no `shop`/`sku`/`archivedAt` — `available` is the only
+ * purchasability signal a non-member ever receives.
+ */
+export interface PublicVariantDoc {
+	id: string;
+	optionValues: Record<string, string> | null;
+	price: number;
+	trackInventory: boolean;
+	available: boolean;
 }
 
 export interface ProductDoc {

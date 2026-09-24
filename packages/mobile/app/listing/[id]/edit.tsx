@@ -19,10 +19,12 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
+import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -391,6 +393,23 @@ export default function EditListingScreen() {
 	const [nextStatus, setNextStatus] = useState<"draft" | "pending">("pending");
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 	const [availableTags, setAvailableTags] = useState<any[]>([]);
+	const { data: myShop } = useMyShop();
+	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
+	const [inShop, setInShop] = useState(false);
+
+	// The listing's own shop, whatever it is — never assumed to be the
+	// signed-in seller's current shop. Toggling is only ever offered when the
+	// two agree (or the listing has none yet), so this never silently moves a
+	// listing to a different shop than the one it already belongs to.
+	const currentShopId: string | null = listing?.shop
+		? typeof listing.shop === "object"
+			? (listing.shop.id ?? null)
+			: listing.shop
+		: null;
+	const shopMismatch = Boolean(
+		activeShop && currentShopId && currentShopId !== activeShop.id,
+	);
+	const wasInShop = Boolean(listing?.shop);
 
 	// Initialize once listing is loaded
 	useEffect(() => {
@@ -398,6 +417,7 @@ export default function EditListingScreen() {
 		const s = listing.status ?? "pending";
 		setNextStatus(s === "draft" ? "draft" : "pending");
 		setTitle(listing.title ?? "");
+		setInShop(Boolean(listing.shop));
 		setDescription(listing.description ?? "");
 		setPrice(listing.price != null ? String(listing.price) : "");
 		setCondition(listing.condition ?? "new");
@@ -432,6 +452,19 @@ export default function EditListingScreen() {
 			.filter((img: ImageItem) => img.id);
 		setImages(imgs);
 	}, [listing?.id, listing]);
+
+	// A product-backed listing is derived from its shop product; this generic
+	// form would silently ignore any change made here. Send the seller to the
+	// product editor instead — the same target the listing detail's "Edit"
+	// button uses for a shop product.
+	useEffect(() => {
+		const productRef = listing?.product;
+		if (!productRef) return;
+		const productId =
+			typeof productRef === "object" ? productRef.id : productRef;
+		if (!productId) return;
+		router.replace(`/seller/product/${productId}` as never);
+	}, [listing?.product]);
 
 	// Fetch available tags
 	useEffect(() => {
@@ -567,6 +600,9 @@ export default function EditListingScreen() {
 				...(selectedTagIds.length > 0
 					? { tags: selectedTagIds }
 					: { tags: [] }),
+				...(activeShop && !shopMismatch
+					? { shop: inShop ? activeShop.id : null }
+					: {}),
 			}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["listing", id] });
@@ -651,6 +687,19 @@ export default function EditListingScreen() {
 				bottomOffset={20}
 				showsVerticalScrollIndicator={false}
 			>
+				{activeShop && !shopMismatch ? (
+					<PublishInShopToggle
+						shopName={activeShop.name}
+						value={inShop}
+						onChange={setInShop}
+						hint={
+							wasInShop && !inShop
+								? t("shop.publishInDetachWarning")
+								: undefined
+						}
+					/>
+				) : null}
+
 				{/* ── Photos ── */}
 				<SectionCard
 					icon="images-outline"
