@@ -1,8 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
-import { useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useReducer, useRef } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -18,30 +16,13 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { CatalogueRowItem } from "@/src/components/seller/CatalogueRowItem";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
-import { useAlert } from "@/src/contexts/AlertContext";
-import {
-	shopKeys,
-	useCatalogue,
-	useMyShop,
-	useRecordMovement,
-} from "@/src/hooks/useShops";
-import { api } from "@/src/lib/api";
-import { resolveErrorMessage } from "@/src/lib/apiError";
-import { type StepAction, stepReducer } from "@/src/lib/catalogueStepper";
+import { useCatalogueStepper } from "@/src/hooks/useCatalogueStepper";
+import { useCatalogue, useMyShop } from "@/src/hooks/useShops";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
-import type {
-	CatalogueFilter,
-	CatalogueRow,
-	PayloadPage,
-	VariantDoc,
-} from "@/src/types/api";
+import type { CatalogueFilter, CatalogueRow } from "@/src/types/api";
 
 const FILTERS: CatalogueFilter[] = ["all", "low", "draft", "out"];
-
-// Long enough to coalesce a burst of taps into one write, short enough that
-// a single tap still feels like it moved stock promptly.
-const STEP_DEBOUNCE_MS = 450;
 
 function isCatalogueFilter(value: unknown): value is CatalogueFilter {
 	return typeof value === "string" && (FILTERS as string[]).includes(value);
@@ -50,34 +31,16 @@ function isCatalogueFilter(value: unknown): value is CatalogueFilter {
 export default function CatalogueScreen() {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
-	const { showError } = useAlert();
-	const queryClient = useQueryClient();
 	const params = useLocalSearchParams<{ filter?: string }>();
 	const filter: CatalogueFilter = isCatalogueFilter(params.filter)
 		? params.filter
 		: "all";
 
-	const [stepState, dispatchStep] = useReducer(stepReducer, {});
-	// `stepState` only updates on the next render; the debounce timer and the
-	// mutation's async continuation both need the *current* pending delta
-	// synchronously, so a ref mirrors it, advanced through the same reducer.
-	const stepRef = useRef(stepState);
-	const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-		new Map(),
-	);
-
-	useEffect(() => {
-		const timers = timersRef.current;
-		return () => {
-			for (const timer of timers.values()) clearTimeout(timer);
-		};
-	}, []);
-
 	const mine = useMyShop();
 	const shop = mine.data?.shop;
 	const catalogue = useCatalogue(shop?.id, filter);
-	const record = useRecordMovement();
 	const readOnly = shop?.status !== "active";
+	const { stepState, step } = useCatalogueStepper(shop?.id, filter);
 
 	const counts = catalogue.data?.counts;
 	const countFor = (f: CatalogueFilter) =>
@@ -90,72 +53,6 @@ export default function CatalogueScreen() {
 					: f === "draft"
 						? counts.draft
 						: counts.out;
-
-	function applyStep(action: StepAction) {
-		stepRef.current = stepReducer(stepRef.current, action);
-		dispatchStep(action);
-	}
-
-	/** Sends the row's net pending delta as a single stock movement. */
-	async function flush(row: CatalogueRow) {
-		const shopId = shop?.id;
-		const delta = stepRef.current[row.id]?.pending ?? 0;
-		if (delta === 0 || !shopId) return;
-		applyStep({ type: "start", rowId: row.id });
-		try {
-			const variants = await queryClient.fetchQuery({
-				queryKey: shopKeys.variants(row.id),
-				queryFn: () =>
-					api.get<PayloadPage<VariantDoc>>(
-						`/api/product-variants?where[product][equals]=${row.id}&where[archivedAt][exists]=false&limit=2&depth=0`,
-					),
-				staleTime: 5 * 60_000,
-			});
-			const variant = variants.docs[0];
-			if (!variant) throw new Error("Catalogue row has no variant");
-			await record.mutateAsync({
-				variantId: variant.id,
-				type: "adjustment",
-				quantity: delta,
-				note: t("catalogue.quickStepNote"),
-			});
-			// `useRecordMovement` already invalidated the catalogue query on
-			// success but does not await its refetch; waiting for it here too
-			// means the optimistic number only clears once the list shows the
-			// server-confirmed one, instead of flashing back to the pre-tap
-			// value for a frame while the refetch is still in flight.
-			await queryClient.invalidateQueries({
-				queryKey: shopKeys.catalogue(shopId, filter),
-			});
-			applyStep({ type: "settle", rowId: row.id, appliedDelta: delta });
-		} catch (error) {
-			// The server's refusal (e.g. stock would go negative) is shown
-			// verbatim and never retried; the optimistic delta is dropped so the
-			// row falls back to the last confirmed number.
-			applyStep({ type: "fail", rowId: row.id });
-			showError(t("catalogue.stepError"), resolveErrorMessage(error, t));
-		}
-	}
-
-	function step(row: CatalogueRow, delta: 1 | -1) {
-		const wasCommitting = stepRef.current[row.id]?.committing ?? false;
-		applyStep({ type: "queue", rowId: row.id, delta });
-		// The stepper buttons are disabled while `stepping` is true, so this can
-		// only race the mutation's own async continuation — never a second tap.
-		// Let the in-flight write settle; `flush` picks up whatever is still
-		// pending once it does.
-		if (wasCommitting) return;
-		const timers = timersRef.current;
-		const existing = timers.get(row.id);
-		if (existing) clearTimeout(existing);
-		timers.set(
-			row.id,
-			setTimeout(() => {
-				timers.delete(row.id);
-				void flush(row);
-			}, STEP_DEBOUNCE_MS),
-		);
-	}
 
 	const rows = catalogue.data?.docs ?? [];
 	const offline = catalogue.isError && Boolean(catalogue.data);

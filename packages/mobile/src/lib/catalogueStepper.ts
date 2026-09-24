@@ -63,3 +63,23 @@ export function stepReducer(state: StepState, action: StepAction): StepState {
 			return state;
 	}
 }
+
+/**
+ * A row is "owed" a write once it carries a pending delta and no request is
+ * currently carrying it — either because its debounce window hasn't fired
+ * yet, or because it settled with a remainder (a tap landed while the
+ * previous request for it was in flight). Two callers rely on this exact
+ * definition: the screen re-flushes immediately after a commit settles when
+ * this is true, and a teardown (unmount, app backgrounding) flushes every
+ * row this is true for, since a debounce timer may never get the chance to
+ * fire on its own.
+ */
+export function needsFlush(state: StepState, rowId: string): boolean {
+	const entry = state[rowId];
+	return Boolean(entry) && entry.pending !== 0 && !entry.committing;
+}
+
+/** Every row a teardown must flush immediately. See `needsFlush`. */
+export function rowsNeedingFlush(state: StepState): string[] {
+	return Object.keys(state).filter((rowId) => needsFlush(state, rowId));
+}

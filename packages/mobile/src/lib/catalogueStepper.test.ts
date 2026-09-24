@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { type StepState, stepReducer } from "./catalogueStepper";
+import {
+	needsFlush,
+	rowsNeedingFlush,
+	type StepState,
+	stepReducer,
+} from "./catalogueStepper";
 
 describe("stepReducer", () => {
 	test("queue accumulates taps for a new row", () => {
@@ -24,9 +29,10 @@ describe("stepReducer", () => {
 		expect(state.a).toEqual({ pending: 2, committing: true });
 	});
 
-	test("start on an unknown row is a no-op", () => {
-		const state: StepState = {};
-		expect(stepReducer(state, { type: "start", rowId: "missing" })).toBe(state);
+	test("start ignores an unrelated row and leaves existing entries untouched", () => {
+		const state: StepState = { a: { pending: 2, committing: false } };
+		const next = stepReducer(state, { type: "start", rowId: "b" });
+		expect(next).toEqual({ a: { pending: 2, committing: false } });
 	});
 
 	test("settle removes the row once the applied delta matches pending", () => {
@@ -50,8 +56,34 @@ describe("stepReducer", () => {
 		expect(state.a).toBeUndefined();
 	});
 
-	test("fail on an unknown row is a no-op", () => {
-		const state: StepState = {};
-		expect(stepReducer(state, { type: "fail", rowId: "missing" })).toBe(state);
+	test("fail ignores an unrelated row and leaves existing entries untouched", () => {
+		const state: StepState = { a: { pending: 2, committing: false } };
+		const next = stepReducer(state, { type: "fail", rowId: "b" });
+		expect(next).toEqual({ a: { pending: 2, committing: false } });
+	});
+
+	test("a tap that lands mid-flight is detected as needing an immediate re-flush once the write settles", () => {
+		// This pins the fix for a real bug: `step()` queues a mid-flight tap but
+		// arms no timer for it, since the stepper buttons are disabled while
+		// `committing`. Without a caller checking `needsFlush` right after
+		// `settle`, that remainder was stranded on screen forever.
+		let state: StepState = {};
+		state = stepReducer(state, { type: "queue", rowId: "a", delta: 1 });
+		state = stepReducer(state, { type: "start", rowId: "a" });
+		state = stepReducer(state, { type: "queue", rowId: "a", delta: 1 });
+		expect(needsFlush(state, "a")).toBe(false); // still in flight, nothing to do yet
+		state = stepReducer(state, { type: "settle", rowId: "a", appliedDelta: 1 });
+		expect(state.a).toEqual({ pending: 1, committing: false });
+		expect(needsFlush(state, "a")).toBe(true);
+		expect(rowsNeedingFlush(state)).toEqual(["a"]);
+	});
+
+	test("rowsNeedingFlush lists every row still owed a write, never one mid-flight or settled", () => {
+		const state: StepState = {
+			a: { pending: 2, committing: false }, // debouncing — teardown must not lose this
+			b: { pending: -1, committing: true }, // already in flight, nothing to do
+			c: { pending: 0, committing: false }, // fully settled
+		};
+		expect(rowsNeedingFlush(state)).toEqual(["a"]);
 	});
 });
