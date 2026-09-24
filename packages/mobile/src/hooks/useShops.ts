@@ -17,6 +17,7 @@ import type {
 	MyShopResponse,
 	PayloadPage,
 	ProductDetailResponse,
+	ProductDoc,
 	ProductInput,
 	ProductWriteResponse,
 	PublicShop,
@@ -40,6 +41,7 @@ export const shopKeys = {
 		["shops", "search", params] as const,
 	product: (id: string) => ["products", id, "detail"] as const,
 	variants: (productId: string) => ["products", productId, "variants"] as const,
+	variant: (variantId: string) => ["product-variants", variantId] as const,
 };
 
 export function useShopsEnabled(): boolean {
@@ -246,6 +248,27 @@ export function useUpdateProduct(productId: string | undefined) {
 		mutationFn: (input: ProductInput) =>
 			api.patch<ProductWriteResponse>(`/api/products/${productId}`, input),
 		onSuccess: invalidate,
+	});
+}
+
+export type VariantWithProduct = Omit<VariantDoc, "product"> & {
+	product: ProductDoc;
+};
+
+/**
+ * A single variant with its product populated (depth=1), for a screen that
+ * is handed only a `variantId` — the stock adjustment sheet's deep link.
+ * Retried once at most on anything but a 404: an unknown id is a dead end,
+ * never a transient failure worth retrying.
+ */
+export function useVariant(variantId: string | undefined) {
+	return useQuery({
+		queryKey: shopKeys.variant(variantId ?? ""),
+		queryFn: () =>
+			api.get<VariantWithProduct>(`/api/product-variants/${variantId}?depth=1`),
+		enabled: Boolean(variantId),
+		retry: (count, error) =>
+			!(error instanceof ApiError && error.status === 404) && count < 1,
 	});
 }
 
