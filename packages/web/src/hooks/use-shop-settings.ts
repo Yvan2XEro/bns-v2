@@ -5,6 +5,11 @@ import { catalogueRootKey } from "~/hooks/use-catalogue";
 import { handleAvailabilityRootKey } from "~/hooks/use-handle-availability";
 import { personalListingsRootKey } from "~/hooks/use-listings-move";
 import { myShopKey } from "~/hooks/use-my-shop";
+import {
+	movementsRootKey,
+	shopVariantsKey,
+	stockSummaryKey,
+} from "~/hooks/use-stock";
 import type { ApiError } from "~/lib/apiError";
 import { type ShopUpdateInput, shopApi } from "~/lib/shop-api";
 import type { PublicShop } from "~/types";
@@ -48,8 +53,10 @@ export function useChangeHandle(shopId: string) {
 
 /**
  * Owner only, and transactional on the server: every listing detaches back to
- * personal, every product archives, and the shop itself closes — all in one
- * write, so the client drops the caches for all three.
+ * personal and every product archives (`closeShopInTransaction`), on top of
+ * the shop itself closing — so the client drops the shop, catalogue,
+ * personal-listings and every stock cache the shop's variants fed (the
+ * `/seller/stock` screens), not just `myShopKey`.
  */
 export function useCloseShop(shopId: string) {
 	const queryClient = useQueryClient();
@@ -68,6 +75,15 @@ export function useCloseShop(shopId: string) {
 			});
 			void queryClient.invalidateQueries({
 				queryKey: personalListingsRootKey,
+			});
+			void queryClient.invalidateQueries({
+				queryKey: stockSummaryKey(shopId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: movementsRootKey(shopId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: shopVariantsKey(shopId),
 			});
 		},
 	});

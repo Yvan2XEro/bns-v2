@@ -3,6 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogueRootKey } from "~/hooks/use-catalogue";
 import { myShopKey } from "~/hooks/use-my-shop";
+import {
+	movementsRootKey,
+	shopVariantsKey,
+	stockSummaryKey,
+} from "~/hooks/use-stock";
 import type { ApiError } from "~/lib/apiError";
 import { shopApi } from "~/lib/shop-api";
 import type { AttachResult, Listing } from "~/types";
@@ -28,9 +33,12 @@ export function usePersonalListings(
 export const attachListingsKey = ["shops", "listings", "attach"] as const;
 
 /**
- * Moves listings into the shop, each becoming a single-variant product. A
- * transactional, partial-success write on the server — some listings can be
- * skipped — so the result is read from the response, never assumed.
+ * Moves listings into the shop, each becoming a single-variant product with
+ * one new, untracked variant (`attachOne`). A transactional, partial-success
+ * write on the server — some listings can be skipped — so the result is read
+ * from the response, never assumed. The new variants land in the shop's
+ * variant list straight away, so the `/seller/stock` caches drop alongside
+ * the shop, catalogue and personal-listings ones.
  */
 export function useAttachListings(shopId: string) {
 	const queryClient = useQueryClient();
@@ -49,6 +57,15 @@ export function useAttachListings(shopId: string) {
 			});
 			void queryClient.invalidateQueries({
 				queryKey: personalListingsRootKey,
+			});
+			void queryClient.invalidateQueries({
+				queryKey: stockSummaryKey(shopId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: movementsRootKey(shopId),
+			});
+			void queryClient.invalidateQueries({
+				queryKey: shopVariantsKey(shopId),
 			});
 		},
 	});
