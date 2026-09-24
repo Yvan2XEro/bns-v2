@@ -149,7 +149,7 @@ export interface VariantDoc {
 	trackInventory: boolean;
 	stockOnHand: number;
 	stockReserved: number;
-	lowStockThreshold: number | null;
+	lowStockThreshold?: number | null;
 	/** Server-derived purchasability signal, set before field access runs — present for every reader, shop member or not. */
 	available: boolean;
 	archivedAt: string | null;

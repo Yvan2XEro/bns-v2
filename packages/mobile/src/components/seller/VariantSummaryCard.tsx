@@ -13,7 +13,7 @@ export function VariantSummaryCard({
 }: {
 	title: string;
 	current: number;
-	lowStockThreshold: number | null;
+	lowStockThreshold?: number | null;
 	tracked: boolean;
 }) {
 	const c = useShopTheme();
@@ -24,7 +24,7 @@ export function VariantSummaryCard({
 			<View>
 				<Text style={[styles.product, { color: c.text }]}>{title}</Text>
 				<Text style={[styles.meta, { color: c.muted }]}>
-					{lowStockThreshold !== null
+					{lowStockThreshold != null
 						? t("stock.currentWithThreshold", {
 								count: current,
 								threshold: lowStockThreshold,

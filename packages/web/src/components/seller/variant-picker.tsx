@@ -19,7 +19,7 @@ export interface PickedVariant {
 	productTitle: string;
 	stockOnHand: number;
 	stockReserved: number;
-	lowStockThreshold: number | null;
+	lowStockThreshold?: number | null;
 	trackInventory: boolean;
 }
 

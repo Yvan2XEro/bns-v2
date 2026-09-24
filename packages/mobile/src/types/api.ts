@@ -707,7 +707,7 @@ export interface VariantDoc {
 	trackInventory: boolean;
 	stockOnHand: number;
 	stockReserved: number;
-	lowStockThreshold: number | null;
+	lowStockThreshold?: number | null;
 	archivedAt: string | null;
 }
 

@@ -91,7 +91,7 @@ export function StockAdjustForm({
 				<p className="font-semibold text-[#0F172A]">{variant.productTitle}</p>
 				<p className="text-[#64748B] text-sm">
 					{variant.label} ·{" "}
-					{variant.lowStockThreshold === null
+					{variant.lowStockThreshold == null
 						? t("currentStock", { count: variant.stockOnHand })
 						: t("currentStockWithAlert", {
 								count: variant.stockOnHand,
