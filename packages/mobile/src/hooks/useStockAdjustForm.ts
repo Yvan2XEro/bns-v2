@@ -51,9 +51,19 @@ export function useStockAdjustForm(variantId: string | undefined) {
 	const amount = form.watch("amount");
 	const result = v ? movementFromForm(type, current, amount) : null;
 
+	/**
+	 * `setValue(..., { shouldValidate: true })` only re-applies the resolver's
+	 * verdict to the field(s) it was told to validate — a stale error on a
+	 * field the schema no longer touches (e.g. `unitCost` once the type isn't
+	 * `receipt`) survives untouched (a known react-hook-form + resolver
+	 * gotcha). A whole-form `trigger()` re-validates every field and replaces
+	 * `formState.errors` wholesale, so a field that left the active schema
+	 * has its error cleared along with everything else.
+	 */
 	function changeType(next: ManualMovementType) {
-		form.setValue("type", next, { shouldValidate: true, shouldDirty: true });
-		form.setValue("amount", "", { shouldValidate: false });
+		form.setValue("type", next, { shouldDirty: true });
+		form.setValue("amount", "", { shouldDirty: true });
+		void form.trigger();
 	}
 
 	const submit = form.handleSubmit((values) => {

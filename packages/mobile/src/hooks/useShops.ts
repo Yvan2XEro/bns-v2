@@ -23,6 +23,7 @@ import type {
 	ProductWriteResponse,
 	PublicShop,
 	PublicShopResponse,
+	PublicVariantDoc,
 	SearchResponse,
 	ShopSearchResponse,
 	StockSummary,
@@ -50,6 +51,10 @@ export const shopKeys = {
 	// Nested under "products", not a "product-variants" root of its own, so
 	// `useInvalidateShop`'s prefix invalidation of ["products"] reaches it.
 	variant: (variantId: string) => ["products", "variant", variantId] as const,
+	// Distinct from `variants(productId)` above: the buyer-facing, public-only
+	// view, never the shop member's widened one.
+	publicVariants: (productId: string) =>
+		["products", productId, "public-variants"] as const,
 };
 
 /** A seller's own listings not yet part of any shop, for the "move in" flow. */
@@ -279,13 +284,35 @@ export function useProductDetail(productId: string | undefined) {
 	});
 }
 
-/** Public variants of a product listing; `cost` is never present here. */
+/**
+ * A shop member's own variant list (stock picker, product editor): the raw
+ * collection, which legitimately widens to include the member's own draft
+ * and archived rows. `cost` is stripped for a role that cannot manage the
+ * shop, but the exact stock counts are still present.
+ */
 export function useProductVariants(productId: string | undefined) {
 	return useQuery({
 		queryKey: shopKeys.variants(productId ?? ""),
 		queryFn: () =>
 			api.get<PayloadPage<VariantDoc>>(
 				`/api/product-variants?where[product][equals]=${productId}&where[archivedAt][exists]=false&limit=100&depth=0`,
+			),
+		enabled: Boolean(productId),
+	});
+}
+
+/**
+ * A buyer's variant list for a listing's detail page — always the public,
+ * live-only view via `GET /api/public/products/:id/variants`, which applies
+ * no caller identity, unlike `useProductVariants` above. No `cost`, no
+ * `stockOnHand`/`stockReserved`: only the server-derived `available` boolean.
+ */
+export function usePublicVariants(productId: string | undefined) {
+	return useQuery({
+		queryKey: shopKeys.publicVariants(productId ?? ""),
+		queryFn: () =>
+			api.get<{ docs: PublicVariantDoc[] }>(
+				`/api/public/products/${productId}/variants`,
 			),
 		enabled: Boolean(productId),
 	});

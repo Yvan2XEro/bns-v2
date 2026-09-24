@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { movementFromForm } from "./stockAdjust";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+	emptyStockAdjustForm,
+	movementFromForm,
+	stockAdjustSchema,
+} from "./stockAdjust";
 
 describe("movementFromForm", () => {
 	test("a receipt adds the typed quantity", () => {
@@ -72,5 +77,53 @@ describe("movementFromForm", () => {
 
 	test("rejects whitespace-only input", () => {
 		expect(movementFromForm("receipt", 2, "   ")).toBeNull();
+	});
+});
+
+/**
+ * `useStockAdjustForm.changeType` relies on a whole-form `trigger()` (no
+ * field names) to clear a stale error on a field the schema no longer
+ * validates — e.g. `unitCost`, once the type isn't `receipt` — because
+ * `setValue(..., { shouldValidate: true })` only reapplies the resolver's
+ * verdict to the field(s) it names, leaving errors on every other field
+ * untouched (a known react-hook-form + resolver gotcha). These tests call
+ * the exact resolver the hook uses — `zodResolver(stockAdjustSchema(...))`,
+ * the real `@hookform/resolvers` + `zod` from this repo, not a stand-in —
+ * to pin the guarantee a whole-form re-validation depends on: the schema
+ * reports no `unitCost` error once the active type no longer checks it, so
+ * replacing `formState.errors` wholesale (what `trigger()` does) discards
+ * the stale one instead of merging around it (what a per-field trigger does).
+ * There is no DOM/render harness in this package's test setup to mount
+ * `useForm` itself and drive `setValue`/`trigger` through a live component;
+ * this is the resolver-level guarantee that `changeType`'s fix depends on.
+ */
+describe("stockAdjustSchema resolver — errors on fields outside the active type", () => {
+	const options = { fields: {}, shouldUseNativeValidation: false };
+
+	test("an invalid unitCost is reported while the type is receipt", async () => {
+		const resolver = zodResolver(stockAdjustSchema(5));
+		const values = {
+			...emptyStockAdjustForm,
+			type: "receipt" as const,
+			amount: "10",
+			unitCost: "not-a-number",
+		};
+		const result = await resolver(values, undefined, options);
+		expect(result.errors.unitCost).toBeDefined();
+	});
+
+	test("the same invalid unitCost is not reported once the type is no longer receipt", async () => {
+		const resolver = zodResolver(stockAdjustSchema(5));
+		// The seller never touched this field; its stale garbage value is
+		// still sitting in the form after switching away from "receipt".
+		const values = {
+			...emptyStockAdjustForm,
+			type: "loss" as const,
+			amount: "2",
+			unitCost: "not-a-number",
+		};
+		const result = await resolver(values, undefined, options);
+		expect(result.errors.unitCost).toBeUndefined();
+		expect(result.errors.amount).toBeUndefined();
 	});
 });

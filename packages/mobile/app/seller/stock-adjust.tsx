@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import {
@@ -14,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { MovementTypePicker } from "@/src/components/seller/MovementTypePicker";
+import { VariantSummaryCard } from "@/src/components/seller/VariantSummaryCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useStockAdjustForm } from "@/src/hooks/useStockAdjustForm";
@@ -67,37 +67,17 @@ export default function StockAdjustSheet() {
 					contentContainerStyle={{ padding: 16, gap: 14 }}
 					keyboardShouldPersistTaps="handled"
 				>
-					<View>
-						<Text style={[styles.product, { color: c.text }]}>
-							{[
-								v.product.title,
-								variantLabel(v.optionValues ?? {}, v.product.options),
-							]
-								.filter(Boolean)
-								.join(" · ")}
-						</Text>
-						<Text style={[styles.meta, { color: c.muted }]}>
-							{v.lowStockThreshold !== null
-								? t("stock.currentWithThreshold", {
-										count: current,
-										threshold: v.lowStockThreshold,
-									})
-								: t("stock.current", { count: current })}
-						</Text>
-					</View>
-
-					{!v.trackInventory ? (
-						<View style={[styles.notice, { backgroundColor: c.warningSoft }]}>
-							<Ionicons
-								name="information-circle-outline"
-								size={16}
-								color={c.warningText}
-							/>
-							<Text style={[styles.noticeText, { color: c.warningText }]}>
-								{t("stock.trackingNote")}
-							</Text>
-						</View>
-					) : null}
+					<VariantSummaryCard
+						title={[
+							v.product.title,
+							variantLabel(v.optionValues ?? {}, v.product.options),
+						]
+							.filter(Boolean)
+							.join(" · ")}
+						current={current}
+						lowStockThreshold={v.lowStockThreshold}
+						tracked={v.trackInventory}
+					/>
 
 					<MovementTypePicker value={type} onChange={changeType} />
 
@@ -209,16 +189,7 @@ export default function StockAdjustSheet() {
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	product: { fontSize: 16, fontFamily: Fonts.displayBold },
 	meta: { fontSize: 12, fontFamily: Fonts.body },
-	notice: {
-		flexDirection: "row",
-		alignItems: "flex-start",
-		gap: 8,
-		padding: 10,
-		borderRadius: 10,
-	},
-	noticeText: { flex: 1, fontSize: 12, fontFamily: Fonts.bodySemibold },
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	input: {
 		height: 48,
