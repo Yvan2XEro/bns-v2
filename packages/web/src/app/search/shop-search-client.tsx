@@ -25,11 +25,14 @@ export function ShopSearchClient({
 	const debouncedCity = useDebouncedValue(city, 300);
 
 	// Keeps the URL shareable; the debounced values (not every keystroke) are the source of truth for it.
+	// Skips the replace when it would be a no-op (e.g. on mount), so this never adds a history call the URL doesn't need.
 	useEffect(() => {
 		const params = new URLSearchParams({ tab: "shops" });
 		if (debouncedQ) params.set("q", debouncedQ);
 		if (debouncedCity) params.set("city", debouncedCity);
-		router.replace(`/search?${params.toString()}`, { scroll: false });
+		const search = `?${params.toString()}`;
+		if (window.location.search === search) return;
+		router.replace(`/search${search}`, { scroll: false });
 	}, [debouncedQ, debouncedCity, router]);
 
 	const { data, isPending, isError, refetch } = useShopSearch({

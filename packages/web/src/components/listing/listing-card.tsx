@@ -2,7 +2,7 @@ import { Clock, MapPin, Store, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { listingShop, productSummaryOf } from "~/lib/listing-shop";
+import { listingPriceMax, listingShopName } from "~/lib/listing-shop";
 import { formatListingPrice } from "~/lib/price";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
@@ -41,10 +41,8 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 	const imageCount = listing.images?.length || 0;
 	const _seller = listing.seller as User | null;
 	const formattedPrice = formatListingPrice(listing.price);
-	// Search hits carry flattened shop fields; Payload docs carry the relation.
-	const hit = listing as { shopName?: string | null; priceMax?: number | null };
-	const shopName = hit.shopName ?? listingShop(listing)?.name ?? null;
-	const priceMax = hit.priceMax ?? productSummaryOf(listing)?.priceMax ?? null;
+	const shopName = listingShopName(listing);
+	const priceMax = listingPriceMax(listing);
 	const isFromPrice =
 		typeof listing.price === "number" &&
 		typeof priceMax === "number" &&
