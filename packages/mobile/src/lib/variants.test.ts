@@ -4,9 +4,9 @@ import {
 	formatXaf,
 	formatXafRange,
 	generateCombinations,
+	isShopOwner,
 	marginPercent,
 	priceRange,
-	variantKey,
 	variantLabel,
 } from "./variants";
 
@@ -37,7 +37,7 @@ describe("generateCombinations", () => {
 	});
 });
 
-describe("variantLabel and variantKey", () => {
+describe("variantLabel", () => {
 	const options = [
 		{ name: "Couleur", values: ["Graphite"] },
 		{ name: "Stockage", values: ["256 Go"] },
@@ -51,10 +51,6 @@ describe("variantLabel and variantKey", () => {
 
 	test("returns an empty label for the default variant", () => {
 		expect(variantLabel({})).toBe("");
-	});
-
-	test("gives the same key whatever the property order", () => {
-		expect(variantKey({ a: "1", b: "2" })).toBe(variantKey({ b: "2", a: "1" }));
 	});
 });
 
@@ -108,5 +104,18 @@ describe("canManageShop", () => {
 		expect(canManageShop("staff")).toBe(false);
 		expect(canManageShop(null)).toBe(false);
 		expect(canManageShop(undefined)).toBe(false);
+	});
+});
+
+describe("isShopOwner", () => {
+	test("only the owner passes", () => {
+		expect(isShopOwner("owner")).toBe(true);
+	});
+
+	test("a manager, staff or no role does not", () => {
+		expect(isShopOwner("manager")).toBe(false);
+		expect(isShopOwner("staff")).toBe(false);
+		expect(isShopOwner(null)).toBe(false);
+		expect(isShopOwner(undefined)).toBe(false);
 	});
 });

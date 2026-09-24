@@ -27,13 +27,6 @@ export function generateCombinations(
 	return combos;
 }
 
-export function variantKey(values: Record<string, string>): string {
-	return Object.keys(values)
-		.sort()
-		.map((k) => `${k}=${values[k]}`)
-		.join("|");
-}
-
 export function variantLabel(
 	values: Record<string, string>,
 	options?: ProductOption[],
@@ -101,4 +94,15 @@ export function formatPercent(value: number, lang?: string): string {
  */
 export function canManageShop(role: ShopRole | null | undefined): boolean {
 	return role === "owner" || role === "manager";
+}
+
+/**
+ * The page address (handle) and closing the shop are owner-only levers:
+ * `requireShopMember(..., { owner: true })` on the API refuses both to a
+ * manager, so the UI must hide the controls rather than offer one the
+ * server would reject — gate the entry point and the submit on this, not
+ * just the form body.
+ */
+export function isShopOwner(role: ShopRole | null | undefined): boolean {
+	return role === "owner";
 }

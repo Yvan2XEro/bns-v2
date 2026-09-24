@@ -12,6 +12,7 @@ import type {
 	CatalogueFilter,
 	CatalogueResponse,
 	HandleAvailability,
+	ListingDoc,
 	ManualMovementType,
 	MovementResponse,
 	MyShopResponse,
@@ -34,15 +35,25 @@ export const shopKeys = {
 	public: (handle: string) => ["shops", "public", handle] as const,
 	handle: (handle: string) => ["shops", "handle", handle] as const,
 	listings: (shopId: string) => ["shops", shopId, "listings"] as const,
+	catalogueRoot: (shopId: string) => ["shops", shopId, "catalogue"] as const,
 	catalogue: (shopId: string, filter: CatalogueFilter) =>
 		["shops", shopId, "catalogue", filter] as const,
 	summary: (shopId: string) => ["shops", shopId, "stock-summary"] as const,
+	/** Every page and filter of one shop's ledger, so a movement drops them all. */
+	movements: (shopId: string) => ["shops", shopId, "stock-movements"] as const,
+	/** The shop-level variant list (stock count screens), distinct from `variants(productId)` below. */
+	shopVariants: (shopId: string) => ["shops", shopId, "variants"] as const,
 	search: (params: Record<string, string>) =>
 		["shops", "search", params] as const,
 	product: (id: string) => ["products", id, "detail"] as const,
 	variants: (productId: string) => ["products", productId, "variants"] as const,
-	variant: (variantId: string) => ["product-variants", variantId] as const,
+	// Nested under "products", not a "product-variants" root of its own, so
+	// `useInvalidateShop`'s prefix invalidation of ["products"] reaches it.
+	variant: (variantId: string) => ["products", "variant", variantId] as const,
 };
+
+/** A seller's own listings not yet part of any shop, for the "move in" flow. */
+export const personalListingsKey = ["my-listings", "personal"] as const;
 
 export function useShopsEnabled(): boolean {
 	return useAppConfig().shopsEnabled;
@@ -169,8 +180,37 @@ export function useChangeHandle(shopId: string | undefined) {
 	});
 }
 
-export function useCloseShop(shopId: string | undefined) {
+/**
+ * Beyond the broad `useInvalidateShop()` sweep, closing and attaching are the
+ * two writes that touch the shop's variants and its stock ledger without any
+ * currently-mounted query key pointing at them by name (no `movements` or
+ * `shopVariants` screen consumes those keys yet) — invalidating them here
+ * keeps the cache correct the moment such a screen is added, instead of
+ * relying on a future author to remember it.
+ */
+function useInvalidateShopClose(shopId: string | undefined) {
+	const queryClient = useQueryClient();
 	const invalidate = useInvalidateShop();
+	return () => {
+		invalidate();
+		if (!shopId) return;
+		queryClient.invalidateQueries({ queryKey: shopKeys.catalogueRoot(shopId) });
+		queryClient.invalidateQueries({ queryKey: shopKeys.summary(shopId) });
+		queryClient.invalidateQueries({ queryKey: shopKeys.movements(shopId) });
+		queryClient.invalidateQueries({ queryKey: shopKeys.shopVariants(shopId) });
+	};
+}
+
+/**
+ * Owner only; the server enforces it and the UI hides the form for anyone
+ * else. Transactional on the server: every listing detaches back to personal
+ * and every product archives (`closeShopInTransaction`), so this drops the
+ * shop, the catalogue, the personal listings, the stock summary, the
+ * movements ledger and the shop's variants — everything a closed shop no
+ * longer feeds.
+ */
+export function useCloseShop(shopId: string | undefined) {
+	const invalidate = useInvalidateShopClose(shopId);
 	return useMutation({
 		mutationFn: (confirmation: string) =>
 			api.post<{ closed: true; detachedListingIds: string[] }>(
@@ -181,12 +221,30 @@ export function useCloseShop(shopId: string | undefined) {
 	});
 }
 
+/**
+ * Moves personal listings into the shop, each becoming a single-variant
+ * product with one new, untracked variant (`attachOne` on the API). The new
+ * variants land in the shop's variant list and stock ledger straight away,
+ * so this invalidates the same set as `useCloseShop` — see there for why.
+ */
 export function useAttachListings(shopId: string | undefined) {
-	const invalidate = useInvalidateShop();
+	const invalidate = useInvalidateShopClose(shopId);
 	return useMutation({
 		mutationFn: (body: { listingIds?: string[]; all?: boolean }) =>
 			api.post<AttachResponse>(`/api/shops/${shopId}/listings/attach`, body),
 		onSuccess: invalidate,
+	});
+}
+
+/** A seller's own listings not yet part of any shop, for the "move in" flow. */
+export function usePersonalListings(userId: string | undefined) {
+	return useQuery({
+		queryKey: personalListingsKey,
+		queryFn: () =>
+			api.get<PayloadPage<ListingDoc>>(
+				`/api/listings?where[seller][equals]=${userId}&where[shop][exists]=false&where[status][in]=draft,pending,published&depth=1&limit=100&sort=-createdAt`,
+			),
+		enabled: Boolean(userId),
 	});
 }
 

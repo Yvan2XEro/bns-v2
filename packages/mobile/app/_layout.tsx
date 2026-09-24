@@ -433,6 +433,11 @@ function RootLayoutNav() {
 					name="shop/create"
 					options={{ presentation: "modal", headerShown: false }}
 				/>
+				<Stack.Screen name="shop/manage" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="shop/move-listings"
+					options={{ presentation: "modal", headerShown: false }}
+				/>
 				<Stack.Screen name="seller/index" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="seller/catalogue"
