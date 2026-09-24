@@ -1129,7 +1129,13 @@
 			"negative": "Stock cannot go below zero."
 		},
 		"moderation": {
-			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now."
+			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now.",
+			"forbidden": "You do not have permission to moderate this content.",
+			"rankTooLow": "You cannot take this action against this account.",
+			"targetNotFound": "The content you are trying to moderate no longer exists.",
+			"reasonRequired": "A reason is required.",
+			"durationInvalid": "This suspension length is not allowed for your role.",
+			"invalidTransition": "This item is not in a state where that action applies."
 		},
 		"payment": {
 			"providerUnavailable": "Payment is unavailable right now. Please try again later."
@@ -1175,6 +1181,7 @@
 		"ageDays": "{{count}} d ago",
 		"target_listing": "Listing",
 		"target_user": "Account",
+		"target_shop": "Shop",
 		"target_message": "Message",
 		"forbiddenTitle": "Moderation is not available",
 		"forbiddenSubtitle": "Your account no longer has moderation access.",
@@ -1246,9 +1253,38 @@
 		"action_user_unsuspend": "Suspension lifted",
 		"action_report_resolve": "Report resolved",
 		"action_report_dismiss": "Report dismissed",
+		"action_shop_suspend": "Shop suspended",
+		"action_shop_unsuspend": "Shop suspension lifted",
 		"bannerTitle": "Your account is suspended",
 		"bannerIndefinite": "You can browse BuyNSellem, but you cannot publish listings or send messages. Contact support to have this reviewed.",
-		"bannerUntil": "You can browse BuyNSellem, but you cannot publish listings or send messages until {{date}}."
+		"bannerUntil": "You can browse BuyNSellem, but you cannot publish listings or send messages until {{date}}.",
+		"shopTitle": "Shop",
+		"shopStatus_active": "Active",
+		"shopStatus_suspended": "Suspended",
+		"shopStatus_closed": "Closed",
+		"ownerSince": "Owner since {{date}}",
+		"account": "Account",
+		"statProducts": "Products on sale",
+		"statDrafts": "Drafts",
+		"shopSuspendedIndefinitely": "Shop suspended indefinitely",
+		"noActiveSuspension": "No suspension in progress",
+		"reportsAgainstShop": "Reports against the shop",
+		"noReports": "No report",
+		"reportStatus_pending": "Open",
+		"reportStatus_reviewed": "Dismissed",
+		"reportStatus_resolved": "Resolved",
+		"restoredCount": "{{count}} products republished",
+		"cannotActOnShop": "You cannot take action against this shop.",
+		"shopClosedNote": "This shop is closed.",
+		"shopSuspend": "Suspend the shop",
+		"shopLift": "Lift the suspension",
+		"shopSuspendSheetTitle": "Suspend this shop",
+		"shopSuspendSheetSubtitle": "Its listings leave search and the shop page returns 404 until the suspension ends.",
+		"shopConfirmSuspend": "Suspend the shop",
+		"shopSuspendedTitle": "Shop suspended",
+		"shopSuspendedMessage": "{{count}} listings were taken down.",
+		"shopLiftTitle": "Lift the suspension?",
+		"shopLiftMessage": "The shop is visible again and the listings this suspension took down go live again."
 	},
 	"shop": {
 		"levelPhone": "Phone verified",

@@ -1202,7 +1202,13 @@
 			"negative": "Le stock ne peut pas passer sous zéro."
 		},
 		"moderation": {
-			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment."
+			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment.",
+			"forbidden": "Vous n'avez pas la permission de modérer ce contenu.",
+			"rankTooLow": "Vous ne pouvez pas effectuer cette action sur ce compte.",
+			"targetNotFound": "Le contenu que vous essayez de modérer n'existe plus.",
+			"reasonRequired": "Un motif est requis.",
+			"durationInvalid": "Cette durée de suspension n'est pas autorisée pour votre rôle.",
+			"invalidTransition": "Cet élément n'est pas dans un état permettant cette action."
 		},
 		"payment": {
 			"providerUnavailable": "Le paiement est indisponible pour le moment. Réessayez plus tard."
@@ -1248,6 +1254,7 @@
 		"ageDays": "il y a {{count}} j",
 		"target_listing": "Annonce",
 		"target_user": "Compte",
+		"target_shop": "Boutique",
 		"target_message": "Message",
 		"forbiddenTitle": "Modération indisponible",
 		"forbiddenSubtitle": "Votre compte n'a plus accès à la modération.",
@@ -1319,9 +1326,38 @@
 		"action_user_unsuspend": "Suspension levée",
 		"action_report_resolve": "Signalement traité",
 		"action_report_dismiss": "Signalement écarté",
+		"action_shop_suspend": "Boutique suspendue",
+		"action_shop_unsuspend": "Suspension de la boutique levée",
 		"bannerTitle": "Votre compte est suspendu",
 		"bannerIndefinite": "Vous pouvez consulter BuyNSellem, mais vous ne pouvez ni publier d'annonce ni envoyer de message. Contactez le support pour un réexamen.",
-		"bannerUntil": "Vous pouvez consulter BuyNSellem, mais vous ne pouvez ni publier d'annonce ni envoyer de message jusqu'au {{date}}."
+		"bannerUntil": "Vous pouvez consulter BuyNSellem, mais vous ne pouvez ni publier d'annonce ni envoyer de message jusqu'au {{date}}.",
+		"shopTitle": "Boutique",
+		"shopStatus_active": "Active",
+		"shopStatus_suspended": "Suspendue",
+		"shopStatus_closed": "Fermée",
+		"ownerSince": "Propriétaire depuis {{date}}",
+		"account": "Compte",
+		"statProducts": "Produits en vente",
+		"statDrafts": "Brouillons",
+		"shopSuspendedIndefinitely": "Boutique suspendue sans limite",
+		"noActiveSuspension": "Aucune suspension en cours",
+		"reportsAgainstShop": "Signalements contre la boutique",
+		"noReports": "Aucun signalement",
+		"reportStatus_pending": "Ouvert",
+		"reportStatus_reviewed": "Classé",
+		"reportStatus_resolved": "Résolu",
+		"restoredCount": "{{count}} produits republiés",
+		"cannotActOnShop": "Vous ne pouvez pas agir sur cette boutique.",
+		"shopClosedNote": "Cette boutique est fermée.",
+		"shopSuspend": "Suspendre la boutique",
+		"shopLift": "Lever la suspension",
+		"shopSuspendSheetTitle": "Suspendre cette boutique",
+		"shopSuspendSheetSubtitle": "Ses annonces quittent la recherche et la page de la boutique renvoie 404 jusqu'à la fin de la suspension.",
+		"shopConfirmSuspend": "Suspendre la boutique",
+		"shopSuspendedTitle": "Boutique suspendue",
+		"shopSuspendedMessage": "{{count}} annonces ont été retirées.",
+		"shopLiftTitle": "Lever la suspension ?",
+		"shopLiftMessage": "La boutique redevient visible et les annonces retirées par cette suspension sont remises en ligne."
 	},
 	"shop": {
 		"levelPhone": "Téléphone vérifié",

@@ -496,6 +496,10 @@ function RootLayoutNav() {
 					name="moderation/user/[id]"
 					options={{ headerShown: false }}
 				/>
+				<Stack.Screen
+					name="moderation/shop/[id]"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen name="settings" options={{ headerShown: false }} />
 				<Stack.Screen name="security" options={{ headerShown: false }} />
 				<Stack.Screen name="contact" options={{ headerShown: false }} />

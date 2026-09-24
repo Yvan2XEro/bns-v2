@@ -72,6 +72,12 @@ export const ERROR_CODES = {
 	shopNotFound: "shop.notFound",
 	stockNegative: "stock.negative",
 	accountSuspended: "moderation.accountSuspended",
+	moderationForbidden: "moderation.forbidden",
+	moderationRankTooLow: "moderation.rankTooLow",
+	moderationTargetNotFound: "moderation.targetNotFound",
+	moderationReasonRequired: "moderation.reasonRequired",
+	moderationDurationInvalid: "moderation.durationInvalid",
+	moderationInvalidTransition: "moderation.invalidTransition",
 
 	paymentProviderUnavailable: "payment.providerUnavailable",
 	boostNotOwner: "boost.notOwner",
@@ -146,6 +152,17 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
 	[ERROR_CODES.accountSuspended]:
 		"Your account is suspended. You cannot publish listings or send messages right now.",
+	[ERROR_CODES.moderationForbidden]:
+		"You do not have permission to moderate this content.",
+	[ERROR_CODES.moderationRankTooLow]:
+		"You cannot take this action against this account.",
+	[ERROR_CODES.moderationTargetNotFound]:
+		"The content you are trying to moderate no longer exists.",
+	[ERROR_CODES.moderationReasonRequired]: "A reason is required.",
+	[ERROR_CODES.moderationDurationInvalid]:
+		"This suspension length is not allowed for your role.",
+	[ERROR_CODES.moderationInvalidTransition]:
+		"This item is not in a state where that action applies.",
 	[ERROR_CODES.paymentProviderUnavailable]:
 		"Payment is unavailable right now. Please try again later.",
 	[ERROR_CODES.boostNotOwner]: "You can only boost your own listings.",

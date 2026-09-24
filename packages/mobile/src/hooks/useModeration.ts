@@ -9,6 +9,7 @@ import { useAuth } from "../lib/auth";
 import { isModerator } from "../lib/moderation";
 import type {
 	ListingDoc,
+	ModerationShopSheet,
 	ModerationSummary,
 	ModerationUserSheet,
 	PayloadPage,
@@ -35,6 +36,7 @@ export const moderationKeys = {
 	listings: ["moderation", "listings"] as const,
 	reports: ["moderation", "reports"] as const,
 	user: (id: string) => ["moderation", "user", id] as const,
+	shop: (id: string) => ["moderation", "shop", id] as const,
 };
 
 export function useIsModerator(): boolean {
@@ -219,6 +221,86 @@ export function useUnsuspendUser() {
 			queryClient.invalidateQueries({
 				queryKey: moderationKeys.user(variables.userId),
 			});
+			queryClient.invalidateQueries({ queryKey: ["listings"] });
+		},
+	});
+}
+
+export interface SuspendShopResponse {
+	shopId: string;
+	until: string | null;
+	unpublishedListingIds: string[];
+}
+
+export interface UnsuspendShopResponse {
+	shopId: string;
+	restoredListingIds: string[];
+}
+
+export function useModerationShop(shopId: string | undefined) {
+	const enabled = useIsModerator();
+	return useQuery({
+		queryKey: moderationKeys.shop(shopId ?? ""),
+		queryFn: () =>
+			api.get<ModerationShopSheet>(`/api/moderation/shops/${shopId}`),
+		enabled: Boolean(shopId) && enabled,
+	});
+}
+
+export function useSuspendShop() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			shopId,
+			reason,
+			durationDays,
+			note,
+		}: {
+			shopId: string;
+			reason: SuspensionReason;
+			durationDays: number | null;
+			note?: string;
+		}) =>
+			api.post<SuspendShopResponse>(`/api/moderation/shops/${shopId}`, {
+				action: "suspend",
+				reason,
+				durationDays,
+				note,
+			}),
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: moderationKeys.shop(variables.shopId),
+			});
+			queryClient.invalidateQueries({ queryKey: moderationKeys.summary });
+			queryClient.invalidateQueries({ queryKey: moderationKeys.reports });
+			queryClient.invalidateQueries({ queryKey: ["shops"] });
+			queryClient.invalidateQueries({ queryKey: ["listings"] });
+		},
+	});
+}
+
+export function useUnsuspendShop() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			shopId,
+			note,
+			restoreListings = true,
+		}: {
+			shopId: string;
+			note?: string;
+			restoreListings?: boolean;
+		}) =>
+			api.post<UnsuspendShopResponse>(`/api/moderation/shops/${shopId}`, {
+				action: "unsuspend",
+				note,
+				restoreListings,
+			}),
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: moderationKeys.shop(variables.shopId),
+			});
+			queryClient.invalidateQueries({ queryKey: ["shops"] });
 			queryClient.invalidateQueries({ queryKey: ["listings"] });
 		},
 	});
