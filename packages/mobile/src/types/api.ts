@@ -862,7 +862,7 @@ export interface ListingShopRef {
 export interface ProductSummary {
 	priceMin: number | null;
 	priceMax: number | null;
-	available: number | null;
+	available: boolean | null;
 	variantCount: number;
 	trackInventory: boolean;
 }
