@@ -27,7 +27,7 @@ import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { ShopResults } from "@/src/components/shop/ShopResults";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
-import { useShopSearch, useShopsEnabled } from "@/src/hooks/useShops";
+import { useShopSearch } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
@@ -130,7 +130,6 @@ export default function SearchScreen() {
 		.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
 		.join("&");
 
-	const shopsEnabled = useShopsEnabled();
 	const [segment, setSegment] = useState<"listings" | "shops">(
 		params.segment === "shops" ? "shops" : "listings",
 	);
@@ -139,8 +138,10 @@ export default function SearchScreen() {
 		...(params.location ? { city: params.location as string } : {}),
 		...(params.category ? { category: params.category as string } : {}),
 	};
-	// Drives the count on the segment even while the listings segment is shown.
-	const shopCount = useShopSearch(shopParams, shopsEnabled);
+	// shopsEnabled gates *creating* a shop only — an existing shop stays
+	// publicly findable with the flag off, so the segment and its count are
+	// never conditioned on it.
+	const shopCount = useShopSearch(shopParams, true);
 	const shopTotal = shopCount.data?.pages[0]?.total ?? 0;
 
 	const {
@@ -350,42 +351,40 @@ export default function SearchScreen() {
 
 			{/* ── Content area ── */}
 			<View style={[styles.content, { backgroundColor: bg }]}>
-				{shopsEnabled ? (
-					<View style={[styles.segments, { borderBottomColor: borderColor }]}>
-						{(["listings", "shops"] as const).map((key) => {
-							const active = segment === key;
-							return (
-								<Pressable
-									key={key}
-									onPress={() => setSegment(key)}
+				<View style={[styles.segments, { borderBottomColor: borderColor }]}>
+					{(["listings", "shops"] as const).map((key) => {
+						const active = segment === key;
+						return (
+							<Pressable
+								key={key}
+								onPress={() => setSegment(key)}
+								style={[
+									styles.segment,
+									active && { borderBottomColor: primaryColor },
+								]}
+								accessibilityRole="tab"
+								accessibilityState={{ selected: active }}
+								accessibilityLabel={`${t(`search.segment_${key}`)} ${(key === "listings" ? totalDocs : shopTotal).toLocaleString()}`}
+							>
+								<Text
 									style={[
-										styles.segment,
-										active && { borderBottomColor: primaryColor },
+										styles.segmentText,
+										{
+											color: active ? primaryColor : mutedColor,
+											fontFamily: Fonts.bodySemibold,
+										},
 									]}
-									accessibilityRole="tab"
-									accessibilityState={{ selected: active }}
-									accessibilityLabel={`${t(`search.segment_${key}`)} ${(key === "listings" ? totalDocs : shopTotal).toLocaleString()}`}
 								>
-									<Text
-										style={[
-											styles.segmentText,
-											{
-												color: active ? primaryColor : mutedColor,
-												fontFamily: Fonts.bodySemibold,
-											},
-										]}
-									>
-										{t(`search.segment_${key}`)}{" "}
-										{(key === "listings"
-											? totalDocs
-											: shopTotal
-										).toLocaleString()}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-				) : null}
+									{t(`search.segment_${key}`)}{" "}
+									{(key === "listings"
+										? totalDocs
+										: shopTotal
+									).toLocaleString()}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
 
 				{segment === "listings" && (
 					<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
