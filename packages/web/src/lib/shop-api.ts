@@ -3,6 +3,7 @@ import type {
 	CatalogueResponse,
 	ClientMovementType,
 	HandleAvailability,
+	Listing,
 	MovementPage,
 	MovementRow,
 	MyShopResponse,
@@ -143,6 +144,12 @@ export const shopApi = {
 			method: "POST",
 			body: JSON.stringify({ listingIds }),
 		}),
+
+	/** A seller's own listings that a shop can still take in. */
+	personalListings: (userId: string) =>
+		request<{ docs: Listing[] }>(
+			`/api/listings?where[seller][equals]=${userId}&where[shop][exists]=false&where[status][in]=draft,pending,published&depth=1&limit=100&sort=-createdAt`,
+		),
 
 	searchShops: (params: {
 		q?: string;

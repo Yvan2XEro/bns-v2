@@ -2,7 +2,12 @@
 
 import { Check } from "lucide-react";
 import { cn } from "~/lib/utils";
-import type { Category } from "~/types";
+
+/** Only what a chip renders and selects by; a shop's own (possibly non-root) categories fit this without a cast. */
+export interface CategoryChipOption {
+	id: string;
+	name: string;
+}
 
 export function CategoryChips({
 	categories,
@@ -10,7 +15,7 @@ export function CategoryChips({
 	onChange,
 	max = 5,
 }: {
-	categories: Category[];
+	categories: CategoryChipOption[];
 	selected: string[];
 	onChange: (ids: string[]) => void;
 	max?: number;

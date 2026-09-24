@@ -11,3 +11,12 @@ import type { ShopRole } from "~/types";
 export function canSeeCost(role: ShopRole | null | undefined): boolean {
 	return role === "owner" || role === "manager";
 }
+
+/**
+ * The page address (handle) and closing the shop are owner-only levers:
+ * `changeShopHandle` and `closeShop` on the API both require it, so the UI
+ * hides the control rather than offering one the server would refuse.
+ */
+export function isShopOwner(role: ShopRole | null | undefined): boolean {
+	return role === "owner";
+}
