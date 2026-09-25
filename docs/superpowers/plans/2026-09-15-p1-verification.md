@@ -37,7 +37,7 @@ API test failure breakdown:
 
 No new failure class. The only two failing test files are: one pre-existing module-resolution failure (`api.int.spec.ts`) and one pre-existing batching-timeout class now also covering one new file (`public-shops.int.spec.ts`, alongside `product-stock-routes.int.spec.ts`) — both confirmed to pass in isolation.
 
-### Web (no test runner — its gates are types and build)
+### Web (types, build, and `bun test`)
 
 | Command | Result |
 |---|---|
@@ -66,7 +66,27 @@ No Docker daemon, no running API container, no MongoDB/Redis/Meilisearch instanc
 
 Corrected against the current code: the feature flag (`AppSettings → Shops → Allow shop creation`, `shops.enabled`) gates shop **creation** only. `useMyShop`/`useMyShopGate` fetch the caller's shop unconditionally (`packages/web/src/hooks/use-my-shop.tsx`, `packages/mobile/src/hooks/useCreateShopGate.ts`) — an existing shop, and its manage/seller screens, stay fully usable with the flag off on both clients. Only the "open a shop" entry point disappears.
 
-### 0. After deploying (run once, on the API container / a machine with `PAYLOAD_API_URL` and DB access)
+### 0. Before deploying — stale `productSummary.available` check
+
+A pre-fix build wrote `listings.productSummary.available` as a unit COUNT; this
+branch writes a purchasability BOOLEAN. Unreachable in production, since nothing
+in this branch shipped there — but live on any staging environment a pre-fix
+build already touched. Do this before deploying, not after.
+
+| # | Action | Expected result |
+|---|---|---|
+| 0.1 | Ask the database whether any stale number is stored: `db.listings.countDocuments({ "productSummary.available": { $type: "number" } })` (mongosh, against the target database). | `0` — nothing to do, skip the rest of this section. Anything higher is the count of documents to repair. |
+| 0.2 | Repair them: re-save every product-backed listing (a no-op `payload.update` with `overrideAccess` and `context: PRODUCT_SERVICE_CONTEXT` re-derives `productSummary` through `deriveListingData`, which now always writes a boolean), or run a one-off backfill script. | Re-running the query in 0.1 returns `0`. |
+| 0.3 | Then re-run `cd packages/search-indexer && bun run reindex`. | Meilisearch picks up the corrected documents. **Reindexing alone is not enough** — the source document has to be fixed first, or the reindex just copies the stale number across. |
+
+Why the check is needed at all: every read path added a runtime coercion except
+one. The public search route and the search-indexer both coerce (`asBoolean`,
+`typeof … === "boolean"`), so a stale number is dropped rather than forwarded
+there — but a raw `GET /api/listings`, or any consumer reading the field
+directly rather than through those two shaped paths, still gets the number back
+verbatim.
+
+### 0b. After deploying (run once, on the API container / a machine with `PAYLOAD_API_URL` and DB access)
 
 | # | Action | Expected result |
 |---|---|---|
@@ -115,7 +135,6 @@ Everything else in the brief's Step 3 (phone gate, shop creation, product/varian
 | 17 | If the deploy itself needs reverting: redeploy the prior image/tag. | Existing shops, products, variants and stock movements are ordinary collections — no destructive migration was added in this branch (confirm with `packages/api/src/migrations` before rollback if any P1 migration ran in production; if one has, its down path needs checking separately, since none was covered by this verification pass). |
 | 18 | Re-run `bun run sync:notification-workflows` and `search-indexer`'s `reindex` after any rollback that touched their targets. | Same idempotent result as section 0 — both scripts are safe to re-run. |
 | 19 | If a migration run logs a duplicate-key error and mentions a partial unique index it did NOT create (`listings.product`, `products.listing`, or `product-variants.(shop, sku)`). | For the two P1 listing/product migrations: the migration still records itself as applied even though the index is absent — resolve the logged duplicate groups by hand, then delete that migration's row from the `payload-migrations` collection and re-run migrations so it retries and actually builds the index. For the `product-variants.(shop, sku)` migration (20260924_000000_p1_variant_sku): it throws instead, so it is NOT recorded as applied — resolve the logged shop/SKU groups (keep one variant's SKU per group, blank or renumber the rest) and simply re-run migrations; no manual `payload-migrations` edit needed there. |
-| 20 | Before deploying the fix that turned `listings.productSummary.available` from a unit count into a purchasability boolean (final-review C1): check whether a pre-fix build already stored or indexed a number there. | Every read path added a runtime coercion except one: the Payload REST/local-API read of a `listings` document returns whatever `productSummary.available` was written as, with no `asBoolean`/`asNumber` narrowing — the public search route and the search-indexer both coerce (`asBoolean`, `typeof … === "boolean"`), so a stale number is dropped rather than forwarded there, but a raw `GET /api/listings` (or any consumer reading the field directly, not through those two shaped paths) still gets the number back verbatim. Unreachable in production (nothing in this branch had shipped there), but live on any staging environment a pre-fix build already touched. If so: re-save every product-backed listing (a no-op `payload.update` with `overrideAccess` and `context: PRODUCT_SERVICE_CONTEXT` re-derives `productSummary` through `deriveListingData`, which now always writes a boolean) or run a one-off backfill script, then re-run `search-indexer`'s `reindex` so Meilisearch picks up the corrected documents — reindexing alone is not enough, the source document has to be fixed first. |
 
 ## Files referenced
 
