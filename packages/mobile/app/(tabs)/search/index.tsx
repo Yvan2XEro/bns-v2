@@ -23,12 +23,20 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { SearchSegments } from "@/src/components/SearchSegments";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import { ShopResults } from "@/src/components/shop/ShopResults";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
+import { useShopSearch } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
+import type {
+	ListingHit,
+	ListingHitMapped,
+	SearchResponse,
+} from "@/src/types/api";
 
 export default function SearchScreen() {
 	const isDark = useColorScheme() === "dark";
@@ -128,6 +136,20 @@ export default function SearchScreen() {
 		.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
 		.join("&");
 
+	const [segment, setSegment] = useState<"listings" | "shops">(
+		params.segment === "shops" ? "shops" : "listings",
+	);
+	const shopParams: Record<string, string> = {
+		...(debouncedQuery ? { q: debouncedQuery } : {}),
+		...(params.location ? { city: params.location as string } : {}),
+		...(params.category ? { category: params.category as string } : {}),
+	};
+	// shopsEnabled gates *creating* a shop only — an existing shop stays
+	// publicly findable with the flag off, so the segment and its count are
+	// never conditioned on it.
+	const shopCount = useShopSearch(shopParams, true);
+	const shopTotal = shopCount.data?.pages[0]?.total ?? 0;
+
 	const {
 		data,
 		fetchNextPage,
@@ -139,7 +161,7 @@ export default function SearchScreen() {
 	} = useInfiniteQuery({
 		queryKey: ["search", searchParams],
 		queryFn: ({ pageParam = 0 }) =>
-			api.get<{ hits: any[]; total: number }>(
+			api.get<SearchResponse | ListingHit[]>(
 				`/api/public/search?${queryString}&limit=20&offset=${pageParam}`,
 			),
 		getNextPageParam: (lastPage, pages) => {
@@ -156,16 +178,22 @@ export default function SearchScreen() {
 
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 
-	const listings = (
-		data?.pages.flatMap((p: any) => (Array.isArray(p) ? p : (p?.hits ?? []))) ??
-		[]
+	const listings: ListingHitMapped[] = (
+		data?.pages.flatMap((p) => (Array.isArray(p) ? p : (p?.hits ?? []))) ?? []
 	)
 		.filter(Boolean)
-		.map((l: any) => ({
-			...l,
-			isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
+		.map((hit) => ({
+			...hit,
+			isBoosted: !!(
+				hit.boostedUntil && new Date(hit.boostedUntil) > new Date()
+			),
 		}));
-	const totalDocs = data?.pages[0]?.total ?? 0;
+	const firstPage = data?.pages[0];
+	const totalDocs = firstPage
+		? Array.isArray(firstPage)
+			? firstPage.length
+			: (firstPage.total ?? 0)
+		: 0;
 	const [refreshing, setRefreshing] = React.useState(false);
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -229,15 +257,15 @@ export default function SearchScreen() {
 		setSaveDialogOpen(true);
 	};
 
-	const renderRow = ({ item }: { item: any[] }) => (
+	const renderRow = ({ item }: { item: ListingHitMapped[] }) => (
 		<View style={styles.row}>
-			{item.map((listing: any) => (
+			{item.map((listing) => (
 				<ListingCard
 					key={listing.id}
 					listing={listing}
 					width={cardWidth}
 					isFavorite={favoriteIds.has(listing.id)}
-					onToggleFavorite={() => toggleFavorite(listing)}
+					onToggleFavorite={() => toggleFavorite({ ...listing })}
 					onPress={(id: string) => router.push(`/listing/${id}`)}
 				/>
 			))}
@@ -335,88 +363,104 @@ export default function SearchScreen() {
 
 			{/* ── Content area ── */}
 			<View style={[styles.content, { backgroundColor: bg }]}>
-				{/* Sort bar */}
-				<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
-					<View style={styles.sortPills}>
-						{SORTS.map((s) => {
-							const active = sort === s.key;
-							return (
-								<Pressable
-									key={s.key}
-									onPress={() => setSort(s.key)}
-									style={[
-										styles.sortPill,
-										{
-											backgroundColor: active
+				<SearchSegments
+					active={segment}
+					onChange={setSegment}
+					listingsCount={totalDocs}
+					shopsCount={shopTotal}
+				/>
+
+				{segment === "listings" && (
+					<View style={[styles.sortBar, { borderBottomColor: borderColor }]}>
+						<View style={styles.sortPills}>
+							{SORTS.map((s) => {
+								const active = sort === s.key;
+								return (
+									<Pressable
+										key={s.key}
+										onPress={() => setSort(s.key)}
+										style={[
+											styles.sortPill,
+											{
+												backgroundColor: active
+													? primaryColor
+													: isDark
+														? "#1e293b"
+														: "#f1f5f9",
+												borderColor: active ? primaryColor : "transparent",
+											},
+										]}
+									>
+										<Ionicons
+											name={s.icon}
+											size={12}
+											color={active ? "#fff" : mutedColor}
+										/>
+										<Text
+											style={[
+												styles.sortText,
+												{
+													color: active ? "#fff" : mutedColor,
+													fontFamily: Fonts.bodySemibold,
+												},
+											]}
+										>
+											{s.label}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
+						{query.length > 0 && (
+							<Pressable
+								onPress={openFilters}
+								style={[
+									styles.filtersBtn,
+									{
+										backgroundColor:
+											activeFilterCount > 0
 												? primaryColor
 												: isDark
 													? "#1e293b"
 													: "#f1f5f9",
-											borderColor: active ? primaryColor : "transparent",
-										},
-									]}
-								>
-									<Ionicons
-										name={s.icon}
-										size={12}
-										color={active ? "#fff" : mutedColor}
-									/>
-									<Text
-										style={[
-											styles.sortText,
-											{
-												color: active ? "#fff" : mutedColor,
-												fontFamily: Fonts.bodySemibold,
-											},
-										]}
-									>
-										{s.label}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
-					{query.length > 0 && (
-						<Pressable
-							onPress={openFilters}
-							style={[
-								styles.filtersBtn,
-								{
-									backgroundColor:
-										activeFilterCount > 0
-											? primaryColor
-											: isDark
-												? "#1e293b"
-												: "#f1f5f9",
-									borderColor:
-										activeFilterCount > 0 ? primaryColor : borderColor,
-								},
-							]}
-						>
-							<Ionicons
-								name="options"
-								size={14}
-								color={activeFilterCount > 0 ? "#fff" : mutedColor}
-							/>
-							<Text
-								style={[
-									styles.filtersText,
-									{
-										color: activeFilterCount > 0 ? "#fff" : mutedColor,
-										fontFamily: Fonts.body,
+										borderColor:
+											activeFilterCount > 0 ? primaryColor : borderColor,
 									},
 								]}
 							>
-								{activeFilterCount > 0
-									? t("search.filtersCount", { count: activeFilterCount })
-									: t("search.filters")}
-							</Text>
-						</Pressable>
-					)}
-				</View>
+								<Ionicons
+									name="options"
+									size={14}
+									color={activeFilterCount > 0 ? "#fff" : mutedColor}
+								/>
+								<Text
+									style={[
+										styles.filtersText,
+										{
+											color: activeFilterCount > 0 ? "#fff" : mutedColor,
+											fontFamily: Fonts.body,
+										},
+									]}
+								>
+									{activeFilterCount > 0
+										? t("search.filtersCount", { count: activeFilterCount })
+										: t("search.filters")}
+								</Text>
+							</Pressable>
+						)}
+					</View>
+				)}
 
 				{/* Results */}
-				{isLoading ? (
+				{segment === "shops" ? (
+					<ShopResults
+						params={shopParams}
+						onClear={() => {
+							setQuery("");
+							setDebouncedQuery("");
+						}}
+					/>
+				) : isLoading ? (
 					<View style={styles.skeletonGrid}>
 						{Array.from({ length: columns * 4 }).map((_, i) => (
 							<SkeletonCard key={i} cardWidth={cardWidth} />

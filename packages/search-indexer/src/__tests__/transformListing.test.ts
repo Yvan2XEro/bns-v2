@@ -178,6 +178,51 @@ describe("transformListing", () => {
 		]);
 	});
 
+	test("adds shop fields when the shop is populated", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "Téléphones", attributes: [] },
+			seller: "user-1",
+			shop: {
+				id: "shop-1",
+				handle: "akwatech",
+				name: "Akwa Tech Store",
+				level: 1,
+			},
+			productSummary: { priceMin: 285000, priceMax: 330000, available: true },
+		});
+		expect(doc.shopId).toBe("shop-1");
+		expect(doc.shopHandle).toBe("akwatech");
+		expect(doc.shopName).toBe("Akwa Tech Store");
+		expect(doc.shopLevel).toBe(1);
+		expect(doc.priceMax).toBe(330000);
+		expect(doc.available).toBe(true);
+	});
+
+	// C1: the aggregate stock count used to reach the public index verbatim.
+	// A stale/legacy document carrying a number for `available` must not be
+	// forwarded as one — only a real boolean survives.
+	test("drops a leftover numeric available instead of forwarding it", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "Téléphones", attributes: [] },
+			seller: "user-1",
+			productSummary: { priceMin: 285000, priceMax: 330000, available: 13 },
+		});
+		expect(doc.available).toBeNull();
+	});
+
+	test("leaves shop fields null for a classified listing", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+		});
+		expect(doc.shopId).toBeNull();
+		expect(doc.shopName).toBeNull();
+		expect(doc.priceMax).toBeNull();
+	});
+
 	test("skips filterable attributes that are not present in listing data", () => {
 		const listing = {
 			...baseListing,

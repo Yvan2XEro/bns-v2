@@ -7,11 +7,13 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "eslint",
+		"test": "bun test",
 		"typecheck": "tsc --noEmit",
 		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@bns/chat-client": "workspace:*",
+		"@hookform/resolvers": "^5.9.1",
 		"@novu/nextjs": "^3.14.1",
 		"@radix-ui/react-avatar": "^1.1.2",
 		"@radix-ui/react-dialog": "^1.1.4",
@@ -34,6 +36,7 @@
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
 		"react-easy-crop": "^5.5.6",
+		"react-hook-form": "^7.88.0",
 		"sharp": "^0.34.5",
 		"socket.io-client": "^4.8.1",
 		"tailwind-merge": "^2.6.0",

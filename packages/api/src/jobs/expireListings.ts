@@ -20,6 +20,8 @@ export const expireListingsTask: TaskConfig<"expireListings"> = {
 				and: [
 					{ expiresAt: { less_than_equal: now } },
 					{ status: { in: ["published", "pending"] } },
+					// A product listing mirrors its product and never expires.
+					{ product: { exists: false } },
 				],
 			},
 			limit: 500,

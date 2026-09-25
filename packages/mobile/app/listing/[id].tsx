@@ -22,6 +22,8 @@ import { ListingCard } from "@/src/components/ListingCard";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
+import { ShopSellerCard } from "@/src/components/shop/ShopSellerCard";
+import { VariantPicker } from "@/src/components/shop/VariantPicker";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -32,13 +34,16 @@ import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
+import { formatXafRange } from "@/src/lib/variants";
 import type {
 	Conversation,
 	Favorite,
 	ListingDoc,
 	ListingImageItem,
+	ListingShopRef,
 	PayloadDoc,
 	PayloadPage,
+	ProductDoc,
 	SimilarResponse,
 	UserDoc,
 } from "@/src/types/api";
@@ -145,6 +150,26 @@ export default function ListingDetail() {
 	const isOwner = user?.id === seller?.id;
 	const favDoc = favData?.docs?.[0];
 	const isFavorite = !!favDoc;
+
+	// Most listings have no shop — this stays null and the rest of the page
+	// renders exactly as it did before shops existed, with no extra request.
+	const listingShop: ListingShopRef | null =
+		listing && typeof listing.shop === "object" && listing.shop
+			? listing.shop
+			: null;
+	const listingProduct: ProductDoc | null =
+		listing &&
+		typeof listing.product === "object" &&
+		listing.product &&
+		"title" in listing.product
+			? listing.product
+			: null;
+	const productId = listing?.product
+		? typeof listing.product === "object"
+			? listing.product.id
+			: listing.product
+		: null;
+	const summary = listing?.productSummary ?? null;
 
 	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
 	// name, type, unit and section all live on the category, so join the two.
@@ -437,7 +462,15 @@ export default function ListingDetail() {
 						</View>
 
 						<Text style={[styles.price, { color: priceColor }]}>
-							{listing.price ? (
+							{summary?.priceMin != null &&
+							summary.priceMax != null &&
+							summary.priceMax !== summary.priceMin ? (
+								formatXafRange(
+									summary.priceMin,
+									summary.priceMax,
+									i18n.language,
+								)
+							) : listing.price ? (
 								<>
 									{listing.price.toLocaleString()}{" "}
 									<Text style={[styles.priceSuffix, { color: mutedColor }]}>
@@ -599,8 +632,16 @@ export default function ListingDetail() {
 						</View>
 					)}
 
+					{listingProduct ? <VariantPicker product={listingProduct} /> : null}
+					{listingShop ? (
+						<ShopSellerCard
+							shop={listingShop}
+							owner={seller && typeof seller === "object" ? seller : null}
+						/>
+					) : null}
+
 					{/* Seller Card */}
-					{seller && (
+					{seller && !listingShop && (
 						<Pressable
 							onPress={() => router.push(`/profile/${seller.id}`)}
 							style={[styles.card, { backgroundColor: cardBg, borderColor }]}
@@ -769,7 +810,11 @@ export default function ListingDetail() {
 					)}
 					{isOwner && (
 						<Pressable
-							onPress={() => router.push(`/listing/${id}/edit`)}
+							onPress={() =>
+								productId
+									? router.push(`/seller/product/${productId}` as never)
+									: router.push(`/listing/${id}/edit`)
+							}
 							style={[
 								styles.editBtn,
 								{ backgroundColor: cardBg, borderColor, borderWidth: 1.5 },

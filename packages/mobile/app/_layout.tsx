@@ -428,6 +428,29 @@ function RootLayoutNav() {
 					name="profile/[userId]"
 					options={{ headerShown: false }}
 				/>
+				<Stack.Screen name="s/[handle]" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="shop/create"
+					options={{ presentation: "modal", headerShown: false }}
+				/>
+				<Stack.Screen name="shop/manage" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="shop/move-listings"
+					options={{ presentation: "modal", headerShown: false }}
+				/>
+				<Stack.Screen name="seller/index" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="seller/catalogue"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/stock-adjust"
+					options={{ presentation: "modal", headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/product/[id]"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen
 					name="auth/login"
 					options={{ presentation: "modal", headerShown: false }}
@@ -471,6 +494,10 @@ function RootLayoutNav() {
 				/>
 				<Stack.Screen
 					name="moderation/user/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/shop/[id]"
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen name="settings" options={{ headerShown: false }} />

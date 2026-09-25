@@ -25,6 +25,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { CityPicker } from "@/src/components/CityPicker";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
+import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
@@ -32,6 +33,7 @@ import {
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
@@ -1540,6 +1542,9 @@ function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
+	const { data: myShop } = useMyShop();
+	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
+	const [publishInShop, setPublishInShop] = useState(true);
 	const categoryPreset = getListingFormPreset(form.category);
 	const showsPrice = categoryPreset.fields.price.enabled;
 	const showsCondition = categoryPreset.fields.condition.enabled;
@@ -1571,6 +1576,7 @@ function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 				...(form.coordinates ? { coordinates: form.coordinates } : {}),
 				category: form.category?.id,
 				seller: user?.id,
+				...(activeShop && publishInShop ? { shop: activeShop.id } : {}),
 				...(showsPrice && form.price ? { price: Number(form.price) } : {}),
 				...(showsCondition && form.condition
 					? { condition: form.condition }
@@ -1760,6 +1766,14 @@ function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 					</View>
 				))}
 			</View>
+
+			{activeShop ? (
+				<PublishInShopToggle
+					shopName={activeShop.name}
+					value={publishInShop}
+					onChange={setPublishInShop}
+				/>
+			) : null}
 
 			{/* Submit for review */}
 			<Pressable

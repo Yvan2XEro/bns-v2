@@ -1,16 +1,12 @@
 import type { Payload } from "payload";
-import { ERROR_CODES, type ErrorCode, fallbackMessage } from "../lib/errors";
+import { ERROR_CODES, type ErrorCode } from "../lib/errors";
+import { ServiceError } from "../lib/serviceError";
 import type { TxReq } from "../lib/transactions";
 
-export class ReviewRuleError extends Error {
-	code: ErrorCode;
-	status: number;
-
+export class ReviewRuleError extends ServiceError {
 	constructor(code: ErrorCode, status: number) {
-		super(fallbackMessage(code));
+		super(code, status);
 		this.name = "ReviewRuleError";
-		this.code = code;
-		this.status = status;
 	}
 }
 

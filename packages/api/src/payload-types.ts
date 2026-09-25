@@ -84,6 +84,11 @@ export interface Config {
     'blocked-users': BlockedUser;
     tags: Tag;
     'moderation-log': ModerationLog;
+    shops: Shop;
+    'shop-members': ShopMember;
+    products: Product;
+    'product-variants': ProductVariant;
+    'stock-movements': StockMovement;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -109,6 +114,11 @@ export interface Config {
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
+    shops: ShopsSelect<false> | ShopsSelect<true>;
+    'shop-members': ShopMembersSelect<false> | ShopMembersSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
+    'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -139,6 +149,7 @@ export interface Config {
       checkSearchAlerts: TaskCheckSearchAlerts;
       processWebhookEvent: TaskProcessWebhookEvent;
       reconcilePendingPayments: TaskReconcilePendingPayments;
+      liftExpiredShopSuspensions: TaskLiftExpiredShopSuspensions;
       inline: {
         input: unknown;
         output: unknown;
@@ -188,6 +199,7 @@ export interface User {
   totalReviews?: number | null;
   bio?: string | null;
   phone?: string | null;
+  phoneVerified?: boolean | null;
   pendingPhone?: string | null;
   phoneVerifiedAt?: string | null;
   phoneVerificationCodeHash?: string | null;
@@ -312,6 +324,25 @@ export interface Listing {
   rejectionReason?: string | null;
   condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   tags?: (string | Tag)[] | null;
+  shop?: (string | null) | Shop;
+  product?: (string | null) | Product;
+  /**
+   * Derived from the product's variants by the product service.
+   */
+  productSummary?: {
+    priceMin?: number | null;
+    priceMax?: number | null;
+    /**
+     * Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.
+     */
+    available?: boolean | null;
+    variantCount?: number | null;
+    trackInventory?: boolean | null;
+  };
+  /**
+   * Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.
+   */
+  moderationHold?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -415,6 +446,99 @@ export interface Tag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops".
+ */
+export interface Shop {
+  id: string;
+  handle: string;
+  previousHandles?:
+    | {
+        handle: string;
+        until: string;
+        id?: string | null;
+      }[]
+    | null;
+  handleChangedAt?: string | null;
+  name: string;
+  description?: string | null;
+  logo?: (string | null) | Media;
+  banner?: (string | null) | Media;
+  contact?: {
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+  };
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    countryCode?: string | null;
+  };
+  categories?: (string | Category)[] | null;
+  owner: string | User;
+  status: 'active' | 'suspended' | 'closed';
+  level?: number | null;
+  closedAt?: string | null;
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
+  suspensionLogId?: string | null;
+  publishedListingCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  shop: string | Shop;
+  title: string;
+  description?: string | null;
+  category: string | Category;
+  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
+  attributes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  images?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  status: 'draft' | 'active' | 'archived';
+  options?:
+    | {
+        name: string;
+        values: string[];
+        id?: string | null;
+      }[]
+    | null;
+  delivery?: {
+    handlingHours?: number | null;
+    weightGrams?: number | null;
+    codAllowed?: boolean | null;
+    pickupAllowed?: boolean | null;
+  };
+  returnPolicy?: string | null;
+  /**
+   * The published listing, written by the product service.
+   */
+  listing?: (string | null) | Listing;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "favorites".
  */
 export interface Favorite {
@@ -471,7 +595,7 @@ export interface Review {
 export interface Report {
   id: string;
   reporter: string | User;
-  targetType: 'listing' | 'user' | 'message';
+  targetType: 'listing' | 'user' | 'message' | 'shop';
   targetId: string;
   reason: 'spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other';
   description?: string | null;
@@ -625,11 +749,14 @@ export interface ModerationLog {
     | 'listing.approve'
     | 'listing.reject'
     | 'listing.takedown'
+    | 'listing.holdRelease'
     | 'user.suspend'
     | 'user.unsuspend'
+    | 'shop.suspend'
+    | 'shop.unsuspend'
     | 'report.resolve'
     | 'report.dismiss';
-  targetType: 'listing' | 'user' | 'report';
+  targetType: 'listing' | 'user' | 'report' | 'shop';
   targetId: string;
   reason?: string | null;
   /**
@@ -645,6 +772,73 @@ export interface ModerationLog {
     | number
     | boolean
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-members".
+ */
+export interface ShopMember {
+  id: string;
+  shop: string | Shop;
+  user: string | User;
+  role: 'owner' | 'manager' | 'staff';
+  status: 'active' | 'revoked';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants".
+ */
+export interface ProductVariant {
+  id: string;
+  product: string | Product;
+  shop: string | Shop;
+  optionValues?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sku?: string | null;
+  price: number;
+  cost?: number | null;
+  trackInventory?: boolean | null;
+  stockOnHand?: number | null;
+  stockReserved?: number | null;
+  lowStockThreshold?: number | null;
+  /**
+   * Buyer-safe purchasability signal: true when the variant can be bought right now.
+   */
+  available?: boolean | null;
+  /**
+   * Set when the variant is removed from its product; movements are kept.
+   */
+  archivedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements".
+ */
+export interface StockMovement {
+  id: string;
+  variant: string | ProductVariant;
+  product?: (string | null) | Product;
+  shop: string | Shop;
+  type: 'receipt' | 'adjustment' | 'loss' | 'return' | 'sale' | 'reservation' | 'release';
+  quantity: number;
+  unitCost?: number | null;
+  stockAfter: number;
+  note?: string | null;
+  actor?: (string | null) | User;
+  orderRef?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -723,7 +917,8 @@ export interface PayloadJob {
           | 'expireBoosts'
           | 'checkSearchAlerts'
           | 'processWebhookEvent'
-          | 'reconcilePendingPayments';
+          | 'reconcilePendingPayments'
+          | 'liftExpiredShopSuspensions';
         taskID: string;
         input?:
           | {
@@ -764,6 +959,7 @@ export interface PayloadJob {
         | 'checkSearchAlerts'
         | 'processWebhookEvent'
         | 'reconcilePendingPayments'
+        | 'liftExpiredShopSuspensions'
       )
     | null;
   queue?: string | null;
@@ -855,6 +1051,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'moderation-log';
         value: string | ModerationLog;
+      } | null)
+    | ({
+        relationTo: 'shops';
+        value: string | Shop;
+      } | null)
+    | ({
+        relationTo: 'shop-members';
+        value: string | ShopMember;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: string | Product;
+      } | null)
+    | ({
+        relationTo: 'product-variants';
+        value: string | ProductVariant;
+      } | null)
+    | ({
+        relationTo: 'stock-movements';
+        value: string | StockMovement;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -920,6 +1136,7 @@ export interface UsersSelect<T extends boolean = true> {
   totalReviews?: T;
   bio?: T;
   phone?: T;
+  phoneVerified?: T;
   pendingPhone?: T;
   phoneVerifiedAt?: T;
   phoneVerificationCodeHash?: T;
@@ -1009,6 +1226,18 @@ export interface ListingsSelect<T extends boolean = true> {
   rejectionReason?: T;
   condition?: T;
   tags?: T;
+  shop?: T;
+  product?: T;
+  productSummary?:
+    | T
+    | {
+        priceMin?: T;
+        priceMax?: T;
+        available?: T;
+        variantCount?: T;
+        trackInventory?: T;
+      };
+  moderationHold?: T;
   createdAt?: T;
   updatedAt?: T;
 }
@@ -1257,6 +1486,142 @@ export interface ModerationLogSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops_select".
+ */
+export interface ShopsSelect<T extends boolean = true> {
+  handle?: T;
+  previousHandles?:
+    | T
+    | {
+        handle?: T;
+        until?: T;
+        id?: T;
+      };
+  handleChangedAt?: T;
+  name?: T;
+  description?: T;
+  logo?: T;
+  banner?: T;
+  contact?:
+    | T
+    | {
+        phone?: T;
+        whatsapp?: T;
+        email?: T;
+      };
+  location?:
+    | T
+    | {
+        city?: T;
+        region?: T;
+        country?: T;
+        countryCode?: T;
+      };
+  categories?: T;
+  owner?: T;
+  status?: T;
+  level?: T;
+  closedAt?: T;
+  suspendedAt?: T;
+  suspendedUntil?: T;
+  suspendedReason?: T;
+  suspendedNote?: T;
+  suspendedBy?: T;
+  suspensionLogId?: T;
+  publishedListingCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-members_select".
+ */
+export interface ShopMembersSelect<T extends boolean = true> {
+  shop?: T;
+  user?: T;
+  role?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  shop?: T;
+  title?: T;
+  description?: T;
+  category?: T;
+  condition?: T;
+  attributes?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  status?: T;
+  options?:
+    | T
+    | {
+        name?: T;
+        values?: T;
+        id?: T;
+      };
+  delivery?:
+    | T
+    | {
+        handlingHours?: T;
+        weightGrams?: T;
+        codAllowed?: T;
+        pickupAllowed?: T;
+      };
+  returnPolicy?: T;
+  listing?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants_select".
+ */
+export interface ProductVariantsSelect<T extends boolean = true> {
+  product?: T;
+  shop?: T;
+  optionValues?: T;
+  sku?: T;
+  price?: T;
+  cost?: T;
+  trackInventory?: T;
+  stockOnHand?: T;
+  stockReserved?: T;
+  lowStockThreshold?: T;
+  available?: T;
+  archivedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-movements_select".
+ */
+export interface StockMovementsSelect<T extends boolean = true> {
+  variant?: T;
+  product?: T;
+  shop?: T;
+  type?: T;
+  quantity?: T;
+  unitCost?: T;
+  stockAfter?: T;
+  note?: T;
+  actor?: T;
+  orderRef?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -1349,6 +1714,13 @@ export interface AppSetting {
       sender?: string | null;
     };
   };
+  shops?: {
+    /**
+     * Off: clients hide shop entry points and POST /api/shops returns shop.disabled. Existing shop pages keep resolving.
+     */
+    enabled?: boolean | null;
+    maxPerUser?: number | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1398,6 +1770,12 @@ export interface AppSettingsSelect<T extends boolean = true> {
               apiKey?: T;
               sender?: T;
             };
+      };
+  shops?:
+    | T
+    | {
+        enabled?: T;
+        maxPerUser?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -1471,6 +1849,14 @@ export interface TaskReconcilePendingPayments {
     expired?: number | null;
     errors?: number | null;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskLiftExpiredShopSuspensions".
+ */
+export interface TaskLiftExpiredShopSuspensions {
+  input?: unknown;
+  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

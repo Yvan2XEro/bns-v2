@@ -8,6 +8,7 @@ import {
 	type RateLimitWindow,
 } from "../lib/rateLimit";
 import { relationId } from "../lib/relationId";
+import { ServiceError } from "../lib/serviceError";
 
 export const CONTACT_PHONE_LIMITS: readonly RateLimitWindow[] = [
 	{ name: "contact-phone:hour", limit: 20, windowSeconds: 3600 },
@@ -30,15 +31,10 @@ export function revealWindowFor(at: Date): number {
 	return Math.floor(at.getTime() / REVEAL_DEDUP_MS);
 }
 
-export class ContactRevealError extends Error {
-	code: ErrorCode;
-	status: number;
-
+export class ContactRevealError extends ServiceError {
 	constructor(code: ErrorCode, status: number) {
-		super(code);
+		super(code, status);
 		this.name = "ContactRevealError";
-		this.code = code;
-		this.status = status;
 	}
 }
 

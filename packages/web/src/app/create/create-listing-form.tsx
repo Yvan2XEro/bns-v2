@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDialogField } from "~/components/category-picker";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
+import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
+import { useMyShop } from "~/hooks/use-my-shop";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
@@ -76,6 +78,10 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		{ value: "poor", label: tCond("poor") },
 	];
 	const [isLoading, setIsLoading] = useState(false);
+
+	const { data: myShop } = useMyShop();
+	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
+	const [publishInShop, setPublishInShop] = useState(true);
 
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
 		null,
@@ -406,6 +412,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			if (coordinates) {
 				listingData.coordinates = coordinates;
 			}
+			if (activeShop && publishInShop) {
+				listingData.shop = activeShop.id;
+			}
 
 			const res = await fetch("/api/listings", {
 				method: "POST",
@@ -686,6 +695,13 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					{/* Review */}
 					{currentStep.id === "review" && (
 						<div className="space-y-4">
+							{activeShop && (
+								<PublishInShopToggle
+									shopName={activeShop.name}
+									checked={publishInShop}
+									onChange={setPublishInShop}
+								/>
+							)}
 							<div className="space-y-3 rounded-lg border p-4">
 								<div className="flex items-center justify-between">
 									<h3 className="font-semibold text-lg">{formData.title}</h3>

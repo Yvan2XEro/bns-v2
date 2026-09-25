@@ -2,12 +2,18 @@ import { APIError, type CollectionConfig, type Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
+import { resolveShopRole, shopField } from "../access/shopRoles";
+import { staffOnlyField } from "../access/staff";
+import { queueShopRecount } from "../hooks/shopListingCount";
 import {
 	assertNotSuspended,
 	type SuspensionCheckable,
 } from "../hooks/suspensionGuard";
 import { validateListingAttributes } from "../hooks/validation";
+import { ERROR_CODES } from "../lib/errors";
 import { getListingFormPreset } from "../lib/listingFormPreset";
+import { relationId } from "../lib/relationId";
+import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
 const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
@@ -15,14 +21,32 @@ const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
 /** Maximum number of images a listing can carry. */
 const MAX_LISTING_IMAGES = 3;
 
-const getRelationshipId = (value: unknown): string | null => {
-	if (typeof value === "string" && value.length > 0) return value;
-	if (value && typeof value === "object" && "id" in value) {
-		const id = (value as { id?: unknown }).id;
-		if (typeof id === "string" && id.length > 0) return id;
-	}
-	return null;
-};
+/**
+ * Set by services/accountDeletion.ts on the deletes its cascade makes. It is
+ * the one way past the `beforeDelete` guard below, and it is unforgeable from
+ * outside the server: Payload builds `req.context` only from a local API
+ * `context` option (`utilities/createLocalReq.js`) — nothing in it reads a
+ * `context` key out of a request body or query string.
+ */
+export const ACCOUNT_DELETION_CONTEXT = { accountDeletion: true } as const;
+
+/** Owned by services/products.ts on a product listing; pinned against every other writer. */
+export const PRODUCT_DERIVED_FIELDS = [
+	"title",
+	"description",
+	"images",
+	"price",
+	"category",
+	"attributes",
+	"condition",
+	"location",
+	"status",
+	"expiresAt",
+	"shop",
+	"product",
+	"productSummary",
+	"moderationHold",
+] as const;
 
 const isEmptyValue = (value: unknown): boolean =>
 	value === undefined || value === null || value === "";
@@ -60,8 +84,8 @@ const shouldValidateListingForm = ({
 }): boolean => {
 	if (operation === "create" || !originalDoc) return true;
 
-	const nextCategoryId = getRelationshipId(data.category);
-	const previousCategoryId = getRelationshipId(originalDoc.category);
+	const nextCategoryId = relationId(data.category);
+	const previousCategoryId = relationId(originalDoc.category);
 	if (nextCategoryId !== previousCategoryId) return true;
 
 	const nextPrice = toNormalizedPrice(data.price);
@@ -79,6 +103,16 @@ const shouldValidateListingForm = ({
 
 	return JSON.stringify(nextAttributes) !== JSON.stringify(previousAttributes);
 };
+
+/**
+ * One listing per product is a raw-driver partial unique index on `product`,
+ * built by migration 20260922_000000_p1_listing_product — Payload's `indexes`
+ * config has no partial filter, and a plain unique index would collide on the
+ * `product: null` every non-product listing stores. `syncProductListing` reads
+ * the winner's listing when that index rejects its insert; if the migration
+ * skipped building the index (legacy duplicates), two concurrent first
+ * publishes can still leave a product with two listings. Check its logs.
+ */
 
 export const Listings: CollectionConfig = {
 	slug: "listings",
@@ -133,12 +167,102 @@ export const Listings: CollectionConfig = {
 					);
 				}
 
+				const productService = req.context?.productService === true;
+				const moderationWrite = req.context?.moderationAction === true;
+
+				if (!productService) {
+					if (relationId(originalDoc?.product) && !moderationWrite) {
+						for (const field of PRODUCT_DERIVED_FIELDS) {
+							data[field] = originalDoc?.[field];
+						}
+					} else {
+						data.product = originalDoc?.product ?? null;
+						data.productSummary = originalDoc?.productSummary ?? null;
+						// A listing that lost its product (detach, or the closeShop
+						// cascade that detaches every listing) still carries whatever
+						// moderation hold it had — `moderationHold` is moderation-owned
+						// in every branch, not just the product-linked one above, and a
+						// held listing's `status` stays pinned too. Without this, the
+						// PRODUCT_DERIVED_FIELDS pin above stops applying the moment
+						// `product` goes null, and the seller who just detached (or
+						// whose shop just closed) can PATCH `status`/`moderationHold`
+						// directly and undo the moderator's decision in one call, with
+						// nothing written to the log.
+						if (!moderationWrite) {
+							data.moderationHold = originalDoc?.moderationHold ?? false;
+							if (originalDoc?.moderationHold === true) {
+								data.status = originalDoc?.status;
+							}
+						}
+					}
+				}
+
+				const nextShop = relationId(data.shop);
+				if (
+					nextShop &&
+					nextShop !== relationId(originalDoc?.shop) &&
+					!moderationWrite &&
+					!productService
+				) {
+					const role = req.user
+						? await resolveShopRole(
+								req.payload,
+								String(req.user.id),
+								nextShop,
+								req.context,
+							)
+						: null;
+					if (!role) throw new CodedAPIError(ERROR_CODES.shopNotMember, 403);
+					const shop = await req.payload
+						.findByID({
+							collection: "shops",
+							id: nextShop,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null);
+					if (shop?.status !== "active") {
+						throw new CodedAPIError(ERROR_CODES.shopInactive, 409);
+					}
+				}
+
+				const nextProduct = relationId(data.product);
+				if (nextProduct && nextProduct !== relationId(originalDoc?.product)) {
+					const product = await req.payload
+						.findByID({
+							collection: "products",
+							id: nextProduct,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null);
+					if (!product) {
+						throw new APIError("The product does not exist.", 400);
+					}
+					if (!nextShop) {
+						throw new APIError(
+							"A listing that carries a product must belong to a shop.",
+							400,
+						);
+					}
+					if (relationId(product.shop) !== nextShop) {
+						throw new APIError(
+							"A listing cannot carry a product from another shop.",
+							400,
+						);
+					}
+				}
+
+				const isProductListing = productService || Boolean(nextProduct);
+
 				// Cap the image count without stranding listings created before the
 				// limit existed: reject only when this write would *increase* the
 				// count past the maximum. Legacy listings stay editable, their owners
 				// can still delete images, and system writes that merely carry the
 				// existing array through are unaffected.
-				if (Array.isArray(data.images)) {
+				if (Array.isArray(data.images) && !isProductListing) {
 					const previous = Array.isArray(originalDoc?.images)
 						? originalDoc.images.length
 						: 0;
@@ -163,7 +287,7 @@ export const Listings: CollectionConfig = {
 						originalDoc: originalDoc as Record<string, unknown> | null,
 					})
 				) {
-					const categoryId = getRelationshipId(data.category);
+					const categoryId = relationId(data.category);
 					if (!categoryId) {
 						throw new Error("Category is required");
 					}
@@ -224,19 +348,25 @@ export const Listings: CollectionConfig = {
 
 				if (operation === "create") {
 					data.seller = req.user?.id;
-					if (data.status === "published") {
-						data.status = "pending";
+					if (productService) {
+						// Product listings mirror their product and never expire.
+						data.expiresAt = null;
+						data.duration = undefined;
+					} else {
+						if (data.status === "published") {
+							data.status = "pending";
+						}
+						// Set expiry date based on duration (default 30 days)
+						const durationDays =
+							data.duration && [30, 60, 90].includes(Number(data.duration))
+								? Number(data.duration)
+								: 30;
+						const expiresAt = new Date();
+						expiresAt.setDate(expiresAt.getDate() + durationDays);
+						data.expiresAt = expiresAt.toISOString();
+						// Remove duration from data as it's not a persisted field
+						data.duration = undefined;
 					}
-					// Set expiry date based on duration (default 30 days)
-					const durationDays =
-						data.duration && [30, 60, 90].includes(Number(data.duration))
-							? Number(data.duration)
-							: 30;
-					const expiresAt = new Date();
-					expiresAt.setDate(expiresAt.getDate() + durationDays);
-					data.expiresAt = expiresAt.toISOString();
-					// Remove duration from data as it's not a persisted field
-					data.duration = undefined;
 				}
 
 				// Only enforce status restrictions when the status is actually changing.
@@ -245,6 +375,7 @@ export const Listings: CollectionConfig = {
 				// "published" status and incorrectly reset it to "pending".
 				if (
 					operation === "update" &&
+					!productService &&
 					data.status !== undefined &&
 					data.status !== originalDoc?.status
 				) {
@@ -264,13 +395,28 @@ export const Listings: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc, operation, previousDoc }) => {
+			async ({ doc, operation, previousDoc, req }) => {
 				if (process.env.REDIS_URL) {
-					const { publishSearchEvent } = await import("../hooks/searchEvents");
+					const { queueSearchEvent } = await import("../hooks/searchEvents");
 					const event =
 						operation === "create" ? "listing.created" : "listing.updated";
-					await publishSearchEvent(event, doc.id as string);
+					await queueSearchEvent(req, event, doc.id as string);
 				}
+
+				const previousShop = relationId(previousDoc?.shop);
+				const currentShop = relationId(doc.shop);
+				if (
+					operation === "create" ||
+					previousDoc?.status !== doc.status ||
+					previousShop !== currentShop
+				) {
+					for (const shopId of new Set([previousShop, currentShop])) {
+						if (shopId) await queueShopRecount(req, shopId);
+					}
+				}
+
+				// Product publication is the seller's own action, not a moderation decision.
+				if (req.context?.productService === true) return;
 
 				if (!isNotificationProviderConfigured()) return;
 				if (operation !== "update") return;
@@ -326,12 +472,47 @@ export const Listings: CollectionConfig = {
 				}
 			},
 		],
+		beforeDelete: [
+			async ({ id, req }) => {
+				const listing = await req.payload
+					.findByID({
+						collection: "listings",
+						id,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null);
+				if (!relationId(listing?.product)) return;
+				// The account-deletion cascade deletes every listing the departing
+				// user sells, and a product listing's seller is the shopkeeper, so
+				// without this branch the guard below would block them from ever
+				// closing their account. The account is going: there is no product
+				// lifecycle left to defer to.
+				if (req.context?.accountDeletion === true) return;
+				// The product owns its listing's lifecycle. Without this, a seller
+				// deletes their own rejected listing — `delete` is owner-or-admin and
+				// the seller of a product listing is the shopkeeper — the product's
+				// pointer dangles, and the next product edit republishes it as if the
+				// moderator had never ruled. Unpublishing goes through the product's
+				// status, which `listingStatusFor` keeps subordinate to a rejection.
+				// Moderators are refused too: moderation moves the status, it does
+				// not delete rows.
+				throw new APIError(
+					"A product's listing is unpublished through its product, not deleted.",
+					403,
+				);
+			},
+		],
 		afterDelete: [
-			async ({ doc }) => {
+			async ({ doc, req }) => {
 				if (process.env.REDIS_URL) {
-					const { publishSearchEvent } = await import("../hooks/searchEvents");
-					await publishSearchEvent("listing.deleted", doc.id as string);
+					const { queueSearchEvent } = await import("../hooks/searchEvents");
+					await queueSearchEvent(req, "listing.deleted", doc.id as string);
 				}
+
+				const shopId = relationId(doc.shop);
+				if (shopId) await queueShopRecount(req, shopId);
 			},
 		],
 	},
@@ -485,6 +666,51 @@ export const Listings: CollectionConfig = {
 			// biome-ignore lint/suspicious/noExplicitAny: tags collection not yet in generated types
 			relationTo: "tags" as any,
 			hasMany: true,
+		},
+		shopField({ picker: false }),
+		{
+			name: "product",
+			type: "relationship",
+			relationTo: "products",
+			index: true,
+			admin: { readOnly: true },
+		},
+		{
+			name: "productSummary",
+			type: "group",
+			admin: {
+				readOnly: true,
+				description:
+					"Derived from the product's variants by the product service.",
+			},
+			fields: [
+				{ name: "priceMin", type: "number" },
+				{ name: "priceMax", type: "number" },
+				{
+					name: "available",
+					type: "checkbox",
+					admin: {
+						description:
+							"Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.",
+					},
+				},
+				{ name: "variantCount", type: "number" },
+				{ name: "trackInventory", type: "checkbox" },
+			],
+		},
+		{
+			name: "moderationHold",
+			type: "checkbox",
+			defaultValue: false,
+			// Read-gated the same way Shops.suspendedNote is: staff only. The
+			// subject of the decision this flag records must not even see it,
+			// let alone read it back to confirm a write succeeded.
+			access: { read: staffOnlyField },
+			admin: {
+				readOnly: true,
+				description:
+					"Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.",
+			},
 		},
 		{
 			name: "createdAt",

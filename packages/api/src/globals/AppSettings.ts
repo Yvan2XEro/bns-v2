@@ -93,5 +93,30 @@ export const AppSettings: GlobalConfig = {
 				},
 			],
 		},
+		{
+			name: "shops",
+			type: "group",
+			label: "Shops",
+			fields: [
+				{
+					name: "enabled",
+					type: "checkbox",
+					label: "Allow shop creation",
+					defaultValue: false,
+					admin: {
+						description:
+							"Off: clients hide shop entry points and POST /api/shops returns shop.disabled. Existing shop pages keep resolving.",
+					},
+				},
+				{
+					name: "maxPerUser",
+					type: "number",
+					label: "Shops per user",
+					defaultValue: 1,
+					min: 1,
+					max: 10,
+				},
+			],
+		},
 	],
 };

@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { createAppleClientSecretFor } from "@/auth/oauth/providers";
+import { ACCOUNT_DELETION_CONTEXT } from "../collections/Listings";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../lib/redact";
 import { type TxReq, withTransaction } from "../lib/transactions";
 import {
@@ -21,6 +22,7 @@ type UserWithAuthProviders = {
 type PayloadLike = {
 	delete: (options: {
 		collection: string;
+		context?: Record<string, unknown>;
 		id: string;
 		overrideAccess?: boolean;
 		req?: TxReq;
@@ -173,6 +175,12 @@ async function deleteByIds(
 	for (const id of ids) {
 		await payload.delete({
 			collection,
+			// `overrideAccess` skips access control, not hooks: Listings refuses
+			// to delete a listing that carries a product unless this says who is
+			// asking. Every delete in the cascade carries it, so a collection that
+			// grows its own guard later does not have to be found by a failing
+			// account deletion in production.
+			context: ACCOUNT_DELETION_CONTEXT,
 			id,
 			overrideAccess: true,
 			req,
@@ -410,6 +418,19 @@ async function runDeletionCascade(
 	userId: string,
 	req: TxReq,
 ): Promise<void> {
+	// Dynamic import: `Users.ts` → `accountDeletion.ts` must stay free of the
+	// product/shop service graph at config load, and this pulls in both.
+	// `req` here is always the transaction this cascade itself runs in — the
+	// caller's ambient one, or the one `deleteUserRelatedData` opened below —
+	// so this closure lands or rolls back with the rest of the cascade.
+	const { closeOwnedShops } = await import("./shopListings");
+	await closeOwnedShops(
+		payload as unknown as import("payload").Payload,
+		userId,
+		new Date(),
+		req as unknown as import("payload").PayloadRequest,
+	);
+
 	const listingIds = await findAllIds(
 		payload,
 		"listings",

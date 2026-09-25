@@ -85,6 +85,8 @@ export interface UserDoc {
 		updatedAt?: string | null;
 	} | null;
 	verified: boolean;
+	/** Virtual, read by the user themselves (P1). Absent on old API versions. */
+	phoneVerified?: boolean;
 	/** Set while the account is under sanction. See `suspensionOf()`. */
 	suspendedAt?: string | null;
 	/** Null alongside a set `suspendedAt` means the suspension is indefinite. */
@@ -251,6 +253,12 @@ export interface ListingHit {
 	boostedUntil?: string | null;
 	attributes?: Record<string, string | number | boolean>;
 	createdAt: string;
+	shopId?: string | null;
+	shopHandle?: string | null;
+	shopName?: string | null;
+	shopLevel?: number | null;
+	priceMax?: number | null;
+	available?: number | null;
 }
 
 /**
@@ -295,6 +303,12 @@ export interface ListingDoc extends ListingHit {
 	rejectionReason?: string | null;
 	coordinates?: { lat?: number | null; lng?: number | null };
 	updatedAt: string;
+	shop?: ListingShopRef | string | null;
+	// A relationship id at shallow depth, populated to `ProductDoc` at
+	// `depth=2` (the listing detail fetch uses it) since `Products.read`
+	// allows an anonymous read of an active product.
+	product?: ProductDoc | { id: string } | string | null;
+	productSummary?: ProductSummary | null;
 }
 
 /** Payload single-document response wrapper */
@@ -482,17 +496,20 @@ export type ModerationActionName =
 	| "listing.approve"
 	| "listing.reject"
 	| "listing.takedown"
+	| "listing.holdRelease"
 	| "user.suspend"
 	| "user.unsuspend"
 	| "report.resolve"
-	| "report.dismiss";
+	| "report.dismiss"
+	| "shop.suspend"
+	| "shop.unsuspend";
 
 export interface ModerationLogEntry {
 	id: string;
 	actor: UserDoc | string;
 	actorRole: string;
 	action: ModerationActionName;
-	targetType: "listing" | "user" | "report";
+	targetType: "listing" | "user" | "report" | "shop";
 	targetId: string;
 	reason?: string | null;
 	note?: string | null;
@@ -505,7 +522,7 @@ export type ReportReason = SuspensionReason;
 export interface ReportDoc {
 	id: string;
 	reporter: UserDoc | string;
-	targetType: "listing" | "user" | "message";
+	targetType: "listing" | "user" | "message" | "shop";
 	targetId: string;
 	reason: ReportReason;
 	description?: string | null;
@@ -531,5 +548,355 @@ export interface ModerationUserSheet {
 		pendingListings: number;
 		reportsAgainst: number;
 	};
+	history: ModerationLogEntry[];
+}
+
+// ─── Shops, products, stock (P1) ─────────────────────────────────────────────
+
+export interface MediaRef {
+	id: string;
+	url: string | null;
+	thumbnailURL: string | null;
+	alt: string | null;
+}
+
+export type ShopRole = "owner" | "manager" | "staff";
+export type ShopStatus = "active" | "suspended" | "closed";
+export type ProductStatus = "draft" | "active" | "archived";
+export type MovementType =
+	| "receipt"
+	| "adjustment"
+	| "loss"
+	| "return"
+	| "sale"
+	| "reservation"
+	| "release";
+export type ManualMovementType = "receipt" | "adjustment" | "loss" | "return";
+
+/** GET /api/public/shops/:handle → `{ shop }` */
+export interface PublicShop {
+	id: string;
+	handle: string;
+	name: string;
+	description: string | null;
+	logo: MediaRef | null;
+	banner: MediaRef | null;
+	contact: {
+		phone: string | null;
+		whatsapp: string | null;
+		email: string | null;
+	};
+	location: {
+		city: string | null;
+		region: string | null;
+		country: string | null;
+		countryCode: string | null;
+	};
+	categories: { id: string; name: string; slug: string }[];
+	level: number;
+	publishedListingCount: number;
+	createdAt: string;
+	owner: {
+		id: string;
+		name: string;
+		avatar: MediaRef | null;
+		rating: number;
+		totalReviews: number;
+		memberSince: string;
+	};
+}
+
+export type PublicShopResponse = { shop: PublicShop } | { redirectTo: string };
+
+export interface MyShop extends PublicShop {
+	status: ShopStatus;
+	handleChangedAt: string | null;
+	nextHandleChangeAt: string | null;
+	suspension: {
+		active: boolean;
+		indefinite: boolean;
+		until: string | null;
+		reason: SuspensionReason | null;
+	} | null;
+}
+
+/** GET /api/shops/mine */
+export interface MyShopResponse {
+	shop: MyShop | null;
+	role: ShopRole | null;
+	counts: {
+		activeProducts: number;
+		draftProducts: number;
+		lowStockVariants: number;
+		lowStockSample: string | null;
+		personalListings: number;
+	} | null;
+}
+
+export interface HandleAvailability {
+	available: boolean;
+	reason: null | "invalid" | "reserved" | "taken";
+	handle: string;
+}
+
+export interface ShopSearchHit {
+	id: string;
+	handle: string;
+	name: string;
+	description: string | null;
+	city: string | null;
+	level: number;
+	publishedListingCount: number;
+	logoUrl: string | null;
+	ownerRating: number;
+	ownerReviews: number;
+	createdAt: string;
+}
+
+export interface ShopSearchResponse {
+	hits: ShopSearchHit[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+export interface CatalogueRow {
+	id: string;
+	title: string;
+	status: ProductStatus;
+	image: MediaRef | null;
+	variantCount: number;
+	priceMin: number | null;
+	priceMax: number | null;
+	stockOnHand: number;
+	available: number;
+	trackInventory: boolean;
+	lowStock: boolean;
+	outOfStock: boolean;
+	sku: string | null;
+	listingId: string | null;
+	listingStatus: ListingStatus | null;
+	updatedAt: string;
+}
+
+export type CatalogueFilter = "all" | "low" | "draft" | "out";
+
+export interface CatalogueResponse {
+	docs: CatalogueRow[];
+	totalDocs: number;
+	page: number;
+	totalPages: number;
+	counts: {
+		all: number;
+		active: number;
+		draft: number;
+		archived: number;
+		low: number;
+		out: number;
+	};
+}
+
+export interface VariantDoc {
+	id: string;
+	product: string;
+	shop: string;
+	optionValues: Record<string, string>;
+	sku: string | null;
+	price: number;
+	/** Absent for a role that cannot manage the shop — the API redacts the key, not just the value. */
+	cost?: number | null;
+	trackInventory: boolean;
+	stockOnHand: number;
+	stockReserved: number;
+	lowStockThreshold?: number | null;
+	archivedAt: string | null;
+}
+
+/**
+ * A buyer's view of a variant, from `GET /api/public/products/:id/variants`.
+ * Leaner than `VariantDoc` on purpose: no `cost`, no `stockOnHand`/
+ * `stockReserved`, no `shop`/`sku`/`archivedAt` — `available` is the only
+ * purchasability signal a non-member ever receives.
+ */
+export interface PublicVariantDoc {
+	id: string;
+	optionValues: Record<string, string> | null;
+	price: number;
+	trackInventory: boolean;
+	available: boolean;
+}
+
+export interface ProductDoc {
+	id: string;
+	shop: string | { id: string; handle?: string; name?: string };
+	title: string;
+	description?: string | null;
+	category: Category | string;
+	condition?: ListingCondition | null;
+	attributes?: Record<string, string | number | boolean> | null;
+	images?: { id?: string; image: Media | string }[];
+	status: ProductStatus;
+	options?: { name: string; values: string[] }[];
+	delivery?: {
+		handlingHours?: number | null;
+		weightGrams?: number | null;
+		codAllowed?: boolean | null;
+		pickupAllowed?: boolean | null;
+	} | null;
+	returnPolicy?: string | null;
+	listing?: string | { id: string } | null;
+	updatedAt: string;
+	createdAt: string;
+}
+
+export interface ProductInput {
+	title: string;
+	description?: string | null;
+	category: string;
+	condition?: ListingCondition | null;
+	attributes?: Record<string, unknown>;
+	images?: string[];
+	status: ProductStatus;
+	options?: { name: string; values: string[] }[];
+	variants: {
+		id?: string;
+		optionValues: Record<string, string>;
+		sku?: string | null;
+		price: number;
+		cost?: number | null;
+		trackInventory?: boolean;
+		lowStockThreshold?: number | null;
+		initialStock?: number;
+	}[];
+	delivery?: {
+		handlingHours?: number | null;
+		weightGrams?: number | null;
+		codAllowed?: boolean;
+		pickupAllowed?: boolean;
+	};
+	returnPolicy?: string | null;
+}
+
+export interface MovementRow {
+	id: string;
+	type: MovementType;
+	quantity: number;
+	stockAfter: number;
+	unitCost: number | null;
+	note: string | null;
+	createdAt: string;
+	actor: { id: string; name: string } | null;
+	variant: { id: string; label: string; sku: string | null };
+	product: { id: string; title: string };
+}
+
+export interface MovementsPage {
+	docs: MovementRow[];
+	totalDocs: number;
+	page: number;
+	totalPages: number;
+	hasNextPage: boolean;
+}
+
+/** GET /api/products/:id/detail */
+export interface ProductDetailResponse {
+	product: ProductDoc;
+	variants: VariantDoc[];
+	listing: {
+		id: string;
+		status: ListingStatus;
+		views: number;
+		favorites: number;
+	} | null;
+	movements: MovementRow[];
+	role: ShopRole;
+}
+
+export interface ProductWriteResponse {
+	product: ProductDoc;
+	variants: VariantDoc[];
+}
+
+export interface VariantAlert {
+	variantId: string;
+	productId: string;
+	productTitle: string;
+	label: string;
+	available: number;
+	threshold: number | null;
+}
+
+export interface StockSummary {
+	costValue: number;
+	unitsOnHand: number;
+	unitsReserved: number;
+	trackedVariants: number;
+	lowStock: VariantAlert[];
+	outOfStock: VariantAlert[];
+}
+
+export interface MovementResponse {
+	movement: MovementRow;
+	variant: VariantDoc;
+}
+
+export interface AttachResponse {
+	attached: { listingId: string; productId: string }[];
+	skipped: {
+		listingId: string;
+		reason: "notOwner" | "otherShop" | "alreadyAttached" | "status";
+	}[];
+}
+
+/** `listing.shop` populated at depth ≥ 1. */
+export interface ListingShopRef {
+	id: string;
+	handle: string;
+	name: string;
+	level: number;
+	status?: ShopStatus;
+	logo?: Media | string | null;
+	publishedListingCount?: number;
+}
+
+/** Service-written on product-backed listings. */
+export interface ProductSummary {
+	priceMin: number | null;
+	priceMax: number | null;
+	available: boolean | null;
+	variantCount: number;
+	trackInventory: boolean;
+}
+
+/** GET /api/moderation/shops/:id */
+export interface ModerationShopSheet {
+	shop: {
+		id: string;
+		handle: string;
+		name: string;
+		status: ShopStatus;
+		level: number;
+		logo: MediaRef | null;
+		createdAt: string;
+	};
+	owner: {
+		id: string;
+		name: string;
+		email: string;
+		role: UserRole;
+		createdAt: string;
+	};
+	suspension: SuspensionSummary & {
+		reason: SuspensionReason | null;
+		note: string | null;
+		by: UserDoc | string | null;
+	};
+	counts: {
+		publishedListings: number;
+		activeProducts: number;
+		draftProducts: number;
+		reportsAgainst: number;
+	};
+	reports: ReportDoc[];
 	history: ModerationLogEntry[];
 }

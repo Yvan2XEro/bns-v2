@@ -10,7 +10,7 @@ fi
 echo "🔍 Biome: checking staged files..."
 
 # Step 1: Auto-fix formatting and safe fixes on staged files
-echo "$STAGED_FILES" | xargs bunx biome check --write --unsafe 2>/dev/null
+echo "$STAGED_FILES" | xargs bunx biome check --write 2>/dev/null
 
 # Step 2: Re-stage the auto-fixed files
 echo "$STAGED_FILES" | xargs git add

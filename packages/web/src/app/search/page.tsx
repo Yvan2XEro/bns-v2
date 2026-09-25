@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { SearchTabs } from "~/components/search/search-tabs";
 import { serverFetch } from "~/lib/server-api";
+import { getShopsEnabled } from "~/lib/server-shop";
 import type { Category, Favorite, Listing } from "~/types";
 import { SearchClient } from "./search-client";
+import { ShopSearchClient } from "./shop-search-client";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
 
@@ -86,6 +89,21 @@ export default async function SearchPage({
 	searchParams: Promise<Record<string, string>>;
 }) {
 	const params = await searchParams;
+	const shopsEnabled = await getShopsEnabled();
+	const tab = shopsEnabled && params.tab === "shops" ? "shops" : "listings";
+
+	if (tab === "shops") {
+		return (
+			<>
+				<SearchTabs active="shops" q={params.q ?? ""} />
+				<ShopSearchClient
+					initialQ={params.q ?? ""}
+					initialCity={params.city ?? ""}
+				/>
+			</>
+		);
+	}
+
 	const [categories, initialData, favoriteIds] = await Promise.all([
 		getCategories(),
 		getInitialListings(params),
@@ -93,12 +111,15 @@ export default async function SearchPage({
 	]);
 
 	return (
-		<SearchClient
-			categories={categories}
-			initialListings={initialData.hits}
-			initialTotal={initialData.total}
-			initialParams={params}
-			favoriteIds={favoriteIds}
-		/>
+		<>
+			{shopsEnabled && <SearchTabs active="listings" q={params.q ?? ""} />}
+			<SearchClient
+				categories={categories}
+				initialListings={initialData.hits}
+				initialTotal={initialData.total}
+				initialParams={params}
+				favoriteIds={favoriteIds}
+			/>
+		</>
 	);
 }

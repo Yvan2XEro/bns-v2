@@ -13,6 +13,8 @@ export interface AppConfig {
 	chatUrl: string | null;
 	novuAppId: string | null;
 	boostPricing: BoostPrice[];
+	/** Gates shop creation only. Fails closed: "unavailable" reads as "off". */
+	shopsEnabled: boolean;
 }
 
 export const EMPTY_APP_CONFIG: AppConfig = {
@@ -20,6 +22,7 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	chatUrl: null,
 	novuAppId: null,
 	boostPricing: [],
+	shopsEnabled: false,
 };
 
 const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);

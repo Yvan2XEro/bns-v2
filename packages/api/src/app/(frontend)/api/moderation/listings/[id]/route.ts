@@ -4,7 +4,11 @@ import {
 	readJson,
 	requireModerator,
 } from "@/lib/moderationRoute";
-import { approveListing, rejectListing } from "@/services/moderation";
+import {
+	approveListing,
+	clearListingHold,
+	rejectListing,
+} from "@/services/moderation";
 
 export async function POST(
 	request: Request,
@@ -29,6 +33,12 @@ export async function POST(
 			const reason = typeof body.reason === "string" ? body.reason : "";
 			return Response.json(
 				await rejectListing(ctx.payload, ctx.actor, id, reason, note),
+			);
+		}
+
+		if (action === "clearHold") {
+			return Response.json(
+				await clearListingHold(ctx.payload, ctx.actor, id, note),
 			);
 		}
 

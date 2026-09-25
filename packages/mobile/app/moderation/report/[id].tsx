@@ -34,6 +34,9 @@ function targetRoute(report: ReportDoc): string | null {
 	if (report.targetType === "user") {
 		return `/moderation/user/${report.targetId}`;
 	}
+	if (report.targetType === "shop") {
+		return `/moderation/shop/${report.targetId}`;
+	}
 	return null;
 }
 
@@ -149,7 +152,9 @@ export default function ModerateReportScreen() {
 											? "person"
 											: data.targetType === "listing"
 												? "pricetag"
-												: "chatbubble"
+												: data.targetType === "shop"
+													? "storefront"
+													: "chatbubble"
 									}
 									size={18}
 									color={c.muted}

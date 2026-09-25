@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { MyShopEntry } from "~/components/shop/my-shop-entry";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -23,6 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { formatListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
+import { getMyShop, getShopsEnabled } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
 import { ProfileEditForm } from "./profile-edit-form";
 
@@ -57,9 +59,11 @@ export default async function MyProfilePage() {
 	const user = (await getAuthUser()) as User | null;
 	if (!user) return null;
 
-	const [reviews, listings] = await Promise.all([
+	const [reviews, listings, shopsEnabled, mine] = await Promise.all([
 		getUserReviews(user.id),
 		getUserListings(user.id),
+		getShopsEnabled(),
+		getMyShop(),
 	]);
 
 	const averageRating =
@@ -174,6 +178,8 @@ export default async function MyProfilePage() {
 									</div>
 								</CardContent>
 							</Card>
+
+							<MyShopEntry mine={mine} shopsEnabled={shopsEnabled} />
 
 							<Link
 								href="/profile/me/searches"

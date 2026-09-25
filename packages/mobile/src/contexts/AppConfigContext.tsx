@@ -8,6 +8,7 @@ export interface AppConfig {
 	webUrl: string | null;
 	enabledAuthProviders: string[];
 	localAuthEnabled: boolean;
+	shopsEnabled: boolean;
 }
 
 const DEFAULT: AppConfig = {
@@ -16,6 +17,7 @@ const DEFAULT: AppConfig = {
 	webUrl: null,
 	enabledAuthProviders: ["google", "apple", "facebook"],
 	localAuthEnabled: true,
+	shopsEnabled: false,
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);
@@ -23,7 +25,12 @@ const AppConfigContext = createContext<AppConfig>(DEFAULT);
 export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 	const { data: config = DEFAULT } = useQuery<AppConfig>({
 		queryKey: ["app-config"],
-		queryFn: () => api.get<AppConfig>("/api/public/config"),
+		// A released API that predates a config key keeps that feature off by
+		// merging over the default rather than leaving the key undefined.
+		queryFn: async () => ({
+			...DEFAULT,
+			...(await api.get<Partial<AppConfig>>("/api/public/config")),
+		}),
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: 3,
 	});

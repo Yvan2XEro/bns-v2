@@ -142,6 +142,10 @@ same patterns as mobile.
   observes.
 - API: `packages/api/tests/int/*.int.spec.ts`, using the shared in-memory
   Payload fake in `tests/int/helpers/`.
+- Web and mobile: `bun test` from the package. Tests sit beside the code they
+  cover (`src/lib/*.test.ts`). Neither package has a component-render harness,
+  so logic that needs pinning belongs in a pure module under `src/lib` rather
+  than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
 - Five API test files fail at `HEAD` for reasons that predate this work
   (module-load timeouts): `api.int.spec.ts`, `boost-callback-route`,

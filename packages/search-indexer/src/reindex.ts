@@ -1,8 +1,12 @@
 import { transformListing } from "./handlers/listingCreated.ts";
+import { transformShop } from "./handlers/shopUpdated.ts";
 import {
 	clearIndex,
+	clearShopsIndex,
 	configureIndex,
+	configureShopsIndex,
 	indexDocuments,
+	indexShopDocuments,
 	type ListingDocument,
 } from "./meilisearch.ts";
 
@@ -79,9 +83,44 @@ async function main(): Promise<void> {
 	console.log(
 		`[search-indexer] reindex complete: indexed=${documents.length} skipped=${skipped} total=${total}`,
 	);
+
+	await reindexShops();
 }
 
-main().catch((error) => {
-	console.error("[search-indexer] reindex fatal error:", error);
-	process.exit(1);
-});
+/** Active shops only — a suspended or closed one has no business in the shops index. */
+export async function reindexShops(): Promise<number> {
+	console.log("[search-indexer] reindex shops...");
+	await configureShopsIndex();
+	await clearShopsIndex();
+	let shopPage = 1;
+	let shopCount = 0;
+	for (;;) {
+		const response = await fetch(
+			`${PAYLOAD_API_URL}/shops?depth=1&limit=${PAGE_SIZE}&page=${shopPage}`,
+		);
+		if (!response.ok)
+			throw new Error(`Failed to fetch shops: ${response.status}`);
+		const data = (await response.json()) as {
+			docs: Record<string, unknown>[];
+			hasNextPage: boolean;
+		};
+		const docs = data.docs
+			.filter((shop) => shop.status === "active")
+			.map(transformShop);
+		await indexShopDocuments(docs);
+		shopCount += docs.length;
+		if (!data.hasNextPage) break;
+		shopPage++;
+	}
+	console.log(`[search-indexer] reindex shops complete: indexed=${shopCount}`);
+	return shopCount;
+}
+
+// `import.meta.main` keeps a test import of this module from firing the
+// bulk reindex against a real (or absent) Payload API.
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error("[search-indexer] reindex fatal error:", error);
+		process.exit(1);
+	});
+}

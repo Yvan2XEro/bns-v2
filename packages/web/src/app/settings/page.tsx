@@ -15,6 +15,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
+import { safeReturnTo } from "~/lib/return-to";
 
 interface PhoneVerificationStatus {
 	expiresAt: null | string;
@@ -241,6 +242,13 @@ export default function SettingsPage() {
 			await refreshUser();
 			setOtpCode("");
 			setPhoneSuccess("Phone number verified successfully");
+
+			// Read from the URL at call time: useSearchParams would force a
+			// Suspense boundary on this client page for a single optional value.
+			const returnTo = safeReturnTo(
+				new URLSearchParams(window.location.search).get("returnTo"),
+			);
+			if (returnTo) router.push(returnTo);
 		} catch (err) {
 			setPhoneError(
 				err instanceof Error ? err.message : "Failed to verify phone number",
@@ -369,7 +377,7 @@ export default function SettingsPage() {
 					</CardContent>
 				</Card>
 
-				<Card className="border-[#E2E8F0]">
+				<Card id="phone" className="border-[#E2E8F0]">
 					<CardHeader>
 						<CardTitle className="text-[#0F172A]">
 							{t("verifyPhoneNumber")}

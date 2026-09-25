@@ -1,8 +1,7 @@
 import { suspensionSummary } from "@/access/roles";
-import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import {
 	handleModerationError,
-	readJson,
+	parseSuspensionAction,
 	requireModerator,
 } from "@/lib/moderationRoute";
 import { suspendUser, unsuspendUser } from "@/services/moderation";
@@ -104,39 +103,18 @@ export async function POST(
 	if (ctx instanceof Response) return ctx;
 
 	const { id } = await params;
-	const body = await readJson(request);
-	const note = typeof body.note === "string" ? body.note : null;
+	const parsed = await parseSuspensionAction(request);
+	if (parsed instanceof Response) return parsed;
 
 	try {
-		if (body.action === "suspend") {
-			// `durationDays: null` is an explicit request for an indefinite
-			// suspension and is distinct from the key being absent, which is a
-			// malformed body.
-			if (!("durationDays" in body)) {
-				return errorResponse(ERROR_CODES.moderationDurationInvalid, 400);
-			}
-			const durationDays =
-				body.durationDays === null ? null : Number(body.durationDays);
-
+		if (parsed.action === "suspend") {
 			return Response.json(
-				await suspendUser(ctx.payload, ctx.actor, id, {
-					reason: typeof body.reason === "string" ? body.reason : "",
-					durationDays,
-					note,
-				}),
+				await suspendUser(ctx.payload, ctx.actor, id, parsed),
 			);
 		}
-
-		if (body.action === "unsuspend") {
-			return Response.json(
-				await unsuspendUser(ctx.payload, ctx.actor, id, {
-					note,
-					restoreListings: body.restoreListings !== false,
-				}),
-			);
-		}
-
-		return errorResponse(ERROR_CODES.badRequest, 400);
+		return Response.json(
+			await unsuspendUser(ctx.payload, ctx.actor, id, parsed),
+		);
 	} catch (error) {
 		return handleModerationError("users:post", error);
 	}

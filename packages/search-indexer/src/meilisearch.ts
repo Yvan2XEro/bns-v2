@@ -44,6 +44,13 @@ export type ListingDocument = {
 	images: unknown[];
 	createdAt: string;
 	updatedAt: string;
+	shopId: string | null;
+	shopHandle: string | null;
+	shopName: string | null;
+	shopLevel: number | null;
+	priceMax: number | null;
+	/** Buyer-safe purchasability signal, not the exact unit count — see the API's `isProductAvailable`. */
+	available: boolean | null;
 	[key: string]: unknown;
 };
 
@@ -167,6 +174,8 @@ const STATIC_FILTERABLE_ATTRIBUTES = [
 	"sellerId",
 	"tags",
 	"_geo",
+	"shopId",
+	"shopLevel",
 ];
 
 /** What the index was last configured with, to skip no-op settings updates. */
@@ -222,6 +231,7 @@ export async function configureIndex(
 				"location",
 				"category",
 				"tags",
+				"shopName",
 			],
 			filterableAttributes,
 			sortableAttributes: [
@@ -285,4 +295,56 @@ export async function clearIndex(): Promise<void> {
 		);
 		throw error;
 	}
+}
+
+const SHOPS_INDEX_NAME = "shops";
+
+export type ShopDocument = {
+	id: string;
+	handle: string;
+	name: string;
+	description: string | null;
+	city: string | null;
+	region: string | null;
+	countryCode: string | null;
+	categoryIds: string[];
+	level: number;
+	publishedListingCount: number;
+	createdAt: string;
+	logoUrl: string | null;
+	ownerRating: number;
+	ownerReviews: number;
+};
+
+export function getShopsIndex() {
+	return getClient().index(SHOPS_INDEX_NAME);
+}
+
+export async function configureShopsIndex(): Promise<void> {
+	await getShopsIndex().updateSettings({
+		searchableAttributes: ["name", "handle", "description", "city"],
+		filterableAttributes: ["city", "countryCode", "categoryIds", "level"],
+		sortableAttributes: ["publishedListingCount", "createdAt"],
+	});
+	console.log(
+		`[search-indexer] meilisearch index "${SHOPS_INDEX_NAME}" configured`,
+	);
+}
+
+export async function indexShopDocument(doc: ShopDocument): Promise<void> {
+	await getShopsIndex().addDocuments([doc], { primaryKey: "id" });
+}
+
+export async function indexShopDocuments(docs: ShopDocument[]): Promise<void> {
+	if (docs.length === 0) return;
+	await getShopsIndex().addDocuments(docs, { primaryKey: "id" });
+}
+
+export async function deleteShopDocument(id: string): Promise<void> {
+	await getShopsIndex().deleteDocument(id);
+	console.log(`[search-indexer] meilisearch deleted shop ${id}`);
+}
+
+export async function clearShopsIndex(): Promise<void> {
+	await getShopsIndex().deleteAllDocuments();
 }

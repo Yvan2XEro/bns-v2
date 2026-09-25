@@ -98,6 +98,10 @@ services:
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
       PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Hops of X-Forwarded-For to trust for the client IP used by rate
+      # limiting: 1 for Traefik, the single reverse proxy in front of this
+      # container here.
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}

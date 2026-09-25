@@ -67,6 +67,28 @@ export const ERROR_CODES = {
 	reviewSelf: "review.self",
 	reviewDuplicate: "review.duplicate",
 	reviewNoInteraction: "review.noInteraction",
+
+	accountSuspended: "moderation.accountSuspended",
+	moderationForbidden: "moderation.forbidden",
+	moderationRankTooLow: "moderation.rankTooLow",
+	moderationTargetNotFound: "moderation.targetNotFound",
+	moderationReasonRequired: "moderation.reasonRequired",
+	moderationDurationInvalid: "moderation.durationInvalid",
+	moderationInvalidTransition: "moderation.invalidTransition",
+
+	shopDisabled: "shop.disabled",
+	shopPhoneNotVerified: "shop.phoneNotVerified",
+	shopLimitReached: "shop.limitReached",
+	shopHandleInvalid: "shop.handleInvalid",
+	shopHandleReserved: "shop.handleReserved",
+	shopHandleTaken: "shop.handleTaken",
+	shopHandleCooldown: "shop.handleCooldown",
+	shopNotMember: "shop.notMember",
+	shopInactive: "shop.inactive",
+	shopNotFound: "shop.notFound",
+	stockNegative: "stock.negative",
+	stockInsufficient: "stock.insufficient",
+	stockCountStale: "stock.countStale",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -126,6 +148,37 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.reviewDuplicate]: "You have already reviewed this user.",
 	[ERROR_CODES.reviewNoInteraction]:
 		"You can review a user only after contacting them.",
+	[ERROR_CODES.accountSuspended]:
+		"Your account is suspended. You cannot publish listings or send messages right now.",
+	[ERROR_CODES.moderationForbidden]:
+		"You do not have permission to moderate this content.",
+	[ERROR_CODES.moderationRankTooLow]:
+		"You cannot take this action against this account.",
+	[ERROR_CODES.moderationTargetNotFound]:
+		"The content you are trying to moderate no longer exists.",
+	[ERROR_CODES.moderationReasonRequired]: "A reason is required.",
+	[ERROR_CODES.moderationDurationInvalid]:
+		"This suspension length is not allowed for your role.",
+	[ERROR_CODES.moderationInvalidTransition]:
+		"This item is not in a state where that action applies.",
+	[ERROR_CODES.shopDisabled]: "Shops are not available yet.",
+	[ERROR_CODES.shopPhoneNotVerified]:
+		"Verify your phone number to open a shop.",
+	[ERROR_CODES.shopLimitReached]: "You already have a shop.",
+	[ERROR_CODES.shopHandleInvalid]:
+		"This address is not valid. Use 3 to 30 lowercase letters, digits or hyphens.",
+	[ERROR_CODES.shopHandleReserved]: "This address is reserved.",
+	[ERROR_CODES.shopHandleTaken]: "This address is already taken.",
+	[ERROR_CODES.shopHandleCooldown]:
+		"The shop address can change only once every 30 days.",
+	[ERROR_CODES.shopNotMember]: "You are not a member of this shop.",
+	[ERROR_CODES.shopInactive]: "This shop is not active.",
+	[ERROR_CODES.shopNotFound]: "This shop does not exist.",
+	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
+	[ERROR_CODES.stockInsufficient]:
+		"Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
+	[ERROR_CODES.stockCountStale]:
+		"The stock changed while you were counting. Reload the page and count again.",
 };
 
 export function fallbackFor(code: string): string {

@@ -2,7 +2,9 @@ import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
+import { activeShopIds } from "@/lib/activeShopIds";
 import { quoteFilterValue } from "@/lib/meiliFilter";
+import { relationId } from "@/lib/relationId";
 
 const meiliConfigured = !!process.env.MEILI_HOST;
 console.log(
@@ -42,18 +44,220 @@ function buildAttributeFilter(slug: string, raw: string): string | null {
 	return `${slug} = ${quoteFilterValue(value)}`;
 }
 
-const serializeListingHit = (doc: Record<string, unknown>) => ({
-	id: doc.id,
-	title: doc.title,
-	description: doc.description,
-	price: doc.price,
-	location: doc.location,
-	images: doc.images,
-	status: doc.status,
-	boostedUntil: doc.boostedUntil,
-	attributes: doc.attributes,
-	createdAt: doc.createdAt,
-});
+const asString = (value: unknown): string | null =>
+	typeof value === "string" ? value : null;
+const asNumber = (value: unknown): number | null =>
+	typeof value === "number" ? value : null;
+const asBoolean = (value: unknown): boolean | null =>
+	typeof value === "boolean" ? value : null;
+
+/**
+ * Takes `unknown` so a caller passes its `Listing`/hit value straight through,
+ * with no cast of its own — it accepts two shapes for the same fields:
+ *
+ * - The Payload path populates `doc.shop` as a full relation, carrying the
+ *   shop's live `status`, so it re-checks it directly — the same rule
+ *   `/s/{handle}` enforces by 404ing.
+ * - The Meilisearch path indexes flat `shopId`/`shopHandle`/`shopName`/
+ *   `shopLevel`/`priceMax`/`available` fields (`ListingDocument`) with no
+ *   status to re-check here. The indexing rule (suspending unpublishes —
+ *   pulling the listing out via its own `listing.updated` event; closing
+ *   clears `shop` on the listing) keeps this path correct as long as every
+ *   event lands, but the publish is fire-and-forget (`searchEvents.ts` drops
+ *   a failed publish, no retry), so the caller batches a live status check
+ *   over a page of hits behind this — see `blankStaleShops`.
+ *
+ * `available` is a purchasability boolean, not the exact unit count — see
+ * `isProductAvailable` — the same spirit as `product-variants.available`, so
+ * this route never reads or forwards a number for it.
+ */
+const serializeListingHit = (input: unknown) => {
+	const doc = (input ?? {}) as Record<string, unknown>;
+	const shop =
+		doc.shop && typeof doc.shop === "object"
+			? (doc.shop as Record<string, unknown>)
+			: null;
+	const activeShop = shop && shop.status === "active" ? shop : null;
+	const summary = (doc.productSummary ?? null) as {
+		priceMax?: number | null;
+		available?: boolean | null;
+	} | null;
+	return {
+		id: doc.id,
+		title: doc.title,
+		description: doc.description,
+		price: doc.price,
+		location: doc.location,
+		images: doc.images,
+		status: doc.status,
+		boostedUntil: doc.boostedUntil,
+		attributes: doc.attributes,
+		createdAt: doc.createdAt,
+		shopId: relationId(doc.shop) ?? asString(doc.shopId),
+		shopHandle: asString(activeShop?.handle) ?? asString(doc.shopHandle),
+		shopName: asString(activeShop?.name) ?? asString(doc.shopName),
+		shopLevel: asNumber(activeShop?.level) ?? asNumber(doc.shopLevel),
+		priceMax: asNumber(summary?.priceMax) ?? asNumber(doc.priceMax),
+		available: asBoolean(summary?.available) ?? asBoolean(doc.available),
+	};
+};
+
+type ListingHit = ReturnType<typeof serializeListingHit>;
+
+/**
+ * The insurance behind the Meilisearch path's trust in its own shop fields:
+ * one query for every distinct `shopId` a page of hits carries, and blank
+ * the display fields of any shop that query does not confirm active —
+ * exactly what the Payload path already gets for free from its populated
+ * relation. Skipped entirely when the page carries no shop ids.
+ */
+async function blankStaleShops(hits: ListingHit[]): Promise<ListingHit[]> {
+	const shopIds = Array.from(
+		new Set(
+			hits
+				.map((hit) => hit.shopId)
+				.filter((id): id is string => typeof id === "string"),
+		),
+	);
+	if (shopIds.length === 0) return hits;
+
+	const payload = await getPayload({ config });
+	const active = await activeShopIds(payload, shopIds);
+	return hits.map((hit) =>
+		hit.shopId && !active.has(hit.shopId)
+			? { ...hit, shopHandle: null, shopName: null, shopLevel: null }
+			: hit,
+	);
+}
+
+interface FallbackParams {
+	query: string;
+	category: string | null;
+	shopParam: string | null;
+	minPrice: string | null;
+	maxPrice: string | null;
+	location: string | null;
+	conditionParam: string | null;
+	boostedOnly: boolean;
+	sortParam: string;
+	limit: number;
+	offset: number;
+	nowIso: string;
+}
+
+/**
+ * The Payload path: source of truth for every filter, including `shop`,
+ * which only this path can enforce against the shop's own status (Shops'
+ * read access already answers "not found" for a suspended or closed shop to
+ * an anonymous caller, so reusing it here is cheaper and safer than
+ * re-deriving the rule). Shared by the two callers below so a page computed
+ * from `offset` always means the same thing in both.
+ */
+async function runPayloadListingSearch(
+	params: FallbackParams,
+): Promise<Response> {
+	const {
+		query,
+		category,
+		shopParam,
+		minPrice,
+		maxPrice,
+		location,
+		conditionParam,
+		boostedOnly,
+		sortParam,
+		limit,
+		offset,
+		nowIso,
+	} = params;
+	const payload = await getPayload({ config });
+	const where: Where = {
+		status: { equals: "published" },
+	};
+
+	if (query) {
+		where.or = [
+			{ title: { contains: query } },
+			{ description: { contains: query } },
+		];
+	}
+
+	if (category) {
+		where.category = { equals: category };
+	}
+
+	if (shopParam) {
+		const shops = await payload.find({
+			collection: "shops",
+			where: { id: { equals: shopParam } },
+			depth: 0,
+			limit: 1,
+		});
+		if (!shops.docs[0]) {
+			return Response.json({ hits: [], total: 0, limit, offset });
+		}
+		where.shop = { equals: shopParam };
+	}
+
+	if (minPrice || maxPrice) {
+		const priceFilter: Record<string, number> = {};
+		if (minPrice) priceFilter.greater_than = Number.parseInt(minPrice, 10);
+		if (maxPrice) priceFilter.less_than = Number.parseInt(maxPrice, 10);
+		where.price = priceFilter;
+	}
+
+	if (location) {
+		where.location = { contains: location };
+	}
+
+	if (conditionParam) {
+		const conditions = conditionParam
+			.split(",")
+			.map((c) => c.trim())
+			.filter(Boolean);
+		if (conditions.length > 0) {
+			where.condition = { in: conditions };
+		}
+	}
+
+	if (boostedOnly) {
+		where.boostedUntil = { greater_than: nowIso };
+	}
+
+	let payloadSort: string;
+	switch (sortParam) {
+		case "oldest":
+			payloadSort = "createdAt";
+			break;
+		case "price_asc":
+			payloadSort = "price";
+			break;
+		case "price_desc":
+			payloadSort = "-price";
+			break;
+		case "boosted":
+			payloadSort = "-boostedUntil";
+			break;
+		default:
+			payloadSort = boostedOnly ? "-boostedUntil" : "-createdAt";
+			break;
+	}
+
+	const result = await payload.find({
+		collection: "listings",
+		where,
+		limit,
+		page: Math.floor(offset / limit) + 1,
+		sort: payloadSort,
+	});
+
+	return Response.json({
+		hits: result.docs.map((doc) => serializeListingHit(doc)),
+		total: result.totalDocs,
+		limit,
+		offset,
+	});
+}
 
 export async function GET(request: Request) {
 	const start = Date.now();
@@ -66,16 +270,37 @@ export async function GET(request: Request) {
 	const lat = searchParams.get("lat");
 	const lng = searchParams.get("lng");
 	const radius = Number.parseInt(searchParams.get("radius") || "50", 10);
-	const limit = Number.parseInt(searchParams.get("limit") || "20", 10);
+	// Clamped like the shops route: an unbounded limit reaches Meilisearch
+	// directly, and now also sizes the live shop-status check's `in` filter.
+	const limit = Math.min(
+		50,
+		Math.max(1, Number.parseInt(searchParams.get("limit") || "20", 10) || 20),
+	);
 	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
 	const sortParam = searchParams.get("sort") || "newest";
 	const boostedOnly = isTruthyQueryParam(searchParams.get("boosted"));
 	const conditionParam = searchParams.get("condition");
 	const tagsParam = searchParams.get("tags");
+	const shopParam = searchParams.get("shop");
 	const nowIso = new Date().toISOString();
 
 	const host = process.env.MEILI_HOST;
 	const key = process.env.MEILI_MASTER_KEY;
+
+	const fallbackParams: FallbackParams = {
+		query,
+		category,
+		shopParam,
+		minPrice,
+		maxPrice,
+		location,
+		conditionParam,
+		boostedOnly,
+		sortParam,
+		limit,
+		offset,
+		nowIso,
+	};
 
 	const dynamicFilters: string[] = [];
 	for (const [key, value] of searchParams.entries()) {
@@ -91,82 +316,7 @@ export async function GET(request: Request) {
 	}
 
 	if (!host || boostedOnly) {
-		const payload = await getPayload({ config });
-		const where: Where = {
-			status: { equals: "published" },
-		};
-
-		if (query) {
-			where.or = [
-				{ title: { contains: query } },
-				{ description: { contains: query } },
-			];
-		}
-
-		if (category) {
-			where.category = { equals: category };
-		}
-
-		if (minPrice || maxPrice) {
-			const priceFilter: Record<string, number> = {};
-			if (minPrice) priceFilter.greater_than = Number.parseInt(minPrice, 10);
-			if (maxPrice) priceFilter.less_than = Number.parseInt(maxPrice, 10);
-			where.price = priceFilter;
-		}
-
-		if (location) {
-			where.location = { contains: location };
-		}
-
-		if (conditionParam) {
-			const conditions = conditionParam
-				.split(",")
-				.map((c) => c.trim())
-				.filter(Boolean);
-			if (conditions.length > 0) {
-				where.condition = { in: conditions };
-			}
-		}
-
-		if (boostedOnly) {
-			where.boostedUntil = { greater_than: nowIso };
-		}
-
-		let payloadSort: string;
-		switch (sortParam) {
-			case "oldest":
-				payloadSort = "createdAt";
-				break;
-			case "price_asc":
-				payloadSort = "price";
-				break;
-			case "price_desc":
-				payloadSort = "-price";
-				break;
-			case "boosted":
-				payloadSort = "-boostedUntil";
-				break;
-			default:
-				payloadSort = boostedOnly ? "-boostedUntil" : "-createdAt";
-				break;
-		}
-
-		const result = await payload.find({
-			collection: "listings",
-			where,
-			limit,
-			page: Math.floor(offset / limit) + 1,
-			sort: payloadSort,
-		});
-
-		return Response.json({
-			hits: result.docs.map((doc) =>
-				serializeListingHit(doc as unknown as Record<string, unknown>),
-			),
-			total: result.totalDocs,
-			limit,
-			offset,
-		});
+		return runPayloadListingSearch(fallbackParams);
 	}
 
 	console.log("[search] Using Meilisearch");
@@ -177,6 +327,10 @@ export async function GET(request: Request) {
 
 	if (category) {
 		filters.push(`categoryId = ${quoteFilterValue(category)}`);
+	}
+
+	if (shopParam) {
+		filters.push(`shopId = ${quoteFilterValue(shopParam)}`);
 	}
 
 	if (minPrice) {
@@ -277,6 +431,13 @@ export async function GET(request: Request) {
 			`[search] Meilisearch rejected the query. filter=${filter} sort=${sort.join(",")}`,
 			error,
 		);
+		if (shopParam) {
+			// `shopId` is filterable, but an index a deploy has not yet reconfigured
+			// (or a shop-filtered query Meilisearch otherwise refuses) should not
+			// take every other search down with a 503 — fail safe to the Payload
+			// path instead.
+			return runPayloadListingSearch(fallbackParams);
+		}
 		return Response.json(
 			{ error: "Search is unavailable", code: "search.unavailable" },
 			{ status: 503 },
@@ -286,10 +447,26 @@ export async function GET(request: Request) {
 	console.log(
 		`[search] Meilisearch returned ${result.estimatedTotalHits ?? 0} results in ${Date.now() - start}ms`,
 	);
-	return Response.json({
-		hits: result.hits,
-		total: result.estimatedTotalHits,
-		limit,
-		offset,
-	});
+	const hits = result.hits.map((hit: unknown) => serializeListingHit(hit));
+
+	try {
+		// Same shape as the Payload path — `serializeListingHit` reads the
+		// indexer's flat `shopId`/`shopHandle`/`shopName`/`shopLevel`/`priceMax`/
+		// `available` fields for a Meilisearch hit, and `blankStaleShops`
+		// re-checks each one against a shop the index might not know is gone.
+		return Response.json({
+			hits: await blankStaleShops(hits),
+			total: result.estimatedTotalHits,
+			limit,
+			offset,
+		});
+	} catch (error) {
+		// The live check hits the database, not Meilisearch — a search that
+		// otherwise succeeded should not 500 because of it. Degrade the way a
+		// Meilisearch failure already does for the shop filter: fail safe to
+		// the Payload path instead, same as the sibling shops route does
+		// unconditionally for its own live check.
+		console.error("[search] Live shop status check failed", error);
+		return runPayloadListingSearch(fallbackParams);
+	}
 }

@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
+import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
@@ -28,6 +29,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
+import { useMyShop } from "~/hooks/use-my-shop";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
@@ -42,6 +44,7 @@ import {
 	resolveFormPreset,
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
+import { listingShopId } from "~/lib/listing-shop";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
 import type { Category, Listing, ListingCondition, Media } from "~/types";
@@ -64,8 +67,19 @@ export function EditListingForm({
 	const t = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
+	const tShop = useTranslations("Shop");
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
+
+	const { data: myShop } = useMyShop();
+	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
+	// The listing's own shop, not the caller's current one: P1 is one shop per
+	// seller so the two coincide in practice, but a listing already filed under
+	// a shop must stay there rather than silently follow the account to
+	// whichever shop it happens to hold when the form is saved.
+	const originalShopId = listingShopId(listing);
+	const wasInShop = originalShopId !== null;
+	const [publishInShop, setPublishInShop] = useState(wasInShop);
 
 	const CONDITIONS: { value: ListingCondition; label: string }[] = [
 		{ value: "new", label: tCond("new") },
@@ -277,6 +291,16 @@ export function EditListingForm({
 
 			if (coordinates) {
 				updateData.coordinates = coordinates;
+			}
+			// Only a member can move the listing in or out; otherwise the field is
+			// left alone so a suspended shop does not silently lose its listings.
+			// Checking the toggle keeps a listing that already has a shop where it
+			// is; it only ever attaches an unshopped listing to the caller's own
+			// shop, so it can never reassign a listing to a different shop.
+			if (activeShop) {
+				updateData.shop = publishInShop
+					? (originalShopId ?? activeShop.id)
+					: null;
 			}
 
 			const res = await fetch(`/api/listings/${listing.id}`, {
@@ -681,6 +705,20 @@ export function EditListingForm({
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* Shop */}
+			{activeShop && (
+				<div className="space-y-2">
+					<PublishInShopToggle
+						shopName={activeShop.name}
+						checked={publishInShop}
+						onChange={setPublishInShop}
+					/>
+					{wasInShop && !publishInShop && (
+						<p className="text-amber-700 text-xs">{tShop("detachWarning")}</p>
+					)}
+				</div>
+			)}
 
 			{/* Save */}
 			<div className="flex justify-end gap-3">

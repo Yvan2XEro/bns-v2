@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { listingProductId } from "~/lib/listing-shop";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Category, Listing } from "~/types";
 import { EditListingForm } from "./edit-listing-form";
@@ -48,6 +49,12 @@ export default async function EditListingPage({ params }: PageProps) {
 		typeof listing.seller === "object" ? listing.seller?.id : listing.seller;
 	if (sellerId !== user.id) {
 		redirect(`/listing/${id}`);
+	}
+
+	// A product listing is derived: its product is the only place to edit it.
+	const productId = listingProductId(listing);
+	if (productId) {
+		redirect(`/seller/catalogue/${productId}`);
 	}
 
 	return (
