@@ -74,6 +74,22 @@ export const ERROR_CODES = {
 	moderationReasonRequired: "moderation.reasonRequired",
 	moderationDurationInvalid: "moderation.durationInvalid",
 	moderationInvalidTransition: "moderation.invalidTransition",
+
+	// Payments and boosts
+	paymentProviderUnavailable: "payment.providerUnavailable",
+	// Logged when a provider reports another amount or currency; never sent to a client.
+	paymentAmountMismatch: "payment.amountMismatch",
+	boostNotOwner: "boost.notOwner",
+	boostListingNotPublished: "boost.listingNotPublished",
+	boostInvalidDuration: "boost.invalidDuration",
+
+	// Reviews
+	reviewSelf: "review.self",
+	reviewDuplicate: "review.duplicate",
+	reviewNoInteraction: "review.noInteraction",
+
+	// Seller contact
+	contactPhoneUnavailable: "contact.phoneUnavailable",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -139,6 +155,20 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"This suspension length is not allowed for your role.",
 	[ERROR_CODES.moderationInvalidTransition]:
 		"This item is not in a state where that action applies.",
+
+	[ERROR_CODES.paymentProviderUnavailable]:
+		"Payment is unavailable right now. Please try again later.",
+	[ERROR_CODES.paymentAmountMismatch]: "The payment could not be confirmed.",
+	[ERROR_CODES.boostNotOwner]: "You can only boost your own listings.",
+	[ERROR_CODES.boostListingNotPublished]:
+		"Only published listings can be boosted.",
+	[ERROR_CODES.boostInvalidDuration]: "This boost duration is not available.",
+	[ERROR_CODES.reviewSelf]: "You cannot review yourself.",
+	[ERROR_CODES.reviewDuplicate]: "You have already reviewed this user.",
+	[ERROR_CODES.reviewNoInteraction]:
+		"You can review a user only after contacting them.",
+	[ERROR_CODES.contactPhoneUnavailable]:
+		"This seller has not shared a phone number.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {

@@ -2,17 +2,27 @@
 
 import { createContext, useContext } from "react";
 
+export interface BoostPrice {
+	days: number;
+	amount: number;
+	currency: string;
+}
+
 export interface AppConfig {
 	stripePublishableKey: string | null;
 	chatUrl: string | null;
 	novuAppId: string | null;
+	boostPricing: BoostPrice[];
 }
 
-const AppConfigContext = createContext<AppConfig>({
+export const EMPTY_APP_CONFIG: AppConfig = {
 	stripePublishableKey: null,
 	chatUrl: null,
 	novuAppId: null,
-});
+	boostPricing: [],
+};
+
+const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);
 
 interface Props {
 	initialConfig: AppConfig;

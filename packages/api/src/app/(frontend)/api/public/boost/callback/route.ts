@@ -1,47 +1,52 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
-import { activateBoostPayment } from "@/lib/boostPayments";
-import { getNotchPayProvider } from "@/lib/payments";
+import { getProvider } from "@/lib/payments";
+import { type SettleOutcome, settlePayment } from "@/services/payments";
+
+type CallbackStatus = "success" | "pending" | "failed";
+
+function callbackStatus(result: SettleOutcome): CallbackStatus {
+	if (result.outcome === "unknown_reference") return "failed";
+	const { status } = result.intent;
+	if (status === "succeeded") return "success";
+	if (status === "pending" || status === "created") return "pending";
+	return "failed";
+}
 
 /**
- * Callback GET après paiement (NotchPay et Stripe Checkout).
- * Query params : provider, listingId, appReturnUrl
- *   NotchPay ajoute aussi : reference
- *   Stripe ajoute aussi  : status (success|cancelled)
+ * GET redirect after a hosted checkout. It never activates anything by
+ * itself: NotchPay payments are verified with the provider and go through
+ * the same idempotent settlement as the webhook, in whichever order the two
+ * arrive.
  */
 export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const provider = url.searchParams.get("provider") ?? "notchpay";
-	const reference = url.searchParams.get("reference") ?? "";
-	const trxref = url.searchParams.get("trxref") ?? "";
+	const providerReference = url.searchParams.get("reference") ?? "";
 	const appReturnUrl = url.searchParams.get("appReturnUrl") ?? "";
 	const listingId = url.searchParams.get("listingId") ?? "";
 
-	let status = "failed";
+	let status: CallbackStatus = "failed";
 
 	if (provider === "stripe") {
 		// L'activation est gérée par le webhook Stripe ; on relaie juste le statut
-		const stripeStatus = url.searchParams.get("status") ?? "";
-		status = stripeStatus === "success" ? "success" : "failed";
-	} else {
-		// NotchPay : vérifier le paiement et activer le boost
-		if (reference) {
-			try {
-				const notchpay = getNotchPayProvider();
-				const paymentStatus = await notchpay.verifyPayment(reference);
-
-				if (paymentStatus === "completed") {
-					const activated = await activateBoost({
-						providerReference: reference,
-						internalReference: trxref,
-					});
-					status = activated ? "success" : "failed";
-				} else if (paymentStatus === "pending") {
-					status = "pending";
-				}
-			} catch (err) {
-				console.error("NotchPay callback error:", err);
-			}
+		status =
+			url.searchParams.get("status") === "success" ? "success" : "failed";
+	} else if (providerReference) {
+		try {
+			const payload = await getPayload({ config });
+			const verified =
+				await getProvider("notchpay").verifyPayment(providerReference);
+			const result = await settlePayment(payload, {
+				...verified,
+				source: "callback",
+			});
+			status = callbackStatus(result);
+		} catch (error) {
+			console.error(
+				"[boost callback] verification failed:",
+				error instanceof Error ? error.message : error,
+			);
 		}
 	}
 
@@ -72,19 +77,4 @@ export async function GET(request: Request) {
 		? `/listing/${listingId}?boostStatus=${status}`
 		: "/";
 	return Response.redirect(`${webUrl}${webPath}`, 302);
-}
-
-async function activateBoost({
-	providerReference,
-	internalReference,
-}: {
-	providerReference: string;
-	internalReference?: string;
-}): Promise<boolean> {
-	const payload = await getPayload({ config });
-	const activation = await activateBoostPayment({
-		payload,
-		candidateReferences: [internalReference, providerReference],
-	});
-	return Boolean(activation);
 }

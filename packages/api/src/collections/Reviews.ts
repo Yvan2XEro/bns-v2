@@ -1,8 +1,22 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
-import { updateUserRating } from "../hooks/reviews";
+import {
+	enforceReviewRules,
+	translateReviewWriteConflicts,
+	updateUserRating,
+} from "../hooks/reviews";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 
+/**
+ * The (reviewer, reviewedUser) uniqueness constraint is not declared here: it
+ * is a raw-driver index built by migration 20260915_000100_p0_reviews_audit,
+ * and only once that migration finds no legacy duplicate reviews left to
+ * resolve first. `enforceReviewRules` (create) still rejects an obvious
+ * duplicate on every write, and `translateReviewWriteConflicts` (afterError)
+ * translates the index's own rejection when two creates race past that
+ * check — but if the migration skipped building the index, that race is not
+ * closed. Check its logs for whether the index actually exists.
+ */
 export const Reviews: CollectionConfig = {
 	slug: "reviews",
 	admin: {
@@ -24,6 +38,8 @@ export const Reviews: CollectionConfig = {
 		},
 	},
 	hooks: {
+		beforeChange: [enforceReviewRules],
+		afterError: [translateReviewWriteConflicts],
 		afterChange: [
 			async ({ doc, req, operation }) => {
 				const reviewedUserId =

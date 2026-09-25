@@ -1170,7 +1170,21 @@
 			"invalidType": "Ce type de fichier n'est pas pris en charge."
 		},
 		"contact": {
-			"incomplete": "Veuillez remplir tous les champs."
+			"incomplete": "Veuillez remplir tous les champs.",
+			"phoneUnavailable": "Ce vendeur n'a pas partagé de numéro de téléphone."
+		},
+		"payment": {
+			"providerUnavailable": "Le paiement est indisponible pour le moment. Réessayez plus tard."
+		},
+		"boost": {
+			"notOwner": "Vous ne pouvez booster que vos propres annonces.",
+			"listingNotPublished": "Seules les annonces publiées peuvent être boostées.",
+			"invalidDuration": "Cette durée de boost n'est pas disponible."
+		},
+		"review": {
+			"self": "Vous ne pouvez pas vous évaluer vous-même.",
+			"duplicate": "Vous avez déjà évalué cet utilisateur.",
+			"noInteraction": "Vous pouvez évaluer un utilisateur seulement après l'avoir contacté."
 		}
 	},
 	"cityPicker": {

@@ -2,6 +2,7 @@ import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
+import { quoteFilterValue } from "@/lib/meiliFilter";
 
 const meiliConfigured = !!process.env.MEILI_HOST;
 console.log(
@@ -10,16 +11,6 @@ console.log(
 
 const isTruthyQueryParam = (value: string | null): boolean =>
 	value === "true" || value === "1";
-
-/**
- * Quotes a value for Meilisearch's filter expression.
- *
- * These came straight from the query string into the expression before, so a
- * value carrying a double quote either broke the whole search or extended the
- * filter with whatever followed it.
- */
-const quoteFilterValue = (value: string): string =>
-	`"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 
 /**
  * Turns one `attr_<slug>=<value>` parameter into a filter clause, or `null`
@@ -185,7 +176,7 @@ export async function GET(request: Request) {
 	const filters: string[] = ["status = published"];
 
 	if (category) {
-		filters.push(`categoryId = "${category}"`);
+		filters.push(`categoryId = ${quoteFilterValue(category)}`);
 	}
 
 	if (minPrice) {
@@ -197,7 +188,7 @@ export async function GET(request: Request) {
 	}
 
 	if (location) {
-		filters.push(`location = "${location}"`);
+		filters.push(`location = ${quoteFilterValue(location)}`);
 	}
 
 	if (conditionParam) {
@@ -206,7 +197,7 @@ export async function GET(request: Request) {
 			.map((c) => c.trim())
 			.filter(Boolean);
 		if (conditions.length > 0) {
-			const conditionList = conditions.map((c) => `"${c}"`).join(", ");
+			const conditionList = conditions.map(quoteFilterValue).join(", ");
 			filters.push(`condition IN [${conditionList}]`);
 		}
 	}
@@ -217,13 +208,13 @@ export async function GET(request: Request) {
 			.map((s) => s.trim())
 			.filter(Boolean);
 		if (tagSlugs.length > 0) {
-			const tagList = tagSlugs.map((s) => `"${s}"`).join(", ");
+			const tagList = tagSlugs.map(quoteFilterValue).join(", ");
 			filters.push(`tags IN [${tagList}]`);
 		}
 	}
 
 	if (boostedOnly) {
-		filters.push(`boostedUntil > "${nowIso}"`);
+		filters.push(`boostedUntil > ${quoteFilterValue(nowIso)}`);
 	}
 
 	for (const dynamicFilter of dynamicFilters) {

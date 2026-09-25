@@ -547,8 +547,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											</Button>
 										</Link>
 									)}
-									{!isOwner && seller?.phone && (
-										<PhoneReveal phone={seller.phone} />
+									{!isOwner && seller && (
+										<PhoneReveal
+											listingId={String(listing.id)}
+											signedIn={Boolean(authUser)}
+										/>
 									)}
 									<FavoriteButton
 										listingId={listing.id}

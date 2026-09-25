@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Access, CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
 import { suspensionSummary } from "../access/roles";
+import { selfOrStaffField } from "../access/staff";
 import type { AuthProvider } from "../auth/oauth/types";
 import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
@@ -231,6 +232,7 @@ export const Users: CollectionConfig = {
 							| undefined,
 						id: user.id,
 					},
+					req,
 				);
 			},
 		],
@@ -331,6 +333,11 @@ export const Users: CollectionConfig = {
 		{
 			name: "phone",
 			type: "text",
+			// Buyers get a seller's number from POST /api/listings/:id/contact-phone,
+			// which is rate limited and recorded; the public user document never carries it.
+			access: {
+				read: selfOrStaffField,
+			},
 		},
 		{
 			name: "pendingPhone",

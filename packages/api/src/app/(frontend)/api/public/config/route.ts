@@ -7,6 +7,7 @@ import config from "@payload-config";
 import { getPayload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
+import { BOOST_PRICING } from "@/lib/boostPricing";
 
 export async function GET() {
 	let enabledAuthProviders: string[] = [];
@@ -43,5 +44,6 @@ export async function GET() {
 		webUrl: process.env.PUBLIC_WEB_URL ?? null,
 		enabledAuthProviders,
 		localAuthEnabled,
+		boostPricing: BOOST_PRICING,
 	});
 }

@@ -7,19 +7,28 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-bns}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_DB:-bns}
+    # Multi-document transactions need a replica set, and a replica set with
+    # authentication needs a key file. Both are opt-in through
+    # MONGO_REPLICA_SET: leave it empty and mongod starts standalone, set it to
+    # rs0 once the key file exists on the host and rs.initiate has been run.
+    command: mongod --bind_ip_all ${MONGO_REPLICA_SET:+--replSet ${MONGO_REPLICA_SET} --keyFile /data/keyfile/mongo-keyfile}
     volumes:
       - mongo_data:/data/db
+      - ${MONGO_KEYFILE_PATH:-/dev/null}:/data/keyfile/mongo-keyfile:ro
     networks:
       - dokploy-network
     healthcheck:
+      # Healthy when standalone, or when the replica set has a primary; a
+      # member started with --replSet but never initiated stays unhealthy.
       test:
         [
           "CMD-SHELL",
-          'mongosh --eval ''db.adminCommand("ping")'' || mongo --eval ''db.adminCommand("ping")''',
+          "mongosh --quiet --eval 'const h = db.hello(); quit(db.adminCommand(\"ping\").ok === 1 && h.isreplicaset !== true && (h.setName === undefined || h.isWritablePrimary === true) ? 0 : 1)'",
         ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -82,7 +91,9 @@ services:
       dockerfile: packages/api/Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin}
+      # replicaSet is the switch that turns Payload transactions on; dropping it
+      # from DATABASE_URI is the first rollback level.
+      DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin${MONGO_REPLICA_SET:+&replicaSet=${MONGO_REPLICA_SET}}}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
       PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
@@ -229,8 +240,8 @@ services:
     restart: unless-stopped
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
-      MEILISEARCH_HOST: http://meilisearch:7700
-      MEILISEARCH_API_KEY: ${MEILI_MASTER_KEY}
+      MEILI_HOST: http://meilisearch:7700
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       PAYLOAD_API_URL: http://api:3000/api
     depends_on:
       redis:

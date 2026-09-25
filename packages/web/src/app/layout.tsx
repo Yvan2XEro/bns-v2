@@ -6,7 +6,12 @@ import "./globals.css";
 import { CategoryBar } from "~/components/layout/category-bar";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
-import { type AppConfig, AppConfigProvider } from "~/hooks/use-app-config";
+import { QueryProvider } from "~/components/query-provider";
+import {
+	type AppConfig,
+	AppConfigProvider,
+	EMPTY_APP_CONFIG,
+} from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
 import { serverFetch } from "~/lib/server-api";
 import type { Category } from "~/types";
@@ -60,11 +65,10 @@ export const metadata: Metadata = {
 async function getPublicConfig(): Promise<AppConfig> {
 	try {
 		const res = await serverFetch("/api/public/config");
-		if (!res.ok)
-			return { stripePublishableKey: null, chatUrl: null, novuAppId: null };
-		return res.json();
+		if (!res.ok) return EMPTY_APP_CONFIG;
+		return { ...EMPTY_APP_CONFIG, ...(await res.json()) };
 	} catch {
-		return { stripePublishableKey: null, chatUrl: null, novuAppId: null };
+		return EMPTY_APP_CONFIG;
 	}
 }
 
@@ -116,16 +120,18 @@ export default async function RootLayout({
 				className={`${dmSans.variable} ${outfit.variable} ${dmSans.className}`}
 			>
 				<NextIntlClientProvider locale={locale} messages={messages}>
-					<AppConfigProvider initialConfig={config}>
-						<AuthProvider>
-							<div className="relative flex min-h-screen flex-col">
-								<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
-								<CategoryBar categories={categories} />
-								<main className="flex-1">{children}</main>
-								<Footer />
-							</div>
-						</AuthProvider>
-					</AppConfigProvider>
+					<QueryProvider>
+						<AppConfigProvider initialConfig={config}>
+							<AuthProvider>
+								<div className="relative flex min-h-screen flex-col">
+									<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
+									<CategoryBar categories={categories} />
+									<main className="flex-1">{children}</main>
+									<Footer />
+								</div>
+							</AuthProvider>
+						</AppConfigProvider>
+					</QueryProvider>
 				</NextIntlClientProvider>
 			</body>
 		</html>

@@ -1,9 +1,12 @@
 "use client";
 
 import { Loader2, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
+import { apiErrorFrom, resolveErrorMessage } from "~/lib/apiError";
 
 interface ReviewFormProps {
 	reviewedUserId: string;
@@ -11,6 +14,8 @@ interface ReviewFormProps {
 }
 
 export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
+	const tRoot = useTranslations();
+	const router = useRouter();
 	const [rating, setRating] = useState(0);
 	const [hoveredRating, setHoveredRating] = useState(0);
 	const [comment, setComment] = useState("");
@@ -41,15 +46,16 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}));
-				throw new Error(data.errors?.[0]?.message || "Failed to submit review");
+				throw apiErrorFrom(res.status, data);
 			}
 
 			setSuccess(true);
 			setRating(0);
 			setComment("");
+			router.refresh();
 			onSuccess?.();
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to submit review");
+			setError(resolveErrorMessage(err, tRoot, "Failed to submit review"));
 		} finally {
 			setIsLoading(false);
 		}

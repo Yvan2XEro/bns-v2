@@ -7,23 +7,29 @@ import sharp from "sharp";
 import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
 import { Categories } from "./collections/Categories";
+import { ContactReveals } from "./collections/ContactReveals";
 import { Conversations } from "./collections/Conversations";
 import { Favorites } from "./collections/Favorites";
 import { Listings } from "./collections/Listings";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
+import { PaymentIntents } from "./collections/PaymentIntents";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
+import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
 import {
 	checkSearchAlertsTask,
 	expireBoostsTask,
 	expireListingsTask,
+	processWebhookEventTask,
+	reconcilePendingPaymentsTask,
 } from "./jobs";
+import { migrations } from "./migrations";
 import { buildStoragePlugin } from "./plugins/storage";
 
 const filename = fileURLToPath(import.meta.url);
@@ -78,6 +84,9 @@ export default buildConfig({
 		Reviews,
 		Reports,
 		BoostPayments,
+		PaymentIntents,
+		WebhookEvents,
+		ContactReveals,
 		SavedSearches,
 		BlockedUsers,
 		Tags,
@@ -91,15 +100,25 @@ export default buildConfig({
 	},
 	db: mongooseAdapter({
 		url: process.env.DATABASE_URI || "",
+		migrationDir: path.resolve(dirname, "migrations"),
+		// Applied at startup when NODE_ENV=production, before the API serves traffic.
+		prodMigrations: migrations,
 	}),
 	sharp,
 	plugins: storagePlugin ? [storagePlugin] : [],
 	cors: ["*", ...(process.env.PAYLOAD_ALLOWED_ORIGINS?.split(",") || [])],
 	jobs: {
-		tasks: [expireListingsTask, expireBoostsTask, checkSearchAlertsTask],
+		tasks: [
+			expireListingsTask,
+			expireBoostsTask,
+			checkSearchAlertsTask,
+			processWebhookEventTask,
+			reconcilePendingPaymentsTask,
+		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
 			{ cron: "0 */6 * * *", queue: "nightly", limit: 10 },
+			{ cron: "* * * * *", queue: "payments", limit: 20 },
 		],
 	},
 });

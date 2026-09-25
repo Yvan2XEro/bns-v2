@@ -8,8 +8,9 @@ import {
 	MessageCircle,
 	Phone,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -22,12 +23,38 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 
+const SUBJECTS = [
+	"general",
+	"account",
+	"listing",
+	"payment",
+	"report",
+	"bug",
+	"feature",
+	"other",
+] as const;
+
 export default function ContactPage() {
+	return (
+		<Suspense>
+			<ContactForm />
+		</Suspense>
+	);
+}
+
+function ContactForm() {
 	const t = useTranslations("Contact");
+	const searchParams = useSearchParams();
+	const requestedSubject = searchParams.get("subject");
+	const initialSubject =
+		requestedSubject &&
+		(SUBJECTS as readonly string[]).includes(requestedSubject)
+			? requestedSubject
+			: "";
 	const [formData, setFormData] = useState({
 		name: "",
 		email: "",
-		subject: "",
+		subject: initialSubject,
 		message: "",
 	});
 	const [isLoading, setIsLoading] = useState(false);

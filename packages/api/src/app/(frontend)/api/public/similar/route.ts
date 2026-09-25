@@ -2,6 +2,7 @@ import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
+import { quoteFilterValue } from "@/lib/meiliFilter";
 
 const _meiliConfigured = !!process.env.MEILI_HOST;
 
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
 
 	const filters: string[] = [
 		"status = published",
-		`categoryId = "${categoryId}"`,
+		`categoryId = ${quoteFilterValue(categoryId)}`,
 	];
 
 	const result = await index.search("", {

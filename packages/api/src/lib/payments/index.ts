@@ -1,8 +1,6 @@
-import { NotchPayProvider } from "./notchpay";
-import { StripeProvider } from "./stripe";
-import type { PaymentProvider } from "./types";
-
-export type ProviderName = "notchpay" | "stripe";
+import { NotchPayProvider, parseNotchPayWebhookEvent } from "./notchpay";
+import { parseStripeWebhookEvent, StripeProvider } from "./stripe";
+import type { PaymentProvider, ProviderName } from "./types";
 
 export function getProvider(name: ProviderName): PaymentProvider {
 	if (name === "stripe") {
@@ -23,25 +21,23 @@ export function getProvider(name: ProviderName): PaymentProvider {
 	return new NotchPayProvider(
 		publicKey,
 		process.env.NOTCHPAY_BASE_URL ?? "https://api.notchpay.co",
+		process.env.NOTCHPAY_HASH_KEY,
 	);
 }
 
-export function getNotchPayProvider(): NotchPayProvider {
-	const publicKey = process.env.NOTCHPAY_PUBLIC_KEY;
-	if (!publicKey) {
-		throw new Error("NotchPay non configuré : définir NOTCHPAY_PUBLIC_KEY");
-	}
-	return new NotchPayProvider(
-		publicKey,
-		process.env.NOTCHPAY_BASE_URL ?? "https://api.notchpay.co",
-	);
-}
-
-export { NotchPayProvider, StripeProvider };
+export {
+	NotchPayProvider,
+	StripeProvider,
+	parseNotchPayWebhookEvent,
+	parseStripeWebhookEvent,
+};
 export type {
 	CreatePaymentParams,
 	CreatePaymentResult,
+	NormalizedPayment,
+	NormalizedWebhookEvent,
 	PaymentProvider,
-	PaymentStatus,
-	WebhookEvent,
+	ProviderName,
+	ProviderPaymentStatus,
 } from "./types";
+export { WebhookSignatureError } from "./types";

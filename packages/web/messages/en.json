@@ -168,6 +168,7 @@
 		"listingDescription": "Description",
 		"similarListings": "Similar listings",
 		"messageSeller": "Message seller",
+		"showNumber": "Show phone number",
 		"editThisListing": "Edit listing",
 		"boostThisListing": "Boost this listing",
 		"currentlyBoosted": "Currently boosted",
@@ -686,7 +687,8 @@
 		"networkError": "Network error. Check your connection.",
 		"initError": "Could not initialize payment",
 		"paymentDeclined": "Payment declined. Please check your details.",
-		"genericError": "Payment error"
+		"genericError": "Payment error",
+		"pricesUnavailable": "Boost prices could not be loaded. Please try again later."
 	},
 	"ApiErrors": {
 		"generic": {
@@ -732,7 +734,21 @@
 			"invalidType": "This file type is not supported."
 		},
 		"contact": {
-			"incomplete": "Please fill in every field."
+			"incomplete": "Please fill in every field.",
+			"phoneUnavailable": "This seller has not shared a phone number."
+		},
+		"payment": {
+			"providerUnavailable": "Payment is unavailable right now. Please try again later."
+		},
+		"boost": {
+			"notOwner": "You can only boost your own listings.",
+			"listingNotPublished": "Only published listings can be boosted.",
+			"invalidDuration": "This boost duration is not available."
+		},
+		"review": {
+			"self": "You cannot review yourself.",
+			"duplicate": "You have already reviewed this user.",
+			"noInteraction": "You can review a user only after contacting them."
 		}
 	}
 }

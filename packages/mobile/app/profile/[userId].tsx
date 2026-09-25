@@ -132,7 +132,6 @@ export default function PublicProfileScreen() {
 	const { mutate: submitReview, isPending: submittingReview } = useMutation({
 		mutationFn: () =>
 			api.post("/api/reviews", {
-				reviewer: user?.id,
 				reviewedUser: userId,
 				rating: reviewRating,
 				comment: reviewComment.trim() || undefined,

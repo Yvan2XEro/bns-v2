@@ -655,7 +655,7 @@ export default function ListingDetail() {
 								</View>
 								<Ionicons name="chevron-forward" size={16} color={mutedColor} />
 							</View>
-							{seller.phone && <PhoneReveal phone={seller.phone} />}
+							{!isOwner && <PhoneReveal listingId={id} />}
 						</Pressable>
 					)}
 

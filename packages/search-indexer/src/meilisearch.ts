@@ -1,21 +1,24 @@
 import { MeiliSearch } from "meilisearch";
 
-const MEILISEARCH_HOST =
-	process.env.MEILISEARCH_HOST || "http://localhost:7700";
-const MEILISEARCH_API_KEY = process.env.MEILISEARCH_API_KEY || "";
 const INDEX_NAME = "listings";
+
+/** The MEILISEARCH_* names are read for one release only, then removed. */
+export function resolveMeiliConfig(
+	env: Record<string, string | undefined> = process.env,
+): { host: string; apiKey: string } {
+	return {
+		host: env.MEILI_HOST || env.MEILISEARCH_HOST || "http://localhost:7700",
+		apiKey: env.MEILI_MASTER_KEY || env.MEILISEARCH_API_KEY || "",
+	};
+}
 
 let client: MeiliSearch | null = null;
 
 function getClient(): MeiliSearch {
 	if (!client) {
-		console.log(
-			`[search-indexer] meilisearch connecting to ${MEILISEARCH_HOST}`,
-		);
-		client = new MeiliSearch({
-			host: MEILISEARCH_HOST,
-			apiKey: MEILISEARCH_API_KEY,
-		});
+		const { host, apiKey } = resolveMeiliConfig();
+		console.log(`[search-indexer] meilisearch connecting to ${host}`);
+		client = new MeiliSearch({ host, apiKey });
 	}
 	return client;
 }
