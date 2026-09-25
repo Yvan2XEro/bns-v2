@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { Listings } from "../../src/collections/Listings";
 import {
+	approveListing,
+	clearListingHold,
 	liftExpiredShopSuspensions,
 	suspendShop,
 	suspendUser,
@@ -475,6 +477,193 @@ describe("a moderator's hold survives an ordinary seller action", () => {
 		});
 		expect(patched.status).toBe("draft");
 		expect(patched.moderationHold).toBe(true);
+	});
+});
+
+// N1/N4: the pin that closed the round-2 escape must not turn into a
+// permanent freeze — a held listing (detached or not) always has a way
+// back. For a detached listing, that means the seller's own next edit
+// decides. A listing still attached to a product has no such edit to make:
+// `clearListingHold` moves it to "pending" instead, so an ordinary sync
+// (a stock movement, a product edit) still cannot republish it, and only an
+// explicit, logged `approveListing` can.
+describe("a moderator's hold is never a one-way door", () => {
+	const SELLER = { id: "u-1" };
+
+	function seedProductBacked() {
+		return fakePayload({
+			users: [
+				{ id: "u-1", role: "user", name: "Aïcha" },
+				{ id: "mod-1", role: "moderator", name: "Grâce" },
+			],
+			categories: [{ id: "cat-1", name: "Audio" }],
+			shops: [
+				{
+					id: "s-1",
+					handle: "akwatech",
+					name: "Akwa",
+					owner: "u-1",
+					status: "active",
+				},
+			],
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+			],
+			products: [
+				{
+					id: "p-1",
+					shop: "s-1",
+					title: "AirPods Pro",
+					category: "cat-1",
+					status: "active",
+					listing: "l-1",
+				},
+			],
+			"product-variants": [
+				{
+					id: "v-1",
+					product: "p-1",
+					shop: "s-1",
+					optionValues: {},
+					price: 95000,
+					trackInventory: true,
+					stockOnHand: 5,
+					stockReserved: 0,
+					archivedAt: null,
+				},
+			],
+			listings: [
+				{
+					id: "l-1",
+					shop: "s-1",
+					product: "p-1",
+					seller: "u-1",
+					title: "AirPods Pro",
+					description: "d",
+					price: 95000,
+					category: "cat-1",
+					attributes: {},
+					images: [],
+					location: "Douala",
+					status: "published",
+					moderationHold: false,
+					productSummary: {
+						priceMin: 95000,
+						priceMax: 95000,
+						available: true,
+						variantCount: 1,
+						trackInventory: true,
+					},
+				},
+			],
+			"stock-movements": [],
+			"moderation-log": [],
+		});
+	}
+
+	const listing = (p: ReturnType<typeof seedProductBacked>, id: string) =>
+		p.store.listings.find((l) => l.id === id);
+
+	const listingsBeforeChange = Listings.hooks?.beforeChange?.[0] as (
+		args: unknown,
+	) => Promise<Record<string, unknown>>;
+
+	it("a moderator can release a held, detached listing directly", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+		await detachListings(payload, SELLER, "s-1", { listingIds: ["l-1"] });
+		expect(listing(payload, "l-1")?.moderationHold).toBe(true);
+
+		await clearListingHold(payload, MOD, "l-1");
+		const released = listing(payload, "l-1")!;
+		expect(released.moderationHold).toBe(false);
+		// The direct clear only lifts the hold; it does not itself decide the
+		// listing's status — the seller does, next.
+		expect(released.status).toBe("draft");
+
+		const result = await listingsBeforeChange({
+			operation: "update",
+			originalDoc: released,
+			data: { ...released, status: "sold" },
+			req: { payload, user: SELLER, context: {} },
+		});
+		expect(result.status).toBe("sold");
+	});
+
+	// N4: clearing the flag alone is not enough here — the listing is still
+	// attached to "p-1", so the very next sync (`recordMovement` calls
+	// `syncProductListing(..., { create: false })`) would otherwise republish
+	// it silently, with nothing written to the log.
+	it("a moderator's release of an attached listing does not come back on the seller's next stock movement", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+		expect(listing(payload, "l-1")?.moderationHold).toBe(true);
+		expect(listing(payload, "l-1")?.status).toBe("draft");
+
+		await clearListingHold(payload, MOD, "l-1");
+		const released = listing(payload, "l-1")!;
+		expect(released.moderationHold).toBe(false);
+		expect(released.status).toBe("pending");
+
+		await recordMovement(payload, SELLER, "v-1", {
+			type: "receipt",
+			quantity: 1,
+		});
+		expect(listing(payload, "l-1")?.status).toBe("pending");
+
+		// Only an explicit, logged moderator decision puts it back on sale.
+		await approveListing(payload, MOD, "l-1");
+		expect(listing(payload, "l-1")?.status).toBe("published");
+	});
+
+	it("approving a held listing lets the seller move its status afterwards", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await unsuspendShop(payload, MOD, "s-1", { restoreListings: false });
+		await detachListings(payload, SELLER, "s-1", { listingIds: ["l-1"] });
+
+		await approveListing(payload, MOD, "l-1");
+		const approved = listing(payload, "l-1")!;
+		expect(approved.status).toBe("published");
+		expect(approved.moderationHold).toBe(false);
+
+		// Before this fix, this write was silently reverted back to
+		// "published" forever — the hold outlived the decision it recorded.
+		const result = await listingsBeforeChange({
+			operation: "update",
+			originalDoc: approved,
+			data: { ...approved, status: "sold" },
+			req: { payload, user: SELLER, context: {} },
+		});
+		expect(result.status).toBe("sold");
+	});
+
+	it("refuses to clear a hold from a plain user", async () => {
+		const payload = seedProductBacked();
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		await expect(
+			clearListingHold(payload, { id: "u-9", role: "user" }, "l-1"),
+		).rejects.toMatchObject({ code: "moderation.forbidden" });
 	});
 });
 

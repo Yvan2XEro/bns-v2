@@ -5,6 +5,7 @@ export const MODERATION_ACTIONS = [
 	"listing.approve",
 	"listing.reject",
 	"listing.takedown",
+	"listing.holdRelease",
 	"user.suspend",
 	"user.unsuspend",
 	"shop.suspend",

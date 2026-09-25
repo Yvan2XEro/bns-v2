@@ -749,6 +749,7 @@ export interface ModerationLog {
     | 'listing.approve'
     | 'listing.reject'
     | 'listing.takedown'
+    | 'listing.holdRelease'
     | 'user.suspend'
     | 'user.unsuspend'
     | 'shop.suspend'

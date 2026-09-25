@@ -126,19 +126,26 @@ export function marginPercent(
 }
 
 /**
- * The purchase cost is a shop secret. It leaves the API only for a member who
- * can manage the shop, on reads and on the answer to a write alike.
+ * `cost` and `lowStockThreshold` are both manager/owner-only shop data — the
+ * same `shopRoleFieldAccess(canManageShop)` predicate gates both on
+ * `ProductVariants`, so every shaped response that hands back a raw variant
+ * doc (built with `overrideAccess`, which skips field access entirely) has
+ * to redact both the same way, not just `cost`. Used on reads and on the
+ * answer to a write alike.
  *
- * The field must be gone, not merely undefined: `JSON.stringify` keeps an
+ * The fields must be gone, not merely undefined: `JSON.stringify` keeps an
  * undefined-valued key off the wire too, but callers should never be able to
  * detect the key existed on the source document.
  */
-export function redactCost<T extends { cost?: number | null }>(
-	variants: T[],
-	canSeeCost: boolean,
-): T[] {
-	if (canSeeCost) return variants;
-	// biome-ignore lint/performance/noDelete: correctness over micro-perf on a small array
-	for (const variant of variants) delete variant.cost;
+export function redactManagerOnlyFields<
+	T extends { cost?: number | null; lowStockThreshold?: number | null },
+>(variants: T[], canManage: boolean): T[] {
+	if (canManage) return variants;
+	for (const variant of variants) {
+		// biome-ignore lint/performance/noDelete: correctness over micro-perf on a small array
+		delete variant.cost;
+		// biome-ignore lint/performance/noDelete: correctness over micro-perf on a small array
+		delete variant.lowStockThreshold;
+	}
 	return variants;
 }

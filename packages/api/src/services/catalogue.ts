@@ -8,7 +8,7 @@ import { ServiceError } from "../lib/serviceError";
 import {
 	isLowStock,
 	isOutOfStock,
-	redactCost,
+	redactManagerOnlyFields,
 	summarizeVariants,
 } from "../lib/variants";
 import type { Listing, Media, Product, ProductVariant } from "../payload-types";
@@ -261,7 +261,7 @@ export async function getProductDetail(
 			overrideAccess: true,
 		})
 	).docs;
-	redactCost(variants, canSeeCost);
+	redactManagerOnlyFields(variants, canSeeCost);
 
 	const imageIds = (product.images ?? [])
 		.map((entry) => relationId(entry.image))

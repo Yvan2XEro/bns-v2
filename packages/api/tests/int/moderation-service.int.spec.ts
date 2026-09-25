@@ -2,6 +2,7 @@ import type { Payload } from "payload";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	approveListing,
+	clearListingHold,
 	decideReport,
 	ModerationError,
 	rejectListing,
@@ -139,6 +140,104 @@ describe("listing moderation", () => {
 
 	it("reports a missing listing as not found", async () => {
 		await expect(approveListing(payload, MOD, "nope")).rejects.toMatchObject({
+			status: 404,
+		});
+	});
+});
+
+// N1: moderationHold must never be a one-way door. approveListing (release +
+// republish) and clearListingHold (release, leave the next move to the
+// seller) are the two ways a moderator ends a hold.
+describe("listing moderation hold", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			listings: [
+				{
+					id: "l-held",
+					status: "draft",
+					title: "Held",
+					seller: "u-1",
+					moderationHold: true,
+				},
+				{
+					id: "l-free",
+					status: "draft",
+					title: "Not held",
+					seller: "u-1",
+					moderationHold: false,
+				},
+				{
+					id: "l-held-attached",
+					status: "draft",
+					title: "Held, attached",
+					seller: "u-1",
+					product: "p-1",
+					moderationHold: true,
+				},
+			],
+		});
+	});
+
+	it("clears the hold when approving a held listing", async () => {
+		await approveListing(payload, MOD, "l-held");
+		const listing = payload.store.listings.find((l: Doc) => l.id === "l-held");
+		expect(listing.status).toBe("published");
+		expect(listing.moderationHold).toBe(false);
+	});
+
+	// This is the detached case: there is no product sync to leak through, so
+	// the seller's own next edit is what decides the status from here.
+	it("releases a held, detached listing without changing its status", async () => {
+		await clearListingHold(payload, MOD, "l-held");
+		const listing = payload.store.listings.find((l: Doc) => l.id === "l-held");
+		expect(listing.status).toBe("draft");
+		expect(listing.moderationHold).toBe(false);
+		expect(logs(payload)[0]).toMatchObject({
+			action: "listing.holdRelease",
+			targetType: "listing",
+			targetId: "l-held",
+		});
+	});
+
+	// N4: for a listing still attached to a product, leaving `status` as
+	// "draft" would let the seller's very next ordinary sync (a stock
+	// movement, a product edit) republish it silently — the defect this
+	// mechanism exists to prevent, coming back through the release lever.
+	// Moving it to "pending" keeps `listingStatusFor` from doing that; only
+	// an explicit, logged `approveListing` call can bring it back.
+	it("releases a held, product-backed listing into pending review, not draft", async () => {
+		await clearListingHold(payload, MOD, "l-held-attached");
+		const listing = payload.store.listings.find(
+			(l: Doc) => l.id === "l-held-attached",
+		);
+		expect(listing.status).toBe("pending");
+		expect(listing.moderationHold).toBe(false);
+		expect(logs(payload)[0]).toMatchObject({
+			action: "listing.holdRelease",
+			targetType: "listing",
+			targetId: "l-held-attached",
+		});
+	});
+
+	it("refuses to clear a hold that is not set", async () => {
+		await expect(
+			clearListingHold(payload, MOD, "l-free"),
+		).rejects.toMatchObject({
+			code: "moderation.invalidTransition",
+			status: 409,
+		});
+	});
+
+	it("rejects a plain user outright", async () => {
+		await expect(
+			clearListingHold(payload, { id: "u-9", role: "user" }, "l-held"),
+		).rejects.toMatchObject({ code: "moderation.forbidden" });
+	});
+
+	it("reports a missing listing as not found", async () => {
+		await expect(clearListingHold(payload, MOD, "nope")).rejects.toMatchObject({
 			status: 404,
 		});
 	});

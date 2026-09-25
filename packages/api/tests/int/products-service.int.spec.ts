@@ -664,7 +664,7 @@ describe("the purchase cost a save answers with", () => {
 			STAFF,
 			product.id,
 			input({
-				variants: asInput(variants, { cost: 1, lowStockThreshold: 1 }),
+				variants: asInput(variants, { cost: 1, lowStockThreshold: 99 }),
 			}),
 		);
 
@@ -681,5 +681,58 @@ describe("the purchase cost a save answers with", () => {
 		const payload = seed();
 		const { variants } = await createProduct(payload, U1, "s-1", input());
 		expect(variants.map((v) => v.cost)).toEqual([382000, 382000]);
+	});
+});
+
+// Same rule as `cost` — `redactManagerOnlyFields` redacts both fields the
+// same way, so both need the same coverage: a staff reader gets neither
+// field, an owner or manager gets both, and a staff write attempt leaves the
+// stored value unchanged.
+describe("the low-stock threshold a save answers with", () => {
+	it("is absent from what a staff member's create returns, and unwritten", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(payload, STAFF, "s-1", input());
+
+		expect(variants).toHaveLength(2);
+		for (const variant of variants) {
+			expect(Object.hasOwn(variant, "lowStockThreshold")).toBe(false);
+		}
+		expect(
+			payload.store["product-variants"].map((v) => v.lowStockThreshold),
+		).toEqual([null, null]);
+	});
+
+	it("is absent from what a staff member's update returns, and the write is ignored", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		expect(variants.map((v) => v.lowStockThreshold)).toEqual([1, 1]);
+
+		const saved = await updateProduct(
+			payload,
+			STAFF,
+			product.id,
+			input({
+				variants: asInput(variants, { cost: 1, lowStockThreshold: 99 }),
+			}),
+		);
+
+		for (const variant of saved.variants) {
+			expect(Object.hasOwn(variant, "lowStockThreshold")).toBe(false);
+		}
+		// Staff asked for 99; the owner's original threshold is untouched.
+		expect(
+			payload.store["product-variants"].map((v) => v.lowStockThreshold),
+		).toEqual([1, 1]);
+	});
+
+	it("is still there for a manager", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(payload, U1, "s-1", input());
+		expect(variants.map((v) => v.lowStockThreshold)).toEqual([1, 1]);
 	});
 });

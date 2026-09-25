@@ -188,28 +188,125 @@ export async function approveListing(
 		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
 	}
 
-	const updated = await payload.update({
-		collection: "listings",
-		id: listingId,
-		overrideAccess: true,
-		context: MODERATION_CONTEXT,
-		data: { status: "published", rejectionReason: null },
-	});
+	return withTransaction(
+		payload,
+		async (req) => {
+			const updated = await payload.update({
+				collection: "listings",
+				id: listingId,
+				req,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				// Republishing is exactly the decision a hold was recording, so it
+				// clears one — a listing approved after `suspendShop` left it
+				// deliberately drafted must not still be pinned draft afterwards.
+				data: {
+					status: "published",
+					rejectionReason: null,
+					moderationHold: false,
+				},
+			});
 
-	await writeLog(payload, {
-		actor,
-		action: "listing.approve",
-		targetType: "listing",
-		targetId: listingId,
-		note: trimmed(note),
-		metadata: { previousStatus: listing.status },
-	});
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "listing.approve",
+					targetType: "listing",
+					targetId: listingId,
+					note: trimmed(note),
+					metadata: { previousStatus: listing.status },
+				},
+				req,
+			);
 
-	return {
-		id: String(updated.id),
-		status: String(updated.status),
-		title: String(updated.title ?? ""),
-	};
+			return {
+				id: String(updated.id),
+				status: String(updated.status),
+				title: String(updated.title ?? ""),
+			};
+		},
+		{ user: actor },
+	);
+}
+
+/**
+ * A moderator's direct lever to release a hold without also republishing —
+ * `approveListing` covers "release and put it back on sale"; this covers
+ * "release, and leave the next move to the seller". Both exist so a hold
+ * (`moderationHold`, set by `suspendShop`/the user-suspend cascade when
+ * `restoreListings` is skipped) is never a one-way door: `Listings.beforeChange`
+ * pins `status` right alongside it while a hold is active, on a detached
+ * listing as much as an attached one, and only a `MODERATION_CONTEXT` write
+ * — never an ordinary one, whatever role holds the session — passes that
+ * pin. Without this, the only way past it was `approveListing`, which always
+ * forces `published` — wrong for a listing the seller had drafted before the
+ * hold, or one they later detached into a plain classified ad they may not
+ * want live at all.
+ *
+ * A listing still attached to a product cannot get away with just clearing
+ * the flag, though: once `moderationHold` is false, `syncProductListing`
+ * stops pinning `status` to "draft" and republishes it on the seller's very
+ * next ordinary action — a stock movement, a product edit — with nothing
+ * written to the log. That is the exact defect this mechanism exists to
+ * prevent, coming back through the release lever. So for a product-backed
+ * listing this also moves `status` to "pending": `listingStatusFor` keeps a
+ * pending listing pending for as long as the product stays active, so an
+ * ordinary sync can no longer republish it, and only an explicit, logged
+ * `approveListing` call can. A detached listing has no sync to leak through,
+ * so its status is left exactly as the hold left it — the seller's own next
+ * edit decides, same as before.
+ */
+export async function clearListingHold(
+	payload: Payload,
+	actor: Actor,
+	listingId: string,
+	note?: string | null,
+): Promise<ListingDecision> {
+	assertModerator(actor);
+
+	const listing = await findListing(payload, listingId);
+	if (listing.moderationHold !== true) {
+		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+	}
+	const isProductBacked = relationId(listing.product) !== null;
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const updated = await payload.update({
+				collection: "listings",
+				id: listingId,
+				req,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				data: {
+					moderationHold: false,
+					...(isProductBacked ? { status: "pending" } : {}),
+				},
+			});
+
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "listing.holdRelease",
+					targetType: "listing",
+					targetId: listingId,
+					note: trimmed(note),
+					metadata: { previousStatus: listing.status },
+				},
+				req,
+			);
+
+			return {
+				id: String(updated.id),
+				status: String(updated.status),
+				title: String(updated.title ?? ""),
+			};
+		},
+		{ user: actor },
+	);
 }
 
 /**
@@ -236,30 +333,43 @@ export async function rejectListing(
 		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
 	}
 
-	const updated = await payload.update({
-		collection: "listings",
-		id: listingId,
-		overrideAccess: true,
-		context: MODERATION_CONTEXT,
-		data: { status: "rejected", rejectionReason: cleanReason },
-	});
+	return withTransaction(
+		payload,
+		async (req) => {
+			const updated = await payload.update({
+				collection: "listings",
+				id: listingId,
+				req,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				data: { status: "rejected", rejectionReason: cleanReason },
+			});
 
-	await writeLog(payload, {
-		actor,
-		action:
-			listing.status === "published" ? "listing.takedown" : "listing.reject",
-		targetType: "listing",
-		targetId: listingId,
-		reason: cleanReason,
-		note: trimmed(note),
-		metadata: { previousStatus: listing.status },
-	});
+			await writeLog(
+				payload,
+				{
+					actor,
+					action:
+						listing.status === "published"
+							? "listing.takedown"
+							: "listing.reject",
+					targetType: "listing",
+					targetId: listingId,
+					reason: cleanReason,
+					note: trimmed(note),
+					metadata: { previousStatus: listing.status },
+				},
+				req,
+			);
 
-	return {
-		id: String(updated.id),
-		status: String(updated.status),
-		title: String(updated.title ?? ""),
-	};
+			return {
+				id: String(updated.id),
+				status: String(updated.status),
+				title: String(updated.title ?? ""),
+			};
+		},
+		{ user: actor },
+	);
 }
 
 async function findListing(payload: Payload, id: string) {

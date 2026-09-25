@@ -253,6 +253,7 @@ describe("getProductDetail", () => {
 	it("returns variants with costs, listing stats and recent movements", async () => {
 		const detail = await getProductDetail(seed(), U1, "p-1");
 		expect(detail.variants.map((v) => v.cost)).toEqual([238000, 276000]);
+		expect(detail.variants.map((v) => v.lowStockThreshold)).toEqual([2, 1]);
 		expect(detail.listing).toEqual({
 			id: "l-1",
 			status: "published",
@@ -270,11 +271,12 @@ describe("getProductDetail", () => {
 		});
 	});
 
-	it("hides cost from a staff member", async () => {
+	it("hides cost and the low-stock threshold from a staff member", async () => {
 		const detail = await getProductDetail(seed(), { id: "u-3" }, "p-1");
 		expect(detail.role).toBe("staff");
 		for (const variant of detail.variants) {
 			expect(Object.hasOwn(variant, "cost")).toBe(false);
+			expect(Object.hasOwn(variant, "lowStockThreshold")).toBe(false);
 		}
 	});
 
