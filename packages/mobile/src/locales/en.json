@@ -1250,6 +1250,7 @@
 		"action_listing_approve": "Listing approved",
 		"action_listing_reject": "Listing rejected",
 		"action_listing_takedown": "Listing taken down",
+		"action_listing_holdRelease": "Listing hold released",
 		"action_user_suspend": "Account suspended",
 		"action_user_unsuspend": "Suspension lifted",
 		"action_report_resolve": "Report resolved",

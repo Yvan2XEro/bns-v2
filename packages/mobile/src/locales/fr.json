@@ -1323,6 +1323,7 @@
 		"action_listing_approve": "Annonce validée",
 		"action_listing_reject": "Annonce rejetée",
 		"action_listing_takedown": "Annonce retirée",
+		"action_listing_holdRelease": "Blocage de l'annonce levé",
 		"action_user_suspend": "Compte suspendu",
 		"action_user_unsuspend": "Suspension levée",
 		"action_report_resolve": "Signalement traité",
