@@ -25,11 +25,16 @@
 #   - take the SRV connection string and append the database name.
 #
 # An SRV string carries the replica set implicitly, so transactions come on
-# without `replicaSet=` ever appearing in the URI. Verify rather than assume:
-#   docker compose -f docker-compose.atlas.yml exec api \
-#     bun run packages/api/src/scripts/transactionProbe.ts
-# It opens a transaction, writes to two collections, aborts, and fails if
-# either write survived — the only proof that transactions are actually live.
+# without `replicaSet=` ever appearing in the URI. Verify rather than assume,
+# with the probe — it opens a transaction, writes to two collections, aborts,
+# and fails if either write survived, which is the only proof that transactions
+# are actually live rather than silently falling back to plain writes.
+#
+# Run it from a CHECKOUT, not from the container: the api image is the Next
+# standalone output (see packages/api/Dockerfile — it copies .next/standalone,
+# public and the static assets, never src/), so no script lives in there.
+#   cd packages/api
+#   DATABASE_URI='<the same Atlas string>' bun run src/scripts/transactionProbe.ts
 #
 #   docker compose -f docker-compose.atlas.yml up -d
 
