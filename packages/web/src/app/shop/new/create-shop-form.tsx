@@ -178,7 +178,7 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 				/>
 			</fieldset>
 
-			<PhoneRequirement returnTo="/shop/new" />
+			<PhoneRequirement />
 
 			{formState.errors.root?.message && (
 				<p className="rounded-lg bg-red-50 px-3 py-2 text-red-700 text-sm">

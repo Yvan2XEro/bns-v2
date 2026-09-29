@@ -10,9 +10,36 @@ import {
 
 export const phoneStatusKey = ["account", "phone", "status"] as const;
 
+/** Mirrors `GET /api/account/phone/status`'s response shape exactly. */
 export interface PhoneStatus {
 	isPhoneVerified: boolean;
 	phone: string | null;
+	pendingPhone: string | null;
+	hasPendingVerification: boolean;
+	resendAvailableAt: string | null;
+	expiresAt: string | null;
+	phoneVerifiedAt: string | null;
+}
+
+function str(value: unknown): string | null {
+	return typeof value === "string" ? value : null;
+}
+
+/**
+ * Shared by the status query and both start/verify mutations, whose
+ * responses are `{ message, ...status }` — the same shape as this endpoint.
+ */
+export function parsePhoneStatus(body: unknown): PhoneStatus {
+	const data = (body ?? {}) as Record<string, unknown>;
+	return {
+		isPhoneVerified: data.isPhoneVerified === true,
+		phone: str(data.phone),
+		pendingPhone: str(data.pendingPhone),
+		hasPendingVerification: data.hasPendingVerification === true,
+		resendAvailableAt: str(data.resendAvailableAt),
+		expiresAt: str(data.expiresAt),
+		phoneVerifiedAt: str(data.phoneVerifiedAt),
+	};
 }
 
 async function fetchPhoneStatus(): Promise<PhoneStatus> {
@@ -32,11 +59,7 @@ async function fetchPhoneStatus(): Promise<PhoneStatus> {
 	const body: unknown = await response.json().catch(() => ({}));
 	if (!response.ok) throw apiErrorFrom(response.status, body);
 
-	const data = body as { isPhoneVerified?: unknown; phone?: unknown };
-	return {
-		isPhoneVerified: data.isPhoneVerified === true,
-		phone: typeof data.phone === "string" ? data.phone : null,
-	};
+	return parsePhoneStatus(body);
 }
 
 /**

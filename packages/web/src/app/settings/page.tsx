@@ -3,7 +3,8 @@
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { PhoneVerificationForm } from "~/components/shop/phone-verification/phone-verification-form";
 import { Button } from "~/components/ui/button";
 import {
 	Card,
@@ -16,16 +17,6 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
 import { safeReturnTo } from "~/lib/return-to";
-
-interface PhoneVerificationStatus {
-	expiresAt: null | string;
-	hasPendingVerification: boolean;
-	isPhoneVerified: boolean;
-	pendingPhone: null | string;
-	phone: null | string;
-	phoneVerifiedAt: null | string;
-	resendAvailableAt: null | string;
-}
 
 async function getErrorMessage(response: Response): Promise<string> {
 	const data = await response.json().catch(() => ({}));
@@ -44,66 +35,6 @@ export default function SettingsPage() {
 	const [passwordSuccess, setPasswordSuccess] = useState("");
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-	const [phoneStatus, setPhoneStatus] =
-		useState<null | PhoneVerificationStatus>(null);
-	const [phoneInput, setPhoneInput] = useState("");
-	const [otpCode, setOtpCode] = useState("");
-	const [phoneError, setPhoneError] = useState("");
-	const [phoneSuccess, setPhoneSuccess] = useState("");
-	const [isLoadingPhoneStatus, setIsLoadingPhoneStatus] = useState(false);
-	const [isSendingPhoneCode, setIsSendingPhoneCode] = useState(false);
-	const [isVerifyingPhoneCode, setIsVerifyingPhoneCode] = useState(false);
-
-	useEffect(() => {
-		if (!user) {
-			return;
-		}
-
-		let isMounted = true;
-
-		async function loadPhoneStatus() {
-			setIsLoadingPhoneStatus(true);
-
-			try {
-				const res = await fetch("/api/account/phone/status", {
-					credentials: "include",
-				});
-
-				if (!res.ok) {
-					throw new Error(await getErrorMessage(res));
-				}
-
-				const data = (await res.json()) as PhoneVerificationStatus;
-				if (!isMounted) {
-					return;
-				}
-
-				setPhoneStatus(data);
-				setPhoneInput(data.pendingPhone || data.phone || "");
-			} catch (err) {
-				if (!isMounted) {
-					return;
-				}
-
-				setPhoneError(
-					err instanceof Error
-						? err.message
-						: "Failed to load phone verification status",
-				);
-			} finally {
-				if (isMounted) {
-					setIsLoadingPhoneStatus(false);
-				}
-			}
-		}
-
-		void loadPhoneStatus();
-
-		return () => {
-			isMounted = false;
-		};
-	}, [user]);
-
 	if (authLoading) {
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
@@ -118,18 +49,16 @@ export default function SettingsPage() {
 
 	const currentUser = user;
 
-	async function refreshPhoneStatus() {
-		const res = await fetch("/api/account/phone/status", {
-			credentials: "include",
-		});
-
-		if (!res.ok) {
-			throw new Error(await getErrorMessage(res));
-		}
-
-		const data = (await res.json()) as PhoneVerificationStatus;
-		setPhoneStatus(data);
-		setPhoneInput(data.pendingPhone || data.phone || "");
+	/**
+	 * Read from the URL at call time: useSearchParams would force a Suspense
+	 * boundary on this client page for a single optional value.
+	 */
+	async function handlePhoneVerified() {
+		await refreshUser();
+		const returnTo = safeReturnTo(
+			new URLSearchParams(window.location.search).get("returnTo"),
+		);
+		if (returnTo) router.push(returnTo);
 	}
 
 	async function handleChangePassword(e: React.FormEvent) {
@@ -187,74 +116,6 @@ export default function SettingsPage() {
 			);
 		} finally {
 			setIsChangingPassword(false);
-		}
-	}
-
-	async function handleSendPhoneCode(e: React.FormEvent) {
-		e.preventDefault();
-		setPhoneError("");
-		setPhoneSuccess("");
-		setIsSendingPhoneCode(true);
-
-		try {
-			const res = await fetch("/api/account/phone/start", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ phone: phoneInput }),
-				credentials: "include",
-			});
-
-			if (!res.ok) {
-				throw new Error(await getErrorMessage(res));
-			}
-
-			await refreshPhoneStatus();
-			setOtpCode("");
-			setPhoneSuccess("Verification code sent to your phone");
-		} catch (err) {
-			setPhoneError(
-				err instanceof Error ? err.message : "Failed to send verification code",
-			);
-		} finally {
-			setIsSendingPhoneCode(false);
-		}
-	}
-
-	async function handleVerifyPhoneCode(e: React.FormEvent) {
-		e.preventDefault();
-		setPhoneError("");
-		setPhoneSuccess("");
-		setIsVerifyingPhoneCode(true);
-
-		try {
-			const res = await fetch("/api/account/phone/verify", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ code: otpCode }),
-				credentials: "include",
-			});
-
-			if (!res.ok) {
-				throw new Error(await getErrorMessage(res));
-			}
-
-			await refreshPhoneStatus();
-			await refreshUser();
-			setOtpCode("");
-			setPhoneSuccess("Phone number verified successfully");
-
-			// Read from the URL at call time: useSearchParams would force a
-			// Suspense boundary on this client page for a single optional value.
-			const returnTo = safeReturnTo(
-				new URLSearchParams(window.location.search).get("returnTo"),
-			);
-			if (returnTo) router.push(returnTo);
-		} catch (err) {
-			setPhoneError(
-				err instanceof Error ? err.message : "Failed to verify phone number",
-			);
-		} finally {
-			setIsVerifyingPhoneCode(false);
 		}
 	}
 
@@ -384,82 +245,11 @@ export default function SettingsPage() {
 						</CardTitle>
 						<CardDescription>{t("verifyPhoneDesc")}</CardDescription>
 					</CardHeader>
-					<CardContent className="space-y-6">
-						<form onSubmit={handleSendPhoneCode} className="space-y-4">
-							{phoneError && (
-								<div className="rounded-xl bg-red-50 p-3 text-red-600 text-sm">
-									{phoneError}
-								</div>
-							)}
-							{phoneSuccess && (
-								<div className="rounded-xl bg-emerald-50 p-3 text-emerald-700 text-sm">
-									{phoneSuccess}
-								</div>
-							)}
-							{phoneStatus?.phone && (
-								<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-									<p className="text-[#64748B] text-sm">{t("currentPhone")}</p>
-									<p className="mt-1 font-medium text-[#0F172A]">
-										{phoneStatus.phone}
-									</p>
-									<p className="mt-1 text-[#64748B] text-xs">
-										{phoneStatus.isPhoneVerified
-											? t("verified")
-											: t("notVerifiedYet")}
-									</p>
-								</div>
-							)}
-							<div className="space-y-2">
-								<Label htmlFor="phoneNumber">{t("phoneNumber")}</Label>
-								<Input
-									id="phoneNumber"
-									type="tel"
-									placeholder="+2376XXXXXXXX"
-									value={phoneInput}
-									onChange={(e) => setPhoneInput(e.target.value)}
-									required
-								/>
-							</div>
-							<Button
-								type="submit"
-								disabled={isSendingPhoneCode || isLoadingPhoneStatus}
-								className="rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]"
-							>
-								{isSendingPhoneCode ? (
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								) : null}
-								{phoneStatus?.hasPendingVerification
-									? t("resendVerificationCode")
-									: t("sendVerificationCode")}
-							</Button>
-						</form>
-
-						{phoneStatus?.hasPendingVerification && (
-							<form onSubmit={handleVerifyPhoneCode} className="space-y-4">
-								<div className="space-y-2">
-									<Label htmlFor="otpCode">{t("verificationCode")}</Label>
-									<Input
-										id="otpCode"
-										inputMode="numeric"
-										maxLength={6}
-										placeholder="123456"
-										value={otpCode}
-										onChange={(e) => setOtpCode(e.target.value)}
-										required
-									/>
-								</div>
-								<Button
-									type="submit"
-									disabled={isVerifyingPhoneCode}
-									className="rounded-xl bg-[#0F172A] hover:bg-[#1E293B]"
-								>
-									{isVerifyingPhoneCode ? (
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									) : null}
-									{t("verifyPhoneNumberBtn")}
-								</Button>
-							</form>
-						)}
+					<CardContent>
+						<PhoneVerificationForm
+							showStatusSummary
+							onVerified={() => void handlePhoneVerified()}
+						/>
 					</CardContent>
 				</Card>
 
