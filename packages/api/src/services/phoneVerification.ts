@@ -74,21 +74,6 @@ function buildVerificationCode(): string {
 	return randomInt(10 ** (OTP_LENGTH - 1), 10 ** OTP_LENGTH).toString();
 }
 
-/**
- * Both conditions are required on purpose: `NODE_ENV !== "production"` is
- * the load-bearing half. A `.env` written for a homelab or dev deployment can
- * end up copied onto the VPS with `PHONE_OTP_DEV_LOG=true` still in it —
- * checking only the switch would then start writing live one-time codes into
- * production logs. A production build must ignore the variable outright, not
- * just default it off, so this check is never simplified to the flag alone.
- */
-function isPhoneOtpDevLogEnabled(): boolean {
-	return (
-		process.env.PHONE_OTP_DEV_LOG === "true" &&
-		process.env.NODE_ENV !== "production"
-	);
-}
-
 function clearVerificationFields() {
 	return {
 		pendingPhone: null,
@@ -171,28 +156,12 @@ export async function startPhoneVerification(
 
 	const code = buildVerificationCode();
 	const expiresAt = new Date(now + OTP_TTL_MS).toISOString();
-	const devLogEnabled = isPhoneOtpDevLogEnabled();
 
-	if (devLogEnabled) {
-		payload.logger.info(
-			`[PHONE_OTP_DEV_LOG] development-only OTP for ${phone}: ${code}`,
-		);
-	}
-
-	try {
-		await sendSms(payload, {
-			from: OTP_MESSAGE_SENDER,
-			message: `Your Buy'N'Sellem verification code is ${code}. It expires in 10 minutes.`,
-			to: phone,
-		});
-	} catch (error) {
-		const isUnconfiguredProvider =
-			error instanceof Error &&
-			error.message === "SMS provider is not configured";
-		if (!(devLogEnabled && isUnconfiguredProvider)) {
-			throw error;
-		}
-	}
+	await sendSms(payload, {
+		from: OTP_MESSAGE_SENDER,
+		message: `Your Buy'N'Sellem verification code is ${code}. It expires in 10 minutes.`,
+		to: phone,
+	});
 
 	const nextUser = await persistVerificationState(payload, user, {
 		pendingPhone: phone,

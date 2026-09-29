@@ -51,6 +51,10 @@ export const AppSettings: GlobalConfig = {
 					options: [
 						{ label: "AvlyText", value: "avlytext" },
 						{ label: "MTarget", value: "mtarget" },
+						{
+							label: "Console (development only — logs instead of sending)",
+							value: "console",
+						},
 					],
 					required: true,
 				},

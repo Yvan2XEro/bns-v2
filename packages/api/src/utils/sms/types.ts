@@ -4,4 +4,4 @@ export interface SmsMessagePayload {
 	to: string;
 }
 
-export type SmsProviderSlug = "avlytext" | "mtarget";
+export type SmsProviderSlug = "avlytext" | "console" | "mtarget";

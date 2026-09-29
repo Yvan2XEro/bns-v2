@@ -1703,7 +1703,7 @@ export interface AppSetting {
     enableLocalAuth?: boolean | null;
   };
   sms: {
-    provider: 'avlytext' | 'mtarget';
+    provider: 'avlytext' | 'mtarget' | 'console';
     defaultSender?: string | null;
     avlytext?: {
       apiKey?: string | null;

@@ -109,11 +109,9 @@ services:
       # limiting: 1 for Traefik, the single reverse proxy in front of this
       # container here.
       TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
-      # Dev-only escape hatch: logs the generated phone verification code
-      # instead of requiring a configured SMS provider. Only takes effect when
-      # NODE_ENV is not "production", so leaving this "true" in a .env copied
-      # onto a production deploy has no effect. Empty/off by default.
-      PHONE_OTP_DEV_LOG: ${PHONE_OTP_DEV_LOG:-}
+      # Pino level for the Payload logger (trace/debug/info/warn/error/fatal).
+      # Empty leaves Payload at its own default ("info").
+      LOG_LEVEL: ${LOG_LEVEL:-}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-http://api.buynsellem.com}
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}

@@ -105,6 +105,14 @@ export default buildConfig({
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),
+	// One knob for every `logger.debug`/`info`/`warn` call in the app, rather
+	// than a feature-specific env var per thing that wants to be visible in
+	// `docker compose logs api`.
+	logger: {
+		options: {
+			level: process.env.LOG_LEVEL || "info",
+		},
+	},
 	secret: process.env.PAYLOAD_SECRET || "default-secret-change-me",
 	typescript: {
 		outputFile: path.resolve(dirname, "payload-types.ts"),

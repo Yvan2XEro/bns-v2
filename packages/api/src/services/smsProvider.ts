@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { avlytextProvider } from "@/utils/sms/providers/avlytext";
+import { consoleProvider } from "@/utils/sms/providers/console";
 import { mtargetProvider } from "@/utils/sms/providers/mtarget";
 import type { SmsMessagePayload, SmsProviderSlug } from "@/utils/sms/types";
 
@@ -51,6 +52,8 @@ export async function sendSms(
 				apiKey: smsSettings.mtarget?.apiKey || "",
 				sender: smsSettings.mtarget?.sender || undefined,
 			});
+		case "console":
+			return consoleProvider(payload, { logger: payloadClient.logger });
 		default:
 			throw new Error("Unsupported SMS provider configuration");
 	}
