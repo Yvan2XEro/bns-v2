@@ -21,6 +21,9 @@
 		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3",
+		"@aws-sdk/s3-request-presigner": "^3",
+		"@azure/storage-blob": "^12",
 		"@faker-js/faker": "^10.3.0",
 		"@novu/api": "^3.14.1",
 		"@payloadcms/db-mongodb": "3.79.0",

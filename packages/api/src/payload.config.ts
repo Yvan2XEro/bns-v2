@@ -39,12 +39,10 @@ import {
 	reconcilePendingPaymentsTask,
 } from "./jobs";
 import { migrations } from "./migrations";
-import { buildStoragePlugin } from "./plugins/storage";
+import { buildStoragePlugins } from "./plugins/storage";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
-
-const storagePlugin = await buildStoragePlugin();
 
 export default buildConfig({
 	admin: {
@@ -130,7 +128,7 @@ export default buildConfig({
 		prodMigrations: migrations,
 	}),
 	sharp,
-	plugins: storagePlugin ? [storagePlugin] : [],
+	plugins: await buildStoragePlugins(),
 	cors: ["*", ...(process.env.PAYLOAD_ALLOWED_ORIGINS?.split(",") || [])],
 	jobs: {
 		tasks: [
