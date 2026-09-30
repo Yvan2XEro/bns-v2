@@ -167,6 +167,7 @@
 		"shopCount": "{count, plural, =0 {Aucune boutique} one {# boutique} other {# boutiques}}",
 		"shopCountIn": "{count, plural, =0 {Aucune boutique} one {# boutique} other {# boutiques}} à {city}",
 		"shopSearchError": "La recherche de boutiques est indisponible",
+		"listingSearchError": "La recherche est indisponible pour le moment",
 		"noShopsTitle": "Aucune boutique trouvée",
 		"noShopsBody": "Essayez un autre mot ou élargissez la ville.",
 		"clearFilters": "Effacer les filtres",
