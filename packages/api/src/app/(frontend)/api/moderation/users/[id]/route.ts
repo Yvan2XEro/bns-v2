@@ -4,6 +4,7 @@ import {
 	parseSuspensionAction,
 	requireModerator,
 } from "@/lib/moderationRoute";
+import { shopCapabilities } from "@/lib/shopCapabilities";
 import { suspendUser, unsuspendUser } from "@/services/moderation";
 
 /** Account sheet: identity, current sanction, listing counts, action history. */
@@ -24,48 +25,70 @@ export async function GET(
 			overrideAccess: true,
 		});
 
-		const [published, pending, reports, history] = await Promise.all([
-			ctx.payload.count({
-				collection: "listings",
-				overrideAccess: true,
-				where: {
-					and: [
-						{ seller: { equals: id } },
-						{ status: { equals: "published" } },
-					],
-				},
-			}),
-			ctx.payload.count({
-				collection: "listings",
-				overrideAccess: true,
-				where: {
-					and: [{ seller: { equals: id } }, { status: { equals: "pending" } }],
-				},
-			}),
-			ctx.payload.count({
-				collection: "reports",
-				overrideAccess: true,
-				where: {
-					and: [
-						{ targetType: { equals: "user" } },
-						{ targetId: { equals: String(id) } },
-					],
-				},
-			}),
-			ctx.payload.find({
-				collection: "moderation-log",
-				depth: 1,
-				limit: 20,
-				sort: "-createdAt",
-				overrideAccess: true,
-				where: {
-					and: [
-						{ targetType: { equals: "user" } },
-						{ targetId: { equals: String(id) } },
-					],
-				},
-			}),
-		]);
+		const [published, pending, reports, history, ownedShops] =
+			await Promise.all([
+				ctx.payload.count({
+					collection: "listings",
+					overrideAccess: true,
+					where: {
+						and: [
+							{ seller: { equals: id } },
+							{ status: { equals: "published" } },
+						],
+					},
+				}),
+				ctx.payload.count({
+					collection: "listings",
+					overrideAccess: true,
+					where: {
+						and: [
+							{ seller: { equals: id } },
+							{ status: { equals: "pending" } },
+						],
+					},
+				}),
+				ctx.payload.count({
+					collection: "reports",
+					overrideAccess: true,
+					where: {
+						and: [
+							{ targetType: { equals: "user" } },
+							{ targetId: { equals: String(id) } },
+						],
+					},
+				}),
+				ctx.payload.find({
+					collection: "moderation-log",
+					depth: 1,
+					limit: 20,
+					sort: "-createdAt",
+					overrideAccess: true,
+					where: {
+						and: [
+							{ targetType: { equals: "user" } },
+							{ targetId: { equals: String(id) } },
+						],
+					},
+				}),
+				// The badge belongs to the shop, read through `shopCapabilities` so
+				// an expired or suspended shop never reports one here either — the
+				// same rule every other surface uses, not a copy of it.
+				ctx.payload.find({
+					collection: "shops",
+					depth: 0,
+					limit: 1,
+					sort: "-createdAt",
+					overrideAccess: true,
+					where: {
+						and: [
+							{ owner: { equals: id } },
+							{ status: { in: ["active", "suspended"] } },
+						],
+					},
+				}),
+			]);
+
+		const ownedShop = ownedShops.docs[0] ?? null;
 
 		return Response.json({
 			user: {
@@ -74,9 +97,10 @@ export async function GET(
 				email: user.email,
 				role: user.role,
 				avatar: user.avatar,
-				verified: user.verified,
+				identityVerifiedAt: user.identityVerifiedAt ?? null,
 				createdAt: user.createdAt,
 			},
+			shopBadge: ownedShop ? shopCapabilities(ownedShop).badge : null,
 			suspension: {
 				...suspensionSummary(user as never),
 				reason: user.suspendedReason ?? null,

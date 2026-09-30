@@ -586,6 +586,7 @@ describe("public shops search route", () => {
 					description: null,
 					city: "Douala",
 					level: 1,
+					badge: "phone",
 					publishedListingCount: 3,
 					logoUrl: null,
 					ownerRating: 4,

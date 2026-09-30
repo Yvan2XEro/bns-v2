@@ -175,6 +175,7 @@ describe("toShopSearchHit", () => {
 			id: "s-1",
 			handle: "akwatech",
 			name: "Akwa",
+			badge: "phone",
 			description: null,
 			city: "Douala",
 			level: 1,

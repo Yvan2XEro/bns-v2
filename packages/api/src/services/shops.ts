@@ -8,6 +8,10 @@ import { type PublicShop, serializePublicShop } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
+	type ShopCapabilities,
+	shopCapabilities,
+} from "../lib/shopCapabilities";
+import {
 	addDays,
 	closedHandleReleased,
 	HANDLE_COOLDOWN_DAYS,
@@ -461,6 +465,7 @@ export async function changeShopHandle(
 export interface MyShopResponse {
 	shop:
 		| (PublicShop & {
+				capabilities: ShopCapabilities;
 				status: string;
 				handleChangedAt: string | null;
 				nextHandleChangeAt: string | null;
@@ -574,6 +579,7 @@ export async function getMyShop(
 	return {
 		shop: {
 			...publicShop,
+			capabilities: shopCapabilities(shop, now),
 			status: String(shop.status),
 			handleChangedAt: shop.handleChangedAt ?? null,
 			nextHandleChangeAt:
@@ -599,12 +605,23 @@ export async function getMyShop(
 	};
 }
 
-/** Suspended and closed shops are 404 to the public; an old handle answers with its successor. */
+/**
+ * Suspended and closed shops are 404 to the public; an old handle answers
+ * with its successor. `options.manage` is the owner-facing variant: it keeps
+ * a suspended shop visible (so the owner can see why) and attaches
+ * `capabilities`, which the public variant never exposes — a visitor reads
+ * only `level` and `badge` off the public shape.
+ */
 export async function resolvePublicShop(
 	payload: Payload,
 	rawHandle: unknown,
 	now: Date = new Date(),
-): Promise<{ shop: PublicShop } | { redirectTo: string } | null> {
+	options: { manage?: boolean } = {},
+): Promise<
+	| { shop: PublicShop & { capabilities?: ShopCapabilities } }
+	| { redirectTo: string }
+	| null
+> {
 	const handle = normalizeHandle(rawHandle);
 	if (!handle) return null;
 
@@ -617,9 +634,14 @@ export async function resolvePublicShop(
 	});
 	const shop = current.docs[0] as Shop | undefined;
 	if (shop) {
-		return shop.status === "active"
-			? { shop: await loadPublicShop(payload, String(shop.id)) }
-			: null;
+		if (!options.manage && shop.status !== "active") return null;
+		if (options.manage && shop.status === "closed") return null;
+		const publicShop = await loadPublicShop(payload, String(shop.id));
+		return {
+			shop: options.manage
+				? { ...publicShop, capabilities: shopCapabilities(shop, now) }
+				: publicShop,
+		};
 	}
 
 	const previous = await payload.find({

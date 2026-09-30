@@ -1,5 +1,6 @@
 import type { Category, Media, Shop, User } from "../payload-types";
 import { relationId } from "./relationId";
+import { type ShopCapabilities, shopCapabilities } from "./shopCapabilities";
 
 export interface MediaRef {
 	id: string;
@@ -28,6 +29,7 @@ export interface PublicShop {
 	};
 	categories: { id: string; name: string; slug: string }[];
 	level: number;
+	badge: ShopCapabilities["badge"];
 	publishedListingCount: number;
 	createdAt: string;
 	owner: {
@@ -92,6 +94,7 @@ export function serializePublicShop(
 				slug: category.slug,
 			})),
 		level: shop.level ?? 1,
+		badge: shopCapabilities(shop).badge,
 		publishedListingCount: shop.publishedListingCount ?? 0,
 		createdAt: shop.createdAt,
 		owner: {
@@ -114,6 +117,7 @@ export interface ShopSearchHit {
 	description: string | null;
 	city: string | null;
 	level: number;
+	badge: ShopCapabilities["badge"];
 	publishedListingCount: number;
 	logoUrl: string | null;
 	ownerRating: number;
@@ -136,13 +140,25 @@ export function toShopSearchHit(input: unknown): ShopSearchHit {
 			: null;
 	const logo =
 		doc.logo && typeof doc.logo === "object" ? (doc.logo as Doc) : null;
+	const level = typeof doc.level === "number" ? doc.level : 1;
+	// The index only ever carries an active shop's document, and the payload
+	// fallback path filters to `status: active` before mapping — so a hit with
+	// no `status` field (the indexed shape) is hydrated as active here, and one
+	// that does carry it (a populated Shop) is trusted as given.
+	const status = typeof doc.status === "string" ? doc.status : "active";
 	return {
 		id: String(doc.id ?? ""),
 		handle: String(doc.handle ?? ""),
 		name: String(doc.name ?? ""),
 		description: str(doc.description),
 		city: str(doc.city) ?? str(location?.city),
-		level: typeof doc.level === "number" ? doc.level : 1,
+		level,
+		badge: shopCapabilities({
+			status,
+			level,
+			levelExpiresAt:
+				typeof doc.levelExpiresAt === "string" ? doc.levelExpiresAt : null,
+		}).badge,
 		publishedListingCount: Number(doc.publishedListingCount ?? 0),
 		logoUrl: str(doc.logoUrl) ?? str(logo?.url),
 		ownerRating: Number(doc.ownerRating ?? owner?.rating ?? 0),

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface Stats {
 	pendingListings: number;
 	pendingReports: number;
-	unverifiedUsers: number;
+	pendingVerifications: number;
 }
 
 export default function ModerationWidget() {
@@ -14,21 +14,19 @@ export default function ModerationWidget() {
 	useEffect(() => {
 		async function fetchStats() {
 			try {
-				const [listings, reports, users] = await Promise.all([
+				const [listings, reports, summary] = await Promise.all([
 					fetch("/api/listings?where[status][equals]=pending&limit=0").then(
 						(r) => r.json(),
 					),
 					fetch("/api/reports?where[status][equals]=pending&limit=0").then(
 						(r) => r.json(),
 					),
-					fetch("/api/users?where[verified][equals]=false&limit=0").then((r) =>
-						r.json(),
-					),
+					fetch("/api/moderation/summary").then((r) => r.json()),
 				]);
 				setStats({
 					pendingListings: listings.totalDocs ?? 0,
 					pendingReports: reports.totalDocs ?? 0,
-					unverifiedUsers: users.totalDocs ?? 0,
+					pendingVerifications: summary.pendingVerifications ?? 0,
 				});
 			} catch {
 				/* ignore */
@@ -53,9 +51,9 @@ export default function ModerationWidget() {
 			color: "#ef4444",
 		},
 		{
-			label: "Unverified Users",
-			count: stats.unverifiedUsers,
-			href: "/admin/users-management",
+			label: "Verifications to review",
+			count: stats.pendingVerifications,
+			href: "/moderation/verification",
 			color: "#3b82f6",
 		},
 	];
