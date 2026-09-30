@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
-	FlatList,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
@@ -18,17 +18,25 @@ import {
 	type Translate,
 	useModerationTheme,
 } from "@/src/components/moderation/theme";
+import { VerificationCard } from "@/src/components/moderation/VerificationCard";
 import {
 	useModerationSummary,
 	usePendingListings,
 	usePendingReports,
 } from "@/src/hooks/useModeration";
+import { useVerificationQueue } from "@/src/hooks/useModerationVerification";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useTranslation } from "@/src/lib/i18n";
+import { capitalize, queueTabs } from "@/src/lib/moderationVerification";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-import type { ListingDoc, ReportDoc, UserDoc } from "@/src/types/api";
+import type {
+	ListingDoc,
+	ModerationVerificationQueueItem,
+	ReportDoc,
+	UserDoc,
+} from "@/src/types/api";
 
-type QueueKey = "listings" | "reports";
+type QueueKey = "listings" | "reports" | "verification";
 
 function relativeAge(iso: string, t: Translate): string {
 	const minutes = Math.max(
@@ -56,35 +64,56 @@ export default function ModerationHubScreen() {
 	const summary = useModerationSummary();
 	const listings = usePendingListings();
 	const reports = usePendingReports();
+	// Never gated on the verification feature flag: a review already in flight
+	// must finish reviewing while intake is paused, so the hub only ever asks
+	// for the fixed "to_review" queue and never reads the flag.
+	const verifications = useVerificationQueue("to_review");
 
-	const active = queue === "listings" ? listings : reports;
+	const isLoading =
+		queue === "listings"
+			? listings.isLoading
+			: queue === "reports"
+				? reports.isLoading
+				: verifications.isLoading;
 
-	const items = useMemo<(ListingDoc | ReportDoc)[]>(
-		() =>
-			(active.data?.pages ?? []).flatMap(
-				(page) => page.docs as (ListingDoc | ReportDoc)[],
-			),
-		[active.data],
-	);
+	const items = useMemo<
+		(ListingDoc | ReportDoc | ModerationVerificationQueueItem)[]
+	>(() => {
+		if (queue === "listings") {
+			return (listings.data?.pages ?? []).flatMap(
+				(page) => page.docs as ListingDoc[],
+			);
+		}
+		if (queue === "reports") {
+			return (reports.data?.pages ?? []).flatMap(
+				(page) => page.docs as ReportDoc[],
+			);
+		}
+		return verifications.data?.items ?? [];
+	}, [queue, listings.data, reports.data, verifications.data]);
+
+	// `verifications` has no pagination — the reviewer queue is a flat,
+	// bounded list, never an infinite one — so only the other two tabs ever
+	// load a next page or show a footer spinner.
+	const infiniteActive =
+		queue === "listings" ? listings : queue === "reports" ? reports : null;
 
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
+		const active =
+			queue === "listings"
+				? listings
+				: queue === "reports"
+					? reports
+					: verifications;
 		await Promise.all([active.refetch(), summary.refetch()]);
 		setRefreshing(false);
-	}, [active, summary]);
+	}, [queue, listings, reports, verifications, summary]);
 
-	const tabs: { key: QueueKey; label: string; count: number }[] = [
-		{
-			key: "listings",
-			label: t("moderation.tabListings"),
-			count: summary.data?.pendingListings ?? 0,
-		},
-		{
-			key: "reports",
-			label: t("moderation.tabReports"),
-			count: summary.data?.pendingReports ?? 0,
-		},
-	];
+	const tabs = queueTabs(summary.data).map((tab) => ({
+		...tab,
+		label: t(`moderation.tab${capitalize(tab.key)}`),
+	}));
 
 	return (
 		<ModerationScreen
@@ -101,6 +130,8 @@ export default function ModerationHubScreen() {
 					return (
 						<Pressable
 							key={tab.key}
+							accessibilityRole="tab"
+							accessibilityState={{ selected }}
 							onPress={() => setQueue(tab.key)}
 							style={[
 								styles.tab,
@@ -118,7 +149,7 @@ export default function ModerationHubScreen() {
 							>
 								{tab.label}
 							</Text>
-							{tab.count > 0 ? (
+							{typeof tab.count === "number" && tab.count > 0 ? (
 								<View
 									style={[
 										styles.tabBadge,
@@ -140,16 +171,17 @@ export default function ModerationHubScreen() {
 				})}
 			</View>
 
-			{active.isLoading ? (
+			{isLoading ? (
 				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
 			) : (
-				<FlatList
+				<FlashList
 					data={items}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={[
-						{ padding: 16, gap: 10, flexGrow: 1 },
-						centeredContent,
-					]}
+					contentContainerStyle={{
+						padding: 16,
+						...(centeredContent ? centeredContent : null),
+					}}
+					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 					refreshControl={
 						<RefreshControl
 							refreshing={refreshing}
@@ -158,8 +190,11 @@ export default function ModerationHubScreen() {
 						/>
 					}
 					onEndReached={() => {
-						if (active.hasNextPage && !active.isFetchingNextPage) {
-							active.fetchNextPage();
+						if (
+							infiniteActive?.hasNextPage &&
+							!infiniteActive.isFetchingNextPage
+						) {
+							infiniteActive.fetchNextPage();
 						}
 					}}
 					onEndReachedThreshold={0.4}
@@ -169,21 +204,27 @@ export default function ModerationHubScreen() {
 							title={
 								queue === "listings"
 									? t("moderation.emptyListingsTitle")
-									: t("moderation.emptyReportsTitle")
+									: queue === "reports"
+										? t("moderation.emptyReportsTitle")
+										: t("moderation.emptyVerificationTitle")
 							}
 							subtitle={t("moderation.emptySubtitle")}
 						/>
 					}
 					ListFooterComponent={
-						active.isFetchingNextPage ? (
+						infiniteActive?.isFetchingNextPage ? (
 							<ActivityIndicator style={{ margin: 16 }} color={c.primary} />
 						) : null
 					}
 					renderItem={({ item }) =>
 						queue === "listings" ? (
 							<ListingRow listing={item as ListingDoc} t={t} c={c} />
-						) : (
+						) : queue === "reports" ? (
 							<ReportRow report={item as ReportDoc} t={t} c={c} />
+						) : (
+							<VerificationCard
+								item={item as ModerationVerificationQueueItem}
+							/>
 						)
 					}
 				/>
@@ -206,7 +247,7 @@ function ListingRow({
 
 	return (
 		<Pressable
-			onPress={() => router.push(`/moderation/listing/${listing.id}`)}
+			onPress={() => router.push(`/moderation/listing/${listing.id}` as never)}
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			{thumb ? (
@@ -250,7 +291,7 @@ function ReportRow({
 
 	return (
 		<Pressable
-			onPress={() => router.push(`/moderation/report/${report.id}`)}
+			onPress={() => router.push(`/moderation/report/${report.id}` as never)}
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			<View style={[styles.reportIcon, { backgroundColor: c.dangerSoft }]}>
