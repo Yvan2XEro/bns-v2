@@ -123,6 +123,7 @@ export const ERROR_CODES = {
 	verificationNotAssignee: "verification.notAssignee",
 	verificationConflictOfInterest: "verification.conflictOfInterest",
 	verificationChecklistIncomplete: "verification.checklistIncomplete",
+	verificationHashUnavailable: "verification.hashUnavailable",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -251,6 +252,8 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"You cannot review a shop you are involved with.",
 	[ERROR_CODES.verificationChecklistIncomplete]:
 		"Every checklist item must be confirmed before approving.",
+	[ERROR_CODES.verificationHashUnavailable]:
+		"Identity verification is misconfigured on our side. Please contact support.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {
