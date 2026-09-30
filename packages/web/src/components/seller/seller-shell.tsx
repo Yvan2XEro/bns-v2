@@ -18,7 +18,7 @@ export async function SellerShell({
 			<SellerSidebar
 				name={shop.name}
 				handle={shop.handle}
-				level={shop.level}
+				badge={shop.badge}
 				logoUrl={shop.logo?.url ?? null}
 				lowStock={mine.counts?.lowStockVariants ?? 0}
 			/>

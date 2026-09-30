@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { cn } from "~/lib/utils";
-import { badgeForLevel } from "~/lib/verification";
+import type { VerificationBadge } from "~/lib/verification";
 
 // Orders (P4), Resale (P8), Delivery (P7) and Payments (P5) join this list
 // when their phase ships.
@@ -37,13 +37,16 @@ const ITEMS = [
 export function SellerSidebar({
 	name,
 	handle,
-	level,
+	badge,
 	logoUrl,
 	lowStock,
 }: {
 	name: string;
 	handle: string;
-	level: number;
+	/** The server's computed, expiry-aware badge — never `badgeForLevel(level)`,
+	 * which would still show "identity verified" after a level-3 approval
+	 * expires and before the nightly job catches up. */
+	badge: VerificationBadge | null;
 	logoUrl: string | null;
 	lowStock: number;
 }) {
@@ -69,7 +72,7 @@ export function SellerSidebar({
 				</div>
 			</div>
 			<div className="px-4 pb-2">
-				<LevelBadge badge={badgeForLevel(level)} size="sm" />
+				<LevelBadge badge={badge} size="sm" />
 			</div>
 			<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col lg:overflow-visible">
 				{ITEMS.map(({ href, key, icon: Icon, exact }) => {

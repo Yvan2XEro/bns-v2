@@ -1,4 +1,5 @@
 import { cache } from "react";
+import type { VerificationBadge } from "~/lib/verification";
 import type { Category, MyShopResponse, PublicShop } from "~/types";
 import { serverGet } from "./server-api";
 
@@ -26,6 +27,22 @@ export const getUserShop = cache(
 			`/api/public/shops/${encodeURIComponent(handle)}`,
 		);
 		return result?.shop ?? null;
+	},
+);
+
+/**
+ * A listing's seller card needs the shop's badge, not just the raw `level`
+ * on the depth-populated relation `GET /api/listings/:id` returns — same
+ * reasoning as `getUserShop` above: re-fetch through the public shop route
+ * so the badge is the server's computed, expiry-aware one, never
+ * `badgeForLevel` over a raw `level`.
+ */
+export const getShopBadge = cache(
+	async (handle: string): Promise<VerificationBadge | null> => {
+		const result = await serverGet<{ shop: PublicShop }>(
+			`/api/public/shops/${encodeURIComponent(handle)}`,
+		);
+		return result?.shop.badge ?? null;
 	},
 );
 

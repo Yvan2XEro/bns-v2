@@ -1,7 +1,6 @@
 import { MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { badgeForLevel } from "~/lib/verification";
 import type { ShopSearchHit } from "~/types";
 import { LevelBadge } from "./level-badge";
 import { ShopInitials } from "./shop-initials";
@@ -22,7 +21,7 @@ export function ShopCard({ shop }: { shop: ShopSearchHit }) {
 			<div className="min-w-0 flex-1">
 				<div className="flex flex-wrap items-center gap-2">
 					<p className="truncate font-bold text-[#0F172A]">{shop.name}</p>
-					<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
+					<LevelBadge badge={shop.badge} size="sm" />
 				</div>
 				<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[#64748B] text-xs">
 					{shop.ownerReviews > 0 ? (

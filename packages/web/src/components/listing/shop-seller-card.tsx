@@ -3,14 +3,20 @@ import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { shopLogoUrl } from "~/lib/listing-shop";
-import { badgeForLevel } from "~/lib/verification";
+import type { VerificationBadge } from "~/lib/verification";
 import type { Shop } from "~/types";
 
 export function ShopSellerCard({
 	shop,
+	badge,
 	ownerName,
 }: {
 	shop: Shop;
+	/** The server's computed, expiry-aware badge — see `getShopBadge` in
+	 * `~/lib/server-shop`. Never derived from `shop.level` here: that raw
+	 * field on a depth-populated relation stays at 3 until the nightly job
+	 * recomputes it, even once the level-3 approval has expired. */
+	badge: VerificationBadge | null;
 	ownerName: string | null;
 }) {
 	const t = useTranslations("Shop");
@@ -25,7 +31,7 @@ export function ShopSellerCard({
 			<div className="min-w-0">
 				<div className="flex flex-wrap items-center gap-2">
 					<p className="truncate font-semibold text-[#0F172A]">{shop.name}</p>
-					<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
+					<LevelBadge badge={badge} size="sm" />
 				</div>
 				{ownerName && (
 					<p className="text-[#64748B] text-xs">

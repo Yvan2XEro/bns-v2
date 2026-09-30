@@ -186,6 +186,36 @@ describe("toShopSearchHit", () => {
 			createdAt: "x",
 		});
 	});
+
+	it("I5: agrees with the Payload fallback path on an expired level-3 shop, now that the index carries levelExpiresAt", () => {
+		const indexed = {
+			id: "s-2",
+			handle: "expired-shop",
+			name: "Expired Shop",
+			description: null,
+			city: "Douala",
+			level: 3,
+			levelExpiresAt: "2020-01-01T00:00:00.000Z",
+			publishedListingCount: 3,
+			logoUrl: null,
+			ownerRating: 4.8,
+			ownerReviews: 12,
+			createdAt: "x",
+			categoryIds: ["c"],
+		};
+		const populated = {
+			id: "s-2",
+			handle: "expired-shop",
+			name: "Expired Shop",
+			status: "active",
+			level: 3,
+			levelExpiresAt: "2020-01-01T00:00:00.000Z",
+		};
+		expect(toShopSearchHit(indexed).badge).toBe("phone");
+		expect(toShopSearchHit(indexed).badge).toBe(
+			toShopSearchHit(populated).badge,
+		);
+	});
 });
 
 describe("GET /api/public/shops/{handle}", () => {

@@ -40,6 +40,7 @@ import {
 import { formatXafRange } from "~/lib/money";
 import { formatListingPrice, hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
+import { getShopBadge } from "~/lib/server-shop";
 import type { Listing, Tag, User } from "~/types";
 
 export const revalidate = 3600;
@@ -173,6 +174,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
 	const shop = listingShop(listing);
+	const shopBadge = shop ? await getShopBadge(shop.handle) : null;
 	const productId = listingProductId(listing);
 	const product = listingProduct(listing);
 	const summary = productSummaryOf(listing);
@@ -513,6 +515,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								{shop ? (
 									<ShopSellerCard
 										shop={shop}
+										badge={shopBadge}
 										ownerName={seller?.name ?? null}
 									/>
 								) : seller ? (

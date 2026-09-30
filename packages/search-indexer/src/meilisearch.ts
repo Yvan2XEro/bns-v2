@@ -309,6 +309,15 @@ export type ShopDocument = {
 	countryCode: string | null;
 	categoryIds: string[];
 	level: number;
+	/**
+	 * When the current `level` expires — the exact field `shopCapabilities`
+	 * (and `toShopSearchHit`'s `badge`) reads to tell an *effective* level
+	 * from a stale stored one. Without this the Meilisearch path always
+	 * computes the badge from the raw `level`, disagreeing with the Payload
+	 * fallback path for the same shop once its approval has expired but the
+	 * nightly recompute job has not run yet.
+	 */
+	levelExpiresAt: string | null;
 	publishedListingCount: number;
 	createdAt: string;
 	logoUrl: string | null;

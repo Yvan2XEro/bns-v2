@@ -41,6 +41,8 @@ export function transformShop(shop: Record<string, unknown>): ShopDocument {
 			? shop.categories.map(idOf).filter((id): id is string => Boolean(id))
 			: [],
 		level: typeof shop.level === "number" ? shop.level : 1,
+		levelExpiresAt:
+			typeof shop.levelExpiresAt === "string" ? shop.levelExpiresAt : null,
 		publishedListingCount: Number(shop.publishedListingCount ?? 0),
 		createdAt: String(shop.createdAt ?? ""),
 		logoUrl: typeof logo?.url === "string" ? logo.url : null,
