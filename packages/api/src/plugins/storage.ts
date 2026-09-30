@@ -142,6 +142,13 @@ export async function buildStoragePlugins(): Promise<Plugin[]> {
 			}),
 			azureStorage({
 				...base,
+				// Never spread the flag here: `@payloadcms/storage-azure` hard-codes
+				// `createIfNotExists({ access: "blob" })` — Azure's anonymous public
+				// read — for any plugin instance with container creation on. The
+				// private container must never be created that way, regardless of
+				// what AZURE_STORAGE_ALLOW_CONTAINER_CREATE says; it is created out
+				// of band with a private access level instead.
+				allowContainerCreate: false,
 				collections: {
 					"verification-documents": { prefix: PRIVATE_PREFIX },
 				},

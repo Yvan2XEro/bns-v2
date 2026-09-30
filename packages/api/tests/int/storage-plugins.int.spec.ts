@@ -49,6 +49,30 @@ describe("buildStoragePlugins", () => {
 		}
 	});
 
+	it("never lets the private Azure container be created with anonymous access, whatever the flag says", async () => {
+		process.env.STORAGE_PROVIDER = "azure";
+		process.env.NODE_ENV = "production";
+		process.env.AZURE_STORAGE_CONTAINER_NAME = "media";
+		process.env.AZURE_STORAGE_PRIVATE_CONTAINER_NAME = "verification-private";
+		process.env.AZURE_STORAGE_ALLOW_CONTAINER_CREATE = "true";
+
+		const { buildStoragePlugins } = await import("../../src/plugins/storage");
+		await buildStoragePlugins();
+
+		expect(azureStorage).toHaveBeenCalledTimes(2);
+		const privateCall = azureStorage.mock.calls.find(
+			([config]) => "verification-documents" in (config.collections as object),
+		);
+		expect(privateCall).toBeDefined();
+		expect(privateCall?.[0].allowContainerCreate).toBe(false);
+
+		// The public plugin still honours the flag: only the private one is forced closed.
+		const publicCall = azureStorage.mock.calls.find(
+			([config]) => "media" in (config.collections as object),
+		);
+		expect(publicCall?.[0].allowContainerCreate).toBe(true);
+	});
+
 	it("boots STORAGE_PROVIDER=local under NODE_ENV=production with no plugins", async () => {
 		process.env.STORAGE_PROVIDER = "local";
 		process.env.NODE_ENV = "production";
