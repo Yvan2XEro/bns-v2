@@ -998,8 +998,12 @@
 				"title": "19. Modifications de cette politique",
 				"body": "Nous pouvons mettre à jour cette politique à mesure que l'application évolue. La date affichée en haut indique toujours la version en vigueur, et nous vous informerons dans l'application de tout changement important."
 			},
+			"sellerVerification": {
+				"title": "20. Vérification d'identité et d'entreprise des vendeurs",
+				"body": "Si vous faites vérifier une boutique, nous transmettons la pièce d'identité et le selfie que vous fournissez à notre partenaire de vérification d'identité (actuellement Didit ou Smile ID), qui peut les traiter hors du Cameroun dans le cadre de garanties contractuelles de protection des données, et, pour la vérification d'entreprise, nous conservons les informations d'immatriculation et les documents que vous transmettez. Le prestataire supprime sa propre copie dans les 30 jours suivant une décision. Nous conservons le dossier de vérification pendant 90 jours après une décision définitive (jusqu'à un an en cas de révocation pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige. Vous pouvez demander à consulter ou supprimer ces informations à tout moment en écrivant à privacy@buynsellem.com, sauf ce que la loi nous oblige à conserver."
+			},
 			"contact": {
-				"title": "20. Nous contacter",
+				"title": "21. Nous contacter",
 				"body": "Pour toute question relative à la confidentialité ou pour exercer vos droits, écrivez à privacy@buynsellem.com. Pour toute autre demande, écrivez à support@buynsellem.com."
 			}
 		}
@@ -1376,7 +1380,128 @@
 		"shopSuspendedTitle": "Boutique suspendue",
 		"shopSuspendedMessage": "{{count}} annonces ont été retirées.",
 		"shopLiftTitle": "Lever la suspension ?",
-		"shopLiftMessage": "La boutique redevient visible et les annonces retirées par cette suspension sont remises en ligne."
+		"shopLiftMessage": "La boutique redevient visible et les annonces retirées par cette suspension sont remises en ligne.",
+		"tabVerification": "Vérification",
+		"emptyVerificationTitle": "Aucune demande de vérification en attente",
+		"verifReviewTitle": "Demande de vérification",
+		"verifRowShop": "Boutique {{id}}",
+		"verifRowClaim": "Réclamer",
+		"verifLevelRequest": "Demande de niveau {{level}}",
+		"verifReasonLabel": "Motif",
+		"verifSellerMessageLabel": "Message au vendeur",
+		"verifSellerMessagePlaceholder": "Expliquez ce que le vendeur doit corriger ou savoir",
+		"verifSignalsTitle": "Signaux",
+		"verifSignalsOtherRequests": "Autres demandes de cette boutique",
+		"verifSignalsViewRelated": "Voir la demande liée",
+		"verifApproveChecklistIncomplete": "Terminez la liste de vérification avant d'approuver.",
+		"verifKycTitle": "Vérification d'identité",
+		"verifKycOutcome": "Résultat",
+		"verifKycDocument": "Document",
+		"verifKycLast4": "4 derniers chiffres",
+		"verifKycExpiry": "Expiration",
+		"verifKycName": "Nom (tel que lu)",
+		"verifKycLiveness": "Détection de vivacité",
+		"verifKycFaceMatch": "Correspondance faciale",
+		"verifKycVendorConsole": "Ouvrir dans la console du prestataire",
+		"verifCommonPassed": "Réussi",
+		"verifCommonFailed": "Échoué",
+		"verifCommonYes": "Oui",
+		"verifCommonNo": "Non",
+		"verifBusinessTitle": "Informations sur l'entreprise",
+		"verifBusinessType": "Type d'entreprise",
+		"verifBusinessLegalName": "Nom légal",
+		"verifBusinessTradeName": "Nom commercial",
+		"verifBusinessRccm": "Numéro RCCM",
+		"verifBusinessEntreprenantNumber": "Numéro de déclaration d'entreprenant",
+		"verifBusinessNiu": "NIU",
+		"verifBusinessNiuFormatWarning": "Format inhabituel",
+		"verifBusinessAddress": "Adresse enregistrée",
+		"verifBusinessCity": "Ville",
+		"verifBusinessRepresentative": "Représentant légal",
+		"verifBusinessRepresentativeIsOwner": "Le représentant est le propriétaire de la boutique",
+		"verifChecklistTitle": "Liste de vérification",
+		"verifDocumentsTitle": "Documents",
+		"verifDocumentUnknownKind": "Document",
+		"verifDocumentPurged": "Ce document a été purgé et ne peut plus être consulté.",
+		"verifDocumentView": "Voir le document",
+		"verifDocumentViewFailed": "Ce document n'a pas pu être ouvert. Veuillez réessayer.",
+		"verifStatus_draft": "Brouillon",
+		"verifStatus_submitted": "Soumise",
+		"verifStatus_in_review": "En cours d'examen",
+		"verifStatus_needs_info": "En attente du vendeur",
+		"verifStatus_approved": "Approuvée",
+		"verifStatus_rejected": "Rejetée",
+		"verifStatus_revoked": "Révoquée",
+		"verifStatus_expired": "Expirée",
+		"verifSignal_identity_reused": "Document d'identité réutilisé",
+		"verifSignal_name_mismatch": "Nom incohérent",
+		"verifSignal_underage": "Mineur",
+		"verifSignal_kyc_declined": "Vérification d'identité refusée",
+		"verifSignal_kyc_review": "Vérification d'identité signalée",
+		"verifSignal_document_reused": "Document réutilisé",
+		"verifSignal_rccm_reused": "Numéro RCCM réutilisé",
+		"verifSignal_niu_reused": "NIU réutilisé",
+		"verifSignal_niu_format": "Format de NIU inhabituel",
+		"verifKycStatus_not_started": "Non commencée",
+		"verifKycStatus_pending": "En attente",
+		"verifKycStatus_approved": "Approuvée",
+		"verifKycStatus_declined": "Refusée",
+		"verifKycStatus_review": "Signalée pour examen",
+		"verifKycStatus_abandoned": "Abandonnée",
+		"verifKycStatus_error": "Erreur",
+		"verifDocumentType_national_id": "Carte d'identité nationale",
+		"verifDocumentType_passport": "Passeport",
+		"verifDocumentType_residence_permit": "Titre de séjour",
+		"verifBusinessType_entreprenant": "Entreprenant",
+		"verifBusinessType_sole_trader": "Entreprise individuelle",
+		"verifBusinessType_company": "Société",
+		"verifBusinessType_cooperative": "Coopérative",
+		"verifChecklist_name_matches_registry": "Le nom correspond au registre",
+		"verifChecklist_registration_number_matches_document": "Le numéro d'immatriculation correspond au document",
+		"verifChecklist_niu_matches_certificate": "Le NIU correspond au certificat",
+		"verifChecklist_representative_matches_identity_or_mandate": "Le représentant correspond à sa pièce d'identité ou à son mandat",
+		"verifChecklist_documents_legible_and_current": "Les documents sont lisibles et à jour",
+		"verifDocumentKind_rccm_extract": "Extrait RCCM",
+		"verifDocumentKind_entreprenant_declaration": "Déclaration d'entreprenant",
+		"verifDocumentKind_niu_certificate": "Certificat NIU",
+		"verifDocumentKind_legal_representative_id": "Pièce d'identité du représentant légal",
+		"verifDocumentKind_mandate": "Mandat",
+		"verifDocumentKind_proof_of_address": "Justificatif de domicile",
+		"verifDocumentKind_other": "Autre document",
+		"verifAction_claim": "Réclamer",
+		"verifAction_release": "Libérer",
+		"verifAction_request_info": "Demander des infos",
+		"verifAction_approve": "Approuver",
+		"verifAction_reject": "Rejeter",
+		"verifAction_revoke": "Révoquer",
+		"verifConfirm_request_info": "Envoyer la demande",
+		"verifConfirm_approve": "Approuver",
+		"verifConfirm_reject": "Rejeter",
+		"verifConfirm_revoke": "Révoquer",
+		"verifSheetTitle_request_info": "Demander plus d'informations",
+		"verifSheetTitle_approve": "Approuver cette demande",
+		"verifSheetTitle_reject": "Rejeter cette demande",
+		"verifSheetTitle_revoke": "Révoquer ce niveau",
+		"verifSheetSubtitle_request_info": "Le vendeur est invité à corriger ou compléter sa soumission.",
+		"verifSheetSubtitle_approve": "La boutique obtient ce niveau.",
+		"verifSheetSubtitle_reject": "La boutique entre en délai d'attente avant de pouvoir redemander ce niveau.",
+		"verifSheetSubtitle_revoke": "La boutique perd les capacités accordées par ce niveau.",
+		"verifReasonCode_document_unreadable": "Document illisible",
+		"verifReasonCode_document_missing": "Document manquant",
+		"verifReasonCode_information_inconsistent": "Informations incohérentes",
+		"verifReasonCode_kyc_retry": "La vérification d'identité doit être retentée",
+		"verifReasonCode_other": "Autre",
+		"verifReasonCode_document_invalid": "Document invalide",
+		"verifReasonCode_document_expired": "Document expiré",
+		"verifReasonCode_identity_mismatch": "Identité incohérente",
+		"verifReasonCode_liveness_failed": "Échec de la détection de vivacité",
+		"verifReasonCode_business_mismatch": "Informations d'entreprise incohérentes",
+		"verifReasonCode_duplicate_identity": "Identité en double",
+		"verifReasonCode_fraud_suspected": "Fraude suspectée",
+		"verifReasonCode_fraud": "Fraude",
+		"verifReasonCode_document_forged": "Document falsifié",
+		"verifReasonCode_business_closed": "Entreprise fermée",
+		"verifReasonCode_identity_reused": "Identité réutilisée"
 	},
 	"shop": {
 		"levelPhone": "Téléphone vérifié",
@@ -1685,6 +1810,76 @@
 		"hub": {
 			"title": "Vérification",
 			"disabledBanner": "La vérification est temporairement suspendue. Vous pouvez toujours consulter l'état de vos demandes ci-dessous."
+		},
+		"identity": {
+			"pageTitle": "Vérification d'identité",
+			"consent": {
+				"title": "Avant de commencer",
+				"intro": "Pour vérifier votre identité, BuyNSellem transmet votre pièce d'identité et un selfie à son partenaire de vérification d'identité. Merci de lire ce que cela implique avant de continuer.",
+				"collects": "Ce que nous collectons : une pièce d'identité (carte nationale, passeport ou carte de séjour) et un selfie utilisé pour vérifier qu'il s'agit bien de vous.",
+				"vendor": "Ces informations sont traitées par le partenaire de vérification d'identité de BuyNSellem (actuellement Didit ou Smile ID), qui peut les traiter hors du Cameroun dans le cadre de garanties contractuelles de protection des données.",
+				"retention": "Le prestataire supprime sa propre copie dans les 30 jours suivant une décision. Nous conservons le dossier de vérification pendant 90 jours après une décision définitive (jusqu'à un an en cas de révocation pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige.",
+				"rights": "Vous pouvez demander à consulter ou supprimer ces informations à tout moment, sauf ce que la loi nous oblige à conserver.",
+				"contact": "Contact : privacy@buynsellem.com",
+				"checkboxLabel": "J'ai lu cette notice et j'accepte que ma pièce d'identité et mon selfie soient transmis pour vérification.",
+				"checkboxError": "Merci d'accepter la notice pour continuer.",
+				"start": "Démarrer la vérification"
+			},
+			"blocked": {
+				"title": "Impossible de démarrer pour l'instant",
+				"body": "La vérification d'identité n'est pas disponible pour cette boutique en ce moment. Consultez le centre de vérification pour connaître l'état actuel.",
+				"backToHub": "Retour à la vérification"
+			}
+		},
+		"return": {
+			"title": "Résultat de la vérification",
+			"backToHub": "Retour à la vérification",
+			"missing": {
+				"title": "Nous n'avons pas trouvé cette demande",
+				"body": "Ouvrez le centre de vérification pour connaître l'état actuel."
+			},
+			"polling": {
+				"title": "Vérification du résultat…",
+				"body": "Cela peut prendre un moment. Merci de garder l'application ouverte, ou de revenir bientôt."
+			},
+			"outcome": {
+				"declinedRetry": {
+					"title": "Cette tentative n'a pas abouti",
+					"body": "Le document n'a pas pu être vérifié cette fois-ci, mais vous pouvez encore réessayer.",
+					"cta": "Réessayer"
+				},
+				"timeout": {
+					"title": "Résultat toujours en attente",
+					"body": "Cela prend plus de temps que d'habitude. Le résultat peut encore arriver de lui-même — vous pouvez vérifier à nouveau maintenant.",
+					"cta": "Actualiser"
+				},
+				"answer": {
+					"approved": {
+						"title": "Identité vérifiée",
+						"body": "Votre identité a été vérifiée."
+					},
+					"needsInfo": {
+						"title": "Informations complémentaires nécessaires",
+						"body": "Un modérateur a besoin d'informations complémentaires avant de statuer. Consultez le centre de vérification pour le détail."
+					},
+					"submitted": {
+						"title": "En cours d'examen",
+						"body": "Votre demande a été transmise à un modérateur et est en cours d'examen."
+					},
+					"rejected": {
+						"title": "Demande rejetée",
+						"body": "Cette demande a été rejetée. Consultez le centre de vérification pour le détail."
+					},
+					"revoked": {
+						"title": "Vérification révoquée",
+						"body": "Cette vérification a été révoquée. Consultez le centre de vérification pour le détail."
+					},
+					"expired": {
+						"title": "Demande expirée",
+						"body": "Cette demande a expiré."
+					}
+				}
+			}
 		},
 		"statusCard": {
 			"noLevel": "Aucun niveau pour l'instant",

@@ -29,6 +29,7 @@ const SECTION_KEYS = [
 	"children",
 	"security",
 	"changes",
+	"sellerVerification",
 	"contact",
 ] as const;
 

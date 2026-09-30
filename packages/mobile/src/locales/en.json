@@ -1014,8 +1014,12 @@
 				"title": "19. Changes to this policy",
 				"body": "We may update this policy as the app changes. The date at the top always shows the current version, and we will tell you in the app about any significant change."
 			},
+			"sellerVerification": {
+				"title": "20. Seller identity and business verification",
+				"body": "If you verify a shop, we send the identity document and selfie you provide to our identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards, and, for business verification, we store the registration details and documents you submit. The vendor deletes its own copy within 30 days of a decision. We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires. You can ask to see or delete this information at any time by writing to privacy@buynsellem.com, except for what the law requires us to keep."
+			},
 			"contact": {
-				"title": "20. Contact us",
+				"title": "21. Contact us",
 				"body": "For privacy questions or to exercise your rights, write to privacy@buynsellem.com. For anything else, write to support@buynsellem.com."
 			}
 		}
@@ -1303,7 +1307,128 @@
 		"shopSuspendedTitle": "Shop suspended",
 		"shopSuspendedMessage": "{{count}} listings were taken down.",
 		"shopLiftTitle": "Lift the suspension?",
-		"shopLiftMessage": "The shop is visible again and the listings this suspension took down go live again."
+		"shopLiftMessage": "The shop is visible again and the listings this suspension took down go live again.",
+		"tabVerification": "Verification",
+		"emptyVerificationTitle": "No pending verification requests",
+		"verifReviewTitle": "Verification request",
+		"verifRowShop": "Shop {{id}}",
+		"verifRowClaim": "Claim",
+		"verifLevelRequest": "Level {{level}} request",
+		"verifReasonLabel": "Reason",
+		"verifSellerMessageLabel": "Message to the seller",
+		"verifSellerMessagePlaceholder": "Explain what the seller needs to fix or know",
+		"verifSignalsTitle": "Signals",
+		"verifSignalsOtherRequests": "Other requests for this shop",
+		"verifSignalsViewRelated": "View related request",
+		"verifApproveChecklistIncomplete": "Complete the checklist before approving.",
+		"verifKycTitle": "Identity check",
+		"verifKycOutcome": "Outcome",
+		"verifKycDocument": "Document",
+		"verifKycLast4": "Last 4 digits",
+		"verifKycExpiry": "Expiry",
+		"verifKycName": "Name (as read)",
+		"verifKycLiveness": "Liveness",
+		"verifKycFaceMatch": "Face match",
+		"verifKycVendorConsole": "Open in the vendor console",
+		"verifCommonPassed": "Passed",
+		"verifCommonFailed": "Failed",
+		"verifCommonYes": "Yes",
+		"verifCommonNo": "No",
+		"verifBusinessTitle": "Business details",
+		"verifBusinessType": "Business type",
+		"verifBusinessLegalName": "Legal name",
+		"verifBusinessTradeName": "Trade name",
+		"verifBusinessRccm": "RCCM number",
+		"verifBusinessEntreprenantNumber": "Entreprenant declaration number",
+		"verifBusinessNiu": "NIU",
+		"verifBusinessNiuFormatWarning": "Unusual format",
+		"verifBusinessAddress": "Registered address",
+		"verifBusinessCity": "City",
+		"verifBusinessRepresentative": "Legal representative",
+		"verifBusinessRepresentativeIsOwner": "Representative is the shop owner",
+		"verifChecklistTitle": "Checklist",
+		"verifDocumentsTitle": "Documents",
+		"verifDocumentUnknownKind": "Document",
+		"verifDocumentPurged": "This document has been purged and can no longer be viewed.",
+		"verifDocumentView": "View document",
+		"verifDocumentViewFailed": "This document could not be opened. Please try again.",
+		"verifStatus_draft": "Draft",
+		"verifStatus_submitted": "Submitted",
+		"verifStatus_in_review": "In review",
+		"verifStatus_needs_info": "Waiting on seller",
+		"verifStatus_approved": "Approved",
+		"verifStatus_rejected": "Rejected",
+		"verifStatus_revoked": "Revoked",
+		"verifStatus_expired": "Expired",
+		"verifSignal_identity_reused": "Identity document reused",
+		"verifSignal_name_mismatch": "Name mismatch",
+		"verifSignal_underage": "Underage",
+		"verifSignal_kyc_declined": "Identity check declined",
+		"verifSignal_kyc_review": "Identity check flagged",
+		"verifSignal_document_reused": "Document reused",
+		"verifSignal_rccm_reused": "RCCM number reused",
+		"verifSignal_niu_reused": "NIU reused",
+		"verifSignal_niu_format": "Unusual NIU format",
+		"verifKycStatus_not_started": "Not started",
+		"verifKycStatus_pending": "Pending",
+		"verifKycStatus_approved": "Approved",
+		"verifKycStatus_declined": "Declined",
+		"verifKycStatus_review": "Flagged for review",
+		"verifKycStatus_abandoned": "Abandoned",
+		"verifKycStatus_error": "Error",
+		"verifDocumentType_national_id": "National ID",
+		"verifDocumentType_passport": "Passport",
+		"verifDocumentType_residence_permit": "Residence permit",
+		"verifBusinessType_entreprenant": "Entreprenant",
+		"verifBusinessType_sole_trader": "Sole trader",
+		"verifBusinessType_company": "Company",
+		"verifBusinessType_cooperative": "Cooperative",
+		"verifChecklist_name_matches_registry": "Name matches the registry",
+		"verifChecklist_registration_number_matches_document": "Registration number matches the document",
+		"verifChecklist_niu_matches_certificate": "NIU matches the certificate",
+		"verifChecklist_representative_matches_identity_or_mandate": "Representative matches their identity document or mandate",
+		"verifChecklist_documents_legible_and_current": "Documents are legible and current",
+		"verifDocumentKind_rccm_extract": "RCCM extract",
+		"verifDocumentKind_entreprenant_declaration": "Entreprenant declaration",
+		"verifDocumentKind_niu_certificate": "NIU certificate",
+		"verifDocumentKind_legal_representative_id": "Legal representative's ID",
+		"verifDocumentKind_mandate": "Mandate",
+		"verifDocumentKind_proof_of_address": "Proof of address",
+		"verifDocumentKind_other": "Other document",
+		"verifAction_claim": "Claim",
+		"verifAction_release": "Release",
+		"verifAction_request_info": "Request info",
+		"verifAction_approve": "Approve",
+		"verifAction_reject": "Reject",
+		"verifAction_revoke": "Revoke",
+		"verifConfirm_request_info": "Send request",
+		"verifConfirm_approve": "Approve",
+		"verifConfirm_reject": "Reject",
+		"verifConfirm_revoke": "Revoke",
+		"verifSheetTitle_request_info": "Request more information",
+		"verifSheetTitle_approve": "Approve this request",
+		"verifSheetTitle_reject": "Reject this request",
+		"verifSheetTitle_revoke": "Revoke this level",
+		"verifSheetSubtitle_request_info": "The seller is asked to fix or complete their submission.",
+		"verifSheetSubtitle_approve": "The shop is granted this level.",
+		"verifSheetSubtitle_reject": "The shop enters a cooldown before it can request this level again.",
+		"verifSheetSubtitle_revoke": "The shop loses the capabilities this level granted.",
+		"verifReasonCode_document_unreadable": "Document unreadable",
+		"verifReasonCode_document_missing": "Document missing",
+		"verifReasonCode_information_inconsistent": "Information inconsistent",
+		"verifReasonCode_kyc_retry": "Identity check needs a retry",
+		"verifReasonCode_other": "Other",
+		"verifReasonCode_document_invalid": "Document invalid",
+		"verifReasonCode_document_expired": "Document expired",
+		"verifReasonCode_identity_mismatch": "Identity mismatch",
+		"verifReasonCode_liveness_failed": "Liveness check failed",
+		"verifReasonCode_business_mismatch": "Business details mismatch",
+		"verifReasonCode_duplicate_identity": "Duplicate identity",
+		"verifReasonCode_fraud_suspected": "Fraud suspected",
+		"verifReasonCode_fraud": "Fraud",
+		"verifReasonCode_document_forged": "Document forged",
+		"verifReasonCode_business_closed": "Business closed",
+		"verifReasonCode_identity_reused": "Identity reused"
 	},
 	"shop": {
 		"levelPhone": "Phone verified",
@@ -1612,6 +1737,76 @@
 		"hub": {
 			"title": "Verification",
 			"disabledBanner": "Verification is temporarily paused. You can still see the status of any request below."
+		},
+		"identity": {
+			"pageTitle": "Identity verification",
+			"consent": {
+				"title": "Before you start",
+				"intro": "To verify your identity, BuyNSellem sends your identification document and a live selfie to its identity verification partner. Please read what this involves before you continue.",
+				"collects": "What we collect: an identity document (national ID, passport or residence permit) and a selfie used to match your face to it.",
+				"vendor": "This information is processed by BuyNSellem's identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards.",
+				"retention": "The vendor deletes its own copy within 30 days of a decision. We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires.",
+				"rights": "You can ask to see or delete this information at any time, except for what the law requires us to keep.",
+				"contact": "Contact: privacy@buynsellem.com",
+				"checkboxLabel": "I have read this notice and I agree that my document and selfie are sent for verification.",
+				"checkboxError": "Please accept the notice to continue.",
+				"start": "Start verification"
+			},
+			"blocked": {
+				"title": "This cannot be started right now",
+				"body": "Identity verification is not available for this shop at the moment. Check the verification hub for the current status.",
+				"backToHub": "Back to verification"
+			}
+		},
+		"return": {
+			"title": "Verification result",
+			"backToHub": "Back to verification",
+			"missing": {
+				"title": "We could not find this request",
+				"body": "Open the verification hub to check the current status."
+			},
+			"polling": {
+				"title": "Checking the result…",
+				"body": "This can take a moment. Please keep the app open, or come back shortly."
+			},
+			"outcome": {
+				"declinedRetry": {
+					"title": "That attempt did not go through",
+					"body": "The document could not be verified this time, but you can still try again.",
+					"cta": "Retry"
+				},
+				"timeout": {
+					"title": "Still waiting on the result",
+					"body": "This is taking longer than usual. The result may still arrive on its own — you can check again now.",
+					"cta": "Refresh"
+				},
+				"answer": {
+					"approved": {
+						"title": "Identity verified",
+						"body": "Your identity has been verified."
+					},
+					"needsInfo": {
+						"title": "More information needed",
+						"body": "A reviewer needs more information before deciding. Check the verification hub for details."
+					},
+					"submitted": {
+						"title": "Under review",
+						"body": "Your request was sent to a reviewer and is now under review."
+					},
+					"rejected": {
+						"title": "Request rejected",
+						"body": "This request was rejected. Check the verification hub for details."
+					},
+					"revoked": {
+						"title": "Verification revoked",
+						"body": "This verification has been revoked. Check the verification hub for details."
+					},
+					"expired": {
+						"title": "Request expired",
+						"body": "This request has expired."
+					}
+				}
+			}
 		},
 		"statusCard": {
 			"noLevel": "No level yet",
