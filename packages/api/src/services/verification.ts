@@ -3,9 +3,10 @@ import { canActOn, isAdmin } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import { LEVEL3_CHECKLIST_ITEMS } from "../collections/VerificationRequests";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
+import { getKycProvider } from "../lib/kyc";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { shopCapabilities } from "../lib/shopCapabilities";
+import { CAPABILITY_UNLOCKS, shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
 import { getVerificationSettings } from "../lib/verificationSettings";
 import {
@@ -30,6 +31,12 @@ import {
 	writeShop,
 } from "./shops";
 import { recomputeShopLevel } from "./verificationLevel";
+import {
+	notifyVerificationApproved,
+	notifyVerificationNeedsInfo,
+	notifyVerificationRejected,
+	notifyVerificationRevoked,
+} from "./verificationNotifications";
 
 /**
  * Three flags, because one transition touches three guarded surfaces:
@@ -810,10 +817,126 @@ export async function requestInfo(
 				note: message,
 			});
 			await recomputeShopLevel(req, shopId, "manual");
+			await notifyVerificationNeedsInfo(req, {
+				subscriberId: relationId(request.submittedBy) ?? "",
+				shopName: shop.name,
+				reasonCode,
+				message,
+			});
 			return updated;
 		},
 		{ user: actor },
 	);
+}
+
+/**
+ * The write core shared by a reviewer's approval and the system's automatic
+ * one: superseding an older approval, computing the expiry, moving the
+ * status, copying identity/legal fields onto the user or shop, and logging
+ * the decision. `actor: null` is the automatic path — `writeLog` then
+ * attributes the entry to `actorRole: "system"`.
+ */
+async function applyApproval(
+	req: PayloadRequest,
+	request: VerificationRequest,
+	transitionName: "approve" | "auto_approve",
+	actor: { id: string; role?: string | null } | null,
+	input: { note?: string | null; checklist?: Record<string, boolean> } = {},
+	metadataExtra: Record<string, unknown> = {},
+): Promise<VerificationRequest> {
+	const shopId = relationId(request.shop) ?? "";
+	const shop = await loadShop(req, shopId);
+	const level: 2 | 3 = request.requestedLevel === 3 ? 3 : 2;
+	if (level === 3) {
+		const checklist = input.checklist ?? {};
+		if (!LEVEL3_CHECKLIST_ITEMS.every((item) => checklist[item] === true)) {
+			throw error(ERROR_CODES.verificationChecklistIncomplete, 400);
+		}
+	}
+
+	const approvedAt = new Date();
+	const documentExpiresAt = request.kyc?.documentExpiresAt
+		? new Date(String(request.kyc.documentExpiresAt))
+		: null;
+	const expiresAt = expiryFor(level, approvedAt, documentExpiresAt);
+
+	// A renewal supersedes the approval it replaces, in the same
+	// transaction: two live approvals for one shop and level would both
+	// feed the level recomputation and the earlier expiry would win by
+	// accident.
+	const superseded = await findApproved(req, shopId, level);
+	const supersedesId =
+		superseded && String(superseded.id) !== String(request.id)
+			? String(superseded.id)
+			: null;
+	if (superseded && supersedesId) {
+		await transition(req, superseded, "expire", {}, "system", null);
+		await writeLog(req, {
+			action: requiredLogAction("expire"),
+			targetId: supersedesId,
+			actor: null,
+			metadata: { cause: "superseded", supersededBy: String(request.id) },
+		});
+	}
+
+	const updated = await transition(
+		req,
+		request,
+		transitionName,
+		{
+			approvedAt: approvedAt.toISOString(),
+			expiresAt: expiresAt.toISOString(),
+			assignee: null,
+			supersedes: supersedesId,
+			decision: {
+				decidedBy: actor?.id ?? null,
+				decidedAt: approvedAt.toISOString(),
+				reasonCode: null,
+				sellerMessage: null,
+				internalNote: input.note ?? null,
+				checklist: input.checklist ?? null,
+			},
+		},
+		actor ? "reviewer" : "system",
+		actor?.id ?? null,
+	);
+
+	if (level === 2) {
+		await req.payload.update({
+			collection: "users",
+			id: relationId(request.submittedBy) ?? "",
+			req,
+			overrideAccess: true,
+			context: VERIFICATION_CONTEXT,
+			data: {
+				identityVerifiedAt: approvedAt.toISOString(),
+				identityVerification: request.id,
+			},
+		});
+	} else {
+		await writeShopLegal(req, shopId, request, approvedAt);
+	}
+
+	await writeLog(req, {
+		action: requiredLogAction(transitionName),
+		targetId: String(request.id),
+		actor,
+		metadata: {
+			level,
+			expiresAt: expiresAt.toISOString(),
+			supersededRequestId: supersedesId,
+			...metadataExtra,
+		},
+	});
+
+	await recomputeShopLevel(req, shopId, "approved");
+	await notifyVerificationApproved(req, {
+		subscriberId: relationId(request.submittedBy) ?? "",
+		shopName: shop.name,
+		level,
+		unlocks: CAPABILITY_UNLOCKS[level],
+	});
+	return updated;
 }
 
 export async function approveRequest(
@@ -830,93 +953,61 @@ export async function approveRequest(
 			const shop = await loadShop(req, shopId);
 			await assertReviewer(req, actor, request, shop);
 
-			const level: 2 | 3 = request.requestedLevel === 3 ? 3 : 2;
-			if (level === 3) {
-				const checklist = input.checklist ?? {};
-				if (!LEVEL3_CHECKLIST_ITEMS.every((item) => checklist[item] === true)) {
-					throw error(ERROR_CODES.verificationChecklistIncomplete, 400);
-				}
-			}
-
-			const approvedAt = new Date();
-			const documentExpiresAt = request.kyc?.documentExpiresAt
-				? new Date(String(request.kyc.documentExpiresAt))
-				: null;
-			const expiresAt = expiryFor(level, approvedAt, documentExpiresAt);
-
-			// A renewal supersedes the approval it replaces, in the same
-			// transaction: two live approvals for one shop and level would both
-			// feed the level recomputation and the earlier expiry would win by
-			// accident.
-			const superseded = await findApproved(req, shopId, level);
-			const supersedesId =
-				superseded && String(superseded.id) !== String(request.id)
-					? String(superseded.id)
-					: null;
-			if (superseded && supersedesId) {
-				await transition(req, superseded, "expire", {}, "system", null);
-				await writeLog(req, {
-					action: requiredLogAction("expire"),
-					targetId: supersedesId,
-					actor: null,
-					metadata: { cause: "superseded", supersededBy: String(request.id) },
-				});
-			}
-
-			const updated = await transition(
+			return applyApproval(
 				req,
 				request,
 				"approve",
-				{
-					approvedAt: approvedAt.toISOString(),
-					expiresAt: expiresAt.toISOString(),
-					assignee: null,
-					supersedes: supersedesId,
-					decision: {
-						decidedBy: actor.id,
-						decidedAt: approvedAt.toISOString(),
-						reasonCode: null,
-						sellerMessage: null,
-						internalNote: input.note ?? null,
-						checklist: input.checklist ?? null,
-					},
-				},
-				"reviewer",
-				actor.id,
+				{ id: actor.id, role: actor.role ?? "moderator" },
+				input,
 			);
-
-			if (level === 2) {
-				await req.payload.update({
-					collection: "users",
-					id: relationId(request.submittedBy) ?? "",
-					req,
-					overrideAccess: true,
-					context: VERIFICATION_CONTEXT,
-					data: {
-						identityVerifiedAt: approvedAt.toISOString(),
-						identityVerification: request.id,
-					},
-				});
-			} else {
-				await writeShopLegal(req, shopId, request, approvedAt);
-			}
-
-			await writeLog(req, {
-				action: requiredLogAction("approve"),
-				targetId: String(request.id),
-				actor: { id: actor.id, role: actor.role ?? "moderator" },
-				metadata: {
-					level,
-					expiresAt: expiresAt.toISOString(),
-					supersededRequestId: supersedesId,
-				},
-			});
-
-			await recomputeShopLevel(req, shopId, "approved");
-			return updated;
 		},
 		{ user: actor },
 	);
+}
+
+/**
+ * The vendor-triggered counterpart of `approveRequest`: no reviewer, no
+ * claim to hold, `submitted → approved` (`TRANSITIONS.auto_approve`) instead
+ * of `in_review → approved`. Runs inside the caller's own transaction — a job
+ * processing a vendor result, never its own — so it takes `req` directly
+ * rather than opening one.
+ */
+export async function autoApprove(
+	req: PayloadRequest,
+	request: VerificationRequest,
+): Promise<VerificationRequest> {
+	return applyApproval(
+		req,
+		request,
+		"auto_approve",
+		null,
+		{},
+		{
+			automatic: true,
+		},
+	);
+}
+
+/**
+ * Moves a level-2 request out of `draft` on the vendor's own signal —
+ * `submit`'s `from`/`to` are the same either way, only who is credited
+ * differs (`source: "vendor"`, no seller action recorded). Also runs inside
+ * the caller's transaction.
+ */
+export async function submitFromVendor(
+	req: PayloadRequest,
+	request: VerificationRequest,
+): Promise<VerificationRequest> {
+	const updated = await transition(
+		req,
+		request,
+		"submit",
+		{ submittedAt: new Date().toISOString() },
+		"vendor",
+		null,
+	);
+	await recomputeShopLevel(req, relationId(updated.shop) ?? "", "manual");
+	return updated;
 }
 
 export async function rejectRequest(
@@ -970,6 +1061,14 @@ export async function rejectRequest(
 			// keeps the post-condition unconditional rather than relying on the
 			// caller to know a rejection never touches the shop's level.
 			await recomputeShopLevel(req, shopId, "rejected");
+			await notifyVerificationRejected(req, {
+				subscriberId: relationId(request.submittedBy) ?? "",
+				shopName: shop.name,
+				reasonCode,
+				sellerMessage,
+				cooldownUntil:
+					cooldownUntil({ decidedAt, reasonCode })?.toISOString() ?? null,
+			});
 			return updated;
 		},
 		{ user: actor },
@@ -1066,6 +1165,11 @@ export async function revokeRequest(
 				metadata: { cascadedRequestIds },
 			});
 			await recomputeShopLevel(req, shopId, "revoked");
+			await notifyVerificationRevoked(req, {
+				subscriberId: relationId(request.submittedBy) ?? "",
+				shopName: shop.name,
+				reasonCode,
+			});
 			return updated;
 		},
 		{ user: actor },
@@ -1153,6 +1257,113 @@ export async function deleteDraft(
 				overrideAccess: true,
 				context: VERIFICATION_CONTEXT,
 			});
+		},
+		{ user: actor },
+	);
+}
+
+/**
+ * Sessions started by this owner across every shop in the last 30 days,
+ * counted by `kyc.attempts` rather than by row: a rate limit on the person,
+ * not on any one request, so opening a fresh request per shop does not
+ * reset it.
+ */
+async function ownerSessionsInWindow(
+	req: PayloadRequest,
+	ownerId: string,
+	now: Date = new Date(),
+): Promise<number> {
+	const windowStart = new Date(now.getTime() - 30 * 86_400_000).toISOString();
+	const found = await req.payload.find({
+		collection: "verification-requests",
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+		req,
+		where: {
+			and: [
+				{ submittedBy: { equals: ownerId } },
+				{ requestedLevel: { equals: 2 } },
+				{ createdAt: { greater_than_equal: windowStart } },
+			],
+		},
+	});
+	return found.docs.reduce(
+		(sum, doc) => sum + Number(doc.kyc?.attempts ?? 0),
+		0,
+	);
+}
+
+export async function startKycSession(
+	payload: Payload,
+	actor: ServiceUser,
+	requestId: string,
+	input: { consentVersion: string; locale: "fr" | "en" },
+): Promise<{ url: string; expiresAt: string }> {
+	return withTransaction(
+		payload,
+		async (req) => {
+			const settings = await getVerificationSettings(payload);
+			if (!settings.enabled) {
+				throw error(ERROR_CODES.verificationDisabled, 403);
+			}
+
+			const request = await loadRequest(req, requestId);
+			if (relationId(request.submittedBy) !== actor.id) {
+				throw error(ERROR_CODES.verificationNotOwner, 403);
+			}
+			if (request.requestedLevel !== 2 || request.status !== "draft") {
+				throw error(ERROR_CODES.verificationInvalidTransition, 409);
+			}
+			// The consent text and the recorded authorisation must be the same
+			// version: a seller cannot consent to a notice we have since replaced.
+			if (
+				!settings.consentVersion ||
+				input.consentVersion !== settings.consentVersion
+			) {
+				throw error(ERROR_CODES.verificationConsentRequired, 409);
+			}
+
+			const attempts = (request.kyc?.attempts ?? 0) + 1;
+			if (attempts > 3) {
+				throw error(ERROR_CODES.verificationTooManyAttempts, 429);
+			}
+			if ((await ownerSessionsInWindow(req, actor.id)) >= 5) {
+				throw error(ERROR_CODES.verificationTooManyAttempts, 429);
+			}
+
+			const session = await getKycProvider(settings.kycProvider).createSession({
+				reference: `VR-${request.id}-${attempts}`,
+				locale: input.locale,
+				returnUrl: `${process.env.PUBLIC_WEB_URL ?? ""}/seller/verification/identity/return?request=${request.id}`,
+			});
+
+			await req.payload.update({
+				collection: "verification-requests",
+				id: request.id,
+				req,
+				overrideAccess: true,
+				context: VERIFICATION_CONTEXT,
+				data: {
+					consent: {
+						acceptedAt: new Date().toISOString(),
+						version: input.consentVersion,
+						locale: input.locale,
+					},
+					kyc: {
+						...(request.kyc ?? {}),
+						provider: settings.kycProvider,
+						sessionRef: session.sessionRef,
+						status: "pending",
+						attempts,
+					},
+				} as never,
+			});
+
+			// The hosted URL is not stored: it is a bearer credential for the
+			// session, and it is handed to exactly one caller, once.
+			return { url: session.url, expiresAt: session.expiresAt.toISOString() };
 		},
 		{ user: actor },
 	);

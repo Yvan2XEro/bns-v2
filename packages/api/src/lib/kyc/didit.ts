@@ -182,7 +182,7 @@ export const diditProvider: KycProvider = {
 		const apiKey = requireEnv("DIDIT_API_KEY");
 		const workflowId = requireEnv("DIDIT_WORKFLOW_ID");
 
-		const res = await fetch(`${baseUrl()}/v2/session/`, {
+		const res = await fetch(`${baseUrl()}/v3/session/`, {
 			method: "POST",
 			headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -260,7 +260,7 @@ export const diditProvider: KycProvider = {
 		const apiKey = requireEnv("DIDIT_API_KEY");
 
 		const res = await fetch(
-			`${baseUrl()}/v2/session/${encodeURIComponent(sessionRef)}/decision/`,
+			`${baseUrl()}/v3/session/${encodeURIComponent(sessionRef)}/decision/`,
 			{ headers: { "x-api-key": apiKey } },
 		);
 		if (!res.ok) {
@@ -303,7 +303,7 @@ export const diditProvider: KycProvider = {
 		const apiKey = requireEnv("DIDIT_API_KEY");
 
 		const res = await fetch(
-			`${baseUrl()}/v2/session/${encodeURIComponent(sessionRef)}/`,
+			`${baseUrl()}/v3/session/${encodeURIComponent(sessionRef)}/delete/`,
 			{ method: "DELETE", headers: { "x-api-key": apiKey } },
 		);
 		if (!res.ok && res.status !== 404) {

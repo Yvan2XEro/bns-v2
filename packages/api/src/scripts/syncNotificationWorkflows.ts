@@ -406,6 +406,13 @@ const workflowSpecs: WorkflowSpec[] = [
 		},
 	},
 	{
+		// P2 replaced the `users.verified` checkbox with the derived shop-level
+		// badges and no longer fires this trigger. It stays declared — never
+		// deleted — because Novu resolves an in-app notification by the
+		// workflow id it was sent under: removing the workflow would leave
+		// every `user-verified` notification a P1 user already received
+		// pointing at nothing. Safe to delete once no such notification can
+		// still be unread, which P3 owns.
 		channels: { push: true },
 		definition: {
 			name: "User Verified",
@@ -616,7 +623,210 @@ const workflowSpecs: WorkflowSpec[] = [
 			],
 		},
 	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Verification Needs Info",
+			description:
+				"Tells a seller a reviewer needs more from their verification request.",
+			workflowId: "verification-needs-info",
+			tags: ["verification"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopName: stringProperty("Shop display name"),
+					reasonCode: stringProperty("Info-request reason code"),
+					message: stringProperty("Reviewer's message to the seller"),
+				},
+				["shopName", "reasonCode", "message"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject:
+						"Informations complementaires requises / Additional information required",
+					body: '"{{payload.shopName}}" : {{payload.message}}',
+					redirect: redirect("/seller/verification"),
+					primaryAction: action("Repondre / Respond", "/seller/verification"),
+					data: { shopName: "{{payload.shopName}}" },
+				}),
+				pushStep("Push", "push", {
+					subject:
+						"Informations complementaires requises / Additional information required",
+					body: '"{{payload.shopName}}" : {{payload.message}}',
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Verification de {{payload.shopName}} : informations requises",
+					body: "Un modérateur a besoin d'informations supplémentaires pour continuer la vérification de {{payload.shopName}}. / A reviewer needs more information to continue verifying {{payload.shopName}}.<br/><br/>{{payload.message}}",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Verification Approved",
+			description: "Tells a seller their verification request was approved.",
+			workflowId: "verification-approved",
+			tags: ["verification", "approved"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopName: stringProperty("Shop display name"),
+					level: numberProperty("The level just reached (2 or 3)"),
+					unlocks: stringProperty(
+						"Comma-separated capability keys this level unlocks",
+					),
+				},
+				["shopName", "level", "unlocks"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Verification approuvee / Verification approved",
+					body: '"{{payload.shopName}}" a atteint le niveau {{payload.level}}. Debloque : {{payload.unlocks}}.',
+					redirect: redirect("/seller/verification"),
+					primaryAction: action("Voir / View", "/seller/verification"),
+					data: { shopName: "{{payload.shopName}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Verification approuvee / Verification approved",
+					body: '"{{payload.shopName}}" a atteint le niveau {{payload.level}}.',
+				}),
+				emailStep("Email", "email", {
+					subject: "{{payload.shopName}} : verification approuvee",
+					body: "Felicitations, {{payload.shopName}} a atteint le niveau {{payload.level}} et debloque : {{payload.unlocks}}. / Congratulations, {{payload.shopName}} has reached level {{payload.level}} and unlocked: {{payload.unlocks}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Verification Rejected",
+			description: "Tells a seller their verification request was rejected.",
+			workflowId: "verification-rejected",
+			tags: ["verification", "rejected"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopName: stringProperty("Shop display name"),
+					reasonCode: stringProperty("Rejection reason code"),
+					sellerMessage: stringProperty("Reviewer's message to the seller"),
+					cooldownUntil: stringProperty(
+						"ISO date a new request is allowed, or empty",
+					),
+				},
+				["shopName", "reasonCode", "sellerMessage", "cooldownUntil"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Verification refusee / Verification rejected",
+					body: '"{{payload.shopName}}" : {{payload.sellerMessage}}',
+					redirect: redirect("/seller/verification"),
+					primaryAction: action(
+						"Voir les details / View details",
+						"/seller/verification",
+					),
+					data: { shopName: "{{payload.shopName}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Verification refusee / Verification rejected",
+					body: '"{{payload.shopName}}" : {{payload.sellerMessage}}',
+				}),
+				emailStep("Email", "email", {
+					subject: "{{payload.shopName}} : verification refusee",
+					body: "Motif : {{payload.sellerMessage}}. Nouvelle demande possible a partir du {{payload.cooldownUntil}}. / Reason: {{payload.sellerMessage}}. A new request is allowed starting {{payload.cooldownUntil}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Verification Revoked",
+			description: "Tells a seller their verification was revoked.",
+			workflowId: "verification-revoked",
+			tags: ["verification", "revoked"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopName: stringProperty("Shop display name"),
+					reasonCode: stringProperty("Revocation reason code"),
+				},
+				["shopName", "reasonCode"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Verification revoquee / Verification revoked",
+					body: '"{{payload.shopName}}" a perdu sa verification ({{payload.reasonCode}}).',
+					redirect: redirect("/seller/verification"),
+					data: { shopName: "{{payload.shopName}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Verification revoquee / Verification revoked",
+					body: '"{{payload.shopName}}" a perdu sa verification ({{payload.reasonCode}}).',
+				}),
+				emailStep("Email", "email", {
+					subject: "{{payload.shopName}} : verification revoquee",
+					body: "Votre verification a ete revoquee. Motif : {{payload.reasonCode}}. / Your verification has been revoked. Reason: {{payload.reasonCode}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Verification Expiring",
+			description:
+				"Warns a seller that their shop's verification level is about to expire.",
+			workflowId: "verification-expiring",
+			tags: ["verification", "expiring"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopName: stringProperty("Shop display name"),
+					daysUntil: numberProperty("Days until the level lapses (30 or 7)"),
+				},
+				["shopName", "daysUntil"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Verification bientot expiree / Verification expiring soon",
+					body: '"{{payload.shopName}}" : {{payload.daysUntil}} jour(s) avant expiration.',
+					redirect: redirect("/seller/verification"),
+					primaryAction: action("Renouveler / Renew", "/seller/verification"),
+					data: { shopName: "{{payload.shopName}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Verification bientot expiree / Verification expiring soon",
+					body: '"{{payload.shopName}}" : {{payload.daysUntil}} jour(s) avant expiration.',
+				}),
+				emailStep("Email", "email", {
+					subject: "{{payload.shopName}} : verification bientot expiree",
+					body: "La verification de {{payload.shopName}} expire dans {{payload.daysUntil}} jour(s). / {{payload.shopName}}'s verification expires in {{payload.daysUntil}} day(s).",
+				}),
+			],
+		},
+	},
 ];
+
+/** The finished workflow definitions, e.g. for a test asserting on their shape. */
+export const WORKFLOWS = workflowSpecs.map((spec) => spec.definition);
 
 function toUpdateDefinition(
 	spec: WorkflowSpec,
@@ -699,7 +909,11 @@ async function main() {
 	);
 }
 
-main().catch((error) => {
-	console.error("[notifications] Failed to sync workflows:", error);
-	process.exit(1);
-});
+// Guarded: a test imports this module for `WORKFLOWS` alone, and must not
+// trigger a live sync (or the `process.exit` below) just by doing so.
+if (import.meta.main) {
+	main().catch((error) => {
+		console.error("[notifications] Failed to sync workflows:", error);
+		process.exit(1);
+	});
+}

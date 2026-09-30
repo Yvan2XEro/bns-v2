@@ -419,11 +419,52 @@ async function runDeletionCascade(
 	req: TxReq,
 ): Promise<void> {
 	// Dynamic import: `Users.ts` → `accountDeletion.ts` must stay free of the
-	// product/shop service graph at config load, and this pulls in both.
-	// `req` here is always the transaction this cascade itself runs in — the
-	// caller's ambient one, or the one `deleteUserRelatedData` opened below —
-	// so this closure lands or rolls back with the rest of the cascade.
+	// product/shop service graph at config load, and this pulls in both (the
+	// verification retention helpers pull in `services/verification.ts`, which
+	// pulls in the shop graph the same way). `req` here is always the
+	// transaction this cascade itself runs in — the caller's ambient one, or
+	// the one `deleteUserRelatedData` opened below — so this closure lands or
+	// rolls back with the rest of the cascade.
 	const { closeOwnedShops } = await import("./shopListings");
+	const { purgeDocumentFiles } = await import("./verificationDocuments");
+	const { clearKycNames, deleteOpenRequests } = await import(
+		"../lib/verificationRetention"
+	);
+
+	const ownedShopIds = await findAllIds(
+		payload,
+		"shops",
+		{
+			and: [
+				{ owner: { equals: userId } },
+				{ status: { in: ["active", "suspended"] } },
+			],
+		},
+		req,
+	);
+
+	// Identity documents go immediately, not on the 90-day schedule: the
+	// account is gone and nothing needs them any more. The decided request
+	// rows stay, stripped of names, for the fraud-prevention hash window —
+	// otherwise deleting an account would erase the record that its document
+	// was ever used, which is the one thing duplicate detection exists for.
+	await purgeDocumentFiles(
+		payload as unknown as import("payload").Payload,
+		{ shop: { in: ownedShopIds } },
+		new Date(),
+		req as unknown as import("payload").PayloadRequest,
+	);
+	await clearKycNames(
+		payload as unknown as import("payload").Payload,
+		userId,
+		req as unknown as import("payload").PayloadRequest,
+	);
+	await deleteOpenRequests(
+		payload as unknown as import("payload").Payload,
+		ownedShopIds,
+		req as unknown as import("payload").PayloadRequest,
+	);
+
 	await closeOwnedShops(
 		payload as unknown as import("payload").Payload,
 		userId,

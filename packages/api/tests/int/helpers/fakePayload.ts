@@ -225,10 +225,27 @@ export function fakePayload(
 		}
 	};
 
+	// A minimal stand-in for `payload.collections[slug].config`, generic across
+	// every slug: no `afterDelete` hooks (no cloud-storage plugin wired up) and
+	// no `staticDir` (nothing to unlink), so a caller reading either — the way
+	// `purgeDocumentFiles` does to drop a file without deleting its row — gets
+	// an empty, harmless config instead of `undefined`.
+	const collectionConfigStub = {
+		config: {
+			hooks: { afterDelete: [] as unknown[] },
+			upload: { staticDir: undefined },
+		},
+	};
+	const collections = new Proxy(
+		{},
+		{ get: () => collectionConfigStub },
+	) as Record<string, typeof collectionConfigStub>;
+
 	const payload = {
 		store,
 		globals,
 		writes,
+		collections,
 		/** Return true to make the matching call throw, to test rollbacks. */
 		failWhen: null as null | ((method: string, args: Args) => boolean),
 		logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },

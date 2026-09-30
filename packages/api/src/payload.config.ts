@@ -35,7 +35,9 @@ import {
 	expireBoostsTask,
 	expireListingsTask,
 	liftExpiredShopSuspensionsTask,
+	processKycEventTask,
 	processWebhookEventTask,
+	purgeVerificationDataTask,
 	reconcilePendingPaymentsTask,
 } from "./jobs";
 import { migrations } from "./migrations";
@@ -138,11 +140,18 @@ export default buildConfig({
 			processWebhookEventTask,
 			reconcilePendingPaymentsTask,
 			liftExpiredShopSuspensionsTask,
+			processKycEventTask,
+			purgeVerificationDataTask,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
 			{ cron: "0 */6 * * *", queue: "nightly", limit: 10 },
 			{ cron: "* * * * *", queue: "payments", limit: 20 },
+			// A vendor result must reach a person promptly, not on the nightly
+			// sweep: `processKycEvent` is queued on the default queue (Payload's
+			// implicit target when `payload.jobs.queue()` gets no `queue`), so
+			// that queue needs its own frequent run alongside "payments".
+			{ cron: "* * * * *", queue: "default", limit: 20 },
 		],
 	},
 });

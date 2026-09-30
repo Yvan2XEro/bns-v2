@@ -1,3 +1,4 @@
+import type { BusinessType } from "../collections/VerificationRequests";
 import type { Category, Media, Shop, User } from "../payload-types";
 import { relationId } from "./relationId";
 import { type ShopCapabilities, shopCapabilities } from "./shopCapabilities";
@@ -7,6 +8,19 @@ export interface MediaRef {
 	url: string | null;
 	thumbnailURL: string | null;
 	alt: string | null;
+}
+
+/**
+ * The `legal` group as declared by the shop (below level 3) or reviewed and
+ * pinned by a reviewer (at level 3) — see `Shops.ts`'s `legal` field. Public
+ * on purpose: `verifiedAt` is what tells a buyer "declared" from "verified".
+ */
+export interface PublicShopLegal {
+	businessType: BusinessType | null;
+	legalName: string | null;
+	rccmNumber: string | null;
+	niu: string | null;
+	verifiedAt: string | null;
 }
 
 export interface PublicShop {
@@ -30,6 +44,7 @@ export interface PublicShop {
 	categories: { id: string; name: string; slug: string }[];
 	level: number;
 	badge: ShopCapabilities["badge"];
+	legal: PublicShopLegal | null;
 	publishedListingCount: number;
 	createdAt: string;
 	owner: {
@@ -39,6 +54,18 @@ export interface PublicShop {
 		rating: number;
 		totalReviews: number;
 		memberSince: string;
+	};
+}
+
+function toPublicShopLegal(shop: Shop): PublicShopLegal | null {
+	const legal = shop.legal;
+	if (!legal) return null;
+	return {
+		businessType: legal.businessType ?? null,
+		legalName: str(legal.legalName),
+		rccmNumber: str(legal.rccmNumber),
+		niu: str(legal.niu),
+		verifiedAt: str(legal.verifiedAt),
 	};
 }
 
@@ -95,6 +122,7 @@ export function serializePublicShop(
 			})),
 		level: shop.level ?? 1,
 		badge: shopCapabilities(shop).badge,
+		legal: toPublicShopLegal(shop),
 		publishedListingCount: shop.publishedListingCount ?? 0,
 		createdAt: shop.createdAt,
 		owner: {

@@ -27,12 +27,26 @@ export function hashPayload(rawBody: string): string {
  */
 async function intentFor(
 	payload: Payload,
-	event: Pick<NormalizedWebhookEvent, "providerTransactionId" | "reference">,
+	event: { providerTransactionId?: string | null; reference?: string | null },
 ): Promise<PaymentIntent | null> {
 	return findIntentByReference(payload, {
 		reference: event.reference,
 		providerReference: event.providerTransactionId,
 	}).catch(() => null);
+}
+
+/**
+ * The fields this recorder actually reads off an event, kept apart from
+ * `NormalizedWebhookEvent` (amount, currency, a payment status) because a
+ * non-payment vendor — `didit`, processed by its own job — has none of
+ * those. A payment provider's normalized event still satisfies this
+ * structurally, so every existing caller is unaffected.
+ */
+export interface WebhookEventFields {
+	providerEventId: string;
+	type: string;
+	reference?: string | null;
+	providerTransactionId?: string | null;
 }
 
 /** Spread so the rebuilt body satisfies the json field's index signature. */
@@ -53,8 +67,8 @@ function isPaymentProvider(
 }
 
 export interface RecordWebhookEventInput {
-	provider: ProviderName;
-	event: NormalizedWebhookEvent;
+	provider: WebhookEvent["provider"];
+	event: WebhookEventFields;
 	raw: unknown;
 	rawBody: string;
 	receivedAt?: Date;
@@ -97,9 +111,20 @@ export async function recordWebhookEvent(
 	// hash, timestamps — is kept whole; only the body is rebuilt, and a
 	// reference that becomes resolvable later survives it, so a late-settling
 	// intent still processes.
-	const intent = await intentFor(payload, input.event);
-	const raw =
-		!intent || intent.customerDeletedAt
+	//
+	// A non-payment vendor never resolves to a payment intent and its body was
+	// never shaped for `retainedWebhookRaw`'s payment parsers, so it is kept
+	// as verified instead of run through them: `didit`'s webhook body carries
+	// only a session id, a status and an event id (`lib/kyc/didit.ts`'s
+	// `diditWebhookEventSchema`), never a document number or a birth date.
+	const intent = isPaymentProvider(input.provider)
+		? await intentFor(payload, input.event)
+		: null;
+	const raw = !isPaymentProvider(input.provider)
+		? isRecord(input.raw)
+			? input.raw
+			: undefined
+		: !intent || intent.customerDeletedAt
 			? redactedBody(input.provider, input.raw)
 			: isRecord(input.raw)
 				? input.raw

@@ -275,8 +275,9 @@ export async function purgeDocumentFiles(
 	payload: Payload,
 	where: Where,
 	now: Date,
+	ambientReq?: PayloadRequest,
 ): Promise<string[]> {
-	return withTransaction(payload, async (req) => {
+	const run = async (req: PayloadRequest) => {
 		const matched = await payload.find({
 			collection: "verification-documents",
 			where: { and: [where, { purgedAt: { exists: false } }] },
@@ -326,5 +327,10 @@ export async function purgeDocumentFiles(
 		}
 
 		return purgedIds;
-	});
+	};
+
+	// Account deletion runs this as one step of its own cascade and must not
+	// let it commit independently of the rest; the nightly purge job has no
+	// ambient transaction to join, so it opens its own.
+	return ambientReq ? run(ambientReq) : withTransaction(payload, run);
 }

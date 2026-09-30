@@ -160,6 +160,8 @@ export interface Config {
       processWebhookEvent: TaskProcessWebhookEvent;
       reconcilePendingPayments: TaskReconcilePendingPayments;
       liftExpiredShopSuspensions: TaskLiftExpiredShopSuspensions;
+      processKycEvent: TaskProcessKycEvent;
+      purgeVerificationData: TaskPurgeVerificationData;
       inline: {
         input: unknown;
         output: unknown;
@@ -477,6 +479,10 @@ export interface Shop {
    * When level 2 was first reached.
    */
   verifiedAt?: string | null;
+  /**
+   * The expiry-notice threshold (30 or 7 days) last sent for the current levelExpiresAt, so the nightly purge fires each one once. Written only by jobs/purgeVerificationData.ts through writeShop.
+   */
+  notifiedExpiryDays?: number | null;
   legal?: {
     businessType?: ('entreprenant' | 'sole_trader' | 'company' | 'cooperative') | null;
     legalName?: string | null;
@@ -866,7 +872,7 @@ export interface PaymentIntent {
  */
 export interface WebhookEvent {
   id: string;
-  provider: 'notchpay' | 'stripe' | 'didit';
+  provider: 'notchpay' | 'stripe' | 'didit' | 'smileid';
   providerEventId: string;
   type?: string | null;
   reference?: string | null;
@@ -1141,7 +1147,9 @@ export interface PayloadJob {
           | 'checkSearchAlerts'
           | 'processWebhookEvent'
           | 'reconcilePendingPayments'
-          | 'liftExpiredShopSuspensions';
+          | 'liftExpiredShopSuspensions'
+          | 'processKycEvent'
+          | 'purgeVerificationData';
         taskID: string;
         input?:
           | {
@@ -1183,6 +1191,8 @@ export interface PayloadJob {
         | 'processWebhookEvent'
         | 'reconcilePendingPayments'
         | 'liftExpiredShopSuspensions'
+        | 'processKycEvent'
+        | 'purgeVerificationData'
       )
     | null;
   queue?: string | null;
@@ -1761,6 +1771,7 @@ export interface ShopsSelect<T extends boolean = true> {
   level?: T;
   levelExpiresAt?: T;
   verifiedAt?: T;
+  notifiedExpiryDays?: T;
   legal?:
     | T
     | {
@@ -2284,6 +2295,30 @@ export interface TaskReconcilePendingPayments {
  * via the `definition` "TaskLiftExpiredShopSuspensions".
  */
 export interface TaskLiftExpiredShopSuspensions {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessKycEvent".
+ */
+export interface TaskProcessKycEvent {
+  input: {
+    webhookEventId: string;
+    provider: string;
+    sessionRef: string;
+  };
+  output: {
+    handled?: boolean | null;
+    requestId?: string | null;
+    status?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeVerificationData".
+ */
+export interface TaskPurgeVerificationData {
   input?: unknown;
   output?: unknown;
 }

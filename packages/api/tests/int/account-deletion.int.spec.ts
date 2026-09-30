@@ -756,3 +756,53 @@ describe("closing an owned shop atomically with account deletion", () => {
 		});
 	});
 });
+
+describe("verification data on account deletion", () => {
+	function ownedShopWorldWithRequests() {
+		const payload = world();
+		payload.store.shops = [
+			{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+		];
+		payload.store["verification-requests"] = [
+			{
+				id: "vr-decided",
+				shop: "s-1",
+				submittedBy: "u-1",
+				requestedLevel: 2,
+				status: "approved",
+				kyc: {
+					givenNames: "Aicha",
+					familyName: "Mbappe",
+					documentNumberHash: "hash-a",
+				},
+			},
+			{
+				id: "vr-open",
+				shop: "s-1",
+				submittedBy: "u-1",
+				requestedLevel: 3,
+				status: "draft",
+				openKey: "s-1:3",
+			},
+		];
+		return payload;
+	}
+
+	it("keeps a decided request's identity hash but clears its names, and removes any still-open request", async () => {
+		const payload = ownedShopWorldWithRequests();
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+
+		const decided = payload.store["verification-requests"].find(
+			(r) => r.id === "vr-decided",
+		);
+		expect(decided?.kyc).toMatchObject({
+			givenNames: null,
+			familyName: null,
+			documentNumberHash: "hash-a",
+		});
+		expect(
+			payload.store["verification-requests"].some((r) => r.id === "vr-open"),
+		).toBe(false);
+	});
+});

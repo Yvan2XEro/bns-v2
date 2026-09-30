@@ -234,6 +234,16 @@ export const Shops: CollectionConfig = {
 			},
 		},
 		{
+			name: "notifiedExpiryDays",
+			type: "number",
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description:
+					"The expiry-notice threshold (30 or 7 days) last sent for the current levelExpiresAt, so the nightly purge fires each one once. Written only by jobs/purgeVerificationData.ts through writeShop.",
+			},
+		},
+		{
 			/**
 			 * Declared by the shop until level 3, reviewed at level 3. The whole
 			 * group is public: it is what a buyer needs to know who they are
