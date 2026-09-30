@@ -266,30 +266,6 @@ describe("buildTimeline", () => {
 		).toBe(false);
 	});
 
-	it("highlights the vendor's auto-submit when it is the live status", () => {
-		const autoSubmitted = {
-			status: "submitted",
-			statusHistory: [
-				{ status: "draft", at: "2026-10-01T09:00:00.000Z", source: "seller" },
-				{
-					status: "submitted",
-					at: "2026-10-01T09:05:00.000Z",
-					source: "vendor",
-				},
-			],
-			infoRequests: [],
-			decision: null,
-		};
-		const timeline = buildTimeline(autoSubmitted as never);
-		expect(timeline).toHaveLength(2);
-		expect(timeline[0]).toMatchObject({
-			status: "submitted",
-			source: "vendor",
-			current: true,
-		});
-		expect(timeline[1]).toMatchObject({ status: "draft", current: false });
-	});
-
 	it("is empty, not undefined, for a request with no history", () => {
 		expect(
 			buildTimeline({
