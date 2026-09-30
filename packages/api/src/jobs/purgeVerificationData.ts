@@ -319,6 +319,17 @@ async function releaseStaleClaims(payload: Payload, now: Date): Promise<void> {
  * guaranteed to exist for any shop worth notifying, whatever became of the
  * request that put it there. Written through `writeShop`, the single writer
  * of shop fields.
+ *
+ * A threshold fires on `daysUntil <= threshold`, not `===`: a run skipped on
+ * the exact day — a deploy, an outage, this very job aborting before its
+ * last step — must still send the notice the next time the job runs, not
+ * skip it forever. Among the thresholds this shop has reached, only the most
+ * urgent (smallest) one that is still more urgent than whatever was last
+ * sent fires, so a run that catches up after a long gap sends one notice,
+ * not a backlog of both. `setShopLevel` (`services/shops.ts`) clears
+ * `notifiedExpiryDays` whenever a recompute changes `levelExpiresAt`, so a
+ * renewal inside the old window gets its own 30- and 7-day notices instead
+ * of inheriting the previous cycle's marker.
  */
 async function notifyExpiringShops(
 	payload: Payload,
@@ -341,11 +352,11 @@ async function notifyExpiringShops(
 			const daysUntil = Math.round(
 				(Date.parse(String(shop.levelExpiresAt)) - now.getTime()) / DAY_MS,
 			);
-			const threshold = (RETENTION.expiryNoticeDays as readonly number[]).find(
-				(d) => d === daysUntil,
-			);
+			const already = shop.notifiedExpiryDays ?? Number.POSITIVE_INFINITY;
+			const threshold = (RETENTION.expiryNoticeDays as readonly number[])
+				.filter((d) => daysUntil <= d && d < already)
+				.sort((a, b) => a - b)[0];
 			if (threshold === undefined) continue;
-			if (shop.notifiedExpiryDays === threshold) continue;
 
 			await writeShop(req, String(shop.id), {
 				notifiedExpiryDays: threshold,

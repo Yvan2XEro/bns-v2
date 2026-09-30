@@ -188,6 +188,14 @@ export async function setShopLevel(
 		legal?: Shop["legal"];
 	},
 ): Promise<Shop> {
+	const current = await req.payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+
 	const data: Record<string, unknown> = {
 		level: input.level,
 		levelExpiresAt: input.levelExpiresAt,
@@ -196,6 +204,16 @@ export async function setShopLevel(
 	// not whether it currently has one.
 	if (input.verifiedAt) data.verifiedAt = input.verifiedAt;
 	if (input.legal !== undefined) data.legal = input.legal;
+
+	// A new expiry date starts a new expiry cycle: whatever the nightly job
+	// already told this shop about the old one describes nothing real any
+	// more. Without this, a shop notified at 30 days that renews inside that
+	// same window would carry the old marker forward and never get a 30- or
+	// 7-day notice for the new cycle (`jobs/purgeVerificationData.ts`).
+	if ((current.levelExpiresAt ?? null) !== (input.levelExpiresAt ?? null)) {
+		data.notifiedExpiryDays = null;
+	}
+
 	return writeShop(req, shopId, data);
 }
 
