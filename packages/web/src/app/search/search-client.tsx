@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ListingGrid } from "~/components/listing/listing-card";
+import { LoadError } from "~/components/seller/load-states";
 import { Button } from "~/components/ui/button";
 import { CitySelect } from "~/components/ui/city-select";
 import {
@@ -33,6 +34,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
+import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import {
+	type ListingSearchParams,
+	useListingSearch,
+} from "~/hooks/use-listing-search";
 import { saveSearch } from "~/lib/actions";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import type { Category, CategoryAttribute, Listing } from "~/types";
@@ -56,13 +62,10 @@ export function SearchClient({
 	const tCond = useTranslations("Condition");
 	const router = useRouter();
 
-	const [listings, setListings] = useState(initialListings);
-	const [total, setTotal] = useState(initialTotal);
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
 		null,
 	);
 	const [attributes, setAttributes] = useState<CategoryAttribute[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
 	const [showMobileFilters, setShowMobileFilters] = useState(false);
 
 	const [nearMe, setNearMe] = useState(false);
@@ -112,9 +115,50 @@ export function SearchClient({
 		Record<string, string>
 	>({});
 
-	const [shouldFetch, setShouldFetch] = useState(false);
-	const [page, setPage] = useState(1);
 	const LIMIT = 20;
+
+	// Debounced the same way the top search input already was (350ms): a
+	// filter panel change (price, category, tags…) should not fire a request
+	// per keystroke or per click, but the query key itself — not a separate
+	// `shouldFetch` flag — is what TanStack Query reacts to.
+	const searchParams = useMemo<ListingSearchParams>(
+		() => ({
+			q: filters.q || undefined,
+			category: filters.category || undefined,
+			minPrice: filters.minPrice || undefined,
+			maxPrice: filters.maxPrice || undefined,
+			location: filters.location || undefined,
+			sort: filters.sort || undefined,
+			condition: filters.condition || undefined,
+			tags: filters.tags || undefined,
+			// The API applies this floor twice — once against the index, once
+			// against live shop data after hydration — so it is never
+			// re-filtered client-side here; this only forwards the intent.
+			minShopLevel: filters.verified === "1" ? 2 : undefined,
+			attributes: attributeFilters,
+			lat: nearMe && geoCoords ? geoCoords.lat : undefined,
+			lng: nearMe && geoCoords ? geoCoords.lng : undefined,
+			radius: nearMe && geoCoords ? geoRadius : undefined,
+			limit: LIMIT,
+		}),
+		[filters, attributeFilters, nearMe, geoCoords, geoRadius],
+	);
+	const debouncedSearchParams = useDebouncedValue(searchParams, 300);
+
+	const {
+		data: searchData,
+		isPending: isLoading,
+		isFetching,
+		isFetchingNextPage,
+		isError: isSearchError,
+		fetchNextPage,
+		hasNextPage,
+		refetch: refetchListings,
+	} = useListingSearch(debouncedSearchParams, {
+		initialPage: { hits: initialListings, total: initialTotal },
+	});
+	const listings = searchData?.pages.flatMap((p) => p.hits) ?? initialListings;
+	const total = searchData?.pages[0]?.total ?? initialTotal;
 
 	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 	const [saveName, setSaveName] = useState("");
@@ -171,51 +215,6 @@ export function SearchClient({
 		}
 	}
 
-	const fetchListings = useCallback(async () => {
-		setIsLoading(true);
-		try {
-			const params = new URLSearchParams();
-			if (filters.q) params.set("q", filters.q);
-			if (filters.category) params.set("category", filters.category);
-			if (filters.minPrice) params.set("minPrice", filters.minPrice);
-			if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
-			if (filters.location) params.set("location", filters.location);
-			if (filters.sort) params.set("sort", filters.sort);
-			if (filters.condition) params.set("condition", filters.condition);
-			if (filters.tags) params.set("tags", filters.tags);
-			// The API applies this floor twice — once against the index, once
-			// against live shop data after hydration — so it is never
-			// re-filtered client-side here; this only forwards the intent.
-			if (filters.verified === "1") params.set("minShopLevel", "2");
-
-			for (const [key, value] of Object.entries(attributeFilters)) {
-				if (value) params.set(`attr_${key}`, value);
-			}
-
-			if (nearMe && geoCoords) {
-				params.set("lat", String(geoCoords.lat));
-				params.set("lng", String(geoCoords.lng));
-				params.set("radius", geoRadius);
-			}
-
-			params.set("limit", String(LIMIT));
-			params.set("offset", String((page - 1) * LIMIT));
-
-			const res = await fetch(`/api/public/search?${params.toString()}`);
-			const data = await res.json();
-			if (page > 1) {
-				setListings((prev) => [...prev, ...(data.hits || [])]);
-			} else {
-				setListings(data.hits || []);
-			}
-			setTotal(data.total || 0);
-		} catch (error) {
-			console.error("Failed to fetch listings:", error);
-		} finally {
-			setIsLoading(false);
-		}
-	}, [filters, attributeFilters, page, nearMe, geoCoords, geoRadius]);
-
 	useEffect(() => {
 		if (filters.category) {
 			const cat = categories.find(
@@ -231,15 +230,7 @@ export function SearchClient({
 		}
 	}, [filters.category, categories]);
 
-	useEffect(() => {
-		if (!shouldFetch) return;
-		const debounce = setTimeout(() => fetchListings(), 300);
-		return () => clearTimeout(debounce);
-	}, [fetchListings, shouldFetch]);
-
 	function updateFilter(key: string, value: string) {
-		setShouldFetch(true);
-		setPage(1);
 		setFilters((prev) => ({ ...prev, [key]: value }));
 		const newParams = new URLSearchParams();
 		const updated = { ...filters, [key]: value };
@@ -253,8 +244,6 @@ export function SearchClient({
 	}
 
 	function updateAttributeFilter(key: string, value: string) {
-		setShouldFetch(true);
-		setPage(1);
 		const newAttrs = { ...attributeFilters, [key]: value };
 		setAttributeFilters(newAttrs);
 
@@ -272,8 +261,6 @@ export function SearchClient({
 		if (nearMe) {
 			setNearMe(false);
 			setGeoCoords(null);
-			setShouldFetch(true);
-			setPage(1);
 			return;
 		}
 		if (!navigator.geolocation) {
@@ -289,8 +276,6 @@ export function SearchClient({
 				});
 				setNearMe(true);
 				setGeoLoading(false);
-				setShouldFetch(true);
-				setPage(1);
 			},
 			(error) => {
 				console.error("Geolocation error:", error);
@@ -302,15 +287,9 @@ export function SearchClient({
 
 	function handleRadiusChange(value: string) {
 		setGeoRadius(value);
-		if (nearMe && geoCoords) {
-			setShouldFetch(true);
-			setPage(1);
-		}
 	}
 
 	function clearFilters() {
-		setShouldFetch(true);
-		setPage(1);
 		setNearMe(false);
 		setGeoCoords(null);
 		setFilters({
@@ -447,8 +426,6 @@ export function SearchClient({
 						} else {
 							if (!nearMe) setGeoCoords(null);
 						}
-						setShouldFetch(true);
-						setPage(1);
 					}}
 					className="h-9 text-sm"
 				/>
@@ -693,7 +670,7 @@ export function SearchClient({
 				<div className="min-w-0 flex-1">
 					<div className="mb-4 flex items-center justify-between">
 						<p className="text-[#64748B] text-sm">
-							{isLoading ? (
+							{isFetching && !isFetchingNextPage ? (
 								t("loading")
 							) : (
 								<>
@@ -777,6 +754,11 @@ export function SearchClient({
 								/>
 							))}
 						</div>
+					) : isSearchError ? (
+						<LoadError
+							title={t("listingSearchError")}
+							onRetry={() => refetchListings()}
+						/>
 					) : listings.length > 0 ? (
 						<>
 							<ListingGrid
@@ -784,17 +766,17 @@ export function SearchClient({
 								favorites={favoriteIds}
 								className="md:grid-cols-3 xl:grid-cols-4"
 							/>
-							{!isLoading && listings.length < total && (
+							{hasNextPage && (
 								<div className="mt-6 text-center">
 									<button
 										type="button"
-										onClick={() => {
-											setShouldFetch(true);
-											setPage((p) => p + 1);
-										}}
-										className="rounded-xl border border-[#E2E8F0] bg-white px-8 py-2.5 font-medium text-[#1E40AF] text-sm transition-colors hover:bg-[#F8FAFC]"
+										onClick={() => fetchNextPage()}
+										disabled={isFetchingNextPage}
+										className="rounded-xl border border-[#E2E8F0] bg-white px-8 py-2.5 font-medium text-[#1E40AF] text-sm transition-colors hover:bg-[#F8FAFC] disabled:opacity-60"
 									>
-										{t("loadMore")} ({listings.length} {t("of")} {total})
+										{isFetchingNextPage
+											? t("loading")
+											: `${t("loadMore")} (${listings.length} ${t("of")} ${total})`}
 									</button>
 								</div>
 							)}
