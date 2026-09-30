@@ -141,19 +141,25 @@ same patterns as mobile.
 - Test behaviour, not implementation: a test asserts what a user or a caller
   observes.
 - API: `packages/api/tests/int/*.int.spec.ts`, using the shared in-memory
-  Payload fake in `tests/int/helpers/`.
+  Payload fake in `tests/int/helpers/`. The API suite runs under **vitest**,
+  not Bun's test runner: `cd packages/api && bun run test:int` for the whole
+  suite, or `bunx vitest run --config ./vitest.config.mts <file>` for one.
+  `bun test` in `packages/api` is not a valid run — it reports well over a
+  hundred failures that are only the wrong runner (`vi.setSystemTime is not a
+  function` and the like). This is the one place the repo's Bun-first rule
+  does not apply.
 - Web and mobile: `bun test` from the package. Tests sit beside the code they
   cover (`src/lib/*.test.ts`). Neither package has a component-render harness,
   so logic that needs pinning belongs in a pure module under `src/lib` rather
   than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
-- One API test file genuinely fails at `HEAD` for a reason that predates this
-  work: `api.int.spec.ts`, on module resolution. Several others —
-  `boost-callback-route`, `listings-before-change`, `public-categories-route`,
-  `public-search-route`, `product-stock-routes` — fail only under the full
-  suite's parallel load and **pass when run alone**. Before treating any
-  failure as a regression, re-run that file on its own. None of them is fixed
-  by raising a timeout.
+- There is no known pre-existing API failure. A full `bun run test:int` on a
+  clean tree passes. Earlier revisions of this file listed six "pre-existing"
+  failures, including `api.int.spec.ts` on module resolution; every one of
+  them was an artefact of running the suite under `bun test` instead of
+  vitest, and none survives a correct run. Do not excuse a failing test by
+  citing that list — if a test fails, it is either your change or a real
+  defect.
 
 ## Comments and docs
 
