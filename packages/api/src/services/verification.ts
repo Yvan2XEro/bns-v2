@@ -400,7 +400,14 @@ export async function computeReviewSignals(
 		orClauses.push({ "business.rccmNumber": { equals: business.rccmNumber } });
 	}
 	if (business?.niu) {
-		orClauses.push({ "business.niu": { equals: business.niu } });
+		// `like` rather than `equals`: the business route upper-cases every niu
+		// it writes, but a row written before that (or by any other caller) can
+		// still carry a lowercase one, and a case-sensitive equality would let
+		// it slip past this duplicate-detection pre-filter. Payload's `like`
+		// operator is a case-insensitive regex match, and both sides are the
+		// same fixed 14-character token, so that is exactly a case-insensitive
+		// equality here.
+		orClauses.push({ "business.niu": { like: business.niu } });
 	}
 
 	let otherRequests: SignalInput["otherRequests"] = [];
@@ -1193,43 +1200,67 @@ export async function revokeRequest(
 	);
 }
 
+export type ExpireCause =
+	| "idle"
+	| "no_response"
+	| "lapsed"
+	| "superseded"
+	| "shop_closed";
+
+/**
+ * The body of `expireRequest`, taking an existing `req` instead of opening
+ * its own transaction. `closeShopInTransaction` (`services/shopListings.ts`)
+ * calls this directly so the "shop_closed" cascade lands in the same
+ * transaction as the close itself, with the audit entry alongside it — a
+ * cascade that opened its own transaction per request could commit some
+ * expiries and then fail, leaving a closed shop with a request still open.
+ */
+export async function expireRequestInTransaction(
+	req: PayloadRequest,
+	requestId: string,
+	cause: ExpireCause,
+	options: { supersededBy?: string } = {},
+): Promise<VerificationRequest> {
+	const request = await loadRequest(req, requestId);
+	const shopId = relationId(request.shop) ?? "";
+
+	const updated = await transition(
+		req,
+		request,
+		"expire",
+		{ assignee: null },
+		"system",
+		null,
+	);
+
+	await writeLog(req, {
+		action: requiredLogAction("expire"),
+		targetId: String(updated.id),
+		actor: null,
+		metadata: options.supersededBy
+			? { cause, supersededBy: options.supersededBy }
+			: { cause },
+	});
+
+	const levelCause: LevelCause =
+		cause === "superseded"
+			? "superseded"
+			: cause === "shop_closed"
+				? "shop_closed"
+				: "expired";
+	await recomputeShopLevel(req, shopId, levelCause);
+	return updated;
+}
+
 export async function expireRequest(
 	payload: Payload,
 	requestId: string,
-	cause: "idle" | "no_response" | "lapsed" | "superseded" | "shop_closed",
+	cause: ExpireCause,
 	options: { supersededBy?: string } = {},
 ): Promise<VerificationRequest> {
-	return withTransaction(payload, async (req) => {
-		const request = await loadRequest(req, requestId);
-		const shopId = relationId(request.shop) ?? "";
-
-		const updated = await transition(
-			req,
-			request,
-			"expire",
-			{ assignee: null },
-			"system",
-			null,
-		);
-
-		await writeLog(req, {
-			action: requiredLogAction("expire"),
-			targetId: String(updated.id),
-			actor: null,
-			metadata: options.supersededBy
-				? { cause, supersededBy: options.supersededBy }
-				: { cause },
-		});
-
-		const levelCause: LevelCause =
-			cause === "superseded"
-				? "superseded"
-				: cause === "shop_closed"
-					? "shop_closed"
-					: "expired";
-		await recomputeShopLevel(req, shopId, levelCause);
-		return updated;
-	});
+	return withTransaction(payload, (req) =>
+		expireRequestInTransaction(req, requestId, cause, options),
+	);
 }
 
 export async function deleteDraft(
