@@ -9,6 +9,11 @@ import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
 import { getVerificationSettings } from "../lib/verificationSettings";
 import {
+	computeSignals,
+	type ReviewSignal,
+	type SignalInput,
+} from "../lib/verificationSignals";
+import {
 	canTransition,
 	isOpen,
 	logActionFor,
@@ -332,6 +337,143 @@ async function transition(
 	return updatedRow;
 }
 
+/**
+ * Gathers the candidates a fresh signal computation needs: other live
+ * requests sharing an identity hash, an RCCM number or a NIU, and any
+ * document this request carries that was already uploaded on another shop.
+ * One coarse `find` per axis, narrowed by whatever the request already has —
+ * `computeSignals` does the exact, normalised comparison over whatever comes
+ * back.
+ *
+ * `overrides.kyc` lets a caller supply a KYC outcome that has not been
+ * written to the row yet (`processKycEvent` computes signals from the
+ * vendor's fresh result before it decides how to persist it).
+ */
+export async function computeReviewSignals(
+	req: PayloadRequest,
+	request: VerificationRequest,
+	overrides: { kyc?: SignalInput["kyc"] } = {},
+): Promise<ReviewSignal[]> {
+	const shopId = relationId(request.shop) ?? "";
+	const ownerId = relationId(request.submittedBy) ?? undefined;
+	const owner = ownerId ? await loadUser(req, ownerId).catch(() => null) : null;
+
+	const kyc: SignalInput["kyc"] =
+		overrides.kyc !== undefined
+			? overrides.kyc
+			: request.kyc?.status
+				? {
+						status: request.kyc.status,
+						givenNames: request.kyc.givenNames ?? null,
+						familyName: request.kyc.familyName ?? null,
+						adult: request.kyc.adult ?? false,
+						documentNumberHash: request.kyc.documentNumberHash ?? null,
+					}
+				: null;
+
+	const business: SignalInput["business"] = request.business?.businessType
+		? {
+				rccmNumber: request.business.rccmNumber ?? null,
+				niu: request.business.niu ?? null,
+			}
+		: null;
+
+	const orClauses: Where[] = [];
+	if (kyc?.documentNumberHash) {
+		orClauses.push({
+			"kyc.documentNumberHash": { equals: kyc.documentNumberHash },
+		});
+	}
+	if (business?.rccmNumber) {
+		orClauses.push({ "business.rccmNumber": { equals: business.rccmNumber } });
+	}
+	if (business?.niu) {
+		orClauses.push({ "business.niu": { equals: business.niu } });
+	}
+
+	let otherRequests: SignalInput["otherRequests"] = [];
+	if (orClauses.length > 0) {
+		const found = await req.payload.find({
+			collection: "verification-requests",
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+			where: { and: [{ id: { not_equals: request.id } }, { or: orClauses }] },
+		});
+		otherRequests = found.docs.map((doc) => ({
+			id: String(doc.id),
+			shopId: relationId(doc.shop) ?? "",
+			submittedById: relationId(doc.submittedBy) ?? "",
+			status: String(doc.status),
+			documentNumberHash: doc.kyc?.documentNumberHash ?? null,
+			rccmNumber: doc.business?.rccmNumber ?? null,
+			niu: doc.business?.niu ?? null,
+		}));
+	}
+
+	const myDocuments = await req.payload.find({
+		collection: "verification-documents",
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+		req,
+		where: { request: { equals: request.id } },
+	});
+	const foreignIds = new Set<string>();
+	for (const doc of myDocuments.docs) {
+		const duplicateOf = doc.duplicateOf as unknown[] | undefined;
+		for (const id of duplicateOf ?? []) {
+			const foreignId = relationId(id);
+			if (foreignId) foreignIds.add(foreignId);
+		}
+	}
+	let documentDuplicates: SignalInput["documentDuplicates"] = [];
+	if (foreignIds.size > 0) {
+		const foreignDocs = await req.payload.find({
+			collection: "verification-documents",
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+			where: { id: { in: [...foreignIds] } },
+		});
+		documentDuplicates = foreignDocs.docs.map((doc) => ({
+			documentId: String(doc.id),
+			shopId: relationId(doc.shop) ?? "",
+		}));
+	}
+
+	return computeSignals({
+		ownerId,
+		ownerName: owner?.name ?? "",
+		shopId,
+		kyc,
+		business,
+		documentDuplicates,
+		otherRequests,
+	});
+}
+
+/** Recomputes and writes `reviewSignals` for a request whose own fields are already current on the row. */
+async function refreshSignals(
+	req: PayloadRequest,
+	request: VerificationRequest,
+): Promise<VerificationRequest> {
+	const reviewSignals = await computeReviewSignals(req, request);
+	return req.payload.update({
+		collection: "verification-requests",
+		id: request.id,
+		req,
+		overrideAccess: true,
+		context: VERIFICATION_CONTEXT,
+		data: { reviewSignals } as never,
+	});
+}
+
 async function writeLog(
 	req: PayloadRequest,
 	input: {
@@ -521,7 +663,9 @@ export async function submitRequest(
 				actor.id,
 			);
 			await recomputeShopLevel(req, relationId(updated.shop) ?? "", "manual");
-			return updated;
+			return updated.requestedLevel === 3
+				? await refreshSignals(req, updated)
+				: updated;
 		},
 		{ user: actor },
 	);
