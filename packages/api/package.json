@@ -11,6 +11,8 @@
 		"generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
 		"generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
 		"lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
+		"migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
+		"migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status",
 		"payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
 		"seed": "cross-env NODE_OPTIONS=--no-deprecation bun run src/seed/seed.ts",
 		"sync:notification-workflows": "cross-env NODE_OPTIONS=--no-deprecation tsx src/scripts/syncNotificationWorkflows.ts",
