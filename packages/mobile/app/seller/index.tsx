@@ -19,11 +19,59 @@ import { SellerManageCard } from "@/src/components/shop/SellerManageCard";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useMyShop } from "@/src/hooks/useShops";
+import { useShopVerification } from "@/src/hooks/useVerification";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildChecklistSteps } from "@/src/lib/sellerChecklist";
 import { shopUrl } from "@/src/lib/shopHandle";
-import type { MyShop, MyShopResponse } from "@/src/types/api";
+import {
+	badgeForLevel,
+	badgeLabelKey,
+	canOpenRequest,
+} from "@/src/lib/verification";
+import type {
+	MyShop,
+	MyShopResponse,
+	ShopVerificationResponse,
+	VerificationStatus,
+} from "@/src/types/api";
+
+/**
+ * The status of whichever of the two upgrade levels currently has an open
+ * request — business takes priority over identity, since a seller working
+ * on both would be finishing the higher one. Reads `canOpenRequest`'s own
+ * "open" reason rather than re-deriving a status list here.
+ */
+function openRequestStatus(
+	view: ShopVerificationResponse | undefined,
+): VerificationStatus | null {
+	if (!view) return null;
+	for (const level of [3, 2] as const) {
+		const request = view.requests[level === 2 ? "level2" : "level3"];
+		if (!request) continue;
+		const result = canOpenRequest(view, level);
+		if (!result.ok && result.reason === "open") return request.status;
+	}
+	return null;
+}
+
+/**
+ * An open request's status takes priority over the badge — it is the more
+ * actionable thing to tell the seller about — falling back to the current
+ * badge, or "no level yet" when there is none.
+ */
+function verificationTileBody(
+	t: (key: string) => string,
+	level: number,
+	view: ShopVerificationResponse | undefined,
+): string {
+	const openStatus = openRequestStatus(view);
+	if (openStatus) return t(`verification.timeline.status.${openStatus}`);
+	const labelKey = badgeLabelKey(badgeForLevel(level));
+	return labelKey
+		? t(`shop.${labelKey}`)
+		: t("verification.statusCard.noLevel");
+}
 
 type ShopCounts = NonNullable<MyShopResponse["counts"]>;
 
@@ -97,6 +145,7 @@ function SellerHubContent({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const verification = useShopVerification(shop.id);
 
 	const share = () => {
 		const url = shopUrl(shop.handle, webUrl);
@@ -171,6 +220,13 @@ function SellerHubContent({
 			title: t("seller.tileSettings"),
 			body: t("seller.tileSettingsBody"),
 			onPress: () => router.push("/shop/manage" as never),
+		},
+		{
+			key: "verification",
+			icon: "shield-checkmark-outline" as const,
+			title: t("seller.tileVerification"),
+			body: verificationTileBody(t, shop.level, verification.data),
+			onPress: () => router.push("/seller/verification" as never),
 		},
 	];
 

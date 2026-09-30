@@ -1382,6 +1382,21 @@
 		"levelPhone": "Téléphone vérifié",
 		"levelIdentity": "Identité vérifiée",
 		"levelBusiness": "Entreprise vérifiée",
+		"legalVerifiedTitle": "Entreprise vérifiée",
+		"legalDeclaredTitle": "Déclarée par la boutique",
+		"legalName": "Raison sociale",
+		"businessType": "Type d'entreprise",
+		"rccm": "Numéro RCCM",
+		"niu": "NIU",
+		"businessTypeEntreprenant": "Entreprenant (déclaration individuelle)",
+		"businessTypeSoleTrader": "Commerçant individuel",
+		"businessTypeCompany": "Société",
+		"businessTypeCooperative": "Coopérative",
+		"legalSectionTitle": "Identité légale",
+		"legalHint": "Modifiable tant que votre vérification entreprise n'est pas approuvée.",
+		"legalLockedHint": "Votre identité entreprise est vérifiée — ouvrez une nouvelle demande pour la modifier.",
+		"legalNone": "Non précisé",
+		"increaseLevel": "Augmenter mon niveau",
 		"notFoundTitle": "Boutique introuvable",
 		"notFoundSubtitle": "Cette boutique n'existe pas ou n'est plus disponible.",
 		"shareLabel": "Partager {{name}}",
@@ -1513,6 +1528,7 @@
 		"tileStockOk": "Aucune alerte",
 		"tileSettings": "Paramètres de la boutique",
 		"tileSettingsBody": "Profil, adresse de la page, contacts",
+		"tileVerification": "Vérification",
 		"suspendedUntil": "Boutique suspendue jusqu'au {{date}}",
 		"suspendedIndefinitely": "Boutique suspendue",
 		"suspendedBody": "Vos produits sont masqués aux acheteurs. Vous voyez toujours votre boutique ici."
@@ -1664,5 +1680,68 @@
 		"listingStats": "En ligne · {{views}} vues · {{favorites}} favoris",
 		"viewListing": "Voir",
 		"latestMovements": "Derniers mouvements"
+	},
+	"verification": {
+		"hub": {
+			"title": "Vérification",
+			"disabledBanner": "La vérification est temporairement suspendue. Vous pouvez toujours consulter l'état de vos demandes ci-dessous."
+		},
+		"statusCard": {
+			"noLevel": "Aucun niveau pour l'instant",
+			"expiresOn": "Valide jusqu'au {{date}}"
+		},
+		"ladder": {
+			"title": "Niveaux de vérification",
+			"state": {
+				"reached": "Atteint",
+				"current": "Niveau actuel",
+				"locked": "Verrouillé"
+			}
+		},
+		"requestCard": {
+			"title": {
+				"2": "Vérification d'identité",
+				"3": "Vérification de l'entreprise"
+			},
+			"continue": "Continuer"
+		},
+		"timeline": {
+			"status": {
+				"draft": "Brouillon",
+				"submitted": "Soumise",
+				"in_review": "En cours de relecture",
+				"needs_info": "Informations complémentaires demandées",
+				"approved": "Approuvée",
+				"rejected": "Refusée",
+				"revoked": "Révoquée",
+				"expired": "Expirée"
+			}
+		},
+		"reviewerMessage": {
+			"title": {
+				"needs_info": "Le relecteur a besoin d'informations complémentaires",
+				"rejected": "Votre demande a été refusée"
+			}
+		},
+		"action": {
+			"label": {
+				"start": {
+					"2": "Faites vérifier votre identité",
+					"3": "Faites vérifier votre entreprise"
+				},
+				"renew": {
+					"2": "Renouveler la vérification d'identité",
+					"3": "Renouveler la vérification de l'entreprise"
+				}
+			},
+			"cta": {
+				"start": "Commencer",
+				"renew": "Renouveler"
+			},
+			"reason": {
+				"cooldown": "Vous pourrez ouvrir une nouvelle demande à partir du {{date}}.",
+				"notRenewableYet": "Le renouvellement sera possible à partir du {{date}}."
+			}
+		}
 	}
 }

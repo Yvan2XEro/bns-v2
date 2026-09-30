@@ -1309,6 +1309,21 @@
 		"levelPhone": "Phone verified",
 		"levelIdentity": "Identity verified",
 		"levelBusiness": "Business verified",
+		"legalVerifiedTitle": "Verified business",
+		"legalDeclaredTitle": "Declared by the shop",
+		"legalName": "Legal name",
+		"businessType": "Business type",
+		"rccm": "RCCM number",
+		"niu": "NIU",
+		"businessTypeEntreprenant": "Sole proprietor (entreprenant)",
+		"businessTypeSoleTrader": "Sole trader",
+		"businessTypeCompany": "Company",
+		"businessTypeCooperative": "Cooperative",
+		"legalSectionTitle": "Legal identity",
+		"legalHint": "Editable until your business verification is approved.",
+		"legalLockedHint": "Your business identity is verified — start a new request to change it.",
+		"legalNone": "Not specified",
+		"increaseLevel": "Increase your level",
 		"notFoundTitle": "Shop not found",
 		"notFoundSubtitle": "This shop does not exist or is no longer available.",
 		"shareLabel": "Share {{name}}",
@@ -1440,6 +1455,7 @@
 		"tileStockOk": "No alert",
 		"tileSettings": "Shop settings",
 		"tileSettingsBody": "Profile, page address, contacts",
+		"tileVerification": "Verification",
 		"suspendedUntil": "Shop suspended until {{date}}",
 		"suspendedIndefinitely": "Shop suspended",
 		"suspendedBody": "Your products are hidden from buyers. You can still see your shop here."
@@ -1591,5 +1607,68 @@
 		"listingStats": "Online · {{views}} views · {{favorites}} favourites",
 		"viewListing": "View",
 		"latestMovements": "Latest movements"
+	},
+	"verification": {
+		"hub": {
+			"title": "Verification",
+			"disabledBanner": "Verification is temporarily paused. You can still see the status of any request below."
+		},
+		"statusCard": {
+			"noLevel": "No level yet",
+			"expiresOn": "Valid until {{date}}"
+		},
+		"ladder": {
+			"title": "Verification levels",
+			"state": {
+				"reached": "Reached",
+				"current": "Current level",
+				"locked": "Locked"
+			}
+		},
+		"requestCard": {
+			"title": {
+				"2": "Identity verification",
+				"3": "Business verification"
+			},
+			"continue": "Continue"
+		},
+		"timeline": {
+			"status": {
+				"draft": "Draft",
+				"submitted": "Submitted",
+				"in_review": "In review",
+				"needs_info": "More information needed",
+				"approved": "Approved",
+				"rejected": "Rejected",
+				"revoked": "Revoked",
+				"expired": "Expired"
+			}
+		},
+		"reviewerMessage": {
+			"title": {
+				"needs_info": "The reviewer needs more information",
+				"rejected": "Your request was declined"
+			}
+		},
+		"action": {
+			"label": {
+				"start": {
+					"2": "Get identity verified",
+					"3": "Get your business verified"
+				},
+				"renew": {
+					"2": "Renew identity verification",
+					"3": "Renew business verification"
+				}
+			},
+			"cta": {
+				"start": "Start",
+				"renew": "Renew"
+			},
+			"reason": {
+				"cooldown": "You can open a new request from {{date}}.",
+				"notRenewableYet": "Renewal opens on {{date}}."
+			}
+		}
 	}
 }

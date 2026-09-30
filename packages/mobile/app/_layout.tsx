@@ -440,6 +440,22 @@ function RootLayoutNav() {
 				/>
 				<Stack.Screen name="seller/index" options={{ headerShown: false }} />
 				<Stack.Screen
+					name="seller/verification/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/verification/identity"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/verification/return"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/verification/business"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
 					name="seller/catalogue"
 					options={{ headerShown: false }}
 				/>
@@ -498,6 +514,10 @@ function RootLayoutNav() {
 				/>
 				<Stack.Screen
 					name="moderation/shop/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/verification/[id]"
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen name="settings" options={{ headerShown: false }} />
