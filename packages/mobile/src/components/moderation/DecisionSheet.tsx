@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useMemo } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
 	KeyboardAvoidingView,
@@ -13,6 +15,11 @@ import {
 	View,
 } from "react-native";
 import { Fonts } from "@/constants/theme";
+import {
+	buildDecisionSchema,
+	type DecisionFormValues,
+	decisionSheetDefaults,
+} from "@/src/lib/decisionSheetForm";
 import { useTranslation } from "@/src/lib/i18n";
 import { useModerationTheme } from "./theme";
 
@@ -77,29 +84,50 @@ export function DecisionSheet({
 }: DecisionSheetProps) {
 	const c = useModerationTheme();
 	const { t } = useTranslation();
-	const [choice, setChoice] = useState<string | null>(null);
-	const [duration, setDuration] = useState<number | null>(null);
-	const [durationTouched, setDurationTouched] = useState(false);
-	const [text, setText] = useState("");
+
+	const needsChoice = Boolean(choices?.length);
+	const needsDuration = Boolean(durations?.length);
+	const singleDuration = durations?.length === 1;
+	const singleDurationValue = singleDuration
+		? (durations?.[0]?.value ?? null)
+		: null;
+
+	const schema = useMemo(
+		() =>
+			buildDecisionSchema({
+				needsChoice,
+				needsDuration,
+				singleDuration,
+				textRequired: Boolean(textRequired),
+			}),
+		[needsChoice, needsDuration, singleDuration, textRequired],
+	);
+
+	const form = useForm<DecisionFormValues>({
+		resolver: zodResolver(schema),
+		mode: "onChange",
+		defaultValues: decisionSheetDefaults(singleDuration, singleDurationValue),
+	});
 
 	// Reopening must not inherit the previous decision: a moderator who
 	// rejected one listing for fraud should not find "fraud" preselected on the
 	// next one and confirm it without looking.
 	useEffect(() => {
 		if (visible) {
-			setChoice(null);
-			setDuration(durations?.[0]?.value ?? null);
-			setDurationTouched(false);
-			setText("");
+			form.reset(decisionSheetDefaults(singleDuration, singleDurationValue));
 		}
-	}, [visible, durations]);
+	}, [visible, singleDuration, singleDurationValue, form.reset]);
 
-	const needsChoice = Boolean(choices?.length);
-	const needsDuration = Boolean(durations?.length);
-	const ready =
-		(!needsChoice || choice !== null) &&
-		(!needsDuration || durationTouched || durations?.length === 1) &&
-		(!textRequired || text.trim().length > 0);
+	const ready = form.formState.isValid;
+	const errors = form.formState.errors;
+
+	const submit = form.handleSubmit((values) => {
+		onConfirm({
+			choice: values.choice,
+			durationDays: values.duration,
+			text: values.text.trim(),
+		});
+	});
 
 	return (
 		<Modal
@@ -155,46 +183,59 @@ export function DecisionSheet({
 										{choicesLabel}
 									</Text>
 								) : null}
-								<View style={styles.choices}>
-									{choices?.map((option) => {
-										const selected = choice === option.value;
-										return (
-											<Pressable
-												key={option.value}
-												onPress={() => setChoice(option.value)}
-												style={[
-													styles.choice,
-													{
-														backgroundColor: selected
-															? destructive
-																? c.dangerSoft
-																: c.isDark
-																	? "#1e3a5f"
-																	: "#dbeafe"
-															: "transparent",
-														borderColor: selected
-															? destructive
-																? c.danger
-																: c.primary
-															: c.border,
-														borderWidth: selected ? 2 : 1,
-													},
-												]}
-											>
-												<Text style={[styles.choiceText, { color: c.text }]}>
-													{option.label}
-												</Text>
-												{selected ? (
-													<Ionicons
-														name="checkmark-circle"
-														size={18}
-														color={destructive ? c.danger : c.primary}
-													/>
-												) : null}
-											</Pressable>
-										);
-									})}
-								</View>
+								<Controller
+									control={form.control}
+									name="choice"
+									render={({ field }) => (
+										<View style={styles.choices}>
+											{choices?.map((option) => {
+												const selected = field.value === option.value;
+												return (
+													<Pressable
+														key={option.value}
+														onPress={() => field.onChange(option.value)}
+														style={[
+															styles.choice,
+															{
+																backgroundColor: selected
+																	? destructive
+																		? c.dangerSoft
+																		: c.isDark
+																			? "#1e3a5f"
+																			: "#dbeafe"
+																	: "transparent",
+																borderColor: selected
+																	? destructive
+																		? c.danger
+																		: c.primary
+																	: c.border,
+																borderWidth: selected ? 2 : 1,
+															},
+														]}
+													>
+														<Text
+															style={[styles.choiceText, { color: c.text }]}
+														>
+															{option.label}
+														</Text>
+														{selected ? (
+															<Ionicons
+																name="checkmark-circle"
+																size={18}
+																color={destructive ? c.danger : c.primary}
+															/>
+														) : null}
+													</Pressable>
+												);
+											})}
+										</View>
+									)}
+								/>
+								{errors.choice ? (
+									<Text style={[styles.errorText, { color: c.danger }]}>
+										{t(errors.choice.message ?? "")}
+									</Text>
+								) : null}
 							</>
 						) : null}
 
@@ -208,39 +249,46 @@ export function DecisionSheet({
 								>
 									{durationsLabel}
 								</Text>
-								<View style={styles.durations}>
-									{durations?.map((option) => {
-										const selected =
-											durationTouched && duration === option.value;
-										return (
-											<Pressable
-												key={String(option.value)}
-												onPress={() => {
-													setDuration(option.value);
-													setDurationTouched(true);
-												}}
-												style={[
-													styles.duration,
-													{
-														backgroundColor: selected
-															? c.danger
-															: "transparent",
-														borderColor: selected ? c.danger : c.border,
-													},
-												]}
-											>
-												<Text
-													style={[
-														styles.durationText,
-														{ color: selected ? "#fff" : c.text },
-													]}
-												>
-													{option.label}
-												</Text>
-											</Pressable>
-										);
-									})}
-								</View>
+								<Controller
+									control={form.control}
+									name="duration"
+									render={({ field }) => (
+										<View style={styles.durations}>
+											{durations?.map((option) => {
+												const selected = field.value === option.value;
+												return (
+													<Pressable
+														key={String(option.value)}
+														onPress={() => field.onChange(option.value)}
+														style={[
+															styles.duration,
+															{
+																backgroundColor: selected
+																	? c.danger
+																	: "transparent",
+																borderColor: selected ? c.danger : c.border,
+															},
+														]}
+													>
+														<Text
+															style={[
+																styles.durationText,
+																{ color: selected ? "#fff" : c.text },
+															]}
+														>
+															{option.label}
+														</Text>
+													</Pressable>
+												);
+											})}
+										</View>
+									)}
+								/>
+								{errors.duration ? (
+									<Text style={[styles.errorText, { color: c.danger }]}>
+										{t(errors.duration.message ?? "")}
+									</Text>
+								) : null}
 							</>
 						) : null}
 
@@ -251,21 +299,33 @@ export function DecisionSheet({
 								>
 									{textLabel}
 								</Text>
-								<TextInput
-									value={text}
-									onChangeText={setText}
-									placeholder={textPlaceholder}
-									placeholderTextColor={c.muted}
-									multiline
-									style={[
-										styles.textarea,
-										{
-											backgroundColor: c.bg,
-											borderColor: c.border,
-											color: c.text,
-										},
-									]}
+								<Controller
+									control={form.control}
+									name="text"
+									render={({ field }) => (
+										<TextInput
+											value={field.value}
+											onChangeText={field.onChange}
+											onBlur={field.onBlur}
+											placeholder={textPlaceholder}
+											placeholderTextColor={c.muted}
+											multiline
+											style={[
+												styles.textarea,
+												{
+													backgroundColor: c.bg,
+													borderColor: c.border,
+													color: c.text,
+												},
+											]}
+										/>
+									)}
 								/>
+								{errors.text ? (
+									<Text style={[styles.errorText, { color: c.danger }]}>
+										{t(errors.text.message ?? "")}
+									</Text>
+								) : null}
 							</>
 						) : null}
 					</ScrollView>
@@ -280,9 +340,7 @@ export function DecisionSheet({
 							</Text>
 						</Pressable>
 						<Pressable
-							onPress={() =>
-								onConfirm({ choice, durationDays: duration, text: text.trim() })
-							}
+							onPress={submit}
 							disabled={!ready || pending}
 							style={[
 								styles.confirmBtn,
@@ -356,6 +414,7 @@ const styles = StyleSheet.create({
 		letterSpacing: 0.5,
 		marginBottom: 8,
 	},
+	errorText: { fontSize: 12, fontFamily: Fonts.body, marginTop: 6 },
 	choices: { gap: 8 },
 	choice: {
 		flexDirection: "row",
