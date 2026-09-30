@@ -1244,7 +1244,8 @@
 			"fieldsInvalid": "Veuillez vérifier les informations d'entreprise signalées.",
 			"notAssignee": "Seul le relecteur qui a pris cette demande peut la décider.",
 			"conflictOfInterest": "Vous ne pouvez pas relire une boutique à laquelle vous êtes lié.",
-			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver."
+			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver.",
+			"hashUnavailable": "La vérification d'identité est mal configurée de notre côté. Veuillez contacter le support."
 		}
 	},
 	"cityPicker": {
@@ -1282,6 +1283,9 @@
 		"forbiddenTitle": "Modération indisponible",
 		"forbiddenSubtitle": "Votre compte n'a plus accès à la modération.",
 		"actionFailed": "L'action a échoué",
+		"decisionChoiceRequired": "Choisissez un motif pour continuer.",
+		"decisionDurationRequired": "Choisissez une durée pour continuer.",
+		"decisionTextRequired": "Ce champ ne peut pas rester vide.",
 		"reviewListing": "Examiner l'annonce",
 		"noPhotos": "Aucune photo",
 		"openAccount": "Voir ce compte",
@@ -1467,7 +1471,6 @@
 		"verifDocumentKind_niu_certificate": "Certificat NIU",
 		"verifDocumentKind_legal_representative_id": "Pièce d'identité du représentant légal",
 		"verifDocumentKind_mandate": "Mandat",
-		"verifDocumentKind_proof_of_address": "Justificatif de domicile",
 		"verifDocumentKind_other": "Autre document",
 		"verifAction_claim": "Réclamer",
 		"verifAction_release": "Libérer",
@@ -1521,6 +1524,7 @@
 		"legalSectionTitle": "Identité légale",
 		"legalHint": "Modifiable tant que votre vérification entreprise n'est pas approuvée.",
 		"legalLockedHint": "Votre identité entreprise est vérifiée — ouvrez une nouvelle demande pour la modifier.",
+		"niuInvalid": "Saisissez 14 lettres ou chiffres, exactement comme sur votre certificat de NIU.",
 		"legalNone": "Non précisé",
 		"increaseLevel": "Augmenter mon niveau",
 		"notFoundTitle": "Boutique introuvable",
@@ -1984,7 +1988,6 @@
 			"niu_certificate": "Certificat NIU",
 			"legal_representative_id": "Pièce d'identité du représentant légal",
 			"mandate": "Mandat",
-			"proof_of_address": "Justificatif de domicile",
 			"other": "Autre document"
 		}
 	}
