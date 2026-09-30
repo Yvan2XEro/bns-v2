@@ -207,6 +207,10 @@ describe("purgeVerificationData", () => {
 					shop: "s-1",
 					kind: "rccm_extract",
 					filename: "a.pdf",
+					// The collection's own comment says this can carry the seller's
+					// name; purging the file's bytes without clearing it would leave
+					// that name behind indefinitely.
+					originalFilename: "carte-identite-aicha-mbappe.pdf",
 					sha256: "h",
 				},
 			],
@@ -214,7 +218,7 @@ describe("purgeVerificationData", () => {
 		const report = await purgeVerificationData(payload, NOW);
 		expect(report.filesPurged).toEqual(["vd-1"]);
 		const doc = payload.store["verification-documents"][0];
-		expect(doc).toMatchObject({ filename: null });
+		expect(doc).toMatchObject({ filename: null, originalFilename: null });
 		expect(doc.purgedAt).toBeTruthy();
 		expect(doc.sha256).toBe("h");
 	});
@@ -258,6 +262,10 @@ describe("purgeVerificationData", () => {
 						givenNames: "Aicha",
 						familyName: "Mbappe",
 						documentNumberHash: "h",
+						// Vendor free text, not a machine code: the review's point is
+						// that this is exactly the evidence retention is supposed to
+						// stop keeping once the row is stripped.
+						vendorWarnings: ["face on the selfie is Aicha Mbappe"],
 					},
 					business: { legalName: "AKWA SARL" },
 					decision: { sellerMessage: "…", internalNote: "…" },
@@ -270,6 +278,7 @@ describe("purgeVerificationData", () => {
 			givenNames: null,
 			familyName: null,
 			documentNumberHash: null,
+			vendorWarnings: null,
 		});
 		// Not `null` itself: Payload's own field pipeline would silently drop the
 		// PII-clearing write on the floor if it were (see the C4 test below).

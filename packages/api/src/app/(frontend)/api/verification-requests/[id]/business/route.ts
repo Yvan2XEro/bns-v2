@@ -36,7 +36,11 @@ const businessSchema = z
 		niu: z
 			.string()
 			.trim()
-			.regex(/^[A-Za-z0-9]{14}$/),
+			.regex(/^[A-Za-z0-9]{14}$/)
+			// Uppercased the same way `registrationNumber` is: stored inconsistently,
+			// a lowercase value defeats the `niu_reused` duplicate-detection
+			// pre-filter against every row written through the browser client.
+			.transform((value) => value.toUpperCase()),
 		registeredAddress: z.string().trim().min(1).max(500),
 		city: z.string().trim().min(1).max(80),
 		legalRepresentativeName: z.string().trim().min(2).max(120),

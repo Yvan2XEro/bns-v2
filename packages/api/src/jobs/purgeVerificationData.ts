@@ -127,6 +127,9 @@ async function stripDueRows(payload: Payload, now: Date): Promise<string[]> {
 								givenNames: null,
 								familyName: null,
 								documentNumberHash: null,
+								// Unfiltered vendor free text, not a machine code — the
+								// same evidence-minimisation rule as the names above.
+								vendorWarnings: null,
 							}
 						: request.kyc,
 					business: request.business ? NULLED_BUSINESS : request.business,

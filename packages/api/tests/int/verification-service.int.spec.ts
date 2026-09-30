@@ -668,3 +668,67 @@ describe("revoke and expiry cascades", () => {
 		});
 	});
 });
+
+describe("niu duplicate detection across a case mismatch", () => {
+	const FULL_BUSINESS = {
+		businessType: "company" as const,
+		legalName: "Akwa SARL",
+		rccmNumber: "RC/DLA/2020/B/9999",
+		registeredAddress: "Akwa",
+		city: "Douala",
+		legalRepresentativeName: "Jean Mbarga",
+		legalRepresentativeIsOwner: true,
+	};
+
+	it("still flags a reused niu when one of the two rows was stored lowercase", async () => {
+		const payload = seed({
+			requests: [
+				{
+					id: "vr-1",
+					shop: "s-1",
+					submittedBy: "u-1",
+					requestedLevel: 3,
+					status: "draft",
+					openKey: "s-1:3",
+					// Lowercase, as a caller that bypasses the client's own
+					// upper-casing (or a row written before the server started
+					// upper-casing it) would store it.
+					business: { ...FULL_BUSINESS, niu: "m012312345678n" },
+				},
+				{
+					id: "vr-2",
+					shop: "s-2",
+					submittedBy: "u-2",
+					requestedLevel: 3,
+					status: "submitted",
+					business: {
+						...FULL_BUSINESS,
+						legalName: "Other SARL",
+						// A different registration number: the niu is the only
+						// field these two rows share, so the pre-filter query has
+						// to be the thing that catches the case mismatch, not an
+						// incidental rccm match.
+						rccmNumber: "RC/DLA/2020/B/1111",
+						niu: "M012312345678N",
+					},
+				},
+			],
+		});
+		payload.store.shops.push({
+			id: "s-2",
+			handle: "other",
+			name: "Other",
+			owner: "u-2",
+			status: "active",
+			level: 1,
+		});
+		payload.store.users.push({ id: "u-2", role: "user", name: "Autre" });
+
+		await submitRequest(payload, OWNER, "vr-1");
+
+		const vr1 = requests(payload).find((r) => r.id === "vr-1");
+		expect(vr1?.reviewSignals).toEqual(
+			expect.arrayContaining([expect.objectContaining({ code: "niu_reused" })]),
+		);
+	});
+});

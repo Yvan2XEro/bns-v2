@@ -326,6 +326,10 @@ export async function purgeDocumentFiles(
 					filename: null,
 					mimeType: null,
 					filesize: null,
+					// The collection's own comment warns this can carry the seller's
+					// name; dropping the file's bytes without clearing it would leave
+					// that name behind forever.
+					originalFilename: null,
 				},
 				req,
 			});

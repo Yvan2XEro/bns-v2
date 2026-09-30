@@ -513,6 +513,26 @@ describe("write routes", () => {
 		expect(body.business.entreprenantDeclarationNumber).toBe("M012345678901X");
 	});
 
+	it("uppercases the niu the same way it does the registration numbers", async () => {
+		const payload = seed({ requests: [DRAFT_L3] });
+		asOwner(payload);
+
+		const { POST } = await import(BUSINESS_ROUTE);
+		const response = await POST(
+			post("http://x/api/verification-requests/vr-1/business", {
+				...VALID_BUSINESS_BODY,
+				// A non-browser caller (or one that skips the client's own
+				// upper-casing) can post any case here; the server is the only
+				// place `niu_reused` duplicate detection can rely on.
+				niu: "m012312345678n",
+			}),
+			params("vr-1"),
+		);
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.business.niu).toBe("M012312345678N");
+	});
+
 	it("refuses a business group missing a required field with verification.fieldsInvalid", async () => {
 		const payload = seed({ requests: [DRAFT_L3] });
 		asOwner(payload);
