@@ -83,7 +83,28 @@ New environment variables this branch adds (all declared in `docker-compose.yml`
 | `VERIFICATION_ALLOW_UNAUTHORISED` | Staging-only bypass of the Law 2024/017 authorisation gate (`packages/api/src/lib/verificationSettings.ts`). Ignored whenever `NODE_ENV==="production"`, and `NODE_ENV` is hardcoded to `"production"` in `packages/api/Dockerfile`, so this variable has no effect there regardless of what is set. |
 | `DIDIT_API_KEY`, `DIDIT_WEBHOOK_SECRET`, `DIDIT_WORKFLOW_ID`, `DIDIT_BASE_URL` | Didit KYC adapter credentials (`packages/api/src/lib/kyc/didit.ts`). |
 
-Run the migration: `20260930_000000_p2_verification_levels.ts`. It retires `users.verified` (copies `true` values to `legacyVerifiedAt` first, so a stale badge's history is preserved, not silently dropped) and creates a partial unique index `verification_open_key_unique` on `verification-requests.openKey`, enforcing "one open request per shop and level" as a database invariant. Its `down` drops the index but deliberately does not restore `verified` — re-deriving it from `legacyVerifiedAt` would recreate the exact meaningless badge the migration removed.
+Run the migrations with `cd packages/api && bun run migrate` (`bun run
+migrate:status` lists what has and has not been applied). Nothing runs them
+automatically — not the Dockerfile, not any compose file, not the deploy
+workflow — so this is a manual step on every deploy that adds one.
+
+**P2 ships two migrations, and the second one has an ordering requirement.**
+
+`20260930_000100_p2_verification_data_fixes.ts` rewrites `kyc.faceMatchScore`
+from the vendor's 0..1 fraction to the 0..100 the field declares, by
+multiplying every value in `(0, 1]` by 100. It must run **before** the new
+code writes any score, because a genuine 1 % match written by the fixed
+adapter also falls in that range and would be read as 100 %. On an identity
+decision that is the worst possible direction of error. Run the migration
+first, then start the new image; do not run it on a deployment that has
+already been serving the new code.
+
+It also upper-cases existing `business.niu` values, clears `vendorWarnings`
+and `originalFilename` on rows the retention strip has already passed, and
+cannot backfill `documentNumberLast4` — the raw document number was never
+persisted, so that one is a forward-fix only.
+
+`20260930_000000_p2_verification_levels.ts`: It retires `users.verified` (copies `true` values to `legacyVerifiedAt` first, so a stale badge's history is preserved, not silently dropped) and creates a partial unique index `verification_open_key_unique` on `verification-requests.openKey`, enforcing "one open request per shop and level" as a database invariant. Its `down` drops the index but deliberately does not restore `verified` — re-deriving it from `legacyVerifiedAt` would recreate the exact meaningless badge the migration removed.
 
 ### 1. Flag off (`AppSettings → Verification → Allow verification requests` unchecked)
 

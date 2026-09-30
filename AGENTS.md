@@ -153,13 +153,18 @@ same patterns as mobile.
   so logic that needs pinning belongs in a pure module under `src/lib` rather
   than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
-- There is no known pre-existing API failure. A full `bun run test:int` on a
-  clean tree passes. Earlier revisions of this file listed six "pre-existing"
-  failures, including `api.int.spec.ts` on module resolution; every one of
-  them was an artefact of running the suite under `bun test` instead of
-  vitest, and none survives a correct run. Do not excuse a failing test by
-  citing that list — if a test fails, it is either your change or a real
-  defect.
+- One API spec genuinely fails, and only one: `api.int.spec.ts`, on
+  `@/payload.config` module resolution. It fails under vitest, run alone, and
+  predates this work. Everything else should pass.
+- Earlier revisions of this file also blamed `boost-callback-route`,
+  `listings-before-change`, `public-categories-route`, `public-search-route`
+  and `product-stock-routes` on "the full suite's parallel load". That was
+  wrong twice over: the list was assembled from `bun test` output, and the
+  real cause for the two reviewer/seller route specs was the 5s default
+  timeout against a 3.5-3.8s first dynamic import. `vitest.config.mts` now
+  sets `testTimeout` to 15s and five consecutive full runs showed no
+  timeouts. So do not excuse a failing test by citing load — if a test
+  fails, it is your change, `api.int.spec.ts`, or a real defect.
 
 ## Comments and docs
 
