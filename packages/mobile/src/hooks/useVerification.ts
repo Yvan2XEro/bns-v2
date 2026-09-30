@@ -8,11 +8,15 @@ import type {
 	VerificationDocumentKind,
 } from "../types/api";
 
-/** Everything about one shop's verification, nested under the existing shop scope so a shop-wide invalidation reaches it. */
+/**
+ * Everything about one shop's verification, nested under the existing shop
+ * scope so a shop-wide invalidation reaches it.
+ *
+ * No per-request key: `useShopVerification` is the only query in this
+ * domain, and every mutation below invalidates `shop` alone.
+ */
 export const verificationKeys = {
 	shop: (shopId: string) => ["shops", shopId, "verification"] as const,
-	request: (shopId: string, requestId: string) =>
-		["shops", shopId, "verification", requestId] as const,
 };
 
 /**

@@ -77,9 +77,12 @@ export interface VerificationDecisionVariables {
 /**
  * Every reviewer action on a request — claim, release, request info, approve,
  * reject, revoke — goes through this one mutation, dispatched by `body.action`
- * the same way the route itself dispatches. Invalidates the queue and the
- * summary (its pending count) alongside the request's own detail: a decision
- * changes which queue a request belongs to, not just its own fields.
+ * the same way the route itself dispatches. Invalidates `root`, which covers
+ * every queue and the request's own detail (both are nested under it): a
+ * decision changes which queue a request belongs to, not just its own
+ * fields. The queue's pending count is read off the "to_review" queue query
+ * itself (`queue-client.tsx`), so there is no separate summary query to
+ * invalidate here.
  */
 export function useVerificationDecision(): UseMutationResult<
 	VerificationRequest,
@@ -102,9 +105,6 @@ export function useVerificationDecision(): UseMutationResult<
 		onSuccess: (_result, { requestId }) => {
 			void queryClient.invalidateQueries({
 				queryKey: moderationVerificationKeys.root,
-			});
-			void queryClient.invalidateQueries({
-				queryKey: moderationVerificationKeys.summary,
 			});
 			void queryClient.invalidateQueries({
 				queryKey: moderationVerificationKeys.detail(requestId),

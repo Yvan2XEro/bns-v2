@@ -24,35 +24,64 @@ export const catalogueRootKey = (shopId: string) =>
 export const productDetailKey = (shopId: string, productId: string) =>
 	[...catalogueRootKey(shopId), productId, "detail"] as const;
 
-/** Everything about one shop's verification: the hub view and each request. */
+/**
+ * Everything about one shop's verification: the hub view and each request.
+ *
+ * There is no separate per-request key. `useShopVerification` is the only
+ * `useQuery` in this domain, and it reads the whole hub in one call — a
+ * `verificationRequestKey(shopId, requestId)` nested under this one would
+ * never be registered by anything, so invalidating it would be a silent
+ * no-op (a longer prefix can never match a shorter registered key). Every
+ * mutation in `use-verification.ts` invalidates this key alone.
+ */
 export const verificationKey = (shopId: string) =>
 	[...shopScopeKey(shopId), "verification"] as const;
-
-export const verificationRequestKey = (shopId: string, requestId: string) =>
-	[...verificationKey(shopId), requestId] as const;
 
 /**
  * Reviewer keys are not shop-scoped: the queue spans shops, and invalidating
  * it on a decision must not depend on knowing which shop the request belonged
  * to.
+ *
+ * No `summary` key: nothing in `use-moderation-verification.ts` ever
+ * registers a `useQuery` for it (the queue tabs' pending count is read off
+ * the "to_review" queue query itself, in `queue-client.tsx`), so invalidating
+ * it invalidated nothing — the same defect `verificationRequestKey` had.
  */
 export const moderationVerificationKeys = {
 	root: ["moderation", "verification"] as const,
 	queue: (queue: string, filters: { level?: number; signal?: string } = {}) =>
 		["moderation", "verification", "queue", queue, filters] as const,
 	detail: (id: string) => ["moderation", "verification", "detail", id] as const,
-	summary: ["moderation", "summary"] as const,
 };
 
 /**
- * True when `key` would be invalidated by `invalidateQueries({ queryKey:
- * prefix })` under TanStack Query's default `exact: false` matching: a
- * leading, element-wise match, `prefix` no longer than `key`.
+ * Mirrors TanStack Query's own `partialMatchKey` (`@tanstack/query-core`,
+ * `utils.ts`): recursive, structural, and driven by `prefix`'s keys rather
+ * than `key`'s — so a shorter `prefix` matches a leading slice of `key` (the
+ * ordinary invalidation case), and an object segment (a `filters` literal,
+ * for instance) matches another object with the same values regardless of
+ * reference, the way two independently-called `moderationVerificationKeys
+ * .queue("to_review", {})` do for TanStack's own deduping. A `===` compare
+ * here would silently disagree with what `invalidateQueries` actually does
+ * for any key carrying an object segment.
  */
 export function isKeyCoveredBy(
 	key: readonly unknown[],
 	prefix: readonly unknown[],
 ): boolean {
-	if (prefix.length > key.length) return false;
-	return prefix.every((segment, i) => segment === key[i]);
+	return partialMatchKey(key, prefix);
+}
+
+function partialMatchKey(a: unknown, b: unknown): boolean {
+	if (a === b) return true;
+	if (typeof a !== typeof b) return false;
+	if (a && b && typeof a === "object" && typeof b === "object") {
+		return Object.keys(b as Record<string, unknown>).every((k) =>
+			partialMatchKey(
+				(a as Record<string, unknown>)[k],
+				(b as Record<string, unknown>)[k],
+			),
+		);
+	}
+	return false;
 }

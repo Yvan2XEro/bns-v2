@@ -136,13 +136,15 @@ function DecisionForm({
 			});
 			onClose();
 		} catch (error) {
-			// The request may have moved on (someone else decided while this
-			// dialog was open) or this moderator may no longer act on it. Either
-			// way the server's refusal is shown as-is and the detail is
-			// refetched, rather than leaving the page insisting on a state the
-			// server has already moved past.
+			// The request may have moved on (someone else decided — or claimed —
+			// while this dialog was open) or this moderator may no longer act on
+			// it. Either way the server's refusal is shown as-is and both the
+			// detail and the queue are refetched (`root` covers both, the same
+			// invalidation `queue-row.tsx` uses on a lost claim race), rather than
+			// leaving the queue listing this request with a still-live Claim
+			// button until `staleTime` lapses.
 			void queryClient.invalidateQueries({
-				queryKey: moderationVerificationKeys.detail(requestId),
+				queryKey: moderationVerificationKeys.root,
 			});
 			form.setError("root", {
 				type: "server",

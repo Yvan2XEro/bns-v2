@@ -7,7 +7,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
-import { verificationKey, verificationRequestKey } from "~/lib/query-keys";
+import { verificationKey } from "~/lib/query-keys";
 import { apiDelete, apiGet, apiPost, apiPostForm } from "~/lib/shop-api";
 import type {
 	BusinessType,
@@ -16,7 +16,7 @@ import type {
 	ShopVerificationResponse,
 } from "~/lib/verification";
 
-export { verificationKey, verificationRequestKey };
+export { verificationKey };
 
 /**
  * The signed-in owner's view of their shop's verification: current level,
@@ -88,11 +88,8 @@ export function useStartKycSession(
 				},
 			),
 		retry: false,
-		onSuccess: (_result, { requestId }) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: verificationKey(shopId) });
-			void queryClient.invalidateQueries({
-				queryKey: verificationRequestKey(shopId, requestId),
-			});
 		},
 	});
 }
@@ -133,12 +130,9 @@ export function useSaveBusiness(
 					business,
 				),
 			retry: false,
-			onSuccess: (_result, { requestId }) => {
+			onSuccess: () => {
 				void queryClient.invalidateQueries({
 					queryKey: verificationKey(shopId),
-				});
-				void queryClient.invalidateQueries({
-					queryKey: verificationRequestKey(shopId, requestId),
 				});
 			},
 		},
@@ -184,11 +178,8 @@ export function useUploadVerificationDocument(
 			);
 		},
 		retry: false,
-		onSuccess: (_result, { requestId }) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: verificationKey(shopId) });
-			void queryClient.invalidateQueries({
-				queryKey: verificationRequestKey(shopId, requestId),
-			});
 		},
 	});
 }
@@ -209,11 +200,8 @@ export function useDeleteVerificationDocument(
 				`/api/verification-requests/${requestId}/documents/${docId}`,
 			),
 		retry: false,
-		onSuccess: (_result, { requestId }) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: verificationKey(shopId) });
-			void queryClient.invalidateQueries({
-				queryKey: verificationRequestKey(shopId, requestId),
-			});
 		},
 	});
 }
@@ -230,11 +218,8 @@ export function useSubmitVerification(
 				`/api/verification-requests/${requestId}/submit`,
 			),
 		retry: false,
-		onSuccess: (_result, requestId) => {
+		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: verificationKey(shopId) });
-			void queryClient.invalidateQueries({
-				queryKey: verificationRequestKey(shopId, requestId),
-			});
 		},
 	});
 }
