@@ -4,22 +4,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { PhoneInput } from "~/components/ui/phone-input";
 import { useUpdateShop } from "~/hooks/use-shop-settings";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { type ShopContactsValues, shopContactsSchema } from "~/lib/shop-form";
+import {
+	type ShopContactsValues,
+	shopContactsSchema,
+	toNullablePhone,
+} from "~/lib/shop-form";
 import type { MyShop } from "~/types";
 
 export function ContactsForm({ shop }: { shop: MyShop }) {
 	const t = useTranslations("ShopManage");
+	const tPhone = useTranslations("PhoneVerification");
 	const tRoot = useTranslations();
 	const router = useRouter();
 	const updateShop = useUpdateShop(shop.id);
 
-	const { formState, handleSubmit, register, setError } =
+	const { control, formState, handleSubmit, register, setError } =
 		useForm<ShopContactsValues>({
 			resolver: zodResolver(shopContactsSchema),
 			mode: "onChange",
@@ -34,8 +40,8 @@ export function ContactsForm({ shop }: { shop: MyShop }) {
 		try {
 			await updateShop.mutateAsync({
 				contact: {
-					phone: values.phone.trim() || null,
-					whatsapp: values.whatsapp.trim() || null,
+					phone: toNullablePhone(values.phone),
+					whatsapp: toNullablePhone(values.whatsapp),
 					email: values.email.trim() || null,
 				},
 			});
@@ -50,21 +56,43 @@ export function ContactsForm({ shop }: { shop: MyShop }) {
 			<p className="text-[#64748B] text-sm">{t("contactsHint")}</p>
 			<div className="space-y-1.5">
 				<Label htmlFor="contact-phone">{t("contactPhone")}</Label>
-				<Input
-					id="contact-phone"
-					type="tel"
-					placeholder="+237 6XX XX XX XX"
-					{...register("phone")}
+				<Controller
+					control={control}
+					name="phone"
+					render={({ field }) => (
+						<PhoneInput
+							id="contact-phone"
+							placeholder={tPhone("phonePlaceholder")}
+							aria-invalid={Boolean(formState.errors.phone)}
+							value={field.value}
+							onChange={field.onChange}
+							onBlur={field.onBlur}
+						/>
+					)}
 				/>
+				{formState.errors.phone && (
+					<p className="text-red-600 text-xs">{tPhone("phoneFormatInvalid")}</p>
+				)}
 			</div>
 			<div className="space-y-1.5">
 				<Label htmlFor="contact-whatsapp">{t("contactWhatsapp")}</Label>
-				<Input
-					id="contact-whatsapp"
-					type="tel"
-					placeholder="+237 6XX XX XX XX"
-					{...register("whatsapp")}
+				<Controller
+					control={control}
+					name="whatsapp"
+					render={({ field }) => (
+						<PhoneInput
+							id="contact-whatsapp"
+							placeholder={tPhone("phonePlaceholder")}
+							aria-invalid={Boolean(formState.errors.whatsapp)}
+							value={field.value}
+							onChange={field.onChange}
+							onBlur={field.onBlur}
+						/>
+					)}
 				/>
+				{formState.errors.whatsapp && (
+					<p className="text-red-600 text-xs">{tPhone("phoneFormatInvalid")}</p>
+				)}
 			</div>
 			<div className="space-y-1.5">
 				<Label htmlFor="contact-email">{t("contactEmail")}</Label>

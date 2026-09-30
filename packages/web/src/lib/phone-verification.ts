@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ERROR_CODES } from "./apiError";
+import { E164_PATTERN } from "./phone-input";
 
 /**
  * Derives a remaining-seconds count from an absolute server timestamp rather
@@ -21,14 +22,13 @@ export function formatCountdown(seconds: number): string {
 }
 
 /**
- * Matches `normalizePhoneNumber` in
- * `packages/api/src/services/phoneVerification.ts` exactly (`^\+[1-9]\d{7,14}$`).
- * `PhoneInput` only ever emits that shape or `""`, so this rejects nothing
- * the server would accept and accepts nothing the server would reject — a
- * malformed number is caught in the field, before any request.
+ * `PhoneInput` only ever emits `E164_PATTERN`'s shape or `""`, so this
+ * rejects nothing the server would accept and accepts nothing the server
+ * would reject — a malformed number is caught in the field, before any
+ * request.
  */
 export const phoneNumberSchema = z.object({
-	phone: z.string().regex(/^\+[1-9]\d{7,14}$/),
+	phone: z.string().regex(E164_PATTERN),
 });
 export type PhoneNumberValues = z.infer<typeof phoneNumberSchema>;
 

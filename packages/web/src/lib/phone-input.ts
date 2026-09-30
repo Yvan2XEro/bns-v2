@@ -4,6 +4,14 @@ import { type Country, parsePhoneNumber } from "react-phone-number-input";
 export const DEFAULT_PHONE_COUNTRY: Country = "CM";
 
 /**
+ * The one E.164 shape `PhoneInput` ever emits, and the only shape
+ * `normalizePhoneNumber` in `packages/api/src/services/phoneVerification.ts`
+ * accepts. Every schema behind a `PhoneInput` field validates against this
+ * same pattern rather than each defining its own.
+ */
+export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
+
+/**
  * The stored value, as `PhoneInput` should display it — and nothing more:
  * this never writes back. Numbers already on file predate the control and
  * are not normalized by the server, so they arrive in whatever shape an
