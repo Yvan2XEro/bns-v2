@@ -55,7 +55,7 @@ export function useStartKycSession(requestId: string | undefined) {
 		mutationFn: (input: { consentVersion: string; locale: "fr" | "en" }) =>
 			api.post<{ url: string; expiresAt: string }>(
 				`/api/verification-requests/${requestId}/kyc-session`,
-				input,
+				{ ...input, platform: "mobile" },
 			),
 	});
 }

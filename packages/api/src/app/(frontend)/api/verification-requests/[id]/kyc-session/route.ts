@@ -8,6 +8,7 @@ const paramsSchema = z.object({ id: z.string().trim().min(1) });
 const bodySchema = z.object({
 	consentVersion: z.string().trim().min(1),
 	locale: z.enum(["fr", "en"]),
+	platform: z.enum(["web", "mobile"]).optional(),
 });
 
 export async function POST(

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetShopLevelListeners } from "../../src/services/shops";
 import {
 	approveRequest,
@@ -11,9 +11,17 @@ import {
 	releaseRequest,
 	requestInfo,
 	revokeRequest,
+	startKycSession,
 	submitRequest,
 } from "../../src/services/verification";
 import { fakePayload } from "./helpers/fakePayload";
+
+// `startKycSession` calls the real Didit adapter (`lib/kyc/didit.ts`), so
+// the vendor is faked at the HTTP boundary the same way `kyc-didit.int.spec.ts`
+// pins the adapter itself.
+process.env.DIDIT_API_KEY = "key-test";
+process.env.DIDIT_WORKFLOW_ID = "wf-1";
+process.env.PUBLIC_WEB_URL = "https://buynsellem.com";
 
 const OWNER = { id: "u-1", role: "user", name: "Aïcha Mbappe" };
 const MOD = { id: "m-1", role: "moderator", name: "Grâce" };
@@ -228,6 +236,77 @@ describe("openRequest", () => {
 		await expect(openRequest(payload, OWNER, "s-1", 2)).rejects.toMatchObject({
 			code: "shop.inactive",
 		});
+	});
+});
+
+describe("startKycSession", () => {
+	const draftL2 = (over: Record<string, unknown> = {}) => ({
+		id: "vr-1",
+		shop: "s-1",
+		submittedBy: "u-1",
+		requestedLevel: 2,
+		status: "draft",
+		openKey: "s-1:2",
+		...over,
+	});
+
+	const stubDiditCreate = () => {
+		const fetchMock = vi.fn(
+			async () =>
+				new Response(
+					JSON.stringify({
+						session_id: "sess-1",
+						url: "https://verify.didit.me/s/sess-1",
+					}),
+					{ status: 201 },
+				),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+		return fetchMock;
+	};
+
+	const callbackOf = (fetchMock: ReturnType<typeof stubDiditCreate>) =>
+		JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)).callback as string;
+
+	it("sends a web seller to the web return page, with no app marker", async () => {
+		const payload = seed({ requests: [draftL2()] });
+		const fetchMock = stubDiditCreate();
+		await startKycSession(payload, OWNER, "vr-1", {
+			consentVersion: "kyc-2026-10-v1",
+			locale: "fr",
+			platform: "web",
+		});
+		expect(callbackOf(fetchMock)).toBe(
+			"https://buynsellem.com/seller/verification/identity/return?request=vr-1",
+		);
+		vi.unstubAllGlobals();
+	});
+
+	it("adds the app=1 marker for a mobile seller, so the web return page hands off to the app", async () => {
+		const payload = seed({ requests: [draftL2()] });
+		const fetchMock = stubDiditCreate();
+		await startKycSession(payload, OWNER, "vr-1", {
+			consentVersion: "kyc-2026-10-v1",
+			locale: "fr",
+			platform: "mobile",
+		});
+		expect(callbackOf(fetchMock)).toBe(
+			"https://buynsellem.com/seller/verification/identity/return?request=vr-1&app=1",
+		);
+		vi.unstubAllGlobals();
+	});
+
+	it("defaults to the web return page when the caller predates the platform field", async () => {
+		const payload = seed({ requests: [draftL2()] });
+		const fetchMock = stubDiditCreate();
+		await startKycSession(payload, OWNER, "vr-1", {
+			consentVersion: "kyc-2026-10-v1",
+			locale: "fr",
+		});
+		expect(callbackOf(fetchMock)).toBe(
+			"https://buynsellem.com/seller/verification/identity/return?request=vr-1",
+		);
+		vi.unstubAllGlobals();
 	});
 });
 

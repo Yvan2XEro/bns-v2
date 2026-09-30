@@ -1299,7 +1299,18 @@ export async function startKycSession(
 	payload: Payload,
 	actor: ServiceUser,
 	requestId: string,
-	input: { consentVersion: string; locale: "fr" | "en" },
+	input: {
+		consentVersion: string;
+		locale: "fr" | "en";
+		/**
+		 * The caller's own client. The vendor's `returnUrl` always resolves to
+		 * the web return page — Didit's `callback` must be an https URL — but a
+		 * mobile session needs that page to hand control back to the app, via
+		 * the `app=1` marker `return-client.tsx` reads before it does anything
+		 * else. Defaults to "web" for a caller that predates this field.
+		 */
+		platform?: "web" | "mobile";
+	},
 ): Promise<{ url: string; expiresAt: string }> {
 	return withTransaction(
 		payload,
@@ -1333,10 +1344,13 @@ export async function startKycSession(
 				throw error(ERROR_CODES.verificationTooManyAttempts, 429);
 			}
 
+			const returnUrl = `${process.env.PUBLIC_WEB_URL ?? ""}/seller/verification/identity/return?request=${request.id}${
+				input.platform === "mobile" ? "&app=1" : ""
+			}`;
 			const session = await getKycProvider(settings.kycProvider).createSession({
 				reference: `VR-${request.id}-${attempts}`,
 				locale: input.locale,
-				returnUrl: `${process.env.PUBLIC_WEB_URL ?? ""}/seller/verification/identity/return?request=${request.id}`,
+				returnUrl,
 			});
 
 			await req.payload.update({
