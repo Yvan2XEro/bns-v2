@@ -33,7 +33,10 @@ import {
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import { decisionSchema } from "@/src/lib/moderationVerification";
+import {
+	decisionSchema,
+	parseReasonCode,
+} from "@/src/lib/moderationVerification";
 import {
 	availableActions,
 	badgeForLevel,
@@ -106,13 +109,17 @@ export default function VerificationReviewScreen() {
 	function confirmDecision(result: DecisionResult) {
 		const action = state.activeAction;
 		if (!action || !request || !activeConfig) return;
+		// `DecisionSheet`'s picker only ever offers `activeConfig.reasons` as
+		// buttons, but nothing upstream of this point re-checks that: parse
+		// the choice against the same list before it ever reaches the network,
+		// rather than trusting it was already constrained (I3).
+		const reason = parseReasonCode(action, result.choice);
+		if (!reason.ok) return;
 		decide.mutate(
 			{
 				id: requestId,
 				action,
-				reasonCode: activeConfig.reasons
-					? (result.choice ?? undefined)
-					: undefined,
+				reasonCode: reason.reasonCode ?? undefined,
 				sellerMessage:
 					activeConfig.textKind === "sellerMessage" ? result.text : undefined,
 				note:

@@ -537,6 +537,17 @@ describe("decisions", () => {
 		).rejects.toMatchObject({ code: "moderation.reasonRequired" });
 	});
 
+	it("refuses a reject reason code outside REJECT_REASONS (I3)", async () => {
+		const payload = seed({ requests: claimed() });
+		await expect(
+			rejectRequest(payload, MOD, "vr-1", {
+				reasonCode: "fraud_suspcted", // typo of "fraud_suspected"
+				sellerMessage: "Not you.",
+			}),
+		).rejects.toMatchObject({ code: "moderation.reasonInvalid", status: 400 });
+		expect(requests(payload)[0].status).toBe("in_review");
+	});
+
 	it("moves to needs_info, then back to submitted on resubmission, stamping respondedAt", async () => {
 		const payload = seed({ requests: claimed() });
 		await requestInfo(payload, MOD, "vr-1", {
@@ -585,6 +596,14 @@ describe("decisions", () => {
 });
 
 describe("revoke and expiry cascades", () => {
+	it("refuses a revoke reason code outside REVOKE_REASONS (I3)", async () => {
+		const payload = seed({ requests: [approvedL2()] });
+		await expect(
+			revokeRequest(payload, MOD, "vr-2", { reasonCode: "frauud" }),
+		).rejects.toMatchObject({ code: "moderation.reasonInvalid", status: 400 });
+		expect(requests(payload)[0].status).toBe("approved");
+	});
+
 	it("revoking level 2 revokes an approved level 3 and drops the shop to 1", async () => {
 		const payload = seed({
 			requests: [approvedL2(), approvedL2({ id: "vr-3", requestedLevel: 3 })],

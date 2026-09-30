@@ -1426,6 +1426,7 @@
 			"rankTooLow": "Vous ne pouvez pas effectuer cette action sur ce compte.",
 			"targetNotFound": "Le contenu que vous essayez de modérer n'existe plus.",
 			"reasonRequired": "Un motif est requis.",
+			"reasonInvalid": "Ce motif n'est pas reconnu.",
 			"durationInvalid": "Cette durée de suspension n'est pas autorisée pour votre rôle.",
 			"invalidTransition": "Cet élément n'est pas dans un état permettant cette action."
 		},

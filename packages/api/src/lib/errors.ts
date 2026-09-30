@@ -72,6 +72,7 @@ export const ERROR_CODES = {
 	moderationRankTooLow: "moderation.rankTooLow",
 	moderationTargetNotFound: "moderation.targetNotFound",
 	moderationReasonRequired: "moderation.reasonRequired",
+	moderationReasonInvalid: "moderation.reasonInvalid",
 	moderationDurationInvalid: "moderation.durationInvalid",
 	moderationInvalidTransition: "moderation.invalidTransition",
 
@@ -183,6 +184,7 @@ const FALLBACKS: Record<ErrorCode, string> = {
 	[ERROR_CODES.moderationTargetNotFound]:
 		"The content you are trying to moderate no longer exists.",
 	[ERROR_CODES.moderationReasonRequired]: "A reason is required.",
+	[ERROR_CODES.moderationReasonInvalid]: "This reason is not recognised.",
 	[ERROR_CODES.moderationDurationInvalid]:
 		"This suspension length is not allowed for your role.",
 	[ERROR_CODES.moderationInvalidTransition]:

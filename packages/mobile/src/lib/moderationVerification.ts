@@ -8,6 +8,7 @@
  * here rather than shipping a code the server refuses.
  */
 
+import { z } from "zod";
 import type { ReviewSignalCode } from "../types/api";
 import type { ReviewerAction, StatusTone } from "./verification";
 
@@ -194,4 +195,29 @@ export function decisionSchema(action: ReviewerAction): DecisionFieldConfig {
 		case "release":
 			return { reasons: null, textRequired: false, textKind: null };
 	}
+}
+
+export type ReasonCodeResult =
+	| { ok: true; reasonCode: string | null }
+	| { ok: false };
+
+/**
+ * Parses a moderator's chosen reason code against the exact list this
+ * action allows, from `REASONS_BY_ACTION` — the same table `decisionSchema`
+ * built the sheet's picker from, never a second copy of it. `DecisionSheet`
+ * only offers those exact values as buttons, so this is normally a no-op;
+ * it exists so a value ever reaching `confirmDecision` any other way is
+ * still refused here rather than forwarded to a server that would refuse it
+ * for an unrelated reason (I3).
+ */
+export function parseReasonCode(
+	action: ReviewerAction,
+	choice: string | null | undefined,
+): ReasonCodeResult {
+	const allowed = REASONS_BY_ACTION[action];
+	if (!allowed || allowed.length === 0) return { ok: true, reasonCode: null };
+	const schema = z.enum(allowed as [string, ...string[]]);
+	const parsed = schema.safeParse(choice);
+	if (!parsed.success) return { ok: false };
+	return { ok: true, reasonCode: parsed.data };
 }

@@ -1425,6 +1425,7 @@
 			"rankTooLow": "You cannot take this action against this account.",
 			"targetNotFound": "The content you are trying to moderate no longer exists.",
 			"reasonRequired": "A reason is required.",
+			"reasonInvalid": "This reason is not recognised.",
 			"durationInvalid": "This suspension length is not allowed for your role.",
 			"invalidTransition": "This item is not in a state where that action applies."
 		},

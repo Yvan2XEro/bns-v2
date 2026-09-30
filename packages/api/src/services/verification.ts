@@ -1,7 +1,11 @@
 import type { Payload, PayloadRequest, Where } from "payload";
 import { canActOn, isAdmin } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
-import { LEVEL3_CHECKLIST_ITEMS } from "../collections/VerificationRequests";
+import {
+	LEVEL3_CHECKLIST_ITEMS,
+	REJECT_REASONS,
+	REVOKE_REASONS,
+} from "../collections/VerificationRequests";
 import { assertNotSuspended } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { getKycProvider } from "../lib/kyc";
@@ -1024,6 +1028,13 @@ export async function rejectRequest(
 	if (!reasonCode || !sellerMessage) {
 		throw error(ERROR_CODES.moderationReasonRequired, 400);
 	}
+	// `decision.reasonCode` is a free `text` field shared with `revokeRequest`
+	// (its two callers write from two different lists), so Payload's own
+	// field validation never checks it — this is the one place that does,
+	// from the collection's own exported list rather than a second copy of it.
+	if (!(REJECT_REASONS as readonly string[]).includes(reasonCode)) {
+		throw error(ERROR_CODES.moderationReasonInvalid, 400);
+	}
 
 	return withTransaction(
 		payload,
@@ -1087,6 +1098,9 @@ export async function revokeRequest(
 	const reasonCode = cleanText(input.reasonCode);
 	if (!reasonCode) {
 		throw error(ERROR_CODES.moderationReasonRequired, 400);
+	}
+	if (!(REVOKE_REASONS as readonly string[]).includes(reasonCode)) {
+		throw error(ERROR_CODES.moderationReasonInvalid, 400);
 	}
 
 	return withTransaction(

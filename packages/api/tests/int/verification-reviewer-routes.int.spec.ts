@@ -663,6 +663,37 @@ describe("POST /api/moderation/verification/{id}", () => {
 		expect(body.request).toMatchObject({ status: "rejected" });
 	});
 
+	it("refuses a reject reason code outside REJECT_REASONS (I3)", async () => {
+		const payload = seed({
+			requests: [
+				{
+					id: "vr-1",
+					shop: "s-1",
+					submittedBy: "u-1",
+					requestedLevel: 2,
+					status: "in_review",
+					assignee: "m-1",
+					claimedAt: NOW.toISOString(),
+					submittedAt: NOW.toISOString(),
+				},
+			],
+		});
+		authAs(payload, MOD);
+		const { POST } = await import(DETAIL_ROUTE);
+		const response = await POST(
+			detailPostRequest("vr-1", {
+				action: "reject",
+				reasonCode: "not_a_real_reason",
+				sellerMessage: "The document is not readable.",
+			}),
+			idParams("vr-1"),
+		);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			code: "moderation.reasonInvalid",
+		});
+	});
+
 	it("revokes an approved request", async () => {
 		const payload = seed({
 			requests: [
@@ -686,6 +717,32 @@ describe("POST /api/moderation/verification/{id}", () => {
 		expect(response.status).toBe(200);
 		const body = await response.json();
 		expect(body.request).toMatchObject({ status: "revoked" });
+	});
+
+	it("refuses a revoke reason code outside REVOKE_REASONS (I3)", async () => {
+		const payload = seed({
+			requests: [
+				{
+					id: "vr-1",
+					shop: "s-1",
+					submittedBy: "u-1",
+					requestedLevel: 2,
+					status: "approved",
+					approvedAt: "2026-01-01T00:00:00.000Z",
+					expiresAt: "2028-01-01T00:00:00.000Z",
+				},
+			],
+		});
+		authAs(payload, MOD);
+		const { POST } = await import(DETAIL_ROUTE);
+		const response = await POST(
+			detailPostRequest("vr-1", { action: "revoke", reasonCode: "fake" }),
+			idParams("vr-1"),
+		);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({
+			code: "moderation.reasonInvalid",
+		});
 	});
 
 	it("lets one of two simultaneous claims win with 409 for the other", async () => {
