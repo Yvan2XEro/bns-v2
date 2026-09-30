@@ -237,6 +237,9 @@ export interface User {
      */
     updatedAt?: string | null;
   };
+  /**
+   * Derived from identityVerifiedAt. Not stored.
+   */
   verified?: boolean | null;
   /**
    * Set when a level-2 request is approved, cleared on revoke or expiry. Written only by services/verification.ts.

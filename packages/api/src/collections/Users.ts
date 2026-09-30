@@ -30,6 +30,25 @@ function ensureAuthProviders(data: Record<string, unknown>) {
 	};
 }
 
+/**
+ * The person-level "Verified" badge is retired: badges belong to shops now.
+ * This survives only so released app versions, which read `user.verified`,
+ * show "Verified" for real identity verification instead of an admin's old
+ * tick — and nothing else.
+ *
+ * Derived from the stored `identityVerifiedAt` and nothing else, on purpose. A
+ * derivation that also asked "and is the owned shop still active?" would need
+ * one shop query per user document, on a collection whose `read` is `anyone`
+ * and which every listing populates: an N+1 across the whole public surface.
+ * The cost of not asking is narrow and known — an owner whose shop is
+ * suspended keeps a "Verified" badge in a released build until they update.
+ * Current clients read the badge from the shop's `capabilities`, where
+ * suspension is handled correctly.
+ */
+export function deriveVerified(doc: Record<string, unknown>): boolean {
+	return Boolean(doc.identityVerifiedAt);
+}
+
 const selfOrAdmin: Access = ({ req: { user } }) => {
 	if (!user) return false;
 	if ((user as { role?: string }).role === "admin") return true;
@@ -73,6 +92,7 @@ export const Users: CollectionConfig = {
 		beforeRead: [
 			({ doc }) => {
 				doc.phoneVerified = Boolean(doc.phoneVerifiedAt);
+				doc.verified = deriveVerified(doc);
 				return doc;
 			},
 		],
@@ -119,7 +139,6 @@ export const Users: CollectionConfig = {
 
 					if (!isAdmin && !isSeed) {
 						data.role = "user";
-						data.verified = undefined;
 						data.rating = undefined;
 						data.totalReviews = undefined;
 						// Same reason as `verified`: a public signup body is never the
@@ -136,7 +155,6 @@ export const Users: CollectionConfig = {
 					if (!isAdmin) {
 						data.email = originalDoc.email;
 						data.role = originalDoc?.role;
-						data.verified = originalDoc.verified;
 						if (!isRatingUpdate) {
 							data.rating = originalDoc?.rating;
 							data.totalReviews = originalDoc.totalReviews;
@@ -197,12 +215,13 @@ export const Users: CollectionConfig = {
 			},
 		],
 		afterChange: [
-			async ({ doc, operation, previousDoc }) => {
+			async ({ doc }) => {
 				if (!isNotificationProviderConfigured()) return;
 
 				try {
-					const { syncNotificationSubscriber, triggerNotificationEvent } =
-						await import("../hooks/notificationEvents");
+					const { syncNotificationSubscriber } = await import(
+						"../hooks/notificationEvents"
+					);
 
 					const avatarUrl =
 						typeof doc.avatar === "object" && doc.avatar?.url
@@ -215,20 +234,6 @@ export const Users: CollectionConfig = {
 						name: doc.name,
 						avatar: avatarUrl,
 					});
-
-					// Notify user when they become verified
-					if (
-						operation === "update" &&
-						doc.verified &&
-						previousDoc &&
-						!previousDoc.verified
-					) {
-						await triggerNotificationEvent({
-							event: "user-verified",
-							subscriberId: doc.id as string,
-							payload: { name: doc.name },
-						});
-					}
 				} catch (error) {
 					console.error("[notifications] Failed to sync subscriber:", error);
 				}
@@ -495,9 +500,11 @@ export const Users: CollectionConfig = {
 		{
 			name: "verified",
 			type: "checkbox",
-			defaultValue: false,
+			virtual: true,
 			admin: {
 				position: "sidebar",
+				readOnly: true,
+				description: "Derived from identityVerifiedAt. Not stored.",
 			},
 		},
 		{
