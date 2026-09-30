@@ -1,0 +1,27 @@
+{
+	"session_id": "ddt-session-declined-1",
+	"status": "Declined",
+	"vendor_data": "VR-vr-2-1",
+	"id_verification": {
+		"document_type": "Passport",
+		"issuing_state": "NGA",
+		"date_of_birth": "1985-11-02",
+		"expiration_date": "2028-06-30",
+		"first_name": "Chidi",
+		"last_name": "Okafor",
+		"nationality": "NGA",
+		"address": "45 Broad Street, Lagos",
+		"portrait_image": "base64-portrait-should-never-reach-our-database",
+		"document_front_image": "base64-front-should-never-reach-our-database"
+	},
+	"liveness": {
+		"status": "Declined",
+		"reference_image": "base64-liveness-frame-should-never-reach-our-database"
+	},
+	"face_match": {
+		"score": 0.41
+	},
+	"warnings": ["document_number_illegible", "face_match_below_threshold"],
+	"email": "chidi.okafor@example.com",
+	"phone_number": "+2348000000000"
+}
