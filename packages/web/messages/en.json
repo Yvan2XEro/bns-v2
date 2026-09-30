@@ -166,6 +166,7 @@
 		"shopCount": "{count, plural, =0 {No shops} one {# shop} other {# shops}}",
 		"shopCountIn": "{count, plural, =0 {No shops} one {# shop} other {# shops}} in {city}",
 		"shopSearchError": "Shop search is unavailable",
+		"listingSearchError": "Search is unavailable right now",
 		"noShopsTitle": "No shop found",
 		"noShopsBody": "Try another word or a wider city.",
 		"clearFilters": "Clear the filters",

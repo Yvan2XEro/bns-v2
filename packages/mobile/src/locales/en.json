@@ -1171,8 +1171,7 @@
 			"fieldsInvalid": "Please check the highlighted business details.",
 			"notAssignee": "Only the reviewer who claimed this request can decide it.",
 			"conflictOfInterest": "You cannot review a shop you are involved with.",
-			"checklistIncomplete": "Every checklist item must be confirmed before approving.",
-			"hashUnavailable": "Identity verification is misconfigured on our side. Please contact support."
+			"checklistIncomplete": "Every checklist item must be confirmed before approving."
 		}
 	},
 	"cityPicker": {
@@ -1210,9 +1209,6 @@
 		"forbiddenTitle": "Moderation is not available",
 		"forbiddenSubtitle": "Your account no longer has moderation access.",
 		"actionFailed": "Action failed",
-		"decisionChoiceRequired": "Choose a reason to continue.",
-		"decisionDurationRequired": "Choose a duration to continue.",
-		"decisionTextRequired": "This field cannot be left empty.",
 		"reviewListing": "Review listing",
 		"noPhotos": "No photos",
 		"openAccount": "View this account",
@@ -1398,6 +1394,7 @@
 		"verifDocumentKind_niu_certificate": "NIU certificate",
 		"verifDocumentKind_legal_representative_id": "Legal representative's ID",
 		"verifDocumentKind_mandate": "Mandate",
+		"verifDocumentKind_proof_of_address": "Proof of address",
 		"verifDocumentKind_other": "Other document",
 		"verifAction_claim": "Claim",
 		"verifAction_release": "Release",
@@ -1451,7 +1448,6 @@
 		"legalSectionTitle": "Legal identity",
 		"legalHint": "Editable until your business verification is approved.",
 		"legalLockedHint": "Your business identity is verified — start a new request to change it.",
-		"niuInvalid": "Enter 14 letters or digits, exactly as printed on your NIU certificate.",
 		"legalNone": "Not specified",
 		"increaseLevel": "Increase your level",
 		"notFoundTitle": "Shop not found",
