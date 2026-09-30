@@ -8,7 +8,6 @@ import {
 	requireModerator,
 } from "@/lib/moderationRoute";
 import { relationId } from "@/lib/relationId";
-import { ServiceError } from "@/lib/serviceError";
 import { canTransition } from "@/lib/verificationTransitions";
 import type { Shop, VerificationRequest } from "@/payload-types";
 import {
