@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { BusinessForm } from "~/components/verification/business-form";
 import { DocumentSlots } from "~/components/verification/document-slots";
+import { SubmitPanel } from "~/components/verification/submit-panel";
 import {
 	useDeleteVerificationDocument,
 	useShopVerification,
@@ -16,6 +17,7 @@ import { resolveErrorMessage } from "~/lib/apiError";
 import type { DocumentKind } from "~/lib/verification";
 import {
 	canSubmit,
+	isBusinessValid,
 	missingKinds,
 	requiredKinds,
 } from "~/lib/verification-business";
@@ -89,13 +91,15 @@ export function BusinessClient({ shopId }: { shopId: string }) {
 		},
 		request.documents,
 	);
-	const ready = canSubmit(
-		{
-			...business,
-			businessType: business.businessType ?? undefined,
-		},
-		request.documents,
-	);
+	// `business` is exactly what the server sends: an optional field that was
+	// never filled is `null`, not `""`. `businessSchema` parses that shape
+	// directly (see verification-business.ts), so it is passed through as-is.
+	const businessValues = {
+		...business,
+		businessType: business.businessType ?? undefined,
+	};
+	const formValid = isBusinessValid(businessValues);
+	const ready = canSubmit(businessValues, request.documents);
 
 	const handleUpload = (kind: DocumentKind, file: File) => {
 		patch({ uploadingKind: kind, actionError: null });
@@ -174,29 +178,15 @@ export function BusinessClient({ shopId }: { shopId: string }) {
 				</TabsContent>
 			</Tabs>
 
-			<div className="space-y-2 border-[#E2E8F0] border-t pt-4">
-				{!ready && missing.length > 0 && (
-					<p className="text-[#64748B] text-sm">
-						{t("documents.missing", {
-							kinds: missing
-								.map((kind) => t(`documentKind.${kind}`))
-								.join(", "),
-						})}
-					</p>
-				)}
-				{submit.isError && (
-					<p role="alert" className="text-red-600 text-sm">
-						{resolveErrorMessage(submit.error, tRoot)}
-					</p>
-				)}
-				<Button
-					type="button"
-					disabled={!ready || submit.isPending}
-					onClick={handleSubmit}
-				>
-					{submit.isPending ? t("documents.submitting") : t("documents.submit")}
-				</Button>
-			</div>
+			<SubmitPanel
+				ready={ready}
+				formValid={formValid}
+				missing={missing}
+				isSubmitting={submit.isPending}
+				submitError={submit.isError ? submit.error : null}
+				onSubmit={handleSubmit}
+				onReviewBusiness={() => patch({ step: "form" })}
+			/>
 		</div>
 	);
 }

@@ -1645,6 +1645,8 @@
 			"uploading": "Envoi en cours…",
 			"dropHint": "Déposez un fichier ici, ou cliquez pour en choisir un",
 			"missing": "Encore manquant : {kinds}",
+			"incompleteBusiness": "Certaines informations sur l'entreprise sont manquantes ou invalides. Vérifiez l'onglet des informations sur l'entreprise avant de soumettre.",
+			"reviewBusiness": "Vérifier les informations sur l'entreprise",
 			"submit": "Soumettre pour vérification",
 			"submitting": "Envoi en cours…"
 		},

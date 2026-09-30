@@ -1644,6 +1644,8 @@
 			"uploading": "Uploading…",
 			"dropHint": "Drag a file here, or click to choose one",
 			"missing": "Still missing: {kinds}",
+			"incompleteBusiness": "Some business details are missing or invalid. Review the business details tab before submitting.",
+			"reviewBusiness": "Review business details",
 			"submit": "Submit for review",
 			"submitting": "Submitting…"
 		},

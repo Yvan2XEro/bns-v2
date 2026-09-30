@@ -22,6 +22,18 @@ const base = {
 	legalRepresentativeIsOwner: true,
 };
 
+/** What `request.business` actually looks like coming back from
+ * `lib/verificationView.ts`: a controlled input never holds `null`, but the
+ * server returns an unfilled optional field as `null`, not `""` — and the
+ * registration number the chosen business type does not use is always
+ * unfilled. `canSubmit` and `businessSchema` must parse this shape directly,
+ * since `business-client.tsx` feeds it in as-is. */
+const serverBusiness = {
+	...base,
+	tradeName: null,
+	entreprenantDeclarationNumber: null,
+};
+
 describe("businessSchema", () => {
 	it("accepts a complete company", () => {
 		expect(businessSchema.safeParse(base).success).toBe(true);
@@ -111,22 +123,37 @@ describe("document requirements", () => {
 	});
 
 	it("names what is still missing and gates submit on it", () => {
-		expect(missingKinds(base, [{ kind: "rccm_extract" }])).toEqual([
+		expect(missingKinds(serverBusiness, [{ kind: "rccm_extract" }])).toEqual([
 			"niu_certificate",
 		]);
-		expect(canSubmit(base, [{ kind: "rccm_extract" }])).toBe(false);
+		expect(canSubmit(serverBusiness, [{ kind: "rccm_extract" }])).toBe(false);
 		expect(
-			canSubmit(base, [{ kind: "rccm_extract" }, { kind: "niu_certificate" }]),
+			canSubmit(serverBusiness, [
+				{ kind: "rccm_extract" },
+				{ kind: "niu_certificate" },
+			]),
 		).toBe(true);
 	});
 
 	it("does not let an invalid form submit even with every document present", () => {
 		expect(
-			canSubmit({ ...base, legalName: "" }, [
+			canSubmit({ ...serverBusiness, legalName: "" }, [
 				{ kind: "rccm_extract" },
 				{ kind: "niu_certificate" },
 			]),
 		).toBe(false);
+	});
+
+	it("I1: submits with a null tradeName and a null unused registration number — the normal shape the server sends", () => {
+		// A seller who picks "company" and never types a trade name, leaving the
+		// entreprenant declaration number untouched, is the ordinary case. Both
+		// fields come back from the server as `null`, never `""`.
+		expect(
+			canSubmit(serverBusiness, [
+				{ kind: "rccm_extract" },
+				{ kind: "niu_certificate" },
+			]),
+		).toBe(true);
 	});
 });
 

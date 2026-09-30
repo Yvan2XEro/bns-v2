@@ -11,7 +11,10 @@ import type { BusinessType, DocumentKind } from "./verification";
  * absent registration number as `null`/`undefined`. `businessSchema` below
  * treats an empty string the same way the server treats a missing value —
  * "not provided" — everywhere else the two accept and refuse the exact same
- * strings.
+ * strings. It stays a plain string schema (no `.nullable()`/`.preprocess()`)
+ * so `zodResolver(businessSchema)` keeps a `string`-typed `BusinessFormValues`
+ * for `useForm` — `canSubmit` below is the one place a `null` from the
+ * server needs converting to `""` before this schema ever sees it.
  */
 export const BUSINESS_TYPES = [
 	"entreprenant",
@@ -102,6 +105,33 @@ export function missingKinds(
 	).filter((kind) => !present.has(kind));
 }
 
+const NULLABLE_STRING_FIELDS = [
+	"tradeName",
+	"rccmNumber",
+	"entreprenantDeclarationNumber",
+] as const;
+
+/**
+ * The server's `business` field the exact way `lib/verificationView.ts`
+ * returns it: `tradeName` and exactly one of the two registration numbers
+ * are `null` until the seller fills them in — never `""`, which is only a
+ * controlled input's "nothing typed yet". `businessSchema` requires plain
+ * strings (so `zodResolver` keeps `BusinessFormValues` string-typed for
+ * `useForm`), so this converts `null`/`undefined` to `""` before parsing —
+ * the one place that conversion needs to happen, since every other caller
+ * comes from a form that already only ever holds strings.
+ */
+function withEmptyForUnset(values: unknown): unknown {
+	if (!values || typeof values !== "object") return values;
+	const next: Record<string, unknown> = {
+		...(values as Record<string, unknown>),
+	};
+	for (const field of NULLABLE_STRING_FIELDS) {
+		if (next[field] == null) next[field] = "";
+	}
+	return next;
+}
+
 /**
  * Gates the Submit button: the form must parse, and every required document
  * for the chosen business type must be present. `values` is `unknown`
@@ -112,9 +142,19 @@ export function canSubmit(
 	values: unknown,
 	documents: { kind: DocumentKind | string }[],
 ): boolean {
-	const parsed = businessSchema.safeParse(values);
+	const parsed = businessSchema.safeParse(withEmptyForUnset(values));
 	if (!parsed.success) return false;
 	return missingKinds(parsed.data, documents).length === 0;
+}
+
+/**
+ * Whether the business form itself is complete and valid, independent of
+ * documents — what `canSubmit` also checks, split out so a caller can tell
+ * "the form is invalid" apart from "documents are missing" and say which one
+ * blocks the Submit button, rather than disabling it with no explanation.
+ */
+export function isBusinessValid(values: unknown): boolean {
+	return businessSchema.safeParse(withEmptyForUnset(values)).success;
 }
 
 /** Collapses runs of whitespace to a single space and uppercases — the same
