@@ -4,14 +4,6 @@ import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { getKycProvider } from "@/lib/kyc";
 import { recordWebhookEvent } from "@/services/webhookEvents";
 
-function safeJson(rawBody: string): unknown {
-	try {
-		return JSON.parse(rawBody);
-	} catch {
-		return null;
-	}
-}
-
 /**
  * Verifies, stores and queues a vendor KYC event, following P0's
  * `handlePaymentWebhook`'s four steps: verify the signature, store the event
@@ -52,7 +44,12 @@ export async function POST(
 				reference: event.sessionRef,
 				providerTransactionId: event.sessionRef,
 			},
-			raw: safeJson(rawBody),
+			// The verified subset only, never the vendor's raw wire body: `event`
+			// is exactly what `verifyWebhook` parsed and checked the signature
+			// over (a session id, a status, an event id for didit), so this is
+			// what `webhook-events.raw` actually holds for a KYC provider, unlike
+			// the arbitrary body a payment provider's webhook stores.
+			raw: event,
 			rawBody,
 		});
 	} catch (error) {

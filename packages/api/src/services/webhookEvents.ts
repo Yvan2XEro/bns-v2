@@ -114,9 +114,14 @@ export async function recordWebhookEvent(
 	//
 	// A non-payment vendor never resolves to a payment intent and its body was
 	// never shaped for `retainedWebhookRaw`'s payment parsers, so it is kept
-	// as verified instead of run through them: `didit`'s webhook body carries
-	// only a session id, a status and an event id (`lib/kyc/didit.ts`'s
+	// as verified instead of run through them: the webhook route (not this
+	// function) passes only what `verifyWebhook` itself parsed and checked the
+	// signature over as `input.raw`, so `didit`'s stored body carries only a
+	// session id, a status and an event id (`lib/kyc/didit.ts`'s
 	// `diditWebhookEventSchema`), never a document number or a birth date.
+	// Those rows are removed outright when the account behind them is deleted
+	// (`lib/verificationRetention.ts`'s `deleteDiditWebhookEvents`), unlike a
+	// payment record, which the law requires kept.
 	const intent = isPaymentProvider(input.provider)
 		? await intentFor(payload, input.event)
 		: null;

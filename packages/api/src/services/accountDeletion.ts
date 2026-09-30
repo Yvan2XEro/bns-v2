@@ -427,19 +427,19 @@ async function runDeletionCascade(
 	// rolls back with the rest of the cascade.
 	const { closeOwnedShops } = await import("./shopListings");
 	const { purgeDocumentFiles } = await import("./verificationDocuments");
-	const { clearKycNames, deleteOpenRequests } = await import(
-		"../lib/verificationRetention"
-	);
+	const { clearKycNames, deleteDiditWebhookEvents, deleteOpenRequests } =
+		await import("../lib/verificationRetention");
 
+	// Every shop this account ever owned, whatever its status: a shop the
+	// seller had already closed still has identity documents in the private
+	// bucket and can still carry an open request nobody will ever answer now.
+	// `closeOwnedShops` below runs its own active/suspended query, so scoping
+	// this one to "still open" would only leave a closed shop's own documents
+	// behind.
 	const ownedShopIds = await findAllIds(
 		payload,
 		"shops",
-		{
-			and: [
-				{ owner: { equals: userId } },
-				{ status: { in: ["active", "suspended"] } },
-			],
-		},
+		{ owner: { equals: userId } },
 		req,
 	);
 
@@ -448,13 +448,24 @@ async function runDeletionCascade(
 	// rows stay, stripped of names, for the fraud-prevention hash window —
 	// otherwise deleting an account would erase the record that its document
 	// was ever used, which is the one thing duplicate detection exists for.
-	await purgeDocumentFiles(
+	//
+	// Guarded exactly like `findOwnedMediaIds` above: `{ shop: { in: [] } }` is
+	// not reliably an empty match across adapters, and a match-all here would
+	// purge every verification document in the database.
+	if (ownedShopIds.length > 0) {
+		await purgeDocumentFiles(
+			payload as unknown as import("payload").Payload,
+			{ shop: { in: ownedShopIds } },
+			new Date(),
+			req as unknown as import("payload").PayloadRequest,
+		);
+	}
+	await clearKycNames(
 		payload as unknown as import("payload").Payload,
-		{ shop: { in: ownedShopIds } },
-		new Date(),
+		userId,
 		req as unknown as import("payload").PayloadRequest,
 	);
-	await clearKycNames(
+	await deleteDiditWebhookEvents(
 		payload as unknown as import("payload").Payload,
 		userId,
 		req as unknown as import("payload").PayloadRequest,

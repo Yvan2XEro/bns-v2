@@ -762,6 +762,9 @@ describe("verification data on account deletion", () => {
 		const payload = world();
 		payload.store.shops = [
 			{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+			// A shop the seller had already closed before deleting the account:
+			// I7's exact gap — excluded from the old, active/suspended-only scope.
+			{ id: "s-2", handle: "closed-shop", status: "closed", owner: "u-1" },
 		];
 		payload.store["verification-requests"] = [
 			{
@@ -784,6 +787,47 @@ describe("verification data on account deletion", () => {
 				status: "draft",
 				openKey: "s-1:3",
 			},
+			{
+				id: "vr-closed-shop",
+				shop: "s-2",
+				submittedBy: "u-1",
+				requestedLevel: 2,
+				status: "rejected",
+				kyc: { provider: "didit", sessionRef: "sess-closed" },
+			},
+		];
+		payload.store["verification-documents"] = [
+			{
+				id: "vd-open",
+				request: "vr-open",
+				shop: "s-1",
+				kind: "rccm_extract",
+				filename: "open.pdf",
+				sha256: "h-open",
+			},
+			{
+				id: "vd-closed",
+				request: "vr-closed-shop",
+				shop: "s-2",
+				kind: "rccm_extract",
+				filename: "closed.pdf",
+				sha256: "h-closed",
+			},
+		];
+		payload.store["webhook-events"] = [
+			{
+				id: "we-didit-1",
+				provider: "didit",
+				providerEventId: "evt-didit-1",
+				reference: "sess-closed",
+				providerReference: "sess-closed",
+				payloadHash: "hash-didit-1",
+				raw: {
+					providerEventId: "evt-didit-1",
+					type: "Approved",
+					sessionRef: "sess-closed",
+				},
+			},
 		];
 		return payload;
 	}
@@ -804,5 +848,60 @@ describe("verification data on account deletion", () => {
 		expect(
 			payload.store["verification-requests"].some((r) => r.id === "vr-open"),
 		).toBe(false);
+	});
+
+	it("purges a closed shop's documents too, not only an active shop's (I7)", async () => {
+		const payload = ownedShopWorldWithRequests();
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+
+		const closedDoc = payload.store["verification-documents"].find(
+			(d) => d.id === "vd-closed",
+		);
+		expect(closedDoc).toMatchObject({ filename: null });
+		expect(closedDoc?.purgedAt).toBeTruthy();
+	});
+
+	it("deletes an open request's own documents instead of orphaning them (I7)", async () => {
+		const payload = ownedShopWorldWithRequests();
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+
+		expect(
+			payload.store["verification-documents"].some((d) => d.id === "vd-open"),
+		).toBe(false);
+	});
+
+	it("removes the didit webhook-events row tied to the deleted account (I6)", async () => {
+		const payload = ownedShopWorldWithRequests();
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+
+		expect(
+			payload.store["webhook-events"].some((e) => e.id === "we-didit-1"),
+		).toBe(false);
+	});
+
+	it("touches no other seller's documents when the deleted account owns no shop", async () => {
+		const payload = world();
+		payload.store.shops = [
+			{ id: "s-other", handle: "other", status: "active", owner: "u-2" },
+		];
+		payload.store["verification-documents"] = [
+			{
+				id: "vd-other",
+				request: "vr-other",
+				shop: "s-other",
+				kind: "rccm_extract",
+				filename: "other.pdf",
+				sha256: "h-other",
+			},
+		];
+
+		await deleteUserRelatedData(payload as never, { id: "u-1" });
+
+		expect(payload.store["verification-documents"][0]).toMatchObject({
+			filename: "other.pdf",
+		});
 	});
 });
