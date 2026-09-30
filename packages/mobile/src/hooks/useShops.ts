@@ -9,6 +9,7 @@ import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type {
 	AttachResponse,
+	BusinessType,
 	CatalogueFilter,
 	CatalogueResponse,
 	HandleAvailability,
@@ -34,6 +35,7 @@ export const shopKeys = {
 	all: ["shops"] as const,
 	mine: ["shops", "mine"] as const,
 	public: (handle: string) => ["shops", "public", handle] as const,
+	byOwner: (userId: string) => ["shops", "by-owner", userId] as const,
 	handle: (handle: string) => ["shops", "handle", handle] as const,
 	listings: (shopId: string) => ["shops", shopId, "listings"] as const,
 	catalogueRoot: (shopId: string) => ["shops", shopId, "catalogue"] as const,
@@ -89,6 +91,33 @@ export function usePublicShop(handle: string | undefined) {
 		enabled: Boolean(handle),
 		retry: (count, error) =>
 			!(error instanceof ApiError && error.status === 404) && count < 2,
+	});
+}
+
+/**
+ * The public profile page needs a stranger's shop badge, not just their
+ * personal stats — there is no by-owner endpoint, so this looks the shop up
+ * by owner (the same anonymous-readable `status: active` filter every other
+ * public shop read uses) and then re-fetches it through the public shop
+ * route so the badge is the server's computed one, never `badgeForLevel`
+ * over a raw `level`. Most profiles own no shop, so this is one request; an
+ * owner's profile is two, both cached under the same key.
+ */
+export function useUserShop(userId: string | undefined) {
+	return useQuery({
+		queryKey: shopKeys.byOwner(userId ?? ""),
+		queryFn: async () => {
+			const page = await api.get<PayloadPage<{ handle: string }>>(
+				`/api/shops?where[owner][equals]=${encodeURIComponent(userId ?? "")}&where[status][equals]=active&limit=1&depth=0`,
+			);
+			const handle = page.docs[0]?.handle;
+			if (!handle) return null;
+			const res = await api.get<PublicShopResponse>(
+				`/api/public/shops/${encodeURIComponent(handle)}`,
+			);
+			return "shop" in res ? res.shop : null;
+		},
+		enabled: Boolean(userId),
 	});
 }
 
@@ -163,6 +192,13 @@ export interface ShopPatch {
 		countryCode?: string | null;
 	};
 	categories?: string[];
+	/** Server rejects it silently at level 3 (`Shops.ts`'s `beforeChange`) — the form only mirrors that. */
+	legal?: {
+		businessType: BusinessType | null;
+		legalName: string | null;
+		rccmNumber: string | null;
+		niu: string | null;
+	};
 }
 
 export function useUpdateShop(shopId: string | undefined) {

@@ -92,6 +92,8 @@ export default function SearchScreen() {
 		}
 	}
 
+	const verifiedOnly = params.verified === "1";
+
 	const activeFilterCount = [
 		params.category,
 		params.minPrice,
@@ -99,6 +101,7 @@ export default function SearchScreen() {
 		params.conditions,
 		params.tags,
 		params.location,
+		verifiedOnly,
 		...Object.values(attrParams),
 	].filter(Boolean).length;
 
@@ -114,10 +117,15 @@ export default function SearchScreen() {
 				tags: (params.tags as string) ?? "",
 				location: (params.location as string) ?? "",
 				radius: (params.radius as string) ?? "",
+				verified: (params.verified as string) ?? "",
 				...attrParams,
 			},
 		});
 
+	// `minShopLevel` is the API's own floor — this only forwards the choice,
+	// it never re-filters the results client-side (the route re-applies the
+	// same floor after hydrating live shop data, since an indexed level can
+	// be stale).
 	const searchParams: Record<string, string> = {
 		sort,
 		...(debouncedQuery ? { q: debouncedQuery } : {}),
@@ -130,6 +138,7 @@ export default function SearchScreen() {
 		...(params.location && params.radius
 			? { radius: params.radius as string }
 			: {}),
+		...(verifiedOnly ? { minShopLevel: "2" } : {}),
 		...attrParams,
 	};
 	const queryString = Object.entries(searchParams)
@@ -143,6 +152,7 @@ export default function SearchScreen() {
 		...(debouncedQuery ? { q: debouncedQuery } : {}),
 		...(params.location ? { city: params.location as string } : {}),
 		...(params.category ? { category: params.category as string } : {}),
+		...(verifiedOnly ? { minShopLevel: "2" } : {}),
 	};
 	// shopsEnabled gates *creating* a shop only — an existing shop stays
 	// publicly findable with the flag off, so the segment and its count are

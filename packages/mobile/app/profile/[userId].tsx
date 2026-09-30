@@ -23,10 +23,12 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { ReviewStars } from "@/src/components/ReviewStars";
+import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
+import { useUserShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
@@ -46,6 +48,9 @@ export default function PublicProfileScreen() {
 	const { favoriteIds, toggleFavorite } = useFavoriteActions();
 	const { isBlocked, blockId } = useIsBlocked(userId);
 	const { block, unblock } = useToggleBlock();
+	// Most profiles own no shop — this stays null and the card renders exactly
+	// as it did before shop badges existed.
+	const { data: userShop } = useUserShop(userId);
 
 	function confirmToggleBlock() {
 		if (!user) {
@@ -243,19 +248,7 @@ export default function PublicProfileScreen() {
 						<Text style={[styles.name, { color: textColor }]}>
 							{profile?.name}
 						</Text>
-						{profile?.verified && (
-							<View
-								style={[
-									styles.verifiedBadge,
-									{ backgroundColor: primaryColor },
-								]}
-							>
-								<Ionicons name="checkmark" size={11} color="#fff" />
-								<Text style={styles.verifiedText}>
-									{t("profile.verifiedBadge")}
-								</Text>
-							</View>
-						)}
+						{userShop ? <LevelBadge badge={userShop.badge} size="sm" /> : null}
 					</View>
 
 					<ReviewStars

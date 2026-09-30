@@ -77,6 +77,7 @@ export default function FiltersModal() {
 	const [selectedTags, setSelectedTags] = useState<string[]>(
 		rawParams.tags ? (rawParams.tags as string).split(",").filter(Boolean) : [],
 	);
+	const [verifiedOnly, setVerifiedOnly] = useState(rawParams.verified === "1");
 
 	const { data: tagsData } = useQuery({
 		queryKey: ["tags"],
@@ -146,6 +147,7 @@ export default function FiltersModal() {
 		if (selectedConditions.length)
 			filterParams.conditions = selectedConditions.join(",");
 		if (selectedTags.length) filterParams.tags = selectedTags.join(",");
+		if (verifiedOnly) filterParams.verified = "1";
 		if (location) filterParams.location = location;
 		if (location) filterParams.radius = String(radius);
 		if (location && locationLat != null) filterParams.lat = String(locationLat);
@@ -170,6 +172,7 @@ export default function FiltersModal() {
 		setLocation("");
 		setRadius(10);
 		setAttributeFilters({});
+		setVerifiedOnly(false);
 	};
 
 	const activeCount = [
@@ -179,6 +182,7 @@ export default function FiltersModal() {
 		selectedConditions.length > 0,
 		selectedTags.length > 0,
 		location,
+		verifiedOnly,
 		...Object.values(attributeFilters).filter(Boolean),
 	].filter(Boolean).length;
 
@@ -310,6 +314,38 @@ export default function FiltersModal() {
 						);
 					})}
 				</View>
+
+				{/* ── Vendeurs vérifiés ── */}
+				<Pressable
+					onPress={() => setVerifiedOnly((prev) => !prev)}
+					accessibilityRole="switch"
+					accessibilityState={{ checked: verifiedOnly }}
+					accessibilityLabel={t("filters.verified")}
+					style={[
+						styles.verifiedRow,
+						{
+							backgroundColor: verifiedOnly ? primaryColor : cardBg,
+							borderColor: verifiedOnly ? primaryColor : borderColor,
+						},
+					]}
+				>
+					<Ionicons
+						name="shield-checkmark"
+						size={18}
+						color={verifiedOnly ? "#fff" : mutedColor}
+					/>
+					<Text
+						style={[
+							styles.verifiedText,
+							{ color: verifiedOnly ? "#fff" : textColor },
+						]}
+					>
+						{t("filters.verified")}
+					</Text>
+					{verifiedOnly && (
+						<Ionicons name="checkmark-circle" size={18} color="#fff" />
+					)}
+				</Pressable>
 
 				{/* ── Tags ── */}
 				{availableTags.length > 0 && (
@@ -577,6 +613,19 @@ const styles = StyleSheet.create({
 
 	// Condition grid
 	conditionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+
+	// Verified-only toggle
+	verifiedRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		minHeight: 44,
+		borderRadius: 12,
+		borderWidth: 1,
+		paddingHorizontal: 14,
+		paddingVertical: 12,
+	},
+	verifiedText: { flex: 1, fontSize: 14, fontFamily: Fonts.bodySemibold },
 
 	// Inputs texte
 	textInput: {

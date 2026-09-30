@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { LegalBlock } from "@/src/components/shop/LegalBlock";
 import { ShopHeader } from "@/src/components/shop/ShopHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -134,6 +135,7 @@ export default function ShopScreen() {
 				ListHeaderComponent={
 					<View style={{ gap: 16, marginBottom: 4 }}>
 						<ShopHeader shop={shop} onShare={share} />
+						<LegalBlock legal={shop.legal} />
 						<Text style={[styles.section, { color: c.text }]}>
 							{t("shop.listingsTitle", { count: shop.publishedListingCount })}
 						</Text>

@@ -675,13 +675,6 @@ export default function ListingDetail() {
 										<Text style={[styles.sellerName, { color: textColor }]}>
 											{seller.name}
 										</Text>
-										{seller.verified && (
-											<Ionicons
-												name="checkmark-circle"
-												size={16}
-												color={primaryColor}
-											/>
-										)}
 									</View>
 									<ReviewStars
 										rating={seller.rating ?? 0}

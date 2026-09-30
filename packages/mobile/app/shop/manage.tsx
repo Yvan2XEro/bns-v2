@@ -7,6 +7,7 @@ import { formStyles as f } from "@/src/components/seller/formStyles";
 import { ShopAddressCard } from "@/src/components/shop/manage/ShopAddressCard";
 import { ShopBrandingCard } from "@/src/components/shop/manage/ShopBrandingCard";
 import { ShopCloseCard } from "@/src/components/shop/manage/ShopCloseCard";
+import { ShopLegalCard } from "@/src/components/shop/manage/ShopLegalCard";
 import { ShopProfileCard } from "@/src/components/shop/manage/ShopProfileCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -49,6 +50,7 @@ export default function ShopSettingsScreen() {
 					role={data?.role ?? null}
 					readOnly={readOnly}
 				/>
+				<ShopLegalCard shop={shop} />
 
 				<Pressable
 					onPress={() => router.push("/shop/move-listings" as never)}

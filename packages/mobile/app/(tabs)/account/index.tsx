@@ -24,7 +24,6 @@ import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
-import { badgeForLevel } from "@/src/lib/verification";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
@@ -232,11 +231,6 @@ export default function AccountScreen() {
 									</Text>
 								</View>
 							)}
-							{user.verified && (
-								<View style={styles.verifiedBadge}>
-									<Ionicons name="checkmark-circle" size={18} color="#3b82f6" />
-								</View>
-							)}
 						</View>
 
 						{/* Info */}
@@ -343,10 +337,7 @@ export default function AccountScreen() {
 										iconBg={isDark ? "#172554" : "#dbeafe"}
 										iconColor={primaryColor}
 										rightElement={
-											<LevelBadge
-												badge={badgeForLevel(ownShop.level)}
-												size="sm"
-											/>
+											<LevelBadge badge={ownShop.badge} size="sm" />
 										}
 										onPress={() => router.push("/seller" as never)}
 										isDark={isDark}

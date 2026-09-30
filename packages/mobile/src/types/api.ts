@@ -494,6 +494,7 @@ export interface SuspensionSummary {
 export interface ModerationSummary {
 	pendingListings: number;
 	pendingReports: number;
+	pendingVerifications: number;
 	total: number;
 }
 
@@ -588,6 +589,21 @@ export type MovementType =
 	| "release";
 export type ManualMovementType = "receipt" | "adjustment" | "loss" | "return";
 
+/**
+ * The `legal` group as declared by the shop (below level 3) or reviewed and
+ * pinned by a reviewer (at level 3) — mirrors `PublicShopLegal` in
+ * `packages/api/src/lib/publicShop.ts`. `verifiedAt` is what tells
+ * `legalIsVerified` "declared" from "verified"; never inferred from which
+ * other fields happen to be set.
+ */
+export interface ShopLegal {
+	businessType: BusinessType | null;
+	legalName: string | null;
+	rccmNumber: string | null;
+	niu: string | null;
+	verifiedAt: string | null;
+}
+
 /** GET /api/public/shops/:handle → `{ shop }` */
 export interface PublicShop {
 	id: string;
@@ -609,6 +625,9 @@ export interface PublicShop {
 	};
 	categories: { id: string; name: string; slug: string }[];
 	level: number;
+	/** Server-computed, expiry-aware — never re-derived from `level` with `badgeForLevel`. */
+	badge: BadgeLevel | null;
+	legal: ShopLegal | null;
 	publishedListingCount: number;
 	createdAt: string;
 	owner: {
@@ -627,6 +646,8 @@ export interface MyShop extends PublicShop {
 	status: ShopStatus;
 	handleChangedAt: string | null;
 	nextHandleChangeAt: string | null;
+	/** Absent from the public shape — a visitor reads only `level` and `badge`. */
+	capabilities: ShopCapabilities;
 	suspension: {
 		active: boolean;
 		indefinite: boolean;
@@ -661,6 +682,8 @@ export interface ShopSearchHit {
 	description: string | null;
 	city: string | null;
 	level: number;
+	/** Server-computed, expiry-aware — never re-derived from `level` with `badgeForLevel`. */
+	badge: BadgeLevel | null;
 	publishedListingCount: number;
 	logoUrl: string | null;
 	ownerRating: number;

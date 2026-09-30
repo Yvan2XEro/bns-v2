@@ -17,8 +17,10 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
@@ -39,6 +41,8 @@ export default function EditProfileScreen() {
 	const { user, refreshUser } = useAuth();
 	const { showSuccess, showError, showAlert } = useAlert();
 	const { t } = useTranslation();
+	const { data: myShop } = useMyShop();
+	const ownShop = myShop?.shop ?? null;
 
 	const [name, setName] = useState(user?.name ?? "");
 	const [bio, setBio] = useState(user?.bio ?? "");
@@ -239,24 +243,14 @@ export default function EditProfileScreen() {
 					</Pressable>
 				</View>
 
-				{/* Verification banner */}
-				{user?.verified ? (
-					<View
-						style={[
-							styles.banner,
-							{
-								backgroundColor: isDark ? "#0f2a1a" : "#f0fdf4",
-								borderColor: "#16a34a",
-							},
-						]}
-					>
-						<Ionicons name="checkmark-circle" size={18} color="#16a34a" />
-						<Text style={[styles.bannerText, { color: "#16a34a" }]}>
-							{t("profile.verifiedBanner")}
-						</Text>
-					</View>
-				) : (
-					<View
+				{/* Shop verification — an owner sees their badge and a way to raise
+				    it; a visitor with no shop sees nothing, same as before shops
+				    carried badges. */}
+				{ownShop ? (
+					<Pressable
+						onPress={() => router.push("/seller/verification" as never)}
+						accessibilityRole="button"
+						accessibilityLabel={t("shop.increaseLevel")}
 						style={[
 							styles.banner,
 							{
@@ -265,16 +259,13 @@ export default function EditProfileScreen() {
 							},
 						]}
 					>
-						<Ionicons
-							name="information-circle"
-							size={18}
-							color={primaryColor}
-						/>
+						<LevelBadge badge={ownShop.badge} size="sm" />
 						<Text style={[styles.bannerText, { color: primaryColor, flex: 1 }]}>
-							{t("profile.unverifiedBanner")}
+							{t("shop.increaseLevel")}
 						</Text>
-					</View>
-				)}
+						<Ionicons name="chevron-forward" size={16} color={primaryColor} />
+					</Pressable>
+				) : null}
 
 				{/* Fields */}
 				{fields.map(
