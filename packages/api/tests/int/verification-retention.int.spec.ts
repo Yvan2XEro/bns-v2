@@ -1,5 +1,20 @@
+import type { Field } from "payload";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { purgeVerificationData } from "../../src/jobs/purgeVerificationData";
+// Reaches past `payload`'s package.json `exports` map on purpose: this is the
+// exact internal function the P2 final review traced the C4 crash to
+// (`beforeValidate/traverseFields.js`, dereferencing a `null` group
+// siblingData). `fakePayload` assigns fields naively and can never reproduce
+// that crash, so this test runs the strip payload through Payload's own,
+// real field-normalisation code instead of a live Mongo. `tests/` is outside
+// the tsc project (see tsconfig.json's "exclude"), so this subpath import
+// never reaches type-checking; only vitest's esbuild transform sees it, and
+// it resolves at runtime against the installed package (verified below).
+import { traverseFields } from "../../../../node_modules/payload/dist/fields/hooks/beforeValidate/traverseFields.js";
+import { VerificationRequests } from "../../src/collections/VerificationRequests";
+import {
+	NULLED_BUSINESS,
+	purgeVerificationData,
+} from "../../src/jobs/purgeVerificationData";
 import {
 	documentPurgeDueAt,
 	RETENTION,
@@ -12,6 +27,43 @@ process.env.DIDIT_WORKFLOW_ID = "wf-1";
 const NOW = new Date("2027-01-01T00:00:00.000Z");
 const days = (n: number) =>
 	new Date(NOW.getTime() - n * 86_400_000).toISOString();
+
+/** The real `business` group field, straight from the collection — never a hand-copied field list. */
+function findField(fields: Field[], name: string): Field {
+	const found = fields.find((field) => "name" in field && field.name === name);
+	if (!found) throw new Error(`field "${name}" not declared`);
+	return found;
+}
+const businessField = findField(VerificationRequests.fields, "business");
+
+/**
+ * Runs a candidate `business` value through Payload's own group-field
+ * normalisation (`beforeValidate`'s `traverseFields`), the same code path
+ * `payload.update` runs in production. Throws exactly when the real pipeline
+ * would.
+ */
+async function normaliseBusiness(value: unknown): Promise<unknown> {
+	const siblingData: Record<string, unknown> = { business: value };
+	await traverseFields({
+		id: "vr-1",
+		collection: undefined,
+		context: {},
+		data: {},
+		doc: siblingData,
+		fields: [businessField],
+		global: undefined,
+		operation: "update",
+		overrideAccess: true,
+		parentIndexPath: "",
+		parentIsLocalized: false,
+		parentPath: "",
+		parentSchemaPath: "",
+		req: {},
+		siblingData,
+		siblingDoc: siblingData,
+	});
+	return siblingData.business;
+}
 
 describe("retention periods", () => {
 	it("declares the periods the processing register names", () => {
@@ -171,7 +223,9 @@ describe("purgeVerificationData", () => {
 			familyName: null,
 			documentNumberHash: null,
 		});
-		expect(request.business).toBeNull();
+		// Not `null` itself: Payload's own field pipeline would silently drop the
+		// PII-clearing write on the floor if it were (see the C4 test below).
+		expect(request.business).toEqual(NULLED_BUSINESS);
 		expect(request.decision).toMatchObject({
 			sellerMessage: null,
 			internalNote: null,
@@ -368,5 +422,79 @@ describe("purgeVerificationData", () => {
 		expect(
 			(await purgeVerificationData(payload, NOW)).expiringNotified,
 		).toEqual([]);
+	});
+});
+
+describe("the strip payload against Payload's real field pipeline (C4)", () => {
+	it("crashes Payload's own group-field normalisation on the old `business: null` shape", async () => {
+		// This is the exact mechanism the P2 final review traced: `typeof null
+		// === "object"` passes Payload's missing-group guard, so `null` is kept
+		// and `traverseFields` dereferences it on the first subfield.
+		await expect(normaliseBusiness(null)).rejects.toThrow(/null/i);
+	});
+
+	it("survives Payload's real pipeline with the per-subfield-null object stripDueRows now writes", async () => {
+		await expect(normaliseBusiness(NULLED_BUSINESS)).resolves.toEqual(
+			NULLED_BUSINESS,
+		);
+	});
+});
+
+describe("purgeVerificationData step isolation (C4)", () => {
+	function seed(over: Record<string, unknown[]> = {}) {
+		return fakePayload({
+			users: [{ id: "u-1", role: "user", name: "Aïcha" }],
+			shops: [
+				{
+					id: "s-1",
+					handle: "akwa",
+					owner: "u-1",
+					status: "active",
+					level: 2,
+					levelExpiresAt: new Date(
+						NOW.getTime() + 30 * 86_400_000,
+					).toISOString(),
+				},
+			],
+			"verification-requests": over["verification-requests"] ?? [],
+			"verification-documents": over["verification-documents"] ?? [],
+			"verification-document-views": over["verification-document-views"] ?? [],
+			"moderation-log": [],
+		});
+	}
+
+	it("still runs every other step when stripDueRows's write throws", async () => {
+		const payload = seed({
+			"verification-requests": [
+				{
+					id: "vr-1",
+					shop: "s-1",
+					submittedBy: "u-1",
+					requestedLevel: 3,
+					status: "rejected",
+					updatedAt: days(5 * 365 + 1),
+					business: { legalName: "AKWA SARL" },
+				},
+			],
+			"verification-document-views": [
+				{ id: "vv-1", createdAt: days(3 * 365 + 1) },
+			],
+		});
+		// Forces exactly the write `stripDueRows` makes to fail, the way
+		// Payload's real pipeline would have on the pre-fix `business: null`
+		// payload — without depending on that bug still being present.
+		payload.failWhen = (method, args) =>
+			method === "update" &&
+			args.collection === "verification-requests" &&
+			!!args.data &&
+			"business" in args.data;
+
+		const report = await purgeVerificationData(payload, NOW);
+
+		expect(report.rowsStripped).toEqual([]);
+		expect(payload.logger.error).toHaveBeenCalled();
+		// Every step after the failing one still ran.
+		expect(report.viewsDeleted).toBe(1);
+		expect(report.expiringNotified).toEqual(["s-1"]);
 	});
 });

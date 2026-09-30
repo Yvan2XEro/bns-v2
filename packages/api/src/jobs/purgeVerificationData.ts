@@ -33,6 +33,52 @@ const DAY_MS = 86_400_000;
 /** System actor for the release lever: `releaseRequest` ignores it entirely once `system: true` is set. */
 const SYSTEM_ACTOR = { id: "system" };
 
+/**
+ * Every subfield nulled explicitly, rather than the group itself. Payload's
+ * own field pipeline normalises a *missing* group with
+ * `if (typeof siblingData[field.name] !== 'object') siblingData[field.name] = {}`
+ * (`beforeValidate`/`beforeChange` promise.js) — and `typeof null === "object"`
+ * passes that guard, so a bare `business: null` slips through as `null` and
+ * `traverseFields` then dereferences it across every one of these subfields.
+ * This object is a value, never `null`, so it can never hit that path.
+ */
+export const NULLED_BUSINESS: NonNullable<VerificationRequest["business"]> = {
+	businessType: null,
+	legalName: null,
+	tradeName: null,
+	rccmNumber: null,
+	entreprenantDeclarationNumber: null,
+	niu: null,
+	registeredAddress: null,
+	city: null,
+	legalRepresentativeName: null,
+	legalRepresentativeIsOwner: null,
+};
+
+/**
+ * Runs one retention step in isolation: a failure is logged and swallowed so
+ * the rest of the nightly chain still runs. Without this, the eight steps
+ * below shared a single failure domain — one throw (C5's `business: null`
+ * dereference, for instance) silently cancelled every rule after it, every
+ * night, forever.
+ */
+async function runStep<T>(
+	payload: Payload,
+	step: string,
+	fallback: T,
+	fn: () => Promise<T>,
+): Promise<T> {
+	try {
+		return await fn();
+	} catch (error) {
+		payload.logger.error(
+			{ err: error, step },
+			"[verification] retention step failed; continuing with the rest",
+		);
+		return fallback;
+	}
+}
+
 async function findTerminal(payload: Payload): Promise<VerificationRequest[]> {
 	const found = await payload.find({
 		collection: "verification-requests",
@@ -83,11 +129,11 @@ async function stripDueRows(payload: Payload, now: Date): Promise<string[]> {
 								documentNumberHash: null,
 							}
 						: request.kyc,
-					business: null,
+					business: request.business ? NULLED_BUSINESS : request.business,
 					decision: request.decision
 						? { ...request.decision, sellerMessage: null, internalNote: null }
 						: request.decision,
-				} as never,
+				},
 			});
 		});
 		stripped.push(String(request.id));
@@ -317,22 +363,45 @@ async function notifyExpiringShops(
 
 /**
  * Runs every retention rule, each independently so one failing does not
- * abandon the rest. Nightly, and it ignores `verification.enabled` entirely:
- * a shop's data does not stop ageing because the feature is paused.
+ * abandon the rest — each step runs through `runStep`, which logs and
+ * swallows its own failure rather than letting it propagate to the next
+ * `await`. Nightly, and it ignores `verification.enabled` entirely: a shop's
+ * data does not stop ageing because the feature is paused.
  */
 export async function purgeVerificationData(
 	payload: Payload,
 	now: Date = new Date(),
 ): Promise<PurgeReport> {
-	const filesPurged = await purgeDueDocuments(payload, now);
-	const rowsStripped = await stripDueRows(payload, now);
-	const { deleted: vendorDeleted, retried: vendorRetried } =
-		await purgeVendorSessions(payload, now);
-	const viewsDeleted = await purgeOldViews(payload, now);
-	await expireLapsedApprovals(payload, now);
-	await expireIdleOpenRequests(payload, now);
-	await releaseStaleClaims(payload, now);
-	const expiringNotified = await notifyExpiringShops(payload, now);
+	const filesPurged = await runStep(payload, "purgeDueDocuments", [], () =>
+		purgeDueDocuments(payload, now),
+	);
+	const rowsStripped = await runStep(payload, "stripDueRows", [], () =>
+		stripDueRows(payload, now),
+	);
+	const { deleted: vendorDeleted, retried: vendorRetried } = await runStep(
+		payload,
+		"purgeVendorSessions",
+		{ deleted: [], retried: [] },
+		() => purgeVendorSessions(payload, now),
+	);
+	const viewsDeleted = await runStep(payload, "purgeOldViews", 0, () =>
+		purgeOldViews(payload, now),
+	);
+	await runStep(payload, "expireLapsedApprovals", undefined, () =>
+		expireLapsedApprovals(payload, now),
+	);
+	await runStep(payload, "expireIdleOpenRequests", undefined, () =>
+		expireIdleOpenRequests(payload, now),
+	);
+	await runStep(payload, "releaseStaleClaims", undefined, () =>
+		releaseStaleClaims(payload, now),
+	);
+	const expiringNotified = await runStep(
+		payload,
+		"notifyExpiringShops",
+		[],
+		() => notifyExpiringShops(payload, now),
+	);
 
 	return {
 		filesPurged,
