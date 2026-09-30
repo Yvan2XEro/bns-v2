@@ -40,7 +40,6 @@ export type DocumentKind =
 	| "niu_certificate"
 	| "legal_representative_id"
 	| "mandate"
-	| "proof_of_address"
 	| "other";
 
 export type ReviewSignalCode =
@@ -430,19 +429,24 @@ const DECISION_STATUSES = new Set<VerificationStatus>(["rejected", "revoked"]);
 
 /**
  * The seller's own view of a request's history: newest first, with the
- * vendor's internal step hidden (it is not something a seller acts on) and
- * the reviewer's message attached to the entry it explains.
+ * vendor's internal step hidden (it is not something a seller acts on) —
+ * *unless* it is the entry that put the request in its current status: a
+ * live "submitted" request must show a "submitted" row and highlight it, or
+ * the timeline silently lies about where things stand. The reviewer's
+ * message attaches to the entry it explains.
  */
 export function buildTimeline(request: TimelineSourceRequest): TimelineEntry[] {
-	const visible = request.statusHistory.filter(
-		(entry) => entry.source !== "vendor",
-	);
-	const sorted = [...visible].sort(
+	const sortedAll = [...request.statusHistory].sort(
 		(a, b) => Date.parse(b.at) - Date.parse(a.at),
+	);
+	const currentEntry =
+		sortedAll.find((entry) => entry.status === request.status) ?? null;
+	const visible = sortedAll.filter(
+		(entry) => entry.source !== "vendor" || entry === currentEntry,
 	);
 	const lastInfoRequest = request.infoRequests.at(-1) ?? null;
 
-	return sorted.map((entry, index) => {
+	return visible.map((entry) => {
 		let reasonCode: string | null = null;
 		let message: string | null = null;
 
@@ -461,7 +465,7 @@ export function buildTimeline(request: TimelineSourceRequest): TimelineEntry[] {
 			status: entry.status,
 			at: entry.at,
 			source: entry.source,
-			current: index === 0,
+			current: entry === currentEntry,
 			reasonCode,
 			message,
 		};
