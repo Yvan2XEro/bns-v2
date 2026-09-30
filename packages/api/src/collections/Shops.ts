@@ -9,6 +9,7 @@ import {
 } from "../hooks/suspensionGuard";
 import { ERROR_CODES } from "../lib/errors";
 import { CodedAPIError } from "../lib/serviceError";
+import { BUSINESS_TYPES } from "./VerificationRequests";
 
 export const SHOP_SERVICE_CONTEXT = { shopService: true } as const;
 
@@ -20,6 +21,8 @@ export const SHOP_SERVICE_FIELDS = [
 	"owner",
 	"status",
 	"level",
+	"levelExpiresAt",
+	"verifiedAt",
 	"closedAt",
 	"suspendedAt",
 	"suspendedUntil",
@@ -31,7 +34,13 @@ export const SHOP_SERVICE_FIELDS = [
 ] as const;
 
 /** A change to any of these makes the shop's listing documents stale in search. */
-const LISTING_VISIBLE_FIELDS = ["name", "handle", "status", "level"] as const;
+const LISTING_VISIBLE_FIELDS = [
+	"name",
+	"handle",
+	"status",
+	"level",
+	"levelExpiresAt",
+] as const;
 
 const SUSPENSION_REASON_OPTIONS = [
 	{ label: "Spam", value: "spam" },
@@ -95,6 +104,17 @@ export const Shops: CollectionConfig = {
 
 				for (const field of SHOP_SERVICE_FIELDS) {
 					data[field] = originalDoc?.[field];
+				}
+
+				// `legal` is owner-editable while the shop is below level 3 and is
+				// shown as "declared". Once level 3 is effective it is reviewed
+				// content: changing it needs a new level-3 request.
+				if ((originalDoc?.level ?? 1) >= 3) {
+					data.legal = originalDoc?.legal;
+				} else if (data.legal && typeof data.legal === "object") {
+					(data.legal as Record<string, unknown>).verifiedAt =
+						(originalDoc?.legal as { verifiedAt?: unknown } | undefined)
+							?.verifiedAt ?? null;
 				}
 				return data;
 			},
@@ -192,6 +212,46 @@ export const Shops: CollectionConfig = {
 			max: 3,
 			defaultValue: 1,
 			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			name: "levelExpiresAt",
+			type: "date",
+			index: true,
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description:
+					"Earliest expiry among the requests backing the current level. Read through shopCapabilities, which compares it at read time — never trust a job to have lowered `level` already.",
+			},
+		},
+		{
+			name: "verifiedAt",
+			type: "date",
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description: "When level 2 was first reached.",
+			},
+		},
+		{
+			/**
+			 * Declared by the shop until level 3, reviewed at level 3. The whole
+			 * group is public: it is what a buyer needs to know who they are
+			 * dealing with, labelled "declared" until `verifiedAt` is set.
+			 */
+			name: "legal",
+			type: "group",
+			fields: [
+				{
+					name: "businessType",
+					type: "select",
+					options: BUSINESS_TYPES.map((value) => ({ label: value, value })),
+				},
+				{ name: "legalName", type: "text", maxLength: 120 },
+				{ name: "rccmNumber", type: "text", maxLength: 40 },
+				{ name: "niu", type: "text", maxLength: 14 },
+				{ name: "verifiedAt", type: "date", admin: { readOnly: true } },
+			],
 		},
 		{
 			name: "closedAt",

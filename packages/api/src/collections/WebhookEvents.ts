@@ -31,6 +31,7 @@ export const WebhookEvents: CollectionConfig = {
 			options: [
 				{ label: "NotchPay", value: "notchpay" },
 				{ label: "Stripe", value: "stripe" },
+				{ label: "Didit", value: "didit" },
 			],
 		},
 		{ name: "providerEventId", type: "text", required: true },

@@ -40,6 +40,18 @@ function redactedBody(provider: string, raw: unknown): WebhookEvent["raw"] {
 	return { ...retainedWebhookRaw(provider, raw) };
 }
 
+/**
+ * `webhook-events.provider` also carries vendor names that are not payment
+ * providers (`didit`, processed by its own job). This job settles payments
+ * only, so a non-payment provider reaching it is misrouted, not a payment
+ * outcome to normalise.
+ */
+function isPaymentProvider(
+	provider: WebhookEvent["provider"],
+): provider is ProviderName {
+	return provider === "notchpay" || provider === "stripe";
+}
+
 export interface RecordWebhookEventInput {
 	provider: ProviderName;
 	event: NormalizedWebhookEvent;
@@ -143,9 +155,18 @@ export async function processWebhookEvent(
 		// a provider's original-wire-format parser finds nothing — a queued
 		// retry for a payment that settles the moment its owner's account is
 		// deleted must still resolve, not silently stop replaying.
-		const normalized = isRetainedWebhookRaw(event.raw)
-			? event.raw
-			: deps.getProvider(event.provider).parseWebhookEvent(event.raw);
+		let normalized: NormalizedWebhookEvent;
+		if (isRetainedWebhookRaw(event.raw)) {
+			normalized = event.raw;
+		} else if (isPaymentProvider(event.provider)) {
+			normalized = deps
+				.getProvider(event.provider)
+				.parseWebhookEvent(event.raw);
+		} else {
+			throw new Error(
+				`processWebhookEvent only handles payment providers; got "${event.provider}"`,
+			);
+		}
 
 		let outcome = "ignored_without_reference";
 		let intent: PaymentIntent | null = null;

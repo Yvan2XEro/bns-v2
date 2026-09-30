@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Access, CollectionConfig } from "payload";
 import { anyone } from "@/access/anyone";
-import { suspensionSummary } from "../access/roles";
-import { selfOrStaffField } from "../access/staff";
+import { isAdmin, suspensionSummary } from "../access/roles";
+import { selfOrStaffField, staffOnlyField } from "../access/staff";
 import type { AuthProvider } from "../auth/oauth/types";
 import { deleteUserRelatedData } from "../services/accountDeletion";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
@@ -155,6 +155,15 @@ export const Users: CollectionConfig = {
 							data.suspendedNote = null;
 							data.suspendedBy = null;
 						}
+					}
+
+					// Pinned for admins too, for the same reason the suspension fields
+					// are: a level granted from the panel would bypass the log.
+					const isVerificationWrite = req.context?.verificationService === true;
+					if (!isVerificationWrite) {
+						data.identityVerifiedAt = originalDoc?.identityVerifiedAt;
+						data.identityVerification = originalDoc?.identityVerification;
+						data.legacyVerifiedAt = originalDoc?.legacyVerifiedAt;
 					}
 
 					if (!isAdmin && !isPhoneVerificationFlow) {
@@ -484,6 +493,36 @@ export const Users: CollectionConfig = {
 			admin: {
 				position: "sidebar",
 			},
+		},
+		{
+			name: "identityVerifiedAt",
+			type: "date",
+			access: { read: selfOrStaffField },
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description:
+					"Set when a level-2 request is approved, cleared on revoke or expiry. Written only by services/verification.ts.",
+			},
+		},
+		{
+			name: "identityVerification",
+			type: "relationship",
+			relationTo: "verification-requests",
+			access: { read: staffOnlyField },
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			// Filled by the P2 migration from the retired `verified` checkbox, so
+			// the fact that an admin had once ticked it is not lost. It grants
+			// nothing: the checkbox never checked anything.
+			name: "legacyVerifiedAt",
+			type: "date",
+			access: {
+				read: ({ req: { user } }) =>
+					isAdmin(user as { role?: string } | undefined),
+			},
+			admin: { readOnly: true, hidden: true },
 		},
 		// Written only by services/moderation.ts; beforeChange pins all five
 		// against every other write. No `suspended` boolean on purpose:

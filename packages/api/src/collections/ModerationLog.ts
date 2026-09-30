@@ -12,6 +12,13 @@ export const MODERATION_ACTIONS = [
 	"shop.unsuspend",
 	"report.resolve",
 	"report.dismiss",
+	"verification.claim",
+	"verification.release",
+	"verification.request_info",
+	"verification.approve",
+	"verification.reject",
+	"verification.revoke",
+	"verification.expire",
 ] as const;
 
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
@@ -39,12 +46,25 @@ export const ModerationLog: CollectionConfig = {
 	},
 	fields: [
 		{
+			/**
+			 * Optional only for system entries: scheduled expiry of a draft
+			 * request and a stale-claim release have no human behind them, and
+			 * `actorRole: "system"` is what the entry means. Every human action
+			 * still fails validation without an actor, so an action cannot be
+			 * taken anonymously by leaving the field out.
+			 */
 			name: "actor",
 			type: "relationship",
 			relationTo: "users",
-			required: true,
 			index: true,
 			admin: { readOnly: true },
+			validate: (
+				value: unknown,
+				{ siblingData }: { siblingData: { actorRole?: string } },
+			) =>
+				value || siblingData?.actorRole === "system"
+					? true
+					: "An actor is required unless the entry is a system entry.",
 		},
 		{
 			// Snapshot, not a join: roles change, the entry must keep saying what
@@ -71,6 +91,7 @@ export const ModerationLog: CollectionConfig = {
 				{ label: "User", value: "user" },
 				{ label: "Report", value: "report" },
 				{ label: "Shop", value: "shop" },
+				{ label: "Verification request", value: "verification-request" },
 			],
 			admin: { readOnly: true },
 		},

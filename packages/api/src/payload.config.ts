@@ -25,6 +25,7 @@ import { Shops } from "./collections/Shops";
 import { StockMovements } from "./collections/StockMovements";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
+import { VerificationRequests } from "./collections/VerificationRequests";
 import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
 import {
@@ -102,6 +103,7 @@ export default buildConfig({
 		Products,
 		ProductVariants,
 		StockMovements,
+		VerificationRequests,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),

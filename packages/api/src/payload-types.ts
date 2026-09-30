@@ -89,6 +89,7 @@ export interface Config {
     products: Product;
     'product-variants': ProductVariant;
     'stock-movements': StockMovement;
+    'verification-requests': VerificationRequest;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -119,6 +120,7 @@ export interface Config {
     products: ProductsSelect<false> | ProductsSelect<true>;
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
+    'verification-requests': VerificationRequestsSelect<false> | VerificationRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -229,6 +231,12 @@ export interface User {
   };
   verified?: boolean | null;
   /**
+   * Set when a level-2 request is approved, cleared on revoke or expiry. Written only by services/verification.ts.
+   */
+  identityVerifiedAt?: string | null;
+  identityVerification?: (string | null) | VerificationRequest;
+  legacyVerifiedAt?: string | null;
+  /**
    * When the current suspension was applied. Empty means the account has never been suspended, or the sanction was lifted.
    */
   suspendedAt?: string | null;
@@ -285,66 +293,191 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "listings".
+ * via the `definition` "verification-requests".
  */
-export interface Listing {
+export interface VerificationRequest {
   id: string;
-  title: string;
-  description: string;
-  price?: number | null;
-  images?:
+  shop: string | Shop;
+  /**
+   * 2 = identity, 3 = business.
+   */
+  requestedLevel: number;
+  submittedBy: string | User;
+  status: 'draft' | 'submitted' | 'in_review' | 'needs_info' | 'approved' | 'rejected' | 'revoked' | 'expired';
+  statusHistory?:
     | {
-        image: string | Media;
+        status: 'draft' | 'submitted' | 'in_review' | 'needs_info' | 'approved' | 'rejected' | 'revoked' | 'expired';
+        at: string;
+        actor?: (string | null) | User;
+        source: 'seller' | 'reviewer' | 'vendor' | 'system';
         id?: string | null;
       }[]
     | null;
-  location: string;
-  seller?: (string | null) | User;
-  category: string | Category;
-  status: 'draft' | 'pending' | 'published' | 'rejected' | 'sold' | 'expired' | 'deleted';
-  boostedUntil?: string | null;
-  expiresAt?: string | null;
-  views?: number | null;
-  attributes?:
+  openKey?: string | null;
+  consent?: {
+    acceptedAt?: string | null;
+    version?: string | null;
+    locale?: ('fr' | 'en') | null;
+  };
+  /**
+   * Level 2 only. No biometric or image data is ever stored here.
+   */
+  kyc?: {
+    provider?: ('didit' | 'smileid') | null;
+    sessionRef?: string | null;
+    status?: ('not_started' | 'pending' | 'approved' | 'declined' | 'review' | 'abandoned' | 'error') | null;
+    attempts?: number | null;
+    decidedAt?: string | null;
+    documentType?: ('national_id' | 'passport' | 'residence_permit') | null;
+    documentCountry?: string | null;
+    documentNumberHash?: string | null;
+    documentNumberLast4?: string | null;
+    documentExpiresAt?: string | null;
+    givenNames?: string | null;
+    familyName?: string | null;
+    adult?: boolean | null;
+    livenessPassed?: boolean | null;
+    faceMatchScore?: number | null;
+    vendorWarnings?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    vendorReviewUrl?: string | null;
+    vendorDataDeletedAt?: string | null;
+  };
+  /**
+   * Level 3 only.
+   */
+  business?: {
+    businessType?: ('entreprenant' | 'sole_trader' | 'company' | 'cooperative') | null;
+    legalName?: string | null;
+    tradeName?: string | null;
+    rccmNumber?: string | null;
+    entreprenantDeclarationNumber?: string | null;
+    niu?: string | null;
+    registeredAddress?: string | null;
+    city?: string | null;
+    legalRepresentativeName?: string | null;
+    legalRepresentativeIsOwner?: boolean | null;
+  };
+  reviewSignals?:
     | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
+        code:
+          | 'identity_reused'
+          | 'name_mismatch'
+          | 'underage'
+          | 'kyc_declined'
+          | 'kyc_review'
+          | 'document_reused'
+          | 'rccm_reused'
+          | 'niu_reused'
+          | 'niu_format';
+        detail?: string | null;
+        relatedRequest?: (string | null) | VerificationRequest;
+        id?: string | null;
+      }[]
     | null;
-  coordinates?: {
-    lat?: number | null;
-    lng?: number | null;
+  assignee?: (string | null) | User;
+  claimedAt?: string | null;
+  infoRequests?:
+    | {
+        reasonCode: 'document_unreadable' | 'document_missing' | 'information_inconsistent' | 'kyc_retry' | 'other';
+        message: string;
+        requestedBy?: (string | null) | User;
+        requestedAt: string;
+        respondedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  decision?: {
+    decidedBy?: (string | null) | User;
+    decidedAt?: string | null;
+    reasonCode?: string | null;
+    sellerMessage?: string | null;
+    internalNote?: string | null;
+    checklist?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
   };
-  /**
-   * Reason for rejection (visible to seller)
-   */
-  rejectionReason?: string | null;
-  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
-  tags?: (string | Tag)[] | null;
-  shop?: (string | null) | Shop;
-  product?: (string | null) | Product;
-  /**
-   * Derived from the product's variants by the product service.
-   */
-  productSummary?: {
-    priceMin?: number | null;
-    priceMax?: number | null;
-    /**
-     * Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.
-     */
-    available?: boolean | null;
-    variantCount?: number | null;
-    trackInventory?: boolean | null;
-  };
-  /**
-   * Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.
-   */
-  moderationHold?: boolean | null;
-  createdAt: string;
+  submittedAt?: string | null;
+  approvedAt?: string | null;
+  expiresAt?: string | null;
+  revokedAt?: string | null;
+  supersedes?: (string | null) | VerificationRequest;
+  previousRequest?: (string | null) | VerificationRequest;
   updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shops".
+ */
+export interface Shop {
+  id: string;
+  handle: string;
+  previousHandles?:
+    | {
+        handle: string;
+        until: string;
+        id?: string | null;
+      }[]
+    | null;
+  handleChangedAt?: string | null;
+  name: string;
+  description?: string | null;
+  logo?: (string | null) | Media;
+  banner?: (string | null) | Media;
+  contact?: {
+    phone?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+  };
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+    countryCode?: string | null;
+  };
+  categories?: (string | Category)[] | null;
+  owner: string | User;
+  status: 'active' | 'suspended' | 'closed';
+  level?: number | null;
+  /**
+   * Earliest expiry among the requests backing the current level. Read through shopCapabilities, which compares it at read time — never trust a job to have lowered `level` already.
+   */
+  levelExpiresAt?: string | null;
+  /**
+   * When level 2 was first reached.
+   */
+  verifiedAt?: string | null;
+  legal?: {
+    businessType?: ('entreprenant' | 'sole_trader' | 'company' | 'cooperative') | null;
+    legalName?: string | null;
+    rccmNumber?: string | null;
+    niu?: string | null;
+    verifiedAt?: string | null;
+  };
+  closedAt?: string | null;
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
+  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
+  suspendedNote?: string | null;
+  suspendedBy?: (string | null) | User;
+  suspensionLogId?: string | null;
+  publishedListingCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -428,6 +561,69 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listings".
+ */
+export interface Listing {
+  id: string;
+  title: string;
+  description: string;
+  price?: number | null;
+  images?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  location: string;
+  seller?: (string | null) | User;
+  category: string | Category;
+  status: 'draft' | 'pending' | 'published' | 'rejected' | 'sold' | 'expired' | 'deleted';
+  boostedUntil?: string | null;
+  expiresAt?: string | null;
+  views?: number | null;
+  attributes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  coordinates?: {
+    lat?: number | null;
+    lng?: number | null;
+  };
+  /**
+   * Reason for rejection (visible to seller)
+   */
+  rejectionReason?: string | null;
+  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
+  tags?: (string | Tag)[] | null;
+  shop?: (string | null) | Shop;
+  product?: (string | null) | Product;
+  /**
+   * Derived from the product's variants by the product service.
+   */
+  productSummary?: {
+    priceMin?: number | null;
+    priceMax?: number | null;
+    /**
+     * Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.
+     */
+    available?: boolean | null;
+    variantCount?: number | null;
+    trackInventory?: boolean | null;
+  };
+  /**
+   * Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.
+   */
+  moderationHold?: boolean | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "tags".
  */
 export interface Tag {
@@ -441,51 +637,6 @@ export interface Tag {
    * Optional emoji to display with the tag (e.g. 🤝)
    */
   emoji?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shops".
- */
-export interface Shop {
-  id: string;
-  handle: string;
-  previousHandles?:
-    | {
-        handle: string;
-        until: string;
-        id?: string | null;
-      }[]
-    | null;
-  handleChangedAt?: string | null;
-  name: string;
-  description?: string | null;
-  logo?: (string | null) | Media;
-  banner?: (string | null) | Media;
-  contact?: {
-    phone?: string | null;
-    whatsapp?: string | null;
-    email?: string | null;
-  };
-  location?: {
-    city?: string | null;
-    region?: string | null;
-    country?: string | null;
-    countryCode?: string | null;
-  };
-  categories?: (string | Category)[] | null;
-  owner: string | User;
-  status: 'active' | 'suspended' | 'closed';
-  level?: number | null;
-  closedAt?: string | null;
-  suspendedAt?: string | null;
-  suspendedUntil?: string | null;
-  suspendedReason?: ('spam' | 'inappropriate' | 'fraud' | 'prohibited' | 'harassment' | 'other') | null;
-  suspendedNote?: string | null;
-  suspendedBy?: (string | null) | User;
-  suspensionLogId?: string | null;
-  publishedListingCount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -665,7 +816,7 @@ export interface PaymentIntent {
  */
 export interface WebhookEvent {
   id: string;
-  provider: 'notchpay' | 'stripe';
+  provider: 'notchpay' | 'stripe' | 'didit';
   providerEventId: string;
   type?: string | null;
   reference?: string | null;
@@ -743,7 +894,7 @@ export interface BlockedUser {
  */
 export interface ModerationLog {
   id: string;
-  actor: string | User;
+  actor?: (string | null) | User;
   actorRole: string;
   action:
     | 'listing.approve'
@@ -755,8 +906,15 @@ export interface ModerationLog {
     | 'shop.suspend'
     | 'shop.unsuspend'
     | 'report.resolve'
-    | 'report.dismiss';
-  targetType: 'listing' | 'user' | 'report' | 'shop';
+    | 'report.dismiss'
+    | 'verification.claim'
+    | 'verification.release'
+    | 'verification.request_info'
+    | 'verification.approve'
+    | 'verification.reject'
+    | 'verification.revoke'
+    | 'verification.expire';
+  targetType: 'listing' | 'user' | 'report' | 'shop' | 'verification-request';
   targetId: string;
   reason?: string | null;
   /**
@@ -1071,6 +1229,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'stock-movements';
         value: string | StockMovement;
+      } | null)
+    | ({
+        relationTo: 'verification-requests';
+        value: string | VerificationRequest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1155,6 +1317,9 @@ export interface UsersSelect<T extends boolean = true> {
         updatedAt?: T;
       };
   verified?: T;
+  identityVerifiedAt?: T;
+  identityVerification?: T;
+  legacyVerifiedAt?: T;
   suspendedAt?: T;
   suspendedUntil?: T;
   suspendedReason?: T;
@@ -1521,6 +1686,17 @@ export interface ShopsSelect<T extends boolean = true> {
   owner?: T;
   status?: T;
   level?: T;
+  levelExpiresAt?: T;
+  verifiedAt?: T;
+  legal?:
+    | T
+    | {
+        businessType?: T;
+        legalName?: T;
+        rccmNumber?: T;
+        niu?: T;
+        verifiedAt?: T;
+      };
   closedAt?: T;
   suspendedAt?: T;
   suspendedUntil?: T;
@@ -1617,6 +1793,107 @@ export interface StockMovementsSelect<T extends boolean = true> {
   note?: T;
   actor?: T;
   orderRef?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-requests_select".
+ */
+export interface VerificationRequestsSelect<T extends boolean = true> {
+  shop?: T;
+  requestedLevel?: T;
+  submittedBy?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        at?: T;
+        actor?: T;
+        source?: T;
+        id?: T;
+      };
+  openKey?: T;
+  consent?:
+    | T
+    | {
+        acceptedAt?: T;
+        version?: T;
+        locale?: T;
+      };
+  kyc?:
+    | T
+    | {
+        provider?: T;
+        sessionRef?: T;
+        status?: T;
+        attempts?: T;
+        decidedAt?: T;
+        documentType?: T;
+        documentCountry?: T;
+        documentNumberHash?: T;
+        documentNumberLast4?: T;
+        documentExpiresAt?: T;
+        givenNames?: T;
+        familyName?: T;
+        adult?: T;
+        livenessPassed?: T;
+        faceMatchScore?: T;
+        vendorWarnings?: T;
+        vendorReviewUrl?: T;
+        vendorDataDeletedAt?: T;
+      };
+  business?:
+    | T
+    | {
+        businessType?: T;
+        legalName?: T;
+        tradeName?: T;
+        rccmNumber?: T;
+        entreprenantDeclarationNumber?: T;
+        niu?: T;
+        registeredAddress?: T;
+        city?: T;
+        legalRepresentativeName?: T;
+        legalRepresentativeIsOwner?: T;
+      };
+  reviewSignals?:
+    | T
+    | {
+        code?: T;
+        detail?: T;
+        relatedRequest?: T;
+        id?: T;
+      };
+  assignee?: T;
+  claimedAt?: T;
+  infoRequests?:
+    | T
+    | {
+        reasonCode?: T;
+        message?: T;
+        requestedBy?: T;
+        requestedAt?: T;
+        respondedAt?: T;
+        id?: T;
+      };
+  decision?:
+    | T
+    | {
+        decidedBy?: T;
+        decidedAt?: T;
+        reasonCode?: T;
+        sellerMessage?: T;
+        internalNote?: T;
+        checklist?: T;
+      };
+  submittedAt?: T;
+  approvedAt?: T;
+  expiresAt?: T;
+  revokedAt?: T;
+  supersedes?: T;
+  previousRequest?: T;
   updatedAt?: T;
   createdAt?: T;
 }
