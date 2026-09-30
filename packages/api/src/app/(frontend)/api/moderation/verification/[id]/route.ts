@@ -27,13 +27,6 @@ import {
  * decision by someone who is not the assignee) would otherwise fall through
  * to that helper's generic 500 rather than the code it actually carries.
  */
-function handleVerificationError(scope: string, error: unknown): Response {
-	if (error instanceof ServiceError) {
-		return errorResponse(error.code, error.status);
-	}
-	return handleModerationError(scope, error);
-}
-
 /**
  * Owner, or any `shop-members` row in the shop: mirrors the check
  * `services/verification.ts`'s own `assertNoConflict` makes before every
@@ -316,6 +309,6 @@ export async function POST(
 		const updated = await ACTIONS[parsed.data.action](ctx, id, parsed.data);
 		return Response.json({ request: updated });
 	} catch (error) {
-		return handleVerificationError("verification:decision", error);
+		return handleModerationError("verification:decision", error);
 	}
 }

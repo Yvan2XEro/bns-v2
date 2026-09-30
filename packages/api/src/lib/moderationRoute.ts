@@ -2,9 +2,9 @@ import config from "@payload-config";
 import { getPayload, type Payload } from "payload";
 import { isModerator } from "../access/roles";
 import type { Actor } from "../services/moderation";
-import { ModerationError } from "../services/moderation";
 import { ERROR_CODES, errorResponse } from "./errors";
 import { readJsonBody } from "./readJsonBody";
+import { ServiceError } from "./serviceError";
 
 export interface ModerationContext {
 	payload: Payload;
@@ -86,9 +86,15 @@ export async function parseSuspensionAction(
  * Business failures keep their code so the clients can translate them;
  * anything else is logged and reported as a generic 500 so a driver message
  * can never reach a client.
+ *
+ * Matches `ServiceError`, not `ModerationError`: the latter is a subclass, and
+ * a moderation route legitimately calls services that raise the base class —
+ * `services/verification.ts` does. Narrowing to the subclass turned every one
+ * of those refusals into a silent 500, so a caller could not tell "you may not
+ * do that" from "we broke".
  */
 export function handleModerationError(scope: string, error: unknown): Response {
-	if (error instanceof ModerationError) {
+	if (error instanceof ServiceError) {
 		return errorResponse(error.code, error.status);
 	}
 	console.error(`[moderation:${scope}]`, error);
