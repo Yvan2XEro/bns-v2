@@ -1742,6 +1742,54 @@
 				"cooldown": "Vous pourrez ouvrir une nouvelle demande à partir du {{date}}.",
 				"notRenewableYet": "Le renouvellement sera possible à partir du {{date}}."
 			}
+		},
+		"business": {
+			"pageTitle": "Vérification de l'entreprise",
+			"title": "Informations de l'entreprise",
+			"businessType": "Type d'entreprise",
+			"businessTypeOption": {
+				"entreprenant": "Entreprenant (déclaration individuelle)",
+				"sole_trader": "Entreprise individuelle",
+				"company": "Société",
+				"cooperative": "Coopérative"
+			},
+			"legalName": "Raison sociale",
+			"tradeName": "Nom commercial (facultatif)",
+			"rccmNumber": "Numéro RCCM",
+			"entreprenantDeclarationNumber": "Numéro de déclaration d'entreprenant",
+			"niu": "Numéro d'identifiant unique (NIU)",
+			"registeredAddress": "Adresse du siège",
+			"city": "Ville",
+			"legalRepresentativeName": "Nom du représentant légal",
+			"legalRepresentativeIsOwner": "Le représentant légal est le propriétaire de la boutique",
+			"save": "Enregistrer les informations",
+			"noRequest": "Aucune demande de vérification d'entreprise en cours. Démarrez-en une depuis le centre de vérification.",
+			"backToHub": "Retour au centre de vérification",
+			"loadError": "Nous n'avons pas pu charger votre statut de vérification."
+		},
+		"documents": {
+			"title": "Documents requis",
+			"extrasTitle": "Document supplémentaire (facultatif)",
+			"pickHint": "Ajouter une photo ou un PDF",
+			"chooseSource": "Ajouter un document",
+			"sourceCamera": "Appareil photo",
+			"sourceLibrary": "Galerie photo",
+			"sourceDocument": "Fichier PDF",
+			"delete": "Supprimer",
+			"confirmDeleteTitle": "Supprimer ce document ?",
+			"confirmDelete": "Cette action est irréversible.",
+			"missing": "Encore manquant : {{kinds}}",
+			"submit": "Soumettre pour vérification",
+			"submitting": "Envoi en cours…"
+		},
+		"documentKind": {
+			"rccm_extract": "Extrait RCCM",
+			"entreprenant_declaration": "Déclaration d'entreprenant",
+			"niu_certificate": "Certificat NIU",
+			"legal_representative_id": "Pièce d'identité du représentant légal",
+			"mandate": "Mandat",
+			"proof_of_address": "Justificatif de domicile",
+			"other": "Autre document"
 		}
 	}
 }

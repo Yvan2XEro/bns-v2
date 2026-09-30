@@ -1669,6 +1669,54 @@
 				"cooldown": "You can open a new request from {{date}}.",
 				"notRenewableYet": "Renewal opens on {{date}}."
 			}
+		},
+		"business": {
+			"pageTitle": "Business verification",
+			"title": "Business details",
+			"businessType": "Business type",
+			"businessTypeOption": {
+				"entreprenant": "Entreprenant (individual declaration)",
+				"sole_trader": "Sole trader",
+				"company": "Company",
+				"cooperative": "Cooperative"
+			},
+			"legalName": "Legal name",
+			"tradeName": "Trade name (optional)",
+			"rccmNumber": "RCCM number",
+			"entreprenantDeclarationNumber": "Entreprenant declaration number",
+			"niu": "Taxpayer number (NIU)",
+			"registeredAddress": "Registered address",
+			"city": "City",
+			"legalRepresentativeName": "Legal representative's name",
+			"legalRepresentativeIsOwner": "The legal representative is the shop owner",
+			"save": "Save business details",
+			"noRequest": "There is no open business verification request. Start one from the verification hub.",
+			"backToHub": "Back to the verification hub",
+			"loadError": "We could not load your verification status."
+		},
+		"documents": {
+			"title": "Required documents",
+			"extrasTitle": "Additional document (optional)",
+			"pickHint": "Add a photo or a PDF",
+			"chooseSource": "Add a document",
+			"sourceCamera": "Camera",
+			"sourceLibrary": "Photo library",
+			"sourceDocument": "PDF file",
+			"delete": "Delete",
+			"confirmDeleteTitle": "Delete this document?",
+			"confirmDelete": "This cannot be undone.",
+			"missing": "Still missing: {{kinds}}",
+			"submit": "Submit for review",
+			"submitting": "Submitting…"
+		},
+		"documentKind": {
+			"rccm_extract": "RCCM extract",
+			"entreprenant_declaration": "Entreprenant declaration",
+			"niu_certificate": "NIU certificate",
+			"legal_representative_id": "Legal representative's ID",
+			"mandate": "Mandate",
+			"proof_of_address": "Proof of address",
+			"other": "Other document"
 		}
 	}
 }
