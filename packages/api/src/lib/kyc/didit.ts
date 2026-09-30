@@ -147,6 +147,36 @@ const diditFaceMatchSchema = z
 	.optional();
 
 /**
+ * The only vendor warning codes this adapter forwards. Didit's `warnings`
+ * array is declared as free `string`s on the wire, and a vendor's free text
+ * can carry an applicant's name (`"the applicant's name (…) does not
+ * match…"` is a real shape their support responses use) — the same
+ * data-minimisation boundary this schema draws around images and identity
+ * fields applies to warnings too. Anything not on this list is dropped
+ * rather than stored; a code Didit adds later needs adding here before a
+ * reviewer sees it, which is the point.
+ */
+const DIDIT_WARNING_CODES = new Set([
+	"document_number_illegible",
+	"face_match_below_threshold",
+	"document_expired",
+	"low_quality_image",
+	"data_mismatch",
+]);
+
+/**
+ * 0-100, matching `VerificationRequests.kyc.faceMatchScore`'s declared
+ * range: Didit itself reports a 0..1 fraction, and a reviewer reading this
+ * field must see a percentage, not a fraction a 97 % match reads as
+ * "approximately 1".
+ */
+function toPercentScore(fraction: number | null | undefined): number | null {
+	if (typeof fraction !== "number" || !Number.isFinite(fraction)) return null;
+	const clamped = Math.min(1, Math.max(0, fraction));
+	return Math.round(clamped * 100);
+}
+
+/**
  * Only the fields this adapter turns into `KycResult` are declared here.
  * `z.object` strips anything else Didit's response carries — document
  * images, address, nationality, e-mail, phone — so those never reach the
@@ -293,8 +323,10 @@ export const diditProvider: KycProvider = {
 				? new Date(idVerification.date_of_birth)
 				: null,
 			livenessPassed: data.liveness?.status === "Approved",
-			faceMatchScore: data.face_match?.score ?? null,
-			warnings: data.warnings ?? [],
+			faceMatchScore: toPercentScore(data.face_match?.score),
+			warnings: (data.warnings ?? []).filter((code) =>
+				DIDIT_WARNING_CODES.has(code),
+			),
 			reviewUrl: data.review_url ?? null,
 		};
 	},

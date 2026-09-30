@@ -16,7 +16,9 @@ export interface KycResult {
 	/** Transient: reduced to `adult`, then discarded. Never stored. */
 	dateOfBirth: Date | null;
 	livenessPassed: boolean;
+	/** 0-100: matches `VerificationRequests.kyc.faceMatchScore`'s declared range. */
 	faceMatchScore: number | null;
+	/** Allow-listed vendor warning codes only; see each adapter's own filter. */
 	warnings: string[];
 	reviewUrl: string | null;
 }

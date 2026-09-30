@@ -1,7 +1,9 @@
 import type { Payload, PayloadRequest, TaskConfig } from "payload";
 import type { VerificationStatus } from "../collections/VerificationRequests";
+import { ERROR_CODES } from "../lib/errors";
 import { peppered } from "../lib/hash";
 import { getKycProvider } from "../lib/kyc";
+import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
 import { getVerificationSettings } from "../lib/verificationSettings";
 import type { ReviewSignal } from "../lib/verificationSignals";
@@ -90,12 +92,18 @@ export async function processKycEvent(
 		// `documentNumber` and `dateOfBirth` exist only in this scope. What is
 		// written is a peppered hash, the last four digits, and a boolean — the
 		// number itself and the date of birth never reach the database, and
-		// never reach a log line either.
-		const documentNumberHash = result.documentNumber
-			? peppered(result.documentNumber.replace(/\s+/g, "").toUpperCase())
+		// never reach a log line either. Both the hash and the last 4 are
+		// derived from the same normalised string: a reviewer matches the last 4
+		// against the physical document, so slicing the raw (unnormalised)
+		// number instead would leave spaces in it, or shift which digits show.
+		const normalisedDocumentNumber = result.documentNumber
+			? result.documentNumber.replace(/\s+/g, "").toUpperCase()
 			: null;
-		const documentNumberLast4 = result.documentNumber
-			? result.documentNumber.slice(-4)
+		const documentNumberHash = normalisedDocumentNumber
+			? peppered(normalisedDocumentNumber)
+			: null;
+		const documentNumberLast4 = normalisedDocumentNumber
+			? normalisedDocumentNumber.slice(-4)
 			: null;
 		const adult = result.dateOfBirth
 			? Date.now() - result.dateOfBirth.getTime() >= 18 * YEAR_MS
@@ -167,6 +175,43 @@ export async function processKycEvent(
 	});
 }
 
+/**
+ * Runs `processKycEvent` and decides whether a failure should retry.
+ *
+ * Kept apart from `TaskConfig.handler` so it can be pinned directly, against
+ * a plain `payload` and `logger`, without building the rest of Payload's
+ * job-runner shape (`job`, `inlineTask`, `tasks`) that `TaskHandlerArgs`
+ * otherwise requires.
+ *
+ * A missing `VERIFICATION_HASH_PEPPER` is a deploy-time misconfiguration, not
+ * a transient vendor hiccup: every one of the 5 configured retries would fail
+ * on the exact same condition, which only delays the alert an operator
+ * needs. Logged once, at error level, and the job finishes as unhandled
+ * instead of looping through them.
+ */
+export async function runProcessKycEvent(
+	payload: Payload,
+	logger: Pick<Payload["logger"], "error">,
+	input: ProcessKycEventInput,
+): Promise<{ output: ProcessKycEventResult }> {
+	try {
+		const output = await processKycEvent(payload, input);
+		return { output };
+	} catch (error) {
+		if (
+			error instanceof ServiceError &&
+			error.code === ERROR_CODES.verificationHashUnavailable
+		) {
+			logger.error(
+				{ err: error, sessionRef: input.sessionRef },
+				"[verification:processKycEvent] VERIFICATION_HASH_PEPPER is not set; not retrying",
+			);
+			return { output: NOOP };
+		}
+		throw error;
+	}
+}
+
 export const processKycEventTask: TaskConfig<"processKycEvent"> = {
 	slug: "processKycEvent",
 	retries: 5,
@@ -182,11 +227,10 @@ export const processKycEventTask: TaskConfig<"processKycEvent"> = {
 	],
 	handler: async ({ input, req }) => {
 		const provider = input.provider === "smileid" ? "smileid" : "didit";
-		const output = await processKycEvent(req.payload, {
+		return runProcessKycEvent(req.payload, req.payload.logger, {
 			webhookEventId: input.webhookEventId,
 			provider,
 			sessionRef: input.sessionRef,
 		});
-		return { output };
 	},
 };

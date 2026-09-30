@@ -82,7 +82,10 @@ describe("didit result normalisation", () => {
 		});
 		expect(result.documentNumber).toBeTypeOf("string");
 		expect(result.dateOfBirth).toBeInstanceOf(Date);
-		expect(result.faceMatchScore).toBeGreaterThan(0);
+		// The fixture's `face_match.score` is Didit's own 0..1 fraction (0.97):
+		// what a reviewer reads is the 0-100 percentage it converts to, not the
+		// fraction itself.
+		expect(result.faceMatchScore).toBe(97);
 		vi.unstubAllGlobals();
 	});
 
@@ -92,6 +95,24 @@ describe("didit result normalisation", () => {
 		expect(result.status).toBe("declined");
 		expect(result.warnings.length).toBeGreaterThan(0);
 		expect(result.documentNumber).toBeNull();
+		// Same conversion on the low end: 0.41 reads as 41, not 0.
+		expect(result.faceMatchScore).toBe(41);
+		vi.unstubAllGlobals();
+	});
+
+	it("keeps only the warning codes on its allow-list, dropping vendor free text", async () => {
+		vi.stubGlobal(
+			"fetch",
+			fetchReturning({
+				...approved,
+				warnings: [
+					"face_match_below_threshold",
+					`Please review — the applicant's name (${"Amina Nkeng"}) does not match the account`,
+				],
+			}),
+		);
+		const result = await diditProvider.fetchResult("sess-1");
+		expect(result.warnings).toEqual(["face_match_below_threshold"]);
 		vi.unstubAllGlobals();
 	});
 

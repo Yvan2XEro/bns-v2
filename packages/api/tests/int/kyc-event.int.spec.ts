@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { processKycEvent } from "../../src/jobs/processKycEvent";
+import {
+	processKycEvent,
+	runProcessKycEvent,
+} from "../../src/jobs/processKycEvent";
 import { startKycSession } from "../../src/services/verification";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -140,7 +143,10 @@ function diditDecisionBody(result: typeof RESULT) {
 			last_name: result.familyName,
 		},
 		liveness: { status: result.livenessPassed ? "Approved" : "Declined" },
-		face_match: { score: result.faceMatchScore },
+		// The wire body carries Didit's own 0..1 fraction; `RESULT.faceMatchScore`
+		// is the 0-100 percentage a reviewer reads once it is stored, so the two
+		// are related by the same /100 the adapter itself reverses.
+		face_match: { score: result.faceMatchScore / 100 },
 		warnings: result.warnings,
 		review_url: result.reviewUrl,
 	};
@@ -198,6 +204,23 @@ describe("processKycEvent", () => {
 		expect(kyc.documentNumberHash).toMatch(/^[0-9a-f]{64}$/);
 		expect(JSON.stringify(request(payload))).not.toContain("123456789");
 		expect(JSON.stringify(request(payload))).not.toContain("1995-03-04");
+	});
+
+	it("takes the last four digits from the normalised document number, not the raw one", async () => {
+		// A vendor can return internal and trailing whitespace; the hash is
+		// peppered from the normalised string, and the last 4 a reviewer matches
+		// against the physical document must come from that same normalised
+		// string — a slice of the raw one would yield "89 " (two digits and a
+		// space) instead of "6789".
+		withProvider({ documentNumber: "12 34 56 789 " });
+		const payload = seed();
+		await processKycEvent(payload, {
+			webhookEventId: "we-2",
+			provider: "didit",
+			sessionRef: "sess-1",
+		});
+
+		expect(request(payload).kyc?.documentNumberLast4).toBe("6789");
 	});
 
 	it("moves an approved result to submitted and leaves the decision to a person", async () => {
@@ -348,6 +371,75 @@ describe("processKycEvent", () => {
 			sessionRef: "sess-1",
 		});
 		expect(JSON.stringify(request(payload))).toBe(after);
+	});
+});
+
+describe("runProcessKycEvent with a missing hash pepper", () => {
+	const REAL_PEPPER = process.env.VERIFICATION_HASH_PEPPER;
+
+	afterEach(() => {
+		process.env.VERIFICATION_HASH_PEPPER = REAL_PEPPER;
+	});
+
+	it("refuses to hash with a declared, stable error code", async () => {
+		process.env.VERIFICATION_HASH_PEPPER = "";
+		withProvider();
+		const payload = seed();
+		await expect(
+			processKycEvent(payload, {
+				webhookEventId: "we-1",
+				provider: "didit",
+				sessionRef: "sess-1",
+			}),
+		).rejects.toMatchObject({
+			name: "ServiceError",
+			code: "verification.hashUnavailable",
+			status: 500,
+		});
+		// Fails closed: no partial write of the decoded result under a hash
+		// that would have protected nothing.
+		expect(request(payload).status).toBe("draft");
+		expect(request(payload).kyc.documentNumberHash).toBeUndefined();
+	});
+
+	it("logs once and stops instead of letting the job retry a condition that cannot change on its own", async () => {
+		process.env.VERIFICATION_HASH_PEPPER = "";
+		withProvider();
+		const payload = seed();
+		const logger = { error: vi.fn() };
+
+		const result = await runProcessKycEvent(payload, logger, {
+			webhookEventId: "we-1",
+			provider: "didit",
+			sessionRef: "sess-1",
+		});
+
+		expect(result).toEqual({
+			output: { handled: false, requestId: null, status: null },
+		});
+		expect(logger.error).toHaveBeenCalledTimes(1);
+		expect(logger.error.mock.calls[0][1]).toMatch(/VERIFICATION_HASH_PEPPER/);
+	});
+
+	it("still throws, so the job retries, when the failure is not this misconfiguration", async () => {
+		process.env.VERIFICATION_HASH_PEPPER = REAL_PEPPER;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => {
+				throw new Error("network unreachable");
+			}),
+		);
+		const payload = seed();
+		const logger = { error: vi.fn() };
+
+		await expect(
+			runProcessKycEvent(payload, logger, {
+				webhookEventId: "we-1",
+				provider: "didit",
+				sessionRef: "sess-1",
+			}),
+		).rejects.toThrow("network unreachable");
+		expect(logger.error).not.toHaveBeenCalled();
 	});
 });
 
