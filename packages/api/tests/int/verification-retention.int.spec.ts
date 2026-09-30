@@ -18,7 +18,9 @@ import {
 import {
 	documentPurgeDueAt,
 	RETENTION,
+	rowStripDueAt,
 } from "../../src/lib/verificationRetention";
+import { setShopLevel } from "../../src/services/shops";
 import { fakePayload } from "./helpers/fakePayload";
 
 process.env.DIDIT_API_KEY = "key-test";
@@ -73,8 +75,54 @@ describe("retention periods", () => {
 			requestRowYears: 5,
 			documentViewYears: 3,
 			vendorDeletionAfterDecisionDays: 30,
-			hashesAfterAccountDeletionDays: 365,
 		});
+	});
+
+	// The design's table also names a one-year hash purge anchored on account
+	// deletion, but nothing stamps the marker it would run off — see the
+	// module's own comment. A constant nothing reads is worse than none: it
+	// makes a rule that was never built look shipped.
+	it("declares no hash-purge period, since nothing anchors it", () => {
+		expect(RETENTION).not.toHaveProperty("hashesAfterAccountDeletionDays");
+	});
+
+	it("anchors the document purge on when the request became terminal, not on its last write", () => {
+		// The exact C8 shape: rejected on day 0, an unrelated write (the vendor
+		// session sweep, account deletion clearing a name, anything) bumps
+		// `updatedAt` on day 30. Anchoring on `updatedAt` would defer the purge to
+		// day 120; the transition itself happened on day 0 and the purge stays
+		// due at day 90.
+		const request = {
+			status: "rejected",
+			updatedAt: days(60), // bumped by an unrelated write 30 days after rejection
+			statusHistory: [
+				{ status: "submitted", at: days(91) },
+				{ status: "rejected", at: days(91) },
+			],
+		};
+		expect(documentPurgeDueAt(request, NOW)!.getTime()).toBeLessThanOrEqual(
+			NOW.getTime(),
+		);
+	});
+
+	it("anchors the row strip on when the request became terminal, not on its last write", () => {
+		const request = {
+			status: "rejected",
+			updatedAt: days(30), // an unrelated write long after the transition
+			statusHistory: [{ status: "rejected", at: days(5 * 365 + 1) }],
+		};
+		expect(rowStripDueAt(request)!.getTime()).toBeLessThanOrEqual(
+			NOW.getTime(),
+		);
+	});
+
+	it("falls back to updatedAt for a row with no statusHistory", () => {
+		expect(
+			documentPurgeDueAt(
+				{ status: "rejected", updatedAt: days(91) },
+				NOW,
+			)!.getTime(),
+		).toBeLessThanOrEqual(NOW.getTime());
 	});
 
 	it("keeps an approved request's files until it leaves approved", () => {
@@ -324,6 +372,66 @@ describe("purgeVerificationData", () => {
 		]);
 	});
 
+	it("still purges a rejected request's documents on day 90 after an unrelated write on day 30 (C8)", async () => {
+		const fetchMock = mockDeleteEndpoint();
+		const start = new Date("2027-01-01T00:00:00.000Z");
+		const day30 = new Date(start.getTime() + 30 * 86_400_000);
+		const day90 = new Date(start.getTime() + 90 * 86_400_000);
+
+		const payload = seed({
+			"verification-requests": [
+				{
+					id: "vr-1",
+					shop: "s-1",
+					submittedBy: "u-1",
+					requestedLevel: 2,
+					status: "rejected",
+					updatedAt: start.toISOString(),
+					statusHistory: [{ status: "rejected", at: start.toISOString() }],
+					kyc: {
+						provider: "didit",
+						sessionRef: "sess-1",
+						decidedAt: start.toISOString(),
+						vendorDataDeletedAt: null,
+					},
+				},
+			],
+			"verification-documents": [
+				{
+					id: "vd-1",
+					request: "vr-1",
+					shop: "s-1",
+					kind: "rccm_extract",
+					filename: "a.pdf",
+					sha256: "h",
+				},
+			],
+		});
+
+		// Day 30: the vendor-session sweep writes the request (bumps
+		// `updatedAt`), the same class of write C8 traced — not a transition, so
+		// it must not move the document purge date. Real timers faked to day 30
+		// so the fake store's own `updatedAt` stamp (wall-clock `Date.now()`)
+		// actually lands there, the way it would in production.
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(day30);
+		await purgeVerificationData(payload, day30);
+		expect(fetchMock).toHaveBeenCalled();
+		expect(
+			payload.store["verification-requests"][0].kyc.vendorDataDeletedAt,
+		).toBeTruthy();
+		expect(payload.store["verification-requests"][0].updatedAt).not.toBe(
+			start.toISOString(),
+		);
+		vi.useRealTimers();
+
+		// Day 90 from the rejection, not from the day-30 write: the document
+		// still purges on schedule. Anchoring on `updatedAt` would have deferred
+		// this to day 120 (30 days past the write, not 90 past the rejection).
+		const report = await purgeVerificationData(payload, day90);
+		expect(report.filesPurged).toEqual(["vd-1"]);
+	});
+
 	it("deletes view rows older than three years", async () => {
 		const payload = seed({
 			"verification-document-views": [
@@ -422,6 +530,82 @@ describe("purgeVerificationData", () => {
 		expect(
 			(await purgeVerificationData(payload, NOW)).expiringNotified,
 		).toEqual([]);
+	});
+
+	it("still sends the 30-day notice after a run misses the exact day (I10)", async () => {
+		const payload = seed();
+		// The job never ran on the exact 30-day mark; the first run to see this
+		// shop finds it 25 days out. Exact-day equality would skip the notice
+		// forever; `<=` catches it up.
+		payload.store.shops[0].levelExpiresAt = new Date(
+			NOW.getTime() + 25 * 86_400_000,
+		).toISOString();
+		expect(
+			(await purgeVerificationData(payload, NOW)).expiringNotified,
+		).toEqual(["s-1"]);
+		expect(payload.store.shops[0].notifiedExpiryDays).toBe(30);
+	});
+
+	it("still sends the 7-day notice after the 7-day mark is also missed (I10)", async () => {
+		const payload = seed();
+		payload.store.shops[0].levelExpiresAt = new Date(
+			NOW.getTime() + 25 * 86_400_000,
+		).toISOString();
+		await purgeVerificationData(payload, NOW);
+		expect(payload.store.shops[0].notifiedExpiryDays).toBe(30);
+
+		// Jumps straight past the 7-day mark (missed the same way) to 3 days out.
+		const later = new Date(NOW.getTime() + 22 * 86_400_000);
+		expect(
+			(await purgeVerificationData(payload, later)).expiringNotified,
+		).toEqual(["s-1"]);
+		expect(payload.store.shops[0].notifiedExpiryDays).toBe(7);
+
+		// And does not re-fire once both thresholds are behind it.
+		expect(
+			(await purgeVerificationData(payload, later)).expiringNotified,
+		).toEqual([]);
+	});
+});
+
+describe("setShopLevel resets the expiry notice marker on renewal (I10)", () => {
+	function seedShop(over: Record<string, unknown> = {}) {
+		return fakePayload({
+			shops: [
+				{
+					id: "s-1",
+					handle: "akwa",
+					owner: "u-1",
+					status: "active",
+					level: 2,
+					levelExpiresAt: days(-20),
+					notifiedExpiryDays: 30,
+					...over,
+				},
+			],
+		});
+	}
+	const req = (payload: ReturnType<typeof seedShop>) =>
+		({ payload, context: {}, user: null }) as never;
+
+	it("clears the marker when a recompute lands a new expiry date", async () => {
+		const payload = seedShop();
+		const renewed = new Date(NOW.getTime() + 400 * 86_400_000).toISOString();
+		await setShopLevel(req(payload), "s-1", {
+			level: 2,
+			levelExpiresAt: renewed,
+		});
+		expect(payload.store.shops[0]).toMatchObject({
+			levelExpiresAt: renewed,
+			notifiedExpiryDays: null,
+		});
+	});
+
+	it("leaves the marker alone when the expiry date does not change", async () => {
+		const payload = seedShop();
+		const same = payload.store.shops[0].levelExpiresAt as string;
+		await setShopLevel(req(payload), "s-1", { level: 2, levelExpiresAt: same });
+		expect(payload.store.shops[0].notifiedExpiryDays).toBe(30);
 	});
 });
 
