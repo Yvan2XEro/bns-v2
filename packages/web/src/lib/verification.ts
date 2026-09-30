@@ -226,6 +226,8 @@ export interface ReviewerRequestDetail {
 	viewer: {
 		canClaim: boolean;
 		canDecide: boolean;
+		/** Revoking an approved request: conflict-of-interest and rank, never assignee — an approved request's assignee is always null. */
+		canRevoke: boolean;
 		isAssignee: boolean;
 		isAdmin: boolean;
 		conflictOfInterest: boolean;
@@ -499,6 +501,56 @@ export function shouldKeepPolling(
 	const request = view.requests[key];
 	if (!request) return false;
 	return POLL_ACTIVE_STATUSES.has(request.status);
+}
+
+/** What the identity-verification return page shows for the level-2 request. */
+export type ReturnOutcome =
+	| { kind: "polling" }
+	| { kind: "declinedRetry" }
+	| { kind: "timeout" }
+	| { kind: "answer"; status: VerificationStatus };
+
+/**
+ * Below this many attempts the vendor's decline leaves the request in
+ * `draft` so the owner can simply retry — the same status a session that
+ * has not resolved yet also sits in. Only `kyc.status` and `kyc.attempts`
+ * tell the two apart, so this is checked before the generic polling bucket,
+ * never instead of it.
+ */
+const MAX_KYC_ATTEMPTS = 3;
+
+/**
+ * The identity-verification return page's outcome: still checking, a
+ * decline with attempts left (offer Retry), the poll timeout with the
+ * request still open (offer Refresh), or the vendor's answer read straight
+ * off the level-2 request's own status. Mirrors mobile's
+ * `resolveOutcome` in `useVerificationReturn.ts` — the same three-way split,
+ * kept in each client rather than shared across the package boundary.
+ */
+export function resolveReturnOutcome(
+	view: ShopVerificationResponse | undefined,
+	elapsedMs: number,
+): ReturnOutcome {
+	const request = view?.requests.level2 ?? null;
+	if (!request) return { kind: "polling" };
+
+	if (
+		request.status === "draft" &&
+		request.kyc?.status === "declined" &&
+		(request.kyc.attempts ?? 0) < MAX_KYC_ATTEMPTS
+	) {
+		return { kind: "declinedRetry" };
+	}
+
+	if (view && shouldKeepPolling(view, 2, elapsedMs)) {
+		return { kind: "polling" };
+	}
+
+	const stillOpen =
+		request.status === "draft" || request.status === "submitted";
+	if (stillOpen) return { kind: "timeout" };
+
+	return { kind: "answer", status: request.status };
 }
 
 /**

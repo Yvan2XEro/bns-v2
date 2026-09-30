@@ -305,13 +305,10 @@
 	"Profile": {
 		"myProfile": "Mon profil",
 		"accountSettings": "Paramètres du compte",
-		"verifyAccount": "Vérifiez votre compte pour gagner la confiance des acheteurs.",
-		"contactSupport": "Contacter le support",
-		"verifiedSeller": "Vendeur vérifié",
+		"increaseLevel": "Augmenter votre niveau",
 		"profileTab": "Profil",
 		"listingsTab": "Mes annonces",
 		"profilePreview": "Aperçu du profil",
-		"verified": "Vérifié",
 		"joined": "Inscrit le {date}",
 		"userReviews": "{count} avis",
 		"savedSearches": "Recherches sauvegardées",
@@ -528,7 +525,9 @@
 		"thirdPartyDesc": "Notre plateforme peut contenir des liens vers des sites ou services tiers. Nous ne sommes pas responsables des pratiques de confidentialité de ces services externes. Nous vous encourageons à lire leurs politiques de confidentialité.",
 		"changesTitle": "9. Modifications de cette politique",
 		"changesDesc": "Nous pouvons mettre à jour cette politique de confidentialité de temps à autre. Nous vous notifierons des changements importants par email ou via un avis sur la plateforme. Votre utilisation continue du Service après les modifications constitue l'acceptation.",
-		"contactTitle": "10. Contact",
+		"sellerVerificationTitle": "10. Vérification d'identité et d'entreprise des vendeurs",
+		"sellerVerificationDesc": "Si vous faites vérifier une boutique, nous transmettons la pièce d'identité et le selfie que vous fournissez à notre partenaire de vérification d'identité (actuellement Didit ou Smile ID), qui peut les traiter hors du Cameroun dans le cadre de garanties contractuelles de protection des données, et, pour la vérification d'entreprise, nous conservons les informations d'immatriculation et les documents que vous transmettez. Le prestataire supprime sa propre copie dans les 30 jours suivant une décision. Nous conservons le dossier de vérification pendant 90 jours après une décision définitive (jusqu'à un an en cas de révocation pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige. Vous pouvez demander à consulter ou supprimer ces informations à tout moment en écrivant à privacy@buynsellem.com, sauf ce que la loi nous oblige à conserver.",
+		"contactTitle": "11. Contact",
 		"contactDesc": "Pour toute question sur cette politique de confidentialité ou vos données, contactez-nous à {email}.",
 		"mobileTitle": "Application mobile",
 		"mobileIntro": "L'application mobile demande les autorisations suivantes, chacune uniquement au moment où vous utilisez la fonctionnalité concernée :",
@@ -1099,6 +1098,7 @@
 		"tabAddress": "Adresse de la page",
 		"tabContacts": "Contacts",
 		"tabListings": "Annonces",
+		"tabLegal": "Informations légales",
 		"tabClose": "Fermeture",
 		"logo": "Logo",
 		"logoHint": "Carré, 512 × 512 px conseillé · PNG ou JPG, 2 Mo au plus",
@@ -1125,6 +1125,9 @@
 		"contactWhatsapp": "WhatsApp",
 		"contactEmail": "E-mail",
 		"contactEmailInvalid": "Cette adresse e-mail n'est pas valide.",
+		"legalHint": "Déclarez l'identité légale de votre boutique. Un modérateur la vérifie dès que vous demandez la vérification entreprise.",
+		"legalLockedHint": "Vos informations légales sont vérifiées et ne peuvent plus être modifiées ici. Un changement nécessite une nouvelle vérification entreprise.",
+		"legalNone": "Non renseigné",
 		"listingsBody": "{count, plural, =0 {Vous n'avez aucune annonce personnelle à transférer.} one {Vous avez # annonce personnelle à reprendre dans la boutique.} other {Vous avez # annonces personnelles à reprendre dans la boutique.}}",
 		"moveTitle": "Transférer mes annonces",
 		"moveBody": "Vos annonces personnelles deviennent des produits de {shop}, avec une seule variante.",
@@ -1465,6 +1468,77 @@
 		"hub": {
 			"title": "Vérification",
 			"disabledBanner": "Les demandes de vérification sont suspendues pour le moment. Vous voyez toujours où en est votre boutique, mais vous ne pouvez pas démarrer ni renouveler une demande tant que ce n'est pas rouvert."
+		},
+		"identity": {
+			"pageTitle": "Vérification d'identité",
+			"loadError": "Impossible de charger votre statut de vérification.",
+			"blocked": {
+				"body": "La vérification d'identité n'est pas disponible pour cette boutique en ce moment. Consultez le centre de vérification pour connaître l'état actuel.",
+				"backToHub": "Retour à la vérification"
+			},
+			"consent": {
+				"title": "Avant de commencer",
+				"intro": "Pour vérifier votre identité, BuyNSellem transmet votre pièce d'identité et un selfie à son partenaire de vérification d'identité. Merci de lire ce que cela implique avant de continuer.",
+				"collects": "Ce que nous collectons : une pièce d'identité (carte nationale, passeport ou carte de séjour) et un selfie utilisé pour vérifier qu'il s'agit bien de vous.",
+				"vendor": "Ces informations sont traitées par le partenaire de vérification d'identité de BuyNSellem (actuellement Didit ou Smile ID), qui peut les traiter hors du Cameroun dans le cadre de garanties contractuelles de protection des données.",
+				"retention": "Le prestataire supprime sa propre copie dans les 30 jours suivant une décision. Nous conservons le dossier de vérification pendant 90 jours après une décision définitive (jusqu'à un an en cas de révocation pour fraude), et la trace qu'une vérification a eu lieu pendant 5 ans, comme la loi l'exige.",
+				"rights": "Vous pouvez demander à consulter ou supprimer ces informations à tout moment, sauf ce que la loi nous oblige à conserver.",
+				"contact": "Contact : privacy@buynsellem.com",
+				"checkboxLabel": "J'ai lu cette notice et j'accepte que ma pièce d'identité et mon selfie soient transmis pour vérification.",
+				"checkboxError": "Merci d'accepter la notice pour continuer.",
+				"start": "Démarrer la vérification",
+				"starting": "Démarrage…"
+			}
+		},
+		"return": {
+			"title": "Résultat de la vérification",
+			"backToHub": "Retour à la vérification",
+			"missing": {
+				"title": "Nous n'avons pas trouvé cette demande",
+				"body": "Ouvrez le centre de vérification pour connaître l'état actuel."
+			},
+			"polling": {
+				"title": "Vérification du résultat…",
+				"body": "Cela peut prendre un moment. Merci de garder cette page ouverte, ou de revenir bientôt."
+			},
+			"outcome": {
+				"declinedRetry": {
+					"title": "Cette tentative n'a pas abouti",
+					"body": "Le document n'a pas pu être vérifié cette fois-ci, mais vous pouvez encore réessayer.",
+					"cta": "Réessayer"
+				},
+				"timeout": {
+					"title": "Résultat toujours en attente",
+					"body": "Cela prend plus de temps que d'habitude. Le résultat peut encore arriver de lui-même — vous pouvez vérifier à nouveau maintenant.",
+					"cta": "Actualiser"
+				},
+				"answer": {
+					"approved": {
+						"title": "Identité vérifiée",
+						"body": "Votre identité a été vérifiée."
+					},
+					"needsInfo": {
+						"title": "Informations complémentaires nécessaires",
+						"body": "Un modérateur a besoin d'informations complémentaires avant de statuer. Consultez le centre de vérification pour le détail."
+					},
+					"submitted": {
+						"title": "En cours d'examen",
+						"body": "Votre demande a été transmise à un modérateur et est en cours d'examen."
+					},
+					"rejected": {
+						"title": "Demande rejetée",
+						"body": "Cette demande a été rejetée. Consultez le centre de vérification pour le détail."
+					},
+					"revoked": {
+						"title": "Vérification révoquée",
+						"body": "Cette vérification a été révoquée. Consultez le centre de vérification pour le détail."
+					},
+					"expired": {
+						"title": "Demande expirée",
+						"body": "Cette demande a expiré."
+					}
+				}
+			}
 		},
 		"statusCard": {
 			"noLevel": "Pas encore vérifiée",

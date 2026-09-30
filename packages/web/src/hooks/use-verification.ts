@@ -84,6 +84,7 @@ export function useStartKycSession(
 				{
 					consentVersion,
 					locale,
+					platform: "web",
 				},
 			),
 		retry: false,

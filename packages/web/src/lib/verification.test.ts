@@ -11,6 +11,7 @@ import {
 	REJECT_REASONS,
 	REQUEST_INFO_REASONS,
 	REVOKE_REASONS,
+	resolveReturnOutcome,
 	type ShopVerificationResponse,
 	shouldKeepPolling,
 	statusToneKey,
@@ -316,6 +317,76 @@ describe("shouldKeepPolling", () => {
 				0,
 			),
 		).toBe(false);
+	});
+});
+
+describe("resolveReturnOutcome", () => {
+	it("keeps polling with nothing to show yet", () => {
+		expect(resolveReturnOutcome(undefined, 0)).toEqual({ kind: "polling" });
+		expect(
+			resolveReturnOutcome(
+				view({ requests: { level2: null, level3: null } }),
+				0,
+			),
+		).toEqual({ kind: "polling" });
+	});
+
+	it("offers a retry on an early decline that still has attempts left", () => {
+		const declined = view({
+			requests: {
+				level2: { status: "draft", kyc: { status: "declined", attempts: 1 } },
+				level3: null,
+			},
+		});
+		expect(resolveReturnOutcome(declined, 0)).toEqual({
+			kind: "declinedRetry",
+		});
+	});
+
+	it("does not offer a retry once attempts reach the cap, even if the status has not moved on", () => {
+		const declined = view({
+			requests: {
+				level2: { status: "draft", kyc: { status: "declined", attempts: 3 } },
+				level3: null,
+			},
+		});
+		expect(resolveReturnOutcome(declined, POLL_TIMEOUT_MS)).toEqual({
+			kind: "timeout",
+		});
+	});
+
+	it("keeps polling a still-open request within the timeout", () => {
+		const pending = view({
+			requests: { level2: { status: "submitted" }, level3: null },
+		});
+		expect(resolveReturnOutcome(pending, 0)).toEqual({ kind: "polling" });
+	});
+
+	it("times out a still-open request once the poll window elapses", () => {
+		const pending = view({
+			requests: { level2: { status: "draft" }, level3: null },
+		});
+		expect(resolveReturnOutcome(pending, POLL_TIMEOUT_MS)).toEqual({
+			kind: "timeout",
+		});
+	});
+
+	it("reports the vendor's answer once the request is no longer open", () => {
+		for (const status of [
+			"approved",
+			"rejected",
+			"needs_info",
+			"revoked",
+			"expired",
+		] as const) {
+			const answered = view({
+				requests: { level2: { status }, level3: null },
+			});
+			expect(resolveReturnOutcome(answered, 0)).toEqual({
+				kind: "answer",
+				status,
+			});
+		}
 	});
 });
 

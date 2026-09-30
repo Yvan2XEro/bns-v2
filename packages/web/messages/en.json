@@ -304,13 +304,10 @@
 	"Profile": {
 		"myProfile": "My Profile",
 		"accountSettings": "Account Settings",
-		"verifyAccount": "Verify your account to build trust with buyers.",
-		"contactSupport": "Contact support",
-		"verifiedSeller": "Verified Seller",
+		"increaseLevel": "Increase your level",
 		"profileTab": "Profile",
 		"listingsTab": "My Listings",
 		"profilePreview": "Profile Preview",
-		"verified": "Verified",
 		"joined": "Joined {date}",
 		"userReviews": "{count} reviews",
 		"savedSearches": "Saved Searches",
@@ -527,7 +524,9 @@
 		"thirdPartyDesc": "Our platform may contain links to third-party websites or services. We are not responsible for the privacy practices of these external services. We encourage you to read their privacy policies.",
 		"changesTitle": "9. Changes to This Policy",
 		"changesDesc": "We may update this privacy policy from time to time. We will notify you of significant changes by email or through a notice on the platform. Your continued use of the Service after changes constitutes acceptance.",
-		"contactTitle": "10. Contact",
+		"sellerVerificationTitle": "10. Seller Identity and Business Verification",
+		"sellerVerificationDesc": "If you verify a shop, we send the identity document and selfie you provide to our identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards, and, for business verification, we store the registration details and documents you submit. The vendor deletes its own copy within 30 days of a decision. We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires. You can ask to see or delete this information at any time by writing to privacy@buynsellem.com, except for what the law requires us to keep.",
+		"contactTitle": "11. Contact",
 		"contactDesc": "For questions about this privacy policy or your data, contact us at {email}.",
 		"mobileTitle": "Mobile app",
 		"mobileIntro": "The mobile app requests the following permissions, each only at the moment you use the corresponding feature:",
@@ -1098,6 +1097,7 @@
 		"tabAddress": "Page address",
 		"tabContacts": "Contacts",
 		"tabListings": "Listings",
+		"tabLegal": "Legal information",
 		"tabClose": "Close",
 		"logo": "Logo",
 		"logoHint": "Square, 512 × 512 px recommended · PNG or JPG, 2 MB at most",
@@ -1124,6 +1124,9 @@
 		"contactWhatsapp": "WhatsApp",
 		"contactEmail": "Email",
 		"contactEmailInvalid": "This email address is not valid.",
+		"legalHint": "Declare your shop's legal identity. A reviewer checks it once you request business verification.",
+		"legalLockedHint": "Your legal information is verified and can no longer be edited here. A change needs a new business verification.",
+		"legalNone": "Not set",
 		"listingsBody": "{count, plural, =0 {You have no personal listing to move.} one {You have # personal listing you can bring into the shop.} other {You have # personal listings you can bring into the shop.}}",
 		"moveTitle": "Move my listings",
 		"moveBody": "Your personal listings become products of {shop}, each with a single variant.",
@@ -1464,6 +1467,77 @@
 		"hub": {
 			"title": "Verification",
 			"disabledBanner": "Verification requests are paused right now. You can still see where your shop stands, but you cannot start or renew a request until it reopens."
+		},
+		"identity": {
+			"pageTitle": "Identity verification",
+			"loadError": "Could not load your verification status.",
+			"blocked": {
+				"body": "Identity verification is not available for this shop at the moment. Check the verification hub for the current status.",
+				"backToHub": "Back to verification"
+			},
+			"consent": {
+				"title": "Before you start",
+				"intro": "To verify your identity, BuyNSellem sends your identification document and a live selfie to its identity verification partner. Please read what this involves before you continue.",
+				"collects": "What we collect: an identity document (national ID, passport or residence permit) and a selfie used to match your face to it.",
+				"vendor": "This information is processed by BuyNSellem's identity verification partner (currently Didit or Smile ID), which may process it outside Cameroon under contractual data-protection safeguards.",
+				"retention": "The vendor deletes its own copy within 30 days of a decision. We keep the verification file for 90 days after a final decision (up to a year if the request was revoked for fraud), and a record that verification took place for 5 years, as the law requires.",
+				"rights": "You can ask to see or delete this information at any time, except for what the law requires us to keep.",
+				"contact": "Contact: privacy@buynsellem.com",
+				"checkboxLabel": "I have read this notice and I agree that my document and selfie are sent for verification.",
+				"checkboxError": "Please accept the notice to continue.",
+				"start": "Start verification",
+				"starting": "Starting…"
+			}
+		},
+		"return": {
+			"title": "Verification result",
+			"backToHub": "Back to verification",
+			"missing": {
+				"title": "We could not find this request",
+				"body": "Open the verification hub to check the current status."
+			},
+			"polling": {
+				"title": "Checking the result…",
+				"body": "This can take a moment. Please keep this page open, or come back shortly."
+			},
+			"outcome": {
+				"declinedRetry": {
+					"title": "That attempt did not go through",
+					"body": "The document could not be verified this time, but you can still try again.",
+					"cta": "Retry"
+				},
+				"timeout": {
+					"title": "Still waiting on the result",
+					"body": "This is taking longer than usual. The result may still arrive on its own — you can check again now.",
+					"cta": "Refresh"
+				},
+				"answer": {
+					"approved": {
+						"title": "Identity verified",
+						"body": "Your identity has been verified."
+					},
+					"needsInfo": {
+						"title": "More information needed",
+						"body": "A reviewer needs more information before deciding. Check the verification hub for details."
+					},
+					"submitted": {
+						"title": "Under review",
+						"body": "Your request was sent to a reviewer and is now under review."
+					},
+					"rejected": {
+						"title": "Request rejected",
+						"body": "This request was rejected. Check the verification hub for details."
+					},
+					"revoked": {
+						"title": "Verification revoked",
+						"body": "This verification has been revoked. Check the verification hub for details."
+					},
+					"expired": {
+						"title": "Request expired",
+						"body": "This request has expired."
+					}
+				}
+			}
 		},
 		"statusCard": {
 			"noLevel": "Not verified yet",

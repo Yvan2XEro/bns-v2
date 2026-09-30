@@ -106,6 +106,9 @@ export default async function PrivacyPage() {
 						<h2>{t("changesTitle")}</h2>
 						<p>{t("changesDesc")}</p>
 
+						<h2>{t("sellerVerificationTitle")}</h2>
+						<p>{t("sellerVerificationDesc")}</p>
+
 						<h2>{t("contactTitle")}</h2>
 						<p>{t("contactDesc", { email: "privacy@buynsellem.com" })}</p>
 					</div>
