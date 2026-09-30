@@ -112,7 +112,9 @@ export function canOpenRequest(
 	level: 2 | 3,
 ): CanOpenResult {
 	if (!view.enabled) return { ok: false, reason: "disabled" };
-	if (level === 3 && view.capabilities.effectiveLevel < 2) {
+	// Mirrors web's `canOpenRequest`: level 2 needs the phone level (1), level
+	// 3 needs level 2 — the same `level - 1` rule for both, not just level 3.
+	if (view.capabilities.effectiveLevel < level - 1) {
 		return { ok: false, reason: "notEligible" };
 	}
 
@@ -121,16 +123,19 @@ export function canOpenRequest(
 		return { ok: false, reason: "open" };
 	}
 
-	if (view.cooldownUntil) {
-		return { ok: false, reason: "cooldown", until: view.cooldownUntil };
-	}
-
 	if (current?.status === "approved") {
 		const renewableFrom =
 			level === 2 ? view.renewableFrom.level2 : view.renewableFrom.level3;
 		if (renewableFrom && Date.parse(renewableFrom) > Date.now()) {
 			return { ok: false, reason: "notRenewableYet", until: renewableFrom };
 		}
+		return { ok: true };
+	}
+
+	// Only a *future* cooldown refuses — a stale one (the boundary has
+	// already passed) must not keep blocking "Start" forever.
+	if (view.cooldownUntil && Date.parse(view.cooldownUntil) > Date.now()) {
+		return { ok: false, reason: "cooldown", until: view.cooldownUntil };
 	}
 
 	return { ok: true };
@@ -168,9 +173,12 @@ export interface TimelineEntry {
 
 /**
  * Newest first. A vendor-source step (the automatic level-2 auto-submit) is
- * never shown to the seller — it is not an action they took or watched. The
- * reviewer's info-request and the final decision attach to the history entry
- * recorded at the same instant, which is how each one was written.
+ * hidden from the seller — it is not an action they took or watched —
+ * *unless* it is the entry that put the request in its current status: a
+ * live "submitted" request must show a "submitted" row and highlight it, or
+ * the timeline silently lies about where things stand. The reviewer's
+ * info-request and the final decision attach to the history entry recorded
+ * at the same instant, which is how each one was written.
  */
 export function buildTimeline(
 	request: Pick<
@@ -178,18 +186,16 @@ export function buildTimeline(
 		"status" | "statusHistory" | "infoRequests" | "decision"
 	>,
 ): TimelineEntry[] {
-	const visible = request.statusHistory.filter(
-		(entry) => entry.source !== "vendor",
-	);
-	const sorted = [...visible].sort(
+	const sortedAll = [...request.statusHistory].sort(
 		(a, b) => Date.parse(b.at) - Date.parse(a.at),
 	);
+	const currentEntry =
+		sortedAll.find((entry) => entry.status === request.status) ?? null;
+	const visible = sortedAll.filter(
+		(entry) => entry.source !== "vendor" || entry === currentEntry,
+	);
 
-	let currentAssigned = false;
-	return sorted.map((entry) => {
-		const isCurrent = !currentAssigned && entry.status === request.status;
-		if (isCurrent) currentAssigned = true;
-
+	return visible.map((entry) => {
 		const infoRequest = request.infoRequests.find(
 			(candidate) => candidate.requestedAt === entry.at,
 		);
@@ -200,7 +206,7 @@ export function buildTimeline(
 			status: entry.status,
 			at: entry.at,
 			source: entry.source,
-			current: isCurrent,
+			current: entry === currentEntry,
 			message: decision?.sellerMessage ?? infoRequest?.message ?? null,
 			reasonCode: decision?.reasonCode ?? infoRequest?.reasonCode ?? null,
 		};

@@ -130,6 +130,15 @@ describe("canOpenRequest", () => {
 		});
 	});
 
+	test("refuses level 2 before the phone level", () => {
+		expect(
+			canOpenRequest(
+				baseView({ capabilities: baseCapabilities({ effectiveLevel: 0 }) }),
+				2,
+			),
+		).toEqual({ ok: false, reason: "notEligible" });
+	});
+
 	test("refuses while a request for that level is open", () => {
 		const open = baseView({
 			requests: { level2: baseRequest({ status: "submitted" }), level3: null },
@@ -143,6 +152,13 @@ describe("canOpenRequest", () => {
 			ok: false,
 			reason: "cooldown",
 			until,
+		});
+	});
+
+	test("allows it once a stale cooldown has passed", () => {
+		const until = new Date(Date.now() - 3_600_000).toISOString();
+		expect(canOpenRequest(baseView({ cooldownUntil: until }), 2)).toEqual({
+			ok: true,
 		});
 	});
 
@@ -270,6 +286,30 @@ describe("buildTimeline", () => {
 		expect(
 			buildTimeline(withVendor).some((entry) => entry.source === "vendor"),
 		).toBe(false);
+	});
+
+	test("highlights the vendor's auto-submit when it is the live status", () => {
+		const autoSubmitted = baseRequest({
+			status: "submitted",
+			statusHistory: [
+				{ status: "draft", at: "2026-10-01T09:00:00.000Z", source: "seller" },
+				{
+					status: "submitted",
+					at: "2026-10-01T09:05:00.000Z",
+					source: "vendor",
+				},
+			],
+			infoRequests: [],
+			decision: null,
+		});
+		const timeline = buildTimeline(autoSubmitted);
+		expect(timeline).toHaveLength(2);
+		expect(timeline[0]).toMatchObject({
+			status: "submitted",
+			source: "vendor",
+			current: true,
+		});
+		expect(timeline[1]).toMatchObject({ status: "draft", current: false });
 	});
 
 	test("is empty, not undefined, for a request with no history", () => {
