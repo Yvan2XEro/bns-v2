@@ -24,6 +24,7 @@ import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { badgeForLevel } from "@/src/lib/verification";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
@@ -342,7 +343,10 @@ export default function AccountScreen() {
 										iconBg={isDark ? "#172554" : "#dbeafe"}
 										iconColor={primaryColor}
 										rightElement={
-											<LevelBadge level={ownShop.level} size="sm" />
+											<LevelBadge
+												badge={badgeForLevel(ownShop.level)}
+												size="sm"
+											/>
 										}
 										onPress={() => router.push("/seller" as never)}
 										isDark={isDark}

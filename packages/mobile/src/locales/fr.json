@@ -1223,6 +1223,23 @@
 			"self": "Vous ne pouvez pas vous évaluer vous-même.",
 			"duplicate": "Vous avez déjà évalué cet utilisateur.",
 			"noInteraction": "Vous pouvez évaluer un utilisateur seulement après l'avoir contacté."
+		},
+		"verification": {
+			"disabled": "La vérification n'est pas encore disponible.",
+			"notOwner": "Seul le propriétaire de la boutique peut faire cela.",
+			"levelNotEligible": "Vérifiez votre identité avant de demander la vérification de l'entreprise.",
+			"requestOpen": "Une demande pour ce niveau est déjà en cours.",
+			"cooldown": "Vous ne pouvez pas encore ouvrir une nouvelle demande. Réessayez plus tard.",
+			"invalidTransition": "Cette demande n'est pas dans un état permettant cette action.",
+			"consentRequired": "Veuillez accepter la notice de protection des données en vigueur pour continuer.",
+			"tooManyAttempts": "Trop de tentatives de vérification. Réessayez plus tard.",
+			"kycUnavailable": "La vérification d'identité est indisponible pour le moment. Réessayez sous peu.",
+			"documentLimit": "Vous avez atteint le nombre maximum de documents pour cette demande.",
+			"documentsMissing": "Certains documents obligatoires manquent encore.",
+			"fieldsInvalid": "Veuillez vérifier les informations d'entreprise signalées.",
+			"notAssignee": "Seul le relecteur qui a pris cette demande peut la décider.",
+			"conflictOfInterest": "Vous ne pouvez pas relire une boutique à laquelle vous êtes lié.",
+			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver."
 		}
 	},
 	"cityPicker": {
@@ -1363,6 +1380,8 @@
 	},
 	"shop": {
 		"levelPhone": "Téléphone vérifié",
+		"levelIdentity": "Identité vérifiée",
+		"levelBusiness": "Entreprise vérifiée",
 		"notFoundTitle": "Boutique introuvable",
 		"notFoundSubtitle": "Cette boutique n'existe pas ou n'est plus disponible.",
 		"shareLabel": "Partager {{name}}",

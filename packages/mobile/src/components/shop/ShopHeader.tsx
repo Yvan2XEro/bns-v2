@@ -6,6 +6,7 @@ import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { shopUrlLabel } from "@/src/lib/shopHandle";
+import { badgeForLevel } from "@/src/lib/verification";
 import type { PublicShop } from "@/src/types/api";
 import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
@@ -48,7 +49,7 @@ export function ShopHeader({
 				</View>
 				<Text style={[styles.name, { color: c.text }]}>{shop.name}</Text>
 				<View style={styles.row}>
-					<LevelBadge level={shop.level} />
+					<LevelBadge badge={badgeForLevel(shop.level)} />
 					<Pressable
 						onPress={onShare}
 						hitSlop={8}

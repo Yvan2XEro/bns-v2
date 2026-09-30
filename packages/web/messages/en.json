@@ -168,7 +168,8 @@
 		"shopSearchError": "Shop search is unavailable",
 		"noShopsTitle": "No shop found",
 		"noShopsBody": "Try another word or a wider city.",
-		"clearFilters": "Clear the filters"
+		"clearFilters": "Clear the filters",
+		"verifiedShopsOnly": "Verified shops only"
 	},
 	"Listing": {
 		"backToResults": "Back to results",
@@ -754,7 +755,17 @@
 		"newShop": "New",
 		"view": "View",
 		"shopStatusUnknown": "We couldn't check your shop status. It won't be offered here until this is retried.",
-		"retryShopStatus": "Retry"
+		"retryShopStatus": "Retry",
+		"legalVerifiedTitle": "Verified business",
+		"legalDeclaredTitle": "Declared by the shop",
+		"legalName": "Legal name",
+		"businessType": "Business type",
+		"rccm": "RCCM number",
+		"niu": "NIU",
+		"businessTypeEntreprenant": "Sole proprietor (entreprenant)",
+		"businessTypeSoleTrader": "Sole trader",
+		"businessTypeCompany": "Company",
+		"businessTypeCooperative": "Cooperative"
 	},
 	"ShopCreate": {
 		"title": "Open my shop",
@@ -791,6 +802,7 @@
 			"dashboard": "Dashboard",
 			"catalogue": "Catalogue",
 			"stock": "Stock",
+			"verification": "Verification",
 			"messages": "Messages",
 			"settings": "Settings"
 		},
@@ -1132,6 +1144,218 @@
 		"closeSubmit": "Close the shop",
 		"closeOwnerOnly": "Only the owner can close the shop."
 	},
+	"Moderation": {
+		"title": "Reviewer queue",
+		"subtitle": "Shops waiting on identity or business verification.",
+		"loading": "Loading…",
+		"empty": "No request matches this queue right now.",
+		"errorTitle": "Could not load the queue.",
+		"retry": "Try again",
+		"tabs": {
+			"to_review": "To review",
+			"mine": "Mine",
+			"needs_info": "Waiting on seller",
+			"decided": "Decided"
+		},
+		"filters": {
+			"levelAll": "All levels",
+			"level2": "Level 2 — Identity",
+			"level3": "Level 3 — Business",
+			"signalAll": "All signals"
+		},
+		"status": {
+			"draft": "Draft",
+			"submitted": "Submitted",
+			"in_review": "In review",
+			"needs_info": "Waiting on seller",
+			"approved": "Approved",
+			"rejected": "Rejected",
+			"revoked": "Revoked",
+			"expired": "Expired"
+		},
+		"signal": {
+			"identity_reused": "Identity document reused",
+			"name_mismatch": "Name mismatch",
+			"underage": "Underage",
+			"kyc_declined": "Identity check declined",
+			"kyc_review": "Identity check flagged",
+			"document_reused": "Document reused",
+			"rccm_reused": "RCCM number reused",
+			"niu_reused": "NIU reused",
+			"niu_format": "Unusual NIU format"
+		},
+		"age": {
+			"minutes": "{count, plural, one {# minute ago} other {# minutes ago}}",
+			"hours": "{count, plural, one {# hour ago} other {# hours ago}}",
+			"days": "{count, plural, one {# day ago} other {# days ago}}"
+		},
+		"row": {
+			"shop": "Shop {id}",
+			"view": "Open",
+			"claim": "Claim",
+			"claiming": "Claiming…"
+		},
+		"review": {
+			"header": {
+				"requestedLevel": "Level {level} request"
+			},
+			"common": {
+				"passed": "Passed",
+				"failed": "Failed",
+				"yes": "Yes",
+				"no": "No"
+			},
+			"kyc": {
+				"title": "Identity check",
+				"outcome": "Outcome",
+				"document": "Document",
+				"last4": "Last 4 digits",
+				"expiry": "Expiry",
+				"name": "Name (as read)",
+				"liveness": "Liveness",
+				"faceMatch": "Face match",
+				"vendorConsole": "Open in the vendor console"
+			},
+			"kycStatus": {
+				"not_started": "Not started",
+				"pending": "Pending",
+				"approved": "Approved",
+				"declined": "Declined",
+				"review": "Flagged for review",
+				"abandoned": "Abandoned",
+				"error": "Error"
+			},
+			"documentType": {
+				"national_id": "National ID",
+				"passport": "Passport",
+				"residence_permit": "Residence permit"
+			},
+			"business": {
+				"title": "Business details",
+				"type": "Business type",
+				"legalName": "Legal name",
+				"tradeName": "Trade name",
+				"rccm": "RCCM number",
+				"entreprenantNumber": "Entreprenant declaration number",
+				"niu": "NIU",
+				"niuFormatWarning": "Unusual format",
+				"address": "Registered address",
+				"city": "City",
+				"representative": "Legal representative",
+				"representativeIsOwner": "Representative is the shop owner"
+			},
+			"businessType": {
+				"entreprenant": "Entreprenant",
+				"sole_trader": "Sole trader",
+				"company": "Company",
+				"cooperative": "Cooperative"
+			},
+			"signals": {
+				"title": "Signals",
+				"viewRelated": "View related request",
+				"otherRequests": "Other requests for this shop",
+				"levelRequest": "Level {level} request"
+			},
+			"checklist": {
+				"title": "Checklist",
+				"name_matches_registry": "Name matches the registry",
+				"registration_number_matches_document": "Registration number matches the document",
+				"niu_matches_certificate": "NIU matches the certificate",
+				"representative_matches_identity_or_mandate": "Representative matches their identity document or mandate",
+				"documents_legible_and_current": "Documents are legible and current"
+			},
+			"documents": {
+				"title": "Documents",
+				"unknownKind": "Document",
+				"purged": "This document has been purged and can no longer be viewed.",
+				"view": "View document",
+				"loading": "Requesting a view…",
+				"viewFailed": "This document could not be opened. Please try again."
+			},
+			"documentKind": {
+				"rccm_extract": "RCCM extract",
+				"entreprenant_declaration": "Entreprenant declaration",
+				"niu_certificate": "NIU certificate",
+				"legal_representative_id": "Legal representative's ID",
+				"mandate": "Mandate",
+				"proof_of_address": "Proof of address",
+				"other": "Other document"
+			},
+			"action": {
+				"claim": "Claim",
+				"release": "Release",
+				"request_info": "Request info",
+				"approve": "Approve",
+				"reject": "Reject",
+				"revoke": "Revoke"
+			},
+			"decisionBar": {
+				"checklistIncomplete": "Complete the checklist before approving."
+			},
+			"dialog": {
+				"reasonLabel": "Reason",
+				"reasonPlaceholder": "Select a reason",
+				"reasonRequired": "Please select a reason.",
+				"sellerMessageLabel": "Message to the seller",
+				"sellerMessagePlaceholder": "Explain what the seller needs to fix or know",
+				"sellerMessageHint": "Sent to the seller exactly as written.",
+				"sellerMessageRequired": "Please write a message for the seller.",
+				"noteLabel": "Internal note (optional)",
+				"noteHint": "Visible to reviewers only, never to the seller.",
+				"checklistIncomplete": "Every checklist item must be confirmed before approving.",
+				"irreversible": "This decision cannot be reversed by you afterwards.",
+				"cancel": "Cancel",
+				"claim": {
+					"title": "Claim this request",
+					"description": "You will be the only reviewer able to decide it.",
+					"confirm": "Claim"
+				},
+				"release": {
+					"title": "Release this request",
+					"description": "It returns to the queue for another reviewer to claim.",
+					"confirm": "Release"
+				},
+				"request_info": {
+					"title": "Request more information",
+					"description": "The seller is asked to fix or complete their submission.",
+					"confirm": "Send request"
+				},
+				"approve": {
+					"title": "Approve this request",
+					"description": "The shop is granted this level.",
+					"confirm": "Approve"
+				},
+				"reject": {
+					"title": "Reject this request",
+					"description": "The shop enters a cooldown before it can request this level again.",
+					"confirm": "Reject"
+				},
+				"revoke": {
+					"title": "Revoke this level",
+					"description": "The shop loses the capabilities this level granted.",
+					"confirm": "Revoke"
+				}
+			},
+			"reasonCode": {
+				"document_unreadable": "Document unreadable",
+				"document_missing": "Document missing",
+				"information_inconsistent": "Information inconsistent",
+				"kyc_retry": "Identity check needs a retry",
+				"other": "Other",
+				"document_invalid": "Document invalid",
+				"document_expired": "Document expired",
+				"identity_mismatch": "Identity mismatch",
+				"liveness_failed": "Liveness check failed",
+				"business_mismatch": "Business details mismatch",
+				"duplicate_identity": "Duplicate identity",
+				"fraud_suspected": "Fraud suspected",
+				"fraud": "Fraud",
+				"document_forged": "Document forged",
+				"business_closed": "Business closed",
+				"identity_reused": "Identity reused"
+			}
+		}
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Something went wrong. Please try again.",
@@ -1235,5 +1459,132 @@
 			"conflictOfInterest": "You cannot review a shop you are involved with.",
 			"checklistIncomplete": "Every checklist item must be confirmed before approving."
 		}
+	},
+	"Verification": {
+		"hub": {
+			"title": "Verification",
+			"disabledBanner": "Verification requests are paused right now. You can still see where your shop stands, but you cannot start or renew a request until it reopens."
+		},
+		"statusCard": {
+			"noLevel": "Not verified yet",
+			"expiresOn": "Valid until {date}",
+			"renewableFrom": "Renewable from {date}",
+			"renewCta": "Renew"
+		},
+		"ladder": {
+			"title": "Verification levels",
+			"state": {
+				"reached": "Reached",
+				"current": "Current level",
+				"locked": "Locked"
+			}
+		},
+		"unlocks": {
+			"protectedPayment": "Protected online payment",
+			"teamMembers": "Team members",
+			"supplier": "Supplier status",
+			"fasterPayouts": "Faster payouts",
+			"legalInfoVerified": "Verified legal information"
+		},
+		"timeline": {
+			"status": {
+				"draft": "Draft",
+				"submitted": "Submitted",
+				"in_review": "In review",
+				"needs_info": "More information needed",
+				"approved": "Approved",
+				"rejected": "Rejected",
+				"revoked": "Revoked",
+				"expired": "Expired"
+			}
+		},
+		"reviewerMessage": {
+			"title": {
+				"needs_info": "The reviewer needs more information",
+				"rejected": "This request was rejected"
+			}
+		},
+		"requestCard": {
+			"title": {
+				"2": "Identity verification",
+				"3": "Business verification"
+			},
+			"continue": "Continue"
+		},
+		"action": {
+			"label": {
+				"start": {
+					"2": "Verify your identity",
+					"3": "Verify your business"
+				},
+				"renew": {
+					"2": "Renew your identity verification",
+					"3": "Renew your business verification"
+				}
+			},
+			"cta": {
+				"start": "Start",
+				"renew": "Renew"
+			},
+			"reason": {
+				"disabled": "Verification is not open yet.",
+				"notEligible": "Verify the previous level first.",
+				"open": "A request for this level is already open.",
+				"cooldown": "You can try again from {date}.",
+				"notRenewableYet": "Renewable from {date}.",
+				"notOwner": "Only the shop owner can request verification."
+			}
+		},
+		"error": {
+			"retry": "Try again"
+		},
+		"business": {
+			"pageTitle": "Business verification",
+			"title": "Business details",
+			"businessType": "Business type",
+			"businessTypeOption": {
+				"entreprenant": "Entreprenant (individual declaration)",
+				"sole_trader": "Sole trader",
+				"company": "Company",
+				"cooperative": "Cooperative"
+			},
+			"legalName": "Legal name",
+			"tradeName": "Trade name (optional)",
+			"rccmNumber": "RCCM number",
+			"entreprenantDeclarationNumber": "Entreprenant declaration number",
+			"niu": "Taxpayer number (NIU)",
+			"registeredAddress": "Registered address",
+			"city": "City",
+			"legalRepresentativeName": "Legal representative's name",
+			"legalRepresentativeIsOwner": "The legal representative is the shop owner",
+			"save": "Save business details",
+			"saving": "Saving…"
+		},
+		"documents": {
+			"title": "Required documents",
+			"extrasTitle": "Additional document (optional)",
+			"delete": "Delete",
+			"deleting": "Deleting…",
+			"cancel": "Cancel",
+			"confirmDelete": "Delete this document? This cannot be undone.",
+			"uploading": "Uploading…",
+			"dropHint": "Drag a file here, or click to choose one",
+			"missing": "Still missing: {kinds}",
+			"submit": "Submit for review",
+			"submitting": "Submitting…"
+		},
+		"documentKind": {
+			"rccm_extract": "RCCM extract",
+			"entreprenant_declaration": "Entreprenant declaration",
+			"niu_certificate": "NIU certificate",
+			"legal_representative_id": "Legal representative's ID",
+			"mandate": "Mandate",
+			"proof_of_address": "Proof of address",
+			"other": "Other document"
+		},
+		"noRequest": "There is no open business verification request. Start one from the verification hub.",
+		"backToHub": "Back to the verification hub",
+		"loadError": "We could not load your verification status.",
+		"retry": "Retry"
 	}
 }

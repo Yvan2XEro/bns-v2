@@ -5,6 +5,7 @@ import { Fonts } from "@/constants/theme";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { formatDate } from "@/src/lib/formatDate";
+import { badgeForLevel } from "@/src/lib/verification";
 import type { ModerationShopSheet } from "@/src/types/api";
 import type { ModerationPalette, Translate } from "./theme";
 
@@ -40,7 +41,7 @@ export function ShopIdentityCard({
 				<View style={{ flex: 1, gap: 4 }}>
 					<Text style={[styles.name, { color: c.text }]}>{shop.name}</Text>
 					<View style={styles.row}>
-						<LevelBadge level={shop.level} size="sm" />
+						<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
 						<Text style={[styles.meta, { color: c.muted }]}>
 							@{shop.handle}
 						</Text>

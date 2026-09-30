@@ -169,7 +169,8 @@
 		"shopSearchError": "La recherche de boutiques est indisponible",
 		"noShopsTitle": "Aucune boutique trouvée",
 		"noShopsBody": "Essayez un autre mot ou élargissez la ville.",
-		"clearFilters": "Effacer les filtres"
+		"clearFilters": "Effacer les filtres",
+		"verifiedShopsOnly": "Boutiques vérifiées uniquement"
 	},
 	"Listing": {
 		"backToResults": "Retour aux résultats",
@@ -755,7 +756,17 @@
 		"newShop": "Nouvelle",
 		"view": "Voir",
 		"shopStatusUnknown": "Impossible de vérifier l'état de votre boutique. Elle ne sera pas proposée ici tant que ce n'est pas réessayé.",
-		"retryShopStatus": "Réessayer"
+		"retryShopStatus": "Réessayer",
+		"legalVerifiedTitle": "Entreprise vérifiée",
+		"legalDeclaredTitle": "Déclaré par la boutique",
+		"legalName": "Raison sociale",
+		"businessType": "Type d'entreprise",
+		"rccm": "Numéro RCCM",
+		"niu": "NIU",
+		"businessTypeEntreprenant": "Entreprenant",
+		"businessTypeSoleTrader": "Entreprise individuelle",
+		"businessTypeCompany": "Société",
+		"businessTypeCooperative": "Coopérative"
 	},
 	"ShopCreate": {
 		"title": "Ouvrir ma boutique",
@@ -792,6 +803,7 @@
 			"dashboard": "Tableau de bord",
 			"catalogue": "Catalogue",
 			"stock": "Stock",
+			"verification": "Vérification",
 			"messages": "Messages",
 			"settings": "Paramètres"
 		},
@@ -1133,6 +1145,218 @@
 		"closeSubmit": "Fermer la boutique",
 		"closeOwnerOnly": "Seul le propriétaire peut fermer la boutique."
 	},
+	"Moderation": {
+		"title": "File d’examen",
+		"subtitle": "Boutiques en attente de vérification d’identité ou d’entreprise.",
+		"loading": "Chargement…",
+		"empty": "Aucune demande ne correspond à cette file pour le moment.",
+		"errorTitle": "Impossible de charger la file.",
+		"retry": "Réessayer",
+		"tabs": {
+			"to_review": "À examiner",
+			"mine": "Les miennes",
+			"needs_info": "En attente du vendeur",
+			"decided": "Décidées"
+		},
+		"filters": {
+			"levelAll": "Tous les niveaux",
+			"level2": "Niveau 2 — Identité",
+			"level3": "Niveau 3 — Entreprise",
+			"signalAll": "Tous les signaux"
+		},
+		"status": {
+			"draft": "Brouillon",
+			"submitted": "Soumise",
+			"in_review": "En cours d’examen",
+			"needs_info": "En attente du vendeur",
+			"approved": "Approuvée",
+			"rejected": "Rejetée",
+			"revoked": "Révoquée",
+			"expired": "Expirée"
+		},
+		"signal": {
+			"identity_reused": "Document d’identité réutilisé",
+			"name_mismatch": "Nom non concordant",
+			"underage": "Mineur",
+			"kyc_declined": "Vérification d’identité refusée",
+			"kyc_review": "Vérification d’identité signalée",
+			"document_reused": "Document réutilisé",
+			"rccm_reused": "Numéro RCCM réutilisé",
+			"niu_reused": "NIU réutilisé",
+			"niu_format": "Format de NIU inhabituel"
+		},
+		"age": {
+			"minutes": "il y a {count, plural, one {# minute} other {# minutes}}",
+			"hours": "il y a {count, plural, one {# heure} other {# heures}}",
+			"days": "il y a {count, plural, one {# jour} other {# jours}}"
+		},
+		"row": {
+			"shop": "Boutique {id}",
+			"view": "Ouvrir",
+			"claim": "Prendre en charge",
+			"claiming": "Prise en charge…"
+		},
+		"review": {
+			"header": {
+				"requestedLevel": "Demande niveau {level}"
+			},
+			"common": {
+				"passed": "Réussi",
+				"failed": "Échoué",
+				"yes": "Oui",
+				"no": "Non"
+			},
+			"kyc": {
+				"title": "Vérification d'identité",
+				"outcome": "Résultat",
+				"document": "Document",
+				"last4": "4 derniers chiffres",
+				"expiry": "Expiration",
+				"name": "Nom (tel que lu)",
+				"liveness": "Détection de vivacité",
+				"faceMatch": "Correspondance faciale",
+				"vendorConsole": "Ouvrir dans la console du prestataire"
+			},
+			"kycStatus": {
+				"not_started": "Non commencé",
+				"pending": "En attente",
+				"approved": "Approuvé",
+				"declined": "Refusé",
+				"review": "Signalé pour examen",
+				"abandoned": "Abandonné",
+				"error": "Erreur"
+			},
+			"documentType": {
+				"national_id": "Carte nationale d'identité",
+				"passport": "Passeport",
+				"residence_permit": "Titre de séjour"
+			},
+			"business": {
+				"title": "Informations sur l'entreprise",
+				"type": "Type d'entreprise",
+				"legalName": "Dénomination légale",
+				"tradeName": "Nom commercial",
+				"rccm": "Numéro RCCM",
+				"entreprenantNumber": "Numéro de déclaration d'entreprenant",
+				"niu": "NIU",
+				"niuFormatWarning": "Format inhabituel",
+				"address": "Adresse enregistrée",
+				"city": "Ville",
+				"representative": "Représentant légal",
+				"representativeIsOwner": "Le représentant est le propriétaire de la boutique"
+			},
+			"businessType": {
+				"entreprenant": "Entreprenant",
+				"sole_trader": "Entreprise individuelle",
+				"company": "Société",
+				"cooperative": "Coopérative"
+			},
+			"signals": {
+				"title": "Signaux",
+				"viewRelated": "Voir la demande liée",
+				"otherRequests": "Autres demandes de cette boutique",
+				"levelRequest": "Demande niveau {level}"
+			},
+			"checklist": {
+				"title": "Liste de contrôle",
+				"name_matches_registry": "Le nom correspond au registre",
+				"registration_number_matches_document": "Le numéro d'enregistrement correspond au document",
+				"niu_matches_certificate": "Le NIU correspond au certificat",
+				"representative_matches_identity_or_mandate": "Le représentant correspond à sa pièce d'identité ou à son mandat",
+				"documents_legible_and_current": "Les documents sont lisibles et à jour"
+			},
+			"documents": {
+				"title": "Documents",
+				"unknownKind": "Document",
+				"purged": "Ce document a été purgé et ne peut plus être consulté.",
+				"view": "Voir le document",
+				"loading": "Demande d'accès en cours…",
+				"viewFailed": "Ce document n'a pas pu être ouvert. Veuillez réessayer."
+			},
+			"documentKind": {
+				"rccm_extract": "Extrait RCCM",
+				"entreprenant_declaration": "Déclaration d'entreprenant",
+				"niu_certificate": "Certificat NIU",
+				"legal_representative_id": "Pièce d'identité du représentant légal",
+				"mandate": "Mandat",
+				"proof_of_address": "Justificatif de domicile",
+				"other": "Autre document"
+			},
+			"action": {
+				"claim": "Prendre en charge",
+				"release": "Libérer",
+				"request_info": "Demander des informations",
+				"approve": "Approuver",
+				"reject": "Rejeter",
+				"revoke": "Révoquer"
+			},
+			"decisionBar": {
+				"checklistIncomplete": "Complétez la liste de contrôle avant d'approuver."
+			},
+			"dialog": {
+				"reasonLabel": "Motif",
+				"reasonPlaceholder": "Sélectionner un motif",
+				"reasonRequired": "Veuillez sélectionner un motif.",
+				"sellerMessageLabel": "Message au vendeur",
+				"sellerMessagePlaceholder": "Expliquez ce que le vendeur doit corriger ou savoir",
+				"sellerMessageHint": "Envoyé au vendeur exactement tel qu'écrit.",
+				"sellerMessageRequired": "Veuillez rédiger un message pour le vendeur.",
+				"noteLabel": "Note interne (facultatif)",
+				"noteHint": "Visible uniquement par les modérateurs, jamais par le vendeur.",
+				"checklistIncomplete": "Chaque élément de la liste de contrôle doit être confirmé avant d'approuver.",
+				"irreversible": "Cette décision ne pourra pas être annulée par vous ensuite.",
+				"cancel": "Annuler",
+				"claim": {
+					"title": "Prendre en charge cette demande",
+					"description": "Vous serez le seul modérateur habilité à la décider.",
+					"confirm": "Prendre en charge"
+				},
+				"release": {
+					"title": "Libérer cette demande",
+					"description": "Elle retourne dans la file pour qu'un autre modérateur la prenne en charge.",
+					"confirm": "Libérer"
+				},
+				"request_info": {
+					"title": "Demander des informations",
+					"description": "Le vendeur est invité à corriger ou compléter sa demande.",
+					"confirm": "Envoyer la demande"
+				},
+				"approve": {
+					"title": "Approuver cette demande",
+					"description": "La boutique obtient ce niveau.",
+					"confirm": "Approuver"
+				},
+				"reject": {
+					"title": "Rejeter cette demande",
+					"description": "La boutique entre en période d'attente avant de pouvoir redemander ce niveau.",
+					"confirm": "Rejeter"
+				},
+				"revoke": {
+					"title": "Révoquer ce niveau",
+					"description": "La boutique perd les capacités accordées par ce niveau.",
+					"confirm": "Révoquer"
+				}
+			},
+			"reasonCode": {
+				"document_unreadable": "Document illisible",
+				"document_missing": "Document manquant",
+				"information_inconsistent": "Informations incohérentes",
+				"kyc_retry": "La vérification d'identité doit être refaite",
+				"other": "Autre",
+				"document_invalid": "Document invalide",
+				"document_expired": "Document expiré",
+				"identity_mismatch": "Identité non correspondante",
+				"liveness_failed": "Échec de la détection de vivacité",
+				"business_mismatch": "Informations d'entreprise non correspondantes",
+				"duplicate_identity": "Identité en doublon",
+				"fraud_suspected": "Fraude suspectée",
+				"fraud": "Fraude",
+				"document_forged": "Document falsifié",
+				"business_closed": "Entreprise fermée",
+				"identity_reused": "Identité réutilisée"
+			}
+		}
+	},
 	"ApiErrors": {
 		"generic": {
 			"unknown": "Une erreur est survenue. Veuillez réessayer.",
@@ -1236,5 +1460,132 @@
 			"conflictOfInterest": "Vous ne pouvez pas relire une boutique à laquelle vous êtes lié.",
 			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver."
 		}
+	},
+	"Verification": {
+		"hub": {
+			"title": "Vérification",
+			"disabledBanner": "Les demandes de vérification sont suspendues pour le moment. Vous voyez toujours où en est votre boutique, mais vous ne pouvez pas démarrer ni renouveler une demande tant que ce n'est pas rouvert."
+		},
+		"statusCard": {
+			"noLevel": "Pas encore vérifiée",
+			"expiresOn": "Valide jusqu'au {date}",
+			"renewableFrom": "Renouvelable à partir du {date}",
+			"renewCta": "Renouveler"
+		},
+		"ladder": {
+			"title": "Niveaux de vérification",
+			"state": {
+				"reached": "Atteint",
+				"current": "Niveau actuel",
+				"locked": "Verrouillé"
+			}
+		},
+		"unlocks": {
+			"protectedPayment": "Paiement en ligne protégé",
+			"teamMembers": "Membres d'équipe",
+			"supplier": "Statut fournisseur",
+			"fasterPayouts": "Versements plus rapides",
+			"legalInfoVerified": "Informations légales vérifiées"
+		},
+		"timeline": {
+			"status": {
+				"draft": "Brouillon",
+				"submitted": "Soumise",
+				"in_review": "En cours d'examen",
+				"needs_info": "Informations complémentaires demandées",
+				"approved": "Approuvée",
+				"rejected": "Rejetée",
+				"revoked": "Révoquée",
+				"expired": "Expirée"
+			}
+		},
+		"reviewerMessage": {
+			"title": {
+				"needs_info": "Le réviseur a besoin d'informations complémentaires",
+				"rejected": "Cette demande a été rejetée"
+			}
+		},
+		"requestCard": {
+			"title": {
+				"2": "Vérification d'identité",
+				"3": "Vérification d'entreprise"
+			},
+			"continue": "Continuer"
+		},
+		"action": {
+			"label": {
+				"start": {
+					"2": "Vérifiez votre identité",
+					"3": "Vérifiez votre entreprise"
+				},
+				"renew": {
+					"2": "Renouvelez votre vérification d'identité",
+					"3": "Renouvelez votre vérification d'entreprise"
+				}
+			},
+			"cta": {
+				"start": "Démarrer",
+				"renew": "Renouveler"
+			},
+			"reason": {
+				"disabled": "La vérification n'est pas encore ouverte.",
+				"notEligible": "Vérifiez d'abord le niveau précédent.",
+				"open": "Une demande pour ce niveau est déjà ouverte.",
+				"cooldown": "Vous pouvez réessayer à partir du {date}.",
+				"notRenewableYet": "Renouvelable à partir du {date}.",
+				"notOwner": "Seul le propriétaire de la boutique peut demander une vérification."
+			}
+		},
+		"error": {
+			"retry": "Réessayer"
+		},
+		"business": {
+			"pageTitle": "Vérification de l'entreprise",
+			"title": "Informations sur l'entreprise",
+			"businessType": "Type d'entreprise",
+			"businessTypeOption": {
+				"entreprenant": "Entreprenant (déclaration individuelle)",
+				"sole_trader": "Commerçant individuel",
+				"company": "Société",
+				"cooperative": "Coopérative"
+			},
+			"legalName": "Dénomination légale",
+			"tradeName": "Nom commercial (optionnel)",
+			"rccmNumber": "Numéro RCCM",
+			"entreprenantDeclarationNumber": "Numéro de déclaration d'entreprenant",
+			"niu": "Numéro d'identifiant unique (NIU)",
+			"registeredAddress": "Adresse du siège",
+			"city": "Ville",
+			"legalRepresentativeName": "Nom du représentant légal",
+			"legalRepresentativeIsOwner": "Le représentant légal est le propriétaire de la boutique",
+			"save": "Enregistrer les informations",
+			"saving": "Enregistrement…"
+		},
+		"documents": {
+			"title": "Documents requis",
+			"extrasTitle": "Document supplémentaire (optionnel)",
+			"delete": "Supprimer",
+			"deleting": "Suppression…",
+			"cancel": "Annuler",
+			"confirmDelete": "Supprimer ce document ? Cette action est irréversible.",
+			"uploading": "Envoi en cours…",
+			"dropHint": "Déposez un fichier ici, ou cliquez pour en choisir un",
+			"missing": "Encore manquant : {kinds}",
+			"submit": "Soumettre pour vérification",
+			"submitting": "Envoi en cours…"
+		},
+		"documentKind": {
+			"rccm_extract": "Extrait RCCM",
+			"entreprenant_declaration": "Déclaration d'entreprenant",
+			"niu_certificate": "Certificat NIU",
+			"legal_representative_id": "Pièce d'identité du représentant légal",
+			"mandate": "Mandat",
+			"proof_of_address": "Justificatif de domicile",
+			"other": "Autre document"
+		},
+		"noRequest": "Aucune demande de vérification d'entreprise n'est ouverte. Démarrez-en une depuis le centre de vérification.",
+		"backToHub": "Retour au centre de vérification",
+		"loadError": "Impossible de charger votre statut de vérification.",
+		"retry": "Réessayer"
 	}
 }

@@ -2,41 +2,57 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
+import { badgeLabelKey } from "@/src/lib/verification";
+import type { BadgeLevel } from "@/src/types/api";
 import { useShopTheme } from "./theme";
 
-/** P1 knows level 1 only; levels 2 and 3 get their own badges in P2. */
+const ICONS: Record<BadgeLevel, keyof typeof Ionicons.glyphMap> = {
+	phone: "checkmark",
+	identity: "shield-checkmark",
+	business: "briefcase",
+};
+
+/** One badge per level, each with its own icon and tone: phone (neutral), identity (green), business (blue). */
 export function LevelBadge({
-	level,
+	badge,
 	size = "md",
 }: {
-	level: number;
+	badge: BadgeLevel | null | undefined;
 	size?: "sm" | "md";
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	if (level < 1) return null;
+	const labelKey = badgeLabelKey(badge);
+	if (!badge || !labelKey) return null;
+
+	const tone =
+		badge === "identity"
+			? { bg: c.successSoft, fg: c.successText }
+			: badge === "business"
+				? { bg: c.primarySoft, fg: c.primary }
+				: { bg: c.neutralSoft, fg: c.body };
 
 	return (
 		<View
 			style={[
 				styles.badge,
 				size === "sm" && styles.small,
-				{ backgroundColor: c.neutralSoft },
+				{ backgroundColor: tone.bg },
 			]}
 		>
 			<Ionicons
-				name="checkmark"
+				name={ICONS[badge]}
 				size={size === "sm" ? 11 : 13}
-				color={c.body}
+				color={tone.fg}
 			/>
 			<Text
 				style={[
 					styles.text,
 					size === "sm" && styles.smallText,
-					{ color: c.body },
+					{ color: tone.fg },
 				]}
 			>
-				{t("shop.levelPhone")}
+				{t(`shop.${labelKey}`)}
 			</Text>
 		</View>
 	);

@@ -7,6 +7,7 @@ import {
 	type ChecklistStepKey,
 	countDoneSteps,
 } from "@/src/lib/sellerChecklist";
+import { badgeForLevel } from "@/src/lib/verification";
 import { LevelBadge } from "./LevelBadge";
 import { useShopTheme } from "./theme";
 
@@ -47,7 +48,7 @@ export function SellerChecklistCard({
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			<View style={styles.pills}>
-				<LevelBadge level={level} size="sm" />
+				<LevelBadge badge={badgeForLevel(level)} size="sm" />
 				{createdToday ? (
 					<View style={[styles.pill, { backgroundColor: c.successSoft }]}>
 						<Text style={[styles.pillText, { color: c.successText }]}>

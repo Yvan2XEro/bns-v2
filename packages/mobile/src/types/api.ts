@@ -84,6 +84,11 @@ export interface UserDoc {
 		source?: string | null;
 		updatedAt?: string | null;
 	} | null;
+	/**
+	 * @deprecated Retired in P2: badges belong to shops. The API still returns
+	 * it, derived from the owner's identity verification, only so released app
+	 * versions keep working. Read the shop's `badge` instead.
+	 */
 	verified: boolean;
 	/** Virtual, read by the user themselves (P1). Absent on old API versions. */
 	phoneVerified?: boolean;
@@ -536,8 +541,18 @@ export interface ReportDoc {
 export interface ModerationUserSheet {
 	user: Pick<
 		UserDoc,
-		"id" | "name" | "email" | "role" | "avatar" | "verified" | "createdAt"
-	>;
+		"id" | "name" | "email" | "role" | "avatar" | "createdAt"
+	> & {
+		/** Set once the owner's identity (level 2) is approved; cleared on revoke. */
+		identityVerifiedAt: string | null;
+	};
+	/**
+	 * The badge of the shop this account currently owns, read the same way
+	 * every other surface reads it (`shopCapabilities(shop).badge`) — never
+	 * derived here from `identityVerifiedAt` alone, since a badge also
+	 * requires an active shop.
+	 */
+	shopBadge: "phone" | "identity" | "business" | null;
 	suspension: SuspensionSummary & {
 		reason: SuspensionReason | null;
 		note: string | null;
@@ -899,4 +914,278 @@ export interface ModerationShopSheet {
 	};
 	reports: ReportDoc[];
 	history: ModerationLogEntry[];
+}
+
+// ─── Verification (P2) ────────────────────────────────────────────────────────
+
+/** Mirrors `shopCapabilities()`'s badge on the API — never re-derived from a raw level number except through `badgeForLevel`. */
+export type BadgeLevel = "phone" | "identity" | "business";
+
+/** Mirrors `ShopCapabilities` (`lib/shopCapabilities.ts`) — the single reader of what a shop's level unlocks. */
+export interface ShopCapabilities {
+	effectiveLevel: 0 | 1 | 2 | 3;
+	badge: BadgeLevel | null;
+	codOrders: boolean;
+	protectedPayment: boolean;
+	teamMembers: boolean;
+	maxMembers: number;
+	supplier: boolean;
+	fasterPayouts: boolean;
+	legalInfoVerified: boolean;
+}
+
+export type VerificationStatus =
+	| "draft"
+	| "submitted"
+	| "in_review"
+	| "needs_info"
+	| "approved"
+	| "rejected"
+	| "revoked"
+	| "expired";
+
+export type VerificationTransitionSource =
+	| "seller"
+	| "reviewer"
+	| "vendor"
+	| "system";
+
+export type BusinessType =
+	| "entreprenant"
+	| "sole_trader"
+	| "company"
+	| "cooperative";
+
+export type VerificationDocumentKind =
+	| "rccm_extract"
+	| "entreprenant_declaration"
+	| "niu_certificate"
+	| "legal_representative_id"
+	| "mandate"
+	| "proof_of_address"
+	| "other";
+
+export type ReviewSignalCode =
+	| "identity_reused"
+	| "name_mismatch"
+	| "underage"
+	| "kyc_declined"
+	| "kyc_review"
+	| "document_reused"
+	| "rccm_reused"
+	| "niu_reused"
+	| "niu_format";
+
+/** The owner's view of a request (`toOwnerRequest` on the API). Reviewer-only fields are absent, not null. */
+export interface OwnerVerificationRequest {
+	id: string;
+	requestedLevel: 2 | 3;
+	status: VerificationStatus;
+	consent: { acceptedAt: string; version: string; locale: "fr" | "en" } | null;
+	kyc: {
+		status:
+			| "not_started"
+			| "pending"
+			| "approved"
+			| "declined"
+			| "review"
+			| "abandoned"
+			| "error";
+		attempts: number;
+		documentType: "national_id" | "passport" | "residence_permit" | null;
+		documentCountry: string | null;
+		documentNumberLast4: string | null;
+		documentExpiresAt: string | null;
+		givenNames: string | null;
+		familyName: string | null;
+		livenessPassed: boolean;
+	} | null;
+	business: {
+		businessType: BusinessType | null;
+		legalName: string | null;
+		tradeName: string | null;
+		rccmNumber: string | null;
+		entreprenantDeclarationNumber: string | null;
+		niu: string | null;
+		registeredAddress: string | null;
+		city: string | null;
+		legalRepresentativeName: string | null;
+		legalRepresentativeIsOwner: boolean;
+	} | null;
+	documents: {
+		id: string;
+		kind: VerificationDocumentKind;
+		originalFilename: string;
+		mimeType: string;
+		filesize: number;
+		createdAt: string;
+	}[];
+	infoRequests: {
+		reasonCode: string;
+		message: string;
+		requestedAt: string;
+		respondedAt: string | null;
+	}[];
+	decision: {
+		decidedAt: string;
+		reasonCode: string | null;
+		sellerMessage: string | null;
+	} | null;
+	statusHistory: {
+		status: VerificationStatus;
+		at: string;
+		source: VerificationTransitionSource;
+	}[];
+	submittedAt: string | null;
+	approvedAt: string | null;
+	expiresAt: string | null;
+}
+
+/** GET /api/shops/:id/verification */
+export interface ShopVerificationResponse {
+	enabled: boolean;
+	capabilities: ShopCapabilities;
+	levelExpiresAt: string | null;
+	consentVersion: string | null;
+	requests: {
+		level2: OwnerVerificationRequest | null;
+		level3: OwnerVerificationRequest | null;
+	};
+	renewableFrom: { level2: string | null; level3: string | null };
+	nextLevel: {
+		level: 2 | 3;
+		unlocks: Array<keyof ShopCapabilities>;
+		eligible: boolean;
+	} | null;
+	cooldownUntil: string | null;
+}
+
+export type ModerationVerificationQueue =
+	| "to_review"
+	| "mine"
+	| "needs_info"
+	| "decided";
+
+/** GET /api/moderation/verification — one queue row. */
+export interface ModerationVerificationQueueItem {
+	id: string;
+	shopId: string | null;
+	requestedLevel: 2 | 3;
+	status: VerificationStatus;
+	submittedAt: string | null;
+	ageMs: number | null;
+	signals: ReviewSignalCode[];
+	assignee: string | null;
+}
+
+/** GET /api/moderation/verification */
+export interface ModerationVerificationQueueResponse {
+	queue: ModerationVerificationQueue;
+	total: number;
+	items: ModerationVerificationQueueItem[];
+}
+
+/**
+ * The capability flags a reviewer screen renders its actions from — read as
+ * the authority, never re-derived client-side from whether `assignee` or any
+ * other field happens to be set.
+ */
+export interface VerificationReviewerViewer {
+	canClaim: boolean;
+	canDecide: boolean;
+	isAssignee: boolean;
+	isAdmin: boolean;
+	conflictOfInterest: boolean;
+}
+
+/** GET /api/moderation/verification/:id */
+export interface ModerationVerificationDetail {
+	request: {
+		id: string;
+		shop: string | null;
+		requestedLevel: 2 | 3;
+		status: VerificationStatus;
+		statusHistory: OwnerVerificationRequest["statusHistory"];
+		consent: OwnerVerificationRequest["consent"];
+		kyc:
+			| (Omit<NonNullable<OwnerVerificationRequest["kyc"]>, "status"> & {
+					provider: "didit" | "smileid" | null;
+					status:
+						| "not_started"
+						| "pending"
+						| "approved"
+						| "declined"
+						| "review"
+						| "abandoned"
+						| "error";
+					sessionRef: string | null;
+					decidedAt: string | null;
+					documentNumberHash: string | null;
+					adult: boolean;
+					faceMatchScore: number | null;
+					vendorWarnings: unknown;
+					vendorReviewUrl: string | null;
+					vendorDataDeletedAt: string | null;
+			  })
+			| null;
+		business: OwnerVerificationRequest["business"];
+		reviewSignals: {
+			code: ReviewSignalCode;
+			detail: string | null;
+			relatedRequest: string | null;
+		}[];
+		assignee: string | null;
+		claimedAt: string | null;
+		infoRequests: OwnerVerificationRequest["infoRequests"];
+		decision: {
+			decidedBy: string | null;
+			decidedAt: string | null;
+			reasonCode: string | null;
+			sellerMessage: string | null;
+			internalNote: string | null;
+			checklist: Record<string, boolean> | null;
+		} | null;
+		submittedAt: string | null;
+		approvedAt: string | null;
+		expiresAt: string | null;
+		revokedAt: string | null;
+		documents: {
+			id: string;
+			kind: VerificationDocumentKind | null;
+			originalFilename: string | null;
+			sha256: string | null;
+			uploadedBy: string | null;
+			duplicateOf: (string | null)[];
+			purgedAt: string | null;
+		}[];
+	};
+	shop: {
+		id: string;
+		handle: string;
+		name: string;
+		status: ShopStatus;
+		level: number | null;
+	};
+	owner: {
+		id: string;
+		name: string | null;
+		email: string;
+		role: UserRole;
+		identityVerifiedAt: string | null;
+	} | null;
+	otherRequests: {
+		id: string;
+		requestedLevel: 2 | 3;
+		status: VerificationStatus;
+		submittedAt: string | null;
+	}[];
+	log: ModerationLogEntry[];
+	viewer: VerificationReviewerViewer;
+}
+
+/** POST /api/moderation/verification/documents/:docId/view — a 60-second, logged signed URL. */
+export interface SignedDocumentUrl {
+	url: string;
+	expiresAt: string;
+	mimeType: string;
 }

@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
+import { badgeForLevel } from "@/src/lib/verification";
 import type { ListingShopRef, UserDoc } from "@/src/types/api";
 import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
@@ -51,7 +52,7 @@ export function ShopSellerCard({
 				<Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
 					{shop.name}
 				</Text>
-				<LevelBadge level={shop.level} size="sm" />
+				<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
 				{meta ? (
 					<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
 				) : null}
