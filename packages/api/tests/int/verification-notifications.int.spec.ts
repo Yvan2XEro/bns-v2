@@ -194,7 +194,7 @@ beforeEach(() => {
 describe("verification notifications", () => {
 	it("needs_info sends exactly shopName, reasonCode and message", async () => {
 		await requestInfo(inReviewL2(), MOD, "vr-1", {
-			reasonCode: "document_unclear",
+			reasonCode: "document_unreadable",
 			message: "Merci de renvoyer une photo plus nette.",
 		});
 		const [call] = triggerNotificationEvent.mock.calls.at(-1) ?? [];
@@ -202,7 +202,7 @@ describe("verification notifications", () => {
 		expect(call?.subscriberId).toBe("u-1");
 		expect(call?.payload).toEqual({
 			shopName: "Akwa Shop",
-			reasonCode: "document_unclear",
+			reasonCode: "document_unreadable",
 			message: "Merci de renvoyer une photo plus nette.",
 		});
 	});
@@ -256,14 +256,14 @@ describe("verification notifications", () => {
 
 	it("revoked sends exactly shopName and reasonCode", async () => {
 		await revokeRequest(approvedL2(), MOD, "vr-2", {
-			reasonCode: "fraud_suspected",
+			reasonCode: "fraud",
 			note: REVIEWER_SECRET,
 		});
 		const [call] = triggerNotificationEvent.mock.calls.at(-1) ?? [];
 		expect(call?.event).toBe("verification-revoked");
 		expect(call?.payload).toEqual({
 			shopName: "Akwa Shop",
-			reasonCode: "fraud_suspected",
+			reasonCode: "fraud",
 		});
 	});
 
@@ -276,7 +276,7 @@ describe("verification notifications", () => {
 
 	it("carries no document data, reviewer notes or vendor payloads in any of the five payloads", async () => {
 		await requestInfo(inReviewL2(), MOD, "vr-1", {
-			reasonCode: "document_unclear",
+			reasonCode: "document_unreadable",
 			message: "Merci de renvoyer une photo plus nette.",
 		});
 		await rejectRequest(inReviewL2(), MOD, "vr-1", {
@@ -290,7 +290,7 @@ describe("verification notifications", () => {
 			checklist: FULL_CHECKLIST,
 		});
 		await revokeRequest(approvedL2(), MOD, "vr-2", {
-			reasonCode: "fraud_suspected",
+			reasonCode: "fraud",
 			note: REVIEWER_SECRET,
 		});
 		await purgeVerificationData(expiringShop(7), NOW);
@@ -318,7 +318,7 @@ describe("verification notifications", () => {
 	it("fires only once the decision transaction commits", async () => {
 		const payload = inReviewL2();
 		await requestInfo(payload, MOD, "vr-1", {
-			reasonCode: "document_unclear",
+			reasonCode: "document_unreadable",
 			message: "Merci de renvoyer une photo plus nette.",
 		});
 		expect(
@@ -338,7 +338,7 @@ describe("verification notifications", () => {
 		};
 		await expect(
 			requestInfo(payload, MOD, "vr-1", {
-				reasonCode: "document_unclear",
+				reasonCode: "document_unreadable",
 				message: "Merci de renvoyer une photo plus nette.",
 			}),
 		).rejects.toThrow("commit failed");
@@ -351,7 +351,7 @@ describe("verification notifications", () => {
 			method === "create" && args.collection === "moderation-log";
 		await expect(
 			requestInfo(payload, MOD, "vr-1", {
-				reasonCode: "document_unclear",
+				reasonCode: "document_unreadable",
 				message: "Merci de renvoyer une photo plus nette.",
 			}),
 		).rejects.toThrow();
@@ -369,7 +369,7 @@ describe("verification notifications", () => {
 		});
 		const payload = inReviewL2();
 		const result = await requestInfo(payload, MOD, "vr-1", {
-			reasonCode: "document_unclear",
+			reasonCode: "document_unreadable",
 			message: "Merci de renvoyer une photo plus nette.",
 		});
 		expect(result.status).toBe("needs_info");
