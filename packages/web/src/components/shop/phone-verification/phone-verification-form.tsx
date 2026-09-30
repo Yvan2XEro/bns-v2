@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { PhoneInput } from "~/components/ui/phone-input";
 import { usePhoneStatus } from "~/hooks/use-phone-status";
 import {
 	useStartPhoneVerification,
@@ -141,15 +141,33 @@ export function PhoneVerificationForm({
 				</div>
 			)}
 
-			<form onSubmit={submitPhone} className="space-y-2" noValidate>
+			<form
+				onSubmit={(event) => {
+					// Radix's Dialog renders this form through a Portal: the DOM tree
+					// splits from the shop-creation form outside the dialog, but React
+					// still propagates the submit event along the React tree, into
+					// that outer form's onSubmit. Stop it explicitly.
+					event.stopPropagation();
+					void submitPhone(event);
+				}}
+				className="space-y-2"
+				noValidate
+			>
 				<Label htmlFor="phone-verification-phone">{t("phoneLabel")}</Label>
-				<Input
-					id="phone-verification-phone"
-					type="tel"
-					placeholder={t("phonePlaceholder")}
-					disabled={pending}
-					aria-invalid={Boolean(phoneFieldMessage)}
-					{...phoneForm.register("phone")}
+				<Controller
+					control={phoneForm.control}
+					name="phone"
+					render={({ field }) => (
+						<PhoneInput
+							id="phone-verification-phone"
+							placeholder={t("phonePlaceholder")}
+							disabled={pending}
+							aria-invalid={Boolean(phoneFieldMessage)}
+							value={field.value}
+							onChange={field.onChange}
+							onBlur={field.onBlur}
+						/>
+					)}
 				/>
 				{phoneFieldMessage && (
 					<p className="text-[#991B1B] text-xs">{phoneFieldMessage}</p>
@@ -169,7 +187,14 @@ export function PhoneVerificationForm({
 			</form>
 
 			{pending && (
-				<form onSubmit={submitCode} noValidate>
+				<form
+					onSubmit={(event) => {
+						// Same portal-vs-React-tree bubbling as the phone form above.
+						event.stopPropagation();
+						void submitCode(event);
+					}}
+					noValidate
+				>
 					<CodeStep
 						control={codeForm.control}
 						errorMessage={codeFieldMessage}

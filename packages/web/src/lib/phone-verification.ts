@@ -21,12 +21,14 @@ export function formatCountdown(seconds: number): string {
 }
 
 /**
- * Loose on purpose: the server is the authority on what counts as a valid
- * phone number (it normalizes and rejects with `phoneInvalid`). This only
- * keeps a seller from submitting an empty or obviously-too-short field.
+ * Matches `normalizePhoneNumber` in
+ * `packages/api/src/services/phoneVerification.ts` exactly (`^\+[1-9]\d{7,14}$`).
+ * `PhoneInput` only ever emits that shape or `""`, so this rejects nothing
+ * the server would accept and accepts nothing the server would reject — a
+ * malformed number is caught in the field, before any request.
  */
 export const phoneNumberSchema = z.object({
-	phone: z.string().trim().min(8).max(20),
+	phone: z.string().regex(/^\+[1-9]\d{7,14}$/),
 });
 export type PhoneNumberValues = z.infer<typeof phoneNumberSchema>;
 

@@ -78,17 +78,58 @@ describe("verificationCodeSchema", () => {
 });
 
 describe("phoneNumberSchema", () => {
-	test("accepts an international-looking number", () => {
+	test("accepts an E.164 number, exactly what PhoneInput emits", () => {
 		expect(
 			phoneNumberSchema.safeParse({ phone: "+237677504218" }).success,
 		).toBe(true);
 	});
 
-	test("rejects a too-short input", () => {
-		expect(phoneNumberSchema.safeParse({ phone: "12345" }).success).toBe(false);
+	test("rejects a blank input", () => {
+		expect(phoneNumberSchema.safeParse({ phone: "" }).success).toBe(false);
 	});
 
-	test("rejects a blank input", () => {
-		expect(phoneNumberSchema.safeParse({ phone: "  " }).success).toBe(false);
+	test("rejects a national number with no +", () => {
+		expect(phoneNumberSchema.safeParse({ phone: "677504218" }).success).toBe(
+			false,
+		);
+	});
+
+	test("rejects a leading zero after the +, mirroring the server's [1-9]", () => {
+		expect(
+			phoneNumberSchema.safeParse({ phone: "+0237677504218" }).success,
+		).toBe(false);
+	});
+
+	test("rejects internal spacing (PhoneInput never emits it, but the schema must catch it if something else does)", () => {
+		expect(
+			phoneNumberSchema.safeParse({ phone: "+237 677 504 218" }).success,
+		).toBe(false);
+	});
+
+	// Mutation-checks the server's `[1-9]\d{7,14}` bound: a leading digit plus
+	// 7 more is the shortest accepted shape, plus 14 more the longest; one
+	// digit short or over on either end is rejected.
+	test("accepts the server's shortest shape: a leading digit plus 7 more", () => {
+		expect(phoneNumberSchema.safeParse({ phone: "+12345678" }).success).toBe(
+			true,
+		);
+	});
+
+	test("rejects a leading digit plus only 6 more, one short of the server's floor", () => {
+		expect(phoneNumberSchema.safeParse({ phone: "+1234567" }).success).toBe(
+			false,
+		);
+	});
+
+	test("accepts the server's longest shape: a leading digit plus 14 more", () => {
+		expect(
+			phoneNumberSchema.safeParse({ phone: "+123456789012345" }).success,
+		).toBe(true);
+	});
+
+	test("rejects a leading digit plus 15 more, one over the server's ceiling", () => {
+		expect(
+			phoneNumberSchema.safeParse({ phone: "+1234567890123456" }).success,
+		).toBe(false);
 	});
 });
