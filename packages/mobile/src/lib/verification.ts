@@ -13,6 +13,7 @@ import type {
 	BadgeLevel,
 	BusinessType,
 	OwnerVerificationRequest,
+	PublicShopResponse,
 	ShopCapabilities,
 	ShopVerificationResponse,
 	VerificationDocumentKind,
@@ -50,6 +51,23 @@ export function badgeLabelKey(
 	badge: BadgeLevel | null | undefined,
 ): "levelPhone" | "levelIdentity" | "levelBusiness" | null {
 	return badge ? BADGE_LABEL_KEYS[badge] : null;
+}
+
+/**
+ * Extracts the server's computed badge from a `usePublicShop` result, for a
+ * surface that only holds a raw, depth-populated shop relation with no
+ * `badge` field of its own (a listing's `shop`, at depth ≥ 1) — same
+ * reasoning as the web `getShopBadge` helper (`server-shop.ts`). Never falls
+ * back to `badgeForLevel` over that relation's raw `level`: while the fetch
+ * is pending, or the shop redirected to a new handle, this returns `null`
+ * and the badge simply doesn't render yet, rather than showing a value the
+ * server hasn't confirmed.
+ */
+export function publicShopBadge(
+	response: PublicShopResponse | undefined,
+): BadgeLevel | null {
+	if (!response || !("shop" in response)) return null;
+	return response.shop.badge;
 }
 
 // ─── Level ladder ─────────────────────────────────────────────────────────────

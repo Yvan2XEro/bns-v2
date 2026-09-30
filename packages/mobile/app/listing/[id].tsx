@@ -27,6 +27,7 @@ import { VariantPicker } from "@/src/components/shop/VariantPicker";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { usePublicShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
@@ -35,6 +36,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { formatXafRange } from "@/src/lib/variants";
+import { publicShopBadge } from "@/src/lib/verification";
 import type {
 	Conversation,
 	Favorite,
@@ -157,6 +159,12 @@ export default function ListingDetail() {
 		listing && typeof listing.shop === "object" && listing.shop
 			? listing.shop
 			: null;
+	// `listingShop` is a depth-populated relation with no computed badge (its
+	// `level` is the raw, stale field) — re-fetch through the public shop
+	// route for the server's expiry-aware badge, same reasoning as web's
+	// `getShopBadge`.
+	const { data: shopBadgeData } = usePublicShop(listingShop?.handle);
+	const shopBadge = publicShopBadge(shopBadgeData);
 	const listingProduct: ProductDoc | null =
 		listing &&
 		typeof listing.product === "object" &&
@@ -636,6 +644,7 @@ export default function ListingDetail() {
 					{listingShop ? (
 						<ShopSellerCard
 							shop={listingShop}
+							badge={shopBadge}
 							owner={seller && typeof seller === "object" ? seller : null}
 						/>
 					) : null}

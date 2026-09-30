@@ -3,8 +3,7 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { badgeForLevel } from "@/src/lib/verification";
-import type { ListingShopRef, UserDoc } from "@/src/types/api";
+import type { BadgeLevel, ListingShopRef, UserDoc } from "@/src/types/api";
 import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
@@ -12,9 +11,18 @@ import { useShopTheme } from "./theme";
 /** Replaces the personal seller card on a shop-backed listing. */
 export function ShopSellerCard({
 	shop,
+	badge,
 	owner,
 }: {
 	shop: ListingShopRef;
+	/**
+	 * The server's computed, expiry-aware badge — see `publicShopBadge` in
+	 * `~/lib/verification`. Never derived from `shop.level` here: `shop` is a
+	 * depth-populated relation off the listing, whose raw `level` field stays
+	 * at 3 until the nightly job recomputes it, even once the level-3
+	 * approval has expired.
+	 */
+	badge: BadgeLevel | null;
 	owner: UserDoc | null;
 }) {
 	const c = useShopTheme();
@@ -52,7 +60,7 @@ export function ShopSellerCard({
 				<Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
 					{shop.name}
 				</Text>
-				<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
+				<LevelBadge badge={badge} size="sm" />
 				{meta ? (
 					<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
 				) : null}

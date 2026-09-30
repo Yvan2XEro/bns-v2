@@ -7,7 +7,7 @@ import {
 	type ChecklistStepKey,
 	countDoneSteps,
 } from "@/src/lib/sellerChecklist";
-import { badgeForLevel } from "@/src/lib/verification";
+import type { BadgeLevel } from "@/src/types/api";
 import { LevelBadge } from "./LevelBadge";
 import { useShopTheme } from "./theme";
 
@@ -25,14 +25,19 @@ export interface ChecklistStepMeta {
  * lays the checklist out.
  */
 export function SellerChecklistCard({
-	level,
+	badge,
 	createdToday,
 	ownerFirstName,
 	shopName,
 	steps,
 	stepMeta,
 }: {
-	level: number;
+	/**
+	 * The server's computed, expiry-aware badge — see `MyShop["badge"]`.
+	 * Never `badgeForLevel(level)`, which would still show "business" after
+	 * a level-3 approval expires and before the nightly job catches up.
+	 */
+	badge: BadgeLevel | null;
 	createdToday: boolean;
 	ownerFirstName: string;
 	shopName: string;
@@ -48,7 +53,7 @@ export function SellerChecklistCard({
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
 			<View style={styles.pills}>
-				<LevelBadge badge={badgeForLevel(level)} size="sm" />
+				<LevelBadge badge={badge} size="sm" />
 				{createdToday ? (
 					<View style={[styles.pill, { backgroundColor: c.successSoft }]}>
 						<Text style={[styles.pillText, { color: c.successText }]}>

@@ -24,12 +24,9 @@ import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildChecklistSteps } from "@/src/lib/sellerChecklist";
 import { shopUrl } from "@/src/lib/shopHandle";
-import {
-	badgeForLevel,
-	badgeLabelKey,
-	canOpenRequest,
-} from "@/src/lib/verification";
+import { badgeLabelKey, canOpenRequest } from "@/src/lib/verification";
 import type {
+	BadgeLevel,
 	MyShop,
 	MyShopResponse,
 	ShopVerificationResponse,
@@ -62,12 +59,12 @@ function openRequestStatus(
  */
 function verificationTileBody(
 	t: (key: string) => string,
-	level: number,
+	badge: BadgeLevel | null,
 	view: ShopVerificationResponse | undefined,
 ): string {
 	const openStatus = openRequestStatus(view);
 	if (openStatus) return t(`verification.timeline.status.${openStatus}`);
-	const labelKey = badgeLabelKey(badgeForLevel(level));
+	const labelKey = badgeLabelKey(badge);
 	return labelKey
 		? t(`shop.${labelKey}`)
 		: t("verification.statusCard.noLevel");
@@ -225,7 +222,7 @@ function SellerHubContent({
 			key: "verification",
 			icon: "shield-checkmark-outline" as const,
 			title: t("seller.tileVerification"),
-			body: verificationTileBody(t, shop.level, verification.data),
+			body: verificationTileBody(t, shop.badge, verification.data),
 			onPress: () => router.push("/seller/verification" as never),
 		},
 	];
@@ -283,7 +280,7 @@ function SellerHubContent({
 
 					{firstRun ? (
 						<SellerChecklistCard
-							level={shop.level}
+							badge={shop.badge}
 							createdToday={createdToday}
 							ownerFirstName={shop.owner.name.split(" ")[0] ?? shop.owner.name}
 							shopName={shop.name}

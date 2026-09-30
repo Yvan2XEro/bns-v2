@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type {
 	OwnerVerificationRequest,
+	PublicShop,
 	ShopCapabilities,
 	ShopVerificationResponse,
 	VerificationReviewerViewer,
@@ -9,6 +10,7 @@ import type {
 import {
 	availableActions,
 	type BusinessValues,
+	badgeForLevel,
 	badgeLabelKey,
 	buildTimeline,
 	CHECKLIST_ITEMS,
@@ -20,6 +22,7 @@ import {
 	missingKinds,
 	POLL_INTERVAL_MS,
 	POLL_TIMEOUT_MS,
+	publicShopBadge,
 	requiredKinds,
 	shouldKeepPolling,
 	statusToneKey,
@@ -461,5 +464,59 @@ describe("checklistComplete", () => {
 			false,
 		);
 		expect(checklistComplete({})).toBe(false);
+	});
+});
+
+describe("publicShopBadge", () => {
+	function shop(overrides: Partial<PublicShop> = {}): PublicShop {
+		return {
+			id: "shop-1",
+			handle: "acme",
+			name: "Acme",
+			description: null,
+			logo: null,
+			banner: null,
+			contact: { phone: null, whatsapp: null, email: null },
+			location: { city: null, region: null, country: null, countryCode: null },
+			categories: [],
+			level: 3,
+			badge: "business",
+			legalVerified: true,
+			legal: null,
+			publishedListingCount: 0,
+			createdAt: "2026-01-01T00:00:00.000Z",
+			owner: {
+				id: "owner-1",
+				name: "Owner",
+				avatar: null,
+				rating: 0,
+				totalReviews: 0,
+				memberSince: "2026-01-01T00:00:00.000Z",
+			},
+			...overrides,
+		};
+	}
+
+	/**
+	 * A depth-populated `listing.shop` relation only ever carries the raw,
+	 * stale `level` (P2 review finding I5) — this is the regression case: a
+	 * shop still stored at level 3 whose approval has actually expired, so
+	 * the server's `shopCapabilities()` already stepped its badge down to
+	 * "phone". Reading `.badge` off the re-fetched public shop must agree
+	 * with the server, never `badgeForLevel(shop.level)` over the stale 3.
+	 */
+	test("reads the server's badge for an expired level-3 shop, not badgeForLevel(level)", () => {
+		const response = { shop: shop({ level: 3, badge: "phone" }) };
+
+		expect(badgeForLevel(3)).toBe("business");
+		expect(publicShopBadge(response)).toBe("phone");
+	});
+
+	test("returns null while the fetch is pending", () => {
+		expect(publicShopBadge(undefined)).toBeNull();
+	});
+
+	test("returns null when the shop redirected to a new handle", () => {
+		expect(publicShopBadge({ redirectTo: "/s/new-handle" })).toBeNull();
 	});
 });
