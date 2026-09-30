@@ -132,6 +132,17 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 					/>
 				)}
 			/>
+			{form.formState.errors.niu ? (
+				<Text style={f.error}>
+					{t(form.formState.errors.niu.message ?? "")}
+				</Text>
+			) : null}
+
+			{form.formState.errors.root?.message ? (
+				<Text style={f.error} role="alert">
+					{form.formState.errors.root.message}
+				</Text>
+			) : null}
 
 			{!readOnly ? (
 				<Pressable

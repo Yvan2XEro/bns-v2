@@ -22,7 +22,7 @@ import { useUpdateShop } from "./useShops";
  */
 export function useUpdateShopLegalForm(shop: MyShop) {
 	const { t } = useTranslation();
-	const { showSuccess, showError } = useAlert();
+	const { showSuccess } = useAlert();
 	const updateShop = useUpdateShop(shop.id);
 	const submittingRef = useRef(false);
 
@@ -44,7 +44,11 @@ export function useUpdateShopLegalForm(shop: MyShop) {
 				},
 				onError: (error) => {
 					submittingRef.current = false;
-					showError(t("shop.saveError"), resolveErrorMessage(error, t));
+					// The server's own reason, mapped back onto the form rather than
+					// only alerted: a toast disappears, but the refusal stays wrong
+					// until the person changes something, so it belongs next to the
+					// Save button they are about to press again.
+					form.setError("root", { message: resolveErrorMessage(error, t) });
 				},
 			},
 		);

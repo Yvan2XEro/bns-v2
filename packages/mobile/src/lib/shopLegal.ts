@@ -55,16 +55,30 @@ export function isBusinessType(value: string): value is BusinessType {
 }
 
 /**
+ * A NIU of the right shape (14 letters or digits) — mirrors the looser
+ * length-only check `verificationBusiness.ts`'s `NIU_PATTERN` uses, not the
+ * stricter `^[A-Z]\d{12}[A-Z]$` the server treats as a soft `niu_format`
+ * review signal rather than a refusal. A value failing that stricter shape
+ * still saves; this only catches a NIU that cannot be the tax office's
+ * number at all (wrong length, or a character that isn't alphanumeric).
+ */
+const NIU_PATTERN = /^[A-Za-z0-9]{14}$/;
+
+/**
  * The shop's own declaration form, editable while `capabilities.effectiveLevel
  * < 3` and read-only at 3 — `verifiedAt` is server-pinned and never part of
  * this schema. An empty string clears a field, the same convention the
- * profile/contacts form uses.
+ * profile/contacts form uses. Each message is a translation key, not
+ * English text: the field that renders it calls `t(...)` on it.
  */
 export const legalFormSchema = z.object({
 	businessType: z.union([z.literal(""), z.enum(BUSINESS_TYPES)]),
 	legalName: z.string().trim().max(120),
 	rccmNumber: z.string().trim().max(40),
-	niu: z.string().trim().max(14),
+	niu: z.union([
+		z.literal(""),
+		z.string().trim().regex(NIU_PATTERN, "shop.niuInvalid"),
+	]),
 });
 
 export type LegalFormValues = z.infer<typeof legalFormSchema>;
