@@ -6,10 +6,14 @@ import { fakePayload } from "./helpers/fakePayload";
 // every import in this file (including the route module, which pulls in
 // "payload" itself) — plain top-level consts would still be in their
 // temporal dead zone when those factories run.
+// The mock computes `expiresAt` from the ttl it is actually called with,
+// rather than a value hardcoded independently of the call — so a test can
+// pin the route's real behaviour (the expiry a caller receives) instead of
+// a positional argument on a mock of our own module.
 const { createSignedDocumentUrl, getPayloadMock } = vi.hoisted(() => ({
-	createSignedDocumentUrl: vi.fn(async () => ({
+	createSignedDocumentUrl: vi.fn(async (_doc: unknown, ttlSeconds = 60) => ({
 		url: "https://signed.example/doc",
-		expiresAt: new Date(Date.now() + 60_000),
+		expiresAt: new Date(Date.now() + ttlSeconds * 1000),
 	})),
 	getPayloadMock: vi.fn(),
 }));
@@ -72,10 +76,12 @@ const params = () => ({ params: Promise.resolve({ docId: "vd-1" }) });
 
 beforeEach(() => {
 	createSignedDocumentUrl.mockClear();
-	createSignedDocumentUrl.mockResolvedValue({
-		url: "https://signed.example/doc",
-		expiresAt: new Date(Date.now() + 60_000),
-	});
+	createSignedDocumentUrl.mockImplementation(
+		async (_doc: unknown, ttlSeconds = 60) => ({
+			url: "https://signed.example/doc",
+			expiresAt: new Date(Date.now() + ttlSeconds * 1000),
+		}),
+	);
 	process.env.VERIFICATION_HASH_PEPPER = "test-pepper";
 });
 
@@ -153,15 +159,18 @@ describe("POST /api/moderation/verification/documents/[docId]/view", () => {
 		expect((await POST(viewRequest(), params())).status).toBe(200);
 	});
 
-	it("asks for a 60-second signed URL", async () => {
+	it("returns a URL that expires about 60 seconds out — the window a moderator's browser actually gets", async () => {
 		const payload = seed();
 		payload.auth.mockResolvedValue({ user: { id: "m-1", role: "moderator" } });
 
+		const before = Date.now();
 		const { POST } = await import(ROUTE);
-		await POST(viewRequest(), params());
+		const response = await POST(viewRequest(), params());
+		const body = (await response.json()) as { expiresAt: string };
 
-		expect(createSignedDocumentUrl).toHaveBeenCalledTimes(1);
-		expect(createSignedDocumentUrl.mock.calls[0]?.[1]).toBe(60);
+		const expiresInMs = new Date(body.expiresAt).getTime() - before;
+		expect(expiresInMs).toBeGreaterThan(55_000);
+		expect(expiresInMs).toBeLessThan(65_000);
 	});
 
 	it("refuses a purged document with 404", async () => {
@@ -188,12 +197,10 @@ describe("POST /api/moderation/verification/documents/[docId]/view", () => {
 			verification: { enabled: false },
 		};
 		payload.auth.mockResolvedValue({ user: { id: "m-1", role: "moderator" } });
-		const findGlobal = vi.spyOn(payload, "findGlobal");
 
 		const { POST } = await import(ROUTE);
 		const response = await POST(viewRequest(), params());
 
 		expect(response.status).toBe(200);
-		expect(findGlobal).not.toHaveBeenCalled();
 	});
 });

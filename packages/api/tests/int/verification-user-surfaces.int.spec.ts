@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { getMyShop, resolvePublicShop } from "../../src/services/shops";
 import { recomputeShopLevel } from "../../src/services/verificationLevel";
@@ -231,26 +230,11 @@ describe("shop responses", () => {
 	});
 });
 
-describe("admin panel surfaces", () => {
-	const read = (path: string) =>
-		readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
-
-	it("no longer queries users by the retired verified field", () => {
-		const source = read("src/components/widgets/ModerationWidget.tsx");
-		expect(source).not.toContain("where[verified]");
-		expect(source).toContain("pendingVerifications");
-	});
-
-	it("no longer offers a Verify button", () => {
-		expect(read("src/components/views/UserActions.tsx")).not.toMatch(
-			/Unverify|\bVerify\b/,
-		);
-	});
-
-	it("shows identity verification instead of the retired checkbox", () => {
-		const source = read("src/components/views/UserManagementClient.tsx");
-		expect(source).not.toMatch(/u\.verified/);
-		expect(source).toContain("identityVerifiedAt");
-		expect(source).toContain("Identity verified");
-	});
-});
+// The admin panel's rendered behaviour (what a moderator actually sees and
+// which endpoints it actually calls) is covered in
+// `verification-admin-surfaces.int.spec.ts`, which renders the three
+// components under jsdom rather than grepping their source text — a rename
+// or a markup change with no behavioural effect no longer fails this suite,
+// and a real behavioural regression (the widget still querying the retired
+// `where[verified]` filter, a Verify button coming back, the table losing
+// its identity column) still does.

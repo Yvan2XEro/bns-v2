@@ -1,7 +1,25 @@
-import { describe, expect, it } from "vitest";
-import { deriveVerified, Users } from "../../src/collections/Users";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../../src/services/notificationProvider", () => ({
+	isNotificationProviderConfigured: () => true,
+	getNotificationProvider: vi.fn(),
+}));
+
+const syncNotificationSubscriber = vi.fn();
+const triggerNotificationEvent = vi.fn();
+vi.mock("../../src/hooks/notificationEvents", () => ({
+	syncNotificationSubscriber: (...args: unknown[]) =>
+		syncNotificationSubscriber(...args),
+	triggerNotificationEvent: (...args: unknown[]) =>
+		triggerNotificationEvent(...args),
+}));
+
+const { deriveVerified, Users } = await import("../../src/collections/Users");
 
 type Hook = (args: { doc: Record<string, unknown> }) => Record<string, unknown>;
+type AfterChangeHook = (args: {
+	doc: Record<string, unknown>;
+}) => Promise<void>;
 
 describe("users.verified virtual", () => {
 	it("is true exactly when the account has a live identity verification", () => {
@@ -43,8 +61,18 @@ describe("users.verified virtual", () => {
 		expect(verified?.virtual).toBe(true);
 	});
 
-	it("no longer triggers the user-verified workflow", () => {
-		const source = Users.hooks?.afterChange?.map(String).join("\n") ?? "";
-		expect(source).not.toContain("user-verified");
+	it("syncs the notification subscriber but never triggers a workflow event — the retired user-verified push is gone, not renamed", async () => {
+		const hook = Users.hooks?.afterChange?.[0] as AfterChangeHook;
+		await hook({
+			doc: { id: "u-1", email: "aicha@example.com", name: "Aïcha" },
+		});
+
+		expect(syncNotificationSubscriber).toHaveBeenCalledWith(
+			expect.objectContaining({
+				subscriberId: "u-1",
+				email: "aicha@example.com",
+			}),
+		);
+		expect(triggerNotificationEvent).not.toHaveBeenCalled();
 	});
 });

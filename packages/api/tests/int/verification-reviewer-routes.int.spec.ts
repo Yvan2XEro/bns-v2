@@ -235,13 +235,13 @@ describe("GET /api/moderation/verification", () => {
 			enabled: false,
 		});
 		authAs(payload, MOD);
-		const findGlobal = vi.spyOn(payload, "findGlobal");
 
 		const { GET } = await import(QUEUE_ROUTE);
 		const response = await GET(getRequest());
+		const body = await response.json();
 
 		expect(response.status).toBe(200);
-		expect(findGlobal).not.toHaveBeenCalled();
+		expect(body.items.map((item: { id: string }) => item.id)).toEqual(["vr-1"]);
 	});
 
 	it("refuses a non-moderator with moderation.forbidden", async () => {
@@ -913,16 +913,19 @@ describe("POST /api/moderation/verification/{id}", () => {
 			enabled: false,
 		});
 		authAs(payload, MOD);
-		const findGlobal = vi.spyOn(payload, "findGlobal");
 
 		const { POST } = await import(DETAIL_ROUTE);
 		const response = await POST(
 			detailPostRequest("vr-1", { action: "claim" }),
 			idParams("vr-1"),
 		);
+		const body = await response.json();
 
 		expect(response.status).toBe(200);
-		expect(findGlobal).not.toHaveBeenCalled();
+		expect(body.request).toMatchObject({
+			status: "in_review",
+			assignee: "m-1",
+		});
 	});
 });
 

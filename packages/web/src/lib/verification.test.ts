@@ -266,6 +266,30 @@ describe("buildTimeline", () => {
 		).toBe(false);
 	});
 
+	it("highlights the vendor's auto-submit when it is the live status", () => {
+		const autoSubmitted = {
+			status: "submitted",
+			statusHistory: [
+				{ status: "draft", at: "2026-10-01T09:00:00.000Z", source: "seller" },
+				{
+					status: "submitted",
+					at: "2026-10-01T09:05:00.000Z",
+					source: "vendor",
+				},
+			],
+			infoRequests: [],
+			decision: null,
+		};
+		const timeline = buildTimeline(autoSubmitted as never);
+		expect(timeline).toHaveLength(2);
+		expect(timeline[0]).toMatchObject({
+			status: "submitted",
+			source: "vendor",
+			current: true,
+		});
+		expect(timeline[1]).toMatchObject({ status: "draft", current: false });
+	});
+
 	it("is empty, not undefined, for a request with no history", () => {
 		expect(
 			buildTimeline({
@@ -393,9 +417,16 @@ describe("resolveReturnOutcome", () => {
 // These four lists are mirrored from
 // `packages/api/src/collections/VerificationRequests.ts` rather than imported,
 // because importing across the package boundary drags a Payload collection
-// into the web type-check. Pinning the exact values is what makes the copy
-// safe: a reason code that drifts from the server's list would otherwise only
-// surface as a refused decision in production.
+// into the web type-check. Pinning a second, hand-typed copy of each list
+// here does NOT catch a divergence from the API: both this file and
+// `lib/verification.ts` are edited by hand, so editing only the API's list
+// leaves both green. That drift is a real hazard (a stale reason code here
+// only ever surfaces as a refused decision in production) — it is covered by
+// `packages/api/tests/int/verification-reason-lists.int.spec.ts`, which runs
+// from the API side (where importing both the collection and this file's
+// exports type-checks cleanly) and compares this module's arrays against the
+// collection's at runtime. What these tests below still catch: a typo made
+// only in this file, independent of the API.
 describe("reason lists mirrored from the API", () => {
 	it("keeps the request-info reasons the API accepts", () => {
 		expect(REQUEST_INFO_REASONS).toEqual([
