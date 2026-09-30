@@ -36,7 +36,7 @@ const YEAR_MS = 365.25 * 86_400_000;
 async function writeKyc(
 	req: PayloadRequest,
 	request: VerificationRequest,
-	kyc: Record<string, unknown>,
+	kyc: NonNullable<VerificationRequest["kyc"]>,
 	reviewSignals: ReviewSignal[],
 ): Promise<VerificationRequest> {
 	return req.payload.update({
@@ -45,7 +45,7 @@ async function writeKyc(
 		req,
 		overrideAccess: true,
 		context: VERIFICATION_CONTEXT,
-		data: { kyc, reviewSignals } as never,
+		data: { kyc, reviewSignals },
 	});
 }
 

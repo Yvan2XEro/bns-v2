@@ -482,7 +482,7 @@ async function refreshSignals(
 		req,
 		overrideAccess: true,
 		context: VERIFICATION_CONTEXT,
-		data: { reviewSignals } as never,
+		data: { reviewSignals },
 	});
 }
 
@@ -1393,7 +1393,7 @@ export async function startKycSession(
 						status: "pending",
 						attempts,
 					},
-				} as never,
+				},
 			});
 
 			// The hosted URL is not stored: it is a bearer credential for the
