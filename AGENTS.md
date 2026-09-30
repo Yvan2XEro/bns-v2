@@ -153,9 +153,13 @@ same patterns as mobile.
   so logic that needs pinning belongs in a pure module under `src/lib` rather
   than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
-- One API spec genuinely fails, and only one: `api.int.spec.ts`, on
-  `@/payload.config` module resolution. It fails under vitest, run alone, and
-  predates this work. Everything else should pass.
+- `bun run test:int` passes: 74 files, 1043 tests, no failures. There is no
+  pre-existing failure to work around any more, so a red test is your change
+  or a real defect.
+- `tests/smoke/api.smoke.spec.ts` is NOT in that run. It boots a real Payload
+  against `DATABASE_URI` — a live Atlas cluster — where every spec under
+  `tests/int/` uses the in-memory fake. Run it deliberately, before a deploy:
+  `bunx vitest run --config ./vitest.config.mts --dir tests/smoke`.
 - Earlier revisions of this file also blamed `boost-callback-route`,
   `listings-before-change`, `public-categories-route`, `public-search-route`
   and `product-stock-routes` on "the full suite's parallel load". That was
@@ -163,8 +167,7 @@ same patterns as mobile.
   real cause for the two reviewer/seller route specs was the 5s default
   timeout against a 3.5-3.8s first dynamic import. `vitest.config.mts` now
   sets `testTimeout` to 15s and five consecutive full runs showed no
-  timeouts. So do not excuse a failing test by citing load — if a test
-  fails, it is your change, `api.int.spec.ts`, or a real defect.
+  timeouts. So do not excuse a failing test by citing load.
 
 ## Comments and docs
 
