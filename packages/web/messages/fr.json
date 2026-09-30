@@ -1283,7 +1283,6 @@
 				"niu_certificate": "Certificat NIU",
 				"legal_representative_id": "Pièce d'identité du représentant légal",
 				"mandate": "Mandat",
-				"proof_of_address": "Justificatif de domicile",
 				"other": "Autre document"
 			},
 			"action": {
@@ -1463,7 +1462,8 @@
 			"fieldsInvalid": "Veuillez vérifier les informations d'entreprise signalées.",
 			"notAssignee": "Seul le relecteur qui a pris cette demande peut la décider.",
 			"conflictOfInterest": "Vous ne pouvez pas relire une boutique à laquelle vous êtes lié.",
-			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver."
+			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver.",
+			"hashUnavailable": "La vérification d'identité est mal configurée de notre côté. Veuillez contacter le support."
 		}
 	},
 	"Verification": {
@@ -1658,7 +1658,6 @@
 			"niu_certificate": "Certificat NIU",
 			"legal_representative_id": "Pièce d'identité du représentant légal",
 			"mandate": "Mandat",
-			"proof_of_address": "Justificatif de domicile",
 			"other": "Autre document"
 		},
 		"noRequest": "Aucune demande de vérification d'entreprise n'est ouverte. Démarrez-en une depuis le centre de vérification.",

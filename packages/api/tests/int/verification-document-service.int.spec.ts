@@ -167,7 +167,7 @@ describe("addDocument", () => {
 			OWNER,
 			"vr-1",
 			file("same"),
-			"proof_of_address",
+			"niu_certificate",
 		);
 		expect(second.duplicateOf).toEqual([]);
 	});

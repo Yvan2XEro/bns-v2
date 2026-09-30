@@ -12,13 +12,15 @@ export const VERIFICATION_MIME_TYPES = [
 export const MAX_VERIFICATION_FILE_SIZE = 10 * 1024 * 1024;
 export const MAX_DOCUMENTS_PER_REQUEST = 10;
 
+// `proof_of_address` is deliberately not a kind: it was a server-only value
+// neither the web nor the mobile upload form could ever produce, which made
+// it a promise to a seller that no screen kept.
 export const DOCUMENT_KINDS = [
 	"rccm_extract",
 	"entreprenant_declaration",
 	"niu_certificate",
 	"legal_representative_id",
 	"mandate",
-	"proof_of_address",
 	"other",
 ] as const;
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];

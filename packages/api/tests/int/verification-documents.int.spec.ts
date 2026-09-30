@@ -37,13 +37,15 @@ describe("verification-documents access", () => {
 		]);
 		expect(MAX_VERIFICATION_FILE_SIZE).toBe(10 * 1024 * 1024);
 		expect(MAX_DOCUMENTS_PER_REQUEST).toBe(10);
+		// `proof_of_address` is not here: neither client can ever upload it, so a
+		// kind only the server knows about is removed rather than left as a
+		// promise no screen keeps.
 		expect([...DOCUMENT_KINDS]).toEqual([
 			"rccm_extract",
 			"entreprenant_declaration",
 			"niu_certificate",
 			"legal_representative_id",
 			"mandate",
-			"proof_of_address",
 			"other",
 		]);
 	});

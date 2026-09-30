@@ -1282,7 +1282,6 @@
 				"niu_certificate": "NIU certificate",
 				"legal_representative_id": "Legal representative's ID",
 				"mandate": "Mandate",
-				"proof_of_address": "Proof of address",
 				"other": "Other document"
 			},
 			"action": {
@@ -1462,7 +1461,8 @@
 			"fieldsInvalid": "Please check the highlighted business details.",
 			"notAssignee": "Only the reviewer who claimed this request can decide it.",
 			"conflictOfInterest": "You cannot review a shop you are involved with.",
-			"checklistIncomplete": "Every checklist item must be confirmed before approving."
+			"checklistIncomplete": "Every checklist item must be confirmed before approving.",
+			"hashUnavailable": "Identity verification is misconfigured on our side. Please contact support."
 		}
 	},
 	"Verification": {
@@ -1657,7 +1657,6 @@
 			"niu_certificate": "NIU certificate",
 			"legal_representative_id": "Legal representative's ID",
 			"mandate": "Mandate",
-			"proof_of_address": "Proof of address",
 			"other": "Other document"
 		},
 		"noRequest": "There is no open business verification request. Start one from the verification hub.",

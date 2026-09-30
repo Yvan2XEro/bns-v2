@@ -1171,7 +1171,8 @@
 			"fieldsInvalid": "Please check the highlighted business details.",
 			"notAssignee": "Only the reviewer who claimed this request can decide it.",
 			"conflictOfInterest": "You cannot review a shop you are involved with.",
-			"checklistIncomplete": "Every checklist item must be confirmed before approving."
+			"checklistIncomplete": "Every checklist item must be confirmed before approving.",
+			"hashUnavailable": "Identity verification is misconfigured on our side. Please contact support."
 		}
 	},
 	"cityPicker": {
@@ -1394,7 +1395,6 @@
 		"verifDocumentKind_niu_certificate": "NIU certificate",
 		"verifDocumentKind_legal_representative_id": "Legal representative's ID",
 		"verifDocumentKind_mandate": "Mandate",
-		"verifDocumentKind_proof_of_address": "Proof of address",
 		"verifDocumentKind_other": "Other document",
 		"verifAction_claim": "Claim",
 		"verifAction_release": "Release",
@@ -1911,7 +1911,6 @@
 			"niu_certificate": "NIU certificate",
 			"legal_representative_id": "Legal representative's ID",
 			"mandate": "Mandate",
-			"proof_of_address": "Proof of address",
 			"other": "Other document"
 		}
 	}

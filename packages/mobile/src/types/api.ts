@@ -992,7 +992,6 @@ export type VerificationDocumentKind =
 	| "niu_certificate"
 	| "legal_representative_id"
 	| "mandate"
-	| "proof_of_address"
 	| "other";
 
 export type ReviewSignalCode =

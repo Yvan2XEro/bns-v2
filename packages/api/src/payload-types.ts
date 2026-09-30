@@ -595,7 +595,6 @@ export interface VerificationDocument {
     | 'niu_certificate'
     | 'legal_representative_id'
     | 'mandate'
-    | 'proof_of_address'
     | 'other';
   sha256?: string | null;
   originalFilename?: string | null;
