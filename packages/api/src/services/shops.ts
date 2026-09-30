@@ -101,6 +101,92 @@ export async function writeShop(
 	});
 }
 
+export type LevelCause =
+	| "approved"
+	| "rejected"
+	| "revoked"
+	| "expired"
+	| "superseded"
+	| "owner_changed"
+	| "shop_closed"
+	| "manual";
+
+export interface ShopLevelChange {
+	shopId: string;
+	previousLevel: number;
+	level: number;
+	cause: LevelCause;
+}
+
+export type ShopLevelListener = (
+	req: PayloadRequest,
+	event: ShopLevelChange,
+) => Promise<void> | void;
+
+const shopLevelListeners: ShopLevelListener[] = [];
+
+/**
+ * P3 registers the team pause here, P4 and P5 their own reactions. Listeners
+ * run inside the transition's transaction, so a listener that writes is part
+ * of the same atomic change.
+ */
+export function onShopLevelChanged(listener: ShopLevelListener): () => void {
+	shopLevelListeners.push(listener);
+	return () => {
+		const index = shopLevelListeners.indexOf(listener);
+		if (index >= 0) shopLevelListeners.splice(index, 1);
+	};
+}
+
+/** Test-only: listeners are module state, and a suite that registers one must be able to undo it. */
+export function __resetShopLevelListeners(): void {
+	shopLevelListeners.length = 0;
+}
+
+export async function notifyShopLevelChanged(
+	req: PayloadRequest,
+	event: ShopLevelChange,
+): Promise<void> {
+	for (const listener of [...shopLevelListeners]) {
+		try {
+			await listener(req, event);
+		} catch (error) {
+			// A later phase's reaction must not roll back a verification decision
+			// that is otherwise correct; the decision is the record, the reaction
+			// is a consequence.
+			req.payload.logger.error(
+				{ err: error, event },
+				"[shops] level listener failed",
+			);
+		}
+	}
+}
+
+/**
+ * The only writer of `shops.level`, `levelExpiresAt` and `verifiedAt`. Goes
+ * through `writeShop`, so the Shops `afterChange` hook still queues the search
+ * event that re-indexes the shop's listings on a level change — a direct
+ * `payload.update` here would silently stop that happening.
+ */
+export async function setShopLevel(
+	req: PayloadRequest,
+	shopId: string,
+	input: {
+		level: 1 | 2 | 3;
+		levelExpiresAt: string | null;
+		verifiedAt?: string | null;
+	},
+): Promise<Shop> {
+	const data: Record<string, unknown> = {
+		level: input.level,
+		levelExpiresAt: input.levelExpiresAt,
+	};
+	// Once set, it stays: it records when this shop first proved an identity,
+	// not whether it currently has one.
+	if (input.verifiedAt) data.verifiedAt = input.verifiedAt;
+	return writeShop(req, shopId, data);
+}
+
 export async function checkHandleAvailability(
 	payload: Payload,
 	raw: unknown,
