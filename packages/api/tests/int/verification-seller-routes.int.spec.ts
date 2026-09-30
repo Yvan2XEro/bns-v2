@@ -39,9 +39,16 @@ const KYC_ROUTE =
 	"../../src/app/(frontend)/api/verification-requests/[id]/kyc-session/route";
 const DOCUMENTS_ROUTE =
 	"../../src/app/(frontend)/api/verification-requests/[id]/documents/route";
+const DOCUMENT_DELETE_ROUTE =
+	"../../src/app/(frontend)/api/verification-requests/[id]/documents/[docId]/route";
 
 const OWNER = { id: "u-1", role: "user", name: "Aïcha" };
 const OTHER = { id: "u-2", role: "user", name: "Autre" };
+const SUSPENDED_OWNER = {
+	...OWNER,
+	suspendedAt: "2026-08-01T00:00:00.000Z",
+	suspendedUntil: null,
+};
 
 const AUTHORISED = {
 	enabled: true,
@@ -90,6 +97,15 @@ const asOwner = (payload: ReturnType<typeof seed>) =>
 	payload.auth.mockResolvedValue({ user: { id: OWNER.id, role: OWNER.role } });
 const asOther = (payload: ReturnType<typeof seed>) =>
 	payload.auth.mockResolvedValue({ user: { id: OTHER.id, role: OTHER.role } });
+const asSuspendedOwner = (payload: ReturnType<typeof seed>) =>
+	payload.auth.mockResolvedValue({
+		user: {
+			id: SUSPENDED_OWNER.id,
+			role: SUSPENDED_OWNER.role,
+			suspendedAt: SUSPENDED_OWNER.suspendedAt,
+			suspendedUntil: SUSPENDED_OWNER.suspendedUntil,
+		},
+	});
 
 const get = (url: string) => new Request(url);
 const del = (url: string) => new Request(url, { method: "DELETE" });
@@ -710,6 +726,111 @@ describe("GET /api/verification-requests/{id}", () => {
 		expect(await response.json()).toMatchObject({
 			code: "verification.notOwner",
 		});
+	});
+});
+
+describe("a suspended owner", () => {
+	// `kyc-session` is not in this enumeration: this file mocks `startKycSession`
+	// itself (see the top of the file), so a route-level call here would only
+	// prove the mock ignores suspension, not the real service. That route's
+	// suspension check is pinned directly against the real implementation in
+	// verification-service.int.spec.ts.
+	it("is refused by every seller verification route (I2)", async () => {
+		const payload = seed({
+			requests: [DRAFT_L3],
+			documents: [
+				{ id: "vd-1", request: "vr-1", shop: "s-1", kind: "rccm_extract" },
+			],
+		});
+		asSuspendedOwner(payload);
+
+		const { GET: shopGET } = await import(SHOP_VERIFICATION_ROUTE);
+		const { POST: openPOST } = await import(OPEN_ROUTE);
+		const { GET: detailGET, DELETE: detailDELETE } = await import(DETAIL_ROUTE);
+		const { POST: businessPOST } = await import(BUSINESS_ROUTE);
+		const { POST: submitPOST } = await import(SUBMIT_ROUTE);
+		const { POST: documentsPOST } = await import(DOCUMENTS_ROUTE);
+		const { DELETE: documentDELETE } = await import(DOCUMENT_DELETE_ROUTE);
+
+		const calls: Array<[string, () => Promise<Response>]> = [
+			[
+				"GET /shops/{id}/verification",
+				() =>
+					shopGET(get("http://x/api/shops/s-1/verification"), params("s-1")),
+			],
+			[
+				"POST /shops/{id}/verification-requests",
+				() =>
+					openPOST(
+						post("http://x/api/shops/s-1/verification-requests", {
+							level: 2,
+						}),
+						params("s-1"),
+					),
+			],
+			[
+				"GET /verification-requests/{id}",
+				() =>
+					detailGET(
+						get("http://x/api/verification-requests/vr-1"),
+						params("vr-1"),
+					),
+			],
+			[
+				"DELETE /verification-requests/{id}",
+				() =>
+					detailDELETE(
+						del("http://x/api/verification-requests/vr-1"),
+						params("vr-1"),
+					),
+			],
+			[
+				"POST /verification-requests/{id}/business",
+				() =>
+					businessPOST(
+						post(
+							"http://x/api/verification-requests/vr-1/business",
+							VALID_BUSINESS_BODY,
+						),
+						params("vr-1"),
+					),
+			],
+			[
+				"POST /verification-requests/{id}/submit",
+				() =>
+					submitPOST(
+						post("http://x/api/verification-requests/vr-1/submit"),
+						params("vr-1"),
+					),
+			],
+			[
+				"POST /verification-requests/{id}/documents",
+				() =>
+					documentsPOST(
+						upload("http://x/api/verification-requests/vr-1/documents", {
+							file: pdfFile(),
+							kind: "rccm_extract",
+						}),
+						params("vr-1"),
+					),
+			],
+			[
+				"DELETE /verification-requests/{id}/documents/{docId}",
+				() =>
+					documentDELETE(
+						del("http://x/api/verification-requests/vr-1/documents/vd-1"),
+						docParams("vr-1", "vd-1"),
+					),
+			],
+		];
+
+		for (const [label, call] of calls) {
+			const response = await call();
+			expect(response.status, label).toBe(403);
+			expect(await response.json(), label).toMatchObject({
+				code: "moderation.accountSuspended",
+			});
+		}
 	});
 });
 

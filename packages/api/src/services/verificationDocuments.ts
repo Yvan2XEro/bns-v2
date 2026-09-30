@@ -12,6 +12,7 @@ import {
 	MAX_DOCUMENTS_PER_REQUEST,
 } from "../collections/VerificationDocuments";
 import type { BusinessType } from "../collections/VerificationRequests";
+import { assertNotSuspended } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { sha256 } from "../lib/hash";
 import { relationId } from "../lib/relationId";
@@ -41,6 +42,8 @@ export interface DocumentActor {
 	id: string;
 	role?: string | null;
 	name?: string | null;
+	suspendedAt?: string | Date | null;
+	suspendedUntil?: string | Date | null;
 }
 
 export const REQUIRED_DOCUMENTS = {
@@ -91,6 +94,9 @@ async function loadEditableRequest(
 	if (relationId(request.submittedBy) !== actor.id) {
 		throw new VerificationDocumentError(ERROR_CODES.verificationNotOwner, 403);
 	}
+	// Shared by add and remove: a suspended owner is refused before either
+	// can touch the request's documents (I2).
+	await assertNotSuspended(payload, actor.id, actor);
 	if (!(EDITABLE_STATUSES as readonly string[]).includes(request.status)) {
 		throw new VerificationDocumentError(
 			ERROR_CODES.verificationInvalidTransition,

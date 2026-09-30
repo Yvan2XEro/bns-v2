@@ -24,7 +24,7 @@ export async function GET(
 	try {
 		const found = await loadOwnedRequest(
 			ctx.payload,
-			ctx.user.id,
+			ctx.user,
 			parsedParams.data.id,
 		);
 		const documents = await documentsFor(ctx.payload, String(found.id));

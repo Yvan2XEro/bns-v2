@@ -76,7 +76,7 @@ export async function POST(
 	try {
 		const existing = await loadOwnedRequest(
 			ctx.payload,
-			ctx.user.id,
+			ctx.user,
 			parsedParams.data.id,
 		);
 		if (existing.requestedLevel !== 3) {
@@ -103,7 +103,7 @@ export async function POST(
 
 		const updated = await loadOwnedRequest(
 			ctx.payload,
-			ctx.user.id,
+			ctx.user,
 			parsedParams.data.id,
 		);
 		const documents = await documentsFor(ctx.payload, String(updated.id));

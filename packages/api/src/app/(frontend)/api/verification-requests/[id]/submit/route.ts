@@ -34,7 +34,7 @@ export async function POST(
 	try {
 		const existing = await loadOwnedRequest(
 			ctx.payload,
-			ctx.user.id,
+			ctx.user,
 			parsedParams.data.id,
 		);
 		const name: TransitionName =

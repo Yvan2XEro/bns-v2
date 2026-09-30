@@ -5,6 +5,10 @@ import {
 	OPEN_STATUSES,
 	type VerificationStatus,
 } from "../collections/VerificationRequests";
+import {
+	assertNotSuspended,
+	type SuspensionCheckable,
+} from "../hooks/suspensionGuard";
 import type {
 	Shop,
 	VerificationDocument,
@@ -193,10 +197,14 @@ export function toOwnerRequest(
 	};
 }
 
-/** Loads a request and refuses anyone but the seller who submitted it. */
+/**
+ * Loads a request and refuses anyone but the seller who submitted it, then a
+ * suspended owner (I2) — checked in that order so a stranger never learns
+ * whether the owner they are impersonating happens to be sanctioned.
+ */
 export async function loadOwnedRequest(
 	payload: Payload,
-	actorId: string,
+	actor: SuspensionCheckable & { id: string },
 	requestId: string,
 ): Promise<VerificationRequest> {
 	let request: VerificationRequest;
@@ -210,9 +218,10 @@ export async function loadOwnedRequest(
 	} catch {
 		throw new ServiceError(ERROR_CODES.notFound, 404);
 	}
-	if (relationId(request.submittedBy) !== actorId) {
+	if (relationId(request.submittedBy) !== actor.id) {
 		throw new ServiceError(ERROR_CODES.verificationNotOwner, 403);
 	}
+	await assertNotSuspended(payload, actor.id, actor);
 	return request;
 }
 

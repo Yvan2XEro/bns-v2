@@ -237,6 +237,22 @@ describe("openRequest", () => {
 			code: "shop.inactive",
 		});
 	});
+
+	it("refuses a suspended owner", async () => {
+		const payload = seed();
+		const suspendedOwner = {
+			...OWNER,
+			suspendedAt: "2026-09-01T00:00:00.000Z",
+			suspendedUntil: null,
+		};
+		await expect(
+			openRequest(payload, suspendedOwner, "s-1", 2),
+		).rejects.toMatchObject({
+			status: 403,
+			data: { code: "moderation.accountSuspended" },
+		});
+		expect(requests(payload)).toHaveLength(0);
+	});
 });
 
 describe("startKycSession", () => {
@@ -306,6 +322,27 @@ describe("startKycSession", () => {
 		expect(callbackOf(fetchMock)).toBe(
 			"https://buynsellem.com/seller/verification/identity/return?request=vr-1",
 		);
+		vi.unstubAllGlobals();
+	});
+
+	it("refuses a suspended owner before a vendor session is created (I2)", async () => {
+		const payload = seed({ requests: [draftL2()] });
+		const fetchMock = stubDiditCreate();
+		const suspendedOwner = {
+			...OWNER,
+			suspendedAt: "2026-09-01T00:00:00.000Z",
+			suspendedUntil: null,
+		};
+		await expect(
+			startKycSession(payload, suspendedOwner, "vr-1", {
+				consentVersion: "kyc-2026-10-v1",
+				locale: "fr",
+			}),
+		).rejects.toMatchObject({
+			status: 403,
+			data: { code: "moderation.accountSuspended" },
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
 		vi.unstubAllGlobals();
 	});
 });

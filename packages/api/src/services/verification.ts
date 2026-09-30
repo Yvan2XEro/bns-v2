@@ -2,6 +2,7 @@ import type { Payload, PayloadRequest, Where } from "payload";
 import { canActOn, isAdmin } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import { LEVEL3_CHECKLIST_ITEMS } from "../collections/VerificationRequests";
+import { assertNotSuspended } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { getKycProvider } from "../lib/kyc";
 import { relationId } from "../lib/relationId";
@@ -582,6 +583,7 @@ export async function openRequest(
 			if (shop.status !== "active") {
 				throw error(ERROR_CODES.shopInactive, 409);
 			}
+			await assertNotSuspended(payload, actor.id, actor);
 			if (level === 3 && shopCapabilities(shop).effectiveLevel < 2) {
 				throw error(ERROR_CODES.verificationLevelNotEligible, 409);
 			}
@@ -647,6 +649,7 @@ export async function submitRequest(
 			if (relationId(request.submittedBy) !== actor.id) {
 				throw error(ERROR_CODES.verificationNotOwner, 403);
 			}
+			await assertNotSuspended(payload, actor.id, actor);
 			if (request.requestedLevel === 3) {
 				assertBusinessValid(request);
 			}
@@ -1227,6 +1230,7 @@ export async function deleteDraft(
 			if (relationId(request.submittedBy) !== actor.id) {
 				throw error(ERROR_CODES.verificationNotOwner, 403);
 			}
+			await assertNotSuspended(payload, actor.id, actor);
 			if (request.status !== "draft") {
 				throw error(ERROR_CODES.verificationInvalidTransition, 409);
 			}
@@ -1324,6 +1328,9 @@ export async function startKycSession(
 			if (relationId(request.submittedBy) !== actor.id) {
 				throw error(ERROR_CODES.verificationNotOwner, 403);
 			}
+			// Checked before the attempt/window counters below: a suspended
+			// owner must never burn one of the paid vendor sessions (I2).
+			await assertNotSuspended(payload, actor.id, actor);
 			if (request.requestedLevel !== 2 || request.status !== "draft") {
 				throw error(ERROR_CODES.verificationInvalidTransition, 409);
 			}

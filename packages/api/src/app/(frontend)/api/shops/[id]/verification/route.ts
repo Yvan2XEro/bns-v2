@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertNotSuspended } from "@/hooks/suspensionGuard";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { relationId } from "@/lib/relationId";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
@@ -27,6 +28,7 @@ export async function GET(
 		if (relationId(shop.owner) !== ctx.user.id) {
 			return errorResponse(ERROR_CODES.verificationNotOwner, 403);
 		}
+		await assertNotSuspended(ctx.payload, ctx.user.id, ctx.user);
 		const view = await getShopVerificationView(ctx.payload, shop);
 		return Response.json(view);
 	} catch (error) {
