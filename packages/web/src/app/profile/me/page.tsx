@@ -1,15 +1,7 @@
-import {
-	BadgeCheck,
-	Bookmark,
-	Calendar,
-	Info,
-	MapPin,
-	Settings,
-	ShieldCheck,
-	Star,
-} from "lucide-react";
+import { Bookmark, Calendar, MapPin, Settings, Star } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { LevelBadge } from "~/components/shop/level-badge";
 import { MyShopEntry } from "~/components/shop/my-shop-entry";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -87,27 +79,15 @@ export default async function MyProfilePage() {
 				</Link>
 			</div>
 
-			{!user.verified && (
-				<div className="mb-6 flex items-center gap-3 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3">
-					<Info className="h-5 w-5 shrink-0 text-[#1E40AF]" />
-					<p className="text-[#1E40AF] text-sm">
-						{t("verifyAccount")}{" "}
-						<Link
-							href="/contact?subject=account"
-							className="font-medium underline hover:text-[#1E3A8A]"
-						>
-							{t("contactSupport")}
-						</Link>
-					</p>
-				</div>
-			)}
-
-			{user.verified && (
-				<div className="mb-6 flex items-center gap-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3">
-					<BadgeCheck className="h-5 w-5 shrink-0 text-[#16A34A]" />
-					<p className="font-medium text-[#16A34A] text-sm">
-						{t("verifiedSeller")}
-					</p>
+			{mine?.shop && (
+				<div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-[#E2E8F0] bg-white px-4 py-3">
+					<LevelBadge badge={mine.shop.badge} />
+					<Link
+						href="/seller/verification"
+						className="font-medium text-[#1E40AF] text-sm hover:underline"
+					>
+						{t("increaseLevel")}
+					</Link>
 				</div>
 			)}
 
@@ -143,12 +123,6 @@ export default async function MyProfilePage() {
 										<h2 className="mt-4 font-bold text-[#0F172A] text-xl">
 											{user.name}
 										</h2>
-										{user.verified && (
-											<Badge variant="secondary" className="mt-2">
-												<ShieldCheck className="mr-1 h-3 w-3" />
-												{t("verified")}
-											</Badge>
-										)}
 										{user.location && (
 											<p className="mt-2 flex items-center text-[#64748B] text-sm">
 												<MapPin className="mr-1 h-4 w-4 text-[#F59E0B]" />

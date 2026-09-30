@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CloseShopForm } from "~/components/shop/close-shop-form";
 import { ContactsForm } from "~/components/shop/contacts-form";
 import { HandleForm } from "~/components/shop/handle-form";
+import { LegalForm } from "~/components/shop/legal-form";
 import { MoveListingsDialog } from "~/components/shop/move-listings-dialog";
 import { ProfileForm } from "~/components/shop/profile-form";
 import { Button } from "~/components/ui/button";
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { isShopOwner } from "~/lib/shop-roles";
 import type { Category, MyShop, ShopRole } from "~/types";
 
-type Tab = "profile" | "address" | "contacts" | "listings" | "close";
+type Tab = "profile" | "address" | "contacts" | "legal" | "listings" | "close";
 
 export function ShopSettingsClient({
 	shop,
@@ -61,6 +62,7 @@ export function ShopSettingsClient({
 						<TabsTrigger value="address">{t("tabAddress")}</TabsTrigger>
 					)}
 					<TabsTrigger value="contacts">{t("tabContacts")}</TabsTrigger>
+					<TabsTrigger value="legal">{t("tabLegal")}</TabsTrigger>
 					<TabsTrigger value="listings">{t("tabListings")}</TabsTrigger>
 					{owner && <TabsTrigger value="close">{t("tabClose")}</TabsTrigger>}
 				</TabsList>
@@ -75,6 +77,9 @@ export function ShopSettingsClient({
 					)}
 					<TabsContent value="contacts">
 						<ContactsForm shop={shop} />
+					</TabsContent>
+					<TabsContent value="legal">
+						<LegalForm shop={shop} />
 					</TabsContent>
 					<TabsContent value="listings">
 						<div className="space-y-3">

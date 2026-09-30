@@ -1,3 +1,4 @@
+import { badgeForLevel, type VerificationBadge } from "~/lib/verification";
 import type { Listing, Product, Shop } from "~/types";
 
 export interface ProductSummary {
@@ -71,6 +72,20 @@ export function listingPriceMax(listing: Listing): number | null {
 	return (
 		asNumber(record.priceMax) ?? productSummaryOf(listing)?.priceMax ?? null
 	);
+}
+
+/**
+ * The trust badge for a listing card: a search hit flattens `shopLevel` onto
+ * the listing the same way it does `shopName`/`priceMax`, a Payload doc only
+ * carries it inside the populated `shop` relation. Reads whichever is
+ * present and maps it through `badgeForLevel` — the same "search hits, cards"
+ * use that function documents. `null` for a personal listing with no shop.
+ */
+export function listingShopBadge(listing: Listing): VerificationBadge | null {
+	const record: Record<string, unknown> = listing;
+	const level =
+		asNumber(record.shopLevel) ?? listingShop(listing)?.level ?? null;
+	return badgeForLevel(level);
 }
 
 export function shopLogoUrl(shop: Shop): string | null {

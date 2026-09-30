@@ -1,11 +1,4 @@
-import {
-	BadgeCheck,
-	Calendar,
-	Flag,
-	MapPin,
-	MessageCircle,
-	Star,
-} from "lucide-react";
+import { Calendar, Flag, MapPin, MessageCircle, Star } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,11 +7,12 @@ import { BlockUserButton } from "~/components/chat/block-user-button";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ReviewForm } from "~/components/listing/review-form";
+import { LevelBadge } from "~/components/shop/level-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { getBlockedUsers } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
+import { getUserShop } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
@@ -108,10 +102,11 @@ async function getUserReviews(userId: string): Promise<Review[]> {
 export default async function ProfilePage({ params }: PageProps) {
 	const t = await getTranslations("Profile");
 	const { userId } = await params;
-	const [user, listings, reviews] = await Promise.all([
+	const [user, listings, reviews, shop] = await Promise.all([
 		getUser(userId),
 		getUserListings(userId),
 		getUserReviews(userId),
+		getUserShop(userId),
 	]);
 	const currentUser = (await getAuthUser()) as { id: string } | null;
 	const blockedUserIds = currentUser ? await getBlockedUsers() : [];
@@ -166,21 +161,13 @@ export default async function ProfilePage({ params }: PageProps) {
 									{user.name?.charAt(0) || "?"}
 								</AvatarFallback>
 							</Avatar>
-							<div className="mt-4 flex items-center gap-2">
-								<h1 className="font-bold text-2xl text-[#0F172A]">
-									{user.name}
-								</h1>
-								{user.verified && (
-									<BadgeCheck className="h-6 w-6 text-[#16A34A]" />
-								)}
-							</div>
-							{user.verified && (
-								<Badge
-									variant="secondary"
-									className="mt-2 border-[#BBF7D0] bg-[#F0FDF4] text-[#16A34A]"
-								>
-									{t("verifiedSeller")}
-								</Badge>
+							<h1 className="mt-4 font-bold text-2xl text-[#0F172A]">
+								{user.name}
+							</h1>
+							{shop && (
+								<div className="mt-2">
+									<LevelBadge badge={shop.badge} />
+								</div>
 							)}
 							{user.location && (
 								<p className="mt-2 flex items-center text-[#64748B] text-sm">

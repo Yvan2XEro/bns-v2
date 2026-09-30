@@ -2,7 +2,12 @@ import { Clock, MapPin, Store, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { listingPriceMax, listingShopName } from "~/lib/listing-shop";
+import { LevelBadge } from "~/components/shop/level-badge";
+import {
+	listingPriceMax,
+	listingShopBadge,
+	listingShopName,
+} from "~/lib/listing-shop";
 import { formatListingPrice } from "~/lib/price";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
@@ -42,6 +47,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 	const _seller = listing.seller as User | null;
 	const formattedPrice = formatListingPrice(listing.price);
 	const shopName = listingShopName(listing);
+	const shopBadge = listingShopBadge(listing);
 	const priceMax = listingPriceMax(listing);
 	const isFromPrice =
 		typeof listing.price === "number" &&
@@ -143,9 +149,12 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						</span>
 					</div>
 					{shopName && (
-						<p className="mt-1.5 flex items-center gap-1 truncate font-medium text-[#1E40AF] text-xs">
+						<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[#1E40AF] text-xs">
 							<Store className="h-3 w-3 shrink-0" />
 							<span className="truncate">{shopName}</span>
+							{shopBadge && (
+								<LevelBadge badge={shopBadge} size="sm" className="shrink-0" />
+							)}
 						</p>
 					)}
 				</div>
