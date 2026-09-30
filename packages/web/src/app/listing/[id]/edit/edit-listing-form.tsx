@@ -71,7 +71,11 @@ export function EditListingForm({
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
 
-	const { data: myShop } = useMyShop();
+	const {
+		data: myShop,
+		error: myShopError,
+		reload: reloadMyShop,
+	} = useMyShop();
 	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
 	// The listing's own shop, not the caller's current one: P1 is one shop per
 	// seller so the two coincide in practice, but a listing already filed under
@@ -717,6 +721,19 @@ export function EditListingForm({
 					{wasInShop && !publishInShop && (
 						<p className="text-amber-700 text-xs">{tShop("detachWarning")}</p>
 					)}
+				</div>
+			)}
+			{!activeShop && myShopError && (
+				<div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
+					<span>{tShop("shopStatusUnknown")}</span>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={reloadMyShop}
+					>
+						{tShop("retryShopStatus")}
+					</Button>
 				</div>
 			)}
 

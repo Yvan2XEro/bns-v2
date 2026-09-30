@@ -49,8 +49,8 @@ export function Header({ novuAppId }: HeaderProps) {
 	const [scrolled, setScrolled] = useState(false);
 	const unreadCount = useUnreadMessages(!!user);
 	const { shopsEnabled } = useAppConfig();
-	const { data: myShop } = useMyShop();
-	const entry = shopEntryFor(myShop, shopsEnabled);
+	const { data: myShop, error: myShopError } = useMyShop();
+	const entry = shopEntryFor(myShop, shopsEnabled, myShopError);
 	const shopEntry = entry ? { href: entry.href, label: t(entry.key) } : null;
 
 	useEffect(() => {

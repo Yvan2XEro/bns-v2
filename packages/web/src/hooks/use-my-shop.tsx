@@ -34,6 +34,11 @@ export function useMyShop() {
 	return {
 		data: enabled ? (query.data ?? null) : null,
 		loading: enabled && query.isPending,
+		/**
+		 * `GET /api/shops/mine` failed: distinct from "this user has no shop".
+		 * Callers must not treat `data === null` while this is true as an answer.
+		 */
+		error: enabled && query.isError,
 		reload,
 	};
 }

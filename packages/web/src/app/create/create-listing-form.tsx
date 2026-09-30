@@ -67,6 +67,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const tListing = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
+	const tShop = useTranslations("Shop");
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 
@@ -79,7 +80,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	];
 	const [isLoading, setIsLoading] = useState(false);
 
-	const { data: myShop } = useMyShop();
+	const {
+		data: myShop,
+		error: myShopError,
+		reload: reloadMyShop,
+	} = useMyShop();
 	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
 	const [publishInShop, setPublishInShop] = useState(true);
 
@@ -701,6 +706,19 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 									checked={publishInShop}
 									onChange={setPublishInShop}
 								/>
+							)}
+							{!activeShop && myShopError && (
+								<div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
+									<span>{tShop("shopStatusUnknown")}</span>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={reloadMyShop}
+									>
+										{tShop("retryShopStatus")}
+									</Button>
+								</div>
 							)}
 							<div className="space-y-3 rounded-lg border p-4">
 								<div className="flex items-center justify-between">

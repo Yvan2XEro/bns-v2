@@ -751,7 +751,9 @@
 		"publishInHint": "L'annonce apparaît sur la page de votre boutique. Elle reste une annonce simple, sans stock.",
 		"detachWarning": "Cela retire l'annonce de la page de votre boutique. Elle reste publiée, sans stock.",
 		"newShop": "Nouvelle",
-		"view": "Voir"
+		"view": "Voir",
+		"shopStatusUnknown": "Impossible de vérifier l'état de votre boutique. Elle ne sera pas proposée ici tant que ce n'est pas réessayé.",
+		"retryShopStatus": "Réessayer"
 	},
 	"ShopCreate": {
 		"title": "Ouvrir ma boutique",

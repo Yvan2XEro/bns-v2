@@ -750,7 +750,9 @@
 		"publishInHint": "The listing appears on your shop page. It stays a simple listing, without stock.",
 		"detachWarning": "This removes the listing from your shop page. It stays published, without stock.",
 		"newShop": "New",
-		"view": "View"
+		"view": "View",
+		"shopStatusUnknown": "We couldn't check your shop status. It won't be offered here until this is retried.",
+		"retryShopStatus": "Retry"
 	},
 	"ShopCreate": {
 		"title": "Open my shop",
