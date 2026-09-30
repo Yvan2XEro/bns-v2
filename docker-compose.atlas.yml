@@ -139,7 +139,8 @@ services:
       # existing hash, so duplicate detection restarts from that point.
       VERIFICATION_HASH_PEPPER: ${VERIFICATION_HASH_PEPPER:-}
       # Staging only: lets verification be enabled before the authorisation is
-      # recorded. Ignored when NODE_ENV=production.
+      # recorded. NODE_ENV is hardcoded to "production" in packages/api/Dockerfile,
+      # so this has no effect there regardless of what is set here.
       VERIFICATION_ALLOW_UNAUTHORISED: ${VERIFICATION_ALLOW_UNAUTHORISED:-false}
       DIDIT_API_KEY: ${DIDIT_API_KEY:-}
       DIDIT_WEBHOOK_SECRET: ${DIDIT_WEBHOOK_SECRET:-}

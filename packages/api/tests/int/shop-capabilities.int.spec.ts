@@ -77,6 +77,41 @@ describe("shopCapabilities", () => {
 		).toBe(2);
 	});
 
+	it("treats an explicit null levelExpiresAt at level >= 2 as unexpired", () => {
+		for (const level of [2, 3]) {
+			expect(
+				shopCapabilities({ status: "active", level, levelExpiresAt: null }, NOW)
+					.effectiveLevel,
+			).toBe(level);
+		}
+	});
+
+	it("treats levelExpiresAt equal to now as already expired", () => {
+		const caps = shopCapabilities(
+			{ status: "active", level: 2, levelExpiresAt: NOW.toISOString() },
+			NOW,
+		);
+		expect(caps.effectiveLevel).toBe(1);
+	});
+
+	it("treats levelExpiresAt one millisecond before now as already expired", () => {
+		const oneMsPast = new Date(NOW.getTime() - 1).toISOString();
+		const caps = shopCapabilities(
+			{ status: "active", level: 2, levelExpiresAt: oneMsPast },
+			NOW,
+		);
+		expect(caps.effectiveLevel).toBe(1);
+	});
+
+	it("treats levelExpiresAt one millisecond after now as not yet expired", () => {
+		const oneMsFuture = new Date(NOW.getTime() + 1).toISOString();
+		const caps = shopCapabilities(
+			{ status: "active", level: 2, levelExpiresAt: oneMsFuture },
+			NOW,
+		);
+		expect(caps.effectiveLevel).toBe(2);
+	});
+
 	it("empties every capability for a shop that is not active", () => {
 		for (const status of ["suspended", "closed"]) {
 			for (const level of [1, 2, 3]) {

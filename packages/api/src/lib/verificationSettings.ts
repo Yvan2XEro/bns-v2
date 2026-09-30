@@ -37,11 +37,12 @@ export function assertAuthorised(
 	if (bypass) return null;
 
 	const a = verification.authorisation ?? {};
-	const missing = (
-		["reference", "grantedAt", "consentVersion"] as const
-	).filter((key) => !filled(a[key]));
-	if (a.transfersAuthorised !== true)
-		missing.push("transfersAuthorised" as never);
+	const missing: Array<
+		"reference" | "grantedAt" | "consentVersion" | "transfersAuthorised"
+	> = (["reference", "grantedAt", "consentVersion"] as const).filter(
+		(key) => !filled(a[key]),
+	);
+	if (a.transfersAuthorised !== true) missing.push("transfersAuthorised");
 	if (missing.length === 0) return null;
 
 	return `Verification cannot be enabled until the Law 2024/017 authorisation is recorded: missing ${missing.join(", ")}.`;
