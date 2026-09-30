@@ -9,6 +9,7 @@ import {
 } from "../hooks/suspensionGuard";
 import { ERROR_CODES } from "../lib/errors";
 import { CodedAPIError } from "../lib/serviceError";
+import { shopCapabilities } from "../lib/shopCapabilities";
 import { BUSINESS_TYPES } from "./VerificationRequests";
 
 export const SHOP_SERVICE_CONTEXT = { shopService: true } as const;
@@ -31,6 +32,7 @@ export const SHOP_SERVICE_FIELDS = [
 	"suspendedBy",
 	"suspensionLogId",
 	"publishedListingCount",
+	"notifiedExpiryDays",
 ] as const;
 
 /** A change to any of these makes the shop's listing documents stale in search. */
@@ -108,8 +110,26 @@ export const Shops: CollectionConfig = {
 
 				// `legal` is owner-editable while the shop is below level 3 and is
 				// shown as "declared". Once level 3 is effective it is reviewed
-				// content: changing it needs a new level-3 request.
-				if ((originalDoc?.level ?? 1) >= 3) {
+				// content: changing it needs a new level-3 request. Gated on the
+				// *effective* level — the same figure `legalVerified` in
+				// publicShop.ts is built from — not the raw stored `level`: once
+				// `levelExpiresAt` has passed, a buyer is no longer shown this shop
+				// as level-3 verified, so locking the seller out on the stale raw
+				// level let a PATCH return 200 while silently discarding the edit.
+				const legalStillVerified = originalDoc
+					? shopCapabilities({
+							status:
+								typeof originalDoc.status === "string"
+									? originalDoc.status
+									: "active",
+							level:
+								typeof originalDoc.level === "number"
+									? originalDoc.level
+									: null,
+							levelExpiresAt: originalDoc.levelExpiresAt ?? null,
+						}).legalInfoVerified
+					: false;
+				if (legalStillVerified) {
 					data.legal = originalDoc?.legal;
 				} else if (data.legal && typeof data.legal === "object") {
 					(data.legal as Record<string, unknown>).verifiedAt =

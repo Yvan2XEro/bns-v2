@@ -127,6 +127,47 @@ describe("Shops beforeChange", () => {
 		expect(result.legal).toEqual(level3.legal);
 	});
 
+	it("I4: keeps the legal block editable once an effective level 3 has expired, rather than silently discarding the edit", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		// The stored `level` is still 3 — the nightly job has not recomputed it
+		// yet — but `levelExpiresAt` is in the past, so `shopCapabilities` reads
+		// this shop as effective level 1, exactly what a buyer is shown.
+		const expiredLevel3 = {
+			...original,
+			level: 3,
+			levelExpiresAt: "2020-01-01T00:00:00.000Z",
+			legal: {
+				businessType: "company",
+				legalName: "Akwa Tech SARL",
+				rccmNumber: "RC/DLA/2020/B/1234",
+				niu: "M012312345678N",
+				verifiedAt: "2026-01-01T00:00:00.000Z",
+			},
+		};
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: expiredLevel3,
+			data: {
+				...expiredLevel3,
+				legal: {
+					businessType: "sole_trader",
+					legalName: "Renamed",
+					rccmNumber: "RC/DLA/2021/B/9999",
+					niu: "M012312345678N",
+					verifiedAt: "2030-01-01T00:00:00.000Z",
+				},
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect((result.legal as { legalName: unknown }).legalName).toBe("Renamed");
+		// `verifiedAt` still isn't a member's to set: below effective level 3 it
+		// is stripped back to whatever was last stored, same as any other
+		// below-level-3 shop.
+		expect((result.legal as { verifiedAt: unknown }).verifiedAt).toBe(
+			"2026-01-01T00:00:00.000Z",
+		);
+	});
+
 	it("strips a member-submitted legal.verifiedAt while the shop is below level 3, but keeps the rest of legal editable", async () => {
 		const payload = fakePayload({ users: [{ id: "u-1" }] });
 		const result = await beforeChange({
