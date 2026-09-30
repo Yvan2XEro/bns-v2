@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Plugin } from "payload";
 
 type StorageProvider = "s3" | "azure" | "local";
@@ -8,8 +9,13 @@ interface StorageEnv {
 	S3_PRIVATE_BUCKET?: string;
 	AZURE_STORAGE_CONTAINER_NAME?: string;
 	AZURE_STORAGE_PRIVATE_CONTAINER_NAME?: string;
+	PRIVATE_UPLOADS_DIR?: string;
 	NODE_ENV?: string;
 }
+
+/** Matches the hardcoded `staticDir` of the `media` collection. */
+const MEDIA_DIR_NAME = "media";
+const DEFAULT_PRIVATE_UPLOADS_DIR = "private-uploads/verification";
 
 function getProvider(env: StorageEnv = process.env): StorageProvider {
 	const val = env.STORAGE_PROVIDER?.toLowerCase();
@@ -33,6 +39,16 @@ const PRIVATE_PREFIX = "verification";
  * The rule this enforces is the one that matters either way — if this
  * deployment stores files at all, identity documents are not in the bucket the
  * CDN serves.
+ *
+ * `local` is a legitimate production configuration, not merely a dev
+ * convenience: Payload serves it through the same `nobody`-access
+ * `staticDir`/file-route path as any other collection (see the document-access
+ * matrix in the P2 final review), and the private path is HMAC-signed on the
+ * way out (`lib/privateFiles.ts`). What actually protects it is that its
+ * `staticDir` is distinct from the public `media` one — the same "not the
+ * bucket the CDN serves" rule S3 and Azure enforce with a distinct
+ * bucket/container name — so that is what this checks instead of the
+ * environment.
  */
 export function assertPrivateStorageConfig(
 	env: StorageEnv = process.env,
@@ -40,9 +56,15 @@ export function assertPrivateStorageConfig(
 	const provider = getProvider(env);
 
 	if (provider === "local") {
-		return env.NODE_ENV === "production"
-			? "STORAGE_PROVIDER=local stores identity documents on the container filesystem; refused in production. Set STORAGE_PROVIDER to s3 or azure."
-			: null;
+		const mediaDir = path.resolve(process.cwd(), MEDIA_DIR_NAME);
+		const privateDir = path.resolve(
+			process.cwd(),
+			env.PRIVATE_UPLOADS_DIR?.trim() || DEFAULT_PRIVATE_UPLOADS_DIR,
+		);
+		if (privateDir === mediaDir) {
+			return "PRIVATE_UPLOADS_DIR resolves to the same directory as the media collection; identity documents would be served from the public media path.";
+		}
+		return null;
 	}
 
 	if (provider === "s3") {

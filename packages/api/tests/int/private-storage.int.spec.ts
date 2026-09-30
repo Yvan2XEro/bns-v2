@@ -46,19 +46,30 @@ describe("assertPrivateStorageConfig", () => {
 		).toContain("AZURE_STORAGE_PRIVATE_CONTAINER_NAME");
 	});
 
-	it("refuses the local provider in production and allows it elsewhere", () => {
+	it("boots the local provider in production when its private path is distinct from media", () => {
 		expect(
 			assertPrivateStorageConfig({
 				STORAGE_PROVIDER: "local",
 				NODE_ENV: "production",
 			}),
-		).toContain("local");
+		).toBeNull();
 		expect(
 			assertPrivateStorageConfig({
 				STORAGE_PROVIDER: "local",
-				NODE_ENV: "development",
+				NODE_ENV: "production",
+				PRIVATE_UPLOADS_DIR: "private-uploads/verification",
 			}),
 		).toBeNull();
+	});
+
+	it("refuses the local provider when its private path collides with the media path", () => {
+		expect(
+			assertPrivateStorageConfig({
+				STORAGE_PROVIDER: "local",
+				NODE_ENV: "production",
+				PRIVATE_UPLOADS_DIR: "media",
+			}),
+		).toContain("PRIVATE_UPLOADS_DIR");
 	});
 });
 

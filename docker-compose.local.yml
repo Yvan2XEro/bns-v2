@@ -162,6 +162,7 @@ services:
       DIDIT_BASE_URL: ${DIDIT_BASE_URL:-https://verification.didit.me}
     volumes:
       - api_media:/app/packages/api/media
+      - api_private_uploads:/app/packages/api/private-uploads
     depends_on:
       mongodb:
         condition: service_healthy
@@ -251,6 +252,7 @@ volumes:
   redis_data:
   meili_data:
   api_media:
+  api_private_uploads:
 
 networks:
   dokploy-network:
