@@ -215,6 +215,16 @@ export async function GET(
 					rankOk &&
 					canTransition("claim", verificationRequest.status),
 				canDecide: isAssignee && !conflictOfInterest,
+				// `revoke` (`services/verification.ts`'s `revokeRequest`) authorises
+				// with conflict-of-interest plus rank, never an assignee — an
+				// approved request's `assignee` is always cleared by
+				// `applyApproval`, so gating revoke on `canDecide` makes it
+				// unreachable. A distinct flag, computed the same way the service
+				// checks it.
+				canRevoke:
+					!conflictOfInterest &&
+					rankOk &&
+					canTransition("revoke", verificationRequest.status),
 				isAssignee,
 				isAdmin: isAdmin(ctx.actor),
 				conflictOfInterest,

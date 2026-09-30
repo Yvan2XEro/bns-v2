@@ -11,6 +11,7 @@ import {
 const viewer = (over = {}) => ({
 	canClaim: false,
 	canDecide: false,
+	canRevoke: false,
 	isAssignee: false,
 	isAdmin: false,
 	conflictOfInterest: false,
@@ -41,10 +42,16 @@ describe("availableActions", () => {
 		).toEqual([]);
 	});
 
-	it("offers revoke on an approved request to anyone who may decide", () => {
-		expect(availableActions(viewer({ canDecide: true }), "approved")).toEqual([
+	it("offers revoke on an approved request to a reviewer the server clears to revoke", () => {
+		expect(availableActions(viewer({ canRevoke: true }), "approved")).toEqual([
 			"revoke",
 		]);
+	});
+
+	it("never offers revoke from canDecide — an approved request's assignee is always null, so canDecide is always false", () => {
+		expect(availableActions(viewer({ canDecide: true }), "approved")).toEqual(
+			[],
+		);
 	});
 
 	it("offers nothing on a terminal request", () => {

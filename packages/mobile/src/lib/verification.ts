@@ -310,6 +310,12 @@ export type ReviewerAction =
  * Reads the permission the API's `viewer` block states, never a value being
  * present — `assignee` is display only. A conflict of interest offers
  * nothing, whatever else the viewer flags say.
+ *
+ * Revoking an approved request reads `canRevoke`, never `canDecide`:
+ * `applyApproval` clears `assignee` on every approval, so `canDecide`
+ * (assignee-gated) is always false once a request reaches `approved`.
+ * `canRevoke` is computed the same way `revokeRequest` itself authorises —
+ * conflict-of-interest and rank, no assignee requirement.
  */
 export function availableActions(
 	viewer: VerificationReviewerViewer,
@@ -322,7 +328,7 @@ export function availableActions(
 	if (viewer.canDecide && status === "in_review") {
 		actions.push("release", "request_info", "approve", "reject");
 	}
-	if (viewer.canDecide && status === "approved") actions.push("revoke");
+	if (viewer.canRevoke && status === "approved") actions.push("revoke");
 	return actions;
 }
 

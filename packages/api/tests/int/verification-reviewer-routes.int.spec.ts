@@ -424,6 +424,7 @@ describe("GET /api/moderation/verification/{id}", () => {
 		expect(asOther.viewer).toEqual({
 			canClaim: false,
 			canDecide: false,
+			canRevoke: false,
 			isAssignee: false,
 			isAdmin: false,
 			conflictOfInterest: false,
@@ -435,8 +436,49 @@ describe("GET /api/moderation/verification/{id}", () => {
 		).json();
 		expect(asAssignee.viewer).toMatchObject({
 			canDecide: true,
+			// `vr-1` is `in_review`, not `approved` — `canRevoke` follows the
+			// state machine, not the assignee.
+			canRevoke: false,
 			isAssignee: true,
 		});
+	});
+
+	it("lets a moderator revoke an approved request from the queue — C6: canDecide is always false once approved, canRevoke is not", async () => {
+		const payload = seed({
+			requests: [
+				{
+					id: "vr-approved",
+					shop: "s-1",
+					submittedBy: "u-1",
+					requestedLevel: 3,
+					status: "approved",
+					assignee: null,
+					submittedAt: "2026-09-01T00:00:00.000Z",
+					approvedAt: "2026-09-05T00:00:00.000Z",
+				},
+			],
+		});
+		authAs(payload, MOD);
+
+		const { GET, POST } = await import(DETAIL_ROUTE);
+		const detail = await (
+			await GET(detailGetRequest("vr-approved"), idParams("vr-approved"))
+		).json();
+
+		expect(detail.viewer.isAssignee).toBe(false);
+		expect(detail.viewer.canDecide).toBe(false);
+		expect(detail.viewer.canRevoke).toBe(true);
+
+		const response = await POST(
+			detailPostRequest("vr-approved", {
+				action: "revoke",
+				reasonCode: "document_forged",
+			}),
+			idParams("vr-approved"),
+		);
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.request).toMatchObject({ status: "revoked" });
 	});
 
 	it("reports conflictOfInterest for a reviewer who is a member of the shop", async () => {

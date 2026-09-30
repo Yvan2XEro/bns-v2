@@ -102,10 +102,16 @@ const TERMINAL_STATUSES = new Set<VerificationStatus>([
 
 /**
  * The decisions this viewer may take on this request right now. Reads the
- * permissions the server already computed (`canClaim`, `canDecide`) rather
- * than re-deriving them from whether a field such as `assignee` happens to
- * be set — that was a P1 bug (a reviewer saw actions the server would have
- * refused).
+ * permissions the server already computed (`canClaim`, `canDecide`,
+ * `canRevoke`) rather than re-deriving them from whether a field such as
+ * `assignee` happens to be set — that was a P1 bug (a reviewer saw actions
+ * the server would have refused).
+ *
+ * `canDecide` never applies to an approved request: `applyApproval` clears
+ * `assignee` on every approval, so `canDecide` (assignee-gated) is always
+ * false once a request reaches `approved`. Revoking it reads `canRevoke`
+ * instead, which the server computes the same way `revokeRequest` itself
+ * authorises — conflict-of-interest and rank, no assignee requirement.
  */
 export function availableActions(
 	viewer: ViewerPermissions,
@@ -115,7 +121,7 @@ export function availableActions(
 	if (TERMINAL_STATUSES.has(status)) return [];
 
 	if (status === "approved") {
-		return viewer.canDecide ? ["revoke"] : [];
+		return viewer.canRevoke ? ["revoke"] : [];
 	}
 
 	const actions: DecisionAction[] = [];

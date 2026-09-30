@@ -386,6 +386,7 @@ function viewer(
 	return {
 		canClaim: false,
 		canDecide: false,
+		canRevoke: false,
 		isAssignee: false,
 		isAdmin: false,
 		conflictOfInterest: false,
@@ -415,10 +416,16 @@ describe("availableActions", () => {
 		).toEqual([]);
 	});
 
-	test("offers revoke on an approved request to anyone who may decide", () => {
-		expect(availableActions(viewer({ canDecide: true }), "approved")).toEqual([
+	test("offers revoke on an approved request to a reviewer the server clears to revoke", () => {
+		expect(availableActions(viewer({ canRevoke: true }), "approved")).toEqual([
 			"revoke",
 		]);
+	});
+
+	test("never offers revoke from canDecide — an approved request's assignee is always null, so canDecide is always false", () => {
+		expect(availableActions(viewer({ canDecide: true }), "approved")).toEqual(
+			[],
+		);
 	});
 
 	test("offers nothing on a terminal request", () => {
