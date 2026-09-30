@@ -59,6 +59,7 @@ async function getInitialListings(
 		if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice);
 		if (searchParams.location) params.set("location", searchParams.location);
 		if (searchParams.sort) params.set("sort", searchParams.sort);
+		if (searchParams.verified === "1") params.set("minShopLevel", "2");
 
 		const res = await serverFetch(`/api/public/search?${params.toString()}`);
 		if (!res.ok) return { hits: [], total: 0 };
@@ -99,6 +100,7 @@ export default async function SearchPage({
 				<ShopSearchClient
 					initialQ={params.q ?? ""}
 					initialCity={params.city ?? ""}
+					initialVerifiedOnly={params.verified === "1"}
 				/>
 			</>
 		);

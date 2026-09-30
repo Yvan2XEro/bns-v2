@@ -13,6 +13,8 @@ const baseShop: MyShop = {
 	location: { city: null, region: null, country: null, countryCode: null },
 	categories: [],
 	level: 0,
+	badge: null,
+	legal: null,
 	publishedListingCount: 0,
 	createdAt: "2024-01-01T00:00:00.000Z",
 	owner: {

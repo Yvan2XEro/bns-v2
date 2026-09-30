@@ -2,6 +2,7 @@
 
 import {
 	ArrowLeftRight,
+	BadgeCheck,
 	Boxes,
 	ExternalLink,
 	LayoutDashboard,
@@ -17,12 +18,18 @@ import { ShopInitials } from "~/components/shop/shop-initials";
 import { cn } from "~/lib/utils";
 import { badgeForLevel } from "~/lib/verification";
 
-// Orders (P4), Resale (P8), Delivery (P7), Payments (P5), Team (P3) and
-// Verification (P2) join this list when their phase ships.
+// Orders (P4), Resale (P8), Delivery (P7) and Payments (P5) join this list
+// when their phase ships.
 const ITEMS = [
 	{ href: "/seller", key: "dashboard", icon: LayoutDashboard, exact: true },
 	{ href: "/seller/catalogue", key: "catalogue", icon: Package, exact: false },
 	{ href: "/seller/stock", key: "stock", icon: Boxes, exact: false },
+	{
+		href: "/seller/verification",
+		key: "verification",
+		icon: BadgeCheck,
+		exact: false,
+	},
 	{ href: "/messages", key: "messages", icon: MessageCircle, exact: false },
 	{ href: "/shop/manage", key: "settings", icon: Settings, exact: false },
 ] as const;

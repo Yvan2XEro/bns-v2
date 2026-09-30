@@ -82,6 +82,7 @@ export function SearchClient({
 		sort: initialParams.sort || "newest",
 		condition: initialParams.condition || "",
 		tags: initialParams.tags || "",
+		verified: initialParams.verified === "1" ? "1" : "",
 	});
 
 	// Local state for the top search input — avoids router.push on every keystroke
@@ -133,6 +134,7 @@ export function SearchClient({
 			params.set("sort", filters.sort);
 		if (filters.condition) params.set("condition", filters.condition);
 		if (filters.tags) params.set("tags", filters.tags);
+		if (filters.verified) params.set("verified", filters.verified);
 		for (const [key, value] of Object.entries(attributeFilters)) {
 			if (value) params.set(`attr_${key}`, value);
 		}
@@ -181,6 +183,10 @@ export function SearchClient({
 			if (filters.sort) params.set("sort", filters.sort);
 			if (filters.condition) params.set("condition", filters.condition);
 			if (filters.tags) params.set("tags", filters.tags);
+			// The API applies this floor twice — once against the index, once
+			// against live shop data after hydration — so it is never
+			// re-filtered client-side here; this only forwards the intent.
+			if (filters.verified === "1") params.set("minShopLevel", "2");
 
 			for (const [key, value] of Object.entries(attributeFilters)) {
 				if (value) params.set(`attr_${key}`, value);
@@ -316,6 +322,7 @@ export function SearchClient({
 			sort: "newest",
 			condition: "",
 			tags: "",
+			verified: "",
 		});
 		setAttributeFilters({});
 		router.push("/search");
@@ -330,6 +337,7 @@ export function SearchClient({
 			filters.location ||
 			filters.condition ||
 			filters.tags ||
+			filters.verified ||
 			nearMe ||
 			Object.values(attributeFilters).some(Boolean)
 		);
@@ -356,6 +364,7 @@ export function SearchClient({
 		filters.location,
 		filters.condition,
 		filters.tags,
+		filters.verified,
 		nearMe ? "nearMe" : "",
 		...Object.values(attributeFilters),
 	].filter(Boolean).length;
@@ -504,6 +513,21 @@ export function SearchClient({
 						</label>
 					))}
 				</div>
+			</div>
+
+			{/* Verified shops only */}
+			<div className="space-y-2">
+				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-[#F8FAFC]">
+					<input
+						type="checkbox"
+						checked={filters.verified === "1"}
+						onChange={(e) =>
+							updateFilter("verified", e.target.checked ? "1" : "")
+						}
+						className="h-4 w-4 rounded border-[#D1D5DB] text-[#1E40AF] focus:ring-[#3B82F6]/20"
+					/>
+					<span className="text-[#334155]">{t("verifiedShopsOnly")}</span>
+				</label>
 			</div>
 
 			{/* Tags */}

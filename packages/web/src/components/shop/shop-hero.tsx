@@ -1,7 +1,6 @@
 import { Flag, MapPin, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ReportDialog } from "~/components/listing/report-dialog";
-import { badgeForLevel } from "~/lib/verification";
 import type { PublicShop } from "~/types";
 import { LevelBadge } from "./level-badge";
 import { ShareShopButton } from "./share-shop-button";
@@ -46,7 +45,7 @@ export function ShopHero({
 								<h1 className="font-bold text-2xl text-[#0F172A] sm:text-3xl">
 									{shop.name}
 								</h1>
-								<LevelBadge badge={badgeForLevel(shop.level)} />
+								<LevelBadge badge={shop.badge} />
 							</div>
 							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[#64748B] text-sm">
 								{shop.owner.totalReviews > 0 && (

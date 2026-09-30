@@ -8,6 +8,8 @@ export interface ShopSearchParams {
 	q: string;
 	city: string;
 	limit: number;
+	/** `2` for "verified shops only"; the API re-applies this floor after hydrating live shop data, so this is never re-filtered client-side. */
+	minShopLevel?: number;
 }
 
 export const shopSearchKey = (params: ShopSearchParams) =>
@@ -21,6 +23,7 @@ export function useShopSearch(params: ShopSearchParams) {
 			shopApi.searchShops({
 				q: params.q || undefined,
 				city: params.city || undefined,
+				minShopLevel: params.minShopLevel,
 				limit: params.limit,
 			}),
 		retry: false,

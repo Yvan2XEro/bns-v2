@@ -18,6 +18,7 @@ import type {
 	VariantDoc,
 } from "~/types";
 import { ApiError, apiErrorFrom, ERROR_CODES, fallbackFor } from "./apiError";
+import type { BusinessType } from "./verification";
 
 /**
  * Transport for the shop routes. It only speaks HTTP and throws `ApiError`;
@@ -114,6 +115,18 @@ export interface ShopUpdateInput {
 		countryCode?: string | null;
 	};
 	categories?: string[];
+	/**
+	 * Owner-editable while `capabilities.effectiveLevel < 3`; the server
+	 * freezes it once level 3 is effective (`Shops.ts`'s `beforeChange` hook),
+	 * so a PATCH here is silently ignored at that point rather than rejected.
+	 * `verifiedAt` is never client-writable — it is not part of this shape.
+	 */
+	legal?: {
+		businessType?: BusinessType | null;
+		legalName?: string | null;
+		rccmNumber?: string | null;
+		niu?: string | null;
+	};
 }
 
 /** A variant read through Payload REST at depth 1, with its product populated. */
@@ -185,6 +198,7 @@ export const shopApi = {
 		q?: string;
 		city?: string;
 		category?: string;
+		minShopLevel?: number;
 		limit?: number;
 		offset?: number;
 	}) => request<ShopSearchResponse>(`/api/public/search/shops${query(params)}`),

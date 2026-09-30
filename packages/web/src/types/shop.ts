@@ -1,3 +1,4 @@
+import type { BusinessType, VerificationBadge } from "~/lib/verification";
 import type { Category, Product } from "../../../api/src/payload-types";
 
 export interface MediaRef {
@@ -21,6 +22,21 @@ export type MovementType =
 /** The subset a shop member can record by hand; the rest are written by orders. */
 export type ClientMovementType = "receipt" | "adjustment" | "loss" | "return";
 
+/**
+ * The `legal` group as the shop declared it (below level 3) or as a
+ * reviewer pinned it (at level 3) — mirrors `PublicShopLegal` in
+ * `packages/api/src/lib/publicShop.ts`. `verifiedAt` is what tells
+ * `legalIsVerified` "declared" from "verified"; never inferred from which
+ * other fields happen to be set.
+ */
+export interface ShopLegal {
+	businessType: BusinessType | null;
+	legalName: string | null;
+	rccmNumber: string | null;
+	niu: string | null;
+	verifiedAt: string | null;
+}
+
 export interface PublicShop {
 	id: string;
 	handle: string;
@@ -41,6 +57,8 @@ export interface PublicShop {
 	};
 	categories: { id: string; name: string; slug: string }[];
 	level: number;
+	badge: VerificationBadge | null;
+	legal: ShopLegal | null;
 	publishedListingCount: number;
 	createdAt: string;
 	owner: {
@@ -90,6 +108,7 @@ export interface ShopSearchHit {
 	description: string | null;
 	city: string | null;
 	level: number;
+	badge: VerificationBadge | null;
 	publishedListingCount: number;
 	logoUrl: string | null;
 	ownerRating: number;

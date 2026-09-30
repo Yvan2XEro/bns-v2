@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import type { PublicShop } from "~/types";
+import { LegalBlock } from "./legal-block";
 
 export function ShopAbout({
 	shop,
@@ -41,6 +42,7 @@ export function ShopAbout({
 					</div>
 				</div>
 			)}
+			<LegalBlock legal={shop.legal} />
 			<Link
 				href={`/profile/${shop.owner.id}`}
 				className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[#93C5FD]"

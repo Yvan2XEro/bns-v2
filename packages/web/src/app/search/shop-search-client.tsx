@@ -13,14 +13,17 @@ import { useShopSearch } from "~/hooks/use-shop-search";
 export function ShopSearchClient({
 	initialQ,
 	initialCity,
+	initialVerifiedOnly,
 }: {
 	initialQ: string;
 	initialCity: string;
+	initialVerifiedOnly: boolean;
 }) {
 	const t = useTranslations("Search");
 	const router = useRouter();
 	const [q, setQ] = useState(initialQ);
 	const [city, setCity] = useState(initialCity);
+	const [verifiedOnly, setVerifiedOnly] = useState(initialVerifiedOnly);
 	const debouncedQ = useDebouncedValue(q, 300).trim();
 	const debouncedCity = useDebouncedValue(city, 300);
 
@@ -30,14 +33,16 @@ export function ShopSearchClient({
 		const params = new URLSearchParams({ tab: "shops" });
 		if (debouncedQ) params.set("q", debouncedQ);
 		if (debouncedCity) params.set("city", debouncedCity);
+		if (verifiedOnly) params.set("verified", "1");
 		const search = `?${params.toString()}`;
 		if (window.location.search === search) return;
 		router.replace(`/search${search}`, { scroll: false });
-	}, [debouncedQ, debouncedCity, router]);
+	}, [debouncedQ, debouncedCity, verifiedOnly, router]);
 
 	const { data, isPending, isError, refetch } = useShopSearch({
 		q: debouncedQ,
 		city: debouncedCity,
+		minShopLevel: verifiedOnly ? 2 : undefined,
 		limit: 30,
 	});
 
@@ -62,6 +67,15 @@ export function ShopSearchClient({
 					/>
 				</div>
 			</div>
+			<label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
+				<input
+					type="checkbox"
+					checked={verifiedOnly}
+					onChange={(event) => setVerifiedOnly(event.target.checked)}
+					className="h-4 w-4 rounded border-[#D1D5DB] text-[#1E40AF] focus:ring-[#3B82F6]/20"
+				/>
+				<span className="text-[#334155]">{t("verifiedShopsOnly")}</span>
+			</label>
 
 			{isPending && <LoadingRows rows={4} />}
 			{isError && (
@@ -80,12 +94,13 @@ export function ShopSearchClient({
 								{t("noShopsTitle")}
 							</p>
 							<p className="mt-1 text-[#64748B] text-sm">{t("noShopsBody")}</p>
-							{(q || city) && (
+							{(q || city || verifiedOnly) && (
 								<button
 									type="button"
 									onClick={() => {
 										setQ("");
 										setCity("");
+										setVerifiedOnly(false);
 									}}
 									className="mt-4 h-10 rounded-lg border border-[#E2E8F0] px-4 font-semibold text-sm"
 								>
