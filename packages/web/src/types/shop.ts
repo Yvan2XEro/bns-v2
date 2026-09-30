@@ -25,9 +25,10 @@ export type ClientMovementType = "receipt" | "adjustment" | "loss" | "return";
 /**
  * The `legal` group as the shop declared it (below level 3) or as a
  * reviewer pinned it (at level 3) — mirrors `PublicShopLegal` in
- * `packages/api/src/lib/publicShop.ts`. `verifiedAt` is what tells
- * `legalIsVerified` "declared" from "verified"; never inferred from which
- * other fields happen to be set.
+ * `packages/api/src/lib/publicShop.ts`. `verifiedAt` ships for record-keeping
+ * only: whether the block is "declared" or "verified" is
+ * `PublicShop.legalVerified`, the server's own capability — a client never
+ * derives it from this field being set.
  */
 export interface ShopLegal {
 	businessType: BusinessType | null;
@@ -58,6 +59,12 @@ export interface PublicShop {
 	categories: { id: string; name: string; slug: string }[];
 	level: number;
 	badge: VerificationBadge | null;
+	/**
+	 * The capability itself, read the same way `badge` is — never inferred
+	 * from `legal.verifiedAt`, which is a row that can outlive the level that
+	 * earned it until the server's next recompute clears it.
+	 */
+	legalVerified: boolean;
 	legal: ShopLegal | null;
 	publishedListingCount: number;
 	createdAt: string;

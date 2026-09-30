@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { legalBlockLines, legalIsVerified } from "./shopLegal";
+import { legalBlockLines } from "./shopLegal";
 
 describe("legalBlockLines", () => {
 	it("shows only the fields the shop actually declared", () => {
@@ -29,29 +29,5 @@ describe("legalBlockLines", () => {
 				verifiedAt: null,
 			}),
 		).toEqual([]);
-	});
-});
-
-describe("legalIsVerified", () => {
-	it("is true only once a reviewer has approved it", () => {
-		expect(
-			legalIsVerified({
-				businessType: null,
-				legalName: "X",
-				rccmNumber: null,
-				niu: null,
-				verifiedAt: "2026-10-01T00:00:00.000Z",
-			}),
-		).toBe(true);
-		expect(
-			legalIsVerified({
-				businessType: null,
-				legalName: "X",
-				rccmNumber: null,
-				niu: null,
-				verifiedAt: null,
-			}),
-		).toBe(false);
-		expect(legalIsVerified(null)).toBe(false);
 	});
 });

@@ -14,6 +14,7 @@ const baseShop: MyShop = {
 	categories: [],
 	level: 0,
 	badge: null,
+	legalVerified: false,
 	legal: null,
 	publishedListingCount: 0,
 	createdAt: "2024-01-01T00:00:00.000Z",

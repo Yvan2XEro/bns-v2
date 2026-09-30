@@ -592,9 +592,10 @@ export type ManualMovementType = "receipt" | "adjustment" | "loss" | "return";
 /**
  * The `legal` group as declared by the shop (below level 3) or reviewed and
  * pinned by a reviewer (at level 3) — mirrors `PublicShopLegal` in
- * `packages/api/src/lib/publicShop.ts`. `verifiedAt` is what tells
- * `legalIsVerified` "declared" from "verified"; never inferred from which
- * other fields happen to be set.
+ * `packages/api/src/lib/publicShop.ts`. `verifiedAt` ships for
+ * record-keeping only: whether the block is "declared" or "verified" is
+ * `PublicShop.legalVerified`, the server's own capability — never derived
+ * from this field being set.
  */
 export interface ShopLegal {
 	businessType: BusinessType | null;
@@ -627,6 +628,12 @@ export interface PublicShop {
 	level: number;
 	/** Server-computed, expiry-aware — never re-derived from `level` with `badgeForLevel`. */
 	badge: BadgeLevel | null;
+	/**
+	 * The capability itself, read the same way `badge` is — never inferred
+	 * from `legal.verifiedAt`, which is a row that can outlive the level that
+	 * earned it until the server's next recompute clears it.
+	 */
+	legalVerified: boolean;
 	legal: ShopLegal | null;
 	publishedListingCount: number;
 	createdAt: string;
@@ -1116,6 +1123,8 @@ export interface ModerationVerificationQueueResponse {
 export interface VerificationReviewerViewer {
 	canClaim: boolean;
 	canDecide: boolean;
+	/** Revoking an approved request: conflict-of-interest and rank, never assignee — an approved request's assignee is always null. */
+	canRevoke: boolean;
 	isAssignee: boolean;
 	isAdmin: boolean;
 	conflictOfInterest: boolean;

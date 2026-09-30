@@ -129,6 +129,43 @@ describe("recomputeShopLevel", () => {
 		await recomputeShopLevel(req(payload), "s-1", "manual");
 		expect(shop(payload)?.level).toBe(2);
 	});
+
+	// C1: the level-3 stamp cannot outlive the level that earned it — a
+	// revoked or expired level-3 backing must clear `legal.verifiedAt` in the
+	// same write as the level drop, not leave it for a later job.
+	it("clears legal.verifiedAt in the same write as a level drop below 3, keeping the declared fields", async () => {
+		const payload = seed([
+			approved({ id: "vr-2", requestedLevel: 2 }),
+			approved({ id: "vr-3", requestedLevel: 3 }),
+		]);
+		payload.store.shops[0].legal = {
+			businessType: "company",
+			legalName: "Akwa Tech SARL",
+			rccmNumber: "RC/DLA/2020/B/1234",
+			niu: "M012312345678N",
+			verifiedAt: "2026-01-01T00:00:00.000Z",
+		};
+		await recomputeShopLevel(req(payload), "s-1", "approved");
+		expect(shop(payload)?.level).toBe(3);
+
+		payload.store["verification-requests"].find(
+			(r) => r.id === "vr-3",
+		)!.status = "revoked";
+		await recomputeShopLevel(req(payload), "s-1", "revoked");
+
+		expect(shop(payload)?.level).toBe(2);
+		expect(shop(payload)?.legal).toMatchObject({
+			legalName: "Akwa Tech SARL",
+			rccmNumber: "RC/DLA/2020/B/1234",
+			verifiedAt: null,
+		});
+	});
+
+	it("leaves legal untouched when the shop was never stamped", async () => {
+		const payload = seed([approved({})]);
+		await recomputeShopLevel(req(payload), "s-1", "approved");
+		expect(shop(payload)?.legal).toBeUndefined();
+	});
 });
 
 describe("onShopLevelChanged", () => {

@@ -44,6 +44,14 @@ export interface PublicShop {
 	categories: { id: string; name: string; slug: string }[];
 	level: number;
 	badge: ShopCapabilities["badge"];
+	/**
+	 * The capability itself, read the same way `badge` is — never left for a
+	 * caller to infer from `legal.verifiedAt`, which is a row that can outlive
+	 * the level that earned it until a recompute clears it. `legal.verifiedAt`
+	 * still ships for record-keeping; this is the field a client may label
+	 * "Verified" from.
+	 */
+	legalVerified: boolean;
 	legal: PublicShopLegal | null;
 	publishedListingCount: number;
 	createdAt: string;
@@ -122,6 +130,7 @@ export function serializePublicShop(
 			})),
 		level: shop.level ?? 1,
 		badge: shopCapabilities(shop).badge,
+		legalVerified: shopCapabilities(shop).legalInfoVerified,
 		legal: toPublicShopLegal(shop),
 		publishedListingCount: shop.publishedListingCount ?? 0,
 		createdAt: shop.createdAt,

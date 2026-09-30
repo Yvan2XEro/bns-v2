@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { getMyShop, resolvePublicShop } from "../../src/services/shops";
+import { recomputeShopLevel } from "../../src/services/verificationLevel";
 import { fakePayload } from "./helpers/fakePayload";
 
 const NOW = new Date("2026-09-15T12:00:00.000Z");
@@ -175,6 +176,58 @@ describe("shop responses", () => {
 
 	it("still hides a suspended shop from the public lookup", async () => {
 		expect(await resolvePublicShop(seed(), "badshop", NOW)).toBeNull();
+	});
+
+	// C1: the public "Verified" label reads `legalVerified`, a capability the
+	// server recomputes with the level — never `legal.verifiedAt` surviving on
+	// the row, which is what let a revoked shop keep the badge.
+	it("clears legalVerified on the public shop once the level-3 backing is revoked", async () => {
+		const payload = seed();
+		const shop = payload.store.shops.find((s) => s.id === "s-1")!;
+		shop.level = 3;
+		shop.legal = {
+			businessType: "company",
+			legalName: "Akwa Tech SARL",
+			rccmNumber: "RC/DLA/2020/B/1234",
+			niu: "M012312345678N",
+			verifiedAt: "2026-01-01T00:00:00.000Z",
+		};
+
+		const before = await resolvePublicShop(payload, "akwatech", NOW);
+		expect(before && "shop" in before ? before.shop.legalVerified : null).toBe(
+			true,
+		);
+
+		// Drop the level the way a revocation does — same choke point every
+		// verification transition goes through.
+		await recomputeShopLevel(
+			{ payload, context: {}, user: null } as never,
+			"s-1",
+			"revoked",
+			NOW,
+		);
+
+		const after = await resolvePublicShop(payload, "akwatech", NOW);
+		expect(after && "shop" in after ? after.shop.legalVerified : null).toBe(
+			false,
+		);
+		expect(
+			after && "shop" in after ? after.shop.legal?.verifiedAt : "unset",
+		).toBeNull();
+	});
+
+	it("never reports legalVerified from legal.verifiedAt alone — only from the current level, even if the stamp were somehow left behind", async () => {
+		const payload = seed();
+		const shop = payload.store.shops.find((s) => s.id === "s-1")!;
+		// The shop is at level 2, but its `legal.verifiedAt` is still set —
+		// exactly the state C1 found reachable when nothing cleared the stamp.
+		// A client asking the capability, not the field, must still say false.
+		shop.legal = { legalName: "Akwa Tech SARL", verifiedAt: "2026-01-01" };
+
+		const result = await resolvePublicShop(payload, "akwatech", NOW);
+		expect(result && "shop" in result ? result.shop.legalVerified : null).toBe(
+			false,
+		);
 	});
 });
 

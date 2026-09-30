@@ -9,9 +9,10 @@ export interface LegalBlockLine {
 
 /**
  * The lines a shop's legal card shows, in declaration order — never
- * `verifiedAt`, which only drives the card's heading (`legalIsVerified`).
- * A field the shop never declared is left out rather than shown empty, so
- * an unverified shop with nothing declared renders no card at all.
+ * `verifiedAt`, which never drives the card's heading either (that reads
+ * `PublicShop.legalVerified`, the server's capability, not a field on this
+ * group). A field the shop never declared is left out rather than shown
+ * empty, so an unverified shop with nothing declared renders no card at all.
  */
 export function legalBlockLines(
 	legal: ShopLegal | null | undefined,
@@ -26,11 +27,6 @@ export function legalBlockLines(
 	if (legal.rccmNumber) lines.push({ label: "rccm", value: legal.rccmNumber });
 	if (legal.niu) lines.push({ label: "niu", value: legal.niu });
 	return lines;
-}
-
-/** True only once a reviewer has approved the legal block (level 3). */
-export function legalIsVerified(legal: ShopLegal | null | undefined): boolean {
-	return Boolean(legal?.verifiedAt);
 }
 
 const BUSINESS_TYPE_LABEL_KEYS: Record<BusinessType, string> = {

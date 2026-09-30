@@ -150,6 +150,38 @@ describe("Shops beforeChange", () => {
 		);
 	});
 
+	it("C1: an owner cannot re-stamp legal.verifiedAt after a revocation clears it, even by resending it verbatim", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		// The exact post-revoke row: level dropped to 2, `legal`'s declared
+		// fields still carry what was reviewed, but `verifiedAt` is already
+		// null — `recomputeShopLevel` cleared it in the same write as the
+		// level drop (services/verificationLevel.ts).
+		const postRevoke = {
+			...original,
+			level: 2,
+			legal: {
+				businessType: "company",
+				legalName: "Akwa Tech SARL",
+				rccmNumber: "RC/DLA/2020/B/1234",
+				niu: "M012312345678N",
+				verifiedAt: null,
+			},
+		};
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: postRevoke,
+			data: {
+				...postRevoke,
+				legal: { ...postRevoke.legal, verifiedAt: "2030-01-01T00:00:00.000Z" },
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect((result.legal as { verifiedAt: unknown }).verifiedAt).toBe(null);
+		expect((result.legal as { legalName: unknown }).legalName).toBe(
+			"Akwa Tech SARL",
+		);
+	});
+
 	it("refuses a member's edit on a suspended shop", async () => {
 		const payload = fakePayload({ users: [{ id: "u-1" }] });
 		await expect(

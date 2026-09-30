@@ -4,16 +4,24 @@ import {
 	businessTypeLabelKey,
 	isBusinessType,
 	legalBlockLines,
-	legalIsVerified,
 } from "~/lib/shop-legal";
 import type { ShopLegal } from "~/types";
 
-/** A shop's declared or reviewed legal identity — renders nothing below level 3 or with nothing declared. */
-export function LegalBlock({ legal }: { legal: ShopLegal | null }) {
+/**
+ * A shop's declared or reviewed legal identity — renders nothing below level
+ * 3 or with nothing declared. `verified` is the server's own capability
+ * (`PublicShop.legalVerified`), never derived here from `legal.verifiedAt`.
+ */
+export function LegalBlock({
+	legal,
+	verified,
+}: {
+	legal: ShopLegal | null;
+	verified: boolean;
+}) {
 	const t = useTranslations("Shop");
 	const lines = legalBlockLines(legal);
 	if (lines.length === 0) return null;
-	const verified = legalIsVerified(legal);
 
 	return (
 		<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">

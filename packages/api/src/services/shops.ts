@@ -171,6 +171,12 @@ export async function notifyShopLevelChanged(
  * through `writeShop`, so the Shops `afterChange` hook still queues the search
  * event that re-indexes the shop's listings on a level change — a direct
  * `payload.update` here would silently stop that happening.
+ *
+ * `legal`, when passed, replaces the whole group in the same write: the
+ * stamp a level-3 approval left on `legal.verifiedAt` must not survive the
+ * level that earned it dropping below 3, and Payload's group fields are
+ * replaced wholesale, so the caller resends the declared fields alongside
+ * the cleared stamp rather than losing them.
  */
 export async function setShopLevel(
 	req: PayloadRequest,
@@ -179,6 +185,7 @@ export async function setShopLevel(
 		level: 1 | 2 | 3;
 		levelExpiresAt: string | null;
 		verifiedAt?: string | null;
+		legal?: Shop["legal"];
 	},
 ): Promise<Shop> {
 	const data: Record<string, unknown> = {
@@ -188,6 +195,7 @@ export async function setShopLevel(
 	// Once set, it stays: it records when this shop first proved an identity,
 	// not whether it currently has one.
 	if (input.verifiedAt) data.verifiedAt = input.verifiedAt;
+	if (input.legal !== undefined) data.legal = input.legal;
 	return writeShop(req, shopId, data);
 }
 

@@ -76,10 +76,28 @@ export async function recomputeShopLevel(
 		? new Date(Math.min(...expiries)).toISOString()
 		: null;
 
+	// The level-3 stamp cannot outlive the level that earned it: a revocation,
+	// an expiry or any other recompute that drops the shop below 3 clears
+	// `legal.verifiedAt` in the same write as the level, so a buyer can never
+	// read "Verified" off a level the shop no longer holds, and the owner
+	// cannot re-stamp it themselves — `Shops.ts`'s `beforeChange` hook only
+	// ever preserves whatever is already on the row.
+	const legal =
+		level < 3 && shop.legal?.verifiedAt
+			? {
+					businessType: shop.legal.businessType ?? null,
+					legalName: shop.legal.legalName ?? null,
+					rccmNumber: shop.legal.rccmNumber ?? null,
+					niu: shop.legal.niu ?? null,
+					verifiedAt: null,
+				}
+			: undefined;
+
 	await setShopLevel(req, shopId, {
 		level,
 		levelExpiresAt,
 		verifiedAt: level >= 2 && !shop.verifiedAt ? now.toISOString() : null,
+		legal,
 	});
 
 	if (level === previousLevel) return null;

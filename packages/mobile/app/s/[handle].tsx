@@ -135,7 +135,7 @@ export default function ShopScreen() {
 				ListHeaderComponent={
 					<View style={{ gap: 16, marginBottom: 4 }}>
 						<ShopHeader shop={shop} onShare={share} />
-						<LegalBlock legal={shop.legal} />
+						<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
 						<Text style={[styles.section, { color: c.text }]}>
 							{t("shop.listingsTitle", { count: shop.publishedListingCount })}
 						</Text>
