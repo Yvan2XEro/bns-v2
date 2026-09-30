@@ -30,6 +30,15 @@ const original = {
 	previousHandles: [],
 	handleChangedAt: null,
 	suspendedAt: null,
+	levelExpiresAt: null,
+	verifiedAt: null,
+	legal: {
+		businessType: null,
+		legalName: null,
+		rccmNumber: null,
+		niu: null,
+		verifiedAt: null,
+	},
 };
 
 describe("Shops beforeChange", () => {
@@ -69,6 +78,76 @@ describe("Shops beforeChange", () => {
 		});
 		expect(result.handle).toBe("akwa");
 		expect(result.level).toBe(2);
+	});
+
+	it("pins levelExpiresAt and verifiedAt on a member's update", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: original,
+			data: {
+				...original,
+				levelExpiresAt: "2099-01-01T00:00:00.000Z",
+				verifiedAt: "2099-01-01T00:00:00.000Z",
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect(result.levelExpiresAt).toBe(null);
+		expect(result.verifiedAt).toBe(null);
+	});
+
+	it("freezes the legal block once level 3 is effective", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		const level3 = {
+			...original,
+			level: 3,
+			legal: {
+				businessType: "company",
+				legalName: "Akwa Tech SARL",
+				rccmNumber: "RC/DLA/2020/B/1234",
+				niu: "M012312345678N",
+				verifiedAt: "2026-01-01T00:00:00.000Z",
+			},
+		};
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: level3,
+			data: {
+				...level3,
+				legal: {
+					businessType: "sole_trader",
+					legalName: "Renamed",
+					rccmNumber: "forged",
+					niu: "forged",
+					verifiedAt: "2030-01-01T00:00:00.000Z",
+				},
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect(result.legal).toEqual(level3.legal);
+	});
+
+	it("strips a member-submitted legal.verifiedAt while the shop is below level 3, but keeps the rest of legal editable", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: original,
+			data: {
+				...original,
+				legal: {
+					businessType: "company",
+					legalName: "Akwa Tech SARL",
+					rccmNumber: "RC/DLA/2020/B/1234",
+					niu: "M012312345678N",
+					verifiedAt: "2030-01-01T00:00:00.000Z",
+				},
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect((result.legal as { verifiedAt: unknown }).verifiedAt).toBe(null);
+		expect((result.legal as { businessType: unknown }).businessType).toBe(
+			"company",
+		);
 	});
 
 	it("refuses a member's edit on a suspended shop", async () => {

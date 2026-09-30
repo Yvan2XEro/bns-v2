@@ -122,6 +122,12 @@ export const Users: CollectionConfig = {
 						data.verified = undefined;
 						data.rating = undefined;
 						data.totalReviews = undefined;
+						// Same reason as `verified`: a public signup body is never the
+						// origin of a verification grant, only services/verification.ts
+						// updating an existing account is.
+						data.identityVerifiedAt = undefined;
+						data.identityVerification = undefined;
+						data.legacyVerifiedAt = undefined;
 					}
 				}
 
