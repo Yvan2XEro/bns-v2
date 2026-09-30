@@ -147,10 +147,13 @@ same patterns as mobile.
   so logic that needs pinning belongs in a pure module under `src/lib` rather
   than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
-- Five API test files fail at `HEAD` for reasons that predate this work
-  (module-load timeouts): `api.int.spec.ts`, `boost-callback-route`,
-  `listings-before-change`, `public-categories-route`, `public-search-route`.
-  They are not regressions; do not "fix" them by raising timeouts.
+- One API test file genuinely fails at `HEAD` for a reason that predates this
+  work: `api.int.spec.ts`, on module resolution. Several others —
+  `boost-callback-route`, `listings-before-change`, `public-categories-route`,
+  `public-search-route`, `product-stock-routes` — fail only under the full
+  suite's parallel load and **pass when run alone**. Before treating any
+  failure as a regression, re-run that file on its own. None of them is fixed
+  by raising a timeout.
 
 ## Comments and docs
 
