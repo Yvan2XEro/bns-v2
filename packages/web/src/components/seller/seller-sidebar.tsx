@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { cn } from "~/lib/utils";
+import { badgeForLevel } from "~/lib/verification";
 
 // Orders (P4), Resale (P8), Delivery (P7), Payments (P5), Team (P3) and
 // Verification (P2) join this list when their phase ships.
@@ -61,7 +62,7 @@ export function SellerSidebar({
 				</div>
 			</div>
 			<div className="px-4 pb-2">
-				<LevelBadge level={level} size="sm" />
+				<LevelBadge badge={badgeForLevel(level)} size="sm" />
 			</div>
 			<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col lg:overflow-visible">
 				{ITEMS.map(({ href, key, icon: Icon, exact }) => {

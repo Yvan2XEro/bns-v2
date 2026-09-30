@@ -49,7 +49,36 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	return body as T;
 }
 
-function query(params: Record<string, string | number | undefined | null>) {
+/**
+ * Generic transport, exported for resource hooks that do not otherwise fit
+ * `shopApi`'s per-endpoint methods (verification and moderation-verification
+ * both span several route families under `/api/shops`, `/api/verification-
+ * requests` and `/api/moderation/verification`). Same error handling as every
+ * `shopApi` call: a network failure and a non-OK response both throw
+ * `ApiError`.
+ */
+export function apiGet<T>(path: string): Promise<T> {
+	return request<T>(path);
+}
+
+export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+	return request<T>(path, {
+		method: "POST",
+		body: body === undefined ? undefined : JSON.stringify(body),
+	});
+}
+
+export function apiPostForm<T>(path: string, form: FormData): Promise<T> {
+	return request<T>(path, { method: "POST", body: form });
+}
+
+export function apiDelete<T>(path: string): Promise<T> {
+	return request<T>(path, { method: "DELETE" });
+}
+
+export function query(
+	params: Record<string, string | number | undefined | null>,
+) {
 	const search = new URLSearchParams();
 	for (const [key, value] of Object.entries(params)) {
 		if (value !== undefined && value !== null && value !== "") {

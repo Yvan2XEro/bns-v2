@@ -1,8 +1,11 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import {
 	catalogueRootKey,
 	isKeyCoveredBy,
 	productDetailKey,
+	shopScopeKey,
+	verificationKey,
+	verificationRequestKey,
 } from "./query-keys";
 
 /**
@@ -49,5 +52,31 @@ describe("query-keys structural coverage", () => {
 		// catalogueRootKey, not nested under it.
 		const oldStyleKey = ["products", "product-1", "detail"] as const;
 		expect(isKeyCoveredBy(oldStyleKey, catalogueRootKey("shop-1"))).toBe(false);
+	});
+});
+
+describe("verification query keys", () => {
+	it("sits under the shop scope, so a shop-wide invalidation reaches it", () => {
+		expect(isKeyCoveredBy(verificationKey("s-1"), shopScopeKey("s-1"))).toBe(
+			true,
+		);
+		expect(
+			isKeyCoveredBy(
+				verificationRequestKey("s-1", "vr-1"),
+				verificationKey("s-1"),
+			),
+		).toBe(true);
+	});
+
+	it("is not a sibling of the catalogue root, so a catalogue mutation leaves it alone", () => {
+		expect(
+			isKeyCoveredBy(verificationKey("s-1"), catalogueRootKey("s-1")),
+		).toBe(false);
+	});
+
+	it("does not collide across shops", () => {
+		expect(isKeyCoveredBy(verificationKey("s-2"), verificationKey("s-1"))).toBe(
+			false,
+		);
 	});
 });

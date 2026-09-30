@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { shopLogoUrl } from "~/lib/listing-shop";
+import { badgeForLevel } from "~/lib/verification";
 import type { Shop } from "~/types";
 
 export function ShopSellerCard({
@@ -24,7 +25,7 @@ export function ShopSellerCard({
 			<div className="min-w-0">
 				<div className="flex flex-wrap items-center gap-2">
 					<p className="truncate font-semibold text-[#0F172A]">{shop.name}</p>
-					<LevelBadge level={shop.level} size="sm" />
+					<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
 				</div>
 				{ownerName && (
 					<p className="text-[#64748B] text-xs">

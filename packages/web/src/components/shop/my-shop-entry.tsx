@@ -2,6 +2,7 @@ import { ChevronRight, Store } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { shopEntryFor } from "~/lib/shop-entry";
+import { badgeForLevel } from "~/lib/verification";
 import type { MyShopResponse } from "~/types";
 import { LevelBadge } from "./level-badge";
 
@@ -30,7 +31,7 @@ export function MyShopEntry({
 				{shop ? (
 					<div className="mt-0.5 flex items-center gap-2">
 						<span className="truncate text-[#64748B] text-xs">{shop.name}</span>
-						<LevelBadge level={shop.level} size="sm" />
+						<LevelBadge badge={badgeForLevel(shop.level)} size="sm" />
 					</div>
 				) : (
 					<p className="text-[#64748B] text-xs">{t("openShopHint")}</p>

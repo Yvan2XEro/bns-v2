@@ -718,6 +718,8 @@
 	},
 	"Shop": {
 		"levelPhone": "Phone verified",
+		"levelIdentity": "Identity verified",
+		"levelBusiness": "Business verified",
 		"status": {
 			"active": "On sale",
 			"draft": "Draft",
@@ -1215,6 +1217,23 @@
 			"negative": "Stock cannot go below zero.",
 			"insufficient": "Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
 			"countStale": "The stock changed while you were counting. Reload the page and count again."
+		},
+		"verification": {
+			"disabled": "Verification is not available yet.",
+			"notOwner": "Only the shop owner can do this.",
+			"levelNotEligible": "Verify your identity before requesting business verification.",
+			"requestOpen": "A request for this level is already open.",
+			"cooldown": "You cannot open a new request yet. Please try again later.",
+			"invalidTransition": "This request is not in a state where that action applies.",
+			"consentRequired": "Please accept the current data-protection notice to continue.",
+			"tooManyAttempts": "Too many verification attempts. Please try again later.",
+			"kycUnavailable": "Identity verification is unavailable right now. Please try again shortly.",
+			"documentLimit": "You have reached the maximum number of documents for this request.",
+			"documentsMissing": "Some required documents are still missing.",
+			"fieldsInvalid": "Please check the highlighted business details.",
+			"notAssignee": "Only the reviewer who claimed this request can decide it.",
+			"conflictOfInterest": "You cannot review a shop you are involved with.",
+			"checklistIncomplete": "Every checklist item must be confirmed before approving."
 		}
 	}
 }
