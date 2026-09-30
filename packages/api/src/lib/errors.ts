@@ -105,6 +105,23 @@ export const ERROR_CODES = {
 	stockNegative: "stock.negative",
 	stockInsufficient: "stock.insufficient",
 	stockCountStale: "stock.countStale",
+
+	// Verification (P2)
+	verificationDisabled: "verification.disabled",
+	verificationNotOwner: "verification.notOwner",
+	verificationLevelNotEligible: "verification.levelNotEligible",
+	verificationRequestOpen: "verification.requestOpen",
+	verificationCooldown: "verification.cooldown",
+	verificationInvalidTransition: "verification.invalidTransition",
+	verificationConsentRequired: "verification.consentRequired",
+	verificationTooManyAttempts: "verification.tooManyAttempts",
+	verificationKycUnavailable: "verification.kycUnavailable",
+	verificationDocumentLimit: "verification.documentLimit",
+	verificationDocumentsMissing: "verification.documentsMissing",
+	verificationFieldsInvalid: "verification.fieldsInvalid",
+	verificationNotAssignee: "verification.notAssignee",
+	verificationConflictOfInterest: "verification.conflictOfInterest",
+	verificationChecklistIncomplete: "verification.checklistIncomplete",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -203,6 +220,35 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"Not enough stock available: some units are already reserved.",
 	[ERROR_CODES.stockCountStale]:
 		"The stock changed while you were counting. Please count again.",
+
+	[ERROR_CODES.verificationDisabled]: "Verification is not available yet.",
+	[ERROR_CODES.verificationNotOwner]: "Only the shop owner can do this.",
+	[ERROR_CODES.verificationLevelNotEligible]:
+		"Verify your identity before requesting business verification.",
+	[ERROR_CODES.verificationRequestOpen]:
+		"A request for this level is already open.",
+	[ERROR_CODES.verificationCooldown]:
+		"You cannot open a new request yet. Please try again later.",
+	[ERROR_CODES.verificationInvalidTransition]:
+		"This request is not in a state where that action applies.",
+	[ERROR_CODES.verificationConsentRequired]:
+		"Please accept the current data-protection notice to continue.",
+	[ERROR_CODES.verificationTooManyAttempts]:
+		"Too many verification attempts. Please try again later.",
+	[ERROR_CODES.verificationKycUnavailable]:
+		"Identity verification is unavailable right now. Please try again shortly.",
+	[ERROR_CODES.verificationDocumentLimit]:
+		"You have reached the maximum number of documents for this request.",
+	[ERROR_CODES.verificationDocumentsMissing]:
+		"Some required documents are still missing.",
+	[ERROR_CODES.verificationFieldsInvalid]:
+		"Please check the highlighted business details.",
+	[ERROR_CODES.verificationNotAssignee]:
+		"Only the reviewer who claimed this request can decide it.",
+	[ERROR_CODES.verificationConflictOfInterest]:
+		"You cannot review a shop you are involved with.",
+	[ERROR_CODES.verificationChecklistIncomplete]:
+		"Every checklist item must be confirmed before approving.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {

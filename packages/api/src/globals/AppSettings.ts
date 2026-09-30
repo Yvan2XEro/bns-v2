@@ -1,4 +1,5 @@
 import type { GlobalConfig } from "payload";
+import { assertAuthorised } from "../lib/verificationSettings";
 
 const isAdmin = ({ req }: { req: { user?: { role?: string } | null } }) =>
 	req.user?.role === "admin";
@@ -12,6 +13,19 @@ export const AppSettings: GlobalConfig = {
 	},
 	admin: {
 		group: "Configuration",
+	},
+	hooks: {
+		beforeChange: [
+			({ data }) => {
+				const refusal = assertAuthorised(
+					(data as { verification?: Record<string, unknown> }).verification ??
+						{},
+					process.env,
+				);
+				if (refusal) throw new Error(refusal);
+				return data;
+			},
+		],
 	},
 	fields: [
 		{
@@ -119,6 +133,68 @@ export const AppSettings: GlobalConfig = {
 					defaultValue: 1,
 					min: 1,
 					max: 10,
+				},
+			],
+		},
+		{
+			name: "verification",
+			type: "group",
+			label: "Verification",
+			fields: [
+				{
+					name: "enabled",
+					type: "checkbox",
+					label: "Allow verification requests",
+					defaultValue: false,
+					admin: {
+						description:
+							"Off: clients hide verification entry points and the seller write routes return verification.disabled. Existing requests stay readable, reviewers keep deciding, and the retention job keeps running.",
+					},
+				},
+				{
+					name: "kycProvider",
+					type: "select",
+					defaultValue: "didit",
+					options: [
+						{ label: "Didit", value: "didit" },
+						{ label: "Smile ID", value: "smileid" },
+					],
+					required: true,
+				},
+				{
+					name: "autoApproveIdentity",
+					type: "checkbox",
+					defaultValue: false,
+					admin: {
+						description:
+							"Off at launch: every identity decision is taken by a person. On, a level-2 request the vendor approved with no review signal is approved automatically.",
+					},
+				},
+				{
+					name: "authorisation",
+					type: "group",
+					label: "Law 2024/017 authorisation",
+					admin: {
+						description:
+							"Recorded in the processing register. Verification cannot be enabled until all four are set.",
+					},
+					fields: [
+						{ name: "reference", type: "text" },
+						{ name: "grantedAt", type: "date" },
+						{
+							name: "transfersAuthorised",
+							type: "checkbox",
+							defaultValue: false,
+						},
+						{
+							name: "consentVersion",
+							type: "text",
+							admin: {
+								description:
+									'The consent text version the clients must send back, e.g. "kyc-2026-10-v1".',
+							},
+						},
+					],
 				},
 			],
 		},

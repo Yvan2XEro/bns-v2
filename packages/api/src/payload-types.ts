@@ -1721,6 +1721,29 @@ export interface AppSetting {
     enabled?: boolean | null;
     maxPerUser?: number | null;
   };
+  verification: {
+    /**
+     * Off: clients hide verification entry points and the seller write routes return verification.disabled. Existing requests stay readable, reviewers keep deciding, and the retention job keeps running.
+     */
+    enabled?: boolean | null;
+    kycProvider: 'didit' | 'smileid';
+    /**
+     * Off at launch: every identity decision is taken by a person. On, a level-2 request the vendor approved with no review signal is approved automatically.
+     */
+    autoApproveIdentity?: boolean | null;
+    /**
+     * Recorded in the processing register. Verification cannot be enabled until all four are set.
+     */
+    authorisation?: {
+      reference?: string | null;
+      grantedAt?: string | null;
+      transfersAuthorised?: boolean | null;
+      /**
+       * The consent text version the clients must send back, e.g. "kyc-2026-10-v1".
+       */
+      consentVersion?: string | null;
+    };
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1776,6 +1799,21 @@ export interface AppSettingsSelect<T extends boolean = true> {
     | {
         enabled?: T;
         maxPerUser?: T;
+      };
+  verification?:
+    | T
+    | {
+        enabled?: T;
+        kycProvider?: T;
+        autoApproveIdentity?: T;
+        authorisation?:
+          | T
+          | {
+              reference?: T;
+              grantedAt?: T;
+              transfersAuthorised?: T;
+              consentVersion?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;

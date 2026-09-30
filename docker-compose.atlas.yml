@@ -131,6 +131,20 @@ services:
       AZURE_STORAGE_ACCOUNT_BASEURL: ${AZURE_STORAGE_ACCOUNT_BASEURL:-}
       AZURE_STORAGE_CONTAINER_NAME: ${AZURE_STORAGE_CONTAINER_NAME:-}
       AZURE_STORAGE_ALLOW_CONTAINER_CREATE: ${AZURE_STORAGE_ALLOW_CONTAINER_CREATE:-false}
+      # Verification (P2)
+      S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:-}
+      AZURE_STORAGE_PRIVATE_CONTAINER_NAME: ${AZURE_STORAGE_PRIVATE_CONTAINER_NAME:-}
+      PRIVATE_UPLOADS_DIR: ${PRIVATE_UPLOADS_DIR:-private-uploads/verification}
+      # Keys the document-number and IP hashes. Rotating it orphans every
+      # existing hash, so duplicate detection restarts from that point.
+      VERIFICATION_HASH_PEPPER: ${VERIFICATION_HASH_PEPPER:-}
+      # Staging only: lets verification be enabled before the authorisation is
+      # recorded. Ignored when NODE_ENV=production.
+      VERIFICATION_ALLOW_UNAUTHORISED: ${VERIFICATION_ALLOW_UNAUTHORISED:-false}
+      DIDIT_API_KEY: ${DIDIT_API_KEY:-}
+      DIDIT_WEBHOOK_SECRET: ${DIDIT_WEBHOOK_SECRET:-}
+      DIDIT_WORKFLOW_ID: ${DIDIT_WORKFLOW_ID:-}
+      DIDIT_BASE_URL: ${DIDIT_BASE_URL:-https://verification.didit.me}
     volumes:
       - api_media:/app/packages/api/media
     depends_on:
