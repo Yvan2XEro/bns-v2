@@ -282,6 +282,86 @@ describe("closeShop", () => {
 		);
 	});
 
+	it("expires every open verification request for the shop, in the same transaction", async () => {
+		const payload = seed();
+		payload.store["verification-requests"] = [
+			{
+				id: "vr-1",
+				shop: "s-1",
+				submittedBy: "u-1",
+				requestedLevel: 2,
+				status: "submitted",
+				openKey: "s-1:2",
+				statusHistory: [],
+			},
+			{
+				id: "vr-2",
+				shop: "s-1",
+				submittedBy: "u-1",
+				requestedLevel: 3,
+				status: "in_review",
+				assignee: "u-1",
+				openKey: "s-1:3",
+				statusHistory: [],
+			},
+			// A different shop's open request must be left alone.
+			{
+				id: "vr-3",
+				shop: "s-2",
+				submittedBy: "u-2",
+				requestedLevel: 2,
+				status: "submitted",
+				openKey: "s-2:2",
+				statusHistory: [],
+			},
+		];
+
+		await closeShop(payload, U1, "s-1", { confirmation: "@AkwaTech" }, NOW);
+
+		const [vr1, vr2, vr3] = ["vr-1", "vr-2", "vr-3"].map((id) =>
+			payload.store["verification-requests"].find((r) => r.id === id),
+		);
+		expect(vr1).toMatchObject({ status: "expired", assignee: null });
+		expect(vr2).toMatchObject({ status: "expired", assignee: null });
+		expect(vr3).toMatchObject({ status: "submitted" });
+
+		const entries = payload.store["moderation-log"].filter(
+			(entry) => entry.action === "verification.expire",
+		);
+		expect(entries).toHaveLength(2);
+		for (const entry of entries) {
+			expect(entry).toMatchObject({
+				metadata: { cause: "shop_closed" },
+			});
+		}
+	});
+
+	it("leaves no open verification request behind even when the close itself fails", async () => {
+		const payload = seed();
+		payload.store["verification-requests"] = [
+			{
+				id: "vr-1",
+				shop: "s-1",
+				submittedBy: "u-1",
+				requestedLevel: 2,
+				status: "submitted",
+				openKey: "s-1:2",
+				statusHistory: [],
+			},
+		];
+		payload.failWhen = (method) => method === "update";
+
+		await expect(
+			closeShop(payload, U1, "s-1", { confirmation: "@AkwaTech" }, NOW),
+		).rejects.toThrow();
+
+		// Rolled back: the shop is still active and the request still open.
+		expect(payload.store.shops[0]).toMatchObject({ status: "active" });
+		expect(
+			payload.store["verification-requests"].find((r) => r.id === "vr-1"),
+		).toMatchObject({ status: "submitted" });
+	});
+
 	it("is owner-only", async () => {
 		const payload = seed();
 		payload.store["shop-members"].push({

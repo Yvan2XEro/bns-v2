@@ -21,6 +21,13 @@ const ALLOWED: [string, string, string, string | null][] = [
 	["resubmit", "needs_info", "submitted", null],
 	["revoke", "approved", "revoked", "verification.revoke"],
 	["expire", "draft", "expired", "verification.expire"],
+	// A shop-closed cascade must be able to expire a request already past
+	// `draft` — still waiting on a reviewer, not just one the idle sweep
+	// would have caught — so `expire` also reaches from `submitted` and
+	// `in_review`, not only the statuses the idle/no-response/lapsed causes
+	// use on their own.
+	["expire", "submitted", "expired", "verification.expire"],
+	["expire", "in_review", "expired", "verification.expire"],
 	["expire", "needs_info", "expired", "verification.expire"],
 	["expire", "approved", "expired", "verification.expire"],
 ];

@@ -5,10 +5,17 @@ import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { addDays, normalizeHandle } from "../lib/shopHandle";
 import { RetryTransaction, withTransaction } from "../lib/transactions";
-import type { Listing, Product, Shop } from "../payload-types";
+import { OPEN_STATUSES } from "../lib/verificationTransitions";
+import type {
+	Listing,
+	Product,
+	Shop,
+	VerificationRequest,
+} from "../payload-types";
 import { syncProductListing } from "./products";
 import { requireShopMember } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser, writeShop } from "./shops";
+import { expireRequestInTransaction } from "./verification";
 
 type SkipReason = "notOwner" | "otherShop" | "alreadyAttached" | "status";
 
@@ -300,6 +307,32 @@ export async function closeShopInTransaction(
 			context: PRODUCT_SERVICE_CONTEXT,
 			data: { status: "archived", listing: null },
 		});
+	}
+
+	// The spec's own cascade: a shop that no longer exists has no business
+	// sitting in the reviewer queue. Every open request (`draft` included, not
+	// just the ones a reviewer can see) moves to `expired` with cause
+	// `shop_closed`, in this same transaction — so a close that then fails
+	// rolls the expiry back too, and one that lands never leaves a request an
+	// operator would have to notice and expire by hand.
+	const openRequests = (
+		await req.payload.find({
+			collection: "verification-requests",
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ status: { in: [...OPEN_STATUSES] } },
+				],
+			},
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+		})
+	).docs as VerificationRequest[];
+	for (const request of openRequests) {
+		await expireRequestInTransaction(req, String(request.id), "shop_closed");
 	}
 
 	// Variants of these products are intentionally left with `archivedAt: null`.

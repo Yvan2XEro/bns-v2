@@ -100,7 +100,11 @@ export const TRANSITIONS: Record<TransitionName, Transition> = {
 		logAction: "verification.revoke",
 	},
 	expire: {
-		from: ["draft", "needs_info", "approved"],
+		// Every `OPEN_STATUS` plus `approved`: a shop-closed cascade must be able
+		// to expire a request the idle sweep never would (a `submitted` or
+		// `in_review` one still waiting on a reviewer), and `approved` stays for
+		// the unrelated "lapsed" cause a backing's own expiry date fires.
+		from: ["draft", "submitted", "in_review", "needs_info", "approved"],
 		to: "expired",
 		by: "system",
 		logAction: "verification.expire",
