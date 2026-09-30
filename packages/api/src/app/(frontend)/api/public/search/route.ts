@@ -5,6 +5,7 @@ import { getPayload } from "payload";
 import { activeShopIds } from "@/lib/activeShopIds";
 import { quoteFilterValue } from "@/lib/meiliFilter";
 import { relationId } from "@/lib/relationId";
+import { shopCapabilities } from "@/lib/shopCapabilities";
 
 const meiliConfigured = !!process.env.MEILI_HOST;
 console.log(
@@ -128,6 +129,54 @@ async function blankStaleShops(hits: ListingHit[]): Promise<ListingHit[]> {
 			? { ...hit, shopHandle: null, shopName: null, shopLevel: null }
 			: hit,
 	);
+}
+
+/**
+ * `blankStaleShops` only clears a hit whose shop stopped being active; it
+ * never corrects the level of one that is still active but was demoted, or
+ * whose level lapsed, since the index was last written. `minShopLevel` is a
+ * promise about the shop's *current* level, so it is re-checked here against
+ * `shopCapabilities`'s effective level — never the indexed `shopLevel` a
+ * stale document can carry — or a "verified shops only" search would
+ * silently return an unverified one. One query per page of hits, same
+ * shape as `blankStaleShops`.
+ */
+async function applyMinShopLevel(
+	hits: ListingHit[],
+	minShopLevel: number,
+): Promise<ListingHit[]> {
+	const shopIds = Array.from(
+		new Set(
+			hits
+				.map((hit) => hit.shopId)
+				.filter((id): id is string => typeof id === "string"),
+		),
+	);
+	if (shopIds.length === 0) return [];
+
+	const payload = await getPayload({ config });
+	const result = await payload.find({
+		collection: "shops",
+		where: { id: { in: shopIds } },
+		depth: 0,
+		limit: 0,
+		pagination: false,
+	});
+	const levels = new Map(
+		result.docs.map((doc) => [
+			String(doc.id),
+			shopCapabilities(doc).effectiveLevel,
+		]),
+	);
+
+	const filtered: ListingHit[] = [];
+	for (const hit of hits) {
+		if (typeof hit.shopId !== "string") continue;
+		const level = levels.get(hit.shopId) ?? 0;
+		if (level < minShopLevel) continue;
+		filtered.push({ ...hit, shopLevel: level });
+	}
+	return filtered;
 }
 
 interface FallbackParams {
@@ -282,6 +331,12 @@ export async function GET(request: Request) {
 	const conditionParam = searchParams.get("condition");
 	const tagsParam = searchParams.get("tags");
 	const shopParam = searchParams.get("shop");
+	const minShopLevelParam = Number.parseInt(
+		searchParams.get("minShopLevel") ?? "",
+		10,
+	);
+	const minShopLevel =
+		minShopLevelParam >= 1 && minShopLevelParam <= 3 ? minShopLevelParam : null;
 	const nowIso = new Date().toISOString();
 
 	const host = process.env.MEILI_HOST;
@@ -331,6 +386,10 @@ export async function GET(request: Request) {
 
 	if (shopParam) {
 		filters.push(`shopId = ${quoteFilterValue(shopParam)}`);
+	}
+
+	if (minShopLevel) {
+		filters.push(`shopLevel >= ${minShopLevel}`);
 	}
 
 	if (minPrice) {
@@ -454,8 +513,16 @@ export async function GET(request: Request) {
 		// indexer's flat `shopId`/`shopHandle`/`shopName`/`shopLevel`/`priceMax`/
 		// `available` fields for a Meilisearch hit, and `blankStaleShops`
 		// re-checks each one against a shop the index might not know is gone.
+		const hydrated = await blankStaleShops(hits);
+		// The Meilisearch filter above ran against the *indexed* `shopLevel`,
+		// which can lag a demotion or suspension — re-apply the floor against
+		// the live, capability-derived level so a stale document never passes
+		// a `minShopLevel` search it no longer qualifies for.
+		const filtered = minShopLevel
+			? await applyMinShopLevel(hydrated, minShopLevel)
+			: hydrated;
 		return Response.json({
-			hits: await blankStaleShops(hits),
+			hits: filtered,
 			total: result.estimatedTotalHits,
 			limit,
 			offset,

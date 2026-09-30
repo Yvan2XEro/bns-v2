@@ -9,11 +9,13 @@ import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import { BOOST_PRICING } from "@/lib/boostPricing";
 import { getShopSettings } from "@/lib/shopSettings";
+import { getVerificationSettings } from "@/lib/verificationSettings";
 
 export async function GET() {
 	let enabledAuthProviders: string[] = [];
 	let localAuthEnabled = true;
 	let shopsEnabled = false;
+	let verificationEnabled = false;
 
 	try {
 		const payload = await getPayload({ config });
@@ -36,6 +38,7 @@ export async function GET() {
 		);
 		localAuthEnabled = authSettings?.enableLocalAuth ?? true;
 		shopsEnabled = (await getShopSettings(payload)).enabled;
+		verificationEnabled = (await getVerificationSettings(payload)).enabled;
 	} catch {
 		enabledAuthProviders = listConfiguredOAuthProviders();
 	}
@@ -48,6 +51,7 @@ export async function GET() {
 		enabledAuthProviders,
 		localAuthEnabled,
 		shopsEnabled,
+		verificationEnabled,
 		boostPricing: BOOST_PRICING,
 	});
 }

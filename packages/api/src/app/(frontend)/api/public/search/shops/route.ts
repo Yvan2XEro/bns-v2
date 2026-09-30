@@ -65,6 +65,12 @@ export async function GET(request: Request) {
 		0,
 		Number.parseInt(search.get("offset") ?? "0", 10) || 0,
 	);
+	const minShopLevelParam = Number.parseInt(
+		search.get("minShopLevel") ?? "",
+		10,
+	);
+	const minShopLevel =
+		minShopLevelParam >= 1 && minShopLevelParam <= 3 ? minShopLevelParam : null;
 	const params: ShopSearchParams = { q, city, category, limit, offset };
 
 	const host = process.env.MEILI_HOST;
@@ -75,6 +81,7 @@ export async function GET(request: Request) {
 	const filters: string[] = [];
 	if (city) filters.push(`city = ${quoteFilterValue(city)}`);
 	if (category) filters.push(`categoryIds = ${quoteFilterValue(category)}`);
+	if (minShopLevel) filters.push(`level >= ${minShopLevel}`);
 
 	try {
 		const index = new MeiliSearch({
