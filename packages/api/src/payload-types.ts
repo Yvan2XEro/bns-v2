@@ -90,13 +90,19 @@ export interface Config {
     'product-variants': ProductVariant;
     'stock-movements': StockMovement;
     'verification-requests': VerificationRequest;
+    'verification-documents': VerificationDocument;
+    'verification-document-views': VerificationDocumentView;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    'verification-requests': {
+      documents: 'verification-documents';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -121,6 +127,8 @@ export interface Config {
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
     'verification-requests': VerificationRequestsSelect<false> | VerificationRequestsSelect<true>;
+    'verification-documents': VerificationDocumentsSelect<false> | VerificationDocumentsSelect<true>;
+    'verification-document-views': VerificationDocumentViewsSelect<false> | VerificationDocumentViewsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -416,6 +424,11 @@ export interface VerificationRequest {
   revokedAt?: string | null;
   supersedes?: (string | null) | VerificationRequest;
   previousRequest?: (string | null) | VerificationRequest;
+  documents?: {
+    docs?: (string | VerificationDocument)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -558,6 +571,40 @@ export interface Category {
     | null;
   createdAt: string;
   updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-documents".
+ */
+export interface VerificationDocument {
+  id: string;
+  request: string | VerificationRequest;
+  shop: string | Shop;
+  kind:
+    | 'rccm_extract'
+    | 'entreprenant_declaration'
+    | 'niu_certificate'
+    | 'legal_representative_id'
+    | 'mandate'
+    | 'proof_of_address'
+    | 'other';
+  sha256?: string | null;
+  originalFilename?: string | null;
+  uploadedBy?: (string | null) | User;
+  duplicateOf?: (string | VerificationDocument)[] | null;
+  purgedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1002,6 +1049,21 @@ export interface StockMovement {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-document-views".
+ */
+export interface VerificationDocumentView {
+  id: string;
+  document: string | VerificationDocument;
+  request: string | VerificationRequest;
+  viewer: string | User;
+  viewerRole?: string | null;
+  ipHash?: string | null;
+  userAgent?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1233,6 +1295,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'verification-requests';
         value: string | VerificationRequest;
+      } | null)
+    | ({
+        relationTo: 'verification-documents';
+        value: string | VerificationDocument;
+      } | null)
+    | ({
+        relationTo: 'verification-document-views';
+        value: string | VerificationDocumentView;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1894,6 +1964,47 @@ export interface VerificationRequestsSelect<T extends boolean = true> {
   revokedAt?: T;
   supersedes?: T;
   previousRequest?: T;
+  documents?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-documents_select".
+ */
+export interface VerificationDocumentsSelect<T extends boolean = true> {
+  request?: T;
+  shop?: T;
+  kind?: T;
+  sha256?: T;
+  originalFilename?: T;
+  uploadedBy?: T;
+  duplicateOf?: T;
+  purgedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "verification-document-views_select".
+ */
+export interface VerificationDocumentViewsSelect<T extends boolean = true> {
+  document?: T;
+  request?: T;
+  viewer?: T;
+  viewerRole?: T;
+  ipHash?: T;
+  userAgent?: T;
   updatedAt?: T;
   createdAt?: T;
 }

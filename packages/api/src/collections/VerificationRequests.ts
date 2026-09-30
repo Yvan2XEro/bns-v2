@@ -112,10 +112,6 @@ const closed = () => false;
  * changes a status by hand, because a status change without its transaction
  * and its moderation-log entry is exactly the audit hole the log exists to
  * close.
- *
- * The `documents` join back from `verification-documents` (Task 3) is added
- * once that collection is registered — a join field referencing an
- * unregistered collection fails Payload's config sanitisation outright.
  */
 export const VerificationRequests: CollectionConfig = {
 	slug: "verification-requests",
@@ -394,6 +390,12 @@ export const VerificationRequests: CollectionConfig = {
 			name: "previousRequest",
 			type: "relationship",
 			relationTo: "verification-requests",
+		},
+		{
+			name: "documents",
+			type: "join",
+			collection: "verification-documents",
+			on: "request",
 		},
 	],
 	timestamps: true,
