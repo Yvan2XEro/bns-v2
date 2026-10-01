@@ -88,6 +88,7 @@ export interface Config {
     shops: Shop;
     'shop-members': ShopMember;
     'shop-activity-log': ShopActivityLog;
+    'shop-invitations': ShopInvitation;
     products: Product;
     'product-variants': ProductVariant;
     'stock-movements': StockMovement;
@@ -127,6 +128,7 @@ export interface Config {
     shops: ShopsSelect<false> | ShopsSelect<true>;
     'shop-members': ShopMembersSelect<false> | ShopMembersSelect<true>;
     'shop-activity-log': ShopActivityLogSelect<false> | ShopActivityLogSelect<true>;
+    'shop-invitations': ShopInvitationsSelect<false> | ShopInvitationsSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
@@ -1099,6 +1101,29 @@ export interface ShopActivityLog {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-invitations".
+ */
+export interface ShopInvitation {
+  id: string;
+  shop: string | Shop;
+  role: 'manager' | 'staff';
+  channel: 'phone' | 'email';
+  phone?: string | null;
+  email?: string | null;
+  pendingKey?: string | null;
+  tokenHash: string;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  invitedBy: string | User;
+  expiresAt: string;
+  sendCount: number;
+  lastSentAt?: string | null;
+  acceptedBy?: (string | null) | User;
+  respondedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "product-variants".
  */
 export interface ProductVariant {
@@ -1397,6 +1422,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'shop-activity-log';
         value: string | ShopActivityLog;
+      } | null)
+    | ({
+        relationTo: 'shop-invitations';
+        value: string | ShopInvitation;
       } | null)
     | ({
         relationTo: 'products';
@@ -1945,6 +1974,28 @@ export interface ShopActivityLogSelect<T extends boolean = true> {
   metadata?: T;
   createdAt?: T;
   updatedAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-invitations_select".
+ */
+export interface ShopInvitationsSelect<T extends boolean = true> {
+  shop?: T;
+  role?: T;
+  channel?: T;
+  phone?: T;
+  email?: T;
+  pendingKey?: T;
+  tokenHash?: T;
+  status?: T;
+  invitedBy?: T;
+  expiresAt?: T;
+  sendCount?: T;
+  lastSentAt?: T;
+  acceptedBy?: T;
+  respondedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

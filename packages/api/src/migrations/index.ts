@@ -6,6 +6,7 @@ import * as migration_20260923_000000_p1_product_listing from "./20260923_000000
 import * as migration_20260924_000000_p1_variant_sku from "./20260924_000000_p1_variant_sku";
 import * as migration_20260930_000000_p2_verification_levels from "./20260930_000000_p2_verification_levels";
 import * as migration_20260930_000100_p2_verification_data_fixes from "./20260930_000100_p2_verification_data_fixes";
+import * as migration_20261001_000000_p3_invitation_pending_key from "./20261001_000000_p3_invitation_pending_key";
 import * as migration_20261001_000100_p3_shop_listing_seller from "./20261001_000100_p3_shop_listing_seller";
 
 export const migrations = [
@@ -53,5 +54,10 @@ export const migrations = [
 		up: migration_20261001_000100_p3_shop_listing_seller.up,
 		down: migration_20261001_000100_p3_shop_listing_seller.down,
 		name: "20261001_000100_p3_shop_listing_seller",
+	},
+	{
+		up: migration_20261001_000000_p3_invitation_pending_key.up,
+		down: migration_20261001_000000_p3_invitation_pending_key.down,
+		name: "20261001_000000_p3_invitation_pending_key",
 	},
 ];

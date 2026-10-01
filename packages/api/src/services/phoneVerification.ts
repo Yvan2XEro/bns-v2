@@ -42,7 +42,8 @@ export class PhoneVerificationError extends ServiceError {
 	}
 }
 
-function normalizePhoneNumber(input: string): string {
+/** Exported for P3 invitations: one normaliser, or two that disagree on the same number. */
+export function normalizePhoneNumber(input: string): string {
 	const trimmed = input.trim();
 	const digitsOnly = trimmed.replace(/[^\d+]/g, "");
 	const normalized = digitsOnly.startsWith("+")
