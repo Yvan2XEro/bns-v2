@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-	ROLE_PERMISSIONS,
-	SHOP_ROLES,
-} from "../../src/access/shopRoles";
 import { ROLE_PERMISSIONS as mobileRolePermissions } from "../../../mobile/src/lib/shopRoles";
 import { ROLE_PERMISSIONS as webRolePermissions } from "../../../web/src/lib/shop-roles";
+import { ROLE_PERMISSIONS, SHOP_ROLES } from "../../src/access/shopRoles";
 
 /**
  * The 63-cell permission matrix is hand-mirrored in both clients

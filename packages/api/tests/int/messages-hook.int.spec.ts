@@ -271,12 +271,16 @@ describe("senderSide and formerMemberAuthor are service-only", () => {
 	// account deletion's `overrideAccess` write) may.
 	it("refuses create and update for an admin too", () => {
 		expect(
-			fieldAccess("senderSide", "create")(asBody({ id: "u-admin", role: "admin" })),
+			fieldAccess(
+				"senderSide",
+				"create",
+			)(asBody({ id: "u-admin", role: "admin" })),
 		).toBe(false);
 		expect(
-			fieldAccess("formerMemberAuthor", "update")(
-				asBody({ id: "u-admin", role: "admin" }),
-			),
+			fieldAccess(
+				"formerMemberAuthor",
+				"update",
+			)(asBody({ id: "u-admin", role: "admin" })),
 		).toBe(false);
 	});
 

@@ -80,9 +80,8 @@ export const Conversations: CollectionConfig = {
 					// writable by any participant.
 					for (const field of PINNED_FIELDS) {
 						(data as Record<string, unknown>)[field] =
-							(originalDoc as Record<string, unknown> | undefined)?.[
-								field
-							] ?? null;
+							(originalDoc as Record<string, unknown> | undefined)?.[field] ??
+							null;
 					}
 					return data;
 				}

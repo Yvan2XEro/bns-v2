@@ -1,9 +1,9 @@
+import type { Category, Product } from "../../../api/src/payload-types";
 import type {
 	BusinessType,
 	ShopCapabilities,
 	VerificationBadge,
 } from "../lib/verification";
-import type { Category, Product } from "../../../api/src/payload-types";
 
 export interface MediaRef {
 	id: string;

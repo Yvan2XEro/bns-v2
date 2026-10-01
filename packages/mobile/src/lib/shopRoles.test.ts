@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { can, canSeeCost, ROLE_PERMISSIONS, type ShopPermission } from "./shopRoles";
+import {
+	can,
+	canSeeCost,
+	ROLE_PERMISSIONS,
+	type ShopPermission,
+} from "./shopRoles";
 
 /**
  * Transcribed independently of `ROLE_PERMISSIONS`, the same way
