@@ -186,9 +186,17 @@ same patterns as mobile.
   count falls and the mismatch stays. A task under pressure to hold 105 will
   reach for the cast the Types section forbids, and this already happened
   once in P3. So the number of `as never` occurrences is also a ceiling:
-  **98 across `packages/api/tests/`, 41 across web and mobile sources.**
+  **98 across `packages/api/tests/`, 48 across web and mobile sources.**
   Neither may rise. If holding the error count would require a new cast, the
-  honest outcome is to let the count rise by one and say so in the report. If a task touches a spec file that holds some, fix those and say
+  honest outcome is to let the count rise by one and say so in the report.
+- Measure those four numbers on a **quiet tree**. Every figure quoted during
+  P3 while agents were writing came out wrong — the web/mobile cast count was
+  published as 41 and was never below 48 — and a ceiling set from a moving
+  tree either traps work or excuses it. These four were measured with nothing
+  running.
+- A cast around `router.push` in `packages/mobile` is usually not a mismatch
+  at all: see the note above about regenerating `.expo/types/router.d.ts`.
+  Eleven of them disappeared in P3 once the types were fresh. If a task touches a spec file that holds some, fix those and say
   what the new count is. The strict-typing rule applies to tests as much as to
   source; this is where it went unenforced, and two of the five `as never`
   casts removed in P2 were hiding real defects.
