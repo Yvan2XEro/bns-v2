@@ -12,6 +12,8 @@ export interface ManageTile {
 	title: string;
 	body: string;
 	alert?: boolean;
+	/** An unread/pending count shown as a small pill — omitted rather than shown as "0". */
+	badge?: number;
 	onPress: () => void;
 }
 
@@ -45,6 +47,7 @@ function Tile({
 	body,
 	onPress,
 	alert,
+	badge,
 	last,
 }: ManageTile & { last: boolean }) {
 	const c = useShopTheme();
@@ -59,7 +62,7 @@ function Tile({
 				},
 			]}
 			accessibilityRole="button"
-			accessibilityLabel={title}
+			accessibilityLabel={badge ? `${title} (${badge})` : title}
 		>
 			<View
 				style={[
@@ -81,6 +84,11 @@ function Tile({
 					{body}
 				</Text>
 			</View>
+			{badge ? (
+				<View style={[styles.badge, { backgroundColor: c.sell }]}>
+					<Text style={styles.badgeText}>{badge > 99 ? "99+" : badge}</Text>
+				</View>
+			) : null}
 			<Ionicons name="chevron-forward" size={16} color={c.muted} />
 		</Pressable>
 	);
@@ -108,4 +116,14 @@ const styles = StyleSheet.create({
 	},
 	tileTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	tileBody: { fontSize: 12, fontFamily: Fonts.body },
+	badge: {
+		minWidth: 20,
+		height: 20,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 5,
+		marginRight: 4,
+	},
+	badgeText: { color: "#fff", fontSize: 11, fontFamily: Fonts.displayBold },
 });

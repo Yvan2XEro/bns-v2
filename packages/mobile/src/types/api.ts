@@ -357,12 +357,25 @@ export interface Favorite {
 
 // ─── Conversations & Messages ─────────────────────────────────────────────────
 
-/** Conversation document from GET /api/conversations */
+/** The shop side of a conversation, populated at depth ≥ 1 — never the full `MyShop`/`PublicShop` shape, just what the header needs. */
+export interface ConversationShop {
+	id: string;
+	name: string;
+	logo?: Media | null;
+}
+
+/**
+ * Conversation document from GET /api/conversations. `shop` and `buyer` are
+ * set only for a shop conversation (`Conversations.beforeChange` on the
+ * API) — both are absent on a classic buyer/seller thread.
+ */
 export interface Conversation {
 	id: string;
 	participants: Array<string | UserDoc>;
 	listing?: string | ListingDoc | null;
 	lastMessage?: string | Message | null;
+	shop?: string | ConversationShop | null;
+	buyer?: string | UserDoc | null;
 	updatedAt: string;
 	createdAt: string;
 }
@@ -374,6 +387,10 @@ export interface Message {
 	sender: string | UserDoc;
 	content: string;
 	read: boolean;
+	/** Which side of a shop conversation sent it — null on a classic thread. */
+	senderSide?: "buyer" | "shop" | null;
+	/** Set when the sender has since left the shop — `messageAuthorLabel` reads this, never a re-derived "ex-member" guess. */
+	formerMemberAuthor?: boolean;
 	createdAt: string;
 	updatedAt: string;
 }

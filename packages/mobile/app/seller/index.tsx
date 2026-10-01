@@ -15,20 +15,27 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { SellerHubHeader } from "@/src/components/shop/SellerHubHeader";
-import { SellerManageCard } from "@/src/components/shop/SellerManageCard";
+import {
+	type ManageTile,
+	SellerManageCard,
+} from "@/src/components/shop/SellerManageCard";
+import { ShopSwitcher } from "@/src/components/shop/ShopSwitcher";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildChecklistSteps } from "@/src/lib/sellerChecklist";
+import { visibleSellerTiles } from "@/src/lib/sellerTiles";
 import { shopUrl } from "@/src/lib/shopHandle";
 import { badgeLabelKey, canOpenRequest } from "@/src/lib/verification";
 import type {
 	BadgeLevel,
 	MyShop,
 	MyShopResponse,
+	ShopRole,
 	ShopVerificationResponse,
 	VerificationStatus,
 } from "@/src/types/api";
@@ -105,9 +112,7 @@ export default function SellerHubScreen() {
 					title={isError ? t("seller.loadError") : t("seller.noShopTitle")}
 					subtitle={isError ? undefined : t("seller.noShopSubtitle")}
 					ctaLabel={isError ? t("common.retry") : t("account.openShop")}
-					onCta={() =>
-						isError ? refetch() : router.replace("/shop/create" as never)
-					}
+					onCta={() => (isError ? refetch() : router.replace("/shop/create"))}
 				/>
 			</SafeAreaView>
 		);
@@ -116,6 +121,7 @@ export default function SellerHubScreen() {
 	return (
 		<SellerHubContent
 			shop={shop}
+			role={data?.role ?? null}
 			counts={counts}
 			webUrl={webUrl}
 			locale={locale}
@@ -127,6 +133,7 @@ export default function SellerHubScreen() {
 
 function SellerHubContent({
 	shop,
+	role,
 	counts,
 	webUrl,
 	locale,
@@ -134,6 +141,7 @@ function SellerHubContent({
 	onRefetch,
 }: {
 	shop: MyShop;
+	role: ShopRole | null;
 	counts: ShopCounts;
 	webUrl: string | null;
 	locale: string;
@@ -143,6 +151,9 @@ function SellerHubContent({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const verification = useShopVerification(shop.id);
+	const { shops } = useActiveShop();
+	const inboxUnread =
+		shops.find((entry) => entry.shopId === shop.id)?.inboxUnread ?? 0;
 
 	const share = () => {
 		const url = shopUrl(shop.handle, webUrl);
@@ -162,18 +173,18 @@ function SellerHubContent({
 		logo: {
 			title: t("seller.stepLogo"),
 			body: shop.logo ? t("seller.stepLogoDone") : t("seller.stepLogoBody"),
-			onPress: () => router.push("/shop/manage" as never),
+			onPress: () => router.push("/shop/manage"),
 		},
 		product: {
 			title: t("seller.stepProduct"),
 			body: t("seller.stepProductBody"),
 			action: t("seller.add"),
-			onPress: () => router.push("/seller/product/new" as never),
+			onPress: () => router.push("/seller/product/new"),
 		},
 		move: {
 			title: t("seller.stepMove"),
 			body: t("seller.stepMoveBody", { count: counts.personalListings }),
-			onPress: () => router.push("/shop/move-listings" as never),
+			onPress: () => router.push("/shop/move-listings"),
 		},
 		share: {
 			title: t("seller.stepShare"),
@@ -182,20 +193,27 @@ function SellerHubContent({
 		},
 	};
 
-	const manageTiles = [
-		{
-			key: "catalogue",
-			icon: "cube-outline" as const,
+	/**
+	 * Icon, copy and destination for every tile `visibleSellerTiles` can
+	 * return — permission filtering and badge counts live there, this is only
+	 * presentation. Keyed by `SellerTile.key` so a tile the role lacks never
+	 * needs an entry read here at all.
+	 */
+	const tileMeta: Record<
+		string,
+		Pick<ManageTile, "icon" | "title" | "body" | "onPress" | "alert">
+	> = {
+		catalogue: {
+			icon: "cube-outline",
 			title: t("seller.tileCatalogue"),
 			body: t("seller.tileCatalogueBody", {
 				count: counts.activeProducts,
 				drafts: counts.draftProducts,
 			}),
-			onPress: () => router.push("/seller/catalogue" as never),
+			onPress: () => router.push("/seller/catalogue"),
 		},
-		{
-			key: "stock",
-			icon: "layers-outline" as const,
+		stock: {
+			icon: "layers-outline",
 			title: t("seller.tileStock"),
 			body:
 				counts.lowStockVariants > 0
@@ -209,23 +227,51 @@ function SellerHubContent({
 				router.push({
 					pathname: "/seller/catalogue",
 					params: { filter: "low" },
-				} as never),
+				}),
 		},
-		{
-			key: "settings",
-			icon: "settings-outline" as const,
+		inbox: {
+			icon: "chatbubbles-outline",
+			title: t("seller.tileInbox"),
+			body:
+				inboxUnread > 0
+					? t("seller.tileInboxUnread", { count: inboxUnread })
+					: t("seller.tileInboxBody"),
+			onPress: () => router.push("/seller/inbox"),
+		},
+		team: {
+			icon: "people-outline",
+			title: t("seller.tileTeam"),
+			body: t("seller.tileTeamBody"),
+			onPress: () => router.push("/seller/team"),
+		},
+		activity: {
+			icon: "time-outline",
+			title: t("seller.tileActivity"),
+			body: t("seller.tileActivityBody"),
+			onPress: () => router.push("/seller/activity"),
+		},
+		settings: {
+			icon: "settings-outline",
 			title: t("seller.tileSettings"),
 			body: t("seller.tileSettingsBody"),
-			onPress: () => router.push("/shop/manage" as never),
+			onPress: () => router.push("/shop/manage"),
 		},
-		{
-			key: "verification",
-			icon: "shield-checkmark-outline" as const,
+		verification: {
+			icon: "shield-checkmark-outline",
 			title: t("seller.tileVerification"),
 			body: verificationTileBody(t, shop.badge, verification.data),
-			onPress: () => router.push("/seller/verification" as never),
+			onPress: () => router.push("/seller/verification"),
 		},
-	];
+	};
+
+	const manageTiles: ManageTile[] = visibleSellerTiles(role, {
+		inboxUnread,
+		lowStock: counts.lowStockVariants,
+	}).map((tile) => ({
+		key: tile.key,
+		badge: tile.badge,
+		...tileMeta[tile.key],
+	}));
 
 	return (
 		<SafeAreaView
@@ -244,6 +290,9 @@ function SellerHubContent({
 				}
 			>
 				<SellerHubHeader shop={shop} webUrl={webUrl} onShare={share} />
+				<View style={styles.switcher}>
+					<ShopSwitcher />
+				</View>
 
 				<View style={styles.content}>
 					{shop.status === "suspended" && shop.suspension ? (
@@ -299,6 +348,7 @@ function SellerHubContent({
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+	switcher: { paddingHorizontal: 16 },
 	content: { padding: 16, gap: 14 },
 	banner: {
 		flexDirection: "row",

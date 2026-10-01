@@ -26,7 +26,52 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
+import {
+	conversationHeader,
+	messageAuthorLabel,
+} from "@/src/lib/conversationView";
 import { useTranslation } from "@/src/lib/i18n";
+import type {
+	Conversation,
+	ConversationShop,
+	PayloadDoc,
+	UserDoc,
+} from "@/src/types/api";
+
+function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
+	return value && typeof value === "object" && "doc" in value
+		? (value as PayloadDoc<T>).doc
+		: (value as T);
+}
+
+/** Null for a classic conversation or an unpopulated `shop` id. */
+function shopOf(conv: Conversation | undefined): ConversationShop | null {
+	return conv?.shop && typeof conv.shop === "object" ? conv.shop : null;
+}
+
+function buyerIdOf(conv: Conversation | undefined): string | null {
+	if (!conv?.buyer) return null;
+	return typeof conv.buyer === "string" ? conv.buyer : conv.buyer.id;
+}
+
+function buyerNameOf(conv: Conversation | undefined): string | null {
+	return conv?.buyer && typeof conv.buyer === "object" ? conv.buyer.name : null;
+}
+
+/**
+ * The only two participants of a shop conversation are the buyer and the
+ * shop's owner (see `Conversations.beforeChange` on the API), so whoever is
+ * signed in here and is not the buyer is looking at it from the shop's side.
+ * Mirrors `isViewerShopSide` in `packages/web/src/app/messages/messages-client.tsx`.
+ */
+function isViewerShopSide(
+	conv: Conversation | undefined,
+	userId: string,
+): boolean {
+	if (!shopOf(conv)) return false;
+	const buyerId = buyerIdOf(conv);
+	return buyerId !== null && buyerId !== userId;
+}
 
 function TypingDots({ color }: { color: string }) {
 	const [step, setStep] = useState(0);
@@ -111,7 +156,10 @@ export function ConversationScreen({
 
 	const { data: convData } = useQuery({
 		queryKey: ["conversation", conversationId],
-		queryFn: () => api.get<any>(`/api/conversations/${conversationId}?depth=2`),
+		queryFn: () =>
+			api.get<Conversation | PayloadDoc<Conversation>>(
+				`/api/conversations/${conversationId}?depth=2`,
+			),
 		enabled: !!conversationId,
 	});
 
@@ -136,8 +184,25 @@ export function ConversationScreen({
 	});
 
 	const messages = messagesData?.docs ?? [];
-	const conv = convData?.doc ?? convData;
-	const otherUser = conv?.participants?.find((p: any) => p.id !== user?.id);
+	const conv = convData ? unwrapDoc(convData) : undefined;
+	const otherUser = conv?.participants?.find(
+		(p): p is UserDoc => typeof p === "object" && p.id !== user?.id,
+	);
+	const shop = shopOf(conv);
+	const viewerIsShopSide =
+		Boolean(user) && isViewerShopSide(conv, user?.id ?? "");
+	const header = conv
+		? conversationHeader({
+				shop: shop
+					? { name: shop.name, logoUrl: shop.logo?.url ?? null }
+					: null,
+				other: otherUser
+					? { name: otherUser.name, avatarUrl: otherUser.avatar?.url ?? null }
+					: null,
+				viewerIsShopSide,
+				buyerName: buyerNameOf(conv),
+			})
+		: null;
 	const contextListingRaw =
 		contextListingData?.doc ?? contextListingData ?? null;
 	const [attachedListing, setAttachedListing] = useState<{
@@ -394,6 +459,20 @@ export function ConversationScreen({
 					: new Date(item.createdAt).toLocaleDateString("fr-FR");
 
 		const isRead = readByOther.has(item.id) || item.read;
+		// Only a shop conversation needs attribution per message — more than
+		// one person can answer from that side. A classic 1:1 thread has
+		// exactly one "other" person, already named in the header.
+		const senderObj = typeof item.sender === "object" ? item.sender : null;
+		const authorLabel =
+			!isMe && shop
+				? messageAuthorLabel({
+						senderSide: item.senderSide ?? null,
+						shopName: shop.name,
+						senderFirstName: senderObj?.name?.split(" ")[0] ?? null,
+						formerMemberAuthor: Boolean(item.formerMemberAuthor),
+						viewerIsShopSide,
+					})
+				: null;
 
 		return (
 			<>
@@ -408,6 +487,19 @@ export function ConversationScreen({
 							{dateLabel}
 						</Text>
 					</View>
+				)}
+				{authorLabel && (
+					<Text style={[styles.authorLabel, { color: mutedColor }]}>
+						{authorLabel.primary}
+						{authorLabel.secondary ? (
+							<Text style={{ color: mutedColor }}>
+								{" "}
+								{authorLabel.secondary === "formerMember"
+									? t("messages.formerMember")
+									: authorLabel.secondary}
+							</Text>
+						) : null}
+					</Text>
 				)}
 				<View style={[styles.msgRow, isMe ? styles.msgRight : styles.msgLeft]}>
 					{!isMe && (
@@ -571,9 +663,9 @@ export function ConversationScreen({
 									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
 								]}
 							>
-								{otherUser?.avatar?.url ? (
+								{header?.logoUrl ? (
 									<Image
-										source={{ uri: otherUser.avatar.url }}
+										source={{ uri: header.logoUrl }}
 										style={styles.headerAvatarImg}
 										contentFit="cover"
 									/>
@@ -585,19 +677,28 @@ export function ConversationScreen({
 											fontSize: 16,
 										}}
 									>
-										{otherUser?.name?.[0]?.toUpperCase() ?? "?"}
+										{(header?.title ?? "?").charAt(0).toUpperCase() || "?"}
 									</Text>
 								)}
 							</View>
-							{isOtherOnline && <View style={styles.onlineDotHeader} />}
+							{!header?.isShop && isOtherOnline && (
+								<View style={styles.onlineDotHeader} />
+							)}
 						</View>
 						<View>
 							<Text style={[styles.headerName, { color: textColor }]}>
-								{otherUser?.name ?? t("messages.user")}
+								{header?.title || t("messages.user")}
 							</Text>
-							{isOtherOnline ? (
+							{!header?.isShop && isOtherOnline ? (
 								<Text style={[styles.onlineLabel, { color: "#22c55e" }]}>
 									{t("messages.online")}
+								</Text>
+							) : header?.subtitle ? (
+								<Text
+									style={[styles.headerListing, { color: mutedColor }]}
+									numberOfLines={1}
+								>
+									{header.subtitle}
 								</Text>
 							) : attachedListing ? (
 								<Pressable
@@ -851,6 +952,12 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 		borderRadius: 10,
 		overflow: "hidden",
+	},
+	authorLabel: {
+		fontSize: 11,
+		fontFamily: Fonts.bodySemibold,
+		marginLeft: 42,
+		marginBottom: 2,
 	},
 	msgRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 6 },
 	msgLeft: { justifyContent: "flex-start" },

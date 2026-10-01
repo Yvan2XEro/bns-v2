@@ -24,11 +24,14 @@ import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
 import { ShopSellerCard } from "@/src/components/shop/ShopSellerCard";
 import { VariantPicker } from "@/src/components/shop/VariantPicker";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { useStartConversation } from "@/src/hooks/useShopInbox";
 import { usePublicShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
@@ -38,7 +41,6 @@ import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { formatXafRange } from "@/src/lib/variants";
 import { publicShopBadge } from "@/src/lib/verification";
 import type {
-	Conversation,
 	Favorite,
 	ListingDoc,
 	ListingImageItem,
@@ -67,7 +69,6 @@ type ListingDetailDoc = ListingDoc & {
 };
 
 type ListingResponse = ListingDetailDoc | PayloadDoc<ListingDetailDoc>;
-type ConversationCreateResponse = Conversation | PayloadDoc<Conversation>;
 
 function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
 	if (
@@ -100,6 +101,7 @@ export default function ListingDetail() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
 	const { t, i18n } = useTranslation();
+	const { showError } = useAlert();
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
@@ -113,7 +115,7 @@ export default function ListingDetail() {
 	const [lightboxVisible, setLightboxVisible] = useState(false);
 	const [lightboxIdx, setLightboxIdx] = useState(0);
 	const [descExpanded, setDescExpanded] = useState(false);
-	const [contactLoading, setContactLoading] = useState(false);
+	const startConversation = useStartConversation();
 	const { webUrl } = useAppConfig();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -217,7 +219,7 @@ export default function ListingDetail() {
 		});
 	};
 
-	const handleMessage = async () => {
+	const handleMessage = () => {
 		if (!user) {
 			router.push({
 				pathname: "/auth/login",
@@ -225,32 +227,18 @@ export default function ListingDetail() {
 			});
 			return;
 		}
-		if (!seller) return;
-		setContactLoading(true);
-		try {
-			// Find any existing conversation with this seller (any listing)
-			const existing = await api.get<PayloadPage<Conversation>>(
-				`/api/conversations?where[participants][equals]=${seller.id}&limit=1&depth=0`,
-			);
-			if (existing.docs?.length > 0) {
-				router.push(`/messages/${existing.docs[0].id}?listing=${id}` as never);
-				return;
-			}
-			// Create a new conversation
-			const created = await api.post<ConversationCreateResponse>(
-				"/api/conversations",
-				{
-					participants: [user.id, seller.id],
-					listing: id,
-				},
-			);
-			const convId = unwrapDoc(created).id;
-			router.push(`/messages/${convId}?listing=${id}` as never);
-		} catch (e) {
-			console.error("handleMessage error", e);
-		} finally {
-			setContactLoading(false);
-		}
+		if (!id) return;
+		// The server dedupes by (shop, buyer) for a shop listing, so messaging
+		// two products of the same shop lands in one thread — see
+		// `MessageSellerButton` on web, which this mirrors.
+		startConversation.mutate(id, {
+			onSuccess: ({ conversationId }) => {
+				router.push(`/messages/${conversationId}?listing=${id}`);
+			},
+			onError: (error) => {
+				showError(t("common.error"), resolveErrorMessage(error, t));
+			},
+		});
 	};
 
 	if (isLoading) {
@@ -791,16 +779,16 @@ export default function ListingDetail() {
 					{!isOwner && (
 						<Pressable
 							onPress={handleMessage}
-							disabled={contactLoading}
+							disabled={startConversation.isPending}
 							style={[
 								styles.msgBtn,
 								{
 									backgroundColor: primaryColor,
-									opacity: contactLoading ? 0.7 : 1,
+									opacity: startConversation.isPending ? 0.7 : 1,
 								},
 							]}
 						>
-							{contactLoading ? (
+							{startConversation.isPending ? (
 								<ActivityIndicator size="small" color="#fff" />
 							) : (
 								<Ionicons name="chatbubble-outline" size={18} color="#fff" />

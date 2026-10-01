@@ -21,11 +21,51 @@ import { SearchBar } from "@/src/components/SearchBar";
 import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
+import { useMyShops } from "@/src/hooks/useMyShops";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { useTranslation } from "@/src/lib/i18n";
+import { can } from "@/src/lib/shopRoles";
+
+/** The shape this screen needs off a conversation row — a narrow, typed view over the loosely-typed `api.get` payload, not `any`. */
+interface ConversationListRow {
+	id: string;
+	shop?: { id: string; name: string } | string | null;
+	buyer?: { id: string } | string | null;
+	participants?: Array<
+		| { id: string; name?: string | null; avatar?: { url?: string } | null }
+		| string
+	>;
+	lastMessage?: { content?: string | null } | null;
+	listing?: { title?: string | null } | null;
+	updatedAt?: string;
+	unreadCount?: number;
+}
+
+function shopOf(
+	conv: ConversationListRow,
+): { id: string; name: string } | null {
+	return conv.shop && typeof conv.shop === "object" ? conv.shop : null;
+}
+
+function buyerIdOf(conv: ConversationListRow): string | null {
+	if (!conv.buyer) return null;
+	return typeof conv.buyer === "string" ? conv.buyer : conv.buyer.id;
+}
+
+/**
+ * The only two participants of a shop conversation are the buyer and the
+ * shop's owner (see `Conversations.beforeChange` on the API) — so whoever is
+ * signed in here and is not the buyer is looking at it from the shop's side.
+ * Mirrors `isViewerShopSide` in `packages/web/src/app/messages/messages-client.tsx`.
+ */
+function isViewerShopSide(conv: ConversationListRow, userId: string): boolean {
+	if (!shopOf(conv)) return false;
+	const buyerId = buyerIdOf(conv);
+	return buyerId !== null && buyerId !== userId;
+}
 
 function formatTime(dateStr: string): string {
 	const d = new Date(dateStr);
@@ -54,12 +94,35 @@ export default function MessagesScreen() {
 	const [markingAllRead, setMarkingAllRead] = useState(false);
 	const swipeableRefs = useRef<Map<string, Swipeable | null>>(new Map());
 
+	const myShops = useMyShops();
+
 	const { data, isLoading, refetch } = useQuery({
 		queryKey: ["conversations"],
 		queryFn: () =>
-			api.get<{ docs: any[] }>("/api/conversations?depth=2&sort=-updatedAt"),
+			api.get<{ docs: any[] }>(
+				`/api/conversations?depth=2&sort=-updatedAt&where[participants][equals]=${user?.id ?? ""}`,
+			),
 		enabled: !!user,
 	});
+
+	function roleInShop(shopId: string) {
+		return myShops.data?.find((entry) => entry.shopId === shopId)?.role ?? null;
+	}
+
+	/**
+	 * The "Shop" chip: shown only to whoever is looking, from their personal
+	 * inbox, at a buyer conversation with their own shop — never to the
+	 * buyer, and never for a permission the server would in fact refuse on
+	 * the shop inbox side. Mirrors `showsShopChip` in
+	 * `packages/web/src/app/messages/messages-client.tsx`.
+	 */
+	function showsShopChip(conv: ConversationListRow): boolean {
+		if (!user) return false;
+		const shop = shopOf(conv);
+		if (!shop) return false;
+		if (!isViewerShopSide(conv, user.id)) return false;
+		return can(roleInShop(shop.id), "inbox.reply");
+	}
 
 	// Refresh conversation list on any incoming message (including brand-new
 	// conversations where the recipient hasn't joined the room yet).
@@ -228,6 +291,7 @@ export default function MessagesScreen() {
 		const lastMsg = item.lastMessage;
 		const unread = (item.unreadCount ?? 0) > 0;
 		const isOnline = other?.id ? onlineUsers.has(other.id) : false;
+		const chip = showsShopChip(item);
 
 		return (
 			<Swipeable
@@ -283,20 +347,36 @@ export default function MessagesScreen() {
 					{/* Content */}
 					<View style={styles.convContent}>
 						<View style={styles.convTop}>
-							<Text
-								style={[
-									styles.convName,
-									{
-										color: textColor,
-										fontFamily: unread
-											? Fonts.displayBold
-											: Fonts.displayMedium,
-									},
-								]}
-								numberOfLines={1}
-							>
-								{other?.name ?? t("messages.user")}
-							</Text>
+							<View style={styles.convNameRow}>
+								<Text
+									style={[
+										styles.convName,
+										{
+											color: textColor,
+											fontFamily: unread
+												? Fonts.displayBold
+												: Fonts.displayMedium,
+										},
+									]}
+									numberOfLines={1}
+								>
+									{other?.name ?? t("messages.user")}
+								</Text>
+								{chip ? (
+									<View
+										style={[
+											styles.shopChip,
+											{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+										]}
+									>
+										<Text
+											style={[styles.shopChipText, { color: primaryColor }]}
+										>
+											{t("messages.shopChip")}
+										</Text>
+									</View>
+								) : null}
+							</View>
 							<Text style={[styles.convTime, { color: mutedColor }]}>
 								{item.updatedAt ? formatTime(item.updatedAt) : ""}
 							</Text>
@@ -589,7 +669,14 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		marginBottom: 2,
 	},
-	convName: { fontSize: 15, flex: 1, fontFamily: Fonts.displayMedium },
+	convNameRow: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+	convName: { fontSize: 15, flexShrink: 1, fontFamily: Fonts.displayMedium },
+	shopChip: {
+		borderRadius: 4,
+		paddingHorizontal: 6,
+		paddingVertical: 2,
+	},
+	shopChipText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
 	convTime: { fontSize: 12, fontFamily: Fonts.body },
 	convLastMsg: { fontSize: 13, fontFamily: Fonts.body },
 	unreadBadge: {
