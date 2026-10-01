@@ -1220,3 +1220,158 @@ export interface SignedDocumentUrl {
 	expiresAt: string;
 	mimeType: string;
 }
+
+// ─── Team, invitations, activity log, inbox (P3) ────────────────────────────
+
+/** `ShopMember.inboxNotifications` — mirrors `INBOX_NOTIFICATION_PREFERENCES`. */
+export type InboxNotificationPreference = "all" | "assigned" | "none";
+
+/** A row of `GET /api/shops/:id/members` → `TeamView.members`. */
+export interface TeamMemberView {
+	id: string;
+	userId: string;
+	name: string | null;
+	avatarUrl: string | null;
+	role: ShopRole;
+	joinedAt: string | null;
+	suspended: boolean;
+	/** Absent for a peer's row a staff member cannot see the preference of. */
+	inboxNotifications?: InboxNotificationPreference;
+}
+
+/** A row of `GET /api/shops/:id/members` → `TeamView.invitations`. */
+export interface PendingInvitationView {
+	id: string;
+	role: "manager" | "staff";
+	channel: "phone" | "email";
+	maskedTarget: string;
+	expiresAt: string;
+	sendCount: number;
+	lastSentAt: string | null;
+	invitedByName: string | null;
+}
+
+/** GET /api/shops/:id/members */
+export interface TeamView {
+	members: TeamMemberView[];
+	invitations: PendingInvitationView[];
+	activeCount: number;
+	maxMembers: number;
+	teamMembers: boolean;
+}
+
+/** GET /api/public/invitations/:token — nothing beyond this shape is returned. */
+export interface PublicInvitationView {
+	shop: {
+		name: string;
+		handle: string;
+		logoUrl: string | null;
+		badge: BadgeLevel | null;
+	};
+	role: "manager" | "staff";
+	channel: "phone" | "email";
+	maskedTarget: string;
+	inviterFirstName: string | null;
+	expiresAt: string;
+	status: "pending" | "accepted" | "declined" | "revoked" | "expired";
+}
+
+/** Mirrors `SHOP_ACTIVITY_ACTIONS` in `packages/api/src/collections/ShopActivityLog.ts`. */
+export type ShopActivityAction =
+	| "member.invited"
+	| "member.invitation_resent"
+	| "member.invitation_revoked"
+	| "member.joined"
+	| "member.role_changed"
+	| "member.removed"
+	| "member.left"
+	| "member.paused"
+	| "member.resumed"
+	| "product.created"
+	| "product.updated"
+	| "product.published"
+	| "product.archived"
+	| "variant.price_changed"
+	| "variant.cost_changed"
+	| "stock.moved"
+	| "listing.attached"
+	| "listing.detached"
+	| "shop.updated"
+	| "shop.handle_changed"
+	| "shop.closed"
+	| "conversation.assigned"
+	| "conversation.status_changed"
+	| "verification.submitted";
+
+/** Mirrors `SHOP_ACTIVITY_TARGET_TYPES` in `packages/api/src/collections/ShopActivityLog.ts`. */
+export type ShopActivityTargetType =
+	| "shop"
+	| "member"
+	| "invitation"
+	| "product"
+	| "variant"
+	| "listing"
+	| "conversation"
+	| "verification-request";
+
+/** A row of `GET /api/shops/:id/activity`, 50 per page, keyset-paginated on `createdAt`. */
+export interface ShopActivityView {
+	id: string;
+	createdAt: string;
+	actor: { id: string; name: string | null } | null;
+	actorRole: "owner" | "manager" | "staff" | "system";
+	action: ShopActivityAction;
+	targetType: ShopActivityTargetType;
+	targetId: string;
+	metadata: Record<string, unknown> | null;
+}
+
+export const INBOX_FILTERS = [
+	"all",
+	"unassigned",
+	"mine",
+	"unread",
+	"awaiting",
+	"done",
+] as const;
+
+export type InboxFilter = (typeof INBOX_FILTERS)[number];
+
+/** A row of `GET /api/shops/:id/inbox`. */
+export interface InboxConversationView {
+	id: string;
+	buyer: { id: string; name: string | null; avatarUrl: string | null } | null;
+	listing: { id: string; title: string; thumbnailUrl: string | null } | null;
+	lastMessage: {
+		preview: string;
+		at: string;
+		side: "buyer" | "shop";
+	} | null;
+	assignee: {
+		id: string;
+		name: string | null;
+		avatarUrl: string | null;
+		suspended: boolean;
+	} | null;
+	inboxStatus: "open" | "done";
+	awaitingReply: boolean;
+	unreadCount: number;
+}
+
+/** GET /api/shops/:id/inbox */
+export interface InboxPage {
+	docs: InboxConversationView[];
+	nextCursor: string | null;
+	totals: Record<InboxFilter, number>;
+}
+
+/** GET /api/me/shops */
+export interface MyShopsEntry {
+	shopId: string;
+	name: string;
+	handle: string;
+	logoUrl: string | null;
+	role: ShopRole;
+	capabilities: ShopCapabilities;
+	inboxUnread: number;
+}

@@ -1,5 +1,20 @@
 import { fetch as expoFetch } from "expo/fetch";
 import * as SecureStore from "expo-secure-store";
+import type {
+	InboxConversationView,
+	InboxFilter,
+	InboxNotificationPreference,
+	InboxPage,
+	MyShopsEntry,
+	PendingInvitationView,
+	PublicInvitationView,
+	ShopActivityAction,
+	ShopActivityTargetType,
+	ShopActivityView,
+	ShopRole,
+	TeamMemberView,
+	TeamView,
+} from "../types/api";
 import { ERROR_CODES, fallbackFor, normalizeApiError } from "./apiError";
 
 export const API_BASE_URL =
@@ -237,3 +252,134 @@ export const api = {
 
 // Re-export token helpers so AuthProvider can share the same storage key.
 export { getToken, setToken, removeToken };
+
+function query(
+	params: Record<string, string | number | undefined | null>,
+): string {
+	const search = new URLSearchParams();
+	for (const [key, value] of Object.entries(params)) {
+		if (value !== undefined && value !== null && value !== "") {
+			search.set(key, String(value));
+		}
+	}
+	const text = search.toString();
+	return text ? `?${text}` : "";
+}
+
+/**
+ * Transport for the team, invitation and inbox routes (Tasks 10, 11, 14).
+ * Mirrors `shopApi` in `packages/web/src/lib/shop-api.ts`, method for method:
+ * screens call the hooks in `useShopTeam.ts`, `useShopActivity.ts`,
+ * `useShopInbox.ts`, `useMyShops.ts` and `useInvitation.ts`, never this
+ * object directly.
+ */
+export const shopApi = {
+	listTeam: (shopId: string) =>
+		api.get<TeamView>(`/api/shops/${shopId}/members`),
+
+	invite: (
+		shopId: string,
+		input: {
+			channel: "phone" | "email";
+			phone?: string;
+			email?: string;
+			role: "manager" | "staff";
+		},
+	) =>
+		api.post<{ invitation: PendingInvitationView; delivered: boolean }>(
+			`/api/shops/${shopId}/invitations`,
+			input,
+		),
+
+	resendInvitation: (shopId: string, invitationId: string) =>
+		api.post<{ invitation: PendingInvitationView; delivered: boolean }>(
+			`/api/shops/${shopId}/invitations/${invitationId}/resend`,
+			{},
+		),
+
+	revokeInvitation: (shopId: string, invitationId: string) =>
+		api.delete<{ revoked: true }>(
+			`/api/shops/${shopId}/invitations/${invitationId}`,
+		),
+
+	changeMemberRole: (
+		shopId: string,
+		memberId: string,
+		role: "manager" | "staff",
+	) =>
+		api.patch<TeamMemberView>(`/api/shops/${shopId}/members/${memberId}`, {
+			role,
+		}),
+
+	removeMember: (shopId: string, memberId: string) =>
+		api.delete<{ removed: true }>(`/api/shops/${shopId}/members/${memberId}`),
+
+	leaveShop: (shopId: string) =>
+		api.post<{ left: true }>(`/api/shops/${shopId}/members/leave`, {}),
+
+	updateInboxPreference: (
+		shopId: string,
+		input: { inboxNotifications: InboxNotificationPreference },
+	) => api.patch<TeamMemberView>(`/api/shops/${shopId}/members/me`, input),
+
+	listActivity: (
+		shopId: string,
+		params: {
+			actor?: string;
+			action?: ShopActivityAction;
+			targetType?: ShopActivityTargetType;
+			cursor?: string;
+		} = {},
+	) =>
+		api.get<{ docs: ShopActivityView[]; nextCursor: string | null }>(
+			`/api/shops/${shopId}/activity${query(params)}`,
+		),
+
+	listInbox: (
+		shopId: string,
+		params: { filter?: InboxFilter; q?: string; cursor?: string } = {},
+	) => api.get<InboxPage>(`/api/shops/${shopId}/inbox${query(params)}`),
+
+	startConversation: (listingId: string) =>
+		api.post<{ conversationId: string; created: boolean }>(
+			"/api/conversations/start",
+			{ listingId },
+		),
+
+	assignConversation: (conversationId: string, userId: string | null) =>
+		api.post<InboxConversationView>(
+			`/api/conversations/${conversationId}/assign`,
+			{ userId },
+		),
+
+	setConversationStatus: (conversationId: string, status: "open" | "done") =>
+		api.post<InboxConversationView>(
+			`/api/conversations/${conversationId}/status`,
+			{ status },
+		),
+
+	markConversationRead: (conversationId: string, lastMessageId: string) =>
+		api.post<{ lastReadAt: string; unreadCount: number }>(
+			`/api/conversations/${conversationId}/read`,
+			{ lastMessageId },
+		),
+
+	listMyShops: () => api.get<MyShopsEntry[]>("/api/me/shops"),
+
+	lookupInvitation: (token: string) =>
+		api.get<PublicInvitationView>(
+			`/api/public/invitations/${encodeURIComponent(token)}`,
+		),
+
+	acceptInvitation: (token: string) =>
+		api.post<{ shopId: string; role: ShopRole }>(
+			`/api/invitations/${encodeURIComponent(token)}/accept`,
+			{},
+		),
+
+	declineInvitation: (token: string) =>
+		api.post<{ declined: true }>(
+			`/api/invitations/${encodeURIComponent(token)}/decline`,
+			{},
+		),
+};

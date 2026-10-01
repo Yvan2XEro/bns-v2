@@ -13,6 +13,7 @@ import type {
 	CatalogueFilter,
 	CatalogueResponse,
 	HandleAvailability,
+	InboxFilter,
 	ListingDoc,
 	ManualMovementType,
 	MovementResponse,
@@ -26,10 +27,22 @@ import type {
 	PublicShopResponse,
 	PublicVariantDoc,
 	SearchResponse,
+	ShopActivityAction,
+	ShopActivityTargetType,
 	ShopSearchResponse,
 	StockSummary,
 	VariantDoc,
 } from "../types/api";
+
+/** `shopKeys.activity`'s filter slice — `cursor` stays out of the key, same as every other paginated key here. */
+export type ShopActivityFilters = {
+	actor?: string;
+	action?: ShopActivityAction;
+	targetType?: ShopActivityTargetType;
+};
+
+/** `shopKeys.inbox`'s filter slice — `cursor` stays out of the key. */
+export type ShopInboxFilters = { filter?: InboxFilter; q?: string };
 
 export const shopKeys = {
 	all: ["shops"] as const,
@@ -46,6 +59,18 @@ export const shopKeys = {
 	movements: (shopId: string) => ["shops", shopId, "stock-movements"] as const,
 	/** The shop-level variant list (stock count screens), distinct from `variants(productId)` below. */
 	shopVariants: (shopId: string) => ["shops", shopId, "variants"] as const,
+	team: (shopId: string) => ["shops", shopId, "team"] as const,
+	activityRoot: (shopId: string) => ["shops", shopId, "activity"] as const,
+	activity: (shopId: string, filters: ShopActivityFilters) =>
+		["shops", shopId, "activity", filters] as const,
+	inboxRoot: (shopId: string) => ["shops", shopId, "inbox"] as const,
+	inbox: (shopId: string, filters: ShopInboxFilters) =>
+		["shops", shopId, "inbox", filters] as const,
+	// Not nested under a shop: one entry per user, across every shop they
+	// belong to, so it is invalidated on its own rather than by
+	// `useInvalidateShop`.
+	myShops: ["me", "shops"] as const,
+	invitation: (token: string) => ["invitations", token] as const,
 	search: (params: Record<string, string>) =>
 		["shops", "search", params] as const,
 	product: (id: string) => ["products", id, "detail"] as const,
