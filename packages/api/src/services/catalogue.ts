@@ -1,5 +1,5 @@
 import type { Payload } from "payload";
-import { canManageShop } from "../access/shopRoles";
+import { can } from "../access/shopRoles";
 import { NOT_ARCHIVED, PUBLIC_VARIANTS } from "../collections/ProductVariants";
 import { ERROR_CODES } from "../lib/errors";
 import { type MediaRef, toMediaRef } from "../lib/publicShop";
@@ -248,7 +248,7 @@ export async function getProductDetail(
 		user,
 		relationId(product.shop) ?? "",
 	);
-	const canSeeCost = canManageShop(role);
+	const canSeeCost = can(role, "costs.view");
 
 	const variants = (
 		await payload.find({

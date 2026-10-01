@@ -29,6 +29,7 @@ import {
 	type TransitionSource,
 } from "../lib/verificationTransitions";
 import type { Shop, User, VerificationRequest } from "../payload-types";
+import { requireShopPermission } from "./shopGuards";
 import {
 	isUniqueViolation,
 	type LevelCause,
@@ -587,14 +588,13 @@ export async function openRequest(
 	return withTransaction(
 		payload,
 		async (req) => {
-			const shop = await loadShop(req, shopId);
-			if (relationId(shop.owner) !== actor.id) {
-				throw error(ERROR_CODES.verificationNotOwner, 403);
-			}
-			if (shop.status !== "active") {
-				throw error(ERROR_CODES.shopInactive, 409);
-			}
-			await assertNotSuspended(payload, actor.id, actor);
+			const { shop } = await requireShopPermission(
+				payload,
+				actor,
+				shopId,
+				"verification.submit",
+				{ writable: true, req },
+			);
 			if (level === 3 && shopCapabilities(shop).effectiveLevel < 2) {
 				throw error(ERROR_CODES.verificationLevelNotEligible, 409);
 			}

@@ -1,7 +1,7 @@
 import { APIError, type CollectionConfig, type Where } from "payload";
 import { isAdmin } from "../access/roles";
 import {
-	canManageShop,
+	can,
 	shopField,
 	shopRoleFieldAccess,
 	shopScopedRead,
@@ -114,7 +114,7 @@ export const ProductVariants: CollectionConfig = {
 			min: 0,
 			// A shop secret: nobody outside the shop's management reads it,
 			// through this collection or through a populated relation.
-			access: { read: shopRoleFieldAccess(canManageShop) },
+			access: { read: shopRoleFieldAccess((role) => can(role, "costs.view")) },
 		},
 		{ name: "trackInventory", type: "checkbox", defaultValue: true },
 		{
@@ -139,8 +139,8 @@ export const ProductVariants: CollectionConfig = {
 			min: 0,
 			// Tells a reader how close to running dry a shop is: a shop secret,
 			// same predicate as `cost` — manage-only. `stockSummary` (the shaped
-			// route that surfaces it) already requires `{ manage: true }`.
-			access: { read: shopRoleFieldAccess(canManageShop) },
+			// route that surfaces it) already requires `costs.view`.
+			access: { read: shopRoleFieldAccess((role) => can(role, "costs.view")) },
 		},
 		{
 			name: "available",

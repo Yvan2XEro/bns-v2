@@ -73,7 +73,7 @@ export const Shops: CollectionConfig = {
 			if (!req.user) return false;
 			if (isAdmin(req.user as { role?: string })) return true;
 			return {
-				id: { in: await memberShopIds(req, { manage: true }) },
+				id: { in: await memberShopIds(req, { permission: "settings.edit" }) },
 			} as Where;
 		},
 		// Closed, never deleted: reports and moderation history keep their target.

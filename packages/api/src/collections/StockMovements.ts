@@ -1,7 +1,7 @@
 import { APIError, type CollectionConfig, type RequestContext } from "payload";
 import { isAdmin } from "../access/roles";
 import {
-	canManageShop,
+	can,
 	shopField,
 	shopRoleFieldAccess,
 	shopScopedRead,
@@ -140,10 +140,10 @@ export const StockMovements: CollectionConfig = {
 			min: 0,
 			// A shop secret, same predicate as `product-variants.cost`. The
 			// service redacts it for `listMovements` on top of this
-			// (`redactCost: !canManageShop(role)`), but the raw REST collection
-			// needs the same gate: latent while P1 creates owner rows only, live
-			// the moment a manager or staff membership exists.
-			access: { read: shopRoleFieldAccess(canManageShop) },
+			// (`redactCost: !can(role, "costs.view")`), but the raw REST
+			// collection needs the same gate: latent while P1 creates owner rows
+			// only, live the moment a manager or staff membership exists.
+			access: { read: shopRoleFieldAccess((role) => can(role, "costs.view")) },
 		},
 		{ name: "stockAfter", type: "number", required: true },
 		{ name: "note", type: "text", maxLength: 500 },

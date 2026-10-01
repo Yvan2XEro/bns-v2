@@ -13,7 +13,7 @@ import type {
 	VerificationRequest,
 } from "../payload-types";
 import { syncProductListing } from "./products";
-import { requireShopMember } from "./shopGuards";
+import { requireShopPermission } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser, writeShop } from "./shops";
 import { expireRequestInTransaction } from "./verification";
 
@@ -169,7 +169,10 @@ export async function attachListings(
 	return withTransaction(
 		payload,
 		async (req) => {
-			await requireShopMember(payload, user, shopId, { writable: true, req });
+			await requireShopPermission(payload, user, shopId, "catalogue.edit", {
+				writable: true,
+				req,
+			});
 
 			const where: Where =
 				input.all === true
@@ -232,7 +235,10 @@ export async function detachListings(
 	return withTransaction(
 		payload,
 		async (req) => {
-			await requireShopMember(payload, user, shopId, { writable: true, req });
+			await requireShopPermission(payload, user, shopId, "catalogue.archive", {
+				writable: true,
+				req,
+			});
 			const listings = (
 				await payload.find({
 					collection: "listings",
@@ -359,10 +365,15 @@ export async function closeShop(
 	input: { confirmation?: unknown },
 	now: Date = new Date(),
 ): Promise<{ closed: true; detachedListingIds: string[] }> {
-	const { shop } = await requireShopMember(payload, user, shopId, {
-		owner: true,
-		writable: true,
-	});
+	const { shop } = await requireShopPermission(
+		payload,
+		user,
+		shopId,
+		"shop.close",
+		{
+			writable: true,
+		},
+	);
 	if (normalizeHandle(input.confirmation) !== shop.handle) {
 		throw new ServiceError(ERROR_CODES.validation, 400);
 	}

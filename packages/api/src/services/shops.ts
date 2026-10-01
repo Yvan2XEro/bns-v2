@@ -31,7 +31,7 @@ import {
 } from "../lib/transactions";
 import { isLowStock } from "../lib/variants";
 import type { Product, Shop } from "../payload-types";
-import { loadPublicShop, requireShopMember } from "./shopGuards";
+import { loadPublicShop, requireShopPermission } from "./shopGuards";
 import { notifyShopCreated } from "./shopNotifications";
 
 export interface ServiceUser {
@@ -434,10 +434,13 @@ export async function changeShopHandle(
 	rawHandle: unknown,
 	now: Date = new Date(),
 ): Promise<{ shop: PublicShop; nextHandleChangeAt: string }> {
-	const { shop } = await requireShopMember(payload, user, shopId, {
-		owner: true,
-		writable: true,
-	});
+	const { shop } = await requireShopPermission(
+		payload,
+		user,
+		shopId,
+		"settings.handle",
+		{ writable: true },
+	);
 
 	if (nextHandleChangeAt(shop.handleChangedAt, now)) {
 		throw new ServiceError(ERROR_CODES.shopHandleCooldown, 409);

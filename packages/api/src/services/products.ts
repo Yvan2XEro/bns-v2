@@ -1,5 +1,5 @@
 import type { Payload, PayloadRequest } from "payload";
-import { canManageShop } from "../access/shopRoles";
+import { can } from "../access/shopRoles";
 import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import { validateListingAttributes } from "../hooks/validation";
@@ -558,6 +558,7 @@ export async function createProduct(
 				data: { shop: shopId, ...productData(input) },
 			});
 
+			const costAllowed = can(role, "costs.view");
 			const productId = product.id;
 			for (const variant of input.variants) {
 				await createVariant(
@@ -566,7 +567,7 @@ export async function createProduct(
 					productId,
 					shopId,
 					{ ...variant, id: null },
-					canManageShop(role),
+					costAllowed,
 				);
 			}
 
@@ -581,7 +582,7 @@ export async function createProduct(
 				}),
 				variants: redactManagerOnlyFields(
 					await liveVariants(req, productId),
-					canManageShop(role),
+					costAllowed,
 				),
 			};
 		},
@@ -617,7 +618,14 @@ export async function updateProduct(
 				writable: true,
 				req,
 			});
-			const costAllowed = canManageShop(role);
+			// `catalogue.edit` covers changing a product; taking it out of the
+			// catalogue is the separate, staff-excluded lever.
+			const archiving =
+				input.status === "archived" && product.status !== "archived";
+			if (archiving && !can(role, "catalogue.archive")) {
+				throw new ServiceError(ERROR_CODES.shopForbidden, 403);
+			}
+			const costAllowed = can(role, "costs.view");
 			await validateCategory(req, input);
 			await assertUniqueSkus(req, shopId, input.variants);
 

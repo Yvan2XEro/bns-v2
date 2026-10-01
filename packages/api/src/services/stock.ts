@@ -5,7 +5,7 @@ import type {
 	PayloadRequest,
 	Where,
 } from "payload";
-import { canManageShop } from "../access/shopRoles";
+import { can } from "../access/shopRoles";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import {
 	MOVEMENT_TYPES,
@@ -36,7 +36,7 @@ import type {
 // services call each other. The cycle is resolved at call time, never at
 // module load, so neither import has to be deferred.
 import { syncProductListing } from "./products";
-import { requireShopMember } from "./shopGuards";
+import { requireShopMember, requireShopPermission } from "./shopGuards";
 import { notifyStockLow } from "./shopNotifications";
 import type { ServiceUser } from "./shops";
 
@@ -95,7 +95,7 @@ export interface StockCountResult {
  * What a stock-movement screen shows for the variant it just moved. `cost`
  * and `lowStockThreshold` are both manager/owner-only shop data — the same
  * predicate the collection's own field access uses
- * (`shopRoleFieldAccess(canManageShop)`) — so both are omitted the same way
+ * (`shopRoleFieldAccess((role) => can(role, "costs.view"))`) — so both are omitted the same way
  * for a caller `canSeeCost` excludes, not just defaulted to null: this shaped
  * route must never be more permissive than the raw collection beside it.
  */
@@ -514,7 +514,7 @@ export async function recordMovement(
 			});
 			return {
 				movement,
-				variant: toVariantView(applied.variant, canManageShop(role)),
+				variant: toVariantView(applied.variant, can(role, "costs.view")),
 				crossedLowStock: applied.crossedLowStock,
 			};
 		},
@@ -652,7 +652,7 @@ export async function listMovements(
 
 	return {
 		docs: await toMovementRows(payload, result.docs, {
-			redactCost: !canManageShop(role),
+			redactCost: !can(role, "costs.view"),
 		}),
 		totalDocs: result.totalDocs,
 		page: result.page ?? page,
@@ -666,7 +666,7 @@ export async function stockSummary(
 	user: ServiceUser,
 	shopId: string,
 ) {
-	await requireShopMember(payload, user, shopId, { manage: true });
+	await requireShopPermission(payload, user, shopId, "costs.view");
 
 	const variants = (
 		await payload.find({

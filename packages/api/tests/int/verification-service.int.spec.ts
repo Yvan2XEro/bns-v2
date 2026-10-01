@@ -67,7 +67,15 @@ function seed(
 					level: 1,
 				},
 			],
-			"shop-members": [{ id: "sm-1", shop: "s-1", user: "u-1", role: "owner" }],
+			"shop-members": [
+				{
+					id: "sm-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+			],
 			"verification-requests": over.requests ?? [],
 			"verification-documents": [],
 			"moderation-log": [],
@@ -178,9 +186,30 @@ describe("openRequest", () => {
 	});
 
 	it("refuses anyone but the owner", async () => {
+		// `m-1` is not a member of `s-1` at all (they own a different shop,
+		// `s-m`), so `requireShopPermission` reports the generic "not a member"
+		// refusal rather than the request-specific one.
 		await expect(
 			openRequest(seed(), { id: "m-1", role: "moderator" }, "s-1", 2),
-		).rejects.toMatchObject({ code: "verification.notOwner", status: 403 });
+		).rejects.toMatchObject({ code: "shop.notMember", status: 403 });
+	});
+
+	it("refuses a shop member who is not the owner", async () => {
+		const payload = seed();
+		// Level 2+ unlocks `teamMembers`, which `resolveShopRole` requires to
+		// resolve a non-owner role at all — otherwise this would fall back to
+		// the "not a member" case the previous test already covers.
+		shop(payload)!.level = 2;
+		payload.store["shop-members"].push({
+			id: "sm-2",
+			shop: "s-1",
+			user: "m-1",
+			role: "manager",
+			status: "active",
+		});
+		await expect(
+			openRequest(payload, { id: "m-1", role: "moderator" }, "s-1", 2),
+		).rejects.toMatchObject({ code: "shop.forbidden", status: 403 });
 	});
 
 	it("refuses level 3 before level 2 is effective", async () => {

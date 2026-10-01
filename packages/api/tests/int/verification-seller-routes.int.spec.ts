@@ -80,6 +80,15 @@ function seed(
 					...over.shop,
 				},
 			],
+			"shop-members": [
+				{
+					id: "sm-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+			],
 			"verification-requests": over.requests ?? [],
 			"verification-documents": over.documents ?? [],
 		},
