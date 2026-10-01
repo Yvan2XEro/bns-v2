@@ -8,6 +8,7 @@ import * as migration_20260930_000000_p2_verification_levels from "./20260930_00
 import * as migration_20260930_000100_p2_verification_data_fixes from "./20260930_000100_p2_verification_data_fixes";
 import * as migration_20261001_000000_p3_invitation_pending_key from "./20261001_000000_p3_invitation_pending_key";
 import * as migration_20261001_000100_p3_shop_listing_seller from "./20261001_000100_p3_shop_listing_seller";
+import * as migration_20261001_000200_p3_shop_member_defaults from "./20261001_000200_p3_shop_member_defaults";
 
 export const migrations = [
 	{
@@ -59,5 +60,10 @@ export const migrations = [
 		up: migration_20261001_000000_p3_invitation_pending_key.up,
 		down: migration_20261001_000000_p3_invitation_pending_key.down,
 		name: "20261001_000000_p3_invitation_pending_key",
+	},
+	{
+		up: migration_20261001_000200_p3_shop_member_defaults.up,
+		down: migration_20261001_000200_p3_shop_member_defaults.down,
+		name: "20261001_000200_p3_shop_member_defaults",
 	},
 ];

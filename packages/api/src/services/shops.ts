@@ -403,6 +403,8 @@ export async function createShop(
 						user: user.id,
 						role: "owner",
 						status: "active",
+						joinedAt: now.toISOString(),
+						inboxNotifications: "all",
 					},
 				});
 				onCommit(commitContextOf(req), () => notifyShopCreated(created));

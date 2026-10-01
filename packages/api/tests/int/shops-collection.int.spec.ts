@@ -409,14 +409,33 @@ describe("Shops update access", () => {
 });
 
 describe("shop-members read access", () => {
-	it("shows a member only their own rows and a stranger nothing of others", async () => {
+	it("shows a member their own rows plus every row of a shop where they hold team.view, nothing to an anonymous caller, everything to a moderator", async () => {
 		const { ShopMembers } = await import("../../src/collections/ShopMembers");
-		const read = ShopMembers.access?.read as (args: unknown) => unknown;
-		expect(read({ req: { user: null } })).toBe(false);
-		expect(read({ req: { user: { id: "u-1", role: "user" } } })).toEqual({
-			user: { equals: "u-1" },
+		const read = ShopMembers.access?.read as (
+			args: unknown,
+		) => Promise<unknown>;
+		const payload = fakePayload({
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-1",
+					role: "owner",
+					status: "active",
+				},
+			],
 		});
-		expect(read({ req: { user: { id: "m", role: "moderator" } } })).toBe(true);
+		expect(await read({ req: { user: null } })).toBe(false);
+		expect(
+			await read({
+				req: { payload, user: { id: "u-1", role: "user" }, context: {} },
+			}),
+		).toEqual({
+			or: [{ user: { equals: "u-1" } }, { shop: { in: ["s-1"] } }],
+		});
+		expect(await read({ req: { user: { id: "m", role: "moderator" } } })).toBe(
+			true,
+		);
 	});
 
 	it("never lets a client write a membership", async () => {

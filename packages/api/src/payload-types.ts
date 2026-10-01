@@ -1034,6 +1034,41 @@ export interface ShopMember {
   user: string | User;
   role: 'owner' | 'manager' | 'staff';
   status: 'active' | 'revoked';
+  /**
+   * The invitation that created or reactivated this row; empty for the owner.
+   */
+  invitation?: (string | null) | ShopInvitation;
+  joinedAt?: string | null;
+  revokedAt?: string | null;
+  /**
+   * Empty for a system revocation.
+   */
+  revokedBy?: (string | null) | User;
+  revokedReason?: ('removed' | 'left' | 'shop_closed' | 'account_deleted') | null;
+  inboxNotifications: 'all' | 'assigned' | 'none';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-invitations".
+ */
+export interface ShopInvitation {
+  id: string;
+  shop: string | Shop;
+  role: 'manager' | 'staff';
+  channel: 'phone' | 'email';
+  phone?: string | null;
+  email?: string | null;
+  pendingKey?: string | null;
+  tokenHash: string;
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
+  invitedBy: string | User;
+  expiresAt: string;
+  sendCount: number;
+  lastSentAt?: string | null;
+  acceptedBy?: (string | null) | User;
+  respondedAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1098,29 +1133,6 @@ export interface ShopActivityLog {
     | null;
   createdAt: string;
   updatedAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shop-invitations".
- */
-export interface ShopInvitation {
-  id: string;
-  shop: string | Shop;
-  role: 'manager' | 'staff';
-  channel: 'phone' | 'email';
-  phone?: string | null;
-  email?: string | null;
-  pendingKey?: string | null;
-  tokenHash: string;
-  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired';
-  invitedBy: string | User;
-  expiresAt: string;
-  sendCount: number;
-  lastSentAt?: string | null;
-  acceptedBy?: (string | null) | User;
-  respondedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1957,6 +1969,12 @@ export interface ShopMembersSelect<T extends boolean = true> {
   user?: T;
   role?: T;
   status?: T;
+  invitation?: T;
+  joinedAt?: T;
+  revokedAt?: T;
+  revokedBy?: T;
+  revokedReason?: T;
+  inboxNotifications?: T;
   updatedAt?: T;
   createdAt?: T;
 }
