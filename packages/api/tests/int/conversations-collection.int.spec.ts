@@ -120,6 +120,24 @@ describe("Conversations.beforeChange on create", () => {
 		expect(data.participants).toEqual(["u-buyer", "u-owner"]);
 	});
 
+	// This case exists to ISOLATE the participants guard. The suite's other
+	// refusals all use a caller who is also a shop member, so the "no
+	// conversation with your own shop" role check refuses them too — disabling
+	// the participants guard left every one of them green. Here the caller is
+	// neither a participant nor a member, and there is no `listing`, so the
+	// hook returns before it ever looks up a shop. Only the participants guard
+	// can refuse this, and it must.
+	it("refuses a caller who puts two other people in participants", async () => {
+		const payload = seed();
+		await expect(
+			beforeChange({
+				req: req(payload, "u-buyer"),
+				operation: "create",
+				data: { participants: ["u-owner", "u-staff"] },
+			}),
+		).rejects.toMatchObject({ data: { code: "messages.notParticipant" } });
+	});
+
 	it("refuses a member opening a shop conversation with their own shop", async () => {
 		const payload = seed();
 		await expect(
