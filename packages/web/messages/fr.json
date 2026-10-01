@@ -850,6 +850,10 @@
 			"prohibited": "article interdit",
 			"harassment": "harcèlement",
 			"other": "autre"
+		},
+		"hubLocked": {
+			"dormant": "Les outils vendeur de votre équipe sont en pause : le niveau de vérification de cette boutique est repassé sous le niveau 2. Demandez au propriétaire de vérifier à nouveau pour rétablir l'accès.",
+			"shopSuspended": "Les outils vendeur sont indisponibles tant que cette boutique est suspendue."
 		}
 	},
 	"Catalogue": {

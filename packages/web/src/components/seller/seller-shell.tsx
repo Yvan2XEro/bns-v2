@@ -13,7 +13,7 @@ export async function SellerShell({
 	children: React.ReactNode;
 }) {
 	const locale = await getLocale();
-	const { shop, role } = mine;
+	const { shop, role, roleReason } = mine;
 
 	return (
 		<div className="min-h-[calc(100vh-3.5rem)] bg-[#F8FAFC] lg:flex">
@@ -26,6 +26,7 @@ export async function SellerShell({
 				logoUrl={shop.logo?.url ?? null}
 				lowStock={mine.counts?.lowStockVariants ?? 0}
 				role={role}
+				roleReason={roleReason}
 			/>
 			<div className="min-w-0 flex-1">
 				<SuspensionBanner shop={shop} locale={locale} />

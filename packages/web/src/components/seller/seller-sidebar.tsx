@@ -8,6 +8,7 @@ import {
 	History,
 	Inbox,
 	LayoutDashboard,
+	Lock,
 	type LucideIcon,
 	MessageCircle,
 	Package,
@@ -24,7 +25,7 @@ import type { ShopPermission } from "~/lib/shop-roles";
 import { can } from "~/lib/shop-roles";
 import { cn } from "~/lib/utils";
 import type { VerificationBadge } from "~/lib/verification";
-import type { ShopRole } from "~/types";
+import type { MyShopRoleReason, ShopRole } from "~/types";
 
 // Orders (P4), Resale (P8), Delivery (P7) and Payments (P5) join this list
 // when their phase ships. `permission: null` means every member sees the
@@ -110,6 +111,7 @@ export function SellerSidebar({
 	logoUrl,
 	lowStock,
 	role,
+	roleReason,
 }: {
 	shopId: string;
 	name: string;
@@ -121,8 +123,14 @@ export function SellerSidebar({
 	logoUrl: string | null;
 	lowStock: number;
 	role: ShopRole | null;
+	/** Why `role` is null despite an active membership — `null` when `role`
+	 * itself is set. Explains the links `can` just filtered out, so a
+	 * dormant or sanctioned member sees a reason instead of a sidebar that
+	 * quietly lost most of its entries. */
+	roleReason: MyShopRoleReason | null;
 }) {
 	const t = useTranslations("Seller");
+	const tRoot = useTranslations();
 	const pathname = usePathname();
 	const { data: myShops } = useMyShops();
 	const inboxUnread =
@@ -136,6 +144,13 @@ export function SellerSidebar({
 	const items = ITEMS.filter(
 		(item) => item.permission === null || can(role, item.permission),
 	);
+
+	const lockedNotice =
+		!role && roleReason
+			? roleReason === "accountSuspended"
+				? tRoot("ApiErrors.moderation.accountSuspended")
+				: t(`hubLocked.${roleReason}`)
+			: null;
 
 	return (
 		<aside className="border-[#E2E8F0] border-b bg-white lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
@@ -153,6 +168,12 @@ export function SellerSidebar({
 			<div className="px-4 pb-2">
 				<LevelBadge badge={badge} size="sm" />
 			</div>
+			{lockedNotice && (
+				<div className="mx-2 mb-2 flex items-start gap-2 rounded-lg bg-[#F1F5F9] px-3 py-2 text-[#475569] text-xs">
+					<Lock aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+					<span>{lockedNotice}</span>
+				</div>
+			)}
 			<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col lg:overflow-visible">
 				{items.map(({ href, key, icon: Icon, exact }) => {
 					const active = isActive(href, exact);

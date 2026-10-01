@@ -1720,7 +1720,10 @@
 		"tileVerification": "Vérification",
 		"suspendedUntil": "Boutique suspendue jusqu'au {{date}}",
 		"suspendedIndefinitely": "Boutique suspendue",
-		"suspendedBody": "Vos produits sont masqués aux acheteurs. Vous voyez toujours votre boutique ici."
+		"suspendedBody": "Vos produits sont masqués aux acheteurs. Vous voyez toujours votre boutique ici.",
+		"hubLocked": {
+			"dormant": "Les outils vendeur de votre équipe sont en pause : le niveau de vérification de cette boutique est repassé sous le niveau 2. Demandez au propriétaire de vérifier à nouveau pour rétablir l'accès."
+		}
 	},
 	"stock": {
 		"notTracked": "Stock non suivi",

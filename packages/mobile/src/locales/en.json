@@ -1643,7 +1643,10 @@
 		"tileVerification": "Verification",
 		"suspendedUntil": "Shop suspended until {{date}}",
 		"suspendedIndefinitely": "Shop suspended",
-		"suspendedBody": "Your products are hidden from buyers. You can still see your shop here."
+		"suspendedBody": "Your products are hidden from buyers. You can still see your shop here.",
+		"hubLocked": {
+			"dormant": "Your team's seller tools are paused: this shop's verification level dropped below level 2. Ask the owner to verify again to restore access."
+		}
 	},
 	"stock": {
 		"notTracked": "Stock not tracked",

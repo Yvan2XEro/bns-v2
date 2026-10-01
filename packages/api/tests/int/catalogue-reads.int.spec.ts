@@ -162,6 +162,7 @@ describe("getMyShop", () => {
 		expect(await getMyShop(seed(), { id: "u-2" }, NOW)).toEqual({
 			shop: null,
 			role: null,
+			roleReason: null,
 			counts: null,
 		});
 	});
@@ -169,6 +170,7 @@ describe("getMyShop", () => {
 	it("summarises the caller's shop", async () => {
 		const result = await getMyShop(seed(), U1, NOW);
 		expect(result.role).toBe("owner");
+		expect(result.roleReason).toBeNull();
 		expect(result.shop).toMatchObject({
 			handle: "akwatech",
 			status: "active",
@@ -188,6 +190,72 @@ describe("getMyShop", () => {
 		const payload = seed();
 		payload.store.shops[0].status = "closed";
 		expect((await getMyShop(payload, U1, NOW)).shop).toBeNull();
+	});
+
+	// I10: the route used to hand back the raw `shop-members` row, so a staff
+	// member of a shop that dropped below level 2 was told "staff" and then
+	// 403ed on every tile. `m-2` (shop s-1, user u-3, staff, active) is the
+	// exact shape that shipped: an active row in a shop the server no longer
+	// grants them a role in.
+	it("resolves the server role for a staff member, not the raw membership row", async () => {
+		const payload = seed();
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBe("staff");
+		expect(result.roleReason).toBeNull();
+	});
+
+	it("tells a staff member their team has gone dormant, and still returns the shop", async () => {
+		const payload = seed();
+		payload.store.shops[0].level = 1;
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBeNull();
+		expect(result.roleReason).toBe("dormant");
+		expect(result.shop).toMatchObject({
+			status: "active",
+			capabilities: { teamMembers: false },
+		});
+	});
+
+	it("tells a staff member the shop itself is suspended, and still returns the shop", async () => {
+		const payload = seed();
+		payload.store.shops[0].status = "suspended";
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBeNull();
+		expect(result.roleReason).toBe("shopSuspended");
+		expect(result.shop).toMatchObject({ status: "suspended" });
+	});
+
+	it("tells a personally suspended staff member, when the shop is otherwise healthy", async () => {
+		const payload = seed();
+		payload.store.users.push({
+			id: "u-3",
+			name: "Suspended staff",
+			suspendedAt: "2026-09-01T00:00:00.000Z",
+			suspendedUntil: "2030-01-01T00:00:00.000Z",
+		});
+		const result = await getMyShop(payload, { id: "u-3" }, NOW);
+		expect(result.role).toBeNull();
+		expect(result.roleReason).toBe("accountSuspended");
+		expect(result.shop).toMatchObject({
+			status: "active",
+			capabilities: { teamMembers: true },
+		});
+	});
+
+	it("keeps the owner's role when the shop has gone dormant", async () => {
+		const payload = seed();
+		payload.store.shops[0].level = 1;
+		const result = await getMyShop(payload, U1, NOW);
+		expect(result.role).toBe("owner");
+		expect(result.roleReason).toBeNull();
+	});
+
+	it("keeps the owner's role when the shop is suspended", async () => {
+		const payload = seed();
+		payload.store.shops[0].status = "suspended";
+		const result = await getMyShop(payload, U1, NOW);
+		expect(result.role).toBe("owner");
+		expect(result.roleReason).toBeNull();
 	});
 });
 

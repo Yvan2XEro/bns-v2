@@ -1,6 +1,6 @@
 import type { Payload, PayloadRequest } from "payload";
 import { isSuspended, suspensionSummary } from "../access/roles";
-import type { ShopRole } from "../access/shopRoles";
+import { resolveShopRole, type ShopRole } from "../access/shopRoles";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
@@ -502,6 +502,18 @@ export async function changeShopHandle(
 	};
 }
 
+/**
+ * Why `role` is null even though an active membership row exists — the
+ * three non-owner conditions `resolveShopRole` checks, reordered for what a
+ * client should tell the person: the shop itself explains more than the
+ * member's own account does, and the level gate explains more than a
+ * personal sanction a teammate has no way to see. The fourth condition
+ * (`resolveShopRole`'s "membership not active") never reaches here: a
+ * revoked row is filtered out of `memberships` below, so that shop is
+ * absent rather than present with a reason.
+ */
+export type MyShopRoleReason = "shopSuspended" | "dormant" | "accountSuspended";
+
 export interface MyShopResponse {
 	shop:
 		| (PublicShop & {
@@ -518,6 +530,8 @@ export interface MyShopResponse {
 		  })
 		| null;
 	role: ShopRole | null;
+	/** Set only when `shop` is non-null and `role` is null. */
+	roleReason: MyShopRoleReason | null;
 	counts: {
 		activeProducts: number;
 		draftProducts: number;
@@ -527,9 +541,20 @@ export interface MyShopResponse {
 	} | null;
 }
 
+function myShopRoleReason(shop: Shop, now: Date): MyShopRoleReason {
+	if (shop.status !== "active") return "shopSuspended";
+	if (!shopCapabilities(shop, now).teamMembers) return "dormant";
+	return "accountSuspended";
+}
+
 /**
  * The owner keeps seeing a suspended shop, with its reason, so the management
  * screens can explain what happened. A closed shop is gone for the owner too.
+ *
+ * `role` is the server-enforced role from `resolveShopRole`, never the raw
+ * membership row: a staff member of a dormant or suspended shop must see the
+ * same null the server answers everywhere else, with `roleReason` saying
+ * why, rather than a role the next tap on every tile will refuse.
  */
 export async function getMyShop(
 	payload: Payload,
@@ -548,6 +573,7 @@ export async function getMyShop(
 
 	let shop: Shop | null = null;
 	let role: ShopRole | null = null;
+	let roleReason: MyShopRoleReason | null = null;
 	for (const membership of memberships.docs) {
 		const candidate = await payload
 			.findByID({
@@ -559,11 +585,12 @@ export async function getMyShop(
 			.catch(() => null);
 		if (candidate && candidate.status !== "closed") {
 			shop = candidate;
-			role = membership.role as ShopRole;
+			role = await resolveShopRole(payload, user.id, String(candidate.id));
+			roleReason = role ? null : myShopRoleReason(candidate, now);
 			break;
 		}
 	}
-	if (!shop) return { shop: null, role: null, counts: null };
+	if (!shop) return { shop: null, role: null, roleReason: null, counts: null };
 
 	const shopId = String(shop.id);
 	const [publicShop, active, drafts, variants, personal] = await Promise.all([
@@ -635,6 +662,7 @@ export async function getMyShop(
 					: null,
 		},
 		role,
+		roleReason,
 		counts: {
 			activeProducts: active.totalDocs,
 			draftProducts: drafts.totalDocs,

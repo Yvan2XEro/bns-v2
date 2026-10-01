@@ -35,6 +35,7 @@ import type {
 	BadgeLevel,
 	MyShop,
 	MyShopResponse,
+	MyShopRoleReason,
 	ShopRole,
 	ShopVerificationResponse,
 	VerificationStatus,
@@ -122,6 +123,7 @@ export default function SellerHubScreen() {
 		<SellerHubContent
 			shop={shop}
 			role={data?.role ?? null}
+			roleReason={data?.roleReason ?? null}
 			counts={counts}
 			webUrl={webUrl}
 			locale={locale}
@@ -134,6 +136,7 @@ export default function SellerHubScreen() {
 function SellerHubContent({
 	shop,
 	role,
+	roleReason,
 	counts,
 	webUrl,
 	locale,
@@ -142,6 +145,7 @@ function SellerHubContent({
 }: {
 	shop: MyShop;
 	role: ShopRole | null;
+	roleReason: MyShopRoleReason | null;
 	counts: ShopCounts;
 	webUrl: string | null;
 	locale: string;
@@ -327,18 +331,42 @@ function SellerHubContent({
 						</View>
 					) : null}
 
-					{firstRun ? (
-						<SellerChecklistCard
-							badge={shop.badge}
-							createdToday={createdToday}
-							ownerFirstName={shop.owner.name.split(" ")[0] ?? shop.owner.name}
-							shopName={shop.name}
-							steps={steps}
-							stepMeta={stepMeta}
-						/>
+					{!role && roleReason && roleReason !== "shopSuspended" ? (
+						<View
+							style={[
+								styles.banner,
+								{ backgroundColor: c.neutralSoft, borderColor: c.border },
+							]}
+						>
+							<Ionicons name="lock-closed" size={18} color={c.muted} />
+							<View style={{ flex: 1 }}>
+								<Text style={[styles.bannerTitle, { color: c.text }]}>
+									{roleReason === "dormant"
+										? t("seller.hubLocked.dormant")
+										: t("apiErrors.moderation.accountSuspended")}
+								</Text>
+							</View>
+						</View>
 					) : null}
 
-					<SellerManageCard tiles={manageTiles} />
+					{role ? (
+						<>
+							{firstRun ? (
+								<SellerChecklistCard
+									badge={shop.badge}
+									createdToday={createdToday}
+									ownerFirstName={
+										shop.owner.name.split(" ")[0] ?? shop.owner.name
+									}
+									shopName={shop.name}
+									steps={steps}
+									stepMeta={stepMeta}
+								/>
+							) : null}
+
+							<SellerManageCard tiles={manageTiles} />
+						</>
+					) : null}
 				</View>
 			</ScrollView>
 		</SafeAreaView>

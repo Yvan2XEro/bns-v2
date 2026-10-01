@@ -849,6 +849,10 @@
 			"prohibited": "prohibited item",
 			"harassment": "harassment",
 			"other": "other"
+		},
+		"hubLocked": {
+			"dormant": "Your team's seller tools are paused: this shop's verification level dropped below level 2. Ask the owner to verify again to restore access.",
+			"shopSuspended": "Seller tools are unavailable while this shop is suspended."
 		}
 	},
 	"Catalogue": {

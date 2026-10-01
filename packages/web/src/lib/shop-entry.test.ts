@@ -33,7 +33,7 @@ const baseShop: MyShop = {
 };
 
 function myShopResponse(shop: MyShop | null): MyShopResponse {
-	return { shop, role: shop ? "owner" : null, counts: null };
+	return { shop, role: shop ? "owner" : null, roleReason: null, counts: null };
 }
 
 describe("shopEntryFor", () => {
