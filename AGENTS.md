@@ -165,7 +165,15 @@ same patterns as mobile.
   no spec file. `bun run check-types:tests` in `packages/api` does, and it is
   advisory — deliberately outside the pre-commit hook, because its backlog
   would block every commit. **The baseline is 105 errors and it must not
-  rise.** If a task touches a spec file that holds some, fix those and say
+  rise.**
+- That error count alone is a **perverse incentive, so it is paired with a
+  second one.** An `as never` does not fix a type error, it hides one: the
+  count falls and the mismatch stays. A task under pressure to hold 105 will
+  reach for the cast the Types section forbids, and this already happened
+  once in P3. So the number of `as never` occurrences is also a ceiling:
+  **98 across `packages/api/tests/`, 41 across web and mobile sources.**
+  Neither may rise. If holding the error count would require a new cast, the
+  honest outcome is to let the count rise by one and say so in the report. If a task touches a spec file that holds some, fix those and say
   what the new count is. The strict-typing rule applies to tests as much as to
   source; this is where it went unenforced, and two of the five `as never`
   casts removed in P2 were hiding real defects.
