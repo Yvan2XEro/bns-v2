@@ -1,45 +1,146 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionConfig, Where } from "payload";
 import { authenticated } from "../access/authenticated";
+import { inboxShopIds } from "../access/inboxShops";
+import { isAdmin, isModerator } from "../access/roles";
+import { resolveShopRole } from "../access/shopRoles";
+import { ERROR_CODES } from "../lib/errors";
+import { relationId } from "../lib/relationId";
+import { CodedAPIError } from "../lib/serviceError";
+
+export const INBOX_SERVICE_CONTEXT = { inboxService: true } as const;
+
+/**
+ * Set by `services/inbox.ts` and by `Messages.afterChange`. Everything else —
+ * a member's own PATCH, a buyer's, the admin panel's — is pinned back to the
+ * stored values below, because a participant could otherwise rewrite
+ * `participants` and read themselves into someone else's thread.
+ */
+const PINNED_FIELDS = [
+	"participants",
+	"shop",
+	"buyer",
+	"assignee",
+	"assignedAt",
+	"assignedBy",
+	"inboxStatus",
+	"awaitingReply",
+] as const;
 
 export const Conversations: CollectionConfig = {
 	slug: "conversations",
 	admin: {
 		useAsTitle: "id",
-		defaultColumns: ["participants", "listing", "updatedAt"],
+		defaultColumns: [
+			"participants",
+			"shop",
+			"listing",
+			"inboxStatus",
+			"lastMessageAt",
+		],
 	},
 	access: {
-		read: ({ req: { user } }) => {
-			if (!user) return false;
-			const userWithRole = user as { role?: string };
-			if (userWithRole.role === "admin" || userWithRole.role === "moderator")
-				return true;
-			return {
-				participants: {
-					equals: user.id,
-				},
-			};
+		read: async ({ req }) => {
+			if (!req.user) return false;
+			if (isModerator(req.user as { role?: string })) return true;
+			const own = { participants: { equals: req.user.id } };
+			const shops = await inboxShopIds(req);
+			if (shops.length === 0) return own as Where;
+			return { or: [own, { shop: { in: shops } }] } as Where;
 		},
 		create: authenticated,
 		update: ({ req: { user } }) => {
 			if (!user) return false;
-			const userWithRole = user as { role?: string };
-			if (userWithRole.role === "admin") return true;
-			return {
-				participants: {
-					equals: user.id,
-				},
-			};
+			if (isAdmin(user as { role?: string })) return true;
+			return { participants: { equals: user.id } } as Where;
 		},
 		delete: ({ req: { user } }) => {
 			if (!user) return false;
-			const userWithRole = user as { role?: string };
-			if (userWithRole.role === "admin") return true;
-			return {
-				participants: {
-					equals: user.id,
-				},
-			};
+			if (isAdmin(user as { role?: string })) return true;
+			return { participants: { equals: user.id } } as Where;
 		},
+	},
+	indexes: [{ fields: ["shop", "buyer"] }],
+	hooks: {
+		beforeChange: [
+			async ({ data, operation, originalDoc, req }) => {
+				if (req.context?.inboxService === true) return data;
+
+				if (operation === "update") {
+					// Re-pin rather than refuse: a released client PATCHes the
+					// whole document back, and refusing would break it. The
+					// writable pair (`lastMessage`, `lastMessageAt`) is what
+					// chat-service actually needs.
+					for (const field of PINNED_FIELDS) {
+						if (originalDoc && field in originalDoc) {
+							(data as Record<string, unknown>)[field] = (
+								originalDoc as Record<string, unknown>
+							)[field];
+						}
+					}
+					return data;
+				}
+				if (operation !== "create") return data;
+
+				const callerId = relationId(req.user);
+				const participants = ((data.participants ?? []) as unknown[])
+					.map(relationId)
+					.filter((id): id is string => Boolean(id));
+				if (!callerId || !participants.includes(callerId)) {
+					throw new CodedAPIError(ERROR_CODES.messagesNotParticipant, 403);
+				}
+
+				const listingId = relationId(data.listing);
+				if (!listingId) return data;
+				const listing = await req.payload
+					.findByID({
+						collection: "listings",
+						id: listingId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null);
+				const shopId = relationId(listing?.shop);
+				if (!shopId) return data;
+
+				// A member cannot open a buyer conversation with their own shop:
+				// it would land in the inbox they themselves answer, and
+				// `participants` would put them on both sides.
+				const role = await resolveShopRole(
+					req.payload,
+					callerId,
+					shopId,
+					req.context,
+				);
+				if (role) {
+					throw new CodedAPIError(ERROR_CODES.messagesNotParticipant, 403);
+				}
+
+				const shop = await req.payload
+					.findByID({
+						collection: "shops",
+						id: shopId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null);
+				if (!shop || shop.status !== "active") {
+					throw new CodedAPIError(ERROR_CODES.shopInactive, 409);
+				}
+
+				const ownerId = relationId(shop.owner);
+				data.shop = shopId;
+				data.buyer = callerId;
+				// Always `[buyer, owner]`: other members reach the conversation
+				// through membership, so revoking one never has to rewrite a
+				// conversation document.
+				data.participants = ownerId ? [callerId, ownerId] : [callerId];
+				data.inboxStatus = "open";
+				data.awaitingReply = false;
+				return data;
+			},
+		],
 	},
 	fields: [
 		{
@@ -49,25 +150,49 @@ export const Conversations: CollectionConfig = {
 			hasMany: true,
 			required: true,
 		},
+		{ name: "listing", type: "relationship", relationTo: "listings" },
+		{ name: "lastMessage", type: "relationship", relationTo: "messages" },
 		{
-			name: "listing",
+			name: "shop",
 			type: "relationship",
-			relationTo: "listings",
-			required: false,
+			relationTo: "shops",
+			index: true,
+			admin: { readOnly: true },
 		},
 		{
-			name: "lastMessage",
+			name: "buyer",
 			type: "relationship",
-			relationTo: "messages",
-			required: false,
+			relationTo: "users",
+			index: true,
+			admin: { readOnly: true },
 		},
 		{
-			name: "updatedAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			name: "assignee",
+			type: "relationship",
+			relationTo: "users",
+			index: true,
+			admin: { readOnly: true },
 		},
+		{ name: "assignedAt", type: "date", admin: { readOnly: true } },
+		{
+			name: "assignedBy",
+			type: "relationship",
+			relationTo: "users",
+			admin: { readOnly: true },
+		},
+		{
+			name: "inboxStatus",
+			type: "select",
+			defaultValue: "open",
+			index: true,
+			options: [
+				{ label: "Open", value: "open" },
+				{ label: "Done", value: "done" },
+			],
+		},
+		{ name: "lastMessageAt", type: "date", index: true },
+		{ name: "awaitingReply", type: "checkbox", defaultValue: false },
+		{ name: "updatedAt", type: "date", admin: { readOnly: true } },
 	],
 	timestamps: true,
 };

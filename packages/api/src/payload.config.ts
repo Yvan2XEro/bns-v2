@@ -8,6 +8,7 @@ import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
 import { Categories } from "./collections/Categories";
 import { ContactReveals } from "./collections/ContactReveals";
+import { ConversationReads } from "./collections/ConversationReads";
 import { Conversations } from "./collections/Conversations";
 import { Favorites } from "./collections/Favorites";
 import { Listings } from "./collections/Listings";
@@ -90,6 +91,7 @@ export default buildConfig({
 		Categories,
 		Favorites,
 		Conversations,
+		ConversationReads,
 		Messages,
 		Reviews,
 		Reports,

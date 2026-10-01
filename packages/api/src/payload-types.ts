@@ -73,6 +73,7 @@ export interface Config {
     categories: Category;
     favorites: Favorite;
     conversations: Conversation;
+    'conversation-reads': ConversationRead;
     messages: Message;
     reviews: Review;
     reports: Report;
@@ -111,6 +112,7 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     favorites: FavoritesSelect<false> | FavoritesSelect<true>;
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
+    'conversation-reads': ConversationReadsSelect<false> | ConversationReadsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     reviews: ReviewsSelect<false> | ReviewsSelect<true>;
     reports: ReportsSelect<false> | ReportsSelect<true>;
@@ -765,6 +767,14 @@ export interface Conversation {
   participants: (string | User)[];
   listing?: (string | null) | Listing;
   lastMessage?: (string | null) | Message;
+  shop?: (string | null) | Shop;
+  buyer?: (string | null) | User;
+  assignee?: (string | null) | User;
+  assignedAt?: string | null;
+  assignedBy?: (string | null) | User;
+  inboxStatus?: ('open' | 'done') | null;
+  lastMessageAt?: string | null;
+  awaitingReply?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -781,6 +791,19 @@ export interface Message {
   read?: boolean | null;
   createdAt: string;
   updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversation-reads".
+ */
+export interface ConversationRead {
+  id: string;
+  conversation: string | Conversation;
+  user: string | User;
+  lastReadAt?: string | null;
+  lastReadMessage?: (string | null) | Message;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1305,6 +1328,10 @@ export interface PayloadLockedDocument {
         value: string | Conversation;
       } | null)
     | ({
+        relationTo: 'conversation-reads';
+        value: string | ConversationRead;
+      } | null)
+    | ({
         relationTo: 'messages';
         value: string | Message;
       } | null)
@@ -1619,6 +1646,26 @@ export interface ConversationsSelect<T extends boolean = true> {
   participants?: T;
   listing?: T;
   lastMessage?: T;
+  shop?: T;
+  buyer?: T;
+  assignee?: T;
+  assignedAt?: T;
+  assignedBy?: T;
+  inboxStatus?: T;
+  lastMessageAt?: T;
+  awaitingReply?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversation-reads_select".
+ */
+export interface ConversationReadsSelect<T extends boolean = true> {
+  conversation?: T;
+  user?: T;
+  lastReadAt?: T;
+  lastReadMessage?: T;
   updatedAt?: T;
   createdAt?: T;
 }
