@@ -10,6 +10,12 @@ interface TriggerPayload {
 	subscriberId: string;
 	payload: NotificationPayload;
 	overrides?: Overrides;
+	/**
+	 * An address to reach when the recipient is not a subscriber yet — an
+	 * invitee with no account. Novu accepts an inline subscriber object in
+	 * place of an id, which creates it on the fly.
+	 */
+	email?: string;
 }
 
 function getStringValue(
@@ -20,7 +26,7 @@ function getStringValue(
 	return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
-function buildExpoPushData(
+export function buildExpoPushData(
 	event: string,
 	payload: NotificationPayload,
 ): Record<string, string> | undefined {
@@ -28,6 +34,7 @@ function buildExpoPushData(
 	const conversationId = getStringValue(payload, "conversationId");
 	const searchUrl = getStringValue(payload, "searchUrl");
 	const productId = getStringValue(payload, "productId");
+	const shopId = getStringValue(payload, "shopId");
 
 	switch (event) {
 		case "listing-approved":
@@ -67,6 +74,25 @@ function buildExpoPushData(
 			return productId
 				? { productId, url: `/seller/product/${productId}` }
 				: undefined;
+		case "shop-inbox-message":
+		case "shop-conversation-assigned": {
+			if (!conversationId || !shopId) return undefined;
+			return { conversationId, shopId, url: `/seller/inbox/${conversationId}` };
+		}
+		case "shop-invitation-accepted":
+		case "shop-invitation-declined":
+		case "shop-member-role-changed":
+		case "shop-team-paused":
+			return { url: "/seller/team" };
+		case "shop-member-removed":
+			// Not `/seller`: they can no longer open that shop, and a push that
+			// lands on a permission error is worse than one that lands on a list.
+			return { url: "/account" };
+		case "shop-invitation": {
+			const inviteUrl = getStringValue(payload, "inviteUrl");
+			const token = inviteUrl?.split("/invite/")[1];
+			return token ? { url: `/invite/${token}` } : undefined;
+		}
 		default:
 			return undefined;
 	}
@@ -102,12 +128,13 @@ export async function triggerNotificationEvent({
 	subscriberId,
 	payload,
 	overrides,
+	email,
 }: TriggerPayload): Promise<void> {
 	try {
 		const notificationProvider = getNotificationProvider();
 		await notificationProvider.trigger({
 			workflowId: event,
-			to: subscriberId,
+			to: email ? { subscriberId, email } : subscriberId,
 			payload,
 			overrides: mergeOverrides(event, payload, overrides),
 		});

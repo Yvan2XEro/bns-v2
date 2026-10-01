@@ -823,6 +823,291 @@ const workflowSpecs: WorkflowSpec[] = [
 			],
 		},
 	},
+	{
+		channels: { email: true, inApp: true, push: true },
+		definition: {
+			name: "Shop Invitation",
+			description: "Invites someone to join a shop's team.",
+			workflowId: "shop-invitation",
+			tags: ["shop", "team"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					inviterName: stringProperty("Who sent the invitation"),
+					role: stringProperty("manager or staff"),
+					inviteUrl: stringProperty("Absolute invitation link"),
+				},
+				["shopId", "shopName", "inviterName", "role", "inviteUrl"],
+			),
+			preferences: preferences({ email: true, inApp: true, push: true }),
+			steps: [
+				emailStep("Email", "email", {
+					subject:
+						"{{payload.inviterName}} vous invite a rejoindre {{payload.shopName}} / {{payload.inviterName}} invites you to join {{payload.shopName}}",
+					body: '<p>{{payload.inviterName}} vous invite a rejoindre l\'equipe de {{payload.shopName}} sur BuyNSellem comme {{payload.role}}.</p><p><a href="{{payload.inviteUrl}}">Rejoindre {{payload.shopName}}</a></p><p>Ce lien expire dans 7 jours.</p><hr/><p>{{payload.inviterName}} invites you to join {{payload.shopName}}\'s team on BuyNSellem as {{payload.role}}.</p><p><a href="{{payload.inviteUrl}}">Join {{payload.shopName}}</a></p><p>This link expires in 7 days.</p>',
+				}),
+				inAppStep("In-App", "in-app", {
+					subject: "Invitation a rejoindre {{payload.shopName}}",
+					body: "{{payload.inviterName}} vous invite comme {{payload.role}}.",
+					redirect: redirect("{{payload.inviteUrl}}"),
+					primaryAction: action("Voir l'invitation", "{{payload.inviteUrl}}"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Invitation a rejoindre {{payload.shopName}}",
+					body: "{{payload.inviterName}} vous invite comme {{payload.role}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shop Invitation Accepted",
+			description: "Tells the inviter and the owner someone joined the team.",
+			workflowId: "shop-invitation-accepted",
+			tags: ["shop", "team"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					memberName: stringProperty("The new member's display name"),
+					role: stringProperty("manager or staff"),
+				},
+				["shopId", "shopName", "memberName", "role"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "{{payload.memberName}} a rejoint {{payload.shopName}}",
+					body: "{{payload.memberName}} a accepte l'invitation comme {{payload.role}}.",
+					redirect: redirect("/seller/team"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "{{payload.memberName}} a rejoint {{payload.shopName}}",
+					body: "{{payload.memberName}} a accepte l'invitation comme {{payload.role}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true },
+		definition: {
+			name: "Shop Invitation Declined",
+			description: "Tells the inviter an invitation was declined.",
+			workflowId: "shop-invitation-declined",
+			tags: ["shop", "team"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					maskedTarget: stringProperty("Masked phone or email of the invitee"),
+				},
+				["shopId", "shopName", "maskedTarget"],
+			),
+			preferences: preferences({ inApp: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Invitation refusee",
+					body: "{{payload.maskedTarget}} a refuse de rejoindre {{payload.shopName}}.",
+					redirect: redirect("/seller/team"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shop Member Removed",
+			description: "Tells a member they were removed from a shop's team.",
+			workflowId: "shop-member-removed",
+			tags: ["shop", "team"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+				},
+				["shopId", "shopName"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Retire de {{payload.shopName}}",
+					body: "Vous n'etes plus membre de l'equipe de {{payload.shopName}}.",
+					redirect: redirect("/account"),
+				}),
+				pushStep("Push", "push", {
+					subject: "Retire de {{payload.shopName}}",
+					body: "Vous n'etes plus membre de l'equipe de {{payload.shopName}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shop Member Role Changed",
+			description: "Tells a member their role in a shop's team changed.",
+			workflowId: "shop-member-role-changed",
+			tags: ["shop", "team"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					role: stringProperty("The member's new role"),
+				},
+				["shopId", "shopName", "role"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Nouveau role chez {{payload.shopName}}",
+					body: "Vous etes maintenant {{payload.role}} chez {{payload.shopName}}.",
+					redirect: redirect("/seller/team"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Nouveau role chez {{payload.shopName}}",
+					body: "Vous etes maintenant {{payload.role}} chez {{payload.shopName}}.",
+				}),
+			],
+		},
+	},
+	{
+		// Fired once per recipient (the owner, then every active member), so a
+		// single workflow has to serve both: it declares all three channels and
+		// each subscriber's own preference decides whether the owner's copy
+		// reaches them by email while a staff member's stays in-app only.
+		channels: { email: true, inApp: true, push: true },
+		definition: {
+			name: "Shop Team Paused",
+			description: "Tells the owner and team a shop was suspended or closed.",
+			workflowId: "shop-team-paused",
+			tags: ["shop", "team", "moderation"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+				},
+				["shopId", "shopName"],
+			),
+			preferences: preferences({ email: true, inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Equipe suspendue",
+					body: '"{{payload.shopName}}" est suspendue : l\'equipe ne peut plus y acceder.',
+					redirect: redirect("/seller/team"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Equipe suspendue",
+					body: '"{{payload.shopName}}" est suspendue : l\'equipe ne peut plus y acceder.',
+				}),
+				emailStep("Email", "email", {
+					subject: "{{payload.shopName}} : equipe suspendue",
+					body: '"{{payload.shopName}}" est suspendue. L\'equipe ne peut plus y acceder tant que la suspension dure.',
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shop Inbox Message",
+			description: "Tells the routed shop members a buyer wrote in.",
+			workflowId: "shop-inbox-message",
+			tags: ["shop", "inbox"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					conversationId: stringProperty("Conversation identifier"),
+					buyerName: stringProperty("Buyer display name"),
+					messagePreview: stringProperty("First 100 characters of the message"),
+				},
+				["shopId", "shopName", "conversationId", "buyerName", "messagePreview"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Nouveau message de {{payload.buyerName}}",
+					body: "{{payload.messagePreview}}",
+					redirect: redirect("/seller/messages/{{payload.conversationId}}"),
+					primaryAction: action(
+						"Repondre",
+						"/seller/messages/{{payload.conversationId}}",
+					),
+					data: { conversationId: "{{payload.conversationId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "{{payload.shopName}} - {{payload.buyerName}}",
+					body: "{{payload.messagePreview}}",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shop Conversation Assigned",
+			description: "Tells a member a conversation was assigned to them.",
+			workflowId: "shop-conversation-assigned",
+			tags: ["shop", "inbox"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					conversationId: stringProperty("Conversation identifier"),
+					assignedByName: stringProperty("Who made the assignment"),
+				},
+				["shopId", "shopName", "conversationId", "assignedByName"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Conversation assignee",
+					body: "{{payload.assignedByName}} vous a assigne une conversation sur {{payload.shopName}}.",
+					redirect: redirect("/seller/messages/{{payload.conversationId}}"),
+					primaryAction: action(
+						"Ouvrir",
+						"/seller/messages/{{payload.conversationId}}",
+					),
+					data: { conversationId: "{{payload.conversationId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Conversation assignee",
+					body: "{{payload.assignedByName}} vous a assigne une conversation sur {{payload.shopName}}.",
+				}),
+			],
+		},
+	},
 ];
 
 /** The finished workflow definitions, e.g. for a test asserting on their shape. */
