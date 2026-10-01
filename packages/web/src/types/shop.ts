@@ -372,8 +372,10 @@ export type ShopActivityAction =
 	| "listing.detached"
 	| "shop.updated"
 	| "shop.handle_changed"
+	| "shop.closed"
 	| "conversation.assigned"
-	| "conversation.status_changed";
+	| "conversation.status_changed"
+	| "verification.submitted";
 
 /** Mirrors `SHOP_ACTIVITY_TARGET_TYPES` in the same file. */
 export type ShopActivityTargetType =
@@ -383,7 +385,8 @@ export type ShopActivityTargetType =
 	| "product"
 	| "variant"
 	| "listing"
-	| "conversation";
+	| "conversation"
+	| "verification-request";
 
 export interface ShopActivityView {
 	id: string;
