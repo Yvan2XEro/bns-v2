@@ -4,7 +4,11 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useAuth } from "@/src/lib/auth";
 
-type ChatContextValue = {
+/**
+ * Exported so a consumer (e.g. `useShopInboxSocket`) can type its own params
+ * against the same shape instead of redeclaring `{ chatClient, onlineUsers }`.
+ */
+export type ChatContextValue = {
 	chatClient: ChatClient | null;
 	onlineUsers: Set<string>;
 };
