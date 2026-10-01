@@ -63,7 +63,7 @@ describe("public categories route", () => {
 			name: "Category 1",
 			slug: "category-1",
 		});
-	}, 10000);
+	});
 
 	it("passes searchAliases through to the clients", async () => {
 		// The ad form guesses a category from the typed title by matching it
@@ -95,5 +95,5 @@ describe("public categories route", () => {
 		const body = await response.json();
 
 		expect(body.categories[0].searchAliases).toBe("voiture, bagnole, toyota");
-	}, 10000);
+	});
 });

@@ -1721,7 +1721,8 @@
 		"expires": "Expire le {date}",
 		"resend": "Renvoyer",
 		"resendExhausted": "Ne peut pas encore être renvoyée",
-		"revoke": "Révoquer"
+		"revoke": "Révoquer",
+		"noShop": "Vous n'avez pas encore de boutique."
 	},
 	"Invite": {
 		"invitedBy": "{name} vous invite à rejoindre",
@@ -1817,7 +1818,8 @@
 			"shop": "Boutique",
 			"conversation": "Conversations",
 			"verification": "Vérification"
-		}
+		},
+		"locked": "Seuls le propriétaire et les managers peuvent voir le journal d'activité."
 	},
 	"Inbox": {
 		"title": "Messagerie",

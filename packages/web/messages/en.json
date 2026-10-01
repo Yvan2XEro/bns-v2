@@ -1720,7 +1720,8 @@
 		"expires": "Expires {date}",
 		"resend": "Resend",
 		"resendExhausted": "Cannot resend yet",
-		"revoke": "Revoke"
+		"revoke": "Revoke",
+		"noShop": "You do not have a shop yet."
 	},
 	"Invite": {
 		"invitedBy": "{name} invited you to join",
@@ -1816,7 +1817,8 @@
 			"shop": "Shop",
 			"conversation": "Conversations",
 			"verification": "Verification"
-		}
+		},
+		"locked": "Only the owner and managers can see the activity log."
 	},
 	"Inbox": {
 		"title": "Inbox",

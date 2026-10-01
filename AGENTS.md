@@ -186,7 +186,10 @@ same patterns as mobile.
   count falls and the mismatch stays. A task under pressure to hold 105 will
   reach for the cast the Types section forbids, and this already happened
   once in P3. So the number of `as never` occurrences is also a ceiling:
-  **98 across `packages/api/tests/`, 48 across web and mobile sources.**
+  **98 across `packages/api/tests/`, and 80 across `packages/web/src`,
+  `packages/mobile/src` **and `packages/mobile/app`** — that last path is
+  where most of them are, and leaving it out is how this number was first
+  published as 48.**
   Neither may rise. If holding the error count would require a new cast, the
   honest outcome is to let the count rise by one and say so in the report.
 - Measure those four numbers on a **quiet tree**. Every figure quoted during
