@@ -1,11 +1,18 @@
 import { describe, expect, it, test } from "bun:test";
 import { QueryClient } from "@tanstack/react-query";
 import {
+	activityKey,
+	activityRootKey,
 	catalogueRootKey,
+	inboxKey,
+	inboxRootKey,
+	invitationKey,
 	isKeyCoveredBy,
 	moderationVerificationKeys,
+	myShopsKey,
 	productDetailKey,
 	shopScopeKey,
+	teamKey,
 	verificationKey,
 } from "./query-keys";
 
@@ -201,5 +208,45 @@ describe("moderationVerificationKeys against a real QueryClient", () => {
 		expect(
 			client.getQueryState(queueKey as unknown as unknown[])?.isInvalidated,
 		).toBeFalsy();
+	});
+});
+
+describe("the P3 keys nest under the shop scope", () => {
+	test("a mutation invalidating the shop scope reaches every one of them", () => {
+		const scope = shopScopeKey("s-1");
+		for (const key of [
+			teamKey("s-1"),
+			activityRootKey("s-1"),
+			activityKey("s-1", { actor: "u-1" }),
+			inboxRootKey("s-1"),
+			inboxKey("s-1", { filter: "mine" }),
+		]) {
+			expect(isKeyCoveredBy(key, scope)).toBe(true);
+		}
+	});
+
+	test("a filtered activity or inbox key is covered by its own root", () => {
+		expect(
+			isKeyCoveredBy(
+				activityKey("s-1", { actor: "u-1" }),
+				activityRootKey("s-1"),
+			),
+		).toBe(true);
+		expect(
+			isKeyCoveredBy(inboxKey("s-1", { filter: "mine" }), inboxRootKey("s-1")),
+		).toBe(true);
+	});
+
+	test("the shop-independent keys are deliberately outside the scope", () => {
+		// `myShopsKey` spans shops and `invitationKey` predates membership, so
+		// neither can nest under one shop's scope.
+		expect(isKeyCoveredBy(myShopsKey(), shopScopeKey("s-1"))).toBe(false);
+		expect(isKeyCoveredBy(invitationKey("tok"), shopScopeKey("s-1"))).toBe(
+			false,
+		);
+	});
+
+	test("one shop's keys never match another shop's scope", () => {
+		expect(isKeyCoveredBy(teamKey("s-1"), shopScopeKey("s-2"))).toBe(false);
 	});
 });

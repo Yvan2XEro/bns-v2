@@ -3,18 +3,29 @@ import type {
 	CatalogueResponse,
 	ClientMovementType,
 	HandleAvailability,
+	InboxConversationView,
+	InboxFilter,
+	InboxNotificationPreference,
+	InboxPage,
 	Listing,
 	MovementPage,
 	MovementRow,
 	MyShopResponse,
+	MyShopsEntry,
+	PendingInvitationView,
 	ProductDetailResponse,
 	ProductInput,
 	ProductSaveResponse,
+	PublicInvitationView,
 	PublicShop,
 	PublicVariantDoc,
+	ShopActivityView,
+	ShopRole,
 	ShopSearchResponse,
 	StockCountResult,
 	StockSummary,
+	TeamMemberView,
+	TeamView,
 	VariantDoc,
 } from "~/types";
 import { ApiError, apiErrorFrom, ERROR_CODES, fallbackFor } from "./apiError";
@@ -304,4 +315,131 @@ export const shopApi = {
 		if (!id) throw apiErrorFrom(500, {});
 		return id;
 	},
+
+	// --- P3 team, invitations and inbox ---
+
+	listTeam: (shopId: string) =>
+		request<TeamView>(`/api/shops/${shopId}/members`),
+
+	invite: (
+		shopId: string,
+		body: {
+			channel: "phone" | "email";
+			phone?: string;
+			email?: string;
+			role: "manager" | "staff";
+		},
+	) =>
+		request<{ invitation: PendingInvitationView; delivered: boolean }>(
+			`/api/shops/${shopId}/invitations`,
+			{ method: "POST", body: JSON.stringify(body) },
+		),
+
+	resendInvitation: (shopId: string, invitationId: string) =>
+		request<{ invitation: PendingInvitationView; delivered: boolean }>(
+			`/api/shops/${shopId}/invitations/${invitationId}/resend`,
+			{ method: "POST" },
+		),
+
+	revokeInvitation: (shopId: string, invitationId: string) =>
+		request<{ revoked: true }>(
+			`/api/shops/${shopId}/invitations/${invitationId}`,
+			{ method: "DELETE" },
+		),
+
+	changeMemberRole: (
+		shopId: string,
+		memberId: string,
+		role: "manager" | "staff",
+	) =>
+		request<TeamMemberView>(`/api/shops/${shopId}/members/${memberId}`, {
+			method: "PATCH",
+			body: JSON.stringify({ role }),
+		}),
+
+	removeMember: (shopId: string, memberId: string) =>
+		request<{ removed: true }>(`/api/shops/${shopId}/members/${memberId}`, {
+			method: "DELETE",
+		}),
+
+	leaveShop: (shopId: string) =>
+		request<{ left: true }>(`/api/shops/${shopId}/members/leave`, {
+			method: "POST",
+		}),
+
+	updateInboxPreference: (
+		shopId: string,
+		inboxNotifications: InboxNotificationPreference,
+	) =>
+		request<TeamMemberView>(`/api/shops/${shopId}/members/me`, {
+			method: "PATCH",
+			body: JSON.stringify({ inboxNotifications }),
+		}),
+
+	listActivity: (
+		shopId: string,
+		filters: {
+			actor?: string;
+			action?: string;
+			targetType?: string;
+			cursor?: string;
+		},
+	) =>
+		request<{ docs: ShopActivityView[]; nextCursor: string | null }>(
+			`/api/shops/${shopId}/activity${query(filters)}`,
+		),
+
+	listInbox: (
+		shopId: string,
+		filters: { filter?: InboxFilter; q?: string; cursor?: string },
+	) => request<InboxPage>(`/api/shops/${shopId}/inbox${query(filters)}`),
+
+	assignConversation: (conversationId: string, userId: string | null) =>
+		request<InboxConversationView>(
+			`/api/conversations/${conversationId}/assign`,
+			{
+				method: "POST",
+				body: JSON.stringify({ userId }),
+			},
+		),
+
+	setConversationStatus: (conversationId: string, status: "open" | "done") =>
+		request<InboxConversationView>(
+			`/api/conversations/${conversationId}/status`,
+			{
+				method: "POST",
+				body: JSON.stringify({ status }),
+			},
+		),
+
+	markConversationRead: (conversationId: string, lastMessageId: string) =>
+		request<{ lastReadAt: string; unreadCount: number }>(
+			`/api/conversations/${conversationId}/read`,
+			{ method: "POST", body: JSON.stringify({ lastMessageId }) },
+		),
+
+	startConversation: (listingId: string) =>
+		request<{ conversationId: string; created: boolean }>(
+			"/api/conversations/start",
+			{ method: "POST", body: JSON.stringify({ listingId }) },
+		),
+
+	listMyShops: () => request<MyShopsEntry[]>("/api/me/shops"),
+
+	lookupInvitation: (token: string) =>
+		request<PublicInvitationView>(
+			`/api/public/invitations/${encodeURIComponent(token)}`,
+		),
+
+	acceptInvitation: (token: string) =>
+		request<{ shopId: string; role: ShopRole }>(
+			`/api/invitations/${encodeURIComponent(token)}/accept`,
+			{ method: "POST" },
+		),
+
+	declineInvitation: (token: string) =>
+		request<{ declined: true }>(
+			`/api/invitations/${encodeURIComponent(token)}/decline`,
+			{ method: "POST" },
+		),
 };

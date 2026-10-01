@@ -65,6 +65,38 @@ export const moderationVerificationKeys = {
  * here would silently disagree with what `invalidateQueries` actually does
  * for any key carrying an object segment.
  */
+/** The roster and the pending invitations: one query, one key. */
+export const teamKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "team"] as const;
+
+/** Every filter of one shop's activity log, so a member action drops them all. */
+export const activityRootKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "activity"] as const;
+
+export const activityKey = (
+	shopId: string,
+	filters: { actor?: string; action?: string; targetType?: string } = {},
+) => [...activityRootKey(shopId), filters] as const;
+
+/** Every filter and page of one shop's inbox. */
+export const inboxRootKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "inbox"] as const;
+
+export const inboxKey = (
+	shopId: string,
+	filters: { filter?: string; q?: string } = {},
+) => [...inboxRootKey(shopId), filters] as const;
+
+/**
+ * Outside `shopScopeKey` on purpose: it spans shops, so no single shop's
+ * invalidation should drop it — the mutations that change membership
+ * invalidate it by name.
+ */
+export const myShopsKey = () => ["me", "shops"] as const;
+
+/** Also outside: the caller is not a member of the shop yet. */
+export const invitationKey = (token: string) => ["invitations", token] as const;
+
 export function isKeyCoveredBy(
 	key: readonly unknown[],
 	prefix: readonly unknown[],

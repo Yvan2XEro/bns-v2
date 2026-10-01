@@ -1,4 +1,8 @@
-import type { BusinessType, VerificationBadge } from "~/lib/verification";
+import type {
+	BusinessType,
+	ShopCapabilities,
+	VerificationBadge,
+} from "~/lib/verification";
 import type { Category, Product } from "../../../api/src/payload-types";
 
 export interface MediaRef {
@@ -292,4 +296,142 @@ export interface AttachResult {
 
 export interface StockCountResult {
 	results: { variantId: string; delta: number; stockAfter: number }[];
+}
+
+// --- P3 team, invitations and inbox ---
+// Mirrors the server views in `packages/api/src/services/shopMembers.ts`,
+// `shopActivity.ts` and `inbox.ts`. Shapes are transcribed, not reinvented.
+
+export type InboxNotificationPreference = "all" | "assigned" | "none";
+
+export interface TeamMemberView {
+	id: string;
+	userId: string;
+	name: string | null;
+	avatarUrl: string | null;
+	role: ShopRole;
+	joinedAt: string | null;
+	suspended: boolean;
+	inboxNotifications?: InboxNotificationPreference;
+}
+
+/** The invitation's target arrives already masked by the server. */
+export interface PendingInvitationView {
+	id: string;
+	role: "manager" | "staff";
+	channel: "phone" | "email";
+	maskedTarget: string;
+	expiresAt: string;
+	sendCount: number;
+	lastSentAt: string | null;
+	invitedByName: string | null;
+}
+
+export interface TeamView {
+	members: TeamMemberView[];
+	invitations: PendingInvitationView[];
+	activeCount: number;
+	maxMembers: number;
+	teamMembers: boolean;
+}
+
+export interface PublicInvitationView {
+	shop: {
+		name: string;
+		handle: string;
+		logoUrl: string | null;
+		badge: VerificationBadge | null;
+	};
+	role: "manager" | "staff";
+	channel: "phone" | "email";
+	maskedTarget: string;
+	inviterFirstName: string | null;
+	expiresAt: string;
+	status: "pending" | "accepted" | "declined" | "revoked" | "expired";
+}
+
+/** Mirrors `SHOP_ACTIVITY_ACTIONS` in `packages/api/src/collections/ShopActivityLog.ts`. */
+export type ShopActivityAction =
+	| "member.invited"
+	| "member.invitation_resent"
+	| "member.invitation_revoked"
+	| "member.joined"
+	| "member.role_changed"
+	| "member.removed"
+	| "member.left"
+	| "member.paused"
+	| "member.resumed"
+	| "product.created"
+	| "product.updated"
+	| "product.published"
+	| "product.archived"
+	| "variant.price_changed"
+	| "variant.cost_changed"
+	| "stock.moved"
+	| "listing.attached"
+	| "listing.detached"
+	| "shop.updated"
+	| "shop.handle_changed"
+	| "conversation.assigned"
+	| "conversation.status_changed";
+
+/** Mirrors `SHOP_ACTIVITY_TARGET_TYPES` in the same file. */
+export type ShopActivityTargetType =
+	| "shop"
+	| "member"
+	| "invitation"
+	| "product"
+	| "variant"
+	| "listing"
+	| "conversation";
+
+export interface ShopActivityView {
+	id: string;
+	createdAt: string;
+	actor: { id: string; name: string | null } | null;
+	actorRole: "owner" | "manager" | "staff" | "system";
+	action: ShopActivityAction;
+	targetType: ShopActivityTargetType;
+	targetId: string;
+	metadata: Record<string, unknown> | null;
+}
+
+export type InboxFilter =
+	| "all"
+	| "unassigned"
+	| "mine"
+	| "unread"
+	| "awaiting"
+	| "done";
+
+export interface InboxConversationView {
+	id: string;
+	buyer: { id: string; name: string | null; avatarUrl: string | null } | null;
+	listing: { id: string; title: string; thumbnailUrl: string | null } | null;
+	lastMessage: { preview: string; at: string; side: "buyer" | "shop" } | null;
+	assignee: {
+		id: string;
+		name: string | null;
+		avatarUrl: string | null;
+		suspended: boolean;
+	} | null;
+	inboxStatus: "open" | "done";
+	awaitingReply: boolean;
+	unreadCount: number;
+}
+
+export interface InboxPage {
+	docs: InboxConversationView[];
+	nextCursor: string | null;
+	totals: Record<InboxFilter, number>;
+}
+
+export interface MyShopsEntry {
+	shopId: string;
+	name: string;
+	handle: string;
+	logoUrl: string | null;
+	role: ShopRole;
+	capabilities: ShopCapabilities;
+	inboxUnread: number;
 }
