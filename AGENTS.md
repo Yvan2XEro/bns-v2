@@ -222,6 +222,19 @@ stage. Isolate them, or serialise them.
   published as 48.**
   Neither may rise. If holding the error count would require a new cast, the
   honest outcome is to let the count rise by one and say so in the report.
+- Measure each number with **exactly this command**, because every
+  disagreement about them so far was a difference of scope, not of fact — the
+  client cast count is 80 counting test files and 52 without, and both were
+  reported as contradictions:
+
+```bash
+cd packages/api && bun run check-types:tests | grep -c "error TS"   # 105
+grep -ro 'as never' packages/api/tests | wc -l                      # 94
+grep -ro 'as never' packages/web/src packages/mobile/src \
+                    packages/mobile/app | wc -l                     # 80
+cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
+```
+
 - Measure those four numbers on a **quiet tree**. Every figure quoted during
   P3 while agents were writing came out wrong — the web/mobile cast count was
   published as 41 and was never below 48 — and a ceiling set from a moving
