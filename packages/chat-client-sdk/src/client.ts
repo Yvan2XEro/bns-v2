@@ -5,6 +5,7 @@ import type {
 	ChatMessage,
 	ClientToServerEvents,
 	ConnectionState,
+	InboxConversationUpdate,
 	SendMessagePayload,
 	ServerToClientEvents,
 	TypingEvent,
@@ -35,6 +36,7 @@ export class ChatClient {
 	private state: ConnectionState = "disconnected";
 	private listeners = new Map<string, Set<(...args: unknown[]) => void>>();
 	private joinedConversations = new Set<string>();
+	private joinedShopInboxes = new Set<string>();
 	private typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 	constructor(options: ChatClientOptions) {
@@ -66,6 +68,10 @@ export class ChatClient {
 			// Rejoin conversations after reconnect
 			for (const convId of this.joinedConversations) {
 				this.socket?.emit("conversation:join", { conversationId: convId });
+			}
+			// Rejoin shop inboxes after reconnect
+			for (const shopId of this.joinedShopInboxes) {
+				this.socket?.emit("shop:inbox:join", { shopId });
 			}
 		});
 
@@ -110,10 +116,23 @@ export class ChatClient {
 		this.socket.on("user:offline", (payload) => {
 			this.emit("user:offline", payload);
 		});
+
+		this.socket.on(
+			"inbox:conversation-updated",
+			(payload: InboxConversationUpdate) => {
+				this.emit("inbox:conversation-updated", payload);
+			},
+		);
+
+		this.socket.on("shop:access-revoked", (payload) => {
+			this.joinedShopInboxes.delete(payload.shopId);
+			this.emit("shop:access-revoked", payload);
+		});
 	}
 
 	disconnect(): void {
 		this.joinedConversations.clear();
+		this.joinedShopInboxes.clear();
 		for (const timer of this.typingTimers.values()) {
 			clearTimeout(timer);
 		}
@@ -171,6 +190,31 @@ export class ChatClient {
 			this.socket?.emit("conversation:leave", { conversationId: convId });
 		}
 		this.joinedConversations.clear();
+	}
+
+	// --- Shop inboxes ---
+
+	joinShopInbox(shopId: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			if (!this.socket?.connected) {
+				this.joinedShopInboxes.add(shopId);
+				resolve(false);
+				return;
+			}
+			this.socket.emit("shop:inbox:join", { shopId }, (response) => {
+				if (response?.success) {
+					this.joinedShopInboxes.add(shopId);
+					resolve(true);
+				} else {
+					resolve(false);
+				}
+			});
+		});
+	}
+
+	leaveShopInbox(shopId: string): void {
+		this.joinedShopInboxes.delete(shopId);
+		this.socket?.emit("shop:inbox:leave", { shopId });
 	}
 
 	// --- Messages ---

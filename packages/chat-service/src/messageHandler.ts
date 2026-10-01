@@ -1,7 +1,11 @@
 import type { Server, Socket } from "socket.io";
-import { getParticipants } from "./cache.ts";
+import {
+	getConversationMeta,
+	hasConversationAccess,
+	invalidateConversationMeta,
+} from "./cache.ts";
 import { getRedis } from "./redis.ts";
-import { getRoomId } from "./rooms.ts";
+import { getRoomId, shopInboxRoom } from "./rooms.ts";
 import { getServiceToken, invalidateServiceToken } from "./serviceAuth.ts";
 
 const PAYLOAD_API_URL =
@@ -123,6 +127,18 @@ export function registerMessageHandlers(
 			return;
 		}
 
+		// Before the rate limit: a refused send must not consume a caller's
+		// budget, and `conversation:join` was never the only way in — a client
+		// can emit `message:send` for any id it can guess.
+		if (!(await hasConversationAccess(userId, conversationId))) {
+			if (tempId)
+				socket.emit("message:failed", {
+					tempId,
+					error: "Access denied to conversation",
+				});
+			return;
+		}
+
 		const allowed = await checkRateLimit(userId);
 		if (!allowed) {
 			if (tempId)
@@ -130,8 +146,10 @@ export function registerMessageHandlers(
 			return;
 		}
 
-		// Fetch participants from cache (no HTTP if cached) for broadcast
-		const participants = await getParticipants(conversationId);
+		// Fetch meta from cache (no HTTP if cached) for broadcast
+		const meta = await getConversationMeta(conversationId);
+		const participants = meta?.participants ?? [];
+		const shopId = meta?.shopId ?? null;
 
 		// Persist async — no blocking broadcast
 		persistMessage(conversationId, userId, content.trim(), listingId)
@@ -185,6 +203,42 @@ export function registerMessageHandlers(
 						console.error("[chat] Failed to update lastMessage:", err),
 					);
 
+				if (shopId) {
+					io.to(shopInboxRoom(shopId)).emit("message:new", {
+						...msgPayload,
+						shopId,
+					});
+					// The API's `Messages.afterChange` has already written
+					// `inboxStatus`, `awaitingReply` and `lastMessageAt`; the cache
+					// entry for the conversation is meta only, so this is one read.
+					await invalidateConversationMeta(conversationId);
+					const token = await getServiceToken();
+					const res = await fetch(
+						`${PAYLOAD_API_URL}/conversations/${conversationId}?depth=0`,
+						{ headers: { Authorization: `JWT ${token}` } },
+					);
+					if (res.ok) {
+						const conv = (await res.json()) as {
+							assignee?: unknown;
+							inboxStatus?: string;
+							awaitingReply?: boolean;
+							lastMessageAt?: string | null;
+						};
+						io.to(shopInboxRoom(shopId)).emit("inbox:conversation-updated", {
+							conversationId,
+							assignee:
+								conv.assignee &&
+								typeof conv.assignee === "object" &&
+								"id" in conv.assignee
+									? String((conv.assignee as { id: unknown }).id)
+									: ((conv.assignee as string | null | undefined) ?? null),
+							inboxStatus: (conv.inboxStatus ?? "open") as "open" | "done",
+							awaitingReply: conv.awaitingReply === true,
+							lastMessageAt: conv.lastMessageAt ?? null,
+						});
+					}
+				}
+
 				console.log(
 					JSON.stringify({
 						event: "message:send",
@@ -234,24 +288,28 @@ export function registerMessageHandlers(
 				userId,
 			});
 
-			// Mark messages as read via service token (fire-and-forget)
+			const lastMessageId = payload.messageIds[payload.messageIds.length - 1];
+			if (!lastMessageId) return;
+
+			// One call to the read route instead of N PATCHes: it also upserts
+			// the caller's `conversation-reads` row, which per-message PATCHes
+			// never did — that is what the shared inbox counts unread from.
 			getServiceToken()
 				.then((token) =>
-					Promise.all(
-						payload.messageIds.map((messageId) =>
-							fetch(`${PAYLOAD_API_URL}/messages/${messageId}`, {
-								method: "PATCH",
-								headers: {
-									"Content-Type": "application/json",
-									Authorization: `JWT ${token}`,
-								},
-								body: JSON.stringify({ read: true }),
-							}),
-						),
+					fetch(
+						`${PAYLOAD_API_URL}/conversations/${payload.conversationId}/read`,
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `JWT ${token}`,
+							},
+							body: JSON.stringify({ lastMessageId, userId }),
+						},
 					),
 				)
 				.catch((err) =>
-					console.error("[chat] Failed to mark messages as read:", err),
+					console.error("[chat] Failed to mark the conversation read:", err),
 				);
 		},
 	);

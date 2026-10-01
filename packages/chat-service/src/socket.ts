@@ -2,7 +2,13 @@ import type { Server, Socket } from "socket.io";
 import { verifyToken } from "./auth.ts";
 import { registerMessageHandlers } from "./messageHandler.ts";
 import { refreshPresence, setOffline, setOnline } from "./presence.ts";
-import { getRoomId, joinRoom, leaveRoom } from "./rooms.ts";
+import {
+	getRoomId,
+	joinRoom,
+	joinShopInbox,
+	leaveRoom,
+	leaveShopInbox,
+} from "./rooms.ts";
 
 export function registerSocketHandlers(io: Server): void {
 	io.use(async (socket, next) => {
@@ -91,6 +97,33 @@ export function registerSocketHandlers(io: Server): void {
 				);
 			},
 		);
+
+		socket.on(
+			"shop:inbox:join",
+			async (
+				payload: { shopId: string },
+				ack?: (response: { success: boolean; error?: string }) => void,
+			) => {
+				const joined = await joinShopInbox(socket, payload.shopId, userId);
+				if (!joined) {
+					ack?.({ success: false, error: "Access denied to shop inbox" });
+					console.error(
+						JSON.stringify({
+							event: "shop:inbox:join:denied",
+							userId,
+							shopId: payload.shopId,
+							timestamp: new Date().toISOString(),
+						}),
+					);
+					return;
+				}
+				ack?.({ success: true });
+			},
+		);
+
+		socket.on("shop:inbox:leave", (payload: { shopId: string }) => {
+			leaveShopInbox(socket, payload.shopId);
+		});
 
 		socket.on("conversation:leave", (payload: { conversationId: string }) => {
 			leaveRoom(socket, payload.conversationId);
