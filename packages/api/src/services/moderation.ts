@@ -8,6 +8,7 @@ import {
 	suspensionSummary,
 } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
+import { queueMembershipChange } from "../hooks/membershipEvents";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -471,6 +472,34 @@ export async function suspendUser(
 				data: suspension,
 			});
 
+			// P3: `resolveShopRole` returns null for a suspended non-owner, so
+			// every shop they belong to has a stale chat-service cache. The
+			// membership row and their conversation assignments are untouched —
+			// the owner can see and reassign deliberately, and lifting the
+			// suspension restores access with no write at all.
+			const memberships = await payload.find({
+				collection: "shop-members",
+				where: {
+					and: [
+						{ user: { equals: targetId } },
+						{ status: { equals: "active" } },
+					],
+				},
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+				req,
+			});
+			for (const row of memberships.docs) {
+				const memberShopId = relationId(row.shop);
+				if (memberShopId) {
+					await queueMembershipChange(commitContextOf(req), memberShopId, [
+						targetId,
+					]);
+				}
+			}
+
 			// The user's own listings (shop listings included, `seller` is the
 			// user) are already drafted above, so the shop cascade below never
 			// touches listings — only the shop's own status.
@@ -644,6 +673,33 @@ export async function unsuspendUser(
 					suspendedBy: null,
 				},
 			});
+
+			// Same shops as the suspension published to; `removedUserIds` still
+			// names the user even though access is being restored — chat-service's
+			// subscriber drops the cached set either way, and naming them makes
+			// the eviction explicit.
+			const memberships = await payload.find({
+				collection: "shop-members",
+				where: {
+					and: [
+						{ user: { equals: targetId } },
+						{ status: { equals: "active" } },
+					],
+				},
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+				req,
+			});
+			for (const row of memberships.docs) {
+				const memberShopId = relationId(row.shop);
+				if (memberShopId) {
+					await queueMembershipChange(commitContextOf(req), memberShopId, [
+						targetId,
+					]);
+				}
+			}
 
 			await writeLog(
 				payload,
@@ -999,6 +1055,10 @@ export async function suspendShop(
 				req,
 			);
 			await applyShopSuspension(payload, req, shopId, suspension, logEntry.id);
+			// No removed ids: the memberships still exist, `resolveShopRole`
+			// returns null for every non-owner of a suspended shop, so the
+			// subscriber refetches and evicts whoever is no longer in the set.
+			await queueMembershipChange(commitContextOf(req), shopId);
 			onCommit(commitContextOf(req), () =>
 				notifyShopSuspended(shop, suspension.suspendedUntil, reason),
 			);
@@ -1033,6 +1093,7 @@ export async function unsuspendShop(
 					? []
 					: await restoreShopListings(payload, req, shop);
 			await clearShopSuspension(payload, req, shopId);
+			await queueMembershipChange(commitContextOf(req), shopId);
 			await writeLog(
 				payload,
 				{

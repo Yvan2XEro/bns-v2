@@ -148,6 +148,14 @@ export function __resetShopLevelListeners(): void {
 	shopLevelListeners.length = 0;
 }
 
+/** Registering the same listener twice would fire a phase's reaction twice. */
+export function onShopLevelChangedOnce(
+	listener: ShopLevelListener,
+): () => void {
+	if (shopLevelListeners.includes(listener)) return () => undefined;
+	return onShopLevelChanged(listener);
+}
+
 export async function notifyShopLevelChanged(
 	req: PayloadRequest,
 	event: ShopLevelChange,

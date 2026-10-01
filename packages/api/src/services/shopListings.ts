@@ -1,10 +1,15 @@
 import type { Payload, PayloadRequest, Where } from "payload";
 import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
+import { queueMembershipChange } from "../hooks/membershipEvents";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { addDays, normalizeHandle } from "../lib/shopHandle";
-import { RetryTransaction, withTransaction } from "../lib/transactions";
+import {
+	commitContextOf,
+	RetryTransaction,
+	withTransaction,
+} from "../lib/transactions";
 import { OPEN_STATUSES } from "../lib/verificationTransitions";
 import type {
 	Listing,
@@ -13,7 +18,12 @@ import type {
 	VerificationRequest,
 } from "../payload-types";
 import { syncProductListing } from "./products";
+import { recordShopActivity } from "./shopActivity";
 import { requireShopPermission } from "./shopGuards";
+import {
+	revokeMembershipsInTransaction,
+	revokePendingInvitationsInTransaction,
+} from "./shopMembers";
 import { isUniqueViolation, type ServiceUser, writeShop } from "./shops";
 import { expireRequestInTransaction } from "./verification";
 
@@ -341,6 +351,28 @@ export async function closeShopInTransaction(
 		await expireRequestInTransaction(req, String(request.id), "shop_closed");
 	}
 
+	// Before the status flips: `revokeMembershipsInTransaction` clears the
+	// members' assignments and reads, and `resolveShopRole` would already
+	// return null for every non-owner once the shop is closed, making those
+	// rows unreachable to the helper's own reads.
+	const removedUserIds = await revokeMembershipsInTransaction(
+		req,
+		shopId,
+		"shop_closed",
+		null,
+		now,
+	);
+	await revokePendingInvitationsInTransaction(req, shopId, now);
+	await recordShopActivity(req, {
+		shop: shopId,
+		actor: null,
+		actorRole: "system",
+		action: "shop.closed",
+		targetType: "shop",
+		targetId: shopId,
+		metadata: { removedMembers: removedUserIds.length },
+	});
+
 	// Variants of these products are intentionally left with `archivedAt: null`.
 	// `PUBLIC_VARIANTS` and the `products` read access both gate on the parent
 	// product's `status: "active"`, so an archived product's variants are
@@ -355,6 +387,7 @@ export async function closeShopInTransaction(
 		status: "closed",
 		closedAt: now.toISOString(),
 	});
+	await queueMembershipChange(commitContextOf(req), shopId, removedUserIds);
 	return listings.map((listing) => String(listing.id));
 }
 

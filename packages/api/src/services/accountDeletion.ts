@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { createAppleClientSecretFor } from "@/auth/oauth/providers";
+import { INBOX_SERVICE_CONTEXT } from "../collections/Conversations";
 import { ACCOUNT_DELETION_CONTEXT } from "../collections/Listings";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../lib/redact";
 import { type TxReq, withTransaction } from "../lib/transactions";
@@ -48,6 +49,7 @@ type PayloadLike = {
 		collection: string;
 		id: string;
 		data: Record<string, unknown>;
+		context?: Record<string, unknown>;
 		overrideAccess?: boolean;
 		req?: TxReq;
 	}) => Promise<unknown>;
@@ -164,6 +166,93 @@ async function findOwnedMediaIds(
 	}
 
 	return [...mediaIds];
+}
+
+/**
+ * A member's messages in a shop inbox are the shop's record of what was said
+ * to a buyer, not the member's personal data: they stay, attributed to the
+ * owner and flagged so the inbox shows "Former member". The rows are
+ * excluded from `messageIds` below so the cascade does not delete what was
+ * just re-attributed. The memberships themselves are revoked here too, in the
+ * same transaction: a member deleting their account loses their shop access
+ * the same way `removeMember` would take it, with `account_deleted` as the
+ * reason history records.
+ */
+async function reattributeShopMessages(
+	payload: PayloadLike,
+	userId: string,
+	req?: TxReq,
+): Promise<string[]> {
+	const memberships = await findAllDocs(
+		payload,
+		"shop-members",
+		{ and: [{ user: { equals: userId } }, { status: { equals: "active" } }] },
+		req,
+	);
+
+	const ids: string[] = [];
+	for (const membership of memberships) {
+		const shopId = toRelationId(membership.shop);
+		if (!shopId) continue;
+		const shops = await payload.find({
+			collection: "shops",
+			where: { id: { equals: shopId } },
+			depth: 0,
+			limit: 1,
+			overrideAccess: true,
+			req,
+		});
+		const ownerId = shops.docs[0] ? toRelationId(shops.docs[0].owner) : null;
+		if (!ownerId || ownerId === userId) continue;
+
+		const conversations = await findAllIds(
+			payload,
+			"conversations",
+			{ shop: { equals: shopId } },
+			req,
+		);
+		if (conversations.length === 0) continue;
+
+		const messages = await findAllDocs(
+			payload,
+			"messages",
+			{
+				and: [
+					{ sender: { equals: userId } },
+					{ conversation: { in: conversations } },
+				],
+			},
+			req,
+		);
+		for (const message of messages) {
+			await payload.update({
+				collection: "messages",
+				id: message.id,
+				req,
+				overrideAccess: true,
+				context: INBOX_SERVICE_CONTEXT,
+				data: { sender: ownerId, formerMemberAuthor: true },
+			});
+			ids.push(String(message.id));
+		}
+	}
+
+	// The memberships themselves go, in the same transaction.
+	for (const membership of memberships) {
+		await payload.update({
+			collection: "shop-members",
+			id: membership.id,
+			req,
+			overrideAccess: true,
+			data: {
+				status: "revoked",
+				revokedAt: new Date().toISOString(),
+				revokedBy: null,
+				revokedReason: "account_deleted",
+			},
+		});
+	}
+	return ids;
 }
 
 async function deleteByIds(
@@ -495,19 +584,33 @@ async function runDeletionCascade(
 		{ participants: { equals: userId } },
 		req,
 	);
-	const messageIds = await findAllIds(
+
+	// A member's messages in a shop inbox are the shop's record of what was
+	// said to a buyer, not the member's personal data: they stay, attributed
+	// to the owner and flagged so the inbox shows "Former member". The rows
+	// are excluded from `messageIds` below so the cascade does not delete
+	// what was just re-attributed.
+	const reattributedMessageIds = await reattributeShopMessages(
 		payload,
-		"messages",
-		{
-			or: [
-				{ sender: { equals: userId } },
-				...(conversationIds.length > 0
-					? [{ conversation: { in: conversationIds } }]
-					: []),
-			],
-		},
+		userId,
 		req,
 	);
+
+	const messageIds = (
+		await findAllIds(
+			payload,
+			"messages",
+			{
+				or: [
+					{ sender: { equals: userId } },
+					...(conversationIds.length > 0
+						? [{ conversation: { in: conversationIds } }]
+						: []),
+				],
+			},
+			req,
+		)
+	).filter((id) => !reattributedMessageIds.includes(id));
 
 	await deleteByIds(
 		payload,

@@ -46,9 +46,14 @@ import {
 } from "./jobs";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
+import { registerShopTeamLevelListener } from "./services/shopTeamLevel";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
+
+// P3's reaction to a level change. Explicit rather than a module side effect,
+// so nothing depends on which file happened to be imported first.
+registerShopTeamLevelListener();
 
 export default buildConfig({
 	admin: {
