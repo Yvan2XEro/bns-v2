@@ -802,6 +802,9 @@
 			"dashboard": "Dashboard",
 			"catalogue": "Catalogue",
 			"stock": "Stock",
+			"inbox": "Inbox",
+			"team": "Team",
+			"activity": "Activity",
 			"verification": "Verification",
 			"messages": "Messages",
 			"settings": "Settings"
@@ -1681,5 +1684,37 @@
 		"backToHub": "Back to the verification hub",
 		"loadError": "We could not load your verification status.",
 		"retry": "Retry"
+	},
+	"Inbox": {
+		"title": "Inbox",
+		"filterAll": "All",
+		"filterUnassigned": "Unassigned",
+		"filterMine": "Mine",
+		"filterUnread": "Unread",
+		"filterAwaiting": "Awaiting reply",
+		"filterDone": "Done",
+		"empty": "No conversations here",
+		"emptyFiltered": "Nothing matches your search",
+		"search": "Search buyer or listing",
+		"assign": "Assign",
+		"assignToMe": "Assign to me",
+		"unassign": "Unassign",
+		"assignee": "Assignee",
+		"unassigned": "Unassigned",
+		"suspendedAssignee": "Suspended",
+		"markDone": "Mark done",
+		"reopen": "Reopen",
+		"done": "Done",
+		"awaitingReply": "Awaiting reply",
+		"accessRevoked": "You no longer have access to this shop.",
+		"loadMore": "Load more",
+		"composerPlaceholder": "Type a message…",
+		"send": "Send",
+		"switchShop": "Switch shop"
+	},
+	"Messages": {
+		"shopChip": "Shop",
+		"openInShopInbox": "Open in shop inbox",
+		"formerMember": "Former member"
 	}
 }

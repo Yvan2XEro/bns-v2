@@ -803,6 +803,9 @@
 			"dashboard": "Tableau de bord",
 			"catalogue": "Catalogue",
 			"stock": "Stock",
+			"inbox": "Messagerie",
+			"team": "Équipe",
+			"activity": "Activité",
 			"verification": "Vérification",
 			"messages": "Messages",
 			"settings": "Paramètres"
@@ -1682,5 +1685,37 @@
 		"backToHub": "Retour au centre de vérification",
 		"loadError": "Impossible de charger votre statut de vérification.",
 		"retry": "Réessayer"
+	},
+	"Inbox": {
+		"title": "Messagerie",
+		"filterAll": "Toutes",
+		"filterUnassigned": "Non attribuées",
+		"filterMine": "Les miennes",
+		"filterUnread": "Non lues",
+		"filterAwaiting": "En attente de réponse",
+		"filterDone": "Traitées",
+		"empty": "Aucune conversation ici",
+		"emptyFiltered": "Aucun résultat pour cette recherche",
+		"search": "Rechercher un acheteur ou une annonce",
+		"assign": "Attribuer",
+		"assignToMe": "M'attribuer",
+		"unassign": "Retirer l'attribution",
+		"assignee": "Attribué à",
+		"unassigned": "Non attribuée",
+		"suspendedAssignee": "Suspendu",
+		"markDone": "Marquer comme traitée",
+		"reopen": "Rouvrir",
+		"done": "Traitée",
+		"awaitingReply": "En attente de réponse",
+		"accessRevoked": "Vous n'avez plus accès à cette boutique.",
+		"loadMore": "Charger plus",
+		"composerPlaceholder": "Écrivez un message…",
+		"send": "Envoyer",
+		"switchShop": "Changer de boutique"
+	},
+	"Messages": {
+		"shopChip": "Boutique",
+		"openInShopInbox": "Ouvrir dans la messagerie boutique",
+		"formerMember": "Ancien membre"
 	}
 }
