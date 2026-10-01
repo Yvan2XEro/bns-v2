@@ -24,9 +24,12 @@ export type ShopPermission =
 	| "shop.close";
 
 /**
- * Mirrors `ROLE_PERMISSIONS` in `packages/api/src/access/shopRoles.ts`. The
- * server stays the authority; this decides whether a screen offers a tile or
- * a control at all, so a staff member never taps into a 403.
+ * Display-only mirror of `ROLE_PERMISSIONS` in `packages/api/src/access/shopRoles.ts`.
+ * The server stays the sole authority for every write; this decides only
+ * whether a screen offers a tile or a control at all, so a staff member never
+ * taps into a 403. `packages/api/tests/int/shop-permissions-parity.int.spec.ts`
+ * imports this table (and web's) alongside the API's own and diffs them at
+ * runtime, so a divergence from the server fails a test instead of shipping.
  */
 export const ROLE_PERMISSIONS: Record<ShopRole, readonly ShopPermission[]> = {
 	owner: [
@@ -92,4 +95,9 @@ export function can(
 ): boolean {
 	if (!role) return false;
 	return PERMISSION_SETS[role]?.has(permission) ?? false;
+}
+
+/** Kept for screens that gate cost visibility; mirrors web's `canSeeCost`. */
+export function canSeeCost(role: ShopRole | null | undefined): boolean {
+	return can(role, "costs.view");
 }

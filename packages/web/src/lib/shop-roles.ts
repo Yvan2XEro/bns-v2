@@ -1,4 +1,4 @@
-import type { ShopRole } from "~/types";
+import type { ShopRole } from "../types";
 
 export type ShopPermission =
 	| "catalogue.edit"
@@ -24,11 +24,14 @@ export type ShopPermission =
 	| "shop.close";
 
 /**
- * Mirrors `ROLE_PERMISSIONS` in `packages/api/src/access/shopRoles.ts`, which
- * stays the authority. This copy exists so a screen can hide a control the
- * server would refuse rather than offering it and showing an error; the test
- * beside this file transcribes the same table the API's own test does, so a
- * divergence fails a test instead of shipping.
+ * Display-only mirror of `ROLE_PERMISSIONS` in
+ * `packages/api/src/access/shopRoles.ts`, which stays the sole authority for
+ * every write. This copy exists so a screen can hide a control the server
+ * would refuse rather than offering it and showing an error.
+ * `packages/api/tests/int/shop-permissions-parity.int.spec.ts` imports this
+ * table (and mobile's) alongside the API's own and diffs them at runtime, so
+ * a divergence from the server fails a test instead of shipping — the test
+ * beside this file only catches this copy drifting from its own local test.
  */
 export const ROLE_PERMISSIONS: Record<ShopRole, readonly ShopPermission[]> = {
 	owner: [

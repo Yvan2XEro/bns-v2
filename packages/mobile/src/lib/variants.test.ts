@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-	canManageShop,
 	formatXaf,
 	formatXafRange,
 	generateCombinations,
@@ -91,19 +90,6 @@ describe("formatXaf", () => {
 	test("collapses a range whose ends are equal", () => {
 		expect(formatXafRange(285000, 330000)).toBe("285 000 – 330 000 XAF");
 		expect(formatXafRange(9000, 9000)).toBe("9 000 XAF");
-	});
-});
-
-describe("canManageShop", () => {
-	test("an owner or manager can manage the shop", () => {
-		expect(canManageShop("owner")).toBe(true);
-		expect(canManageShop("manager")).toBe(true);
-	});
-
-	test("staff and no role cannot", () => {
-		expect(canManageShop("staff")).toBe(false);
-		expect(canManageShop(null)).toBe(false);
-		expect(canManageShop(undefined)).toBe(false);
 	});
 });
 

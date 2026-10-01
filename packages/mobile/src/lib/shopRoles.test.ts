@@ -1,67 +1,82 @@
 import { describe, expect, test } from "bun:test";
-import type { ShopRole } from "../types/api";
-import { can, ROLE_PERMISSIONS, type ShopPermission } from "./shopRoles";
+import { can, canSeeCost, ROLE_PERMISSIONS, type ShopPermission } from "./shopRoles";
 
-const ALL_PERMISSIONS: readonly ShopPermission[] = ROLE_PERMISSIONS.owner;
-
-const MANAGER_ONLY_GAP: readonly ShopPermission[] = [
-	"payments.manage",
-	"team.manageManagers",
-	"settings.handle",
-	"verification.submit",
-	"shop.close",
-];
-
-const STAFF_PERMISSIONS: readonly ShopPermission[] = [
-	"catalogue.edit",
-	"stock.move",
-	"orders.view",
-	"orders.process",
-	"inbox.reply",
-	"team.view",
+/**
+ * Transcribed independently of `ROLE_PERMISSIONS`, the same way
+ * `packages/web/src/lib/shop-roles.test.ts` and
+ * `packages/api/tests/int/shop-permissions-parity.int.spec.ts` do: a literal
+ * table, not a slice of the implementation looped back on itself. Deleting a
+ * permission from the implementation must leave a row here with no match,
+ * not shrink the thing being iterated along with it.
+ */
+const MATRIX: Array<[ShopPermission, boolean, boolean, boolean]> = [
+	["catalogue.edit", true, true, true],
+	["catalogue.archive", true, true, false],
+	["stock.move", true, true, true],
+	["costs.view", true, true, false],
+	["costs.edit", true, true, false],
+	["orders.view", true, true, true],
+	["orders.process", true, true, true],
+	["orders.cancel", true, true, false],
+	["inbox.reply", true, true, true],
+	["inbox.assignOthers", true, true, false],
+	["payments.view", true, true, false],
+	["payments.manage", true, false, false],
+	["team.view", true, true, true],
+	["team.inviteStaff", true, true, false],
+	["team.manageManagers", true, false, false],
+	["settings.edit", true, true, false],
+	["settings.handle", true, false, false],
+	["verification.submit", true, false, false],
+	["resale.manage", true, true, false],
+	["activity.view", true, true, false],
+	["shop.close", true, false, false],
 ];
 
 describe("ROLE_PERMISSIONS mirrors the API matrix", () => {
-	test("owner holds every permission", () => {
-		for (const permission of ALL_PERMISSIONS) {
-			expect(can("owner", permission)).toBe(true);
+	test("matches the server's matrix exactly", () => {
+		for (const [permission, owner, manager, staff] of MATRIX) {
+			expect([permission, can("owner", permission)]).toEqual([
+				permission,
+				owner,
+			]);
+			expect([permission, can("manager", permission)]).toEqual([
+				permission,
+				manager,
+			]);
+			expect([permission, can("staff", permission)]).toEqual([
+				permission,
+				staff,
+			]);
 		}
 	});
 
-	test("manager holds everything except the five owner-only levers", () => {
-		for (const permission of ALL_PERMISSIONS) {
-			const expected = !MANAGER_ONLY_GAP.includes(permission);
-			expect(can("manager", permission)).toBe(expected);
-		}
-	});
-
-	test("staff holds exactly the six base permissions", () => {
-		for (const permission of ALL_PERMISSIONS) {
-			const expected = STAFF_PERMISSIONS.includes(permission);
-			expect(can("staff", permission)).toBe(expected);
-		}
-	});
-
-	test("the three role tables sum to the full permission list with no extra entry", () => {
-		const roles: ShopRole[] = ["owner", "manager", "staff"];
-		for (const role of roles) {
-			for (const permission of ROLE_PERMISSIONS[role]) {
-				expect(ALL_PERMISSIONS.includes(permission)).toBe(true);
-			}
-		}
+	test("declares 21, 16 and 6 permissions", () => {
+		expect(ROLE_PERMISSIONS.owner.length).toBe(21);
+		expect(ROLE_PERMISSIONS.manager.length).toBe(16);
+		expect(ROLE_PERMISSIONS.staff.length).toBe(6);
 	});
 });
 
 describe("can() with no usable role", () => {
 	test("refuses every permission for null", () => {
-		for (const permission of ALL_PERMISSIONS) {
+		for (const [permission] of MATRIX) {
 			expect(can(null, permission)).toBe(false);
 		}
 	});
 
 	test("refuses every permission for undefined", () => {
-		for (const permission of ALL_PERMISSIONS) {
+		for (const [permission] of MATRIX) {
 			expect(can(undefined, permission)).toBe(false);
 		}
+	});
+});
+
+describe("canSeeCost", () => {
+	test("is costs.view", () => {
+		expect(canSeeCost("owner")).toBe(true);
+		expect(canSeeCost("manager")).toBe(true);
+		expect(canSeeCost("staff")).toBe(false);
+		expect(canSeeCost(null)).toBe(false);
 	});
 });

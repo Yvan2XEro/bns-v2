@@ -87,16 +87,6 @@ export function formatPercent(value: number, lang?: string): string {
 }
 
 /**
- * Mirrors `canManageShop` in `packages/api/src/access/shopRoles.ts`: only an
- * owner or manager may see purchase cost. Screens must gate cost display on
- * this — never on whether a `cost` value happens to be present, since a role
- * that cannot see it never receives the field at all.
- */
-export function canManageShop(role: ShopRole | null | undefined): boolean {
-	return role === "owner" || role === "manager";
-}
-
-/**
  * The page address (handle) and closing the shop are owner-only levers:
  * `requireShopMember(..., { owner: true })` on the API refuses both to a
  * manager, so the UI must hide the controls rather than offer one the

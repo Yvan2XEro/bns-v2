@@ -26,7 +26,7 @@ import {
 	toProductInput,
 	variantIssues,
 } from "@/src/lib/productForm";
-import { canManageShop } from "@/src/lib/variants";
+import { canSeeCost } from "@/src/lib/shopRoles";
 
 export default function ProductScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -61,7 +61,7 @@ export default function ProductScreen() {
 		[form.category],
 	);
 	const role = creating ? mine.data?.role : detail.data?.role;
-	const canManageCost = canManageShop(role);
+	const canManageCost = canSeeCost(role);
 
 	const submit = () => {
 		setShowErrors(true);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getMyShop } from "~/lib/server-shop";
+import { canSeeCost } from "~/lib/shop-roles";
 import { StockClient } from "./stock-client";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,8 +17,7 @@ export default async function StockPage({
 }) {
 	const [mine, params] = await Promise.all([getMyShop(), searchParams]);
 	if (!mine?.shop) redirect("/shop/new");
-	// The summary exposes costs: owner and manager only (the API enforces it too).
-	const canSeeCosts = mine.role === "owner" || mine.role === "manager";
+	const canSeeCosts = canSeeCost(mine.role);
 
 	return (
 		<StockClient

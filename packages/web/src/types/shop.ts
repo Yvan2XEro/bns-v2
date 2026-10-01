@@ -2,7 +2,7 @@ import type {
 	BusinessType,
 	ShopCapabilities,
 	VerificationBadge,
-} from "~/lib/verification";
+} from "../lib/verification";
 import type { Category, Product } from "../../../api/src/payload-types";
 
 export interface MediaRef {
@@ -94,9 +94,19 @@ export type MyShop = PublicShop & {
 	} | null;
 };
 
+/**
+ * Why `role` is null even though `shop` is not — an active membership with
+ * no usable role, mirroring `resolveShopRole`'s non-owner conditions:
+ * `shopSuspended` (the shop itself), `dormant` (its level dropped below 2),
+ * `accountSuspended` (the caller's own account). Never set alongside a
+ * non-null `role`.
+ */
+export type MyShopRoleReason = "shopSuspended" | "dormant" | "accountSuspended";
+
 export interface MyShopResponse {
 	shop: MyShop | null;
 	role: ShopRole | null;
+	roleReason: MyShopRoleReason | null;
 	counts: {
 		activeProducts: number;
 		draftProducts: number;

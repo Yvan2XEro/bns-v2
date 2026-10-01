@@ -42,9 +42,9 @@ function defaultValues(shop: MyShop): ShopProfileFormValues {
 
 /**
  * Owns the profile+contacts form: name, description, city, categories and
- * the three contact fields save together through one `PATCH`, matching
- * what `canManageShop` already allows a manager to do (unlike the address
- * and close-shop forms, this one is not owner-gated).
+ * the three contact fields save together through one `PATCH`, matching the
+ * same manager-or-owner access `can(role, "settings.edit")` grants (unlike
+ * the address and close-shop forms, this one is not owner-gated).
  */
 export function useUpdateShopForm(shop: MyShop) {
 	const { t } = useTranslation();
