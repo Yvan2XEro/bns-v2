@@ -86,6 +86,7 @@ export interface Config {
     'moderation-log': ModerationLog;
     shops: Shop;
     'shop-members': ShopMember;
+    'shop-activity-log': ShopActivityLog;
     products: Product;
     'product-variants': ProductVariant;
     'stock-movements': StockMovement;
@@ -123,6 +124,7 @@ export interface Config {
     'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
     shops: ShopsSelect<false> | ShopsSelect<true>;
     'shop-members': ShopMembersSelect<false> | ShopMembersSelect<true>;
+    'shop-activity-log': ShopActivityLogSelect<false> | ShopActivityLogSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
@@ -1003,6 +1005,68 @@ export interface ShopMember {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-activity-log".
+ */
+export interface ShopActivityLog {
+  id: string;
+  shop: string | Shop;
+  actor?: (string | null) | User;
+  /**
+   * Snapshot at the time of the action: owner, manager, staff or system.
+   */
+  actorRole: string;
+  action:
+    | 'member.invited'
+    | 'member.invitation_resent'
+    | 'member.invitation_revoked'
+    | 'member.joined'
+    | 'member.role_changed'
+    | 'member.removed'
+    | 'member.left'
+    | 'member.paused'
+    | 'member.resumed'
+    | 'product.created'
+    | 'product.updated'
+    | 'product.published'
+    | 'product.archived'
+    | 'variant.price_changed'
+    | 'variant.cost_changed'
+    | 'stock.moved'
+    | 'listing.attached'
+    | 'listing.detached'
+    | 'shop.updated'
+    | 'shop.handle_changed'
+    | 'shop.closed'
+    | 'conversation.assigned'
+    | 'conversation.status_changed'
+    | 'verification.submitted';
+  targetType:
+    | 'shop'
+    | 'member'
+    | 'invitation'
+    | 'product'
+    | 'variant'
+    | 'listing'
+    | 'conversation'
+    | 'verification-request';
+  targetId: string;
+  /**
+   * Before and after values of the changed fields. Cost values only on variant.cost_changed.
+   */
+  metadata?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  createdAt: string;
+  updatedAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "product-variants".
  */
 export interface ProductVariant {
@@ -1291,6 +1355,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'shop-members';
         value: string | ShopMember;
+      } | null)
+    | ({
+        relationTo: 'shop-activity-log';
+        value: string | ShopActivityLog;
       } | null)
     | ({
         relationTo: 'products';
@@ -1802,6 +1870,21 @@ export interface ShopMembersSelect<T extends boolean = true> {
   status?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-activity-log_select".
+ */
+export interface ShopActivityLogSelect<T extends boolean = true> {
+  shop?: T;
+  actor?: T;
+  actorRole?: T;
+  action?: T;
+  targetType?: T;
+  targetId?: T;
+  metadata?: T;
+  createdAt?: T;
+  updatedAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

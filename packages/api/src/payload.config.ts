@@ -20,6 +20,7 @@ import { ProductVariants } from "./collections/ProductVariants";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
+import { ShopActivityLog } from "./collections/ShopActivityLog";
 import { ShopMembers } from "./collections/ShopMembers";
 import { Shops } from "./collections/Shops";
 import { StockMovements } from "./collections/StockMovements";
@@ -102,6 +103,7 @@ export default buildConfig({
 		ModerationLog,
 		Shops,
 		ShopMembers,
+		ShopActivityLog,
 		Products,
 		ProductVariants,
 		StockMovements,

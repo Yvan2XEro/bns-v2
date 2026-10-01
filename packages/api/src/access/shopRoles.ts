@@ -335,18 +335,40 @@ export async function memberShopIds(
  * reads every row of their shops on top of whatever `base` exposes publicly —
  * it unions the member scope onto `base` rather than narrowing it, which is
  * what every shop-owned collection actually needs.
+ *
+ * `allow` narrows that member scope to a permission rather than plain
+ * membership — `shop-activity-log` gates its read on `activity.view` rather
+ * than "any active member", since a staff member sees the shop but not who
+ * changed what in it.
  */
-export function shopScopedRead(base: Access, fieldName = "shop"): Access {
+export function shopScopedRead(
+	base: Access,
+	fieldName = "shop",
+	allow?: (role: ShopRole | null) => boolean,
+): Access {
 	return async (args) => {
 		if (isModerator(args.req.user)) return true;
 		const result = await base(args);
 		if (result === true) return true;
 		if (!relationId(args.req.user)) return result;
-		const scope = {
-			[fieldName]: { in: await memberShopIds(args.req) },
-		} as Where;
+		const ids = allow
+			? await permittedShopIds(args.req, allow)
+			: await memberShopIds(args.req);
+		const scope = { [fieldName]: { in: ids } } as Where;
 		return result === false ? scope : ({ or: [result, scope] } as Where);
 	};
+}
+
+/** `memberShopIds` narrowed by an arbitrary predicate, reusing its cache. */
+async function permittedShopIds(
+	req: PayloadRequest,
+	allow: (role: ShopRole | null) => boolean,
+): Promise<string[]> {
+	await memberShopIds(req);
+	const rows = (req.context as Record<string, unknown>)[MEMBER_CACHE] as
+		| Array<{ shop: string; role: ShopRole }>
+		| undefined;
+	return (rows ?? []).filter((row) => allow(row.role)).map((row) => row.shop);
 }
 
 /**
