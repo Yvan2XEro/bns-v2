@@ -358,6 +358,14 @@ export const Messages: CollectionConfig = {
 				{ label: "Buyer", value: "buyer" },
 				{ label: "Shop", value: "shop" },
 			],
+			// Derived in `beforeChange` for a shop conversation only. Without
+			// this, a body-supplied `senderSide` on a classic conversation
+			// routes `afterChange` into the shop notification branch, which
+			// resolves no recipient and the message never notifies anyone.
+			// `overrideAccess` (the hook's own assignment, and the service
+			// paths) bypasses field access entirely, so this only closes the
+			// ordinary REST caller.
+			access: { create: () => false, update: () => false },
 			admin: {
 				readOnly: true,
 				description: "Set on shop conversations only; absent on a classic one.",
@@ -367,6 +375,10 @@ export const Messages: CollectionConfig = {
 			name: "formerMemberAuthor",
 			type: "checkbox",
 			defaultValue: false,
+			// Written only by account deletion, via `overrideAccess`. REST
+			// access control covers only incoming data from a request, not
+			// mutations made within a hook via `overrideAccess`.
+			access: { create: () => false, update: () => false },
 			admin: {
 				readOnly: true,
 				description:

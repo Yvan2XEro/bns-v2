@@ -70,12 +70,19 @@ export const Conversations: CollectionConfig = {
 					// whole document back, and refusing would break it. The
 					// writable pair (`lastMessage`, `lastMessageAt`) is what
 					// chat-service actually needs.
+					//
+					// Pinned unconditionally, including when the key is absent
+					// from `originalDoc` altogether: Mongo stores no key for an
+					// unset relationship, so `field in originalDoc` is false on
+					// a classic conversation's `shop`/`buyer` and on an
+					// unassigned shop conversation's `assignee`/`assignedAt`/
+					// `assignedBy` — and a conditional pin leaves exactly those
+					// writable by any participant.
 					for (const field of PINNED_FIELDS) {
-						if (originalDoc && field in originalDoc) {
-							(data as Record<string, unknown>)[field] = (
-								originalDoc as Record<string, unknown>
-							)[field];
-						}
+						(data as Record<string, unknown>)[field] =
+							(originalDoc as Record<string, unknown> | undefined)?.[
+								field
+							] ?? null;
 					}
 					return data;
 				}

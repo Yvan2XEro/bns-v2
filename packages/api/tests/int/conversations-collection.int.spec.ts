@@ -208,6 +208,41 @@ describe("Conversations.beforeChange on update", () => {
 		});
 	});
 
+	// This case ISOLATES the rule the test above cannot see: `original` there
+	// carries all eight pinned keys, so `field in originalDoc` is always true
+	// and a pin that only fires when the key already exists passes unnoticed.
+	// Mongo stores no key at all for an unset relationship, so a classic
+	// conversation has neither `shop` nor `buyer`, and an unassigned shop
+	// conversation has no `assignee`/`assignedAt`/`assignedBy`. This fixture
+	// omits exactly those three to match the unassigned-shop-conversation
+	// case, and a participant tries to write all three through a PATCH.
+	it("pins assignee, shop and buyer even when the stored document has no such key", async () => {
+		const payload = seed();
+		const originalWithoutOptionalKeys = {
+			id: "c-2",
+			participants: ["u-buyer", "u-owner"],
+			inboxStatus: "open",
+			awaitingReply: false,
+		};
+		const data = await beforeChange({
+			req: req(payload, "u-buyer"),
+			operation: "update",
+			originalDoc: originalWithoutOptionalKeys,
+			data: {
+				shop: "s-2",
+				buyer: "u-buyer2",
+				assignee: "u-outsider",
+				assignedAt: "2026-10-09T00:00:00.000Z",
+				assignedBy: "u-buyer",
+			},
+		});
+		expect(data.shop).toBeNull();
+		expect(data.buyer).toBeNull();
+		expect(data.assignee).toBeNull();
+		expect(data.assignedAt).toBeNull();
+		expect(data.assignedBy).toBeNull();
+	});
+
 	it("lets the inbox service through", async () => {
 		const payload = seed();
 		const serviceReq = {

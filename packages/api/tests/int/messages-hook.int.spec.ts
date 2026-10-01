@@ -238,6 +238,73 @@ describe("blocking still applies", () => {
 	});
 });
 
+describe("senderSide and formerMemberAuthor are service-only", () => {
+	type FieldAccessFn = (args: unknown) => unknown;
+	const fieldAccess = (name: string, operation: "create" | "update") => {
+		const field = Messages.fields.find(
+			(f) => "name" in f && f.name === name,
+		) as { access?: Record<string, FieldAccessFn> };
+		return field.access?.[operation] as FieldAccessFn;
+	};
+	const asBody = (user: Record<string, unknown> | null) => ({ req: { user } });
+
+	// A body-supplied `senderSide` on a classic conversation used to route
+	// `afterChange` into the shop branch, which resolves no recipient — the
+	// message arrives in the database and nobody is ever notified. Closing
+	// the field at this layer is what Payload's own REST handler consults
+	// (`beforeValidate`, ahead of this collection's `beforeChange`), so it is
+	// the layer that matters; `beforeChange` directly assigning
+	// `data.senderSide` for a shop conversation is unaffected, because that
+	// assignment happens after field access and does not go through it again.
+	it("refuses create and update for an ordinary caller", () => {
+		expect(fieldAccess("senderSide", "create")(asBody({ id: "u-buyer" }))).toBe(
+			false,
+		);
+		expect(fieldAccess("senderSide", "update")(asBody({ id: "u-buyer" }))).toBe(
+			false,
+		);
+	});
+
+	// Admin and moderator hold `Messages.access.update` at the collection
+	// level, but neither should be able to set these two fields by hand
+	// either — only the service paths (`beforeChange`'s own derivation, and
+	// account deletion's `overrideAccess` write) may.
+	it("refuses create and update for an admin too", () => {
+		expect(
+			fieldAccess("senderSide", "create")(asBody({ id: "u-admin", role: "admin" })),
+		).toBe(false);
+		expect(
+			fieldAccess("formerMemberAuthor", "update")(
+				asBody({ id: "u-admin", role: "admin" }),
+			),
+		).toBe(false);
+	});
+
+	it("leaves senderSide server-derived: a classic conversation ignores a body-supplied value once the REST layer strips it", async () => {
+		// Simulates what Payload's `beforeValidate` field access already did
+		// before this hook ever ran: an ordinary REST caller's `senderSide`
+		// never reaches `data` for a classic conversation, so the hook sees
+		// none to preserve and none to derive.
+		const payload = seed();
+		const data = await beforeChange({
+			req: asUser(payload, "u-buyer"),
+			operation: "create",
+			data: { conversation: "c-solo", content: "bonjour" },
+		});
+		expect(data.senderSide).toBeUndefined();
+	});
+
+	it("still lets the shop-conversation derivation run, unaffected by the field being closed to REST", async () => {
+		const payload = seed();
+		const data = await beforeChange({
+			req: asUser(payload, "u-staff"),
+			operation: "create",
+			data: { conversation: "c-shop", content: "on arrive" },
+		});
+		expect(data.senderSide).toBe("shop");
+	});
+});
+
 describe("Messages.access.read", () => {
 	it("adds the caller's inbox shops' conversations to the cached id list", async () => {
 		const payload = seed();
