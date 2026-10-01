@@ -1,0 +1,13 @@
+{
+	// The base config carries `exclude: ["node_modules", "tests"]`, so
+	// `check-types` has never type-checked a single spec file. That is why
+	// `tests/int/api.int.spec.ts` was the only file whose path alias broke:
+	// no alias applies under `tests/`, and it was the only spec using one.
+	//
+	// This config exists to measure and shrink that gap. It is ADVISORY: it is
+	// deliberately not in the pre-commit hook, because the backlog it reports
+	// would block every commit until it was empty. The rule is that the count
+	// must not rise, and that it comes down as P3 touches these files.
+	"extends": "./tsconfig.json",
+	"exclude": ["node_modules"]
+}

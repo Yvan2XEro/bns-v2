@@ -153,6 +153,14 @@ same patterns as mobile.
   so logic that needs pinning belongs in a pure module under `src/lib` rather
   than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
+- `tsconfig.json` carries `exclude: ["tests"]`, so `check-types` type-checks
+  no spec file. `bun run check-types:tests` in `packages/api` does, and it is
+  advisory — deliberately outside the pre-commit hook, because its backlog
+  would block every commit. **The baseline is 105 errors and it must not
+  rise.** If a task touches a spec file that holds some, fix those and say
+  what the new count is. The strict-typing rule applies to tests as much as to
+  source; this is where it went unenforced, and two of the five `as never`
+  casts removed in P2 were hiding real defects.
 - `bun run test:int` passes: 74 files, 1043 tests, no failures. There is no
   pre-existing failure to work around any more, so a red test is your change
   or a real defect.

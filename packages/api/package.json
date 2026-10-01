@@ -20,7 +20,8 @@
 		"test": "pnpm run test:int && pnpm run test:e2e",
 		"test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
 		"test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
-		"check-types": "tsc --noEmit"
+		"check-types": "tsc --noEmit",
+		"check-types:tests": "tsc --noEmit -p tsconfig.tests.json"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3",
