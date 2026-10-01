@@ -15,6 +15,7 @@ import { getListingFormPreset } from "../lib/listingFormPreset";
 import { relationId } from "../lib/relationId";
 import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
+import { recordShopActivity } from "../services/shopActivity";
 
 const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
 
@@ -347,7 +348,49 @@ export const Listings: CollectionConfig = {
 				}
 
 				if (operation === "create") {
-					data.seller = req.user?.id;
+					const listingShopId = relationId(data.shop);
+					if (listingShopId) {
+						// A shop listing belongs to the shop, so its public seller is
+						// the owner: the contact-phone reveal and the seller card must
+						// never expose a staff member's personal account, and removing
+						// a member must not orphan what they published. The acting
+						// member is recorded in `shop-activity-log` instead.
+						const listingShop = await req.payload
+							.findByID({
+								collection: "shops",
+								id: listingShopId,
+								depth: 0,
+								overrideAccess: true,
+								req,
+							})
+							.catch(() => null);
+						const ownerId = relationId(listingShop?.owner);
+						data.seller = ownerId ?? req.user?.id;
+
+						const actorId = req.user ? String(req.user.id) : null;
+						if (actorId) {
+							const actorRole = await resolveShopRole(
+								req.payload,
+								actorId,
+								listingShopId,
+								req.context,
+							);
+							await recordShopActivity(req, {
+								shop: listingShopId,
+								actor: actorId,
+								actorRole: actorRole ?? "owner",
+								action: "product.published",
+								targetType: "listing",
+								// The listing id does not exist yet in `beforeChange`;
+								// the product is the stable handle for a shop listing,
+								// which always has one.
+								targetId: String(relationId(data.product) ?? listingShopId),
+								metadata: { title: data.title ?? null },
+							});
+						}
+					} else {
+						data.seller = req.user?.id;
+					}
 					if (productService) {
 						// Product listings mirror their product and never expire.
 						data.expiresAt = null;
