@@ -148,6 +148,14 @@ same patterns as mobile.
   hundred failures that are only the wrong runner (`vi.setSystemTime is not a
   function` and the like). This is the one place the repo's Bun-first rule
   does not apply.
+- `packages/mobile` has no `check-types` script, so `turbo check-types` —
+  which the pre-commit hook runs — reports "7 packages in scope" and checks
+  five. Mobile has never been type-checked by the hook. `bun run
+  check-types:advisory` in `packages/mobile` does it; the baseline is **39
+  errors and it must not rise**. It is not named `check-types` on purpose:
+  turbo would pick that up and block every commit on the existing backlog.
+  Rename it once the count reaches zero, and the hook covers mobile from then
+  on.
 - Web and mobile: `bun test` from the package. Tests sit beside the code they
   cover (`src/lib/*.test.ts`). Neither package has a component-render harness,
   so logic that needs pinning belongs in a pure module under `src/lib` rather

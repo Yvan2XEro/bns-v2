@@ -9,7 +9,8 @@
 		"android": "expo run:android",
 		"ios": "expo run:ios",
 		"web": "expo start --web",
-		"lint": "expo lint"
+		"lint": "expo lint",
+		"check-types:advisory": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@bns/chat-client": "workspace:*",
