@@ -259,6 +259,34 @@ describe("GET /api/shops/{id}/verification", () => {
 		});
 	});
 
+	// The existing case above uses a NON-member, whom `resolveShopRole` answers
+	// `null` for, so it would still pass if the route asked the wrong question.
+	// This one is a real manager on a level-2 shop — `resolveShopRole` returns
+	// "manager", and only the matrix refuses it, because `verification.submit`
+	// is owner-only. It is what stops this route quietly opening up if a
+	// manager is ever granted that permission.
+	it("refuses a manager, because verification.submit is the owner's alone", async () => {
+		const payload = seed({ shop: { level: 2 } });
+		payload.store["shop-members"].push({
+			id: "sm-mgr",
+			shop: "s-1",
+			user: "u-mgr",
+			role: "manager",
+			status: "active",
+		});
+		payload.auth.mockResolvedValue({ user: { id: "u-mgr", role: "user" } });
+
+		const { GET } = await import(SHOP_VERIFICATION_ROUTE);
+		const response = await GET(
+			get("http://x/api/shops/s-1/verification"),
+			params("s-1"),
+		);
+		expect(response.status).toBe(403);
+		expect(await response.json()).toMatchObject({
+			code: "verification.notOwner",
+		});
+	});
+
 	const POPULATED_LEVEL2 = {
 		id: "vr-4",
 		shop: "s-1",
