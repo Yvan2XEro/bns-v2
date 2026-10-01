@@ -61,6 +61,11 @@ export const ShopActivityLog: CollectionConfig = {
 			() => false,
 			"shop",
 			(role) => can(role, "activity.view"),
+			// A moderator has no business reading margins (the moderation
+			// shop-sheet route strips this same action's `metadata` by hand);
+			// excluding the row here closes the collection endpoint the route's
+			// strip did not cover.
+			{ action: { not_equals: "variant.cost_changed" } },
 		),
 		create: () => false,
 		update: () => false,

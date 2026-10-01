@@ -1612,18 +1612,26 @@ export async function updateMyMemberPreferences(
 	return memberView(updated, profiles.get(user.id), new Date(), true);
 }
 
-/** Used by shop close and by account deletion; returns the revoked user ids. */
+/**
+ * Used by shop close (every non-owner member) and by account deletion
+ * (`onlyUserId`, one member across each shop they belong to) — the same
+ * per-member effects either way: assignment clearing, read-mark cleanup and
+ * the `member.removed` activity entry, all through `revokeOne`. Returns the
+ * revoked user ids.
+ */
 export async function revokeMembershipsInTransaction(
 	req: PayloadRequest,
 	shopId: string,
 	reason: "removed" | "left" | "shop_closed" | "account_deleted",
 	actor: { id: string; role: ShopRole | "system" } | null,
 	now: Date = new Date(),
+	onlyUserId?: string,
 ): Promise<string[]> {
 	const members = await activeMembers(req.payload, shopId, req);
 	const removed: string[] = [];
 	for (const member of members) {
 		if (member.role === "owner") continue;
+		if (onlyUserId && relationId(member.user) !== onlyUserId) continue;
 		const userId = await revokeOne(req, member, shopId, reason, actor, now);
 		if (userId) removed.push(userId);
 	}

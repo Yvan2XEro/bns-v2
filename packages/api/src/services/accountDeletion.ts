@@ -3,7 +3,11 @@ import { createAppleClientSecretFor } from "@/auth/oauth/providers";
 import { INBOX_SERVICE_CONTEXT } from "../collections/Conversations";
 import { ACCOUNT_DELETION_CONTEXT } from "../collections/Listings";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../lib/redact";
-import { type TxReq, withTransaction } from "../lib/transactions";
+import {
+	commitContextOf,
+	type TxReq,
+	withTransaction,
+} from "../lib/transactions";
 import {
 	getNotificationProvider,
 	isNotificationProviderConfigured,
@@ -173,16 +177,27 @@ async function findOwnedMediaIds(
  * to a buyer, not the member's personal data: they stay, attributed to the
  * owner and flagged so the inbox shows "Former member". The rows are
  * excluded from `messageIds` below so the cascade does not delete what was
- * just re-attributed. The memberships themselves are revoked here too, in the
- * same transaction: a member deleting their account loses their shop access
- * the same way `removeMember` would take it, with `account_deleted` as the
- * reason history records.
+ * just re-attributed.
+ *
+ * The memberships themselves are revoked here too, in the same transaction,
+ * through `revokeMembershipsInTransaction` (scoped to this one user with
+ * `onlyUserId`) rather than a bare status update: a member deleting their
+ * account loses their shop access the same way `removeMember` would take it
+ * — assignments cleared, read marks gone, a `member.removed` entry — with
+ * `account_deleted` as the reason history records. A membership where this
+ * user is the shop's own owner is left to that helper's existing owner skip:
+ * `closeOwnedShops` already closed that shop above, the same way it does for
+ * a plain shop close.
  */
 async function reattributeShopMessages(
 	payload: PayloadLike,
 	userId: string,
 	req?: TxReq,
 ): Promise<string[]> {
+	const { revokeMembershipsInTransaction } = await import("./shopMembers");
+	const { queueMembershipChange } = await import("../hooks/membershipEvents");
+	const txReq = req as unknown as import("payload").PayloadRequest;
+
 	const memberships = await findAllDocs(
 		payload,
 		"shop-members",
@@ -191,6 +206,7 @@ async function reattributeShopMessages(
 	);
 
 	const ids: string[] = [];
+	const now = new Date();
 	for (const membership of memberships) {
 		const shopId = toRelationId(membership.shop);
 		if (!shopId) continue;
@@ -203,54 +219,51 @@ async function reattributeShopMessages(
 			req,
 		});
 		const ownerId = shops.docs[0] ? toRelationId(shops.docs[0].owner) : null;
-		if (!ownerId || ownerId === userId) continue;
 
-		const conversations = await findAllIds(
-			payload,
-			"conversations",
-			{ shop: { equals: shopId } },
-			req,
-		);
-		if (conversations.length === 0) continue;
-
-		const messages = await findAllDocs(
-			payload,
-			"messages",
-			{
-				and: [
-					{ sender: { equals: userId } },
-					{ conversation: { in: conversations } },
-				],
-			},
-			req,
-		);
-		for (const message of messages) {
-			await payload.update({
-				collection: "messages",
-				id: message.id,
+		if (ownerId && ownerId !== userId) {
+			const conversations = await findAllIds(
+				payload,
+				"conversations",
+				{ shop: { equals: shopId } },
 				req,
-				overrideAccess: true,
-				context: INBOX_SERVICE_CONTEXT,
-				data: { sender: ownerId, formerMemberAuthor: true },
-			});
-			ids.push(String(message.id));
+			);
+			if (conversations.length > 0) {
+				const messages = await findAllDocs(
+					payload,
+					"messages",
+					{
+						and: [
+							{ sender: { equals: userId } },
+							{ conversation: { in: conversations } },
+						],
+					},
+					req,
+				);
+				for (const message of messages) {
+					await payload.update({
+						collection: "messages",
+						id: message.id,
+						req,
+						overrideAccess: true,
+						context: INBOX_SERVICE_CONTEXT,
+						data: { sender: ownerId, formerMemberAuthor: true },
+					});
+					ids.push(String(message.id));
+				}
+			}
 		}
-	}
 
-	// The memberships themselves go, in the same transaction.
-	for (const membership of memberships) {
-		await payload.update({
-			collection: "shop-members",
-			id: membership.id,
-			req,
-			overrideAccess: true,
-			data: {
-				status: "revoked",
-				revokedAt: new Date().toISOString(),
-				revokedBy: null,
-				revokedReason: "account_deleted",
-			},
-		});
+		const revoked = await revokeMembershipsInTransaction(
+			txReq,
+			shopId,
+			"account_deleted",
+			null,
+			now,
+			userId,
+		);
+		if (revoked.length > 0) {
+			await queueMembershipChange(commitContextOf(txReq), shopId, revoked);
+		}
 	}
 	return ids;
 }

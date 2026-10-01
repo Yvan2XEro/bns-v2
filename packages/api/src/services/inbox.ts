@@ -371,7 +371,7 @@ export async function assignConversation(
 		(userId === null &&
 			previousAssignee !== null &&
 			previousAssignee !== user.id);
-	const { shop } = await requireShopPermission(
+	const { shop, role } = await requireShopPermission(
 		payload,
 		user,
 		shopId,
@@ -419,7 +419,7 @@ export async function assignConversation(
 			await recordShopActivity(req, {
 				shop: shopId,
 				actor: user.id,
-				actorRole: "owner",
+				actorRole: role,
 				action: "conversation.assigned",
 				targetType: "conversation",
 				targetId: conversationId,
@@ -459,9 +459,13 @@ export async function setConversationStatus(
 		payload,
 		conversationId,
 	);
-	await requireShopPermission(payload, user, shopId, "inbox.reply", {
-		writable: true,
-	});
+	const { role } = await requireShopPermission(
+		payload,
+		user,
+		shopId,
+		"inbox.reply",
+		{ writable: true },
+	);
 	if ((conversation.inboxStatus ?? "open") === status) {
 		return shapeOne(payload, conversation, user.id);
 	}
@@ -480,7 +484,7 @@ export async function setConversationStatus(
 			await recordShopActivity(req, {
 				shop: shopId,
 				actor: user.id,
-				actorRole: "owner",
+				actorRole: role,
 				action: "conversation.status_changed",
 				targetType: "conversation",
 				targetId: conversationId,

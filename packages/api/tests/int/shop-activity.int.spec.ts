@@ -47,6 +47,16 @@ function seed(entries: Record<string, unknown>[] = []) {
 
 const req = (payload: ReturnType<typeof seed>) =>
 	({ payload, context: {}, user: null }) as never;
+
+/** One cast, reused by every `access.read` call below rather than one per test. */
+const accessArgs = (
+	payload: ReturnType<typeof seed>,
+	userId: string,
+	role = "user",
+) =>
+	({
+		req: { user: { id: userId, role }, payload, context: {} },
+	}) as never;
 const actor = (id: string) => ({
 	id,
 	role: "user",
@@ -178,18 +188,35 @@ describe("the cost-metadata rule", () => {
 describe("the collection's own read access gates on activity.view", () => {
 	it("scopes to shops where the caller's role holds activity.view", async () => {
 		const payload = seed();
-		const asReq = (userId: string) =>
-			({
-				req: { user: { id: userId, role: "user" }, payload, context: {} },
-			}) as never;
 		// Owner holds activity.view: scoped to the shops that permission covers.
-		expect(await ShopActivityLog.access?.read?.(asReq("u-owner"))).toEqual({
+		expect(
+			await ShopActivityLog.access?.read?.(accessArgs(payload, "u-owner")),
+		).toEqual({
 			shop: { in: ["s-1"] },
 		});
 		// Staff is an active member but activity.view is not in its grant, so
 		// the scope excludes every shop rather than falling back to membership.
-		expect(await ShopActivityLog.access?.read?.(asReq("u-staff"))).toEqual({
+		expect(
+			await ShopActivityLog.access?.read?.(accessArgs(payload, "u-staff")),
+		).toEqual({
 			shop: { in: [] },
+		});
+	});
+});
+
+describe("a moderator reading the collection directly (I5)", () => {
+	it("does not get the bare access that also reaches variant.cost_changed metadata", async () => {
+		const payload = seed();
+		// The moderation shop-sheet route strips cost metadata by hand for its
+		// own reader; a moderator hitting the collection directly must not be
+		// able to walk around that by getting the bare `true` the row-level
+		// short-circuit used to return regardless of the row's content.
+		expect(
+			await ShopActivityLog.access?.read?.(
+				accessArgs(payload, "u-mod", "moderator"),
+			),
+		).toEqual({
+			action: { not_equals: "variant.cost_changed" },
 		});
 	});
 });

@@ -357,6 +357,24 @@ describe("assignConversation", () => {
 		expect(view.assignee).toMatchObject({ id: "u-staff" });
 	});
 
+	// I7: the activity entry named the owner for every actor; it must name
+	// whoever actually holds the shop role that let the action through.
+	it("records the caller's own shop role, not the owner's, in the activity entry", async () => {
+		const payload = seed();
+		await assignConversation(payload, actor("u-staff"), "c-open", "u-staff");
+		expect(payload.store["shop-activity-log"][0]).toMatchObject({
+			actorRole: "staff",
+		});
+	});
+
+	it("records the manager's role when a manager assigns someone else", async () => {
+		const payload = seed();
+		await assignConversation(payload, actor("u-mgr"), "c-open", "u-staff");
+		expect(payload.store["shop-activity-log"][0]).toMatchObject({
+			actorRole: "manager",
+		});
+	});
+
 	it("refuses an assignee who is not a member, or is suspended", async () => {
 		const payload = seed();
 		await expect(
@@ -436,6 +454,16 @@ describe("setConversationStatus", () => {
 		const payload = seed();
 		await setConversationStatus(payload, actor("u-staff"), "c-done", "done");
 		expect(payload.store["shop-activity-log"]).toHaveLength(0);
+	});
+
+	// I7: same gap as `assignConversation` — the actor's real role, not a
+	// hard-coded "owner".
+	it("records the caller's own shop role in the activity entry", async () => {
+		const payload = seed();
+		await setConversationStatus(payload, actor("u-staff"), "c-open", "done");
+		expect(payload.store["shop-activity-log"][0]).toMatchObject({
+			actorRole: "staff",
+		});
 	});
 });
 

@@ -340,14 +340,24 @@ export async function memberShopIds(
  * membership — `shop-activity-log` gates its read on `activity.view` rather
  * than "any active member", since a staff member sees the shop but not who
  * changed what in it.
+ *
+ * `moderatorScope` narrows a moderator's own access the same way `allow`
+ * narrows a member's: a moderator still sees every shop (the row-level
+ * bypass below is unconditional on the shop), but a collection whose rows
+ * can carry something a moderator has no business reading — the cost figures
+ * `shop-activity-log` keeps in `metadata` — passes a `Where` that excludes
+ * those rows outright. A bare `true` here would let the collection endpoint
+ * hand a moderator exactly what a route-level strip (built for the same
+ * reason) was written to keep from them.
  */
 export function shopScopedRead(
 	base: Access,
 	fieldName = "shop",
 	allow?: (role: ShopRole | null) => boolean,
+	moderatorScope?: Where,
 ): Access {
 	return async (args) => {
-		if (isModerator(args.req.user)) return true;
+		if (isModerator(args.req.user)) return moderatorScope ?? true;
 		const result = await base(args);
 		if (result === true) return true;
 		if (!relationId(args.req.user)) return result;

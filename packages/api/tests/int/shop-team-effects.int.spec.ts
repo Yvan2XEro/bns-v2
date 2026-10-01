@@ -311,6 +311,22 @@ describe("moderation", () => {
 	});
 });
 
+/**
+ * One cast, reused by every test below, instead of one pair per call site:
+ * the fake's `payload` and a bare `{ id }` never match the real `Payload`
+ * and `UserWithAuthProviders` the service expects, and every call site here
+ * was repeating the same two casts around it.
+ */
+async function deleteAccount(
+	payload: ReturnType<typeof seed>,
+	userId: string,
+): Promise<void> {
+	const { deleteUserRelatedData } = await import(
+		"../../src/services/accountDeletion"
+	);
+	await deleteUserRelatedData(payload as never, { id: userId } as never);
+}
+
 describe("account deletion", () => {
 	it("revokes a member's memberships and re-attributes their shop messages to the owner", async () => {
 		const payload = seed();
@@ -334,10 +350,7 @@ describe("account deletion", () => {
 				formerMemberAuthor: false,
 			},
 		);
-		const { deleteUserRelatedData } = await import(
-			"../../src/services/accountDeletion"
-		);
-		await deleteUserRelatedData(payload as never, { id: "u-staff" } as never);
+		await deleteAccount(payload, "u-staff");
 
 		expect(
 			payload.store["shop-members"].find((m) => m.id === "m-staff"),
@@ -367,21 +380,47 @@ describe("account deletion", () => {
 			content: "hi",
 			read: false,
 		});
-		const { deleteUserRelatedData } = await import(
-			"../../src/services/accountDeletion"
-		);
-		await deleteUserRelatedData(payload as never, { id: "u-staff" } as never);
+		await deleteAccount(payload, "u-staff");
 		expect(
 			payload.store.messages.find((m) => m.id === "msg-3"),
 		).toBeUndefined();
 	});
 
+	// I6: a bare `payload.update` to "revoked" did none of what a removal
+	// does. The same fixture used by "closing a shop" above proves the member
+	// gets the same effects here: assignments cleared, read marks gone, a
+	// `member.removed` entry, and the chat invalidation.
+	it("clears the member's conversation assignment and read marks, and records member.removed", async () => {
+		const payload = seed();
+		await deleteAccount(payload, "u-staff");
+
+		expect(payload.store.conversations[0].assignee).toBeNull();
+		expect(payload.store["conversation-reads"]).toHaveLength(0);
+		expect(
+			payload.store["shop-activity-log"].filter(
+				(e) => e.action === "member.removed",
+			),
+		).toHaveLength(1);
+	});
+
+	it("publishes a membership change naming the removed member, after commit", async () => {
+		const payload = seed();
+		await deleteAccount(payload, "u-staff");
+
+		expect(published).toHaveLength(1);
+		const message = JSON.parse(published[0]) as {
+			shopId: string;
+			removedUserIds: string[];
+		};
+		expect(message).toMatchObject({
+			shopId: "s-1",
+			removedUserIds: ["u-staff"],
+		});
+	});
+
 	it("closes an owner's shop before the cascade, which revokes the team", async () => {
 		const payload = seed();
-		const { deleteUserRelatedData } = await import(
-			"../../src/services/accountDeletion"
-		);
-		await deleteUserRelatedData(payload as never, { id: "u-owner" } as never);
+		await deleteAccount(payload, "u-owner");
 		expect(payload.store.shops[0].status).toBe("closed");
 		expect(
 			payload.store["shop-members"]
