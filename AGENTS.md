@@ -136,6 +136,36 @@ same patterns as mobile.
 - Routes validate their input with zod and answer with the shared error codes.
 - Every environment variable is declared in the `docker-compose.yml` files.
 
+## Running several agents at once
+
+Give each agent its own git worktree. Several agents sharing one working tree
+is how P3 lost work: two of them ran `git stash`, which resets the tree
+internally, and that destroyed every other agent's uncommitted changes —
+three separate reports of files silently reverting, one task rebuilt from
+scratch. No amount of discipline fixes it, because the damage comes from a
+command that is legitimate in a tree you own alone.
+
+A worktree has no `node_modules`, which is why this was not done sooner.
+Symlinking the root's and each package's is enough — `tsc`, `vitest` and
+`bun test` all run:
+
+```bash
+R=$(git rev-parse --show-toplevel)
+git worktree add --detach "$W" HEAD
+ln -s "$R/node_modules" "$W/node_modules"
+for p in api web mobile chat-service; do
+  ln -s "$R/packages/$p/node_modules" "$W/packages/$p/node_modules"
+done
+```
+
+Two things follow. The pre-commit hook runs `turbo check-types` across every
+package, so an agent mid-work in one package blocks every other package's
+commits; in separate worktrees that stops happening. And the hook re-stages
+each staged path's whole working-tree content after biome
+(`.husky/pre-commit`), which destroys hunk-level staging — so two agents
+editing one file cannot produce two honest commits, however carefully they
+stage. Isolate them, or serialise them.
+
 ## Tests
 
 - Test behaviour, not implementation: a test asserts what a user or a caller
