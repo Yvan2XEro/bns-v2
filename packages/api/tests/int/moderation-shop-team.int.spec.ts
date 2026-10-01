@@ -13,7 +13,10 @@ import { fakePayload } from "./helpers/fakePayload";
  */
 
 function activityEntry(
-	overrides: Partial<Record<string, unknown>> & { id: string; createdAt: string },
+	overrides: Partial<Record<string, unknown>> & {
+		id: string;
+		createdAt: string;
+	},
 ) {
 	return {
 		shop: "s-1",

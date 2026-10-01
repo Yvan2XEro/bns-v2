@@ -1,7 +1,10 @@
+import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
-import type { ModerationShopTeamMember, ShopActivityView } from "@/src/types/api";
-import { StyleSheet, Text, View } from "react-native";
+import type {
+	ModerationShopTeamMember,
+	ShopActivityView,
+} from "@/src/types/api";
 import type { ModerationPalette, Translate } from "./theme";
 
 interface ShopTeamCardProps {
@@ -86,7 +89,10 @@ function TeamMemberRow({
 				) : null}
 			</View>
 			<View
-				style={[styles.roleChip, { backgroundColor: c.bg, borderColor: c.border }]}
+				style={[
+					styles.roleChip,
+					{ backgroundColor: c.bg, borderColor: c.border },
+				]}
 			>
 				<Text style={[styles.roleChipText, { color: c.text }]}>
 					{t(`moderation.teamRole_${member.role}`)}

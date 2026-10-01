@@ -65,7 +65,8 @@ async function shopTeamMembers(
 			limit: userIds.length,
 			overrideAccess: true,
 		});
-		for (const user of users.docs) names.set(String(user.id), user.name ?? null);
+		for (const user of users.docs)
+			names.set(String(user.id), user.name ?? null);
 	}
 
 	return members.docs.map((row) => ({
