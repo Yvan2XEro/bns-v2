@@ -38,6 +38,7 @@ export interface ServiceUser {
 	id: string;
 	role?: string | null;
 	name?: string | null;
+	email?: string | null;
 	suspendedAt?: string | Date | null;
 	suspendedUntil?: string | Date | null;
 }

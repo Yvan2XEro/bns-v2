@@ -11,6 +11,7 @@ export function toServiceUser(user: unknown): ServiceUser {
 		id: String(u.id),
 		role: u.role ?? null,
 		name: u.name ?? null,
+		email: u.email ?? null,
 		suspendedAt: u.suspendedAt ?? null,
 		suspendedUntil: u.suspendedUntil ?? null,
 	};
