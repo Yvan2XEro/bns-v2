@@ -13,6 +13,7 @@ import {
 	EMPTY_APP_CONFIG,
 } from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
+import { ChatProvider } from "~/hooks/use-chat-client";
 import { serverFetch } from "~/lib/server-api";
 import type { Category } from "~/types";
 
@@ -123,12 +124,16 @@ export default async function RootLayout({
 					<QueryProvider>
 						<AppConfigProvider initialConfig={config}>
 							<AuthProvider>
-								<div className="relative flex min-h-screen flex-col">
-									<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
-									<CategoryBar categories={categories} />
-									<main className="flex-1">{children}</main>
-									<Footer />
-								</div>
+								<ChatProvider>
+									<div className="relative flex min-h-screen flex-col">
+										<Header
+											novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER}
+										/>
+										<CategoryBar categories={categories} />
+										<main className="flex-1">{children}</main>
+										<Footer />
+									</div>
+								</ChatProvider>
 							</AuthProvider>
 						</AppConfigProvider>
 					</QueryProvider>

@@ -5,42 +5,113 @@ import {
 	BadgeCheck,
 	Boxes,
 	ExternalLink,
+	History,
+	Inbox,
 	LayoutDashboard,
+	type LucideIcon,
 	MessageCircle,
 	Package,
 	Settings,
+	Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
+import { useMyShops } from "~/hooks/use-my-shops";
+import type { ShopPermission } from "~/lib/shop-roles";
+import { can } from "~/lib/shop-roles";
 import { cn } from "~/lib/utils";
 import type { VerificationBadge } from "~/lib/verification";
+import type { ShopRole } from "~/types";
 
 // Orders (P4), Resale (P8), Delivery (P7) and Payments (P5) join this list
-// when their phase ships.
+// when their phase ships. `permission: null` means every member sees the
+// entry regardless of role; anything else is gated with `can`, so staff
+// never see a link to a screen the server would refuse them.
 const ITEMS = [
-	{ href: "/seller", key: "dashboard", icon: LayoutDashboard, exact: true },
-	{ href: "/seller/catalogue", key: "catalogue", icon: Package, exact: false },
-	{ href: "/seller/stock", key: "stock", icon: Boxes, exact: false },
+	{
+		href: "/seller",
+		key: "dashboard",
+		icon: LayoutDashboard,
+		exact: true,
+		permission: null,
+	},
+	{
+		href: "/seller/catalogue",
+		key: "catalogue",
+		icon: Package,
+		exact: false,
+		permission: "catalogue.edit",
+	},
+	{
+		href: "/seller/stock",
+		key: "stock",
+		icon: Boxes,
+		exact: false,
+		permission: "stock.move",
+	},
+	{
+		href: "/seller/messages",
+		key: "inbox",
+		icon: Inbox,
+		exact: false,
+		permission: "inbox.reply",
+	},
+	{
+		href: "/seller/team",
+		key: "team",
+		icon: Users,
+		exact: false,
+		permission: "team.view",
+	},
+	{
+		href: "/seller/team/activity",
+		key: "activity",
+		icon: History,
+		exact: false,
+		permission: "activity.view",
+	},
 	{
 		href: "/seller/verification",
 		key: "verification",
 		icon: BadgeCheck,
 		exact: false,
+		permission: "verification.submit",
 	},
-	{ href: "/messages", key: "messages", icon: MessageCircle, exact: false },
-	{ href: "/shop/manage", key: "settings", icon: Settings, exact: false },
-] as const;
+	{
+		href: "/messages",
+		key: "messages",
+		icon: MessageCircle,
+		exact: false,
+		permission: null,
+	},
+	{
+		href: "/shop/manage",
+		key: "settings",
+		icon: Settings,
+		exact: false,
+		permission: "settings.edit",
+	},
+] as const satisfies ReadonlyArray<{
+	href: string;
+	key: string;
+	icon: LucideIcon;
+	exact: boolean;
+	permission: ShopPermission | null;
+}>;
 
 export function SellerSidebar({
+	shopId,
 	name,
 	handle,
 	badge,
 	logoUrl,
 	lowStock,
+	role,
 }: {
+	shopId: string;
 	name: string;
 	handle: string;
 	/** The server's computed, expiry-aware badge — never `badgeForLevel(level)`,
@@ -49,14 +120,22 @@ export function SellerSidebar({
 	badge: VerificationBadge | null;
 	logoUrl: string | null;
 	lowStock: number;
+	role: ShopRole | null;
 }) {
 	const t = useTranslations("Seller");
 	const pathname = usePathname();
+	const { data: myShops } = useMyShops();
+	const inboxUnread =
+		myShops?.find((entry) => entry.shopId === shopId)?.inboxUnread ?? 0;
 
 	const isActive = (href: string, exact?: boolean) =>
 		exact
 			? pathname === href
 			: pathname === href || pathname.startsWith(`${href}/`);
+
+	const items = ITEMS.filter(
+		(item) => item.permission === null || can(role, item.permission),
+	);
 
 	return (
 		<aside className="border-[#E2E8F0] border-b bg-white lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
@@ -75,7 +154,7 @@ export function SellerSidebar({
 				<LevelBadge badge={badge} size="sm" />
 			</div>
 			<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col lg:overflow-visible">
-				{ITEMS.map(({ href, key, icon: Icon, exact }) => {
+				{items.map(({ href, key, icon: Icon, exact }) => {
 					const active = isActive(href, exact);
 					return (
 						<Link
@@ -94,6 +173,11 @@ export function SellerSidebar({
 							{key === "stock" && lowStock > 0 && (
 								<span className="rounded-full bg-[#fef3c7] px-1.5 font-semibold text-[#92400e] text-[11px]">
 									{lowStock}
+								</span>
+							)}
+							{key === "inbox" && inboxUnread > 0 && (
+								<span className="rounded-full bg-[#1E40AF] px-1.5 font-semibold text-[11px] text-white">
+									{inboxUnread}
 								</span>
 							)}
 						</Link>
