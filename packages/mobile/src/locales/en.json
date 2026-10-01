@@ -1103,7 +1103,8 @@
 		},
 		"messages": {
 			"blocked": "You can no longer exchange messages with this user.",
-			"failed": "The message could not be sent."
+			"failed": "The message could not be sent.",
+			"notParticipant": "You are not part of this conversation."
 		},
 		"listing": {
 			"notFound": "This listing is no longer available.",
@@ -1127,7 +1128,8 @@
 			"handleCooldown": "The shop address can only change once every 30 days.",
 			"notMember": "You are not a member of this shop.",
 			"inactive": "This shop is not active.",
-			"notFound": "This shop does not exist or is unavailable."
+			"notFound": "This shop does not exist or is unavailable.",
+			"forbidden": "Your role in this shop does not allow that."
 		},
 		"stock": {
 			"negative": "Stock cannot go below zero.",
@@ -1173,6 +1175,22 @@
 			"conflictOfInterest": "You cannot review a shop you are involved with.",
 			"checklistIncomplete": "Every checklist item must be confirmed before approving.",
 			"hashUnavailable": "Identity verification is misconfigured on our side. Please contact support."
+		},
+		"team": {
+			"levelRequired": "Verify your identity to add team members.",
+			"limitReached": "This shop has reached its team size limit.",
+			"alreadyMember": "This person is already a member of the shop.",
+			"invitationPending": "An invitation is already pending for this person.",
+			"invitationInvalid": "This invitation is no longer valid.",
+			"invitationMismatch": "This invitation was sent to a different phone number or email address.",
+			"phoneVerificationRequired": "Verify your phone number to accept this invitation.",
+			"cannotInviteSelf": "You cannot invite yourself.",
+			"resendLimit": "This invitation cannot be sent again yet.",
+			"ownerCannotLeave": "The owner cannot leave their own shop.",
+			"cannotManageRole": "You cannot change this member's role."
+		},
+		"inbox": {
+			"notAssignable": "This person cannot be assigned to shop conversations."
 		}
 	},
 	"cityPicker": {

@@ -15,8 +15,8 @@ import { type Doc, fakePayload, matches } from "./helpers/fakePayload";
 const seed = () =>
 	fakePayload({
 		shops: [
-			{ id: "s-1", status: "active", owner: "u-1" },
-			{ id: "s-2", status: "active", owner: "u-2" },
+			{ id: "s-1", status: "active", owner: "u-1", level: 2 },
+			{ id: "s-2", status: "active", owner: "u-2", level: 2 },
 		],
 		"shop-members": [
 			{ id: "m-1", shop: "s-1", user: "u-1", role: "staff", status: "active" },

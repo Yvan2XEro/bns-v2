@@ -106,6 +106,21 @@ export const ERROR_CODES = {
 	verificationConflictOfInterest: "verification.conflictOfInterest",
 	verificationChecklistIncomplete: "verification.checklistIncomplete",
 	verificationHashUnavailable: "verification.hashUnavailable",
+
+	shopForbidden: "shop.forbidden",
+	teamLevelRequired: "team.levelRequired",
+	teamLimitReached: "team.limitReached",
+	teamAlreadyMember: "team.alreadyMember",
+	teamInvitationPending: "team.invitationPending",
+	teamInvitationInvalid: "team.invitationInvalid",
+	teamInvitationMismatch: "team.invitationMismatch",
+	teamPhoneVerificationRequired: "team.phoneVerificationRequired",
+	teamCannotInviteSelf: "team.cannotInviteSelf",
+	teamResendLimit: "team.resendLimit",
+	teamOwnerCannotLeave: "team.ownerCannotLeave",
+	teamCannotManageRole: "team.cannotManageRole",
+	inboxNotAssignable: "inbox.notAssignable",
+	messagesNotParticipant: "messages.notParticipant",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -226,6 +241,27 @@ const FALLBACKS: Record<string, string> = {
 		"Every checklist item must be confirmed before approving.",
 	[ERROR_CODES.verificationHashUnavailable]:
 		"Identity verification is misconfigured on our side. Please contact support.",
+
+	[ERROR_CODES.shopForbidden]: "Your role in this shop does not allow that.",
+	[ERROR_CODES.teamLevelRequired]: "Verify your identity to add team members.",
+	[ERROR_CODES.teamLimitReached]: "This shop has reached its team size limit.",
+	[ERROR_CODES.teamAlreadyMember]:
+		"This person is already a member of the shop.",
+	[ERROR_CODES.teamInvitationPending]:
+		"An invitation is already pending for this person.",
+	[ERROR_CODES.teamInvitationInvalid]: "This invitation is no longer valid.",
+	[ERROR_CODES.teamInvitationMismatch]:
+		"This invitation was sent to a different phone number or email address.",
+	[ERROR_CODES.teamPhoneVerificationRequired]:
+		"Verify your phone number to accept this invitation.",
+	[ERROR_CODES.teamCannotInviteSelf]: "You cannot invite yourself.",
+	[ERROR_CODES.teamResendLimit]: "This invitation cannot be sent again yet.",
+	[ERROR_CODES.teamOwnerCannotLeave]: "The owner cannot leave their own shop.",
+	[ERROR_CODES.teamCannotManageRole]: "You cannot change this member's role.",
+	[ERROR_CODES.inboxNotAssignable]:
+		"This person cannot be assigned to shop conversations.",
+	[ERROR_CODES.messagesNotParticipant]:
+		"You are not part of this conversation.",
 };
 
 export function fallbackFor(code: string): string {

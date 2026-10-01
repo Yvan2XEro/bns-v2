@@ -1176,7 +1176,8 @@
 		},
 		"messages": {
 			"blocked": "Vous ne pouvez plus échanger de messages avec cet utilisateur.",
-			"failed": "Le message n'a pas pu être envoyé."
+			"failed": "Le message n'a pas pu être envoyé.",
+			"notParticipant": "Vous ne faites pas partie de cette conversation."
 		},
 		"listing": {
 			"notFound": "Cette annonce n'est plus disponible.",
@@ -1200,7 +1201,8 @@
 			"handleCooldown": "L'adresse de la boutique ne peut changer qu'une fois tous les 30 jours.",
 			"notMember": "Vous n'êtes pas membre de cette boutique.",
 			"inactive": "Cette boutique n'est pas active.",
-			"notFound": "Cette boutique n'existe pas ou n'est pas disponible."
+			"notFound": "Cette boutique n'existe pas ou n'est pas disponible.",
+			"forbidden": "Votre rôle dans cette boutique ne permet pas cette action."
 		},
 		"stock": {
 			"negative": "Le stock ne peut pas passer sous zéro.",
@@ -1246,6 +1248,22 @@
 			"conflictOfInterest": "Vous ne pouvez pas relire une boutique à laquelle vous êtes lié.",
 			"checklistIncomplete": "Chaque point de la liste doit être confirmé avant d'approuver.",
 			"hashUnavailable": "La vérification d'identité est mal configurée de notre côté. Veuillez contacter le support."
+		},
+		"team": {
+			"levelRequired": "Vérifiez votre identité pour ajouter des membres à l'équipe.",
+			"limitReached": "Cette boutique a atteint sa limite de membres.",
+			"alreadyMember": "Cette personne est déjà membre de la boutique.",
+			"invitationPending": "Une invitation est déjà en attente pour cette personne.",
+			"invitationInvalid": "Cette invitation n'est plus valide.",
+			"invitationMismatch": "Cette invitation a été envoyée à un autre numéro de téléphone ou une autre adresse e-mail.",
+			"phoneVerificationRequired": "Vérifiez votre numéro de téléphone pour accepter cette invitation.",
+			"cannotInviteSelf": "Vous ne pouvez pas vous inviter vous-même.",
+			"resendLimit": "Cette invitation ne peut pas être renvoyée pour le moment.",
+			"ownerCannotLeave": "Le propriétaire ne peut pas quitter sa propre boutique.",
+			"cannotManageRole": "Vous ne pouvez pas modifier le rôle de ce membre."
+		},
+		"inbox": {
+			"notAssignable": "Cette personne ne peut pas être affectée aux conversations de la boutique."
 		}
 	},
 	"cityPicker": {

@@ -25,7 +25,7 @@ function seed() {
 				name: "Akwa Tech",
 				owner: "u-1",
 				status: "active",
-				level: 1,
+				level: 2,
 				handleChangedAt: "2026-09-10T00:00:00.000Z",
 				publishedListingCount: 1,
 			},

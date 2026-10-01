@@ -1,7 +1,8 @@
 import type { Payload, PayloadRequest } from "payload";
 import {
-	canManageShop,
+	can,
 	resolveShopRole,
+	type ShopPermission,
 	type ShopRole,
 } from "../access/shopRoles";
 import {
@@ -34,8 +35,44 @@ export async function findShop(
 }
 
 /**
- * Every shop route and service starts here. P3 replaces the role checks with
- * `requireShopPermission`; callers keep passing the same options.
+ * Every shop route and service starts here. The permission, not the role, is
+ * what a caller names: `can` owns the table and nothing else compares a role
+ * string.
+ */
+export async function requireShopPermission(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	permission: ShopPermission,
+	options: { writable?: boolean; req?: PayloadRequest } = {},
+): Promise<{ shop: Shop; role: ShopRole }> {
+	const shop = await findShop(payload, shopId, options.req);
+	const role = await resolveShopRole(
+		payload,
+		user.id,
+		String(shop.id),
+		options.req?.context,
+	);
+
+	if (!role) throw new ServiceError(ERROR_CODES.shopNotMember, 403);
+	if (!can(role, permission))
+		throw new ServiceError(ERROR_CODES.shopForbidden, 403);
+
+	if (options.writable) {
+		await assertNotSuspended(payload, user.id, user as SuspensionCheckable);
+		if (shop.status !== "active")
+			throw new ServiceError(ERROR_CODES.shopInactive, 409);
+	}
+
+	return { shop, role };
+}
+
+/**
+ * "Any active member", plus the two legacy shapes. `manage: true` is
+ * `settings.edit` and `owner: true` is the role itself — a permission cannot
+ * express "the owner and nobody else" for a permission every manager also
+ * holds, which is why `owner` stays a role check here and the genuinely
+ * owner-only levers name `settings.handle` or `shop.close` instead.
  */
 export async function requireShopMember(
 	payload: Payload,
@@ -48,27 +85,16 @@ export async function requireShopMember(
 		req?: PayloadRequest;
 	} = {},
 ): Promise<{ shop: Shop; role: ShopRole }> {
-	const shop = await findShop(payload, shopId, options.req);
-	const role = await resolveShopRole(
+	const result = await requireShopPermission(
 		payload,
-		user.id,
-		String(shop.id),
-		options.req?.context,
+		user,
+		shopId,
+		options.manage ? "settings.edit" : "team.view",
+		{ writable: options.writable, req: options.req },
 	);
-
-	if (!role) throw new ServiceError(ERROR_CODES.shopNotMember, 403);
-	if (options.manage && !canManageShop(role))
+	if (options.owner && result.role !== "owner")
 		throw new ServiceError(ERROR_CODES.shopNotMember, 403);
-	if (options.owner && role !== "owner")
-		throw new ServiceError(ERROR_CODES.shopNotMember, 403);
-
-	if (options.writable) {
-		await assertNotSuspended(payload, user.id, user as SuspensionCheckable);
-		if (shop.status !== "active")
-			throw new ServiceError(ERROR_CODES.shopInactive, 409);
-	}
-
-	return { shop, role };
+	return result;
 }
 
 export async function loadPublicShop(

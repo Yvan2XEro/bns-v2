@@ -10,6 +10,32 @@ import { fakePayload } from "./helpers/fakePayload";
 
 const seed = () =>
 	fakePayload({
+		shops: [
+			{
+				id: "s-1",
+				handle: "s-1",
+				name: "S1",
+				owner: "u-1",
+				status: "active",
+				level: 2,
+			},
+			{
+				id: "s-2",
+				handle: "s-2",
+				name: "S2",
+				owner: "u-2",
+				status: "active",
+				level: 2,
+			},
+			{
+				id: "s-3",
+				handle: "s-3",
+				name: "S3",
+				owner: "u-3",
+				status: "active",
+				level: 2,
+			},
+		],
 		"shop-members": [
 			{ id: "m-1", shop: "s-1", user: "u-1", role: "owner", status: "active" },
 			{ id: "m-2", shop: "s-2", user: "u-1", role: "staff", status: "revoked" },

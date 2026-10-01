@@ -180,6 +180,7 @@ export function fakePayload(
 		context?: Doc;
 		transactionID?: string;
 	}> = [];
+	const reads: Array<{ collection: string; id?: string; where?: Doc }> = [];
 	let seq = 0;
 	let txSeq = 0;
 	let lastStamp = 0;
@@ -246,6 +247,7 @@ export function fakePayload(
 		globals,
 		writes,
 		collections,
+		reads,
 		/** Return true to make the matching call throw, to test rollbacks. */
 		failWhen: null as null | ((method: string, args: Args) => boolean),
 		logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -257,6 +259,7 @@ export function fakePayload(
 		},
 		async findByID({ collection, id, req, context }: Args) {
 			applyRequestContext(req, context);
+			reads.push({ collection, id: String(id) });
 			const doc = byId(collection, id);
 			if (!doc) throw notFound();
 			return clone(doc);
@@ -272,6 +275,7 @@ export function fakePayload(
 			context,
 		}: Args) {
 			applyRequestContext(req, context);
+			reads.push({ collection, where });
 			const all = sortDocs(
 				table(collection).filter((d) => matches(d, where)),
 				sort,

@@ -30,6 +30,7 @@ function seed() {
 					id: "s-1",
 					status: "active",
 					owner: "u-1",
+					level: 2,
 					location: { city: "Douala" },
 				},
 			],
