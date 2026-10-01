@@ -156,6 +156,13 @@ same patterns as mobile.
   turbo would pick that up and block every commit on the existing backlog.
   Rename it once the count reaches zero, and the hook covers mobile from then
   on.
+- `packages/chat-service`: `bun run test`, which runs **one process per test
+  file**. Do not use `bun test` there (kept as `test:combined` for diagnosis
+  only): Bun's `mock.module` is process-global, so in a single invocation a
+  file that mocks `../redis.ts` or `../cache.ts` keeps that double in place
+  for every file loaded after it. That produced 15 failures while all six
+  files passed individually, and it hid a fully broken `auth.test.ts` inside
+  its own noise. Per-file: 55 pass, 0 fail.
 - Web and mobile: `bun test` from the package. Tests sit beside the code they
   cover (`src/lib/*.test.ts`). Neither package has a component-render harness,
   so logic that needs pinning belongs in a pure module under `src/lib` rather
