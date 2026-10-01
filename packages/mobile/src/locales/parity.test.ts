@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Glob } from "bun";
 import en from "./en.json";
 import fr from "./fr.json";
 
@@ -11,18 +14,92 @@ function leafPaths(node: Json, prefix = ""): string[] {
 	});
 }
 
+function getPath(node: Json, path: string): Json | string | undefined {
+	return path
+		.split(".")
+		.reduce<Json | string | undefined>(
+			(acc, key) => (acc && typeof acc === "object" ? acc[key] : undefined),
+			node,
+		);
+}
+
 /**
- * Pre-existing drift, measured on 2026-09-15 before this task touched a
- * single key: 2 keys exist only in English, 76 only in French (`boostHistory`
- * is a whole namespace French-only). None of it is P3's — it predates every
- * P3 screen — so this gate does not demand the backlog be cleared. It pins
- * today's count as a ceiling that must not rise, the same way the mobile
- * type-error count is a ceiling in `AGENTS.md`: a real fix lowers the number
- * and the constant below drops with it; a new screen that forgets a
- * translation raises the count and fails here instead of shipping silently.
+ * Pre-existing drift, measured on 2026-10-01 after fixing the mobile i18n
+ * defect this task was about (`boostHistory`, `safety`, `savedSearches`,
+ * part of `listing`, and a handful of validator-message keys were missing
+ * from English only): 2 keys exist only in English, 5 only in French, none
+ * of them reachable from a `t(...)` call (see the "called keys" test below)
+ * — they are translated strings nothing in the app currently asks for. This
+ * gate does not demand that backlog be cleared either. It pins today's count
+ * as a ceiling that must not rise, the same way the mobile type-error count
+ * is a ceiling in `AGENTS.md`: a real fix lowers the number and the constant
+ * below drops with it; a new screen that forgets a translation raises the
+ * count and fails here instead of shipping silently.
  */
 const PRE_EXISTING_ONLY_EN_CEILING = 2;
-const PRE_EXISTING_ONLY_FR_CEILING = 73;
+const PRE_EXISTING_ONLY_FR_CEILING = 5;
+
+const SRC_ROOT = join(import.meta.dir, "..");
+const APP_ROOT = join(import.meta.dir, "../../app");
+
+/**
+ * `t(` reached through two shapes in this codebase: a literal/template call
+ * (`t("ns.key")`, `t(\`ns.key\`)`) and a zod validator whose `message` or
+ * `.regex(..., message)` string IS the translation key, later rendered with
+ * `t(errors.field.message)` (`decisionSheetForm.ts`, `shopLegal.ts`,
+ * `useIdentityConsentForm.ts`) — those never appear as a `t(` call at all,
+ * which is how four of this task's 66 missing keys went unnoticed by a
+ * grep for `t(` literals alone.
+ *
+ * A template literal built from a runtime value (`t(\`moderation.verifStatus_${status}\`)`)
+ * is read only for its static prefix, which this intentionally fails to
+ * resolve to a full key and so never adds to the set below. Those ~70 call
+ * sites stay a manual-review concern; what this function buys is a hard
+ * floor under the >1100 keys that aren't.
+ */
+function extractCalledKeys(files: string[]): Set<string> {
+	const keys = new Set<string>();
+	const tCallRe = /(?<![a-zA-Z0-9_])t\(\s*(`[^`]*`|"[^"]*"|'[^']*')/g;
+	const messageKeyRe = /\bmessage:\s*"([a-zA-Z][\w.]*\.[a-zA-Z][\w.]*)"/g;
+	const regexMessageKeyRe =
+		/\.regex\([^,()]*,\s*"([a-zA-Z][\w.]*\.[a-zA-Z][\w.]*)"\)/g;
+
+	for (const file of files) {
+		const text = readFileSync(file, "utf8");
+		for (const match of text.matchAll(tCallRe)) {
+			const literal = match[1] as string;
+			const inner = literal.slice(1, -1);
+			if (literal[0] === "`" && inner.includes("${")) continue;
+			keys.add(inner);
+		}
+		for (const match of text.matchAll(messageKeyRe))
+			keys.add(match[1] as string);
+		for (const match of text.matchAll(regexMessageKeyRe)) {
+			keys.add(match[1] as string);
+		}
+	}
+	return keys;
+}
+
+function listSourceFiles(root: string): string[] {
+	const glob = new Glob("**/*.{ts,tsx}");
+	const files: string[] = [];
+	for (const rel of glob.scanSync({ cwd: root })) {
+		if (rel.includes(".test.")) continue;
+		files.push(join(root, rel));
+	}
+	return files;
+}
+
+/**
+ * The actual defect this task fixes: a key that's absent from BOTH files
+ * passes every check above (parity and namespace presence don't require a
+ * key to exist at all), and that's exactly how `boostHistory` and
+ * `currency.xaf` went unnoticed. Measured today, right after fixing every
+ * key this found: 0. The ceiling must come down with a real fix and never
+ * rise — a new screen calling a key nobody wrote fails here before it ships.
+ */
+const CALLED_KEY_MISSING_CEILING = 0;
 
 /**
  * `apiError.locales.test.ts` guards the error codes. This guards everything
@@ -94,6 +171,21 @@ describe("locale parity", () => {
 			((en as Json).shopActivity as Json).roles as Json,
 		).sort();
 		expect(activityRoles).toEqual(["manager", "owner", "staff", "system"]);
+	});
+
+	test("every key the code calls exists in both en and fr", () => {
+		const files = [...listSourceFiles(SRC_ROOT), ...listSourceFiles(APP_ROOT)];
+		const calledKeys = extractCalledKeys(files);
+		expect(calledKeys.size).toBeGreaterThan(1000);
+
+		const missingEn = [...calledKeys].filter(
+			(key) => getPath(en as Json, key) === undefined,
+		);
+		const missingFr = [...calledKeys].filter(
+			(key) => getPath(fr as Json, key) === undefined,
+		);
+		expect(missingEn.length).toBeLessThanOrEqual(CALLED_KEY_MISSING_CEILING);
+		expect(missingFr.length).toBeLessThanOrEqual(CALLED_KEY_MISSING_CEILING);
 	});
 
 	test("no string is left identical in both languages by accident in the P3 namespaces", () => {

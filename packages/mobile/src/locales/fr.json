@@ -866,7 +866,8 @@
 	},
 	"currency": {
 		"symbol": "FCFA",
-		"format": "{{amount}} FCFA"
+		"format": "{{amount}} FCFA",
+		"xaf": "FCFA"
 	},
 	"safety": {
 		"title": "Conseils de sécurité",

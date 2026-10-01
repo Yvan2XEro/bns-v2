@@ -207,7 +207,8 @@
 			"title": "Safety Tips",
 			"tip1": "Meet in a safe, public place to complete transactions.",
 			"tip2": "Never share your bank details or transfer money in advance.",
-			"tip3": "Inspect the item thoroughly before making any payment."
+			"tip3": "Inspect the item thoroughly before making any payment.",
+			"strip": "Public place · Check before paying · No advance payment"
 		},
 		"attributes": "Details",
 		"sellerInfo": "Seller Info",
@@ -228,7 +229,24 @@
 		"photosCount_plural": "{{count}} photos",
 		"noDescription": "No description provided.",
 		"callSeller": "Call seller",
-		"distanceKm": "{{km}} km away"
+		"distanceKm": "{{km}} km away",
+		"contactSeller": "Contact Seller",
+		"edit": "Edit",
+		"save": "Save",
+		"saved": "Saved",
+		"share": "Share",
+		"characteristics": "Characteristics",
+		"seller": "Seller",
+		"memberSinceLabel": "Member since",
+		"readMore": "Read more",
+		"readLess": "Read less",
+		"notFound": "Listing not found",
+		"notFoundSubtitle": "This listing no longer exists, has been removed, or the link is invalid.",
+		"back": "Back",
+		"today": "Today",
+		"yesterday": "Yesterday",
+		"daysAgo": "{{count}} days ago",
+		"featured": "Featured"
 	},
 	"create": {
 		"title": "Post a Listing",
@@ -845,7 +863,60 @@
 	},
 	"currency": {
 		"symbol": "XAF",
-		"format": "{{amount}} XAF"
+		"format": "{{amount}} XAF",
+		"xaf": "XAF"
+	},
+	"safety": {
+		"title": "Safety Tips",
+		"heading": "Buy and sell safely",
+		"subtitle": "Follow these tips to avoid scams and unsafe transactions.",
+		"tip1Title": "Meet in a public place",
+		"tip1Desc": "Pick a busy spot like a café, market or shopping centre to make the exchange.",
+		"tip2Title": "Check the item before you pay",
+		"tip2Desc": "Inspect the item carefully before handing over any money. Test electronics before you pay.",
+		"tip3Title": "Never send money in advance",
+		"tip3Desc": "Never transfer money before you have the item in hand. Be wary of deals that sound too good to be true.",
+		"tip4Title": "Bring someone with you",
+		"tip4Desc": "For bigger deals or meetings with strangers, bring someone you trust along.",
+		"tip5Title": "Check the seller's identity",
+		"tip5Desc": "Look at the seller's profile, reviews and how long they've been on the platform before going ahead.",
+		"tip6Title": "Report suspicious behaviour",
+		"tip6Desc": "Use the Report button if you spot a scam, a fake listing or inappropriate behaviour."
+	},
+	"savedSearches": {
+		"title": "Saved Searches",
+		"noSearches": "No saved searches",
+		"noSearchesSubtitle": "Save your searches to get notified about new matching listings",
+		"alerts": "Alerts",
+		"deleteConfirm": "Delete this search?"
+	},
+	"boostHistory": {
+		"title": "Boost History",
+		"subtitle": "{{count}} boost loaded",
+		"subtitle_plural": "{{count}} boosts loaded",
+		"noBoosts": "No boosts yet",
+		"noBoostsSubtitle": "Boost your listings to get more visibility",
+		"viewMyListings": "View My Listings",
+		"totalSpent": "Total spent on boosts",
+		"monthlySpend": "Monthly Spend",
+		"last6Months": "Last 6 months",
+		"history": "HISTORY",
+		"endOfHistory": "— End of history —",
+		"statusCompleted": "Completed",
+		"statusActive": "Active",
+		"statusFailed": "Failed",
+		"statusRefunded": "Refunded",
+		"total": "Total",
+		"completed": "Completed",
+		"deletedListing": "Deleted listing",
+		"week1": "1 week",
+		"week2": "2 weeks",
+		"month1": "1 month",
+		"month2": "2 months",
+		"month3": "3 months",
+		"days": "{{count}} day",
+		"days_plural": "{{count}} days",
+		"active": "Active"
 	},
 	"favorites": {
 		"title": "Favorites",
@@ -1481,7 +1552,10 @@
 		"teamActivityAction_shop_closed": "Shop closed",
 		"teamActivityAction_conversation_assigned": "Conversation assigned",
 		"teamActivityAction_conversation_status_changed": "Conversation status changed",
-		"teamActivityAction_verification_submitted": "Verification submitted"
+		"teamActivityAction_verification_submitted": "Verification submitted",
+		"decisionChoiceRequired": "Choose a reason to continue.",
+		"decisionDurationRequired": "Choose a duration to continue.",
+		"decisionTextRequired": "This field can't be left empty."
 	},
 	"shop": {
 		"levelPhone": "Phone verified",
@@ -1602,7 +1676,8 @@
 		"variantCombinationUnavailable": "This combination is not offered",
 		"newShop": "New",
 		"view": "View",
-		"productsCount": "{{count}} products"
+		"productsCount": "{{count}} products",
+		"niuInvalid": "Enter 14 letters or digits, exactly as shown on your NIU certificate."
 	},
 	"seller": {
 		"space": "Seller space",
