@@ -4,5 +4,6 @@ export { expireListingsTask } from "./expireListings";
 export { liftExpiredShopSuspensionsTask } from "./liftExpiredShopSuspensions";
 export { processKycEventTask } from "./processKycEvent";
 export { processWebhookEventTask } from "./processWebhookEvent";
+export { purgeShopActivityTask } from "./purgeShopActivity";
 export { purgeVerificationDataTask } from "./purgeVerificationData";
 export { reconcilePendingPaymentsTask } from "./reconcilePendingPayments";

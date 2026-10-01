@@ -39,6 +39,7 @@ import {
 	liftExpiredShopSuspensionsTask,
 	processKycEventTask,
 	processWebhookEventTask,
+	purgeShopActivityTask,
 	purgeVerificationDataTask,
 	reconcilePendingPaymentsTask,
 } from "./jobs";
@@ -146,6 +147,7 @@ export default buildConfig({
 			liftExpiredShopSuspensionsTask,
 			processKycEventTask,
 			purgeVerificationDataTask,
+			purgeShopActivityTask,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
