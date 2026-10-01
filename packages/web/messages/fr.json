@@ -1742,7 +1742,8 @@
 		"join": "Rejoindre {shop}",
 		"decline": "Refuser",
 		"joined": "Vous faites maintenant partie de {shop} !",
-		"joinedCta": "Aller à ma boutique"
+		"joinedCta": "Aller à ma boutique",
+		"openInApp": "Ouvrir dans l'application BuyNSellem"
 	},
 	"shopActivity": {
 		"title": "Activité",

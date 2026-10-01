@@ -1741,7 +1741,8 @@
 		"join": "Join {shop}",
 		"decline": "Decline",
 		"joined": "You're part of {shop} now!",
-		"joinedCta": "Go to my shop"
+		"joinedCta": "Go to my shop",
+		"openInApp": "Open in the BuyNSellem app"
 	},
 	"shopActivity": {
 		"title": "Activity",

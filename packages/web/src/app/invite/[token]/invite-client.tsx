@@ -276,6 +276,21 @@ export function InviteClient({ token }: { token: string }) {
 							</Button>
 						</div>
 					)}
+
+					{/* The spec's SMS and email links point at this page, which is
+					    meant to offer "Open in the app". Nothing built it, so
+					    mobile's `invite/[token]` route was reachable only by
+					    typing the scheme by hand. Secondary on purpose: a desktop
+					    visitor cannot use it, and on a phone without the app
+					    installed the scheme resolves to nothing. */}
+					{step !== "expired" && step !== "responded" && (
+						<a
+							href={`buynsellem://invite/${token}`}
+							className="block text-center text-[#64748B] text-xs underline"
+						>
+							{t("openInApp")}
+						</a>
+					)}
 				</CardContent>
 			</Card>
 		</div>
