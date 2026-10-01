@@ -9,8 +9,72 @@ import {
 import { toMediaRef } from "@/lib/publicShop";
 import { relationId } from "@/lib/relationId";
 import { suspendShop, unsuspendShop } from "@/services/moderation";
+import { recentShopActivity } from "@/services/shopActivity";
 
 type Params = { params: Promise<{ id: string }> };
+
+const SHOP_TEAM_ACTIVITY_LIMIT = 20;
+
+interface ShopTeamMemberView {
+	id: string;
+	name: string | null;
+	role: string;
+	joinedAt: string | null;
+}
+
+/**
+ * The moderator's Team section. A moderator is not a shop member —
+ * `resolveShopRole` answers `null` for them — so this does not go through
+ * `getShopTeam`/`requireShopPermission`: both key off a shop role the
+ * moderator does not and must not hold. The route's own moderator check
+ * (`requireModerator`, already run before this is reached) is the only
+ * authorisation that applies here, the same way `recentShopActivity` takes
+ * no permission argument for the same reason. Reads only active members —
+ * a revoked one has left the team — and leaves out `inboxNotifications` and
+ * `revokedBy`, which Task 5 made readable only to the member and to managers.
+ */
+async function shopTeamMembers(
+	payload: import("payload").Payload,
+	shopId: string,
+): Promise<ShopTeamMemberView[]> {
+	const members = await payload.find({
+		collection: "shop-members",
+		where: {
+			and: [{ shop: { equals: shopId } }, { status: { equals: "active" } }],
+		},
+		sort: "joinedAt",
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+
+	const userIds = [
+		...new Set(
+			members.docs
+				.map((row) => relationId(row.user))
+				.filter((userId): userId is string => Boolean(userId)),
+		),
+	];
+	const names = new Map<string, string | null>();
+	if (userIds.length > 0) {
+		const users = await payload.find({
+			collection: "users",
+			where: { id: { in: userIds } },
+			depth: 0,
+			limit: userIds.length,
+			overrideAccess: true,
+		});
+		for (const user of users.docs) names.set(String(user.id), user.name ?? null);
+	}
+
+	return members.docs.map((row) => ({
+		id: String(row.id),
+		name: names.get(relationId(row.user) ?? "") ?? null,
+		role: row.role,
+		joinedAt: row.joinedAt ?? null,
+	}));
+}
 
 /** Shop sheet: identity, owner, counts, reports against the shop or its listings, history. */
 export async function GET(request: Request, { params }: Params) {
@@ -64,8 +128,8 @@ export async function GET(request: Request, { params }: Params) {
 					: []),
 			],
 		};
-		const [activeProducts, draftProducts, reports, history] = await Promise.all(
-			[
+		const [activeProducts, draftProducts, reports, history, team, rawActivity] =
+			await Promise.all([
 				ctx.payload.count({
 					collection: "products",
 					where: {
@@ -101,7 +165,18 @@ export async function GET(request: Request, { params }: Params) {
 					depth: 1,
 					overrideAccess: true,
 				}),
-			],
+				shopTeamMembers(ctx.payload, id),
+				recentShopActivity(ctx.payload, id, SHOP_TEAM_ACTIVITY_LIMIT),
+			]);
+
+		// A moderator reviewing a shop has no business reading its margins: the
+		// cost figures `variant.cost_changed` carries in `metadata` are stripped
+		// here, for this reader only — the service's own write-time guard
+		// (`assertNoCostLeak`) stops a cost value leaking into any other action.
+		const activity = rawActivity.map((entry) =>
+			entry.action === "variant.cost_changed"
+				? { ...entry, metadata: null }
+				: entry,
 		);
 
 		return Response.json({
@@ -139,6 +214,8 @@ export async function GET(request: Request, { params }: Params) {
 			},
 			reports: reports.docs,
 			history: history.docs,
+			team,
+			activity,
 		});
 	} catch (error) {
 		return handleModerationError("shops:get", error);

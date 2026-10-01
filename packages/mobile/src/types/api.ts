@@ -944,6 +944,22 @@ export interface ModerationShopSheet {
 	};
 	reports: ReportDoc[];
 	history: ModerationLogEntry[];
+	/** Active members only — a revoked one has left the team. */
+	team: ModerationShopTeamMember[];
+	/** The shop's last 20 activity entries, newest first. `metadata` is
+	 * stripped (`null`) on `variant.cost_changed`: a moderator has no business
+	 * reading a shop's margins. */
+	activity: ShopActivityView[];
+}
+
+/** A row of `ModerationShopSheet.team`. No `inboxNotifications` or
+ * `revokedBy`: Task 5 made those readable only to the member and to
+ * managers, neither of which a moderator is. */
+export interface ModerationShopTeamMember {
+	id: string;
+	name: string | null;
+	role: ShopRole;
+	joinedAt: string | null;
 }
 
 // ─── Verification (P2) ────────────────────────────────────────────────────────

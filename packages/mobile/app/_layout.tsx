@@ -527,6 +527,33 @@ function RootLayoutNav() {
 				<Stack.Screen name="safety" options={{ headerShown: false }} />
 				<Stack.Screen name="terms" options={{ headerShown: false }} />
 				<Stack.Screen name="privacy" options={{ headerShown: false }} />
+
+				{/* P3 team: four tasks each built a screen and reported its
+				    registration rather than editing this file, because four
+				    concurrent writers to one route table is how a wave loses
+				    work. Added here in one edit. */}
+				<Stack.Screen name="invite/[token]" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="seller/team/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/team/invite"
+					options={{ presentation: "modal", headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/team/[memberId]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen name="seller/activity" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="seller/inbox/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/inbox/[conversationId]"
+					options={{ headerShown: false, animation: "slide_from_right" }}
+				/>
 			</Stack>
 
 			<StatusBar style="auto" />

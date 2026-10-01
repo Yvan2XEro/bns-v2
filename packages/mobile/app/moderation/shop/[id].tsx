@@ -7,6 +7,7 @@ import { ShopActionBar } from "@/src/components/moderation/ShopActionBar";
 import { ShopHistoryList } from "@/src/components/moderation/ShopHistoryList";
 import { ShopIdentityCard } from "@/src/components/moderation/ShopIdentityCard";
 import { ShopSuspensionCard } from "@/src/components/moderation/ShopSuspensionCard";
+import { ShopTeamCard } from "@/src/components/moderation/ShopTeamCard";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
@@ -137,6 +138,12 @@ export default function ModerateShopScreen() {
 							t={t}
 						/>
 						<ShopSuspensionCard suspension={suspension} c={c} t={t} />
+						<ShopTeamCard
+							team={data.team}
+							activity={data.activity}
+							c={c}
+							t={t}
+						/>
 						<ShopHistoryList
 							reports={data.reports}
 							history={data.history}
