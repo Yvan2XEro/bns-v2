@@ -19,6 +19,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { safeReturnTo } from "~/lib/return-to";
 
 export default function LoginPage() {
 	return (
@@ -38,7 +39,12 @@ function LoginForm() {
 	const { login } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const redirectTo = searchParams.get("redirect") || "/";
+	// Validated, not just defaulted: `router.push` follows a protocol-relative
+	// value like "//evil.com" straight off the site, so an unchecked `redirect`
+	// param is an open redirect — and a phishing link pointing at our own login
+	// is more convincing than one that does not. `safeReturnTo` accepts only
+	// same-origin paths.
+	const redirectTo = safeReturnTo(searchParams.get("redirect")) ?? "/";
 	const resetSuccess = searchParams.get("reset") === "success";
 	const oauthError = searchParams.get("oauthError");
 
