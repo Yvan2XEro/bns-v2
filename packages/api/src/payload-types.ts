@@ -166,6 +166,7 @@ export interface Config {
       liftExpiredShopSuspensions: TaskLiftExpiredShopSuspensions;
       processKycEvent: TaskProcessKycEvent;
       purgeVerificationData: TaskPurgeVerificationData;
+      purgeShopActivity: TaskPurgeShopActivity;
       inline: {
         input: unknown;
         output: unknown;
@@ -789,6 +790,14 @@ export interface Message {
   content: string;
   listing?: (string | null) | Listing;
   read?: boolean | null;
+  /**
+   * Set on shop conversations only; absent on a classic one.
+   */
+  senderSide?: ('buyer' | 'shop') | null;
+  /**
+   * The author deleted their account; the message is re-attributed to the shop owner and shown as "Former member".
+   */
+  formerMemberAuthor?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1235,7 +1244,8 @@ export interface PayloadJob {
           | 'reconcilePendingPayments'
           | 'liftExpiredShopSuspensions'
           | 'processKycEvent'
-          | 'purgeVerificationData';
+          | 'purgeVerificationData'
+          | 'purgeShopActivity';
         taskID: string;
         input?:
           | {
@@ -1279,6 +1289,7 @@ export interface PayloadJob {
         | 'liftExpiredShopSuspensions'
         | 'processKycEvent'
         | 'purgeVerificationData'
+        | 'purgeShopActivity'
       )
     | null;
   queue?: string | null;
@@ -1679,6 +1690,8 @@ export interface MessagesSelect<T extends boolean = true> {
   content?: T;
   listing?: T;
   read?: T;
+  senderSide?: T;
+  formerMemberAuthor?: T;
   createdAt?: T;
   updatedAt?: T;
 }
@@ -2448,6 +2461,14 @@ export interface TaskProcessKycEvent {
  * via the `definition` "TaskPurgeVerificationData".
  */
 export interface TaskPurgeVerificationData {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeShopActivity".
+ */
+export interface TaskPurgeShopActivity {
   input?: unknown;
   output?: unknown;
 }
