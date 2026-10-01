@@ -19,6 +19,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { safeReturnTo } from "~/lib/return-to";
 
 export default function RegisterPage() {
 	const t = useTranslations("Auth");
@@ -33,6 +34,11 @@ export default function RegisterPage() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const oauthError = searchParams.get("oauthError");
+	// Registration used to push "/" unconditionally, so any flow that sends
+	// someone here to finish something lost it at the last step — a team
+	// invitation being the case that surfaced it. `safeReturnTo` accepts only
+	// same-origin paths, so this cannot become an open redirect.
+	const redirectTo = safeReturnTo(searchParams.get("redirect")) ?? "/";
 
 	useEffect(() => {
 		if (oauthError) {
@@ -58,7 +64,7 @@ export default function RegisterPage() {
 
 		try {
 			await register(email, password, name);
-			router.push("/");
+			router.push(redirectTo);
 		} catch (err) {
 			setError(resolveErrorMessage(err, tErrors, t("registrationFailed")));
 		} finally {
