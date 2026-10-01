@@ -22,6 +22,7 @@ import type {
 	Listing as GeneratedListing,
 	Media,
 	Message,
+	Shop,
 	User,
 } from "../../../api/src/payload-types";
 
@@ -130,6 +131,10 @@ export interface ConversationWithDetails {
 	participants: User[];
 	listing?: Listing;
 	lastMessage?: Message;
+	/** Set only for a shop conversation; absent on a classic one. */
+	shop?: (string | null) | Shop;
+	/** The buyer side of a shop conversation; absent on a classic one. */
+	buyer?: (string | null) | User;
 	updatedAt: string;
 	createdAt: string;
 }

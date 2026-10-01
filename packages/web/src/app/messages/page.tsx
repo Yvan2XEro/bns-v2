@@ -1,20 +1,23 @@
 import { getBlockedUsers } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import type { Listing, Message, User } from "~/types";
+import type { ConversationWithDetails, Listing, Message, User } from "~/types";
 import { MessagesClient } from "./messages-client";
 
-interface ConversationWithDetails {
-	id: string;
-	participants: User[];
-	listing?: Listing;
-	lastMessage?: Message;
-	updatedAt: string;
-	createdAt: string;
-}
-
-async function getConversations(): Promise<ConversationWithDetails[]> {
+/**
+ * Restricted to conversations the signed-in user is actually a participant
+ * of. Without this filter, the collection's own read access also returns
+ * every conversation of a shop they merely staff — a manager or a staff
+ * member would see the whole shop inbox mixed into their personal screen.
+ * A shop conversation still appears here for its two real participants: the
+ * buyer, and the shop's owner (who is always named in `participants`).
+ */
+async function getConversations(
+	userId: string,
+): Promise<ConversationWithDetails[]> {
 	try {
-		const res = await serverFetch("/api/conversations?depth=2");
+		const res = await serverFetch(
+			`/api/conversations?depth=2&where[participants][equals]=${userId}`,
+		);
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.docs || data || [];
@@ -100,7 +103,7 @@ export default async function MessagesPage({
 	const user = (await getAuthUser()) as User | null;
 	if (!user) return null;
 
-	let conversations = await getConversations();
+	let conversations = await getConversations(user.id);
 
 	const listingId = params.listing;
 	const conversationId = params.conversation;

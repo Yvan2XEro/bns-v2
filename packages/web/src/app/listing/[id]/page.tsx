@@ -5,7 +5,6 @@ import {
 	Eye,
 	Flag,
 	MapPin,
-	MessageCircle,
 	Pencil,
 	Shield,
 	Star,
@@ -21,6 +20,7 @@ import { BoostStatusBanner } from "~/components/listing/boost-status-banner";
 import { FavoriteButton } from "~/components/listing/favorite-button";
 import { ImageGallery } from "~/components/listing/image-gallery";
 import { ListingGrid } from "~/components/listing/listing-card";
+import { MessageSellerButton } from "~/components/listing/message-seller-button";
 import { PhoneReveal } from "~/components/listing/phone-reveal";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ShareButton } from "~/components/listing/share-button";
@@ -583,15 +583,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										</div>
 									)}
 									{!isOwner && (
-										<Link
-											href={`/messages?listing=${listing.id}`}
-											className="w-full"
-										>
-											<Button className="w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]">
-												<MessageCircle className="mr-2 h-4 w-4" />
-												{t("messageSeller")}
-											</Button>
-										</Link>
+										<MessageSellerButton
+											listingId={String(listing.id)}
+											signedIn={Boolean(authUser)}
+										/>
 									)}
 									{!isOwner && seller && (
 										<PhoneReveal

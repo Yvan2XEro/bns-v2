@@ -19,6 +19,8 @@ import {
 	WifiOff,
 	X,
 } from "lucide-react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
@@ -39,16 +41,60 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { useAuth } from "~/hooks/use-auth";
+import { useMyShops } from "~/hooks/use-my-shops";
+import { useMarkConversationRead } from "~/hooks/use-shop-inbox";
 import { blockUser, deleteConversation, unblockUser } from "~/lib/actions";
-import type { Listing, Message, User } from "~/types";
+import {
+	conversationHeader,
+	messageAuthorLabel,
+} from "~/lib/conversation-view";
+import { can } from "~/lib/shop-roles";
+import type {
+	ConversationWithDetails,
+	Listing,
+	Media,
+	Message,
+	Shop,
+	ShopRole,
+	User,
+} from "~/types";
 
-interface ConversationWithDetails {
-	id: string;
-	participants: User[];
-	listing?: Listing;
-	lastMessage?: Message;
-	updatedAt: string;
-	createdAt: string;
+/** The populated shop of a conversation, or null for a classic one or an unpopulated id. */
+function shopOf(conv: ConversationWithDetails): Shop | null {
+	return conv.shop && typeof conv.shop === "object" ? conv.shop : null;
+}
+
+function buyerIdOf(conv: ConversationWithDetails): string | null {
+	if (!conv.buyer) return null;
+	return typeof conv.buyer === "string" ? conv.buyer : conv.buyer.id;
+}
+
+function buyerNameOf(conv: ConversationWithDetails): string | null {
+	return conv.buyer && typeof conv.buyer === "object" ? conv.buyer.name : null;
+}
+
+/**
+ * The only two participants of a shop conversation are the buyer and the
+ * shop's owner (see `Conversations.beforeChange`). So whoever is signed in
+ * here and is not the buyer is looking at it from the shop's side.
+ */
+function isViewerShopSide(
+	conv: ConversationWithDetails,
+	userId: string,
+): boolean {
+	if (!shopOf(conv)) return false;
+	const buyerId = buyerIdOf(conv);
+	return buyerId !== null && buyerId !== userId;
+}
+
+function mediaUrl(value: string | Media | null | undefined): string | null {
+	if (!value || typeof value === "string") return null;
+	return value.url ?? null;
+}
+
+function firstNameOf(name: string | null | undefined): string | null {
+	if (!name) return null;
+	return name.trim().split(/\s+/)[0] || null;
 }
 
 interface MessagesClientProps {
@@ -71,6 +117,9 @@ export function MessagesClient({
 	contextListing,
 }: MessagesClientProps) {
 	const { token } = useAuth();
+	const t = useTranslations("Messages");
+	const myShops = useMyShops();
+	const markRead = useMarkConversationRead();
 	const [conversations, setConversations] = useState(initialConversations);
 	const [selectedConversation, setSelectedConversation] =
 		useState<ConversationWithDetails | null>(preSelectedConversation);
@@ -273,54 +322,52 @@ export function MessagesClient({
 	}, [selectedConversation?.id, selectedConversation]);
 
 	// Fetch messages when conversation changes
-	const fetchMessages = useCallback(async (conversationId: string) => {
-		try {
-			const res = await fetch(
-				`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&depth=1`,
-				{ credentials: "include" },
-			);
-			if (res.ok) {
-				const data = await res.json();
-				setMessages(data.docs || []);
-				// Mark as read
-				setUnreadCounts((prev) => {
-					const next = { ...prev };
-					delete next[conversationId];
-					return next;
-				});
-				fetch(
-					`/api/messages?where[conversation][equals]=${conversationId}&where[read][equals]=false`,
-					{
-						credentials: "include",
-					},
-				)
-					.then(async (res) => {
-						if (!res.ok) return;
-						const data = await res.json();
-						const unreadMessages = data.docs || [];
-						for (const msg of unreadMessages) {
-							fetch(`/api/messages/${msg.id}`, {
-								method: "PATCH",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify({ read: true }),
-								credentials: "include",
-							}).catch(() => {
-								/* ignore */
-							});
-						}
-					})
-					.catch(() => {
-						/* ignore */
+	// biome-ignore lint/correctness/useExhaustiveDependencies: markRead.mutate is a stable function identity from useMutation
+	const fetchMessages = useCallback(
+		async (conversationId: string, shopId: string | null) => {
+			try {
+				const res = await fetch(
+					`/api/messages?where[conversation][equals]=${conversationId}&sort=createdAt&depth=1`,
+					{ credentials: "include" },
+				);
+				if (res.ok) {
+					const data = await res.json();
+					const docs: Message[] = data.docs || [];
+					setMessages(docs);
+					setUnreadCounts((prev) => {
+						const next = { ...prev };
+						delete next[conversationId];
+						return next;
 					});
+					// The collection's own `update` access refuses this for anyone
+					// but an admin, so a per-message PATCH silently failed for
+					// every real caller. `/api/conversations/{id}/read` is the
+					// route Task 14 built for exactly this, and it serves a
+					// classic conversation too — see `markConversationRead >
+					// works for a classic conversation, which is the web
+					// mark-read fix` in `inbox-service.int.spec.ts`.
+					const newest = docs.at(-1);
+					if (newest) {
+						markRead.mutate({
+							conversationId,
+							lastMessageId: String(newest.id),
+							...(shopId ? { shopId } : {}),
+						});
+					}
+				}
+			} catch (error) {
+				console.error("Failed to fetch messages:", error);
 			}
-		} catch (error) {
-			console.error("Failed to fetch messages:", error);
-		}
-	}, []);
+		},
+		[],
+	);
 
 	useEffect(() => {
 		if (selectedConversation) {
-			fetchMessages(selectedConversation.id);
+			fetchMessages(
+				selectedConversation.id,
+				shopOf(selectedConversation)?.id ?? null,
+			);
 		}
 	}, [selectedConversation?.id, fetchMessages, selectedConversation]);
 
@@ -378,6 +425,52 @@ export function MessagesClient({
 
 	function isUserOnline(userId: string): boolean {
 		return onlineUsers.has(userId);
+	}
+
+	function roleInShop(shopId: string | null): ShopRole | null {
+		if (!shopId) return null;
+		return myShops.data?.find((entry) => entry.shopId === shopId)?.role ?? null;
+	}
+
+	/**
+	 * The "Shop" chip and its link to the shop inbox: shown only to the owner
+	 * looking, from their personal screen, at a buyer conversation with their
+	 * own shop — never to the buyer, and never for a permission the server
+	 * would in fact refuse on the shop inbox side.
+	 */
+	function showsShopChip(conv: ConversationWithDetails): boolean {
+		const shop = shopOf(conv);
+		if (!shop) return false;
+		if (!isViewerShopSide(conv, user.id)) return false;
+		return can(roleInShop(shop.id), "inbox.reply");
+	}
+
+	function headerFor(conv: ConversationWithDetails) {
+		const shop = shopOf(conv);
+		const other = getOtherParticipant(conv);
+		return conversationHeader({
+			shop: shop ? { name: shop.name, logoUrl: mediaUrl(shop.logo) } : null,
+			other: other
+				? { name: other.name, avatarUrl: mediaUrl(other.avatar) }
+				: null,
+			viewerIsShopSide: isViewerShopSide(conv, user.id),
+			buyerName: buyerNameOf(conv),
+		});
+	}
+
+	function authorLabelFor(
+		message: Message,
+		conv: ConversationWithDetails | null,
+	): { primary: string; secondary: string | null } {
+		const sender = typeof message.sender === "object" ? message.sender : null;
+		const shop = conv ? shopOf(conv) : null;
+		return messageAuthorLabel({
+			senderSide: message.senderSide ?? null,
+			shopName: shop?.name ?? null,
+			senderFirstName: firstNameOf(sender?.name),
+			formerMemberAuthor: Boolean(message.formerMemberAuthor),
+			viewerIsShopSide: conv ? isViewerShopSide(conv, user.id) : false,
+		});
 	}
 
 	async function handleDeleteConversation() {
@@ -455,8 +548,11 @@ export function MessagesClient({
 					<div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
 						{conversations.length > 0 ? (
 							conversations.map((conv) => {
+								const header = headerFor(conv);
+								const chip = showsShopChip(conv);
 								const other = getOtherParticipant(conv);
-								const online = other ? isUserOnline(other.id) : false;
+								const online =
+									!header.isShop && other ? isUserOnline(other.id) : false;
 								const blocked = isOtherBlocked(conv);
 								return (
 									<button
@@ -471,11 +567,9 @@ export function MessagesClient({
 									>
 										<div className="relative">
 											<Avatar>
-												<AvatarImage
-													src={(other?.avatar as { url?: string })?.url}
-												/>
+												<AvatarImage src={header.logoUrl ?? undefined} />
 												<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
-													{other?.name?.charAt(0) || "?"}
+													{header.title.charAt(0) || "?"}
 												</AvatarFallback>
 											</Avatar>
 											{online && !blocked && (
@@ -485,8 +579,13 @@ export function MessagesClient({
 										<div className="flex-1 overflow-hidden">
 											<div className="flex items-center gap-2">
 												<p className="truncate font-medium text-[#0F172A]">
-													{other?.name || "Unknown"}
+													{header.title || "Unknown"}
 												</p>
+												{chip && (
+													<span className="shrink-0 rounded bg-[#EFF6FF] px-1.5 py-0.5 font-medium text-[#1E40AF] text-[10px]">
+														{t("shopChip")}
+													</span>
+												)}
 												{blocked && (
 													<span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 font-medium text-[10px] text-red-600">
 														Blocked
@@ -528,41 +627,57 @@ export function MessagesClient({
 								>
 									<ArrowLeft className="h-5 w-5" />
 								</Button>
-								<div className="relative">
-									<Avatar>
-										<AvatarImage
-											src={
-												(
-													getOtherParticipant(selectedConversation)?.avatar as {
-														url?: string;
-													}
-												)?.url
-											}
-										/>
-										<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
-											{getOtherParticipant(selectedConversation)?.name?.charAt(
-												0,
-											) || "?"}
-										</AvatarFallback>
-									</Avatar>
-									{(() => {
-										const other = getOtherParticipant(selectedConversation);
-										return other && isUserOnline(other.id) ? (
-											<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
-										) : null;
-									})()}
-								</div>
-								<div className="flex-1">
-									<p className="font-medium text-[#0F172A]">
-										{getOtherParticipant(selectedConversation)?.name ||
-											"Unknown"}
-									</p>
-									{selectedConversation.listing && (
-										<p className="text-[#64748B] text-xs">
-											Re: {(selectedConversation.listing as Listing).title}
-										</p>
-									)}
-								</div>
+								{(() => {
+									const header = headerFor(selectedConversation);
+									const chip = showsShopChip(selectedConversation);
+									const other = getOtherParticipant(selectedConversation);
+									return (
+										<>
+											<div className="relative">
+												<Avatar>
+													<AvatarImage src={header.logoUrl ?? undefined} />
+													<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
+														{header.title.charAt(0) || "?"}
+													</AvatarFallback>
+												</Avatar>
+												{!header.isShop && other && isUserOnline(other.id) && (
+													<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
+												)}
+											</div>
+											<div className="flex-1">
+												<div className="flex items-center gap-2">
+													<p className="font-medium text-[#0F172A]">
+														{header.title || "Unknown"}
+													</p>
+													{chip && (
+														<span className="rounded bg-[#EFF6FF] px-1.5 py-0.5 font-medium text-[#1E40AF] text-[10px]">
+															{t("shopChip")}
+														</span>
+													)}
+												</div>
+												{header.subtitle && (
+													<p className="text-[#64748B] text-xs">
+														{header.subtitle}
+													</p>
+												)}
+												{selectedConversation.listing && (
+													<p className="text-[#64748B] text-xs">
+														Re:{" "}
+														{(selectedConversation.listing as Listing).title}
+													</p>
+												)}
+												{chip && (
+													<Link
+														href={`/seller/messages?conversation=${selectedConversation.id}`}
+														className="text-[#1E40AF] text-xs hover:underline"
+													>
+														{t("openInShopInbox")}
+													</Link>
+												)}
+											</div>
+										</>
+									);
+								})()}
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
 										<Button variant="ghost" size="icon">
@@ -618,11 +733,26 @@ export function MessagesClient({
 									const msgListing = (
 										message as Message & { listing?: ListingAttachment }
 									).listing;
+									const authorLabel = isOwn
+										? null
+										: authorLabelFor(message, selectedConversation);
 									return (
 										<div
 											key={message.id}
-											className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+											className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
 										>
+											{authorLabel && (
+												<p className="mb-0.5 px-1 font-medium text-[#64748B] text-xs">
+													{authorLabel.primary}
+													{authorLabel.secondary && (
+														<span className="ml-1 text-[#94A3B8]">
+															{authorLabel.secondary === "formerMember"
+																? t("formerMember")
+																: authorLabel.secondary}
+														</span>
+													)}
+												</p>
+											)}
 											<div
 												className={`max-w-[70%] overflow-hidden ${
 													isOwn
@@ -640,6 +770,7 @@ export function MessagesClient({
 														}`}
 													>
 														{msgListing.thumbnailUrl && (
+															// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
 															<img
 																src={msgListing.thumbnailUrl}
 																alt={msgListing.title}
@@ -702,6 +833,7 @@ export function MessagesClient({
 										<div className="mb-2 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-2">
 											<Paperclip className="h-4 w-4 shrink-0 text-[#64748B]" />
 											{attachedListing.thumbnailUrl && (
+												// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
 												<img
 													src={attachedListing.thumbnailUrl}
 													alt={attachedListing.title}
