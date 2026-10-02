@@ -14,6 +14,9 @@ const bodySchema = z.object({
 	quoteHash: z.unknown(),
 	termsAccepted: z.unknown(),
 	idempotencyKey: z.unknown(),
+	// Analytics, not a business rule: an unknown value falls back to the
+	// service's default rather than refusing an order over its own label.
+	source: z.enum(["web", "ios", "android"]).optional().catch(undefined),
 });
 
 export async function POST(request: Request) {
@@ -26,6 +29,7 @@ export async function POST(request: Request) {
 	try {
 		const placed = await placeOrder(ctx.payload, ctx.user, body.data, {
 			ip: clientIp(request),
+			source: body.data.source,
 		});
 		return Response.json(placed);
 	} catch (error) {

@@ -502,6 +502,39 @@ describe("placeOrder: order numbering", () => {
 	});
 });
 
+describe("placeOrder: the order remembers which client placed it", () => {
+	// `source` defaulted to "web" and nothing ever passed another value, so
+	// every mobile order would have been recorded as web — unfalsifiable
+	// afterwards, since web is also a real value.
+	it.each([
+		["ios"],
+		["android"],
+	] as const)("records %s when the client says so", async (source) => {
+		const payload = world();
+		const input = await quotedInput(payload, BUYER);
+
+		await placeOrder(payload, BUYER, input, {
+			now: NOW,
+			store: new MemoryCounterStore(),
+			source,
+		});
+
+		expect(payload.store.orders[0]).toMatchObject({ source });
+	});
+
+	it("defaults to web when no client says anything", async () => {
+		const payload = world();
+		const input = await quotedInput(payload, BUYER);
+
+		await placeOrder(payload, BUYER, input, {
+			now: NOW,
+			store: new MemoryCounterStore(),
+		});
+
+		expect(payload.store.orders[0]).toMatchObject({ source: "web" });
+	});
+});
+
 describe("placeOrder: one transaction for every write", () => {
 	it("creates the order, the items, the reservation, the event and the converted cart together", async () => {
 		const payload = world();

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Platform } from "react-native";
 import { api } from "../lib/api";
 import type {
 	DeliveryOption,
@@ -54,8 +55,14 @@ export function useCheckoutQuote() {
 export function usePlaceOrder() {
 	const queryClient = useQueryClient();
 	return useMutation({
+		// The platform is pinned here, not in a screen: every order this app
+		// places used to be recorded as "web", because the service's default is
+		// the only value that ever reached it.
 		mutationFn: (input: PlaceInput) =>
-			api.post<PlaceResponse>("/api/checkout/place", input),
+			api.post<PlaceResponse>("/api/checkout/place", {
+				...input,
+				source: Platform.OS === "ios" ? "ios" : "android",
+			}),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });

@@ -90,7 +90,11 @@ export function usePlaceOrder() {
 	const queryClient = useQueryClient();
 	return useMutation<PlaceResponse, ApiError, CheckoutPlaceInput>({
 		mutationKey: checkoutPlaceKey,
-		mutationFn: (input) => apiPost<PlaceResponse>("/api/checkout/place", input),
+		mutationFn: (input) =>
+			apiPost<PlaceResponse>("/api/checkout/place", {
+				...input,
+				source: "web",
+			}),
 		retry: false,
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: cartKey() });
