@@ -1,5 +1,8 @@
 "use client";
 
+import { OrderHeaderCard } from "~/components/chat/order-header-card";
+import { SystemChip } from "~/components/chat/system-chip";
+import { isSystemMessage } from "~/lib/system-message";
 import { cn } from "~/lib/utils";
 import type { Message } from "~/types";
 
@@ -27,7 +30,11 @@ export function ThreadMessages({
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+			<OrderHeaderCard messages={messages ?? []} side="shop" />
 			{(messages ?? []).map((message) => {
+				if (isSystemMessage(message)) {
+					return <SystemChip key={message.id} message={message} />;
+				}
 				const fromShop = message.senderSide === "shop";
 				const name = senderName(message, viewerId);
 				return (

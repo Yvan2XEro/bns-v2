@@ -12,7 +12,10 @@ import {
 	type LucideIcon,
 	MessageCircle,
 	Package,
+	Receipt,
 	Settings,
+	ShoppingBag,
+	SlidersHorizontal,
 	Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -20,88 +23,28 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
+import { useAppConfig } from "~/hooks/use-app-config";
 import { useMyShops } from "~/hooks/use-my-shops";
-import type { ShopPermission } from "~/lib/shop-roles";
-import { can } from "~/lib/shop-roles";
+import { type SellerNavKey, visibleSellerNav } from "~/lib/seller-nav";
 import { cn } from "~/lib/utils";
 import type { VerificationBadge } from "~/lib/verification";
 import type { MyShopRoleReason, ShopRole } from "~/types";
+import { OrdersRestrictedNotice } from "./orders-restricted-notice";
 
-// Orders (P4), Resale (P8), Delivery (P7) and Payments (P5) join this list
-// when their phase ships. `permission: null` means every member sees the
-// entry regardless of role; anything else is gated with `can`, so staff
-// never see a link to a screen the server would refuse them.
-const ITEMS = [
-	{
-		href: "/seller",
-		key: "dashboard",
-		icon: LayoutDashboard,
-		exact: true,
-		permission: null,
-	},
-	{
-		href: "/seller/catalogue",
-		key: "catalogue",
-		icon: Package,
-		exact: false,
-		permission: "catalogue.edit",
-	},
-	{
-		href: "/seller/stock",
-		key: "stock",
-		icon: Boxes,
-		exact: false,
-		permission: "stock.move",
-	},
-	{
-		href: "/seller/messages",
-		key: "inbox",
-		icon: Inbox,
-		exact: false,
-		permission: "inbox.reply",
-	},
-	{
-		href: "/seller/team",
-		key: "team",
-		icon: Users,
-		exact: false,
-		permission: "team.view",
-	},
-	{
-		href: "/seller/team/activity",
-		key: "activity",
-		icon: History,
-		exact: false,
-		permission: "activity.view",
-	},
-	{
-		href: "/seller/verification",
-		key: "verification",
-		icon: BadgeCheck,
-		exact: false,
-		permission: "verification.submit",
-	},
-	{
-		href: "/messages",
-		key: "messages",
-		icon: MessageCircle,
-		exact: false,
-		permission: null,
-	},
-	{
-		href: "/shop/manage",
-		key: "settings",
-		icon: Settings,
-		exact: false,
-		permission: "settings.edit",
-	},
-] as const satisfies ReadonlyArray<{
-	href: string;
-	key: string;
-	icon: LucideIcon;
-	exact: boolean;
-	permission: ShopPermission | null;
-}>;
+const ICONS: Record<SellerNavKey, LucideIcon> = {
+	dashboard: LayoutDashboard,
+	orders: ShoppingBag,
+	catalogue: Package,
+	stock: Boxes,
+	inbox: Inbox,
+	billing: Receipt,
+	team: Users,
+	activity: History,
+	verification: BadgeCheck,
+	messages: MessageCircle,
+	settings: Settings,
+	orderSettings: SlidersHorizontal,
+};
 
 export function SellerSidebar({
 	shopId,
@@ -141,9 +84,8 @@ export function SellerSidebar({
 			? pathname === href
 			: pathname === href || pathname.startsWith(`${href}/`);
 
-	const items = ITEMS.filter(
-		(item) => item.permission === null || can(role, item.permission),
-	);
+	const { ordersEnabled } = useAppConfig();
+	const items = visibleSellerNav(role, ordersEnabled);
 
 	const lockedNotice =
 		!role && roleReason
@@ -174,9 +116,15 @@ export function SellerSidebar({
 					<span>{lockedNotice}</span>
 				</div>
 			)}
+			<OrdersRestrictedNotice
+				shopId={shopId}
+				role={role}
+				ordersEnabled={ordersEnabled}
+			/>
 			<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col lg:overflow-visible">
-				{items.map(({ href, key, icon: Icon, exact }) => {
+				{items.map(({ href, key, exact }) => {
 					const active = isActive(href, exact);
+					const Icon = ICONS[key];
 					return (
 						<Link
 							key={href}

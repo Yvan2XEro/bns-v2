@@ -8,7 +8,8 @@ import { ListingGrid } from "~/components/listing/listing-card";
 import { shopUrl } from "~/components/shop/share-shop-button";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
-import { serverFetch } from "~/lib/server-api";
+import { serverFetch, serverGet } from "~/lib/server-api";
+import { type ShopRatingStats, shopRating } from "~/lib/shop-rating";
 import type { Listing, PublicShop } from "~/types";
 
 const PAGE_SIZE = 24;
@@ -26,6 +27,17 @@ const lookupShop = cache(async (handle: string): Promise<Lookup> => {
 		return null;
 	}
 });
+
+/**
+ * The verified-purchase rating is service-pinned on the shop document and
+ * publicly readable, but the public shop route does not carry it; a failed
+ * read falls back to the owner's rating rather than failing the page.
+ */
+function getShopRatingStats(shopId: string): Promise<ShopRatingStats | null> {
+	return serverGet<ShopRatingStats>(
+		`/api/shops/${encodeURIComponent(shopId)}?depth=0&select[rating]=true&select[totalReviews]=true`,
+	);
+}
 
 async function getShopListings(
 	shopId: string,
@@ -99,11 +111,13 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 
 	const { shop } = result;
 	const page = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
-	const [locale, t, listings] = await Promise.all([
+	const [locale, t, listings, ratingStats] = await Promise.all([
 		getLocale(),
 		getTranslations("Shop"),
 		getShopListings(shop.id, q.trim(), page),
+		getShopRatingStats(shop.id),
 	]);
+	const rating = shopRating(ratingStats, shop.owner);
 	const totalPages = Math.max(1, Math.ceil(listings.total / PAGE_SIZE));
 
 	const jsonLd = {
@@ -141,7 +155,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
 			/>
-			<ShopHero shop={shop} locale={locale} />
+			<ShopHero shop={shop} rating={rating} locale={locale} />
 			<div className="container mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:px-8">
 				<div className="lg:col-span-1">
 					<ShopAbout shop={shop} locale={locale} />

@@ -8,6 +8,7 @@ import {
 	PlusCircle,
 	Search,
 	Settings,
+	ShoppingBag,
 	Store,
 	User,
 	X,
@@ -33,6 +34,7 @@ import { useAuth } from "~/hooks/use-auth";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
 import { shopEntryFor } from "~/lib/shop-entry";
+import { CartButton } from "./cart-button";
 import { LocaleSwitcher } from "./locale-switcher";
 
 interface HeaderProps {
@@ -48,7 +50,7 @@ export function Header({ novuAppId }: HeaderProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [scrolled, setScrolled] = useState(false);
 	const unreadCount = useUnreadMessages(!!user);
-	const { shopsEnabled } = useAppConfig();
+	const { shopsEnabled, ordersEnabled } = useAppConfig();
 	const { data: myShop, error: myShopError } = useMyShop();
 	const entry = shopEntryFor(myShop, shopsEnabled, myShopError);
 	const shopEntry = entry ? { href: entry.href, label: t(entry.key) } : null;
@@ -151,6 +153,8 @@ export function Header({ novuAppId }: HeaderProps) {
 								</button>
 							</Link>
 
+							<CartButton />
+
 							{novuAppId && (
 								<NotificationInbox applicationIdentifier={novuAppId} />
 							)}
@@ -194,6 +198,14 @@ export function Header({ novuAppId }: HeaderProps) {
 											<Link href={shopEntry.href} className="cursor-pointer">
 												<Store className="mr-2 h-4 w-4" />
 												{shopEntry.label}
+											</Link>
+										</DropdownMenuItem>
+									)}
+									{ordersEnabled && (
+										<DropdownMenuItem asChild>
+											<Link href="/purchases" className="cursor-pointer">
+												<ShoppingBag className="mr-2 h-4 w-4" />
+												{t("purchases")}
 											</Link>
 										</DropdownMenuItem>
 									)}
@@ -301,6 +313,12 @@ export function Header({ novuAppId }: HeaderProps) {
 											href: "/messages",
 										},
 										{ label: t("profile"), href: "/profile/me" },
+										...(ordersEnabled
+											? [
+													{ label: t("cart"), href: "/cart" },
+													{ label: t("purchases"), href: "/purchases" },
+												]
+											: []),
 										...(shopEntry ? [shopEntry] : []),
 									]
 								: [

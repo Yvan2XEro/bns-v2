@@ -1,6 +1,7 @@
 import { Flag, MapPin, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ReportDialog } from "~/components/listing/report-dialog";
+import type { ShopRatingDisplay } from "~/lib/shop-rating";
 import type { PublicShop } from "~/types";
 import { LevelBadge } from "./level-badge";
 import { ShareShopButton } from "./share-shop-button";
@@ -9,9 +10,11 @@ import { ShopInitials } from "./shop-initials";
 
 export function ShopHero({
 	shop,
+	rating,
 	locale,
 }: {
 	shop: PublicShop;
+	rating: ShopRatingDisplay | null;
 	locale: string;
 }) {
 	const t = useTranslations("Shop");
@@ -48,13 +51,17 @@ export function ShopHero({
 								<LevelBadge badge={shop.badge} />
 							</div>
 							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[#64748B] text-sm">
-								{shop.owner.totalReviews > 0 && (
+								{rating && (
 									<span className="flex items-center gap-1">
 										<Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-										{shop.owner.rating.toLocaleString(locale, {
+										{rating.rating.toLocaleString(locale, {
 											maximumFractionDigits: 1,
 										})}{" "}
-										({t("reviews", { count: shop.owner.totalReviews })})
+										(
+										{rating.source === "shop"
+											? t("verifiedReviews", { count: rating.count })
+											: t("reviews", { count: rating.count })}
+										)
 									</span>
 								)}
 								<span>

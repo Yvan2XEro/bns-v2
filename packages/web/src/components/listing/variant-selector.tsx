@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { publicVariantsQuery } from "~/hooks/use-variants";
 import { formatXaf } from "~/lib/money";
 import { cn } from "~/lib/utils";
@@ -12,6 +12,7 @@ import {
 	matchVariant,
 	resolveSelection,
 } from "~/lib/variants";
+import type { PublicVariantDoc } from "~/types";
 
 /**
  * Buyer-facing. Reads `GET /api/public/products/:id/variants`, which always
@@ -28,10 +29,13 @@ export function VariantSelector({
 	productId,
 	codAllowed,
 	pickupAllowed,
+	children,
 }: {
 	productId: string;
 	codAllowed: boolean;
 	pickupAllowed: boolean;
+	/** The buy box's controls, given the variant currently selected (null while none matches). */
+	children?: (variant: PublicVariantDoc | null) => ReactNode;
 }) {
 	const t = useTranslations("Listing");
 	const locale = useLocale();
@@ -160,6 +164,7 @@ export function VariantSelector({
 						.join(" · ")}
 				</p>
 			)}
+			{children?.(current)}
 		</div>
 	);
 }

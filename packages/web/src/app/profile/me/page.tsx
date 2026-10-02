@@ -19,6 +19,7 @@ import { getAuthUser, serverFetch } from "~/lib/server-api";
 import { getMyShop, getShopsEnabled } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
 import { ProfileEditForm } from "./profile-edit-form";
+import { PurchasesEntry } from "./purchases-entry";
 
 async function getUserReviews(userId: string): Promise<Review[]> {
 	try {
@@ -152,6 +153,8 @@ export default async function MyProfilePage() {
 									</div>
 								</CardContent>
 							</Card>
+
+							<PurchasesEntry />
 
 							<MyShopEntry mine={mine} shopsEnabled={shopsEnabled} />
 

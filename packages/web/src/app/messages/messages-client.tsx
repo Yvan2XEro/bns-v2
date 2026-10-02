@@ -22,6 +22,8 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { OrderHeaderCard } from "~/components/chat/order-header-card";
+import { SystemChip } from "~/components/chat/system-chip";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import {
@@ -49,6 +51,7 @@ import {
 	messageAuthorLabel,
 } from "~/lib/conversation-view";
 import { can } from "~/lib/shop-roles";
+import { isSystemMessage } from "~/lib/system-message";
 import type {
 	ConversationWithDetails,
 	Listing,
@@ -209,6 +212,9 @@ export function MessagesClient({
 							conversation: msg.conversationId,
 							sender: msg.sender as unknown as User | string,
 							content: msg.content,
+							kind: msg.kind ?? "user",
+							systemEvent: msg.systemEvent ?? null,
+							systemParams: msg.systemParams ?? null,
 							createdAt: msg.createdAt,
 							updatedAt: msg.createdAt,
 						} as Message,
@@ -724,7 +730,18 @@ export function MessagesClient({
 							</div>
 
 							<div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
+								<OrderHeaderCard
+									messages={messages}
+									side={
+										isViewerShopSide(selectedConversation, user.id)
+											? "shop"
+											: "buyer"
+									}
+								/>
 								{messages.map((message) => {
+									if (isSystemMessage(message)) {
+										return <SystemChip key={message.id} message={message} />;
+									}
 									const senderId =
 										typeof message.sender === "object"
 											? (message.sender as User).id

@@ -42,7 +42,10 @@
 		"logIn": "Log in",
 		"signUp": "Sign up",
 		"myShop": "My shop",
-		"openShop": "Open a shop"
+		"openShop": "Open a shop",
+		"cart": "Cart",
+		"cartWithCount": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",
+		"purchases": "My purchases"
 	},
 	"Footer": {
 		"brandTagline": "The marketplace to buy and sell locally.",
@@ -334,7 +337,9 @@
 		"reviewsTitle": "Reviews",
 		"unknownUser": "Unknown",
 		"name": "Name",
-		"saveChanges": "Save changes"
+		"saveChanges": "Save changes",
+		"purchases": "My purchases",
+		"purchasesHint": "Track your orders, receipts and returns"
 	},
 	"Settings": {
 		"accountSettings": "Account Settings",
@@ -765,7 +770,8 @@
 		"businessTypeEntreprenant": "Sole proprietor (entreprenant)",
 		"businessTypeSoleTrader": "Sole trader",
 		"businessTypeCompany": "Company",
-		"businessTypeCooperative": "Cooperative"
+		"businessTypeCooperative": "Cooperative",
+		"verifiedReviews": "{count, plural, one {# verified purchase review} other {# verified purchase reviews}}"
 	},
 	"ShopCreate": {
 		"title": "Open my shop",
@@ -807,7 +813,10 @@
 			"activity": "Activity",
 			"verification": "Verification",
 			"messages": "Messages",
-			"settings": "Settings"
+			"settings": "Settings",
+			"orders": "Orders",
+			"billing": "Billing",
+			"orderSettings": "Order settings"
 		},
 		"viewShop": "View my shop",
 		"buyerMode": "Back to buyer mode",
@@ -853,7 +862,9 @@
 		"hubLocked": {
 			"dormant": "Your team's seller tools are paused: this shop's verification level dropped below level 2. Ask the owner to verify again to restore access.",
 			"shopSuspended": "Seller tools are unavailable while this shop is suspended."
-		}
+		},
+		"ordersRestricted": "New orders paused",
+		"ordersRestrictedLink": "See why in billing"
 	},
 	"Catalogue": {
 		"title": "Catalogue",
@@ -1898,7 +1909,20 @@
 	"Messages": {
 		"shopChip": "Shop",
 		"openInShopInbox": "Open in shop inbox",
-		"formerMember": "Former member"
+		"formerMember": "Former member",
+		"system_order_placed": "Order {orderNumber} placed.",
+		"system_order_confirmed": "Order {orderNumber} confirmed.",
+		"system_order_accepted": "The shop accepted order {orderNumber}.",
+		"system_order_declined": "The shop declined order {orderNumber}.",
+		"system_order_shipped": "Order {orderNumber} shipped.",
+		"system_order_delivered": "Order {orderNumber} delivered.",
+		"system_order_cancelled": "Order {orderNumber} cancelled.",
+		"system_order_delivery_failed": "Delivery of order {orderNumber} failed.",
+		"system_order_withdrawal_requested": "The customer asked to withdraw from order {orderNumber}.",
+		"system_order_completed": "Order {orderNumber} completed.",
+		"orderCardTitle": "Order {orderNumber}",
+		"orderCardUntitled": "Order linked to this conversation",
+		"orderCardOpen": "View order"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Order placed",
@@ -2379,5 +2403,21 @@
 		"capsMaxDailyOrders": "New orders per day: {count} at most",
 		"capsMaxOpenOrders": "Open orders at once: {count} at most",
 		"capsHint": "These caps follow your shop's verification level and rise with it."
+	},
+	"BuyBox": {
+		"addToCart": "Add to cart",
+		"buyNow": "Order now",
+		"quantity": "Quantity",
+		"decrease": "Decrease quantity",
+		"increase": "Increase quantity",
+		"deliveryTo": "Delivery in {city}: {fee}",
+		"pickupFree": "Free pickup",
+		"codBadge": "Cash on delivery",
+		"returnBadge": "Returns accepted within {days} days",
+		"added": "Added to your cart.",
+		"viewCart": "View cart",
+		"restrictedTitle": "Orders temporarily unavailable",
+		"restrictedBody": "You can still message the seller.",
+		"chooseVariant": "Choose an available option."
 	}
 }

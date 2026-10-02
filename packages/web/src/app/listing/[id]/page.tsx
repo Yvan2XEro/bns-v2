@@ -25,7 +25,6 @@ import { PhoneReveal } from "~/components/listing/phone-reveal";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ShareButton } from "~/components/listing/share-button";
 import { ShopSellerCard } from "~/components/listing/shop-seller-card";
-import { VariantSelector } from "~/components/listing/variant-selector";
 import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
@@ -40,8 +39,9 @@ import {
 import { formatXafRange } from "~/lib/money";
 import { formatListingPrice, hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import { getShopBadge } from "~/lib/server-shop";
+import { getMyShop, getShopBadge } from "~/lib/server-shop";
 import type { Listing, Tag, User } from "~/types";
+import { BuyBox } from "./buy-box";
 
 export const revalidate = 3600;
 
@@ -174,7 +174,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
 	const shop = listingShop(listing);
-	const shopBadge = shop ? await getShopBadge(shop.handle) : null;
+	const [shopBadge, mine] = await Promise.all([
+		shop ? getShopBadge(shop.handle) : null,
+		shop && authUser ? getMyShop() : null,
+	]);
 	const productId = listingProductId(listing);
 	const product = listingProduct(listing);
 	const summary = productSummaryOf(listing);
@@ -191,6 +194,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		seller &&
 		String(authUser.id) === String(seller.id)
 	);
+	// The cart refuses any member of the listing's shop; the active shop is the
+	// one membership known here, and the API's `checkout.selfPurchase` covers
+	// a member viewing from another active shop.
+	const ownShop = isOwner || (shop !== null && mine?.shop?.id === shop.id);
 	const category = listing.category as { id: string; name: string } | undefined;
 
 	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
@@ -499,10 +506,32 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							)}
 						</div>
 						{productId && (
-							<VariantSelector
+							<BuyBox
+								listingId={String(listing.id)}
 								productId={productId}
+								shop={
+									shop
+										? {
+												id: shop.id,
+												restricted: Boolean(shop.ordersRestrictedAt),
+											}
+										: null
+								}
+								orderable={listing.orderable}
+								ownShop={ownShop}
+								productAvailable={summary?.available ?? null}
+								signedIn={Boolean(authUser)}
 								codAllowed={delivery.codAllowed === true}
 								pickupAllowed={delivery.pickupAllowed === true}
+								delivery={{
+									city: shop?.location?.city ?? null,
+									sellerDeliveryEnabled:
+										shop?.orderSettings?.sellerDeliveryEnabled === true,
+									deliveryFee: shop?.orderSettings?.deliveryFee ?? null,
+									pickupEnabled: shop?.orderSettings?.pickupEnabled === true,
+									pickupAddress:
+										shop?.orderSettings?.pickupPoint?.address ?? null,
+								}}
 							/>
 						)}
 					</div>

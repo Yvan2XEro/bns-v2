@@ -42,7 +42,10 @@
 		"logIn": "Connexion",
 		"signUp": "S'inscrire",
 		"myShop": "Ma boutique",
-		"openShop": "Ouvrir une boutique"
+		"openShop": "Ouvrir une boutique",
+		"cart": "Panier",
+		"cartWithCount": "Panier, {count, plural, =0 {vide} one {# article} other {# articles}}",
+		"purchases": "Mes achats"
 	},
 	"Footer": {
 		"brandTagline": "La marketplace pour acheter et vendre localement.",
@@ -335,7 +338,9 @@
 		"reviewsTitle": "Avis",
 		"unknownUser": "Inconnu",
 		"name": "Nom",
-		"saveChanges": "Enregistrer les modifications"
+		"saveChanges": "Enregistrer les modifications",
+		"purchases": "Mes achats",
+		"purchasesHint": "Suivez vos commandes, reçus et retours"
 	},
 	"Settings": {
 		"accountSettings": "Paramètres du compte",
@@ -766,7 +771,8 @@
 		"businessTypeEntreprenant": "Entreprenant",
 		"businessTypeSoleTrader": "Entreprise individuelle",
 		"businessTypeCompany": "Société",
-		"businessTypeCooperative": "Coopérative"
+		"businessTypeCooperative": "Coopérative",
+		"verifiedReviews": "{count, plural, one {# avis d'achat vérifié} other {# avis d'achats vérifiés}}"
 	},
 	"ShopCreate": {
 		"title": "Ouvrir ma boutique",
@@ -808,7 +814,10 @@
 			"activity": "Activité",
 			"verification": "Vérification",
 			"messages": "Messages",
-			"settings": "Paramètres"
+			"settings": "Paramètres",
+			"orders": "Commandes",
+			"billing": "Facturation",
+			"orderSettings": "Réglages des commandes"
 		},
 		"viewShop": "Voir ma boutique",
 		"buyerMode": "Revenir en mode acheteur",
@@ -854,7 +863,9 @@
 		"hubLocked": {
 			"dormant": "Les outils vendeur de votre équipe sont en pause : le niveau de vérification de cette boutique est repassé sous le niveau 2. Demandez au propriétaire de vérifier à nouveau pour rétablir l'accès.",
 			"shopSuspended": "Les outils vendeur sont indisponibles tant que cette boutique est suspendue."
-		}
+		},
+		"ordersRestricted": "Nouvelles commandes suspendues",
+		"ordersRestrictedLink": "Voir pourquoi dans la facturation"
 	},
 	"Catalogue": {
 		"title": "Catalogue",
@@ -1899,7 +1910,20 @@
 	"Messages": {
 		"shopChip": "Boutique",
 		"openInShopInbox": "Ouvrir dans la messagerie boutique",
-		"formerMember": "Ancien membre"
+		"formerMember": "Ancien membre",
+		"system_order_placed": "Commande {orderNumber} enregistrée.",
+		"system_order_confirmed": "Commande {orderNumber} confirmée.",
+		"system_order_accepted": "La boutique a accepté la commande {orderNumber}.",
+		"system_order_declined": "La boutique a refusé la commande {orderNumber}.",
+		"system_order_shipped": "Commande {orderNumber} expédiée.",
+		"system_order_delivered": "Commande {orderNumber} livrée.",
+		"system_order_cancelled": "Commande {orderNumber} annulée.",
+		"system_order_delivery_failed": "La livraison de la commande {orderNumber} a échoué.",
+		"system_order_withdrawal_requested": "Le client a demandé à se rétracter pour la commande {orderNumber}.",
+		"system_order_completed": "Commande {orderNumber} terminée.",
+		"orderCardTitle": "Commande {orderNumber}",
+		"orderCardUntitled": "Commande liée à cette conversation",
+		"orderCardOpen": "Voir la commande"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Commande transmise",
@@ -2380,5 +2404,21 @@
 		"capsMaxDailyOrders": "Nouvelles commandes par jour : {count} au plus",
 		"capsMaxOpenOrders": "Commandes en cours en même temps : {count} au plus",
 		"capsHint": "Ces plafonds suivent le niveau de vérification de votre boutique et augmentent avec lui."
+	},
+	"BuyBox": {
+		"addToCart": "Ajouter au panier",
+		"buyNow": "Commander maintenant",
+		"quantity": "Quantité",
+		"decrease": "Diminuer la quantité",
+		"increase": "Augmenter la quantité",
+		"deliveryTo": "Livraison à {city} : {fee}",
+		"pickupFree": "Retrait gratuit",
+		"codBadge": "Paiement à la livraison",
+		"returnBadge": "Retour possible sous {days} jours",
+		"added": "Article ajouté à votre panier.",
+		"viewCart": "Voir le panier",
+		"restrictedTitle": "Commandes temporairement indisponibles",
+		"restrictedBody": "Vous pouvez toujours écrire au vendeur.",
+		"chooseVariant": "Choisissez une option disponible."
 	}
 }
