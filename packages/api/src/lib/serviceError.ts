@@ -15,7 +15,13 @@ import { type ErrorCode, fallbackMessage } from "./errors";
 export class ServiceError extends Error {
 	code: ErrorCode;
 	status: number;
-	/** Extra client-readable context (e.g. `cart.singleShop`'s `currentShop`). */
+	/**
+	 * Structured context a caller can act on without parsing `message`. Two
+	 * callers arrived at it independently in the same wave: the cart hands back
+	 * `currentShop` when a second shop's item is refused, and the order
+	 * service's losing writer hands back the status that actually holds, so a
+	 * UI can re-render instead of guessing.
+	 */
 	details?: Record<string, unknown>;
 
 	constructor(
