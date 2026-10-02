@@ -39,6 +39,9 @@ const original = {
 		niu: null,
 		verifiedAt: null,
 	},
+	ordersRestrictedAt: null,
+	orderSettings: { codEnabled: true },
+	location: { city: "douala" },
 };
 
 describe("Shops beforeChange", () => {
@@ -372,8 +375,8 @@ describe("Shops afterChange", () => {
 			doc: {
 				...original,
 				description: "New",
-				location: { ...(original.location ?? {}) },
-				orderSettings: { ...(original.orderSettings ?? {}) },
+				location: { ...original.location },
+				orderSettings: { ...original.orderSettings },
 			},
 			previousDoc: original,
 			req: { context: {} },

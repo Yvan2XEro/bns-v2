@@ -14,15 +14,15 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
- * The one cast for every Task 24 call below, instead of one per call site:
- * `PayloadLike`'s deliberately loose `find`/`update` shapes (plain
- * `Record<string, unknown>` wheres) never structurally match the real
- * `Payload` type the fake also carries, the same reason every pre-existing
- * call in this file already casts. Centralising it here keeps the ceiling's
- * growth to this one line rather than one per new test.
+ * The one cast for every plain call in this file. `PayloadLike`'s
+ * deliberately loose `find`/`update` shapes (plain `Record<string, unknown>`
+ * wheres) never structurally match the real `Payload` type the fake also
+ * carries, so each call site used to carry its own `as never`. The four that
+ * still do pass a wrapper with one method deliberately narrowed, which is not
+ * assignable here; everything else goes through this.
  */
 async function runDeletion(
-	payload: ReturnType<typeof world>,
+	payload: ReturnType<typeof fakePayload>,
 	user: { id: string },
 ): Promise<void> {
 	await deleteUserRelatedData(payload as never, user);
@@ -289,7 +289,7 @@ describe("deleteUserRelatedData payment retention", () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(NOW);
 		payload = world();
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 		vi.useRealTimers();
 	});
 
@@ -386,7 +386,7 @@ describe("deleteUserRelatedData payment retention", () => {
 		const before = structuredClone(payload.store);
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(new Date("2026-09-16T00:00:00.000Z"));
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 		vi.useRealTimers();
 		expect(payload.store).toEqual(before);
 	});
@@ -457,7 +457,7 @@ describe("deleteUserRelatedData transactional cascade", () => {
 		const payload = world();
 		const beginTransaction = vi.spyOn(payload.db, "beginTransaction");
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 		vi.useRealTimers();
 
 		expect(beginTransaction).toHaveBeenCalledTimes(1);
@@ -501,7 +501,7 @@ describe("deleteUserRelatedData transactional cascade", () => {
 		// A re-run (same lack of a transaction) finds the same intent — its
 		// customer is still set — redacts the already-safe webhook body as a
 		// no-op, and finishes anonymising the intent.
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 		vi.useRealTimers();
 
 		expect(
@@ -586,7 +586,7 @@ describe("replaying an unprocessed webhook after the account is deleted", () => 
 
 		// The user deletes their account while the event is still in flight,
 		// unprocessed — a real race, not a contrived one.
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 		vi.useRealTimers();
 
 		const redactedEvent = payload.store["webhook-events"].find(
@@ -720,7 +720,7 @@ describe("closing an owned shop atomically with account deletion", () => {
 		vi.setSystemTime(NOW);
 		const payload = ownedShopWorld();
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 		vi.useRealTimers();
 
 		expect(payload.store.shops[0]).toMatchObject({
@@ -856,7 +856,7 @@ describe("verification data on account deletion", () => {
 	it("keeps a decided request's identity hash but clears its names, and removes any still-open request", async () => {
 		const payload = ownedShopWorldWithRequests();
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 
 		const decided = payload.store["verification-requests"].find(
 			(r) => r.id === "vr-decided",
@@ -874,7 +874,7 @@ describe("verification data on account deletion", () => {
 	it("purges a closed shop's documents too, not only an active shop's (I7)", async () => {
 		const payload = ownedShopWorldWithRequests();
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 
 		const closedDoc = payload.store["verification-documents"].find(
 			(d) => d.id === "vd-closed",
@@ -886,7 +886,7 @@ describe("verification data on account deletion", () => {
 	it("deletes an open request's own documents instead of orphaning them (I7)", async () => {
 		const payload = ownedShopWorldWithRequests();
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 
 		expect(
 			payload.store["verification-documents"].some((d) => d.id === "vd-open"),
@@ -896,7 +896,7 @@ describe("verification data on account deletion", () => {
 	it("removes the didit webhook-events row tied to the deleted account (I6)", async () => {
 		const payload = ownedShopWorldWithRequests();
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 
 		expect(
 			payload.store["webhook-events"].some((e) => e.id === "we-didit-1"),
@@ -919,7 +919,7 @@ describe("verification data on account deletion", () => {
 			},
 		];
 
-		await deleteUserRelatedData(payload as never, { id: "u-1" });
+		await runDeletion(payload, { id: "u-1" });
 
 		expect(payload.store["verification-documents"][0]).toMatchObject({
 			filename: "other.pdf",
