@@ -65,6 +65,56 @@ describe("getOrderSettings", () => {
 		).toBeNull();
 	});
 
+	// The global has carried these two JSON fields since the settings task,
+	// with descriptions promising a merge that never existed: an admin
+	// tightening a cap turned a knob connected to nothing, and checkout kept
+	// enforcing the built-in defaults.
+	it("merges a shop cap override onto the level defaults and drops garbage", async () => {
+		const settings = await getOrderSettings(
+			settingsGlobal({
+				enabled: true,
+				shopCaps: {
+					1: { maxDailyOrders: 5, maxOrderTotal: "nonsense" },
+					2: "not a row",
+					9: { maxDailyOrders: 1 },
+				},
+			}),
+		);
+		// Only the sane override of a known level survives, partially.
+		expect(settings.shopCaps).toEqual({ 1: { maxDailyOrders: 5 } });
+	});
+
+	it("merges a buyer tier override row-wise onto BUYER_CAPS", async () => {
+		const settings = await getOrderSettings(
+			settingsGlobal({
+				enabled: true,
+				buyerCaps: {
+					new: { maxOpenOrders: 2, confirmation: "call" },
+					trusted: { maxOrderTotal: null },
+					watch: { confirmation: "shout" },
+					ghost: { maxOpenOrders: 9 },
+				},
+			}),
+		);
+		// The named fields move; everything else keeps its default.
+		expect(settings.buyerCaps.new).toEqual({
+			maxOpenOrders: 2,
+			maxOrderTotal: 75_000,
+			confirmation: "call",
+		});
+		// null is a legal value here: "the shop cap alone decides".
+		expect(settings.buyerCaps.trusted.maxOrderTotal).toBeNull();
+		// An unknown confirmation and an unknown tier change nothing.
+		expect(settings.buyerCaps.watch.confirmation).toBe("call");
+		expect(Object.keys(settings.buyerCaps).sort()).toEqual([
+			"blocked",
+			"new",
+			"regular",
+			"trusted",
+			"watch",
+		]);
+	});
+
 	it("restricts COD to the pilot shops when the list is non-empty", async () => {
 		const open = await getOrderSettings(settingsGlobal({ enabled: true }));
 		expect(isPilotShop(open, "s-1")).toBe(true);

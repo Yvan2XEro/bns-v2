@@ -74,6 +74,71 @@ const intOr = (value: unknown, fallback: number): number => {
 	return Number.isInteger(n) && n >= 0 ? n : fallback;
 };
 
+const CAP_LEVELS = [1, 2, 3] as const;
+const COD_CAP_KEYS = [
+	"maxOrderTotal",
+	"maxDailyOrders",
+	"maxOpenOrders",
+] as const;
+const BUYER_TIER_KEYS = [
+	"new",
+	"regular",
+	"trusted",
+	"watch",
+	"blocked",
+] as const;
+const CONFIRMATIONS = new Set([
+	"auto_or_code",
+	"code_or_call",
+	"call",
+	"refused",
+]);
+
+/**
+ * The admin's per-level cap overrides, kept only where they are sane: a
+ * non-negative integer under a known key of a known level. The global's two
+ * cap fields are free-form JSON, and a typo'd override that silently became
+ * `undefined` would re-open the cap it meant to tighten — so anything
+ * unrecognised is dropped, never passed through.
+ */
+function shopCapsOf(value: unknown): OrderSettings["shopCaps"] {
+	if (value === null || typeof value !== "object") return {};
+	const out: OrderSettings["shopCaps"] = {};
+	for (const level of CAP_LEVELS) {
+		const row = (value as Record<string, unknown>)[String(level)];
+		if (row === null || typeof row !== "object") continue;
+		const caps: Partial<CodCaps> = {};
+		for (const key of COD_CAP_KEYS) {
+			const n = Number((row as Record<string, unknown>)[key]);
+			if (Number.isInteger(n) && n >= 0) caps[key] = n;
+		}
+		if (Object.keys(caps).length > 0) out[level] = caps;
+	}
+	return out;
+}
+
+/** Same discipline per buyer tier, merged row-wise onto BUYER_CAPS. */
+function buyerCapsOf(value: unknown): OrderSettings["buyerCaps"] {
+	const out = { ...BUYER_CAPS };
+	if (value === null || typeof value !== "object") return out;
+	for (const tier of BUYER_TIER_KEYS) {
+		const row = (value as Record<string, unknown>)[tier];
+		if (row === null || typeof row !== "object") continue;
+		const patch: Partial<BuyerCapRow> = {};
+		const open = Number((row as Record<string, unknown>).maxOpenOrders);
+		if (Number.isInteger(open) && open >= 0) patch.maxOpenOrders = open;
+		const total = (row as Record<string, unknown>).maxOrderTotal;
+		if (total === null) patch.maxOrderTotal = null;
+		else if (Number.isInteger(Number(total)) && Number(total) >= 0)
+			patch.maxOrderTotal = Number(total);
+		const confirmation = (row as Record<string, unknown>).confirmation;
+		if (typeof confirmation === "string" && CONFIRMATIONS.has(confirmation))
+			patch.confirmation = confirmation as BuyerCapRow["confirmation"];
+		if (Object.keys(patch).length > 0) out[tier] = { ...out[tier], ...patch };
+	}
+	return out;
+}
+
 function citiesOf(value: unknown): OrderSettings["launchCities"] {
 	if (!Array.isArray(value)) {
 		return [
@@ -122,6 +187,8 @@ export async function getOrderSettings(
 				typeof orders.termsVersion === "string" && orders.termsVersion
 					? orders.termsVersion
 					: "2026-09",
+			shopCaps: shopCapsOf(orders.shopCaps),
+			buyerCaps: buyerCapsOf(orders.buyerCaps),
 			pilotShopIds: Array.isArray(orders.pilotShopIds)
 				? orders.pilotShopIds.map(String)
 				: [],
