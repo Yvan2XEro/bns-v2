@@ -7,6 +7,10 @@ interface Options {
 	/** Compound unique keys per collection, e.g. `{ shops: [["handle"]] }`. */
 	uniques?: Record<string, string[][]>;
 	globals?: Record<string, Doc>;
+	/** `payload.config.secret`, read by services that salt a hash with it
+	 * (`req.payload.config.secret` rather than `process.env.PAYLOAD_SECRET`,
+	 * so a test can set its own and assert the hash is reproducible from it). */
+	secret?: string;
 }
 
 type Undo = { collection: string; id: string; before: Doc | null };
@@ -248,6 +252,7 @@ export function fakePayload(
 		writes,
 		collections,
 		reads,
+		config: { secret: options.secret ?? "fake-payload-test-secret" },
 		/** Return true to make the matching call throw, to test rollbacks. */
 		failWhen: null as null | ((method: string, args: Args) => boolean),
 		logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
