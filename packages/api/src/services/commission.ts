@@ -1,0 +1,986 @@
+import type { Payload, PayloadRequest } from "payload";
+import { isModerator } from "../access/roles";
+import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
+import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
+import { ERROR_CODES } from "../lib/errors";
+import {
+	commissionForLine,
+	invoiceTotals,
+	netting,
+	sumCommission,
+	weekBoundsDouala,
+} from "../lib/orderMath";
+import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
+import { getProvider } from "../lib/payments";
+import { relationId } from "../lib/relationId";
+import { ServiceError } from "../lib/serviceError";
+import { type TxReq, withTransaction } from "../lib/transactions";
+import type {
+	CommissionInvoice,
+	CommissionLine,
+	Order,
+	OrderItem,
+	PaymentIntent,
+	Shop,
+} from "../payload-types";
+import { type Actor, ModerationError } from "./moderation";
+import { registerOrderEventHandler } from "./orders/events";
+import { appendOrderEvent } from "./orders/transitions";
+import {
+	createPaymentIntent,
+	findIntentByIdempotencyKey,
+	markIntentPending,
+} from "./payments";
+import { nextInvoiceNumber } from "./sequences";
+import { requireShopPermission } from "./shopGuards";
+import { isUniqueViolation, type ServiceUser } from "./shops";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const INVOICE_SERIES = "C" as const;
+/** Boost's webhook route settles any purpose by `intent.purpose` — the
+ * consequence table is explicit that this task adds no payment machinery, so
+ * the commission checkout reuses this same callback instead of a new route. */
+const SETTLEMENT_WEBHOOK_PATH = "/api/public/boost/webhook/notchpay";
+
+/**
+ * No shared "platform legal identity" constant exists yet in the codebase
+ * (the order-contract builder that will need one is a later task). Declared
+ * here, read from env so a deployment can override it without a code change.
+ */
+const PLATFORM_ISSUER = {
+	legalName: process.env.PLATFORM_LEGAL_NAME ?? "BuyNSellem SARL",
+	supportEmail: process.env.SUPPORT_EMAIL ?? "support@buynsellem.com",
+	supportPhone: process.env.SUPPORT_PHONE ?? null,
+};
+
+export interface InvoiceLineView {
+	orderNumber: string;
+	baseAmount: number;
+	amount: number;
+	kind: CommissionLine["kind"];
+}
+
+export interface CommissionInvoiceView {
+	id: string;
+	invoiceNumber: string;
+	periodStart: string;
+	periodEnd: string;
+	ordersCount: number;
+	commissionTotal: number;
+	vatAmount: number;
+	totalDue: number;
+	currency: "XAF";
+	status: NonNullable<CommissionInvoice["status"]>;
+	issuedAt: string;
+	dueAt: string;
+	paidAt: string | null;
+	lines: InvoiceLineView[];
+}
+
+export interface BillingView {
+	invoices: CommissionInvoiceView[];
+	currentPeriod: {
+		periodStart: string;
+		periodEnd: string;
+		accrued: number;
+		ordersCount: number;
+	};
+	restricted: { since: string; reason: "commission_overdue" | "staff" } | null;
+}
+
+/** Category rate wins when the category carries one; the order item's own
+ * (set at checkout time, itself defaulted from `defaultCommissionRateBps`)
+ * wins otherwise. Looked up at accrual time rather than at checkout, so a
+ * staff edit to a category's rate between placement and delivery is honoured. */
+async function resolveRateBps(
+	payload: Payload,
+	item: OrderItem,
+	settings: OrderSettings,
+	req?: PayloadRequest,
+): Promise<number> {
+	const categoryId = item.snapshot?.categoryId;
+	if (categoryId) {
+		const category = await payload
+			.findByID({
+				collection: "categories",
+				id: categoryId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+			.catch(() => null);
+		if (
+			category &&
+			typeof category.commissionRateBps === "number" &&
+			category.commissionRateBps >= 0
+		) {
+			return category.commissionRateBps;
+		}
+	}
+	return item.commissionRateBps ?? settings.defaultCommissionRateBps;
+}
+
+async function findExistingCharge(
+	req: PayloadRequest,
+	orderId: string,
+): Promise<CommissionLine | null> {
+	const { docs } = await req.payload.find({
+		collection: "commission-lines",
+		where: {
+			and: [{ order: { equals: orderId } }, { kind: { equals: "charge" } }],
+		},
+		limit: 1,
+		depth: 0,
+		pagination: false,
+		overrideAccess: true,
+		req,
+	});
+	return docs[0] ?? null;
+}
+
+/**
+ * Writes the one `charge` commission line a delivered order ever gets.
+ * `req` must be inside a transaction: the line, the per-item commission
+ * fields, `order.commission` and the `order.commission_accrued` event all
+ * land together, or none of them do.
+ *
+ * Idempotent two ways, deliberately both: an app-level check (cheap, wins
+ * the common case) and the `(order, kind: "charge")` partial unique index
+ * (Task 6), whose violation this catches into "already accrued" rather than
+ * letting it fail the delivery it rode in on. Either guard alone would be
+ * enough; keeping both is what Review Focus 4 asks for — a retried delivery
+ * must produce exactly one line regardless of which guard catches it.
+ */
+export async function accrueCommission(
+	req: PayloadRequest,
+	order: Order,
+	items: readonly OrderItem[],
+): Promise<CommissionLine | null> {
+	// D2: a cancelled or failed order (or any order not actually delivered)
+	// accrues nothing. This is the one guard, not a cancelled-specific and a
+	// failed-specific branch, because "delivered" is the only state commission
+	// is ever owed from.
+	if (order.status !== "delivered") return null;
+
+	const existing = await findExistingCharge(req, String(order.id));
+	if (existing) return existing;
+
+	const settings = await getOrderSettings(req.payload);
+	const rated = await Promise.all(
+		items.map(async (item) => ({
+			item,
+			lineSubtotal: item.lineSubtotal ?? 0,
+			rateBps: await resolveRateBps(req.payload, item, settings, req),
+		})),
+	);
+	const baseAmount = rated.reduce((sum, r) => sum + r.lineSubtotal, 0);
+	const amount = sumCommission(rated);
+	const firstRate = rated[0]?.rateBps ?? settings.defaultCommissionRateBps;
+	const uniformRate = rated.every((r) => r.rateBps === firstRate)
+		? firstRate
+		: settings.defaultCommissionRateBps;
+
+	let created: CommissionLine;
+	try {
+		created = await req.payload.create({
+			collection: "commission-lines",
+			overrideAccess: true,
+			req,
+			data: {
+				shop: relationId(order.shop) ?? "",
+				order: String(order.id),
+				kind: "charge",
+				paymentMethod: order.paymentMethod,
+				baseAmount,
+				amount,
+				status: "open",
+				accruedAt: new Date().toISOString(),
+			},
+		});
+	} catch (error) {
+		if (!isUniqueViolation(error)) throw error;
+		const recovered = await findExistingCharge(req, String(order.id));
+		if (recovered) return recovered;
+		throw error;
+	}
+
+	for (const r of rated) {
+		await req.payload.update({
+			collection: "order-items",
+			id: r.item.id,
+			overrideAccess: true,
+			context: ORDER_SERVICE_CONTEXT,
+			req,
+			data: {
+				commissionRateBps: r.rateBps,
+				commissionAmount: commissionForLine(r.lineSubtotal, r.rateBps),
+			},
+		});
+	}
+
+	await req.payload.update({
+		collection: "orders",
+		id: order.id,
+		overrideAccess: true,
+		context: ORDER_SERVICE_CONTEXT,
+		req,
+		data: { commission: { rateBps: uniformRate, amount, line: created.id } },
+	});
+
+	// `shop` visibility: informational for the seller, never shown to the
+	// buyer (Task 12's `visibleEvents` excludes it from the buyer audience).
+	await appendOrderEvent(req, order, {
+		type: "order.commission_accrued",
+		visibility: "shop",
+		actorType: "system",
+		metadata: {
+			commissionLineId: String(created.id),
+			amount,
+			baseAmount,
+		},
+	});
+
+	return created;
+}
+
+/**
+ * The integration point with the delivery transition: registered against
+ * `order.delivered` rather than called from a route, because Task 14 owns no
+ * delivery route to call it from, and the registry already gives the
+ * guarantee Review Focus 4 asks for — `runOrderEventHandlers` dispatches a
+ * given `OrderEvent.id` once, and `applyTransition`'s conditional write means
+ * a replayed "mark delivered" never produces a second `order.delivered`
+ * event in the first place. `accrueCommission`'s own duplicate-key guard
+ * above is what makes this safe even if something else accrues the same
+ * order directly in the same transaction as the transition — belt and
+ * braces, not an either/or.
+ */
+async function accrueCommissionOnDelivery(
+	payload: Payload,
+	order: Order,
+): Promise<void> {
+	const { docs: items } = await payload.find({
+		collection: "order-items",
+		where: { order: { equals: order.id } },
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	await withTransaction(payload, (req) =>
+		accrueCommission(req, order, items as OrderItem[]),
+	);
+}
+
+registerOrderEventHandler("order.delivered", accrueCommissionOnDelivery);
+
+function sumByKind(
+	lines: readonly CommissionLine[],
+	kind: CommissionLine["kind"],
+): number {
+	return lines
+		.filter((line) => line.kind === kind)
+		.reduce((sum, line) => sum + line.amount, 0);
+}
+
+function sellerSnapshotOf(shop: Shop): Record<string, unknown> {
+	return {
+		name: shop.name,
+		handle: shop.handle,
+		legalName: shop.legal?.legalName ?? null,
+		rccmNumber: shop.legal?.rccmNumber ?? null,
+		niu: shop.legal?.niu ?? null,
+		city: shop.location?.city ?? null,
+		phone: shop.contact?.phone ?? null,
+	};
+}
+
+/**
+ * One pass over every shop with open commission lines accrued by
+ * `periodEnd` (Monday–Sunday, `Africa/Douala`). Idempotent per
+ * `(shop, periodStart)` two ways, same pairing as `accrueCommission`: a
+ * pre-check that skips the common case, and the real unique index (Task 6)
+ * whose violation is swallowed as "already issued".
+ */
+export async function issueInvoicesForWeek(
+	payload: Payload,
+	now: Date,
+): Promise<{ issued: string[]; rolledOver: string[]; netted: string[] }> {
+	const { periodStart, periodEnd } = weekBoundsDouala(now);
+	const settings = await getOrderSettings(payload);
+
+	const { docs: openLines } = await payload.find({
+		collection: "commission-lines",
+		where: {
+			and: [
+				{ status: { equals: "open" } },
+				{ accruedAt: { less_than_equal: periodEnd } },
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+
+	const byShop = new Map<string, CommissionLine[]>();
+	for (const line of openLines) {
+		const shopId = relationId(line.shop);
+		if (!shopId) continue;
+		const list = byShop.get(shopId) ?? [];
+		list.push(line);
+		byShop.set(shopId, list);
+	}
+
+	const issued: string[] = [];
+	const rolledOver: string[] = [];
+	const netted: string[] = [];
+
+	for (const [shopId, lines] of byShop) {
+		const already = await payload.find({
+			collection: "commission-invoices",
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ periodStart: { equals: periodStart } },
+				],
+			},
+			limit: 1,
+			depth: 0,
+			pagination: false,
+			overrideAccess: true,
+		});
+		if (already.docs[0]) continue;
+
+		const charges = sumByKind(lines, "charge");
+		const credits = sumByKind(lines, "credit");
+		const carryIn = sumByKind(lines, "carry_over");
+		const totals = invoiceTotals({
+			charges,
+			credits,
+			carryOver: -carryIn,
+			vatRateBps: settings.vatRateBps,
+		});
+		const decision = netting({
+			commissionTotal: totals.commissionTotal,
+			minInvoiceAmount: settings.minInvoiceAmount,
+		});
+
+		if (decision.action === "roll_over") {
+			rolledOver.push(shopId);
+			continue;
+		}
+
+		const shop = await payload.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		});
+		const ordersCount = new Set(
+			lines.flatMap((line) => {
+				const orderId = relationId(line.order);
+				return orderId ? [orderId] : [];
+			}),
+		).size;
+
+		try {
+			const invoiceId = await withTransaction(payload, async (req) => {
+				const invoiceNumber = await nextInvoiceNumber(req, INVOICE_SERIES, now);
+				const created = await req.payload.create({
+					collection: "commission-invoices",
+					overrideAccess: true,
+					req,
+					data: {
+						invoiceNumber,
+						shop: shopId,
+						periodStart,
+						periodEnd,
+						lines: lines.map((line) => String(line.id)),
+						ordersCount,
+						commissionTotal: totals.commissionTotal,
+						vatRateBps: settings.vatRateBps,
+						vatAmount: totals.vatAmount,
+						totalDue: decision.action === "invoice" ? totals.totalDue : 0,
+						currency: "XAF",
+						status: decision.action === "invoice" ? "issued" : "void",
+						issuedAt: now.toISOString(),
+						dueAt: new Date(
+							now.getTime() + settings.invoiceDueDays * DAY_MS,
+						).toISOString(),
+						sellerSnapshot: sellerSnapshotOf(shop),
+						issuerSnapshot: PLATFORM_ISSUER,
+					},
+				});
+
+				for (const line of lines) {
+					await req.payload.update({
+						collection: "commission-lines",
+						id: line.id,
+						overrideAccess: true,
+						req,
+						data: { status: "invoiced", invoice: created.id },
+					});
+				}
+
+				if (decision.action === "credit_carry_over") {
+					// The credit rolls forward as its own line, picked up the same
+					// way any other open line is — `issueInvoicesForWeek` does not
+					// need to know its own output is also its input.
+					await req.payload.create({
+						collection: "commission-lines",
+						overrideAccess: true,
+						req,
+						data: {
+							shop: shopId,
+							kind: "carry_over",
+							amount: decision.carryOver,
+							status: "open",
+							accruedAt: periodEnd,
+						},
+					});
+				}
+
+				return String(created.id);
+			});
+
+			if (decision.action === "invoice") issued.push(invoiceId);
+			else netted.push(invoiceId);
+		} catch (error) {
+			if (isUniqueViolation(error)) continue;
+			throw error;
+		}
+	}
+
+	return { issued, rolledOver, netted };
+}
+
+/**
+ * Daily sweep: marks invoices overdue, sends the dueAt−2d reminder once,
+ * restricts a shop after `restrictAfterOverdueDays`, and logs a staff report
+ * past 30 days. No notification machinery exists in this task's scope
+ * (Task 16's Novu workflows are a later task), so "reminder" and "report"
+ * are operational log lines a human or an alert pipeline can act on.
+ */
+export async function enforceOverdue(
+	payload: Payload,
+	now: Date,
+): Promise<{ marked: string[]; restricted: string[]; reported: string[] }> {
+	const settings = await getOrderSettings(payload);
+	const { docs: invoices } = await payload.find({
+		collection: "commission-invoices",
+		where: { status: { in: ["issued", "overdue"] } },
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+
+	const marked: string[] = [];
+	const restricted: string[] = [];
+	const reported: string[] = [];
+
+	for (const invoice of invoices) {
+		if (!invoice.dueAt) continue;
+		const dueAt = new Date(invoice.dueAt).getTime();
+		const daysOverdue = (now.getTime() - dueAt) / DAY_MS;
+
+		if (
+			daysOverdue < 0 &&
+			now.getTime() >= dueAt - 2 * DAY_MS &&
+			!invoice.dueSoonReminderSentAt
+		) {
+			payload.logger.info({
+				msg: "[commission] due-soon reminder",
+				invoiceId: invoice.id,
+			});
+			await payload.update({
+				collection: "commission-invoices",
+				id: invoice.id,
+				overrideAccess: true,
+				data: { dueSoonReminderSentAt: now.toISOString() },
+			});
+		}
+
+		if (daysOverdue >= 0 && invoice.status === "issued") {
+			await payload.update({
+				collection: "commission-invoices",
+				id: invoice.id,
+				overrideAccess: true,
+				data: { status: "overdue" },
+			});
+			marked.push(String(invoice.id));
+		}
+
+		if (daysOverdue >= settings.restrictAfterOverdueDays) {
+			const shopId = relationId(invoice.shop);
+			if (shopId) {
+				const shop = await payload.findByID({
+					collection: "shops",
+					id: shopId,
+					depth: 0,
+					overrideAccess: true,
+				});
+				if (!shop.ordersRestrictedAt) {
+					await payload.update({
+						collection: "shops",
+						id: shopId,
+						overrideAccess: true,
+						context: SHOP_SERVICE_CONTEXT,
+						data: {
+							ordersRestrictedAt: now.toISOString(),
+							ordersRestrictedReason: "commission_overdue",
+						},
+					});
+					restricted.push(shopId);
+				}
+				if (!invoice.restrictedAt) {
+					await payload.update({
+						collection: "commission-invoices",
+						id: invoice.id,
+						overrideAccess: true,
+						data: { restrictedAt: now.toISOString() },
+					});
+				}
+			}
+		}
+
+		if (daysOverdue >= 30) {
+			payload.logger.error({
+				msg: "[commission] shop reported: commission invoice is 30+ days overdue",
+				invoiceId: invoice.id,
+				shopId: relationId(invoice.shop),
+			});
+			reported.push(String(invoice.id));
+		}
+	}
+
+	return { marked, restricted, reported };
+}
+
+/**
+ * Starts (or resumes) the NotchPay checkout for an invoice's `totalDue`.
+ * Mirrors `startBoostPurchase`'s two-phase shape: the intent is created
+ * inside its own transaction, the provider call happens outside any
+ * transaction (a network call must never hold one open), and the intent's
+ * move to `pending` is a second, short transaction. No in-app return route
+ * is created — the existing NotchPay webhook settles it, exactly like boost.
+ */
+export async function payInvoice(
+	payload: Payload,
+	user: ServiceUser,
+	invoiceId: string,
+	now: Date = new Date(),
+): Promise<{ checkoutUrl: string }> {
+	const invoice = await payload
+		.findByID({
+			collection: "commission-invoices",
+			id: invoiceId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (!invoice) {
+		throw new ServiceError(ERROR_CODES.commissionInvoiceNotFound, 404);
+	}
+	const shopId = relationId(invoice.shop);
+	if (!shopId) {
+		throw new ServiceError(ERROR_CODES.commissionInvoiceNotFound, 404);
+	}
+	// `payments.view` is owner/manager, deliberately not `payments.manage`
+	// (owner-only) — any member who can see the money can pay it off.
+	await requireShopPermission(payload, user, shopId, "payments.view");
+
+	if (invoice.status === "paid") {
+		throw new ServiceError(ERROR_CODES.commissionAlreadyPaid, 409);
+	}
+
+	const idempotencyKey = `commission:${invoice.id}`;
+	const replay = await findIntentByIdempotencyKey(payload, idempotencyKey);
+	if (replay && replay.status === "pending" && replay.checkoutUrl) {
+		return { checkoutUrl: replay.checkoutUrl };
+	}
+
+	const totalDue = invoice.totalDue ?? 0;
+	const currency = invoice.currency ?? "XAF";
+	const intent = await withTransaction(payload, (req) =>
+		createPaymentIntent(
+			payload,
+			{
+				purpose: "commission",
+				targetType: "commission-invoice",
+				targetId: String(invoice.id),
+				customerId: user.id,
+				amount: totalDue,
+				currency,
+				provider: "notchpay",
+				idempotencyKey,
+				now,
+			},
+			req,
+		),
+	);
+
+	const serverUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL ?? "";
+	let checkout: { checkoutUrl?: string; providerReference: string };
+	try {
+		checkout = await getProvider("notchpay").createPayment({
+			reference: String(intent.reference),
+			amount: totalDue,
+			currency,
+			description: `Commission BuyNSellem ${invoice.invoiceNumber}`,
+			callbackUrl: new URL(SETTLEMENT_WEBHOOK_PATH, serverUrl).toString(),
+			customer: { email: user.email ?? "", name: user.name ?? undefined },
+		});
+	} catch (error) {
+		payload.logger.error({
+			msg: "[commission] provider refused to create the payment",
+			intentId: intent.id,
+			err: error,
+		});
+		throw new ServiceError(ERROR_CODES.paymentProviderUnavailable, 502);
+	}
+
+	await withTransaction(payload, (req) =>
+		markIntentPending(
+			payload,
+			String(intent.id),
+			{
+				providerReference: checkout.providerReference,
+				checkoutUrl: checkout.checkoutUrl ?? null,
+			},
+			req,
+		),
+	);
+
+	return { checkoutUrl: checkout.checkoutUrl ?? "" };
+}
+
+/**
+ * Registered as `PURPOSE_HANDLERS.commission.onSucceeded`, so it takes the
+ * `(payload, intent, req: TxReq)` shape every purpose handler does — not
+ * `req.payload`, because `TxReq` is `Partial<PayloadRequest>` and `payload`
+ * is passed alongside it everywhere else in that registry (`attemptStatus`,
+ * `activateBoostPayment`). By the time this runs, `attemptStatus`
+ * (`services/payments.ts`) has already compared the provider's reported
+ * amount against `intent.amount`: a mismatch is turned into
+ * `amount_mismatch` and never reaches a purpose handler at all, which is
+ * what keeps a mis-settled invoice unpaid (P0's rule, re-used, not
+ * re-implemented).
+ */
+export async function applyCommissionSettlement(
+	payload: Payload,
+	intent: PaymentIntent,
+	req?: TxReq,
+): Promise<void> {
+	const invoice = await payload.findByID({
+		collection: "commission-invoices",
+		id: intent.targetId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (invoice.status === "paid") return;
+
+	await payload.update({
+		collection: "commission-invoices",
+		id: invoice.id,
+		overrideAccess: true,
+		req,
+		data: { status: "paid", paidAt: new Date().toISOString() },
+	});
+
+	const shopId = relationId(invoice.shop);
+	if (!shopId) return;
+	const shop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (shop.ordersRestrictedReason === "commission_overdue") {
+		const { totalDocs } = await payload.count({
+			collection: "commission-invoices",
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ status: { equals: "overdue" } },
+					{ id: { not_equals: String(invoice.id) } },
+				],
+			},
+			req,
+			overrideAccess: true,
+		});
+		if (totalDocs === 0) {
+			await payload.update({
+				collection: "shops",
+				id: shopId,
+				overrideAccess: true,
+				context: SHOP_SERVICE_CONTEXT,
+				req,
+				data: { ordersRestrictedAt: null, ordersRestrictedReason: null },
+			});
+		}
+	}
+
+	payload.logger.info({
+		msg: "[commission] invoice paid",
+		invoiceId: invoice.id,
+		shopId,
+	});
+}
+
+/** Staff-only: writes the waiver and its `ModerationLog` entry (with every
+ * waived line's order number) in the same transaction. */
+export async function waiveInvoice(
+	payload: Payload,
+	actor: Actor,
+	invoiceId: string,
+	note: string,
+): Promise<CommissionInvoice> {
+	if (!isModerator(actor)) {
+		throw new ModerationError(ERROR_CODES.moderationForbidden, 403);
+	}
+	if (!note || !note.trim()) {
+		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+	}
+
+	return withTransaction(payload, async (req) => {
+		const invoice = await req.payload.findByID({
+			collection: "commission-invoices",
+			id: invoiceId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		if (invoice.status === "paid") {
+			throw new ServiceError(ERROR_CODES.commissionAlreadyPaid, 409);
+		}
+
+		const lineIds = (invoice.lines ?? []).flatMap((line) => {
+			const id = relationId(line);
+			return id ? [id] : [];
+		});
+		const lines = await Promise.all(
+			lineIds.map((id) =>
+				req.payload
+					.findByID({
+						collection: "commission-lines",
+						id,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null),
+			),
+		);
+		const orderNumbers = (
+			await Promise.all(
+				lines.flatMap((line) => {
+					if (!line) return [];
+					const orderId = relationId(line.order);
+					if (!orderId) return [];
+					return [
+						req.payload
+							.findByID({
+								collection: "orders",
+								id: orderId,
+								depth: 0,
+								overrideAccess: true,
+								req,
+							})
+							.then((order) => order.orderNumber)
+							.catch(() => null),
+					];
+				}),
+			)
+		).filter((value): value is string => typeof value === "string");
+
+		const updated = await req.payload.update({
+			collection: "commission-invoices",
+			id: invoiceId,
+			overrideAccess: true,
+			req,
+			data: { status: "waived", waivedBy: actor.id, waivedNote: note },
+		});
+
+		for (const id of lineIds) {
+			await req.payload.update({
+				collection: "commission-lines",
+				id,
+				overrideAccess: true,
+				req,
+				data: { status: "waived" },
+			});
+		}
+
+		await req.payload.create({
+			collection: "moderation-log",
+			overrideAccess: true,
+			context: { moderationAction: true },
+			req,
+			data: {
+				actor: actor.id,
+				actorRole: actor.role ?? "user",
+				action: "commission.waive",
+				targetType: "commission-invoice",
+				targetId: String(invoiceId),
+				note,
+				metadata: { orderNumbers },
+			},
+		});
+
+		return updated;
+	});
+}
+
+/** Resolves a commission-invoice's lines to the order numbers and amounts the
+ * document and the billing view both show; a `carry_over` line (no order)
+ * falls back to its own kind as the label. */
+export async function resolveInvoiceLineViews(
+	payload: Payload,
+	invoice: CommissionInvoice,
+): Promise<InvoiceLineView[]> {
+	const lineIds = (invoice.lines ?? []).flatMap((line) => {
+		const id = relationId(line);
+		return id ? [id] : [];
+	});
+	const lines = await Promise.all(
+		lineIds.map((id) =>
+			payload
+				.findByID({
+					collection: "commission-lines",
+					id,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null),
+		),
+	);
+	return Promise.all(
+		lines.flatMap((line) => {
+			if (!line) return [];
+			const base = {
+				baseAmount: line.baseAmount ?? 0,
+				amount: line.amount,
+				kind: line.kind,
+			};
+			const orderId = relationId(line.order);
+			if (!orderId)
+				return [Promise.resolve({ ...base, orderNumber: line.kind })];
+			return [
+				payload
+					.findByID({
+						collection: "orders",
+						id: orderId,
+						depth: 0,
+						overrideAccess: true,
+					})
+					.then((order) => ({ ...base, orderNumber: order.orderNumber }))
+					.catch(() => ({ ...base, orderNumber: line.kind })),
+			];
+		}),
+	);
+}
+
+/**
+ * The shop billing screen's one read: every invoice (newest first), the
+ * still-accruing current week, and whether the shop is restricted. Current
+ * week bounds are derived from `weekBoundsDouala`'s *last complete* week
+ * rather than re-deriving the `Africa/Douala` boundary a second time.
+ */
+export async function getBillingView(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	now: Date = new Date(),
+): Promise<BillingView> {
+	await requireShopPermission(payload, user, shopId, "payments.view");
+
+	const { docs: invoices } = await payload.find({
+		collection: "commission-invoices",
+		where: { shop: { equals: shopId } },
+		sort: "-issuedAt",
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+
+	const invoiceViews = await Promise.all(
+		invoices.map(async (invoice) => ({
+			id: String(invoice.id),
+			invoiceNumber: invoice.invoiceNumber,
+			periodStart: invoice.periodStart ?? "",
+			periodEnd: invoice.periodEnd ?? "",
+			ordersCount: invoice.ordersCount ?? 0,
+			commissionTotal: invoice.commissionTotal ?? 0,
+			vatAmount: invoice.vatAmount ?? 0,
+			totalDue: invoice.totalDue ?? 0,
+			currency: "XAF" as const,
+			status: invoice.status ?? "issued",
+			issuedAt: invoice.issuedAt ?? "",
+			dueAt: invoice.dueAt ?? "",
+			paidAt: invoice.paidAt ?? null,
+			lines: await resolveInvoiceLineViews(payload, invoice),
+		})),
+	);
+
+	const lastWeek = weekBoundsDouala(now);
+	const currentStart = new Date(
+		new Date(lastWeek.periodEnd).getTime() + 1,
+	).toISOString();
+	const currentEnd = new Date(
+		new Date(currentStart).getTime() + 7 * DAY_MS - 1,
+	).toISOString();
+
+	const { docs: openLines } = await payload.find({
+		collection: "commission-lines",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ kind: { equals: "charge" } },
+				{ status: { equals: "open" } },
+				{ accruedAt: { greater_than_equal: currentStart } },
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const accrued = openLines.reduce((sum, line) => sum + line.amount, 0);
+	const ordersCount = new Set(
+		openLines.flatMap((line) => {
+			const orderId = relationId(line.order);
+			return orderId ? [orderId] : [];
+		}),
+	).size;
+
+	const shop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const restricted = shop.ordersRestrictedAt
+		? {
+				since: shop.ordersRestrictedAt,
+				reason: shop.ordersRestrictedReason ?? "commission_overdue",
+			}
+		: null;
+
+	return {
+		invoices: invoiceViews,
+		currentPeriod: {
+			periodStart: currentStart,
+			periodEnd: currentEnd,
+			accrued,
+			ordersCount,
+		},
+		restricted,
+	};
+}
+
+export { renderInvoiceHtml } from "../lib/commissionInvoiceDocument";

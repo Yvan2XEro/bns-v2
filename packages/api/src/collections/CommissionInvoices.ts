@@ -87,6 +87,11 @@ export const CommissionInvoices: CollectionConfig = {
 		{ name: "dueAt", type: "date" },
 		{ name: "paidAt", type: "date" },
 		{ name: "restrictedAt", type: "date" },
+		// Makes the dueAt-2d reminder idempotent across daily enforcement runs:
+		// without a marker, every run between the reminder point and dueAt would
+		// re-send it. Added by Task 14 (services/commission.ts#enforceOverdue);
+		// no other field here can carry this flag.
+		{ name: "dueSoonReminderSentAt", type: "date" },
 		{
 			name: "paymentIntents",
 			type: "relationship",

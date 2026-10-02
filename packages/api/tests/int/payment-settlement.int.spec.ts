@@ -488,3 +488,105 @@ describe("boost activation", () => {
 		expect(listingOf(payload).boostedUntil).toBe(at(14 * DAY));
 	});
 });
+
+// Task 14: the `commission` purpose, wired into the same registry boost
+// uses — `services/commission.ts` is never imported directly here, only
+// through `settlePayment`/`PURPOSE_HANDLERS`, the same way a caller reaches
+// it in production.
+function commissionWorld(
+	invoice: Record<string, unknown> = {},
+	intent: Record<string, unknown> = {},
+) {
+	return fakePayload({
+		shops: [
+			{
+				id: "s-1",
+				name: "Shop",
+				handle: "shop",
+				owner: "u-1",
+				status: "active",
+			},
+		],
+		"commission-invoices": [
+			{
+				id: "inv-1",
+				invoiceNumber: "BNS-C-2026-000001",
+				shop: "s-1",
+				status: "issued",
+				totalDue: 4_293,
+				...invoice,
+			},
+		],
+		"payment-intents": [
+			{
+				id: "pi-1",
+				purpose: "commission",
+				targetType: "commission-invoice",
+				targetId: "inv-1",
+				customer: "u-1",
+				amount: 4_293,
+				currency: "XAF",
+				provider: "notchpay",
+				providerReference: "trx.c1",
+				reference: "PI-pi-1",
+				status: "pending",
+				statusHistory: [],
+				idempotencyKey: "commission:inv-1",
+				...intent,
+			},
+		],
+	});
+}
+
+const invoiceOf = (p: FakePayload) => p.store["commission-invoices"][0];
+
+describe("commission settlement (PURPOSE_HANDLERS.commission)", () => {
+	const paid = {
+		reference: "PI-pi-1",
+		status: "succeeded" as const,
+		amount: 4_293,
+		currency: "XAF",
+		providerTransactionId: "trx.c1",
+	};
+
+	it("marks the invoice paid on a matching settlement", async () => {
+		const payload = commissionWorld();
+		const result = await settlePayment(payload, { ...paid, source: "webhook" });
+
+		expect(result.outcome).toBe("applied");
+		expect(invoiceOf(payload)).toMatchObject({ status: "paid" });
+	});
+
+	it("a settled amount different from totalDue leaves the intent pending and the invoice unpaid", async () => {
+		const payload = commissionWorld();
+		const result = await settlePayment(payload, {
+			...paid,
+			amount: 1_000, // the invoice's totalDue is 4 293
+			source: "webhook",
+		});
+
+		expect(result.outcome).toBe("amount_mismatch");
+		expect(payload.store["payment-intents"][0].status).toBe("pending");
+		expect(invoiceOf(payload).status).toBe("issued");
+	});
+
+	it("ignores a duplicate commission settlement webhook", async () => {
+		const payload = commissionWorld();
+		await settlePayment(payload, { ...paid, source: "webhook" });
+		const again = await settlePayment(payload, { ...paid, source: "callback" });
+
+		expect(again.outcome).toBe("unchanged");
+		expect(invoiceOf(payload).status).toBe("paid");
+	});
+
+	it("does nothing to the invoice on a failed commission payment", async () => {
+		const payload = commissionWorld();
+		await settlePayment(payload, {
+			...paid,
+			status: "failed",
+			source: "webhook",
+		});
+
+		expect(invoiceOf(payload).status).toBe("issued");
+	});
+});

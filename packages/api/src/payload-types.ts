@@ -1079,6 +1079,7 @@ export interface CommissionInvoice {
   dueAt?: string | null;
   paidAt?: string | null;
   restrictedAt?: string | null;
+  dueSoonReminderSentAt?: string | null;
   paymentIntents?: (string | PaymentIntent)[] | null;
   sellerSnapshot?:
     | {
@@ -3134,6 +3135,7 @@ export interface CommissionInvoicesSelect<T extends boolean = true> {
   dueAt?: T;
   paidAt?: T;
   restrictedAt?: T;
+  dueSoonReminderSentAt?: T;
   paymentIntents?: T;
   sellerSnapshot?: T;
   issuerSnapshot?: T;
