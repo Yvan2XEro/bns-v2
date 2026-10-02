@@ -140,6 +140,21 @@ export function deliveryFeeFor(
 	);
 }
 
+/**
+ * What a launch city charges when the shop sets no override of its own: the
+ * settings global's figure for that city, else the city's built-in default.
+ * `quoteDelivery` falls back to exactly this, so a seller shown it as the
+ * default is shown the fee a buyer would really be charged.
+ */
+export function cityDeliveryFee(
+	settings: OrderSettings,
+	city: LaunchCityKey,
+): number {
+	return (
+		deliveryFeeFor(settings, city) ?? LAUNCH_CITIES[city].defaultDeliveryFee
+	);
+}
+
 /** An empty pilot list means every eligible shop; a non-empty one is a whitelist. */
 export function isPilotShop(settings: OrderSettings, shopId: string): boolean {
 	return (

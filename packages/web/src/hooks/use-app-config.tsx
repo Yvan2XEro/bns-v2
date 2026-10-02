@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { LaunchCityOption } from "~/types/order";
 
 export interface BoostPrice {
 	days: number;
@@ -15,6 +16,11 @@ export interface AppConfig {
 	boostPricing: BoostPrice[];
 	/** Gates shop creation only. Fails closed: "unavailable" reads as "off". */
 	shopsEnabled: boolean;
+	/** Gates the cart, checkout and order screens. Fails closed the same way. */
+	ordersEnabled: boolean;
+	/** The cities ordering is open in, with each one's default delivery fee. */
+	launchCities: LaunchCityOption[];
+	withdrawalDays: number;
 }
 
 export const EMPTY_APP_CONFIG: AppConfig = {
@@ -23,6 +29,12 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	novuAppId: null,
 	boostPricing: [],
 	shopsEnabled: false,
+	// The three values `GET /api/public/config` itself falls back to on a
+	// settings outage: a client that cannot read the flag hides ordering
+	// rather than advertising it.
+	ordersEnabled: false,
+	launchCities: [],
+	withdrawalDays: 15,
 };
 
 const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);

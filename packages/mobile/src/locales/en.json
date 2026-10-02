@@ -2378,16 +2378,7 @@
 		"withdrawalSubmit": "Submit return request",
 		"withdrawalSent": "Your return request was sent",
 		"cancelReason_changedMind": "I changed my mind",
-		"cancelReason_foundCheaper": "I found it cheaper elsewhere",
-		"cancelReason_orderedByMistake": "I ordered by mistake",
-		"cancelReason_duplicateOrder": "This is a duplicate order",
-		"cancelReason_wrongAddress": "I entered the wrong address",
-		"cancelReason_wrongItem": "I ordered the wrong item",
-		"cancelReason_noLongerNeeded": "I no longer need this item",
-		"cancelReason_deliveryTooSlow": "Delivery is taking too long",
-		"cancelReason_paymentIssue": "I have a payment issue",
-		"cancelReason_sellerUnresponsive": "The seller is not responding",
-		"cancelReason_other": "Other reason"
+		"cancelReason_orderedByMistake": "I ordered by mistake"
 	},
 	"sellerOrders": {
 		"title": "Orders",

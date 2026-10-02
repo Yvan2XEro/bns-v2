@@ -1,5 +1,5 @@
-import { isLaunchCityKey, LAUNCH_CITIES } from "../lib/launchCities";
-import { deliveryFeeFor, type OrderSettings } from "../lib/orderSettings";
+import { isLaunchCityKey } from "../lib/launchCities";
+import { cityDeliveryFee, type OrderSettings } from "../lib/orderSettings";
 import type { Shop } from "../payload-types";
 
 export interface QuoteItem {
@@ -41,13 +41,6 @@ export interface DeliveryQuoteInput {
 	settings: OrderSettings;
 }
 
-function cityDeliveryFee(settings: OrderSettings, city: string): number {
-	if (!isLaunchCityKey(city)) return 0;
-	return (
-		deliveryFeeFor(settings, city) ?? LAUNCH_CITIES[city].defaultDeliveryFee
-	);
-}
-
 /**
  * P4's flat-fee implementation. P7 replaces this body behind the same
  * signature — the plan names this exact seam — once real courier quotes
@@ -66,8 +59,14 @@ export async function quoteDelivery(
 		shopCity &&
 		shopCity === input.destination.city
 	) {
+		// A shop outside the launch cities has no city default to fall back to;
+		// `isListingOrderable` already keeps its listings unorderable, so the
+		// zero here is a shape, never a fee a buyer is charged.
 		const fee =
-			settings.deliveryFee ?? cityDeliveryFee(input.settings, shopCity);
+			settings.deliveryFee ??
+			(isLaunchCityKey(shopCity)
+				? cityDeliveryFee(input.settings, shopCity)
+				: 0);
 		options.push({
 			optionId: `seller_delivery:${shopCity}`,
 			method: "seller_delivery",

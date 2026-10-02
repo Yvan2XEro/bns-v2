@@ -56,12 +56,16 @@ describe("the P3 workflows", () => {
  * commission workflows. The spec this brief names as authority
  * (`docs/superpowers/specs/2026-09-15-p4-cod-orders-design.md`, "Notifications"
  * table) lists exactly fourteen: eleven `order-*` rows plus three
- * `commission-invoice-*` rows. Nothing in the spec names a fifteenth or
- * sixteenth workflow anywhere else in the document (checked: no other
- * `notify \`...\`` call site exists). This test pins the fourteen the table
- * actually names, so a forgotten one fails by naming it and an accidental
- * extra under the same prefix fails too — it does not pretend the count is
- * sixteen to match an assertion the primary source does not support.
+ * `commission-invoice-*` rows. This test pins those fourteen, so a forgotten
+ * one fails by naming it and an accidental extra under the same prefix fails
+ * too — it does not pretend the count is sixteen to match an assertion the
+ * primary source does not support.
+ *
+ * `order-stale-reminder` is the fifteenth and is NOT in the spec's table: the
+ * spec gives `failStaleOrders` its three-day nudge but no workflow row for
+ * it, so the job was triggering an event nothing delivered. The catalogue
+ * entry was added with the shape of the fourteen; it is listed here because
+ * a workflow the code fires must exist, not because the spec names it.
  */
 const P4_WORKFLOW_IDS = [
 	"order-placed",
@@ -75,6 +79,7 @@ const P4_WORKFLOW_IDS = [
 	"order-delivery-declared",
 	"order-withdrawal-requested",
 	"order-review-reminder",
+	"order-stale-reminder",
 	"commission-invoice-issued",
 	"commission-invoice-overdue",
 	"commission-invoice-paid",
@@ -99,6 +104,7 @@ const P4_PAYLOAD_REQUIRED_FIELDS: Record<string, string[]> = {
 	"order-delivery-declared": ["orderId", "orderNumber", "contestBy"],
 	"order-withdrawal-requested": ["orderId", "caseNumber", "itemsCount"],
 	"order-review-reminder": ["orderId", "shopName"],
+	"order-stale-reminder": ["orderId", "orderNumber", "shippedAt", "staleAt"],
 	"commission-invoice-issued": [
 		"invoiceId",
 		"invoiceNumber",
@@ -110,7 +116,7 @@ const P4_PAYLOAD_REQUIRED_FIELDS: Record<string, string[]> = {
 };
 
 describe("the P4 order and commission workflows", () => {
-	it("declares exactly the fourteen the spec's table names, no fewer and no more under the same prefixes", () => {
+	it("declares exactly the spec's fourteen plus order-stale-reminder, no fewer and no more under the same prefixes", () => {
 		for (const id of P4_WORKFLOW_IDS) {
 			expect(ids).toContain(id);
 		}
@@ -189,7 +195,7 @@ describe("buildExpoPushData", () => {
 	});
 });
 
-describe("buildExpoPushData for the fourteen P4 order and commission workflows", () => {
+describe("buildExpoPushData for the fifteen P4 order and commission workflows", () => {
 	it("sends order-placed and order-delivered to the buyer's purchase screen by default", () => {
 		for (const event of ["order-placed", "order-delivered"]) {
 			expect(buildExpoPushData(event, { orderId: "o-1" })).toEqual({
@@ -210,10 +216,11 @@ describe("buildExpoPushData for the fourteen P4 order and commission workflows",
 		}
 	});
 
-	it("sends the two shop-only order workflows to the shop's order screen", () => {
+	it("sends the three shop-only order workflows to the shop's order screen", () => {
 		for (const event of [
 			"order-confirmation-needed",
 			"order-accept-reminder",
+			"order-stale-reminder",
 		]) {
 			expect(buildExpoPushData(event, { orderId: "o-1" })).toEqual({
 				orderId: "o-1",

@@ -331,6 +331,57 @@ describe("buyerCancelOrder", () => {
 		expect(variantOf(payload)?.stockReserved).toBe(1);
 		expect(events(payload)).toHaveLength(0);
 	});
+
+	/**
+	 * The two reasons `cancellation.reason` can hold from a buyer (spec line
+	 * 151), and what happens to a third. This used to coerce anything
+	 * unrecognised to `buyer_changed_mind`, which wrote a reason the buyer
+	 * never gave into the record with nothing to show it had happened — the
+	 * clients were shipping eleven options against these two.
+	 */
+	it("records each of the two reasons the model stores, as given", async () => {
+		for (const reason of [
+			"buyer_changed_mind",
+			"buyer_ordered_by_mistake",
+		] as const) {
+			const payload = seed({ order: baseOrder({ status: "placed" }) });
+			await buyerCancelOrder(payload, buyerUser, "order-1", { reason });
+			const order = await freshOrder(payload);
+			expect(order.cancellation).toMatchObject({ by: "buyer", reason });
+		}
+	});
+
+	it("defaults to buyer_changed_mind when the buyer gives no reason at all", async () => {
+		const payload = seed({ order: baseOrder({ status: "placed" }) });
+		await buyerCancelOrder(payload, buyerUser, "order-1", {});
+		expect((await freshOrder(payload)).cancellation).toMatchObject({
+			reason: "buyer_changed_mind",
+		});
+	});
+
+	it("refuses an unrecognised reason instead of recording a false one", async () => {
+		const payload = seed({ order: baseOrder({ status: "placed" }) });
+		await expect(
+			buyerCancelOrder(payload, buyerUser, "order-1", {
+				reason: "found_cheaper",
+			}),
+		).rejects.toMatchObject({ code: "order.reasonRequired", status: 400 });
+
+		const order = await freshOrder(payload);
+		expect(order.status).toBe("placed");
+		expect(order.cancellation?.reason ?? null).toBeNull();
+		expect(events(payload)).toHaveLength(0);
+	});
+
+	it("refuses a seller's reason sent on the buyer's route", async () => {
+		const payload = seed({ order: baseOrder({ status: "placed" }) });
+		await expect(
+			buyerCancelOrder(payload, buyerUser, "order-1", {
+				reason: "seller_out_of_stock",
+			}),
+		).rejects.toMatchObject({ code: "order.reasonRequired" });
+		expect((await freshOrder(payload)).status).toBe("placed");
+	});
 });
 
 describe("shipOrder", () => {

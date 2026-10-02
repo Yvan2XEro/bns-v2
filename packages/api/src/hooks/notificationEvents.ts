@@ -43,6 +43,9 @@ export function buildExpoPushData(
 		// `order-placed` and `order-delivered` reach both the buyer and shop
 		// members from the same workflow id; `audience` (present on both
 		// payloads) is the only signal this function has to tell them apart.
+		// The shop-only reminders (`order-confirmation-needed`,
+		// `order-accept-reminder`, `order-stale-reminder`) have one audience and
+		// need no such field.
 		// The other mixed-recipient order workflows (`order-cancelled`,
 		// `order-delivery-failed`, `order-withdrawal-requested`) carry no such
 		// field per the spec table, so they fall back to the buyer's screen —
@@ -57,6 +60,7 @@ export function buildExpoPushData(
 		}
 		case "order-confirmation-needed":
 		case "order-accept-reminder":
+		case "order-stale-reminder":
 			return orderId
 				? { orderId, url: `/seller/orders/${orderId}` }
 				: undefined;

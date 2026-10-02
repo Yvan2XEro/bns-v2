@@ -18,54 +18,21 @@ export { orderSettingsKey };
  */
 export type OrderSettingsInput = NonNullable<Shop["orderSettings"]>;
 
-function pickupPointOf(
-	group: OrderSettingsInput,
-): OrderSettingsView["pickupPoint"] {
-	const point = group.pickupPoint;
-	if (!point?.address) return null;
-	const lat = point.gps?.lat;
-	const lng = point.gps?.lng;
-	return {
-		address: point.address,
-		landmark: point.landmark ?? null,
-		gps:
-			typeof lat === "number" && typeof lng === "number" ? { lat, lng } : null,
-		hours: point.hours ?? null,
-	};
-}
-
 /**
- * The shop's COD, delivery and pickup settings.
- *
- * Read through Payload's own `GET /api/shops/{id}` because that is the only
- * endpoint that serves them: no task in this plan builds a route answering
- * `OrderSettingsView`, so `caps` and `cityDefaultFee` — both derived
- * server-side, from `shopCapabilities.codCaps` and `deliveryFeeFor` — have no
- * source and come back `null`, which the contract already allows. A screen
- * must therefore render no caps notice rather than compute one; see Task 29's
- * report for the plan defect. When the endpoint lands, the body of this
- * `queryFn` becomes a single `apiGet` and nothing else here changes.
+ * The shop's COD, delivery and pickup settings, straight off
+ * `GET /api/shops/{id}/order-settings` — the route that answers
+ * `OrderSettingsView` whole, including the two fields only the server can
+ * state: `caps` (the shop's effective-level COD ceilings) and
+ * `cityDefaultFee` (what the launch city charges when the shop sets no fee of
+ * its own). It is `payments.view`-gated, so a staff member reads neither.
  */
 export function useOrderSettings(shopId: string | null) {
 	return useQuery<OrderSettingsView, ApiError>({
 		queryKey: orderSettingsKey(shopId ?? ""),
-		queryFn: async () => {
-			const shop = await apiGet<Shop>(
-				`/api/shops/${encodeURIComponent(shopId ?? "")}?depth=0`,
-			);
-			const group: OrderSettingsInput = shop.orderSettings ?? {};
-			return {
-				codEnabled: group.codEnabled === true,
-				sellerDeliveryEnabled: group.sellerDeliveryEnabled !== false,
-				deliveryFee: group.deliveryFee ?? null,
-				deliveryEtaText: group.deliveryEtaText ?? null,
-				pickupEnabled: group.pickupEnabled === true,
-				pickupPoint: pickupPointOf(group),
-				salesTermsExtra: group.salesTermsExtra ?? null,
-				caps: null,
-				cityDefaultFee: null,
-			};
-		},
+		queryFn: () =>
+			apiGet<OrderSettingsView>(
+				`/api/shops/${encodeURIComponent(shopId ?? "")}/order-settings`,
+			),
 		enabled: Boolean(shopId),
 		retry: false,
 	});
@@ -78,21 +45,21 @@ export const saveOrderSettingsKey = [
 ] as const;
 
 /**
- * Saves the group through the shop's own `PATCH /api/shops/{id}`, which is
- * `settings.edit`-gated — the same gate the rest of the shop's profile uses,
- * so there is no second permission rule to keep in step. The shop document
- * itself changes, so `myShopKey` is dropped alongside these settings.
+ * Saves the group through `PATCH /api/shops/{id}/order-settings`, which is
+ * `settings.edit`-gated — the same permission `PATCH /api/shops/{id}` demands
+ * for this group, so there is no second rule to keep in step — and answers
+ * the fresh `OrderSettingsView`. The shop document itself changes (a search
+ * reindex hangs off `orderSettings.codEnabled`), so `myShopKey` is dropped
+ * alongside these settings.
  */
 export function useSaveOrderSettings(shopId: string | null) {
 	const queryClient = useQueryClient();
-	return useMutation<{ doc: Shop }, ApiError, OrderSettingsInput>({
+	return useMutation<OrderSettingsView, ApiError, OrderSettingsInput>({
 		mutationKey: [...saveOrderSettingsKey, shopId ?? ""],
 		mutationFn: (orderSettings) =>
-			apiPatch<{ doc: Shop }>(
-				`/api/shops/${encodeURIComponent(shopId ?? "")}`,
-				{
-					orderSettings,
-				},
+			apiPatch<OrderSettingsView>(
+				`/api/shops/${encodeURIComponent(shopId ?? "")}/order-settings`,
+				orderSettings,
 			),
 		retry: false,
 		onSuccess: () => {

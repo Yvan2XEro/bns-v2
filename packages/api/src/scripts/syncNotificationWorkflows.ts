@@ -1464,6 +1464,53 @@ const workflowSpecs: WorkflowSpec[] = [
 			],
 		},
 	},
+	/**
+	 * Not in the spec's notification catalogue: the spec gives the stale
+	 * shipment its job (`failStaleOrders`) and its reminder, but no workflow
+	 * row, so `triggerNotificationEvent("order-stale-reminder")` fired into
+	 * nothing. This entry is added here with the shape of the fourteen the
+	 * table does name; its payload is exactly what `notifyShop`
+	 * (jobs/failStaleOrders.ts) sends, and like `order-accept-reminder` it
+	 * reaches shop members only.
+	 */
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Stale Reminder",
+			description:
+				"Nudges shop members about an order still in transit three days after shipping.",
+			workflowId: "order-stale-reminder",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					shippedAt: stringProperty("Shipping date, ISO date"),
+					staleAt: stringProperty(
+						"Date the order fails automatically, ISO date",
+					),
+				},
+				["orderId", "orderNumber", "shippedAt", "staleAt"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Livraison en attente",
+					body: "Commande {{payload.orderNumber}} : expediee le {{payload.shippedAt}} et toujours en transit. Confirmez la remise ou signalez un echec. / Order {{payload.orderNumber}}: shipped on {{payload.shippedAt}} and still in transit. Confirm the handover or report a failure.",
+					redirect: redirect("/seller/orders/{{payload.orderId}}"),
+					primaryAction: action("Ouvrir", "/seller/orders/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Livraison en attente",
+					body: "Commande {{payload.orderNumber}} : toujours en transit, a cloturer avant {{payload.staleAt}}.",
+				}),
+			],
+		},
+	},
 	{
 		channels: { inApp: true, push: true, email: true },
 		definition: {

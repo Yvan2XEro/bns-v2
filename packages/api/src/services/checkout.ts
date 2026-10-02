@@ -24,6 +24,7 @@ import {
 	isPilotShop,
 	type OrderSettings,
 } from "../lib/orderSettings";
+import { type PickupPointView, pickupPointView } from "../lib/pickupPointView";
 import { quoteHash } from "../lib/quoteHash";
 import {
 	type CounterStore,
@@ -591,6 +592,97 @@ async function codAllowedByProduct(
 }
 
 /**
+ * The priced form of the cart every delivery and fee calculation starts from.
+ * Shared by the quote and by the delivery-option list so the two can never
+ * price the same cart differently.
+ */
+async function priceCartLines(
+	payload: Payload,
+	lines: readonly CartLineView[],
+): Promise<{ items: QuoteItem[]; subtotal: number }> {
+	const codAllowedMap = await codAllowedByProduct(payload, lines);
+	const items: QuoteItem[] = lines.map((line) => ({
+		variantId: line.variantId,
+		quantity: line.quantity,
+		// `CartLineView.lineSubtotal` is the one priced figure the serialiser
+		// publishes; recomputing it here is how the quote and the cart would
+		// drift apart again.
+		lineSubtotal: line.lineSubtotal,
+		codAllowed: codAllowedMap.get(line.productId) ?? true,
+	}));
+	return {
+		items,
+		subtotal: items.reduce((sum, item) => sum + item.lineSubtotal, 0),
+	};
+}
+
+/** The contract's `DeliveryOption`, with the pickup point a client can rely on. */
+export interface DeliveryOptionView {
+	optionId: string;
+	method: "seller_delivery" | "pickup";
+	fee: number;
+	etaText: string;
+	codAllowed: boolean;
+	pickupPoint?: PickupPointView;
+}
+
+function deliveryOptionView(option: DeliveryOption): DeliveryOptionView {
+	const point = pickupPointView(option.pickupPoint);
+	return {
+		optionId: option.optionId,
+		method: option.method,
+		fee: option.fee,
+		etaText: option.etaText,
+		codAllowed: option.codAllowed,
+		...(point ? { pickupPoint: point } : {}),
+	};
+}
+
+/**
+ * The delivery step's own source of options, for the city the buyer is about
+ * to deliver to (the shop's own city when none is named — the only city
+ * `seller_delivery` is ever offered in).
+ *
+ * It runs the same preconditions as the quote and asks `quoteDelivery` for
+ * the answer rather than re-deriving which options exist: a step that
+ * offered an option the quote would then refuse is the bug this exists to
+ * avoid. No rate limit of its own — it reveals nothing the cart does not
+ * already show its owner, and `quoteCheckout` still counts the quote that
+ * follows.
+ */
+export async function listDeliveryOptions(
+	payload: Payload,
+	user: ServiceUser,
+	input: { city?: unknown; district?: unknown } = {},
+	options: { now?: Date } = {},
+): Promise<{ city: string; options: DeliveryOptionView[] }> {
+	const now = options.now ?? new Date();
+	const { settings, lines, shop } = await assertCheckoutPreconditions(
+		payload,
+		user,
+		{ now },
+	);
+	const city =
+		typeof input.city === "string" && input.city.trim()
+			? input.city.trim()
+			: (shop.location?.city ?? "");
+	const district =
+		typeof input.district === "string" && input.district.trim()
+			? input.district.trim()
+			: undefined;
+
+	const { items, subtotal } = await priceCartLines(payload, lines);
+	const quoted = await quoteDelivery({
+		shop,
+		items,
+		subtotal,
+		destination: { city, district },
+		settings,
+	});
+	return { city, options: quoted.map(deliveryOptionView) };
+}
+
+/**
  * The buyer's own COD checkout quote: a priced promise computed fresh from
  * the current cart, the shop's current settings and the buyer's current
  * risk tier — never from anything stored. `placeOrder` (Task 19) re-runs
@@ -650,14 +742,7 @@ async function buildQuote(
 		throw new CheckoutError(ERROR_CODES.checkoutCityNotServed, 409);
 	}
 
-	const codAllowedMap = await codAllowedByProduct(payload, lines);
-	const subtotal = lines.reduce((sum, line) => sum + line.lineSubtotal, 0);
-	const quoteItems: QuoteItem[] = lines.map((line) => ({
-		variantId: line.variantId,
-		quantity: line.quantity,
-		lineSubtotal: line.lineSubtotal,
-		codAllowed: codAllowedMap.get(line.productId) ?? true,
-	}));
+	const { items: quoteItems, subtotal } = await priceCartLines(payload, lines);
 
 	const deliveryOptions: DeliveryOption[] = await quoteDelivery({
 		shop,

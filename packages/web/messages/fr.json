@@ -2033,16 +2033,7 @@
 		"withdrawalSubmit": "Envoyer la demande de retour",
 		"withdrawalSent": "Votre demande de retour a été envoyée",
 		"cancelReason_changedMind": "J'ai changé d'avis",
-		"cancelReason_foundCheaper": "J'ai trouvé moins cher ailleurs",
-		"cancelReason_orderedByMistake": "J'ai commandé par erreur",
-		"cancelReason_duplicateOrder": "C'est une commande en double",
-		"cancelReason_wrongAddress": "J'ai saisi la mauvaise adresse",
-		"cancelReason_wrongItem": "Je me suis trompé d'article",
-		"cancelReason_noLongerNeeded": "Je n'ai plus besoin de cet article",
-		"cancelReason_deliveryTooSlow": "La livraison prend trop de temps",
-		"cancelReason_paymentIssue": "J'ai un problème de paiement",
-		"cancelReason_sellerUnresponsive": "Le vendeur ne répond pas",
-		"cancelReason_other": "Autre raison"
+		"cancelReason_orderedByMistake": "J'ai commandé par erreur"
 	},
 	"SellerOrders": {
 		"title": "Commandes",

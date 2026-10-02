@@ -99,13 +99,27 @@ function parseSellerEndReason(
 	return { reason, note };
 }
 
-/** The buyer's own reason is optional context, never a gate: a buyer may
- * always cancel within the allowed statuses, with or without saying why. */
+/**
+ * Saying why is optional — a buyer may always cancel within the allowed
+ * statuses — but *claiming* a reason the enum cannot hold is refused rather
+ * than quietly turned into "changed their mind". Coercion put a reason the
+ * buyer never gave into the cancellation record, with nothing anywhere to
+ * show it had happened; a client that sends an unknown value is a defect,
+ * and `order.reasonRequired` is how it finds out.
+ */
 function parseBuyerCancelReason(reasonInput: unknown): CancellationReason {
-	return (
-		BUYER_CANCEL_REASONS.find((candidate) => candidate === reasonInput) ??
-		"buyer_changed_mind"
+	if (reasonInput === undefined || reasonInput === null)
+		return "buyer_changed_mind";
+	const reason = BUYER_CANCEL_REASONS.find(
+		(candidate) => candidate === reasonInput,
 	);
+	if (!reason)
+		throw new ServiceError(
+			ERROR_CODES.orderReasonRequired,
+			400,
+			"a buyer cancellation reason must be one of the two the order model stores",
+		);
+	return reason;
 }
 
 /**

@@ -133,18 +133,11 @@ describe("every computed-family key the code could pick at runtime exists", () =
 		"failure_other",
 	];
 
+	// Two, not eleven: `cancellation.reason` stores only these two from a
+	// buyer (spec line 151), and `parseBuyerCancelReason` refuses the rest.
 	const CANCEL_REASON_KEYS = [
 		"cancelReason_changedMind",
-		"cancelReason_foundCheaper",
 		"cancelReason_orderedByMistake",
-		"cancelReason_duplicateOrder",
-		"cancelReason_wrongAddress",
-		"cancelReason_wrongItem",
-		"cancelReason_noLongerNeeded",
-		"cancelReason_deliveryTooSlow",
-		"cancelReason_paymentIssue",
-		"cancelReason_sellerUnresponsive",
-		"cancelReason_other",
 	];
 
 	const TIER_KEYS = ["tierNew", "tierRegular", "tierTrusted", "tierWatch"];
@@ -153,7 +146,7 @@ describe("every computed-family key the code could pick at runtime exists", () =
 		expect(STATUS_KEYS).toHaveLength(22);
 		expect(TAB_KEYS).toHaveLength(6);
 		expect(FAILURE_REASON_KEYS).toHaveLength(6);
-		expect(CANCEL_REASON_KEYS).toHaveLength(11);
+		expect(CANCEL_REASON_KEYS).toHaveLength(2);
 		expect(TIER_KEYS).toHaveLength(4);
 	});
 
@@ -330,16 +323,7 @@ describe("every key Task 7 promised for its own namespaces exists", () => {
 			"withdrawalSubmit",
 			"withdrawalSent",
 			"cancelReason_changedMind",
-			"cancelReason_foundCheaper",
 			"cancelReason_orderedByMistake",
-			"cancelReason_duplicateOrder",
-			"cancelReason_wrongAddress",
-			"cancelReason_wrongItem",
-			"cancelReason_noLongerNeeded",
-			"cancelReason_deliveryTooSlow",
-			"cancelReason_paymentIssue",
-			"cancelReason_sellerUnresponsive",
-			"cancelReason_other",
 		],
 		SellerOrders: [
 			"title",
@@ -441,5 +425,50 @@ describe("every key Task 7 promised for its own namespaces exists", () => {
 			}
 		}
 		expect(missing).toEqual([]);
+	});
+});
+
+/**
+ * The copy and the data model, compared.
+ *
+ * `cancellation.reason` on an order is a select over the spec's twelve
+ * reasons (spec line 151), of which exactly two are the buyer's own, and
+ * `parseBuyerCancelReason` refuses anything else. These locale files once
+ * offered eleven: nine of them would have been recorded as a reason the
+ * buyer did not give. The set is asserted in both directions, so a key
+ * re-added to the copy fails here as loudly as one deleted from it.
+ */
+describe("the buyer cancellation copy and the order model agree", () => {
+	const BUYER_CANCEL_REASONS = [
+		"buyer_changed_mind",
+		"buyer_ordered_by_mistake",
+	] as const;
+
+	const KEY_OF_REASON: Record<(typeof BUYER_CANCEL_REASONS)[number], string> = {
+		buyer_changed_mind: "cancelReason_changedMind",
+		buyer_ordered_by_mistake: "cancelReason_orderedByMistake",
+	};
+
+	const shippedKeys = (catalogue: Json): string[] => {
+		const purchases = catalogue.Purchases;
+		if (!purchases || typeof purchases !== "object") return [];
+		return Object.keys(purchases)
+			.filter((key) => key.startsWith("cancelReason_"))
+			.sort();
+	};
+
+	test("every reason the model stores has a key, in both locales", () => {
+		expect(BUYER_CANCEL_REASONS).toHaveLength(2);
+		for (const reason of BUYER_CANCEL_REASONS) {
+			const path = `Purchases.${KEY_OF_REASON[reason]}`;
+			expect(leaf(en as Json, path)).not.toBeUndefined();
+			expect(leaf(fr as Json, path)).not.toBeUndefined();
+		}
+	});
+
+	test("the copy offers no reason the model cannot store", () => {
+		const expected = Object.values(KEY_OF_REASON).sort();
+		expect(shippedKeys(en as Json)).toEqual(expected);
+		expect(shippedKeys(fr as Json)).toEqual(expected);
 	});
 });

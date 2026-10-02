@@ -284,18 +284,11 @@ describe("locale parity", () => {
 		"failure_other",
 	];
 
+	// Two, not eleven: `cancellation.reason` stores only these two from a
+	// buyer (spec line 151), and `parseBuyerCancelReason` refuses the rest.
 	const CANCEL_REASON_KEYS = [
 		"cancelReason_changedMind",
-		"cancelReason_foundCheaper",
 		"cancelReason_orderedByMistake",
-		"cancelReason_duplicateOrder",
-		"cancelReason_wrongAddress",
-		"cancelReason_wrongItem",
-		"cancelReason_noLongerNeeded",
-		"cancelReason_deliveryTooSlow",
-		"cancelReason_paymentIssue",
-		"cancelReason_sellerUnresponsive",
-		"cancelReason_other",
 	];
 
 	const TIER_KEYS = ["tierNew", "tierRegular", "tierTrusted", "tierWatch"];
@@ -304,7 +297,7 @@ describe("locale parity", () => {
 		expect(STATUS_KEYS).toHaveLength(22);
 		expect(TAB_KEYS).toHaveLength(6);
 		expect(FAILURE_REASON_KEYS).toHaveLength(6);
-		expect(CANCEL_REASON_KEYS).toHaveLength(11);
+		expect(CANCEL_REASON_KEYS).toHaveLength(2);
 		expect(TIER_KEYS).toHaveLength(4);
 	});
 

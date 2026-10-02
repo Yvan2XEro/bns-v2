@@ -398,3 +398,14 @@ export interface OrderSettingsView {
 	} | null;
 	cityDefaultFee: number | null;
 }
+
+/**
+ * One entry of `GET /api/public/config`'s `launchCities`. The same shape
+ * mobile declares (`packages/mobile/src/types/order.ts`), because the two
+ * clients read the same route.
+ */
+export interface LaunchCityOption {
+	key: string;
+	label: string;
+	fee: number;
+}

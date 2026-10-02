@@ -5,6 +5,7 @@ import { quoteHash } from "../../src/lib/quoteHash";
 import { MemoryCounterStore } from "../../src/lib/rateLimit";
 import {
 	type CheckoutQuoteInput,
+	listDeliveryOptions,
 	QUOTE_RATE_LIMITS,
 	quoteCheckout,
 } from "../../src/services/checkout";
@@ -175,6 +176,17 @@ function world(overrides: Overrides = {}) {
 		},
 	);
 }
+
+/** The baseline group with an explicit fee, so a fee assertion is not the city default by accident. */
+const SELLER_ONLY = {
+	codEnabled: true,
+	sellerDeliveryEnabled: true,
+	deliveryFee: 1200,
+	deliveryEtaText: "24-48h",
+	pickupEnabled: false,
+	pickupPoint: undefined,
+	salesTermsExtra: null,
+};
 
 const baseAddress = (patch: Record<string, unknown> = {}) => ({
 	recipientName: "Jean Mballa",
@@ -638,5 +650,186 @@ describe("quoteCheckout: the rate limit", () => {
 		expect(QUOTE_RATE_LIMITS.perIp).toEqual([
 			{ name: "checkout-quote:ip", limit: 30, windowSeconds: 3600 },
 		]);
+	});
+});
+
+/**
+ * `listDeliveryOptions`, behind `GET /api/checkout/delivery-options`: the
+ * delivery step's own source of options, which the plan's contract names
+ * (`DeliveryOption`) and nothing served until now.
+ *
+ * It must answer exactly what the quote would accept — an option offered here
+ * and refused there by `checkout.methodUnavailable` is the bug this exists to
+ * prevent — so each case below asserts the option list whole and the last one
+ * feeds the `optionId` it returned straight back into `quoteCheckout`.
+ */
+describe("listDeliveryOptions", () => {
+	it("offers seller delivery at the shop's own fee for the shop's city", async () => {
+		const payload = world({ shop: { orderSettings: SELLER_ONLY } });
+		expect(
+			await listDeliveryOptions(
+				payload,
+				BUYER,
+				{ city: "douala" },
+				{ now: NOW },
+			),
+		).toEqual({
+			city: "douala",
+			options: [
+				{
+					optionId: "seller_delivery:douala",
+					method: "seller_delivery",
+					fee: 1200,
+					etaText: "24-48h",
+					codAllowed: true,
+				},
+			],
+		});
+	});
+
+	it("falls back to the city fee from the settings global when the shop sets none", async () => {
+		const payload = world();
+		const { options } = await listDeliveryOptions(
+			payload,
+			BUYER,
+			{},
+			{ now: NOW },
+		);
+		expect(options).toEqual([
+			{
+				optionId: "seller_delivery:douala",
+				method: "seller_delivery",
+				fee: 2000,
+				etaText: "24-48h",
+				codAllowed: true,
+			},
+		]);
+	});
+
+	it("defaults to the shop's own city when the caller names none", async () => {
+		const payload = world();
+		expect(
+			(await listDeliveryOptions(payload, BUYER, {}, { now: NOW })).city,
+		).toBe("douala");
+	});
+
+	it("offers pickup with the shop's point, free, alongside delivery", async () => {
+		const payload = world({
+			shop: {
+				orderSettings: {
+					...SELLER_ONLY,
+					pickupEnabled: true,
+					pickupPoint: {
+						address: "Rue Njo-Njo",
+						landmark: "Face pharmacie",
+						gps: { lat: 4.03, lng: 9.7 },
+						hours: "08h-18h",
+					},
+				},
+			},
+		});
+		const { options } = await listDeliveryOptions(
+			payload,
+			BUYER,
+			{ city: "douala" },
+			{ now: NOW },
+		);
+
+		expect(options).toHaveLength(2);
+		expect(options[1]).toEqual({
+			optionId: "pickup:s-1",
+			method: "pickup",
+			fee: 0,
+			etaText: "24-48h",
+			codAllowed: true,
+			pickupPoint: {
+				address: "Rue Njo-Njo",
+				landmark: "Face pharmacie",
+				gps: { lat: 4.03, lng: 9.7 },
+				hours: "08h-18h",
+			},
+		});
+	});
+
+	it("offers no seller delivery to a city the shop is not in", async () => {
+		const payload = world();
+		expect(
+			await listDeliveryOptions(
+				payload,
+				BUYER,
+				{ city: "yaounde" },
+				{ now: NOW },
+			),
+		).toEqual({ city: "yaounde", options: [] });
+	});
+
+	// Not `codAllowed: false` on an option: a product that forbids COD makes
+	// its cart line unavailable (`orderabilityReason` "codNotAllowed"), so the
+	// preconditions refuse before any option is quoted. The flag on the option
+	// is `quoteDelivery`'s own shape, which P5's mobile-money cart will use;
+	// in a P4 COD cart it is unreachable as false, and this pins the refusal
+	// that happens instead.
+	it("refuses before quoting when a product in the cart forbids cash on delivery", async () => {
+		const payload = world({ product: { delivery: { codAllowed: false } } });
+		expect(
+			await codeOf(listDeliveryOptions(payload, BUYER, {}, { now: NOW })),
+		).toBe("cart.itemUnavailable");
+	});
+
+	it("runs the quote's own preconditions: the flag, the phone and the cart", async () => {
+		expect(
+			await codeOf(
+				listDeliveryOptions(
+					world({ ordersEnabled: false }),
+					BUYER,
+					{},
+					{ now: NOW },
+				),
+			),
+		).toBe("checkout.disabled");
+		expect(
+			await codeOf(
+				listDeliveryOptions(
+					world({ buyer: { phoneVerifiedAt: null } }),
+					BUYER,
+					{},
+					{ now: NOW },
+				),
+			),
+		).toBe("checkout.phoneNotVerified");
+		expect(
+			await codeOf(
+				listDeliveryOptions(world({ cart: null }), BUYER, {}, { now: NOW }),
+			),
+		).toBe("cart.empty");
+		expect(
+			await codeOf(
+				listDeliveryOptions(
+					world({ shop: { ordersRestrictedAt: NOW.toISOString() } }),
+					BUYER,
+					{},
+					{ now: NOW },
+				),
+			),
+		).toBe("order.shopUnavailable");
+	});
+
+	it("returns an optionId the quote then accepts, at the same fee", async () => {
+		const payload = world();
+		const { options } = await listDeliveryOptions(
+			payload,
+			BUYER,
+			{},
+			{ now: NOW },
+		);
+		const quote = await quoteCheckout(
+			payload,
+			BUYER,
+			baseInput({ deliveryOptionId: options[0].optionId }),
+			{ now: NOW, store: new MemoryCounterStore() },
+		);
+
+		expect(quote.summary.delivery.optionId).toBe(options[0].optionId);
+		expect(quote.summary.amounts.deliveryFee).toBe(options[0].fee);
 	});
 });
