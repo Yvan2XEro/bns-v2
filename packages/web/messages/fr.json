@@ -1527,7 +1527,8 @@
 		},
 		"commission": {
 			"invoiceNotFound": "Cette facture n'existe pas.",
-			"alreadyPaid": "Cette facture a déjà été réglée."
+			"alreadyPaid": "Cette facture a déjà été réglée.",
+			"notPayable": "Cette facture ne peut plus être réglée."
 		},
 		"account": {
 			"openOrders": "Vous avez encore des commandes en cours.",

@@ -177,6 +177,7 @@ export const ERROR_CODES = {
 	// Commission (P4)
 	commissionInvoiceNotFound: "commission.invoiceNotFound",
 	commissionAlreadyPaid: "commission.alreadyPaid",
+	commissionNotPayable: "commission.notPayable",
 
 	// Account deletion blocked by order state (P4)
 	accountOpenOrders: "account.openOrders",
@@ -381,6 +382,7 @@ const FALLBACKS: Record<ErrorCode, string> = {
 
 	[ERROR_CODES.commissionInvoiceNotFound]: "This invoice does not exist.",
 	[ERROR_CODES.commissionAlreadyPaid]: "This invoice has already been paid.",
+	[ERROR_CODES.commissionNotPayable]: "This invoice can no longer be paid.",
 
 	[ERROR_CODES.accountOpenOrders]: "You still have orders in progress.",
 	[ERROR_CODES.accountUnpaidCommission]:

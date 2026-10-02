@@ -1526,7 +1526,8 @@
 		},
 		"commission": {
 			"invoiceNotFound": "This invoice does not exist.",
-			"alreadyPaid": "This invoice has already been paid."
+			"alreadyPaid": "This invoice has already been paid.",
+			"notPayable": "This invoice can no longer be paid."
 		},
 		"account": {
 			"openOrders": "You still have orders in progress.",

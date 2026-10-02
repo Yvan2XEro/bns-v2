@@ -619,6 +619,12 @@ export async function payInvoice(
 	if (invoice.status === "paid") {
 		throw new ServiceError(ERROR_CODES.commissionAlreadyPaid, 409);
 	}
+	// Only money that is still owed is payable. A waived or void invoice was
+	// written off by the platform; accepting a payment against it would charge
+	// a seller for a debt that no longer exists, with the ledger saying both.
+	if (invoice.status !== "issued" && invoice.status !== "overdue") {
+		throw new ServiceError(ERROR_CODES.commissionNotPayable, 409);
+	}
 
 	const idempotencyKey = `commission:${invoice.id}`;
 	const replay = await findIntentByIdempotencyKey(payload, idempotencyKey);

@@ -6,6 +6,7 @@ import {
 	applyCommissionSettlement,
 	enforceOverdue,
 	issueInvoicesForWeek,
+	payInvoice,
 	waiveInvoice,
 } from "../../src/services/commission";
 import type { Actor } from "../../src/services/moderation";
@@ -263,6 +264,75 @@ describe("enforceOverdue", () => {
 
 		expect(result.reported).toEqual(["inv-1"]);
 		expect(payload.logger.error).toHaveBeenCalled();
+	});
+});
+
+describe("payInvoice", () => {
+	const owner = {
+		id: "u-owner",
+		role: null,
+		name: null,
+		email: null,
+		suspendedAt: null,
+		suspendedUntil: null,
+	};
+
+	// Only money still owed is payable. `waived` and `void` were written off
+	// by the platform; before this guard the only refused status was `paid`,
+	// so a seller could settle a debt that no longer existed.
+	it.each([
+		["waived"],
+		["void"],
+	])("refuses to take money against a %s invoice", async (status) => {
+		const payload = fakePayload({
+			shops: [shop()],
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-owner",
+					role: "owner",
+					status: "active",
+				},
+			],
+			"commission-invoices": [
+				{
+					id: "inv-1",
+					shop: "s-1",
+					status,
+					totalDue: 4_293,
+					invoiceNumber: "BNS-C-2026-000001",
+				},
+			],
+		});
+
+		await expect(
+			payInvoice(payload, owner, "inv-1", NOW),
+		).rejects.toMatchObject({ code: "commission.notPayable", status: 409 });
+		// Nothing was created on the way to the refusal.
+		expect(payload.store["payment-intents"] ?? []).toHaveLength(0);
+	});
+
+	it("still answers alreadyPaid for a paid invoice", async () => {
+		const payload = fakePayload({
+			shops: [shop()],
+			"shop-members": [
+				{
+					id: "m-1",
+					shop: "s-1",
+					user: "u-owner",
+					role: "owner",
+					status: "active",
+				},
+			],
+			"commission-invoices": [
+				{ id: "inv-1", shop: "s-1", status: "paid", totalDue: 4_293 },
+			],
+		});
+
+		await expect(
+			payInvoice(payload, owner, "inv-1", NOW),
+		).rejects.toMatchObject({ code: "commission.alreadyPaid" });
 	});
 });
 

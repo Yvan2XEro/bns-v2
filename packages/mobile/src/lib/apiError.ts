@@ -156,6 +156,7 @@ export const ERROR_CODES = {
 
 	commissionInvoiceNotFound: "commission.invoiceNotFound",
 	commissionAlreadyPaid: "commission.alreadyPaid",
+	commissionNotPayable: "commission.notPayable",
 
 	accountOpenOrders: "account.openOrders",
 	accountUnpaidCommission: "account.unpaidCommission",
@@ -349,6 +350,7 @@ const FALLBACKS: Record<string, string> = {
 		"A return is already in progress for this order.",
 	[ERROR_CODES.commissionInvoiceNotFound]: "This invoice does not exist.",
 	[ERROR_CODES.commissionAlreadyPaid]: "This invoice has already been paid.",
+	[ERROR_CODES.commissionNotPayable]: "This invoice can no longer be paid.",
 	[ERROR_CODES.accountOpenOrders]: "You still have orders in progress.",
 	[ERROR_CODES.accountUnpaidCommission]:
 		"Your shop has an unpaid commission invoice.",
