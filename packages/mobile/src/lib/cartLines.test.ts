@@ -10,39 +10,41 @@ function line(patch: Partial<CartLineView> = {}): CartLineView {
 		variantId: "variant-1",
 		shopId: "shop-1",
 		title: "Chaussures",
+		variantLabel: "42",
+		imageUrl: null,
 		quantity: 2,
+		unitPrice: 10_000,
 		priceAtAdd: 10_000,
-		currentPrice: 10_000,
 		priceChanged: false,
-		unavailable: false,
-		unavailableCode: null,
+		lineSubtotal: 20_000,
+		available: true,
 		maxQuantity: null,
 		...patch,
 	};
 }
 
 describe("cartLineSubtotal", () => {
-	test("multiplies the current price by the quantity", () => {
-		expect(cartLineSubtotal(line({ quantity: 3, currentPrice: 7_500 }))).toBe(
+	test("multiplies the unit price by the quantity", () => {
+		expect(cartLineSubtotal(line({ quantity: 3, unitPrice: 7_500 }))).toBe(
 			22_500,
 		);
 	});
 
-	test("falls back to the price at add when the current price is unknown", () => {
+	test("follows the quantity the caller passes, not the server's stored subtotal", () => {
 		expect(
 			cartLineSubtotal(
-				line({ quantity: 2, currentPrice: null, priceAtAdd: 9_000 }),
+				line({ quantity: 4, unitPrice: 9_000, lineSubtotal: 0 }),
 			),
-		).toBe(18_000);
+		).toBe(36_000);
 	});
 });
 
 describe("cartTotals", () => {
-	test("sums the available lines at their current price", () => {
+	test("sums the available lines at their unit price", () => {
 		expect(
 			cartTotals([
-				line({ id: "a", quantity: 2, currentPrice: 10_000 }),
-				line({ id: "b", quantity: 1, currentPrice: 4_500 }),
+				line({ id: "a", quantity: 2, unitPrice: 10_000 }),
+				line({ id: "b", quantity: 1, unitPrice: 4_500 }),
 			]),
 		).toEqual({
 			subtotal: 24_500,
@@ -55,13 +57,12 @@ describe("cartTotals", () => {
 	test("an unavailable line counts for neither the subtotal nor the item count", () => {
 		expect(
 			cartTotals([
-				line({ id: "a", quantity: 2, currentPrice: 10_000 }),
+				line({ id: "a", quantity: 2, unitPrice: 10_000 }),
 				line({
 					id: "b",
 					quantity: 4,
-					currentPrice: 4_500,
-					unavailable: true,
-					unavailableCode: "cart.outOfStock",
+					unitPrice: 4_500,
+					available: false,
 					maxQuantity: 1,
 				}),
 			]),
@@ -80,7 +81,7 @@ describe("cartTotals", () => {
 					id: "a",
 					quantity: 2,
 					priceAtAdd: 10_000,
-					currentPrice: 12_000,
+					unitPrice: 12_000,
 					priceChanged: true,
 				}),
 			]),
@@ -92,15 +93,14 @@ describe("cartTotals", () => {
 		});
 	});
 
-	test("a line whose price can no longer be read contributes nothing", () => {
+	test("a line whose listing can no longer be read contributes nothing", () => {
 		expect(
 			cartTotals([
 				line({
 					id: "a",
 					quantity: 2,
-					currentPrice: null,
-					unavailable: true,
-					unavailableCode: "cart.itemUnavailable",
+					unitPrice: 10_000,
+					available: false,
 				}),
 			]),
 		).toEqual({

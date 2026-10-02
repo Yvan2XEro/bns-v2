@@ -5,54 +5,21 @@ import {
 	readJson,
 	requireModerator,
 } from "@/lib/moderationRoute";
-import type { OrderEvent, OrderItem } from "@/payload-types";
 import { cancelOrder, findOrderForModeration } from "@/services/moderation";
-import { serializeOrderForStaff } from "@/services/orders/serialize";
+import { buildStaffOrderView } from "@/services/orders/queries";
 
 /**
  * A moderator arbitrates with the order's own serialised view (Task 12) —
- * never a hand-built projection — plus the two risk fields a moderator
- * needs to triage a dispute: the tier and the at-placement refusal count
- * already stored on the order itself. Neither of those requires (or
- * allows) reading `buyer-phone-scores`, so the buyer's phone hash and the
- * raw refusal rows behind that count are never within reach of this route.
+ * never a hand-built projection. `risk` now carries both fields a moderator
+ * needs to triage a dispute (the tier and the at-placement refusal count)
+ * straight from that projection, so this route no longer rebuilds it.
+ * Neither field requires (or allows) reading `buyer-phone-scores`, so the
+ * buyer's phone hash and the raw refusal rows behind that count are never
+ * within reach of this route.
  */
 async function loadStaffOrderSheet(payload: Payload, id: string) {
 	const order = await findOrderForModeration(payload, id);
-
-	const [items, events] = await Promise.all([
-		payload.find({
-			collection: "order-items",
-			depth: 0,
-			limit: 0,
-			pagination: false,
-			overrideAccess: true,
-			where: { order: { equals: id } },
-		}),
-		payload.find({
-			collection: "order-events",
-			depth: 0,
-			limit: 0,
-			pagination: false,
-			sort: "createdAt",
-			overrideAccess: true,
-			where: { order: { equals: id } },
-		}),
-	]);
-
-	const view = serializeOrderForStaff(
-		order,
-		items.docs as OrderItem[],
-		events.docs as OrderEvent[],
-	);
-
-	return {
-		...view,
-		risk: {
-			phoneTier: order.risk?.phoneTier ?? null,
-			refusalsAtPlacement: order.risk?.refusalsAtPlacement ?? null,
-		},
-	};
+	return buildStaffOrderView(payload, order);
 }
 
 export async function GET(

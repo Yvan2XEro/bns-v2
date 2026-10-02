@@ -534,10 +534,16 @@ describe("quoteCheckout: the successful quote", () => {
 			store: new MemoryCounterStore(),
 		});
 
-		expect(quote.summary.subtotal).toBe(10_000);
-		expect(quote.summary.deliveryFee).toBe(2_000);
-		expect(quote.summary.total).toBe(12_000);
-		expect(quote.summary.items).toHaveLength(1);
+		expect(quote.summary.amounts).toEqual({
+			subtotal: 10_000,
+			deliveryFee: 2_000,
+			discount: 0,
+			buyerProtectionFee: 0,
+			total: 12_000,
+			currency: "XAF",
+		});
+		expect(quote.summary.lines).toHaveLength(1);
+		expect(quote.summary.paymentMethod).toBe("cod");
 		expect(quote.preContract.termsVersion).toBe("2026-09");
 		expect(quote.preContract.amounts.total).toBe(12_000);
 		expect(quote.confirmationRequired).toBe("sms_code");

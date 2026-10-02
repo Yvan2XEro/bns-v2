@@ -257,8 +257,21 @@ describe("POST /api/orders/{id}/cancel", () => {
 		expect(response.status).toBe(200);
 		const body = await response.json();
 		expect(body.status).toBe("cancelled");
-		expect(body.handover).toBeUndefined();
-		expect(body.confirmation).toBeUndefined();
+		// Both blocks are part of the order view now; what they must never carry
+		// is the code or its hash, so pin them whole rather than assert absence.
+		expect(body.confirmation).toEqual({
+			method: null,
+			required: "none",
+			attemptsLeft: 5,
+			resendsLeft: 3,
+		});
+		expect(body.handover).toEqual({
+			method: null,
+			locked: false,
+			attemptsLeft: 5,
+			regenerationsLeft: 3,
+		});
+		expect(JSON.stringify(body)).not.toMatch(/codeHash|codeExpiresAt/);
 	});
 });
 

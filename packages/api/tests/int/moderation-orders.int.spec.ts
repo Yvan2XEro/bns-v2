@@ -281,10 +281,10 @@ describe("GET /api/moderation/orders/{id}", () => {
 		expect(response.status).toBe(200);
 		const body = await response.json();
 
-		expect(body.buyer).toBe("buyer-1");
-		expect(body.shop).toBe("s-1");
+		expect(body.buyer).toEqual({ id: "buyer-1", name: null });
+		expect(body.shop).toMatchObject({ id: "s-1" });
 		expect(body.amounts).toMatchObject({ total: 20_000 });
-		expect(body.events.map((e: { id: string }) => e.id).sort()).toEqual([
+		expect(body.timeline.map((e: { id: string }) => e.id).sort()).toEqual([
 			"oe-both",
 			"oe-staff",
 		]);

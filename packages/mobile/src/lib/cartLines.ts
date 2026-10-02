@@ -1,13 +1,13 @@
 import type { CartLineView } from "../types/order";
 
 /**
- * One line's money. `currentPrice` is null only when the listing or variant
- * can no longer be read at all, and such a line is always `unavailable`, so
- * the fallback to `priceAtAdd` exists to render a row rather than to charge
- * for it — `cartTotals` excludes the line from the subtotal either way.
+ * One line's money. The server already states it as `lineSubtotal`; this
+ * recomputes it from `unitPrice` so the quantity stepper can show the new
+ * total before the round trip that confirms it, and never invents a price —
+ * `unitPrice` is what the buyer will actually be charged.
  */
 export function cartLineSubtotal(line: CartLineView): number {
-	return (line.currentPrice ?? line.priceAtAdd) * line.quantity;
+	return line.unitPrice * line.quantity;
 }
 
 export interface CartTotals {
@@ -18,12 +18,11 @@ export interface CartTotals {
 }
 
 /**
- * Mirrors `toCartView` in `packages/api/src/services/cart.ts`: an unavailable
- * line contributes nothing to either the subtotal or the item count, and an
- * available line is valued at `currentPrice`, never at the price it was added
- * at. The server's own `subtotal`/`itemCount` stay authoritative; this is for
- * the quantity stepper, which must show the new total before the round trip
- * that confirms it.
+ * Mirrors `toCartView` in `packages/api/src/services/cart.ts`: a line that is
+ * not `available` contributes nothing to either the subtotal or the item
+ * count, and an available line is valued at `unitPrice`, never at the price it
+ * was added at. The server's own `subtotal` stays authoritative; this is for
+ * the stepper's optimistic total.
  */
 export function cartTotals(lines: readonly CartLineView[]): CartTotals {
 	let subtotal = 0;
@@ -32,11 +31,11 @@ export function cartTotals(lines: readonly CartLineView[]): CartTotals {
 	let priceChangedCount = 0;
 
 	for (const line of lines) {
-		if (line.unavailable) {
-			unavailableCount += 1;
-		} else {
-			subtotal += (line.currentPrice ?? 0) * line.quantity;
+		if (line.available) {
+			subtotal += cartLineSubtotal(line);
 			itemCount += line.quantity;
+		} else {
+			unavailableCount += 1;
 		}
 		if (line.priceChanged) priceChangedCount += 1;
 	}

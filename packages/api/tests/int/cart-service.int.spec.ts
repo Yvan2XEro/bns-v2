@@ -434,7 +434,7 @@ describe("reading a cart: price is a quote, not a promise", () => {
 
 		const view = await getCartView(payload, BUYER);
 		expect(view.lines[0].priceAtAdd).toBe(10_000);
-		expect(view.lines[0].currentPrice).toBe(15_000);
+		expect(view.lines[0].unitPrice).toBe(15_000);
 		expect(view.lines[0].priceChanged).toBe(true);
 
 		// The stored line itself stays untouched.
@@ -449,8 +449,8 @@ describe("reading a cart: price is a quote, not a promise", () => {
 
 		const view = await getCartView(payload, BUYER);
 		expect(view.lines).toHaveLength(1);
-		expect(view.lines[0].unavailable).toBe(true);
-		expect(view.lines[0].unavailableCode).toBe("cart.itemUnavailable");
+		expect(view.lines[0].available).toBe(false);
+		expect(view.subtotal).toBe(0);
 	});
 
 	it("flags a line whose variant went out of stock as unavailable rather than dropping it", async () => {
@@ -461,10 +461,8 @@ describe("reading a cart: price is a quote, not a promise", () => {
 
 		const view = await getCartView(payload, BUYER);
 		expect(view.lines).toHaveLength(1);
-		expect(view.lines[0].unavailable).toBe(true);
-		expect(view.lines[0].unavailableCode).toBe("cart.outOfStock");
+		expect(view.lines[0].available).toBe(false);
 		expect(view.lines[0].maxQuantity).toBe(0);
-		expect(view.hasUnavailable).toBe(true);
 		expect(view.subtotal).toBe(0);
 	});
 });

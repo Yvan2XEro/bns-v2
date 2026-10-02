@@ -426,7 +426,7 @@ describe("placeOrder: the quote is never trusted", () => {
 		}).catch((e) => e);
 
 		expect(error).toMatchObject({ code: "checkout.quoteChanged", status: 409 });
-		expect(error.details.quote.summary.total).toBe(14_000);
+		expect(error.details.quote.summary.amounts.total).toBe(14_000);
 		expect(payload.store.orders).toHaveLength(0);
 	});
 
@@ -444,7 +444,7 @@ describe("placeOrder: the quote is never trusted", () => {
 		}).catch((e) => e);
 
 		expect(error).toMatchObject({ code: "checkout.quoteChanged", status: 409 });
-		expect(error.details.quote.summary.deliveryFee).toBe(3_000);
+		expect(error.details.quote.summary.amounts.deliveryFee).toBe(3_000);
 		expect(payload.store.orders).toHaveLength(0);
 	});
 
@@ -461,7 +461,7 @@ describe("placeOrder: the quote is never trusted", () => {
 		}).catch((e) => e);
 
 		expect(error).toMatchObject({ code: "checkout.quoteChanged", status: 409 });
-		expect(error.details.quote.summary.items[0].quantity).toBe(2);
+		expect(error.details.quote.summary.lines[0].quantity).toBe(2);
 		expect(payload.store.orders).toHaveLength(0);
 	});
 

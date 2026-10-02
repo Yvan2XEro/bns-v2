@@ -53,6 +53,7 @@ import {
 } from "./cart";
 import {
 	type DeliveryOption,
+	type PickupPointSnapshot,
 	type QuoteItem,
 	quoteDelivery,
 } from "./deliveryQuote";
@@ -227,7 +228,7 @@ export async function assertCheckoutPreconditions(
 
 	// 8. Every line still available, at the requested quantity.
 	const lines = await revalidateCartLines(payload, cart);
-	const badLine = lines.find((line) => line.unavailable);
+	const badLine = lines.find((line) => !line.available);
 	if (badLine) {
 		throw new CheckoutError(
 			badLine.unavailableCode ?? ERROR_CODES.cartItemUnavailable,
@@ -381,24 +382,94 @@ export interface QuoteSummaryItem {
 	lineSubtotal: number;
 }
 
+/** One line of the quote, as the checkout screen renders it: what it is, how many, what it costs. The ids `placeOrder` needs stay on `QuoteSummaryItem`, off the wire. */
+export interface QuoteSummaryLine {
+	title: string;
+	variantLabel: string;
+	unitPrice: number;
+	quantity: number;
+	lineSubtotal: number;
+	imageUrl: string | null;
+}
+
+/**
+ * The address the quote echoes back, in the same shape the checkout form
+ * submitted — an absent optional field rather than an explicit null, so a
+ * screen can round-trip the echo straight back into `POST /checkout/place`.
+ */
+export interface QuoteAddress {
+	recipientName: string;
+	phone: string;
+	city: LaunchCityKey;
+	district: string;
+	districtOther?: string;
+	landmark?: string;
+	gps?: { lat: number; lng: number; accuracyMeters?: number };
+	instructions?: string;
+}
+
 export interface QuoteResponse {
 	summary: {
-		shopId: string;
-		items: QuoteSummaryItem[];
-		subtotal: number;
-		deliveryFee: number;
-		total: number;
+		lines: QuoteSummaryLine[];
+		amounts: {
+			subtotal: number;
+			deliveryFee: number;
+			discount: number;
+			buyerProtectionFee: number;
+			total: number;
+			currency: string;
+		};
 		paymentMethod: "cod";
 		delivery: {
-			optionId: string;
 			method: "seller_delivery" | "pickup";
+			optionId: string;
 			etaText: string;
-			address: DeliveryAddress;
+			address: QuoteAddress;
+			pickupPoint?: PickupPointSnapshot;
 		};
 	};
 	preContract: ContractSnapshot;
 	confirmationRequired: "none" | "sms_code" | "seller_call";
 	quoteHash: string;
+}
+
+/**
+ * What `placeOrder` needs from a quote and the buyer never sees: the shop it
+ * is for, the per-line ids and condition behind `summary.lines`, and the
+ * normalised address with its nulls resolved. `quoteCheckout` answers with
+ * the wire shape alone; `buildQuote` answers with both.
+ */
+export interface QuoteInternals {
+	shopId: string;
+	items: QuoteSummaryItem[];
+	address: DeliveryAddress;
+	/** The chosen option's pickup point, which `placeOrder` snapshots onto the order so the view can show it after the shop's own point moves. */
+	pickupPoint: PickupPointSnapshot | null;
+}
+
+/** Drops the resolved nulls back to absent keys, so the echo is the same shape the form submitted. */
+function toQuoteAddress(address: DeliveryAddress): QuoteAddress {
+	const gps = address.gps;
+	return {
+		recipientName: address.recipientName,
+		phone: address.phone,
+		city: address.city,
+		district: address.district,
+		...(address.districtOther ? { districtOther: address.districtOther } : {}),
+		...(address.landmark ? { landmark: address.landmark } : {}),
+		...(gps
+			? {
+					gps: {
+						lat: gps.lat,
+						lng: gps.lng,
+						...(gps.accuracyMeters === null
+							? {}
+							: { accuracyMeters: gps.accuracyMeters }),
+					},
+				}
+			: {}),
+		...(address.instructions ? { instructions: address.instructions } : {}),
+	};
 }
 
 function mediaUrlOf(value: unknown): string | null {
@@ -445,7 +516,7 @@ async function buildSummaryItems(
 							.catch(() => null)
 					: null,
 			]);
-			const unitPrice = line.currentPrice ?? line.priceAtAdd;
+			const unitPrice = line.unitPrice;
 			const firstImage = listing?.images?.[0]?.image;
 			return {
 				lineId: line.id,
@@ -529,12 +600,12 @@ async function codAllowedByProduct(
  *
  * Nothing here writes: a quote is never stored.
  */
-export async function quoteCheckout(
+async function buildQuote(
 	payload: Payload,
 	user: ServiceUser,
 	input: CheckoutQuoteInput,
 	options: { store?: CounterStore; now?: Date; ip?: string } = {},
-): Promise<QuoteResponse> {
+): Promise<{ response: QuoteResponse; internals: QuoteInternals }> {
 	const now = options.now ?? new Date();
 	const store = options.store ?? getCounterStore();
 
@@ -580,14 +651,11 @@ export async function quoteCheckout(
 	}
 
 	const codAllowedMap = await codAllowedByProduct(payload, lines);
-	const subtotal = lines.reduce(
-		(sum, line) => sum + (line.currentPrice ?? line.priceAtAdd) * line.quantity,
-		0,
-	);
+	const subtotal = lines.reduce((sum, line) => sum + line.lineSubtotal, 0);
 	const quoteItems: QuoteItem[] = lines.map((line) => ({
 		variantId: line.variantId,
 		quantity: line.quantity,
-		lineSubtotal: (line.currentPrice ?? line.priceAtAdd) * line.quantity,
+		lineSubtotal: line.lineSubtotal,
 		codAllowed: codAllowedMap.get(line.productId) ?? true,
 	}));
 
@@ -708,7 +776,7 @@ export async function quoteCheckout(
 			lineId: line.id,
 			variantId: line.variantId,
 			quantity: line.quantity,
-			unitPrice: line.currentPrice ?? line.priceAtAdd,
+			unitPrice: line.unitPrice,
 		})),
 		deliveryFee: chosen.fee,
 		method: chosen.method,
@@ -718,24 +786,58 @@ export async function quoteCheckout(
 	});
 
 	return {
-		summary: {
+		response: {
+			summary: {
+				lines: items.map((item) => ({
+					title: item.title,
+					variantLabel: item.variantLabel,
+					unitPrice: item.unitPrice,
+					quantity: item.quantity,
+					lineSubtotal: item.lineSubtotal,
+					imageUrl: item.imageUrl,
+				})),
+				amounts: {
+					subtotal,
+					deliveryFee: chosen.fee,
+					discount: 0,
+					buyerProtectionFee: 0,
+					total,
+					currency: "XAF",
+				},
+				paymentMethod: "cod",
+				delivery: {
+					method: chosen.method,
+					optionId: chosen.optionId,
+					etaText: chosen.etaText,
+					address: toQuoteAddress(address),
+					...(chosen.pickupPoint ? { pickupPoint: chosen.pickupPoint } : {}),
+				},
+			},
+			preContract,
+			confirmationRequired,
+			quoteHash: hash,
+		},
+		internals: {
 			shopId: String(shop.id),
 			items,
-			subtotal,
-			deliveryFee: chosen.fee,
-			total,
-			paymentMethod: "cod",
-			delivery: {
-				optionId: chosen.optionId,
-				method: chosen.method,
-				etaText: chosen.etaText,
-				address,
-			},
+			address,
+			pickupPoint: chosen.pickupPoint ?? null,
 		},
-		preContract,
-		confirmationRequired,
-		quoteHash: hash,
 	};
+}
+
+/**
+ * The quote a checkout screen reads. `buildQuote`'s internals — the shop id,
+ * the per-line ids and the normalised address — stay with `placeOrder`, which
+ * is the only caller that needs them.
+ */
+export async function quoteCheckout(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<QuoteResponse> {
+	return (await buildQuote(payload, user, input, options)).response;
 }
 
 export interface CheckoutPlaceInput extends CheckoutQuoteInput {
@@ -791,6 +893,13 @@ function contractSnapshotJson(
 	snapshot: ContractSnapshot,
 ): Record<string, unknown> {
 	return { ...snapshot };
+}
+
+/** Same spread as `contractSnapshotJson`: an interface is not an index signature, and the field is a `json` column. */
+function pickupPointJson(
+	pickupPoint: PickupPointSnapshot | null,
+): Record<string, unknown> | null {
+	return pickupPoint ? { ...pickupPoint } : null;
 }
 
 function responseFromOrder(order: Order): PlaceResponse {
@@ -888,11 +997,12 @@ export async function placeOrder(
 	);
 	if (alreadyPlaced) return responseFromOrder(alreadyPlaced);
 
-	const fresh = await quoteCheckout(payload, user, input, {
-		now,
-		store: options.store,
-		ip: options.ip,
-	});
+	const { response: fresh, internals } = await buildQuote(
+		payload,
+		user,
+		input,
+		{ now, store: options.store, ip: options.ip },
+	);
 
 	const suppliedHash =
 		typeof input.quoteHash === "string" ? input.quoteHash : "";
@@ -913,7 +1023,7 @@ export async function placeOrder(
 		depth: 0,
 		overrideAccess: true,
 	});
-	const address = fresh.summary.delivery.address;
+	const address = internals.address;
 	const { tier, refusals } = await scoreCheckout(
 		payload,
 		{ accountPhone: account.phone ?? null, deliveryPhone: address.phone },
@@ -921,7 +1031,7 @@ export async function placeOrder(
 	);
 
 	const orderNumber = await nextNumber(payload, "BNS", now);
-	const shopId = fresh.summary.shopId;
+	const shopId = internals.shopId;
 	const placedAtIso = now.toISOString();
 	const confirmBy = new Date(
 		now.getTime() + settings.confirmHours * 60 * 60 * 1000,
@@ -968,15 +1078,16 @@ export async function placeOrder(
 							gps: address.gps
 								? { ...address.gps, capturedAt: placedAtIso }
 								: undefined,
-							fee: fresh.summary.deliveryFee,
+							pickupPoint: pickupPointJson(internals.pickupPoint),
+							fee: fresh.summary.amounts.deliveryFee,
 							etaText: fresh.summary.delivery.etaText,
 						},
 						amounts: {
-							subtotal: fresh.summary.subtotal,
-							deliveryFee: fresh.summary.deliveryFee,
+							subtotal: fresh.summary.amounts.subtotal,
+							deliveryFee: fresh.summary.amounts.deliveryFee,
 							discount: 0,
 							buyerProtectionFee: 0,
-							total: fresh.summary.total,
+							total: fresh.summary.amounts.total,
 							currency: "XAF",
 						},
 						risk: {
@@ -999,7 +1110,7 @@ export async function placeOrder(
 
 				const zeroedListingIds = new Set<string>();
 				let lineNumber = 0;
-				for (const line of fresh.summary.items) {
+				for (const line of internals.items) {
 					lineNumber += 1;
 
 					const variant = await req.payload.findByID({
@@ -1173,7 +1284,7 @@ export async function placeOrder(
 					sendOrderSms(req.payload, {
 						to: address.phone,
 						text: receiptSms(
-							{ orderNumber, shopName, total: fresh.summary.total },
+							{ orderNumber, shopName, total: fresh.summary.amounts.total },
 							locale,
 						),
 					}),

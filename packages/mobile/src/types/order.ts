@@ -1,17 +1,21 @@
 /**
- * The order, cart, checkout and billing shapes the API actually serves.
+ * The order, cart, checkout and billing shapes the API serves.
  *
- * Every interface below is transcribed from the landed backend, not from the
- * phase plan's "API contracts" section: where the two disagree the server is
- * the authority (AGENTS.md — "never let a client copy drift from it"), and
- * they disagree in several places. The divergences are recorded in
- * `.superpowers/sdd/2026-09-15-p4-cod-orders/task-36-report.md`; the sources
- * are `packages/api/src/services/orders/serialize.ts` and `queries.ts`
- * (orders), `services/cart.ts` (cart), `services/checkout.ts` and
- * `services/deliveryQuote.ts` (checkout), `lib/orderContract.ts` (the
- * contract snapshot) and `services/commission.ts` (billing).
+ * Every interface below is the P4 plan's "API contracts" section, which the
+ * API now produces field for field —
+ * `packages/api/src/services/orders/serialize.ts` (orders),
+ * `services/cart.ts` (cart), `services/checkout.ts` (quote and place),
+ * `services/deliveryQuote.ts` (delivery options) and `services/commission.ts`
+ * (billing). `packages/web/src/types/order.ts` is the same contract in the
+ * same words; the two clients describe one wire, and the field names below are
+ * the wire's, not this package's.
+ *
+ * An earlier revision transcribed the serialiser's pre-contract shape instead
+ * (`events`, `shop` as a bare id, item fields under `snapshot`, no
+ * `confirmation`/`handover`); see
+ * `.superpowers/sdd/2026-09-15-p4-cod-orders/fix-serializers-report.md` for
+ * what moved and why.
  */
-import type { ErrorCode } from "../lib/apiError";
 import type { OrderStatusName } from "../lib/orderStatus";
 
 export type { OrderStatusName, ShopOrderTab } from "../lib/orderStatus";
@@ -77,38 +81,47 @@ export type OrderActorType =
 // --- Cart -----------------------------------------------------------------
 
 export interface CartLineView {
+	/** The array row id, which is what the line routes address. */
 	id: string;
 	listingId: string;
 	productId: string;
 	variantId: string;
 	shopId: string;
 	title: string;
+	variantLabel: string;
+	imageUrl: string | null;
 	quantity: number;
+	/** The price now, which is what the buyer will be charged. */
+	unitPrice: number;
 	priceAtAdd: number;
-	/** Null only when the listing or variant can no longer be read at all. */
-	currentPrice: number | null;
 	priceChanged: boolean;
-	unavailable: boolean;
-	unavailableCode: ErrorCode | null;
-	/** Set only when `unavailableCode` is `cart.outOfStock`. */
+	lineSubtotal: number;
+	available: boolean;
+	/** Null when the variant is untracked. */
 	maxQuantity: number | null;
 }
 
 export interface CartView {
+	/** Null when the buyer has no active cart. */
 	id: string | null;
-	shopId: string | null;
+	shop: {
+		id: string;
+		name: string;
+		handle: string;
+		city: string | null;
+	} | null;
 	lines: CartLineView[];
 	subtotal: number;
-	itemCount: number;
-	hasUnavailable: boolean;
+	shopOrderable: boolean;
+	currency: "XAF";
 }
 
 // --- Checkout -------------------------------------------------------------
 
 export interface PickupPointSnapshot {
-	address: string | null;
+	address: string;
 	landmark: string | null;
-	gps: { lat: number | null; lng: number | null } | null;
+	gps: { lat: number; lng: number } | null;
 	hours: string | null;
 }
 
@@ -122,28 +135,34 @@ export interface DeliveryOption {
 	pickupPoint?: PickupPointSnapshot;
 }
 
-/** What a checkout form submits; `phone` is normalised server-side. */
+/** What a checkout form submits, and what the quote echoes back. */
 export interface AddressInput {
 	recipientName: string;
+	/** E.164, `^\+2376\d{8}$`; normalised server-side. */
 	phone: string;
+	/** A launch city key. */
 	city: string;
+	/** `"douala.akwa"`, `"douala.other"`, … */
 	district: string;
 	districtOther?: string;
+	/** Required for `seller_delivery`. */
 	landmark?: string;
+	gps?: {
+		lat: number;
+		lng: number;
+		accuracyMeters?: number;
+		capturedAt?: string;
+	};
 	instructions?: string;
-	gps?: { lat: number; lng: number; accuracyMeters?: number };
 }
 
-/** What the quote echoes back, every optional field resolved to null. */
-export interface DeliveryAddress {
-	recipientName: string;
-	phone: string;
-	city: string;
-	district: string;
-	districtOther: string | null;
-	landmark: string | null;
-	instructions: string | null;
-	gps: { lat: number; lng: number; accuracyMeters: number | null } | null;
+export interface OrderAmounts {
+	subtotal: number;
+	deliveryFee: number;
+	discount: 0;
+	buyerProtectionFee: 0;
+	total: number;
+	currency: "XAF";
 }
 
 export interface ContractSnapshot {
@@ -173,50 +192,38 @@ export interface ContractSnapshot {
 		quantity: number;
 		lineSubtotal: number;
 	}>;
-	amounts: {
-		subtotal: number;
-		deliveryFee: number;
-		discount: 0;
-		buyerProtectionFee: 0;
-		total: number;
-		currency: "XAF";
-	};
+	amounts: OrderAmounts;
 	terms: { fr: string[]; en: string[] };
 	withdrawal: {
 		days: number;
 		howTo: { fr: string; en: string };
 		costs: { fr: string; en: string };
 	};
+	/** The template plus the shop's `salesTermsExtra`. */
 	salesTerms: { fr: string; en: string };
 	complaints: { fr: string; en: string };
 }
 
-export interface QuoteSummaryItem {
-	lineId: string;
-	listingId: string;
-	variantId: string;
+export interface QuoteSummaryLine {
 	title: string;
 	variantLabel: string;
-	condition: string | null;
-	imageUrl: string | null;
 	unitPrice: number;
 	quantity: number;
 	lineSubtotal: number;
+	imageUrl: string | null;
 }
 
 export interface QuoteResponse {
 	summary: {
-		shopId: string;
-		items: QuoteSummaryItem[];
-		subtotal: number;
-		deliveryFee: number;
-		total: number;
-		paymentMethod: "cod";
+		lines: QuoteSummaryLine[];
+		amounts: OrderAmounts;
+		paymentMethod: PaymentMethod;
 		delivery: {
-			optionId: string;
 			method: DeliveryMethod;
+			optionId: string;
 			etaText: string;
-			address: DeliveryAddress;
+			address: AddressInput;
+			pickupPoint?: PickupPointSnapshot;
 		};
 	};
 	preContract: ContractSnapshot;
@@ -245,96 +252,105 @@ export interface PlaceResponse {
 
 // --- Orders ---------------------------------------------------------------
 
-export interface OrderAmounts {
-	subtotal?: number | null;
-	deliveryFee?: number | null;
-	discount?: number | null;
-	buyerProtectionFee?: number | null;
-	total?: number | null;
-	currency?: string | null;
-}
-
-export interface OrderDeadlines {
-	confirmBy?: string | null;
-	acceptBy?: string | null;
-	staleAt?: string | null;
-	completeAt?: string | null;
-	withdrawalUntil?: string | null;
-}
-
-export interface OrderTimestamps {
-	placedAt?: string | null;
-	confirmedAt?: string | null;
-	acceptedAt?: string | null;
-	shippedAt?: string | null;
-	deliveredAt?: string | null;
-	completedAt?: string | null;
-	cancelledAt?: string | null;
-	failedAt?: string | null;
-}
-
 export interface OrderItemView {
 	id: string;
-	lineNumber: number | null;
-	product: string;
-	variant: string;
-	sourcing: string | null;
-	fulfillingShop: string;
-	snapshot: {
-		title: string | null;
-		variantLabel: string | null;
-		sku: string | null;
-		imageUrl: string | null;
-		categoryId: string | null;
-		condition: string | null;
-		returnPolicy: string | null;
-	};
+	lineNumber: number;
+	title: string;
+	variantLabel: string;
+	sku: string | null;
+	imageUrl: string | null;
 	unitPrice: number;
 	quantity: number;
-	lineSubtotal: number | null;
+	lineSubtotal: number;
 	fulfillmentStatus: FulfillmentStatus;
+	returnPolicy: string | null;
 	/** Shop audience with `payments.view` only. */
-	commissionRateBps?: number | null;
-	commissionAmount?: number | null;
+	commissionAmount?: number;
 }
 
 /** One timeline row, already filtered to this audience's visibility. */
-export interface OrderEventView {
+export interface OrderTimelineEntry {
 	id: string;
 	type: string;
-	actorType: OrderActorType | null;
-	statusFrom: string | null;
-	statusTo: string | null;
-	paymentStatusFrom: string | null;
-	paymentStatusTo: string | null;
+	at: string;
+	actorType: OrderActorType;
+	/** Only ever a name this audience already holds: the buyer's own, the shop's own members', or — for staff alone — anyone's. */
+	actorName: string | null;
 	reason: string | null;
 	note: string | null;
-	createdAt: string;
+	metadata: Record<string, unknown> | null;
+}
+
+export interface OrderShopView {
+	id: string;
+	name: string;
+	handle: string;
+	logoUrl: string | null;
+	city: string | null;
+	phone: string | null;
 }
 
 export interface OrderDeliveryView {
-	method: DeliveryMethod | null;
+	method: DeliveryMethod;
 	recipientName: string;
-	/** Masked for a shop or staff viewer once a terminal order has aged 30 days. */
+	/** Masked for a shop or staff viewer once a terminal order has aged 30 days, which `phoneMasked` states rather than leaving a screen to detect. */
 	phone: string;
-	city: string | null;
-	district: string | null;
+	phoneMasked: boolean;
+	city: string;
+	district: string;
 	districtOther: string | null;
 	landmark: string | null;
+	gps: { lat: number; lng: number; accuracyMeters: number | null } | null;
 	instructions: string | null;
-	etaText: string | null;
+	etaText: string;
+	fee: number;
+	pickupPoint: PickupPointSnapshot | null;
+}
+
+export interface OrderDeadlines {
+	confirmBy: string | null;
+	acceptBy: string | null;
+	staleAt: string | null;
+	completeAt: string | null;
+	withdrawalUntil: string | null;
+	contestBy: string | null;
+}
+
+export interface OrderTimestamps {
+	placedAt: string;
+	confirmedAt: string | null;
+	acceptedAt: string | null;
+	shippedAt: string | null;
+	deliveredAt: string | null;
+	completedAt: string | null;
+	cancelledAt: string | null;
+	failedAt: string | null;
+}
+
+export interface OrderConfirmationView {
+	method: ConfirmationMethod | null;
+	required: ConfirmationRequired;
+	attemptsLeft: number;
+	resendsLeft: number;
+}
+
+export interface OrderHandoverView {
+	method: HandoverMethod | null;
+	locked: boolean;
+	attemptsLeft: number;
+	regenerationsLeft: number;
 }
 
 export interface OrderCancellationView {
-	by?: string | null;
-	reason?: string | null;
-	note?: string | null;
+	by: string;
+	reason: string;
+	note: string | null;
 }
 
 export interface OrderDeliveryFailureView {
-	reason?: DeliveryFailureReason | null;
-	attempts?: number | null;
-	note?: string | null;
+	reason: string;
+	attempts: number;
+	note: string | null;
 }
 
 /**
@@ -347,38 +363,50 @@ export interface OrderDeliveryFailureView {
 export interface OrderView {
 	id: string;
 	orderNumber: string;
-	shop: string;
 	status: OrderStatus;
-	paymentMethod: PaymentMethod;
 	paymentStatus: PaymentStatus;
-	delivery: OrderDeliveryView;
+	paymentMethod: PaymentMethod;
 	amounts: OrderAmounts;
+	items: OrderItemView[];
+	timeline: OrderTimelineEntry[];
+	shop: OrderShopView;
+	delivery: OrderDeliveryView;
 	deadlines: OrderDeadlines;
 	timestamps: OrderTimestamps;
+	confirmation: OrderConfirmationView;
+	handover: OrderHandoverView;
 	cancellation: OrderCancellationView | null;
 	deliveryFailure: OrderDeliveryFailureView | null;
-	completionHold: CompletionHold | null;
-	completedAt: string | null;
-	createdAt: string;
-	updatedAt: string;
-	items: OrderItemView[];
-	events: OrderEventView[];
+	completionHold: CompletionHold;
+	returnCaseNumber: string | null;
+	conversationId: string | null;
+	reviewable: boolean;
 	/** Shop and staff audiences. */
-	buyer?: string | null;
-	risk?: { phoneTier: BuyerTier } | null;
+	buyer?: { id: string | null; name: string | null };
+	/** Shop and staff audiences. */
+	risk?: { phoneTier: BuyerTier; refusalsAtPlacement: number };
 	/** Shop audience with `payments.view`. */
-	commission?: { rateBps: number | null; amount: number | null };
+	commission?: { rateBps: number; amount: number };
 }
 
 export interface OrderListEntry {
 	id: string;
 	orderNumber: string;
-	shop: string;
 	status: OrderStatus;
-	paymentStatus: PaymentStatus;
-	total: number | null;
-	currency: string | null;
-	createdAt: string;
+	placedAt: string;
+	total: number;
+	/** Units, not rows. */
+	itemCount: number;
+	firstItemTitle: string;
+	firstItemImageUrl: string | null;
+	shopName: string;
+	deliveryFailureReason?: string | null;
+	/** Shop role. */
+	recipientName?: string;
+	/** Shop role. */
+	acceptBy?: string | null;
+	/** Shop role. */
+	phoneTier?: BuyerTier;
 }
 
 export interface OrderPage {
@@ -421,8 +449,8 @@ export interface HandoverCodeResponse {
 
 /**
  * What the handover route adds to its 400/409 body on a wrong or exhausted
- * code. It is the only place a client learns the lock state, because
- * `order.handover` is not part of any order projection.
+ * code. The order view's own `handover` block carries the same lock state and
+ * attempt budget, so this is the immediate answer rather than the only one.
  */
 export interface HandoverFailureData {
 	handover?: { locked?: boolean };

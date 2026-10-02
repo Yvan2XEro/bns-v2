@@ -1,5 +1,6 @@
 import type { Payload, PayloadRequest, Where } from "payload";
 import {
+	type OrderAudience,
 	type OrderViewer,
 	requireOrderAudience,
 } from "../../access/orderAccess";
@@ -12,6 +13,8 @@ import {
 	TAB_STATUSES,
 } from "../../lib/orderFormat";
 import { renderReceiptHtml } from "../../lib/orderReceipt";
+import { toMediaRef } from "../../lib/publicShop";
+import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
 import type { Order, OrderEvent, OrderItem } from "../../payload-types";
 import { requireShopPermission } from "../shopGuards";
@@ -19,6 +22,9 @@ import type { ServiceUser } from "../shops";
 import {
 	type BuyerOrderView,
 	type OrderListEntryView,
+	type OrderListRowSources,
+	type OrderShopView,
+	type OrderViewSources,
 	type ShopOrderView,
 	type StaffOrderView,
 	serializeOrderForBuyer,
@@ -41,6 +47,13 @@ export const ORDER_LIST_PAGE_SIZE = 20;
  */
 const ORDER_ITEMS_LIMIT = 200;
 const ORDER_EVENTS_LIMIT = 500;
+
+/**
+ * A list row needs its order's unit count and its first line, so the batch
+ * read behind a page is bounded per order rather than per page — a single
+ * pathological order cannot starve the other nineteen rows of their items.
+ */
+const ORDER_LIST_ITEMS_PER_ORDER = 20;
 
 export type OrderView = BuyerOrderView | ShopOrderView | StaffOrderView;
 
@@ -98,6 +111,229 @@ async function loadOrderEvents(
 	return result.docs as OrderEvent[];
 }
 
+const UNKNOWN_SHOP: OrderShopView = {
+	id: "",
+	name: "",
+	handle: "",
+	logoUrl: null,
+	city: null,
+	phone: null,
+};
+
+/**
+ * `depth: 1` so the logo arrives as a `Media` document rather than an id —
+ * `logoUrl` is the one field of the shop block a client cannot resolve on its
+ * own. A shop that can no longer be read at all (hard-deleted under an order
+ * that outlives it) resolves to `UNKNOWN_SHOP` rather than throwing: the order
+ * is still the buyer's record of a purchase they made.
+ */
+async function loadOrderShop(
+	payload: Payload,
+	order: Order,
+	req?: PayloadRequest,
+): Promise<OrderShopView> {
+	const shopId = relationId(order.shop);
+	if (!shopId) return UNKNOWN_SHOP;
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 1,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+	if (!shop) return { ...UNKNOWN_SHOP, id: shopId };
+	return {
+		id: shop.id,
+		name: shop.name,
+		handle: shop.handle,
+		logoUrl: toMediaRef(shop.logo)?.url ?? null,
+		city: shop.location?.city ?? null,
+		phone: shop.contact?.phone ?? null,
+	};
+}
+
+/** Display names for the users behind a set of relationships, in one query. */
+async function loadUserNames(
+	payload: Payload,
+	ids: readonly string[],
+	req?: PayloadRequest,
+): Promise<Map<string, string>> {
+	const names = new Map<string, string>();
+	const unique = [...new Set(ids)];
+	if (unique.length === 0) return names;
+	const result = await payload.find({
+		collection: "users",
+		where: { id: { in: unique } },
+		depth: 0,
+		limit: unique.length,
+		overrideAccess: true,
+		req,
+	});
+	for (const user of result.docs) {
+		if (user.name) names.set(String(user.id), user.name);
+	}
+	return names;
+}
+
+async function loadReturnCaseNumber(
+	payload: Payload,
+	order: Order,
+	req?: PayloadRequest,
+): Promise<string | null> {
+	const caseId = relationId(order.returnCase);
+	if (!caseId) return null;
+	const returnCase = await payload
+		.findByID({
+			collection: "return-cases",
+			id: caseId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+	return returnCase?.number ?? null;
+}
+
+/**
+ * Narrower than `assertOrderReviewAllowed`'s own duplicate check, which keys
+ * off `reviewer + reviewedUser + shop`: this one drops `reviewedUser`, so a
+ * shop whose owner changed since the buyer reviewed it reads as already
+ * reviewed. The conservative direction on purpose — a hidden button is a
+ * smaller failure than one that answers `review.duplicate`.
+ */
+async function hasReviewedShop(
+	payload: Payload,
+	buyerId: string | null,
+	shopId: string,
+	req?: PayloadRequest,
+): Promise<boolean> {
+	if (!buyerId || !shopId) return false;
+	const result = await payload.find({
+		collection: "reviews",
+		where: {
+			and: [{ reviewer: { equals: buyerId } }, { shop: { equals: shopId } }],
+		},
+		depth: 0,
+		limit: 1,
+		overrideAccess: true,
+		req,
+	});
+	return result.docs.length > 0;
+}
+
+/**
+ * Everything the single-order projection needs beyond the `orders` document.
+ * One function for all three audiences, so a field can never be present for
+ * one of them only because a loader was wired up on one code path.
+ */
+export async function loadOrderViewSources(
+	payload: Payload,
+	order: Order,
+	audience: OrderAudience,
+	req?: PayloadRequest,
+): Promise<OrderViewSources> {
+	const buyerId = relationId(order.buyer);
+	const shopId = relationId(order.shop) ?? "";
+	const [items, events, shop, returnCaseNumber, buyerHasReviewedShop] =
+		await Promise.all([
+			loadOrderItems(payload, order.id, req),
+			loadOrderEvents(payload, order.id, req),
+			loadOrderShop(payload, order, req),
+			loadReturnCaseNumber(payload, order, req),
+			audience.kind === "buyer"
+				? hasReviewedShop(payload, buyerId, shopId, req)
+				: Promise.resolve(false),
+		]);
+
+	const actorIds = events
+		.map((event) => relationId(event.actor))
+		.filter((id): id is string => id !== null);
+	const names = await loadUserNames(
+		payload,
+		buyerId ? [...actorIds, buyerId] : actorIds,
+		req,
+	);
+
+	return {
+		items,
+		events,
+		shop,
+		buyer: { id: buyerId, name: (buyerId && names.get(buyerId)) || null },
+		actorNames: names,
+		returnCaseNumber,
+		conversationId: relationId(order.conversation),
+		buyerHasReviewedShop,
+	};
+}
+
+/** Sums every line's quantity and takes the first line's display fields, for one order's list row. */
+function listRowSources(
+	shopName: string,
+	items: readonly OrderItem[],
+): OrderListRowSources {
+	const first = [...items].sort(
+		(a, b) => (a.lineNumber ?? 0) - (b.lineNumber ?? 0),
+	)[0];
+	return {
+		shopName,
+		itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+		firstItemTitle: first?.snapshot?.title ?? "",
+		firstItemImageUrl: first?.snapshot?.imageUrl ?? null,
+	};
+}
+
+/**
+ * Every row's items in one query rather than one per row: a page is 20 orders
+ * and each row needs its unit count and its first line's title and image.
+ */
+async function loadItemsByOrder(
+	payload: Payload,
+	orderIds: readonly string[],
+	req?: PayloadRequest,
+): Promise<Map<string, OrderItem[]>> {
+	const byOrder = new Map<string, OrderItem[]>();
+	if (orderIds.length === 0) return byOrder;
+	const result = await payload.find({
+		collection: "order-items",
+		where: { order: { in: [...orderIds] } },
+		depth: 0,
+		limit: orderIds.length * ORDER_LIST_ITEMS_PER_ORDER,
+		overrideAccess: true,
+		req,
+	});
+	for (const item of result.docs as OrderItem[]) {
+		const orderId = relationId(item.order);
+		if (!orderId) continue;
+		const bucket = byOrder.get(orderId);
+		if (bucket) bucket.push(item);
+		else byOrder.set(orderId, [item]);
+	}
+	return byOrder;
+}
+
+/** Shop names for a buyer's page of orders, which may span as many shops as it has rows. */
+async function loadShopNames(
+	payload: Payload,
+	shopIds: readonly string[],
+	req?: PayloadRequest,
+): Promise<Map<string, string>> {
+	const names = new Map<string, string>();
+	const unique = [...new Set(shopIds)].filter((id) => id.length > 0);
+	if (unique.length === 0) return names;
+	const result = await payload.find({
+		collection: "shops",
+		where: { id: { in: unique } },
+		depth: 0,
+		limit: unique.length,
+		overrideAccess: true,
+		req,
+	});
+	for (const shop of result.docs) names.set(String(shop.id), shop.name);
+	return names;
+}
+
 /**
  * The buyer's own purchase list — keyset-paginated on `createdAt`, the same
  * "older than the last row I saw" scheme as `listShopActivity`, so a page
@@ -123,8 +359,28 @@ export async function listBuyerOrders(
 	});
 
 	const rows = result.docs as Order[];
+	const [itemsByOrder, shopNames] = await Promise.all([
+		loadItemsByOrder(
+			payload,
+			rows.map((row) => row.id),
+		),
+		loadShopNames(
+			payload,
+			rows.map((row) => relationId(row.shop) ?? ""),
+		),
+	]);
+
 	return {
-		docs: rows.map(serializeOrderListEntry),
+		docs: rows.map((row) =>
+			serializeOrderListEntry(
+				row,
+				listRowSources(
+					shopNames.get(relationId(row.shop) ?? "") ?? "",
+					itemsByOrder.get(row.id) ?? [],
+				),
+				"buyer",
+			),
+		),
 		nextCursor:
 			rows.length === ORDER_LIST_PAGE_SIZE
 				? rows[rows.length - 1].createdAt
@@ -149,18 +405,15 @@ export async function getOrderView(
 		orderId,
 		req,
 	);
-	const [items, events] = await Promise.all([
-		loadOrderItems(payload, orderId, req),
-		loadOrderEvents(payload, orderId, req),
-	]);
+	const sources = await loadOrderViewSources(payload, order, audience, req);
 
 	switch (audience.kind) {
 		case "buyer":
-			return serializeOrderForBuyer(order, items, events);
+			return serializeOrderForBuyer(order, sources);
 		case "shop":
-			return serializeOrderForShop(order, items, events, audience.role);
+			return serializeOrderForShop(order, sources, audience.role);
 		case "staff":
-			return serializeOrderForStaff(order, items, events);
+			return serializeOrderForStaff(order, sources);
 	}
 }
 
@@ -305,14 +558,48 @@ export async function listShopOrders(
 	});
 
 	const rows = result.docs as Order[];
-	const counts = await tabCounts(payload, shopId, query.q, req);
+	const [counts, itemsByOrder, shopNames] = await Promise.all([
+		tabCounts(payload, shopId, query.q, req),
+		loadItemsByOrder(
+			payload,
+			rows.map((row) => row.id),
+			req,
+		),
+		loadShopNames(payload, [shopId], req),
+	]);
+	const shopName = shopNames.get(shopId) ?? "";
 
 	return {
-		docs: rows.map(serializeOrderListEntry),
+		docs: rows.map((row) =>
+			serializeOrderListEntry(
+				row,
+				listRowSources(shopName, itemsByOrder.get(row.id) ?? []),
+				"shop",
+			),
+		),
 		nextCursor:
 			rows.length === ORDER_LIST_PAGE_SIZE
 				? rows[rows.length - 1].createdAt
 				: null,
 		counts,
 	};
+}
+
+/**
+ * The staff order sheet, for the moderation route — `findOrderForModeration`
+ * has already loaded and authorised the order, so this is the projection step
+ * alone, built from the same sources every other audience's view is.
+ */
+export async function buildStaffOrderView(
+	payload: Payload,
+	order: Order,
+	req?: PayloadRequest,
+): Promise<StaffOrderView> {
+	const sources = await loadOrderViewSources(
+		payload,
+		order,
+		{ kind: "staff" },
+		req,
+	);
+	return serializeOrderForStaff(order, sources);
 }

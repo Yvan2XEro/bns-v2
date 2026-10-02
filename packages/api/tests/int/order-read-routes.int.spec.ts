@@ -129,7 +129,7 @@ function baseOrders() {
 function seed() {
 	const payload = fakePayload({
 		users: [
-			{ id: BUYER_A, role: "user" },
+			{ id: BUYER_A, role: "user", name: "Alice Buyer" },
 			{ id: BUYER_B, role: "user" },
 			{ id: OWNER, role: "user" },
 			{ id: MANAGER, role: "user" },
@@ -137,7 +137,18 @@ function seed() {
 			{ id: OUTSIDER, role: "user" },
 			{ id: MODERATOR, role: "moderator" },
 		],
-		shops: [{ id: "s-1", status: "active", owner: OWNER, level: 2 }],
+		shops: [
+			{
+				id: "s-1",
+				status: "active",
+				owner: OWNER,
+				level: 2,
+				name: "Boutique Test",
+				handle: "boutique-test",
+				location: { city: "douala" },
+				contact: { phone: "+237600000001" },
+			},
+		],
 		"shop-members": [
 			{
 				id: "m-owner",
@@ -515,6 +526,100 @@ describe("GET /api/shops/{id}/orders — permissions", () => {
 	});
 });
 
+describe("the wire shape, through the real routes", () => {
+	/**
+	 * `serialize.ts` is pinned field for field by
+	 * `order-serialize.int.spec.ts`; these three cover the other half — that
+	 * `queries.ts` actually loads the shop, the buyer and the items the
+	 * contract's rows and blocks are built from. A loader wired up wrongly
+	 * sends a correct shape full of empty strings.
+	 */
+	it("a buyer's list row is exactly the contract's OrderListEntry", async () => {
+		const payload = seed();
+		asUser(payload, BUYER_A);
+		const { GET } = await import("../../src/app/(frontend)/api/orders/route");
+		const response = await GET(get("/x?role=buyer&status=placed"));
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		const row = (body.docs as Array<{ id: string }>).find(
+			(d) => d.id === "o-placed",
+		);
+		expect(row).toEqual({
+			id: "o-placed",
+			orderNumber: "ORD-PLACED",
+			status: "placed",
+			placedAt: isoAt(1),
+			total: 11_000,
+			itemCount: 1,
+			firstItemTitle: "Item",
+			firstItemImageUrl: null,
+			shopName: "Boutique Test",
+			deliveryFailureReason: null,
+		});
+	});
+
+	it("a shop queue row adds the recipient, the accept clock and the tier, and nothing else", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		const response = await GET(get("/x?tab=to_accept"), {
+			params: Promise.resolve({ id: "s-1" }),
+		});
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		const row = (body.docs as Array<{ id: string }>).find(
+			(d) => d.id === "o-placed",
+		);
+		expect(row).toEqual({
+			id: "o-placed",
+			orderNumber: "ORD-PLACED",
+			status: "placed",
+			placedAt: isoAt(1),
+			total: 11_000,
+			itemCount: 1,
+			firstItemTitle: "Item",
+			firstItemImageUrl: null,
+			shopName: "Boutique Test",
+			deliveryFailureReason: null,
+			recipientName: "Recipient placed",
+			acceptBy: null,
+			phoneTier: "new",
+		});
+	});
+
+	it("the order view carries the shop block the contract declares, and the buyer block only for the shop", async () => {
+		const payload = seed();
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/route"
+		);
+		const expectedShop = {
+			id: "s-1",
+			name: "Boutique Test",
+			handle: "boutique-test",
+			logoUrl: null,
+			city: "douala",
+			phone: "+237600000001",
+		};
+
+		asUser(payload, BUYER_A);
+		const buyerBody = await (
+			await GET(get("/x"), { params: Promise.resolve({ id: "o-placed" }) })
+		).json();
+		expect(buyerBody.shop).toEqual(expectedShop);
+		expect("buyer" in buyerBody).toBe(false);
+
+		asUser(payload, OWNER);
+		const shopBody = await (
+			await GET(get("/x"), { params: Promise.resolve({ id: "o-placed" }) })
+		).json();
+		expect(shopBody.shop).toEqual(expectedShop);
+		expect(shopBody.buyer).toEqual({ id: BUYER_A, name: "Alice Buyer" });
+		expect(shopBody.risk).toEqual({ phoneTier: "new", refusalsAtPlacement: 0 });
+	});
+});
+
 describe("GET /api/orders — the buyer's own purchase list", () => {
 	it("never includes another buyer's order", async () => {
 		const payload = seed();
@@ -552,7 +657,7 @@ describe("GET /api/orders/{id} — the order view", () => {
 		const body = await response.json();
 		expect("commission" in body).toBe(false);
 		expect("risk" in body).toBe(false);
-		const eventIds = body.events.map((e: { id: string }) => e.id);
+		const eventIds = body.timeline.map((e: { id: string }) => e.id);
 		expect(eventIds).toContain("oe-placed-both");
 		expect(eventIds).not.toContain("oe-placed-staff");
 	});

@@ -7,8 +7,8 @@ import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { type TxReq, withTransaction } from "../lib/transactions";
-import { availableOf } from "../lib/variants";
-import type { Cart, Listing, ProductVariant } from "../payload-types";
+import { availableOf, variantLabel } from "../lib/variants";
+import type { Cart, Listing, ProductVariant, Shop } from "../payload-types";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 
 export class CartError extends ServiceError {
@@ -37,30 +37,52 @@ export interface AddCartItemInput {
 }
 
 export interface CartLineView {
+	/** The array row id, which is what the line routes address. */
 	id: string;
 	listingId: string;
 	productId: string;
 	variantId: string;
 	shopId: string;
 	title: string;
+	variantLabel: string;
+	imageUrl: string | null;
 	quantity: number;
+	/** The price now, which is what the buyer would be charged. Falls back to `priceAtAdd` when the listing or variant can no longer be read at all — such a line is never `available`, so the fallback renders a row rather than pricing one. */
+	unitPrice: number;
 	priceAtAdd: number;
-	/** Null only when the listing or variant can no longer be read at all. */
-	currentPrice: number | null;
 	priceChanged: boolean;
-	unavailable: boolean;
-	unavailableCode: ErrorCode | null;
-	/** Set only when `unavailableCode` is `cart.outOfStock`. */
+	lineSubtotal: number;
+	available: boolean;
+	/** The cap the stepper may raise this line to; null when the variant is untracked. */
 	maxQuantity: number | null;
 }
 
+/**
+ * One line plus the refusal code behind an unavailable one. Internal: the code
+ * is what `assertCheckoutPreconditions` answers with, and it never reaches the
+ * wire — `available` and `maxQuantity` are what a cart screen needs, and a
+ * per-line error code on a list is a second vocabulary for the same facts.
+ */
+export interface CartLineState extends CartLineView {
+	unavailableCode: ErrorCode | null;
+}
+
+export interface CartShopView {
+	id: string;
+	name: string;
+	handle: string;
+	city: string | null;
+}
+
 export interface CartView {
+	/** Null when the buyer has no active cart. */
 	id: string | null;
-	shopId: string | null;
+	shop: CartShopView | null;
 	lines: CartLineView[];
 	subtotal: number;
-	itemCount: number;
-	hasUnavailable: boolean;
+	/** False when the shop itself cannot take an order right now — closed, restricted, COD off, or outside the launch cities — whatever each individual line says. */
+	shopOrderable: boolean;
+	currency: string;
 }
 
 function parseQuantity(value: unknown): number {
@@ -88,42 +110,45 @@ async function requireEnabled(payload: Payload): Promise<OrderSettings> {
 	return settings;
 }
 
-/**
- * The seven reasons a listing/variant pair cannot be ordered right now, as
- * one shared check: `addCartItem` throws on the first one it meets,
- * `revalidateCartLines` reads the same reason to flag a line without
- * dropping it. A variant archived after it was added and a listing taken
- * down after it was added both resolve to the same reason here, so the two
- * call sites can never drift on what "unavailable" means.
- */
-async function orderabilityReason(
-	payload: Payload,
-	listing: Listing,
-	variant: ProductVariant,
-	settings: OrderSettings,
-): Promise<
-	| "unpublished"
+type ShopOrderabilityReason =
 	| "shopInactive"
 	| "shopRestricted"
 	| "codDisabled"
-	| "cityNotLaunch"
-	| "codNotAllowed"
-	| "variantArchived"
-	| null
-> {
-	if (listing.status !== "published") return "unpublished";
+	| "cityNotLaunch";
 
-	const shopId = relationId(listing.shop);
-	const shop = shopId
-		? await payload
-				.findByID({
-					collection: "shops",
-					id: shopId,
-					depth: 0,
-					overrideAccess: true,
-				})
-				.catch(() => null)
-		: null;
+type OrderabilityReason =
+	| ShopOrderabilityReason
+	| "unpublished"
+	| "codNotAllowed"
+	| "variantArchived";
+
+async function loadShop(
+	payload: Payload,
+	shopId: string | null,
+	req?: TxReq,
+): Promise<Shop | null> {
+	if (!shopId) return null;
+	return payload
+		.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+}
+
+/**
+ * The four reasons a shop cannot take an order at all, whatever is in the
+ * cart. Split out of `orderabilityReason` because `CartView.shopOrderable` is
+ * exactly this answer, and recomputing it line by line would let the cart
+ * banner and a line's own flag disagree.
+ */
+export function shopOrderabilityReason(
+	shop: Shop | null,
+	settings: OrderSettings,
+): ShopOrderabilityReason | null {
 	if (!shop || shop.status !== "active") return "shopInactive";
 	if (shop.ordersRestrictedAt) return "shopRestricted";
 	if (shop.orderSettings?.codEnabled !== true) return "codDisabled";
@@ -135,6 +160,36 @@ async function orderabilityReason(
 	) {
 		return "cityNotLaunch";
 	}
+	return null;
+}
+
+/**
+ * The seven reasons a listing/variant pair cannot be ordered right now, as
+ * one shared check: `addCartItem` throws on the first one it meets,
+ * `revalidateCartLines` reads the same reason to flag a line without
+ * dropping it. A variant archived after it was added and a listing taken
+ * down after it was added both resolve to the same reason here, so the two
+ * call sites can never drift on what "unavailable" means.
+ *
+ * `shop` is the already-loaded shop when the caller holds it (the cart view
+ * loads it once for every line); without it the listing's own shop is read.
+ */
+async function orderabilityReason(
+	payload: Payload,
+	listing: Listing,
+	variant: ProductVariant,
+	settings: OrderSettings,
+	shop?: Shop | null,
+	req?: TxReq,
+): Promise<OrderabilityReason | null> {
+	if (listing.status !== "published") return "unpublished";
+
+	const resolvedShop =
+		shop === undefined
+			? await loadShop(payload, relationId(listing.shop), req)
+			: shop;
+	const shopReason = shopOrderabilityReason(resolvedShop, settings);
+	if (shopReason) return shopReason;
 
 	const productId = relationId(variant.product);
 	const product = productId
@@ -197,12 +252,32 @@ export async function revalidateCartLines(
 	payload: Payload,
 	cart: Cart | null,
 	req?: TxReq,
-): Promise<CartLineView[]> {
+): Promise<CartLineState[]> {
+	return (await revalidateCart(payload, cart, req)).lines;
+}
+
+function firstImageUrl(listing: Listing | null): string | null {
+	const image = listing?.images?.[0]?.image;
+	if (!image || typeof image !== "object") return null;
+	return typeof image.url === "string" && image.url ? image.url : null;
+}
+
+/**
+ * The cart's lines plus the one shop they all belong to, loaded once. The
+ * single-shop rule (`cart.singleShop`) is what makes one shop read enough for
+ * every line — `applyAddToCart` refuses a second one.
+ */
+async function revalidateCart(
+	payload: Payload,
+	cart: Cart | null,
+	req?: TxReq,
+): Promise<{ lines: CartLineState[]; shop: Shop | null }> {
 	const items = cart?.items ?? [];
-	if (items.length === 0) return [];
+	if (items.length === 0) return { lines: [], shop: null };
 
 	const settings = await getOrderSettings(payload);
-	const lines: CartLineView[] = [];
+	const shop = await loadShop(payload, relationId(items[0].shop), req);
+	const lines: CartLineState[] = [];
 
 	for (const item of items) {
 		const listingId = relationId(item.listing);
@@ -210,12 +285,14 @@ export async function revalidateCartLines(
 		const productId = relationId(item.product);
 		const shopId = relationId(item.shop);
 
+		// `depth: 1` so the first image arrives as a Media document: `imageUrl`
+		// is the one line field a client cannot resolve from an id.
 		const listing = listingId
 			? await payload
 					.findByID({
 						collection: "listings",
 						id: listingId,
-						depth: 0,
+						depth: 1,
 						overrideAccess: true,
 						req,
 					})
@@ -233,13 +310,13 @@ export async function revalidateCartLines(
 					.catch(() => null)
 			: null;
 
-		let unavailable = false;
-		let unavailableCode: CartLineView["unavailableCode"] = null;
+		let available = true;
+		let unavailableCode: ErrorCode | null = null;
 		let maxQuantity: number | null = null;
 		let currentPrice: number | null = null;
 
 		if (!listing || !variant) {
-			unavailable = true;
+			available = false;
 			unavailableCode = ERROR_CODES.cartItemUnavailable;
 		} else {
 			currentPrice = variant.price;
@@ -248,20 +325,20 @@ export async function revalidateCartLines(
 				listing,
 				variant,
 				settings,
+				shop,
+				req,
 			);
+			if (variant.trackInventory === true) maxQuantity = availableOf(variant);
 			if (reason) {
-				unavailable = true;
+				available = false;
 				unavailableCode = ERROR_CODES.cartItemUnavailable;
-			} else if (variant.trackInventory === true) {
-				const available = availableOf(variant);
-				if (item.quantity > available) {
-					unavailable = true;
-					unavailableCode = ERROR_CODES.cartOutOfStock;
-					maxQuantity = available;
-				}
+			} else if (maxQuantity !== null && item.quantity > maxQuantity) {
+				available = false;
+				unavailableCode = ERROR_CODES.cartOutOfStock;
 			}
 		}
 
+		const unitPrice = currentPrice ?? item.priceAtAdd;
 		lines.push({
 			id: String(item.id ?? ""),
 			listingId: listingId ?? "",
@@ -269,17 +346,41 @@ export async function revalidateCartLines(
 			variantId: variantId ?? "",
 			shopId: shopId ?? "",
 			title: listing?.title ?? "",
+			variantLabel: variantLabel(variant?.optionValues),
+			imageUrl: firstImageUrl(listing),
 			quantity: item.quantity,
+			unitPrice,
 			priceAtAdd: item.priceAtAdd,
-			currentPrice,
 			priceChanged: currentPrice !== null && currentPrice !== item.priceAtAdd,
-			unavailable,
-			unavailableCode,
+			lineSubtotal: unitPrice * item.quantity,
+			available,
 			maxQuantity,
+			unavailableCode,
 		});
 	}
 
-	return lines;
+	return { lines, shop };
+}
+
+/** The wire line: `unavailableCode` stays behind, every other field is the contract's. */
+function toLineView(line: CartLineState): CartLineView {
+	return {
+		id: line.id,
+		listingId: line.listingId,
+		productId: line.productId,
+		variantId: line.variantId,
+		shopId: line.shopId,
+		title: line.title,
+		variantLabel: line.variantLabel,
+		imageUrl: line.imageUrl,
+		quantity: line.quantity,
+		unitPrice: line.unitPrice,
+		priceAtAdd: line.priceAtAdd,
+		priceChanged: line.priceChanged,
+		lineSubtotal: line.lineSubtotal,
+		available: line.available,
+		maxQuantity: line.maxQuantity,
+	};
 }
 
 async function toCartView(
@@ -287,23 +388,27 @@ async function toCartView(
 	cart: Cart | null,
 	req?: TxReq,
 ): Promise<CartView> {
-	const lines = await revalidateCartLines(payload, cart, req);
+	const { lines, shop } = await revalidateCart(payload, cart, req);
+	const settings = await getOrderSettings(payload);
 	const subtotal = lines.reduce(
-		(sum, line) =>
-			sum + (line.unavailable ? 0 : (line.currentPrice ?? 0) * line.quantity),
-		0,
-	);
-	const itemCount = lines.reduce(
-		(sum, line) => sum + (line.unavailable ? 0 : line.quantity),
+		(sum, line) => sum + (line.available ? line.lineSubtotal : 0),
 		0,
 	);
 	return {
 		id: cart ? String(cart.id) : null,
-		shopId: lines[0]?.shopId ?? null,
-		lines,
+		shop: shop
+			? {
+					id: String(shop.id),
+					name: shop.name,
+					handle: shop.handle,
+					city: shop.location?.city ?? null,
+				}
+			: null,
+		lines: lines.map(toLineView),
 		subtotal,
-		itemCount,
-		hasUnavailable: lines.some((line) => line.unavailable),
+		shopOrderable:
+			lines.length > 0 && shopOrderabilityReason(shop, settings) === null,
+		currency: "XAF",
 	};
 }
 
