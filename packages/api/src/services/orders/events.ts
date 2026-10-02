@@ -1,4 +1,5 @@
 import type { Payload, PayloadRequest } from "payload";
+import { ORDER_QUEUE } from "../../jobs/orderSweep";
 import { commitContextOf, onCommit } from "../../lib/transactions";
 import type { Order, OrderEvent } from "../../payload-types";
 
@@ -98,12 +99,84 @@ export async function runOrderEventHandlers(
 	return failed;
 }
 
+/** The spec's retry budget: the first dispatch plus four retries. */
+export const DISPATCH_ATTEMPT_BUDGET = 5;
+
+/** First back-off, doubled per attempt — 30 s, 1 min, 2 min, 4 min. */
+export const DISPATCH_RETRY_BASE_MS = 30_000;
+
+/**
+ * Hands the handlers that failed to the `dispatchOrderEvent` job, which will
+ * run exactly those and come back here if they fail again. Returns whether a
+ * retry was queued; `false` means the budget is spent and the failure has
+ * been logged for a human.
+ *
+ * The policy lives here rather than in the job because both entry points need
+ * it: the inline dispatch below is attempt 1, and the job is every attempt
+ * after. Only the failed handlers are named — re-running one that already sold
+ * stock or wrote a commission line is the duplication this registry exists to
+ * prevent, and the `event.id` guard cannot help a partial failure.
+ */
+export async function scheduleOrderEventRetry(
+	payload: Payload,
+	event: OrderEvent,
+	failedAttempt: number,
+	handlers: readonly string[],
+): Promise<boolean> {
+	const orderId = String(
+		typeof event.order === "object" ? event.order.id : event.order,
+	);
+	if (failedAttempt >= DISPATCH_ATTEMPT_BUDGET) {
+		payload.logger.error(
+			{
+				orderId,
+				eventId: event.id,
+				type: event.type,
+				attempt: failedAttempt,
+				failed: [...handlers],
+			},
+			"[orders] event dispatch gave up after the retry budget",
+		);
+		return false;
+	}
+
+	await payload.jobs.queue({
+		task: "dispatchOrderEvent",
+		queue: ORDER_QUEUE,
+		input: {
+			orderId,
+			eventId: event.id,
+			attempt: failedAttempt + 1,
+			handlers: [...handlers],
+		},
+		waitUntil: new Date(
+			Date.now() + DISPATCH_RETRY_BASE_MS * 2 ** (failedAttempt - 1),
+		),
+	});
+	return true;
+}
+
+/**
+ * Attempt 1, inline, immediately after the commit — so a buyer's receipt,
+ * conversation and notification do not wait for the next sweep of the orders
+ * queue. What the job adds is the retry: a handler that throws here is queued
+ * by name, with back-off, instead of being logged and forgotten, which is
+ * what happened until this call existed.
+ *
+ * The window this leaves is a process death between the commit and this
+ * function finishing: the event's effects are then lost with no retry row to
+ * recover them. Dispatching attempt 1 through the queue too would close it, at
+ * the cost of making every order's first SMS and conversation wait up to five
+ * minutes.
+ */
 async function dispatchOrderEvent(
 	payload: Payload,
 	order: Order,
 	event: OrderEvent,
 ): Promise<void> {
-	await runOrderEventHandlers(payload, order, event);
+	const failed = await runOrderEventHandlers(payload, order, event);
+	if (failed.length === 0) return;
+	await scheduleOrderEventRetry(payload, event, 1, failed);
 }
 
 /**

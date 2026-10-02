@@ -1,12 +1,10 @@
 import type { Payload, TaskConfig } from "payload";
-import { runOrderEventHandlers } from "../services/orders/events";
-import { ORDER_QUEUE } from "./orderSweep";
+import {
+	runOrderEventHandlers,
+	scheduleOrderEventRetry,
+} from "../services/orders/events";
 
-/** The spec's retry budget: the first dispatch plus four retries. */
-export const DISPATCH_ATTEMPT_BUDGET = 5;
-
-/** First back-off, doubled per attempt — 30 s, 1 min, 2 min, 4 min. */
-const RETRY_BASE_MS = 30_000;
+export { DISPATCH_ATTEMPT_BUDGET } from "../services/orders/events";
 
 export interface DispatchOrderEventInput {
 	orderId: string;
@@ -36,16 +34,18 @@ function namesOf(value: unknown): string[] | undefined {
 }
 
 /**
- * Runs one order event's handlers and decides what happens to the ones that
- * failed. Kept apart from `TaskConfig.handler` (same reasoning as
- * `runProcessKycEvent`) so it can be pinned against a plain `payload`.
+ * Runs one order event's handlers and hands the ones that failed back to
+ * `scheduleOrderEventRetry`. Kept apart from `TaskConfig.handler` (same
+ * reasoning as `runProcessKycEvent`) so it can be pinned against a plain
+ * `payload`.
  *
  * A failure re-queues *this* task with the failed handlers' names rather
  * than letting Payload retry the job: Payload's own retry re-runs the task
  * with the input it already had, which cannot narrow the work to the
  * handlers that still need doing — and re-running a handler that already
  * sold stock or wrote a commission line is the one thing the registry's
- * idempotency exists to prevent.
+ * idempotency exists to prevent. The budget and the back-off live beside the
+ * registry, because the inline attempt 1 needs the same policy.
  */
 export async function runDispatchOrderEvent(
 	payload: Payload,
@@ -72,33 +72,13 @@ export async function runDispatchOrderEvent(
 		return { output: { attempt, failed, requeued: false } };
 	}
 
-	if (attempt >= DISPATCH_ATTEMPT_BUDGET) {
-		payload.logger.error(
-			{
-				orderId: input.orderId,
-				eventId: input.eventId,
-				type: event.type,
-				attempt,
-				failed,
-			},
-			"[orders] event dispatch gave up after the retry budget",
-		);
-		return { output: { attempt, failed, requeued: false } };
-	}
-
-	await payload.jobs.queue({
-		task: "dispatchOrderEvent",
-		queue: ORDER_QUEUE,
-		input: {
-			orderId: input.orderId,
-			eventId: input.eventId,
-			attempt: attempt + 1,
-			handlers: failed,
-		},
-		waitUntil: new Date(Date.now() + RETRY_BASE_MS * 2 ** (attempt - 1)),
-	});
-
-	return { output: { attempt, failed, requeued: true } };
+	const requeued = await scheduleOrderEventRetry(
+		payload,
+		event,
+		attempt,
+		failed,
+	);
+	return { output: { attempt, failed, requeued } };
 }
 
 export const dispatchOrderEventTask: TaskConfig<"dispatchOrderEvent"> = {

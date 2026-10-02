@@ -4,9 +4,12 @@ import { withTransaction } from "../../src/lib/transactions";
 import type { Order, OrderEvent } from "../../src/payload-types";
 import {
 	__resetOrderEventHandlers,
+	DISPATCH_ATTEMPT_BUDGET,
+	DISPATCH_RETRY_BASE_MS,
 	queueOrderEvent,
 	registerOrderEventHandler,
 	runOrderEventHandlers,
+	scheduleOrderEventRetry,
 } from "../../src/services/orders/events";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -145,5 +148,86 @@ describe("queueOrderEvent", () => {
 
 		expect(calledDuringTransaction).toBe(false);
 		expect(calls).toEqual(["ran"]);
+	});
+
+	// `jobs/dispatchOrderEvent.ts` carries the whole retry budget and nothing
+	// reached it: the post-commit dispatch ran the handlers inline and threw
+	// the failed names away, so a receipt SMS that failed once failed for
+	// good. These three pin the hand-off in both directions.
+	it("queues the handlers that failed, by name, with the first back-off", async () => {
+		const payload = fakePayload();
+		const order = makeOrder();
+		const event = makeEvent({ id: "ev-9", order: "o-7" });
+		const start = Date.now();
+		async function sendsReceipt() {
+			throw new Error("sms gateway down");
+		}
+		registerOrderEventHandler("order.shipped", sendsReceipt);
+		registerOrderEventHandler("order.shipped", async function notifies() {});
+
+		await withTransaction(payload, async (req) => {
+			queueOrderEvent(req, order, event);
+		});
+
+		expect(payload.jobs.queue).toHaveBeenCalledTimes(1);
+		const [call] = payload.jobs.queue.mock.calls as unknown as [
+			[
+				{
+					task: string;
+					queue: string;
+					input: Record<string, unknown>;
+					waitUntil: Date;
+				},
+			],
+		];
+		expect(call[0].task).toBe("dispatchOrderEvent");
+		expect(call[0].queue).toBe("orders");
+		// Only the handler that threw, and attempt 2 — the inline dispatch was
+		// attempt 1. A retry naming `notifies` would notify twice.
+		expect(call[0].input).toEqual({
+			orderId: "o-7",
+			eventId: "ev-9",
+			attempt: 2,
+			handlers: ["sendsReceipt"],
+		});
+		expect(call[0].waitUntil.getTime() - start).toBeGreaterThanOrEqual(
+			DISPATCH_RETRY_BASE_MS,
+		);
+	});
+
+	it("queues nothing when every handler succeeds", async () => {
+		const payload = fakePayload();
+		const order = makeOrder();
+		registerOrderEventHandler("order.shipped", async function notifies() {});
+
+		await withTransaction(payload, async (req) => {
+			queueOrderEvent(req, order, makeEvent());
+		});
+
+		expect(payload.jobs.queue).not.toHaveBeenCalled();
+	});
+
+	it("stops at the budget and leaves the failure for a human", async () => {
+		const payload = fakePayload();
+		const event = makeEvent({ id: "ev-9", order: "o-7" });
+
+		const requeued = await scheduleOrderEventRetry(
+			payload,
+			event,
+			DISPATCH_ATTEMPT_BUDGET,
+			["sendsReceipt"],
+		);
+
+		expect(requeued).toBe(false);
+		expect(payload.jobs.queue).not.toHaveBeenCalled();
+		expect(payload.logger.error).toHaveBeenCalledWith(
+			expect.objectContaining({
+				orderId: "o-7",
+				eventId: "ev-9",
+				attempt: DISPATCH_ATTEMPT_BUDGET,
+				failed: ["sendsReceipt"],
+			}),
+			expect.stringContaining("gave up"),
+		);
 	});
 });
