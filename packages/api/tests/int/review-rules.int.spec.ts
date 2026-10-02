@@ -93,6 +93,25 @@ describe("assertReviewAllowed", () => {
 			code: "review.noInteraction",
 		});
 	});
+
+	it("still allows one personal review of the same user even after a shop review of them", async () => {
+		// The three-field (reviewer, reviewedUser, shop) index this duplicate
+		// check mirrors: a shop review of `seller`'s shop (shop set) and a
+		// personal review of `seller` (shop null) are different rows, so an
+		// existing shop review must never block the personal one.
+		const payload = world({
+			reviews: [
+				{
+					id: "r-1",
+					reviewer: "buyer",
+					reviewedUser: "seller",
+					shop: "shop-1",
+				},
+			],
+			conversations: [{ id: "c-1", participants: ["buyer", "seller"] }],
+		});
+		await expect(allowed(payload)).resolves.toBeUndefined();
+	});
 });
 
 describe("enforceReviewRules hook", () => {

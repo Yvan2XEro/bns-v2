@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
+import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import type { TxReq } from "../lib/transactions";
 
@@ -70,6 +71,10 @@ export async function assertReviewAllowed(
 	if (reviewerId === reviewedUserId) {
 		throw new ReviewRuleError(ERROR_CODES.reviewSelf, 400);
 	}
+	// Scoped to `shop: { exists: false }`: a shop review and a personal review
+	// of the same pair are different rows under the three-field index (see
+	// `assertOrderReviewAllowed`), so an existing shop review must never block
+	// the one personal review this check guards.
 	const duplicate = await exists(
 		payload,
 		"reviews",
@@ -77,6 +82,7 @@ export async function assertReviewAllowed(
 			and: [
 				{ reviewer: { equals: reviewerId } },
 				{ reviewedUser: { equals: reviewedUserId } },
+				{ shop: { exists: false } },
 			],
 		},
 		req,
@@ -92,10 +98,110 @@ export async function assertReviewAllowed(
 	}
 }
 
+interface OrderReviewTarget {
+	shop: string;
+	reviewedUser: string;
+}
+
 /**
- * True for the two shapes a (reviewer, reviewedUser) unique-index violation
- * can take: the raw Mongo driver error, and the `ValidationError` Payload's
- * mongodb adapter wraps it in before it reaches a collection hook.
+ * Resolves what an order review would target — the shop and its owner — and
+ * the order's current state, without deciding whether the review is allowed.
+ * Shared by `assertOrderReviewAllowed` (the create-time check) and
+ * `translateReviewWriteConflict`'s caller (the race-loser's afterError path),
+ * so both agree on which review a given order actually refers to.
+ */
+export async function findOrderReviewTarget(
+	payload: Payload,
+	orderId: string,
+	req?: TxReq,
+): Promise<{
+	buyerId: string | null;
+	status: string;
+	target: OrderReviewTarget | null;
+}> {
+	const order = await payload.findByID({
+		collection: "orders",
+		id: orderId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+
+	const buyerId = relationId(order.buyer);
+	const shopId = relationId(order.shop);
+	if (!shopId) return { buyerId, status: order.status, target: null };
+
+	const shop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	const reviewedUserId = relationId(shop.owner);
+	if (!reviewedUserId) return { buyerId, status: order.status, target: null };
+
+	return {
+		buyerId,
+		status: order.status,
+		target: { shop: shopId, reviewedUser: reviewedUserId },
+	};
+}
+
+const ORDER_REVIEWABLE_STATUSES: ReadonlySet<string> = new Set([
+	"delivered",
+	"completed",
+]);
+
+/**
+ * The order path P4 adds to the interaction rule above: a delivered or
+ * completed order from the caller stands in for a conversation or a contact
+ * reveal (A4, docs/superpowers/specs/2026-09-15-p4-cod-orders-design.md).
+ * Every refusal here reuses `review.noInteraction` — from the reviewer's
+ * side, an order that is not theirs, or not yet delivered, is exactly "no
+ * qualifying interaction yet".
+ */
+export async function assertOrderReviewAllowed(
+	payload: Payload,
+	{ reviewerId, orderId }: { reviewerId: string; orderId: string },
+	req?: TxReq,
+): Promise<OrderReviewTarget> {
+	const { buyerId, status, target } = await findOrderReviewTarget(
+		payload,
+		orderId,
+		req,
+	);
+
+	if (
+		!buyerId ||
+		buyerId !== reviewerId ||
+		!ORDER_REVIEWABLE_STATUSES.has(status) ||
+		!target
+	) {
+		throw new ReviewRuleError(ERROR_CODES.reviewNoInteraction, 403);
+	}
+
+	const duplicate = await exists(
+		payload,
+		"reviews",
+		{
+			and: [
+				{ reviewer: { equals: reviewerId } },
+				{ reviewedUser: { equals: target.reviewedUser } },
+				{ shop: { equals: target.shop } },
+			],
+		},
+		req,
+	);
+	if (duplicate) throw new ReviewRuleError(ERROR_CODES.reviewDuplicate, 409);
+
+	return target;
+}
+
+/**
+ * True for the two shapes a (reviewer, reviewedUser, shop) unique-index
+ * violation can take: the raw Mongo driver error, and the `ValidationError`
+ * Payload's mongodb adapter wraps it in before it reaches a collection hook.
  */
 export function isReviewUniqueViolation(error: unknown): boolean {
 	if (!error || typeof error !== "object") return false;
@@ -109,7 +215,9 @@ export function isReviewUniqueViolation(error: unknown): boolean {
 		return Boolean(
 			err.data?.errors?.some(
 				(fieldError) =>
-					fieldError.path === "reviewer" || fieldError.path === "reviewedUser",
+					fieldError.path === "reviewer" ||
+					fieldError.path === "reviewedUser" ||
+					fieldError.path === "shop",
 			),
 		);
 	}
@@ -119,20 +227,27 @@ export function isReviewUniqueViolation(error: unknown): boolean {
 /**
  * Closes the race the pre-check above cannot: two creates can both pass it
  * before either is written, and only one survives the database's unique
- * (reviewer, reviewedUser) index (migration 20260915_000100_p0_reviews_audit,
- * when it was able to create it). Called with the error the write itself
- * raised; re-reads to confirm the pair now exists before translating it into
- * the same review.duplicate the pre-check throws, so the caller cannot tell
- * which path rejected them. Anything else — a write that failed for an
- * unrelated reason, or an index hit the re-read cannot confirm — is left
- * alone (returns `undefined`) so the original error keeps its own response.
+ * (reviewer, reviewedUser, shop) index (migration
+ * 20261002_000100_p4_review_shop_index, replacing P0's two-field one). Called
+ * with the error the write itself raised; re-reads to confirm the tuple now
+ * exists before translating it into the same review.duplicate the pre-check
+ * throws, so the caller cannot tell which path rejected them. Anything else —
+ * a write that failed for an unrelated reason, or an index hit the re-read
+ * cannot confirm — is left alone (returns `undefined`) so the original error
+ * keeps its own response.
+ *
+ * `shop` is optional and defaults to the personal-review scope
+ * (`shop: { exists: false }`), mirroring `assertReviewAllowed`'s own
+ * duplicate check, so a race on a personal review is never confirmed against
+ * an unrelated shop review of the same pair.
  */
 export async function translateReviewWriteConflict(
 	payload: Payload,
 	{
 		reviewerId,
 		reviewedUserId,
-	}: { reviewerId: string; reviewedUserId: string },
+		shop,
+	}: { reviewerId: string; reviewedUserId: string; shop?: string | null },
 	error: unknown,
 	req?: TxReq,
 ): Promise<ReviewRuleError | undefined> {
@@ -144,6 +259,7 @@ export async function translateReviewWriteConflict(
 			and: [
 				{ reviewer: { equals: reviewerId } },
 				{ reviewedUser: { equals: reviewedUserId } },
+				shop ? { shop: { equals: shop } } : { shop: { exists: false } },
 			],
 		},
 		req,

@@ -3,6 +3,7 @@ import { authenticated } from "../access/authenticated";
 import {
 	enforceReviewRules,
 	translateReviewWriteConflicts,
+	updateShopRating,
 	updateUserRating,
 } from "../hooks/reviews";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
@@ -50,6 +51,11 @@ export const Reviews: CollectionConfig = {
 					await updateUserRating({ req, reviewedUserId });
 				}
 
+				const shopId = typeof doc.shop === "string" ? doc.shop : doc.shop?.id;
+				if (shopId) {
+					await updateShopRating(req, shopId);
+				}
+
 				if (operation === "create" && isNotificationProviderConfigured()) {
 					try {
 						const { triggerNotificationEvent } = await import(
@@ -95,6 +101,11 @@ export const Reviews: CollectionConfig = {
 						: doc.reviewedUser?.id;
 				if (reviewedUserId) {
 					await updateUserRating({ req, reviewedUserId });
+				}
+
+				const shopId = typeof doc.shop === "string" ? doc.shop : doc.shop?.id;
+				if (shopId) {
+					await updateShopRating(req, shopId);
 				}
 			},
 		],
