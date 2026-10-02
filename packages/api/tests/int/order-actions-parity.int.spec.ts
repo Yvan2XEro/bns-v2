@@ -7,13 +7,21 @@ import {
 	type OrderAction,
 } from "../../../mobile/src/lib/orderActions";
 import {
+	CANCELLATION_REASON_KEYS as mobileCancellationReasonKeys,
+	STAFF_CANCEL_REASONS as mobileStaffCancelReasons,
+} from "../../../mobile/src/lib/staffOrderSheet";
+import {
 	ORDER_ACTION_PERMISSIONS as webActionPermissions,
 	ORDER_ACTION_ROUTES as webActionRoutes,
 	ORDER_ACTIONS_BY_STATUS as webActionTable,
 } from "../../../web/src/lib/order-actions";
 import { can, ROLE_PERMISSIONS, SHOP_ROLES } from "../../src/access/shopRoles";
+import { ORDER_CANCELLATION_REASONS } from "../../src/collections/Orders";
 import { ORDER_STATUS_NAMES } from "../../src/lib/orderFormat";
-import { MODERATOR_CANCELLABLE_STATUSES } from "../../src/services/moderation";
+import {
+	MODERATOR_CANCELLABLE_STATUSES,
+	STAFF_CANCEL_REASONS,
+} from "../../src/services/moderation";
 import {
 	BUYER_CANCELLABLE_STATUSES,
 	SELLER_CANCELLABLE_STATUSES,
@@ -346,5 +354,17 @@ describe("the two client mirrors are the same table", () => {
 	it("agrees on the shop permission each action is gated on", () => {
 		expect(Object.keys(webActionPermissions)).toHaveLength(9);
 		expect(webActionPermissions).toEqual(mobileActionPermissions);
+	});
+});
+
+describe("the moderation order sheet's reasons", () => {
+	it("mobile's moderation order sheet offers exactly the reasons cancelOrder accepts", () => {
+		expect([...mobileStaffCancelReasons]).toEqual([...STAFF_CANCEL_REASONS]);
+	});
+
+	it("the sheet labels every cancellation reason the collection stores", () => {
+		expect(Object.keys(mobileCancellationReasonKeys).sort()).toEqual(
+			[...ORDER_CANCELLATION_REASONS].sort(),
+		);
 	});
 });
