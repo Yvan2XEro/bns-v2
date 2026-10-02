@@ -117,4 +117,142 @@ describe("locale parity", () => {
 			expect(identical.length).toBeLessThan(enLeaves.length);
 		}
 	});
+
+	/**
+	 * Task 7's P4 namespaces: `OrderStatus`, `Cart`, `Checkout`, `Purchases`,
+	 * `SellerOrders` and `Billing` land here as a block, the same silent-drift
+	 * shape as the P3 namespaces above — every screen task in waves 10-13
+	 * calls `useTranslations("Checkout")` and friends before any of these
+	 * namespaces exist in this file otherwise.
+	 */
+	const P4_NAMESPACES = [
+		"OrderStatus",
+		"Cart",
+		"Checkout",
+		"Purchases",
+		"SellerOrders",
+		"Billing",
+	];
+
+	test("every P4 namespace is in exact en/fr lockstep", () => {
+		for (const namespace of P4_NAMESPACES) {
+			const enNs = leafPaths(((en as Json)[namespace] ?? {}) as Json).sort();
+			const frNs = leafPaths(((fr as Json)[namespace] ?? {}) as Json).sort();
+			expect(frNs).toEqual(enNs);
+		}
+	});
+
+	// Deliberately no "every P4 namespace exists in both" test here: a
+	// namespace absent from BOTH files satisfies en/fr lockstep perfectly,
+	// which is exactly the blind spot `messages-keys.test.ts` exists to
+	// cover with a hard-coded manifest instead — see its
+	// "every key Task 7 promised exists" test and Task 7's report for the
+	// mutation that proves the split (deleting `Billing` from both files
+	// leaves this file green and fails that one).
+
+	/**
+	 * The status vocabulary itself, pinned in full: the eleven statuses times
+	 * two audiences give 22 cells (some seller keys repeat — `confirmed` and
+	 * `paid` share `status_placed_seller`, `completed` shares
+	 * `status_delivered_seller` — so this list has 22 entries but fewer than
+	 * 22 distinct key names), the six tabs, and the six delivery-failure
+	 * reasons. This is the hard-coded half of the computed-family guard:
+	 * `messages-keys.test.ts` scans for literal `t("...")` calls, which can
+	 * never see `t(statusLabelKey(status, audience))` — a key chosen at
+	 * runtime from this very table.
+	 */
+	const STATUS_KEYS = [
+		["status_placed_buyer", "status_placed_seller"],
+		["status_confirmed_buyer", "status_placed_seller"],
+		["status_paid_buyer", "status_placed_seller"],
+		["status_accepted_buyer", "status_accepted_seller"],
+		["status_shipped_buyer", "status_shipped_seller"],
+		["status_delivered_buyer", "status_delivered_seller"],
+		["status_completed_buyer", "status_delivered_seller"],
+		["status_cancelled_buyer", "status_cancelled_seller"],
+		["status_failed_buyer", "status_failed_seller"],
+		["status_returned_buyer", "status_returned_seller"],
+		["status_disputed_buyer", "status_disputed_seller"],
+	].flat();
+
+	const TAB_KEYS = [
+		"tab_to_accept",
+		"tab_to_ship",
+		"tab_shipped",
+		"tab_delivered",
+		"tab_cancelled",
+		"tab_failed",
+	];
+
+	const FAILURE_REASON_KEYS = [
+		"failure_refused",
+		"failure_unreachable",
+		"failure_absent",
+		"failure_address_not_found",
+		"failure_timeout",
+		"failure_other",
+	];
+
+	const CANCEL_REASON_KEYS = [
+		"cancelReason_changedMind",
+		"cancelReason_foundCheaper",
+		"cancelReason_orderedByMistake",
+		"cancelReason_duplicateOrder",
+		"cancelReason_wrongAddress",
+		"cancelReason_wrongItem",
+		"cancelReason_noLongerNeeded",
+		"cancelReason_deliveryTooSlow",
+		"cancelReason_paymentIssue",
+		"cancelReason_sellerUnresponsive",
+		"cancelReason_other",
+	];
+
+	const TIER_KEYS = ["tierNew", "tierRegular", "tierTrusted", "tierWatch"];
+
+	test("the computed-key families have the sizes the code assumes", () => {
+		expect(STATUS_KEYS).toHaveLength(22);
+		expect(TAB_KEYS).toHaveLength(6);
+		expect(FAILURE_REASON_KEYS).toHaveLength(6);
+		expect(CANCEL_REASON_KEYS).toHaveLength(11);
+		expect(TIER_KEYS).toHaveLength(4);
+	});
+
+	test("every computed-family key exists in both locales", () => {
+		for (const key of STATUS_KEYS.concat(TAB_KEYS, FAILURE_REASON_KEYS)) {
+			expect((en as Json).OrderStatus).toHaveProperty(key);
+			expect((fr as Json).OrderStatus).toHaveProperty(key);
+		}
+		for (const key of CANCEL_REASON_KEYS) {
+			expect((en as Json).Purchases).toHaveProperty(key);
+			expect((fr as Json).Purchases).toHaveProperty(key);
+		}
+		for (const key of TIER_KEYS) {
+			expect((en as Json).SellerOrders).toHaveProperty(key);
+			expect((fr as Json).SellerOrders).toHaveProperty(key);
+		}
+	});
+
+	test("no string is left identical in both languages by accident in the P4 namespaces", () => {
+		for (const namespace of P4_NAMESPACES) {
+			const enNode = ((en as Json)[namespace] ?? {}) as Json;
+			const frNode = ((fr as Json)[namespace] ?? {}) as Json;
+			const enLeaves = leafPaths(enNode);
+			// A namespace absent from both sides has nothing to compare — that
+			// is a presence problem, and `messages-keys.test.ts` is the gate
+			// that owns it, not this one.
+			if (enLeaves.length === 0) continue;
+			const identical = enLeaves.filter((path) => {
+				const read = (node: Json) =>
+					path
+						.split(".")
+						.reduce<Json | string | undefined>(
+							(acc, key) =>
+								acc && typeof acc === "object" ? acc[key] : undefined,
+							node,
+						);
+				return read(enNode) === read(frNode);
+			});
+			expect(identical.length).toBeLessThan(enLeaves.length);
+		}
+	});
 });
