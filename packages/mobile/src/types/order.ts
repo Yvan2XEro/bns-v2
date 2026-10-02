@@ -241,6 +241,12 @@ export interface QuoteInput {
 export interface PlaceInput extends QuoteInput {
 	quoteHash: string;
 	termsAccepted: true;
+	/**
+	 * One UUID per checkout attempt — the server requires it, and resolves a
+	 * double-tap or a retried request to the first call's order. The web twin
+	 * first shipped without it and every placement would have been refused.
+	 */
+	idempotencyKey: string;
 }
 
 export interface PlaceResponse {
@@ -503,6 +509,27 @@ export interface BillingView {
  * publishes the shop's COD caps or the city's default fee next to it — see
  * the report's plan-defect note.
  */
+/**
+ * `GET /api/shops/{id}/order-settings` — the raw group plus the two figures
+ * only the server can compute: the level's COD caps (admin overrides merged
+ * in) and the launch city's default fee. Same shape as the web's.
+ */
+export interface OrderSettingsView {
+	codEnabled: boolean;
+	sellerDeliveryEnabled: boolean;
+	deliveryFee: number | null;
+	deliveryEtaText: string | null;
+	pickupEnabled: boolean;
+	pickupPoint: PickupPointSnapshot | null;
+	salesTermsExtra: string | null;
+	caps: {
+		maxOrderTotal: number;
+		maxDailyOrders: number;
+		maxOpenOrders: number;
+	} | null;
+	cityDefaultFee: number | null;
+}
+
 export interface ShopOrderSettings {
 	codEnabled?: boolean | null;
 	sellerDeliveryEnabled?: boolean | null;

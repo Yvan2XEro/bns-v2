@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type {
+	DeliveryOption,
 	PlaceInput,
 	PlaceResponse,
 	QuoteInput,
@@ -8,6 +9,30 @@ import type {
 } from "../types/order";
 import { cartKey } from "./useCart";
 import { purchasesRootKey } from "./usePurchases";
+
+export const deliveryOptionsKey = (city: string, district: string) =>
+	["checkout", "delivery-options", city, district] as const;
+
+/**
+ * `GET /api/checkout/delivery-options` — the delivery step's own source, so
+ * the step never offers an option the quote would then refuse.
+ */
+export function useDeliveryOptions(
+	city: string | null,
+	district: string | null,
+) {
+	const params = new URLSearchParams();
+	if (city) params.set("city", city);
+	if (district) params.set("district", district);
+	return useQuery({
+		queryKey: deliveryOptionsKey(city ?? "", district ?? ""),
+		queryFn: () =>
+			api.get<{ city: string; options: DeliveryOption[] }>(
+				`/api/checkout/delivery-options?${params.toString()}`,
+			),
+		enabled: Boolean(city),
+	});
+}
 
 /**
  * `POST /api/checkout/quote` is a read that needs a body, so it is a mutation
