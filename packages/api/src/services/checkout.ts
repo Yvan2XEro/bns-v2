@@ -1,4 +1,6 @@
 import type { Payload } from "payload";
+import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
+import { queueSearchEvent } from "../hooks/searchEvents";
 import { resolveSuspension } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import {
@@ -13,7 +15,9 @@ import {
 	buildContractSnapshot,
 	type ContractSnapshot,
 	loadSalesTermsTemplate,
+	snapshotHash,
 } from "../lib/orderContract";
+import { commissionForLine } from "../lib/orderMath";
 import {
 	type BuyerTierKey,
 	getOrderSettings,
@@ -34,15 +38,32 @@ import {
 	type ShopCapabilities,
 	shopCapabilities,
 } from "../lib/shopCapabilities";
-import type { Cart, ProductVariant, Shop } from "../payload-types";
-import { type CartLineView, loadActiveCart, revalidateCartLines } from "./cart";
+import {
+	commitContextOf,
+	onCommit,
+	withTransaction,
+} from "../lib/transactions";
+import { availableOf } from "../lib/variants";
+import type { Cart, Order, ProductVariant, Shop } from "../payload-types";
+import {
+	type CartLineView,
+	loadActiveCart,
+	markCartConverted,
+	revalidateCartLines,
+} from "./cart";
 import {
 	type DeliveryOption,
 	type QuoteItem,
 	quoteDelivery,
 } from "./deliveryQuote";
-import { scoreCheckout } from "./orders/risk";
-import type { ServiceUser } from "./shops";
+import { issueConfirmationCode } from "./orders/confirmation";
+import { queueOrderEvent } from "./orders/events";
+import { recordPlacement, scoreCheckout } from "./orders/risk";
+import { receiptSms, sendOrderSms } from "./orders/sms";
+import { appendOrderEvent, applyTransition } from "./orders/transitions";
+import { nextNumber } from "./sequences";
+import { isUniqueViolation, type ServiceUser } from "./shops";
+import { reserve } from "./stock";
 
 export class CheckoutError extends ServiceError {
 	constructor(
@@ -715,4 +736,466 @@ export async function quoteCheckout(
 		confirmationRequired,
 		quoteHash: hash,
 	};
+}
+
+export interface CheckoutPlaceInput extends CheckoutQuoteInput {
+	quoteHash?: unknown;
+	termsAccepted?: unknown;
+	idempotencyKey?: unknown;
+}
+
+export interface PlaceResponse {
+	orderId: string;
+	orderNumber: string;
+	status: Order["status"];
+	paymentStatus: Order["paymentStatus"];
+	confirmationRequired: "none" | "sms_code" | "seller_call";
+	amounts: {
+		subtotal: number;
+		deliveryFee: number;
+		total: number;
+		currency: "XAF";
+	};
+	deadlines: { confirmBy: string | null; acceptBy: string | null };
+}
+
+/**
+ * Mirrors `services/orders/notifications.ts`'s own (unexported)
+ * `resolveConfirmationRequired`: anything other than a pending SMS code or a
+ * pending seller call reads as settled, including the auto-confirmed
+ * `verified_phone` method.
+ */
+function confirmationRequiredOf(
+	order: Order,
+): "none" | "sms_code" | "seller_call" {
+	const method = order.confirmation?.method;
+	if (method === "sms_code" || method === "seller_call") return method;
+	return "none";
+}
+
+/** `scoreCheckout`'s tier never comes back `blocked` here: a blocked tier
+ * makes `quoteCheckout` itself refuse with `order.codUnavailable` before this
+ * function is ever reached, so this only narrows the type for the field's
+ * four-value select. */
+function riskTierOf(
+	tier: BuyerTierKey,
+): "new" | "regular" | "trusted" | "watch" {
+	return tier === "blocked" ? "watch" : tier;
+}
+
+/** `order.contract.snapshot` is a `json` field, so it has no named shape of
+ * its own on the Payload side; this is the one place a `ContractSnapshot`
+ * crosses into it. The spread produces a plain object rather than casting
+ * one type as another. */
+function contractSnapshotJson(
+	snapshot: ContractSnapshot,
+): Record<string, unknown> {
+	return { ...snapshot };
+}
+
+function responseFromOrder(order: Order): PlaceResponse {
+	return {
+		orderId: String(order.id),
+		orderNumber: order.orderNumber,
+		status: order.status,
+		paymentStatus: order.paymentStatus,
+		confirmationRequired: confirmationRequiredOf(order),
+		amounts: {
+			subtotal: order.amounts?.subtotal ?? 0,
+			deliveryFee: order.amounts?.deliveryFee ?? 0,
+			total: order.amounts?.total ?? 0,
+			currency: "XAF",
+		},
+		deadlines: {
+			confirmBy: order.deadlines?.confirmBy ?? null,
+			acceptBy: order.deadlines?.acceptBy ?? null,
+		},
+	};
+}
+
+/** The pre-check `placeOrder` runs before doing any real work: the common,
+ * non-racing replay of an already-placed idempotency key is answered from
+ * this alone. The partial unique index (Task 6) is the actual guard against
+ * two concurrent requests for the same key — this is only the optimisation
+ * that keeps a replay from redoing the quote, the reservation and the rest. */
+async function findOrderByIdempotencyKey(
+	payload: Payload,
+	buyerId: string,
+	idempotencyKey: string,
+): Promise<Order | null> {
+	const { docs } = await payload.find({
+		collection: "orders",
+		where: {
+			and: [
+				{ buyer: { equals: buyerId } },
+				{ idempotencyKey: { equals: idempotencyKey } },
+			],
+		},
+		limit: 1,
+		depth: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	return (docs[0] as Order | undefined) ?? null;
+}
+
+/**
+ * Places a cash-on-delivery order. The client's own quote is never trusted:
+ * every precondition `quoteCheckout` enforces runs again here — by calling
+ * `quoteCheckout` itself, not by re-implementing it — and the price charged
+ * is the one this fresh run computes, never the one the request body
+ * carries. A mismatch between the fresh hash and the one the client
+ * supplied means the world moved since the quote was shown, and the buyer
+ * must see the new numbers before anything is created: `checkout.quoteChanged`
+ * carries the fresh quote for exactly that, rather than making the client
+ * re-request it.
+ *
+ * Everything that must survive together or not at all — the order, its
+ * items, the stock reservations, the placement event, the cart's
+ * `converted` flag, the buyer's placement count — happens inside one
+ * `withTransaction` body. Everything that reaches outside the process — the
+ * receipt SMS, the order's conversation, the buyer/shop notifications, the
+ * search index — is queued through `onCommit` or the order-event registry
+ * and never runs until that transaction has actually committed; if it never
+ * commits, none of it ever runs either.
+ */
+export async function placeOrder(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutPlaceInput,
+	options: {
+		now?: Date;
+		store?: CounterStore;
+		ip?: string;
+		source?: "web" | "ios" | "android";
+	} = {},
+): Promise<PlaceResponse> {
+	const now = options.now ?? new Date();
+	const source = options.source ?? "web";
+
+	const idempotencyKey =
+		typeof input.idempotencyKey === "string" ? input.idempotencyKey.trim() : "";
+	if (!idempotencyKey) {
+		throw new CheckoutError(ERROR_CODES.validation, 400, undefined, {
+			field: "idempotencyKey",
+		});
+	}
+
+	const alreadyPlaced = await findOrderByIdempotencyKey(
+		payload,
+		user.id,
+		idempotencyKey,
+	);
+	if (alreadyPlaced) return responseFromOrder(alreadyPlaced);
+
+	const fresh = await quoteCheckout(payload, user, input, {
+		now,
+		store: options.store,
+		ip: options.ip,
+	});
+
+	const suppliedHash =
+		typeof input.quoteHash === "string" ? input.quoteHash : "";
+	if (suppliedHash !== fresh.quoteHash) {
+		throw new CheckoutError(ERROR_CODES.checkoutQuoteChanged, 409, undefined, {
+			quote: fresh,
+		});
+	}
+
+	if (input.termsAccepted !== true) {
+		throw new CheckoutError(ERROR_CODES.checkoutTermsNotAccepted, 400);
+	}
+
+	const settings = await getOrderSettings(payload);
+	const account = await payload.findByID({
+		collection: "users",
+		id: user.id,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const address = fresh.summary.delivery.address;
+	const { tier, refusals } = await scoreCheckout(
+		payload,
+		{ accountPhone: account.phone ?? null, deliveryPhone: address.phone },
+		now,
+	);
+
+	const orderNumber = await nextNumber(payload, "BNS", now);
+	const shopId = fresh.summary.shopId;
+	const placedAtIso = now.toISOString();
+	const confirmBy = new Date(
+		now.getTime() + settings.confirmHours * 60 * 60 * 1000,
+	).toISOString();
+	const acceptBy = new Date(
+		now.getTime() + settings.acceptHours * 60 * 60 * 1000,
+	).toISOString();
+
+	try {
+		return await withTransaction(
+			payload,
+			async (req) => {
+				const cart = await loadActiveCart(req.payload, user.id);
+				if (!cart) throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
+
+				const createdOrder = await req.payload.create({
+					collection: "orders",
+					req,
+					overrideAccess: true,
+					context: ORDER_SERVICE_CONTEXT,
+					data: {
+						orderNumber,
+						idempotencyKey,
+						buyer: user.id,
+						shop: shopId,
+						status: "placed",
+						paymentMethod: "cod",
+						paymentStatus: "cod_pending",
+						confirmation: {
+							method:
+								fresh.confirmationRequired === "seller_call"
+									? "seller_call"
+									: null,
+						},
+						delivery: {
+							method: fresh.summary.delivery.method,
+							recipientName: address.recipientName,
+							phone: address.phone,
+							city: address.city,
+							district: address.district,
+							districtOther: address.districtOther,
+							landmark: address.landmark,
+							instructions: address.instructions,
+							gps: address.gps
+								? { ...address.gps, capturedAt: placedAtIso }
+								: undefined,
+							fee: fresh.summary.deliveryFee,
+							etaText: fresh.summary.delivery.etaText,
+						},
+						amounts: {
+							subtotal: fresh.summary.subtotal,
+							deliveryFee: fresh.summary.deliveryFee,
+							discount: 0,
+							buyerProtectionFee: 0,
+							total: fresh.summary.total,
+							currency: "XAF",
+						},
+						risk: {
+							phoneTier: riskTierOf(tier),
+							refusalsAtPlacement: refusals,
+							capsApplied: null,
+						},
+						deadlines: { confirmBy, acceptBy },
+						timestamps: { placedAt: placedAtIso },
+						contract: {
+							termsVersion: fresh.preContract.termsVersion,
+							locale: fresh.preContract.locale,
+							acceptedAt: placedAtIso,
+							snapshot: contractSnapshotJson(fresh.preContract),
+							snapshotHash: snapshotHash(fresh.preContract),
+						},
+						source,
+					},
+				});
+
+				const zeroedListingIds = new Set<string>();
+				let lineNumber = 0;
+				for (const line of fresh.summary.items) {
+					lineNumber += 1;
+
+					const variant = await req.payload.findByID({
+						collection: "product-variants",
+						id: line.variantId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					const listing = line.listingId
+						? await req.payload
+								.findByID({
+									collection: "listings",
+									id: line.listingId,
+									depth: 0,
+									overrideAccess: true,
+									req,
+								})
+								.catch(() => null)
+						: null;
+					const productId = relationId(variant.product);
+					const product = productId
+						? await req.payload
+								.findByID({
+									collection: "products",
+									id: productId,
+									depth: 0,
+									overrideAccess: true,
+									req,
+								})
+								.catch(() => null)
+						: null;
+
+					const commissionRateBps = settings.defaultCommissionRateBps;
+					const commissionAmount = commissionForLine(
+						line.lineSubtotal,
+						commissionRateBps,
+					);
+
+					await req.payload.create({
+						collection: "order-items",
+						req,
+						overrideAccess: true,
+						context: ORDER_SERVICE_CONTEXT,
+						// `draft: false` plus the explicit `fulfillmentStatus` below are
+						// required to pick the right overload of Payload's generated
+						// `create` types for this collection: without them TS resolves
+						// to the draft-discriminated union and asks for a `draft` flag
+						// this collection has no versions to support.
+						draft: false,
+						data: {
+							order: createdOrder.id,
+							lineNumber,
+							listing: line.listingId || undefined,
+							product: productId ?? "",
+							variant: line.variantId,
+							fulfillingShop: shopId,
+							fulfillmentStatus: "unfulfilled",
+							snapshot: {
+								title: line.title,
+								variantLabel: line.variantLabel,
+								sku: variant.sku ?? null,
+								imageUrl: line.imageUrl,
+								categoryId: listing ? relationId(listing.category) : null,
+								condition: line.condition,
+								returnPolicy: product?.returnPolicy ?? null,
+							},
+							unitPrice: line.unitPrice,
+							quantity: line.quantity,
+							lineSubtotal: line.lineSubtotal,
+							commissionRateBps,
+							commissionAmount,
+							stockTracked: variant.trackInventory === true,
+						},
+					});
+
+					let reservation: Awaited<ReturnType<typeof reserve>>;
+					try {
+						reservation = await reserve(req, {
+							variant,
+							quantity: line.quantity,
+							orderId: String(createdOrder.id),
+							orderRef: createdOrder.orderNumber,
+						});
+					} catch (error) {
+						if (
+							error instanceof ServiceError &&
+							error.code === ERROR_CODES.stockInsufficient
+						) {
+							throw new CheckoutError(
+								ERROR_CODES.cartOutOfStock,
+								409,
+								undefined,
+								{
+									line: {
+										lineId: line.lineId,
+										listingId: line.listingId,
+										variantId: line.variantId,
+									},
+								},
+							);
+						}
+						throw error;
+					}
+
+					if (reservation && line.listingId) {
+						if (availableOf(reservation.variant) === 0) {
+							zeroedListingIds.add(line.listingId);
+						}
+					}
+				}
+
+				await recordPlacement(req, {
+					phone: address.phone,
+					orderId: String(createdOrder.id),
+				});
+				await markCartConverted(req, String(cart.id), [
+					String(createdOrder.id),
+				]);
+
+				const placedEvent = await appendOrderEvent(req, createdOrder, {
+					type: "order.placed",
+					actorType: "buyer",
+					actor: user.id,
+					visibility: "both",
+					source,
+				});
+				queueOrderEvent(req, createdOrder, placedEvent);
+
+				let finalOrder = createdOrder;
+				if (fresh.confirmationRequired === "none") {
+					const transitioned = await applyTransition(
+						req,
+						createdOrder,
+						{
+							status: "confirmed",
+							set: {
+								confirmation: {
+									...createdOrder.confirmation,
+									method: "verified_phone",
+									confirmedAt: placedAtIso,
+									confirmedBy: user.id,
+								},
+							},
+						},
+						{
+							type: "order.confirmed",
+							actorType: "system",
+							visibility: "both",
+						},
+					);
+					finalOrder = transitioned.order;
+				} else if (fresh.confirmationRequired === "sms_code") {
+					await issueConfirmationCode(req, createdOrder, { resend: false });
+					// `issueConfirmationCode` writes through `payload.update`, not
+					// `applyTransition`, so it never hands back the updated row —
+					// re-read it so the response reflects the `sms_code` method it
+					// just set rather than the pre-code snapshot.
+					finalOrder = await req.payload.findByID({
+						collection: "orders",
+						id: createdOrder.id,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+				}
+
+				const locale = fresh.preContract.locale;
+				const shopName = fresh.preContract.seller.name;
+				onCommit(commitContextOf(req), () =>
+					sendOrderSms(req.payload, {
+						to: address.phone,
+						text: receiptSms(
+							{ orderNumber, shopName, total: fresh.summary.total },
+							locale,
+						),
+					}),
+				);
+
+				for (const listingId of zeroedListingIds) {
+					await queueSearchEvent(req, "listing.updated", listingId);
+				}
+
+				return responseFromOrder(finalOrder);
+			},
+			{ user },
+		);
+	} catch (error) {
+		if (isUniqueViolation(error)) {
+			const recovered = await findOrderByIdempotencyKey(
+				payload,
+				user.id,
+				idempotencyKey,
+			);
+			if (recovered) return responseFromOrder(recovered);
+		}
+		throw error;
+	}
 }
