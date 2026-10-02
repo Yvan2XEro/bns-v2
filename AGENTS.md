@@ -216,6 +216,15 @@ stage. Isolate them, or serialise them.
   so logic that needs pinning belongs in a pure module under `src/lib` rather
   than inline in a component.
 - Write the failing test first, watch it fail, then make it pass.
+- **Assert a value, not an absence of complaint.** Nine tests in this project
+  have passed for a reason unrelated to their names, and the ones that
+  survived the same hazard differed only in the shape of the assertion. A
+  test asserting `toHaveLength(1)` goes red when the thing under test silently
+  does nothing, because 0 is not 1. A test asserting "it threw", "it did not
+  throw" or "the spy was not called twice" passes just as happily when the
+  code was never reached at all. Prefer counting, comparing a value, or
+  asserting an exact shape; when a test can only check that something did not
+  happen, pair it with one that proves the path ran.
 - `tsconfig.json` carries `exclude: ["tests"]`, so `check-types` type-checks
   no spec file. `bun run check-types:tests` in `packages/api` does, and it is
   advisory — deliberately outside the pre-commit hook, because its backlog
