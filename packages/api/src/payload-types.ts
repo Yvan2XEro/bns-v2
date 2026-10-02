@@ -95,6 +95,7 @@ export interface Config {
     'verification-requests': VerificationRequest;
     'verification-documents': VerificationDocument;
     'verification-document-views': VerificationDocumentView;
+    sequences: Sequence;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -135,6 +136,7 @@ export interface Config {
     'verification-requests': VerificationRequestsSelect<false> | VerificationRequestsSelect<true>;
     'verification-documents': VerificationDocumentsSelect<false> | VerificationDocumentsSelect<true>;
     'verification-document-views': VerificationDocumentViewsSelect<false> | VerificationDocumentViewsSelect<true>;
+    sequences: SequencesSelect<false> | SequencesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1205,6 +1207,17 @@ export interface VerificationDocumentView {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sequences".
+ */
+export interface Sequence {
+  id: string;
+  key: string;
+  value: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1462,6 +1475,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'verification-document-views';
         value: string | VerificationDocumentView;
+      } | null)
+    | ({
+        relationTo: 'sequences';
+        value: string | Sequence;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2235,6 +2252,16 @@ export interface VerificationDocumentViewsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sequences_select".
+ */
+export interface SequencesSelect<T extends boolean = true> {
+  key?: T;
+  value?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -2357,6 +2384,116 @@ export interface AppSetting {
       consentVersion?: string | null;
     };
   };
+  orders?: {
+    /**
+     * Off: clients hide checkout entry points and the order write routes return order.codUnavailable. Read by lib/orderSettings.ts.
+     */
+    enabled?: boolean | null;
+    /**
+     * Cities where checkout is open and their delivery fee. Read by lib/orderSettings.ts (deliveryFeeFor); a city absent here fails checkout.cityNotServed.
+     */
+    launchCities?:
+      | {
+          key: 'douala' | 'yaounde';
+          deliveryFee: number;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Basis points kept by the platform. Read by lib/orderSettings.ts.
+     */
+    defaultCommissionRateBps?: number | null;
+    /**
+     * Basis points of VAT applied to invoices.
+     */
+    vatRateBps?: number | null;
+    /**
+     * Smallest commission invoice the platform will issue.
+     */
+    minInvoiceAmount?: number | null;
+    /**
+     * Days a shop has to pay a commission invoice.
+     */
+    invoiceDueDays?: number | null;
+    /**
+     * Days an invoice may stay overdue before new COD orders are refused.
+     */
+    restrictAfterOverdueDays?: number | null;
+    /**
+     * Hours a shop has to confirm a new order.
+     */
+    confirmHours?: number | null;
+    /**
+     * Hours a buyer has to accept delivery before escalation.
+     */
+    acceptHours?: number | null;
+    /**
+     * Days after delivery before collected cash is withdrawable. Exposed at GET /api/public/config.
+     */
+    withdrawalDays?: number | null;
+    /**
+     * Days an order may sit 'shipped' before it is flagged stale.
+     */
+    staleShippedDays?: number | null;
+    /**
+     * Per-level overrides merged onto lib/shopCapabilities.ts's codCaps() defaults.
+     */
+    shopCaps?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    /**
+     * Per-tier overrides merged onto lib/orderSettings.ts's BUYER_CAPS defaults.
+     */
+    buyerCaps?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    /**
+     * COD terms version a buyer must have accepted to check out.
+     */
+    termsVersion?: string | null;
+    /**
+     * Empty means every eligible shop; non-empty restricts COD to this whitelist. Read by lib/orderSettings.ts's isPilotShop().
+     */
+    pilotShopIds?: string[] | null;
+  };
+  company?: {
+    /**
+     * Legal name printed on commission invoices.
+     */
+    legalName?: string | null;
+    /**
+     * RCCM trade register number printed on invoices.
+     */
+    rccm?: string | null;
+    /**
+     * Tax identification number (NIU) printed on invoices.
+     */
+    niu?: string | null;
+    /**
+     * Registered address printed on invoices.
+     */
+    address?: string | null;
+    /**
+     * Support contact shown to buyers and shops.
+     */
+    supportEmail?: string | null;
+    /**
+     * Support contact shown to buyers and shops.
+     */
+    supportPhone?: string | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2427,6 +2564,41 @@ export interface AppSettingsSelect<T extends boolean = true> {
               transfersAuthorised?: T;
               consentVersion?: T;
             };
+      };
+  orders?:
+    | T
+    | {
+        enabled?: T;
+        launchCities?:
+          | T
+          | {
+              key?: T;
+              deliveryFee?: T;
+              id?: T;
+            };
+        defaultCommissionRateBps?: T;
+        vatRateBps?: T;
+        minInvoiceAmount?: T;
+        invoiceDueDays?: T;
+        restrictAfterOverdueDays?: T;
+        confirmHours?: T;
+        acceptHours?: T;
+        withdrawalDays?: T;
+        staleShippedDays?: T;
+        shopCaps?: T;
+        buyerCaps?: T;
+        termsVersion?: T;
+        pilotShopIds?: T;
+      };
+  company?:
+    | T
+    | {
+        legalName?: T;
+        rccm?: T;
+        niu?: T;
+        address?: T;
+        supportEmail?: T;
+        supportPhone?: T;
       };
   updatedAt?: T;
   createdAt?: T;

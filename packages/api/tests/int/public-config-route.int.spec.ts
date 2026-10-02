@@ -42,4 +42,47 @@ describe("GET /api/public/config", () => {
 		);
 		expect(await (await GET()).json()).toMatchObject({ shopsEnabled: false });
 	});
+
+	it("exposes ordersEnabled false and no cities when the flag is off", async () => {
+		findGlobal.mockResolvedValue({
+			orders: { enabled: false, launchCities: [] },
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		expect(await (await GET()).json()).toMatchObject({
+			ordersEnabled: false,
+			launchCities: [],
+		});
+	});
+
+	it("exposes the enabled cities with their label and fee", async () => {
+		findGlobal.mockResolvedValue({
+			orders: {
+				enabled: true,
+				launchCities: [{ key: "douala", deliveryFee: 2500 }],
+				withdrawalDays: 10,
+			},
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		expect(await (await GET()).json()).toMatchObject({
+			ordersEnabled: true,
+			launchCities: [{ key: "douala", label: "Douala", fee: 2500 }],
+			withdrawalDays: 10,
+		});
+	});
+
+	it("hides ordering when the settings read throws", async () => {
+		findGlobal.mockRejectedValue(new Error("down"));
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		expect(await (await GET()).json()).toMatchObject({
+			ordersEnabled: false,
+			launchCities: [],
+			withdrawalDays: 15,
+		});
+	});
 });

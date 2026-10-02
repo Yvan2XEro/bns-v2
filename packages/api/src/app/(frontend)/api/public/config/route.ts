@@ -8,6 +8,8 @@ import { getPayload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import { BOOST_PRICING } from "@/lib/boostPricing";
+import { LAUNCH_CITIES } from "@/lib/launchCities";
+import { getOrderSettings } from "@/lib/orderSettings";
 import { getShopSettings } from "@/lib/shopSettings";
 import { getVerificationSettings } from "@/lib/verificationSettings";
 
@@ -16,6 +18,9 @@ export async function GET() {
 	let localAuthEnabled = true;
 	let shopsEnabled = false;
 	let verificationEnabled = false;
+	let ordersEnabled = false;
+	let launchCities: Array<{ key: string; label: string; fee: number }> = [];
+	let withdrawalDays = 15;
 
 	try {
 		const payload = await getPayload({ config });
@@ -39,8 +44,20 @@ export async function GET() {
 		localAuthEnabled = authSettings?.enableLocalAuth ?? true;
 		shopsEnabled = (await getShopSettings(payload)).enabled;
 		verificationEnabled = (await getVerificationSettings(payload)).enabled;
+		const orderSettings = await getOrderSettings(payload);
+		ordersEnabled = orderSettings.enabled;
+		launchCities = orderSettings.launchCities.map(({ key, deliveryFee }) => ({
+			key,
+			label: LAUNCH_CITIES[key].label,
+			fee: deliveryFee,
+		}));
+		withdrawalDays = orderSettings.withdrawalDays;
 	} catch {
 		enabledAuthProviders = listConfiguredOAuthProviders();
+		// A settings outage must hide ordering, not advertise it.
+		ordersEnabled = false;
+		launchCities = [];
+		withdrawalDays = 15;
 	}
 
 	return Response.json({
@@ -52,6 +69,9 @@ export async function GET() {
 		localAuthEnabled,
 		shopsEnabled,
 		verificationEnabled,
+		ordersEnabled,
+		launchCities,
+		withdrawalDays,
 		boostPricing: BOOST_PRICING,
 	});
 }

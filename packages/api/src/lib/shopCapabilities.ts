@@ -54,6 +54,34 @@ function expired(value: string | Date | null | undefined, now: Date): boolean {
 	return Number.isFinite(at) && at <= now.getTime();
 }
 
+export interface CodCaps {
+	maxOrderTotal: number;
+	maxDailyOrders: number;
+	maxOpenOrders: number;
+}
+
+const COD_CAPS: Record<1 | 2 | 3, CodCaps> = {
+	1: { maxOrderTotal: 150_000, maxDailyOrders: 20, maxOpenOrders: 30 },
+	2: { maxOrderTotal: 500_000, maxDailyOrders: 100, maxOpenOrders: 200 },
+	3: { maxOrderTotal: 2_000_000, maxDailyOrders: 500, maxOpenOrders: 1_000 },
+};
+
+/**
+ * Null at level 0 rather than zeroes: level 0 has no `codOrders` at all, and a
+ * caller that treats "no caps" as "caps of zero" would answer
+ * `order.shopCapReached` where the honest refusal is `order.codUnavailable`.
+ */
+export function codCaps(
+	effectiveLevel: 0 | 1 | 2 | 3,
+	overrides?: Partial<Record<1 | 2 | 3, Partial<CodCaps>>>,
+): CodCaps | null {
+	if (effectiveLevel === 0) return null;
+	return {
+		...COD_CAPS[effectiveLevel],
+		...(overrides?.[effectiveLevel] ?? {}),
+	};
+}
+
 export function shopCapabilities(
 	shop: CapabilityShop,
 	now = new Date(),

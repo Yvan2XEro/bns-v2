@@ -376,8 +376,9 @@ export function fakePayload(
 			});
 			return clone(removed);
 		},
-		async findGlobal({ slug }: Args) {
-			return clone(globals[String(slug)] ?? {});
+		async findGlobal(args: Args) {
+			payload.maybeFail("findGlobal", args);
+			return clone(globals[String(args.slug)] ?? {});
 		},
 		db: {
 			async beginTransaction() {

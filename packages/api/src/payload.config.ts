@@ -21,6 +21,7 @@ import { ProductVariants } from "./collections/ProductVariants";
 import { Reports } from "./collections/Reports";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
+import { Sequences } from "./collections/Sequences";
 import { ShopActivityLog } from "./collections/ShopActivityLog";
 import { ShopInvitations } from "./collections/ShopInvitations";
 import { ShopMembers } from "./collections/ShopMembers";
@@ -120,6 +121,7 @@ export default buildConfig({
 		VerificationRequests,
 		VerificationDocuments,
 		VerificationDocumentViews,
+		Sequences,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),
