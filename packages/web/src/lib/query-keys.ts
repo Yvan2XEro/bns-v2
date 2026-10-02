@@ -87,12 +87,57 @@ export const inboxKey = (
 	filters: { filter?: string; q?: string } = {},
 ) => [...inboxRootKey(shopId), filters] as const;
 
+/** Every tab, search and per-order view of one shop's order queue. */
+export const shopOrdersRootKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "orders"] as const;
+
+export const shopOrdersKey = (
+	shopId: string,
+	filters: { tab?: string; q?: string } = {},
+) => [...shopOrdersRootKey(shopId), filters] as const;
+
+/**
+ * One order as the fulfilling shop sees it. Nested under the queue root, not
+ * beside it, so accepting or shipping from the list reaches the detail view
+ * the same `invalidateQueries` call already covers.
+ */
+export const shopOrderKey = (shopId: string, orderId: string) =>
+	[...shopOrdersRootKey(shopId), orderId] as const;
+
+/** The shop's commission invoices, current accrual and restriction. */
+export const billingKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "billing"] as const;
+
+/** The shop's COD, delivery and pickup settings. */
+export const orderSettingsKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "order-settings"] as const;
+
 /**
  * Outside `shopScopeKey` on purpose: it spans shops, so no single shop's
  * invalidation should drop it — the mutations that change membership
  * invalidate it by name.
  */
 export const myShopsKey = () => ["me", "shops"] as const;
+
+/**
+ * Also outside, for the same reason `myShopsKey` is, and it matters more
+ * here. A buyer's purchases span every shop they have ever ordered from, so a
+ * shop-scoped purchases key would be dropped by one unrelated shop's
+ * invalidation; and in the other direction the buyer's own mutations
+ * (`cancel`, `confirm`, `confirm-receipt`, `withdrawal`) know no shop id at
+ * all, so a shop-scoped key is one they could never name. The cart is the
+ * same: it holds one shop's lines today, but the buyer may replace that shop
+ * wholesale, and the cart routes take no shop id either.
+ */
+export const cartKey = () => ["cart"] as const;
+
+export const purchasesRootKey = () => ["purchases"] as const;
+
+export const purchasesKey = (filters: { status?: string } = {}) =>
+	[...purchasesRootKey(), "list", filters] as const;
+
+export const purchaseKey = (orderId: string) =>
+	[...purchasesRootKey(), orderId] as const;
 
 /** Also outside: the caller is not a member of the shop yet. */
 export const invitationKey = (token: string) => ["invitations", token] as const;

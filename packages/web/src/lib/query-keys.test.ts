@@ -3,6 +3,8 @@ import { QueryClient } from "@tanstack/react-query";
 import {
 	activityKey,
 	activityRootKey,
+	billingKey,
+	cartKey,
 	catalogueRootKey,
 	inboxKey,
 	inboxRootKey,
@@ -10,7 +12,14 @@ import {
 	isKeyCoveredBy,
 	moderationVerificationKeys,
 	myShopsKey,
+	orderSettingsKey,
 	productDetailKey,
+	purchaseKey,
+	purchasesKey,
+	purchasesRootKey,
+	shopOrderKey,
+	shopOrdersKey,
+	shopOrdersRootKey,
 	shopScopeKey,
 	teamKey,
 	verificationKey,
@@ -248,5 +257,123 @@ describe("the P3 keys nest under the shop scope", () => {
 
 	test("one shop's keys never match another shop's scope", () => {
 		expect(isKeyCoveredBy(teamKey("s-1"), shopScopeKey("s-2"))).toBe(false);
+	});
+});
+
+describe("the P4 order keys", () => {
+	test("every new shop-scoped key is covered by its shop scope", () => {
+		const scope = shopScopeKey("s-1");
+		const keys = [
+			shopOrdersRootKey("s-1"),
+			shopOrdersKey("s-1", { tab: "to_accept" }),
+			shopOrdersKey("s-1", { tab: "shipped", q: "BNS" }),
+			shopOrderKey("s-1", "o-1"),
+			billingKey("s-1"),
+			orderSettingsKey("s-1"),
+		];
+		expect(keys).toHaveLength(6);
+		expect(keys.filter((key) => isKeyCoveredBy(key, scope))).toHaveLength(6);
+	});
+
+	test("a filtered or per-order seller key is covered by the seller-orders root", () => {
+		const root = shopOrdersRootKey("s-1");
+		expect(isKeyCoveredBy(shopOrdersKey("s-1", { tab: "to_ship" }), root)).toBe(
+			true,
+		);
+		expect(isKeyCoveredBy(shopOrderKey("s-1", "o-1"), root)).toBe(true);
+	});
+
+	test("the seller-orders root does not reach billing or the order settings", () => {
+		const root = shopOrdersRootKey("s-1");
+		expect(isKeyCoveredBy(billingKey("s-1"), root)).toBe(false);
+		expect(isKeyCoveredBy(orderSettingsKey("s-1"), root)).toBe(false);
+	});
+
+	test("one shop's order keys never match another shop's scope", () => {
+		expect(
+			isKeyCoveredBy(
+				shopOrdersKey("s-1", { tab: "shipped" }),
+				shopScopeKey("s-2"),
+			),
+		).toBe(false);
+		expect(
+			isKeyCoveredBy(shopOrderKey("s-1", "o-1"), shopOrdersRootKey("s-2")),
+		).toBe(false);
+	});
+
+	// A buyer's purchases span shops: the one shop whose order just moved must
+	// not be able to drop the buyer's whole history, and — more to the point —
+	// a shop-scoped purchases key would never be invalidated by the buyer's
+	// own mutations, which know no shop id at all. `myShopsKey`'s comment in
+	// query-keys.ts is the precedent this follows.
+	test("the purchases keys are not shop-scoped", () => {
+		const outside = [
+			purchasesRootKey(),
+			purchasesKey({ status: "shipped" }),
+			purchaseKey("o-1"),
+			cartKey(),
+		];
+		expect(outside).toHaveLength(4);
+		expect(
+			outside.filter((key) => isKeyCoveredBy(key, shopScopeKey("s-1"))),
+		).toHaveLength(0);
+		// Proves the four keys above are real keys rather than empty arrays,
+		// which would vacuously fail every coverage check.
+		expect(outside.filter((key) => key.length > 0)).toHaveLength(4);
+	});
+
+	test("the purchases root covers both the filtered list and one purchase", () => {
+		const root = purchasesRootKey();
+		expect(isKeyCoveredBy(purchasesKey({ status: "delivered" }), root)).toBe(
+			true,
+		);
+		expect(isKeyCoveredBy(purchasesKey({}), root)).toBe(true);
+		expect(isKeyCoveredBy(purchaseKey("o-1"), root)).toBe(true);
+	});
+
+	test("the purchases root leaves the cart alone, and the reverse", () => {
+		expect(isKeyCoveredBy(cartKey(), purchasesRootKey())).toBe(false);
+		expect(isKeyCoveredBy(purchasesRootKey(), cartKey())).toBe(false);
+	});
+
+	test("two purchases keys whose filters differ are different keys", () => {
+		expect(
+			isKeyCoveredBy(
+				purchasesKey({ status: "shipped" }),
+				purchasesKey({ status: "delivered" }),
+			),
+		).toBe(false);
+	});
+});
+
+describe("the P4 order keys against a real QueryClient", () => {
+	it("invalidating the shop scope marks a seller-orders query invalidated", async () => {
+		const client = new QueryClient();
+		const key = shopOrdersKey("s-1", { tab: "to_accept" });
+		client.setQueryData(key as unknown as unknown[], { docs: [] });
+
+		await client.invalidateQueries({ queryKey: shopScopeKey("s-1") });
+
+		expect(
+			client.getQueryState(key as unknown as unknown[])?.isInvalidated,
+		).toBe(true);
+	});
+
+	it("invalidating one shop's scope leaves the buyer's purchases untouched", async () => {
+		const client = new QueryClient();
+		const key = purchasesKey({ status: "shipped" });
+		client.setQueryData(key as unknown as unknown[], { docs: [] });
+
+		await client.invalidateQueries({ queryKey: shopScopeKey("s-1") });
+
+		expect(
+			client.getQueryState(key as unknown as unknown[])?.isInvalidated,
+		).toBeFalsy();
+		// And the purchases root still reaches it, so the line above is a
+		// scoping result rather than a query nobody can invalidate.
+		await client.invalidateQueries({ queryKey: purchasesRootKey() });
+		expect(
+			client.getQueryState(key as unknown as unknown[])?.isInvalidated,
+		).toBe(true);
 	});
 });
