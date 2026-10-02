@@ -17,6 +17,8 @@ const baseShop: MyShop = {
 	legalVerified: false,
 	legal: null,
 	publishedListingCount: 0,
+	rating: 0,
+	totalReviews: 0,
 	createdAt: "2024-01-01T00:00:00.000Z",
 	owner: {
 		id: "user-1",

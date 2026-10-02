@@ -9,7 +9,7 @@ import { shopUrl } from "~/components/shop/share-shop-button";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
 import { serverFetch, serverGet } from "~/lib/server-api";
-import { type ShopRatingStats, shopRating } from "~/lib/shop-rating";
+import { shopRating } from "~/lib/shop-rating";
 import type { Listing, PublicShop } from "~/types";
 
 const PAGE_SIZE = 24;
@@ -27,17 +27,6 @@ const lookupShop = cache(async (handle: string): Promise<Lookup> => {
 		return null;
 	}
 });
-
-/**
- * The verified-purchase rating is service-pinned on the shop document and
- * publicly readable, but the public shop route does not carry it; a failed
- * read falls back to the owner's rating rather than failing the page.
- */
-function getShopRatingStats(shopId: string): Promise<ShopRatingStats | null> {
-	return serverGet<ShopRatingStats>(
-		`/api/shops/${encodeURIComponent(shopId)}?depth=0&select[rating]=true&select[totalReviews]=true`,
-	);
-}
 
 async function getShopListings(
 	shopId: string,
@@ -111,13 +100,14 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 
 	const { shop } = result;
 	const page = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
-	const [locale, t, listings, ratingStats] = await Promise.all([
+	const [locale, t, listings] = await Promise.all([
 		getLocale(),
 		getTranslations("Shop"),
 		getShopListings(shop.id, q.trim(), page),
-		getShopRatingStats(shop.id),
 	]);
-	const rating = shopRating(ratingStats, shop.owner);
+	// The public shape carries the shop's own verified-purchase rating now;
+	// this page used to make a second select-filtered read for it.
+	const rating = shopRating(shop, shop.owner);
 	const totalPages = Math.max(1, Math.ceil(listings.total / PAGE_SIZE));
 
 	const jsonLd = {

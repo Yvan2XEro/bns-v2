@@ -71,6 +71,9 @@ export interface PublicShop {
 	legalVerified: boolean;
 	legal: ShopLegal | null;
 	publishedListingCount: number;
+	/** The shop's own verified-purchase rating; `owner.rating` is the person's. */
+	rating: number;
+	totalReviews: number;
 	createdAt: string;
 	owner: {
 		id: string;
