@@ -1,6 +1,5 @@
 import type { Payload } from "payload";
 import { SuspendedAccountError } from "../hooks/suspensionGuard";
-import { ModerationError } from "../services/moderation";
 import type { ServiceUser } from "../services/shops";
 import { ERROR_CODES, errorResponse } from "./errors";
 import { ServiceError } from "./serviceError";
@@ -43,7 +42,11 @@ export { readJsonBody as readBody } from "./readJsonBody";
  * generic.server so driver text never reaches a client.
  */
 export function handleServiceError(scope: string, error: unknown): Response {
-	if (error instanceof ServiceError || error instanceof ModerationError) {
+	// `ModerationError extends ServiceError`, so this one check catches both.
+	// Naming the subclass here used to import the whole moderation service —
+	// orders, stock, transitions, chat — into every route's graph, which is
+	// also what split vitest's module registry under the partial mocks.
+	if (error instanceof ServiceError) {
 		return errorResponse(error.code, error.status, error.details);
 	}
 	if (error instanceof SuspendedAccountError) {
