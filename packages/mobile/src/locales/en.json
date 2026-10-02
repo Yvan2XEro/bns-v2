@@ -1206,7 +1206,8 @@
 		},
 		"stock": {
 			"negative": "Stock cannot go below zero.",
-			"insufficient": "Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first."
+			"insufficient": "Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
+			"countStale": "The stock changed while you were counting. Please count again."
 		},
 		"moderation": {
 			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now.",
@@ -1264,6 +1265,49 @@
 		},
 		"inbox": {
 			"notAssignable": "This person cannot be assigned to shop conversations."
+		},
+		"cart": {
+			"empty": "Your cart is empty.",
+			"itemUnavailable": "This item can no longer be ordered.",
+			"outOfStock": "Not enough stock for this quantity.",
+			"quantityInvalid": "Choose a quantity between 1 and 20.",
+			"singleShop": "Your cart holds items from another shop."
+		},
+		"checkout": {
+			"disabled": "Checkout is not available yet.",
+			"phoneNotVerified": "Verify your phone number to place an order.",
+			"addressInvalid": "Please check the delivery address.",
+			"cityNotServed": "This shop does not deliver to this city yet.",
+			"methodUnavailable": "This delivery or payment method is not available.",
+			"quoteChanged": "Your order summary has changed. Please review it again.",
+			"termsNotAccepted": "Please accept the terms of sale to continue.",
+			"selfPurchase": "You cannot order from your own shop."
+		},
+		"order": {
+			"notFound": "This order does not exist.",
+			"invalidTransition": "This order is not in a state that allows that action.",
+			"shopUnavailable": "This shop cannot take orders right now.",
+			"codUnavailable": "Cash on delivery is not available for this order.",
+			"buyerCapReached": "You have reached your limit of cash-on-delivery orders.",
+			"shopCapReached": "This shop has reached its order limit.",
+			"acceptDeadlinePassed": "The 48-hour deadline to accept this order has passed.",
+			"reasonRequired": "A reason is required.",
+			"confirmationCodeInvalid": "This confirmation code is incorrect.",
+			"confirmationCodeExpired": "This confirmation code has expired.",
+			"codeResendLimit": "This code can no longer be resent.",
+			"handoverCodeInvalid": "This handover code is incorrect.",
+			"handoverLocked": "Too many incorrect handover codes. Ask the buyer for a new code or to confirm in the app.",
+			"contestWindowClosed": "The window to contest this delivery has closed.",
+			"withdrawalWindowClosed": "The 15-day return window has closed.",
+			"withdrawalAlreadyRequested": "A return is already in progress for this order."
+		},
+		"commission": {
+			"invoiceNotFound": "This invoice does not exist.",
+			"alreadyPaid": "This invoice has already been paid."
+		},
+		"account": {
+			"openOrders": "You still have orders in progress.",
+			"unpaidCommission": "Your shop has an unpaid commission invoice."
 		}
 	},
 	"cityPicker": {

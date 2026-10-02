@@ -1209,7 +1209,8 @@
 		},
 		"stock": {
 			"negative": "Le stock ne peut pas passer sous zéro.",
-			"insufficient": "Stock insuffisant : certaines unités sont déjà réservées. Réduisez la quantité ou libérez d'abord une réservation."
+			"insufficient": "Stock insuffisant : certaines unités sont déjà réservées. Réduisez la quantité ou libérez d'abord une réservation.",
+			"countStale": "Le stock a changé pendant votre comptage. Veuillez recompter."
 		},
 		"moderation": {
 			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment.",
@@ -1267,6 +1268,49 @@
 		},
 		"inbox": {
 			"notAssignable": "Cette personne ne peut pas être affectée aux conversations de la boutique."
+		},
+		"cart": {
+			"empty": "Votre panier est vide.",
+			"itemUnavailable": "Cet article ne peut plus être commandé.",
+			"outOfStock": "Le stock est insuffisant pour cette quantité.",
+			"quantityInvalid": "Choisissez une quantité entre 1 et 20.",
+			"singleShop": "Votre panier contient déjà des articles d'une autre boutique."
+		},
+		"checkout": {
+			"disabled": "La commande n'est pas encore disponible.",
+			"phoneNotVerified": "Vérifiez votre numéro de téléphone pour commander.",
+			"addressInvalid": "Veuillez vérifier l'adresse de livraison.",
+			"cityNotServed": "Cette boutique ne livre pas encore dans cette ville.",
+			"methodUnavailable": "Ce mode de livraison ou de paiement n'est pas disponible.",
+			"quoteChanged": "Votre récapitulatif a changé. Veuillez le revérifier.",
+			"termsNotAccepted": "Veuillez accepter les conditions de vente pour continuer.",
+			"selfPurchase": "Vous ne pouvez pas commander dans votre propre boutique."
+		},
+		"order": {
+			"notFound": "Cette commande n'existe pas.",
+			"invalidTransition": "Cette commande n'est pas dans un état qui permet cette action.",
+			"shopUnavailable": "Cette boutique ne peut pas prendre de commande actuellement.",
+			"codUnavailable": "Le paiement à la livraison n'est pas disponible pour cette commande.",
+			"buyerCapReached": "Vous avez atteint votre limite de commandes à la livraison.",
+			"shopCapReached": "Cette boutique a atteint sa limite de commandes.",
+			"acceptDeadlinePassed": "Le délai de 48 h pour accepter cette commande est dépassé.",
+			"reasonRequired": "Un motif est obligatoire.",
+			"confirmationCodeInvalid": "Ce code de confirmation est incorrect.",
+			"confirmationCodeExpired": "Ce code de confirmation a expiré.",
+			"codeResendLimit": "Ce code ne peut plus être renvoyé.",
+			"handoverCodeInvalid": "Ce code de remise est incorrect.",
+			"handoverLocked": "Trop de codes de remise incorrects. Demandez un nouveau code à l'acheteur ou qu'il confirme dans l'application.",
+			"contestWindowClosed": "Le délai pour contester cette livraison est écoulé.",
+			"withdrawalWindowClosed": "Le délai de retour de 15 jours est écoulé.",
+			"withdrawalAlreadyRequested": "Un retour est déjà en cours pour cette commande."
+		},
+		"commission": {
+			"invoiceNotFound": "Cette facture n'existe pas.",
+			"alreadyPaid": "Cette facture a déjà été réglée."
+		},
+		"account": {
+			"openOrders": "Vous avez encore des commandes en cours.",
+			"unpaidCommission": "Votre boutique a une facture de commission impayée."
 		}
 	},
 	"cityPicker": {

@@ -72,6 +72,7 @@ export const ERROR_CODES = {
 	shopNotFound: "shop.notFound",
 	stockNegative: "stock.negative",
 	stockInsufficient: "stock.insufficient",
+	stockCountStale: "stock.countStale",
 	accountSuspended: "moderation.accountSuspended",
 	moderationForbidden: "moderation.forbidden",
 	moderationRankTooLow: "moderation.rankTooLow",
@@ -121,6 +122,43 @@ export const ERROR_CODES = {
 	teamCannotManageRole: "team.cannotManageRole",
 	inboxNotAssignable: "inbox.notAssignable",
 	messagesNotParticipant: "messages.notParticipant",
+
+	cartEmpty: "cart.empty",
+	cartItemUnavailable: "cart.itemUnavailable",
+	cartOutOfStock: "cart.outOfStock",
+	cartQuantityInvalid: "cart.quantityInvalid",
+	cartSingleShop: "cart.singleShop",
+	checkoutDisabled: "checkout.disabled",
+	checkoutPhoneNotVerified: "checkout.phoneNotVerified",
+	checkoutAddressInvalid: "checkout.addressInvalid",
+	checkoutCityNotServed: "checkout.cityNotServed",
+	checkoutMethodUnavailable: "checkout.methodUnavailable",
+	checkoutQuoteChanged: "checkout.quoteChanged",
+	checkoutTermsNotAccepted: "checkout.termsNotAccepted",
+	checkoutSelfPurchase: "checkout.selfPurchase",
+
+	orderNotFound: "order.notFound",
+	orderInvalidTransition: "order.invalidTransition",
+	orderShopUnavailable: "order.shopUnavailable",
+	orderCodUnavailable: "order.codUnavailable",
+	orderBuyerCapReached: "order.buyerCapReached",
+	orderShopCapReached: "order.shopCapReached",
+	orderAcceptDeadlinePassed: "order.acceptDeadlinePassed",
+	orderReasonRequired: "order.reasonRequired",
+	orderConfirmationCodeInvalid: "order.confirmationCodeInvalid",
+	orderConfirmationCodeExpired: "order.confirmationCodeExpired",
+	orderCodeResendLimit: "order.codeResendLimit",
+	orderHandoverCodeInvalid: "order.handoverCodeInvalid",
+	orderHandoverLocked: "order.handoverLocked",
+	orderContestWindowClosed: "order.contestWindowClosed",
+	orderWithdrawalWindowClosed: "order.withdrawalWindowClosed",
+	orderWithdrawalAlreadyRequested: "order.withdrawalAlreadyRequested",
+
+	commissionInvoiceNotFound: "commission.invoiceNotFound",
+	commissionAlreadyPaid: "commission.alreadyPaid",
+
+	accountOpenOrders: "account.openOrders",
+	accountUnpaidCommission: "account.unpaidCommission",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -186,6 +224,8 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.stockNegative]: "Stock cannot go below zero.",
 	[ERROR_CODES.stockInsufficient]:
 		"Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
+	[ERROR_CODES.stockCountStale]:
+		"The stock changed while you were counting. Please count again.",
 	[ERROR_CODES.accountSuspended]:
 		"Your account is suspended. You cannot publish listings or send messages right now.",
 	[ERROR_CODES.moderationForbidden]:
@@ -262,6 +302,56 @@ const FALLBACKS: Record<string, string> = {
 		"This person cannot be assigned to shop conversations.",
 	[ERROR_CODES.messagesNotParticipant]:
 		"You are not part of this conversation.",
+
+	[ERROR_CODES.cartEmpty]: "Your cart is empty.",
+	[ERROR_CODES.cartItemUnavailable]: "This item can no longer be ordered.",
+	[ERROR_CODES.cartOutOfStock]: "Not enough stock for this quantity.",
+	[ERROR_CODES.cartQuantityInvalid]: "Choose a quantity between 1 and 20.",
+	[ERROR_CODES.cartSingleShop]: "Your cart holds items from another shop.",
+	[ERROR_CODES.checkoutDisabled]: "Checkout is not available yet.",
+	[ERROR_CODES.checkoutPhoneNotVerified]:
+		"Verify your phone number to place an order.",
+	[ERROR_CODES.checkoutAddressInvalid]: "Please check the delivery address.",
+	[ERROR_CODES.checkoutCityNotServed]:
+		"This shop does not deliver to this city yet.",
+	[ERROR_CODES.checkoutMethodUnavailable]:
+		"This delivery or payment method is not available.",
+	[ERROR_CODES.checkoutQuoteChanged]:
+		"Your order summary has changed. Please review it again.",
+	[ERROR_CODES.checkoutTermsNotAccepted]:
+		"Please accept the terms of sale to continue.",
+	[ERROR_CODES.checkoutSelfPurchase]: "You cannot order from your own shop.",
+	[ERROR_CODES.orderNotFound]: "This order does not exist.",
+	[ERROR_CODES.orderInvalidTransition]:
+		"This order is not in a state that allows that action.",
+	[ERROR_CODES.orderShopUnavailable]: "This shop cannot take orders right now.",
+	[ERROR_CODES.orderCodUnavailable]:
+		"Cash on delivery is not available for this order.",
+	[ERROR_CODES.orderBuyerCapReached]:
+		"You have reached your limit of cash-on-delivery orders.",
+	[ERROR_CODES.orderShopCapReached]: "This shop has reached its order limit.",
+	[ERROR_CODES.orderAcceptDeadlinePassed]:
+		"The 48-hour deadline to accept this order has passed.",
+	[ERROR_CODES.orderReasonRequired]: "A reason is required.",
+	[ERROR_CODES.orderConfirmationCodeInvalid]:
+		"This confirmation code is incorrect.",
+	[ERROR_CODES.orderConfirmationCodeExpired]:
+		"This confirmation code has expired.",
+	[ERROR_CODES.orderCodeResendLimit]: "This code can no longer be resent.",
+	[ERROR_CODES.orderHandoverCodeInvalid]: "This handover code is incorrect.",
+	[ERROR_CODES.orderHandoverLocked]:
+		"Too many incorrect handover codes. Ask the buyer for a new code or to confirm in the app.",
+	[ERROR_CODES.orderContestWindowClosed]:
+		"The window to contest this delivery has closed.",
+	[ERROR_CODES.orderWithdrawalWindowClosed]:
+		"The 15-day return window has closed.",
+	[ERROR_CODES.orderWithdrawalAlreadyRequested]:
+		"A return is already in progress for this order.",
+	[ERROR_CODES.commissionInvoiceNotFound]: "This invoice does not exist.",
+	[ERROR_CODES.commissionAlreadyPaid]: "This invoice has already been paid.",
+	[ERROR_CODES.accountOpenOrders]: "You still have orders in progress.",
+	[ERROR_CODES.accountUnpaidCommission]:
+		"Your shop has an unpaid commission invoice.",
 };
 
 export function fallbackFor(code: string): string {

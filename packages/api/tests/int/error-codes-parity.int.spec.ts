@@ -1,0 +1,89 @@
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
+import { ERROR_CODES as mobileCodes } from "../../../mobile/src/lib/apiError";
+import { ERROR_CODES as webCodes } from "../../../web/src/lib/apiError";
+import { ERROR_CODES, fallbackMessage } from "../../src/lib/errors";
+
+/**
+ * Modelled on `shop-permissions-parity.int.spec.ts`: the clients hand-mirror
+ * the code list rather than importing `lib/errors.ts` (which would drag
+ * Payload's type surface into their type-checks), so this file imports both
+ * mirrors into the API's own type-check and compares them against the single
+ * source of truth. Before it existed, 33 new codes could be added here and
+ * every suite in the repository stayed green while both clients fell back to
+ * English developer text.
+ */
+
+/** Logged, never sent to a client — P0's rule, so no client translates it. */
+const INTERNAL_ONLY = ["payment.amountMismatch"] as const;
+
+const clientFacing = Object.values(ERROR_CODES).filter(
+	(code) => !INTERNAL_ONLY.includes(code as (typeof INTERNAL_ONLY)[number]),
+);
+
+describe("the error contract is the same in all three packages", () => {
+	it("web mirrors every client-facing code", () => {
+		expect([...new Set(Object.values(webCodes))].sort()).toEqual(
+			[...clientFacing].sort(),
+		);
+	});
+
+	it("mobile mirrors every client-facing code", () => {
+		expect([...new Set(Object.values(mobileCodes))].sort()).toEqual(
+			[...clientFacing].sort(),
+		);
+	});
+
+	it("gives each P4 code a fallback of its own", () => {
+		for (const code of P4_CODES) {
+			expect(fallbackMessage(code)).not.toBe(
+				fallbackMessage(ERROR_CODES.unknown),
+			);
+		}
+	});
+});
+
+/** The spec's list, transcribed. Not derived from ERROR_CODES. */
+const P4_CODES = [
+	"cart.empty",
+	"cart.itemUnavailable",
+	"cart.outOfStock",
+	"cart.quantityInvalid",
+	"cart.singleShop",
+	"checkout.disabled",
+	"checkout.phoneNotVerified",
+	"checkout.addressInvalid",
+	"checkout.cityNotServed",
+	"checkout.methodUnavailable",
+	"checkout.quoteChanged",
+	"checkout.termsNotAccepted",
+	"checkout.selfPurchase",
+	"order.notFound",
+	"order.invalidTransition",
+	"order.shopUnavailable",
+	"order.codUnavailable",
+	"order.buyerCapReached",
+	"order.shopCapReached",
+	"order.acceptDeadlinePassed",
+	"order.reasonRequired",
+	"order.confirmationCodeInvalid",
+	"order.confirmationCodeExpired",
+	"order.codeResendLimit",
+	"order.handoverCodeInvalid",
+	"order.handoverLocked",
+	"order.contestWindowClosed",
+	"order.withdrawalWindowClosed",
+	"order.withdrawalAlreadyRequested",
+	"commission.invoiceNotFound",
+	"commission.alreadyPaid",
+	"account.openOrders",
+	"account.unpaidCommission",
+] as const;
+
+describe("P4 error codes", () => {
+	it("declares all thirty-three", () => {
+		const declared = new Set(Object.values(ERROR_CODES));
+		for (const code of P4_CODES) expect(declared.has(code)).toBe(true);
+		expect(P4_CODES.length).toBe(33);
+	});
+});
