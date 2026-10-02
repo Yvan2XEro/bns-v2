@@ -226,12 +226,20 @@ stage. Isolate them, or serialise them.
   count falls and the mismatch stays. A task under pressure to hold 105 will
   reach for the cast the Types section forbids, and this already happened
   once in P3. So the number of `as never` occurrences is also a ceiling:
-  **94 across `packages/api/tests/`, and 80 across `packages/web/src`,
+  **95 across `packages/api/tests/`, and 80 across `packages/web/src`,
   `packages/mobile/src` **and `packages/mobile/app`** — that last path is
   where most of them are, and leaving it out is how this number was first
   published as 48.**
   Neither may rise. If holding the error count would require a new cast, the
   honest outcome is to let the count rise by one and say so in the report.
+- The API test cast ceiling moved 94 -> 95 in P4, deliberately and once.
+  `nextInvoiceNumber` reads only `req.payload` but forwards `req` into
+  Payload's own db calls, which require the full `PayloadRequest`; narrowing
+  the parameter breaks the forward, and centralising the cast in a helper only
+  moves it. The rule above says that when holding the count would need a cast,
+  the honest outcome is to let it rise by one and say so — this is that case,
+  and it is the only one so far. Do not treat it as licence: the next rise
+  needs its own reason in writing.
 - Measure each number with **exactly this command**, because every
   disagreement about them so far was a difference of scope, not of fact — the
   client cast count is 80 counting test files and 52 without, and both were
@@ -239,7 +247,7 @@ stage. Isolate them, or serialise them.
 
 ```bash
 cd packages/api && bun run check-types:tests | grep -c "error TS"   # 105
-grep -ro 'as never' packages/api/tests | wc -l                      # 94
+grep -ro 'as never' packages/api/tests | wc -l                      # 95
 grep -ro 'as never' packages/web/src packages/mobile/src \
                     packages/mobile/app | wc -l                     # 80
 cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
