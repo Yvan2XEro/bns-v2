@@ -219,11 +219,27 @@ export async function getOrderReceiptHtml(
 	);
 }
 
+/**
+ * `q` narrows the counts exactly as it narrows the rows. Without it the tab
+ * bar said 12 while the open tab showed 3 — the brief asks for counts that
+ * "agree with the rows", and a search is the one case where they would not.
+ */
 async function tabCounts(
 	payload: Payload,
 	shopId: string,
+	q?: string,
 	req?: PayloadRequest,
 ): Promise<Record<ShopOrderTab, number>> {
+	const search: Where[] = q
+		? [
+				{
+					or: [
+						{ orderNumber: { like: q } },
+						{ "delivery.recipientName": { like: q } },
+					],
+				},
+			]
+		: [];
 	const counts = {} as Record<ShopOrderTab, number>;
 	for (const tab of SHOP_ORDER_TABS) {
 		const result = await payload.count({
@@ -232,6 +248,7 @@ async function tabCounts(
 				and: [
 					{ shop: { equals: shopId } },
 					{ status: { in: TAB_STATUSES[tab] } },
+					...search,
 				],
 			},
 			overrideAccess: true,
@@ -288,7 +305,7 @@ export async function listShopOrders(
 	});
 
 	const rows = result.docs as Order[];
-	const counts = await tabCounts(payload, shopId, req);
+	const counts = await tabCounts(payload, shopId, query.q, req);
 
 	return {
 		docs: rows.map(serializeOrderListEntry),

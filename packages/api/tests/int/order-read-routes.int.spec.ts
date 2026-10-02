@@ -301,6 +301,46 @@ describe("GET /api/shops/{id}/orders — counts agree with the rows", () => {
 			expect(body.counts[tab]).toBe(body.docs.length);
 		}
 	});
+
+	// The case the test above cannot see: without `q` the counts and the rows
+	// are filtered identically, so they agree whatever the count query does.
+	// With a search they only agree if `q` narrows both — and it did not, so
+	// the tab bar read 12 while the open tab showed 3.
+	it("still agrees when a search narrows the list", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		for (const tab of [
+			"to_accept",
+			"to_ship",
+			"shipped",
+			"delivered",
+			"cancelled",
+			"failed",
+		]) {
+			const response = await GET(get(`/x?tab=${tab}&q=BNS`), {
+				params: Promise.resolve({ id: "s-1" }),
+			});
+			const body = await response.json();
+			expect(body.counts[tab]).toBe(body.docs.length);
+		}
+	});
+
+	it("a search that matches nothing zeroes every count", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		const response = await GET(get("/x?tab=to_accept&q=zzz-no-such-order"), {
+			params: Promise.resolve({ id: "s-1" }),
+		});
+		const body = await response.json();
+		expect(body.docs).toHaveLength(0);
+		for (const count of Object.values(body.counts)) expect(count).toBe(0);
+	});
 });
 
 describe("GET /api/shops/{id}/orders — q", () => {
