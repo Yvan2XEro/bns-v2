@@ -5,10 +5,7 @@ import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { ServiceError } from "@/lib/serviceError";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
 import { withTransaction } from "@/lib/transactions";
-import {
-	actorTypeForShopRole,
-	markDeliveryFailed,
-} from "@/services/orders/delivery";
+import { markDeliveryFailed } from "@/services/orders/delivery";
 import { getOrderView } from "@/services/orders/queries";
 
 const paramsSchema = z.object({ id: z.string().trim().min(1) });
@@ -48,7 +45,8 @@ export async function POST(
 				markDeliveryFailed(req, order, {
 					reason: body.data.reason,
 					note: body.data.note,
-					actorType: actorTypeForShopRole(role),
+					actorType: "seller",
+					actorShopRole: role,
 					actor: ctx.user.id,
 				}),
 			{ user: ctx.user },

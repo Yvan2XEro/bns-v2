@@ -3,6 +3,13 @@ import {
 	runOrderEventHandlers,
 	scheduleOrderEventRetry,
 } from "../services/orders/events";
+// Each handler module registers itself when loaded, and the dispatch path
+// imports none of them (`orders/chat` had no production importer at all). This
+// task is loaded by `payload.config.ts` in every process that dispatches an
+// order event, inline or on retry, so the registry is filled here.
+import "../services/commission";
+import "../services/orders/chat";
+import "../services/orders/notifications";
 
 export { DISPATCH_ATTEMPT_BUDGET } from "../services/orders/events";
 

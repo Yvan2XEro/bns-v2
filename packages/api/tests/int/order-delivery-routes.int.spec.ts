@@ -309,6 +309,31 @@ describe("POST /api/orders/{id}/handover", () => {
 		expect(can("staff", "orders.process")).toBe(true);
 		expect(can("staff", "orders.cancel")).toBe(false);
 	});
+
+	// `actorType: "staff"` is the platform moderator (moderation's
+	// staff-cancel, and the serialiser hides that name from both parties); a
+	// shop employee is a `seller` whose role rides in `actorShopRole`, exactly
+	// as the acceptance and shipping events already record it.
+	it("records a shop employee's handover as a seller event carrying the shop role", async () => {
+		const payload = seed();
+		const { code } = await withTransaction(payload, (req) =>
+			issueHandoverCode(req, orderDoc(payload, "o-staff"), {
+				regenerate: false,
+			}),
+		);
+
+		asUser(payload, STAFF);
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/handover/route"
+		);
+		const res = await POST(post("/x", { code }), params("o-staff"));
+		expect(res.status).toBe(200);
+
+		const delivered = payload.store["order-events"]
+			.filter((e) => e.order === "o-staff" && e.type === "order.delivered")
+			.map((e) => [e.actorType, e.actorShopRole, e.actor]);
+		expect(delivered).toEqual([["seller", "staff", STAFF]]);
+	});
 });
 
 describe("POST /api/orders/{id}/handover-code/regenerate", () => {

@@ -3,6 +3,7 @@ import {
 	type OrderViewer,
 	requireOrderAudience,
 } from "../../access/orderAccess";
+import type { ShopRole } from "../../access/shopRoles";
 import {
 	type ORDER_DELIVERY_FAILURE_REASONS,
 	ORDER_SERVICE_CONTEXT,
@@ -51,15 +52,6 @@ export type HandoverMethod = NonNullable<
 	NonNullable<Order["handover"]>["method"]
 >;
 export type OrderActorType = NonNullable<OrderEvent["actorType"]>;
-
-/** The shop side of `handover`/`declare-delivered`/`mark-delivery-failed` is
- * always a member with `orders.process`; `staff` is its own event actor so
- * the timeline can tell a hired hand's action from the owner's. */
-export function actorTypeForShopRole(
-	role: "owner" | "manager" | "staff",
-): OrderActorType {
-	return role === "staff" ? "staff" : "seller";
-}
 
 /** The three reasons art. 26 treats as the buyer's fault — the only ones a
  * failed delivery ever scores against the delivery phone (mirrors
@@ -121,6 +113,7 @@ export interface MarkDeliveredOptions {
 	method: HandoverMethod;
 	actorType: OrderActorType;
 	actor?: string;
+	actorShopRole?: ShopRole;
 	note?: string;
 	photo?: string;
 }
@@ -187,6 +180,7 @@ export async function markDelivered(
 			visibility: "both",
 			actorType: options.actorType,
 			actor: options.actor ?? null,
+			actorShopRole: options.actorShopRole ?? null,
 			note: options.note ?? null,
 			metadata: options.photo ? { photo: options.photo } : null,
 		},
@@ -211,6 +205,7 @@ export interface MarkDeliveryFailedOptions {
 	note?: string;
 	actorType: OrderActorType;
 	actor?: string;
+	actorShopRole?: ShopRole;
 }
 
 /**
@@ -259,6 +254,7 @@ export async function markDeliveryFailed(
 			visibility: "both",
 			actorType: options.actorType,
 			actor: options.actor ?? null,
+			actorShopRole: options.actorShopRole ?? null,
 			reason: options.reason,
 			note: options.note ?? null,
 		},

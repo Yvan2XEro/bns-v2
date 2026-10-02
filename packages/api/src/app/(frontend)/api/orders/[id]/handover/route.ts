@@ -7,7 +7,6 @@ import { ServiceError } from "@/lib/serviceError";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
 import { withTransaction } from "@/lib/transactions";
 import {
-	actorTypeForShopRole,
 	assertHandoverRateLimit,
 	markDelivered,
 } from "@/services/orders/delivery";
@@ -59,11 +58,12 @@ export async function POST(
 				ctx.payload,
 				async (req) => {
 					await verifyHandoverCode(req, order, body.data.code, {
-						actor: { type: actorTypeForShopRole(role), id: ctx.user.id },
+						actor: { type: "seller", id: ctx.user.id },
 					});
 					return markDelivered(req, order, {
 						method: "otp",
-						actorType: actorTypeForShopRole(role),
+						actorType: "seller",
+						actorShopRole: role,
 						actor: ctx.user.id,
 					});
 				},

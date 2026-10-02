@@ -14,7 +14,12 @@ import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { getProvider } from "../lib/payments";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { type TxReq, withTransaction } from "../lib/transactions";
+import {
+	commitContextOf,
+	onCommit,
+	type TxReq,
+	withTransaction,
+} from "../lib/transactions";
 import type {
 	CommissionInvoice,
 	CommissionLine,
@@ -25,12 +30,9 @@ import type {
 } from "../payload-types";
 import { type Actor, ModerationError } from "./moderation";
 import { registerOrderEventHandler } from "./orders/events";
+import { notifyCommissionInvoicePaid } from "./orders/notifications";
 import { appendOrderEvent } from "./orders/transitions";
-import {
-	createPaymentIntent,
-	findIntentByIdempotencyKey,
-	markIntentPending,
-} from "./payments";
+import { createPaymentIntent, markIntentPending } from "./payments";
 import { nextInvoiceNumber } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
@@ -626,11 +628,30 @@ export async function payInvoice(
 		throw new ServiceError(ERROR_CODES.commissionNotPayable, 409);
 	}
 
-	const idempotencyKey = `commission:${invoice.id}`;
-	const replay = await findIntentByIdempotencyKey(payload, idempotencyKey);
-	if (replay && replay.status === "pending" && replay.checkoutUrl) {
-		return { checkoutUrl: replay.checkoutUrl };
-	}
+	// One intent per attempt (`commission:{invoiceId}:{attemptNo}`): the key is
+	// unique, so a single key per invoice made every attempt after a failed or
+	// expired one collide with it and the invoice could never be paid.
+	const { docs: attempts } = await payload.find({
+		collection: "payment-intents",
+		where: {
+			and: [
+				{ purpose: { equals: "commission" } },
+				{ targetId: { equals: String(invoice.id) } },
+			],
+		},
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	const live = attempts.find(
+		(attempt) =>
+			attempt.status === "pending" &&
+			attempt.checkoutUrl &&
+			(!attempt.expiresAt || new Date(attempt.expiresAt) > now),
+	);
+	if (live?.checkoutUrl) return { checkoutUrl: live.checkoutUrl };
+	const idempotencyKey = `commission:${invoice.id}:${attempts.length + 1}`;
 
 	const totalDue = invoice.totalDue ?? 0;
 	const currency = invoice.currency ?? "XAF";
@@ -713,13 +734,21 @@ export async function applyCommissionSettlement(
 	});
 	if (invoice.status === "paid") return;
 
-	await payload.update({
+	const paid = await payload.update({
 		collection: "commission-invoices",
 		id: invoice.id,
 		overrideAccess: true,
 		req,
 		data: { status: "paid", paidAt: new Date().toISOString() },
 	});
+	const notify = () =>
+		notifyCommissionInvoicePaid(payload, paid).catch((err: unknown) =>
+			payload.logger.error(
+				{ err, invoiceId: paid.id },
+				"[commission] paid notification failed",
+			),
+		);
+	if (!onCommit(commitContextOf(req ?? {}), notify)) void notify();
 
 	const shopId = relationId(invoice.shop);
 	if (!shopId) return;

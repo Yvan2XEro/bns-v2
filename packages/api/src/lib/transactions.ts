@@ -88,7 +88,7 @@ export function onCommit(
  * would then run the callback immediately instead of queuing it for after
  * the commit.
  */
-export function commitContextOf(req: PayloadRequest): CommitContext {
+export function commitContextOf(req: TxReq): CommitContext {
 	const { transactionID } = req;
 	return {
 		context: req.context,
