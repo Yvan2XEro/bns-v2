@@ -77,3 +77,38 @@ export const ORDER_STATUS_LABEL_KEYS: Record<
 		seller: "status_disputed_seller",
 	},
 };
+
+/**
+ * The seller order list's six tabs, in display order. Hand-mirrored in
+ * `packages/web/src/lib/order-status.ts` and mobile's `orderStatus.ts`
+ * (Task 7) the same way the status/label tables above are — this is the
+ * first server-side consumer, so this table is what those two copies are
+ * checked against, not the other way round.
+ */
+export const SHOP_ORDER_TABS = [
+	"to_accept",
+	"to_ship",
+	"shipped",
+	"delivered",
+	"cancelled",
+	"failed",
+] as const;
+
+export type ShopOrderTab = (typeof SHOP_ORDER_TABS)[number];
+
+/**
+ * Which statuses each seller-order tab shows. `to_accept` groups `placed`,
+ * `confirmed` and `paid`: all three read as "a new order waiting on you"
+ * from the seller's side, whatever stage the buyer's own confirmation is
+ * at. `delivered` groups `delivered` and `completed` for the same reason.
+ * `returned` and `disputed` are reserved for P6 (see Task 8's
+ * `RESERVED_STATUSES`) and are claimed by no tab.
+ */
+export const TAB_STATUSES: Record<ShopOrderTab, readonly OrderStatusName[]> = {
+	to_accept: ["placed", "confirmed", "paid"],
+	to_ship: ["accepted"],
+	shipped: ["shipped"],
+	delivered: ["delivered", "completed"],
+	cancelled: ["cancelled"],
+	failed: ["delivery_failed"],
+};
