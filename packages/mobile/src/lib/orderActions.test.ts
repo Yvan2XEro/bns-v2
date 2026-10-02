@@ -31,6 +31,7 @@ function orderAt(
 			withdrawalUntil: FUTURE,
 		},
 		deliveryFailure: null,
+		reviewable: true,
 		...patch,
 	};
 }
@@ -348,5 +349,25 @@ describe("canTakeAction", () => {
 				now: NOW,
 			}),
 		).toBe(false);
+	});
+});
+
+// The serialiser computes `reviewable` from reviewRules (one review per
+// order, buyer only, delivered or completed); the table says where the
+// button may exist, this flag says whether it still does.
+describe("review_shop gating", () => {
+	test("offers the review on a delivered order the buyer has not reviewed", () => {
+		expect(availableActions(orderAt("delivered"), "buyer")).toContain(
+			"review_shop",
+		);
+	});
+
+	test("withholds the review once the serialiser says it is spent", () => {
+		expect(
+			availableActions(orderAt("delivered", { reviewable: false }), "buyer"),
+		).not.toContain("review_shop");
+		expect(
+			availableActions(orderAt("completed", { reviewable: false }), "buyer"),
+		).toEqual(["receipt"]);
 	});
 });

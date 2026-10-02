@@ -194,6 +194,7 @@ export type OrderActionSubject = Pick<
 	| "completionHold"
 	| "deadlines"
 	| "deliveryFailure"
+	| "reviewable"
 >;
 
 export interface AvailableActionsOptions {
@@ -251,6 +252,11 @@ function conditionHolds(
 		// is already answered by the first one's effect.
 		case "contest_delivery":
 			return order.completionHold !== "dispute";
+		// `reviewRules` is the judge — one review per order, buyer only — and
+		// the serialiser answers it as `reviewable`, so the button and the
+		// route refuse for the same reason at the same moment.
+		case "review_shop":
+			return order.reviewable;
 		default:
 			return true;
 	}

@@ -219,6 +219,7 @@ export type OrderActionSubject = Pick<
 	| "deliveryFailure"
 	| "completionHold"
 	| "returnCaseNumber"
+	| "reviewable"
 >;
 
 /** A deadline the API may legitimately not have set: absent means unbounded. */
@@ -307,6 +308,11 @@ function conditionHolds(
 		// caller to use `mark-delivery-failed` instead.
 		case "report_failed_attempt":
 			return (order.deliveryFailure?.attempts ?? 0) < 1;
+		// `reviewRules` is the judge — one review per order, buyer only — and
+		// the serialiser answers it as `reviewable`, so the button and the
+		// route refuse for the same reason at the same moment.
+		case "review_shop":
+			return order.reviewable;
 		default:
 			return true;
 	}

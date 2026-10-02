@@ -138,6 +138,7 @@ function subject(
 		},
 		deliveryFailure: null,
 		completionHold: "none",
+		reviewable: true,
 		returnCaseNumber: null,
 		...patch,
 	};
@@ -653,5 +654,27 @@ describe("every action names the route that answers it", () => {
 		] as const) {
 			expect(ORDER_ACTION_PERMISSIONS[action]).toBeUndefined();
 		}
+	});
+});
+
+// The serialiser computes `reviewable` from reviewRules (one review per
+// order, buyer only, delivered or completed); the table says where the
+// button may exist, this flag says whether it still does.
+describe("review_shop gating", () => {
+	it("offers the review on a delivered order the buyer has not reviewed", () => {
+		expect(availableActions(subject("delivered"), "buyer")).toContain(
+			"review_shop",
+		);
+	});
+
+	it("withholds the review once the serialiser says it is spent", () => {
+		expect(
+			availableActions(subject("delivered", { reviewable: false }), "buyer"),
+		).not.toContain("review_shop");
+		// The row itself still carries it — the gate is the condition, not the
+		// table, which must keep agreeing with mobile's cell for cell.
+		expect(
+			availableActions(subject("completed", { reviewable: false }), "buyer"),
+		).toEqual(["receipt"]);
 	});
 });
