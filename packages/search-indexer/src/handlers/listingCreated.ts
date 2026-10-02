@@ -136,6 +136,11 @@ export function transformListing(
 		priceMax: typeof summary?.priceMax === "number" ? summary.priceMax : null,
 		available:
 			typeof summary?.available === "boolean" ? summary.available : null,
+		// Copied through, never recomputed: the API is the one place
+		// `isListingOrderable` runs (lib/orderable.ts). A listing fetched before
+		// that virtual existed carries no `orderable` key at all, and defaults
+		// to `false` rather than `undefined` reaching Meilisearch.
+		orderable: listing.orderable === true,
 	};
 
 	const coordinates = listing.coordinates as

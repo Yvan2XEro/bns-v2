@@ -71,6 +71,12 @@ const asBoolean = (value: unknown): boolean | null =>
  * `available` is a purchasability boolean, not the exact unit count — see
  * `isProductAvailable` — the same spirit as `product-variants.available`, so
  * this route never reads or forwards a number for it.
+ *
+ * `orderable` is read the same way on both paths, straight off `doc.orderable`
+ * — the Payload path's value is the listing's own `beforeRead` virtual
+ * (lib/orderable.ts#isListingOrderable), and the Meilisearch path's is
+ * `transformListing`'s copy of that same virtual, under the same key. There
+ * is no second computation here to drift from either.
  */
 const serializeListingHit = (input: unknown) => {
 	const doc = (input ?? {}) as Record<string, unknown>;
@@ -100,6 +106,7 @@ const serializeListingHit = (input: unknown) => {
 		shopLevel: asNumber(activeShop?.level) ?? asNumber(doc.shopLevel),
 		priceMax: asNumber(summary?.priceMax) ?? asNumber(doc.priceMax),
 		available: asBoolean(summary?.available) ?? asBoolean(doc.available),
+		orderable: asBoolean(doc.orderable) ?? false,
 	};
 };
 
@@ -328,6 +335,7 @@ export async function GET(request: Request) {
 	const offset = Number.parseInt(searchParams.get("offset") || "0", 10);
 	const sortParam = searchParams.get("sort") || "newest";
 	const boostedOnly = isTruthyQueryParam(searchParams.get("boosted"));
+	const orderableOnly = isTruthyQueryParam(searchParams.get("orderable"));
 	const conditionParam = searchParams.get("condition");
 	const tagsParam = searchParams.get("tags");
 	const shopParam = searchParams.get("shop");
@@ -390,6 +398,15 @@ export async function GET(request: Request) {
 
 	if (minShopLevel) {
 		filters.push(`shopLevel >= ${minShopLevel}`);
+	}
+
+	// `orderable` has no non-default meaning other than "true": the same
+	// `isTruthyQueryParam` gate `boosted` uses, so `orderable=false` or any
+	// other value leaves the filter off rather than asking Meilisearch to
+	// exclude anything. There is no Payload-fallback equivalent (same gap as
+	// `minShopLevel` above) — `orderable` is a search-index-only filter.
+	if (orderableOnly) {
+		filters.push("orderable = true");
 	}
 
 	if (minPrice) {

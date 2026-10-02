@@ -223,6 +223,39 @@ describe("transformListing", () => {
 		expect(doc.priceMax).toBeNull();
 	});
 
+	test("copies orderable through when the API computed it true", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+			orderable: true,
+		});
+		expect(doc.orderable).toBe(true);
+	});
+
+	// The one implementation of the rule lives on the API side
+	// (lib/orderable.ts#isListingOrderable); the indexer only ever carries its
+	// answer through. A listing fetched before that virtual existed, or any
+	// other falsy/missing value, must not be forwarded as orderable.
+	test("defaults orderable to false when absent", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+		});
+		expect(doc.orderable).toBe(false);
+	});
+
+	test("defaults orderable to false for a non-boolean leftover value", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+			orderable: "true",
+		});
+		expect(doc.orderable).toBe(false);
+	});
+
 	test("skips filterable attributes that are not present in listing data", () => {
 		const listing = {
 			...baseListing,

@@ -727,6 +727,10 @@ export interface Listing {
    * Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.
    */
   moderationHold?: boolean | null;
+  /**
+   * Derived at read time from order settings, the shop and the product (lib/orderable.ts#isListingOrderable). Not stored.
+   */
+  orderable?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -2192,6 +2196,7 @@ export interface ListingsSelect<T extends boolean = true> {
         trackInventory?: T;
       };
   moderationHold?: T;
+  orderable?: T;
   createdAt?: T;
   updatedAt?: T;
 }

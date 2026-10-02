@@ -1,3 +1,4 @@
+import type { Payload } from "payload";
 import { APIError, type CollectionConfig, type Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
@@ -12,6 +13,13 @@ import {
 import { validateListingAttributes } from "../hooks/validation";
 import { ERROR_CODES } from "../lib/errors";
 import { getListingFormPreset } from "../lib/listingFormPreset";
+import {
+	type IsListingOrderableInput,
+	isListingOrderable,
+	type OrderableProduct,
+	type OrderableShop,
+} from "../lib/orderable";
+import { getOrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
@@ -115,6 +123,62 @@ const shouldValidateListingForm = ({
  * publishes can still leave a product with two listings. Check its logs.
  */
 
+/**
+ * Gathers what `isListingOrderable` (lib/orderable.ts) needs and asks it the
+ * one question. A fresh shop/product read on every listing read, never a
+ * trust of whatever depth populated on `doc` — the same reason
+ * `assertCheckoutPreconditions` re-fetches the shop by id instead of reading
+ * it off the cart. `productSummary.available` is read as-is rather than
+ * recomputed: it is already `isProductAvailable`'s own result, written by
+ * `deriveListingData` whenever the product or its variants change.
+ */
+async function deriveOrderable(
+	payload: Payload,
+	doc: Record<string, unknown>,
+): Promise<boolean> {
+	const shopId = relationId(doc.shop);
+	if (!shopId) return false;
+
+	const settings = await getOrderSettings(payload);
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+
+	const productId = relationId(doc.product);
+	const product = productId
+		? await payload
+				.findByID({
+					collection: "products",
+					id: productId,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null)
+		: null;
+
+	const summary = doc.productSummary as
+		| { available?: unknown }
+		| null
+		| undefined;
+	const productAvailable =
+		typeof summary?.available === "boolean" ? summary.available : null;
+
+	const input: IsListingOrderableInput = {
+		listingStatus: typeof doc.status === "string" ? doc.status : null,
+		shopId,
+		shop: shop as OrderableShop | null,
+		product: product as OrderableProduct | null,
+		productAvailable,
+		settings,
+	};
+	return isListingOrderable(input);
+}
+
 export const Listings: CollectionConfig = {
 	slug: "listings",
 	admin: {
@@ -155,6 +219,15 @@ export const Listings: CollectionConfig = {
 		},
 	},
 	hooks: {
+		// Computed before field access runs, the same shape `Users.beforeRead`
+		// already uses for `phoneVerified`/`verified`: never stored, so there is
+		// nothing for a stale write to leave behind.
+		beforeRead: [
+			async ({ doc, req }) => {
+				doc.orderable = await deriveOrderable(req.payload, doc);
+				return doc;
+			},
+		],
 		beforeChange: [
 			async ({ data, req, operation, originalDoc }) => {
 				// Skipped for moderation writes: suspending an account cascades
@@ -753,6 +826,16 @@ export const Listings: CollectionConfig = {
 				readOnly: true,
 				description:
 					"Set when a moderator takes this listing down and chooses not to restore it. Blocks the product service from republishing it on an ordinary sync (a stock movement, a product edit) until a moderator clears it.",
+			},
+		},
+		{
+			name: "orderable",
+			type: "checkbox",
+			virtual: true,
+			admin: {
+				readOnly: true,
+				description:
+					"Derived at read time from order settings, the shop and the product (lib/orderable.ts#isListingOrderable). Not stored.",
 			},
 		},
 		{

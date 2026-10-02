@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { resolveMeiliConfig } from "../meilisearch.ts";
+import {
+	resolveMeiliConfig,
+	STATIC_FILTERABLE_ATTRIBUTES,
+} from "../meilisearch.ts";
 
 describe("resolveMeiliConfig", () => {
 	test("reads the names the API uses", () => {
@@ -36,5 +39,14 @@ describe("resolveMeiliConfig", () => {
 			host: "http://localhost:7700",
 			apiKey: "",
 		});
+	});
+});
+
+describe("STATIC_FILTERABLE_ATTRIBUTES", () => {
+	// Carried through from the API's `listings.orderable` virtual (see
+	// `transformListing`); a buyer search for `?orderable=true` needs the
+	// index configured to accept a filter on it at all.
+	test("includes orderable", () => {
+		expect(STATIC_FILTERABLE_ATTRIBUTES).toContain("orderable");
 	});
 });

@@ -293,6 +293,66 @@ describe("public search route", () => {
 		expect(searchMock.mock.calls.at(-1)?.[1]?.limit).toBe(50);
 	});
 
+	describe("the orderable filter", () => {
+		it("filters on orderable=true", async () => {
+			expect(await filterFor("orderable=true")).toContain("orderable = true");
+		});
+
+		it("ignores any other value", async () => {
+			expect(await filterFor("orderable=false")).not.toContain("orderable");
+			expect(await filterFor("orderable=0")).not.toContain("orderable");
+			expect(await filterFor("orderable=banana")).not.toContain("orderable");
+			expect(await filterFor("")).not.toContain("orderable");
+		});
+
+		it("surfaces a Meilisearch hit's own orderable value in the response", async () => {
+			searchMock.mockResolvedValueOnce({
+				hits: [
+					{
+						id: "listing-20",
+						title: "Carried through from the index",
+						status: "published",
+						orderable: true,
+					},
+				],
+				estimatedTotalHits: 1,
+			});
+
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search"),
+			);
+			const body = await response.json();
+
+			expect(body.hits[0].orderable).toBe(true);
+		});
+
+		it("defaults a hit's orderable to false rather than forwarding a non-boolean", async () => {
+			searchMock.mockResolvedValueOnce({
+				hits: [
+					{
+						id: "listing-21",
+						title: "Stale document predating the field",
+						status: "published",
+					},
+				],
+				estimatedTotalHits: 1,
+			});
+
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search"),
+			);
+			const body = await response.json();
+
+			expect(body.hits[0].orderable).toBe(false);
+		});
+	});
+
 	describe("category attribute filters", () => {
 		it("matches an exact value", async () => {
 			expect(await filterFor("attr_fuel-type=Diesel")).toContain(

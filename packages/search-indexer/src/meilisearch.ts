@@ -51,6 +51,12 @@ export type ListingDocument = {
 	priceMax: number | null;
 	/** Buyer-safe purchasability signal, not the exact unit count — see the API's `isProductAvailable`. */
 	available: boolean | null;
+	/**
+	 * Copied verbatim from the API's `listings.orderable` virtual
+	 * (lib/orderable.ts#isListingOrderable) — the indexer never recomputes
+	 * this rule, only carries the value through. See `transformListing`.
+	 */
+	orderable: boolean;
 	[key: string]: unknown;
 };
 
@@ -164,7 +170,7 @@ async function fetchFilterableAttributeSlugs(
 }
 
 /** Filterable regardless of what the categories declare. */
-const STATIC_FILTERABLE_ATTRIBUTES = [
+export const STATIC_FILTERABLE_ATTRIBUTES = [
 	"status",
 	"categoryId",
 	"condition",
@@ -176,6 +182,7 @@ const STATIC_FILTERABLE_ATTRIBUTES = [
 	"_geo",
 	"shopId",
 	"shopLevel",
+	"orderable",
 ];
 
 /** What the index was last configured with, to skip no-op settings updates. */
