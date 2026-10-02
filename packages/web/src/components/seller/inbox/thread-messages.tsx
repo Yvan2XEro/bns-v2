@@ -1,14 +1,17 @@
 "use client";
 
 import { cn } from "~/lib/utils";
-import type { Message, User } from "~/types";
+import type { Message } from "~/types";
 
 function senderName(message: Message, viewerId: string): string | null {
 	if (message.senderSide !== "shop") return null;
 	const sender = message.sender;
-	if (typeof sender === "string") return null;
+	// P4 made `sender` nullable on the collection, which is what surfaced the
+	// missing guard here: an unpopulated or absent sender used to be
+	// unreachable by the types and is now the ordinary case.
+	if (!sender || typeof sender === "string") return null;
 	if (sender.id === viewerId) return null;
-	return (sender as User).name ?? null;
+	return sender.name ?? null;
 }
 
 export function ThreadMessages({
