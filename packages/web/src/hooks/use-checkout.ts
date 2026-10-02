@@ -1,11 +1,12 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
 import { cartKey, purchasesRootKey } from "~/lib/query-keys";
-import { apiPost } from "~/lib/shop-api";
+import { apiGet, apiPost, query } from "~/lib/shop-api";
 import type {
 	AddressInput,
+	DeliveryOption,
 	PaymentMethod,
 	PlaceResponse,
 	QuoteResponse,
@@ -26,12 +27,43 @@ export interface CheckoutPlaceInput extends CheckoutQuoteInput {
 	 * accept the new summary (art. 17) rather than the one they last saw.
 	 */
 	quoteHash: string;
-	/** `checkout.termsNotAccepted` without it. */
-	acceptTerms: boolean;
+	/** `checkout.termsNotAccepted` without it. The server reads this name. */
+	termsAccepted: boolean;
+	/**
+	 * One UUID per checkout attempt. The server requires it: a double-tap or a
+	 * retried request resolves to the first call's order instead of a second
+	 * one. This type first shipped without it — guessed before the placement
+	 * route landed — so every placement would have been refused.
+	 */
+	idempotencyKey: string;
 }
 
 export const checkoutQuoteKey = ["checkout", "quote"] as const;
 export const checkoutPlaceKey = ["checkout", "place"] as const;
+export const deliveryOptionsKey = (city: string, district: string) =>
+	["checkout", "delivery-options", city, district] as const;
+
+/**
+ * `GET /api/checkout/delivery-options` — the delivery step's own source, so
+ * the step never offers an option the quote would then refuse.
+ */
+export function useDeliveryOptions(
+	city: string | null,
+	district: string | null,
+) {
+	return useQuery<{ city: string; options: DeliveryOption[] }, ApiError>({
+		queryKey: deliveryOptionsKey(city ?? "", district ?? ""),
+		queryFn: () =>
+			apiGet(
+				`/api/checkout/delivery-options${query({
+					city: city ?? undefined,
+					district: district ?? undefined,
+				})}`,
+			),
+		enabled: Boolean(city),
+		retry: false,
+	});
+}
 
 /**
  * A mutation, not a query: the quote is a `POST` that recomputes prices,

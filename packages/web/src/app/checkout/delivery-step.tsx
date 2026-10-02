@@ -4,10 +4,10 @@ import { LoaderCircle, MapPin, Store, Truck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
+import { useDeliveryOptions } from "~/hooks/use-checkout";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatXaf } from "~/lib/order-money";
 import type { AddressInput, DeliveryOption } from "~/types/order";
-import { useDeliveryOptions } from "./use-delivery-options";
 
 function OptionCard({
 	option,

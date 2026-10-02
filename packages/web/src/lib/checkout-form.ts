@@ -321,15 +321,8 @@ export function quoteDifferences(
 	return changed;
 }
 
-/**
- * `POST /api/checkout/place` reads `termsAccepted` and `idempotencyKey`;
- * `CheckoutPlaceInput` (Task 29) names the first `acceptTerms` and lacks the
- * second, so both spellings are sent until the hook catches up.
- */
-export type PlaceOrderBody = CheckoutPlaceInput & {
-	termsAccepted: true;
-	idempotencyKey: string;
-};
+/** Exactly `CheckoutPlaceInput`: the hook's type is the route's input. */
+export type PlaceOrderBody = CheckoutPlaceInput;
 
 export function placeOrderBody(
 	state: CheckoutState,
@@ -343,7 +336,6 @@ export function placeOrderBody(
 		paymentMethod,
 		locale,
 		quoteHash: state.quote.quoteHash,
-		acceptTerms: true,
 		termsAccepted: true,
 		idempotencyKey: state.idempotencyKey,
 	};

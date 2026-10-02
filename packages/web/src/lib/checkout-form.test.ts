@@ -358,7 +358,6 @@ describe("the placement body", () => {
 			paymentMethod: "cod",
 			locale: "fr",
 			quoteHash: "h-10000-2000",
-			acceptTerms: true,
 			termsAccepted: true,
 			idempotencyKey: "idem-1",
 		});
