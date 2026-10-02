@@ -56,6 +56,14 @@ export interface ChatMessage {
 	tempId?: string;
 	listing?: ListingAttachment;
 	shopId?: string;
+	/** Absent, or `"user"`, for an ordinary message. `"system"` for a line
+	 * the order service posted — `sender` is then an empty string, never a
+	 * user id. */
+	kind?: "user" | "system";
+	/** System messages only: the order-event type, e.g. `"order.placed"`. */
+	systemEvent?: string;
+	/** System messages only: structured data for a localised chip. */
+	systemParams?: Record<string, unknown>;
 }
 
 export interface InboxConversationUpdate {

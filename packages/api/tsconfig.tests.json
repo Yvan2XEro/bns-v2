@@ -9,5 +9,14 @@
 	// would block every commit until it was empty. The rule is that the count
 	// must not rise, and that it comes down as P3 touches these files.
 	"extends": "./tsconfig.json",
-	"exclude": ["node_modules"]
+	"exclude": ["node_modules"],
+	// `chat-channel-parity.int.spec.ts` (Task 15) is the first spec to import
+	// a `chat-service` module, and every one of those imports its own
+	// siblings with an explicit `.ts` extension (Bun/ESM convention there).
+	// `moduleResolution: "bundler"` refuses that without this flag — TS5097
+	// on every such import, in a package this config never touches directly.
+	// `noEmit` is already true, which is the flag's other prerequisite.
+	"compilerOptions": {
+		"allowImportingTsExtensions": true
+	}
 }

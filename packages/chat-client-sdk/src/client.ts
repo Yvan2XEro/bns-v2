@@ -84,7 +84,10 @@ export class ChatClient {
 			this.emit("error", err);
 		});
 
-		// Forward server events
+		// Forward server events. A system message (`kind: "system"`) arrives
+		// through this same event, with `systemEvent`/`systemParams` set and no
+		// real `sender` — forwarded as-is, since the thread-chip rendering is
+		// the consuming screen's concern, not this client's.
 		this.socket.on("message:new", (msg: ChatMessage) => {
 			this.emit("message:new", msg);
 		});

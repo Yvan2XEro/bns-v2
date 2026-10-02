@@ -1,8 +1,9 @@
 import { fetchInboxMembers, invalidateInboxMembers } from "./cache.ts";
+import { CHAT_MEMBERSHIP_CHANNEL } from "./channels.ts";
 import { getRedis } from "./redis.ts";
 import { shopInboxRoom } from "./rooms.ts";
 
-export const CHAT_MEMBERSHIP_CHANNEL = "chat:membership";
+export { CHAT_MEMBERSHIP_CHANNEL };
 
 export interface MembershipChangeMessage {
 	type: "shop.members.changed";

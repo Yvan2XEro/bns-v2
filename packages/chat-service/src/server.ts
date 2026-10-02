@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { startMembershipSubscriber } from "./membership.ts";
 import { createRedisClients } from "./redis.ts";
 import { registerSocketHandlers } from "./socket.ts";
+import { startSystemMessageSubscriber } from "./systemMessages.ts";
 
 const PORT = Number.parseInt(process.env.PORT || "4000", 10);
 
@@ -32,6 +33,13 @@ async function main(): Promise<void> {
 	await startMembershipSubscriber(io, membershipClient);
 	console.log("[chat-service] chat:membership subscriber started");
 
+	// Its own connection, beside the membership one, for the same reason:
+	// a subscribed client cannot issue other commands.
+	const systemMessageClient = pubClient.duplicate();
+	await systemMessageClient.connect();
+	await startSystemMessageSubscriber(io, systemMessageClient);
+	console.log("[chat-service] chat:system subscriber started");
+
 	registerSocketHandlers(io);
 
 	httpServer.listen(PORT, () => {
@@ -42,6 +50,7 @@ async function main(): Promise<void> {
 		console.log("[chat-service] Shutting down...");
 		io.close();
 		await membershipClient.quit();
+		await systemMessageClient.quit();
 		await pubClient.quit();
 		await subClient.quit();
 		httpServer.close();
