@@ -54,6 +54,13 @@ export interface PublicShop {
 	legalVerified: boolean;
 	legal: PublicShopLegal | null;
 	publishedListingCount: number;
+	/**
+	 * The shop's own verified-purchase rating (P4's reviews task), distinct
+	 * from the owner's person rating below. The shop page used to make a
+	 * second select-filtered read for these two.
+	 */
+	rating: number;
+	totalReviews: number;
 	createdAt: string;
 	owner: {
 		id: string;
@@ -133,6 +140,8 @@ export function serializePublicShop(
 		legalVerified: shopCapabilities(shop).legalInfoVerified,
 		legal: toPublicShopLegal(shop),
 		publishedListingCount: shop.publishedListingCount ?? 0,
+		rating: shop.rating ?? 0,
+		totalReviews: shop.totalReviews ?? 0,
 		createdAt: shop.createdAt,
 		owner: {
 			id: relationId(owner) ?? relationId(shop.owner) ?? "",

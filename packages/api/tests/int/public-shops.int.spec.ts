@@ -72,6 +72,20 @@ describe("resolvePublicShop", () => {
 		expect(JSON.stringify(result)).not.toContain("+237600000000");
 	});
 
+	// The shop's own verified-purchase rating, distinct from the owner's
+	// person rating the block above pins. The shop page used to make a second
+	// select-filtered read because the public shape did not carry these two.
+	it("serves the shop's own rating, and zero when none exists yet", async () => {
+		const payload = seed();
+		(payload.store.shops[0] as { rating?: number }).rating = 4.2;
+		(payload.store.shops[0] as { totalReviews?: number }).totalReviews = 17;
+		const rated = await resolvePublicShop(payload, "akwatech", NOW);
+		expect(rated).toMatchObject({ shop: { rating: 4.2, totalReviews: 17 } });
+
+		const unrated = await resolvePublicShop(seed(), "akwatech", NOW);
+		expect(unrated).toMatchObject({ shop: { rating: 0, totalReviews: 0 } });
+	});
+
 	it("redirects an unexpired previous handle", async () => {
 		expect(await resolvePublicShop(seed(), "akwa", NOW)).toEqual({
 			redirectTo: "akwatech",
