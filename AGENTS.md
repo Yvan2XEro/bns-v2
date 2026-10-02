@@ -156,7 +156,17 @@ ln -s "$R/node_modules" "$W/node_modules"
 for p in api web mobile chat-service; do
   ln -s "$R/packages/$p/node_modules" "$W/packages/$p/node_modules"
 done
+# The .env files are git-ignored, so a worktree has none and every spec that
+# needs PAYLOAD_SECRET throws. Three P4 agents each reported 24-29 "unrelated
+# pre-existing failures" before this line existed; all of them were this.
+for f in .env packages/api/.env packages/chat-service/.env packages/mobile/.env; do
+  [ -f "$R/$f" ] && ln -s "$R/$f" "$W/$f"
+done
 ```
+
+Even then, several agents running `vitest` at once on one machine contend for
+CPU and will report timeouts that do not reproduce. Read an agent's full-suite
+count as indicative; verify on the main checkout after the work lands.
 
 Two things follow. The pre-commit hook runs `turbo check-types` across every
 package, so an agent mid-work in one package blocks every other package's

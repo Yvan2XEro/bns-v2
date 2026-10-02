@@ -257,23 +257,27 @@ export function fakePayload(
 			if (payload.failWhen?.(method, args))
 				throw new Error(`forced failure: ${method}`);
 		},
-		async findByID({ collection, id, req, context }: Args) {
+		async findByID(args: Args) {
+			payload.maybeFail("findByID", args);
+			const { collection, id, req, context } = args;
 			applyRequestContext(req, context);
 			reads.push({ collection, id: String(id) });
 			const doc = byId(collection, id);
 			if (!doc) throw notFound();
 			return clone(doc);
 		},
-		async find({
-			collection,
-			where,
-			sort,
-			limit,
-			page = 1,
-			pagination,
-			req,
-			context,
-		}: Args) {
+		async find(findArgs: Args) {
+			payload.maybeFail("find", findArgs);
+			const {
+				collection,
+				where,
+				sort,
+				limit,
+				page = 1,
+				pagination,
+				req,
+				context,
+			} = findArgs;
 			applyRequestContext(req, context);
 			reads.push({ collection, where });
 			const all = sortDocs(
@@ -294,7 +298,9 @@ export function fakePayload(
 				nextPage: page < totalPages ? page + 1 : null,
 			};
 		},
-		async count({ collection, where, req, context }: Args) {
+		async count(args: Args) {
+			payload.maybeFail("count", args);
+			const { collection, where, req, context } = args;
 			applyRequestContext(req, context);
 			return {
 				totalDocs: table(collection).filter((d) => matches(d, where)).length,
