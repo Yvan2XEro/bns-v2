@@ -15,12 +15,20 @@ import { type ErrorCode, fallbackMessage } from "./errors";
 export class ServiceError extends Error {
 	code: ErrorCode;
 	status: number;
+	/** Extra client-readable context (e.g. `cart.singleShop`'s `currentShop`). */
+	details?: Record<string, unknown>;
 
-	constructor(code: ErrorCode, status: number, message?: string) {
+	constructor(
+		code: ErrorCode,
+		status: number,
+		message?: string,
+		details?: Record<string, unknown>,
+	) {
 		super(message ?? fallbackMessage(code));
 		this.name = "ServiceError";
 		this.code = code;
 		this.status = status;
+		this.details = details;
 	}
 }
 

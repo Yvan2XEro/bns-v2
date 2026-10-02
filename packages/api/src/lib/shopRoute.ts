@@ -44,7 +44,7 @@ export { readJsonBody as readBody } from "./readJsonBody";
  */
 export function handleServiceError(scope: string, error: unknown): Response {
 	if (error instanceof ServiceError || error instanceof ModerationError) {
-		return errorResponse(error.code, error.status);
+		return errorResponse(error.code, error.status, error.details);
 	}
 	if (error instanceof SuspendedAccountError) {
 		return errorResponse(ERROR_CODES.accountSuspended, 403);

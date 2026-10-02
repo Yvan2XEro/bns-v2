@@ -397,6 +397,13 @@ export function fallbackMessage(code: ErrorCode): string {
  * The message is never taken from an exception: internal text (a Mongo error,
  * a stack, an env var name) must not reach a client. Log the original instead.
  */
-export function errorResponse(code: ErrorCode, status: number): Response {
-	return Response.json({ code, message: fallbackMessage(code) }, { status });
+export function errorResponse(
+	code: ErrorCode,
+	status: number,
+	details?: Record<string, unknown>,
+): Response {
+	return Response.json(
+		{ code, message: fallbackMessage(code), ...(details ? { details } : {}) },
+		{ status },
+	);
 }
