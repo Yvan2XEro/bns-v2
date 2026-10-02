@@ -3,13 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // `vi.hoisted` runs before the mock factories, which vitest hoists above
 // every import in this file.
-const { queueSearchEvent, notifyCommissionInvoiceIssued } = vi.hoisted(() => ({
+const {
+	queueSearchEvent,
+	notifyCommissionInvoiceIssued,
+	notifyCommissionInvoiceOverdue,
+} = vi.hoisted(() => ({
 	queueSearchEvent: vi.fn(async () => undefined),
 	notifyCommissionInvoiceIssued: vi.fn(async () => undefined),
+	notifyCommissionInvoiceOverdue: vi.fn(async () => undefined),
 }));
 vi.mock("../../src/hooks/searchEvents", () => ({ queueSearchEvent }));
 vi.mock("../../src/services/orders/notifications", () => ({
 	notifyCommissionInvoiceIssued,
+	notifyCommissionInvoiceOverdue,
 }));
 
 import { Shops } from "../../src/collections/Shops";
@@ -49,6 +55,7 @@ beforeEach(() => {
 	vi.useFakeTimers();
 	queueSearchEvent.mockClear();
 	notifyCommissionInvoiceIssued.mockClear();
+	notifyCommissionInvoiceOverdue.mockClear();
 });
 
 afterEach(() => {
@@ -411,6 +418,60 @@ describe("enforceCommissionOverdue", () => {
 			"s-1",
 			{ reindexListings: true },
 		);
+	});
+
+	// `notifyCommissionInvoiceOverdue` existed in notifications.ts and nothing
+	// called it: the workflow's own doc comment named this job as its caller.
+	// A seller was being restricted — their shop stops taking orders — with a
+	// log line as the only trace. The three stages are asserted by stage name
+	// and invoice, so a sweep that notified the wrong one goes red.
+	it.each([
+		[
+			"due_soon",
+			{ dueAt: new Date(MONDAY_RUN.getTime() + DAY_MS).toISOString() },
+		],
+		[
+			"overdue",
+			{ dueAt: new Date(MONDAY_RUN.getTime() - 60_000).toISOString() },
+		],
+		[
+			"restricted",
+			{
+				status: "overdue",
+				dueAt: new Date(MONDAY_RUN.getTime() - 3 * DAY_MS).toISOString(),
+			},
+		],
+	])("tells the shop at the %s stage", async (stage, invoice) => {
+		vi.setSystemTime(MONDAY_RUN);
+		const payload = overdueWorld(invoice);
+
+		const result = await enforceCommissionOverdue(payload);
+
+		expect(result.notified).toEqual([{ invoiceId: "inv-1", stage }]);
+		expect(notifyCommissionInvoiceOverdue).toHaveBeenCalledTimes(1);
+		expect(notifyCommissionInvoiceOverdue).toHaveBeenCalledWith(
+			payload,
+			expect.objectContaining({ id: "inv-1" }),
+			stage,
+		);
+	});
+
+	// The reminder, the mark and the restriction are each idempotent at the
+	// write, so the replay has nothing to announce. Paired with the cases
+	// above, which prove the first run does announce.
+	it("announces nothing on a replayed sweep", async () => {
+		vi.setSystemTime(MONDAY_RUN);
+		const payload = overdueWorld({
+			status: "overdue",
+			dueAt: new Date(MONDAY_RUN.getTime() - 3 * DAY_MS).toISOString(),
+		});
+
+		await enforceCommissionOverdue(payload);
+		notifyCommissionInvoiceOverdue.mockClear();
+		const replay = await enforceCommissionOverdue(payload);
+
+		expect(replay.notified).toEqual([]);
+		expect(notifyCommissionInvoiceOverdue).not.toHaveBeenCalled();
 	});
 
 	it("runs daily 06:00 on the commission queue", () => {

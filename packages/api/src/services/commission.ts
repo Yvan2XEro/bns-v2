@@ -461,16 +461,32 @@ export async function issueInvoicesForWeek(
 }
 
 /**
+ * The three moments in an invoice's decline a seller is told about. The
+ * `commission-invoice-overdue` workflow takes the stage as its payload, so
+ * the names are the workflow's, not this file's.
+ */
+export type OverdueStage = "due_soon" | "overdue" | "restricted";
+
+/**
  * Daily sweep: marks invoices overdue, sends the dueAt−2d reminder once,
  * restricts a shop after `restrictAfterOverdueDays`, and logs a staff report
- * past 30 days. No notification machinery exists in this task's scope
- * (Task 16's Novu workflows are a later task), so "reminder" and "report"
- * are operational log lines a human or an alert pipeline can act on.
+ * past 30 days. The log lines stay — an alert pipeline reads them — but each
+ * of the three stages a seller must hear about is also returned in `notify`,
+ * because the notification itself belongs to the job: this function writes,
+ * the job fires the external effect afterwards, the same split
+ * `issueCommissionInvoices` already uses. Returning the stage rather than
+ * firing it here is also what makes the restriction notifiable at all: a shop
+ * id alone cannot name the invoice that caused it.
  */
 export async function enforceOverdue(
 	payload: Payload,
 	now: Date,
-): Promise<{ marked: string[]; restricted: string[]; reported: string[] }> {
+): Promise<{
+	marked: string[];
+	notify: Array<{ invoice: CommissionInvoice; stage: OverdueStage }>;
+	reported: string[];
+	restricted: string[];
+}> {
 	const settings = await getOrderSettings(payload);
 	const { docs: invoices } = await payload.find({
 		collection: "commission-invoices",
@@ -484,6 +500,7 @@ export async function enforceOverdue(
 	const marked: string[] = [];
 	const restricted: string[] = [];
 	const reported: string[] = [];
+	const notify: Array<{ invoice: CommissionInvoice; stage: OverdueStage }> = [];
 
 	for (const invoice of invoices) {
 		if (!invoice.dueAt) continue;
@@ -505,6 +522,7 @@ export async function enforceOverdue(
 				overrideAccess: true,
 				data: { dueSoonReminderSentAt: now.toISOString() },
 			});
+			notify.push({ invoice, stage: "due_soon" });
 		}
 
 		if (daysOverdue >= 0 && invoice.status === "issued") {
@@ -515,6 +533,7 @@ export async function enforceOverdue(
 				data: { status: "overdue" },
 			});
 			marked.push(String(invoice.id));
+			notify.push({ invoice, stage: "overdue" });
 		}
 
 		if (daysOverdue >= settings.restrictAfterOverdueDays) {
@@ -538,6 +557,7 @@ export async function enforceOverdue(
 						},
 					});
 					restricted.push(shopId);
+					notify.push({ invoice, stage: "restricted" });
 				}
 				if (!invoice.restrictedAt) {
 					await payload.update({
@@ -560,7 +580,7 @@ export async function enforceOverdue(
 		}
 	}
 
-	return { marked, restricted, reported };
+	return { marked, notify, reported, restricted };
 }
 
 /**
