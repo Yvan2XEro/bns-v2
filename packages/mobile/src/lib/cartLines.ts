@@ -1,4 +1,4 @@
-import type { CartLineView } from "../types/order";
+import type { CartLineView, CartView } from "../types/order";
 
 /**
  * One line's money. The server already states it as `lineSubtotal`; this
@@ -41,4 +41,45 @@ export function cartTotals(lines: readonly CartLineView[]): CartTotals {
 	}
 
 	return { subtotal, itemCount, unavailableCount, priceChangedCount };
+}
+
+/**
+ * The checkout button's gate: the shop still takes orders, something is
+ * payable, and nothing in the cart is unavailable — the quote would refuse
+ * any of the three.
+ */
+export function canCheckout(cart: CartView): boolean {
+	const totals = cartTotals(cart.lines);
+	return (
+		cart.shopOrderable && totals.itemCount > 0 && totals.unavailableCount === 0
+	);
+}
+
+export type CartLineState = "ok" | "price_changed" | "unavailable";
+
+/** Unavailable wins: a price the buyer cannot pay is not worth announcing. */
+export function cartLineState(line: CartLineView): CartLineState {
+	if (!line.available) return "unavailable";
+	if (line.priceChanged) return "price_changed";
+	return "ok";
+}
+
+export interface QuantityStepper {
+	canDecrease: boolean;
+	canIncrease: boolean;
+	/** The tracked stock is reached; the screen says why "+" is disabled. */
+	atMax: boolean;
+}
+
+/**
+ * Never below one (removing is its own button) and never above a tracked
+ * variant's stock. An untracked variant has no client-side ceiling: the
+ * cart's own maximum is a server rule (`cart.quantityInvalid`).
+ */
+export function quantityStepper(line: CartLineView): QuantityStepper {
+	if (cartLineState(line) === "unavailable") {
+		return { canDecrease: false, canIncrease: false, atMax: false };
+	}
+	const atMax = line.maxQuantity !== null && line.quantity >= line.maxQuantity;
+	return { canDecrease: line.quantity > 1, canIncrease: !atMax, atMax };
 }
