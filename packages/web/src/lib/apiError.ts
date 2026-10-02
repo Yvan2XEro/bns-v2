@@ -395,7 +395,24 @@ function codeForPayloadError(status: number, text: string): ErrorCode {
 	return codeForStatus(status);
 }
 
-export type NormalizedError = { code: string; message: string };
+export type NormalizedError = {
+	code: string;
+	message: string;
+	/**
+	 * The structured payload our own routes attach beside the code —
+	 * `cart.singleShop` names the conflicting shop, `order.handoverLocked`
+	 * carries the lock state and attempts left. Only the trusted envelope (1)
+	 * ever provides it; a Payload-shaped error gets null, so nothing a hook
+	 * or internal error fabricates can reach a screen as if it were ours.
+	 */
+	details: null | Record<string, unknown>;
+};
+
+function detailsOf(value: unknown): null | Record<string, unknown> {
+	return value !== null && typeof value === "object" && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
+}
 
 export function normalizeApiError(
 	status: number,
@@ -403,6 +420,7 @@ export function normalizeApiError(
 ): NormalizedError {
 	const b = (body ?? {}) as {
 		code?: unknown;
+		details?: unknown;
 		message?: unknown;
 		errors?: unknown;
 	};
@@ -415,6 +433,7 @@ export function normalizeApiError(
 				typeof b.message === "string" && b.message
 					? b.message
 					: fallbackFor(b.code),
+			details: detailsOf(b.details),
 		};
 	}
 
@@ -432,7 +451,7 @@ export function normalizeApiError(
 		// `data` through untouched, so the code survives the REST layer.
 		const dataCode = first?.data?.code;
 		if (typeof dataCode === "string" && dataCode in FALLBACKS) {
-			return { code: dataCode, message: fallbackFor(dataCode) };
+			return { code: dataCode, message: fallbackFor(dataCode), details: null };
 		}
 
 		const nested = first?.data?.errors;
@@ -443,13 +462,13 @@ export function normalizeApiError(
 		const outerText = typeof first?.message === "string" ? first.message : "";
 
 		const code = codeForPayloadError(status, `${nestedText} ${outerText}`);
-		return { code, message: fallbackFor(code) };
+		return { code, message: fallbackFor(code), details: null };
 	}
 
 	// (3) Anything else, including Payload's bare { message } internals, whose
 	// text is developer-facing and must not be shown.
 	const code = codeForStatus(status);
-	return { code, message: fallbackFor(code) };
+	return { code, message: fallbackFor(code), details: null };
 }
 
 type TFunction = (key: string) => string;
@@ -511,17 +530,24 @@ function safeTranslate(code: string, t: TFunction): null | string {
 export class ApiError extends Error {
 	status: number;
 	code: string;
+	details: null | Record<string, unknown>;
 
-	constructor(message: string, status: number, code: string) {
+	constructor(
+		message: string,
+		status: number,
+		code: string,
+		details: null | Record<string, unknown> = null,
+	) {
 		super(message);
 		this.name = "ApiError";
 		this.status = status;
 		this.code = code;
+		this.details = details;
 	}
 }
 
 /** Builds an ApiError from a failed response body. */
 export function apiErrorFrom(status: number, body: unknown): ApiError {
-	const { code, message } = normalizeApiError(status, body);
-	return new ApiError(message, status, code);
+	const { code, message, details } = normalizeApiError(status, body);
+	return new ApiError(message, status, code, details);
 }
