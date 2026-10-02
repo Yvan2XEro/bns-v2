@@ -62,7 +62,7 @@ export function useResendConfirmationCode(orderId: string | undefined) {
 }
 
 export function useCancelOrder(orderId: string | undefined) {
-	return useOrderPost<{ reason?: BuyerCancelReason }>(orderId, "cancel");
+	return useOrderPost<{ reason: BuyerCancelReason }>(orderId, "cancel");
 }
 
 export function useConfirmReceipt(orderId: string | undefined) {

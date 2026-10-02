@@ -251,7 +251,7 @@ describe("POST /api/orders/{id}/cancel", () => {
 		const { POST } = await import(
 			"../../src/app/(frontend)/api/orders/[id]/cancel/route"
 		);
-		const response = await POST(post("/x", {}), {
+		const response = await POST(post("/x", { reason: "buyer_changed_mind" }), {
 			params: Promise.resolve({ id: "order-1" }),
 		});
 		expect(response.status).toBe(200);

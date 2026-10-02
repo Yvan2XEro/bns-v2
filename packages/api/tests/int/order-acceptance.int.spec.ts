@@ -297,7 +297,9 @@ describe("buyerCancelOrder", () => {
 			order: baseOrder({ status: "placed" }),
 			variants: [baseVariant({ stockReserved: 1 })],
 		});
-		await buyerCancelOrder(payload, buyerUser, "order-1");
+		await buyerCancelOrder(payload, buyerUser, "order-1", {
+			reason: "buyer_changed_mind",
+		});
 		const order = await freshOrder(payload);
 		expect(order.status).toBe("cancelled");
 		expect(order.paymentStatus).toBe("unpaid");
@@ -306,7 +308,9 @@ describe("buyerCancelOrder", () => {
 
 	it("increments cancelledAfterAccept after acceptance", async () => {
 		const payload = seed({ order: baseOrder({ status: "accepted" }) });
-		await buyerCancelOrder(payload, buyerUser, "order-1");
+		await buyerCancelOrder(payload, buyerUser, "order-1", {
+			reason: "buyer_changed_mind",
+		});
 		const scoreRow = payload.store["buyer-phone-scores"][0] as
 			| { cancelledAfterAccept?: number }
 			| undefined;
@@ -315,7 +319,9 @@ describe("buyerCancelOrder", () => {
 
 	it("does not increment cancelledAfterAccept before acceptance", async () => {
 		const payload = seed({ order: baseOrder({ status: "confirmed" }) });
-		await buyerCancelOrder(payload, buyerUser, "order-1");
+		await buyerCancelOrder(payload, buyerUser, "order-1", {
+			reason: "buyer_changed_mind",
+		});
 		expect(payload.store["buyer-phone-scores"]).toHaveLength(0);
 	});
 
@@ -325,7 +331,9 @@ describe("buyerCancelOrder", () => {
 			variants: [baseVariant({ stockReserved: 1 })],
 		});
 		await expect(
-			buyerCancelOrder(payload, buyerUser, "order-1"),
+			buyerCancelOrder(payload, buyerUser, "order-1", {
+				reason: "buyer_changed_mind",
+			}),
 		).rejects.toMatchObject({ code: "order.invalidTransition" });
 		expect(releases(payload)).toHaveLength(0);
 		expect(variantOf(payload)?.stockReserved).toBe(1);
@@ -351,12 +359,16 @@ describe("buyerCancelOrder", () => {
 		}
 	});
 
-	it("defaults to buyer_changed_mind when the buyer gives no reason at all", async () => {
-		const payload = seed({ order: baseOrder({ status: "placed" }) });
-		await buyerCancelOrder(payload, buyerUser, "order-1", {});
-		expect((await freshOrder(payload)).cancellation).toMatchObject({
-			reason: "buyer_changed_mind",
+	it("refuses a cancellation that names no reason, before any write", async () => {
+		const payload = seed({
+			order: baseOrder({ status: "placed" }),
+			variants: [baseVariant({ stockReserved: 1 })],
 		});
+		await expect(
+			buyerCancelOrder(payload, buyerUser, "order-1", {}),
+		).rejects.toMatchObject({ code: "order.reasonRequired" });
+		expect((await freshOrder(payload)).status).toBe("placed");
+		expect(releases(payload)).toHaveLength(0);
 	});
 
 	it("refuses an unrecognised reason instead of recording a false one", async () => {
@@ -453,7 +465,9 @@ describe("a buyer cancelling while the courier is at the door", () => {
 	it("cancel racing ship leaves one winner, one release decision, and no handover SMS when cancel wins", async () => {
 		const payload = seed({ order: baseOrder({ status: "accepted" }) });
 		const [cancelResult, shipResult] = await Promise.allSettled([
-			buyerCancelOrder(payload, buyerUser, "order-1"),
+			buyerCancelOrder(payload, buyerUser, "order-1", {
+				reason: "buyer_changed_mind",
+			}),
 			shipOrder(payload, ownerUser, "order-1"),
 		]);
 		expect([cancelResult.status, shipResult.status].sort()).toEqual([

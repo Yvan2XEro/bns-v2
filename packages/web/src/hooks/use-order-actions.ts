@@ -93,7 +93,7 @@ export function useResendConfirmationCode(target: OrderActionTarget) {
 }
 
 export function useCancelOrder(target: OrderActionTarget) {
-	return useOrderAction<{ reason?: string }>("cancel", target);
+	return useOrderAction<{ reason: string }>("cancel", target);
 }
 
 export function useConfirmReceipt(target: OrderActionTarget) {
