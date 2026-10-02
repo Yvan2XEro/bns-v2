@@ -340,6 +340,52 @@ describe("Shops afterChange", () => {
 		);
 	});
 
+	// P4's `orderable` reads these three, so a change to any of them changes
+	// how the shop's listings look in the index. Omitting them is the P3
+	// `levelExpiresAt` bug again: search would call a listing orderable while
+	// checkout refused it.
+	it.each([
+		["ordersRestrictedAt", { ordersRestrictedAt: "2026-10-02T00:00:00.000Z" }],
+		["orderSettings.codEnabled", { orderSettings: { codEnabled: false } }],
+		["location.city", { location: { city: "yaounde" } }],
+	])("asks for a listing reindex when %s changes", async (_name, patch) => {
+		await afterChange({
+			operation: "update",
+			doc: { ...original, ...patch },
+			previousDoc: original,
+			req: { context: {} },
+		});
+		expect(queueSearchEvent).toHaveBeenCalledWith(
+			expect.anything(),
+			"shop.updated",
+			"s-1",
+			{ reindexListings: true },
+		);
+	});
+
+	// The other half, and the reason the field list carries dotted paths: a
+	// group compared by reference is never equal to itself, so listing
+	// `location` whole would have reindexed every listing on every save.
+	it("does not reindex when a group is rewritten with the same values", async () => {
+		await afterChange({
+			operation: "update",
+			doc: {
+				...original,
+				description: "New",
+				location: { ...(original.location ?? {}) },
+				orderSettings: { ...(original.orderSettings ?? {}) },
+			},
+			previousDoc: original,
+			req: { context: {} },
+		});
+		expect(queueSearchEvent).toHaveBeenCalledWith(
+			expect.anything(),
+			"shop.updated",
+			"s-1",
+			{ reindexListings: false },
+		);
+	});
+
 	it("publishes shop.created on create", async () => {
 		await afterChange({
 			operation: "create",

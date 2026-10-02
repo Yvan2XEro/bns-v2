@@ -41,13 +41,39 @@ export const SHOP_SERVICE_FIELDS = [
 ] as const;
 
 /** A change to any of these makes the shop's listing documents stale in search. */
+/**
+ * A change to any of these alters what a listing of this shop looks like in
+ * the search index, so it has to trigger a reindex of the shop's listings.
+ *
+ * The last three arrived with P4's `orderable` flag, which reads
+ * `ordersRestrictedAt`, `orderSettings.codEnabled` and `location.city`.
+ * Leaving them out is the P3 `levelExpiresAt` bug in another costume: the
+ * index would answer from a stale copy while the database answered correctly,
+ * so the same listing would look orderable in search and refuse at checkout.
+ *
+ * Dotted paths on purpose. `location` and `orderSettings` are groups, and
+ * comparing a group by reference is never equal — listing the group itself
+ * would reindex every listing on every shop save.
+ */
 const LISTING_VISIBLE_FIELDS = [
 	"name",
 	"handle",
 	"status",
 	"level",
 	"levelExpiresAt",
+	"ordersRestrictedAt",
+	"orderSettings.codEnabled",
+	"location.city",
 ] as const;
+
+function at(doc: Record<string, unknown> | undefined, path: string): unknown {
+	let cursor: unknown = doc;
+	for (const key of path.split(".")) {
+		if (cursor === null || typeof cursor !== "object") return undefined;
+		cursor = (cursor as Record<string, unknown>)[key];
+	}
+	return cursor;
+}
 
 const SUSPENSION_REASON_OPTIONS = [
 	{ label: "Spam", value: "spam" },
@@ -150,7 +176,7 @@ export const Shops: CollectionConfig = {
 				const reindexListings =
 					operation === "update" &&
 					LISTING_VISIBLE_FIELDS.some(
-						(field) => previousDoc?.[field] !== doc[field],
+						(field) => at(previousDoc, field) !== at(doc, field),
 					);
 				await queueSearchEvent(
 					req,
