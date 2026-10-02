@@ -22,9 +22,13 @@ import type { Order, OrderEvent } from "../../src/payload-types";
 import {
 	createOrderConversation,
 	postOrderSystemMessage,
+	registerOrderChatHandlers,
 	SYSTEM_MESSAGE_EVENTS,
 } from "../../src/services/orders/chat";
-import { runOrderEventHandlers } from "../../src/services/orders/events";
+import {
+	__resetOrderEventHandlers,
+	runOrderEventHandlers,
+} from "../../src/services/orders/events";
 import { type Doc, fakePayload } from "./helpers/fakePayload";
 import { runBeforeChange } from "./helpers/runBeforeChange";
 
@@ -295,6 +299,19 @@ describe("publishing on chat:system", () => {
 });
 
 describe("registered on the order-event registry (Task 8)", () => {
+	// `__resetOrderEventHandlers()` clears both the handler map and the
+	// dispatch log it guards "posts once" with; `registerOrderChatHandlers()`
+	// is the real re-registration this module actually does at load, not a
+	// stand-in. Without this, the dispatch log is whatever this file's other
+	// tests left it as — none of them touch it (they call
+	// `createOrderConversation`/`postOrderSystemMessage` directly, never
+	// `runOrderEventHandlers`), so it would in practice already be empty
+	// here, but this test does not rely on that being true by accident.
+	beforeEach(() => {
+		__resetOrderEventHandlers();
+		registerOrderChatHandlers();
+	});
+
 	it("posts once under a retried transition — the same event id dispatched twice", async () => {
 		const payload = seed();
 		const order = orderOf(payload);

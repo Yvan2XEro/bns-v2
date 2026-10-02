@@ -268,11 +268,24 @@ async function handleOrderEvent(
 	await postOrderSystemMessage(req, order, event);
 }
 
-// Registered once per process load: a retried transition reaches this
+/**
+ * Registers `handleOrderEvent` for each of the ten events. Exported, not
+ * just run as a module-load side effect, so a test that calls Task 8's
+ * `__resetOrderEventHandlers()` — which clears the handler map along with
+ * the dispatch log — has a real way back in, rather than needing a second
+ * import of this module (which `require`/`import` caching would not give
+ * it) or a hand-rolled stand-in that drifts from what production actually
+ * registers.
+ */
+export function registerOrderChatHandlers(): void {
+	for (const type of SYSTEM_MESSAGE_EVENTS) {
+		registerOrderEventHandler(type, handleOrderEvent);
+	}
+}
+
+// Run once per process load: a retried transition reaches `handleOrderEvent`
 // through `queueOrderEvent` -> `runOrderEventHandlers`, whose own dispatch
 // log (keyed by `OrderEvent.id`) is what keeps a replay from posting the
 // line twice. Posting from inside `applyTransition` instead would have no
 // such guard.
-for (const type of SYSTEM_MESSAGE_EVENTS) {
-	registerOrderEventHandler(type, handleOrderEvent);
-}
+registerOrderChatHandlers();
