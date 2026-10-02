@@ -1071,6 +1071,519 @@ const workflowSpecs: WorkflowSpec[] = [
 		},
 	},
 	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Order Placed",
+			description:
+				"Tells the buyer their order was placed and the shop a new order arrived.",
+			workflowId: "order-placed",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					shopName: stringProperty("Shop display name"),
+					total: numberProperty("Order total, in XAF"),
+					audience: stringProperty('"buyer" or "shop"'),
+					confirmationRequired: stringProperty(
+						'"none", "sms_code" or "seller_call"',
+					),
+				},
+				[
+					"orderId",
+					"orderNumber",
+					"shopName",
+					"total",
+					"audience",
+					"confirmationRequired",
+				],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Commande {{payload.orderNumber}}",
+					body: "Commande {{payload.orderNumber}} enregistree chez {{payload.shopName}} : {{payload.total}} FCFA. / Order {{payload.orderNumber}} recorded with {{payload.shopName}}: {{payload.total}} XAF.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Commande {{payload.orderNumber}}",
+					body: "{{payload.shopName}} - {{payload.total}} FCFA",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Confirmation Needed",
+			description:
+				"Tells shop members a placed order needs a seller call before it can be accepted.",
+			workflowId: "order-confirmation-needed",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					tier: stringProperty("Buyer phone risk tier"),
+				},
+				["orderId", "orderNumber", "tier"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Appel requis",
+					body: "Commande {{payload.orderNumber}} : confirmez par appel avant de l'accepter. / Order {{payload.orderNumber}}: confirm by phone call before accepting it.",
+					redirect: redirect("/seller/orders/{{payload.orderId}}"),
+					primaryAction: action("Ouvrir", "/seller/orders/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Appel requis",
+					body: "Commande {{payload.orderNumber}} : confirmez par appel.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Accept Reminder",
+			description:
+				"Reminds shop members twelve hours before the 48-hour accept deadline.",
+			workflowId: "order-accept-reminder",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					acceptBy: stringProperty("Accept deadline, ISO date"),
+				},
+				["orderId", "orderNumber", "acceptBy"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Delai d'acceptation",
+					body: "Commande {{payload.orderNumber}} : il vous reste peu de temps pour l'accepter. / Order {{payload.orderNumber}}: you have little time left to accept it.",
+					redirect: redirect("/seller/orders/{{payload.orderId}}"),
+					primaryAction: action(
+						"Accepter",
+						"/seller/orders/{{payload.orderId}}",
+					),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Delai d'acceptation",
+					body: "Commande {{payload.orderNumber}} : acceptez-la avant {{payload.acceptBy}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Accepted",
+			description: "Tells the buyer the shop accepted their order.",
+			workflowId: "order-accepted",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					shopName: stringProperty("Shop display name"),
+					etaText: stringProperty("Delivery ETA, free text"),
+				},
+				["orderId", "orderNumber", "shopName", "etaText"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Commande acceptee",
+					body: "{{payload.shopName}} a accepte votre commande {{payload.orderNumber}}. / {{payload.shopName}} accepted your order {{payload.orderNumber}}.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Commande acceptee",
+					body: "{{payload.shopName}} a accepte votre commande {{payload.orderNumber}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Shipped",
+			description: "Tells the buyer their order is on its way.",
+			workflowId: "order-shipped",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					method: stringProperty('"seller_delivery" or "pickup"'),
+					pickupPoint: stringProperty(
+						"Pickup point, serialised, empty when not pickup",
+					),
+				},
+				["orderId", "orderNumber", "method", "pickupPoint"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Commande expediee",
+					body: "Votre commande {{payload.orderNumber}} est en route. / Your order {{payload.orderNumber}} is on its way.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Commande expediee",
+					body: "Votre commande {{payload.orderNumber}} est en route.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Delivered",
+			description: "Tells the buyer and shop members an order was delivered.",
+			workflowId: "order-delivered",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					withdrawalUntil: stringProperty("Withdrawal window end, ISO date"),
+					reviewUrl: stringProperty("Where to leave a review"),
+				},
+				["orderId", "orderNumber", "withdrawalUntil", "reviewUrl"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Commande livree",
+					body: "Votre commande {{payload.orderNumber}} a ete livree. / Your order {{payload.orderNumber}} has been delivered.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					primaryAction: action("Noter", "{{payload.reviewUrl}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Commande livree",
+					body: "Votre commande {{payload.orderNumber}} a ete livree.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Cancelled",
+			description: "Tells the buyer and shop members an order was cancelled.",
+			workflowId: "order-cancelled",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					by: stringProperty('"buyer", "seller", "staff" or "system"'),
+					reason: stringProperty("Cancellation reason code"),
+				},
+				["orderId", "orderNumber", "by", "reason"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Commande annulee",
+					body: "Votre commande {{payload.orderNumber}} a ete annulee. / Your order {{payload.orderNumber}} has been cancelled.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Commande annulee",
+					body: "Votre commande {{payload.orderNumber}} a ete annulee.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Delivery Failed",
+			description:
+				"Tells the buyer and shop members a delivery attempt failed for good.",
+			workflowId: "order-delivery-failed",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					reason: stringProperty("Delivery failure reason code"),
+				},
+				["orderId", "orderNumber", "reason"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Livraison echouee",
+					body: "La livraison de la commande {{payload.orderNumber}} a echoue. / Delivery of order {{payload.orderNumber}} failed.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Livraison echouee",
+					body: "La livraison de la commande {{payload.orderNumber}} a echoue.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Delivery Declared",
+			description:
+				"Tells the buyer a seller declared the order delivered without a scanned code, and until when they can contest it.",
+			workflowId: "order-delivery-declared",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					orderNumber: stringProperty("Order number"),
+					contestBy: stringProperty("Contest window end, ISO date"),
+				},
+				["orderId", "orderNumber", "contestBy"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Livraison declaree",
+					body: "Le vendeur a declare la commande {{payload.orderNumber}} livree. / The seller declared order {{payload.orderNumber}} delivered.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Livraison declaree",
+					body: "Le vendeur a declare la commande {{payload.orderNumber}} livree.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Withdrawal Requested",
+			description:
+				"Tells the buyer and the shop's owner/manager a withdrawal case was opened.",
+			workflowId: "order-withdrawal-requested",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					caseNumber: stringProperty("Return case number"),
+					itemsCount: numberProperty("Number of items in the case"),
+				},
+				["orderId", "caseNumber", "itemsCount"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Retractation demandee",
+					body: "Une demande de retractation a ete ouverte pour la commande {{payload.orderId}}. / A withdrawal request was opened for order {{payload.orderId}}.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Retractation demandee",
+					body: "Une demande de retractation a ete ouverte, dossier {{payload.caseNumber}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Review Reminder",
+			description:
+				"Reminds the buyer to review the shop three days after delivery when they have not yet.",
+			workflowId: "order-review-reminder",
+			tags: ["order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					shopName: stringProperty("Shop display name"),
+				},
+				["orderId", "shopName"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Donnez votre avis",
+					body: "Donnez votre avis sur {{payload.shopName}}. / Share your review of {{payload.shopName}}.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					primaryAction: action("Noter", "/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Donnez votre avis",
+					body: "Donnez votre avis sur {{payload.shopName}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Commission Invoice Issued",
+			description:
+				"Tells the shop's owner/manager a commission invoice was issued.",
+			workflowId: "commission-invoice-issued",
+			tags: ["commission"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					invoiceId: stringProperty("Invoice identifier"),
+					invoiceNumber: stringProperty("Invoice number"),
+					totalDue: numberProperty("Total due, in XAF"),
+					dueAt: stringProperty("Due date, ISO date"),
+				},
+				["invoiceId", "invoiceNumber", "totalDue", "dueAt"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Facture de commission",
+					body: "Facture {{payload.invoiceNumber}} emise : {{payload.totalDue}} FCFA. / Commission invoice {{payload.invoiceNumber}} issued: {{payload.totalDue}} XAF.",
+					redirect: redirect("/seller/billing/{{payload.invoiceId}}"),
+					primaryAction: action(
+						"Payer",
+						"/seller/billing/{{payload.invoiceId}}",
+					),
+					data: { invoiceId: "{{payload.invoiceId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Facture de commission",
+					body: "Facture {{payload.invoiceNumber}} : {{payload.totalDue}} FCFA a regler avant {{payload.dueAt}}.",
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Facture de commission {{payload.invoiceNumber}} / Commission invoice {{payload.invoiceNumber}}",
+					body: "Facture {{payload.invoiceNumber}} : {{payload.totalDue}} FCFA, a regler avant {{payload.dueAt}}. / Invoice {{payload.invoiceNumber}}: {{payload.totalDue}} XAF, due {{payload.dueAt}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Commission Invoice Overdue",
+			description:
+				"Warns the shop's owner/manager a commission invoice is due soon, overdue, or that orders were restricted.",
+			workflowId: "commission-invoice-overdue",
+			tags: ["commission"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					invoiceId: stringProperty("Invoice identifier"),
+					invoiceNumber: stringProperty("Invoice number"),
+					stage: stringProperty('"due_soon", "overdue" or "restricted"'),
+				},
+				["invoiceId", "invoiceNumber", "stage"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Facture en retard",
+					body: "Facture {{payload.invoiceNumber}} : statut {{payload.stage}}. / Invoice {{payload.invoiceNumber}}: status {{payload.stage}}.",
+					redirect: redirect("/seller/billing/{{payload.invoiceId}}"),
+					primaryAction: action(
+						"Payer",
+						"/seller/billing/{{payload.invoiceId}}",
+					),
+					data: { invoiceId: "{{payload.invoiceId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Facture en retard",
+					body: "Facture {{payload.invoiceNumber}} : statut {{payload.stage}}.",
+				}),
+				emailStep("Email", "email", {
+					subject: "Facture {{payload.invoiceNumber}} : {{payload.stage}}",
+					body: "Facture {{payload.invoiceNumber}}, statut {{payload.stage}}. / Invoice {{payload.invoiceNumber}}, status {{payload.stage}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Commission Invoice Paid",
+			description:
+				"Tells the shop's owner/manager a commission invoice was settled.",
+			workflowId: "commission-invoice-paid",
+			tags: ["commission"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					invoiceId: stringProperty("Invoice identifier"),
+					invoiceNumber: stringProperty("Invoice number"),
+				},
+				["invoiceId", "invoiceNumber"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Facture reglee",
+					body: "Facture {{payload.invoiceNumber}} reglee. / Invoice {{payload.invoiceNumber}} settled.",
+					redirect: redirect("/seller/billing/{{payload.invoiceId}}"),
+					data: { invoiceId: "{{payload.invoiceId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Facture reglee",
+					body: "Facture {{payload.invoiceNumber}} reglee.",
+				}),
+			],
+		},
+	},
+	{
 		channels: { inApp: true, push: true },
 		definition: {
 			name: "Shop Conversation Assigned",

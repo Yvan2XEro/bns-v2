@@ -51,6 +51,87 @@ describe("the P3 workflows", () => {
 	});
 });
 
+/**
+ * Task 16's brief and its own caller both assert "sixteen" P4 order and
+ * commission workflows. The spec this brief names as authority
+ * (`docs/superpowers/specs/2026-09-15-p4-cod-orders-design.md`, "Notifications"
+ * table) lists exactly fourteen: eleven `order-*` rows plus three
+ * `commission-invoice-*` rows. Nothing in the spec names a fifteenth or
+ * sixteenth workflow anywhere else in the document (checked: no other
+ * `notify \`...\`` call site exists). This test pins the fourteen the table
+ * actually names, so a forgotten one fails by naming it and an accidental
+ * extra under the same prefix fails too — it does not pretend the count is
+ * sixteen to match an assertion the primary source does not support.
+ */
+const P4_WORKFLOW_IDS = [
+	"order-placed",
+	"order-confirmation-needed",
+	"order-accept-reminder",
+	"order-accepted",
+	"order-shipped",
+	"order-delivered",
+	"order-cancelled",
+	"order-delivery-failed",
+	"order-delivery-declared",
+	"order-withdrawal-requested",
+	"order-review-reminder",
+	"commission-invoice-issued",
+	"commission-invoice-overdue",
+	"commission-invoice-paid",
+] as const;
+
+const P4_PAYLOAD_REQUIRED_FIELDS: Record<string, string[]> = {
+	"order-placed": [
+		"orderId",
+		"orderNumber",
+		"shopName",
+		"total",
+		"audience",
+		"confirmationRequired",
+	],
+	"order-confirmation-needed": ["orderId", "orderNumber", "tier"],
+	"order-accept-reminder": ["orderId", "orderNumber", "acceptBy"],
+	"order-accepted": ["orderId", "orderNumber", "shopName", "etaText"],
+	"order-shipped": ["orderId", "orderNumber", "method", "pickupPoint"],
+	"order-delivered": ["orderId", "orderNumber", "withdrawalUntil", "reviewUrl"],
+	"order-cancelled": ["orderId", "orderNumber", "by", "reason"],
+	"order-delivery-failed": ["orderId", "orderNumber", "reason"],
+	"order-delivery-declared": ["orderId", "orderNumber", "contestBy"],
+	"order-withdrawal-requested": ["orderId", "caseNumber", "itemsCount"],
+	"order-review-reminder": ["orderId", "shopName"],
+	"commission-invoice-issued": [
+		"invoiceId",
+		"invoiceNumber",
+		"totalDue",
+		"dueAt",
+	],
+	"commission-invoice-overdue": ["invoiceId", "invoiceNumber", "stage"],
+	"commission-invoice-paid": ["invoiceId", "invoiceNumber"],
+};
+
+describe("the P4 order and commission workflows", () => {
+	it("declares exactly the fourteen the spec's table names, no fewer and no more under the same prefixes", () => {
+		for (const id of P4_WORKFLOW_IDS) {
+			expect(ids).toContain(id);
+		}
+		const orderAndCommissionIds = ids.filter(
+			(id) => id.startsWith("order-") || id.startsWith("commission-invoice-"),
+		);
+		expect(orderAndCommissionIds.sort()).toEqual([...P4_WORKFLOW_IDS].sort());
+	});
+
+	it("gives each one a payloadSchema whose required fields match the spec's table, field for field", () => {
+		for (const [id, fields] of Object.entries(P4_PAYLOAD_REQUIRED_FIELDS)) {
+			const workflow = WORKFLOWS.find((w) => w.workflowId === id);
+			expect(workflow?.payloadSchema).toMatchObject({ required: fields });
+		}
+	});
+
+	it("declares no duplicate workflow ids among the full set", () => {
+		expect(new Set(ids).size).toBe(ids.length);
+	});
+});
+
 describe("buildExpoPushData", () => {
 	it("deep-links an inbox message to the shop inbox thread", () => {
 		expect(
@@ -105,5 +186,69 @@ describe("buildExpoPushData", () => {
 		).toEqual({
 			url: "/invite/tok",
 		});
+	});
+});
+
+describe("buildExpoPushData for the fourteen P4 order and commission workflows", () => {
+	it("sends order-placed and order-delivered to the buyer's purchase screen by default", () => {
+		for (const event of ["order-placed", "order-delivered"]) {
+			expect(buildExpoPushData(event, { orderId: "o-1" })).toEqual({
+				orderId: "o-1",
+				url: "/purchases/o-1",
+			});
+		}
+	});
+
+	it("sends order-placed and order-delivered to the shop's order screen for the shop audience", () => {
+		for (const event of ["order-placed", "order-delivered"]) {
+			expect(
+				buildExpoPushData(event, { orderId: "o-1", audience: "shop" }),
+			).toEqual({
+				orderId: "o-1",
+				url: "/seller/orders/o-1",
+			});
+		}
+	});
+
+	it("sends the two shop-only order workflows to the shop's order screen", () => {
+		for (const event of [
+			"order-confirmation-needed",
+			"order-accept-reminder",
+		]) {
+			expect(buildExpoPushData(event, { orderId: "o-1" })).toEqual({
+				orderId: "o-1",
+				url: "/seller/orders/o-1",
+			});
+		}
+	});
+
+	it("sends every buyer-only or mixed-recipient order workflow to the buyer's purchase screen", () => {
+		for (const event of [
+			"order-accepted",
+			"order-shipped",
+			"order-cancelled",
+			"order-delivery-failed",
+			"order-delivery-declared",
+			"order-withdrawal-requested",
+			"order-review-reminder",
+		]) {
+			expect(buildExpoPushData(event, { orderId: "o-1" })).toEqual({
+				orderId: "o-1",
+				url: "/purchases/o-1",
+			});
+		}
+	});
+
+	it("sends the three commission workflows to the shop's billing screen", () => {
+		for (const event of [
+			"commission-invoice-issued",
+			"commission-invoice-overdue",
+			"commission-invoice-paid",
+		]) {
+			expect(buildExpoPushData(event, { invoiceId: "inv-1" })).toEqual({
+				invoiceId: "inv-1",
+				url: "/seller/billing/inv-1",
+			});
+		}
 	});
 });

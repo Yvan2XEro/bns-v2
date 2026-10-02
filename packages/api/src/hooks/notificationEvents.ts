@@ -1,4 +1,5 @@
 import type { Overrides } from "@novu/api/models/components";
+import { ChatOrPushProviderEnum } from "@novu/api/models/components";
 import { getNotificationProvider } from "../services/notificationProvider";
 
 type NotificationPayloadValue = string | number | boolean | null | undefined;
@@ -35,8 +36,44 @@ export function buildExpoPushData(
 	const searchUrl = getStringValue(payload, "searchUrl");
 	const productId = getStringValue(payload, "productId");
 	const shopId = getStringValue(payload, "shopId");
+	const orderId = getStringValue(payload, "orderId");
+	const invoiceId = getStringValue(payload, "invoiceId");
 
 	switch (event) {
+		// `order-placed` and `order-delivered` reach both the buyer and shop
+		// members from the same workflow id; `audience` (present on both
+		// payloads) is the only signal this function has to tell them apart.
+		// The other mixed-recipient order workflows (`order-cancelled`,
+		// `order-delivery-failed`, `order-withdrawal-requested`) carry no such
+		// field per the spec table, so they fall back to the buyer's screen —
+		// the one route every recipient of those three can at least open.
+		case "order-placed":
+		case "order-delivered": {
+			if (!orderId) return undefined;
+			const audience = getStringValue(payload, "audience");
+			return audience === "shop"
+				? { orderId, url: `/seller/orders/${orderId}` }
+				: { orderId, url: `/purchases/${orderId}` };
+		}
+		case "order-confirmation-needed":
+		case "order-accept-reminder":
+			return orderId
+				? { orderId, url: `/seller/orders/${orderId}` }
+				: undefined;
+		case "order-accepted":
+		case "order-shipped":
+		case "order-delivery-declared":
+		case "order-review-reminder":
+		case "order-cancelled":
+		case "order-delivery-failed":
+		case "order-withdrawal-requested":
+			return orderId ? { orderId, url: `/purchases/${orderId}` } : undefined;
+		case "commission-invoice-issued":
+		case "commission-invoice-overdue":
+		case "commission-invoice-paid":
+			return invoiceId
+				? { invoiceId, url: `/seller/billing/${invoiceId}` }
+				: undefined;
 		case "listing-approved":
 		case "listing-status":
 		case "listing-expired":
@@ -140,6 +177,37 @@ export async function triggerNotificationEvent({
 		});
 	} catch (error) {
 		console.error(`[notifications] Failed to trigger event "${event}":`, error);
+	}
+}
+
+/**
+ * Whether `subscriberId` has a working Expo push credential on Novu. The SDK
+ * exposes no way to ask this cheaply — credentials are write-only
+ * (`subscribers.credentials.update`/`append`/`delete`) — so this reads the
+ * subscriber back and inspects the one channel entry Expo would have written.
+ * Used only to decide the order-placed seller SMS fallback (`services/orders/
+ * notifications.ts`): a lookup failure must read as "no token", the same as
+ * a subscriber who genuinely never registered one, never as a reason to
+ * throw and lose the order notification entirely.
+ */
+export async function hasPushCredential(
+	subscriberId: string,
+): Promise<boolean> {
+	try {
+		const notificationProvider = getNotificationProvider();
+		const { result } =
+			await notificationProvider.subscribers.retrieve(subscriberId);
+		return (result.channels ?? []).some(
+			(channel) =>
+				channel.providerId === ChatOrPushProviderEnum.Expo &&
+				(channel.credentials.deviceTokens?.length ?? 0) > 0,
+		);
+	} catch (error) {
+		console.error(
+			`[notifications] Failed to read push credentials for "${subscriberId}":`,
+			error,
+		);
+		return false;
 	}
 }
 
