@@ -23,14 +23,27 @@ function orderAt(
 ): OrderActionSubject {
 	return {
 		status,
-		paymentMethod: "cod",
 		completionHold: "none",
+		confirmation: {
+			method: "sms_code",
+			required: "sms_code",
+			attemptsLeft: 5,
+			resendsLeft: 3,
+		},
+		handover: {
+			method: "seller_declaration",
+			locked: false,
+			attemptsLeft: 5,
+			regenerationsLeft: 3,
+		},
 		deadlines: {
 			confirmBy: FUTURE,
 			acceptBy: FUTURE,
 			withdrawalUntil: FUTURE,
+			contestBy: FUTURE,
 		},
 		deliveryFailure: null,
+		returnCaseNumber: null,
 		reviewable: true,
 		...patch,
 	};
@@ -243,13 +256,20 @@ describe("availableActions: the deadlines the server will enforce", () => {
 		]);
 	});
 
-	test("a placed order with no confirmBy offers neither code nor seller call", () => {
+	// An absent deadline reads as unbounded, exactly as the server reads it:
+	// `checkConfirmation` and `confirmBySellerCall` only refuse a deadline
+	// that exists and has passed. (Spent counters, not absent deadlines, are
+	// what closes these paths in practice.)
+	test("a placed order with no confirmBy keeps the code and the seller call", () => {
 		const subject = orderAt("placed", { deadlines: {} });
 		expect(availableActions(subject, "buyer", null, { now: NOW })).toEqual([
+			"confirm_code",
+			"resend_code",
 			"cancel",
 			"receipt",
 		]);
 		expect(availableActions(subject, "shop", "owner", { now: NOW })).toEqual([
+			"confirm_by_call",
 			"decline",
 			"seller_cancel",
 			"receipt",
@@ -259,7 +279,9 @@ describe("availableActions: the deadlines the server will enforce", () => {
 	test("a delivered order past withdrawalUntil no longer offers a return", () => {
 		expect(
 			availableActions(
-				orderAt("delivered", { deadlines: { withdrawalUntil: PAST } }),
+				orderAt("delivered", {
+					deadlines: { withdrawalUntil: PAST, contestBy: FUTURE },
+				}),
 				"buyer",
 				null,
 				{ now: NOW },
@@ -267,17 +289,16 @@ describe("availableActions: the deadlines the server will enforce", () => {
 		).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
-	test("a delivered order with no withdrawalUntil still offers a return", () => {
+	// A window that must exist to be open: `openWithdrawal` and
+	// `contestDelivery` both refuse an order with no deadline recorded, so an
+	// absent one reads as closed rather than unbounded — the opposite of the
+	// optional deadlines above, and the same split web makes.
+	test("a delivered order with no windows recorded offers neither return nor contest", () => {
 		expect(
 			availableActions(orderAt("delivered", { deadlines: {} }), "buyer", null, {
 				now: NOW,
 			}),
-		).toEqual([
-			"contest_delivery",
-			"request_withdrawal",
-			"review_shop",
-			"receipt",
-		]);
+		).toEqual(["review_shop", "receipt"]);
 	});
 });
 
@@ -314,7 +335,11 @@ describe("availableActions: the counters the server will enforce", () => {
 		).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
-	test("a delivered order held by a dispute offers neither contest nor return", () => {
+	// The dispute hold blocks completion, not the buyer: `contestDelivery`'s
+	// only gates are the declaration and the window, and `openWithdrawal`'s
+	// only guard is the return case. The client inventing a stricter rule
+	// here is exactly the divergence this file exists to prevent.
+	test("a dispute hold takes nothing away that the server would accept", () => {
 		expect(
 			availableActions(
 				orderAt("delivered", { completionHold: "dispute" }),
@@ -322,7 +347,114 @@ describe("availableActions: the counters the server will enforce", () => {
 				null,
 				{ now: NOW },
 			),
-		).toEqual(["review_shop", "receipt"]);
+		).toEqual([
+			"contest_delivery",
+			"request_withdrawal",
+			"review_shop",
+			"receipt",
+		]);
+	});
+});
+
+// Each ported condition gets the test that reddens exactly it — the first
+// port of these conditions shipped without them, and a mutation that
+// hard-wired the handover lock to true survived the whole suite.
+describe("availableActions: each condition fails for its own reason", () => {
+	test("a locked handover drops the code entry and nothing else", () => {
+		const subject = orderAt("shipped", {
+			handover: {
+				method: null,
+				locked: true,
+				attemptsLeft: 3,
+				regenerationsLeft: 3,
+			},
+		});
+		expect(availableActions(subject, "shop", "owner", { now: NOW })).toEqual([
+			"declare_delivered",
+			"report_failed_attempt",
+			"mark_delivery_failed",
+			"receipt",
+		]);
+	});
+
+	test("spent handover attempts drop the code entry even unlocked", () => {
+		const subject = orderAt("shipped", {
+			handover: {
+				method: null,
+				locked: false,
+				attemptsLeft: 0,
+				regenerationsLeft: 3,
+			},
+		});
+		expect(
+			availableActions(subject, "shop", "owner", { now: NOW }),
+		).not.toContain("handover");
+	});
+
+	test("spent regenerations drop the buyer's new-code button", () => {
+		const subject = orderAt("shipped", {
+			handover: {
+				method: null,
+				locked: false,
+				attemptsLeft: 5,
+				regenerationsLeft: 0,
+			},
+		});
+		expect(availableActions(subject, "buyer", null, { now: NOW })).toEqual([
+			"confirm_receipt",
+			"receipt",
+		]);
+	});
+
+	test("a handover that was not a declaration offers no contest", () => {
+		const subject = orderAt("delivered", {
+			handover: {
+				method: "buyer_confirmation",
+				locked: false,
+				attemptsLeft: 5,
+				regenerationsLeft: 3,
+			},
+		});
+		expect(availableActions(subject, "buyer", null, { now: NOW })).toEqual([
+			"request_withdrawal",
+			"review_shop",
+			"receipt",
+		]);
+	});
+
+	test("spent confirmation attempts drop the code and keep the resend", () => {
+		const subject = orderAt("placed", {
+			confirmation: {
+				method: "sms_code",
+				required: "sms_code",
+				attemptsLeft: 0,
+				resendsLeft: 2,
+			},
+		});
+		const actions = availableActions(subject, "buyer", null, { now: NOW });
+		expect(actions).not.toContain("confirm_code");
+		expect(actions).toContain("resend_code");
+	});
+
+	test("spent resends drop the resend and keep the code", () => {
+		const subject = orderAt("placed", {
+			confirmation: {
+				method: "sms_code",
+				required: "sms_code",
+				attemptsLeft: 2,
+				resendsLeft: 0,
+			},
+		});
+		const actions = availableActions(subject, "buyer", null, { now: NOW });
+		expect(actions).toContain("confirm_code");
+		expect(actions).not.toContain("resend_code");
+	});
+
+	test("a return case on the order drops the return even inside the window", () => {
+		const subject = orderAt("delivered", { returnCaseNumber: "RC-2026-0001" });
+		expect(
+			availableActions(subject, "buyer", null, { now: NOW }),
+		).not.toContain("request_withdrawal");
 	});
 });
 

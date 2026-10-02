@@ -190,10 +190,12 @@ export const ORDER_ACTION_PERMISSIONS: Partial<
 export type OrderActionSubject = Pick<
 	OrderView,
 	| "status"
-	| "paymentMethod"
+	| "confirmation"
+	| "handover"
 	| "completionHold"
 	| "deadlines"
 	| "deliveryFailure"
+	| "returnCaseNumber"
 	| "reviewable"
 >;
 
@@ -202,19 +204,36 @@ export interface AvailableActionsOptions {
 	now?: Date;
 }
 
-function elapsed(deadline: string | null | undefined, now: Date): boolean {
-	if (!deadline) return false;
-	const at = Date.parse(deadline);
-	return Number.isFinite(at) && now.getTime() > at;
+/** A deadline the API may legitimately not have set: absent means unbounded. */
+function beforeOptionalDeadline(
+	at: string | null | undefined,
+	now: Date,
+): boolean {
+	if (!at) return true;
+	const deadline = Date.parse(at);
+	return !Number.isFinite(deadline) || now.getTime() <= deadline;
 }
 
 /**
- * The conditions the server will apply anyway, limited to what an order
- * projection actually carries. `handover.locked`, `confirmation.attemptsLeft`,
- * `handover.regenerationsLeft`, the 48-hour contest window and `reviewable`
- * are *not* served by `serializeOrderFor*`, so the actions that depend on them
- * are offered and the server's own error code is what the screen reports —
- * guessing those rules here would be re-implementing them in a client.
+ * A window that must exist to be open. `contestDelivery` and `openWithdrawal`
+ * both refuse an order with no deadline recorded, so an absent one reads as
+ * closed rather than unbounded.
+ */
+function insideWindow(at: string | null | undefined, now: Date): boolean {
+	if (!at) return false;
+	const deadline = Date.parse(at);
+	return Number.isFinite(deadline) && now.getTime() <= deadline;
+}
+
+/**
+ * Whether the order's own data still allows an action its status and audience
+ * already offer. Every branch mirrors a refusal the API would answer with:
+ * this function never invents a stricter rule than the server's. It is the
+ * web package's `conditionHolds` line for line — the comment that used to
+ * live here said the confirmation and handover groups were not serialised,
+ * which stopped being true when the serialisers were aligned with the
+ * contract, and the thin conditions it justified offered buttons the server
+ * then refused.
  */
 function conditionHolds(
 	action: OrderAction,
@@ -222,36 +241,60 @@ function conditionHolds(
 	now: Date,
 ): boolean {
 	switch (action) {
-		// `deadlines.confirmBy` is set only while a buyer confirmation is
-		// outstanding, and `cancelByConfirmationExpiry` kills the order once it
-		// passes — so its presence is what says "a code is still expected", and
-		// it gates the seller's call path for the same reason.
+		// `checkConfirmation` refuses when no code was ever issued
+		// (`order.confirmationCodeInvalid`), when the five attempts are spent,
+		// and once the 24-hour TTL — which `deadlines.confirmBy` mirrors — has
+		// passed (`order.confirmationCodeExpired`).
 		case "confirm_code":
-		case "resend_code":
-		case "confirm_by_call":
 			return (
-				Boolean(order.deadlines.confirmBy) &&
-				!elapsed(order.deadlines.confirmBy, now)
+				order.confirmation.required === "sms_code" &&
+				order.confirmation.attemptsLeft > 0 &&
+				beforeOptionalDeadline(order.deadlines.confirmBy, now)
 			);
-		// `acceptOrder` throws `order.acceptDeadlinePassed` past this one.
+		// `canResend`: three resends, and the same expiry.
+		case "resend_code":
+			return (
+				order.confirmation.required === "sms_code" &&
+				order.confirmation.resendsLeft > 0 &&
+				beforeOptionalDeadline(order.deadlines.confirmBy, now)
+			);
+		// `confirmBySellerCall` checks `confirmBy` and nothing about
+		// `confirmation.required` — a seller who reaches the buyer by phone
+		// may confirm whichever path was originally chosen.
+		case "confirm_by_call":
+			return beforeOptionalDeadline(order.deadlines.confirmBy, now);
+		// `acceptOrder`: `order.acceptDeadlinePassed` past the 48 hours.
 		case "accept":
-			return !elapsed(order.deadlines.acceptBy, now);
+			return beforeOptionalDeadline(order.deadlines.acceptBy, now);
+		// `checkHandover` answers `order.handoverLocked` on `lockedAt` or on
+		// the fifth wrong code.
+		case "handover":
+			return !order.handover.locked && order.handover.attemptsLeft > 0;
+		// `canRegenerate`: three regenerations per order.
+		case "regenerate_handover_code":
+			return order.handover.regenerationsLeft > 0;
+		// `contestDelivery` answers `order.contestWindowClosed` both for a
+		// handover that was not a declaration and for a window that has run
+		// out — those are its only two gates, so no dispute-hold check here:
+		// the client never invents a stricter rule than the server's.
+		case "contest_delivery":
+			return (
+				order.handover.method === "seller_declaration" &&
+				insideWindow(order.deadlines.contestBy, now)
+			);
+		// `openWithdrawal`: `order.withdrawalWindowClosed` past the 15 days,
+		// `order.withdrawalAlreadyRequested` once a case exists. The hold is
+		// the same fact read off the order rather than off the case.
+		case "request_withdrawal":
+			return (
+				insideWindow(order.deadlines.withdrawalUntil, now) &&
+				order.returnCaseNumber === null &&
+				order.completionHold !== "return_case"
+			);
 		// `reportFailedAttempt` refuses a second attempt, pointing the caller at
 		// `mark-delivery-failed` instead.
 		case "report_failed_attempt":
 			return (order.deliveryFailure?.attempts ?? 0) < 1;
-		// `openWithdrawal` refuses once the order already carries a return case,
-		// and `completionHold` is the served half of that state.
-		case "request_withdrawal":
-			return (
-				order.completionHold !== "return_case" &&
-				order.completionHold !== "dispute" &&
-				!elapsed(order.deadlines.withdrawalUntil, now)
-			);
-		// `contestDelivery` sets `completionHold: "dispute"`, so a second contest
-		// is already answered by the first one's effect.
-		case "contest_delivery":
-			return order.completionHold !== "dispute";
 		// `reviewRules` is the judge — one review per order, buyer only — and
 		// the serialiser answers it as `reviewable`, so the button and the
 		// route refuse for the same reason at the same moment.

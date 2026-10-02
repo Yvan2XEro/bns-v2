@@ -168,9 +168,14 @@ describe("barActions", () => {
 			buyerActions(
 				order("delivered", {
 					reviewable: true,
+					handover: {
+						...order("delivered").handover,
+						method: "seller_declaration",
+					},
 					deadlines: {
 						...order("delivered").deadlines,
 						withdrawalUntil: "2026-10-10T10:00:00Z",
+						contestBy: "2026-10-04T10:00:00Z",
 					},
 				}),
 			),
@@ -185,6 +190,12 @@ describe("barActions", () => {
 	test("leaves the panel actions to their panels", () => {
 		const actions = buyerActions(
 			order("placed", {
+				confirmation: {
+					method: "sms_code",
+					required: "sms_code",
+					attemptsLeft: 5,
+					resendsLeft: 3,
+				},
 				deadlines: {
 					...order("placed").deadlines,
 					confirmBy: "2026-10-03T10:00:00Z",
