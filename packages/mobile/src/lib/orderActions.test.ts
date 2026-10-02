@@ -39,9 +39,11 @@ function orderAt(
  * Transcribed by hand from the landed backend — `services/orders/transitions.ts`
  * (which status may become which, and which of them this phase may write at
  * all), `access/orderAccess.ts` (one audience per caller) and each route's own
- * audience guard under `app/(frontend)/api/orders/[id]/`. Deliberately a
- * literal here rather than an import: a test that reads the table it asserts
- * proves nothing.
+ * audience guard under `app/(frontend)/api/orders/[id]/`, plus
+ * `services/moderation.ts#MODERATOR_CANCELLABLE_STATUSES` (the staff cancel)
+ * and `services/reviewRules.ts#ORDER_REVIEWABLE_STATUSES` (the buyer's
+ * review). Deliberately a literal here rather than an import: a test that
+ * reads the table it asserts proves nothing.
  */
 const TABLE: Array<{
 	status: OrderStatusName;
@@ -51,73 +53,79 @@ const TABLE: Array<{
 	{
 		status: "placed",
 		audience: "buyer",
-		actions: ["confirm_code", "resend_code", "cancel_order", "view_receipt"],
+		actions: ["confirm_code", "resend_code", "cancel", "receipt"],
 	},
 	{
 		status: "placed",
 		audience: "shop",
-		actions: [
-			"confirm_by_call",
-			"decline_order",
-			"seller_cancel_order",
-			"view_receipt",
-		],
+		actions: ["confirm_by_call", "decline", "seller_cancel", "receipt"],
 	},
-	{ status: "placed", audience: "staff", actions: ["view_receipt"] },
+	{
+		status: "placed",
+		audience: "staff",
+		actions: ["staff_cancel", "receipt"],
+	},
 
 	{
 		status: "confirmed",
 		audience: "buyer",
-		actions: ["cancel_order", "view_receipt"],
+		actions: ["cancel", "receipt"],
 	},
 	{
 		status: "confirmed",
 		audience: "shop",
-		actions: [
-			"accept_order",
-			"decline_order",
-			"seller_cancel_order",
-			"view_receipt",
-		],
+		actions: ["accept", "decline", "seller_cancel", "receipt"],
 	},
-	{ status: "confirmed", audience: "staff", actions: ["view_receipt"] },
+	{
+		status: "confirmed",
+		audience: "staff",
+		actions: ["staff_cancel", "receipt"],
+	},
 
 	// `paid` is reserved for P5: `assertStatusAuthority` refuses every
 	// transition into or out of it without a reserved-phase context, so a P4
 	// screen that offered "accept" here would hand the seller a 409.
-	{ status: "paid", audience: "buyer", actions: ["view_receipt"] },
-	{ status: "paid", audience: "shop", actions: ["view_receipt"] },
-	{ status: "paid", audience: "staff", actions: ["view_receipt"] },
+	{ status: "paid", audience: "buyer", actions: ["receipt"] },
+	{ status: "paid", audience: "shop", actions: ["receipt"] },
+	{ status: "paid", audience: "staff", actions: ["receipt"] },
 
 	{
 		status: "accepted",
 		audience: "buyer",
-		actions: ["cancel_order", "view_receipt"],
+		actions: ["cancel", "receipt"],
 	},
 	{
 		status: "accepted",
 		audience: "shop",
-		actions: ["ship_order", "seller_cancel_order", "view_receipt"],
+		actions: ["ship", "seller_cancel", "receipt"],
 	},
-	{ status: "accepted", audience: "staff", actions: ["view_receipt"] },
+	{
+		status: "accepted",
+		audience: "staff",
+		actions: ["staff_cancel", "receipt"],
+	},
 
 	{
 		status: "shipped",
 		audience: "buyer",
-		actions: ["confirm_receipt", "regenerate_handover_code", "view_receipt"],
+		actions: ["confirm_receipt", "regenerate_handover_code", "receipt"],
 	},
 	{
 		status: "shipped",
 		audience: "shop",
 		actions: [
-			"verify_handover_code",
+			"handover",
 			"declare_delivered",
 			"report_failed_attempt",
 			"mark_delivery_failed",
-			"view_receipt",
+			"receipt",
 		],
 	},
-	{ status: "shipped", audience: "staff", actions: ["view_receipt"] },
+	{
+		status: "shipped",
+		audience: "staff",
+		actions: ["staff_cancel", "receipt"],
+	},
 
 	{
 		status: "delivered",
@@ -126,35 +134,35 @@ const TABLE: Array<{
 			"contest_delivery",
 			"request_withdrawal",
 			"review_shop",
-			"view_receipt",
+			"receipt",
 		],
 	},
-	{ status: "delivered", audience: "shop", actions: ["view_receipt"] },
-	{ status: "delivered", audience: "staff", actions: ["view_receipt"] },
+	{ status: "delivered", audience: "shop", actions: ["receipt"] },
+	{ status: "delivered", audience: "staff", actions: ["receipt"] },
 
 	{
 		status: "completed",
 		audience: "buyer",
-		actions: ["review_shop", "view_receipt"],
+		actions: ["review_shop", "receipt"],
 	},
-	{ status: "completed", audience: "shop", actions: ["view_receipt"] },
-	{ status: "completed", audience: "staff", actions: ["view_receipt"] },
+	{ status: "completed", audience: "shop", actions: ["receipt"] },
+	{ status: "completed", audience: "staff", actions: ["receipt"] },
 
-	{ status: "cancelled", audience: "buyer", actions: ["view_receipt"] },
-	{ status: "cancelled", audience: "shop", actions: ["view_receipt"] },
-	{ status: "cancelled", audience: "staff", actions: ["view_receipt"] },
+	{ status: "cancelled", audience: "buyer", actions: ["receipt"] },
+	{ status: "cancelled", audience: "shop", actions: ["receipt"] },
+	{ status: "cancelled", audience: "staff", actions: ["receipt"] },
 
-	{ status: "delivery_failed", audience: "buyer", actions: ["view_receipt"] },
-	{ status: "delivery_failed", audience: "shop", actions: ["view_receipt"] },
-	{ status: "delivery_failed", audience: "staff", actions: ["view_receipt"] },
+	{ status: "delivery_failed", audience: "buyer", actions: ["receipt"] },
+	{ status: "delivery_failed", audience: "shop", actions: ["receipt"] },
+	{ status: "delivery_failed", audience: "staff", actions: ["receipt"] },
 
-	{ status: "returned", audience: "buyer", actions: ["view_receipt"] },
-	{ status: "returned", audience: "shop", actions: ["view_receipt"] },
-	{ status: "returned", audience: "staff", actions: ["view_receipt"] },
+	{ status: "returned", audience: "buyer", actions: ["receipt"] },
+	{ status: "returned", audience: "shop", actions: ["receipt"] },
+	{ status: "returned", audience: "staff", actions: ["receipt"] },
 
-	{ status: "disputed", audience: "buyer", actions: ["view_receipt"] },
-	{ status: "disputed", audience: "shop", actions: ["view_receipt"] },
-	{ status: "disputed", audience: "staff", actions: ["view_receipt"] },
+	{ status: "disputed", audience: "buyer", actions: ["receipt"] },
+	{ status: "disputed", audience: "shop", actions: ["receipt"] },
+	{ status: "disputed", audience: "staff", actions: ["receipt"] },
 ];
 
 describe("availableActions: the 33 status × audience rows", () => {
@@ -177,31 +185,31 @@ describe("availableActions: the shop role filter", () => {
 	test("a manager keeps the shop cancel, which needs orders.cancel", () => {
 		expect(
 			availableActions(orderAt("accepted"), "shop", "manager", { now: NOW }),
-		).toEqual(["ship_order", "seller_cancel_order", "view_receipt"]);
+		).toEqual(["ship", "seller_cancel", "receipt"]);
 	});
 
 	test("a staff member may ship but never cancel the shop's order", () => {
 		expect(
 			availableActions(orderAt("accepted"), "shop", "staff", { now: NOW }),
-		).toEqual(["ship_order", "view_receipt"]);
+		).toEqual(["ship", "receipt"]);
 	});
 
 	test("a staff member on a placed order keeps decline and loses cancel", () => {
 		expect(
 			availableActions(orderAt("placed"), "shop", "staff", { now: NOW }),
-		).toEqual(["confirm_by_call", "decline_order", "view_receipt"]);
+		).toEqual(["confirm_by_call", "decline", "receipt"]);
 	});
 
 	test("a shop audience with no resolved role gets the receipt only", () => {
 		expect(
 			availableActions(orderAt("accepted"), "shop", null, { now: NOW }),
-		).toEqual(["view_receipt"]);
+		).toEqual(["receipt"]);
 	});
 
 	test("the role never narrows a buyer's own actions", () => {
 		expect(
 			availableActions(orderAt("accepted"), "buyer", null, { now: NOW }),
-		).toEqual(["cancel_order", "view_receipt"]);
+		).toEqual(["cancel", "receipt"]);
 	});
 });
 
@@ -216,7 +224,7 @@ describe("availableActions: the deadlines the server will enforce", () => {
 				"owner",
 				{ now: NOW },
 			),
-		).toEqual(["decline_order", "seller_cancel_order", "view_receipt"]);
+		).toEqual(["decline", "seller_cancel", "receipt"]);
 	});
 
 	test("a placed order past confirmBy offers neither code nor seller call", () => {
@@ -224,26 +232,26 @@ describe("availableActions: the deadlines the server will enforce", () => {
 			deadlines: { confirmBy: PAST, acceptBy: FUTURE },
 		});
 		expect(availableActions(subject, "buyer", null, { now: NOW })).toEqual([
-			"cancel_order",
-			"view_receipt",
+			"cancel",
+			"receipt",
 		]);
 		expect(availableActions(subject, "shop", "owner", { now: NOW })).toEqual([
-			"decline_order",
-			"seller_cancel_order",
-			"view_receipt",
+			"decline",
+			"seller_cancel",
+			"receipt",
 		]);
 	});
 
 	test("a placed order with no confirmBy offers neither code nor seller call", () => {
 		const subject = orderAt("placed", { deadlines: {} });
 		expect(availableActions(subject, "buyer", null, { now: NOW })).toEqual([
-			"cancel_order",
-			"view_receipt",
+			"cancel",
+			"receipt",
 		]);
 		expect(availableActions(subject, "shop", "owner", { now: NOW })).toEqual([
-			"decline_order",
-			"seller_cancel_order",
-			"view_receipt",
+			"decline",
+			"seller_cancel",
+			"receipt",
 		]);
 	});
 
@@ -255,7 +263,7 @@ describe("availableActions: the deadlines the server will enforce", () => {
 				null,
 				{ now: NOW },
 			),
-		).toEqual(["contest_delivery", "review_shop", "view_receipt"]);
+		).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
 	test("a delivered order with no withdrawalUntil still offers a return", () => {
@@ -267,7 +275,7 @@ describe("availableActions: the deadlines the server will enforce", () => {
 			"contest_delivery",
 			"request_withdrawal",
 			"review_shop",
-			"view_receipt",
+			"receipt",
 		]);
 	});
 });
@@ -287,10 +295,10 @@ describe("availableActions: the counters the server will enforce", () => {
 				{ now: NOW },
 			),
 		).toEqual([
-			"verify_handover_code",
+			"handover",
 			"declare_delivered",
 			"mark_delivery_failed",
-			"view_receipt",
+			"receipt",
 		]);
 	});
 
@@ -302,7 +310,7 @@ describe("availableActions: the counters the server will enforce", () => {
 				null,
 				{ now: NOW },
 			),
-		).toEqual(["contest_delivery", "review_shop", "view_receipt"]);
+		).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
 	test("a delivered order held by a dispute offers neither contest nor return", () => {
@@ -313,14 +321,14 @@ describe("availableActions: the counters the server will enforce", () => {
 				null,
 				{ now: NOW },
 			),
-		).toEqual(["review_shop", "view_receipt"]);
+		).toEqual(["review_shop", "receipt"]);
 	});
 });
 
 describe("canTakeAction", () => {
 	test("answers true for an action the status and audience allow", () => {
 		expect(
-			canTakeAction(orderAt("accepted"), "ship_order", "shop", "owner", {
+			canTakeAction(orderAt("accepted"), "ship", "shop", "owner", {
 				now: NOW,
 			}),
 		).toBe(true);
@@ -328,19 +336,15 @@ describe("canTakeAction", () => {
 
 	test("answers false for the seller cancel a staff member may not take", () => {
 		expect(
-			canTakeAction(
-				orderAt("accepted"),
-				"seller_cancel_order",
-				"shop",
-				"staff",
-				{ now: NOW },
-			),
+			canTakeAction(orderAt("accepted"), "seller_cancel", "shop", "staff", {
+				now: NOW,
+			}),
 		).toBe(false);
 	});
 
 	test("answers false for an action belonging to the other audience", () => {
 		expect(
-			canTakeAction(orderAt("accepted"), "ship_order", "buyer", null, {
+			canTakeAction(orderAt("accepted"), "ship", "buyer", null, {
 				now: NOW,
 			}),
 		).toBe(false);

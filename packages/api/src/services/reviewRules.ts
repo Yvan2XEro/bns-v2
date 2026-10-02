@@ -148,7 +148,11 @@ export async function findOrderReviewTarget(
 	};
 }
 
-const ORDER_REVIEWABLE_STATUSES: ReadonlySet<string> = new Set([
+/**
+ * Exported so `order-actions-parity.int.spec.ts` can pin both clients'
+ * `review_shop` cells to exactly this list rather than to a transcription.
+ */
+export const ORDER_REVIEWABLE_STATUSES: ReadonlySet<string> = new Set([
 	"delivered",
 	"completed",
 ]);

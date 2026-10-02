@@ -26,8 +26,13 @@ import { ORDER_STATUSES, type OrderStatusName } from "./order-status";
  *    `delivered` only.
  *  - `packages/api/src/services/orders/queries.ts` — `getOrderReceiptHtml`
  *    gates on `requireOrderAudience` alone, so every audience may print.
- *  - Task 24's brief for `POST /api/moderation/orders/{id}`: staff cancel
- *    applies to `placed`, `confirmed`, `accepted`, `shipped` and nothing else.
+ *  - `packages/api/src/services/moderation.ts` —
+ *    `MODERATOR_CANCELLABLE_STATUSES`, the staff cancel behind
+ *    `POST /api/moderation/orders/{id}`: `placed`, `confirmed`, `accepted`,
+ *    `shipped` and nothing else.
+ *  - `packages/api/src/services/reviewRules.ts` —
+ *    `ORDER_REVIEWABLE_STATUSES`, which `assertOrderReviewAllowed` holds the
+ *    buyer's review of the shop to: `delivered` and `completed` only.
  */
 const TABLE: Record<
 	OrderStatusName,
@@ -74,13 +79,17 @@ const TABLE: Record<
 		staff: ["staff_cancel", "receipt"],
 	},
 	delivered: {
-		buyer: ["contest_delivery", "request_withdrawal", "receipt"],
+		buyer: ["contest_delivery", "request_withdrawal", "review_shop", "receipt"],
 		shop: ["receipt"],
 		staff: ["receipt"],
 	},
 	// The four terminal statuses (`TERMINAL_STATUSES`) plus `disputed`, whose
 	// every outgoing transition is P6's. Nothing but the receipt.
-	completed: { buyer: ["receipt"], shop: ["receipt"], staff: ["receipt"] },
+	completed: {
+		buyer: ["review_shop", "receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
+	},
 	cancelled: { buyer: ["receipt"], shop: ["receipt"], staff: ["receipt"] },
 	delivery_failed: {
 		buyer: ["receipt"],
@@ -192,6 +201,7 @@ describe("the table's own shape", () => {
 			"regenerate_handover_code",
 			"contest_delivery",
 			"request_withdrawal",
+			"review_shop",
 		];
 		const offered = ORDER_STATUSES.flatMap((status) =>
 			availableActions(subject(status), "shop", "owner", NOW),
@@ -230,6 +240,7 @@ describe("the table's own shape", () => {
 		expect(availableActions(subject("delivered"), "buyer", null, NOW)).toEqual([
 			"contest_delivery",
 			"request_withdrawal",
+			"review_shop",
 			"receipt",
 		]);
 	});
@@ -459,7 +470,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["request_withdrawal", "receipt"]);
+		expect(actions).toEqual(["request_withdrawal", "review_shop", "receipt"]);
 	});
 
 	it("drops contest_delivery once contestBy has passed", () => {
@@ -471,7 +482,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["request_withdrawal", "receipt"]);
+		expect(actions).toEqual(["request_withdrawal", "review_shop", "receipt"]);
 	});
 
 	it("drops contest_delivery when there is no contest window at all", () => {
@@ -483,7 +494,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["request_withdrawal", "receipt"]);
+		expect(actions).toEqual(["request_withdrawal", "review_shop", "receipt"]);
 	});
 
 	it("drops request_withdrawal once the 15-day window has closed", () => {
@@ -498,7 +509,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["contest_delivery", "receipt"]);
+		expect(actions).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
 	it("drops request_withdrawal when there is no withdrawal deadline at all", () => {
@@ -513,7 +524,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["contest_delivery", "receipt"]);
+		expect(actions).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
 	it("drops request_withdrawal when a return case is already open", () => {
@@ -523,7 +534,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["contest_delivery", "receipt"]);
+		expect(actions).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
 	it("drops request_withdrawal when completion is held by a return case", () => {
@@ -533,7 +544,7 @@ describe("each per-order condition drops exactly its own action", () => {
 			null,
 			NOW,
 		);
-		expect(actions).toEqual(["contest_delivery", "receipt"]);
+		expect(actions).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
 	it("still offers contest_delivery while completion is held by a dispute", () => {
@@ -546,6 +557,7 @@ describe("each per-order condition drops exactly its own action", () => {
 		expect(actions).toEqual([
 			"contest_delivery",
 			"request_withdrawal",
+			"review_shop",
 			"receipt",
 		]);
 	});
@@ -577,7 +589,7 @@ describe("every action names the route that answers it", () => {
 			))
 				offered.add(action);
 		}
-		expect(offered.size).toBe(18);
+		expect(offered.size).toBe(19);
 		expect(Object.keys(ORDER_ACTION_ROUTES).sort()).toEqual(
 			[...offered].sort(),
 		);
@@ -599,6 +611,10 @@ describe("every action names the route that answers it", () => {
 		expect(ORDER_ACTION_ROUTES.staff_cancel).toEqual({
 			method: "POST",
 			path: "/api/moderation/orders/{id}",
+		});
+		expect(ORDER_ACTION_ROUTES.review_shop).toEqual({
+			method: "POST",
+			path: "/api/reviews",
 		});
 		expect(ORDER_ACTION_ROUTES.resend_code).toEqual({
 			method: "POST",
@@ -631,6 +647,7 @@ describe("every action names the route that answers it", () => {
 			"regenerate_handover_code",
 			"contest_delivery",
 			"request_withdrawal",
+			"review_shop",
 			"receipt",
 			"staff_cancel",
 		] as const) {

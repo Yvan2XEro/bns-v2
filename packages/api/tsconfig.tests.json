@@ -16,7 +16,20 @@
 	// `moduleResolution: "bundler"` refuses that without this flag — TS5097
 	// on every such import, in a package this config never touches directly.
 	// `noEmit` is already true, which is the flag's other prerequisite.
+	// `order-actions-parity.int.spec.ts` imports `packages/web`'s action table,
+	// and web's own modules address each other through its `~/*` alias. The
+	// base config knows nothing of it, so every such file reported TS2307 —
+	// a path that resolves perfectly in web's own type-check. Declaring the
+	// alias here is what keeps the error count honest: the alternative was
+	// rewriting web sources to relative paths to suit this config.
+	// `paths` is replaced wholesale by `extends`, not merged, so the base
+	// config's two entries are repeated.
 	"compilerOptions": {
-		"allowImportingTsExtensions": true
+		"allowImportingTsExtensions": true,
+		"paths": {
+			"@/*": ["./src/*"],
+			"@payload-config": ["./src/payload.config.ts"],
+			"~/*": ["../web/src/*"]
+		}
 	}
 }

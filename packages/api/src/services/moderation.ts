@@ -1249,8 +1249,11 @@ function parseStaffCancelReason(value: unknown): StaffCancelReason {
  * reserved for P5's payment flow and P6's arbitration respectively; a
  * moderator cancelling an order is a permission a staff review grants here,
  * never a reason to reach into either phase's own state.
+ *
+ * Exported so `order-actions-parity.int.spec.ts` can pin both clients' staff
+ * rows to exactly this list rather than to a transcription of it.
  */
-const MODERATOR_CANCELLABLE_STATUSES: readonly Order["status"][] = [
+export const MODERATOR_CANCELLABLE_STATUSES: readonly Order["status"][] = [
 	"placed",
 	"confirmed",
 	"accepted",

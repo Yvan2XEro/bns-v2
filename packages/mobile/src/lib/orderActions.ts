@@ -23,16 +23,23 @@ import { can, type ShopPermission } from "./shopRoles";
  *    *buyer's* alone (a shop member gets `order.notFound` there), while
  *    `handover`, `declare-delivered`, `delivery-attempt-failed` and
  *    `mark-delivery-failed` are the shop's.
+ *  - `services/moderation.ts#MODERATOR_CANCELLABLE_STATUSES` — the staff
+ *    cancellation lever behind `POST /api/moderation/orders/{id}` with
+ *    `{ action: "cancel" }`, `placed`/`confirmed`/`accepted`/`shipped` only.
+ *  - `services/reviewRules.ts#ORDER_REVIEWABLE_STATUSES` — the buyer's review
+ *    of the shop (`POST /api/reviews` carrying `order`), `delivered` and
+ *    `completed` only.
  *
- * The same table is derived independently in `packages/web` from these same
- * sources; the two are diffed by hand when both land, because neither
- * package's tests can see the other's copy.
+ * `packages/web/src/lib/order-actions.ts` carries the same table, with the
+ * same action names on purpose: `order-actions-parity.int.spec.ts` imports
+ * both into one API test and compares them cell for cell, with no name map.
+ * An action added or moved here and not there fails that test.
  */
 export type OrderAction =
 	// buyer
 	| "confirm_code"
 	| "resend_code"
-	| "cancel_order"
+	| "cancel"
 	| "confirm_receipt"
 	| "regenerate_handover_code"
 	| "contest_delivery"
@@ -40,36 +47,39 @@ export type OrderAction =
 	| "review_shop"
 	// shop
 	| "confirm_by_call"
-	| "accept_order"
-	| "decline_order"
-	| "seller_cancel_order"
-	| "ship_order"
-	| "verify_handover_code"
+	| "accept"
+	| "decline"
+	| "seller_cancel"
+	| "ship"
+	| "handover"
 	| "declare_delivered"
 	| "report_failed_attempt"
 	| "mark_delivery_failed"
+	// staff
+	| "staff_cancel"
 	// every audience
-	| "view_receipt";
+	| "receipt";
 
 export const ORDER_ACTIONS: readonly OrderAction[] = [
 	"confirm_code",
 	"resend_code",
-	"cancel_order",
+	"cancel",
 	"confirm_receipt",
 	"regenerate_handover_code",
 	"contest_delivery",
 	"request_withdrawal",
 	"review_shop",
 	"confirm_by_call",
-	"accept_order",
-	"decline_order",
-	"seller_cancel_order",
-	"ship_order",
-	"verify_handover_code",
+	"accept",
+	"decline",
+	"seller_cancel",
+	"ship",
+	"handover",
 	"declare_delivered",
 	"report_failed_attempt",
 	"mark_delivery_failed",
-	"view_receipt",
+	"staff_cancel",
+	"receipt",
 ];
 
 /**
@@ -87,99 +97,86 @@ export const ORDER_ACTION_TABLE: Record<
 	Record<OrderAudienceKind, readonly OrderAction[]>
 > = {
 	placed: {
-		buyer: ["confirm_code", "resend_code", "cancel_order", "view_receipt"],
-		shop: [
-			"confirm_by_call",
-			"decline_order",
-			"seller_cancel_order",
-			"view_receipt",
-		],
-		staff: ["view_receipt"],
+		buyer: ["confirm_code", "resend_code", "cancel", "receipt"],
+		shop: ["confirm_by_call", "decline", "seller_cancel", "receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	confirmed: {
-		buyer: ["cancel_order", "view_receipt"],
-		shop: [
-			"accept_order",
-			"decline_order",
-			"seller_cancel_order",
-			"view_receipt",
-		],
-		staff: ["view_receipt"],
+		buyer: ["cancel", "receipt"],
+		shop: ["accept", "decline", "seller_cancel", "receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	paid: {
-		buyer: ["view_receipt"],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 	accepted: {
-		buyer: ["cancel_order", "view_receipt"],
-		shop: ["ship_order", "seller_cancel_order", "view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["cancel", "receipt"],
+		shop: ["ship", "seller_cancel", "receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	shipped: {
-		buyer: ["confirm_receipt", "regenerate_handover_code", "view_receipt"],
+		buyer: ["confirm_receipt", "regenerate_handover_code", "receipt"],
 		shop: [
-			"verify_handover_code",
+			"handover",
 			"declare_delivered",
 			"report_failed_attempt",
 			"mark_delivery_failed",
-			"view_receipt",
+			"receipt",
 		],
-		staff: ["view_receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	delivered: {
-		buyer: [
-			"contest_delivery",
-			"request_withdrawal",
-			"review_shop",
-			"view_receipt",
-		],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["contest_delivery", "request_withdrawal", "review_shop", "receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 	completed: {
-		buyer: ["review_shop", "view_receipt"],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["review_shop", "receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 	cancelled: {
-		buyer: ["view_receipt"],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 	delivery_failed: {
-		buyer: ["view_receipt"],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 	returned: {
-		buyer: ["view_receipt"],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 	disputed: {
-		buyer: ["view_receipt"],
-		shop: ["view_receipt"],
-		staff: ["view_receipt"],
+		buyer: ["receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
 	},
 };
 
 /**
- * The shop permission each shop action's route demands. `seller_cancel_order`
+ * The shop permission each shop action's route demands. `seller_cancel`
  * is the one that is not `orders.process`: `POST /api/orders/{id}/seller-cancel`
  * goes through `requireOrderShopPermission(..., "orders.cancel")`, which the
  * role matrix gives an owner and a manager and never a staff member.
- * `view_receipt` needs none — `requireOrderAudience` alone gates it.
+ * `receipt` needs none — `requireOrderAudience` alone gates it, and neither
+ * does `staff_cancel`: a moderator is authorised by `isModerator`, not by a
+ * shop role, so a shop permission on it would hide it from everyone.
  */
 export const ORDER_ACTION_PERMISSIONS: Partial<
 	Record<OrderAction, ShopPermission>
 > = {
 	confirm_by_call: "orders.process",
-	accept_order: "orders.process",
-	decline_order: "orders.process",
-	seller_cancel_order: "orders.cancel",
-	ship_order: "orders.process",
-	verify_handover_code: "orders.process",
+	accept: "orders.process",
+	decline: "orders.process",
+	seller_cancel: "orders.cancel",
+	ship: "orders.process",
+	handover: "orders.process",
 	declare_delivered: "orders.process",
 	report_failed_attempt: "orders.process",
 	mark_delivery_failed: "orders.process",
@@ -236,7 +233,7 @@ function conditionHolds(
 				!elapsed(order.deadlines.confirmBy, now)
 			);
 		// `acceptOrder` throws `order.acceptDeadlinePassed` past this one.
-		case "accept_order":
+		case "accept":
 			return !elapsed(order.deadlines.acceptBy, now);
 		// `reportFailedAttempt` refuses a second attempt, pointing the caller at
 		// `mark-delivery-failed` instead.
@@ -275,7 +272,9 @@ export function availableActions(
 	const now = options.now ?? new Date();
 	return ORDER_ACTION_TABLE[order.status][audience].filter((action) => {
 		const permission = ORDER_ACTION_PERMISSIONS[action];
-		if (permission && !can(role, permission)) return false;
+		if (audience === "shop" && permission && !can(role, permission)) {
+			return false;
+		}
 		return conditionHolds(action, order, now);
 	});
 }

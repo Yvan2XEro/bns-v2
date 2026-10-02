@@ -32,10 +32,20 @@ import { can, type ShopPermission } from "./shop-roles";
  *  - `services/orders/queries.ts#getOrderReceiptHtml` gates on
  *    `requireOrderAudience` alone, so all three audiences may print, in every
  *    status.
+ *  - `services/moderation.ts#MODERATOR_CANCELLABLE_STATUSES` is exactly
+ *    `placed`/`confirmed`/`accepted`/`shipped`; outside those
+ *    `POST /api/moderation/orders/{id}` with `{ action: "cancel" }` answers
+ *    `moderationInvalidTransition`. That list is the whole staff row.
+ *  - `services/reviewRules.ts#ORDER_REVIEWABLE_STATUSES` is exactly
+ *    `delivered`/`completed`, so `review_shop` sits in those two buyer cells
+ *    and nowhere else.
  *
- * The table is a flat `status × audience → actions` record on purpose: the
- * mobile package carries the same table, derived from the same sources, and a
- * flat literal is what lets the two be compared mechanically.
+ * The table is a flat `status × audience → actions` record on purpose:
+ * `packages/mobile/src/lib/orderActions.ts` carries the same table under the
+ * same action names, and
+ * `packages/api/tests/int/order-actions-parity.int.spec.ts` imports both into
+ * one API test and compares them cell for cell with no name map. An action
+ * added or moved here and not there fails that test.
  */
 export type OrderAction =
 	| "confirm_code"
@@ -55,6 +65,7 @@ export type OrderAction =
 	| "contest_delivery"
 	| "request_withdrawal"
 	| "staff_cancel"
+	| "review_shop"
 	| "receipt";
 
 /**
@@ -103,6 +114,12 @@ export const ORDER_ACTION_ROUTES: Record<
 	request_withdrawal: { method: "POST", path: "/api/orders/{id}/withdrawal" },
 	/** Task 24's route; staff never reach the party-facing ones above. */
 	staff_cancel: { method: "POST", path: "/api/moderation/orders/{id}" },
+	/**
+	 * The one action whose route is not order-scoped: a review is created on
+	 * the `reviews` collection carrying the order, and `enforceReviewRules`
+	 * resolves the shop and `verifiedPurchase` from it.
+	 */
+	review_shop: { method: "POST", path: "/api/reviews" },
 	receipt: { method: "GET", path: "/api/orders/{id}/receipt" },
 };
 
@@ -168,11 +185,15 @@ export const ORDER_ACTIONS_BY_STATUS: Record<
 		staff: ["staff_cancel", "receipt"],
 	},
 	delivered: {
-		buyer: ["contest_delivery", "request_withdrawal", "receipt"],
+		buyer: ["contest_delivery", "request_withdrawal", "review_shop", "receipt"],
 		shop: ["receipt"],
 		staff: ["receipt"],
 	},
-	completed: { buyer: ["receipt"], shop: ["receipt"], staff: ["receipt"] },
+	completed: {
+		buyer: ["review_shop", "receipt"],
+		shop: ["receipt"],
+		staff: ["receipt"],
+	},
 	cancelled: { buyer: ["receipt"], shop: ["receipt"], staff: ["receipt"] },
 	delivery_failed: {
 		buyer: ["receipt"],
