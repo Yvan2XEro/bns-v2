@@ -2,7 +2,9 @@ import type { Payload } from "payload";
 import { createAppleClientSecretFor } from "@/auth/oauth/providers";
 import { INBOX_SERVICE_CONTEXT } from "../collections/Conversations";
 import { ACCOUNT_DELETION_CONTEXT } from "../collections/Listings";
+import { ERROR_CODES } from "../lib/errors";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../lib/redact";
+import { ServiceError } from "../lib/serviceError";
 import {
 	commitContextOf,
 	type TxReq,
@@ -96,6 +98,12 @@ async function findAllIds(
 	return (await findAllDocs(payload, collection, where, req)).map(
 		(doc) => doc.id,
 	);
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object"
+		? (value as Record<string, unknown>)
+		: {};
 }
 
 function toRelationId(value: unknown): string | undefined {
@@ -749,6 +757,132 @@ async function runDeletionCascade(
 	await deleteByIds(payload, "conversations", conversationIds, req);
 	await deleteByIds(payload, "listings", listingIds, req);
 	await deleteByIds(payload, "media", mediaIds, req);
+
+	await redactBuyerOrders(payload, userId, req);
+}
+
+/**
+ * A buyer with a courier en route, or a shop owing commission, cannot simply
+ * vanish: somebody is still owed goods or money (Task 1's two codes exist
+ * for exactly this). Both checks run before any write below — a refusal
+ * here leaves the account, every order and every invoice exactly as they
+ * were, nothing to roll back.
+ */
+async function assertAccountDeletable(
+	payload: PayloadLike,
+	userId: string,
+	ownedShopIds: string[],
+	req?: TxReq,
+): Promise<void> {
+	const { TERMINAL_STATUSES } = await import("./orders/transitions");
+
+	const openAsBuyer = await payload.find({
+		collection: "orders",
+		depth: 0,
+		limit: 1,
+		overrideAccess: true,
+		where: {
+			and: [
+				{ buyer: { equals: userId } },
+				{ status: { not_in: TERMINAL_STATUSES } },
+			],
+		},
+		req,
+	});
+	if (openAsBuyer.docs.length > 0) {
+		throw new ServiceError(ERROR_CODES.accountOpenOrders, 409);
+	}
+
+	if (ownedShopIds.length === 0) return;
+
+	const openAsShop = await payload.find({
+		collection: "orders",
+		depth: 0,
+		limit: 1,
+		overrideAccess: true,
+		where: {
+			and: [
+				{ shop: { in: ownedShopIds } },
+				{ status: { not_in: TERMINAL_STATUSES } },
+			],
+		},
+		req,
+	});
+	if (openAsShop.docs.length > 0) {
+		throw new ServiceError(ERROR_CODES.accountOpenOrders, 409);
+	}
+
+	const unpaidInvoices = await payload.find({
+		collection: "commission-invoices",
+		depth: 0,
+		limit: 1,
+		overrideAccess: true,
+		where: {
+			and: [
+				{ shop: { in: ownedShopIds } },
+				{ status: { in: ["issued", "overdue"] } },
+			],
+		},
+		req,
+	});
+	if (unpaidInvoices.docs.length > 0) {
+		throw new ServiceError(ERROR_CODES.accountUnpaidCommission, 409);
+	}
+}
+
+const REDACTED_RECIPIENT_NAME = "Compte supprimé";
+const REDACTED_DELIVERY_PHONE = "+000000000";
+
+/**
+ * Every order this account placed is terminal by the time this runs —
+ * `assertAccountDeletable` above refused otherwise — so this only severs the
+ * identity, never the goods-or-money history art. 32 keeps: the order
+ * itself, its items, its events and any commission line or invoice are
+ * untouched. `buyer` is nulled and `buyerDeletedAt` stamped the same way a
+ * shop member's departure is recorded, not deleted.
+ */
+async function redactBuyerOrders(
+	payload: PayloadLike,
+	userId: string,
+	req?: TxReq,
+): Promise<void> {
+	const now = new Date().toISOString();
+	const orders = await findAllDocs(
+		payload,
+		"orders",
+		{ buyer: { equals: userId } },
+		req,
+	);
+
+	for (const order of orders) {
+		const delivery = asRecord(order.delivery);
+		const gps = asRecord(delivery.gps);
+		await payload.update({
+			collection: "orders",
+			id: order.id,
+			overrideAccess: true,
+			context: ACCOUNT_DELETION_CONTEXT,
+			data: {
+				buyer: null,
+				buyerDeletedAt: now,
+				delivery: {
+					...delivery,
+					recipientName: REDACTED_RECIPIENT_NAME,
+					phone: REDACTED_DELIVERY_PHONE,
+					landmark: null,
+					instructions: null,
+					gps: {
+						...gps,
+						lat: null,
+						lng: null,
+						accuracyMeters: null,
+						capturedAt: null,
+					},
+				},
+			},
+			req,
+		});
+	}
 }
 
 export async function deleteUserRelatedData(
@@ -757,6 +891,14 @@ export async function deleteUserRelatedData(
 	req?: TxReq,
 ): Promise<void> {
 	const userId = user.id;
+
+	const ownedShopIds = await findAllIds(
+		payload,
+		"shops",
+		{ owner: { equals: userId } },
+		req,
+	);
+	await assertAccountDeletable(payload, userId, ownedShopIds, req);
 
 	if (req?.transactionID) {
 		// The caller — Users.ts's beforeDelete hook — already opened a

@@ -8,7 +8,9 @@ import {
 	suspensionSummary,
 } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
+import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
 import { queueMembershipChange } from "../hooks/membershipEvents";
+import { queueSystemMessage } from "../hooks/systemMessageEvents";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -17,11 +19,13 @@ import {
 	onCommit,
 	withTransaction,
 } from "../lib/transactions";
-import type { Shop } from "../payload-types";
+import type { Order, OrderItem, Shop } from "../payload-types";
+import { applyTransition, TERMINAL_STATUSES } from "./orders/transitions";
 import {
 	notifyShopSuspended,
 	notifyShopUnsuspended,
 } from "./shopNotifications";
+import { release } from "./stock";
 
 export const SUSPENSION_REASONS = [
 	"spam",
@@ -61,7 +65,7 @@ const MODERATION_CONTEXT = { moderationAction: true } as const;
 interface LogInput {
 	actor: Actor;
 	action: ModerationAction;
-	targetType: "listing" | "user" | "report" | "shop";
+	targetType: "listing" | "user" | "report" | "shop" | "order";
 	targetId: string;
 	reason?: string | null;
 	note?: string | null;
@@ -1059,6 +1063,9 @@ export async function suspendShop(
 			// returns null for every non-owner of a suspended shop, so the
 			// subscriber refetches and evicts whoever is no longer in the set.
 			await queueMembershipChange(commitContextOf(req), shopId);
+			// Every open order keeps running — suspension is not a cancellation —
+			// but the buyer is told the shop behind it just went down.
+			await postShopSuspensionMessages(payload, req, shopId);
 			onCommit(commitContextOf(req), () =>
 				notifyShopSuspended(shop, suspension.suspendedUntil, reason),
 			);
@@ -1209,6 +1216,265 @@ export async function liftExpiredShopSuspensions(
 		if (acted) lifted.push(shopId);
 	}
 	return { lifted };
+}
+
+// ─── Orders ──────────────────────────────────────────────────────────────────
+
+/**
+ * The three reasons `ORDER_CANCELLATION_REASONS` (collections/Orders.ts)
+ * reserves for a staff-initiated cancellation; the other nine belong to the
+ * buyer or the seller.
+ */
+export const STAFF_CANCEL_REASONS = [
+	"staff_fraud",
+	"staff_policy",
+	"staff_other",
+] as const;
+
+export type StaffCancelReason = (typeof STAFF_CANCEL_REASONS)[number];
+
+function parseStaffCancelReason(value: unknown): StaffCancelReason {
+	if (
+		typeof value === "string" &&
+		(STAFF_CANCEL_REASONS as readonly string[]).includes(value)
+	) {
+		return value as StaffCancelReason;
+	}
+	throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+}
+
+/**
+ * The statuses a moderator's own cancellation lever reaches. `STATUS_TRANSITIONS`
+ * would let `paid` and `disputed` through too — structurally valid, but
+ * reserved for P5's payment flow and P6's arbitration respectively; a
+ * moderator cancelling an order is a permission a staff review grants here,
+ * never a reason to reach into either phase's own state.
+ */
+const MODERATOR_CANCELLABLE_STATUSES: readonly Order["status"][] = [
+	"placed",
+	"confirmed",
+	"accepted",
+	"shipped",
+];
+
+export async function findOrderForModeration(
+	payload: Payload,
+	id: string,
+	req?: PayloadRequest,
+): Promise<Order> {
+	try {
+		return await payload.findByID({
+			collection: "orders",
+			id,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+	} catch {
+		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+	}
+}
+
+/**
+ * Gives every reserved unit on the order back, whatever fulfilment stage it
+ * reached — `release` itself is the idempotency and the no-throw guard
+ * (Task 9): a line already sold rather than merely reserved simply finds its
+ * condition unmet and logs instead of failing the cancellation that is
+ * retiring it.
+ */
+async function releaseOrderStock(
+	req: PayloadRequest,
+	order: Order,
+): Promise<void> {
+	const items = await req.payload.find({
+		collection: "order-items",
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+		req,
+		where: { order: { equals: String(order.id) } },
+	});
+	for (const item of items.docs as OrderItem[]) {
+		const variantId = relationId(item.variant);
+		if (!variantId) continue;
+		const variant = await req.payload.findByID({
+			collection: "product-variants",
+			id: variantId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		await release(req, {
+			variant,
+			quantity: item.quantity,
+			orderId: String(order.id),
+			orderRef: order.orderNumber,
+		});
+	}
+}
+
+export interface OrderCancellationResult {
+	id: string;
+	status: Order["status"];
+}
+
+/**
+ * A moderator's own cancellation lever — a permission question
+ * (`assertModerator`, the same gate every other action in this file asks),
+ * not a status one: the status check below only bounds *which* live orders
+ * a moderator may reach, the way `shop.suspend`'s own status guard does, and
+ * carries no opinion about who may hold the lever.
+ */
+export async function cancelOrder(
+	payload: Payload,
+	actor: Actor,
+	orderId: string,
+	input: { reason: string; note?: string | null },
+): Promise<OrderCancellationResult> {
+	assertModerator(actor);
+
+	const reason = parseStaffCancelReason(input.reason);
+	const note = trimmed(input.note);
+	if (reason === "staff_other" && !note) {
+		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+	}
+
+	const order = await findOrderForModeration(payload, orderId);
+	if (!MODERATOR_CANCELLABLE_STATUSES.includes(order.status)) {
+		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+	}
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			// Re-read inside the transaction: the same race `suspendShop` guards
+			// against between its own pre-transaction read and its write.
+			const current = await findOrderForModeration(payload, orderId, req);
+			if (!MODERATOR_CANCELLABLE_STATUSES.includes(current.status)) {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+
+			const { order: updated } = await applyTransition(
+				req,
+				current,
+				{
+					status: "cancelled",
+					set: {
+						cancellation: {
+							...(current.cancellation ?? {}),
+							by: "staff",
+							reason,
+							note,
+						},
+						timestamps: {
+							...(current.timestamps ?? {}),
+							cancelledAt: new Date().toISOString(),
+						},
+					},
+				},
+				{
+					type: "order.cancelled",
+					actorType: "staff",
+					actor: actor.id,
+					reason,
+					note,
+					visibility: "both",
+					source: "staff_console",
+				},
+			);
+
+			await releaseOrderStock(req, updated);
+
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "order.cancel",
+					targetType: "order",
+					targetId: orderId,
+					reason,
+					note,
+					metadata: {
+						orderNumber: updated.orderNumber,
+						previousStatus: current.status,
+					},
+				},
+				req,
+			);
+
+			return { id: String(updated.id), status: updated.status };
+		},
+		{ user: actor },
+	);
+}
+
+/**
+ * A plain system line, not an `order-events` entry: a shop suspension is not
+ * one of `applyTransition`'s own transitions and must never be mistaken for
+ * one in the order's own timeline. `suspendShop` cancels nothing — every
+ * open order keeps running exactly as it was, under a shop that can no
+ * longer take new ones — so this only tells the buyer their order may slip,
+ * the same way any other delay would.
+ */
+async function postShopSuspensionMessages(
+	payload: Payload,
+	req: PayloadRequest,
+	shopId: string,
+): Promise<void> {
+	const orders = await payload.find({
+		collection: "orders",
+		depth: 0,
+		limit: 0,
+		pagination: false,
+		overrideAccess: true,
+		req,
+		where: { shop: { equals: shopId } },
+	});
+
+	for (const doc of orders.docs as Order[]) {
+		if (TERMINAL_STATUSES.includes(doc.status)) continue;
+
+		const conversations = await payload.find({
+			collection: "conversations",
+			depth: 0,
+			limit: 1,
+			overrideAccess: true,
+			req,
+			where: { order: { equals: String(doc.id) } },
+		});
+		const conversationId = conversations.docs[0]?.id;
+		if (!conversationId) continue;
+
+		const content = `La boutique est suspendue ; la commande ${doc.orderNumber} peut être retardée.`;
+		const systemParams = { orderNumber: doc.orderNumber };
+		const message = await payload.create({
+			collection: "messages",
+			req,
+			overrideAccess: true,
+			context: ORDER_SERVICE_CONTEXT,
+			data: {
+				conversation: conversationId,
+				kind: "system",
+				sender: null,
+				content,
+				systemEvent: "shop.suspended",
+				systemParams,
+				order: doc.id,
+			},
+		});
+
+		await queueSystemMessage(req, {
+			type: "order.system_message",
+			conversationId: String(conversationId),
+			messageId: String(message.id),
+			kind: "system",
+			systemEvent: "shop.suspended",
+			systemParams,
+			content,
+			createdAt: String(message.createdAt),
+		});
+	}
 }
 
 // ─── Reports ─────────────────────────────────────────────────────────────────

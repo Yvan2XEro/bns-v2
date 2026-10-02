@@ -6,6 +6,7 @@ import {
 	decideReport,
 	ModerationError,
 	rejectListing,
+	suspendShop,
 	suspendUser,
 	unsuspendUser,
 } from "../../src/services/moderation";
@@ -484,5 +485,84 @@ describe("report decisions", () => {
 			action: "report.dismiss",
 			metadata: { reportedTargetType: "listing", reportedTargetId: "l-1" },
 		});
+	});
+});
+
+// I2-adjacent lesson for orders: a suspension is not a cancellation, and
+// must never be mistaken for one by anything downstream.
+describe("shop suspension leaves orders alone", () => {
+	let payload: any;
+
+	beforeEach(() => {
+		payload = fakePayload({
+			users: [{ id: "owner-1", role: "user" }],
+			shops: [
+				{ id: "s-1", status: "active", owner: "owner-1", handle: "boutique" },
+			],
+			orders: [
+				{
+					id: "o-open",
+					shop: "s-1",
+					status: "accepted",
+					orderNumber: "ORD-OPEN",
+				},
+				{
+					id: "o-terminal",
+					shop: "s-1",
+					status: "completed",
+					orderNumber: "ORD-DONE",
+				},
+			],
+			conversations: [
+				{ id: "c-open", order: "o-open", shop: "s-1" },
+				{ id: "c-terminal", order: "o-terminal", shop: "s-1" },
+			],
+			messages: [],
+		});
+	});
+
+	it("cancels no order", async () => {
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		expect(
+			payload.store.orders.find((o: Doc) => o.id === "o-open").status,
+		).toBe("accepted");
+		expect(
+			payload.store.orders.find((o: Doc) => o.id === "o-terminal").status,
+		).toBe("completed");
+	});
+
+	it("posts exactly one system message, into the one open order's conversation", async () => {
+		await suspendShop(payload, MOD, "s-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+		const messages = payload.store.messages as Doc[];
+		expect(messages).toHaveLength(1);
+		expect(messages[0]).toMatchObject({
+			conversation: "c-open",
+			kind: "system",
+			sender: null,
+			order: "o-open",
+		});
+	});
+});
+
+describe("user suspension leaves a buyer's own orders running", () => {
+	it("touches no order when suspending a buyer", async () => {
+		const payload = fakePayload({
+			users: [{ id: "u-1", role: "user" }],
+			orders: [{ id: "o-1", buyer: "u-1", shop: "s-1", status: "accepted" }],
+		});
+
+		await suspendUser(payload, MOD, "u-1", {
+			reason: "fraud",
+			durationDays: 7,
+		});
+
+		const order = payload.store.orders.find((o: Doc) => o.id === "o-1");
+		expect(order?.status).toBe("accepted");
 	});
 });

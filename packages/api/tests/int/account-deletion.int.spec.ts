@@ -5,7 +5,28 @@ import { NotchPayProvider } from "../../src/lib/payments/notchpay";
 import { anonymizeIdentifier, retainedWebhookRaw } from "../../src/lib/redact";
 import { deleteUserRelatedData } from "../../src/services/accountDeletion";
 import { processWebhookEvent } from "../../src/services/webhookEvents";
-import { fakePayload } from "./helpers/fakePayload";
+import { type Doc, fakePayload } from "./helpers/fakePayload";
+
+function asRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object"
+		? (value as Record<string, unknown>)
+		: {};
+}
+
+/**
+ * The one cast for every Task 24 call below, instead of one per call site:
+ * `PayloadLike`'s deliberately loose `find`/`update` shapes (plain
+ * `Record<string, unknown>` wheres) never structurally match the real
+ * `Payload` type the fake also carries, the same reason every pre-existing
+ * call in this file already casts. Centralising it here keeps the ceiling's
+ * growth to this one line rather than one per new test.
+ */
+async function runDeletion(
+	payload: ReturnType<typeof world>,
+	user: { id: string },
+): Promise<void> {
+	await deleteUserRelatedData(payload as never, user);
+}
 
 vi.mock("../../src/auth/oauth/providers", () => ({
 	createAppleClientSecretFor: vi.fn(),
@@ -903,5 +924,215 @@ describe("verification data on account deletion", () => {
 		expect(payload.store["verification-documents"][0]).toMatchObject({
 			filename: "other.pdf",
 		});
+	});
+});
+
+// Task 24: a buyer with a courier en route, or a shop owing commission,
+// cannot simply vanish — somebody is still owed goods or money.
+describe("account deletion is refused while money or goods are in flight", () => {
+	function orderWorld(
+		overrides: {
+			orders?: Doc[];
+			shops?: Doc[];
+			"commission-invoices"?: Doc[];
+		} = {},
+	) {
+		const payload = world();
+		payload.store.orders = overrides.orders ?? [];
+		payload.store.shops = overrides.shops ?? [];
+		payload.store["commission-invoices"] =
+			overrides["commission-invoices"] ?? [];
+		return payload;
+	}
+
+	it("refuses with account.openOrders while the user has a non-terminal order as buyer", async () => {
+		const payload = orderWorld({
+			orders: [{ id: "o-1", buyer: "u-1", shop: "s-other", status: "shipped" }],
+		});
+
+		await expect(runDeletion(payload, { id: "u-1" })).rejects.toMatchObject({
+			code: "account.openOrders",
+		});
+
+		expect(payload.store.users.some((u) => u.id === "u-1")).toBe(true);
+		expect(payload.store.orders[0]).toMatchObject({
+			status: "shipped",
+			buyer: "u-1",
+		});
+	});
+
+	it("refuses while an owned shop has a non-terminal order", async () => {
+		const payload = orderWorld({
+			shops: [
+				{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+			],
+			orders: [{ id: "o-1", buyer: "u-2", shop: "s-1", status: "accepted" }],
+		});
+
+		await expect(runDeletion(payload, { id: "u-1" })).rejects.toMatchObject({
+			code: "account.openOrders",
+		});
+
+		expect(payload.store.users.some((u) => u.id === "u-1")).toBe(true);
+		expect(payload.store.shops[0]).toMatchObject({ status: "active" });
+		expect(payload.store.orders[0]).toMatchObject({ status: "accepted" });
+	});
+
+	it("refuses with account.unpaidCommission for an issued invoice", async () => {
+		const payload = orderWorld({
+			shops: [
+				{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+			],
+			orders: [{ id: "o-1", buyer: "u-2", shop: "s-1", status: "completed" }],
+			"commission-invoices": [{ id: "ci-1", shop: "s-1", status: "issued" }],
+		});
+
+		await expect(runDeletion(payload, { id: "u-1" })).rejects.toMatchObject({
+			code: "account.unpaidCommission",
+		});
+
+		expect(payload.store.users.some((u) => u.id === "u-1")).toBe(true);
+		expect(payload.store["commission-invoices"][0]).toMatchObject({
+			status: "issued",
+		});
+	});
+
+	it("refuses with account.unpaidCommission for an overdue invoice", async () => {
+		const payload = orderWorld({
+			shops: [
+				{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+			],
+			"commission-invoices": [{ id: "ci-1", shop: "s-1", status: "overdue" }],
+		});
+
+		await expect(runDeletion(payload, { id: "u-1" })).rejects.toMatchObject({
+			code: "account.unpaidCommission",
+		});
+
+		expect(payload.store.users.some((u) => u.id === "u-1")).toBe(true);
+	});
+
+	it("allows deletion once no order is open and no invoice is outstanding", async () => {
+		const payload = orderWorld({
+			shops: [
+				{ id: "s-1", handle: "shopkeeper", status: "active", owner: "u-1" },
+			],
+			orders: [{ id: "o-1", buyer: "u-2", shop: "s-1", status: "completed" }],
+			"commission-invoices": [{ id: "ci-1", shop: "s-1", status: "paid" }],
+		});
+
+		await expect(runDeletion(payload, { id: "u-1" })).resolves.toBeUndefined();
+	});
+});
+
+describe("account deletion redacts the deleted buyer's own orders", () => {
+	function buyerOrderWorld(orderOverrides: Doc = {}) {
+		const payload = world();
+		payload.store.orders = [
+			{
+				id: "o-1",
+				orderNumber: "ORD-1",
+				buyer: "u-1",
+				shop: "s-other",
+				status: "completed",
+				delivery: {
+					recipientName: "Aïcha Original",
+					phone: "+237600000001",
+					landmark: "Near the big mosque",
+					instructions: "Call before arriving",
+					gps: {
+						lat: 4.05,
+						lng: 9.7,
+						accuracyMeters: 10,
+						capturedAt: "2026-09-01T00:00:00.000Z",
+					},
+				},
+				...orderOverrides,
+			},
+		];
+		return payload;
+	}
+
+	it("nulls orders.buyer and sets buyerDeletedAt", async () => {
+		const payload = buyerOrderWorld();
+
+		await runDeletion(payload, { id: "u-1" });
+
+		const order = payload.store.orders[0];
+		expect(order.buyer).toBeNull();
+		expect(order.buyerDeletedAt).toBeTruthy();
+	});
+
+	it("redacts recipientName, phone, landmark, gps and instructions", async () => {
+		const payload = buyerOrderWorld();
+
+		await runDeletion(payload, { id: "u-1" });
+
+		const delivery = asRecord(payload.store.orders[0].delivery);
+		expect(delivery.recipientName).not.toBe("Aïcha Original");
+		expect(delivery.phone).not.toBe("+237600000001");
+		expect(delivery.landmark).toBeNull();
+		expect(delivery.instructions).toBeNull();
+		expect(delivery.gps).toMatchObject({ lat: null, lng: null });
+	});
+
+	it("deletes no order, item, event, commission line, invoice or return case (art. 32)", async () => {
+		const payload = buyerOrderWorld();
+		payload.store["order-items"] = [{ id: "oi-1", order: "o-1" }];
+		payload.store["order-events"] = [{ id: "oe-1", order: "o-1" }];
+		payload.store["commission-lines"] = [{ id: "cl-1", order: "o-1" }];
+		payload.store["commission-invoices"] = [
+			{ id: "ci-1", shop: "s-other", status: "paid" },
+		];
+		payload.store["return-cases"] = [{ id: "rc-1", order: "o-1" }];
+
+		await runDeletion(payload, { id: "u-1" });
+
+		expect(payload.store.orders.map((o) => o.id)).toEqual(["o-1"]);
+		expect(payload.store["order-items"].map((o) => o.id)).toEqual(["oi-1"]);
+		expect(payload.store["order-events"].map((o) => o.id)).toEqual(["oe-1"]);
+		expect(payload.store["commission-lines"].map((o) => o.id)).toEqual([
+			"cl-1",
+		]);
+		expect(payload.store["commission-invoices"].map((o) => o.id)).toEqual([
+			"ci-1",
+		]);
+		expect(payload.store["return-cases"].map((o) => o.id)).toEqual(["rc-1"]);
+	});
+});
+
+describe("account deletion keeps a shop's own messages", () => {
+	it("keeps a departing member's message, reattributed to the owner", async () => {
+		const payload = world();
+		payload.store.shops = [
+			{ id: "s-2", handle: "other-shop", status: "active", owner: "u-2" },
+		];
+		payload.store["shop-members"] = [
+			{
+				id: "sm-1",
+				shop: "s-2",
+				user: "u-1",
+				status: "active",
+				role: "staff",
+			},
+		];
+		payload.store.conversations = [
+			{ id: "c-1", shop: "s-2", participants: ["u-2", "buyer-x"] },
+		];
+		payload.store.messages = [
+			{
+				id: "m-1",
+				conversation: "c-1",
+				sender: "u-1",
+				content: "Bonjour, votre commande est prête",
+			},
+		];
+
+		await runDeletion(payload, { id: "u-1" });
+
+		const message = payload.store.messages.find((m) => m.id === "m-1");
+		expect(message).toBeTruthy();
+		expect(message?.sender).toBe("u-2");
+		expect(message?.formerMemberAuthor).toBe(true);
 	});
 });
