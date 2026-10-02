@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { ObjectId } from "bson";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -227,6 +228,29 @@ describe("updateShopRating", () => {
 
 		const shop = payload.store.shops.find((s: any) => s.id === SHOP);
 		expect(shop).toMatchObject({ rating: 4.5, totalReviews: 3 });
+	});
+
+	// The branch production actually takes, which every other test here
+	// avoids: real ids are 24-hex ObjectIds, and `$match` on a shop stored as
+	// an ObjectId will not match the same value passed as a string. With only
+	// string-id fixtures the aggregation would return no rows in production
+	// and the rating would quietly recompute to zero — on the one number a
+	// buyer in Douala uses to decide whether to hand cash to a stranger.
+	it("matches a real 24-hex id as an ObjectId, not as a string", async () => {
+		const hexId = "65a1b2c3d4e5f60718293a4b";
+		const payload = world({
+			shops: [{ id: hexId, owner: OWNER, rating: 0, totalReviews: 0 }],
+		});
+		const aggregate = withAggregateStub(payload, [{ average: 3.5, count: 2 }]);
+
+		await updateShopRating({ payload }, hexId);
+
+		const match = aggregate.mock.calls[0]?.[0]?.[0] as
+			| { $match?: { shop?: unknown } }
+			| undefined;
+		const matched = match?.$match?.shop;
+		expect(matched).toBeInstanceOf(ObjectId);
+		expect(String(matched)).toBe(hexId);
 	});
 
 	it("resets to zero when no row comes back (the shop's last review was removed)", async () => {
