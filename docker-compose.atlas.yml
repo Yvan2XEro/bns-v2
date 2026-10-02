@@ -84,6 +84,8 @@ services:
       # first rollback level here is the cluster, not a URI option.
       DATABASE_URI: ${DATABASE_URI:?Set DATABASE_URI to the Atlas connection string}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      # HMAC key for buyer-phone-scores.phoneHash; rotating it resets every refusal score
+      ORDER_PHONE_PEPPER: ${ORDER_PHONE_PEPPER:?Set ORDER_PHONE_PEPPER}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
       PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
