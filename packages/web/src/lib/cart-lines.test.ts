@@ -1,6 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import type { CartLineView, CartView } from "~/types/order";
-import { canCheckout, cartTotals } from "./cart-lines";
+import { ApiError } from "./apiError";
+import {
+	canCheckout,
+	cartLineState,
+	cartTotals,
+	parseAddToCart,
+	quantityStepper,
+	singleShopConflict,
+} from "./cart-lines";
 
 function line(patch: Partial<CartLineView> = {}): CartLineView {
 	const quantity = patch.quantity ?? 1;
@@ -159,5 +167,149 @@ describe("canCheckout", () => {
 		expect(canCheckout(cart({ lines: [line({ available: false })] }))).toBe(
 			false,
 		);
+	});
+});
+
+describe("cartLineState", () => {
+	it("reads an available, unchanged line as ok", () => {
+		expect(cartLineState(line())).toBe("ok");
+	});
+
+	it("reads a changed price as price_changed", () => {
+		expect(cartLineState(line({ priceAtAdd: 8_000, priceChanged: true }))).toBe(
+			"price_changed",
+		);
+	});
+
+	it("reads an unavailable line as unavailable, even when its price also changed", () => {
+		expect(cartLineState(line({ available: false }))).toBe("unavailable");
+		expect(
+			cartLineState(
+				line({ available: false, priceAtAdd: 8_000, priceChanged: true }),
+			),
+		).toBe("unavailable");
+	});
+});
+
+describe("quantityStepper", () => {
+	it("allows both directions in the middle of the range", () => {
+		expect(quantityStepper(line({ quantity: 3, maxQuantity: 5 }))).toEqual({
+			canDecrease: true,
+			canIncrease: true,
+			atMax: false,
+		});
+	});
+
+	it("stops at one, where the remove button takes over", () => {
+		expect(quantityStepper(line({ quantity: 1, maxQuantity: 5 }))).toEqual({
+			canDecrease: false,
+			canIncrease: true,
+			atMax: false,
+		});
+	});
+
+	it("stops at the tracked stock and says so", () => {
+		expect(quantityStepper(line({ quantity: 5, maxQuantity: 5 }))).toEqual({
+			canDecrease: true,
+			canIncrease: false,
+			atMax: true,
+		});
+	});
+
+	it("leaves an untracked variant's ceiling to the server", () => {
+		expect(quantityStepper(line({ quantity: 12, maxQuantity: null }))).toEqual({
+			canDecrease: true,
+			canIncrease: true,
+			atMax: false,
+		});
+	});
+
+	it("freezes an unavailable line in both directions", () => {
+		expect(
+			quantityStepper(line({ quantity: 3, maxQuantity: 5, available: false })),
+		).toEqual({ canDecrease: false, canIncrease: false, atMax: false });
+	});
+});
+
+describe("singleShopConflict", () => {
+	const refusal = (details?: unknown) => ({
+		code: "cart.singleShop",
+		status: 409,
+		details,
+	});
+
+	it("offers replace only when the conflicting shop differs", () => {
+		const other = refusal({ currentShop: { id: "s-9", name: "Chez Mado" } });
+		expect(singleShopConflict(other, "s-1")).toEqual({
+			currentShop: { id: "s-9", name: "Chez Mado" },
+		});
+		expect(singleShopConflict(other, "s-9")).toBeNull();
+	});
+
+	it("keeps the conflict when the shop being added is unknown, trusting the server's refusal", () => {
+		expect(
+			singleShopConflict(
+				refusal({ currentShop: { id: "s-9", name: null } }),
+				null,
+			),
+		).toEqual({ currentShop: { id: "s-9", name: null } });
+	});
+
+	it("keeps the conflict without a name when the refusal carries no readable details", () => {
+		expect(singleShopConflict(refusal(), "s-1")).toEqual({
+			currentShop: null,
+		});
+		expect(
+			singleShopConflict(refusal({ currentShop: { id: 7 } }), "s-1"),
+		).toEqual({ currentShop: null });
+	});
+
+	it("reads the ApiError the cart hooks actually throw", () => {
+		const thrown = new ApiError("refused", 409, "cart.singleShop");
+		expect(singleShopConflict(thrown, "s-1")).toEqual({ currentShop: null });
+		const withDetails = Object.assign(thrown, {
+			details: { currentShop: { id: "s-9", name: "Chez Mado" } },
+		});
+		expect(singleShopConflict(withDetails, "s-1")).toEqual({
+			currentShop: { id: "s-9", name: "Chez Mado" },
+		});
+	});
+
+	it("is not a conflict for any other failure", () => {
+		expect(
+			singleShopConflict(
+				{ code: "cart.outOfStock", details: { currentShop: { id: "s-9" } } },
+				"s-1",
+			),
+		).toBeNull();
+		expect(singleShopConflict(new Error("boom"), "s-1")).toBeNull();
+		expect(singleShopConflict(null, "s-1")).toBeNull();
+	});
+});
+
+describe("parseAddToCart", () => {
+	it("reads listing, variant and quantity", () => {
+		expect(parseAddToCart("l-1:v-2:3")).toEqual({
+			listingId: "l-1",
+			variantId: "v-2",
+			quantity: 3,
+		});
+	});
+
+	it("refuses a missing, partial or malformed value", () => {
+		for (const value of [
+			null,
+			"",
+			"l-1:v-2",
+			"l-1::3",
+			":v-2:3",
+			"l-1:v-2:0",
+			"l-1:v-2:-1",
+			"l-1:v-2:1.5",
+			"l-1:v-2:abc",
+			"l-1:v-2:3:extra",
+		]) {
+			expect(parseAddToCart(value)).toBeNull();
+		}
 	});
 });

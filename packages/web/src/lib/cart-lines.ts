@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { CartLineView, CartView } from "~/types/order";
 
 /**
@@ -64,4 +65,92 @@ export function canCheckout(cart: CartView): boolean {
 	return (
 		cart.shopOrderable && totals.itemCount > 0 && totals.unavailableCount === 0
 	);
+}
+
+export type CartLineState = "ok" | "price_changed" | "unavailable";
+
+/** Unavailable wins: a price the buyer cannot pay is not worth announcing. */
+export function cartLineState(line: CartLineView): CartLineState {
+	if (!line.available) return "unavailable";
+	if (line.priceChanged) return "price_changed";
+	return "ok";
+}
+
+export interface QuantityStepper {
+	canDecrease: boolean;
+	canIncrease: boolean;
+	/** The tracked stock is reached; the screen says why "+" is disabled. */
+	atMax: boolean;
+}
+
+/**
+ * The stepper never goes below one (removing is its own button) and never
+ * above a tracked variant's stock. An untracked variant has no client-side
+ * ceiling: the cart's own maximum is a server rule (`cart.quantityInvalid`)
+ * and is not mirrored here.
+ */
+export function quantityStepper(line: CartLineView): QuantityStepper {
+	if (cartLineState(line) === "unavailable") {
+		return { canDecrease: false, canIncrease: false, atMax: false };
+	}
+	const atMax = line.maxQuantity !== null && line.quantity >= line.maxQuantity;
+	return { canDecrease: line.quantity > 1, canIncrease: !atMax, atMax };
+}
+
+const singleShopRefusal = z.object({
+	code: z.literal("cart.singleShop"),
+	details: z.unknown().optional(),
+});
+
+const currentShopDetails = z.object({
+	currentShop: z.object({ id: z.string().min(1), name: z.string().nullable() }),
+});
+
+export interface SingleShopConflict {
+	/** Null when the refusal did not say which shop the cart holds. */
+	currentShop: { id: string; name: string | null } | null;
+}
+
+/**
+ * Whether a failed add should open the "replace the cart" dialog.
+ *
+ * Only `cart.singleShop` qualifies, and only when the shop already in the cart
+ * is not the one being added: replacing a cart with items from its own shop
+ * would empty it for nothing. When the shop being added is unknown (an add
+ * replayed from a URL carries no shop id) the server's refusal is itself the
+ * proof that the shops differ.
+ */
+export function singleShopConflict(
+	error: unknown,
+	addingShopId: string | null,
+): SingleShopConflict | null {
+	const refusal = singleShopRefusal.safeParse(error);
+	if (!refusal.success) return null;
+	const details = currentShopDetails.safeParse(refusal.data.details);
+	if (!details.success) return { currentShop: null };
+	const { currentShop } = details.data;
+	if (addingShopId !== null && currentShop.id === addingShopId) return null;
+	return { currentShop };
+}
+
+export interface AddToCartRequest {
+	listingId: string;
+	variantId: string;
+	quantity: number;
+}
+
+/**
+ * Reads the `addToCart=listingId:variantId:qty` parameter a signed-out add
+ * carries through sign-in back to `/cart`. Anything malformed is ignored
+ * rather than half-applied.
+ */
+export function parseAddToCart(
+	value: string | null | undefined,
+): AddToCartRequest | null {
+	if (!value) return null;
+	const parts = value.split(":");
+	if (parts.length !== 3) return null;
+	const [listingId, variantId, rawQuantity] = parts;
+	if (!listingId || !variantId || !/^[1-9]\d*$/.test(rawQuantity)) return null;
+	return { listingId, variantId, quantity: Number(rawQuantity) };
 }

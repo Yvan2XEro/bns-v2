@@ -1949,7 +1949,18 @@
 		"singleShopReplace": "Replace cart",
 		"singleShopKeep": "Keep current cart",
 		"selfPurchase": "You cannot buy from your own shop",
-		"signInToAdd": "Sign in to add items to your cart"
+		"signInToAdd": "Sign in to add items to your cart",
+		"singleShopBodyNamed": "Your cart already holds items from {shop}. Empty it to add this item?",
+		"decrease": "Decrease the quantity of {title}",
+		"increase": "Increase the quantity of {title}",
+		"removeItem": "Remove {title} from the cart",
+		"priceWas": "Price when added: {price}",
+		"itemCount": "{count, plural, one {# item} other {# items}}",
+		"priceChangedNotice": "The price of {count, plural, one {# item has} other {# items have}} changed. You will confirm the new total before ordering.",
+		"unavailableBlocking": "Remove the unavailable items to place your order.",
+		"shopNotOrderable": "This shop is not taking orders at the moment.",
+		"adding": "Adding the item to your cart…",
+		"retry": "Try again"
 	},
 	"Checkout": {
 		"stepAddress": "Address",

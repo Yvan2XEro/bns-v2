@@ -1950,7 +1950,18 @@
 		"singleShopReplace": "Remplacer le panier",
 		"singleShopKeep": "Garder le panier actuel",
 		"selfPurchase": "Vous ne pouvez pas acheter dans votre propre boutique",
-		"signInToAdd": "Connectez-vous pour ajouter des articles à votre panier"
+		"signInToAdd": "Connectez-vous pour ajouter des articles à votre panier",
+		"singleShopBodyNamed": "Votre panier contient déjà des articles de {shop}. Le vider pour ajouter cet article ?",
+		"decrease": "Diminuer la quantité de {title}",
+		"increase": "Augmenter la quantité de {title}",
+		"removeItem": "Retirer {title} du panier",
+		"priceWas": "Prix à l'ajout : {price}",
+		"itemCount": "{count, plural, one {# article} other {# articles}}",
+		"priceChangedNotice": "Le prix de {count, plural, one {# article a} other {# articles ont}} changé. Vous validerez le nouveau total avant de commander.",
+		"unavailableBlocking": "Retirez les articles indisponibles pour passer la commande.",
+		"shopNotOrderable": "Cette boutique ne prend plus de commandes pour le moment.",
+		"adding": "Ajout de l'article à votre panier…",
+		"retry": "Réessayer"
 	},
 	"Checkout": {
 		"stepAddress": "Adresse",
