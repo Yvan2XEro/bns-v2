@@ -43,15 +43,19 @@ import { VerificationRequests } from "./collections/VerificationRequests";
 import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
 import {
+	abandonCartsTask,
 	checkSearchAlertsTask,
+	enforceCommissionOverdueTask,
 	expireBoostsTask,
 	expireListingsTask,
+	issueCommissionInvoicesTask,
 	liftExpiredShopSuspensionsTask,
 	processKycEventTask,
 	processWebhookEventTask,
 	purgeShopActivityTask,
 	purgeVerificationDataTask,
 	reconcilePendingPaymentsTask,
+	reconcileStockCachesTask,
 } from "./jobs";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
@@ -173,6 +177,10 @@ export default buildConfig({
 			processKycEventTask,
 			purgeVerificationDataTask,
 			purgeShopActivityTask,
+			abandonCartsTask,
+			issueCommissionInvoicesTask,
+			enforceCommissionOverdueTask,
+			reconcileStockCachesTask,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
@@ -183,6 +191,10 @@ export default buildConfig({
 			// implicit target when `payload.jobs.queue()` gets no `queue`), so
 			// that queue needs its own frequent run alongside "payments".
 			{ cron: "* * * * *", queue: "default", limit: 20 },
+			// Commission runs on its own queue so a weekly invoicing pass can
+			// never be starved by, or starve, the nightly sweeps.
+			{ cron: "0 5 * * 1", queue: "commission", limit: 20 },
+			{ cron: "0 6 * * *", queue: "commission", limit: 20 },
 		],
 	},
 });

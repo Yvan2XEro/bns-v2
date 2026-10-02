@@ -187,6 +187,10 @@ export interface Config {
       processKycEvent: TaskProcessKycEvent;
       purgeVerificationData: TaskPurgeVerificationData;
       purgeShopActivity: TaskPurgeShopActivity;
+      abandonCarts: TaskAbandonCarts;
+      issueCommissionInvoices: TaskIssueCommissionInvoices;
+      enforceCommissionOverdue: TaskEnforceCommissionOverdue;
+      reconcileStockCaches: TaskReconcileStockCaches;
       inline: {
         input: unknown;
         output: unknown;
@@ -1810,7 +1814,11 @@ export interface PayloadJob {
           | 'liftExpiredShopSuspensions'
           | 'processKycEvent'
           | 'purgeVerificationData'
-          | 'purgeShopActivity';
+          | 'purgeShopActivity'
+          | 'abandonCarts'
+          | 'issueCommissionInvoices'
+          | 'enforceCommissionOverdue'
+          | 'reconcileStockCaches';
         taskID: string;
         input?:
           | {
@@ -1855,6 +1863,10 @@ export interface PayloadJob {
         | 'processKycEvent'
         | 'purgeVerificationData'
         | 'purgeShopActivity'
+        | 'abandonCarts'
+        | 'issueCommissionInvoices'
+        | 'enforceCommissionOverdue'
+        | 'reconcileStockCaches'
       )
     | null;
   queue?: string | null;
@@ -3633,6 +3645,40 @@ export interface TaskPurgeVerificationData {
  * via the `definition` "TaskPurgeShopActivity".
  */
 export interface TaskPurgeShopActivity {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskAbandonCarts".
+ */
+export interface TaskAbandonCarts {
+  input?: unknown;
+  output: {
+    abandoned?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskIssueCommissionInvoices".
+ */
+export interface TaskIssueCommissionInvoices {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskEnforceCommissionOverdue".
+ */
+export interface TaskEnforceCommissionOverdue {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReconcileStockCaches".
+ */
+export interface TaskReconcileStockCaches {
   input?: unknown;
   output?: unknown;
 }

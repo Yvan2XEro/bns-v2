@@ -315,6 +315,11 @@ export async function issueInvoicesForWeek(
 			and: [
 				{ status: { equals: "open" } },
 				{ accruedAt: { less_than_equal: periodEnd } },
+				// P5 collects a mobile-money order's commission at source, so
+				// such a line is never owed on an invoice. `not_equals` rather
+				// than `equals: "cod"` on purpose: `credit` and `carry_over`
+				// lines carry no payment method and must still be invoiced.
+				{ paymentMethod: { not_equals: "mobile_money" } },
 			],
 		},
 		limit: 0,
