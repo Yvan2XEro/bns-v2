@@ -199,7 +199,7 @@ stage. Isolate them, or serialise them.
 - `packages/mobile` has no `check-types` script, so `turbo check-types` —
   which the pre-commit hook runs — reports "7 packages in scope" and checks
   five. Mobile has never been type-checked by the hook. `bun run
-  check-types:advisory` in `packages/mobile` does it; the baseline is **35
+  check-types:advisory` in `packages/mobile` does it; the baseline is **32
   errors and it must not rise**. It is not named `check-types` on purpose:
   turbo would pick that up and block every commit on the existing backlog.
   Rename it once the count reaches zero, and the hook covers mobile from then
@@ -259,7 +259,7 @@ cd packages/api && bun run check-types:tests | grep -c "error TS"   # 105
 grep -ro 'as never' packages/api/tests | wc -l                      # 95
 grep -ro 'as never' packages/web/src packages/mobile/src \
                     packages/mobile/app | wc -l                     # 80
-cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
+cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 32
 ```
 
 - Measure those four numbers on a **quiet tree**. Every figure quoted during
