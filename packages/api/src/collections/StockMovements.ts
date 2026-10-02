@@ -149,6 +149,8 @@ export const StockMovements: CollectionConfig = {
 		{ name: "note", type: "text", maxLength: 500 },
 		{ name: "actor", type: "relationship", relationTo: "users" },
 		{ name: "orderRef", type: "text" },
+		{ name: "order", type: "relationship", relationTo: "orders", index: true },
+		{ name: "reservedAfter", type: "number" },
 	],
 	timestamps: true,
 };

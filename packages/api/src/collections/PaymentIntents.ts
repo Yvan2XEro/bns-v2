@@ -48,13 +48,19 @@ export const PaymentIntents: CollectionConfig = {
 			name: "purpose",
 			type: "select",
 			required: true,
-			options: [{ label: "Boost", value: "boost" }],
+			options: [
+				{ label: "Boost", value: "boost" },
+				{ label: "Commission", value: "commission" },
+			],
 		},
 		{
 			name: "targetType",
 			type: "select",
 			required: true,
-			options: [{ label: "Boost payment", value: "boost-payment" }],
+			options: [
+				{ label: "Boost payment", value: "boost-payment" },
+				{ label: "Commission invoice", value: "commission-invoice" },
+			],
 		},
 		{ name: "targetId", type: "text", required: true, index: true },
 		{

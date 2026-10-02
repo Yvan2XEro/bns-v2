@@ -68,6 +68,53 @@ describe("Shops beforeChange", () => {
 		expect(result.publishedListingCount).toBe(4);
 	});
 
+	it("pins the P4 service-owned fields on a member's update", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		const withOrderFields = {
+			...original,
+			ordersRestrictedAt: null,
+			ordersRestrictedReason: null,
+			rating: 4.5,
+			totalReviews: 10,
+			stats: { ordersDelivered: 3 },
+		};
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: withOrderFields,
+			data: {
+				...withOrderFields,
+				ordersRestrictedAt: "2026-10-01T00:00:00.000Z",
+				ordersRestrictedReason: "commission_overdue",
+				rating: 1,
+				totalReviews: 999,
+				stats: { ordersDelivered: 999 },
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect(result.ordersRestrictedAt).toBeNull();
+		expect(result.ordersRestrictedReason).toBeNull();
+		expect(result.rating).toBe(4.5);
+		expect(result.totalReviews).toBe(10);
+		expect(result.stats).toEqual({ ordersDelivered: 3 });
+	});
+
+	it("lets a member write orderSettings, which is not a service-pinned field", async () => {
+		const payload = fakePayload({ users: [{ id: "u-1" }] });
+		const result = await beforeChange({
+			operation: "update",
+			originalDoc: original,
+			data: {
+				...original,
+				orderSettings: { codEnabled: true, sellerDeliveryEnabled: false },
+			},
+			req: { payload, user: { id: "u-1" }, context: {} },
+		});
+		expect(result.orderSettings).toEqual({
+			codEnabled: true,
+			sellerDeliveryEnabled: false,
+		});
+	});
+
 	it("lets the shop service write its fields", async () => {
 		const payload = fakePayload();
 		const result = await beforeChange({

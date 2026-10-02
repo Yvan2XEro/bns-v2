@@ -24,6 +24,20 @@ export const Messages: CollectionConfig = {
 			async ({ req, data, operation }) => {
 				if (operation !== "create") return data;
 
+				// A system message trusts no field access check to close it: field
+				// access cannot see `req.context`, and the order service's own
+				// writes use `overrideAccess`, which skips field access entirely.
+				// This is the one place that actually closes the door, and it must
+				// do so before touching `req.payload` — the order service calls
+				// this with a minimal `req` that carries no live connection.
+				if (data.kind === "system") {
+					if (req.context?.orderService !== true) {
+						throw new CodedAPIError(ERROR_CODES.forbidden, 403);
+					}
+					data.sender = null;
+					return data;
+				}
+
 				// Only chat-service may name someone else as the sender. Every
 				// other caller sends as themselves, whatever the body says.
 				const named = relationId(data.sender);
@@ -168,6 +182,10 @@ export const Messages: CollectionConfig = {
 							: {}),
 					},
 				});
+
+				// Order notifications already cover a system message (`order-placed`,
+				// `order-shipped`, …); `new-message` would double it up.
+				if (doc.kind === "system") return;
 
 				if (!isNotificationProviderConfigured()) return;
 				try {
@@ -329,15 +347,53 @@ export const Messages: CollectionConfig = {
 			name: "sender",
 			type: "relationship",
 			relationTo: "users",
-			required: true,
 			admin: {
 				readOnly: true,
 			},
+			// Required for a `user` message, null for a `system` one — the
+			// `beforeChange` guard above is what actually enforces "null only
+			// from the order service"; this just keeps an ordinary message from
+			// being saved senderless.
+			validate: (
+				value: unknown,
+				{ siblingData }: { siblingData?: { kind?: string } },
+			) =>
+				value || siblingData?.kind === "system"
+					? true
+					: "A sender is required.",
 		},
 		{
 			name: "content",
 			type: "text",
 			required: true,
+		},
+		{
+			name: "kind",
+			type: "select",
+			defaultValue: "user",
+			index: true,
+			options: [
+				{ label: "User", value: "user" },
+				{ label: "System", value: "system" },
+			],
+			admin: { readOnly: true },
+		},
+		{
+			name: "systemEvent",
+			type: "text",
+			admin: {
+				readOnly: true,
+				description:
+					'An order-event type, e.g. "order.placed". System messages only.',
+			},
+		},
+		{ name: "systemParams", type: "json", admin: { readOnly: true } },
+		{
+			name: "order",
+			type: "relationship",
+			relationTo: "orders",
+			index: true,
+			admin: { readOnly: true },
 		},
 		{
 			name: "listing",

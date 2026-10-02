@@ -61,6 +61,7 @@ export const Reports: CollectionConfig = {
 				{ label: "User", value: "user" },
 				{ label: "Message", value: "message" },
 				{ label: "Shop", value: "shop" },
+				{ label: "Order", value: "order" },
 			],
 		},
 		{
@@ -79,6 +80,7 @@ export const Reports: CollectionConfig = {
 				{ label: "Prohibited item", value: "prohibited" },
 				{ label: "Harassment", value: "harassment" },
 				{ label: "Other", value: "other" },
+				{ label: "Delivery contested", value: "delivery_contested" },
 			],
 		},
 		{

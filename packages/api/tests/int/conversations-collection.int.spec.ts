@@ -243,6 +243,32 @@ describe("Conversations.beforeChange on update", () => {
 		expect(data.assignedBy).toBeNull();
 	});
 
+	// The exact C1 mechanism, now for `order`: a classic conversation (and an
+	// order conversation created before P4) has no `order` key at all, so a
+	// pin that only fires when the key already exists would let an attacker's
+	// PATCH set it for the first time.
+	it("pins order on a REST update even when the stored document has no such key", async () => {
+		const payload = seed();
+		const data = await beforeChange({
+			req: req(payload, "u-buyer"),
+			operation: "update",
+			originalDoc: { id: "c-1", participants: ["u-1", "u-2"] },
+			data: { order: "o-attacker" },
+		});
+		expect(data.order ?? null).toBeNull();
+	});
+
+	it("pins order back to its stored value when one is already set", async () => {
+		const payload = seed();
+		const data = await beforeChange({
+			req: req(payload, "u-buyer"),
+			operation: "update",
+			originalDoc: { ...original, order: "o-1" },
+			data: { order: "o-attacker" },
+		});
+		expect(data.order).toBe("o-1");
+	});
+
 	it("lets the inbox service through", async () => {
 		const payload = seed();
 		const serviceReq = {

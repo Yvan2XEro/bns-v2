@@ -6,7 +6,11 @@ import { buildConfig } from "payload";
 import sharp from "sharp";
 import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
+import { BuyerPhoneScores } from "./collections/BuyerPhoneScores";
+import { Carts } from "./collections/Carts";
 import { Categories } from "./collections/Categories";
+import { CommissionInvoices } from "./collections/CommissionInvoices";
+import { CommissionLines } from "./collections/CommissionLines";
 import { ContactReveals } from "./collections/ContactReveals";
 import { ConversationReads } from "./collections/ConversationReads";
 import { Conversations } from "./collections/Conversations";
@@ -15,10 +19,14 @@ import { Listings } from "./collections/Listings";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
+import { OrderEvents } from "./collections/OrderEvents";
+import { OrderItems } from "./collections/OrderItems";
+import { Orders } from "./collections/Orders";
 import { PaymentIntents } from "./collections/PaymentIntents";
 import { Products } from "./collections/Products";
 import { ProductVariants } from "./collections/ProductVariants";
 import { Reports } from "./collections/Reports";
+import { ReturnCases } from "./collections/ReturnCases";
 import { Reviews } from "./collections/Reviews";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Sequences } from "./collections/Sequences";
@@ -122,6 +130,14 @@ export default buildConfig({
 		VerificationDocuments,
 		VerificationDocumentViews,
 		Sequences,
+		Carts,
+		Orders,
+		OrderItems,
+		OrderEvents,
+		BuyerPhoneScores,
+		CommissionLines,
+		CommissionInvoices,
+		ReturnCases,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),

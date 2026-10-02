@@ -1,6 +1,14 @@
 import type { CollectionConfig } from "payload";
 import { anyone } from "../access/anyone";
+import { isModerator } from "../access/roles";
 import { decorateCategoryWithFormPreset } from "../lib/listingFormPreset";
+
+const staffOnlyWrite = {
+	create: ({ req: { user } }: { req: { user: { role?: string } | null } }) =>
+		isModerator(user),
+	update: ({ req: { user } }: { req: { user: { role?: string } | null } }) =>
+		isModerator(user),
+};
 
 export interface CategoryAttribute {
 	name: string;
@@ -302,6 +310,18 @@ export const Categories: CollectionConfig = {
 					},
 				},
 			],
+		},
+		{
+			// Overrides `AppSettings.orders.defaultCommissionRateBps` for every
+			// order item filed under this category. Collection-level access
+			// already restricts writes to staff; this is the same rule stated
+			// again at the field, since it is the one field here with money
+			// consequences.
+			name: "commissionRateBps",
+			type: "number",
+			min: 0,
+			max: 2000,
+			access: staffOnlyWrite,
 		},
 		{
 			name: "createdAt",

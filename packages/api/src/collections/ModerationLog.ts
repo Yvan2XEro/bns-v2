@@ -19,6 +19,8 @@ export const MODERATION_ACTIONS = [
 	"verification.reject",
 	"verification.revoke",
 	"verification.expire",
+	"order.cancel",
+	"commission.waive",
 ] as const;
 
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
@@ -92,6 +94,8 @@ export const ModerationLog: CollectionConfig = {
 				{ label: "Report", value: "report" },
 				{ label: "Shop", value: "shop" },
 				{ label: "Verification request", value: "verification-request" },
+				{ label: "Order", value: "order" },
+				{ label: "Commission invoice", value: "commission-invoice" },
 			],
 			admin: { readOnly: true },
 		},

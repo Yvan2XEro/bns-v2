@@ -33,6 +33,11 @@ export const SHOP_SERVICE_FIELDS = [
 	"suspensionLogId",
 	"publishedListingCount",
 	"notifiedExpiryDays",
+	"ordersRestrictedAt",
+	"ordersRestrictedReason",
+	"rating",
+	"totalReviews",
+	"stats",
 ] as const;
 
 /** A change to any of these makes the shop's listing documents stale in search. */
@@ -335,6 +340,76 @@ export const Shops: CollectionConfig = {
 			defaultValue: 0,
 			index: true,
 			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			// Owner/manager-editable through the same `settings.edit` gate as the
+			// rest of the collection's `access.update` — no extra field access
+			// needed here.
+			name: "orderSettings",
+			type: "group",
+			fields: [
+				{ name: "codEnabled", type: "checkbox", defaultValue: false },
+				{ name: "sellerDeliveryEnabled", type: "checkbox", defaultValue: true },
+				{ name: "deliveryFee", type: "number", min: 0, max: 20_000 },
+				{ name: "deliveryEtaText", type: "text" },
+				{ name: "pickupEnabled", type: "checkbox", defaultValue: false },
+				{
+					name: "pickupPoint",
+					type: "group",
+					fields: [
+						{ name: "address", type: "text" },
+						{ name: "landmark", type: "text" },
+						{
+							name: "gps",
+							type: "group",
+							fields: [
+								{ name: "lat", type: "number" },
+								{ name: "lng", type: "number" },
+							],
+						},
+						{ name: "hours", type: "text" },
+					],
+				},
+				{ name: "salesTermsExtra", type: "textarea", maxLength: 2000 },
+			],
+		},
+		{
+			name: "ordersRestrictedAt",
+			type: "date",
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			name: "ordersRestrictedReason",
+			type: "select",
+			options: [
+				{ label: "Commission overdue", value: "commission_overdue" },
+				{ label: "Staff", value: "staff" },
+			],
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			name: "rating",
+			type: "number",
+			min: 0,
+			max: 5,
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			name: "totalReviews",
+			type: "number",
+			defaultValue: 0,
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			name: "stats",
+			type: "group",
+			admin: { readOnly: true },
+			fields: [
+				{ name: "ordersDelivered", type: "number", defaultValue: 0 },
+				{ name: "ordersCancelledBySeller", type: "number", defaultValue: 0 },
+				{ name: "ordersAutoCancelled", type: "number", defaultValue: 0 },
+				{ name: "ordersDeliveryFailed", type: "number", defaultValue: 0 },
+			],
 		},
 	],
 	timestamps: true,

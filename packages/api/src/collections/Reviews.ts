@@ -121,6 +121,18 @@ export const Reviews: CollectionConfig = {
 			relationTo: "listings",
 			required: false,
 		},
+		{ name: "order", type: "relationship", relationTo: "orders" },
+		{ name: "shop", type: "relationship", relationTo: "shops", index: true },
+		{
+			// Service-set: the order review path (a later task) is the only
+			// writer, matching P3's I1 — a client claiming this itself is a
+			// field-level rule, not a hook comment, so it is closed here even
+			// before that service exists.
+			name: "verifiedPurchase",
+			type: "checkbox",
+			defaultValue: false,
+			access: { create: () => false },
+		},
 		{
 			name: "rating",
 			type: "number",

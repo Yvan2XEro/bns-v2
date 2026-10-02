@@ -24,6 +24,7 @@ const PINNED_FIELDS = [
 	"assignedBy",
 	"inboxStatus",
 	"awaitingReply",
+	"order",
 ] as const;
 
 export const Conversations: CollectionConfig = {
@@ -169,6 +170,19 @@ export const Conversations: CollectionConfig = {
 			name: "buyer",
 			type: "relationship",
 			relationTo: "users",
+			index: true,
+			admin: { readOnly: true },
+		},
+		{
+			// Set once by `services/orders/chat.ts` (a later task) when the
+			// conversation is created for an order; pinned afterwards like
+			// `shop`/`buyer`. Not declared `unique`: the order service is the
+			// collection's sole writer of this field, so there is no concurrent
+			// REST race for a database-level constraint to close, unlike
+			// `carts`/`orders`/`commission-lines` in the P4 index migration.
+			name: "order",
+			type: "relationship",
+			relationTo: "orders",
 			index: true,
 			admin: { readOnly: true },
 		},
