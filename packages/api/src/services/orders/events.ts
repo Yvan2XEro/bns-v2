@@ -50,6 +50,17 @@ export function __resetOrderEventHandlers(): void {
 	dispatched.clear();
 }
 
+export interface RunOrderEventHandlersOptions {
+	/**
+	 * Run only the handlers carrying these names — `dispatchOrderEvent`'s
+	 * retry, which passes back the names a previous attempt reported as
+	 * failed. Naming them also waives the `event.id` guard below: the retry
+	 * *is* the continuation of the dispatch that claimed the id, and the
+	 * handlers it names are exactly the ones that never completed.
+	 */
+	only?: readonly string[];
+}
+
 /**
  * Runs every handler registered for `event.type`, each in its own `try` so
  * one failure never stops the rest, and returns the names of the handlers
@@ -63,12 +74,17 @@ export async function runOrderEventHandlers(
 	payload: Payload,
 	order: Order,
 	event: OrderEvent,
+	options: RunOrderEventHandlersOptions = {},
 ): Promise<string[]> {
-	if (dispatched.has(event.id)) return [];
-	dispatched.add(event.id);
+	const only = options.only?.length ? new Set(options.only) : null;
+	if (!only) {
+		if (dispatched.has(event.id)) return [];
+		dispatched.add(event.id);
+	}
 
 	const failed: string[] = [];
 	for (const handler of handlers.get(event.type) ?? []) {
+		if (only && !only.has(handler.name || "anonymous")) continue;
 		try {
 			await handler(payload, order, event);
 		} catch (error) {

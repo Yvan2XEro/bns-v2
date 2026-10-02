@@ -45,9 +45,13 @@ import { AppSettings } from "./globals/AppSettings";
 import {
 	abandonCartsTask,
 	checkSearchAlertsTask,
+	completeOrdersTask,
+	dispatchOrderEventTask,
 	enforceCommissionOverdueTask,
 	expireBoostsTask,
 	expireListingsTask,
+	expireOrdersTask,
+	failStaleOrdersTask,
 	issueCommissionInvoicesTask,
 	liftExpiredShopSuspensionsTask,
 	processKycEventTask,
@@ -181,6 +185,10 @@ export default buildConfig({
 			issueCommissionInvoicesTask,
 			enforceCommissionOverdueTask,
 			reconcileStockCachesTask,
+			dispatchOrderEventTask,
+			expireOrdersTask,
+			failStaleOrdersTask,
+			completeOrdersTask,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
@@ -195,6 +203,12 @@ export default buildConfig({
 			// never be starved by, or starve, the nightly sweeps.
 			{ cron: "0 5 * * 1", queue: "commission", limit: 20 },
 			{ cron: "0 6 * * *", queue: "commission", limit: 20 },
+			// The order lifecycle: `expireOrders` and the `dispatchOrderEvent`
+			// retries it enqueues share the five-minute "orders" queue, while
+			// `failStaleOrders` and `completeOrders` only ever act on deadlines
+			// measured in days.
+			{ cron: "*/5 * * * *", queue: "orders", limit: 50 },
+			{ cron: "0 * * * *", queue: "hourly", limit: 20 },
 		],
 	},
 });

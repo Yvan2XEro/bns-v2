@@ -1,8 +1,12 @@
 export { abandonCartsTask } from "./abandonCarts";
 export { checkSearchAlertsTask } from "./checkSearchAlerts";
+export { completeOrdersTask } from "./completeOrders";
+export { dispatchOrderEventTask } from "./dispatchOrderEvent";
 export { enforceCommissionOverdueTask } from "./enforceCommissionOverdue";
 export { expireBoostsTask } from "./expireBoosts";
 export { expireListingsTask } from "./expireListings";
+export { expireOrdersTask } from "./expireOrders";
+export { failStaleOrdersTask } from "./failStaleOrders";
 export { issueCommissionInvoicesTask } from "./issueCommissionInvoices";
 export { liftExpiredShopSuspensionsTask } from "./liftExpiredShopSuspensions";
 export { processKycEventTask } from "./processKycEvent";

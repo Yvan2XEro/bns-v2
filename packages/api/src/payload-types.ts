@@ -191,6 +191,10 @@ export interface Config {
       issueCommissionInvoices: TaskIssueCommissionInvoices;
       enforceCommissionOverdue: TaskEnforceCommissionOverdue;
       reconcileStockCaches: TaskReconcileStockCaches;
+      dispatchOrderEvent: TaskDispatchOrderEvent;
+      expireOrders: TaskExpireOrders;
+      failStaleOrders: TaskFailStaleOrders;
+      completeOrders: TaskCompleteOrders;
       inline: {
         input: unknown;
         output: unknown;
@@ -1818,7 +1822,11 @@ export interface PayloadJob {
           | 'abandonCarts'
           | 'issueCommissionInvoices'
           | 'enforceCommissionOverdue'
-          | 'reconcileStockCaches';
+          | 'reconcileStockCaches'
+          | 'dispatchOrderEvent'
+          | 'expireOrders'
+          | 'failStaleOrders'
+          | 'completeOrders';
         taskID: string;
         input?:
           | {
@@ -1867,6 +1875,10 @@ export interface PayloadJob {
         | 'issueCommissionInvoices'
         | 'enforceCommissionOverdue'
         | 'reconcileStockCaches'
+        | 'dispatchOrderEvent'
+        | 'expireOrders'
+        | 'failStaleOrders'
+        | 'completeOrders'
       )
     | null;
   queue?: string | null;
@@ -3681,6 +3693,75 @@ export interface TaskEnforceCommissionOverdue {
 export interface TaskReconcileStockCaches {
   input?: unknown;
   output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskDispatchOrderEvent".
+ */
+export interface TaskDispatchOrderEvent {
+  input: {
+    orderId: string;
+    eventId: string;
+    attempt?: number | null;
+    handlers?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+  };
+  output: {
+    attempt?: number | null;
+    failed?:
+      | {
+          [k: string]: unknown;
+        }
+      | unknown[]
+      | string
+      | number
+      | boolean
+      | null;
+    requeued?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpireOrders".
+ */
+export interface TaskExpireOrders {
+  input?: unknown;
+  output: {
+    confirmationExpired?: number | null;
+    sellerTimedOut?: number | null;
+    remindersSent?: number | null;
+    errors?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFailStaleOrders".
+ */
+export interface TaskFailStaleOrders {
+  input?: unknown;
+  output: {
+    remindersSent?: number | null;
+    failed?: number | null;
+    errors?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCompleteOrders".
+ */
+export interface TaskCompleteOrders {
+  input?: unknown;
+  output: {
+    completed?: number | null;
+    errors?: number | null;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
