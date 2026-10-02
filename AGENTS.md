@@ -189,7 +189,7 @@ stage. Isolate them, or serialise them.
 - `packages/mobile` has no `check-types` script, so `turbo check-types` —
   which the pre-commit hook runs — reports "7 packages in scope" and checks
   five. Mobile has never been type-checked by the hook. `bun run
-  check-types:advisory` in `packages/mobile` does it; the baseline is **39
+  check-types:advisory` in `packages/mobile` does it; the baseline is **35
   errors and it must not rise**. It is not named `check-types` on purpose:
   turbo would pick that up and block every commit on the existing backlog.
   Rename it once the count reaches zero, and the hook covers mobile from then
@@ -216,7 +216,7 @@ stage. Isolate them, or serialise them.
   count falls and the mismatch stays. A task under pressure to hold 105 will
   reach for the cast the Types section forbids, and this already happened
   once in P3. So the number of `as never` occurrences is also a ceiling:
-  **98 across `packages/api/tests/`, and 80 across `packages/web/src`,
+  **94 across `packages/api/tests/`, and 80 across `packages/web/src`,
   `packages/mobile/src` **and `packages/mobile/app`** — that last path is
   where most of them are, and leaving it out is how this number was first
   published as 48.**
