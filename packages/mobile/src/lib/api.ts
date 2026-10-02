@@ -126,6 +126,7 @@ async function request<T>(
 	path: string,
 	options: RequestInit = {},
 	retried = false,
+	parse: "json" | "text" = "json",
 ): Promise<T> {
 	const token = await getToken();
 
@@ -179,7 +180,7 @@ async function request<T>(
 			// retry the original request once with the new token.
 			const recovered = await refreshToken();
 			if (recovered) {
-				return request<T>(path, options, true);
+				return request<T>(path, options, true, parse);
 			}
 			await removeToken();
 			unauthorizedHandler?.();
@@ -197,11 +198,19 @@ async function request<T>(
 		return {} as T;
 	}
 
+	if (parse === "text") return res.text() as Promise<T>;
 	return res.json() as Promise<T>;
 }
 
 export const api = {
 	get: <T>(path: string): Promise<T> => request<T>(path),
+
+	/** For the two routes that answer `text/html` rather than JSON: an order's
+	 * printable receipt and a commission invoice's document. Both need the
+	 * caller's token, so the markup is fetched here and handed to a WebView
+	 * rather than opened by URL. */
+	getText: (path: string): Promise<string> =>
+		request<string>(path, {}, false, "text"),
 
 	post: <T>(path: string, body: unknown): Promise<T> =>
 		request<T>(path, {

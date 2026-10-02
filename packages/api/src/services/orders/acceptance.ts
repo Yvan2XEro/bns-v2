@@ -49,13 +49,13 @@ const BUYER_CANCEL_REASONS = [
  * cancelled` as structurally valid — that row belongs to staff/dispute
  * cancellation, not this one, so the restriction lives here rather than in
  * the shared table. */
-const BUYER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
+export const BUYER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
 	"placed",
 	"confirmed",
 	"accepted",
 ];
 
-const SELLER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
+export const SELLER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
 	"placed",
 	"confirmed",
 	"accepted",
