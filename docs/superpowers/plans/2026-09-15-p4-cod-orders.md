@@ -3447,7 +3447,7 @@ describe("the API and chat-service agree on every Redis channel", () => {
 
 ---
 
-### Task 16: The sixteen Novu workflows and their push payloads
+### Task 16: The fourteen Novu workflows and their push payloads
 
 **Files:**
 - Create: `packages/api/src/services/orders/notifications.ts`
@@ -3456,20 +3456,20 @@ describe("the API and chat-service agree on every Redis channel", () => {
 
 **Interfaces:**
 - Consumes: `registerOrderEventHandler` (Task 8); `inboxNotificationRecipients`-style member resolution from `services/shopMemberNotifications.ts` (**imported**, not re-implemented); `triggerNotificationEvent`, `buildExpoPushData` (`hooks/notificationEvents.ts`).
-- Produces: the 13 workflow definitions with the spec's exact ids and payload schemas (`order-placed`, `order-confirmation-needed`, `order-accept-reminder`, `order-accepted`, `order-shipped`, `order-delivered`, `order-cancelled`, `order-delivery-failed`, `order-delivery-declared`, `order-withdrawal-requested`, `order-review-reminder`, `commission-invoice-issued`, `commission-invoice-overdue`, `commission-invoice-paid` — fourteen ids; thirteen *order* ones plus the three commission ones is sixteen definitions in total, and the spec's table is the authority: **sixteen**); `notifyOrderPlaced`, `notifyOrderAccepted`, … one function per workflow, each registered as an order-event handler; `recipientsForShop(payload, shopId, permission)`.
+- Produces: the fourteen workflow definitions with the spec's exact ids and payload schemas (`order-placed`, `order-confirmation-needed`, `order-accept-reminder`, `order-accepted`, `order-shipped`, `order-delivered`, `order-cancelled`, `order-delivery-failed`, `order-delivery-declared`, `order-withdrawal-requested`, `order-review-reminder`, `commission-invoice-issued`, `commission-invoice-overdue`, `commission-invoice-paid` — **fourteen** ids: eleven *order* ones plus three commission ones. The spec's Notifications table is the authority and lists exactly fourteen rows; this plan said sixteen in a dozen places from an arithmetic slip, which the implementing task caught by counting the spec instead of trusting the plan); `notifyOrderPlaced`, `notifyOrderAccepted`, … one function per workflow, each registered as an order-event handler; `recipientsForShop(payload, shopId, permission)`.
 - **Links out:** every in-app `redirect` and push `data` points at `/purchases/{id}` (Task 32), `/seller/orders/{id}` (Task 33) or `/seller/billing/{id}` (Task 34), and the deep links `buynsellem://purchases/{id}` / `buynsellem://seller/orders/{id}` are registered by Task 41. The review link in `order-delivered` points at `/purchases/{id}` and **not** at a review route, because no task builds one — the review is a panel on that screen (Task 32).
 
 - [ ] **Step 1: Write the failing tests**, cases:
-- `declares sixteen new workflows, with the spec's ids` — the ids are listed literally in the test, and the count is asserted, so a forgotten workflow fails rather than passing quietly (P3's Task 12 pattern).
+- `declares fourteen new workflows, with the spec's ids` — the ids are listed literally in the test, and the count is asserted, so a forgotten workflow fails rather than passing quietly (P3's Task 12 pattern).
 - `every workflow's payloadSchema requires exactly the spec's fields` — one case per workflow, transcribed from the spec's table.
 - `order-placed reaches the buyer and every member with orders.view` and `reaches nobody who lacks it` — the matrix, through `can`, never a role string.
 - `commission-invoice-issued reaches owner and manager only`.
 - `order-accept-reminder fires once` — a second run sends nothing.
-- `buildExpoPushData routes each new workflow to its deep link` — sixteen cases.
+- `buildExpoPushData routes each new workflow to its deep link` — fourteen cases.
 - `a notification is never triggered inside the transaction` — rolled back, nothing triggered.
 - `the seller SMS fallback fires only when no member has a push token` (the spec's fourth SMS).
 
-- [ ] **Step 2–4: Run red, implement, run green**, then `bun run sync:notification-workflows -- --dry-run` and paste the sixteen listed ids into the report.
+- [ ] **Step 2–4: Run red, implement, run green**, then `bun run sync:notification-workflows -- --dry-run` and paste the fourteen listed ids into the report.
 
 - [ ] **Step 5: Prove each rule fails for its own reason**
 
@@ -4045,7 +4045,7 @@ Same contract as Task 29, same 33-row action table — and **the mobile table is
 
 **Files:** `docs/superpowers/plans/2026-09-15-p4-cod-orders-release.md` (**new**, the record of the pass).
 
-- [ ] **Step 1: Pre-flight on a quiet tree.** All six suites; `bun run generate:types` leaves no diff; `bun run sync:notification-workflows -- --dry-run` lists the sixteen workflows; the four ceilings measured and quoted; `bunx biome check` over every touched file with each remaining warning qualified, not waved through.
+- [ ] **Step 1: Pre-flight on a quiet tree.** All six suites; `bun run generate:types` leaves no diff; `bun run sync:notification-workflows -- --dry-run` lists the fourteen workflows; the four ceilings measured and quoted; `bunx biome check` over every touched file with each remaining warning qualified, not waved through.
 - [ ] **Step 2: Migrations and the smoke suite.** `bun run migrate:status`, then the four indexes verified on staging, then `bunx vitest run --config ./vitest.config.mts --dir tests/smoke` — deliberately, as AGENTS.md says, and only here.
 - [ ] **Step 3: Staging with `orders.enabled = true` and one level-1 pilot shop in Douala.** Walk the spec's manual list and record each result with the order number: verified-phone auto-confirm; another phone with the SMS code; seller-call confirmation; accept, ship, a wrong handover code then the right one; the buyer's confirm-receipt path; a seller declaration and a buyer contest; a refusal at the door and the refusal score's effect on the next checkout; auto-cancel at 48 h on a clock-shifted staging; a withdrawal request; a verified review; an invoice issued, paid in the NotchPay sandbox, then the overdue restriction and its lift; the receipt and the invoice in both languages.
 - [ ] **Step 4: Check the five Review Focus cases by hand on staging**, because each is a race or a dead end a test can only approximate: cancel while the courier is at the door; a delivery marked on a refused order; two devices accepting one order; a replayed delivery; a handover locked with its regenerations spent. Record what the two users saw, not only what the database holds.
@@ -4122,7 +4122,7 @@ Each numbered scope item of the spec, and the task that implements it.
 
 **Ruling 6 — `listings.orderable` is derived by the API, not computed by the indexer.** The spec puts the rule in `transformListing`. The indexer cannot read `AppSettings` and would have to re-implement nine clauses about shops, products and stock — the cross-package duplication AGENTS.md calls a bug. The API derives the virtual field in `beforeRead` (the shape `Users` already uses for `verified`), the indexer copies it, and the rule has one implementation with nine tests. Task 25.
 
-**Ruling 7 — the notification table has sixteen workflows, not thirteen.** The spec's table lists eleven `order-*` workflows plus `order-review-reminder` and the three `commission-invoice-*` ones. Task 16 asserts sixteen ids literally, so the count cannot drift silently; if a reviewer counts differently, the list in the test is the thing to argue with.
+**Ruling 7 — the notification table has fourteen workflows, not thirteen.** The spec's table lists eleven `order-*` workflows plus `order-review-reminder` and the three `commission-invoice-*` ones. Task 16 asserts sixteen ids literally, so the count cannot drift silently; if a reviewer counts differently, the list in the test is the thing to argue with.
 
 **Ruling 8 — `verifiedPurchase`, `senderSide`-style fields are closed at the field level, not in a comment.** P3's I1 shipped two fields that `admin: { readOnly: true }` protected only in the admin panel. Every service-owned field P4 adds carries `access.create: () => false` / `update: () => false` where a client could otherwise send it, and the pins that cannot be expressed as field access (`status`, `paymentStatus`, `fulfillmentStatus`, `snapshot`) are enforced in `beforeChange` against `req.context.orderService`. Task 6.
 
