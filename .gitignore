@@ -48,3 +48,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # MongoDB replica-set key file
 mongo-keyfile
+.mcp.json
