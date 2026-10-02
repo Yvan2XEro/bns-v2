@@ -1,0 +1,96 @@
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Glob } from "bun";
+import {
+	isScreenFile,
+	rootRegistrationFor,
+	stackScreenNames,
+} from "./appRoutes";
+
+const APP_ROOT = join(import.meta.dir, "../../app");
+
+/**
+ * P3 shipped a screen nothing could reach. Every P4 screen file under these
+ * roots must have its root `Stack.Screen`, found by reading the files on disk
+ * rather than a list someone has to remember to extend.
+ */
+const P4_ROOTS = [
+	"cart.tsx",
+	"checkout/**/*",
+	"purchases/**/*",
+	"seller/orders/**/*",
+	"seller/billing/**/*",
+	"seller/order-settings.tsx",
+	"moderation/order/**/*",
+];
+
+function appFiles(pattern: string): string[] {
+	return [...new Glob(pattern).scanSync({ cwd: APP_ROOT })].sort();
+}
+
+const allFiles = appFiles("**/*");
+const layoutDirs = allFiles
+	.filter((file) => /(^|\/)_layout\.tsx$/.test(file))
+	.map((file) => file.replace(/\/?_layout\.tsx$/, ""))
+	.filter(Boolean);
+const p4Screens = P4_ROOTS.flatMap(appFiles).filter(isScreenFile).sort();
+const registered = stackScreenNames(
+	readFileSync(join(APP_ROOT, "_layout.tsx"), "utf8"),
+);
+
+describe("every P4 screen is registered in the root stack", () => {
+	test("the roots hold the fifteen screens the plan lists", () => {
+		expect(p4Screens).toEqual([
+			"cart.tsx",
+			"checkout/address.tsx",
+			"checkout/confirmation/[id].tsx",
+			"checkout/delivery.tsx",
+			"checkout/review.tsx",
+			"moderation/order/[id].tsx",
+			"purchases/[id].tsx",
+			"purchases/[id]/withdrawal.tsx",
+			"purchases/index.tsx",
+			"seller/billing/[id].tsx",
+			"seller/billing/index.tsx",
+			"seller/order-settings.tsx",
+			"seller/orders/[id].tsx",
+			"seller/orders/[id]/handover.tsx",
+			"seller/orders/index.tsx",
+		]);
+	});
+
+	test("checkout's steps answer to one entry, through its own layout", () => {
+		expect(layoutDirs).toContain("checkout");
+		expect(
+			rootRegistrationFor("checkout/confirmation/[id].tsx", layoutDirs),
+		).toBe("checkout");
+	});
+
+	test.each(p4Screens)("%s has a Stack.Screen", (file) => {
+		const name = rootRegistrationFor(file, layoutDirs);
+		if (!registered.includes(name)) {
+			throw new Error(
+				`app/${file} is not reachable: app/_layout.tsx has no <Stack.Screen name="${name}">`,
+			);
+		}
+		expect(registered).toContain(name);
+	});
+
+	test("every new entry hides the stack header, which the screens draw themselves", () => {
+		const source = readFileSync(join(APP_ROOT, "_layout.tsx"), "utf8");
+		const names = [
+			...new Set(p4Screens.map((f) => rootRegistrationFor(f, layoutDirs))),
+		];
+		expect(names).toHaveLength(12);
+		for (const name of names) {
+			const entry = new RegExp(
+				`<Stack\\.Screen\\s+name="${name.replace(/[[\]]/g, "\\$&")}"[^>]*headerShown: false`,
+			);
+			expect({ name, hidden: entry.test(source) }).toEqual({
+				name,
+				hidden: true,
+			});
+		}
+	});
+});

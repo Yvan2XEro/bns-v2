@@ -19,14 +19,15 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { BuyBox } from "@/src/components/order/BuyBox";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
 import { ShopSellerCard } from "@/src/components/shop/ShopSellerCard";
-import { VariantPicker } from "@/src/components/shop/VariantPicker";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { useMyShops } from "@/src/hooks/useMyShops";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useStartConversation } from "@/src/hooks/useShopInbox";
 import { usePublicShop } from "@/src/hooks/useShops";
@@ -34,6 +35,7 @@ import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { isOwnShop } from "@/src/lib/buyBox";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
@@ -180,6 +182,13 @@ export default function ListingDetail() {
 			: listing.product
 		: null;
 	const summary = listing?.productSummary ?? null;
+	const { data: myShops } = useMyShops();
+	const ownShop = isOwnShop({
+		viewerId: user?.id ?? null,
+		sellerId: seller && typeof seller === "object" ? seller.id : null,
+		shopId: listingShop?.id ?? null,
+		memberOf: (myShops ?? []).map((entry) => entry.shopId),
+	});
 
 	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
 	// name, type, unit and section all live on the category, so join the two.
@@ -628,7 +637,22 @@ export default function ListingDetail() {
 						</View>
 					)}
 
-					{listingProduct ? <VariantPicker product={listingProduct} /> : null}
+					<BuyBox
+						listingId={id}
+						product={listingProduct}
+						shop={
+							listingShop
+								? {
+										id: listingShop.id,
+										restricted: Boolean(listingShop.ordersRestrictedAt),
+									}
+								: null
+						}
+						orderable={listing.orderable}
+						ownShop={ownShop}
+						productAvailable={summary?.available ?? null}
+						signedIn={Boolean(user)}
+					/>
 					{listingShop ? (
 						<ShopSellerCard
 							shop={listingShop}

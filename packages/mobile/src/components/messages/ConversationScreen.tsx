@@ -31,12 +31,14 @@ import {
 	messageAuthorLabel,
 } from "@/src/lib/conversationView";
 import { useTranslation } from "@/src/lib/i18n";
+import { isSystemMessage } from "@/src/lib/systemMessage";
 import type {
 	Conversation,
 	ConversationShop,
 	PayloadDoc,
 	UserDoc,
 } from "@/src/types/api";
+import { SystemChip } from "./SystemChip";
 
 function unwrapDoc<T>(value: PayloadDoc<T> | T): T {
 	return value && typeof value === "object" && "doc" in value
@@ -457,6 +459,29 @@ export function ConversationScreen({
 				: msgDate === yesterday
 					? t("messages.yesterday")
 					: new Date(item.createdAt).toLocaleDateString("fr-FR");
+
+		if (isSystemMessage(item)) {
+			return (
+				<>
+					{showDate && (
+						<View style={styles.dateSep}>
+							<Text
+								style={[
+									styles.dateLabel,
+									{ color: mutedColor, backgroundColor: bg },
+								]}
+							>
+								{dateLabel}
+							</Text>
+						</View>
+					)}
+					<SystemChip
+						message={item}
+						side={viewerIsShopSide ? "shop" : "buyer"}
+					/>
+				</>
+			);
+		}
 
 		const isRead = readByOther.has(item.id) || item.read;
 		// Only a shop conversation needs attribution per message — more than

@@ -314,6 +314,8 @@ export interface ListingDoc extends ListingHit {
 	// allows an anonymous read of an active product.
 	product?: ProductDoc | { id: string } | string | null;
 	productSummary?: ProductSummary | null;
+	/** Virtual, derived by the API at read time (`lib/orderable.ts`); absent from older reads. */
+	orderable?: boolean | null;
 }
 
 /** Payload single-document response wrapper */
@@ -929,6 +931,8 @@ export interface ListingShopRef {
 	status?: ShopStatus;
 	logo?: Media | string | null;
 	publishedListingCount?: number;
+	/** Set while commission arrears pause the shop's orders. */
+	ordersRestrictedAt?: string | null;
 }
 
 /** Service-written on product-backed listings. */

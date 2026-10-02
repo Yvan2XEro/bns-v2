@@ -419,7 +419,18 @@
 		"unblock": "Unblock user",
 		"blockConfirmTitle": "Block this user?",
 		"blockConfirmBody": "They will no longer be able to message you, and you will not be able to message them.",
-		"blockedNotice": "You have blocked this user."
+		"blockedNotice": "You have blocked this user.",
+		"system_order_placed": "Order {{orderNumber}} placed.",
+		"system_order_confirmed": "Order {{orderNumber}} confirmed.",
+		"system_order_accepted": "The shop accepted order {{orderNumber}}.",
+		"system_order_declined": "The shop declined order {{orderNumber}}.",
+		"system_order_shipped": "Order {{orderNumber}} shipped.",
+		"system_order_delivered": "Order {{orderNumber}} delivered.",
+		"system_order_cancelled": "Order {{orderNumber}} cancelled.",
+		"system_order_delivery_failed": "Delivery of order {{orderNumber}} failed.",
+		"system_order_withdrawal_requested": "The customer asked to withdraw from order {{orderNumber}}.",
+		"system_order_completed": "Order {{orderNumber}} completed.",
+		"systemOrderOpen": "View order"
 	},
 	"account": {
 		"title": "Account",
@@ -470,7 +481,10 @@
 		"myShop": "Seller space",
 		"shopSuspended": "Shop suspended",
 		"openShop": "Open a shop",
-		"openShopSublabel": "Free · a page to share on WhatsApp"
+		"openShopSublabel": "Free · a page to share on WhatsApp",
+		"myPurchases": "My orders",
+		"myPurchasesSublabel": "Track what you bought",
+		"cart": "Cart"
 	},
 	"listings": {
 		"title": "My Listings",
@@ -1766,7 +1780,12 @@
 		"suspendedBody": "Your products are hidden from buyers. You can still see your shop here.",
 		"hubLocked": {
 			"dormant": "Your team's seller tools are paused: this shop's verification level dropped below level 2. Ask the owner to verify again to restore access."
-		}
+		},
+		"tileOrders": "Orders",
+		"tileOrdersBody": "Accept, ship and hand over",
+		"tileOrdersToAccept": "To accept: {{count}}",
+		"tileBilling": "Billing",
+		"tileBillingBody": "Commission invoices and order settings"
 	},
 	"stock": {
 		"notTracked": "Stock not tracked",
@@ -2781,5 +2800,20 @@
 		"receipt": "Receipt",
 		"receiptFailed": "The receipt could not be opened",
 		"noAction": "No action is available at this status."
+	},
+	"buyBox": {
+		"addToCart": "Add to cart",
+		"buyNow": "Order now",
+		"quantity": "Quantity",
+		"decrease": "Decrease quantity",
+		"increase": "Increase quantity",
+		"added": "Added to your cart.",
+		"viewCart": "View cart",
+		"codBadge": "Cash on delivery",
+		"returnBadge": "Returns accepted within {{days}} days",
+		"restrictedTitle": "Orders temporarily unavailable",
+		"restrictedBody": "You can still message the seller.",
+		"chooseVariant": "Choose an available option.",
+		"singleShopBodyNamed": "Your cart already holds items from {{shop}}. Empty it to add this item?"
 	}
 }

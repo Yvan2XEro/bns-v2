@@ -12,6 +12,7 @@ import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import {
 	useIsModerator,
@@ -116,6 +117,7 @@ export default function AccountScreen() {
 	// regardless of it, which is why `ownShop` — not `shopsEnabled` — decides
 	// whether the row below shows a shop or the "open a shop" invite.
 	const shopsEnabled = useShopsEnabled();
+	const { ordersEnabled } = useAppConfig();
 	const { data: myShop } = useMyShop();
 	const ownShop = myShop?.shop ?? null;
 	const { showConfirm } = useAlert();
@@ -339,7 +341,7 @@ export default function AccountScreen() {
 										rightElement={
 											<LevelBadge badge={ownShop.badge} size="sm" />
 										}
-										onPress={() => router.push("/seller" as never)}
+										onPress={() => router.push("/seller")}
 										isDark={isDark}
 										borderColor={borderColor}
 									/>
@@ -350,7 +352,7 @@ export default function AccountScreen() {
 										sublabel={t("account.openShopSublabel")}
 										iconBg={isDark ? "#451a03" : "#fef3c7"}
 										iconColor="#d97706"
-										onPress={() => router.push("/shop/create" as never)}
+										onPress={() => router.push("/shop/create")}
 										isDark={isDark}
 										borderColor={borderColor}
 									/>
@@ -373,6 +375,25 @@ export default function AccountScreen() {
 								},
 							]}
 						>
+							{ordersEnabled ? (
+								<>
+									<MenuItem
+										icon="bag-handle-outline"
+										label={t("account.myPurchases")}
+										sublabel={t("account.myPurchasesSublabel")}
+										onPress={() => router.push("/purchases")}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+									<MenuItem
+										icon="cart-outline"
+										label={t("account.cart")}
+										onPress={() => router.push("/cart")}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+								</>
+							) : null}
 							<MenuItem
 								icon="cube-outline"
 								label={t("account.myListings")}

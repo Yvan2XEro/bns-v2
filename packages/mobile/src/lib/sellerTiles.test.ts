@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { visibleSellerTiles } from "./sellerTiles";
+import { showsOrdersTile, visibleSellerTiles } from "./sellerTiles";
 
 const counts = { inboxUnread: 4, lowStock: 2 };
 
@@ -45,5 +45,64 @@ describe("visibleSellerTiles", () => {
 		const tiles = visibleSellerTiles("owner", { inboxUnread: 0, lowStock: 0 });
 		expect(tiles.find((t) => t.key === "inbox")?.badge).toBeUndefined();
 		expect(tiles.find((t) => t.key === "stock")?.badge).toBeUndefined();
+	});
+});
+
+describe("the order tiles", () => {
+	const on = { ordersEnabled: true };
+
+	test("join the hub for an owner once ordering is on, orders first", () => {
+		expect(visibleSellerTiles("owner", counts, on).map((t) => t.key)).toEqual([
+			"orders",
+			"catalogue",
+			"stock",
+			"inbox",
+			"billing",
+			"team",
+			"activity",
+			"settings",
+			"verification",
+		]);
+	});
+
+	test("stay out while ordering is off, whatever the role", () => {
+		const keys = visibleSellerTiles("owner", counts, {
+			ordersEnabled: false,
+		}).map((t) => t.key);
+		expect(keys).not.toContain("orders");
+		expect(keys).not.toContain("billing");
+		expect(keys).toHaveLength(7);
+	});
+
+	test("give staff the orders tile but not billing, which needs payments.view", () => {
+		const keys = visibleSellerTiles("staff", counts, on).map((t) => t.key);
+		expect(keys).toEqual(["orders", "catalogue", "stock", "inbox", "team"]);
+	});
+
+	test("carry the to-accept count as the orders badge, and no zero", () => {
+		expect(
+			visibleSellerTiles("owner", { ...counts, toAccept: 3 }, on).find(
+				(t) => t.key === "orders",
+			)?.badge,
+		).toBe(3);
+		expect(
+			visibleSellerTiles("owner", { ...counts, toAccept: 0 }, on).find(
+				(t) => t.key === "orders",
+			)?.badge,
+		).toBeUndefined();
+	});
+
+	test("point at the order and billing screens", () => {
+		const tiles = visibleSellerTiles("owner", counts, on);
+		expect(tiles.find((t) => t.key === "orders")?.href).toBe("/seller/orders");
+		expect(tiles.find((t) => t.key === "billing")?.href).toBe(
+			"/seller/billing",
+		);
+	});
+
+	test("read the order list only when the orders tile shows", () => {
+		expect(showsOrdersTile("staff", true)).toBe(true);
+		expect(showsOrdersTile("owner", false)).toBe(false);
+		expect(showsOrdersTile(null, true)).toBe(false);
 	});
 });

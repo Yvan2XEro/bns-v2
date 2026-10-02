@@ -23,12 +23,13 @@ import { ShopSwitcher } from "@/src/components/shop/ShopSwitcher";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildChecklistSteps } from "@/src/lib/sellerChecklist";
-import { visibleSellerTiles } from "@/src/lib/sellerTiles";
+import { showsOrdersTile, visibleSellerTiles } from "@/src/lib/sellerTiles";
 import { shopUrl } from "@/src/lib/shopHandle";
 import { badgeLabelKey, canOpenRequest } from "@/src/lib/verification";
 import type {
@@ -154,10 +155,18 @@ function SellerHubContent({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const { ordersEnabled } = useAppConfig();
 	const verification = useShopVerification(shop.id);
 	const { shops } = useActiveShop();
 	const inboxUnread =
 		shops.find((entry) => entry.shopId === shop.id)?.inboxUnread ?? 0;
+	// The badge is the list's own `to_accept` count, not a second endpoint; a
+	// role without `orders.view` never reads the list.
+	const readsOrders = showsOrdersTile(role, ordersEnabled);
+	const toAcceptList = useSellerOrders(readsOrders ? shop.id : undefined, {
+		tab: "to_accept",
+	});
+	const toAccept = toAcceptList.data?.pages[0]?.counts.to_accept ?? 0;
 
 	const share = () => {
 		const url = shopUrl(shop.handle, webUrl);
@@ -207,6 +216,26 @@ function SellerHubContent({
 		string,
 		Pick<ManageTile, "icon" | "title" | "body" | "onPress" | "alert">
 	> = {
+		orders: {
+			icon: "receipt-outline",
+			title: t("seller.tileOrders"),
+			body:
+				toAccept > 0
+					? t("seller.tileOrdersToAccept", { count: toAccept })
+					: t("seller.tileOrdersBody"),
+			alert: toAccept > 0,
+			onPress: () =>
+				router.push({
+					pathname: "/seller/orders",
+					params: toAccept > 0 ? { tab: "to_accept" } : {},
+				}),
+		},
+		billing: {
+			icon: "card-outline",
+			title: t("seller.tileBilling"),
+			body: t("seller.tileBillingBody"),
+			onPress: () => router.push("/seller/billing"),
+		},
 		catalogue: {
 			icon: "cube-outline",
 			title: t("seller.tileCatalogue"),
@@ -268,10 +297,11 @@ function SellerHubContent({
 		},
 	};
 
-	const manageTiles: ManageTile[] = visibleSellerTiles(role, {
-		inboxUnread,
-		lowStock: counts.lowStockVariants,
-	}).map((tile) => ({
+	const manageTiles: ManageTile[] = visibleSellerTiles(
+		role,
+		{ inboxUnread, lowStock: counts.lowStockVariants, toAccept },
+		{ ordersEnabled },
+	).map((tile) => ({
 		key: tile.key,
 		badge: tile.badge,
 		...tileMeta[tile.key],
@@ -288,7 +318,10 @@ function SellerHubContent({
 				refreshControl={
 					<RefreshControl
 						refreshing={isRefetching}
-						onRefresh={onRefetch}
+						onRefresh={() => {
+							onRefetch();
+							if (readsOrders) void toAcceptList.refetch();
+						}}
 						tintColor={c.primary}
 					/>
 				}

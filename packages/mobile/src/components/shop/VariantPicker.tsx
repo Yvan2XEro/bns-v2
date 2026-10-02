@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { usePublicVariants } from "@/src/hooks/useShops";
@@ -11,16 +11,24 @@ import {
 	resolveSelection,
 } from "@/src/lib/variantPicker";
 import { formatXaf, variantLabel } from "@/src/lib/variants";
-import type { ProductDoc } from "@/src/types/api";
+import type { ProductDoc, PublicVariantDoc } from "@/src/types/api";
 import { useShopTheme } from "./theme";
 
 /**
  * Buyer-facing. Reads `usePublicVariants`, the public/live-only endpoint —
  * never `useProductVariants`, the shop member's widened raw collection used
  * by the seller-facing product editor — so an owner previewing their own
- * listing sees exactly what a stranger sees.
+ * listing sees exactly what a stranger sees. `children` receives the chosen
+ * variant (web's `VariantSelector` does the same), which is how the buy box
+ * adds what the buyer picked.
  */
-export function VariantPicker({ product }: { product: ProductDoc }) {
+export function VariantPicker({
+	product,
+	children,
+}: {
+	product: ProductDoc;
+	children?: (variant: PublicVariantDoc | null) => ReactNode;
+}) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const options = product.options ?? [];
@@ -43,9 +51,11 @@ export function VariantPicker({ product }: { product: ProductDoc }) {
 			? manualSelection
 			: initialSelection(variants, options);
 
-	if (options.length === 0 || variants.length === 0) return null;
+	if (variants.length === 0) return null;
 
 	const current = matchVariant(variants, selection);
+	// A product without options has one variant and nothing to pick.
+	if (options.length === 0) return children?.(current) ?? null;
 	const stateLabel = !current
 		? t("shop.variantCombinationUnavailable")
 		: !current.trackInventory
@@ -149,6 +159,7 @@ export function VariantPicker({ product }: { product: ProductDoc }) {
 					</Text>
 				) : null}
 			</View>
+			{children?.(current)}
 		</View>
 	);
 }

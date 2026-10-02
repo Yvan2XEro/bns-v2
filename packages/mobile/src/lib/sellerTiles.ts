@@ -8,14 +8,28 @@ export interface SellerTile {
 	badge?: number;
 }
 
+/** `orders` tiles follow the `ordersEnabled` flag, like web's seller nav. */
 const TILES: ReadonlyArray<{
 	key: string;
 	href: string;
 	permission: ShopPermission;
+	orders?: true;
 }> = [
+	{
+		key: "orders",
+		href: "/seller/orders",
+		permission: "orders.view",
+		orders: true,
+	},
 	{ key: "catalogue", href: "/seller/catalogue", permission: "catalogue.edit" },
 	{ key: "stock", href: "/seller/stock-adjust", permission: "stock.move" },
 	{ key: "inbox", href: "/seller/inbox", permission: "inbox.reply" },
+	{
+		key: "billing",
+		href: "/seller/billing",
+		permission: "payments.view",
+		orders: true,
+	},
 	{ key: "team", href: "/seller/team", permission: "team.view" },
 	{ key: "activity", href: "/seller/activity", permission: "activity.view" },
 	{ key: "settings", href: "/shop/manage", permission: "settings.edit" },
@@ -26,18 +40,37 @@ const TILES: ReadonlyArray<{
 	},
 ];
 
+export interface SellerTileCounts {
+	inboxUnread: number;
+	lowStock: number;
+	/** `counts.to_accept` off the shop's order list. */
+	toAccept?: number;
+}
+
 /** A zero badge is omitted, not rendered: "0" beside a tile reads as broken. */
 export function visibleSellerTiles(
 	role: ShopRole | null | undefined,
-	counts: { inboxUnread: number; lowStock: number },
+	counts: SellerTileCounts,
+	options: { ordersEnabled: boolean } = { ordersEnabled: false },
 ): SellerTile[] {
-	return TILES.filter((tile) => can(role, tile.permission)).map((tile) => {
-		const badge =
-			tile.key === "inbox"
-				? counts.inboxUnread
-				: tile.key === "stock"
-					? counts.lowStock
-					: 0;
-		return { ...tile, ...(badge > 0 ? { badge } : {}) };
+	const badges: Record<string, number> = {
+		inbox: counts.inboxUnread,
+		stock: counts.lowStock,
+		orders: counts.toAccept ?? 0,
+	};
+	return TILES.filter(
+		(tile) =>
+			(!tile.orders || options.ordersEnabled) && can(role, tile.permission),
+	).map(({ key, href, permission }) => {
+		const badge = badges[key] ?? 0;
+		return { key, href, permission, ...(badge > 0 ? { badge } : {}) };
 	});
+}
+
+/** Whether the hub should read the order list at all, for the to-accept badge. */
+export function showsOrdersTile(
+	role: ShopRole | null | undefined,
+	ordersEnabled: boolean,
+): boolean {
+	return ordersEnabled && can(role, "orders.view");
 }

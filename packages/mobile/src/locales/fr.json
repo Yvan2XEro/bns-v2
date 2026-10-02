@@ -468,7 +468,18 @@
 		"unblock": "Débloquer l'utilisateur",
 		"blockConfirmTitle": "Bloquer cet utilisateur ?",
 		"blockConfirmBody": "Il ne pourra plus vous envoyer de messages, et vous ne pourrez plus lui en envoyer.",
-		"blockedNotice": "Vous avez bloqué cet utilisateur."
+		"blockedNotice": "Vous avez bloqué cet utilisateur.",
+		"system_order_placed": "Commande {{orderNumber}} enregistrée.",
+		"system_order_confirmed": "Commande {{orderNumber}} confirmée.",
+		"system_order_accepted": "La boutique a accepté la commande {{orderNumber}}.",
+		"system_order_declined": "La boutique a refusé la commande {{orderNumber}}.",
+		"system_order_shipped": "Commande {{orderNumber}} expédiée.",
+		"system_order_delivered": "Commande {{orderNumber}} livrée.",
+		"system_order_cancelled": "Commande {{orderNumber}} annulée.",
+		"system_order_delivery_failed": "La livraison de la commande {{orderNumber}} a échoué.",
+		"system_order_withdrawal_requested": "Le client a demandé à se rétracter pour la commande {{orderNumber}}.",
+		"system_order_completed": "Commande {{orderNumber}} terminée.",
+		"systemOrderOpen": "Voir la commande"
 	},
 	"account": {
 		"title": "Mon compte",
@@ -519,7 +530,10 @@
 		"myShop": "Espace vendeur",
 		"shopSuspended": "Boutique suspendue",
 		"openShop": "Ouvrir une boutique",
-		"openShopSublabel": "Gratuit · une page à partager sur WhatsApp"
+		"openShopSublabel": "Gratuit · une page à partager sur WhatsApp",
+		"myPurchases": "Mes commandes",
+		"myPurchasesSublabel": "Suivre vos achats",
+		"cart": "Panier"
 	},
 	"listings": {
 		"title": "Mes annonces",
@@ -1769,7 +1783,12 @@
 		"suspendedBody": "Vos produits sont masqués aux acheteurs. Vous voyez toujours votre boutique ici.",
 		"hubLocked": {
 			"dormant": "Les outils vendeur de votre équipe sont en pause : le niveau de vérification de cette boutique est repassé sous le niveau 2. Demandez au propriétaire de vérifier à nouveau pour rétablir l'accès."
-		}
+		},
+		"tileOrders": "Commandes",
+		"tileOrdersBody": "Accepter, expédier et remettre",
+		"tileOrdersToAccept": "À accepter : {{count}}",
+		"tileBilling": "Facturation",
+		"tileBillingBody": "Factures de commission et réglages des commandes"
 	},
 	"stock": {
 		"notTracked": "Stock non suivi",
@@ -2784,5 +2803,20 @@
 		"receipt": "Reçu",
 		"receiptFailed": "Impossible d'ouvrir le reçu",
 		"noAction": "Aucune action possible à ce statut."
+	},
+	"buyBox": {
+		"addToCart": "Ajouter au panier",
+		"buyNow": "Commander maintenant",
+		"quantity": "Quantité",
+		"decrease": "Diminuer la quantité",
+		"increase": "Augmenter la quantité",
+		"added": "Article ajouté à votre panier.",
+		"viewCart": "Voir le panier",
+		"codBadge": "Paiement à la livraison",
+		"returnBadge": "Retour possible sous {{days}} jours",
+		"restrictedTitle": "Commandes temporairement indisponibles",
+		"restrictedBody": "Vous pouvez toujours écrire au vendeur.",
+		"chooseVariant": "Choisissez une option disponible.",
+		"singleShopBodyNamed": "Votre panier contient déjà des articles de {{shop}}. Le vider pour ajouter cet article ?"
 	}
 }

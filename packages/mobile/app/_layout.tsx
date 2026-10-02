@@ -53,6 +53,7 @@ import {
 } from "@/src/contexts/OnboardingContext";
 import { api } from "@/src/lib/api";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
+import { notificationUrl, toAppPath } from "@/src/lib/deepLinks";
 import {
 	registerForPushNotificationsAsync,
 	syncPushTokenWithBackend,
@@ -298,24 +299,10 @@ function PushTokenRegistrar() {
 //   - Background: app was backgrounded, user taps notification
 // Navigation is deferred until auth is resolved and the user is logged in.
 
-function resolveNotificationUrl(data: Record<string, unknown>): string | null {
-	const directUrl =
-		(typeof data?.url === "string" && data.url) ||
-		(typeof data?.redirectUrl === "string" && data.redirectUrl) ||
-		(typeof data?.searchUrl === "string" && data.searchUrl) ||
-		(typeof data?.deepLink === "string" && data.deepLink);
-	if (directUrl) return directUrl;
-
-	const conversationId = data?.conversationId as string | undefined;
-	const listingId = data?.listingId as string | undefined;
-	if (conversationId) return `/messages/${conversationId}`;
-	if (listingId) return `/listing/${listingId}`;
-	return null;
-}
-
 function navigateFromNotificationUrl(url: string) {
-	if (url.startsWith("/")) {
-		router.push(url as Parameters<typeof router.push>[0]);
+	const path = toAppPath(url);
+	if (path) {
+		router.push(path as Parameters<typeof router.push>[0]);
 		return;
 	}
 
@@ -330,7 +317,7 @@ function PushNotificationHandler() {
 	useEffect(() => {
 		Notifications.getLastNotificationResponseAsync().then((response) => {
 			if (!response) return;
-			const url = resolveNotificationUrl(
+			const url = notificationUrl(
 				response.notification.request.content.data as Record<string, unknown>,
 			);
 			if (url) pendingUrlRef.current = url;
@@ -340,7 +327,7 @@ function PushNotificationHandler() {
 	useEffect(() => {
 		const sub = Notifications.addNotificationResponseReceivedListener(
 			(response) => {
-				const url = resolveNotificationUrl(
+				const url = notificationUrl(
 					response.notification.request.content.data as Record<string, unknown>,
 				);
 				if (!url) return;
@@ -553,6 +540,44 @@ function RootLayoutNav() {
 				<Stack.Screen
 					name="seller/inbox/[conversationId]"
 					options={{ headerShown: false, animation: "slide_from_right" }}
+				/>
+
+				{/* P4 orders. Checkout's own layout covers its four steps. */}
+				<Stack.Screen name="cart" options={{ headerShown: false }} />
+				<Stack.Screen name="checkout" options={{ headerShown: false }} />
+				<Stack.Screen name="purchases/index" options={{ headerShown: false }} />
+				<Stack.Screen name="purchases/[id]" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="purchases/[id]/withdrawal"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/orders/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/orders/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/orders/[id]/handover"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/billing/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/billing/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/order-settings"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/order/[id]"
+					options={{ headerShown: false }}
 				/>
 			</Stack>
 
