@@ -391,6 +391,269 @@ export async function applyMovement(
 	return { movement, variant: updated, crossedLowStock: crossed };
 }
 
+/**
+ * The four movements an order causes. Unlike `applyMovement`, these also move
+ * `stockReserved`, and unlike a manual movement they must never flip an
+ * untracked variant into tracking — an order against a variant nobody counts
+ * is simply not this service's business. `onHand`/`reserved` are coefficients
+ * multiplied by the caller's (always positive) `quantity`; the movement's own
+ * `quantity` field records whichever of the two actually changes, preferring
+ * `onHand` when both do (`sale`), so it stays the signed on-hand delta the
+ * rest of the ledger already uses.
+ */
+const ORDER_MOVEMENTS = {
+	reserve: { type: "reservation", onHand: 0, reserved: 1 },
+	release: { type: "release", onHand: 0, reserved: -1 },
+	sell: { type: "sale", onHand: -1, reserved: -1 },
+	recordReturn: { type: "return", onHand: 1, reserved: 0 },
+} as const satisfies Record<
+	string,
+	{ type: MovementType; onHand: -1 | 0 | 1; reserved: -1 | 0 | 1 }
+>;
+
+type OrderMovementKind = keyof typeof ORDER_MOVEMENTS;
+type OrderMovementSpec = (typeof ORDER_MOVEMENTS)[OrderMovementKind];
+
+export interface OrderMovementArgs {
+	variant: ProductVariant;
+	quantity: number;
+	orderId: string;
+	orderRef: string | null;
+}
+
+export type OrderMovementResult = {
+	movement: StockMovement;
+	variant: ProductVariant;
+} | null;
+
+/**
+ * Whether a movement `(order, variant, type)` has already been written. The
+ * idempotency gate every order-stock function checks before writing, so a
+ * transition replayed after a crash or a duplicate webhook never double-counts.
+ */
+export async function movementExists(
+	req: PayloadRequest,
+	args: { orderId: string; variantId: string; type: MovementType },
+): Promise<boolean> {
+	const existing = await req.payload.find({
+		collection: "stock-movements",
+		where: {
+			and: [
+				{ order: { equals: args.orderId } },
+				{ variant: { equals: args.variantId } },
+				{ type: { equals: args.type } },
+			],
+		},
+		depth: 0,
+		limit: 1,
+		pagination: false,
+		overrideAccess: true,
+		req,
+	});
+	return existing.docs.length > 0;
+}
+
+/**
+ * The CAS condition each order movement needs, beyond the id match every one
+ * of them carries. `reservation` pins the on-hand snapshot (it does not touch
+ * that field) and bounds the live `stockReserved` by it, the mirror image of
+ * `applyMovement`'s own consuming case, which pins `stockReserved` and bounds
+ * live `stockOnHand`. `release` and `sale` need no pin: the field(s) they
+ * decrement are also the field(s) their condition reads, so the live document
+ * Mongo's `findOneAndUpdate` matches against is already the only snapshot that
+ * matters. `return` adds nothing — the goods are physically back regardless of
+ * what the counters currently say.
+ */
+function orderMovementConditions(
+	spec: OrderMovementSpec,
+	quantity: number,
+	onHandSnap: number,
+): Where[] {
+	switch (spec.type) {
+		case "reservation":
+			return [
+				counterEquals("stockOnHand", onHandSnap),
+				{ stockReserved: { less_than_equal: onHandSnap - quantity } },
+			];
+		case "release":
+			return [{ stockReserved: { greater_than_equal: quantity } }];
+		case "sale":
+			return [
+				{ stockOnHand: { greater_than_equal: quantity } },
+				{ stockReserved: { greater_than_equal: quantity } },
+			];
+		default:
+			return [];
+	}
+}
+
+async function applyOrderMovement(
+	req: PayloadRequest,
+	spec: OrderMovementSpec,
+	args: OrderMovementArgs,
+	onConditionFailed: "throw" | "alert",
+): Promise<OrderMovementResult> {
+	const { variant, quantity, orderId, orderRef } = args;
+	if (!Number.isInteger(quantity) || quantity <= 0) throw invalid();
+	if (!orderId) throw invalid();
+	// Not this service's business: an untracked variant carries no counters an
+	// order could move.
+	if (variant.trackInventory !== true) return null;
+
+	const variantId = String(variant.id);
+	if (await movementExists(req, { orderId, variantId, type: spec.type })) {
+		return null;
+	}
+
+	const shopId = relationId(variant.shop);
+	if (!shopId) throw invalid();
+
+	const onHandSnap = Number(variant.stockOnHand ?? 0);
+	const reservedSnap = Number(variant.stockReserved ?? 0);
+	const conditions: Where[] = [
+		{ id: { equals: variantId } },
+		...orderMovementConditions(spec, quantity, onHandSnap),
+	];
+
+	const updated: unknown = await req.payload.db.updateOne({
+		collection: "product-variants",
+		where: { and: conditions },
+		data: {
+			stockOnHand: { $inc: spec.onHand * quantity },
+			stockReserved: { $inc: spec.reserved * quantity },
+		},
+		req,
+		returning: true,
+	});
+
+	if (updated === null || updated === undefined) {
+		if (onConditionFailed === "throw") {
+			throw new ServiceError(ERROR_CODES.stockInsufficient, 409);
+		}
+		// A failed `sell`/`release` must not throw: the goods already moved (or
+		// the order already died) in the physical world, and rolling back a
+		// delivery that happened would be worse than a stale cache. The database
+		// must shout instead of pretending, so this is a logger call, not a
+		// silently swallowed branch.
+		req.payload.logger.error({
+			msg: "[stock] condition failed on a delivery",
+			orderId,
+			variantId,
+			type: spec.type,
+		});
+		return null;
+	}
+	if (!isVariantRow(updated)) throw new ServiceError(ERROR_CODES.server, 500);
+
+	const stockAfter = Number(updated.stockOnHand);
+	const reservedAfter = Number(updated.stockReserved ?? 0);
+	const primary = spec.onHand !== 0 ? spec.onHand : spec.reserved;
+
+	trustLoadedVariant(req.context, { id: variant.id, shop: variant.shop });
+	const movement = await req.payload.create({
+		collection: "stock-movements",
+		req,
+		overrideAccess: true,
+		data: {
+			variant: variantId,
+			product: relationId(variant.product),
+			shop: shopId,
+			type: spec.type,
+			quantity: primary * quantity,
+			stockAfter,
+			reservedAfter,
+			note: null,
+			actor: null,
+			order: orderId,
+			orderRef: orderRef ?? null,
+		},
+	});
+
+	// Only a reservation can cross the low-stock line: it is the only one of
+	// the four that reduces availability without `applyMovement`'s own sale
+	// path already having reduced it (a `sell` moves both counters by the same
+	// amount, so availability does not move a second time).
+	if (spec.type === "reservation") {
+		const threshold =
+			typeof updated.lowStockThreshold === "number"
+				? updated.lowStockThreshold
+				: null;
+		const availableBefore = availableOf({
+			stockOnHand: onHandSnap,
+			stockReserved: reservedSnap,
+		});
+		const availableAfter = availableOf({
+			stockOnHand: stockAfter,
+			stockReserved: reservedAfter,
+		});
+		if (crossedLowStock(availableBefore, availableAfter, threshold)) {
+			onCommit(commitContextOf(req), async () => {
+				const product = await req.payload
+					.findByID({
+						collection: "products",
+						id: relationId(variant.product) ?? "",
+						depth: 0,
+						overrideAccess: true,
+					})
+					.catch(() => null);
+				await notifyStockLow(req.payload, {
+					shopId: relationId(variant.shop) ?? "",
+					productId: relationId(variant.product) ?? "",
+					productTitle: String(product?.title ?? ""),
+					variantLabel: variantLabel(updated.optionValues),
+					available: availableAfter,
+				});
+			});
+		}
+	}
+
+	return { movement, variant: updated };
+}
+
+/** Placing an order. Refuses — throws `stock.insufficient` — rather than let a checkout oversell. */
+export async function reserve(
+	req: PayloadRequest,
+	args: OrderMovementArgs,
+): Promise<OrderMovementResult> {
+	return applyOrderMovement(req, ORDER_MOVEMENTS.reserve, args, "throw");
+}
+
+/**
+ * An order dying (cancelled, expired, refused) gives its units back. Must be
+ * idempotent — a second death releases nothing, via the `movementExists`
+ * gate every order movement shares — and must not throw: by the time an order
+ * is dying its reservation may already be gone for a reason this call cannot
+ * see, and that is not a reason to fail the transition that is retiring it.
+ */
+export async function release(
+	req: PayloadRequest,
+	args: OrderMovementArgs,
+): Promise<OrderMovementResult> {
+	return applyOrderMovement(req, ORDER_MOVEMENTS.release, args, "alert");
+}
+
+/**
+ * The cash is collected and the goods are gone. A failed condition here means
+ * the reservation this sale was supposed to consume is no longer what the
+ * database thinks it is — a cache drift, not a reason to roll back a delivery
+ * that physically happened. So this logs and alerts rather than throwing; the
+ * database must record the sale or shout, never silently pretend it refused.
+ */
+export async function sell(
+	req: PayloadRequest,
+	args: OrderMovementArgs,
+): Promise<OrderMovementResult> {
+	return applyOrderMovement(req, ORDER_MOVEMENTS.sell, args, "alert");
+}
+
+/** The goods physically came back: no condition can refuse that. */
+export async function recordReturn(
+	req: PayloadRequest,
+	args: OrderMovementArgs,
+): Promise<OrderMovementResult> {
+	return applyOrderMovement(req, ORDER_MOVEMENTS.recordReturn, args, "alert");
+}
+
 async function findByIds<TSlug extends CollectionSlug>(
 	payload: Payload,
 	collection: TSlug,
