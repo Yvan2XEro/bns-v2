@@ -254,10 +254,6 @@ export const boostApi = {
 	}> => {
 		return api.post("/api/public/boost", { listingId, duration });
 	},
-
-	getStatus: async (listingId: string): Promise<BoostPayment | null> => {
-		return api.get<BoostPayment | null>(`/api/public/boost/${listingId}`);
-	},
 };
 
 export const authApi = {
