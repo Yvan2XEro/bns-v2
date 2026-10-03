@@ -141,3 +141,30 @@ export function phoneMatchesChannel(
 	const prefix = local.slice(0, 3);
 	return CHANNEL_PHONE_PREFIXES[channel].includes(prefix);
 }
+
+/** The payer's number in E.164 for `channel`, or null when it is not one of that operator's. */
+export function payerPhoneE164(
+	phone: string,
+	channel: PaymentChannel,
+): string | null {
+	if (!phoneMatchesChannel(phone, channel)) return null;
+	const local = cmLocalNumber(phone);
+	return local ? `+${CHANNEL_DIAL_CODES[channel]}${local}` : null;
+}
+
+/**
+ * Whether a typed number is the same line as a stored E.164 one, with or
+ * without its country code. `dialCodes` are the market's own (from
+ * `CHANNEL_DIAL_CODES`), so the comparison needs no country of its own.
+ */
+export function isSamePhoneNumber(
+	typed: string,
+	stored: string,
+	dialCodes: readonly string[],
+): boolean {
+	const a = typed.replace(/[^\d]/g, "");
+	const b = stored.replace(/[^\d]/g, "");
+	if (!a || !b) return false;
+	if (a === b) return true;
+	return dialCodes.some((code) => `${code}${a}` === b || `${code}${b}` === a);
+}

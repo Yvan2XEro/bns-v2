@@ -1,7 +1,11 @@
 import type { Payload } from "payload";
 import { ERROR_CODES } from "../lib/errors";
 import type { NormalizedPayment, ProviderName } from "../lib/payments/types";
-import { type IntentStatus, transitionPath } from "../lib/paymentTransitions";
+import {
+	canTransition,
+	type IntentStatus,
+	transitionPath,
+} from "../lib/paymentTransitions";
 import { type TxReq, withTransaction } from "../lib/transactions";
 import type { PaymentIntent } from "../payload-types";
 import { PURPOSE_HANDLERS } from "./paymentPurposes";
@@ -22,6 +26,18 @@ export interface CreateIntentInput {
 	provider: ProviderName;
 	idempotencyKey: string;
 	now?: Date;
+	/** Overrides the P0 default of `now + INTENT_TTL_MS` (checkout uses its own window). */
+	expiresAt?: Date;
+	/** The marketplace fields a `checkout` intent carries from its first write. */
+	checkout?: Pick<
+		PaymentIntent,
+		| "channel"
+		| "payerPhone"
+		| "connectedAccount"
+		| "destinationAmount"
+		| "applicationFee"
+		| "attempt"
+	>;
 }
 
 export interface StatusReport {
@@ -149,7 +165,10 @@ export async function createPaymentIntent(
 			statusHistory: [
 				{ status: "created", source: "system", at: now.toISOString() },
 			],
-			expiresAt: new Date(now.getTime() + INTENT_TTL_MS).toISOString(),
+			expiresAt: (
+				input.expiresAt ?? new Date(now.getTime() + INTENT_TTL_MS)
+			).toISOString(),
+			...(input.checkout ?? {}),
 		},
 	});
 	// The reference embeds the id, so it can only be written once the id exists.
@@ -254,6 +273,50 @@ export function markIntentPending(
 	return withTransaction(payload, (txReq) =>
 		moveIntentToPending(payload, intentId, details, txReq),
 	);
+}
+
+/**
+ * Fails an intent the provider never accepted (`created`/`pending` → `failed`)
+ * with a failure code, without running its purpose handler: a provider error
+ * at creation is not a payment outcome, the payer was never prompted. Null
+ * when the intent had already moved on.
+ */
+export async function failIntentBeforeProvider(
+	payload: Payload,
+	intentId: string,
+	details: {
+		failureCode: NonNullable<PaymentIntent["failureCode"]>;
+		providerReference?: string | null;
+		note?: string;
+		now?: Date;
+	},
+): Promise<IntentDoc | null> {
+	return withTransaction(payload, async (req) => {
+		const intent = await loadIntent(payload, intentId, req);
+		if (!canTransition(intent.status, "failed")) return null;
+		return saveIntentIf(
+			payload,
+			intentId,
+			intent.status,
+			{
+				status: "failed",
+				failureCode: details.failureCode,
+				...(details.providerReference
+					? { providerReference: details.providerReference }
+					: {}),
+				statusHistory: [
+					...(intent.statusHistory ?? []),
+					{
+						status: "failed",
+						source: "system",
+						at: (details.now ?? new Date()).toISOString(),
+						note: details.note ?? null,
+					},
+				],
+			},
+			req,
+		);
+	});
 }
 
 /** Kept out of `statusHistory`: a customer can read their own intent in full. */

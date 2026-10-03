@@ -270,11 +270,9 @@ async function endOrder(
 }
 
 /**
- * `confirmed`/`paid` → `accepted`. `paid` is P5's reserved row — a P4 caller
- * carries no `RESERVED_TRANSITION_CONTEXT`, so `applyTransition` itself
- * refuses it, same as it refuses `placed` for not being in the table at all.
- * The deadline is this function's own addition: the table has no notion of
- * time, so a confirmed order past `acceptBy` is refused here, before the
+ * `confirmed`/`paid` → `accepted`; `placed` is refused for not being in the
+ * table at all. The deadline is this function's own addition: the table has
+ * no notion of time, so an order past `acceptBy` is refused here, before the
  * table is even consulted.
  */
 export async function acceptOrder(

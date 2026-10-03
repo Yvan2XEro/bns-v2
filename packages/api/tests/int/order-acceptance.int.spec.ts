@@ -214,13 +214,17 @@ describe("acceptOrder", () => {
 		});
 	});
 
-	it("refuses from paid in P4 (P5's reserved row)", async () => {
-		const payload = seed({ order: baseOrder({ status: "paid" }) });
-		await expect(
-			acceptOrder(payload, ownerUser, "order-1"),
-		).rejects.toMatchObject({
-			code: "order.invalidTransition",
+	it("accepts from paid: P5 opened the row a P4 actor could not reach", async () => {
+		const payload = seed({
+			order: baseOrder({
+				status: "paid",
+				paymentMethod: "mobile_money",
+				paymentStatus: "paid",
+			}),
 		});
+		const { order } = await acceptOrder(payload, ownerUser, "order-1");
+		expect(order.status).toBe("accepted");
+		expect((await freshOrder(payload)).status).toBe("accepted");
 	});
 });
 

@@ -93,7 +93,9 @@ export const TERMINAL_STATUSES: readonly OrderStatus[] = [
  * above still carries their rows — structural validity — so that a P4
  * transition landing *next to* one (`delivered → completed` beside
  * `delivered → returned`) is checked against the real shape of the machine,
- * not a P4-only subset of it. */
+ * not a P4-only subset of it. P5 has since opened `paid`'s three rows
+ * (`UNRESERVED_TRANSITIONS`); the status stays listed so that any row added
+ * through it later is reserved until someone opens it on purpose. */
 export const RESERVED_STATUSES: readonly OrderStatus[] = [
 	"paid",
 	"returned",
@@ -115,6 +117,24 @@ export const RESERVED_TRANSITION_CONTEXT = {
 	orderReservedTransition: true,
 } as const;
 
+/**
+ * P5 is implemented, so its rows through `paid` are no longer reserved: a
+ * settled payment moves `placed → paid`, and a paid order is accepted or
+ * cancelled by the same flows as a confirmed one. Exactly these three; every
+ * other row touching a reserved status still needs the context flag.
+ */
+export const UNRESERVED_TRANSITIONS: ReadonlyArray<
+	readonly [OrderStatus, OrderStatus]
+> = [
+	["placed", "paid"],
+	["paid", "accepted"],
+	["paid", "cancelled"],
+];
+
+function isUnreserved(from: OrderStatus, to: OrderStatus): boolean {
+	return UNRESERVED_TRANSITIONS.some(([f, t]) => f === from && t === to);
+}
+
 function isReserved(status: OrderStatus): boolean {
 	return RESERVED_STATUSES.includes(status);
 }
@@ -125,6 +145,7 @@ function assertStatusAuthority(
 	to: OrderStatus,
 ): void {
 	if (!isReserved(from) && !isReserved(to)) return;
+	if (isUnreserved(from, to)) return;
 	if (req.context?.orderReservedTransition === true) return;
 	throw new ServiceError(
 		ERROR_CODES.orderInvalidTransition,

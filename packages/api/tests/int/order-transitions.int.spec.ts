@@ -21,6 +21,7 @@ import {
 	STATUS_TRANSITIONS,
 	TERMINAL_STATUSES,
 	type TransitionEventInput,
+	UNRESERVED_TRANSITIONS,
 } from "../../src/services/orders/transitions";
 import { type Doc, fakePayload } from "./helpers/fakePayload";
 
@@ -225,36 +226,67 @@ describe("applyTransition", () => {
 		expect(payload.writes).toHaveLength(0);
 	});
 
-	it("refuses a P5 status from a P4 actor, and allows it with the P5 context flag", async () => {
+	it("lets placed → paid through without the context flag: P5 opened exactly its three rows", async () => {
 		const payload = seedOrder({ status: "placed" });
+		await withTransaction(payload, (req) =>
+			applyTransition(
+				req,
+				orderOf(payload),
+				{ status: "paid" },
+				event({ type: "order.note_added", visibility: "both" }),
+			),
+		);
+		expect(payload.store.orders[0]?.status).toBe("paid");
+		expect(UNRESERVED_TRANSITIONS).toEqual([
+			["placed", "paid"],
+			["paid", "accepted"],
+			["paid", "cancelled"],
+		]);
+	});
+
+	it.each([
+		"accepted",
+		"cancelled",
+	] as const)("lets paid → %s through without the context flag", async (to) => {
+		const payload = seedOrder({ status: "paid" });
+		await withTransaction(payload, (req) =>
+			applyTransition(
+				req,
+				orderOf(payload),
+				{ status: to },
+				event({ type: "order.note_added", visibility: "both" }),
+			),
+		);
+		expect(payload.store.orders[0]?.status).toBe(to);
+	});
+
+	it("still refuses a P6 status from a P4 actor, and allows it with the context flag", async () => {
+		const payload = seedOrder({ status: "delivered" });
 		await expect(
 			withTransaction(payload, (req) =>
 				applyTransition(
 					req,
 					orderOf(payload),
-					{ status: "paid" },
-					event({
-						type: "order.confirmed",
-						actorType: "seller",
-						visibility: "both",
-					}),
+					{ status: "returned" },
+					event({ type: "order.note_added", visibility: "both" }),
 				),
 			),
 		).rejects.toMatchObject({ code: "order.invalidTransition" });
+		expect(payload.store.orders[0]?.status).toBe("delivered");
 
-		const payload2 = seedOrder({ status: "placed" });
+		const payload2 = seedOrder({ status: "delivered" });
 		await withTransaction(
 			payload2,
 			(req) =>
 				applyTransition(
 					req,
 					orderOf(payload2),
-					{ status: "paid" },
-					event({ type: "order.confirmed", visibility: "both" }),
+					{ status: "returned" },
+					event({ type: "order.note_added", visibility: "both" }),
 				),
 			{ context: { ...RESERVED_TRANSITION_CONTEXT } },
 		);
-		expect(payload2.store.orders[0]?.status).toBe("paid");
+		expect(payload2.store.orders[0]?.status).toBe("returned");
 	});
 
 	it("refuses an item fulfilment change the item's own table forbids", async () => {

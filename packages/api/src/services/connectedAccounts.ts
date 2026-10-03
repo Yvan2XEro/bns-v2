@@ -100,7 +100,8 @@ export function shopMarketCountry(
 	return own || settings.markets[0]?.countryCode || "";
 }
 
-function marketOf(
+/** The shop's `provider_split` market row, enabled or not; null when none resolves. */
+export function marketOf(
 	settings: PaymentSettings,
 	shop: Pick<Shop, "location">,
 ): MarketRow | null {
