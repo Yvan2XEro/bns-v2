@@ -98,14 +98,18 @@ const TABLE: Array<{
 
 	// `paid → accepted|cancelled` are P5's unreserved rows: the shop accepts
 	// or declines, the buyer may still cancel, and the refund follows. No
-	// staff cancel: `MODERATOR_CANCELLABLE_STATUSES` does not list `paid`.
+	// the staff cancel: `MODERATOR_CANCELLABLE_STATUSES` lists `paid` now.
 	{ status: "paid", audience: "buyer", actions: ["cancel", "receipt"] },
 	{
 		status: "paid",
 		audience: "shop",
 		actions: ["accept", "decline", "receipt"],
 	},
-	{ status: "paid", audience: "staff", actions: ["receipt"] },
+	{
+		status: "paid",
+		audience: "staff",
+		actions: ["staff_cancel", "receipt"],
+	},
 
 	{
 		status: "accepted",

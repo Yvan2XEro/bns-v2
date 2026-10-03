@@ -53,7 +53,7 @@ function orderAt(status: OrderStatusName): OrderActionSubject {
 }
 
 describe("staffSheetActions", () => {
-	test("offers the cancel at exactly the four moderator-cancellable statuses", () => {
+	test("offers the cancel at exactly the moderator-cancellable statuses", () => {
 		const statuses: OrderStatusName[] = [
 			"placed",
 			"confirmed",
@@ -70,7 +70,13 @@ describe("staffSheetActions", () => {
 		const cancellable = statuses.filter(
 			(status) => staffSheetActions(orderAt(status), NOW).canCancel,
 		);
-		expect(cancellable).toEqual(["placed", "confirmed", "accepted", "shipped"]);
+		expect(cancellable).toEqual([
+			"placed",
+			"confirmed",
+			"paid",
+			"accepted",
+			"shipped",
+		]);
 	});
 
 	test("offers the receipt in every status", () => {

@@ -1300,6 +1300,9 @@ function parseStaffCancelReason(value: unknown): StaffCancelReason {
 export const MODERATOR_CANCELLABLE_STATUSES: readonly Order["status"][] = [
 	"placed",
 	"confirmed",
+	// The P4 spec's cancellation row for `paid` (l.564) lists staff; the P5
+	// settlement handler already refunds a paid order on a staff cancel.
+	"paid",
 	"accepted",
 	"shipped",
 ];

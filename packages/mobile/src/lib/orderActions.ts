@@ -113,7 +113,7 @@ export const ORDER_ACTION_TABLE: Record<
 	paid: {
 		buyer: ["cancel", "receipt"],
 		shop: ["accept", "decline", "receipt"],
-		staff: ["receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	accepted: {
 		buyer: ["cancel", "receipt"],

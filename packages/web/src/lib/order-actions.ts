@@ -173,7 +173,7 @@ export const ORDER_ACTIONS_BY_STATUS: Record<
 	paid: {
 		buyer: ["cancel", "receipt"],
 		shop: ["accept", "decline", "receipt"],
-		staff: ["receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	accepted: {
 		buyer: ["cancel", "receipt"],

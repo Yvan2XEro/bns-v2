@@ -203,6 +203,7 @@ for (const { pkg, table, declared, permissions } of CLIENTS) {
 				"paid/buyer/cancel",
 				"paid/shop/accept",
 				"paid/shop/decline",
+				"paid/staff/staff_cancel",
 			]);
 			expect(RESERVED_STATUSES.length).toBe(3);
 		});
@@ -241,7 +242,7 @@ for (const { pkg, table, declared, permissions } of CLIENTS) {
 			// A silently empty loop is the hazard this count closes: fourteen live
 			// cells carry twenty-three status-changing actions between them, four
 			// of which are the staff cancel and three of which are `paid`'s.
-			expect(checked).toHaveLength(23);
+			expect(checked).toHaveLength(24);
 		});
 
 		it("offers the buyer's own cancel exactly where buyerCancelOrder allows it", () => {
@@ -280,7 +281,7 @@ for (const { pkg, table, declared, permissions } of CLIENTS) {
 			expect(offered.sort()).toEqual(
 				[...MODERATOR_CANCELLABLE_STATUSES].sort(),
 			);
-			expect(MODERATOR_CANCELLABLE_STATUSES).toHaveLength(4);
+			expect(MODERATOR_CANCELLABLE_STATUSES).toHaveLength(5);
 		});
 
 		/**

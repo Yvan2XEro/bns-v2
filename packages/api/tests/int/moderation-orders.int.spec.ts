@@ -1,13 +1,18 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ORDER_STATUSES } from "../../src/collections/Orders";
-import { cancelOrder } from "../../src/services/moderation";
+import {
+	cancelOrder,
+	MODERATOR_CANCELLABLE_STATUSES,
+} from "../../src/services/moderation";
 import { fakePayload } from "./helpers/fakePayload";
 
 const MOD = { id: "mod-1", role: "moderator" };
 const USER = { id: "user-1", role: "user" };
 
-const CANCELLABLE_STATUSES = ["placed", "confirmed", "accepted", "shipped"];
+// The service's own list, so this matrix can never drift from it again: it
+// held a four-status transcription while `paid` joined the real list.
+const CANCELLABLE_STATUSES = MODERATOR_CANCELLABLE_STATUSES;
 
 function orderWorld(status: string, overrides: Record<string, unknown> = {}) {
 	return fakePayload({
@@ -66,11 +71,23 @@ describe("cancelOrder — the four reachable statuses, and nothing else", () => 
 			expect(payload.store.orders[0]?.status).toBe("cancelled");
 		});
 
-		it(`moves a "${status}" COD order's payment from cod_pending to unpaid`, async () => {
-			const payload = orderWorld(status);
-			await cancelOrder(payload, MOD, "o-1", { reason: "staff_policy" });
-			expect(payload.store.orders[0]?.paymentStatus).toBe("unpaid");
-		});
+		if (status !== "paid") {
+			it(`moves a "${status}" COD order's payment from cod_pending to unpaid`, async () => {
+				const payload = orderWorld(status);
+				await cancelOrder(payload, MOD, "o-1", { reason: "staff_policy" });
+				expect(payload.store.orders[0]?.paymentStatus).toBe("unpaid");
+			});
+		} else {
+			// A paid order is mobile money: cancellation leaves paymentStatus
+			// to the refund flow (checkout-settlement's handler owns it), and
+			// the status still moves.
+			it("leaves a paid order's paymentStatus to the refund flow", async () => {
+				const payload = orderWorld("paid", { paymentStatus: "paid" });
+				await cancelOrder(payload, MOD, "o-1", { reason: "staff_policy" });
+				expect(payload.store.orders[0]?.paymentStatus).toBe("paid");
+				expect(payload.store.orders[0]?.status).toBe("cancelled");
+			});
+		}
 	}
 
 	for (const status of ORDER_STATUSES.filter(

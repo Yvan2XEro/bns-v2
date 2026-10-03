@@ -59,11 +59,11 @@ const TABLE: Record<
 	// or declines (`DECLINABLE_STATUSES`); the buyer may still cancel
 	// (`BUYER_CANCELLABLE_STATUSES`), and the refund follows either way. Not
 	// `seller_cancel` (the shop has not accepted yet) nor the staff cancel
-	// (`MODERATOR_CANCELLABLE_STATUSES` does not list `paid`).
+	// (`MODERATOR_CANCELLABLE_STATUSES` lists `paid` since the checkpoint's D-6/D-8 follow-up).
 	paid: {
 		buyer: ["cancel", "receipt"],
 		shop: ["accept", "decline", "receipt"],
-		staff: ["receipt"],
+		staff: ["staff_cancel", "receipt"],
 	},
 	accepted: {
 		buyer: ["cancel", "receipt"],
