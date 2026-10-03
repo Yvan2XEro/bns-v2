@@ -43,6 +43,30 @@ function gsmAmount(value: number, locale: "fr" | "en"): string {
 	return formatXaf(value, locale).replace(/[\u202f\u00a0]/g, " ");
 }
 
+/**
+ * The closest GSM-7 spelling of a shop name. Names here carry ô, ê, û, ç —
+ * ordinary Cameroonian spellings that GSM-7 does not hold (it has é è à ù,
+ * and Ç only in upper case). Before this, one such character made
+ * `gsm7Length` throw inside the post-commit callback and the receipt SMS was
+ * silently never sent for every order that shop ever received. The name is
+ * display text, not a credential: "Dépôt Côté Ouest" arriving as
+ * "Depot Cote Ouest" is a receipt; not arriving at all is not. Characters
+ * with no base-letter decomposition fall back to "?", and the result is
+ * always encodable by construction.
+ */
+export function gsm7Name(text: string): string {
+	let out = "";
+	for (const char of text) {
+		if (GSM7_BASIC.has(char) || GSM7_EXTENDED_CHARS.has(char)) {
+			out += char;
+			continue;
+		}
+		const base = char.normalize("NFD")[0] ?? "?";
+		out += GSM7_BASIC.has(base) || GSM7_EXTENDED_CHARS.has(base) ? base : "?";
+	}
+	return out;
+}
+
 export function isGsm7(text: string): boolean {
 	for (const char of text) {
 		if (!GSM7_BASIC.has(char) && !GSM7_EXTENDED_CHARS.has(char)) return false;
@@ -90,15 +114,27 @@ export function receiptSms(
 			? `BuyNSellem: commande ${input.orderNumber} recue chez ${shopName}, total ${gsmAmount(input.total, "fr")} a payer a la livraison. Suivi: buynsellem.com/purchases/${input.orderId}.`
 			: `BuyNSellem: order ${input.orderNumber} received from ${shopName}, total ${gsmAmount(input.total, "en")} due on delivery. Track: buynsellem.com/purchases/${input.orderId}.`;
 
-	const full = build(input.shopName);
+	const shopName = gsm7Name(input.shopName);
+	const full = build(shopName);
 	const overflow = gsm7Length(full) - SMS_BUDGET;
 	if (overflow <= 0) return full;
 
-	// Trim the name by the overflow plus the ellipsis it gains. Never below a
-	// few characters: a receipt naming no recognisable shop is worse than a
-	// long one, and the order number identifies it regardless.
-	const keep = Math.max(6, input.shopName.length - overflow - 1);
-	return build(`${input.shopName.slice(0, keep).trimEnd()}.`);
+	// Trim the name by its GSM-7 length, not its character count: an extended
+	// character ([ ] { } € …) costs two septets, so a character-counted trim
+	// left names carrying them over budget. Walk back septet by septet until
+	// the overflow plus the trailing "." fits. Never below a few characters:
+	// a receipt naming no recognisable shop is worse than a long one, and the
+	// order number identifies it regardless.
+	const allowed = Math.max(6, gsm7Length(shopName) - overflow - 1);
+	let keep = "";
+	let used = 0;
+	for (const char of shopName) {
+		const cost = GSM7_EXTENDED_CHARS.has(char) ? 2 : 1;
+		if (used + cost > allowed) break;
+		keep += char;
+		used += cost;
+	}
+	return build(`${keep.trimEnd()}.`);
 }
 
 /** Sent to the delivery phone when the buyer's number is not their own

@@ -108,6 +108,46 @@ describe("the four order SMS", () => {
 		expect(fr).toContain(" chez Boutiqu.,");
 	});
 
+	// The re-review of the final fix round found both of these reachable with
+	// ordinary Cameroonian shop names: ô/ê/ç made gsm7Length throw inside the
+	// post-commit callback — the receipt was silently never sent for every
+	// order that shop ever received — and the trim counted characters while
+	// an extended char ([ ] { } € ~) costs two septets, so such a name
+	// stayed over budget after "trimming".
+	it("sends a receipt for a shop name GSM-7 cannot spell, as its closest spelling", () => {
+		for (const locale of ["fr", "en"] as const) {
+			const text = receiptSms(
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Dépôt Çà ç",
+					total: 12_500,
+				},
+				locale,
+			);
+			expect(gsm7Length(text)).toBeLessThanOrEqual(160);
+			// é and upper-case Ç survive (GSM-7 holds them); ô and the
+			// lower-case ç lose their accents; nothing throws, the link is
+			// whole, and the name was short enough that nothing was trimmed.
+			expect(text).toContain(" Dépot Çà c,");
+			expect(text).toContain(`buynsellem.com/purchases/${ORDER_ID}`);
+		}
+	});
+
+	it("trims a name of two-septet characters by its real GSM-7 cost", () => {
+		const text = receiptSms(
+			{
+				orderId: ORDER_ID,
+				orderNumber: ORDER_NUMBER,
+				shopName: "Ab[]{}|~^\\x boutique du carrefour",
+				total: 1_250_000,
+			},
+			"fr",
+		);
+		expect(gsm7Length(text)).toBeLessThanOrEqual(160);
+		expect(text).toContain(`buynsellem.com/purchases/${ORDER_ID}`);
+	});
+
 	it("fits the confirmation and handover SMS in one message", () => {
 		for (const locale of ["fr", "en"] as const) {
 			const confirmation = confirmationCodeSms(
