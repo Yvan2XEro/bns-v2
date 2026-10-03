@@ -222,7 +222,10 @@ describe("the Payments namespace", () => {
 	// must be a deliberate edit of this test, not a drive-by copy change.
 	test("ships the spec's disclosure sentences verbatim", () => {
 		expect(enNs.disclosure_listingBadge).toBe(
-			"Protected payment available: your money is released to the seller only after delivery. Fee: 3% (min 100 FCFA)",
+			// The fee figures are settings an admin can change; a hard-coded "3%"
+			// would lie the day they do, so the badge takes the live values from
+			// the public config (coordinator ruling, 2026-10-03).
+			"Protected payment available: your money is released to the seller only after delivery. Fee: {rate}% (min {min} FCFA)",
 		);
 		expect(enNs.disclosure_holder).toBe(
 			"Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
@@ -231,7 +234,7 @@ describe("the Payments namespace", () => {
 			"Funds are held by NotchPay. BuyNSellem never holds your money.",
 		);
 		expect(frNs.disclosure_listingBadge).toBe(
-			"Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : 3 % (min. 100 FCFA)",
+			"Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {rate} % (min. {min} FCFA)",
 		);
 		expect(frNs.disclosure_holder).toBe(
 			"Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",

@@ -2845,7 +2845,7 @@
 		"singleShopBodyNamed": "Your cart already holds items from {{shop}}. Empty it to add this item?"
 	},
 	"payments": {
-		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: 3% (min 100 FCFA)",
+		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: {{rate}}% (min {{min}} FCFA)",
 		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
 		"disclosure_sellerLegend": "Funds are held by NotchPay. BuyNSellem never holds your money.",
 		"method_title": "Payment method",

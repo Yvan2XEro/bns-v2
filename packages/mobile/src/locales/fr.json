@@ -2848,7 +2848,7 @@
 		"singleShopBodyNamed": "Votre panier contient déjà des articles de {{shop}}. Le vider pour ajouter cet article ?"
 	},
 	"payments": {
-		"disclosure_listingBadge": "Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : 3 % (min. 100 FCFA)",
+		"disclosure_listingBadge": "Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {{rate}} % (min. {{min}} FCFA)",
 		"disclosure_holder": "Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",
 		"disclosure_sellerLegend": "Les fonds sont détenus par NotchPay. BuyNSellem ne détient jamais votre argent.",
 		"method_title": "Mode de paiement",
