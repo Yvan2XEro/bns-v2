@@ -21,6 +21,7 @@ import {
 } from "../lib/transactions";
 import type { Order, OrderItem, Shop } from "../payload-types";
 import { applyTransition, TERMINAL_STATUSES } from "./orders/transitions";
+import { activeHolds, createHold, releaseHold } from "./payoutHolds";
 import {
 	notifyShopSuspended,
 	notifyShopUnsuspended,
@@ -659,7 +660,7 @@ export async function unsuspendUser(
 					},
 				);
 				if (!matches) continue;
-				await clearShopSuspension(payload, req, shopId);
+				await clearShopSuspension(payload, req, shopId, actor.id);
 				restoredShopIds.push(shopId);
 			}
 
@@ -827,6 +828,16 @@ async function applyShopSuspension(
 	suspension: SuspensionFields,
 	suspensionLogId: string,
 ) {
+	// Same transaction as the suspension: a suspended shop must never be left
+	// able to take protected payments or receive payouts.
+	await createHold(req, {
+		scope: "shop",
+		shop: shopId,
+		reason: "shop_suspended",
+		until: null,
+		createdByType: "moderator",
+		createdBy: suspension.suspendedBy,
+	});
 	await payload.update({
 		collection: "shops",
 		id: shopId,
@@ -837,11 +848,18 @@ async function applyShopSuspension(
 	});
 }
 
+/** `releasedBy` is null when the expiry job lifts the suspension. */
 async function clearShopSuspension(
 	payload: Payload,
 	req: PayloadRequest,
 	shopId: string,
+	releasedBy: string | null,
 ) {
+	for (const hold of await activeHolds(payload, { shop: shopId }, req)) {
+		if (hold.reason === "shop_suspended") {
+			await releaseHold(req, hold.id, { releasedBy });
+		}
+	}
 	await payload.update({
 		collection: "shops",
 		id: shopId,
@@ -1099,7 +1117,7 @@ export async function unsuspendShop(
 				input.restoreListings === false
 					? []
 					: await restoreShopListings(payload, req, shop);
-			await clearShopSuspension(payload, req, shopId);
+			await clearShopSuspension(payload, req, shopId, actor.id);
 			await queueMembershipChange(commitContextOf(req), shopId);
 			await writeLog(
 				payload,
@@ -1196,7 +1214,7 @@ export async function liftExpiredShopSuspensions(
 			}
 
 			const restoredListingIds = await restoreShopListings(payload, req, shop);
-			await clearShopSuspension(payload, req, shopId);
+			await clearShopSuspension(payload, req, shopId, null);
 			await writeLog(
 				payload,
 				{
