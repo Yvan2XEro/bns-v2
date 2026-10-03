@@ -175,6 +175,11 @@ function attemptInProgress(
 
 // ─── Rule 1: the order is the caller's and still payable ─────────────────────
 
+/** When the order's checkout window closes and `expireOrders` cancels it. */
+const checkoutWindowEnd = (order: Order, settings: PaymentSettings): number =>
+	toMs(order.timestamps?.placedAt ?? order.createdAt) +
+	settings.checkoutExpiryMinutes * 60_000;
+
 function assertPayable(
 	order: Order,
 	user: ServiceUser,
@@ -184,14 +189,12 @@ function assertPayable(
 	if (relationId(order.buyer) !== user.id) {
 		throw refuse(ERROR_CODES.paymentOrderNotPayable, 403);
 	}
-	const placedAt = toMs(order.timestamps?.placedAt ?? order.createdAt);
-	const window = settings.checkoutExpiryMinutes * 60_000;
 	const payable =
 		order.status === "placed" &&
 		order.paymentMethod === "mobile_money" &&
 		(order.paymentStatus === "unpaid" ||
 			order.paymentStatus === "awaiting_payment") &&
-		now.getTime() - placedAt < window;
+		now.getTime() < checkoutWindowEnd(order, settings);
 	if (!payable) throw refuse(ERROR_CODES.paymentOrderNotPayable, 409);
 }
 
@@ -573,8 +576,14 @@ export async function createCheckoutIntent(
 					provider: market.provider,
 					idempotencyKey,
 					now,
+					// A later attempt never outlives the order: the buyer's countdown
+					// must end when `expireOrders` cancels it, or a payment approved
+					// after that is taken and refunded as late.
 					expiresAt: new Date(
-						now.getTime() + settings.checkoutExpiryMinutes * 60_000,
+						Math.min(
+							now.getTime() + settings.checkoutExpiryMinutes * 60_000,
+							checkoutWindowEnd(order, settings),
+						),
 					),
 					checkout: {
 						channel,

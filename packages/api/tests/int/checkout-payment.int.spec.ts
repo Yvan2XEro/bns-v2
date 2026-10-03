@@ -348,7 +348,8 @@ describe("createCheckoutIntent — the happy path", () => {
 		expect(response).toEqual({
 			intentId: String(intents()[0]?.id),
 			status: "pending",
-			expiresAt: new Date(NOW.getTime() + 30 * MIN).toISOString(),
+			// The order was placed 5 minutes ago: its window, not the attempt's, ends it.
+			expiresAt: new Date(NOW.getTime() + 25 * MIN).toISOString(),
 			channel: "cm.orange",
 			attempt: 1,
 			attemptsLeft: 2,
@@ -378,7 +379,8 @@ describe("createCheckoutIntent — the happy path", () => {
 			applicationFee: WORKED.applicationFee,
 			destinationAmount: WORKED.destinationAmount,
 			attempt: 1,
-			expiresAt: new Date(NOW.getTime() + 30 * MIN).toISOString(),
+			// The order was placed 5 minutes ago: its window, not the attempt's, ends it.
+			expiresAt: new Date(NOW.getTime() + 25 * MIN).toISOString(),
 		});
 		expect(
 			(intent.statusHistory as Array<{ status: string }>).map((h) => h.status),
@@ -562,6 +564,17 @@ describe("createCheckoutIntent — the ladder, one code at a time", () => {
 				code: "payment.orderNotPayable",
 				status: 409,
 			});
+		});
+
+		it("ends a late attempt with the order's own window, not thirty minutes after it", async () => {
+			const placedAt = new Date(NOW.getTime() - 25 * MIN);
+			use(
+				seed({ order: { timestamps: { placedAt: placedAt.toISOString() } } }),
+			);
+			const response = await pay();
+			const window = new Date(placedAt.getTime() + 30 * MIN).toISOString();
+			expect(response.expiresAt).toBe(window);
+			expect(intents()[0]?.expiresAt).toBe(window);
 		});
 
 		it("still takes an order placed 29 minutes ago", async () => {
@@ -1145,7 +1158,8 @@ describe("the routes", () => {
 		expect(await res.json()).toEqual({
 			intentId: String(intents()[0]?.id),
 			status: "pending",
-			expiresAt: new Date(NOW.getTime() + 30 * MIN).toISOString(),
+			// The order was placed 5 minutes ago: its window, not the attempt's, ends it.
+			expiresAt: new Date(NOW.getTime() + 25 * MIN).toISOString(),
 			channel: "cm.orange",
 			attempt: 1,
 			attemptsLeft: 2,
