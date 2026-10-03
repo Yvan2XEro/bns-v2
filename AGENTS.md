@@ -265,7 +265,8 @@ cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
   P3 while agents were writing came out wrong — the web/mobile cast count was
   published as 41 and was never below 48 — and a ceiling set from a moving
   tree either traps work or excuses it. These four were measured with nothing
-  running, at P4's close. The mobile advisory figure is honest only with a
+  running, at P5's close (where all four held their P4 values exactly: the
+  spec added ~47k lines without a single new cast or test-type error). The mobile advisory figure is honest only with a
   fresh `.expo/types/router.d.ts`; without one the same tree reads 32 and
   hides three real errors.
 - A cast around `router.push` in `packages/mobile` is usually not a mismatch
