@@ -5,6 +5,7 @@ import type {
 	ConfirmationRequired,
 	DeliveryMethod,
 	DeliveryOption,
+	PaymentMethod,
 	QuoteResponse,
 } from "~/types/order";
 
@@ -199,6 +200,8 @@ export interface CheckoutState {
 	step: CheckoutStep;
 	address: AddressInput | null;
 	option: DeliveryOption | null;
+	/** COD unless the buyer picks protected payment at the review step; the flag decides whether that choice is even offered. */
+	paymentMethod: PaymentMethod;
 	quote: QuoteResponse | null;
 	/** The summary the buyer saw before `checkout.quoteChanged`, for highlighting. */
 	previousQuote: QuoteResponse | null;
@@ -214,6 +217,7 @@ export type CheckoutAction =
 	| { type: "addressSubmitted"; address: AddressInput }
 	| { type: "addressRejected"; field: AddressField | null }
 	| { type: "optionChosen"; option: DeliveryOption }
+	| { type: "paymentMethodChosen"; method: PaymentMethod }
 	| { type: "quoteLoaded"; quote: QuoteResponse }
 	| { type: "quoteChanged"; quote: QuoteResponse }
 	| { type: "contractLocale"; locale: "fr" | "en" }
@@ -224,6 +228,7 @@ export function initialCheckoutState(idempotencyKey: string): CheckoutState {
 		step: "address",
 		address: null,
 		option: null,
+		paymentMethod: "cod",
 		quote: null,
 		previousQuote: null,
 		contractLocale: null,
@@ -265,6 +270,16 @@ export function checkoutReducer(
 				...state,
 				step: "review",
 				option: action.option,
+				quote: null,
+				previousQuote: null,
+				accepted: false,
+			};
+		// A method change re-prices the order (the protection fee), so the quote
+		// on screen is no longer the one that would be charged.
+		case "paymentMethodChosen":
+			return {
+				...state,
+				paymentMethod: action.method,
 				quote: null,
 				previousQuote: null,
 				accepted: false,

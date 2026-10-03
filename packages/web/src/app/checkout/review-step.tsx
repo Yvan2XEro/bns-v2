@@ -12,7 +12,9 @@ import {
 	canPlaceOrder,
 	quoteDifferences,
 } from "~/lib/checkout-form";
+import type { PaymentMethod } from "~/types/order";
 import { OrderSummary } from "./order-summary";
+import { PaymentMethodPicker } from "./payment-method-picker";
 import { PreContractPanel } from "./pre-contract-panel";
 
 export function ReviewStep({
@@ -24,6 +26,8 @@ export function ReviewStep({
 	placing,
 	placeError,
 	onPlace,
+	protectedPaymentEnabled,
+	onChoosePaymentMethod,
 }: {
 	state: CheckoutState;
 	dispatch: Dispatch<CheckoutAction>;
@@ -33,6 +37,9 @@ export function ReviewStep({
 	placing: boolean;
 	placeError: ApiError | null;
 	onPlace: () => void;
+	/** Server-decided: "coming soon" is never inferred client-side. */
+	protectedPaymentEnabled: boolean;
+	onChoosePaymentMethod: (method: PaymentMethod) => void;
 }) {
 	const t = useTranslations("Checkout");
 	const tRoot = useTranslations();
@@ -41,34 +48,55 @@ export function ReviewStep({
 	const goTo = (step: "address" | "delivery") =>
 		dispatch({ type: "goTo", step });
 
+	// Shown above every other outcome, including a quote error: switching back
+	// to COD must stay reachable even when the protected quote the buyer just
+	// asked for comes back refused.
+	const methodPicker = protectedPaymentEnabled && (
+		<PaymentMethodPicker
+			method={state.paymentMethod}
+			fee={
+				quote && quote.summary.paymentMethod === "mobile_money"
+					? quote.summary.amounts.buyerProtectionFee
+					: null
+			}
+			onChoose={onChoosePaymentMethod}
+		/>
+	);
+
 	if (quoting) {
 		return (
-			<p className="flex items-center gap-2 text-[#64748B] text-sm">
-				<LoaderCircle className="h-4 w-4 animate-spin" />
-				{t("loadingQuote")}
-			</p>
+			<div className="space-y-6">
+				{methodPicker}
+				<p className="flex items-center gap-2 text-[#64748B] text-sm">
+					<LoaderCircle className="h-4 w-4 animate-spin" />
+					{t("loadingQuote")}
+				</p>
+			</div>
 		);
 	}
 	if (!quote) {
 		return (
-			<div className="space-y-3">
-				{quoteError && (
-					<p role="alert" className="text-red-700 text-sm">
-						{resolveErrorMessage(quoteError, tRoot)}
-					</p>
-				)}
-				<div className="flex gap-3">
-					<Button
-						type="button"
-						variant="outline"
-						className="min-h-11"
-						onClick={() => goTo("delivery")}
-					>
-						{t("back")}
-					</Button>
-					<Button type="button" className="min-h-11" onClick={onRetryQuote}>
-						{t("retryQuote")}
-					</Button>
+			<div className="space-y-6">
+				{methodPicker}
+				<div className="space-y-3">
+					{quoteError && (
+						<p role="alert" className="text-red-700 text-sm">
+							{resolveErrorMessage(quoteError, tRoot)}
+						</p>
+					)}
+					<div className="flex gap-3">
+						<Button
+							type="button"
+							variant="outline"
+							className="min-h-11"
+							onClick={() => goTo("delivery")}
+						>
+							{t("back")}
+						</Button>
+						<Button type="button" className="min-h-11" onClick={onRetryQuote}>
+							{t("retryQuote")}
+						</Button>
+					</div>
 				</div>
 			</div>
 		);
@@ -79,6 +107,7 @@ export function ReviewStep({
 
 	return (
 		<div className="space-y-6">
+			{methodPicker}
 			{previousQuote && (
 				<div
 					role="alert"
@@ -131,7 +160,9 @@ export function ReviewStep({
 				onClick={onPlace}
 			>
 				{placing && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-				{t("placeOrderCod")}
+				{quote.summary.paymentMethod === "mobile_money"
+					? t("placeOrder")
+					: t("placeOrderCod")}
 			</Button>
 		</div>
 	);

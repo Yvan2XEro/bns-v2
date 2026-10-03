@@ -20,6 +20,7 @@ import {
 import type {
 	AddressInput,
 	DeliveryOption,
+	PaymentMethod,
 	QuoteResponse,
 } from "~/types/order";
 import { AddressStep } from "./address-step";
@@ -39,7 +40,8 @@ export function CheckoutClient() {
 	const t = useTranslations("Checkout");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const router = useRouter();
-	const { ordersEnabled, launchCities } = useAppConfig();
+	const { ordersEnabled, launchCities, protectedPaymentEnabled } =
+		useAppConfig();
 	const cart = useCart(ordersEnabled);
 	const quote = useCheckoutQuote();
 	const place = usePlaceOrder();
@@ -69,13 +71,14 @@ export function CheckoutClient() {
 	const requestQuote = (
 		address: AddressInput,
 		option: DeliveryOption,
+		method: PaymentMethod,
 		onQuote: (fresh: QuoteResponse) => void,
 	) =>
 		quote.mutate(
 			{
 				address,
 				deliveryOptionId: option.optionId,
-				paymentMethod: "cod",
+				paymentMethod: method,
 				locale,
 			},
 			{
@@ -96,7 +99,18 @@ export function CheckoutClient() {
 			dispatch({ type: "addressRejected", field: "landmark" });
 			return;
 		}
-		requestQuote(state.address, option, (fresh) =>
+		requestQuote(state.address, option, state.paymentMethod, (fresh) =>
+			dispatch({ type: "quoteLoaded", quote: fresh }),
+		);
+	};
+
+	// Switching method re-prices the order (the protection fee is the server's
+	// to compute, never this screen's), so it asks for a fresh quote the same
+	// way picking a different delivery option does.
+	const choosePaymentMethod = (method: PaymentMethod) => {
+		dispatch({ type: "paymentMethodChosen", method });
+		if (!state.address || !state.option) return;
+		requestQuote(state.address, state.option, method, (fresh) =>
 			dispatch({ type: "quoteLoaded", quote: fresh }),
 		);
 	};
@@ -109,13 +123,18 @@ export function CheckoutClient() {
 		place.mutate(body, {
 			onSuccess: (placed) =>
 				router.push(
-					`/checkout/confirmation/${encodeURIComponent(placed.orderId)}?c=${placed.confirmationRequired}`,
+					body.paymentMethod === "mobile_money"
+						? `/checkout/${encodeURIComponent(placed.orderId)}/pay`
+						: `/checkout/confirmation/${encodeURIComponent(placed.orderId)}?c=${placed.confirmationRequired}`,
 				),
 			onError: (error) => {
 				if (error.code !== ERROR_CODES.checkoutQuoteChanged) return;
 				if (!state.address || !state.option) return;
-				requestQuote(state.address, state.option, (fresh) =>
-					dispatch({ type: "quoteChanged", quote: fresh }),
+				requestQuote(
+					state.address,
+					state.option,
+					state.paymentMethod,
+					(fresh) => dispatch({ type: "quoteChanged", quote: fresh }),
 				);
 			},
 		});
@@ -184,6 +203,8 @@ export function CheckoutClient() {
 							: place.error
 					}
 					onPlace={placeOrder}
+					protectedPaymentEnabled={protectedPaymentEnabled}
+					onChoosePaymentMethod={choosePaymentMethod}
 				/>
 			)}
 		</div>

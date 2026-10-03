@@ -17,6 +17,7 @@ import { ConfirmCodeForm } from "./confirm-code-form";
 import { ConfirmReceiptDialog } from "./confirm-receipt-dialog";
 import { ContestDialog } from "./contest-dialog";
 import { HandoverCard } from "./handover-card";
+import { PaymentSection } from "./payment-section";
 import { PurchaseSummary } from "./purchase-summary";
 import { ReviewPanel } from "./review-panel";
 import { Timeline } from "./timeline";
@@ -112,6 +113,7 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 				</Button>
 			)}
 
+			<PaymentSection order={order} />
 			<PurchaseSummary order={order} />
 			<Timeline entries={order.timeline} />
 

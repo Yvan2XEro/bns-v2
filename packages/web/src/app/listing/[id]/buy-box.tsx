@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { VariantSelector } from "~/components/listing/variant-selector";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { type DeliveryLineInput, decideBuyBox } from "~/lib/buy-box";
+import { showsProtectionBadge } from "~/lib/payment-disclosure";
+import type { VerificationBadge } from "~/lib/verification";
 import { BuyActions } from "./buy-actions";
+import { ProtectionBadge } from "./protection-badge";
 
 export interface BuyBoxProps {
 	listingId: string;
@@ -18,6 +21,8 @@ export interface BuyBoxProps {
 	codAllowed: boolean;
 	pickupAllowed: boolean;
 	delivery: DeliveryLineInput;
+	/** The server's own, expiry-aware badge for this listing's shop; null for a classified ad. */
+	shopBadge: VerificationBadge | null;
 }
 
 /**
@@ -27,7 +32,7 @@ export interface BuyBoxProps {
  */
 export function BuyBox(props: BuyBoxProps) {
 	const t = useTranslations("BuyBox");
-	const { ordersEnabled } = useAppConfig();
+	const { ordersEnabled, protectedPaymentEnabled } = useAppConfig();
 	const decision = decideBuyBox({
 		ordersEnabled,
 		orderable: props.orderable,
@@ -37,6 +42,11 @@ export function BuyBox(props: BuyBoxProps) {
 		signedIn: props.signedIn,
 	});
 
+	const badge = showsProtectionBadge(
+		protectedPaymentEnabled,
+		props.shopBadge,
+	) && <ProtectionBadge />;
+
 	const asToday = (
 		<VariantSelector
 			productId={props.productId}
@@ -45,11 +55,18 @@ export function BuyBox(props: BuyBoxProps) {
 		/>
 	);
 
-	if (decision.kind === "hidden") return asToday;
+	if (decision.kind === "hidden")
+		return (
+			<>
+				{badge}
+				{asToday}
+			</>
+		);
 
 	if (decision.kind === "restricted") {
 		return (
 			<>
+				{badge}
 				<div className="mt-4 flex items-start gap-2 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm">
 					<Clock
 						aria-hidden="true"
@@ -68,20 +85,23 @@ export function BuyBox(props: BuyBoxProps) {
 	}
 
 	return (
-		<VariantSelector
-			productId={props.productId}
-			codAllowed={false}
-			pickupAllowed={false}
-		>
-			{(variant) => (
-				<BuyActions
-					listingId={props.listingId}
-					shopId={props.shop?.id ?? null}
-					variant={variant}
-					signedIn={decision.signedIn}
-					delivery={props.delivery}
-				/>
-			)}
-		</VariantSelector>
+		<>
+			{badge}
+			<VariantSelector
+				productId={props.productId}
+				codAllowed={false}
+				pickupAllowed={false}
+			>
+				{(variant) => (
+					<BuyActions
+						listingId={props.listingId}
+						shopId={props.shop?.id ?? null}
+						variant={variant}
+						signedIn={decision.signedIn}
+						delivery={props.delivery}
+					/>
+				)}
+			</VariantSelector>
+		</>
 	);
 }

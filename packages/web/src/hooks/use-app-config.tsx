@@ -9,6 +9,13 @@ export interface BoostPrice {
 	currency: string;
 }
 
+/** `AppSettings.payments.buyerProtection`, mirrored from `PAYMENT_DEFAULTS`. */
+export interface BuyerProtectionConfig {
+	bps: number;
+	min: number;
+	max: number;
+}
+
 export interface AppConfig {
 	stripePublishableKey: string | null;
 	chatUrl: string | null;
@@ -21,8 +28,15 @@ export interface AppConfig {
 	/** The cities ordering is open in, with each one's default delivery fee. */
 	launchCities: LaunchCityOption[];
 	withdrawalDays: number;
-	/** Gates the payments setup entry point and nav link. Fails closed. */
+	/**
+	 * Whether protected payment is open for the caller's market, server-decided
+	 * (`isProtectedPaymentOpen`). Fails closed the same way `ordersEnabled`
+	 * does: a client that cannot read the flag shows "coming soon", never a
+	 * guess that it is on.
+	 */
 	protectedPaymentEnabled: boolean;
+	/** Rate, minimum and maximum for the buyer protection fee. Changing them affects new orders only. */
+	buyerProtection: BuyerProtectionConfig;
 }
 
 export const EMPTY_APP_CONFIG: AppConfig = {
@@ -38,6 +52,7 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	launchCities: [],
 	withdrawalDays: 15,
 	protectedPaymentEnabled: false,
+	buyerProtection: { bps: 300, min: 100, max: 15_000 },
 };
 
 const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);

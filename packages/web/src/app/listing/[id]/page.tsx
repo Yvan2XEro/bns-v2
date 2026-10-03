@@ -523,6 +523,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								signedIn={Boolean(authUser)}
 								codAllowed={delivery.codAllowed === true}
 								pickupAllowed={delivery.pickupAllowed === true}
+								shopBadge={shopBadge}
 								delivery={{
 									city: shop?.location?.city ?? null,
 									sellerDeliveryEnabled:

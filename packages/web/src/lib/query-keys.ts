@@ -159,6 +159,10 @@ export const purchasesKey = (filters: { status?: string } = {}) =>
 export const purchaseKey = (orderId: string) =>
 	[...purchasesRootKey(), orderId] as const;
 
+/** The order's own buyer-fee invoice, if the protection fee ever issued one. */
+export const feeInvoiceKey = (orderId: string) =>
+	[...purchaseKey(orderId), "fee-invoice"] as const;
+
 /** Also outside: the caller is not a member of the shop yet. */
 export const invitationKey = (token: string) => ["invitations", token] as const;
 

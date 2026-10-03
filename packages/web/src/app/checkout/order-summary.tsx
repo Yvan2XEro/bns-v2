@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 import { DISTRICTS } from "~/lib/checkout-form";
 import { formatXaf } from "~/lib/order-money";
 import type { QuoteResponse } from "~/types/order";
+import { PaymentMethodLabel } from "./payment-method-label";
+import { ProtectionFeeRow } from "./protection-fee-row";
 
 function Changed({ on, children }: { on: boolean; children: ReactNode }) {
 	const t = useTranslations("Checkout");
@@ -50,7 +52,8 @@ export function OrderSummary({
 	const t = useTranslations("Checkout");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const money = (amount: number) => formatXaf(amount, locale);
-	const { lines, amounts, delivery } = quote.summary;
+	const { lines, amounts, delivery, paymentMethod } = quote.summary;
+	const protectedPayment = paymentMethod === "mobile_money";
 	const address = delivery.address;
 	const districtName =
 		address.districtOther ??
@@ -109,6 +112,9 @@ export function OrderSummary({
 						</Changed>
 					</dd>
 				</div>
+				{protectedPayment && amounts.buyerProtectionFee > 0 && (
+					<ProtectionFeeRow amount={money(amounts.buyerProtectionFee)} />
+				)}
 				<div className="flex justify-between font-semibold text-[#0F172A] text-base">
 					<dt>{t("total")}</dt>
 					<dd>
@@ -146,7 +152,7 @@ export function OrderSummary({
 				)}
 				<p className="pt-2">
 					<span className="font-medium">{t("paymentMethod")}</span> ·{" "}
-					{t("paymentCod")}
+					<PaymentMethodLabel method={paymentMethod} />
 				</p>
 			</div>
 		</section>
