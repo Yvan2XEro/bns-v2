@@ -274,7 +274,10 @@ describe("the payments copy is the same on web and mobile", () => {
 					webStrings[key]?.replace(/\{(\w+)\}/g, "{{$1}}"),
 			);
 			expect(differing).toEqual([]);
-			expect(Object.keys(webStrings)).toHaveLength(149);
+			// 149 → 159: Tasks 24–28 added the seller screens' copy (4 shared) and
+			// six states only mobile renders as text (toasts, empty screens), mirrored
+			// into web verbatim so the byte-parity above stays whole-namespace.
+			expect(Object.keys(webStrings)).toHaveLength(159);
 		});
 	}
 

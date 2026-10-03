@@ -207,8 +207,10 @@ describe("the Payments namespace", () => {
 		// 149 at Task 7's close, +4 for Task 25's own screens: the shop-hold
 		// "no access" copy, the provider-schedule state `readyForPayout: null`
 		// renders instead of 0, the payout-account cooldown date sentence, and
-		// the "this was not me" confirmation.
-		expect(Object.keys(enNs)).toHaveLength(153);
+		// the "this was not me" confirmation. +6 at Task 28's landing: states
+		// only mobile renders as text today, mirrored here verbatim so the
+		// cross-client byte-parity spec stays whole-namespace.
+		expect(Object.keys(enNs)).toHaveLength(159);
 	});
 
 	test("carries the same placeholders in both languages, in next-intl's single braces", () => {
