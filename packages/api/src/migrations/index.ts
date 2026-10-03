@@ -11,6 +11,7 @@ import * as migration_20261001_000100_p3_shop_listing_seller from "./20261001_00
 import * as migration_20261001_000200_p3_shop_member_defaults from "./20261001_000200_p3_shop_member_defaults";
 import * as migration_20261002_000000_p4_order_indexes from "./20261002_000000_p4_order_indexes";
 import * as migration_20261002_000100_p4_review_shop_index from "./20261002_000100_p4_review_shop_index";
+import * as migration_20261003_000000_p5_invoice_indexes from "./20261003_000000_p5_invoice_indexes";
 
 export const migrations = [
 	{
@@ -77,5 +78,10 @@ export const migrations = [
 		up: migration_20261002_000100_p4_review_shop_index.up,
 		down: migration_20261002_000100_p4_review_shop_index.down,
 		name: "20261002_000100_p4_review_shop_index",
+	},
+	{
+		up: migration_20261003_000000_p5_invoice_indexes.up,
+		down: migration_20261003_000000_p5_invoice_indexes.down,
+		name: "20261003_000000_p5_invoice_indexes",
 	},
 ];

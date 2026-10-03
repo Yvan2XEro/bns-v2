@@ -179,6 +179,36 @@ function world() {
 				idempotencyKey: "order:o-2:1",
 			},
 		],
+		"buyer-fee-invoices": [
+			{
+				id: "bfi-1",
+				number: "BNS-F-2026-000001",
+				kind: "invoice",
+				order: "o-1",
+				buyer: "u-1",
+				amountTtc: 1_410,
+				pdf: "file-1",
+			},
+			{
+				id: "bfi-2",
+				number: "BNS-F-2026-000002",
+				kind: "credit_note",
+				creditsInvoice: "bfi-1",
+				order: "o-1",
+				buyer: "u-1",
+				amountTtc: 1_410,
+				pdf: "file-2",
+			},
+			{
+				id: "bfi-3",
+				number: "BNS-F-2026-000003",
+				kind: "invoice",
+				order: "o-2",
+				buyer: "u-2",
+				amountTtc: 900,
+				pdf: "file-3",
+			},
+		],
 		"contact-reveals": [
 			{ id: "cr-1", viewer: "u-1", seller: "u-2", listing: "l-9" },
 			{ id: "cr-2", viewer: "u-2", seller: "u-1", listing: "l-1" },
@@ -373,6 +403,22 @@ describe("deleteUserRelatedData payment retention", () => {
 		).toEqual([
 			["rf-1", null, 900, "succeeded"],
 			["rf-2", "u-2", 500, "pending"],
+		]);
+	});
+
+	it("keeps the deleted buyer's fee invoice and credit note whole without the buyer, and touches no other", () => {
+		expect(
+			payload.store["buyer-fee-invoices"].map((i) => [
+				i.id,
+				i.number,
+				i.buyer,
+				i.amountTtc,
+				i.pdf,
+			]),
+		).toEqual([
+			["bfi-1", "BNS-F-2026-000001", null, 1_410, "file-1"],
+			["bfi-2", "BNS-F-2026-000002", null, 1_410, "file-2"],
+			["bfi-3", "BNS-F-2026-000003", "u-2", 900, "file-3"],
 		]);
 	});
 

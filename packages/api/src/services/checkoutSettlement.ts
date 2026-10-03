@@ -190,6 +190,23 @@ async function postCharge(
 	});
 }
 
+/**
+ * In its own transaction after commit, so a failure never unsettles a paid
+ * order. Idempotent per order (Task 22), which is what lets every replayed
+ * success call it again as the retry.
+ */
+function invoiceAfterCommit(
+	req: PayloadRequest,
+	order: Order,
+	intent: PaymentIntent,
+): void {
+	afterCommit(req, () =>
+		withTransaction(req.payload, (invoiceReq) =>
+			issueBuyerFeeInvoice(invoiceReq, order, intent),
+		),
+	);
+}
+
 async function settleOrder(
 	req: PayloadRequest,
 	order: Order,
@@ -229,11 +246,7 @@ async function settleOrder(
 	const notice = noticeOf(paid, intent);
 	afterCommit(req, () => notifyPaymentSucceeded(req.payload, notice));
 	afterCommit(req, () => notifyOrderPaid(req.payload, { ...notice, acceptBy }));
-	afterCommit(req, () =>
-		withTransaction(req.payload, (invoiceReq) =>
-			issueBuyerFeeInvoice(invoiceReq, paid, intent),
-		),
-	);
+	invoiceAfterCommit(req, paid, intent);
 	return "paid";
 }
 
@@ -261,8 +274,16 @@ async function settleSuccess(
 ): Promise<CheckoutSettlementOutcome> {
 	const intentId = String(intent.id);
 	// A replay of a success already handled — the posting is written in the
-	// same transaction as everything else it decided.
-	if (await chargeOf(req, intentId)) return "unchanged";
+	// same transaction as everything else it decided. Only the fee invoice is
+	// retried, and only for the payment that settled the order.
+	const handled = await chargeOf(req, intentId);
+	if (handled) {
+		const settled = relationId(handled.order);
+		if (settled && intent.status === "succeeded") {
+			invoiceAfterCommit(req, await loadOrder(req, settled), intent);
+		}
+		return "unchanged";
+	}
 
 	const order = await loadOrder(req, intent.targetId);
 	if (intent.status !== "succeeded") {

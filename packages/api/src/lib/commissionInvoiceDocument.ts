@@ -1,5 +1,6 @@
 import type { CommissionInvoice, CommissionLine } from "../payload-types";
 import { formatXaf } from "./orderFormat";
+import { type PdfLine, renderTextPdf } from "./textPdf";
 
 export interface InvoiceDocumentLine {
 	orderNumber: string;
@@ -153,4 +154,128 @@ export function renderInvoiceHtml(
 <p>${t.totalDue}: ${escapeHtml(formatXaf(invoice.totalDue ?? 0, lang))}</p>
 </body>
 </html>`;
+}
+
+// ─── Series F: the buyer protection fee invoice and its credit note ─────────
+
+export interface BuyerFeeDocument {
+	kind: "invoice" | "credit_note";
+	number: string;
+	/** The invoice a credit note cancels. */
+	creditsNumber: string | null;
+	issuedAt: string;
+	/** When the buyer's payment succeeded; invoices only. */
+	paidAt: string | null;
+	orderNumber: string;
+	customerName: string;
+	amountHt: number;
+	vat: number;
+	amountTtc: number;
+	vatRateBps: number;
+	issuer: { legalName: string; supportEmail: string };
+}
+
+/** French first: Law 2011/012 art. 6 wants both, these are PDFs, so accented. */
+export const BUYER_FEE_DOCUMENT_COPY = {
+	fr: {
+		invoiceTitle: "Facture — frais de protection acheteur",
+		creditNoteTitle: "Avoir — frais de protection acheteur",
+		number: "Numéro",
+		issuedOn: "Date d'émission",
+		credits: "Avoir sur la facture",
+		order: "Commande",
+		customer: "Client",
+		description: "Désignation",
+		service: "Service de protection acheteur",
+		amountHt: "Montant HT",
+		vat: "TVA",
+		amountTtc: "Montant TTC",
+		paidOn: "Payée par mobile money le",
+		refunded: "Montant remboursé au client",
+		issuer: "Émetteur",
+		contact: "Contact",
+	},
+	en: {
+		invoiceTitle: "Invoice — buyer protection fee",
+		creditNoteTitle: "Credit note — buyer protection fee",
+		number: "Number",
+		issuedOn: "Issue date",
+		credits: "Credits invoice",
+		order: "Order",
+		customer: "Customer",
+		description: "Description",
+		service: "Buyer protection service",
+		amountHt: "Amount excl. VAT",
+		vat: "VAT",
+		amountTtc: "Amount incl. VAT",
+		paidOn: "Paid by mobile money on",
+		refunded: "Amount refunded to the customer",
+		issuer: "Issuer",
+		contact: "Contact",
+	},
+} as const;
+
+function longDate(iso: string, lang: "fr" | "en"): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return iso;
+	return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
+		dateStyle: "long",
+		timeZone: "Africa/Douala",
+	}).format(date);
+}
+
+/** `1925` → `19,25 %` / `19.25%`. */
+export function formatVatRate(bps: number, lang: "fr" | "en"): string {
+	const percent = (bps / 100).toFixed(2).replace(/\.?0+$/, "");
+	return lang === "fr" ? `${percent.replace(".", ",")} %` : `${percent}%`;
+}
+
+function feeSection(doc: BuyerFeeDocument, lang: "fr" | "en"): PdfLine[] {
+	const t = BUYER_FEE_DOCUMENT_COPY[lang];
+	const credit = doc.kind === "credit_note";
+	// French typography puts a space before the colon.
+	const colon = lang === "fr" ? " :" : ":";
+	const lines: PdfLine[] = [
+		{
+			text: credit ? t.creditNoteTitle : t.invoiceTitle,
+			bold: true,
+			size: 14,
+			gap: 12,
+		},
+		{ text: `${t.number}${colon} ${doc.number}` },
+		{ text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang)}` },
+	];
+	if (credit && doc.creditsNumber) {
+		lines.push({ text: `${t.credits}${colon} ${doc.creditsNumber}` });
+	}
+	lines.push(
+		{ text: `${t.issuer}${colon} ${doc.issuer.legalName}` },
+		{ text: `${t.contact}${colon} ${doc.issuer.supportEmail}` },
+		{ text: `${t.order}${colon} ${doc.orderNumber}` },
+		{ text: `${t.customer}${colon} ${doc.customerName}` },
+		{ text: `${t.description}${colon} ${t.service}`, gap: 6 },
+		{ text: `${t.amountHt}${colon} ${formatXaf(doc.amountHt, lang)}` },
+		{
+			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${formatXaf(doc.vat, lang)}`,
+		},
+		{
+			text: `${t.amountTtc}${colon} ${formatXaf(doc.amountTtc, lang)}`,
+			bold: true,
+		},
+	);
+	if (credit) {
+		lines.push({ text: t.refunded, gap: 6 });
+	} else if (doc.paidAt) {
+		lines.push({ text: `${t.paidOn} ${longDate(doc.paidAt, lang)}`, gap: 6 });
+	}
+	return lines;
+}
+
+/** Pure: the document's text, French section then English. */
+export function buyerFeeDocumentLines(doc: BuyerFeeDocument): PdfLine[] {
+	return [...feeSection(doc, "fr"), ...feeSection(doc, "en")];
+}
+
+export function renderBuyerFeeDocumentPdf(doc: BuyerFeeDocument): Buffer {
+	return renderTextPdf(buyerFeeDocumentLines(doc));
 }

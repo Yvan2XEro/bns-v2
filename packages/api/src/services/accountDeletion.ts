@@ -428,6 +428,23 @@ async function retainPaymentRecords(
 		});
 	}
 
+	// A fee invoice and its credit note are tax records: kept whole, numbers
+	// and PDFs included, with only the buyer link gone.
+	for (const id of await findAllIds(
+		payload,
+		"buyer-fee-invoices",
+		{ buyer: { equals: userId } },
+		req,
+	)) {
+		await payload.update({
+			collection: "buyer-fee-invoices",
+			id,
+			overrideAccess: true,
+			data: { buyer: null },
+			req,
+		});
+	}
+
 	for (const intent of intents) {
 		await payload.update({
 			collection: "payment-intents",

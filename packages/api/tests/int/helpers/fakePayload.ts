@@ -22,6 +22,8 @@ interface Args {
 	collection: string;
 	context?: Doc;
 	data?: Doc;
+	/** An upload collection's file, as the local API takes it. */
+	file?: { data: Uint8Array; mimetype: string; name: string; size: number };
 	id?: unknown;
 	limit?: number;
 	page?: number;
@@ -185,6 +187,8 @@ export function fakePayload(
 		transactionID?: string;
 	}> = [];
 	const reads: Array<{ collection: string; id?: string; where?: Doc }> = [];
+	/** Uploaded bytes by document id; the row itself gets Payload's file fields. */
+	const files = new Map<string, Uint8Array>();
 	let seq = 0;
 	let txSeq = 0;
 	let lastStamp = 0;
@@ -250,6 +254,7 @@ export function fakePayload(
 		store,
 		globals,
 		writes,
+		files,
 		collections,
 		reads,
 		config: { secret: options.secret ?? "fake-payload-test-secret" },
@@ -312,7 +317,7 @@ export function fakePayload(
 			};
 		},
 		async create(args: Args) {
-			const { collection, data, req, context } = args;
+			const { collection, data, file, req, context } = args;
 			applyRequestContext(req, context);
 			payload.maybeFail("create", args);
 			seq += 1;
@@ -321,8 +326,16 @@ export function fakePayload(
 				id: `${collection}-${seq}`,
 				createdAt: now,
 				updatedAt: now,
+				...(file
+					? {
+							filename: file.name,
+							mimeType: file.mimetype,
+							filesize: file.size,
+						}
+					: {}),
 				...clone(data ?? {}),
 			};
+			if (file) files.set(String(doc.id), file.data);
 			assertUnique(collection, doc);
 			table(collection).push(doc);
 			journal(req, collection, doc.id, null);

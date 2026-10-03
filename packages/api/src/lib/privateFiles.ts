@@ -18,6 +18,8 @@ export const DEFAULT_SIGNED_URL_TTL_SECONDS = 60;
 export async function createSignedDocumentUrl(
 	doc: PrivateDoc,
 	ttlSeconds: number = DEFAULT_SIGNED_URL_TTL_SECONDS,
+	/** The route that serves this collection under the local provider. */
+	localRoute = "/api/verification/files",
 ): Promise<{ url: string; expiresAt: Date }> {
 	const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
 	const provider = process.env.STORAGE_PROVIDER?.toLowerCase();
@@ -77,7 +79,7 @@ export async function createSignedDocumentUrl(
 	const exp = expiresAt.getTime();
 	const sig = signLocalFileToken(doc.id, exp);
 	return {
-		url: `/api/verification/files/${encodeURIComponent(doc.id)}?exp=${exp}&sig=${sig}`,
+		url: `${localRoute}/${encodeURIComponent(doc.id)}?exp=${exp}&sig=${sig}`,
 		expiresAt,
 	};
 }

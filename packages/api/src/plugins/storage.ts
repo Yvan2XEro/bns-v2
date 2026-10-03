@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { Plugin } from "payload";
+import { BUYER_FEE_INVOICE_FILES_PREFIX } from "../collections/BuyerFeeInvoiceFiles";
 
 type StorageProvider = "s3" | "azure" | "local";
 
@@ -34,7 +35,7 @@ const storageCollections = { media: true } as const;
 const privateCollections = {
 	"verification-documents": { prefix: "verification" },
 	"payment-gate-evidence": { prefix: "payment-gates" },
-	"buyer-fee-invoice-files": { prefix: "buyer-fee-invoices" },
+	"buyer-fee-invoice-files": { prefix: BUYER_FEE_INVOICE_FILES_PREFIX },
 } as const;
 
 /**

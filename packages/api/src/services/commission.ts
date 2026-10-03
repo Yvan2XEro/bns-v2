@@ -49,7 +49,7 @@ const SETTLEMENT_WEBHOOK_PATH = "/api/public/boost/webhook/notchpay";
  * (the order-contract builder that will need one is a later task). Declared
  * here, read from env so a deployment can override it without a code change.
  */
-const PLATFORM_ISSUER = {
+export const PLATFORM_ISSUER = {
 	legalName: process.env.PLATFORM_LEGAL_NAME ?? "BuyNSellem SARL",
 	supportEmail: process.env.SUPPORT_EMAIL ?? "support@buynsellem.com",
 	supportPhone: process.env.SUPPORT_PHONE ?? null,
@@ -460,6 +460,88 @@ export async function issueInvoicesForWeek(
 	}
 
 	return { issued, rolledOver, netted };
+}
+
+/**
+ * The commission a protected order paid inside its application fee, invoiced
+ * on its own at `completed` (series `C`, `settlement: application_fee`) and
+ * born `paid`. `earned` is C′, the commission actually kept net of refunds,
+ * as the order's `commission_earned` posting recorded it. The order's own
+ * `charge` line — which the weekly run never picks up — is the idempotency
+ * key: once it points at an invoice, that invoice is returned. `req` must be
+ * inside a transaction, so an aborted invoice releases its number.
+ */
+export async function issueApplicationFeeInvoice(
+	req: PayloadRequest,
+	order: Order,
+	earned: { commission: number; commissionVat: number },
+): Promise<CommissionInvoice | null> {
+	const line = await findExistingCharge(req, String(order.id));
+	if (!line) {
+		req.payload.logger.error(
+			{ orderId: order.id },
+			"[commission] a completed protected order has no commission line to invoice",
+		);
+		return null;
+	}
+	const invoiceId = relationId(line.invoice);
+	if (invoiceId) {
+		return req.payload.findByID({
+			collection: "commission-invoices",
+			id: invoiceId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+	}
+	const shopId = relationId(order.shop);
+	if (!shopId) throw new Error(`[commission] order ${order.id} has no shop`);
+	const shop = await req.payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	const settings = await getOrderSettings(req.payload);
+	const now = new Date();
+	const completedAt = order.timestamps?.completedAt ?? now.toISOString();
+	const total = earned.commission + earned.commissionVat;
+	const invoice = await req.payload.create({
+		collection: "commission-invoices",
+		overrideAccess: true,
+		req,
+		data: {
+			invoiceNumber: await nextInvoiceNumber(req, INVOICE_SERIES, now),
+			shop: shopId,
+			// A one-order invoice: its period is the order's completion. The
+			// (shop, periodStart) index binds `mobile_money` invoices only.
+			periodStart: completedAt,
+			periodEnd: completedAt,
+			lines: [String(line.id)],
+			ordersCount: 1,
+			commissionTotal: earned.commission,
+			vatRateBps: settings.vatRateBps,
+			vatAmount: earned.commissionVat,
+			totalDue: total,
+			currency: order.amounts?.currency ?? "XAF",
+			status: "paid",
+			settlement: "application_fee",
+			issuedAt: now.toISOString(),
+			dueAt: now.toISOString(),
+			paidAt: now.toISOString(),
+			sellerSnapshot: sellerSnapshotOf(shop),
+			issuerSnapshot: PLATFORM_ISSUER,
+		},
+	});
+	await req.payload.update({
+		collection: "commission-lines",
+		id: line.id,
+		overrideAccess: true,
+		req,
+		data: { status: "invoiced", invoice: invoice.id },
+	});
+	return invoice;
 }
 
 /**

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import type { PayloadRequest } from "payload";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const notifications = vi.hoisted(() => ({
@@ -19,7 +20,11 @@ vi.mock("../../src/services/paymentNotifications", async (importOriginal) => ({
 
 const invoices = vi.hoisted(() => ({
 	issueBuyerFeeInvoice: vi.fn(
-		async (_req: unknown, _order: unknown, _intent: unknown) => {},
+		async (
+			_req: unknown,
+			_order: unknown,
+			_intent: unknown,
+		): Promise<unknown> => undefined,
 	),
 	issueApplicationFeeCommissionInvoice: vi.fn(
 		async (_req: unknown, _order: unknown) => {},
@@ -384,7 +389,7 @@ describe("a matching success", () => {
 		expect(refunds()).toHaveLength(0);
 	});
 
-	it("does nothing more when the same success arrives again, from the webhook or from reconciliation", async () => {
+	it("does nothing more when the same success arrives again, from the webhook or from reconciliation — but retries the invoice", async () => {
 		await applyStatus(payload, "pi-1", success());
 		const again = await applyStatus(payload, "pi-1", success());
 		const reconciled = await applyStatus(
@@ -401,7 +406,52 @@ describe("a matching success", () => {
 		expect(events()).toHaveLength(1);
 		expect(notifications.notifyPaymentSucceeded).toHaveBeenCalledTimes(1);
 		expect(notifications.notifyOrderPaid).toHaveBeenCalledTimes(1);
-		expect(invoices.issueBuyerFeeInvoice).toHaveBeenCalledTimes(1);
+		// Task 22: the invoice is idempotent per order, so every replay of the
+		// settling payment re-asks for it — the retry a failed first issue gets.
+		expect(
+			invoices.issueBuyerFeeInvoice.mock.calls.map(([, o, i]) => [
+				(o as Order).id,
+				(o as Order).paymentStatus,
+				(i as PaymentIntent).id,
+			]),
+		).toEqual([
+			["o-1", "paid", "pi-1"],
+			["o-1", "paid", "pi-1"],
+			["o-1", "paid", "pi-1"],
+		]);
+	});
+
+	it("leaves one invoice row, with one number, after the success is replayed twice", async () => {
+		const actual = await vi.importActual<
+			typeof import("../../src/services/buyerFeeInvoices")
+		>("../../src/services/buyerFeeInvoices");
+		invoices.issueBuyerFeeInvoice.mockImplementation((req, o, i) =>
+			actual.issueBuyerFeeInvoice(
+				req as PayloadRequest,
+				o as Order,
+				i as PaymentIntent,
+			),
+		);
+		try {
+			await applyStatus(payload, "pi-1", success());
+			await applyStatus(payload, "pi-1", success());
+			await applyStatus(payload, "pi-1", success({ source: "reconcile" }));
+			const issued = await Promise.all(
+				invoices.issueBuyerFeeInvoice.mock.results.map((r) => r.value),
+			);
+
+			expect(payload.store["buyer-fee-invoices"]).toHaveLength(1);
+			expect(
+				issued.map((invoice) => (invoice as { number: string }).number),
+			).toEqual([
+				"BNS-F-2026-000001",
+				"BNS-F-2026-000001",
+				"BNS-F-2026-000001",
+			]);
+		} finally {
+			// Back to the hoisted no-op, so the real body does not outlive this test.
+			invoices.issueBuyerFeeInvoice.mockReset();
+		}
 	});
 
 	it("keeps the paid order when the invoice cannot be issued", async () => {

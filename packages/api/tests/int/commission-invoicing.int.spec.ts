@@ -1,7 +1,9 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { weekBoundsDouala } from "../../src/lib/orderMath";
-import type { PaymentIntent } from "../../src/payload-types";
+import { withTransaction } from "../../src/lib/transactions";
+import type { Order, PaymentIntent } from "../../src/payload-types";
+import { issueApplicationFeeCommissionInvoice } from "../../src/services/buyerFeeInvoices";
 import {
 	applyCommissionSettlement,
 	enforceOverdue,
@@ -9,6 +11,7 @@ import {
 	payInvoice,
 	waiveInvoice,
 } from "../../src/services/commission";
+import { postingFor, postLedger } from "../../src/services/ledger";
 import type { Actor } from "../../src/services/moderation";
 import { type Doc, type FakePayload, fakePayload } from "./helpers/fakePayload";
 
@@ -202,6 +205,136 @@ describe("issueInvoicesForWeek", () => {
 		// transaction, so the retry gets the FIRST number, not the second.
 		expect(invoice.invoiceNumber).toBe("BNS-C-2026-000001");
 		expect(result.issued).toEqual([invoice.id]);
+	});
+});
+
+describe("a protected order's commission: out of the weekly run, invoiced paid at completed", () => {
+	const COMPLETED_AT = "2026-09-16T10:00:00.000Z";
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+	});
+	afterEach(() => vi.useRealTimers());
+
+	/** A mobile-money order of 47 000: commission 3 153 HT + 607 VAT, kept whole. */
+	function protectedWorld() {
+		return world({
+			orders: [
+				{ id: "o-1", orderNumber: "BNS-2609-000001" },
+				{
+					id: "o-2",
+					orderNumber: "BNS-2609-000002",
+					shop: "s-1",
+					status: "completed",
+					paymentMethod: "mobile_money",
+					amounts: { currency: "XAF", commission: 3_153, commissionVat: 607 },
+					timestamps: { completedAt: COMPLETED_AT },
+				},
+			],
+			"commission-lines": [
+				chargeLine(),
+				chargeLine({
+					id: "cl-mm",
+					order: "o-2",
+					paymentMethod: "mobile_money",
+					baseAmount: 45_000,
+					amount: 3_153,
+				}),
+			],
+		});
+	}
+
+	async function complete(payload: FakePayload) {
+		await withTransaction(payload, (req) =>
+			postLedger(req, {
+				kind: "commission_earned",
+				occurredAt: COMPLETED_AT,
+				sourceType: "order-event",
+				sourceId: "oe-completed",
+				currency: "XAF",
+				order: "o-2",
+				shop: "s-1",
+				entries: postingFor("commission_earned", {
+					commission: 3_153,
+					commissionVat: 607,
+				}),
+			}),
+		);
+		const order = payload.store.orders.find((o) => o.id === "o-2");
+		return withTransaction(payload, (req) =>
+			issueApplicationFeeCommissionInvoice(req, order as unknown as Order),
+		);
+	}
+
+	it("leaves the mobile_money line out of the weekly invoice and invoices it alone, already paid", async () => {
+		const payload = protectedWorld();
+		const week = await issueInvoicesForWeek(payload, NOW);
+		const weekly = invoicesOf(payload).find((i) => i.id === week.issued[0]);
+		expect({
+			lines: weekly?.lines,
+			commissionTotal: weekly?.commissionTotal,
+		}).toEqual({ lines: ["cl-1"], commissionTotal: 3_600 });
+		expect(linesOf(payload).find((l) => l.id === "cl-mm")?.status).toBe("open");
+
+		vi.setSystemTime(new Date("2026-09-23T09:00:00.000Z"));
+		const paid = await complete(payload);
+
+		expect(invoicesOf(payload)).toHaveLength(2);
+		const stored = invoicesOf(payload).find((i) => i.id === paid?.id);
+		expect({
+			invoiceNumber: stored?.invoiceNumber,
+			settlement: stored?.settlement,
+			status: stored?.status,
+			lines: stored?.lines,
+			ordersCount: stored?.ordersCount,
+			commissionTotal: stored?.commissionTotal,
+			vatAmount: stored?.vatAmount,
+			totalDue: stored?.totalDue,
+			periodStart: stored?.periodStart,
+			paidAt: stored?.paidAt,
+		}).toEqual({
+			invoiceNumber: "BNS-C-2026-000002",
+			settlement: "application_fee",
+			status: "paid",
+			lines: ["cl-mm"],
+			ordersCount: 1,
+			commissionTotal: 3_153,
+			vatAmount: 607,
+			totalDue: 3_760,
+			periodStart: COMPLETED_AT,
+			paidAt: "2026-09-23T09:00:00.000Z",
+		});
+		expect(linesOf(payload).find((l) => l.id === "cl-mm")).toMatchObject({
+			status: "invoiced",
+			invoice: paid?.id,
+		});
+	});
+
+	it("issues one invoice per order however often the completed handler retries", async () => {
+		const payload = protectedWorld();
+		const first = await complete(payload);
+		const order = payload.store.orders.find((o) => o.id === "o-2");
+		const retry = await withTransaction(payload, (req) =>
+			issueApplicationFeeCommissionInvoice(req, order as unknown as Order),
+		);
+
+		expect(
+			invoicesOf(payload).filter((i) => i.settlement === "application_fee"),
+		).toHaveLength(1);
+		expect([first?.invoiceNumber, retry?.invoiceNumber]).toEqual([
+			"BNS-C-2026-000001",
+			"BNS-C-2026-000001",
+		]);
+	});
+
+	it("invoices nothing when no commission was earned", async () => {
+		const payload = protectedWorld();
+		const order = payload.store.orders.find((o) => o.id === "o-2");
+		const none = await withTransaction(payload, (req) =>
+			issueApplicationFeeCommissionInvoice(req, order as unknown as Order),
+		);
+		expect(none).toBeNull();
+		expect(invoicesOf(payload)).toHaveLength(0);
 	});
 });
 
