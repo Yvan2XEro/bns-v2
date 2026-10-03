@@ -18,6 +18,7 @@ import {
 } from "../../lib/transactions";
 import type { Order } from "../../payload-types";
 import { handoverCodeSms, sendOrderSms } from "./sms";
+import { appendOrderEvent } from "./transitions";
 
 /** The same actor shapes `order-events.actorType`/`actor` already carry; a
  * courier has no account in this system, so `id` is optional. */
@@ -90,18 +91,12 @@ export async function issueHandoverCode(
 			},
 		},
 	});
-	await req.payload.create({
-		collection: "order-events",
-		req,
-		overrideAccess: true,
-		data: {
-			order: order.id,
-			type: options.regenerate
-				? "order.handover_code_regenerated"
-				: "order.handover_code_sent",
-			actorType: "system",
-			visibility: "both",
-		},
+	await appendOrderEvent(req, order, {
+		type: options.regenerate
+			? "order.handover_code_regenerated"
+			: "order.handover_code_sent",
+		actorType: "system",
+		visibility: "both",
 	});
 
 	const { orderNumber } = order;
@@ -164,20 +159,14 @@ export async function verifyHandoverCode(
 						},
 					},
 				});
-				await txReq.payload.create({
-					collection: "order-events",
-					req: txReq,
-					overrideAccess: true,
-					data: {
-						order: order.id,
-						type: eventType,
-						actorType: options.actor.type,
-						actor: options.actor.id,
-						visibility: "both",
-						metadata: options.shipmentId
-							? { shipmentId: options.shipmentId }
-							: null,
-					},
+				await appendOrderEvent(txReq, order, {
+					type: eventType,
+					actorType: options.actor.type,
+					actor: options.actor.id,
+					visibility: "both",
+					metadata: options.shipmentId
+						? { shipmentId: options.shipmentId }
+						: null,
 				});
 			},
 			{ user: req.user ?? null },

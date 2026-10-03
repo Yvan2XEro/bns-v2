@@ -1,4 +1,7 @@
 // @vitest-environment node
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { PayloadRequest } from "payload";
 import { describe, expect, it } from "vitest";
 import { withTransaction } from "../../src/lib/transactions";
@@ -391,7 +394,26 @@ describe("applyTransition", () => {
 	});
 });
 
+/** Every `src` file that creates an `order-events` row itself, as a path
+ * relative to `src`. */
+function orderEventWriters(): string[] {
+	const root = fileURLToPath(new URL("../../src/", import.meta.url));
+	const writes = /\.create\(\{\s*collection:\s*"order-events"/;
+	return readdirSync(root, { recursive: true, encoding: "utf8" })
+		.filter((path) => path.endsWith(".ts"))
+		.filter((path) => writes.test(readFileSync(join(root, path), "utf8")))
+		.sort();
+}
+
 describe("appendOrderEvent", () => {
+	// Its no-secrets guard sits at the write itself, so it only holds while
+	// no second call site creates an event directly.
+	it("is the only code that creates an order event", () => {
+		expect(orderEventWriters()).toEqual([
+			join("services", "orders", "transitions.ts"),
+		]);
+	});
+
 	it("also rejects a code or hash key when called directly", async () => {
 		const payload = seedOrder({ status: "shipped" });
 		await expect(

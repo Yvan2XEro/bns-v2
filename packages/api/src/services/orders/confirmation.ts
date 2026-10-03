@@ -14,6 +14,7 @@ import { ServiceError } from "../../lib/serviceError";
 import { commitContextOf, onCommit } from "../../lib/transactions";
 import type { Order } from "../../payload-types";
 import { confirmationCodeSms, sendOrderSms } from "./sms";
+import { appendOrderEvent } from "./transitions";
 
 /**
  * `req.payload.config.secret` rather than `process.env.PAYLOAD_SECRET`
@@ -88,16 +89,10 @@ export async function issueConfirmationCode(
 			},
 		},
 	});
-	await req.payload.create({
-		collection: "order-events",
-		req,
-		overrideAccess: true,
-		data: {
-			order: order.id,
-			type: "order.confirmation_code_sent",
-			actorType: "system",
-			visibility: "buyer",
-		},
+	await appendOrderEvent(req, order, {
+		type: "order.confirmation_code_sent",
+		actorType: "system",
+		visibility: "buyer",
 	});
 
 	const { orderNumber } = order;
