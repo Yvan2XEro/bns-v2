@@ -13,15 +13,24 @@ import { fakePayload } from "./helpers/fakePayload";
  * rollback of that transaction is visible) and Task 21's notifiers.
  */
 
-const { createHold, notify } = vi.hoisted(() => ({
+const { createHold, findActiveHold, notify } = vi.hoisted(() => ({
 	createHold: vi.fn(),
+	findActiveHold: vi.fn<
+		(
+			req: unknown,
+			key: { reason: string },
+		) => Promise<null | { id: string; until: null | string }>
+	>(async () => null),
 	notify: {
 		notifyPayoutAccountActivated: vi.fn(async () => undefined),
 		notifyPayoutAccountReview: vi.fn(async () => undefined),
 		notifyPayoutAccountChanged: vi.fn(async () => undefined),
 	},
 }));
-vi.mock("../../src/services/payoutHolds", () => ({ createHold }));
+vi.mock("../../src/services/payoutHolds", () => ({
+	createHold,
+	findActiveHold,
+}));
 vi.mock("../../src/services/paymentNotifications", () => notify);
 
 const { getPayloadMock } = vi.hoisted(() => ({ getPayloadMock: vi.fn() }));
@@ -158,6 +167,8 @@ beforeEach(() => {
 	vi.useFakeTimers({ toFake: ["Date"] });
 	vi.setSystemTime(NOW);
 	createHold.mockReset();
+	findActiveHold.mockReset();
+	findActiveHold.mockResolvedValue(null);
 	createHold.mockImplementation(
 		async (req: PayloadRequest, data: CreateHoldInput) =>
 			req.payload.create({
@@ -272,6 +283,29 @@ describe("the validation ladder", () => {
 				),
 			),
 		).toEqual({ code: "payout.accountInvalid", status: 400 });
+	});
+
+	// D-7 (checkpoint): payout.holdActive had no thrower. A shop under a
+	// change hold or a fraud hold does not get to swap its money destination
+	// mid-investigation; before this, only the cooldown stood in the way.
+	it("4b. an active fraud or change hold refuses the change with payout.holdActive", async () => {
+		const payload = world({ accounts: [activeRow("p-0", 10)] });
+		findActiveHold.mockImplementation(async (_req, key) =>
+			key.reason === "fraud_signal" ? { id: "h-1", until: null } : null,
+		);
+		await expect(
+			submitPayoutAccount(
+				payload,
+				OWNER,
+				"s-1",
+				input({ accountName: "Paul Biya" }),
+			),
+		).rejects.toMatchObject({
+			code: "payout.holdActive",
+			status: 409,
+			details: { until: null },
+		});
+		expect(rows(payload, "payout-accounts")).toHaveLength(1);
 	});
 
 	it("5. a change within seven days of the last activation is refused with payout.accountChangeCooldown", async () => {

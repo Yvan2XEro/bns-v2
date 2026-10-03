@@ -352,6 +352,15 @@ export function paymentSettingsRefusal(
 	env: PaymentEnv,
 ): string | null {
 	const reasons: string[] = [];
+	// D-5 (P5 checkpoint): no code posts `provider_fee` yet — that lands with
+	// the adapter work. Under "platform" the books merely overstate
+	// provider_position; under "seller" every shop would fail the nightly
+	// balance check and be held, so that setting is refused until then.
+	if (recordOf(payments).providerFeeBearer === "seller") {
+		reasons.push(
+			'providerFeeBearer "seller" cannot be enabled: provider fees are not posted yet (they land with the payment adapter); every shop would fail the nightly balance check.',
+		);
+	}
 	const rawMarkets = recordOf(payments).markets;
 	const rows = Array.isArray(rawMarkets) ? rawMarkets.map(recordOf) : [];
 

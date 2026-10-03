@@ -24,7 +24,7 @@ import {
 	notifyPayoutAccountChanged,
 	notifyPayoutAccountReview,
 } from "./paymentNotifications";
-import { createHold } from "./payoutHolds";
+import { createHold, findActiveHold } from "./payoutHolds";
 import { findShop } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 
@@ -374,6 +374,22 @@ export async function createPayoutAccount(
 	}
 
 	const now = new Date();
+	// D-7 (P5 checkpoint): payout.holdActive was declared and translated with
+	// no thrower. Its job is here — a shop under an account-change hold or a
+	// fraud hold does not get to swap its money destination mid-investigation;
+	// before this, only the 7-day cooldown stood in the way.
+	for (const reason of ["payout_account_changed", "fraud_signal"] as const) {
+		const hold = await findActiveHold(req, {
+			scope: "shop",
+			shop: shopId,
+			reason,
+		});
+		if (hold) {
+			throw new ServiceError(ERROR_CODES.payoutHoldActive, 409, undefined, {
+				until: hold.until ?? null,
+			});
+		}
+	}
 	const previous = await lastActivation(req, shopId);
 	if (
 		previous &&

@@ -282,6 +282,15 @@ describe("AppSettings beforeChange — payments", () => {
 		}
 	});
 
+	// D-5: nothing posts provider_fee until an adapter lands; under "seller"
+	// every shop would fail the nightly balance check and be held.
+	it("beforeChange refuses providerFeeBearer seller until provider fees are posted", () => {
+		expect(refusalOf({ providerFeeBearer: "seller" })).toContain(
+			'providerFeeBearer "seller" cannot be enabled',
+		);
+		expect(refusalOf({ providerFeeBearer: "platform" })).toBeNull();
+	});
+
 	it("beforeChange refuses a market vatRateBps different from orders.vatRateBps for the same country", () => {
 		expect(refusalOf({ markets: [{ ...CM, vatRateBps: 1800 }] })).toBe(
 			"Market CM: vatRateBps 1800 differs from orders.vatRateBps 1925; COD and protected-payment invoices would diverge.",
