@@ -90,3 +90,16 @@ export function weekBoundsDouala(now: Date): {
 		periodEnd: new Date(thisMonday - 1 - DOUALA_OFFSET_MS).toISOString(),
 	};
 }
+
+/** The calendar month in `Africa/Douala` that holds `now`, as ISO instants: `start` inclusive, `end` exclusive. */
+export function monthBoundsDouala(now: Date): { start: string; end: string } {
+	const local = new Date(now.getTime() + DOUALA_OFFSET_MS);
+	const year = local.getUTCFullYear();
+	const month = local.getUTCMonth();
+	return {
+		start: new Date(Date.UTC(year, month, 1) - DOUALA_OFFSET_MS).toISOString(),
+		end: new Date(
+			Date.UTC(year, month + 1, 1) - DOUALA_OFFSET_MS,
+		).toISOString(),
+	};
+}

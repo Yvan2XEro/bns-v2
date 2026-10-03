@@ -34,6 +34,7 @@ import { commitContextOf, onCommit } from "../lib/transactions";
 import type {
 	ConnectedAccount,
 	PayoutAccount,
+	PayoutHold,
 	Shop,
 	User,
 } from "../payload-types";
@@ -293,9 +294,32 @@ export async function freshOnboardingLink(
 }
 
 /**
- * Members without the permission get the permission error; anyone else —
- * including a member of another shop — learns nothing about this one.
+ * The payments screens' gate: owner and manager through `payments.view`, and
+ * staff. A member without the permission gets the permission error; anyone
+ * else — including a member of another shop — learns nothing about this one.
  */
+export async function requirePaymentsViewer(
+	payload: Payload,
+	user: ServiceUser,
+	shop: Shop,
+): Promise<void> {
+	const role = await roleOrNotFound(payload, user, shop);
+	if (role && !can(role, "payments.view")) {
+		throw new ServiceError(ERROR_CODES.shopForbidden, 403);
+	}
+}
+
+/** What a shop sees of its holds: the category, never the reason. */
+export function holdsView(
+	holds: readonly PayoutHold[],
+): PaymentSetupView["holds"] {
+	return holds.map((hold) => ({
+		scope: hold.scope,
+		reasonCategory: PAYOUT_HOLD_CATEGORIES[hold.reason],
+		until: hold.until ?? null,
+	}));
+}
+
 async function roleOrNotFound(
 	payload: Payload,
 	user: ServiceUser,
@@ -566,10 +590,7 @@ export async function paymentSetupView(
 	user: ServiceUser,
 	now: Date = new Date(),
 ): Promise<PaymentSetupView> {
-	const role = await roleOrNotFound(payload, user, shop);
-	if (role && !can(role, "payments.view")) {
-		throw new ServiceError(ERROR_CODES.shopForbidden, 403);
-	}
+	await requirePaymentsViewer(payload, user, shop);
 
 	const shopId = String(shop.id);
 	const settings = await getPaymentSettings(payload);
@@ -644,11 +665,7 @@ export async function paymentSetupView(
 					status: pending.status,
 				}
 			: null,
-		holds: holds.docs.map((hold) => ({
-			scope: hold.scope,
-			reasonCategory: PAYOUT_HOLD_CATEGORIES[hold.reason],
-			until: hold.until ?? null,
-		})),
+		holds: holdsView(holds.docs),
 		changeCooldownUntil,
 	};
 }

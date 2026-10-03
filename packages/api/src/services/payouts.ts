@@ -816,7 +816,11 @@ async function holdForRepeatedFailures(
 }
 
 /** Live payouts (not failed, cancelled or reversed) already carrying this order's money. */
-async function paidOut(req: PayloadRequest, orderId: string): Promise<number> {
+/** What live payouts (not failed, cancelled or reversed) already carry of this order. */
+export async function paidOut(
+	req: PayloadRequest,
+	orderId: string,
+): Promise<number> {
 	const { docs } = await req.payload.find({
 		collection: "payouts",
 		where: {

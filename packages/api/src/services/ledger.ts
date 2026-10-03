@@ -592,6 +592,35 @@ export async function orderBalances(
 	return balancesWhere(req, { order: { equals: orderId } });
 }
 
+/** `orderBalances` for several orders in one pass; an order with no posting maps to `{}`. */
+export async function balancesByOrder(
+	req: PayloadRequest,
+	orderIds: readonly string[],
+): Promise<Map<string, Partial<Record<LedgerCategory, number>>>> {
+	const result = new Map<string, Partial<Record<LedgerCategory, number>>>(
+		orderIds.map((id) => [id, {}]),
+	);
+	if (orderIds.length === 0) return result;
+	const categories = await categoriesById(req.payload, req);
+	await eachTransaction(
+		req.payload,
+		{ order: { in: [...orderIds] } },
+		req,
+		(transaction) => {
+			const totals = result.get(idOf(transaction.order));
+			if (!totals) return;
+			for (const entry of transaction.entries) {
+				const category = categories.get(idOf(entry.account));
+				if (!category) continue;
+				totals[category] =
+					(totals[category] ?? 0) +
+					balanceDelta(category, entry.debit, entry.credit);
+			}
+		},
+	);
+	return result;
+}
+
 /**
  * The position of one payment intent's own postings. A duplicate or late
  * checkout payment is posted with the intent and no order (Task 14), so its
