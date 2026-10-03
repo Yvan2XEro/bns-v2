@@ -219,6 +219,13 @@ export interface Config {
       expireOrders: TaskExpireOrders;
       failStaleOrders: TaskFailStaleOrders;
       completeOrders: TaskCompleteOrders;
+      submitRefund: TaskSubmitRefund;
+      syncConnectedAccount: TaskSyncConnectedAccount;
+      releaseEligibleFunds: TaskReleaseEligibleFunds;
+      expirePayoutHolds: TaskExpirePayoutHolds;
+      reconcileLedger: TaskReconcileLedger;
+      recoverSellerReceivables: TaskRecoverSellerReceivables;
+      sweepBuyerFeeInvoices: TaskSweepBuyerFeeInvoices;
       inline: {
         input: unknown;
         output: unknown;
@@ -2235,7 +2242,14 @@ export interface PayloadJob {
           | 'dispatchOrderEvent'
           | 'expireOrders'
           | 'failStaleOrders'
-          | 'completeOrders';
+          | 'completeOrders'
+          | 'submitRefund'
+          | 'syncConnectedAccount'
+          | 'releaseEligibleFunds'
+          | 'expirePayoutHolds'
+          | 'reconcileLedger'
+          | 'recoverSellerReceivables'
+          | 'sweepBuyerFeeInvoices';
         taskID: string;
         input?:
           | {
@@ -2288,6 +2302,13 @@ export interface PayloadJob {
         | 'expireOrders'
         | 'failStaleOrders'
         | 'completeOrders'
+        | 'submitRefund'
+        | 'syncConnectedAccount'
+        | 'releaseEligibleFunds'
+        | 'expirePayoutHolds'
+        | 'reconcileLedger'
+        | 'recoverSellerReceivables'
+        | 'sweepBuyerFeeInvoices'
       )
     | null;
   queue?: string | null;
@@ -4656,6 +4677,77 @@ export interface TaskCompleteOrders {
     completed?: number | null;
     errors?: number | null;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSubmitRefund".
+ */
+export interface TaskSubmitRefund {
+  input: {
+    refundId: string;
+  };
+  output: {
+    status?: string | null;
+    attempts?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSyncConnectedAccount".
+ */
+export interface TaskSyncConnectedAccount {
+  input: {
+    connectedAccountId?: string | null;
+  };
+  output: {
+    synced?: number | null;
+    failed?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReleaseEligibleFunds".
+ */
+export interface TaskReleaseEligibleFunds {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpirePayoutHolds".
+ */
+export interface TaskExpirePayoutHolds {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReconcileLedger".
+ */
+export interface TaskReconcileLedger {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRecoverSellerReceivables".
+ */
+export interface TaskRecoverSellerReceivables {
+  input?: unknown;
+  output: {
+    debits?: number | null;
+    writtenOff?: number | null;
+    suspended?: number | null;
+    failed?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSweepBuyerFeeInvoices".
+ */
+export interface TaskSweepBuyerFeeInvoices {
+  input?: unknown;
+  output?: unknown;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

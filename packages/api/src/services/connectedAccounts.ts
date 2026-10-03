@@ -498,6 +498,29 @@ export async function syncConnectedAccount(
 	return applyAccountState(req, row, state, deps.now ?? new Date());
 }
 
+/**
+ * The owner is back from hosted onboarding: pull the row now rather than at
+ * the next 6-hourly sweep. Settled (`active`) or closed rows have nothing to
+ * learn from it.
+ */
+export async function queueSyncOnOnboardingReturn(
+	payload: Payload,
+	shopId: string,
+): Promise<void> {
+	const account = await findConnectedAccount(payload, shopId);
+	if (!account || !SYNC_ON_RETURN.has(account.status)) return;
+	await payload.jobs.queue({
+		task: "syncConnectedAccount",
+		queue: "payments",
+		input: { connectedAccountId: String(account.id) },
+	});
+}
+
+const SYNC_ON_RETURN: ReadonlySet<ConnectedAccount["status"]> = new Set([
+	"onboarding",
+	"restricted",
+]);
+
 function ineligibleReasonOf(
 	shop: Shop,
 	settings: PaymentSettings,

@@ -868,3 +868,66 @@ describe("GET /api/shops/{id}/payments/setup", () => {
 		expect((await res.json()).code).toBe(ERROR_CODES.shopNotFound);
 	});
 });
+
+describe("GET /api/shops/{id}/payments/setup on the return from onboarding", () => {
+	const returning = (userId: string, query = "?onboarding=done") => {
+		payload.auth.mockResolvedValue({ user: asUser(userId) });
+		return GET(
+			new Request(`http://x/api/shops/${SHOP}/payments/setup${query}`),
+			params(),
+		);
+	};
+
+	it.each([
+		"onboarding",
+		"restricted",
+	])("queues a sync of a %s account on the payments queue", async (status) => {
+		use(
+			seed({}, payments(), { "connected-accounts": [accountRow({ status })] }),
+		);
+
+		const res = await returning(OWNER);
+
+		expect(res.status).toBe(200);
+		expect(payload.jobs.queue.mock.calls).toEqual([
+			[
+				{
+					task: "syncConnectedAccount",
+					queue: "payments",
+					input: { connectedAccountId: "ca-1" },
+				},
+			],
+		]);
+	});
+
+	it("queues nothing for an active account, or without the return marker", async () => {
+		use(seed({}, payments(), { "connected-accounts": [accountRow()] }));
+		const active = await returning(OWNER);
+		const queuedForActive = payload.jobs.queue.mock.calls.length;
+		use(
+			seed({}, payments(), {
+				"connected-accounts": [accountRow({ status: "onboarding" })],
+			}),
+		);
+		const plain = await returning(OWNER, "");
+
+		expect([active.status, plain.status]).toEqual([200, 200]);
+		expect((await plain.json()).connectedAccount.status).toBe("onboarding");
+		expect([queuedForActive, payload.jobs.queue.mock.calls.length]).toEqual([
+			0, 0,
+		]);
+	});
+
+	it("queues nothing for a caller the view refuses", async () => {
+		use(
+			seed({}, payments(), {
+				"connected-accounts": [accountRow({ status: "onboarding" })],
+			}),
+		);
+
+		const res = await returning(STRANGER);
+
+		expect(res.status).toBe(404);
+		expect(payload.jobs.queue.mock.calls).toHaveLength(0);
+	});
+});

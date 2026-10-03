@@ -218,6 +218,7 @@ describe("payout-account notices", () => {
 
 	const changed = {
 		...account,
+		holdHours: 72,
 		holdUntil: "2026-10-06T10:00:00.000Z",
 		notMeUrl:
 			"https://buynsellem.com/seller/payments/setup?shop=652f1c2b9a0e4d0012345678&notMe=652f1c2b9a0e4d0087654321",
@@ -242,7 +243,7 @@ describe("payout-account notices", () => {
 		expect(sendSms.mock.calls.map(([, message]) => message)).toEqual([
 			{
 				to: "+237670000001",
-				message: payoutAccountChangedSms(changed.notMeUrl),
+				message: payoutAccountChangedSms(changed.notMeUrl, 72),
 			},
 		]);
 	});
@@ -272,7 +273,7 @@ describe("payout-account notices", () => {
 	});
 
 	it("the SMS is GSM-7, carries the whole link, and fits in two parts", () => {
-		const text = payoutAccountChangedSms(changed.notMeUrl);
+		const text = payoutAccountChangedSms(changed.notMeUrl, 72);
 		expect(isGsm7(text)).toBe(true);
 		expect(text.endsWith(changed.notMeUrl)).toBe(true);
 		expect(gsm7Length(text)).toBeLessThanOrEqual(306);

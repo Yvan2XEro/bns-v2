@@ -63,6 +63,7 @@ import {
 	expireBoostsTask,
 	expireListingsTask,
 	expireOrdersTask,
+	expirePayoutHoldsTask,
 	failStaleOrdersTask,
 	issueCommissionInvoicesTask,
 	liftExpiredShopSuspensionsTask,
@@ -70,11 +71,18 @@ import {
 	processWebhookEventTask,
 	purgeShopActivityTask,
 	purgeVerificationDataTask,
+	reconcileLedgerTask,
 	reconcilePendingPaymentsTask,
 	reconcileStockCachesTask,
+	recoverSellerReceivablesTask,
+	releaseEligibleFundsTask,
+	submitRefundTask,
+	sweepBuyerFeeInvoicesTask,
+	syncConnectedAccountTask,
 } from "./jobs";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
+import { registerRefundSubmissionQueue } from "./services/refunds";
 import { registerShopTeamLevelListener } from "./services/shopTeamLevel";
 
 const filename = fileURLToPath(import.meta.url);
@@ -83,6 +91,47 @@ const dirname = path.dirname(filename);
 // P3's reaction to a level change. Explicit rather than a module side effect,
 // so nothing depends on which file happened to be imported first.
 registerShopTeamLevelListener();
+registerRefundSubmissionQueue((payload, { refundId, waitUntil }) =>
+	payload.jobs.queue({
+		task: "submitRefund",
+		queue: "payments",
+		input: { refundId },
+		waitUntil,
+	}),
+);
+
+// Payload's scheduler reads crons in the server's zone, which is UTC in the
+// api image; Africa/Douala is UTC+1 all year, so each daily time below is the
+// Douala hour minus one. The P5 jobs are scheduled here rather than in their
+// own files so the whole money calendar reads in one place.
+const PAYMENTS = "payments";
+const paymentTasks = [
+	submitRefundTask,
+	{
+		...syncConnectedAccountTask,
+		schedule: [{ cron: "0 */6 * * *", queue: PAYMENTS }],
+	},
+	{
+		...releaseEligibleFundsTask,
+		schedule: [{ cron: "0 9 * * *", queue: PAYMENTS }], // 10:00 Douala
+	},
+	{
+		...expirePayoutHoldsTask,
+		schedule: [{ cron: "*/15 * * * *", queue: PAYMENTS }],
+	},
+	{
+		...reconcileLedgerTask,
+		schedule: [{ cron: "30 1 * * *", queue: PAYMENTS }], // 02:30 Douala
+	},
+	{
+		...recoverSellerReceivablesTask,
+		schedule: [{ cron: "0 2 * * *", queue: PAYMENTS }], // 03:00 Douala
+	},
+	{
+		...sweepBuyerFeeInvoicesTask,
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
+	},
+];
 
 export default buildConfig({
 	admin: {
@@ -213,11 +262,12 @@ export default buildConfig({
 			expireOrdersTask,
 			failStaleOrdersTask,
 			completeOrdersTask,
+			...paymentTasks,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
 			{ cron: "0 */6 * * *", queue: "nightly", limit: 10 },
-			{ cron: "* * * * *", queue: "payments", limit: 20 },
+			{ cron: "* * * * *", queue: PAYMENTS, limit: 50 },
 			// A vendor result must reach a person promptly, not on the nightly
 			// sweep: `processKycEvent` is queued on the default queue (Payload's
 			// implicit target when `payload.jobs.queue()` gets no `queue`), so
