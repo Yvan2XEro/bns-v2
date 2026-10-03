@@ -118,10 +118,10 @@ describe("renderReceiptHtml", () => {
 		const fr = renderReceiptHtml(input, "fr");
 		const en = renderReceiptHtml(input, "en");
 		expect(fr).toContain(
-			"<p>Delai de retractation: 10 jours a compter de la reception du colis. La date exacte figurera sur ce recu une fois la commande livree.</p>",
+			"<p>Delai de retractation: 10 jours a compter de la reception du colis. La date exacte figurera sur ce recu si la commande est livree.</p>",
 		);
 		expect(en).toContain(
-			"<p>Withdrawal period: 10 days from receiving the parcel. The exact date will appear on this receipt once the order is delivered.</p>",
+			"<p>Withdrawal period: 10 days from receiving the parcel. The exact date will appear on this receipt if the order is delivered.</p>",
 		);
 		expect(fr).not.toContain("Date limite de retractation");
 		expect(en).not.toContain("Withdrawal deadline");

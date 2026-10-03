@@ -28,9 +28,13 @@ function escapeHtml(value: string): string {
 function formatDate(iso: string, lang: "fr" | "en"): string {
 	const date = new Date(iso);
 	if (Number.isNaN(date.getTime())) return escapeHtml(iso);
+	// Africa/Douala, not the server's zone: this document states a statutory
+	// deadline, and a date rendered in UTC can name the wrong calendar day
+	// for the buyer reading it in Cameroon.
 	return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
 		dateStyle: "medium",
 		timeStyle: "short",
+		timeZone: "Africa/Douala",
 	}).format(date);
 }
 
@@ -51,7 +55,7 @@ const copy = {
 		total: "Total a payer",
 		withdrawalUntil: "Date limite de retractation",
 		withdrawalRule: (days: number) =>
-			`Delai de retractation: ${days} jours a compter de la reception du colis. La date exacte figurera sur ce recu une fois la commande livree.`,
+			`Delai de retractation: ${days} jours a compter de la reception du colis. La date exacte figurera sur ce recu si la commande est livree.`,
 		hash: "Empreinte du contrat",
 	},
 	en: {
@@ -70,7 +74,7 @@ const copy = {
 		total: "Total due",
 		withdrawalUntil: "Withdrawal deadline",
 		withdrawalRule: (days: number) =>
-			`Withdrawal period: ${days} days from receiving the parcel. The exact date will appear on this receipt once the order is delivered.`,
+			`Withdrawal period: ${days} days from receiving the parcel. The exact date will appear on this receipt if the order is delivered.`,
 		hash: "Contract fingerprint",
 	},
 } as const;
