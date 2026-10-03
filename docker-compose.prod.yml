@@ -5,6 +5,13 @@ services:
   api:
     build: !reset null
     image: ghcr.io/${GITHUB_REPO}/api:main
+    environment:
+      # Threaded here too, empty, so this file alone never hides that these
+      # three exist — production stays off because the values are empty and
+      # the AppSettings gate refuses, never because the wiring is missing.
+      PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      NOTCHPAY_PRIVATE_KEY: ${NOTCHPAY_PRIVATE_KEY:-}
+      PROTECTED_PAYMENT_ALLOWED: ${PROTECTED_PAYMENT_ALLOWED:-}
 
   web:
     build: !reset null

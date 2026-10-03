@@ -130,6 +130,11 @@ services:
       # Staging only: "fake" serves protected payment from the in-memory fake
       # provider despite NODE_ENV=production. Leave empty in production.
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      # Same staging/production gate as PAYMENTS_PROVIDER above: empty in
+      # production, so the protected-payment flag stays refused by policy
+      # (the AppSettings gate record), not by a missing variable.
+      NOTCHPAY_PRIVATE_KEY: ${NOTCHPAY_PRIVATE_KEY:-}
+      PROTECTED_PAYMENT_ALLOWED: ${PROTECTED_PAYMENT_ALLOWED:-}
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
       GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
       APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID:-}

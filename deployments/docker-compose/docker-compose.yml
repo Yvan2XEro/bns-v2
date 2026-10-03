@@ -142,6 +142,11 @@ services:
       # Staging only: "fake" serves protected payment from the in-memory fake
       # provider despite NODE_ENV=production. Leave empty in production.
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      # Same staging/production gate as PAYMENTS_PROVIDER above: empty in
+      # production, so the protected-payment flag stays refused by policy
+      # (the AppSettings gate record), not by a missing variable.
+      NOTCHPAY_PRIVATE_KEY: ${NOTCHPAY_PRIVATE_KEY:-}
+      PROTECTED_PAYMENT_ALLOWED: ${PROTECTED_PAYMENT_ALLOWED:-}
       NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
       NOVU_API_URL: ${NOVU_API_URL:-https://api.novu.co}
       NOVU_EXPO_INTEGRATION_IDENTIFIER: ${NOVU_EXPO_INTEGRATION_IDENTIFIER:-}
