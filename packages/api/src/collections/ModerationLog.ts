@@ -21,6 +21,10 @@ export const MODERATION_ACTIONS = [
 	"verification.expire",
 	"order.cancel",
 	"commission.waive",
+	"payout.hold",
+	"payout.release",
+	"payout.account_approve",
+	"payout.account_reject",
 ] as const;
 
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];

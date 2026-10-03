@@ -69,6 +69,7 @@ describe("buildStoragePlugins", () => {
 		expect(privateCall?.[0].collections).toEqual({
 			"verification-documents": { prefix: "verification" },
 			"payment-gate-evidence": { prefix: "payment-gates" },
+			"buyer-fee-invoice-files": { prefix: "buyer-fee-invoices" },
 		});
 
 		// The public plugin still honours the flag: only the private one is forced closed.

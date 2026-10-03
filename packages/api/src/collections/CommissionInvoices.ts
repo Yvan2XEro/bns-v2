@@ -4,6 +4,16 @@ import { can, shopScopedRead } from "../access/shopRoles";
 import { staffOnly } from "../access/staff";
 import { getOrderSettings } from "../lib/orderSettings";
 
+/**
+ * `mobile_money`: P4's weekly invoice, which the seller pays. `application_fee`:
+ * P5's per-order invoice for a protected order, issued already `paid` because
+ * the commission was taken in the application fee.
+ */
+export const COMMISSION_INVOICE_SETTLEMENTS = [
+	"mobile_money",
+	"application_fee",
+] as const;
+
 export const COMMISSION_INVOICE_STATUSES = [
 	"issued",
 	"paid",
@@ -79,6 +89,16 @@ export const CommissionInvoices: CollectionConfig = {
 			defaultValue: "issued",
 			index: true,
 			options: COMMISSION_INVOICE_STATUSES.map((value) => ({
+				label: value,
+				value,
+			})),
+		},
+		{
+			name: "settlement",
+			type: "select",
+			defaultValue: "mobile_money",
+			index: true,
+			options: COMMISSION_INVOICE_SETTLEMENTS.map((value) => ({
 				label: value,
 				value,
 			})),

@@ -34,6 +34,7 @@ const storageCollections = { media: true } as const;
 const privateCollections = {
 	"verification-documents": { prefix: "verification" },
 	"payment-gate-evidence": { prefix: "payment-gates" },
+	"buyer-fee-invoice-files": { prefix: "buyer-fee-invoices" },
 } as const;
 
 /**

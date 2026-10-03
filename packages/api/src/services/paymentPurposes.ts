@@ -35,4 +35,16 @@ export const PURPOSE_HANDLERS: Record<
 			// retry through `payInvoice`.
 		},
 	},
+	// Fails loud until P5's checkout settlement is wired in (Task 14): an
+	// error rolls the transition back and leaves the webhook event to be
+	// retried, where a silent no-op would mark a paid order's intent settled
+	// without ever touching the order.
+	checkout: {
+		onSucceeded: async () => {
+			throw new Error("checkout intents are not settled yet");
+		},
+		onFailed: async () => {
+			throw new Error("checkout intents are not settled yet");
+		},
+	},
 };

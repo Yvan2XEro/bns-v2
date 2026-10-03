@@ -420,6 +420,7 @@ async function retainPaymentRecords(
 			data: {
 				customer: null,
 				customerDeletedAt,
+				payerPhone: null,
 				idempotencyKey: anonymizeIdempotencyKey(intent.idempotencyKey, userId),
 			},
 			req,

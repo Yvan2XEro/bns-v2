@@ -105,6 +105,17 @@ export interface Config {
     'commission-invoices': CommissionInvoice;
     'return-cases': ReturnCase;
     'payment-gate-evidence': PaymentGateEvidence;
+    'connected-accounts': ConnectedAccount;
+    'payout-accounts': PayoutAccount;
+    refunds: Refund;
+    payouts: Payout;
+    'payout-holds': PayoutHold;
+    'ledger-accounts': LedgerAccount;
+    'ledger-transactions': LedgerTransaction;
+    'buyer-fee-invoices': BuyerFeeInvoice;
+    'buyer-fee-invoice-files': BuyerFeeInvoiceFile;
+    'reconciliation-runs': ReconciliationRun;
+    'reconciliation-mismatches': ReconciliationMismatch;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -155,6 +166,17 @@ export interface Config {
     'commission-invoices': CommissionInvoicesSelect<false> | CommissionInvoicesSelect<true>;
     'return-cases': ReturnCasesSelect<false> | ReturnCasesSelect<true>;
     'payment-gate-evidence': PaymentGateEvidenceSelect<false> | PaymentGateEvidenceSelect<true>;
+    'connected-accounts': ConnectedAccountsSelect<false> | ConnectedAccountsSelect<true>;
+    'payout-accounts': PayoutAccountsSelect<false> | PayoutAccountsSelect<true>;
+    refunds: RefundsSelect<false> | RefundsSelect<true>;
+    payouts: PayoutsSelect<false> | PayoutsSelect<true>;
+    'payout-holds': PayoutHoldsSelect<false> | PayoutHoldsSelect<true>;
+    'ledger-accounts': LedgerAccountsSelect<false> | LedgerAccountsSelect<true>;
+    'ledger-transactions': LedgerTransactionsSelect<false> | LedgerTransactionsSelect<true>;
+    'buyer-fee-invoices': BuyerFeeInvoicesSelect<false> | BuyerFeeInvoicesSelect<true>;
+    'buyer-fee-invoice-files': BuyerFeeInvoiceFilesSelect<false> | BuyerFeeInvoiceFilesSelect<true>;
+    'reconciliation-runs': ReconciliationRunsSelect<false> | ReconciliationRunsSelect<true>;
+    'reconciliation-mismatches': ReconciliationMismatchesSelect<false> | ReconciliationMismatchesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -969,6 +991,20 @@ export interface Order {
     buyerProtectionFee?: number | null;
     total?: number | null;
     currency?: string | null;
+    buyerProtectionFeeVat?: number | null;
+    commission?: number | null;
+    commissionVat?: number | null;
+    applicationFee?: number | null;
+    destinationAmount?: number | null;
+  };
+  settlement?: {
+    mode?: ('provider_split' | 'direct_to_seller' | 'platform_collects') | null;
+    releaseModel?: ('provider_hold' | 'provider_schedule') | null;
+    connectedAccount?: (string | null) | ConnectedAccount;
+    releaseEligibleAt?: string | null;
+    releasedAt?: string | null;
+    payout?: (string | null) | Payout;
+    refundedAmount?: number | null;
   };
   commission?: {
     rateBps?: number | null;
@@ -1055,6 +1091,95 @@ export interface Order {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "connected-accounts".
+ */
+export interface ConnectedAccount {
+  id: string;
+  shop: string | Shop;
+  provider: 'notchpay';
+  providerAccountId?: string | null;
+  accountType: 'express' | 'custom' | 'standard';
+  status: 'created' | 'onboarding' | 'restricted' | 'active' | 'disabled' | 'deauthorized';
+  chargesEnabled?: boolean | null;
+  payoutsEnabled?: boolean | null;
+  requirementsDue?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  kycStatus?: string | null;
+  kycName?: string | null;
+  payoutSchedule?: ('manual' | 'daily' | 'weekly' | 'monthly') | null;
+  lastSyncedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payouts".
+ */
+export interface Payout {
+  id: string;
+  shop: string | Shop;
+  connectedAccount: string | ConnectedAccount;
+  payoutAccount?: (string | null) | PayoutAccount;
+  amount: number;
+  fee?: number | null;
+  currency: string;
+  orders?:
+    | {
+        order: string | Order;
+        amount: number;
+        id?: string | null;
+      }[]
+    | null;
+  origin: 'platform_release' | 'provider_schedule';
+  status: 'scheduled' | 'pending' | 'sent' | 'processing' | 'complete' | 'failed' | 'reversed' | 'cancelled';
+  statusHistory?:
+    | {
+        status: 'scheduled' | 'pending' | 'sent' | 'processing' | 'complete' | 'failed' | 'reversed' | 'cancelled';
+        source: 'webhook' | 'reconcile' | 'system';
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  providerTransferId?: string | null;
+  failureReason?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-accounts".
+ */
+export interface PayoutAccount {
+  id: string;
+  shop: string | Shop;
+  method: 'mtn_momo' | 'orange_money' | 'bank';
+  accountName: string;
+  accountNumber: string;
+  accountNumberMasked?: string | null;
+  status: 'pending_verification' | 'pending_review' | 'active' | 'rejected' | 'replaced';
+  nameMatch?: {
+    identityName?: string | null;
+    providerName?: string | null;
+    result?: ('match' | 'partial' | 'mismatch') | null;
+    score?: number | null;
+    checkedAt?: string | null;
+  };
+  providerRecipientId?: string | null;
+  activatedAt?: string | null;
+  replacedAt?: string | null;
+  createdBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "commission-lines".
  */
 export interface CommissionLine {
@@ -1089,6 +1214,7 @@ export interface CommissionInvoice {
   totalDue?: number | null;
   currency?: string | null;
   status?: ('issued' | 'paid' | 'overdue' | 'waived' | 'void') | null;
+  settlement?: ('mobile_money' | 'application_fee') | null;
   issuedAt?: string | null;
   dueAt?: string | null;
   paidAt?: string | null;
@@ -1124,8 +1250,8 @@ export interface CommissionInvoice {
  */
 export interface PaymentIntent {
   id: string;
-  purpose: 'boost' | 'commission';
-  targetType: 'boost-payment' | 'commission-invoice';
+  purpose: 'boost' | 'commission' | 'checkout';
+  targetType: 'boost-payment' | 'commission-invoice' | 'order';
   targetId: string;
   customer?: (string | null) | User;
   customerDeletedAt?: string | null;
@@ -1149,6 +1275,16 @@ export interface PaymentIntent {
   expiresAt?: string | null;
   settledAmount?: number | null;
   settledCurrency?: string | null;
+  channel?: ('cm.mtn' | 'cm.orange') | null;
+  payerPhone?: string | null;
+  connectedAccount?: (string | null) | ConnectedAccount;
+  destinationAmount?: number | null;
+  applicationFee?: number | null;
+  attempt?: number | null;
+  failureCode?:
+    | ('declined' | 'insufficient_funds' | 'timeout' | 'limit_exceeded' | 'invalid_number' | 'provider_error')
+    | null;
+  lateSuccess?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1456,7 +1592,11 @@ export interface ModerationLog {
     | 'verification.revoke'
     | 'verification.expire'
     | 'order.cancel'
-    | 'commission.waive';
+    | 'commission.waive'
+    | 'payout.hold'
+    | 'payout.release'
+    | 'payout.account_approve'
+    | 'payout.account_reject';
   targetType: 'listing' | 'user' | 'report' | 'shop' | 'verification-request' | 'order' | 'commission-invoice';
   targetId: string;
   reason?: string | null;
@@ -1759,6 +1899,253 @@ export interface PaymentGateEvidence {
   focalX?: number | null;
   focalY?: number | null;
   sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds".
+ */
+export interface Refund {
+  id: string;
+  order: string | Order;
+  paymentIntent: string | PaymentIntent;
+  buyer?: (string | null) | User;
+  shop?: (string | null) | Shop;
+  amount: number;
+  breakdown?: {
+    seller?: number | null;
+    commission?: number | null;
+    commissionVat?: number | null;
+    buyerProtectionFee?: number | null;
+  };
+  reason:
+    | 'order_cancelled'
+    | 'seller_declined'
+    | 'acceptance_timeout'
+    | 'late_payment'
+    | 'duplicate_payment'
+    | 'withdrawal'
+    | 'dispute'
+    | 'unavailable'
+    | 'moderation';
+  sourceType: 'order' | 'return-case' | 'dispute' | 'payment-intent' | 'moderation';
+  sourceId: string;
+  status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
+  statusHistory?:
+    | {
+        status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
+        source: 'webhook' | 'reconcile' | 'system';
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  providerRefundId?: string | null;
+  fundedBy?: ('connected_account' | 'platform_advance') | null;
+  idempotencyKey: string;
+  attempts?: number | null;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-holds".
+ */
+export interface PayoutHold {
+  id: string;
+  scope: 'shop' | 'order';
+  shop: string | Shop;
+  order?: (string | null) | Order;
+  reason:
+    | 'payout_account_changed'
+    | 'fraud_signal'
+    | 'reconciliation_mismatch'
+    | 'dispute_open'
+    | 'return_open'
+    | 'moderation'
+    | 'payout_failed_repeatedly'
+    | 'shop_suspended';
+  blocksCharges?: boolean | null;
+  status: 'active' | 'released' | 'expired';
+  until?: string | null;
+  createdByType: 'system' | 'moderator';
+  createdBy?: (string | null) | User;
+  releasedBy?: (string | null) | User;
+  releasedAt?: string | null;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-accounts".
+ */
+export interface LedgerAccount {
+  id: string;
+  key: string;
+  category:
+    | 'provider_position'
+    | 'seller_pending'
+    | 'seller_releasable'
+    | 'seller_payout_in_transit'
+    | 'seller_receivable'
+    | 'buyer_refund_in_transit'
+    | 'platform_fee_unearned'
+    | 'platform_revenue_commission'
+    | 'platform_revenue_protection_fee'
+    | 'vat_payable'
+    | 'provider_fee_expense'
+    | 'buyer_guarantee_expense';
+  type: 'asset' | 'liability' | 'revenue' | 'expense';
+  shop?: (string | null) | Shop;
+  currency: string;
+  balance: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-transactions".
+ */
+export interface LedgerTransaction {
+  id: string;
+  idempotencyKey: string;
+  kind:
+    | 'charge'
+    | 'provider_fee'
+    | 'release'
+    | 'commission_earned'
+    | 'payout_submitted'
+    | 'payout_complete'
+    | 'payout_failed'
+    | 'payout_reversed'
+    | 'refund_submitted'
+    | 'refund_complete'
+    | 'refund_failed'
+    | 'clawback_recovered'
+    | 'guarantee_writeoff';
+  occurredAt: string;
+  postedAt: string;
+  sourceType: 'webhook-event' | 'reconciliation-run' | 'order-event';
+  sourceId: string;
+  order?: (string | null) | Order;
+  shop?: (string | null) | Shop;
+  paymentIntent?: (string | null) | PaymentIntent;
+  refund?: (string | null) | Refund;
+  payout?: (string | null) | Payout;
+  entries: {
+    account: string | LedgerAccount;
+    debit: number;
+    credit: number;
+    id?: string | null;
+  }[];
+  reverses?: (string | null) | LedgerTransaction;
+  memo?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoices".
+ */
+export interface BuyerFeeInvoice {
+  id: string;
+  number: string;
+  kind: 'invoice' | 'credit_note';
+  creditsInvoice?: (string | null) | BuyerFeeInvoice;
+  order: string | Order;
+  buyer?: (string | null) | User;
+  amountHt: number;
+  vat: number;
+  amountTtc: number;
+  vatRateBps: number;
+  pdf?: (string | null) | BuyerFeeInvoiceFile;
+  issuedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoice-files".
+ */
+export interface BuyerFeeInvoiceFile {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-runs".
+ */
+export interface ReconciliationRun {
+  id: string;
+  startedAt: string;
+  finishedAt?: string | null;
+  window?: {
+    from?: string | null;
+    to?: string | null;
+  };
+  status: 'running' | 'succeeded' | 'failed';
+  counts?: {
+    checked?: number | null;
+    matched?: number | null;
+    autoFixed?: number | null;
+    mismatches?: number | null;
+  };
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-mismatches".
+ */
+export interface ReconciliationMismatch {
+  id: string;
+  run?: (string | null) | ReconciliationRun;
+  kind:
+    | 'missing_locally'
+    | 'missing_at_provider'
+    | 'amount_mismatch'
+    | 'status_mismatch'
+    | 'balance_mismatch'
+    | 'unbalanced_ledger';
+  entityType?: string | null;
+  providerId?: string | null;
+  localId?: string | null;
+  expected?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  actual?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  shop?: (string | null) | Shop;
+  status: 'open' | 'auto_fixed' | 'resolved' | 'ignored';
+  resolvedBy?: (string | null) | User;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2075,6 +2462,50 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'payment-gate-evidence';
         value: string | PaymentGateEvidence;
+      } | null)
+    | ({
+        relationTo: 'connected-accounts';
+        value: string | ConnectedAccount;
+      } | null)
+    | ({
+        relationTo: 'payout-accounts';
+        value: string | PayoutAccount;
+      } | null)
+    | ({
+        relationTo: 'refunds';
+        value: string | Refund;
+      } | null)
+    | ({
+        relationTo: 'payouts';
+        value: string | Payout;
+      } | null)
+    | ({
+        relationTo: 'payout-holds';
+        value: string | PayoutHold;
+      } | null)
+    | ({
+        relationTo: 'ledger-accounts';
+        value: string | LedgerAccount;
+      } | null)
+    | ({
+        relationTo: 'ledger-transactions';
+        value: string | LedgerTransaction;
+      } | null)
+    | ({
+        relationTo: 'buyer-fee-invoices';
+        value: string | BuyerFeeInvoice;
+      } | null)
+    | ({
+        relationTo: 'buyer-fee-invoice-files';
+        value: string | BuyerFeeInvoiceFile;
+      } | null)
+    | ({
+        relationTo: 'reconciliation-runs';
+        value: string | ReconciliationRun;
+      } | null)
+    | ({
+        relationTo: 'reconciliation-mismatches';
+        value: string | ReconciliationMismatch;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2437,6 +2868,14 @@ export interface PaymentIntentsSelect<T extends boolean = true> {
   expiresAt?: T;
   settledAmount?: T;
   settledCurrency?: T;
+  channel?: T;
+  payerPhone?: T;
+  connectedAccount?: T;
+  destinationAmount?: T;
+  applicationFee?: T;
+  attempt?: T;
+  failureCode?: T;
+  lateSuccess?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2998,6 +3437,22 @@ export interface OrdersSelect<T extends boolean = true> {
         buyerProtectionFee?: T;
         total?: T;
         currency?: T;
+        buyerProtectionFeeVat?: T;
+        commission?: T;
+        commissionVat?: T;
+        applicationFee?: T;
+        destinationAmount?: T;
+      };
+  settlement?:
+    | T
+    | {
+        mode?: T;
+        releaseModel?: T;
+        connectedAccount?: T;
+        releaseEligibleAt?: T;
+        releasedAt?: T;
+        payout?: T;
+        refundedAmount?: T;
       };
   commission?:
     | T
@@ -3185,6 +3640,7 @@ export interface CommissionInvoicesSelect<T extends boolean = true> {
   totalDue?: T;
   currency?: T;
   status?: T;
+  settlement?: T;
   issuedAt?: T;
   dueAt?: T;
   paidAt?: T;
@@ -3249,6 +3705,269 @@ export interface PaymentGateEvidenceSelect<T extends boolean = true> {
   focalX?: T;
   focalY?: T;
   sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "connected-accounts_select".
+ */
+export interface ConnectedAccountsSelect<T extends boolean = true> {
+  shop?: T;
+  provider?: T;
+  providerAccountId?: T;
+  accountType?: T;
+  status?: T;
+  chargesEnabled?: T;
+  payoutsEnabled?: T;
+  requirementsDue?: T;
+  kycStatus?: T;
+  kycName?: T;
+  payoutSchedule?: T;
+  lastSyncedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-accounts_select".
+ */
+export interface PayoutAccountsSelect<T extends boolean = true> {
+  shop?: T;
+  method?: T;
+  accountName?: T;
+  accountNumber?: T;
+  accountNumberMasked?: T;
+  status?: T;
+  nameMatch?:
+    | T
+    | {
+        identityName?: T;
+        providerName?: T;
+        result?: T;
+        score?: T;
+        checkedAt?: T;
+      };
+  providerRecipientId?: T;
+  activatedAt?: T;
+  replacedAt?: T;
+  createdBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds_select".
+ */
+export interface RefundsSelect<T extends boolean = true> {
+  order?: T;
+  paymentIntent?: T;
+  buyer?: T;
+  shop?: T;
+  amount?: T;
+  breakdown?:
+    | T
+    | {
+        seller?: T;
+        commission?: T;
+        commissionVat?: T;
+        buyerProtectionFee?: T;
+      };
+  reason?: T;
+  sourceType?: T;
+  sourceId?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        source?: T;
+        at?: T;
+        id?: T;
+      };
+  providerRefundId?: T;
+  fundedBy?: T;
+  idempotencyKey?: T;
+  attempts?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payouts_select".
+ */
+export interface PayoutsSelect<T extends boolean = true> {
+  shop?: T;
+  connectedAccount?: T;
+  payoutAccount?: T;
+  amount?: T;
+  fee?: T;
+  currency?: T;
+  orders?:
+    | T
+    | {
+        order?: T;
+        amount?: T;
+        id?: T;
+      };
+  origin?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        source?: T;
+        at?: T;
+        id?: T;
+      };
+  providerTransferId?: T;
+  failureReason?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payout-holds_select".
+ */
+export interface PayoutHoldsSelect<T extends boolean = true> {
+  scope?: T;
+  shop?: T;
+  order?: T;
+  reason?: T;
+  blocksCharges?: T;
+  status?: T;
+  until?: T;
+  createdByType?: T;
+  createdBy?: T;
+  releasedBy?: T;
+  releasedAt?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-accounts_select".
+ */
+export interface LedgerAccountsSelect<T extends boolean = true> {
+  key?: T;
+  category?: T;
+  type?: T;
+  shop?: T;
+  currency?: T;
+  balance?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ledger-transactions_select".
+ */
+export interface LedgerTransactionsSelect<T extends boolean = true> {
+  idempotencyKey?: T;
+  kind?: T;
+  occurredAt?: T;
+  postedAt?: T;
+  sourceType?: T;
+  sourceId?: T;
+  order?: T;
+  shop?: T;
+  paymentIntent?: T;
+  refund?: T;
+  payout?: T;
+  entries?:
+    | T
+    | {
+        account?: T;
+        debit?: T;
+        credit?: T;
+        id?: T;
+      };
+  reverses?: T;
+  memo?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoices_select".
+ */
+export interface BuyerFeeInvoicesSelect<T extends boolean = true> {
+  number?: T;
+  kind?: T;
+  creditsInvoice?: T;
+  order?: T;
+  buyer?: T;
+  amountHt?: T;
+  vat?: T;
+  amountTtc?: T;
+  vatRateBps?: T;
+  pdf?: T;
+  issuedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "buyer-fee-invoice-files_select".
+ */
+export interface BuyerFeeInvoiceFilesSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-runs_select".
+ */
+export interface ReconciliationRunsSelect<T extends boolean = true> {
+  startedAt?: T;
+  finishedAt?: T;
+  window?:
+    | T
+    | {
+        from?: T;
+        to?: T;
+      };
+  status?: T;
+  counts?:
+    | T
+    | {
+        checked?: T;
+        matched?: T;
+        autoFixed?: T;
+        mismatches?: T;
+      };
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reconciliation-mismatches_select".
+ */
+export interface ReconciliationMismatchesSelect<T extends boolean = true> {
+  run?: T;
+  kind?: T;
+  entityType?: T;
+  providerId?: T;
+  localId?: T;
+  expected?: T;
+  actual?: T;
+  shop?: T;
+  status?: T;
+  resolvedBy?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -68,6 +68,7 @@ function world() {
 				providerReference: "trx.1",
 				status: "succeeded",
 				idempotencyKey: "boost:u-1:key-1",
+				payerPhone: "+237670000001",
 				statusHistory: [
 					{
 						status: "succeeded",
@@ -84,6 +85,7 @@ function world() {
 				currency: "XAF",
 				status: "succeeded",
 				idempotencyKey: "boost:u-2:key-2",
+				payerPhone: "+237690000002",
 			},
 		],
 		"webhook-events": [
@@ -329,6 +331,17 @@ describe("deleteUserRelatedData payment retention", () => {
 		expect(serialized).not.toContain("Awa");
 		expect(serialized).not.toContain("+237600000001");
 		expect(serialized).not.toContain("cus_notch_1");
+	});
+
+	it("nulls the payer phone on the deleted customer's intent and only there", () => {
+		const phones = payload.store["payment-intents"].map((i) => [
+			i.id,
+			i.payerPhone,
+		]);
+		expect(phones).toEqual([
+			["pi-1", null],
+			["pi-2", "+237690000002"],
+		]);
 	});
 
 	it("replaces the deleted user's raw id inside the kept intent's idempotency key", () => {

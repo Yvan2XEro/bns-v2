@@ -2,6 +2,7 @@ import type { CollectionConfig } from "payload";
 import { can, shopRoleFieldAccess } from "../access/shopRoles";
 import { staffOnly } from "../access/staff";
 import { LAUNCH_CITIES, LAUNCH_CITY_KEYS } from "../lib/launchCities";
+import { RELEASE_MODELS, SETTLEMENT_MODES } from "../lib/paymentSettings";
 
 export const ORDER_STATUSES = [
 	"placed",
@@ -52,6 +53,17 @@ export const ORDER_DELIVERY_FAILURE_REASONS = [
 	"timeout",
 	"other",
 ] as const;
+
+/**
+ * The values of `AppSettings.payments` (`settlementMode`, `releaseModel`),
+ * snapshotted onto a paid order. Task 2 declares them as `SETTLEMENT_MODES` /
+ * `RELEASE_MODELS` in lib/paymentSettings.ts; once both land these become
+ * imports of those.
+ */
+export // Task 2's lists are the one declaration; parallel copies were the P5 drift
+// seed caught twice already (PaymentChannel, these two).
+const ORDER_SETTLEMENT_MODES = SETTLEMENT_MODES;
+export const ORDER_RELEASE_MODELS = RELEASE_MODELS;
 
 /**
  * Set by `services/orders/*` on every write that may legitimately move
@@ -252,6 +264,46 @@ export const Orders: CollectionConfig = {
 				{ name: "buyerProtectionFee", type: "number", defaultValue: 0 },
 				{ name: "total", type: "number" },
 				{ name: "currency", type: "text", defaultValue: "XAF" },
+				// P5, frozen at payment by `splitAmounts` (lib/paymentMath.ts).
+				{ name: "buyerProtectionFeeVat", type: "number" },
+				{ name: "commission", type: "number" },
+				{ name: "commissionVat", type: "number" },
+				{ name: "applicationFee", type: "number" },
+				{ name: "destinationAmount", type: "number" },
+			],
+		},
+		{
+			// P5, service-written. `mode` and `releaseModel` are snapshots of
+			// `AppSettings.payments` at payment, so a later settings change never
+			// re-routes an order already paid.
+			name: "settlement",
+			type: "group",
+			fields: [
+				{
+					name: "mode",
+					type: "select",
+					options: ORDER_SETTLEMENT_MODES.map((value) => ({
+						label: value,
+						value,
+					})),
+				},
+				{
+					name: "releaseModel",
+					type: "select",
+					options: ORDER_RELEASE_MODELS.map((value) => ({
+						label: value,
+						value,
+					})),
+				},
+				{
+					name: "connectedAccount",
+					type: "relationship",
+					relationTo: "connected-accounts",
+				},
+				{ name: "releaseEligibleAt", type: "date", index: true },
+				{ name: "releasedAt", type: "date" },
+				{ name: "payout", type: "relationship", relationTo: "payouts" },
+				{ name: "refundedAmount", type: "number", defaultValue: 0 },
 			],
 		},
 		{
