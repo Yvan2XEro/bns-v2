@@ -507,11 +507,13 @@ describe("serializeOrderForShop: the whole wire, field for field", () => {
 		});
 	});
 
-	it("is exactly the same view minus every commission field for a staff member", () => {
+	// The accrual event's metadata carries the commission amount: handing it
+	// to a role without payments.view defeated the field gate below.
+	it("is exactly the same view minus every commission field for a staff member, the accrual event included", () => {
 		expect(serializeOrderForShop(makeOrder(), sources(), "staff")).toEqual({
 			...EXPECTED_BASE,
 			items: EXPECTED_ITEMS,
-			timeline: [ROW_BOTH("Alice Mbarga"), ROW_SELLER("Jean Owner"), ROW_SHOP],
+			timeline: [ROW_BOTH("Alice Mbarga"), ROW_SELLER("Jean Owner")],
 			reviewable: false,
 			buyer: { id: "u-buyer", name: "Alice Mbarga" },
 			risk: EXPECTED_RISK,
@@ -524,6 +526,25 @@ describe("serializeOrderForShop: the whole wire, field for field", () => {
 			const allowed = can(role, "payments.view");
 			expect("commission" in view).toBe(allowed);
 			expect("commissionAmount" in view.items[0]).toBe(allowed);
+		}
+	});
+
+	it("gates the commission accrual event on the same matrix cell", () => {
+		const accruals = Object.fromEntries(
+			SHOP_ROLES.map((role) => [
+				role,
+				serializeOrderForShop(makeOrder(), sources(), role).timeline.filter(
+					(row) => row.type === "order.commission_accrued",
+				),
+			]),
+		);
+		expect(accruals).toEqual({
+			owner: [ROW_SHOP],
+			manager: [ROW_SHOP],
+			staff: [],
+		});
+		for (const role of SHOP_ROLES) {
+			expect(accruals[role].length).toBe(can(role, "payments.view") ? 1 : 0);
 		}
 	});
 

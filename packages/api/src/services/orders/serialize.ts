@@ -552,8 +552,16 @@ export function visibleEvents(
 	actorNames: ReadonlyMap<string, string> = new Map(),
 ): OrderTimelineEntry[] {
 	const allowed = eventVisibilitiesFor(audience);
+	// The accrual event's metadata is the commission amount itself, so it
+	// answers to the same `payments.view` cell as the commission fields.
+	const hidesCommission =
+		audience.kind === "shop" && !can(audience.role, "payments.view");
 	return events
 		.filter((event) => allowed.includes(event.visibility))
+		.filter(
+			(event) =>
+				!(hidesCommission && event.type === "order.commission_accrued"),
+		)
 		.map((event) => timelineEntry(audience, event, actorNames));
 }
 
