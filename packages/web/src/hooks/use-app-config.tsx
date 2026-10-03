@@ -21,6 +21,8 @@ export interface AppConfig {
 	/** The cities ordering is open in, with each one's default delivery fee. */
 	launchCities: LaunchCityOption[];
 	withdrawalDays: number;
+	/** Gates the payments setup entry point and nav link. Fails closed. */
+	protectedPaymentEnabled: boolean;
 }
 
 export const EMPTY_APP_CONFIG: AppConfig = {
@@ -35,6 +37,7 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	ordersEnabled: false,
 	launchCities: [],
 	withdrawalDays: 15,
+	protectedPaymentEnabled: false,
 };
 
 const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);

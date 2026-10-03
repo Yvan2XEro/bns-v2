@@ -53,6 +53,17 @@ export const SELLER_NAV = [
 		orders: true,
 	},
 	{
+		href: "/seller/payments",
+		key: "payments",
+		exact: false,
+		permission: "payments.view",
+		orders: false,
+		// Absent (falsy) on every other row; visibleSellerNav reads that as "no
+		// extra flag gate". This is the only entry `protectedPaymentEnabled`
+		// hides on top of its `payments.view` permission check.
+		protectedPayment: true,
+	},
+	{
 		href: "/seller/team",
 		key: "team",
 		exact: false,
@@ -100,6 +111,7 @@ export const SELLER_NAV = [
 	exact: boolean;
 	permission: ShopPermission | null;
 	orders: boolean;
+	protectedPayment?: boolean;
 }>;
 
 export type SellerNavEntry = (typeof SELLER_NAV)[number];
@@ -108,10 +120,15 @@ export type SellerNavKey = SellerNavEntry["key"];
 export function visibleSellerNav(
 	role: ShopRole | null,
 	ordersEnabled: boolean,
+	protectedPaymentEnabled = false,
 ): SellerNavEntry[] {
-	return SELLER_NAV.filter(
-		(entry) =>
+	return SELLER_NAV.filter((entry) => {
+		const gatedByFlag =
+			"protectedPayment" in entry ? entry.protectedPayment === true : false;
+		return (
 			(ordersEnabled || !entry.orders) &&
-			(entry.permission === null || can(role, entry.permission)),
-	);
+			(protectedPaymentEnabled || !gatedByFlag) &&
+			(entry.permission === null || can(role, entry.permission))
+		);
+	});
 }

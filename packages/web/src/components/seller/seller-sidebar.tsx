@@ -17,6 +17,7 @@ import {
 	ShoppingBag,
 	SlidersHorizontal,
 	Users,
+	Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,6 +39,7 @@ const ICONS: Record<SellerNavKey, LucideIcon> = {
 	stock: Boxes,
 	inbox: Inbox,
 	billing: Receipt,
+	payments: Wallet,
 	team: Users,
 	activity: History,
 	verification: BadgeCheck,
@@ -84,8 +86,8 @@ export function SellerSidebar({
 			? pathname === href
 			: pathname === href || pathname.startsWith(`${href}/`);
 
-	const { ordersEnabled } = useAppConfig();
-	const items = visibleSellerNav(role, ordersEnabled);
+	const { ordersEnabled, protectedPaymentEnabled } = useAppConfig();
+	const items = visibleSellerNav(role, ordersEnabled, protectedPaymentEnabled);
 
 	const lockedNotice =
 		!role && roleReason

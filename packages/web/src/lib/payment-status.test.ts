@@ -204,7 +204,11 @@ describe("holdReasonCategory", () => {
 describe("the Payments namespace", () => {
 	test("has the same keys in en and fr", () => {
 		expect(Object.keys(frNs).sort()).toEqual(Object.keys(enNs).sort());
-		expect(Object.keys(enNs)).toHaveLength(149);
+		// 149 at Task 7's close, +4 for Task 25's own screens: the shop-hold
+		// "no access" copy, the provider-schedule state `readyForPayout: null`
+		// renders instead of 0, the payout-account cooldown date sentence, and
+		// the "this was not me" confirmation.
+		expect(Object.keys(enNs)).toHaveLength(153);
 	});
 
 	test("carries the same placeholders in both languages, in next-intl's single braces", () => {

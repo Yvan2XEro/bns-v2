@@ -112,6 +112,26 @@ export const billingKey = (shopId: string) =>
 export const orderSettingsKey = (shopId: string) =>
 	[...shopScopeKey(shopId), "order-settings"] as const;
 
+/** Every view under the shop's protected-payment screens. */
+export const sellerPaymentsRootKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "payments"] as const;
+
+/** The amounts strip, payouts list and per-order breakdown. */
+export const sellerPaymentsKey = (shopId: string) =>
+	[...sellerPaymentsRootKey(shopId), "overview"] as const;
+
+/** One payout's orders and status history. */
+export const sellerPayoutKey = (shopId: string, payoutId: string) =>
+	[...sellerPaymentsRootKey(shopId), "payouts", payoutId] as const;
+
+/**
+ * The onboarding/payout-account setup view. Nested under the same root as
+ * the overview so a mutation that invalidates the root (a fresh payout
+ * account, say) reaches both without naming each one by hand.
+ */
+export const paymentSetupKey = (shopId: string) =>
+	[...sellerPaymentsRootKey(shopId), "setup"] as const;
+
 /**
  * Outside `shopScopeKey` on purpose: it spans shops, so no single shop's
  * invalidation should drop it — the mutations that change membership

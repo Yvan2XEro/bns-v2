@@ -816,7 +816,8 @@
 			"settings": "Settings",
 			"orders": "Orders",
 			"billing": "Billing",
-			"orderSettings": "Order settings"
+			"orderSettings": "Order settings",
+			"payments": "Payments"
 		},
 		"viewShop": "View my shop",
 		"buyerMode": "Back to buyer mode",
@@ -2597,6 +2598,10 @@
 		"order_paidProtected": "Paid with protected payment.",
 		"order_refundsTitle": "Refunds",
 		"order_refundDelay": "A refund usually reaches your mobile money account within {days} days.",
-		"order_feeInvoice": "Download the fee invoice"
+		"order_feeInvoice": "Download the fee invoice",
+		"seller_noAccess": "Payments are reserved for the shop's owner and managers.",
+		"seller_providerSchedule": "NotchPay pays out on its own schedule.",
+		"setup_cooldownUntil": "You can change it again on {date}.",
+		"setup_notMeConfirmed": "Thanks — we've started a security review and placed a hold on your payouts."
 	}
 }

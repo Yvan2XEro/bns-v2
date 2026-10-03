@@ -817,7 +817,8 @@
 			"settings": "Paramètres",
 			"orders": "Commandes",
 			"billing": "Facturation",
-			"orderSettings": "Réglages des commandes"
+			"orderSettings": "Réglages des commandes",
+			"payments": "Paiements"
 		},
 		"viewShop": "Voir ma boutique",
 		"buyerMode": "Revenir en mode acheteur",
@@ -2598,6 +2599,10 @@
 		"order_paidProtected": "Payé par paiement protégé.",
 		"order_refundsTitle": "Remboursements",
 		"order_refundDelay": "Un remboursement arrive généralement sur votre compte mobile money sous {days} jours.",
-		"order_feeInvoice": "Télécharger la facture des frais"
+		"order_feeInvoice": "Télécharger la facture des frais",
+		"seller_noAccess": "Les paiements sont réservés au propriétaire et aux gérants de la boutique.",
+		"seller_providerSchedule": "NotchPay effectue les versements selon son propre calendrier.",
+		"setup_cooldownUntil": "Vous pourrez le modifier à nouveau le {date}.",
+		"setup_notMeConfirmed": "Merci — nous avons lancé une vérification de sécurité et suspendu vos versements."
 	}
 }
