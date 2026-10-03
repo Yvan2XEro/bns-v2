@@ -11,6 +11,7 @@ import {
 	RELEASE_MODELS,
 	SETTLEMENT_MODES,
 } from "../lib/paymentSettings";
+import { adapterPresenceRefusal } from "../lib/payments/marketplaceRegistry";
 import { assertAuthorised } from "../lib/verificationSettings";
 
 const isAdmin = ({ req }: { req: { user?: { role?: string } | null } }) =>
@@ -55,6 +56,8 @@ export const AppSettings: GlobalConfig = {
 				);
 				const refusal = paymentSettingsRefusal(payments, vat, process.env);
 				if (refusal) throw new Error(refusal);
+				const adapterRefusal = adapterPresenceRefusal(payments, process.env);
+				if (adapterRefusal) throw new Error(adapterRefusal);
 				return data;
 			},
 		],

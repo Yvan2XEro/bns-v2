@@ -8,6 +8,7 @@ import {
 } from "../../src/lib/paymentSettings";
 import { FakeMarketplaceProvider } from "../../src/lib/payments/fakeMarketplace";
 import {
+	adapterPresenceRefusal,
 	getMarketplaceProvider,
 	registerMarketplaceProvider,
 	sharedFakeMarketplace,
@@ -140,3 +141,51 @@ describe("getMarketplaceProvider", () => {
 });
 
 runMarketplaceContract(() => new FakeMarketplaceProvider());
+
+// The Global Constraint "the flag cannot be enabled while no adapter is
+// registered" lives in code, not prose: the settings hook asks the registry.
+describe("adapterPresenceRefusal", () => {
+	const enabling = {
+		protectedPayment: { enabled: true },
+		markets: [{ enabled: false, provider: "notchpay" }],
+	};
+
+	it("refuses enabling in production with no adapter and no fake override", () => {
+		const refusal = adapterPresenceRefusal(enabling, {
+			NODE_ENV: "production",
+		});
+		expect(refusal).toContain(
+			'no payment adapter is registered for "notchpay"',
+		);
+	});
+
+	it("lets staging through on the explicit fake override, and dev implicitly", () => {
+		expect(
+			adapterPresenceRefusal(enabling, {
+				NODE_ENV: "production",
+				PAYMENTS_PROVIDER: "fake",
+			}),
+		).toBeNull();
+		expect(adapterPresenceRefusal(enabling, { NODE_ENV: "test" })).toBeNull();
+	});
+
+	it("lets production through once the adapter is registered, and stays quiet when nothing enables", () => {
+		const undo = registerMarketplaceProvider(
+			"notchpay",
+			() => new FakeMarketplaceProvider(),
+		);
+		try {
+			expect(
+				adapterPresenceRefusal(enabling, { NODE_ENV: "production" }),
+			).toBeNull();
+		} finally {
+			undo();
+		}
+		expect(
+			adapterPresenceRefusal(
+				{ protectedPayment: { enabled: false }, markets: [] },
+				{ NODE_ENV: "production" },
+			),
+		).toBeNull();
+	});
+});

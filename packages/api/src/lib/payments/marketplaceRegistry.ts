@@ -35,8 +35,54 @@ export function registerMarketplaceProvider(
 	};
 }
 
+/**
+ * Whether enabling protected payment would have a provider to stand on:
+ * a registered real adapter for `name`, or the explicit fake override. The
+ * settings hook asks this before letting the flag through — the constraint
+ * "the flag cannot be enabled while no adapter is registered" lives here,
+ * not in prose.
+ */
+export function hasMarketplaceProvider(
+	name: PaymentProviderId,
+	env: PaymentEnv = process.env,
+): boolean {
+	return factories.has(name) || usesFakeMarketplace(env);
+}
+
 export function usesFakeMarketplace(env: PaymentEnv = process.env): boolean {
 	return env.PAYMENTS_PROVIDER === "fake" || env.NODE_ENV !== "production";
+}
+
+/**
+ * The settings hook's half of the hexagonal bargain: enabling protected
+ * payment (globally or per market) is refused while the named provider has
+ * no registered adapter and the fake override is not explicitly on. Shaped
+ * like `paymentSettingsRefusal` — a sentence or null — so the hook treats
+ * both the same way.
+ */
+export function adapterPresenceRefusal(
+	payments: unknown,
+	env: PaymentEnv = process.env,
+): null | string {
+	const p = (payments ?? {}) as {
+		protectedPayment?: { enabled?: unknown };
+		markets?: Array<{ enabled?: unknown; provider?: unknown }>;
+	};
+	const enabling =
+		p.protectedPayment?.enabled === true ||
+		(p.markets ?? []).some((m) => m.enabled === true);
+	if (!enabling) return null;
+	const providers = new Set(
+		(p.markets ?? [])
+			.map((m) => m.provider)
+			.filter((x): x is PaymentProviderId => typeof x === "string"),
+	);
+	for (const name of providers) {
+		if (!hasMarketplaceProvider(name, env)) {
+			return `Protected payment cannot be enabled: no payment adapter is registered for "${name}" and PAYMENTS_PROVIDER=fake is not set. Build and register the adapter first.`;
+		}
+	}
+	return null;
 }
 
 /** The single fake every non-production caller shares, so a webhook verifies against the instance that signed it. */

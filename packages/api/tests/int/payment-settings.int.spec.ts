@@ -260,6 +260,32 @@ describe("AppSettings beforeChange — payments", () => {
 		expect(refusalOf({ markets: [CM] })).toBeNull();
 	});
 
+	// Pins the WIRING, not just the function: a first version of this guard
+	// was unit-tested green while the hook never called it.
+	it("beforeChange refuses enabling in production while no adapter is registered", () => {
+		const everything = {
+			protectedPayment: { enabled: true },
+			markets: [{ ...CM, enabled: true }],
+			gates: ALL_GATES,
+		};
+		const savedNodeEnv = process.env.NODE_ENV;
+		const savedProvider = process.env.PAYMENTS_PROVIDER;
+		try {
+			process.env.NODE_ENV = "production";
+			delete process.env.PAYMENTS_PROVIDER;
+			expect(refusalOf(everything)).toContain(
+				'no payment adapter is registered for "notchpay"',
+			);
+			// The explicit staging override stands in for an adapter.
+			process.env.PAYMENTS_PROVIDER = "fake";
+			expect(refusalOf(everything)).toBeNull();
+		} finally {
+			process.env.NODE_ENV = savedNodeEnv;
+			if (savedProvider === undefined) delete process.env.PAYMENTS_PROVIDER;
+			else process.env.PAYMENTS_PROVIDER = savedProvider;
+		}
+	});
+
 	it("beforeChange refuses a market vatRateBps different from orders.vatRateBps for the same country", () => {
 		expect(refusalOf({ markets: [{ ...CM, vatRateBps: 1800 }] })).toBe(
 			"Market CM: vatRateBps 1800 differs from orders.vatRateBps 1925; COD and protected-payment invoices would diverge.",
