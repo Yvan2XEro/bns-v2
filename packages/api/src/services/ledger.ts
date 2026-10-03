@@ -121,7 +121,11 @@ export interface PostingAmounts {
 	payout_submitted: { amount: number };
 	payout_complete: { amount: number };
 	payout_failed: { amount: number };
-	payout_reversed: { amount: number };
+	/** The money actually came back from the connected account (reachable
+	 * only from `complete`, after `payout_complete` already drained
+	 * `seller_payout_in_transit` into `provider_position`), so it posts its
+	 * own entries rather than `payout_failed`'s pre-completion reversal. */
+	payout_reversed: { amount: number; releaseModel: ReleaseModel };
 	refund_submitted: RefundPostingAmounts;
 	refund_complete: { amount: number };
 	/** The lines of the `refund_submitted` posting being reversed, as `transactionLines` reads them. */
@@ -184,7 +188,24 @@ const POSTINGS: Postings = {
 		credit("provider_position", amount),
 	],
 	payout_failed: payoutBack,
-	payout_reversed: payoutBack,
+	// Reachable only from `complete`: `payout_complete` already moved the
+	// amount out of `seller_payout_in_transit` into `provider_position`
+	// (spent), so a later reversal must put it back on both sides — debiting
+	// `provider_position` (the money really did return) and crediting the
+	// bucket the amount would sit in if the payout had never gone out:
+	// `seller_releasable` under `provider_hold` (another payout attempt is
+	// possible), `seller_payout_in_transit` under `provider_schedule` (the
+	// provider will resubmit on its own schedule). `payoutBack` would instead
+	// drive `seller_payout_in_transit` to -amount forever.
+	payout_reversed: ({ amount, releaseModel }) => [
+		debit("provider_position", amount),
+		credit(
+			releaseModel === "provider_hold"
+				? "seller_releasable"
+				: "seller_payout_in_transit",
+			amount,
+		),
+	],
 	refund_submitted: (a) => {
 		const fromPending = Math.min(
 			a.seller,

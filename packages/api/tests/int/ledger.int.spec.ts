@@ -231,10 +231,26 @@ describe("postingFor: the postings table", () => {
 			total: D,
 		},
 		{
-			name: "payout_reversed",
+			name: "payout_reversed under provider_hold",
 			kind: "payout_reversed",
-			lines: postingFor("payout_reversed", { amount: D }),
-			expected: [d("seller_payout_in_transit", D), c("seller_releasable", D)],
+			lines: postingFor("payout_reversed", {
+				amount: D,
+				releaseModel: "provider_hold",
+			}),
+			expected: [d("provider_position", D), c("seller_releasable", D)],
+			total: D,
+		},
+		{
+			name: "payout_reversed under provider_schedule",
+			kind: "payout_reversed",
+			lines: postingFor("payout_reversed", {
+				amount: D,
+				releaseModel: "provider_schedule",
+			}),
+			expected: [
+				d("provider_position", D),
+				c("seller_payout_in_transit", D),
+			],
 			total: D,
 		},
 		{
@@ -733,6 +749,7 @@ describe("property: 200 legal events", () => {
 		shop: string;
 		amount: number;
 		open: boolean;
+		releaseModel: ReleaseModel;
 	}
 
 	it("keeps the signed sum at zero, seller_pending non-negative, and every cache equal to its recomputation", async () => {
@@ -849,7 +866,12 @@ describe("property: 200 legal events", () => {
 					);
 					const amount = t.entries[0]?.debit ?? 0;
 					if (shops[o.shop] === "provider_schedule" && amount > 0) {
-						payouts.push({ shop: o.shop, amount, open: true });
+						payouts.push({
+							shop: o.shop,
+							amount,
+							open: true,
+							releaseModel: "provider_schedule",
+						});
 					}
 				});
 			}
@@ -976,7 +998,12 @@ describe("property: 200 legal events", () => {
 				if (releasable > 0) {
 					steps.push(async () => {
 						const amount = int(1, releasable);
-						payouts.push({ shop, amount, open: true });
+						payouts.push({
+							shop,
+							amount,
+							open: true,
+							releaseModel: "provider_hold",
+						});
 						await send("payout_submitted", shop, undefined, async () =>
 							postingFor("payout_submitted", { amount }),
 						);
@@ -1028,7 +1055,10 @@ describe("property: 200 legal events", () => {
 					steps.push(async () => {
 						p.open = false;
 						await send(kind, p.shop, undefined, async () =>
-							postingFor(kind, { amount: p.amount }),
+							postingFor(kind, {
+								amount: p.amount,
+								releaseModel: p.releaseModel,
+							}),
 						);
 					});
 				}

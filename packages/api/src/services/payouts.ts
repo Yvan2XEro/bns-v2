@@ -1371,6 +1371,10 @@ async function postForPayout(
 	if (await payoutPosting(req, payout.id, kind)) return;
 	const sourceType: LedgerSourceType =
 		options.source === "reconcile" ? "reconciliation-run" : "webhook-event";
+	// Only `payout_reversed` reads it, but it is harmless on the other three
+	// kinds' postings (their builders destructure `amount` alone).
+	const releaseModel: ReleaseModel =
+		payout.origin === "platform_release" ? "provider_hold" : "provider_schedule";
 	await postLedger(req, {
 		kind,
 		occurredAt: new Date().toISOString(),
@@ -1379,7 +1383,7 @@ async function postForPayout(
 		currency: payout.currency,
 		shop: idOf(payout.shop),
 		payout: payout.id,
-		entries: postingFor(kind, { amount: payout.amount }),
+		entries: postingFor(kind, { amount: payout.amount, releaseModel }),
 		memo: `${event.type} ${options.sourceId ?? event.providerEventId}`,
 	});
 }

@@ -958,10 +958,20 @@ describe("transfer lifecycle", () => {
 		for (const event of events) await apply(payload, event);
 
 		expect(payouts(payload)[0].status).toBe("reversed");
+		// `payout_complete` already drained `seller_payout_in_transit` into
+		// `provider_position`; the checkpoint ruling (not `payout_failed`'s
+		// pre-completion reversal) puts the money back on both sides —
+		// debiting `provider_position` (it really did come back) and
+		// crediting `seller_releasable` (this payout is `platform_release`:
+		// `provider_hold`, so the seller is due another attempt).
 		expect(linesOf(payload, ofKind(payload, "payout_reversed")[0])).toEqual([
-			d("seller_payout_in_transit", D),
+			d("provider_position", D),
 			c("seller_releasable", D),
 		]);
+		// The old `payoutBack` posting drove this to -D forever; it must
+		// land back at 0, the same balance `payout_complete` left it at.
+		expect(await balance(payload, "seller_payout_in_transit")).toBe(0);
+		expect(await balance(payload, "seller_releasable")).toBe(D);
 	});
 
 	it("provider_schedule: a provider transfer creates its own payout row, out of order too", async () => {
