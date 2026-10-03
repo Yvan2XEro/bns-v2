@@ -732,6 +732,27 @@ describe("applyRefundEvent", () => {
 		});
 	});
 
+	it("credits the buyer fee invoice when a refund gives the fee back, and only then", async () => {
+		await charge("o-1", PAID_AT);
+		await submitted(17_000);
+		fake.script("order:o-1:1", [{ entity: "refund", status: "succeeded" }]);
+		await deliver(fake.advance("order:o-1:1"));
+		expect(payload.store["buyer-fee-invoices"] ?? []).toEqual([]);
+
+		const rest = await request({ sourceType: "dispute", sourceId: "d-1" });
+		expect(rest.breakdown?.buyerProtectionFee).toBe(SPLIT.buyerProtectionFee);
+		await submit(String(rest.id));
+		fake.script("dispute:d-1:1", [{ entity: "refund", status: "succeeded" }]);
+		await deliver(fake.advance("dispute:d-1:1"));
+
+		const docs = payload.store["buyer-fee-invoices"] ?? [];
+		expect(docs.map((d) => [d.kind, d.order, d.amountTtc])).toEqual([
+			["invoice", "o-1", SPLIT.buyerProtectionFee],
+			["credit_note", "o-1", SPLIT.buyerProtectionFee],
+		]);
+		expect(docs[1]?.creditsInvoice).toBe(docs[0]?.id);
+	});
+
 	it("moves a partial refund to partially_refunded, and the last one to refunded", async () => {
 		await charge("o-1", PAID_AT);
 		await submitted(17_000);

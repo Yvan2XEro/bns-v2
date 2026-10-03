@@ -31,6 +31,7 @@ import type {
 	PaymentIntent,
 	Refund,
 } from "../payload-types";
+import { creditNoteFor, issueBuyerFeeInvoice } from "./buyerFeeInvoices";
 import {
 	intentBalances,
 	type LedgerSourceType,
@@ -648,6 +649,27 @@ function refundNotice(
 
 // --- The lifecycle -----------------------------------------------------------
 
+/**
+ * A refund that gave the buyer protection fee back — a full refund; a partial
+ * one never touches the fee — credits the fee invoice (spec: "credit note on
+ * refund"). Issuing the invoice first covers a refund that beat
+ * settlement's own after-commit issue; both are idempotent per order. A
+ * duplicate or late payment was never invoiced, so it has nothing to credit.
+ */
+function creditFeeAfterCommit(req: PayloadRequest, row: Refund): void {
+	if (isIntentScoped(row.sourceType)) return;
+	if ((row.breakdown?.buyerProtectionFee ?? 0) <= 0) return;
+	afterCommit(req, () =>
+		withTransaction(req.payload, async (tx) => {
+			const intent = await loadIntent(tx, relationId(row.paymentIntent) ?? "");
+			if (!intent) return;
+			const order = await loadOrder(tx, relationId(row.order) ?? "");
+			const invoice = await issueBuyerFeeInvoice(tx, order, intent);
+			if (invoice) await creditNoteFor(tx, invoice, row);
+		}),
+	);
+}
+
 /** The spec's monotonic table. `created` is local; `succeeded` and `failed` are terminal. */
 export const REFUND_TRANSITIONS: Record<RefundStatus, readonly RefundStatus[]> =
 	{
@@ -1019,6 +1041,7 @@ async function advance(
 				refundNotice(moved, { currency: intent?.currency ?? "" }),
 			),
 		);
+		creditFeeAfterCommit(req, moved);
 	}
 	if (target === "failed") await afterFailure(req, moved, ctx);
 	return { outcome: "applied", refund: moved };
