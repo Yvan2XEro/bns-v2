@@ -48,6 +48,7 @@ import {
 	__resetOrderEventHandlers,
 	runOrderEventHandlers,
 } from "../../src/services/orders/events";
+import { releaseHold } from "../../src/services/payoutHolds";
 import {
 	applyTransferEvent,
 	earlyReleaseAmount,
@@ -785,6 +786,48 @@ describe("releaseEligibleFunds", () => {
 		expect(fourth.payouts).toEqual([]);
 		expect(fourth.skipped).toEqual([{ shop: SHOP, reason: "shop_hold" }]);
 		expect(fake.callsTo("releasePayout")).toHaveLength(3);
+	});
+
+	it("an admin's release of the repeated-failure hold lets the next run pay, and the streak starts again", async () => {
+		const payload = seed();
+		const fake = provider();
+		await paidOrder(payload, "o-1");
+		await complete(payload, "o-1");
+		for (let attempt = 1; attempt <= 3; attempt++) {
+			await releaseEligibleFunds(payload, new Date(NOW + attempt * DAY), {
+				provider: fake,
+			});
+			const payout = payouts(payload)[attempt - 1];
+			for (const event of transferEvents(fake, payout, ["failed"])) {
+				await apply(payload, event);
+			}
+		}
+		const [hold] = payload.store["payout-holds"];
+
+		vi.setSystemTime(NOW + 4 * DAY);
+		await withTransaction(payload, (req) =>
+			releaseHold(req, String(hold.id), { note: "seller fixed the number" }),
+		);
+		vi.setSystemTime(NOW + 5 * DAY);
+		const run = await releaseEligibleFunds(payload, new Date(NOW + 5 * DAY), {
+			provider: fake,
+		});
+
+		expect(run.skipped).toEqual([]);
+		expect(run.payouts).toMatchObject([{ amount: D, status: "pending" }]);
+		expect(fake.callsTo("releasePayout")).toHaveLength(4);
+		expect(
+			payload.store["payout-holds"].map((h) => [h.reason, h.status]),
+		).toEqual([["payout_failed_repeatedly", "released"]]);
+
+		// One failure after the release is one, not the fourth of a streak.
+		const fourth = payouts(payload)[3];
+		for (const event of transferEvents(fake, fourth, ["failed"])) {
+			await apply(payload, event);
+		}
+		expect(
+			payload.store["payout-holds"].filter((h) => h.status === "active"),
+		).toHaveLength(0);
 	});
 
 	it("catches up a completed order whose release a cleared blocker held back", async () => {

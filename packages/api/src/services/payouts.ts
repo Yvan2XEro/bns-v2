@@ -738,11 +738,32 @@ async function earlyReleases(
 	return released;
 }
 
-/** The last three submitted payouts of the shop all failed. */
+/**
+ * The last three submitted payouts of the shop all failed. Only payouts made
+ * since staff last released a `payout_failed_repeatedly` hold count: the
+ * failures behind that hold are what the release cleared, and counting them
+ * again would re-hold the shop on its very next run, forever.
+ */
 async function failedRepeatedly(
 	req: PayloadRequest,
 	shopId: string,
 ): Promise<boolean> {
+	const { docs: cleared } = await req.payload.find({
+		collection: "payout-holds",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ reason: { equals: "payout_failed_repeatedly" } },
+				{ releasedAt: { exists: true } },
+			],
+		},
+		sort: "-releasedAt",
+		limit: 1,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	const since = cleared[0]?.releasedAt;
 	const { docs } = await req.payload.find({
 		collection: "payouts",
 		where: {
@@ -750,6 +771,7 @@ async function failedRepeatedly(
 				{ shop: { equals: shopId } },
 				{ origin: { equals: "platform_release" } },
 				{ status: { not_in: ["scheduled", "cancelled"] } },
+				...(since ? [{ createdAt: { greater_than: since } }] : []),
 			],
 		},
 		sort: "-createdAt",
