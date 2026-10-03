@@ -462,3 +462,39 @@ export async function notifyPaymentFailed(
 		failureCode: notice.failureCode,
 	});
 }
+
+// --- Reconciliation alert (Task 18's seam; Task 21 implements) -------------
+export interface ReconciliationAlertNotice {
+	runId: string;
+	/** Every mismatch still `open` after the run, whichever run or service opened it. */
+	openMismatches: number;
+	/** Of those, the ones this run opened. */
+	newMismatches: number;
+	byKind: Partial<
+		Record<
+			| "missing_locally"
+			| "missing_at_provider"
+			| "amount_mismatch"
+			| "status_mismatch"
+			| "balance_mismatch"
+			| "unbalanced_ledger",
+			number
+		>
+	>;
+}
+
+/**
+ * `payments-reconciliation-alert`: admins, by email, after a run that leaves
+ * any mismatch open. The workflow's payload schema is strict (`runId`,
+ * `openMismatches`, nothing else), so the richer notice stays here and the
+ * breakdown lives on the staff route the email links to.
+ */
+export async function notifyReconciliationAlert(
+	payload: Payload,
+	notice: ReconciliationAlertNotice,
+): Promise<void> {
+	await toAdmins(payload, "payments-reconciliation-alert", {
+		runId: notice.runId,
+		openMismatches: notice.openMismatches,
+	});
+}

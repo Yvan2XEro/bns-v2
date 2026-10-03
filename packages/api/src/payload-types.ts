@@ -4509,6 +4509,8 @@ export interface TaskReconcilePendingPayments {
     settled?: number | null;
     expired?: number | null;
     errors?: number | null;
+    refundsApplied?: number | null;
+    payoutsApplied?: number | null;
   };
 }
 /**

@@ -11,6 +11,8 @@ export const reconcilePendingPaymentsTask: TaskConfig<"reconcilePendingPayments"
 			{ name: "settled", type: "number" },
 			{ name: "expired", type: "number" },
 			{ name: "errors", type: "number" },
+			{ name: "refundsApplied", type: "number" },
+			{ name: "payoutsApplied", type: "number" },
 		],
 		schedule: [{ cron: "*/15 * * * *", queue: "payments" }],
 		handler: async ({ req }) => ({

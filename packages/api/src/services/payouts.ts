@@ -1488,3 +1488,86 @@ export async function applyTransferEvent(
 	}
 	return { applied: true, payout: payout.id, status: payout.status, changed };
 }
+
+export type MirrorOutcome =
+	| { mirrored: true; payout: Payout; outcome: TransferOutcome }
+	| {
+			mirrored: false;
+			reason: "not_cancelled" | "amount_differs" | "orders_repaid";
+	  };
+
+/**
+ * `submitPayout` cancels a payout whose `releasePayout` call failed — a
+ * timeout included, after which the provider may still have created the
+ * transfer. When reconciliation finds that transfer, the cancelled row stays
+ * as it is (it records what we believed) and a new row mirrors the transfer,
+ * with the same orders, then follows it like any transfer event. Refused when
+ * any of those orders has since been bound to another live payout: the seller
+ * was then paid twice, and staff decide.
+ */
+export async function mirrorCancelledTransfer(
+	req: PayloadRequest,
+	cancelled: Payout,
+	event: TransferEvent,
+	options: TransferEventOptions = {},
+): Promise<MirrorOutcome> {
+	const { payload } = req;
+	if (cancelled.status !== "cancelled" || cancelled.providerTransferId) {
+		return { mirrored: false, reason: "not_cancelled" };
+	}
+	if (event.amount !== cancelled.amount) {
+		return { mirrored: false, reason: "amount_differs" };
+	}
+	const orders: Order[] = [];
+	for (const line of cancelled.orders ?? []) {
+		const order = await payload.findByID({
+			collection: "orders",
+			id: idOf(line.order),
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const bound = relationId(order.settlement?.payout);
+		if (bound && bound !== cancelled.id) {
+			return { mirrored: false, reason: "orders_repaid" };
+		}
+		orders.push(order);
+	}
+	const at = new Date().toISOString();
+	const mirror = await payload.create({
+		collection: "payouts",
+		data: {
+			shop: idOf(cancelled.shop),
+			connectedAccount: idOf(cancelled.connectedAccount),
+			...(cancelled.payoutAccount
+				? { payoutAccount: idOf(cancelled.payoutAccount) }
+				: {}),
+			amount: cancelled.amount,
+			currency: cancelled.currency,
+			orders: (cancelled.orders ?? []).map((line) => ({
+				order: idOf(line.order),
+				amount: line.amount,
+			})),
+			origin: "platform_release",
+			status: "pending",
+			statusHistory: [
+				{ status: "pending", source: historySource(options), at },
+			],
+			providerTransferId: event.transferId,
+		},
+		overrideAccess: true,
+		context: PAYOUT_CONTEXT,
+		req,
+	});
+	for (const order of orders) {
+		const completed =
+			order.status === "completed" &&
+			Boolean(order.settlement?.releaseEligibleAt);
+		await updateSettlement(req, order, {
+			payout: mirror.id,
+			...(completed ? { releasedAt: at } : {}),
+		});
+	}
+	const outcome = await applyTransferEvent(req, event, options);
+	return { mirrored: true, payout: mirror, outcome };
+}

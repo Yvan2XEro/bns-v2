@@ -492,22 +492,91 @@ export async function recomputeBalances(
 	payload: Payload,
 	req?: PayloadRequest,
 ): Promise<Map<string, number>> {
-	const categories = await categoriesById(payload, req);
+	const { accounts } = await ledgerIntegrity(payload, req);
+	return new Map(
+		accounts.map(({ account, recomputed }) => [String(account.id), recomputed]),
+	);
+}
+
+export interface LedgerIntegrity {
+	/** Every account with its cached balance (on the row) and the balance its entries give. */
+	accounts: Array<{ account: LedgerAccount; recomputed: number }>;
+	/** Stored postings whose sides differ: never edited, only reported. */
+	unbalanced: Array<{ transaction: string; debit: number; credit: number }>;
+}
+
+/**
+ * One pass over every posting. Run it inside a transaction when the caches
+ * are to be corrected from it, so the read is one snapshot and a posting
+ * landing meanwhile conflicts instead of being overwritten.
+ */
+export async function ledgerIntegrity(
+	payload: Payload,
+	req?: PayloadRequest,
+): Promise<LedgerIntegrity> {
+	const { docs } = await payload.find({
+		collection: "ledger-accounts",
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		...(req ? { req } : {}),
+	});
+	const categories = new Map(docs.map((a) => [String(a.id), a.category]));
 	const balances = new Map<string, number>();
 	for (const id of categories.keys()) balances.set(id, 0);
+	const unbalanced: LedgerIntegrity["unbalanced"] = [];
 	await eachTransaction(payload, undefined, req, (transaction) => {
+		let debits = 0;
+		let credits = 0;
 		for (const entry of transaction.entries) {
 			const id = idOf(entry.account);
 			const category = categories.get(id);
 			if (!category) throw new LedgerPostingError(`unknown account ${id}`);
+			debits += entry.debit;
+			credits += entry.credit;
 			balances.set(
 				id,
 				(balances.get(id) ?? 0) +
 					balanceDelta(category, entry.debit, entry.credit),
 			);
 		}
+		if (debits !== credits) {
+			unbalanced.push({
+				transaction: String(transaction.id),
+				debit: debits,
+				credit: credits,
+			});
+		}
 	});
-	return balances;
+	return {
+		accounts: docs.map((account) => ({
+			account,
+			recomputed: balances.get(String(account.id)) ?? 0,
+		})),
+		unbalanced,
+	};
+}
+
+/**
+ * Sets a drifted cache to what its entries give. A compare-and-swap on the
+ * cached value read: false when the balance moved since, and the next run
+ * decides again. The postings themselves are never touched.
+ */
+export async function correctBalanceCache(
+	req: PayloadRequest,
+	accountId: string,
+	cached: number,
+	recomputed: number,
+): Promise<boolean> {
+	const swapped = await req.payload.db.updateOne({
+		collection: "ledger-accounts",
+		where: {
+			and: [{ id: { equals: accountId } }, { balance: { equals: cached } }],
+		},
+		data: { balance: recomputed },
+		req,
+	});
+	return Boolean(swapped);
 }
 
 /**
