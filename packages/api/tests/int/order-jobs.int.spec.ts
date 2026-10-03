@@ -338,6 +338,7 @@ describe("expireOrders", () => {
 		const result = await expireOrders(payload);
 
 		expect(result).toEqual({
+			paymentExpired: 0,
 			confirmationExpired: 1,
 			sellerTimedOut: 0,
 			remindersSent: 0,
@@ -416,15 +417,96 @@ describe("expireOrders", () => {
 		expect(reminded).toHaveBeenCalledTimes(1);
 	});
 
-	it("leaves a mobile_money order alone in P4", async () => {
+	it("cancels a mobile_money order unpaid 30 min after placement with payment_expired, fails its payment and releases its stock", async () => {
+		const mobileMoney = (overrides: Doc) =>
+			baseOrder({
+				paymentMethod: "mobile_money",
+				paymentStatus: "awaiting_payment",
+				status: "placed",
+				// Deadlines already past prove the COD passes leave it alone:
+				// an unpaid protected order dies of its checkout window only.
+				deadlines: { confirmBy: at(-HOUR), acceptBy: at(-HOUR) },
+				...overrides,
+			});
 		const payload = world({
 			orders: [
-				baseOrder({
-					paymentMethod: "mobile_money",
+				mobileMoney({
 					paymentStatus: "unpaid",
-					status: "placed",
 					timestamps: { placedAt: at(-2 * HOUR) },
-					deadlines: { confirmBy: at(-HOUR), acceptBy: at(-HOUR) },
+				}),
+				mobileMoney({
+					id: "order-2",
+					orderNumber: "BNS-2610-000002",
+					timestamps: { placedAt: at(-30 * 60_000) },
+				}),
+				mobileMoney({
+					id: "order-3",
+					orderNumber: "BNS-2610-000003",
+					timestamps: { placedAt: at(-29 * 60_000) },
+				}),
+			],
+			items: [baseItem({ id: "item-2", order: "order-2" })],
+			variants: [baseVariant({ stockOnHand: 5, stockReserved: 1 })],
+		});
+
+		const result = await expireOrders(payload);
+
+		expect(result).toEqual({
+			paymentExpired: 2,
+			confirmationExpired: 0,
+			sellerTimedOut: 0,
+			remindersSent: 0,
+			errors: 0,
+		});
+		for (const id of ["order-1", "order-2"]) {
+			const order = liveOrder(payload, id);
+			expect([order.status, order.paymentStatus]).toEqual([
+				"cancelled",
+				"failed",
+			]);
+			expect(groupOf(order, "cancellation")).toEqual({
+				by: "system",
+				reason: "payment_expired",
+				note: null,
+			});
+			expect(
+				eventsOf(payload, id).map((row) => [
+					row.type,
+					row.reason,
+					row.statusTo,
+					row.paymentStatusTo,
+				]),
+			).toEqual([
+				["order.cancelled", "payment_expired", "cancelled", "failed"],
+			]);
+		}
+		expect(releases(payload).map((row) => row.order)).toEqual(["order-2"]);
+		expect(payload.store["product-variants"][0].stockReserved).toBe(0);
+		expect(payload.store["product-variants"][0].stockOnHand).toBe(5);
+		const young = liveOrder(payload, "order-3");
+		expect([young.status, young.paymentStatus]).toEqual([
+			"placed",
+			"awaiting_payment",
+		]);
+		expect(eventsOf(payload, "order-3")).toHaveLength(0);
+	});
+
+	it("times out a paid mobile_money order at acceptBy with seller_timeout, and reminds before it", async () => {
+		const paid = (overrides: Doc) =>
+			baseOrder({
+				paymentMethod: "mobile_money",
+				paymentStatus: "paid",
+				status: "paid",
+				timestamps: { placedAt: at(-3 * DAY) },
+				...overrides,
+			});
+		const payload = world({
+			orders: [
+				paid({ deadlines: { acceptBy: at(-HOUR) } }),
+				paid({
+					id: "order-2",
+					orderNumber: "BNS-2610-000002",
+					deadlines: { acceptBy: at(11 * HOUR) },
 				}),
 			],
 		});
@@ -432,16 +514,22 @@ describe("expireOrders", () => {
 		const result = await expireOrders(payload);
 
 		expect(result).toEqual({
+			paymentExpired: 0,
 			confirmationExpired: 0,
-			sellerTimedOut: 0,
-			remindersSent: 0,
+			sellerTimedOut: 1,
+			remindersSent: 1,
 			errors: 0,
 		});
 		const order = liveOrder(payload);
-		expect(order.status).toBe("placed");
-		expect(order.paymentStatus).toBe("unpaid");
-		expect(groupOf(order, "cancellation").reason ?? null).toBeNull();
-		expect(eventsOf(payload)).toHaveLength(0);
+		expect([order.status, order.paymentStatus]).toEqual(["cancelled", "paid"]);
+		expect(groupOf(order, "cancellation")).toMatchObject({
+			by: "system",
+			reason: "seller_timeout",
+		});
+		expect(eventTypes(payload)).toEqual(["order.declined"]);
+		expect(eventTypes(payload, "order-2")).toEqual([
+			"order.accept_reminder_sent",
+		]);
 	});
 
 	it("batches in hundreds and gives each order its own transaction", async () => {

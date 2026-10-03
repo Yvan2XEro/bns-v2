@@ -10,6 +10,7 @@ import {
 import "../services/commission";
 import "../services/orders/chat";
 import "../services/orders/notifications";
+import "../services/checkoutSettlement";
 import "../services/payouts";
 
 export { DISPATCH_ATTEMPT_BUDGET } from "../services/orders/events";

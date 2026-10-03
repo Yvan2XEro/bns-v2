@@ -1,4 +1,4 @@
-import type { Payload } from "payload";
+import type { Payload, PayloadRequest } from "payload";
 import { ERROR_CODES } from "../lib/errors";
 import type { NormalizedPayment, ProviderName } from "../lib/payments/types";
 import {
@@ -40,6 +40,8 @@ export interface CreateIntentInput {
 	>;
 }
 
+export type FailureCode = NonNullable<PaymentIntent["failureCode"]>;
+
 export interface StatusReport {
 	status: IntentStatus;
 	source: StatusSource;
@@ -47,15 +49,23 @@ export interface StatusReport {
 	amount?: number | null;
 	currency?: string | null;
 	note?: string;
+	/** Stored on the intent when the report fails it. */
+	failureCode?: FailureCode | null;
 }
 
 export interface SettleInput extends NormalizedPayment {
 	source: StatusSource;
 	at?: Date;
+	failureCode?: FailureCode | null;
 }
 
 export type AppliedOutcome = {
-	outcome: "applied" | "unchanged" | "ignored" | "amount_mismatch";
+	outcome:
+		| "applied"
+		| "unchanged"
+		| "ignored"
+		| "amount_mismatch"
+		| "late_success";
 	intent: IntentDoc;
 };
 export type SettleOutcome = { outcome: "unknown_reference" } | AppliedOutcome;
@@ -277,8 +287,8 @@ export function markIntentPending(
 
 /**
  * Fails an intent the provider never accepted (`created`/`pending` → `failed`)
- * with a failure code, without running its purpose handler: a provider error
- * at creation is not a payment outcome, the payer was never prompted. Null
+ * with a failure code. The purpose handler runs as for any failure, so a
+ * checkout's last attempt failing at the provider still ends the order. Null
  * when the intent had already moved on.
  */
 export async function failIntentBeforeProvider(
@@ -294,7 +304,7 @@ export async function failIntentBeforeProvider(
 	return withTransaction(payload, async (req) => {
 		const intent = await loadIntent(payload, intentId, req);
 		if (!canTransition(intent.status, "failed")) return null;
-		return saveIntentIf(
+		const failed = await saveIntentIf(
 			payload,
 			intentId,
 			intent.status,
@@ -316,17 +326,92 @@ export async function failIntentBeforeProvider(
 			},
 			req,
 		);
+		if (failed)
+			await PURPOSE_HANDLERS[failed.purpose].onFailed(payload, failed, req);
+		return failed;
 	});
 }
 
 /** Kept out of `statusHistory`: a customer can read their own intent in full. */
 const MISMATCH_NOTE = "the provider reported a different amount";
 
+const reportedOf = (report: StatusReport) => ({
+	amount: report.amount ?? null,
+	currency: report.currency?.toUpperCase() ?? null,
+});
+
+const matchesIntent = (intent: IntentDoc, report: StatusReport) => {
+	const reported = reportedOf(report);
+	return (
+		reported.amount === intent.amount && reported.currency === intent.currency
+	);
+};
+
+/**
+ * A success reported on an intent already closed. A purpose that knows what
+ * to do with the money (`onLateSuccess`) gets the intent flagged once —
+ * status kept, `lateSuccess: true` — and a replay of the same success finds
+ * the flag and writes nothing. Any other purpose keeps P0's ignore-and-alert.
+ */
+async function closedSuccess(
+	payload: Payload,
+	intent: IntentDoc,
+	report: StatusReport,
+	history: HistoryEntry[],
+	at: string,
+	req: PayloadRequest,
+): Promise<AppliedOutcome | null> {
+	const handler = PURPOSE_HANDLERS[intent.purpose];
+	const id = String(intent.id);
+	if (!handler.onLateSuccess || intent.status === "succeeded") return null;
+	if (intent.lateSuccess) return { outcome: "unchanged", intent };
+	if (!matchesIntent(intent, report)) {
+		logMismatch(payload, intent, report);
+		await handler.onAmountMismatch?.(payload, intent, reportedOf(report), req);
+		return { outcome: "amount_mismatch", intent };
+	}
+	history.push({
+		status: "succeeded",
+		source: report.source,
+		at,
+		note: `late success: intent is ${intent.status}`,
+	});
+	const updated = await saveIntentIf(
+		payload,
+		id,
+		intent.status,
+		{
+			statusHistory: history,
+			lateSuccess: true,
+			settledAmount: report.amount ?? null,
+			settledCurrency: reportedOf(report).currency,
+		},
+		req,
+	);
+	if (!updated) return null;
+	await handler.onLateSuccess(payload, updated, req);
+	return { outcome: "late_success", intent: updated };
+}
+
+function logMismatch(
+	payload: Payload,
+	intent: IntentDoc,
+	report: StatusReport,
+): void {
+	payload.logger.error({
+		msg: "[payments] provider amount does not match the intent",
+		code: ERROR_CODES.paymentAmountMismatch,
+		intentId: String(intent.id),
+		expected: { amount: intent.amount, currency: intent.currency },
+		reported: reportedOf(report),
+	});
+}
+
 async function attemptStatus(
 	payload: Payload,
 	intentId: string,
 	report: StatusReport,
-	req: TxReq,
+	req: PayloadRequest,
 ): Promise<AppliedOutcome | null> {
 	const intent = await loadIntent(payload, intentId, req);
 	const at = (report.at ?? new Date()).toISOString();
@@ -339,15 +424,9 @@ async function attemptStatus(
 	// on a closed intent the success belongs to the ignored branch below, which
 	// alerts staff instead of writing a settled amount.
 	if (target === "succeeded" && path.length > 0) {
-		const currency = report.currency?.toUpperCase() ?? null;
-		if (report.amount !== intent.amount || currency !== intent.currency) {
-			payload.logger.error({
-				msg: "[payments] provider amount does not match the intent",
-				code: ERROR_CODES.paymentAmountMismatch,
-				intentId,
-				expected: { amount: intent.amount, currency: intent.currency },
-				reported: { amount: report.amount ?? null, currency },
-			});
+		const currency = reportedOf(report).currency;
+		if (!matchesIntent(intent, report)) {
+			logMismatch(payload, intent, report);
 			history.push({
 				status: "succeeded",
 				source: report.source,
@@ -365,7 +444,14 @@ async function attemptStatus(
 				},
 				req,
 			);
-			return updated ? { outcome: "amount_mismatch", intent: updated } : null;
+			if (!updated) return null;
+			await handler.onAmountMismatch?.(
+				payload,
+				updated,
+				reportedOf(report),
+				req,
+			);
+			return { outcome: "amount_mismatch", intent: updated };
 		}
 	}
 
@@ -377,6 +463,11 @@ async function attemptStatus(
 		else if (target !== "created" && target !== "pending")
 			await handler.onFailed(payload, intent, req);
 		return { outcome: "unchanged", intent };
+	}
+
+	if (path.length === 0 && target === "succeeded") {
+		const late = await closedSuccess(payload, intent, report, history, at, req);
+		if (late) return late;
 	}
 
 	if (path.length === 0) {
@@ -418,6 +509,9 @@ async function attemptStatus(
 	if (target === "succeeded") {
 		data.settledAmount = report.amount ?? null;
 		data.settledCurrency = report.currency?.toUpperCase() ?? null;
+	}
+	if (target === "failed" && report.failureCode) {
+		data.failureCode = report.failureCode;
 	}
 	const updated = await saveIntentIf(
 		payload,
@@ -474,5 +568,6 @@ export async function settlePayment(
 		at: input.at,
 		amount: input.amount,
 		currency: input.currency,
+		failureCode: input.failureCode ?? null,
 	});
 }

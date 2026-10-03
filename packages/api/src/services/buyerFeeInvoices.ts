@@ -1,5 +1,5 @@
 import type { PayloadRequest } from "payload";
-import type { Order } from "../payload-types";
+import type { Order, PaymentIntent } from "../payload-types";
 
 // --- Task 16's seam; Task 22 owns this file and replaces the body ---------
 /**
@@ -15,5 +15,22 @@ export async function issueApplicationFeeCommissionInvoice(
 ): Promise<void> {
 	throw new Error(
 		"services/buyerFeeInvoices.issueApplicationFeeCommissionInvoice lands with P5 Task 22",
+	);
+}
+
+// --- Task 14's seam; Task 22 replaces the body ----------------------------
+/**
+ * The buyer protection fee invoice (series `F`) of the intent that paid the
+ * order. Called by `services/checkoutSettlement.ts` in its own transaction
+ * once the settlement has committed — only for the settling intent, never a
+ * duplicate or a late payment, whose fee is refunded.
+ */
+export async function issueBuyerFeeInvoice(
+	_req: PayloadRequest,
+	_order: Order,
+	_intent: PaymentIntent,
+): Promise<void> {
+	throw new Error(
+		"services/buyerFeeInvoices.issueBuyerFeeInvoice lands with P5 Task 22",
 	);
 }

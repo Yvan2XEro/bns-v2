@@ -221,6 +221,8 @@ interface EndOrderOptions {
 	actorType: NonNullable<OrderEvent["actorType"]>;
 	actorId?: string | null;
 	actorShopRole?: ShopRole | null;
+	/** Overrides the COD default below: an unpaid protected order dies `failed`. */
+	paymentStatus?: Order["paymentStatus"];
 }
 
 /**
@@ -243,9 +245,11 @@ async function endOrder(
 		order,
 		{
 			status: "cancelled",
-			...(order.paymentStatus === "cod_pending"
-				? { paymentStatus: "unpaid" as const }
-				: {}),
+			...(opts.paymentStatus
+				? { paymentStatus: opts.paymentStatus }
+				: order.paymentStatus === "cod_pending"
+					? { paymentStatus: "unpaid" as const }
+					: {}),
 			set: {
 				cancellation: {
 					by: opts.by,
@@ -699,5 +703,24 @@ export async function declineByTimeout(
 		by: "system",
 		reason: "seller_timeout",
 		actorType: "system",
+	});
+}
+
+/**
+ * A `mobile_money` order whose payment never arrived: the checkout window
+ * closed (`expireOrders`) or the last attempt failed or expired
+ * (`checkoutSettlement`). `paymentStatus` goes to `failed` with the status, in
+ * the caller's transaction, and the stock is released like any other death.
+ */
+export async function cancelByPaymentExpiry(
+	req: PayloadRequest,
+	order: Order,
+): Promise<{ order: Order; event: OrderEvent }> {
+	return endOrder(req, order, {
+		eventType: "order.cancelled",
+		by: "system",
+		reason: "payment_expired",
+		actorType: "system",
+		paymentStatus: "failed",
 	});
 }

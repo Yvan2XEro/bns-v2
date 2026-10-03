@@ -520,22 +520,36 @@ export async function orderBalances(
 	req: PayloadRequest,
 	orderId: string,
 ): Promise<Partial<Record<LedgerCategory, number>>> {
+	return balancesWhere(req, { order: { equals: orderId } });
+}
+
+/**
+ * The position of one payment intent's own postings. A duplicate or late
+ * checkout payment is posted with the intent and no order (Task 14), so its
+ * refund draws on this rather than on the order the buyer actually paid.
+ */
+export async function intentBalances(
+	req: PayloadRequest,
+	intentId: string,
+): Promise<Partial<Record<LedgerCategory, number>>> {
+	return balancesWhere(req, { paymentIntent: { equals: intentId } });
+}
+
+async function balancesWhere(
+	req: PayloadRequest,
+	where: Where,
+): Promise<Partial<Record<LedgerCategory, number>>> {
 	const categories = await categoriesById(req.payload, req);
 	const totals: Partial<Record<LedgerCategory, number>> = {};
-	await eachTransaction(
-		req.payload,
-		{ order: { equals: orderId } },
-		req,
-		(transaction) => {
-			for (const entry of transaction.entries) {
-				const category = categories.get(idOf(entry.account));
-				if (!category) continue;
-				totals[category] =
-					(totals[category] ?? 0) +
-					balanceDelta(category, entry.debit, entry.credit);
-			}
-		},
-	);
+	await eachTransaction(req.payload, where, req, (transaction) => {
+		for (const entry of transaction.entries) {
+			const category = categories.get(idOf(entry.account));
+			if (!category) continue;
+			totals[category] =
+				(totals[category] ?? 0) +
+				balanceDelta(category, entry.debit, entry.credit);
+		}
+	});
 	return totals;
 }
 

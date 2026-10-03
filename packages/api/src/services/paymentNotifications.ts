@@ -229,3 +229,41 @@ export async function notifyPayoutHoldPlaced(
 		checkPayoutAccount: notice.checkPayoutAccount,
 	});
 }
+
+// --- Checkout settlement notices (Task 14's seam; Task 21 implements) ------
+export interface PaymentNotice {
+	orderId: string;
+	orderNumber: string;
+	intentId: string;
+	buyerId: string | null;
+	shopId: string | null;
+	amount: number;
+	currency: string;
+}
+
+/** `payment-succeeded`: the buyer. */
+export async function notifyPaymentSucceeded(
+	_payload: Payload,
+	_notice: PaymentNotice,
+): Promise<void> {
+	throw pending("notifyPaymentSucceeded");
+}
+
+/** `order-paid`: the owner and managers, who now have until `acceptBy`. */
+export async function notifyOrderPaid(
+	_payload: Payload,
+	_notice: PaymentNotice & { acceptBy: string },
+): Promise<void> {
+	throw pending("notifyOrderPaid");
+}
+
+/** `payment-failed`: the buyer, on the final failure or the expiry only. */
+export async function notifyPaymentFailed(
+	_payload: Payload,
+	_notice: PaymentNotice & {
+		status: "failed" | "expired";
+		failureCode: string | null;
+	},
+): Promise<void> {
+	throw pending("notifyPaymentFailed");
+}

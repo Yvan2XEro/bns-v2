@@ -4625,6 +4625,7 @@ export interface TaskDispatchOrderEvent {
 export interface TaskExpireOrders {
   input?: unknown;
   output: {
+    paymentExpired?: number | null;
     confirmationExpired?: number | null;
     sellerTimedOut?: number | null;
     remindersSent?: number | null;

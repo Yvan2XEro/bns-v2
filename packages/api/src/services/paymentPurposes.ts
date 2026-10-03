@@ -1,16 +1,40 @@
-import type { Payload } from "payload";
-import type { TxReq } from "../lib/transactions";
+import type { Payload, PayloadRequest } from "payload";
 import type { PaymentIntent } from "../payload-types";
 import { activateBoostPayment, failBoostPayment } from "./boostActivation";
+import {
+	alertCheckoutAmountMismatch,
+	settleCheckoutIntent,
+} from "./checkoutSettlement";
 import { applyCommissionSettlement } from "./commission";
+
+export interface ReportedAmount {
+	amount: number | null;
+	currency: string | null;
+}
 
 export interface PurposeHandler {
 	onSucceeded(
 		payload: Payload,
 		intent: PaymentIntent,
-		req: TxReq,
+		req: PayloadRequest,
 	): Promise<void>;
-	onFailed(payload: Payload, intent: PaymentIntent, req: TxReq): Promise<void>;
+	onFailed(
+		payload: Payload,
+		intent: PaymentIntent,
+		req: PayloadRequest,
+	): Promise<void>;
+	/** A success on an intent already closed; without it, P0 ignores the report. */
+	onLateSuccess?(
+		payload: Payload,
+		intent: PaymentIntent,
+		req: PayloadRequest,
+	): Promise<void>;
+	onAmountMismatch?(
+		payload: Payload,
+		intent: PaymentIntent,
+		reported: ReportedAmount,
+		req: PayloadRequest,
+	): Promise<void>;
 }
 
 export const PURPOSE_HANDLERS: Record<
@@ -35,16 +59,17 @@ export const PURPOSE_HANDLERS: Record<
 			// retry through `payInvoice`.
 		},
 	},
-	// Fails loud until P5's checkout settlement is wired in (Task 14): an
-	// error rolls the transition back and leaves the webhook event to be
-	// retried, where a silent no-op would mark a paid order's intent settled
-	// without ever touching the order.
 	checkout: {
-		onSucceeded: async () => {
-			throw new Error("checkout intents are not settled yet");
+		onSucceeded: async (_payload, intent, req) => {
+			await settleCheckoutIntent(req, intent);
 		},
-		onFailed: async () => {
-			throw new Error("checkout intents are not settled yet");
+		onFailed: async (_payload, intent, req) => {
+			await settleCheckoutIntent(req, intent);
 		},
+		onLateSuccess: async (_payload, intent, req) => {
+			await settleCheckoutIntent(req, intent);
+		},
+		onAmountMismatch: (_payload, intent, reported, req) =>
+			alertCheckoutAmountMismatch(req, intent, reported),
 	},
 };

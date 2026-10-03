@@ -1,9 +1,11 @@
 import type { Payload, PayloadRequest, TaskConfig, Where } from "payload";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
+import { getPaymentSettings } from "../lib/paymentSettings";
 import { relationId } from "../lib/relationId";
 import type { Order } from "../payload-types";
 import {
 	cancelByConfirmationExpiry,
+	cancelByPaymentExpiry,
 	declineByTimeout,
 } from "../services/orders/acceptance";
 import { queueOrderEvent } from "../services/orders/events";
@@ -13,17 +15,31 @@ import { eachOrder, ORDER_QUEUE, selectOrders } from "./orderSweep";
 /** The spec's reminder lead time: `acceptBy − 12 h`. */
 const ACCEPT_REMINDER_LEAD_MS = 12 * 60 * 60 * 1000;
 
-/**
- * P4 expires cash-on-delivery orders only. A `mobile_money` order still
- * unpaid past the checkout window dies with `payment_expired`, and a `paid`
- * order past `acceptBy` dies with `seller_timeout` — both rows belong to P5,
- * which owns the `paid` status this phase may not even write.
- */
+/** Only cash on delivery is confirmed by the buyer; a protected order is confirmed by paying. */
 const COD_ONLY: Where = { paymentMethod: { equals: "cod" } };
+
+/**
+ * Orders the shop still has to accept: a COD order before acceptance, or a
+ * protected order once paid — its `acceptBy` runs from `paidAt`
+ * (`checkoutSettlement`). An unpaid protected order is never the shop's to
+ * accept, so its own death is the checkout window below, not `acceptBy`.
+ */
+const AWAITING_ACCEPTANCE: Where = {
+	or: [
+		{ and: [COD_ONLY, { status: { in: ["placed", "confirmed"] } }] },
+		{
+			and: [
+				{ paymentMethod: { equals: "mobile_money" } },
+				{ status: { equals: "paid" } },
+			],
+		},
+	],
+};
 
 const ACCEPT_REMINDER_EVENT = "order.accept_reminder_sent";
 
 export interface ExpireOrdersResult {
+	paymentExpired: number;
 	confirmationExpired: number;
 	sellerTimedOut: number;
 	remindersSent: number;
@@ -98,14 +114,15 @@ async function sendAcceptReminder(
 }
 
 /**
- * The deadline sweep: confirmation expiry, the acceptance timeout, and the
- * reminder that precedes it. `acceptance.ts` owns both deaths, so a
- * system-driven cancellation writes exactly what a human-driven one writes;
- * this job decides only which orders are due.
+ * The deadline sweep: the unpaid protected order's checkout window,
+ * confirmation expiry, the acceptance timeout, and the reminder that
+ * precedes it. `acceptance.ts` owns every death, so a system-driven
+ * cancellation writes exactly what a human-driven one writes; this job
+ * decides only which orders are due.
  *
- * The three passes query in turn rather than in parallel: an order past both
- * `confirmBy` and `acceptBy` is cancelled by the first pass, and the second
- * pass's own query no longer finds it.
+ * The passes query in turn rather than in parallel: an order past both
+ * `confirmBy` and `acceptBy` is cancelled by the first pass that finds it,
+ * and the next pass's own query no longer does.
  */
 export async function expireOrders(
 	payload: Payload,
@@ -113,11 +130,39 @@ export async function expireOrders(
 	const now = new Date();
 	const nowIso = now.toISOString();
 	const result: ExpireOrdersResult = {
+		paymentExpired: 0,
 		confirmationExpired: 0,
 		sellerTimedOut: 0,
 		remindersSent: 0,
 		errors: 0,
 	};
+
+	// A success landing after this is refunded as `late_payment` by the
+	// settlement, so the window can close without waiting on the provider.
+	const { checkoutExpiryMinutes } = await getPaymentSettings(payload);
+	const unpaid = await selectOrders(payload, {
+		and: [
+			{ status: { equals: "placed" } },
+			{ paymentMethod: { equals: "mobile_money" } },
+			{ paymentStatus: { in: ["unpaid", "awaiting_payment"] } },
+			{
+				"timestamps.placedAt": {
+					less_than_equal: new Date(
+						now.getTime() - checkoutExpiryMinutes * 60_000,
+					).toISOString(),
+				},
+			},
+		],
+	});
+	result.errors += await eachOrder(
+		payload,
+		unpaid,
+		"expireOrders",
+		async (req, order) => {
+			await cancelByPaymentExpiry(req, order);
+			result.paymentExpired += 1;
+		},
+	);
 
 	const confirmationExpired = await selectOrders(payload, {
 		and: [
@@ -138,8 +183,7 @@ export async function expireOrders(
 
 	const timedOut = await selectOrders(payload, {
 		and: [
-			{ status: { in: ["placed", "confirmed"] } },
-			COD_ONLY,
+			AWAITING_ACCEPTANCE,
 			{ "deadlines.acceptBy": { less_than_equal: nowIso } },
 		],
 	});
@@ -157,8 +201,7 @@ export async function expireOrders(
 
 	const dueForReminder = await selectOrders(payload, {
 		and: [
-			{ status: { in: ["placed", "confirmed"] } },
-			COD_ONLY,
+			AWAITING_ACCEPTANCE,
 			{ "deadlines.acceptBy": { greater_than: nowIso } },
 			{
 				"deadlines.acceptBy": {
@@ -186,6 +229,7 @@ export const expireOrdersTask: TaskConfig<"expireOrders"> = {
 	retries: 1,
 	inputSchema: [],
 	outputSchema: [
+		{ name: "paymentExpired", type: "number" },
 		{ name: "confirmationExpired", type: "number" },
 		{ name: "sellerTimedOut", type: "number" },
 		{ name: "remindersSent", type: "number" },

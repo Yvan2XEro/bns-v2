@@ -32,6 +32,7 @@ import type {
 	Refund,
 } from "../payload-types";
 import {
+	intentBalances,
 	type LedgerSourceType,
 	orderBalances,
 	postingFor,
@@ -300,11 +301,26 @@ async function loadIntent(
 		.catch(() => null);
 }
 
-/** The intent that paid the order: the first checkout intent that succeeded. */
+/**
+ * The intent that paid the order: the one whose `charge` carries the order
+ * (Task 14 tags only the settling payment), else the first that succeeded.
+ * A late success never paid the order, whatever its creation date.
+ */
 async function settlingIntent(
 	req: PayloadRequest,
 	orderId: string,
 ): Promise<PaymentIntent | null> {
+	const { docs: charges } = await req.payload.find({
+		collection: "ledger-transactions",
+		where: {
+			and: [{ order: { equals: orderId } }, { kind: { equals: "charge" } }],
+		},
+		limit: 1,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	const charged = relationId(charges[0]?.paymentIntent);
 	const { docs } = await req.payload.find({
 		collection: "payment-intents",
 		where: {
@@ -321,7 +337,11 @@ async function settlingIntent(
 		overrideAccess: true,
 		req,
 	});
-	return docs.find(isPaid) ?? null;
+	return (
+		docs.find((intent) => charged !== null && String(intent.id) === charged) ??
+		docs.find((intent) => intent.status === "succeeded") ??
+		null
+	);
 }
 
 async function refundsWhere(
@@ -720,12 +740,16 @@ async function ensurePostings(
 	if (!currency) {
 		throw new Error(`[refunds] refund ${refundId} has no intent currency`);
 	}
+	// A duplicate or late payment's charge carries no order (Task 14), so its
+	// refund stays off the order's position too: tagging it would debit the
+	// pending money of the payment the order really kept.
+	const intentScoped = isIntentScoped(row.sourceType);
 	const base = {
 		occurredAt: ctx.now,
 		sourceType: ctx.ledgerSource,
 		sourceId: refundId,
 		currency,
-		order: orderId,
+		...(intentScoped ? {} : { order: orderId }),
 		...(shop ? { shop } : {}),
 		paymentIntent: intentId,
 		refund: refundId,
@@ -752,7 +776,9 @@ async function ensurePostings(
 		const b = breakdownOf(row);
 		const fee = order.amounts?.buyerProtectionFee ?? 0;
 		const feeVat = order.amounts?.buyerProtectionFeeVat ?? 0;
-		const balances = await orderBalances(req, orderId);
+		const balances = intentScoped
+			? await intentBalances(req, intentId)
+			: await orderBalances(req, orderId);
 		await postLedger(req, {
 			...base,
 			kind: "refund_submitted",
@@ -765,7 +791,8 @@ async function ensurePostings(
 							? roundXaf((feeVat * b.buyerProtectionFee) / fee)
 							: 0,
 				sellerPendingAvailable: balances.seller_pending ?? 0,
-				commissionEarned: await commissionEarned(req, orderId),
+				commissionEarned:
+					!intentScoped && (await commissionEarned(req, orderId)),
 			}),
 		});
 	}
