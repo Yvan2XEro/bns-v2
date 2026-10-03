@@ -8,6 +8,7 @@ import {
 import { ERROR_CODES } from "../lib/errors";
 import { nameMatch } from "../lib/nameMatch";
 import { CHANNEL_DIAL_CODES } from "../lib/paymentMath";
+import { getPaymentSettings } from "../lib/paymentSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
@@ -326,10 +327,15 @@ export async function createPayoutAccount(
 	}
 
 	let holdUntil: string | null = null;
+	// The hours come from settings (payments.payoutAccountChangeHoldHours):
+	// the constant is only the reader's own default. Hold and SMS share the
+	// one figure, so the message can never promise a window the hold does not
+	// keep.
+	const holdHours =
+		(await getPaymentSettings(req.payload)).payoutAccountChangeHoldHours ??
+		PAYOUT_CHANGE_HOLD_HOURS;
 	if (status === "active" && previous) {
-		holdUntil = new Date(
-			now.getTime() + PAYOUT_CHANGE_HOLD_HOURS * HOUR_MS,
-		).toISOString();
+		holdUntil = new Date(now.getTime() + holdHours * HOUR_MS).toISOString();
 		await createHold(req, {
 			scope: "shop",
 			shop: shopId,
@@ -354,6 +360,7 @@ export async function createPayoutAccount(
 				await notifyPayoutAccountChanged(payload, {
 					...notice,
 					holdUntil,
+					holdHours,
 					notMeUrl: notMeUrl(shopId, notice.accountId),
 				});
 			}

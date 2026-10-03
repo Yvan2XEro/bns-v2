@@ -477,6 +477,7 @@ describe("a second activation", () => {
 					accountId: view.id,
 					method: "mtn_momo",
 					accountNumberMasked: "+237 6•• •• •4 21",
+					holdHours: 72,
 					holdUntil: until,
 					notMeUrl: `https://buynsellem.com/seller/payments/setup?shop=s-1&notMe=${view.id}`,
 				},

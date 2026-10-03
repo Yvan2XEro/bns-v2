@@ -105,6 +105,7 @@ export interface PayoutAccountNotice {
 
 export interface PayoutAccountChangedNotice extends PayoutAccountNotice {
 	holdUntil: string;
+	holdHours: number;
 	notMeUrl: string;
 }
 
@@ -141,8 +142,13 @@ export async function notifyPayoutAccountReview(
  * (no accent, no ellipsis): one UCS-2 character would turn this two-part
  * message into five. The link is the not-me route, so it is never shortened.
  */
-export function payoutAccountChangedSms(notMeUrl: string): string {
-	return `BuyNSellem: compte de versement modifie, versements bloques 72h. Pas vous? / Payout account changed, payouts held 72h. Not you? ${notMeUrl}`;
+export function payoutAccountChangedSms(
+	notMeUrl: string,
+	holdHours: number,
+): string {
+	// The hours are a setting (payments.payoutAccountChangeHoldHours): frozen
+	// copy would lie the day an admin moves it — the badge's 3% lesson again.
+	return `BuyNSellem: compte de versement modifie, versements bloques ${holdHours}h. Pas vous? / Payout account changed, payouts held ${holdHours}h. Not you? ${notMeUrl}`;
 }
 
 /**
@@ -172,7 +178,7 @@ export async function notifyPayoutAccountChanged(
 	try {
 		await sendSms(payload, {
 			to: owner.phone,
-			message: payoutAccountChangedSms(notice.notMeUrl),
+			message: payoutAccountChangedSms(notice.notMeUrl, notice.holdHours),
 		});
 	} catch (error) {
 		payload.logger.error(
