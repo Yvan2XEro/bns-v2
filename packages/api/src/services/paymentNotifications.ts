@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import type { PayoutMethod } from "../collections/PayoutAccounts";
+import type { ConnectedAccountStatus } from "../lib/payments/marketplace";
 import { relationId } from "../lib/relationId";
 import type { Shop } from "../payload-types";
 import { isNotificationProviderConfigured } from "./notificationProvider";
@@ -80,4 +81,45 @@ export async function notifyPayoutAccountChanged(
 	_notice: PayoutAccountChangedNotice,
 ): Promise<void> {
 	throw pending("notifyPayoutAccountChanged");
+}
+
+// --- Connected-account notices (Task 9) -----------------------------------
+/**
+ * A connected account went `disabled` or `deauthorized` and a charge-blocking
+ * hold was placed. The owner gets the hold's category only; admins get the
+ * provider status, which is what they have to chase.
+ */
+export async function notifyConnectedAccountLost(
+	payload: Payload,
+	input: { shopId: string; status: ConnectedAccountStatus },
+) {
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: input.shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (!shop) return;
+	await trigger("payout-hold-placed", relationId(shop.owner), {
+		shopId: input.shopId,
+		shopName: shop.name,
+		reasonCategory: "security",
+	});
+	const { docs: admins } = await payload.find({
+		collection: "users",
+		where: { role: { equals: "admin" } },
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	for (const admin of admins) {
+		await trigger("payments-connected-account-lost", String(admin.id), {
+			shopId: input.shopId,
+			shopName: shop.name,
+			status: input.status,
+		});
+	}
 }

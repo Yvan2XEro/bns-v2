@@ -311,6 +311,19 @@ const envAllows = (env: PaymentEnv): boolean =>
 	env.PROTECTED_PAYMENT_ALLOWED === "true";
 
 /**
+ * The country-independent half of `isProtectedPaymentOpen`: the flag, the env
+ * and the gates. Callers that must tell `payment.protectedDisabled` apart from
+ * `payment.marketUnavailable` ask this first.
+ */
+export function isProtectedPaymentFlagOpen(
+	settings: PaymentSettings,
+	env: PaymentEnv = process.env,
+): boolean {
+	if (!settings.protectedPayment.enabled || !envAllows(env)) return false;
+	return missingGates(settings.gates, settings.releaseModel).length === 0;
+}
+
+/**
  * Whether a buyer in this country may pay by protected payment right now.
  * Re-checks the gates and the env on every read, so a gate row deleted or the
  * env var withdrawn after the flag was saved closes the feature at once.
@@ -320,9 +333,7 @@ export function isProtectedPaymentOpen(
 	countryCode: string,
 	env: PaymentEnv = process.env,
 ): boolean {
-	if (!settings.protectedPayment.enabled || !envAllows(env)) return false;
-	if (missingGates(settings.gates, settings.releaseModel).length > 0)
-		return false;
+	if (!isProtectedPaymentFlagOpen(settings, env)) return false;
 	try {
 		return resolveSettlement(settings, countryCode).enabled;
 	} catch {
