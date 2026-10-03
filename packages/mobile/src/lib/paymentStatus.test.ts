@@ -217,7 +217,19 @@ describe("holdReasonCategory", () => {
 describe("the payments namespace", () => {
 	test("has the same keys in en and fr", () => {
 		expect(Object.keys(frNs).sort()).toEqual(Object.keys(enNs).sort());
-		expect(Object.keys(enNs)).toHaveLength(149);
+		// 149 at Task 7's close. Task 28 added 10 screen-copy keys of its own
+		// (seller_*, setup_* and payout_* — the hub, setup and payout-detail
+		// screens), never touching a key outside those prefixes: four of them
+		// (seller_noAccess, seller_providerSchedule, setup_cooldownUntil,
+		// setup_notMeConfirmed) match Task 25's web additions name and text —
+		// see payment-vocab-parity.int.spec.ts on the API side, which is what
+		// pins the two clients' copy to each other, not this file. The other
+		// six (seller_payoutAccountNotSet, seller_holdOnOrder, payout_notFound,
+		// setup_fieldInvalid, setup_saveFailed, setup_onboardingFailed) have no
+		// web counterpart: mobile shows them as toast titles and empty-state
+		// screens, a paradigm web's inline-disabled-button approach does not
+		// need the same copy for.
+		expect(Object.keys(enNs)).toHaveLength(159);
 	});
 
 	test("carries the same placeholders in both languages, in i18next's double braces", () => {

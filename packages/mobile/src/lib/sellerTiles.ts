@@ -30,6 +30,12 @@ const TILES: ReadonlyArray<{
 		permission: "payments.view",
 		orders: true,
 	},
+	{
+		key: "payments",
+		href: "/seller/payments",
+		permission: "payments.view",
+		orders: true,
+	},
 	{ key: "team", href: "/seller/team", permission: "team.view" },
 	{ key: "activity", href: "/seller/activity", permission: "activity.view" },
 	{ key: "settings", href: "/shop/manage", permission: "settings.edit" },
@@ -45,6 +51,8 @@ export interface SellerTileCounts {
 	lowStock: number;
 	/** `counts.to_accept` off the shop's order list. */
 	toAccept?: number;
+	/** The payments view's own `holds.length` — see `sellerPaymentsActionCount`. */
+	paymentsHolds?: number;
 }
 
 /** A zero badge is omitted, not rendered: "0" beside a tile reads as broken. */
@@ -57,6 +65,7 @@ export function visibleSellerTiles(
 		inbox: counts.inboxUnread,
 		stock: counts.lowStock,
 		orders: counts.toAccept ?? 0,
+		payments: counts.paymentsHolds ?? 0,
 	};
 	return TILES.filter(
 		(tile) =>

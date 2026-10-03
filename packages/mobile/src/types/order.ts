@@ -18,9 +18,14 @@
  */
 import type { OrderStatusName } from "../lib/orderStatus";
 import type {
+	ConnectedAccountStatus,
+	HoldCategory,
 	PaymentChannel,
 	PaymentFailureCode,
 	PaymentIntentStatus,
+	PayoutAccountStatus,
+	PayoutMethod,
+	PayoutStatus,
 } from "../lib/paymentStatus";
 
 export type { OrderStatusName, ShopOrderTab } from "../lib/orderStatus";
@@ -539,6 +544,95 @@ export interface BillingView {
 		ordersCount: number;
 	};
 	restricted: { since: string; reason: "commission_overdue" | "staff" } | null;
+}
+
+// --- Protected payment (seller) --------------------------------------------
+
+/**
+ * `holds[]` on both `SellerPaymentsView` and `PaymentSetupView` — category
+ * only, never an amount or an order id (the owner sees the category, never
+ * which order or how much; `services/connectedAccounts.ts`'s `holdsView`).
+ */
+export interface PaymentHoldView {
+	scope: "shop" | "order";
+	reasonCategory: HoldCategory;
+	until: string | null;
+}
+
+export interface SellerPaymentsAmounts {
+	awaitingDelivery: number;
+	inWithdrawalPeriod: number;
+	/** `null` under the `provider_schedule` release model: the provider pays
+	 * out on its own schedule, which the screen must not read as zero. */
+	readyForPayout: number | null;
+	payoutInTransit: number;
+	paidThisMonth: number;
+	currency: string;
+}
+
+export interface SellerPayoutRow {
+	id: string;
+	date: string;
+	amount: number;
+	fee: number;
+	destinationMasked: string;
+	status: PayoutStatus;
+}
+
+export interface SellerPaymentsOrderRow {
+	orderId: string;
+	orderNumber: string;
+	goods: number;
+	delivery: number;
+	commissionHt: number;
+	vat: number;
+	netToYou: number;
+	status: OrderStatus;
+	releaseDate: string | null;
+}
+
+/** `GET /api/shops/{id}/payments` — `services/sellerPayments.ts`'s `SellerPaymentsView`. */
+export interface SellerPaymentsView {
+	amounts: SellerPaymentsAmounts;
+	payouts: SellerPayoutRow[];
+	orders: SellerPaymentsOrderRow[];
+	holds: PaymentHoldView[];
+}
+
+/** `GET /api/shops/{id}/payments/payouts/{payoutId}`. */
+export interface SellerPayoutDetail extends SellerPayoutRow {
+	currency: string;
+	orders: Array<{ orderId: string; orderNumber: string; amount: number }>;
+	statusHistory: Array<{ status: PayoutStatus; at: string }>;
+}
+
+/** `GET /api/shops/{id}/payments/setup` — `connectedAccounts.ts`'s `PaymentSetupView`. */
+export interface PaymentSetupView {
+	flagEnabled: boolean;
+	eligible: boolean;
+	ineligibleReason: null | "level" | "shopStatus" | "market";
+	connectedAccount: null | {
+		status: ConnectedAccountStatus;
+		chargesEnabled: boolean;
+		payoutsEnabled: boolean;
+		requirementsDue: string[];
+		lastSyncedAt: string | null;
+	};
+	payoutAccount: null | {
+		method: PayoutMethod;
+		accountName: string;
+		accountNumberMasked: string;
+		status: PayoutAccountStatus;
+		activatedAt: string | null;
+	};
+	/** Loosely typed on the wire (a row mid-review, not yet the active one). */
+	pendingAccount: null | {
+		method: string;
+		accountNumberMasked: string;
+		status: string;
+	};
+	holds: PaymentHoldView[];
+	changeCooldownUntil: string | null;
 }
 
 // --- The shop's own order settings ----------------------------------------

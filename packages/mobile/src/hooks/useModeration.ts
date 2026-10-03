@@ -7,6 +7,7 @@ import {
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { isModerator } from "../lib/moderation";
+import type { PayoutHoldReason } from "../lib/paymentStatus";
 import type {
 	ListingDoc,
 	ModerationShopSheet,
@@ -304,4 +305,107 @@ export function useUnsuspendShop() {
 			queryClient.invalidateQueries({ queryKey: ["listings"] });
 		},
 	});
+}
+
+// ─── Payments section (P5): `/api/moderation/shops/{id}/payouts` ─────────────
+
+export interface PayoutAccountDecisionResult {
+	accountId: string;
+	status: string;
+	replacedAccountIds: string[];
+	holdUntil: string | null;
+}
+
+/** Every one of these mutations invalidates only the shop sheet — the
+ * payments block they change lives nowhere else on the client. */
+function useShopPaymentsMutation<TVars extends { shopId: string }, TData>(
+	mutationFn: (vars: TVars) => Promise<TData>,
+) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn,
+		onSuccess: (_data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: moderationKeys.shop(variables.shopId),
+			});
+		},
+	});
+}
+
+export function useHoldShopPayouts() {
+	return useShopPaymentsMutation(
+		({
+			shopId,
+			reason,
+			untilDays,
+			note,
+		}: {
+			shopId: string;
+			reason: PayoutHoldReason;
+			untilDays: number | null;
+			note?: string;
+		}) =>
+			api.post<{ id: string }>(`/api/moderation/shops/${shopId}/payouts`, {
+				action: "hold",
+				scope: "shop",
+				reason,
+				untilDays,
+				note,
+			}),
+	);
+}
+
+export function useReleasePayoutHold() {
+	return useShopPaymentsMutation(
+		({
+			shopId,
+			holdId,
+			note,
+		}: {
+			shopId: string;
+			holdId: string;
+			note?: string;
+		}) =>
+			api.post<{ id: string }>(`/api/moderation/shops/${shopId}/payouts`, {
+				action: "release",
+				holdId,
+				note,
+			}),
+	);
+}
+
+export function useApprovePayoutAccount() {
+	return useShopPaymentsMutation(
+		({
+			shopId,
+			accountId,
+			note,
+		}: {
+			shopId: string;
+			accountId: string;
+			note?: string;
+		}) =>
+			api.post<PayoutAccountDecisionResult>(
+				`/api/moderation/shops/${shopId}/payouts`,
+				{ action: "approve_account", accountId, note },
+			),
+	);
+}
+
+export function useRejectPayoutAccount() {
+	return useShopPaymentsMutation(
+		({
+			shopId,
+			accountId,
+			note,
+		}: {
+			shopId: string;
+			accountId: string;
+			note?: string;
+		}) =>
+			api.post<PayoutAccountDecisionResult>(
+				`/api/moderation/shops/${shopId}/payouts`,
+				{ action: "reject_account", accountId, note },
+			),
+	);
 }

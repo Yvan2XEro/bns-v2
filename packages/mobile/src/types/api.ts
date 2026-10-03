@@ -7,6 +7,14 @@
  *  • /api/public/*   → custom Next.js routes, own response shapes (see below)
  *  • /api/{collection}/* → Payload REST — standard PayloadPage<T> shape
  */
+import type {
+	ConnectedAccountStatus,
+	HoldCategory,
+	NameMatchVerdict,
+	PayoutHoldReason,
+	PayoutMethod,
+	PayoutStatus,
+} from "../lib/paymentStatus";
 
 // ─── Shared / Primitives ──────────────────────────────────────────────────────
 
@@ -981,6 +989,78 @@ export interface ModerationShopSheet {
 	 * stripped (`null`) on `variant.cost_changed`: a moderator has no business
 	 * reading a shop's margins. */
 	activity: ShopActivityView[];
+	payments: ShopPaymentsSheet;
+}
+
+// ─── Moderation: the shop sheet's payments block (P5) ─────────────────────────
+
+/**
+ * Staff see the hold's reason and its note, unlike the seller's own setup
+ * view, which gets the category alone (`PaymentHoldView` in `types/order.ts`).
+ */
+export interface ShopPaymentsHold {
+	id: string;
+	scope: "shop" | "order";
+	orderId: string | null;
+	reason: PayoutHoldReason;
+	reasonCategory: HoldCategory;
+	blocksCharges: boolean;
+	until: string | null;
+	createdByType: "system" | "moderator";
+	createdBy: string | null;
+	note: string | null;
+	createdAt: string;
+}
+
+export interface ShopPaymentsPendingAccount {
+	id: string;
+	method: PayoutMethod;
+	accountName: string;
+	accountNumberMasked: string;
+	nameMatch: null | {
+		result: NameMatchVerdict;
+		identityName: string | null;
+		score: number | null;
+	};
+	createdAt: string;
+}
+
+export interface ShopRefundRateView {
+	windowDays: number;
+	/** Protected orders created in the window. */
+	orders: number;
+	/** Of those, the ones with at least one refund that did not fail. */
+	refundedOrders: number;
+}
+
+/** `payments` on `GET /api/moderation/shops/:id` — `services/moderation.ts`'s `shopPaymentsSheet`. */
+export interface ShopPaymentsSheet {
+	connectedAccount: null | {
+		status: ConnectedAccountStatus;
+		chargesEnabled: boolean;
+		payoutsEnabled: boolean;
+		lastSyncedAt: string | null;
+	};
+	payoutAccount: null | {
+		id: string;
+		method: PayoutMethod;
+		accountName: string;
+		accountNumberMasked: string;
+		activatedAt: string | null;
+	};
+	pendingAccounts: ShopPaymentsPendingAccount[];
+	holds: ShopPaymentsHold[];
+	openExposure: number;
+	lastPayouts: Array<{
+		id: string;
+		amount: number;
+		currency: string;
+		status: PayoutStatus;
+		origin: "platform_release" | "provider_schedule";
+		failureReason: string | null;
+		createdAt: string;
+	}>;
+	refundRate: ShopRefundRateView;
 }
 
 /** A row of `ModerationShopSheet.team`. No `inboxNotifications` or

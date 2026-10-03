@@ -58,6 +58,7 @@ describe("the order tiles", () => {
 			"stock",
 			"inbox",
 			"billing",
+			"payments",
 			"team",
 			"activity",
 			"settings",
@@ -71,6 +72,7 @@ describe("the order tiles", () => {
 		}).map((t) => t.key);
 		expect(keys).not.toContain("orders");
 		expect(keys).not.toContain("billing");
+		expect(keys).not.toContain("payments");
 		expect(keys).toHaveLength(7);
 	});
 
@@ -92,12 +94,28 @@ describe("the order tiles", () => {
 		).toBeUndefined();
 	});
 
-	test("point at the order and billing screens", () => {
+	test("point at the order, billing and payments screens", () => {
 		const tiles = visibleSellerTiles("owner", counts, on);
 		expect(tiles.find((t) => t.key === "orders")?.href).toBe("/seller/orders");
 		expect(tiles.find((t) => t.key === "billing")?.href).toBe(
 			"/seller/billing",
 		);
+		expect(tiles.find((t) => t.key === "payments")?.href).toBe(
+			"/seller/payments",
+		);
+	});
+
+	test("carries the holds count as the payments badge, and no zero", () => {
+		expect(
+			visibleSellerTiles("owner", { ...counts, paymentsHolds: 2 }, on).find(
+				(t) => t.key === "payments",
+			)?.badge,
+		).toBe(2);
+		expect(
+			visibleSellerTiles("owner", { ...counts, paymentsHolds: 0 }, on).find(
+				(t) => t.key === "payments",
+			)?.badge,
+		).toBeUndefined();
 	});
 
 	test("read the order list only when the orders tile shows", () => {

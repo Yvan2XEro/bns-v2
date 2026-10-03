@@ -24,13 +24,16 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
+import { useSellerPayments } from "@/src/hooks/useSellerPayments";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildChecklistSteps } from "@/src/lib/sellerChecklist";
+import { sellerPaymentsActionCount } from "@/src/lib/sellerPayments";
 import { showsOrdersTile, visibleSellerTiles } from "@/src/lib/sellerTiles";
 import { shopUrl } from "@/src/lib/shopHandle";
+import { can } from "@/src/lib/shopRoles";
 import { badgeLabelKey, canOpenRequest } from "@/src/lib/verification";
 import type {
 	BadgeLevel,
@@ -168,6 +171,13 @@ function SellerHubContent({
 	});
 	const toAccept = toAcceptList.data?.pages[0]?.counts.to_accept ?? 0;
 
+	// Same shape as the orders badge above: the tile's own hub screen reads
+	// everything else this view carries, so the hub fetches only what makes
+	// the badge honest rather than a second, lighter endpoint.
+	const readsPayments = ordersEnabled && can(role, "payments.view");
+	const paymentsView = useSellerPayments(readsPayments ? shop.id : undefined);
+	const paymentsHolds = sellerPaymentsActionCount(paymentsView.data);
+
 	const share = () => {
 		const url = shopUrl(shop.handle, webUrl);
 		Share.share({ message: `${shop.name}\n${url}`, url });
@@ -236,6 +246,16 @@ function SellerHubContent({
 			body: t("seller.tileBillingBody"),
 			onPress: () => router.push("/seller/billing"),
 		},
+		payments: {
+			icon: "wallet-outline",
+			title: t("seller.tilePayments"),
+			body:
+				paymentsHolds > 0
+					? t("seller.tilePaymentsHold", { count: paymentsHolds })
+					: t("seller.tilePaymentsBody"),
+			alert: paymentsHolds > 0,
+			onPress: () => router.push("/seller/payments"),
+		},
 		catalogue: {
 			icon: "cube-outline",
 			title: t("seller.tileCatalogue"),
@@ -299,7 +319,12 @@ function SellerHubContent({
 
 	const manageTiles: ManageTile[] = visibleSellerTiles(
 		role,
-		{ inboxUnread, lowStock: counts.lowStockVariants, toAccept },
+		{
+			inboxUnread,
+			lowStock: counts.lowStockVariants,
+			toAccept,
+			paymentsHolds,
+		},
 		{ ordersEnabled },
 	).map((tile) => ({
 		key: tile.key,
