@@ -942,10 +942,24 @@ describe("applyRefundEvent", () => {
 describe("clawback and write-off", () => {
 	const REFUND_AT = new Date("2026-10-03T10:00:00.000Z");
 
-	/** o-1 released, then fully refunded under a return hold: its seller part becomes a receivable. */
-	async function receivable() {
+	/**
+	 * o-1 released, then fully refunded under a return hold: its seller part
+	 * becomes a receivable. Paid out by default — the receivable is then a
+	 * real debt; while o-1's money is still unpaid, the next payout batch nets
+	 * it instead (`payouts.ts`).
+	 */
+	async function receivable({ paidOut = true } = {}) {
 		await charge("o-1", PAID_AT);
 		await release("o-1", new Date("2026-10-02T10:00:00.000Z"));
+		if (paidOut) {
+			const o1 = payload.store.orders.find((o) => o.id === "o-1");
+			if (o1) {
+				o1.settlement = {
+					...(o1.settlement as Record<string, unknown>),
+					releasedAt: "2026-10-02T12:00:00.000Z",
+				};
+			}
+		}
 		await withTransaction(payload, (req) =>
 			createHold(req, {
 				scope: "order",
@@ -1028,6 +1042,57 @@ describe("clawback and write-off", () => {
 			(await withTransaction(payload, (req) => orderBalances(req, "o-2")))
 				.seller_pending,
 		).toBe(43_240 - 21_620);
+	});
+
+	it("leaves alone a receivable the order's own unpaid releasable money will net: no debit, no write-off", async () => {
+		await receivable({ paidOut: false });
+		await newOrder("o-2", new Date("2026-10-04T09:00:00.000Z"));
+		expect(await balance("seller_receivable")).toBe(43_240);
+		expect(await balance("seller_releasable")).toBe(43_240);
+
+		const nextDay = await recoverSellerReceivables(payload, {
+			provider: fake,
+			now: new Date("2026-10-05T03:00:00.000Z"),
+		});
+		const day60 = await recoverSellerReceivables(payload, {
+			provider: fake,
+			now: new Date(REFUND_AT.getTime() + 60 * DAY),
+		});
+
+		expect([nextDay.debits, nextDay.writeOffs]).toEqual([[], []]);
+		expect([day60.debits, day60.writeOffs, day60.suspended]).toEqual([
+			[],
+			[],
+			[],
+		]);
+		expect(fake.callsTo("debitConnectedAccount")).toEqual([]);
+		expect(kinds()).not.toContain("guarantee_writeoff");
+		expect(kinds()).not.toContain("clawback_recovered");
+	});
+
+	it("recovers only the part of the receivable the order's unpaid money cannot net", async () => {
+		await receivable({ paidOut: false });
+		// 10,000 of o-1's 43,240 already left in a live payout (an early release).
+		payload.store.payouts = [
+			{
+				id: "po-early",
+				shop: SHOP,
+				status: "complete",
+				origin: "platform_release",
+				amount: 10_000,
+				orders: [{ order: "o-1", amount: 10_000 }],
+			},
+		];
+		await newOrder("o-2", new Date("2026-10-04T09:00:00.000Z"));
+
+		const result = await recoverSellerReceivables(payload, {
+			provider: fake,
+			now: new Date("2026-10-05T03:00:00.000Z"),
+		});
+
+		expect(result.debits).toEqual([
+			{ shop: SHOP, order: "o-2", amount: 10_000, reference: "CB-o-2" },
+		]);
 	});
 
 	it("does not recover from a charge older than the receivable", async () => {

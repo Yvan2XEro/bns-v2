@@ -49,6 +49,7 @@ import {
 	type RefundNoticeInput,
 } from "./paymentNotifications";
 import { activeHolds, createHold } from "./payoutHolds";
+import { receivablesToBeNetted } from "./payouts";
 import { isUniqueViolation } from "./shops";
 
 /** Every refund-service write carries it (AGENTS.md: `overrideAccess` + a context flag). */
@@ -1375,6 +1376,47 @@ function consume(pieces: ReceivablePiece[], amount: number): ReceivablePiece[] {
 	return open;
 }
 
+/**
+ * Takes out of each piece what the next payout batch will net from its own
+ * order's unpaid releasable money (`receivablesToBeNetted`): a refund after
+ * `release` on an order not yet paid out is covered by funds the provider
+ * still holds, so debiting it from a later charge, or writing it off, would
+ * make the seller pay it twice.
+ */
+async function withoutNettable(
+	payload: Payload,
+	pieces: ReceivablePiece[],
+): Promise<ReceivablePiece[]> {
+	if (pieces.length === 0) return pieces;
+	return withTransaction(payload, async (req) => {
+		const byOrder = new Map<string, Map<string, number>>();
+		const open: ReceivablePiece[] = [];
+		for (const piece of pieces) {
+			const posting = await req.payload.findByID({
+				collection: "ledger-transactions",
+				id: piece.transaction,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			});
+			const orderId = relationId(posting.order);
+			let covered = 0;
+			if (posting.kind === "refund_submitted" && orderId) {
+				let nettable = byOrder.get(orderId);
+				if (!nettable) {
+					nettable = await receivablesToBeNetted(req, orderId);
+					byOrder.set(orderId, nettable);
+				}
+				covered = nettable.get(piece.transaction) ?? 0;
+			}
+			const outstanding =
+				piece.outstanding - Math.min(covered, piece.outstanding);
+			if (outstanding > 0) open.push({ ...piece, outstanding });
+		}
+		return open;
+	});
+}
+
 interface ClawbackDebit {
 	orderId: string;
 	amount: number;
@@ -1519,7 +1561,7 @@ async function recoverShop(
 	const inFlight = known
 		.filter((d) => d.status === "pending")
 		.reduce((sum, d) => sum + d.amount, 0);
-	pieces = consume(pieces, inFlight);
+	pieces = await withoutNettable(payload, consume(pieces, inFlight));
 
 	const cutoff = now.getTime() - RECEIVABLE_WRITEOFF_DAYS * DAY_MS;
 	const stale = pieces.filter((p) => p.at <= cutoff);

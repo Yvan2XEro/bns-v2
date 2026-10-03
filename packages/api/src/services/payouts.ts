@@ -29,6 +29,7 @@ import { issueApplicationFeeCommissionInvoice } from "./buyerFeeInvoices";
 import {
 	accountBalance,
 	type LedgerSourceType,
+	ledgerIdempotencyKey,
 	orderBalances,
 	postingFor,
 	postLedger,
@@ -853,42 +854,100 @@ async function netReceivables(
 	shopId: string,
 	unpaid: number,
 ): Promise<void> {
+	for (const { submitted, amount } of await plannedNettings(
+		req,
+		order,
+		unpaid,
+	)) {
+		await postLedger(req, nettingPosting(submitted, order, shopId, amount));
+	}
+}
+
+const nettingPosting = (
+	submitted: LedgerTransaction,
+	order: Order,
+	shopId: string,
+	amount: number,
+) => ({
+	kind: "clawback_recovered" as const,
+	occurredAt: new Date().toISOString(),
+	sourceType: submitted.sourceType as LedgerSourceType,
+	sourceId: submitted.sourceId,
+	currency: currencyOf(order),
+	order: order.id,
+	shop: shopId,
+	...(submitted.refund ? { refund: idOf(submitted.refund) } : {}),
+	entries: postingFor("clawback_recovered", {
+		amount,
+		from: "seller_releasable",
+	}),
+	memo: "refund after release netted before payout",
+});
+
+/** The nettings `netReceivables` would post now: standing refunds not yet netted, oldest first, within `unpaid`. */
+async function plannedNettings(
+	req: PayloadRequest,
+	order: Order,
+	unpaid: number,
+): Promise<Array<{ submitted: LedgerTransaction; amount: number }>> {
 	let available = unpaid;
-	if (available <= 0) return;
+	if (available <= 0) return [];
 	const postings = await orderTransactions(req, order.id, [
 		"refund_submitted",
 		"refund_failed",
+		"clawback_recovered",
 	]);
 	const failed = new Set(
 		postings
 			.filter((t) => t.kind === "refund_failed")
 			.map((t) => idOf(t.reverses)),
 	);
+	const netted = new Set(
+		postings
+			.filter((t) => t.kind === "clawback_recovered")
+			.map((t) => t.idempotencyKey),
+	);
+	const planned: Array<{ submitted: LedgerTransaction; amount: number }> = [];
 	for (const submitted of postings) {
 		if (submitted.kind !== "refund_submitted" || failed.has(submitted.id))
 			continue;
+		const posting = nettingPosting(submitted, order, "", 0);
+		if (netted.has(ledgerIdempotencyKey(posting))) continue;
 		const receivable = (await transactionLines(req, submitted))
 			.filter((l) => l.category === "seller_receivable")
 			.reduce((sum, l) => sum + l.debit, 0);
 		const amount = Math.min(receivable, available);
 		if (amount <= 0) continue;
-		const { created } = await postLedger(req, {
-			kind: "clawback_recovered",
-			occurredAt: new Date().toISOString(),
-			sourceType: submitted.sourceType as LedgerSourceType,
-			sourceId: submitted.sourceId,
-			currency: currencyOf(order),
-			order: order.id,
-			shop: shopId,
-			...(submitted.refund ? { refund: idOf(submitted.refund) } : {}),
-			entries: postingFor("clawback_recovered", {
-				amount,
-				from: "seller_releasable",
-			}),
-			memo: "refund after release netted before payout",
-		});
-		if (created) available -= amount;
+		planned.push({ submitted, amount });
+		available -= amount;
 	}
+	return planned;
+}
+
+/**
+ * How much of each standing refund's receivable (by its `refund_submitted`
+ * posting id) the next batch will net from the order's own unpaid
+ * releasable money. That part is already covered by funds the provider
+ * still holds for the seller, so receivable recovery (`refunds.ts`) must
+ * neither debit it from a later charge nor write it off: the seller would
+ * pay it twice. Empty once the order is paid out.
+ */
+export async function receivablesToBeNetted(
+	req: PayloadRequest,
+	orderId: string,
+): Promise<Map<string, number>> {
+	const order = await req.payload.findByID({
+		collection: "orders",
+		id: orderId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (order.settlement?.releasedAt) return new Map();
+	const releasable = (await orderBalances(req, orderId)).seller_releasable ?? 0;
+	const unpaid = releasable - (await paidOut(req, orderId));
+	const planned = await plannedNettings(req, order, unpaid);
+	return new Map(planned.map((p) => [p.submitted.id, p.amount]));
 }
 
 /** Payouts whose `payout_submitted` has not been posted still sit in `seller_releasable`. */
