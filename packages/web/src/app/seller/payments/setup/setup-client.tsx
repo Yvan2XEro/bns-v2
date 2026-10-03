@@ -184,6 +184,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 						<PayoutAccountForm
 							shopId={shopId}
 							hasActiveAccount={Boolean(view.payoutAccount)}
+							payoutChangeHoldHours={view.payoutChangeHoldHours}
 						/>
 					)
 				)}

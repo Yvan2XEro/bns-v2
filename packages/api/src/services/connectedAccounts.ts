@@ -85,6 +85,10 @@ export interface PaymentSetupView {
 		until: string | null;
 	}>;
 	changeCooldownUntil: string | null;
+	/** `payments.payoutAccountChangeHoldHours`, the same source the hold
+	 * enforcer (`payoutAccounts.ts`) and the SMS (`paymentNotifications.ts`)
+	 * read — never a client-side literal. */
+	payoutChangeHoldHours: number;
 }
 
 const LOST_STATUSES: readonly ConnectedAccountStatus[] = [
@@ -667,5 +671,6 @@ export async function paymentSetupView(
 			: null,
 		holds: holdsView(holds.docs),
 		changeCooldownUntil,
+		payoutChangeHoldHours: settings.payoutAccountChangeHoldHours,
 	};
 }

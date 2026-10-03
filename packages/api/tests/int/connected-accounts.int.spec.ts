@@ -472,6 +472,7 @@ describe("applyAccountEvent", () => {
 			pendingAccount: null,
 			holds: [{ scope: "shop", reasonCategory: "security", until: null }],
 			changeCooldownUntil: null,
+			payoutChangeHoldHours: 72,
 		} satisfies PaymentSetupView);
 	});
 
@@ -669,6 +670,7 @@ describe("paymentSetupView", () => {
 			pendingAccount: null,
 			holds: [],
 			changeCooldownUntil: null,
+			payoutChangeHoldHours: 72,
 		} satisfies PaymentSetupView);
 	});
 
@@ -716,6 +718,7 @@ describe("paymentSetupView", () => {
 			},
 			holds: [],
 			changeCooldownUntil: null,
+			payoutChangeHoldHours: 72,
 		} satisfies PaymentSetupView);
 	});
 
@@ -771,6 +774,7 @@ describe("paymentSetupView", () => {
 			pendingAccount: null,
 			holds: [],
 			changeCooldownUntil: "2026-10-08T10:00:00.000Z",
+			payoutChangeHoldHours: 72,
 		} satisfies PaymentSetupView);
 	});
 
@@ -851,6 +855,7 @@ describe("GET /api/shops/{id}/payments/setup", () => {
 			pendingAccount: null,
 			holds: [],
 			changeCooldownUntil: null,
+			payoutChangeHoldHours: 72,
 		});
 	});
 

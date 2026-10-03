@@ -633,6 +633,8 @@ export interface PaymentSetupView {
 	};
 	holds: PaymentHoldView[];
 	changeCooldownUntil: string | null;
+	/** `payments.payoutAccountChangeHoldHours` — never a client-side literal. */
+	payoutChangeHoldHours: number;
 }
 
 // --- The shop's own order settings ----------------------------------------

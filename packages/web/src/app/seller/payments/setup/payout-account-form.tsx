@@ -25,22 +25,19 @@ import {
 } from "~/lib/payout-account-form";
 import { useLocaleKey } from "../use-locale-key";
 
-/** 72 hours, mirroring the server's `PAYOUT_CHANGE_HOLD_HOURS` in
- * `packages/api/src/services/payoutAccounts.ts`. Not a value the setup view
- * carries on the wire — the same literal is already duplicated in mobile's
- * `setup_changeNotice` copy (Task 7), so this follows that precedent rather
- * than inventing a second convention. */
-const PAYOUT_CHANGE_HOLD_HOURS = 72;
-
 export function PayoutAccountForm({
 	shopId,
 	hasActiveAccount,
+	payoutChangeHoldHours,
 }: {
 	shopId: string;
 	/** An active payout account already exists: saving this form replaces it,
-	 * which is the case the 72-hour notice and "confirm the change" wording
+	 * which is the case the hold notice and "confirm the change" wording
 	 * cover. First-time setup just saves. */
 	hasActiveAccount: boolean;
+	/** `PaymentSetupView.payoutChangeHoldHours` — the server's setting, never
+	 * a client literal. */
+	payoutChangeHoldHours: number;
 }) {
 	const t = useTranslations("Payments");
 	const tRoot = useTranslations();
@@ -80,7 +77,7 @@ export function PayoutAccountForm({
 		<div className="space-y-3">
 			{hasActiveAccount && (
 				<p className="rounded-lg bg-[#FFFBEB] px-3 py-2 text-[#92400E] text-xs">
-					{t("setup_changeNotice", { hours: PAYOUT_CHANGE_HOLD_HOURS })}
+					{t("setup_changeNotice", { hours: payoutChangeHoldHours })}
 				</p>
 			)}
 			<form onSubmit={handleSubmit(onValid)} className="space-y-4" noValidate>

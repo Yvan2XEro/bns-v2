@@ -98,6 +98,8 @@ export interface PaymentSetupView {
 	pendingAccount: PendingPayoutAccountSummary | null;
 	holds: PaymentHoldView[];
 	changeCooldownUntil: string | null;
+	/** `payments.payoutAccountChangeHoldHours` — never a client-side literal. */
+	payoutChangeHoldHours: number;
 }
 
 /** `POST /api/shops/{id}/payout-accounts` and the `not-me` route answer this. */
