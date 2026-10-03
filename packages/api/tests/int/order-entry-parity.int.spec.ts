@@ -236,10 +236,7 @@ describe("an order push opens the right screen on the phone", () => {
 		}
 	});
 
-	// A shop member's copy carries no `audience`, so it falls back to the
-	// buyer's route. Reported as a spec decision, not fixed here: this pins
-	// what the API sends today, and turns red the day that changes.
-	it("order-delivered: both copies open /purchases/{id}, the shop's included", async () => {
+	it("order-delivered: the buyer to their purchase, the shop to its order", async () => {
 		const pushes = await pushesFor("order.delivered", "ev-entry-2");
 		const delivered = pushes.filter((p) => p.event === "order-delivered");
 		expect(
@@ -253,13 +250,13 @@ describe("an order push opens the right screen on the phone", () => {
 				],
 				[
 					"u-owner",
-					{ orderId: "order-1", url: "/purchases/order-1" },
-					"purchases/[id]",
+					{ orderId: "order-1", url: "/seller/orders/order-1" },
+					"seller/orders/[id]",
 				],
 			].sort(),
 		);
 		for (const push of delivered) {
-			expect(schemeScreenFor(push.data)).toBe("purchases/[id]");
+			expect(schemeScreenFor(push.data)).toBe(screenFor(push.data));
 		}
 	});
 
@@ -271,7 +268,16 @@ describe("an order push opens the right screen on the phone", () => {
 				"seller/orders/[id]",
 			],
 			["order-placed", { orderId: "o-1", audience: "buyer" }, "purchases/[id]"],
-			["order-delivered", { orderId: "o-1" }, "purchases/[id]"],
+			[
+				"order-delivered",
+				{ orderId: "o-1", audience: "shop" },
+				"seller/orders/[id]",
+			],
+			[
+				"order-delivered",
+				{ orderId: "o-1", audience: "buyer" },
+				"purchases/[id]",
+			],
 			["order-confirmation-needed", { orderId: "o-1" }, "seller/orders/[id]"],
 			["order-accept-reminder", { orderId: "o-1" }, "seller/orders/[id]"],
 			["order-stale-reminder", { orderId: "o-1" }, "seller/orders/[id]"],

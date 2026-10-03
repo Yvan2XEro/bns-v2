@@ -274,12 +274,13 @@ export const notifyOrderDelivered: OrderEventHandler = async (
 		reviewUrl: `/purchases/${order.id}`,
 	};
 
-	if (buyerId) await fire("order-delivered", buyerId, base);
+	if (buyerId)
+		await fire("order-delivered", buyerId, { ...base, audience: "buyer" });
 	if (!shopId) return;
 
 	const recipients = await recipientsForShop(payload, shopId, "orders.view");
 	for (const subscriberId of recipients) {
-		await fire("order-delivered", subscriberId, base);
+		await fire("order-delivered", subscriberId, { ...base, audience: "shop" });
 	}
 };
 

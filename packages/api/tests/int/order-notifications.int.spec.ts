@@ -279,6 +279,35 @@ describe("order-placed", () => {
 	});
 });
 
+describe("order-delivered", () => {
+	// The push data builder routes on `audience`; without it every shop
+	// member's push opened the buyer's purchase screen.
+	it("marks the buyer's copy 'buyer' and every shop member's copy 'shop'", async () => {
+		const payload = seed(baseOrder({ status: "delivered" }));
+		const order = await freshOrder(payload);
+		await runOrderEventHandlers(payload, order, {
+			id: "ev-delivered-1",
+			order: order.id,
+			type: "order.delivered",
+			visibility: "both",
+			updatedAt: NOW_ISO,
+			createdAt: NOW_ISO,
+		});
+
+		const audiences = callsFor("order-delivered")
+			.map((c) => [c.subscriberId, c.payload.audience])
+			.sort();
+		expect(audiences).toEqual(
+			[
+				["u-buyer", "buyer"],
+				["u-manager", "shop"],
+				["u-owner", "shop"],
+				["u-staff", "shop"],
+			].sort(),
+		);
+	});
+});
+
 describe("order-confirmation-needed", () => {
 	it("fires to shop members, with the buyer's phone risk tier, only when seller_call is required", async () => {
 		const payload = seed(

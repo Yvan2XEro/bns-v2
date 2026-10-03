@@ -1275,8 +1275,9 @@ const workflowSpecs: WorkflowSpec[] = [
 					orderNumber: stringProperty("Order number"),
 					withdrawalUntil: stringProperty("Withdrawal window end, ISO date"),
 					reviewUrl: stringProperty("Where to leave a review"),
+					audience: stringProperty('"buyer" or "shop"'),
 				},
-				["orderId", "orderNumber", "withdrawalUntil", "reviewUrl"],
+				["orderId", "orderNumber", "withdrawalUntil", "reviewUrl", "audience"],
 			),
 			preferences: preferences({ inApp: true, push: true }),
 			steps: [
