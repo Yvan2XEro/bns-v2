@@ -12,6 +12,7 @@ import "../services/orders/chat";
 import "../services/orders/notifications";
 import "../services/checkoutSettlement";
 import "../services/payouts";
+import "../services/fraudTriggers";
 
 export { DISPATCH_ATTEMPT_BUDGET } from "../services/orders/events";
 

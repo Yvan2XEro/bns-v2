@@ -241,6 +241,26 @@ describe("recordWebhookEvent", () => {
 			`sha256:${hashPayload(rawBody)}`,
 		);
 	});
+
+	it("keeps a marketplace transfer body whole: it is not a payment body to rebuild", async () => {
+		const payload = world();
+		const transfer = {
+			providerEventId: "evt_tr_1",
+			type: "transfer/complete",
+			entity: "transfer",
+			reference: "PO-po-1",
+			transferId: "tr_1",
+			amount: 18_400,
+		};
+		await recordWebhookEvent(payload, {
+			provider: "notchpay",
+			event: { ...transfer, providerTransactionId: null },
+			raw: transfer,
+			rawBody: JSON.stringify(transfer),
+		});
+
+		expect(payload.store["webhook-events"][0].raw).toEqual(transfer);
+	});
 });
 
 describe("processWebhookEvent", () => {

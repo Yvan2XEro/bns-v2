@@ -139,7 +139,7 @@ export async function findOrderForPayment(
 /** The order's checkout intents, newest first. */
 async function orderIntents(
 	payload: Payload,
-	order: Order,
+	order: Pick<Order, "id">,
 ): Promise<PaymentIntent[]> {
 	const { docs } = await payload.find({
 		collection: "payment-intents",
@@ -815,4 +815,39 @@ export async function paymentStatusView(
 		}),
 	]);
 	return statusViewOf(fresh, freshIntent);
+}
+
+export interface CheckoutCallbackDeps {
+	provider?: MarketplaceProvider;
+	settings?: PaymentSettings;
+	now?: Date;
+}
+
+/**
+ * The hosted checkout's return to `CHECKOUT_CALLBACK_PATH?orderId=`. The
+ * redirect itself proves nothing: the order's latest intent, while still
+ * open, is verified with the provider and settled like any other report, in
+ * whichever order this and the webhook arrive.
+ */
+export async function settleCheckoutCallback(
+	payload: Payload,
+	orderId: string,
+	deps: CheckoutCallbackDeps = {},
+): Promise<string> {
+	const latest = (await orderIntents(payload, { id: orderId }))[0];
+	if (!latest || !isOpen(latest)) return "no_open_intent";
+	const provider =
+		deps.provider ??
+		getMarketplaceProvider(
+			deps.settings ?? (await getPaymentSettings(payload)),
+		);
+	const report = await provider.verifyPayment(
+		latest.reference ?? `PI-${latest.id}`,
+	);
+	const settled = await settlePayment(payload, {
+		...report,
+		source: "callback",
+		at: deps.now,
+	});
+	return settled.outcome;
 }

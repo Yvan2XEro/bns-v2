@@ -1,5 +1,6 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { appRedirectPage } from "@/lib/appRedirectPage";
 import { getProvider } from "@/lib/payments";
 import { type SettleOutcome, settlePayment } from "@/services/payments";
 
@@ -53,22 +54,7 @@ export async function GET(request: Request) {
 	// Retour vers l'app mobile via deep link
 	if (appReturnUrl) {
 		const deepLink = `${appReturnUrl}?status=${status}&listingId=${encodeURIComponent(listingId)}`;
-		return new Response(
-			`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Retour vers l'app…</title>
-  <script>window.location.replace(${JSON.stringify(deepLink)});</script>
-  <meta http-equiv="refresh" content="0;url=${deepLink}" />
-</head>
-<body style="font-family:sans-serif;text-align:center;padding-top:80px">
-  <p>Redirection vers l'application…</p>
-  <p><a href="${deepLink}">Appuyer ici si la redirection ne fonctionne pas</a></p>
-</body>
-</html>`,
-			{ headers: { "Content-Type": "text/html; charset=utf-8" } },
-		);
+		return appRedirectPage(deepLink);
 	}
 
 	// Retour web — redirection vers le frontend (pas le backend)

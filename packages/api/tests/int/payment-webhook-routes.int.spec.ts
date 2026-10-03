@@ -64,7 +64,13 @@ describe("payment webhook routes", () => {
 	let payload: ReturnType<typeof fakePayload>;
 	const logSpies: Array<ReturnType<typeof vi.spyOn>> = [];
 
+	// The NotchPay URL now feeds the marketplace spine. These cases pin what
+	// it still does in production before any marketplace adapter is
+	// registered: P0's NotchPay verification (payments-webhook.int.spec.ts
+	// covers the spine itself).
 	beforeEach(() => {
+		vi.stubEnv("NODE_ENV", "production");
+		vi.stubEnv("PAYMENTS_PROVIDER", "");
 		process.env.NOTCHPAY_PUBLIC_KEY = "pk_test";
 		process.env.NOTCHPAY_HASH_KEY = HASH_KEY;
 		process.env.STRIPE_SECRET_KEY = "sk_test_routes";
@@ -82,6 +88,7 @@ describe("payment webhook routes", () => {
 	});
 
 	afterEach(() => {
+		vi.unstubAllEnvs();
 		for (const spy of logSpies.splice(0)) spy.mockRestore();
 	});
 

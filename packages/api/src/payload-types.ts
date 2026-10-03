@@ -1493,7 +1493,7 @@ export interface BoostPayment {
  */
 export interface WebhookEvent {
   id: string;
-  provider: 'notchpay' | 'stripe' | 'didit' | 'smileid';
+  provider: 'notchpay' | 'stripe' | 'didit' | 'smileid' | 'fake';
   providerEventId: string;
   type?: string | null;
   reference?: string | null;

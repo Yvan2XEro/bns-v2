@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import type { Payload } from "payload";
+import { getPaymentSettings } from "../lib/paymentSettings";
 import { getProvider } from "../lib/payments";
+import type { MarketplaceProvider } from "../lib/payments/marketplace";
+import { getMarketplaceProvider } from "../lib/payments/marketplaceRegistry";
 import {
 	isRecord,
 	type NormalizedWebhookEvent,
@@ -9,6 +12,7 @@ import {
 } from "../lib/payments/types";
 import { isRetainedWebhookRaw, retainedWebhookRaw } from "../lib/redact";
 import type { PaymentIntent, WebhookEvent } from "../payload-types";
+import { dispatchMarketplaceEvent } from "./marketplaceEvents";
 import { findIntentByReference, settlePayment } from "./payments";
 
 const COLLECTION = "webhook-events" as const;
@@ -47,6 +51,8 @@ export interface WebhookEventFields {
 	type: string;
 	reference?: string | null;
 	providerTransactionId?: string | null;
+	/** A marketplace event's entity; absent on a P0 payment event. */
+	entity?: string;
 }
 
 /** Spread so the rebuilt body satisfies the json field's index signature. */
@@ -122,10 +128,14 @@ export async function recordWebhookEvent(
 	// Those rows are removed outright when the account behind them is deleted
 	// (`lib/verificationRetention.ts`'s `deleteDiditWebhookEvents`), unlike a
 	// payment record, which the law requires kept.
-	const intent = isPaymentProvider(input.provider)
-		? await intentFor(payload, input.event)
-		: null;
-	const raw = !isPaymentProvider(input.provider)
+	// A refund, transfer, account or debit event is not a payment body:
+	// `retainedWebhookRaw` would rebuild it as one and lose the very fields
+	// its applier reads.
+	const paymentBody =
+		isPaymentProvider(input.provider) &&
+		(input.event.entity ?? "payment") === "payment";
+	const intent = paymentBody ? await intentFor(payload, input.event) : null;
+	const raw = !paymentBody
 		? isRecord(input.raw)
 			? input.raw
 			: undefined
@@ -162,13 +172,48 @@ export async function recordWebhookEvent(
 	}
 }
 
+/**
+ * The marketplace provider that signed rows stored under `provider`, or null
+ * when the row is P0's (a P0 provider, or no adapter registered in
+ * production). The registry's provider in this environment is the only one
+ * whose wire shape a marketplace row can be parsed back with.
+ */
+export async function marketplaceProviderFor(
+	payload: Payload,
+	provider: WebhookEvent["provider"],
+): Promise<MarketplaceProvider | null> {
+	try {
+		const marketplace = getMarketplaceProvider(
+			await getPaymentSettings(payload),
+		);
+		return marketplace.id === provider ? marketplace : null;
+	} catch {
+		return null;
+	}
+}
+
+export interface ProcessWebhookDeps {
+	getProvider: (name: ProviderName) => PaymentProvider;
+	marketplaceFor: (
+		payload: Payload,
+		provider: WebhookEvent["provider"],
+	) => Promise<MarketplaceProvider | null>;
+}
+
+const DEFAULT_DEPS: ProcessWebhookDeps = {
+	getProvider,
+	marketplaceFor: marketplaceProviderFor,
+};
+
 export async function processWebhookEvent(
 	payload: Payload,
 	eventId: string,
-	deps: { getProvider: (name: ProviderName) => PaymentProvider } = {
-		getProvider,
-	},
+	deps: Partial<ProcessWebhookDeps> = {},
 ): Promise<{ outcome: string }> {
+	const { getProvider: p0Provider, marketplaceFor } = {
+		...DEFAULT_DEPS,
+		...deps,
+	};
 	const event = await payload.findByID({
 		collection: COLLECTION,
 		id: eventId,
@@ -179,34 +224,43 @@ export async function processWebhookEvent(
 
 	const attempts = (event.attempts ?? 0) + 1;
 	try {
-		// The account-deletion cascade may have already rewritten this event's
-		// body into the same normalised shape `parseWebhookEvent` would
-		// otherwise produce (lib/redact.ts). Re-parsing that flat shape through
-		// a provider's original-wire-format parser finds nothing — a queued
-		// retry for a payment that settles the moment its owner's account is
-		// deleted must still resolve, not silently stop replaying.
-		let normalized: NormalizedWebhookEvent;
-		if (isRetainedWebhookRaw(event.raw)) {
-			normalized = event.raw;
-		} else if (isPaymentProvider(event.provider)) {
-			normalized = deps
-				.getProvider(event.provider)
-				.parseWebhookEvent(event.raw);
-		} else {
-			throw new Error(
-				`processWebhookEvent only handles payment providers; got "${event.provider}"`,
-			);
-		}
-
 		let outcome = "ignored_without_reference";
 		let intent: PaymentIntent | null = null;
-		if (normalized.reference || normalized.providerTransactionId) {
-			const settled = await settlePayment(payload, {
-				...normalized,
-				source: "webhook",
-			});
-			outcome = settled.outcome;
-			if ("intent" in settled) intent = settled.intent;
+		const marketplace = isRetainedWebhookRaw(event.raw)
+			? null
+			: await marketplaceFor(payload, event.provider);
+		if (marketplace) {
+			const dispatched = await dispatchMarketplaceEvent(
+				payload,
+				marketplace.parseWebhookEvent(event.raw),
+			);
+			outcome = dispatched.outcome;
+			intent = dispatched.intent;
+		} else {
+			let normalized: NormalizedWebhookEvent;
+			// The account-deletion cascade may have already rewritten this event's
+			// body into the same normalised shape `parseWebhookEvent` would
+			// otherwise produce (lib/redact.ts). Re-parsing that flat shape through
+			// a provider's original-wire-format parser finds nothing — a queued
+			// retry for a payment that settles the moment its owner's account is
+			// deleted must still resolve, not silently stop replaying.
+			if (isRetainedWebhookRaw(event.raw)) {
+				normalized = event.raw;
+			} else if (isPaymentProvider(event.provider)) {
+				normalized = p0Provider(event.provider).parseWebhookEvent(event.raw);
+			} else {
+				throw new Error(
+					`processWebhookEvent only handles payment providers; got "${event.provider}"`,
+				);
+			}
+			if (normalized.reference || normalized.providerTransactionId) {
+				const settled = await settlePayment(payload, {
+					...normalized,
+					source: "webhook",
+				});
+				outcome = settled.outcome;
+				if ("intent" in settled) intent = settled.intent;
+			}
 		}
 
 		const data: Partial<WebhookEvent> = {
@@ -217,7 +271,11 @@ export async function processWebhookEvent(
 		// The owner's account went away between this event being stored and
 		// this run: the sweep has already been and gone, so the body is
 		// redacted here or never.
-		if (intent?.customerDeletedAt && !isRetainedWebhookRaw(event.raw)) {
+		if (
+			intent?.customerDeletedAt &&
+			isPaymentProvider(event.provider) &&
+			!isRetainedWebhookRaw(event.raw)
+		) {
 			data.raw = redactedBody(event.provider, event.raw);
 		}
 
