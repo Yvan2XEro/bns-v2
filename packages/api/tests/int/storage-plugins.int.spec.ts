@@ -65,6 +65,11 @@ describe("buildStoragePlugins", () => {
 		);
 		expect(privateCall).toBeDefined();
 		expect(privateCall?.[0].allowContainerCreate).toBe(false);
+		// P5's gate evidence shares the private container, never the public one.
+		expect(privateCall?.[0].collections).toEqual({
+			"verification-documents": { prefix: "verification" },
+			"payment-gate-evidence": { prefix: "payment-gates" },
+		});
 
 		// The public plugin still honours the flag: only the private one is forced closed.
 		const publicCall = azureStorage.mock.calls.find(

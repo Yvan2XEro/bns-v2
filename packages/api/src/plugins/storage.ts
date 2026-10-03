@@ -27,8 +27,14 @@ function getProvider(env: StorageEnv = process.env): StorageProvider {
 // Collections that use file storage in the public bucket/container.
 const storageCollections = { media: true } as const;
 
-/** Identity documents live under their own prefix in their own private container. */
-const PRIVATE_PREFIX = "verification";
+/**
+ * Identity documents and P5's gate evidence each live under their own prefix
+ * in the one private bucket/container.
+ */
+const privateCollections = {
+	"verification-documents": { prefix: "verification" },
+	"payment-gate-evidence": { prefix: "payment-gates" },
+} as const;
 
 /**
  * Checked at config build time, on the environment alone.
@@ -113,7 +119,7 @@ export async function buildStoragePlugins(): Promise<Plugin[]> {
 				config,
 			}),
 			s3Storage({
-				collections: { "verification-documents": { prefix: PRIVATE_PREFIX } },
+				collections: privateCollections,
 				bucket: process.env.S3_PRIVATE_BUCKET ?? "",
 				acl: "private",
 				// Identity documents are never uploaded from the browser (the
@@ -149,9 +155,7 @@ export async function buildStoragePlugins(): Promise<Plugin[]> {
 				// what AZURE_STORAGE_ALLOW_CONTAINER_CREATE says; it is created out
 				// of band with a private access level instead.
 				allowContainerCreate: false,
-				collections: {
-					"verification-documents": { prefix: PRIVATE_PREFIX },
-				},
+				collections: privateCollections,
 				containerName: process.env.AZURE_STORAGE_PRIVATE_CONTAINER_NAME ?? "",
 			}),
 		];

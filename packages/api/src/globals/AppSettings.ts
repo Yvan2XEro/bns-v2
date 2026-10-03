@@ -1,5 +1,16 @@
 import type { GlobalConfig } from "payload";
 import { LAUNCH_CITY_KEYS } from "../lib/launchCities";
+import {
+	DEFAULT_MARKETS,
+	GATE_IDS,
+	PAYMENT_CHANNELS,
+	PAYMENT_DEFAULTS,
+	PAYMENT_PROVIDERS,
+	PROVIDER_FEE_BEARERS,
+	paymentSettingsRefusal,
+	RELEASE_MODELS,
+	SETTLEMENT_MODES,
+} from "../lib/paymentSettings";
 import { assertAuthorised } from "../lib/verificationSettings";
 
 const isAdmin = ({ req }: { req: { user?: { role?: string } | null } }) =>
@@ -23,6 +34,26 @@ export const AppSettings: GlobalConfig = {
 						{},
 					process.env,
 				);
+				if (refusal) throw new Error(refusal);
+				return data;
+			},
+			({ data, originalDoc }) => {
+				// A global save may carry only the groups it changed; judge the
+				// document as it will be stored.
+				const stored = (originalDoc ?? {}) as Record<string, unknown>;
+				const incoming = data as Record<string, unknown>;
+				const payments = {
+					...(stored.payments as object | undefined),
+					...(incoming.payments as object | undefined),
+				};
+				const vat = Number(
+					(incoming.orders as { vatRateBps?: unknown } | undefined)
+						?.vatRateBps ??
+						(stored.orders as { vatRateBps?: unknown } | undefined)
+							?.vatRateBps ??
+						1925,
+				);
+				const refusal = paymentSettingsRefusal(payments, vat, process.env);
 				if (refusal) throw new Error(refusal);
 				return data;
 			},
@@ -351,6 +382,231 @@ export const AppSettings: GlobalConfig = {
 						description:
 							"Empty means every eligible shop; non-empty restricts COD to this whitelist. Read by lib/orderSettings.ts's isPilotShop().",
 					},
+				},
+			],
+		},
+		{
+			name: "payments",
+			type: "group",
+			label: "Payments (protected payment)",
+			admin: {
+				description:
+					"Read by lib/paymentSettings.ts. Enabling the flag or a market is refused until the gate record below holds evidence for G1, G2, G4, G5, G6 (and G3 under provider_hold) and the API runs with PROTECTED_PAYMENT_ALLOWED=true.",
+			},
+			fields: [
+				{
+					name: "protectedPayment",
+					type: "group",
+					fields: [
+						{
+							name: "enabled",
+							type: "checkbox",
+							defaultValue: PAYMENT_DEFAULTS.protectedPayment.enabled,
+							admin: {
+								description:
+									"Off: checkout offers COD only, payment setup screens say Coming soon, intent creation returns payment.protectedDisabled. Webhooks, refunds, payouts and reconciliation keep running. Exposed at GET /api/public/config.",
+							},
+						},
+					],
+				},
+				{
+					name: "releaseModel",
+					type: "select",
+					required: true,
+					defaultValue: PAYMENT_DEFAULTS.releaseModel,
+					options: RELEASE_MODELS.map((value) => ({ label: value, value })),
+					admin: {
+						description:
+							"provider_hold needs gate G3 cleared; provider_schedule is the fallback when it is not.",
+					},
+				},
+				{
+					name: "markets",
+					type: "array",
+					defaultValue: () =>
+						DEFAULT_MARKETS.map((m) => ({ ...m, channels: [...m.channels] })),
+					admin: {
+						description:
+							"One row per country. Only provider_split can be saved; the VAT rate must equal orders.vatRateBps.",
+					},
+					fields: [
+						{
+							name: "countryCode",
+							type: "text",
+							required: true,
+							admin: { description: "ISO 3166-1 alpha-2, e.g. CM." },
+							validate: (value: unknown) =>
+								typeof value === "string" && /^[A-Z]{2}$/.test(value)
+									? true
+									: "Two upper-case letters (ISO 3166-1 alpha-2).",
+						},
+						{
+							name: "currency",
+							type: "text",
+							required: true,
+							admin: { description: "ISO 4217, e.g. XAF." },
+							validate: (value: unknown) =>
+								typeof value === "string" && /^[A-Z]{3}$/.test(value)
+									? true
+									: "Three upper-case letters (ISO 4217).",
+						},
+						{
+							name: "provider",
+							type: "select",
+							required: true,
+							options: PAYMENT_PROVIDERS.map((value) => ({
+								label: value,
+								value,
+							})),
+						},
+						{
+							name: "settlementMode",
+							type: "select",
+							required: true,
+							defaultValue: "provider_split",
+							options: SETTLEMENT_MODES.map((value) => ({
+								label: value,
+								value,
+							})),
+						},
+						{
+							name: "channels",
+							type: "select",
+							hasMany: true,
+							options: PAYMENT_CHANNELS.map((value) => ({
+								label: value,
+								value,
+							})),
+						},
+						{
+							name: "vatRateBps",
+							type: "number",
+							required: true,
+							min: 0,
+							max: 10_000,
+						},
+						{ name: "enabled", type: "checkbox", defaultValue: false },
+					],
+				},
+				{
+					name: "buyerProtection",
+					type: "group",
+					admin: {
+						description:
+							"Fee the buyer pays on a protected order: bps of the order total, clamped to [min, max] XAF, VAT included.",
+					},
+					fields: [
+						{
+							name: "bps",
+							type: "number",
+							min: 0,
+							max: 10_000,
+							defaultValue: PAYMENT_DEFAULTS.buyerProtection.bps,
+						},
+						{
+							name: "min",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.buyerProtection.min,
+						},
+						{
+							name: "max",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.buyerProtection.max,
+						},
+					],
+				},
+				{
+					name: "checkoutExpiryMinutes",
+					type: "number",
+					min: 1,
+					defaultValue: PAYMENT_DEFAULTS.checkoutExpiryMinutes,
+				},
+				{
+					name: "payoutAccountChangeHoldHours",
+					type: "number",
+					min: 0,
+					defaultValue: PAYMENT_DEFAULTS.payoutAccountChangeHoldHours,
+				},
+				{
+					name: "minPayout",
+					type: "number",
+					min: 0,
+					defaultValue: PAYMENT_DEFAULTS.minPayout,
+				},
+				{
+					name: "maxOrderAmount",
+					type: "number",
+					min: 0,
+					defaultValue: PAYMENT_DEFAULTS.maxOrderAmount,
+				},
+				{
+					name: "exposureCaps",
+					type: "group",
+					admin: {
+						description:
+							"Protected-payment amount a shop may have in flight, by verification level.",
+					},
+					fields: [
+						{
+							name: "level2",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.exposureCaps.level2,
+						},
+						{
+							name: "level3",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.exposureCaps.level3,
+						},
+					],
+				},
+				{
+					name: "earlyRelease",
+					type: "group",
+					fields: [
+						{
+							name: "enabled",
+							type: "checkbox",
+							defaultValue: PAYMENT_DEFAULTS.earlyRelease.enabled,
+						},
+					],
+				},
+				{
+					name: "providerFeeBearer",
+					type: "select",
+					required: true,
+					defaultValue: PAYMENT_DEFAULTS.providerFeeBearer,
+					options: PROVIDER_FEE_BEARERS.map((value) => ({
+						label: value,
+						value,
+					})),
+				},
+				{
+					name: "gates",
+					type: "array",
+					admin: {
+						description:
+							"The launch gate record (P5 spec, Gates). A row counts once its evidence is filed.",
+					},
+					fields: [
+						{
+							name: "gate",
+							type: "select",
+							required: true,
+							options: GATE_IDS.map((value) => ({ label: value, value })),
+						},
+						{ name: "clearedAt", type: "date" },
+						{ name: "clearedBy", type: "text" },
+						{
+							name: "evidence",
+							type: "upload",
+							relationTo: "payment-gate-evidence",
+						},
+						{ name: "note", type: "textarea" },
+					],
 				},
 			],
 		},

@@ -104,6 +104,7 @@ export interface Config {
     'commission-lines': CommissionLine;
     'commission-invoices': CommissionInvoice;
     'return-cases': ReturnCase;
+    'payment-gate-evidence': PaymentGateEvidence;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -153,6 +154,7 @@ export interface Config {
     'commission-lines': CommissionLinesSelect<false> | CommissionLinesSelect<true>;
     'commission-invoices': CommissionInvoicesSelect<false> | CommissionInvoicesSelect<true>;
     'return-cases': ReturnCasesSelect<false> | ReturnCasesSelect<true>;
+    'payment-gate-evidence': PaymentGateEvidenceSelect<false> | PaymentGateEvidenceSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -1741,6 +1743,25 @@ export interface BuyerPhoneScore {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gate-evidence".
+ */
+export interface PaymentGateEvidence {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -2050,6 +2071,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'return-cases';
         value: string | ReturnCase;
+      } | null)
+    | ({
+        relationTo: 'payment-gate-evidence';
+        value: string | PaymentGateEvidence;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -3209,6 +3234,24 @@ export interface ReturnCasesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gate-evidence_select".
+ */
+export interface PaymentGateEvidenceSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -3415,6 +3458,78 @@ export interface AppSetting {
      */
     pilotShopIds?: string[] | null;
   };
+  /**
+   * Read by lib/paymentSettings.ts. Enabling the flag or a market is refused until the gate record below holds evidence for G1, G2, G4, G5, G6 (and G3 under provider_hold) and the API runs with PROTECTED_PAYMENT_ALLOWED=true.
+   */
+  payments: {
+    protectedPayment?: {
+      /**
+       * Off: checkout offers COD only, payment setup screens say Coming soon, intent creation returns payment.protectedDisabled. Webhooks, refunds, payouts and reconciliation keep running. Exposed at GET /api/public/config.
+       */
+      enabled?: boolean | null;
+    };
+    /**
+     * provider_hold needs gate G3 cleared; provider_schedule is the fallback when it is not.
+     */
+    releaseModel: 'provider_hold' | 'provider_schedule';
+    /**
+     * One row per country. Only provider_split can be saved; the VAT rate must equal orders.vatRateBps.
+     */
+    markets?:
+      | {
+          /**
+           * ISO 3166-1 alpha-2, e.g. CM.
+           */
+          countryCode: string;
+          /**
+           * ISO 4217, e.g. XAF.
+           */
+          currency: string;
+          provider: 'notchpay';
+          settlementMode: 'provider_split' | 'direct_to_seller' | 'platform_collects';
+          channels?: ('cm.mtn' | 'cm.orange')[] | null;
+          vatRateBps: number;
+          enabled?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Fee the buyer pays on a protected order: bps of the order total, clamped to [min, max] XAF, VAT included.
+     */
+    buyerProtection?: {
+      bps?: number | null;
+      min?: number | null;
+      max?: number | null;
+    };
+    checkoutExpiryMinutes?: number | null;
+    payoutAccountChangeHoldHours?: number | null;
+    minPayout?: number | null;
+    maxOrderAmount?: number | null;
+    /**
+     * Protected-payment amount a shop may have in flight, by verification level.
+     */
+    exposureCaps?: {
+      level2?: number | null;
+      level3?: number | null;
+    };
+    earlyRelease?: {
+      enabled?: boolean | null;
+    };
+    providerFeeBearer: 'platform' | 'seller';
+    /**
+     * The launch gate record (P5 spec, Gates). A row counts once its evidence is filed.
+     */
+    gates?:
+      | {
+          gate: 'G1' | 'G2' | 'G3' | 'G4' | 'G5' | 'G6';
+          clearedAt?: string | null;
+          clearedBy?: string | null;
+          evidence?: (string | null) | PaymentGateEvidence;
+          note?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   company?: {
     /**
      * Legal name printed on commission invoices.
@@ -3536,6 +3651,61 @@ export interface AppSettingsSelect<T extends boolean = true> {
         buyerCaps?: T;
         termsVersion?: T;
         pilotShopIds?: T;
+      };
+  payments?:
+    | T
+    | {
+        protectedPayment?:
+          | T
+          | {
+              enabled?: T;
+            };
+        releaseModel?: T;
+        markets?:
+          | T
+          | {
+              countryCode?: T;
+              currency?: T;
+              provider?: T;
+              settlementMode?: T;
+              channels?: T;
+              vatRateBps?: T;
+              enabled?: T;
+              id?: T;
+            };
+        buyerProtection?:
+          | T
+          | {
+              bps?: T;
+              min?: T;
+              max?: T;
+            };
+        checkoutExpiryMinutes?: T;
+        payoutAccountChangeHoldHours?: T;
+        minPayout?: T;
+        maxOrderAmount?: T;
+        exposureCaps?:
+          | T
+          | {
+              level2?: T;
+              level3?: T;
+            };
+        earlyRelease?:
+          | T
+          | {
+              enabled?: T;
+            };
+        providerFeeBearer?: T;
+        gates?:
+          | T
+          | {
+              gate?: T;
+              clearedAt?: T;
+              clearedBy?: T;
+              evidence?: T;
+              note?: T;
+              id?: T;
+            };
       };
   company?:
     | T

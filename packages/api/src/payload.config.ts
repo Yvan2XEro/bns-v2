@@ -22,6 +22,7 @@ import { ModerationLog } from "./collections/ModerationLog";
 import { OrderEvents } from "./collections/OrderEvents";
 import { OrderItems } from "./collections/OrderItems";
 import { Orders } from "./collections/Orders";
+import { PaymentGateEvidence } from "./collections/PaymentGateEvidence";
 import { PaymentIntents } from "./collections/PaymentIntents";
 import { Products } from "./collections/Products";
 import { ProductVariants } from "./collections/ProductVariants";
@@ -146,6 +147,7 @@ export default buildConfig({
 		CommissionLines,
 		CommissionInvoices,
 		ReturnCases,
+		PaymentGateEvidence,
 	],
 	globals: [AppSettings],
 	editor: lexicalEditor(),

@@ -10,10 +10,20 @@ import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import { BOOST_PRICING } from "@/lib/boostPricing";
 import { LAUNCH_CITIES } from "@/lib/launchCities";
 import { getOrderSettings } from "@/lib/orderSettings";
+import {
+	getPaymentSettings,
+	isProtectedPaymentOpen,
+	PAYMENT_DEFAULTS,
+} from "@/lib/paymentSettings";
 import { getShopSettings } from "@/lib/shopSettings";
 import { getVerificationSettings } from "@/lib/verificationSettings";
 
-export async function GET() {
+/**
+ * The caller's market is `?country=` when given, else the first market row —
+ * the launch market — so a client that does not send one yet still learns
+ * the flag for the market it ships in.
+ */
+export async function GET(request?: Request) {
 	let enabledAuthProviders: string[] = [];
 	let localAuthEnabled = true;
 	let shopsEnabled = false;
@@ -21,6 +31,9 @@ export async function GET() {
 	let ordersEnabled = false;
 	let launchCities: Array<{ key: string; label: string; fee: number }> = [];
 	let withdrawalDays = 15;
+	let protectedPaymentEnabled = false;
+	let buyerProtection = PAYMENT_DEFAULTS.buyerProtection;
+	let checkoutExpiryMinutes = PAYMENT_DEFAULTS.checkoutExpiryMinutes;
 
 	try {
 		const payload = await getPayload({ config });
@@ -52,12 +65,21 @@ export async function GET() {
 			fee: deliveryFee,
 		}));
 		withdrawalDays = orderSettings.withdrawalDays;
+		const paymentSettings = await getPaymentSettings(payload);
+		const country =
+			(request && new URL(request.url).searchParams.get("country")) ||
+			paymentSettings.markets[0]?.countryCode;
+		protectedPaymentEnabled =
+			country !== undefined && isProtectedPaymentOpen(paymentSettings, country);
+		buyerProtection = paymentSettings.buyerProtection;
+		checkoutExpiryMinutes = paymentSettings.checkoutExpiryMinutes;
 	} catch {
 		enabledAuthProviders = listConfiguredOAuthProviders();
 		// A settings outage must hide ordering, not advertise it.
 		ordersEnabled = false;
 		launchCities = [];
 		withdrawalDays = 15;
+		protectedPaymentEnabled = false;
 	}
 
 	return Response.json({
@@ -73,5 +95,8 @@ export async function GET() {
 		launchCities,
 		withdrawalDays,
 		boostPricing: BOOST_PRICING,
+		protectedPaymentEnabled,
+		buyerProtection,
+		checkoutExpiryMinutes,
 	});
 }

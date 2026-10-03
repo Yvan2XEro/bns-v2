@@ -20,7 +20,12 @@ vi.mock("meilisearch", () => ({
 		}
 	},
 }));
-vi.mock("payload", () => ({ getPayload: getPayloadMock }));
+// `APIError`: the config route reaches `lib/serviceError.ts` through
+// `lib/paymentSettings.ts`, and it extends that class at import time.
+vi.mock("payload", () => ({
+	APIError: class APIError extends Error {},
+	getPayload: getPayloadMock,
+}));
 
 /** Seeds the shared fake Payload the routes' `getPayload({config})` resolves to. */
 function seed(shops: Record<string, unknown>[] = []) {
