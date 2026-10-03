@@ -41,6 +41,14 @@ describe("the error contract is the same in all three packages", () => {
 			);
 		}
 	});
+
+	it("gives each P5 code a fallback of its own", () => {
+		for (const code of P5_CODES) {
+			expect(fallbackMessage(code)).not.toBe(
+				fallbackMessage(ERROR_CODES.unknown),
+			);
+		}
+	});
 });
 
 /** The spec's list, transcribed. Not derived from ERROR_CODES. */
@@ -85,5 +93,45 @@ describe("P4 error codes", () => {
 		const declared = new Set(Object.values(ERROR_CODES));
 		for (const code of P4_CODES) expect(declared.has(code)).toBe(true);
 		expect(P4_CODES.length).toBe(33);
+	});
+});
+
+/** P5's contracts list, transcribed. Not derived from ERROR_CODES. */
+const P5_CODES = [
+	"payment.protectedDisabled",
+	"payment.marketUnavailable",
+	"payment.shopNotEligible",
+	"payment.orderNotPayable",
+	"payment.attemptInProgress",
+	"payment.tooManyAttempts",
+	"payment.channelUnsupported",
+	"payment.amountTooHigh",
+	"payment.selfPurchase",
+	"payment.declined",
+	"payment.insufficientFunds",
+	"payment.timeout",
+	"payment.limitExceeded",
+	"payment.expired",
+	"payout.ownerOnly",
+	"payout.methodUnavailable",
+	"payout.accountInvalid",
+	"payout.accountNameMismatch",
+	"payout.accountChangeCooldown",
+	"payout.onboardingIncomplete",
+	"payout.holdActive",
+	"refund.amountExceeds",
+	"refund.notRefundable",
+	"refund.windowExpired",
+] as const;
+
+describe("P5 error codes", () => {
+	it("declares all twenty-four, every one client-facing", () => {
+		const declared = new Set(Object.values(ERROR_CODES));
+		const missing = P5_CODES.filter((code) => !declared.has(code));
+		expect(missing).toEqual([]);
+		expect(P5_CODES.length).toBe(24);
+		expect(P5_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
+			24,
+		);
 	});
 });

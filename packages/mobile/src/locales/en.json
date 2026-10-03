@@ -1234,7 +1234,21 @@
 			"invalidTransition": "This item is not in a state where that action applies."
 		},
 		"payment": {
-			"providerUnavailable": "Payment is unavailable right now. Please try again later."
+			"providerUnavailable": "Payment is unavailable right now. Please try again later.",
+			"protectedDisabled": "Protected payment is not available yet.",
+			"marketUnavailable": "Protected payment is not available in this country yet.",
+			"shopNotEligible": "This shop cannot receive protected payments yet.",
+			"orderNotPayable": "This order can no longer be paid.",
+			"attemptInProgress": "A payment attempt is already in progress. Approve it on your phone or wait a moment.",
+			"tooManyAttempts": "You have reached the maximum number of payment attempts for this order.",
+			"channelUnsupported": "This payment method is not available here. Please choose another one.",
+			"amountTooHigh": "This order is above the maximum amount for protected payment.",
+			"selfPurchase": "You cannot pay this shop from your own account or from a phone number linked to the shop.",
+			"declined": "The payment was declined. Please try again or use another number.",
+			"insufficientFunds": "The balance on this account is too low. Top it up and try again, or use another number.",
+			"timeout": "The payment was not approved in time. Please try again and approve it on your phone.",
+			"limitExceeded": "This payment is above your account's transaction limit. Use another number or contact your operator.",
+			"expired": "The time to pay has run out. If money was taken from your account, it will be refunded automatically."
 		},
 		"boost": {
 			"notOwner": "You can only boost your own listings.",
@@ -1323,6 +1337,20 @@
 		"account": {
 			"openOrders": "You still have orders in progress.",
 			"unpaidCommission": "Your shop has an unpaid commission invoice."
+		},
+		"payout": {
+			"ownerOnly": "Only the shop owner can manage payouts.",
+			"methodUnavailable": "This payout method is not available yet. Please choose another one.",
+			"accountInvalid": "This account number is not valid for the chosen payout method.",
+			"accountNameMismatch": "The account holder's name does not match your verified identity.",
+			"accountChangeCooldown": "You changed your payout account recently. Please wait before changing it again.",
+			"onboardingIncomplete": "Finish setting up your payment account to receive payouts.",
+			"holdActive": "Payouts for this shop are paused while our team carries out a review. We will let you know when they resume."
+		},
+		"refund": {
+			"amountExceeds": "This amount is more than what remains refundable on this order.",
+			"notRefundable": "This order has no online payment to refund.",
+			"windowExpired": "This payment is too old to be refunded automatically. The refund will be arranged directly with the seller."
 		}
 	},
 	"cityPicker": {

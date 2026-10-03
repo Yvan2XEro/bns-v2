@@ -182,6 +182,36 @@ export const ERROR_CODES = {
 	// Account deletion blocked by order state (P4)
 	accountOpenOrders: "account.openOrders",
 	accountUnpaidCommission: "account.unpaidCommission",
+
+	// Protected payment (P5)
+	paymentProtectedDisabled: "payment.protectedDisabled",
+	paymentMarketUnavailable: "payment.marketUnavailable",
+	paymentShopNotEligible: "payment.shopNotEligible",
+	paymentOrderNotPayable: "payment.orderNotPayable",
+	paymentAttemptInProgress: "payment.attemptInProgress",
+	paymentTooManyAttempts: "payment.tooManyAttempts",
+	paymentChannelUnsupported: "payment.channelUnsupported",
+	paymentAmountTooHigh: "payment.amountTooHigh",
+	paymentSelfPurchase: "payment.selfPurchase",
+	paymentDeclined: "payment.declined",
+	paymentInsufficientFunds: "payment.insufficientFunds",
+	paymentTimeout: "payment.timeout",
+	paymentLimitExceeded: "payment.limitExceeded",
+	paymentExpired: "payment.expired",
+
+	// Payouts (P5)
+	payoutOwnerOnly: "payout.ownerOnly",
+	payoutMethodUnavailable: "payout.methodUnavailable",
+	payoutAccountInvalid: "payout.accountInvalid",
+	payoutAccountNameMismatch: "payout.accountNameMismatch",
+	payoutAccountChangeCooldown: "payout.accountChangeCooldown",
+	payoutOnboardingIncomplete: "payout.onboardingIncomplete",
+	payoutHoldActive: "payout.holdActive",
+
+	// Refunds (P5)
+	refundAmountExceeds: "refund.amountExceeds",
+	refundNotRefundable: "refund.notRefundable",
+	refundWindowExpired: "refund.windowExpired",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -387,6 +417,53 @@ const FALLBACKS: Record<ErrorCode, string> = {
 	[ERROR_CODES.accountOpenOrders]: "You still have orders in progress.",
 	[ERROR_CODES.accountUnpaidCommission]:
 		"Your shop has an unpaid commission invoice.",
+
+	[ERROR_CODES.paymentProtectedDisabled]:
+		"Protected payment is not available yet.",
+	[ERROR_CODES.paymentMarketUnavailable]:
+		"Protected payment is not available in this country yet.",
+	[ERROR_CODES.paymentShopNotEligible]:
+		"This shop cannot receive protected payments yet.",
+	[ERROR_CODES.paymentOrderNotPayable]: "This order can no longer be paid.",
+	[ERROR_CODES.paymentAttemptInProgress]:
+		"A payment attempt is already in progress. Approve it on your phone or wait a moment.",
+	[ERROR_CODES.paymentTooManyAttempts]:
+		"You have reached the maximum number of payment attempts for this order.",
+	[ERROR_CODES.paymentChannelUnsupported]:
+		"This payment method is not available here. Please choose another one.",
+	[ERROR_CODES.paymentAmountTooHigh]:
+		"This order is above the maximum amount for protected payment.",
+	[ERROR_CODES.paymentSelfPurchase]:
+		"You cannot pay this shop from your own account or from a phone number linked to the shop.",
+	[ERROR_CODES.paymentDeclined]:
+		"The payment was declined. Please try again or use another number.",
+	[ERROR_CODES.paymentInsufficientFunds]:
+		"The balance on this account is too low. Top it up and try again, or use another number.",
+	[ERROR_CODES.paymentTimeout]:
+		"The payment was not approved in time. Please try again and approve it on your phone.",
+	[ERROR_CODES.paymentLimitExceeded]:
+		"This payment is above your account's transaction limit. Use another number or contact your operator.",
+	[ERROR_CODES.paymentExpired]:
+		"The time to pay has run out. If money was taken from your account, it will be refunded automatically.",
+	[ERROR_CODES.payoutOwnerOnly]: "Only the shop owner can manage payouts.",
+	[ERROR_CODES.payoutMethodUnavailable]:
+		"This payout method is not available yet. Please choose another one.",
+	[ERROR_CODES.payoutAccountInvalid]:
+		"This account number is not valid for the chosen payout method.",
+	[ERROR_CODES.payoutAccountNameMismatch]:
+		"The account holder's name does not match your verified identity.",
+	[ERROR_CODES.payoutAccountChangeCooldown]:
+		"You changed your payout account recently. Please wait before changing it again.",
+	[ERROR_CODES.payoutOnboardingIncomplete]:
+		"Finish setting up your payment account to receive payouts.",
+	[ERROR_CODES.payoutHoldActive]:
+		"Payouts for this shop are paused while our team carries out a review. We will let you know when they resume.",
+	[ERROR_CODES.refundAmountExceeds]:
+		"This amount is more than what remains refundable on this order.",
+	[ERROR_CODES.refundNotRefundable]:
+		"This order has no online payment to refund.",
+	[ERROR_CODES.refundWindowExpired]:
+		"This payment is too old to be refunded automatically. The refund will be arranged directly with the seller.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {

@@ -95,3 +95,61 @@ describe("P4 error codes", () => {
 		});
 	});
 });
+
+const P5_CODES = {
+	paymentProtectedDisabled: "payment.protectedDisabled",
+	paymentMarketUnavailable: "payment.marketUnavailable",
+	paymentShopNotEligible: "payment.shopNotEligible",
+	paymentOrderNotPayable: "payment.orderNotPayable",
+	paymentAttemptInProgress: "payment.attemptInProgress",
+	paymentTooManyAttempts: "payment.tooManyAttempts",
+	paymentChannelUnsupported: "payment.channelUnsupported",
+	paymentAmountTooHigh: "payment.amountTooHigh",
+	paymentSelfPurchase: "payment.selfPurchase",
+	paymentDeclined: "payment.declined",
+	paymentInsufficientFunds: "payment.insufficientFunds",
+	paymentTimeout: "payment.timeout",
+	paymentLimitExceeded: "payment.limitExceeded",
+	paymentExpired: "payment.expired",
+	payoutOwnerOnly: "payout.ownerOnly",
+	payoutMethodUnavailable: "payout.methodUnavailable",
+	payoutAccountInvalid: "payout.accountInvalid",
+	payoutAccountNameMismatch: "payout.accountNameMismatch",
+	payoutAccountChangeCooldown: "payout.accountChangeCooldown",
+	payoutOnboardingIncomplete: "payout.onboardingIncomplete",
+	payoutHoldActive: "payout.holdActive",
+	refundAmountExceeds: "refund.amountExceeds",
+	refundNotRefundable: "refund.notRefundable",
+	refundWindowExpired: "refund.windowExpired",
+} as const;
+
+describe("P5 error codes", () => {
+	it("declares all twenty-four", () => {
+		expect(Object.keys(P5_CODES)).toHaveLength(24);
+	});
+
+	it.each(Object.entries(P5_CODES))("defines %s as %s", (key, code) => {
+		expect(ERROR_CODES[key as keyof typeof ERROR_CODES]).toBe(code);
+	});
+
+	it.each(Object.values(P5_CODES))("gives %s its own fallback", (code) => {
+		expect(fallbackMessage(code)).not.toBe(
+			fallbackMessage(ERROR_CODES.unknown),
+		);
+	});
+
+	it("never gives two P5 codes the same fallback", () => {
+		const messages = Object.values(P5_CODES).map(fallbackMessage);
+		expect(new Set(messages).size).toBe(24);
+	});
+
+	it("builds the shared response shape", async () => {
+		const response = errorResponse(ERROR_CODES.paymentAttemptInProgress, 409);
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({
+			code: "payment.attemptInProgress",
+			message:
+				"A payment attempt is already in progress. Approve it on your phone or wait a moment.",
+		});
+	});
+});

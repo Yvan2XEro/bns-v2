@@ -1237,7 +1237,21 @@
 			"invalidTransition": "Cet élément n'est pas dans un état permettant cette action."
 		},
 		"payment": {
-			"providerUnavailable": "Le paiement est indisponible pour le moment. Réessayez plus tard."
+			"providerUnavailable": "Le paiement est indisponible pour le moment. Réessayez plus tard.",
+			"protectedDisabled": "Le paiement protégé n'est pas encore disponible.",
+			"marketUnavailable": "Le paiement protégé n'est pas encore disponible dans ce pays.",
+			"shopNotEligible": "Cette boutique ne peut pas encore recevoir de paiements protégés.",
+			"orderNotPayable": "Cette commande ne peut plus être payée.",
+			"attemptInProgress": "Une tentative de paiement est déjà en cours. Approuvez-la sur votre téléphone ou patientez un instant.",
+			"tooManyAttempts": "Vous avez atteint le nombre maximal de tentatives de paiement pour cette commande.",
+			"channelUnsupported": "Ce moyen de paiement n'est pas disponible ici. Choisissez-en un autre.",
+			"amountTooHigh": "Cette commande dépasse le montant maximal autorisé pour le paiement protégé.",
+			"selfPurchase": "Vous ne pouvez pas payer cette boutique avec votre propre compte ni avec un numéro lié à la boutique.",
+			"declined": "Le paiement a été refusé. Réessayez ou utilisez un autre numéro.",
+			"insufficientFunds": "Le solde de ce compte est insuffisant. Rechargez-le puis réessayez, ou utilisez un autre numéro.",
+			"timeout": "Le paiement n'a pas été approuvé à temps. Réessayez et approuvez-le sur votre téléphone.",
+			"limitExceeded": "Ce paiement dépasse le plafond de votre compte. Utilisez un autre numéro ou contactez votre opérateur.",
+			"expired": "Le délai de paiement est dépassé. Si un montant a été débité de votre compte, il vous sera remboursé automatiquement."
 		},
 		"boost": {
 			"notOwner": "Vous ne pouvez booster que vos propres annonces.",
@@ -1326,6 +1340,20 @@
 		"account": {
 			"openOrders": "Vous avez encore des commandes en cours.",
 			"unpaidCommission": "Votre boutique a une facture de commission impayée."
+		},
+		"payout": {
+			"ownerOnly": "Seul le propriétaire de la boutique peut gérer les versements.",
+			"methodUnavailable": "Ce mode de versement n'est pas encore disponible. Choisissez-en un autre.",
+			"accountInvalid": "Ce numéro de compte n'est pas valide pour le mode de versement choisi.",
+			"accountNameMismatch": "Le nom du titulaire du compte ne correspond pas à votre identité vérifiée.",
+			"accountChangeCooldown": "Vous avez modifié votre compte de versement récemment. Patientez avant de le modifier à nouveau.",
+			"onboardingIncomplete": "Terminez la configuration de votre compte de paiement pour recevoir vos versements.",
+			"holdActive": "Les versements de cette boutique sont suspendus le temps d'une vérification par notre équipe. Nous vous préviendrons dès leur reprise."
+		},
+		"refund": {
+			"amountExceeds": "Ce montant dépasse ce qui reste remboursable sur cette commande.",
+			"notRefundable": "Cette commande n'a aucun paiement en ligne à rembourser.",
+			"windowExpired": "Ce paiement est trop ancien pour être remboursé automatiquement. Le remboursement sera organisé directement avec le vendeur."
 		}
 	},
 	"cityPicker": {
