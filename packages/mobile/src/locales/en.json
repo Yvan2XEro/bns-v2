@@ -3014,7 +3014,7 @@
 		"seller_colReleaseDate": "Release date",
 		"seller_noAccess": "Payments are reserved for the shop's owner and managers.",
 		"seller_payoutAccountNotSet": "Not set up yet",
-		"seller_providerSchedule": "NotchPay pays out on its own schedule.",
+		"seller_providerSchedule": "Your payment provider pays out on its own schedule.",
 		"seller_holdOnOrder": "One of your orders",
 		"payout_title": "Payout details",
 		"payout_orders": "Orders in this payout",

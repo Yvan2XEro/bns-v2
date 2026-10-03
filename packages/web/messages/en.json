@@ -2569,7 +2569,7 @@
 		"seller_payoutAccountNotSet": "Not set up yet",
 		"seller_payoutInProgress": "Payout in progress",
 		"seller_payoutsTitle": "Payouts",
-		"seller_providerSchedule": "NotchPay pays out on its own schedule.",
+		"seller_providerSchedule": "Your payment provider pays out on its own schedule.",
 		"seller_readyForPayout": "Ready for payout",
 		"seller_statusAccount": "NotchPay account",
 		"seller_statusHolds": "Payout holds",

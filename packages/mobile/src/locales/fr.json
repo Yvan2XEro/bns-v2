@@ -3017,7 +3017,7 @@
 		"seller_colReleaseDate": "Date de déblocage",
 		"seller_noAccess": "Les paiements sont réservés au propriétaire et aux gérants de la boutique.",
 		"seller_payoutAccountNotSet": "Pas encore configuré",
-		"seller_providerSchedule": "NotchPay effectue les versements selon son propre calendrier.",
+		"seller_providerSchedule": "Votre prestataire de paiement effectue les versements selon son propre calendrier.",
 		"seller_holdOnOrder": "Une de vos commandes",
 		"payout_title": "Détail du versement",
 		"payout_orders": "Commandes de ce versement",

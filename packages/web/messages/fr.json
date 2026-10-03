@@ -2570,7 +2570,7 @@
 		"seller_payoutAccountNotSet": "Pas encore configuré",
 		"seller_payoutInProgress": "Versement en cours",
 		"seller_payoutsTitle": "Versements",
-		"seller_providerSchedule": "NotchPay effectue les versements selon son propre calendrier.",
+		"seller_providerSchedule": "Votre prestataire de paiement effectue les versements selon son propre calendrier.",
 		"seller_readyForPayout": "Prêt à être versé",
 		"seller_statusAccount": "Compte NotchPay",
 		"seller_statusHolds": "Suspensions de versement",
