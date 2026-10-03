@@ -53,6 +53,7 @@ describe("renderReceiptHtml", () => {
 				orderNumber: "BNS-2609-000123",
 				orderDate: "2026-09-15T10:00:00.000Z",
 				printedAt: "2026-09-15T10:00:05.000Z",
+				withdrawalUntil: null,
 				snapshot,
 				snapshotHash: "a".repeat(64),
 			},
@@ -73,6 +74,7 @@ describe("renderReceiptHtml", () => {
 				orderNumber: "BNS-2609-000123",
 				orderDate: "2026-09-15T10:00:00.000Z",
 				printedAt: "2026-09-15T10:00:05.000Z",
+				withdrawalUntil: null,
 				snapshot,
 				snapshotHash: "a".repeat(64),
 			},
@@ -89,6 +91,7 @@ describe("renderReceiptHtml", () => {
 			orderNumber: "BNS-2609-000123",
 			orderDate: "2026-09-15T10:00:00.000Z",
 			printedAt: "2026-09-15T10:00:05.000Z",
+			withdrawalUntil: null,
 			snapshot,
 			snapshotHash: "a".repeat(64),
 		};
@@ -96,19 +99,59 @@ describe("renderReceiptHtml", () => {
 		expect(renderReceiptHtml(input, "en")).toContain("XAF 17,000");
 	});
 
-	it("renders the withdrawal deadline", () => {
-		const snapshot = buildContractSnapshot(baseInput);
-		const html = renderReceiptHtml(
-			{
-				orderNumber: "BNS-2609-000123",
-				orderDate: "2026-09-15T10:00:00.000Z",
-				printedAt: "2026-09-15T10:00:05.000Z",
-				snapshot,
-				snapshotHash: "a".repeat(64),
-			},
-			"fr",
+	// The statutory window runs from delivery, not from the order: before
+	// delivery the receipt states the rule, never a date computed from the
+	// order date, which was always earlier than the buyer's real deadline.
+	it("states the withdrawal rule, with the contract's own day count, before delivery", () => {
+		const snapshot = buildContractSnapshot({
+			...baseInput,
+			withdrawalDays: 10,
+		});
+		const input = {
+			orderNumber: "BNS-2609-000123",
+			orderDate: "2026-09-15T10:00:00.000Z",
+			printedAt: "2026-09-15T10:00:05.000Z",
+			withdrawalUntil: null,
+			snapshot,
+			snapshotHash: "a".repeat(64),
+		};
+		const fr = renderReceiptHtml(input, "fr");
+		const en = renderReceiptHtml(input, "en");
+		expect(fr).toContain(
+			"<p>Delai de retractation: 10 jours a compter de la reception du colis. La date exacte figurera sur ce recu une fois la commande livree.</p>",
 		);
-		expect(html).toContain("Date limite de retractation");
+		expect(en).toContain(
+			"<p>Withdrawal period: 10 days from receiving the parcel. The exact date will appear on this receipt once the order is delivered.</p>",
+		);
+		expect(fr).not.toContain("Date limite de retractation");
+		expect(en).not.toContain("Withdrawal deadline");
+	});
+
+	it("prints the order's stored deadline once delivered, not one counted from the order date", () => {
+		const snapshot = buildContractSnapshot(baseInput);
+		// Ordered on the 15th, delivered on the 18th: the deadline is the 3rd,
+		// where counting from the order date would have said the 30th.
+		const withdrawalUntil = "2026-10-03T14:00:00.000Z";
+		const input = {
+			orderNumber: "BNS-2609-000123",
+			orderDate: "2026-09-15T10:00:00.000Z",
+			printedAt: "2026-09-20T10:00:05.000Z",
+			withdrawalUntil,
+			snapshot,
+			snapshotHash: "a".repeat(64),
+		};
+		const date = (lang: string) =>
+			new Intl.DateTimeFormat(lang, {
+				dateStyle: "medium",
+				timeStyle: "short",
+			}).format(new Date(withdrawalUntil));
+		const fr = renderReceiptHtml(input, "fr");
+		const en = renderReceiptHtml(input, "en");
+		expect(fr).toContain(
+			`<p>Date limite de retractation: ${date("fr-FR")}</p>`,
+		);
+		expect(en).toContain(`<p>Withdrawal deadline: ${date("en-GB")}</p>`);
+		expect(fr).not.toContain("Delai de retractation");
 	});
 
 	it("escapes a shop name containing markup", () => {
@@ -121,6 +164,7 @@ describe("renderReceiptHtml", () => {
 				orderNumber: "BNS-2609-000123",
 				orderDate: "2026-09-15T10:00:00.000Z",
 				printedAt: "2026-09-15T10:00:05.000Z",
+				withdrawalUntil: null,
 				snapshot,
 				snapshotHash: "a".repeat(64),
 			},

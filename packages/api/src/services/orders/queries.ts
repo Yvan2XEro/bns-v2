@@ -465,6 +465,7 @@ export async function getOrderReceiptHtml(
 			orderNumber: order.orderNumber,
 			orderDate: order.createdAt,
 			printedAt: new Date().toISOString(),
+			withdrawalUntil: order.deadlines?.withdrawalUntil ?? null,
 			snapshot,
 			snapshotHash,
 		},

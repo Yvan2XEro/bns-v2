@@ -766,6 +766,43 @@ describe("GET /api/orders/{id}/receipt", () => {
 		expect(response.status).toBe(200);
 	});
 
+	it("states the withdrawal rule while the order is undelivered", async () => {
+		const payload = seed();
+		asUser(payload, BUYER_A);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/receipt/route"
+		);
+		const response = await GET(get("/x?lang=en"), {
+			params: Promise.resolve({ id: "o-receipt" }),
+		});
+		const html = await response.text();
+		expect(html).toContain(
+			"Withdrawal period: 14 days from receiving the parcel.",
+		);
+		expect(html).not.toContain("Withdrawal deadline");
+	});
+
+	it("prints the order's own withdrawalUntil once delivered", async () => {
+		const payload = seed();
+		const order = payload.store.orders.find((o) => o.id === "o-receipt");
+		if (!order) throw new Error("test fixture: no o-receipt");
+		order.status = "delivered";
+		order.deadlines = { withdrawalUntil: "2026-10-03T14:00:00.000Z" };
+		asUser(payload, BUYER_A);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/receipt/route"
+		);
+		const response = await GET(get("/x?lang=en"), {
+			params: Promise.resolve({ id: "o-receipt" }),
+		});
+		const html = await response.text();
+		const expected = new Intl.DateTimeFormat("en-GB", {
+			dateStyle: "medium",
+			timeStyle: "short",
+		}).format(new Date("2026-10-03T14:00:00.000Z"));
+		expect(html).toContain(`<p>Withdrawal deadline: ${expected}</p>`);
+	});
+
 	it("answers order.notFound for a stranger — nobody else", async () => {
 		const payload = seed();
 		asUser(payload, OUTSIDER);

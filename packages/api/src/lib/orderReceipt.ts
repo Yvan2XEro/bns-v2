@@ -7,6 +7,8 @@ export interface ReceiptInput {
 	orderDate: string;
 	/** ISO timestamp this document was generated. */
 	printedAt: string;
+	/** `order.deadlines.withdrawalUntil`: set on delivery, null before it. */
+	withdrawalUntil: string | null;
 	snapshot: ContractSnapshot;
 	snapshotHash: string;
 }
@@ -32,12 +34,6 @@ function formatDate(iso: string, lang: "fr" | "en"): string {
 	}).format(date);
 }
 
-function withdrawalDeadline(orderDate: string, days: number): Date {
-	const deadline = new Date(orderDate);
-	deadline.setUTCDate(deadline.getUTCDate() + days);
-	return deadline;
-}
-
 const copy = {
 	fr: {
 		title: "Recu de commande",
@@ -54,6 +50,8 @@ const copy = {
 		deliveryFee: "Frais de livraison",
 		total: "Total a payer",
 		withdrawalUntil: "Date limite de retractation",
+		withdrawalRule: (days: number) =>
+			`Delai de retractation: ${days} jours a compter de la reception du colis. La date exacte figurera sur ce recu une fois la commande livree.`,
 		hash: "Empreinte du contrat",
 	},
 	en: {
@@ -71,6 +69,8 @@ const copy = {
 		deliveryFee: "Delivery fee",
 		total: "Total due",
 		withdrawalUntil: "Withdrawal deadline",
+		withdrawalRule: (days: number) =>
+			`Withdrawal period: ${days} days from receiving the parcel. The exact date will appear on this receipt once the order is delivered.`,
 		hash: "Contract fingerprint",
 	},
 } as const;
@@ -86,10 +86,11 @@ export function renderReceiptHtml(
 ): string {
 	const t = copy[lang];
 	const { snapshot } = input;
-	const deadline = withdrawalDeadline(
-		input.orderDate,
-		snapshot.withdrawal.days,
-	);
+	// The legal window runs from delivery, so no date exists before it: a
+	// date counted from the order would always be earlier than the real one.
+	const withdrawal = input.withdrawalUntil
+		? `${t.withdrawalUntil}: ${formatDate(input.withdrawalUntil, lang)}`
+		: t.withdrawalRule(snapshot.withdrawal.days);
 
 	const rows = snapshot.items
 		.map(
@@ -138,7 +139,7 @@ export function renderReceiptHtml(
 <p>${t.subtotal}: ${escapeHtml(formatXaf(snapshot.amounts.subtotal, lang))}</p>
 <p>${t.deliveryFee}: ${escapeHtml(formatXaf(snapshot.amounts.deliveryFee, lang))}</p>
 <p>${t.total}: ${escapeHtml(formatXaf(snapshot.amounts.total, lang))}</p>
-<p>${t.withdrawalUntil}: ${formatDate(deadline.toISOString(), lang)}</p>
+<p>${withdrawal}</p>
 <p>${t.hash}: ${escapeHtml(input.snapshotHash)}</p>
 </body>
 </html>`;
