@@ -41,6 +41,7 @@ import {
 	notifyConnectedAccountLost,
 	notifyPaymentsOnboardingAction,
 } from "./paymentNotifications";
+import { PAYOUT_CHANGE_COOLDOWN_DAYS } from "./payoutAccounts";
 import { createHold } from "./payoutHolds";
 import type { ServiceUser } from "./shops";
 
@@ -90,7 +91,9 @@ const LOST_STATUSES: readonly ConnectedAccountStatus[] = [
 	"deauthorized",
 ];
 
-const PAYOUT_ACCOUNT_CHANGE_COOLDOWN_MS = 7 * 86_400_000;
+/** The view shows the cooldown `createPayoutAccount` enforces: one number. */
+const PAYOUT_ACCOUNT_CHANGE_COOLDOWN_MS =
+	PAYOUT_CHANGE_COOLDOWN_DAYS * 86_400_000;
 
 const webUrl = () => process.env.PUBLIC_WEB_URL ?? "https://buynsellem.com";
 
