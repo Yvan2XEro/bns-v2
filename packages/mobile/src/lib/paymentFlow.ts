@@ -141,16 +141,44 @@ export function pendingPhaseOf(
 // ─── COD fallback ───────────────────────────────────────────────────────────
 
 /**
- * `payment.shopNotEligible` means the shop itself cannot take protected
- * payments any more — not that this order is unpayable — so the fallback
- * only ever applies when the order's own delivery method still allows
- * paying on delivery.
+ * `payment.shopNotEligible` (the shop itself cannot take protected payments
+ * any more) and `payment.tooManyAttempts` (this order's three attempts are
+ * spent) both mean the order is stuck unless COD is still on the table —
+ * not that the order itself is unpayable — so the fallback only ever applies
+ * when the order's own cancel action is still available (mirrors web's
+ * `codFallbackAllowed` in `payment-flow.ts`).
  */
 export function codFallbackOffered(
 	errorCode: string | null,
 	codAllowed: boolean,
 ): boolean {
-	return errorCode === ERROR_CODES.paymentShopNotEligible && codAllowed;
+	if (!codAllowed) return false;
+	return (
+		errorCode === ERROR_CODES.paymentShopNotEligible ||
+		errorCode === ERROR_CODES.paymentTooManyAttempts
+	);
+}
+
+// ─── The failed screen ──────────────────────────────────────────────────────
+
+export type FailedAction = "retry" | "changeOperator" | "payOnDelivery";
+
+/**
+ * The failed card's buttons, in display order — mirrors web's
+ * `failedActions`. Spent attempts drop "Try again" and "Use another number
+ * or operator": there is nothing left to retry, and offering a fresh
+ * operator/number on an attempt count of zero would just earn
+ * `payment.tooManyAttempts` again. Only the COD fallback, when offered,
+ * survives that case.
+ */
+export function failedActions(
+	attemptsLeft: number,
+	codFallback: boolean,
+): FailedAction[] {
+	const actions: FailedAction[] = [];
+	if (attemptsLeft > 0) actions.push("retry", "changeOperator");
+	if (codFallback) actions.push("payOnDelivery");
+	return actions;
 }
 
 // ─── Hosted-checkout fallback (P0's boost idiom) ───────────────────────────

@@ -17,10 +17,15 @@ import {
 	useCreatePaymentIntent,
 	usePaymentStatus,
 } from "@/src/hooks/useCheckout";
-import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useCancelOrder } from "@/src/hooks/useOrderActions";
+import { usePurchase } from "@/src/hooks/usePurchases";
+import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import { availableActions } from "@/src/lib/orderActions";
 import {
+	codFallbackOffered,
+	failedActions,
 	formatCountdown,
 	pendingPhaseOf,
 	reminderFireAt,
@@ -54,6 +59,8 @@ export default function CheckoutPendingScreen() {
 	const { t } = useTranslation();
 	const status = usePaymentStatus(orderId);
 	const createIntent = useCreatePaymentIntent(orderId);
+	const purchase = usePurchase(orderId);
+	const cancel = useCancelOrder(orderId);
 
 	const [now, setNow] = useState(() => new Date());
 	useEffect(() => {
@@ -150,9 +157,33 @@ export default function CheckoutPendingScreen() {
 			params: { orderId },
 		});
 
+	// Cancels the order, exactly as web's "Pay on delivery instead" does: the
+	// stock this order held is freed by the cancellation itself, and the
+	// buyer re-places on their own from the purchases list — no separate
+	// COD-conversion transition.
+	const payOnDelivery = async () => {
+		await cancel.mutateAsync({ reason: "buyer_changed_mind" });
+		router.replace("/purchases");
+	};
+
 	const phase = status.data ? pendingPhaseOf(status.data, now) : "checking";
 	const resendSeconds = resendSecondsLeft(attemptStartedAtRef.current, now);
 	const canResendNow = resendSeconds === 0 && Boolean(channel && phone);
+
+	// Inferred the same way web does: a fresh attempt at zero attempts left
+	// would be refused with exactly this code, so there is no need to wait
+	// for the server to say so again.
+	const order = purchase.data;
+	const orderAllowsCod = order
+		? availableActions(order, "buyer", null).includes("cancel")
+		: false;
+	const offerCod =
+		Boolean(intent) &&
+		intent?.attemptsLeft === 0 &&
+		codFallbackOffered(ERROR_CODES.paymentTooManyAttempts, orderAllowsCod);
+	const failedCardActions = intent
+		? failedActions(intent.attemptsLeft, offerCod)
+		: [];
 
 	return (
 		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -227,18 +258,28 @@ export default function CheckoutPendingScreen() {
 								attempts: intent.attemptsLeft,
 							})}
 						</Text>
-						{intent.attemptsLeft > 0 && channel && phone ? (
+						{failedCardActions.includes("retry") && channel && phone ? (
 							<CheckoutButton
 								label={t("payments.failed_retry")}
 								onPress={() => void resend()}
 								loading={createIntent.isPending}
 							/>
 						) : null}
-						<Pressable onPress={changeOperator} accessibilityRole="button">
-							<Text style={[formStyles.hint, { color: c.primary }]}>
-								{t("payments.failed_changeNumber")}
-							</Text>
-						</Pressable>
+						{failedCardActions.includes("changeOperator") ? (
+							<Pressable onPress={changeOperator} accessibilityRole="button">
+								<Text style={[formStyles.hint, { color: c.primary }]}>
+									{t("payments.failed_changeNumber")}
+								</Text>
+							</Pressable>
+						) : null}
+						{failedCardActions.includes("payOnDelivery") ? (
+							<CheckoutButton
+								label={t("payments.pay_payOnDelivery")}
+								onPress={() => void payOnDelivery()}
+								loading={cancel.isPending}
+								variant="outline"
+							/>
+						) : null}
 					</View>
 				) : null}
 

@@ -3,6 +3,7 @@ import { ERROR_CODES } from "./apiError";
 import {
 	canResend,
 	codFallbackOffered,
+	failedActions,
 	FOREGROUND_REFRESH_MIN_INTERVAL_MS,
 	formatCountdown,
 	isPastExpiry,
@@ -202,6 +203,34 @@ describe("COD fallback on shopNotEligible", () => {
 			false,
 		);
 		expect(codFallbackOffered(null, true)).toBe(false);
+	});
+});
+
+describe("COD fallback on tooManyAttempts (S-2)", () => {
+	test("offered on that code too, mirroring web's codFallbackAllowed", () => {
+		expect(codFallbackOffered(ERROR_CODES.paymentTooManyAttempts, true)).toBe(
+			true,
+		);
+	});
+
+	test("still gated on COD being allowed at all", () => {
+		expect(codFallbackOffered(ERROR_CODES.paymentTooManyAttempts, false)).toBe(
+			false,
+		);
+	});
+});
+
+describe("the failed card's actions (S-2)", () => {
+	test("attempts left: retry and change-operator, no COD fallback shown", () => {
+		expect(failedActions(2, false)).toEqual(["retry", "changeOperator"]);
+	});
+
+	test("zero attempts, no fallback offered: nothing left to do here", () => {
+		expect(failedActions(0, false)).toEqual([]);
+	});
+
+	test("zero attempts, fallback offered: COD is the only action", () => {
+		expect(failedActions(0, true)).toEqual(["payOnDelivery"]);
 	});
 });
 
