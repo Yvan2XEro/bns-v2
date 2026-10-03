@@ -24,7 +24,13 @@ import {
 	isPilotShop,
 	type OrderSettings,
 } from "../lib/orderSettings";
-import { getPaymentSettings, isProtectedPaymentOpen } from "../lib/paymentSettings";
+import { splitAmounts } from "../lib/paymentMath";
+import {
+	getPaymentSettings,
+	isProtectedPaymentOpen,
+	type MarketRow,
+	type PaymentSettings,
+} from "../lib/paymentSettings";
 import { type PickupPointView, pickupPointView } from "../lib/pickupPointView";
 import { quoteHash } from "../lib/quoteHash";
 import {
@@ -54,7 +60,7 @@ import {
 	revalidateCartLines,
 } from "./cart";
 import { assertShopEligibleForProtectedPayment } from "./checkoutPayment";
-import { shopMarketCountry } from "./connectedAccounts";
+import { marketOf, shopMarketCountry } from "./connectedAccounts";
 import {
 	type DeliveryOption,
 	type PickupPointSnapshot,
@@ -426,7 +432,7 @@ export interface QuoteResponse {
 			total: number;
 			currency: string;
 		};
-		paymentMethod: "cod";
+		paymentMethod: "cod" | "mobile_money";
 		delivery: {
 			method: "seller_delivery" | "pickup";
 			optionId: string;
@@ -733,7 +739,14 @@ async function buildQuote(
 	if (input.paymentMethod !== "cod" && input.paymentMethod !== "mobile_money") {
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
 	}
-	if (input.paymentMethod === "mobile_money") {
+	const paymentMethod: "cod" | "mobile_money" = input.paymentMethod;
+	// Set only for `mobile_money`: the market whose `vatRateBps` and the
+	// payment settings whose `buyerProtection` config price the fee below,
+	// the exact inputs `checkoutPayment.ts#amountsFor` prices from at intent
+	// time — so the two never drift apart.
+	let protectedPricing: { market: MarketRow; settings: PaymentSettings } | null =
+		null;
+	if (paymentMethod === "mobile_money") {
 		// `mobile_money` is behind its own flag, re-checked here (not trusted
 		// from a stored setting) the same way `checkoutPayment.ts`'s intent
 		// creation re-checks it; a market/flag closed between two requests
@@ -748,6 +761,13 @@ async function buildQuote(
 		// would enforce, so no order is ever placed for a shop that could
 		// never actually take the payment.
 		await assertShopEligibleForProtectedPayment(payload, shop, now);
+		const market = marketOf(paymentSettings, shop);
+		// `isProtectedPaymentOpen` above already resolved this country to an
+		// enabled market; a miss here would mean the two checks disagree.
+		if (!market) {
+			throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+		}
+		protectedPricing = { market, settings: paymentSettings };
 	}
 
 	const optionId =
@@ -838,6 +858,29 @@ async function buildQuote(
 		buildSummaryItems(payload, lines),
 	]);
 
+	// Priced here, not left at zero: under `mobile_money` the fee the buyer
+	// will actually be charged, from the same `splitAmounts` math
+	// `checkoutPayment.ts#amountsFor` uses at intent time, with the same
+	// commission (the order's items don't exist yet, so summed per-line here
+	// rather than read back off `order-items`). `cod` keeps the fee-less total.
+	const commission = protectedPricing
+		? items.reduce(
+				(sum, item) =>
+					sum + commissionForLine(item.lineSubtotal, settings.defaultCommissionRateBps),
+				0,
+			)
+		: 0;
+	const protectedAmounts = protectedPricing
+		? splitAmounts({
+				orderTotal: total,
+				commission,
+				vatRateBps: protectedPricing.market.vatRateBps,
+				protection: protectedPricing.settings.buyerProtection,
+			})
+		: null;
+	const buyerProtectionFeeAmount = protectedAmounts?.buyerProtectionFee ?? 0;
+	const quoteTotal = protectedAmounts?.buyerTotal ?? total;
+
 	const preContract = buildContractSnapshot({
 		termsVersion: settings.termsVersion,
 		locale,
@@ -886,7 +929,7 @@ async function buildQuote(
 		deliveryFee: chosen.fee,
 		method: chosen.method,
 		city: address.city,
-		paymentMethod: "cod",
+		paymentMethod,
 		termsVersion: settings.termsVersion,
 	});
 
@@ -905,11 +948,11 @@ async function buildQuote(
 					subtotal,
 					deliveryFee: chosen.fee,
 					discount: 0,
-					buyerProtectionFee: 0,
-					total,
+					buyerProtectionFee: buyerProtectionFeeAmount,
+					total: quoteTotal,
 					currency: "XAF",
 				},
-				paymentMethod: "cod",
+				paymentMethod,
 				delivery: {
 					method: chosen.method,
 					optionId: chosen.optionId,
@@ -1108,9 +1151,10 @@ export async function placeOrder(
 		input,
 		{ now, store: options.store, ip: options.ip },
 	);
-	// `buildQuote` already refused anything else; its own response always
-	// pins `summary.paymentMethod` to "cod" (the wire shape never changes),
-	// so the actual method placed comes from the validated input instead.
+	// `buildQuote` already refused anything else; recomputed from the
+	// validated input rather than trusted off `fresh.summary.paymentMethod`,
+	// which now carries the priced method but is still the quote's echo, not
+	// the order's own field.
 	const paymentMethod: "cod" | "mobile_money" =
 		input.paymentMethod === "mobile_money" ? "mobile_money" : "cod";
 
@@ -1197,7 +1241,7 @@ export async function placeOrder(
 							subtotal: fresh.summary.amounts.subtotal,
 							deliveryFee: fresh.summary.amounts.deliveryFee,
 							discount: 0,
-							buyerProtectionFee: 0,
+							buyerProtectionFee: fresh.summary.amounts.buyerProtectionFee,
 							total: fresh.summary.amounts.total,
 							currency: "XAF",
 						},

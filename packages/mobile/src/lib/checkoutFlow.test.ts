@@ -267,8 +267,12 @@ describe("the payment method (Task 29)", () => {
 		expect(state.accepted).toBe(false);
 	});
 	test("a quote places with the method it was priced under", () => {
+		// Server-priced values (B-1): a mobile_money quote carries the real
+		// fee and total, not the cod quote's fee-less ones.
 		const mobileMoneyQuote = quote();
 		mobileMoneyQuote.summary.paymentMethod = "mobile_money";
+		mobileMoneyQuote.summary.amounts.buyerProtectionFee = 660;
+		mobileMoneyQuote.summary.amounts.total = 22_660;
 		let state = checkoutReducer(reviewing(), {
 			type: "paymentMethodChosen",
 			method: "mobile_money",
@@ -279,6 +283,14 @@ describe("the payment method (Task 29)", () => {
 		});
 		state = checkoutReducer(state, { type: "accepted", accepted: true });
 		expect(placeOrderBody(state, "fr")?.paymentMethod).toBe("mobile_money");
+		expect(state.quote?.summary.amounts).toEqual({
+			subtotal: 20_000,
+			deliveryFee: 2_000,
+			discount: 0,
+			buyerProtectionFee: 660,
+			total: 22_660,
+			currency: "XAF",
+		});
 	});
 });
 

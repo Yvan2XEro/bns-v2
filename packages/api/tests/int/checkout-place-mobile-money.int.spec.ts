@@ -428,3 +428,83 @@ describe("placeOrder: COD is unchanged by the mobile-money path", () => {
 		});
 	});
 });
+
+describe("quoteCheckout/placeOrder: the protected quote is priced server-side (B-1)", () => {
+	it("prices the fee and the real total under mobile_money; the cod quote of the same cart stays fee-less", async () => {
+		const payload = world();
+
+		const codQuote = await quoteCheckout(
+			payload,
+			BUYER,
+			baseQuoteInput({ paymentMethod: "cod" }),
+			{ now: NOW, store: new MemoryCounterStore() },
+		);
+		expect(codQuote.summary.paymentMethod).toBe("cod");
+		expect(codQuote.summary.amounts).toEqual({
+			subtotal: 10_000,
+			deliveryFee: 2_000,
+			discount: 0,
+			buyerProtectionFee: 0,
+			total: 12_000,
+			currency: "XAF",
+		});
+
+		// 10 000 goods + 2 000 delivery = 12 000; 8 % commission (the
+		// `openPayments()`/world() default) = 800; 3 % buyer-protection fee
+		// of 12 000 = 360 — the exact `splitAmounts` result, not a client
+		// literal.
+		const mobileMoneyQuote = await quoteCheckout(
+			payload,
+			BUYER,
+			baseQuoteInput({ paymentMethod: "mobile_money" }),
+			{ now: NOW, store: new MemoryCounterStore() },
+		);
+		expect(mobileMoneyQuote.summary.paymentMethod).toBe("mobile_money");
+		expect(mobileMoneyQuote.summary.amounts).toEqual({
+			subtotal: 10_000,
+			deliveryFee: 2_000,
+			discount: 0,
+			buyerProtectionFee: 360,
+			total: 12_360,
+			currency: "XAF",
+		});
+
+		const order = await place(
+			payload,
+			await quotedInput(payload, BUYER, { paymentMethod: "mobile_money" }),
+		);
+		const placed = orderAt(payload);
+		expect(placed.amounts).toEqual({
+			subtotal: 10_000,
+			deliveryFee: 2_000,
+			discount: 0,
+			buyerProtectionFee: 360,
+			total: 12_360,
+			currency: "XAF",
+		});
+		expect(order.confirmationRequired).toBe("sms_code");
+	});
+
+	it("binds the quote hash to the method: a cod quote can never place a mobile_money order", async () => {
+		const payload = world();
+		const codQuote = await quoteCheckout(
+			payload,
+			BUYER,
+			baseQuoteInput({ paymentMethod: "cod" }),
+			{ now: NOW, store: new MemoryCounterStore() },
+		);
+
+		const input: CheckoutPlaceInput = {
+			...baseQuoteInput({ paymentMethod: "mobile_money" }),
+			quoteHash: codQuote.quoteHash,
+			termsAccepted: true,
+			idempotencyKey: freshIdempotencyKey(),
+		};
+
+		await expect(place(payload, input)).rejects.toMatchObject({
+			code: "checkout.quoteChanged",
+			status: 409,
+		});
+		expect(payload.store.orders).toHaveLength(0);
+	});
+});
