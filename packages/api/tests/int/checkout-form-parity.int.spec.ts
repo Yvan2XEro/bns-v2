@@ -20,7 +20,10 @@ import {
 } from "../../../web/src/lib/checkout-form";
 import { LAUNCH_CITY_KEYS } from "../../src/lib/launchCities";
 import { ServiceError } from "../../src/lib/serviceError";
-import { parseDeliveryAddress } from "../../src/services/checkout";
+import {
+	parseDeliveryAddress,
+	DELIVERY_PHONE_PATTERN as serverPhonePattern,
+} from "../../src/services/checkout";
 
 /**
  * The checkout address rules exist three times: `parseDeliveryAddress` on the
@@ -46,13 +49,6 @@ const CASES: Array<{
 	name: string;
 	values: Partial<CheckoutAddressValues>;
 	method?: Method;
-	/**
-	 * The one known difference: the server's `CAMEROON_PHONE` takes any
-	 * `+237` nine-digit number, the clients only a `+2376` mobile, because
-	 * the confirmation SMS goes to this number. Stricter on the client is the
-	 * safe direction; this row pins it so either side moving is noticed.
-	 */
-	serverAccepts?: true;
 }> = [
 	{ name: "a complete address", values: {} },
 	{ name: "a complete pickup address", values: {}, method: "pickup" },
@@ -61,11 +57,9 @@ const CASES: Array<{
 	{ name: "recipient of 60", values: { recipientName: "A".repeat(60) } },
 	{ name: "recipient of 61", values: { recipientName: "A".repeat(61) } },
 	{ name: "recipient of spaces", values: { recipientName: "   " } },
-	{
-		name: "a landline",
-		values: { phone: "+237222123456" },
-		serverAccepts: true,
-	},
+	// The confirmation and handover codes travel by SMS to this number, so a
+	// landline is refused everywhere, the server included.
+	{ name: "a landline", values: { phone: "+237222123456" } },
 	{ name: "a short mobile", values: { phone: "+23769912440" } },
 	{ name: "a foreign mobile", values: { phone: "+33612345678" } },
 	{
@@ -155,21 +149,14 @@ function serverField(
 }
 
 describe("the checkout address rules agree across the API and both clients", () => {
-	for (const {
-		name,
-		values,
-		method = "seller_delivery",
-		serverAccepts,
-	} of CASES) {
+	for (const { name, values, method = "seller_delivery" } of CASES) {
 		it(name, () => {
 			const input = { ...valid, ...values };
 			const web = clientFields(webSchema, input, method);
 			const mobile = clientFields(mobileSchema, input, method);
 			expect(mobile).toEqual(web);
 			expect(web.length).toBeLessThanOrEqual(1);
-			expect(serverAccepts ? null : (web[0] ?? null)).toBe(
-				serverField(input, method),
-			);
+			expect(web[0] ?? null).toBe(serverField(input, method));
 		});
 	}
 
@@ -194,8 +181,9 @@ describe("the checkout address rules agree across the API and both clients", () 
 });
 
 describe("the values around the rules agree too", () => {
-	it("the phone pattern is one pattern", () => {
+	it("the phone pattern is one pattern, the server's included", () => {
 		expect(mobilePhonePattern.source).toBe(webPhonePattern.source);
+		expect(serverPhonePattern.source).toBe(webPhonePattern.source);
 	});
 
 	it("the district tables are one table", () => {

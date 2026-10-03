@@ -271,7 +271,10 @@ export interface DeliveryAddress {
 	gps: { lat: number; lng: number; accuracyMeters: number | null } | null;
 }
 
-const CAMEROON_PHONE = /^\+237\d{9}$/;
+/** A Cameroonian mobile: the confirmation and handover codes travel by SMS
+ * to this number, and a landline would leave them undeliverable. Both
+ * clients hold the same pattern (`checkout-form-parity.int.spec.ts`). */
+export const DELIVERY_PHONE_PATTERN = /^\+2376\d{8}$/;
 
 function normalizeAddressPhone(raw: string): string {
 	const trimmed = raw.trim().replace(/[\s-]/g, "");
@@ -320,7 +323,7 @@ export function parseDeliveryAddress(
 
 	const phone =
 		typeof raw.phone === "string" ? normalizeAddressPhone(raw.phone) : "";
-	if (!CAMEROON_PHONE.test(phone)) addressInvalid("delivery.phone");
+	if (!DELIVERY_PHONE_PATTERN.test(phone)) addressInvalid("delivery.phone");
 
 	const cityRaw = typeof raw.city === "string" ? raw.city : "";
 	if (!isLaunchCityKey(cityRaw)) addressInvalid("delivery.city");
