@@ -37,7 +37,10 @@ const { getPayloadMock, registry, holds, notifications } = vi.hoisted(() => ({
 				}),
 		),
 	},
-	notifications: { notifyConnectedAccountLost: vi.fn(async () => undefined) },
+	notifications: {
+		notifyConnectedAccountLost: vi.fn(async () => undefined),
+		notifyPaymentsOnboardingAction: vi.fn(async () => undefined),
+	},
 }));
 
 vi.mock("@payload-config", () => ({ default: {} }));
@@ -51,9 +54,7 @@ vi.mock("../../src/lib/payments/marketplaceRegistry", () => ({
 vi.mock("../../src/services/payoutHolds", () => ({
 	createHold: holds.createHold,
 }));
-vi.mock("../../src/services/paymentNotifications", () => ({
-	notifyConnectedAccountLost: notifications.notifyConnectedAccountLost,
-}));
+vi.mock("../../src/services/paymentNotifications", () => notifications);
 
 import { POST } from "../../src/app/(frontend)/api/shops/[id]/payments/onboarding/route";
 import { GET } from "../../src/app/(frontend)/api/shops/[id]/payments/setup/route";
@@ -227,6 +228,7 @@ beforeEach(() => {
 	registry.provider = fake;
 	holds.createHold.mockClear();
 	notifications.notifyConnectedAccountLost.mockClear();
+	notifications.notifyPaymentsOnboardingAction.mockClear();
 	use(seed());
 });
 
@@ -525,6 +527,66 @@ describe("applyAccountEvent", () => {
 		});
 		expect(holds.createHold).not.toHaveBeenCalled();
 		expect(notifications.notifyConnectedAccountLost).not.toHaveBeenCalled();
+		expect(
+			notifications.notifyPaymentsOnboardingAction.mock.calls.map(
+				(call: unknown[]) => call[1],
+			),
+		).toEqual([
+			{
+				shopId: SHOP,
+				status: "restricted",
+				requirementsDue: ["individual.id_number"],
+			},
+		]);
+	});
+
+	it("tells the owner about a restriction once, not on every replay", async () => {
+		fake.seedAccount({ accountId: "acct_seed", status: "restricted" });
+		await apply(accountEvent("restricted"));
+		await apply(accountEvent("restricted"));
+
+		expect(payload.store["connected-accounts"][0].status).toBe("restricted");
+		expect(notifications.notifyPaymentsOnboardingAction).toHaveBeenCalledTimes(
+			1,
+		);
+	});
+
+	it("tells the owner when an active account starts owing requirements", async () => {
+		fake.seedAccount({
+			accountId: "acct_seed",
+			status: "active",
+			requirementsDue: ["tos_acceptance"],
+		});
+		await apply(accountEvent("active"));
+
+		expect(
+			notifications.notifyPaymentsOnboardingAction.mock.calls.map(
+				(call: unknown[]) => call[1],
+			),
+		).toEqual([
+			{ shopId: SHOP, status: "active", requirementsDue: ["tos_acceptance"] },
+		]);
+	});
+
+	it("does not call onboarding requirements an action notice", async () => {
+		use(
+			seed({}, payments(), {
+				"connected-accounts": [accountRow({ status: "onboarding" })],
+			}),
+		);
+		fake.seedAccount({
+			accountId: "acct_seed",
+			status: "onboarding",
+			requirementsDue: ["individual.id_number"],
+		});
+		await apply(accountEvent("onboarding"));
+
+		expect(payload.store["connected-accounts"][0].requirementsDue).toEqual([
+			"individual.id_number",
+		]);
+		expect(notifications.notifyPaymentsOnboardingAction).toHaveBeenCalledTimes(
+			0,
+		);
 	});
 
 	it("ignores an account it does not know, and writes nothing", async () => {

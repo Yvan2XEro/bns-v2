@@ -78,6 +78,35 @@ export function buildExpoPushData(
 			return invoiceId
 				? { invoiceId, url: `/seller/billing/${invoiceId}` }
 				: undefined;
+		// P5. The spec's "payments to /orders/{id}" names no client route: the
+		// buyer's order lives at /purchases/{id} and the shop's at
+		// /seller/orders/{id}, so each audience gets its own.
+		case "payment-succeeded":
+		case "payment-failed":
+		case "refund-completed":
+		case "refund-failed":
+			return orderId ? { orderId, url: `/purchases/${orderId}` } : undefined;
+		case "order-paid":
+			return orderId
+				? { orderId, url: `/seller/orders/${orderId}` }
+				: undefined;
+		case "refund-initiated": {
+			if (!orderId) return undefined;
+			return getStringValue(payload, "audience") === "shop"
+				? { orderId, url: `/seller/orders/${orderId}` }
+				: { orderId, url: `/purchases/${orderId}` };
+		}
+		case "payout-sent":
+		case "payout-failed":
+		case "payout-hold-placed":
+		case "payout-hold-released":
+		case "payout-receivable-written-off":
+			return { url: "/seller/payments" };
+		case "payments-onboarding-action":
+		case "payout-account-activated":
+		case "payout-account-review":
+		case "payout-account-changed":
+			return { url: "/seller/payments/setup" };
 		case "listing-approved":
 		case "listing-status":
 		case "listing-expired":

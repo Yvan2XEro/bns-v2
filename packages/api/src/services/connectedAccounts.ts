@@ -37,7 +37,10 @@ import type {
 	Shop,
 	User,
 } from "../payload-types";
-import { notifyConnectedAccountLost } from "./paymentNotifications";
+import {
+	notifyConnectedAccountLost,
+	notifyPaymentsOnboardingAction,
+} from "./paymentNotifications";
 import { createHold } from "./payoutHolds";
 import type { ServiceUser } from "./shops";
 
@@ -343,7 +346,8 @@ function requirementsOf(value: unknown): string[] {
 /**
  * Writes provider truth onto the row. Losing the account (disabled or
  * deauthorized) blocks charges with a shop hold, and the owner and staff are
- * told once — on the transition, not on every replay of it.
+ * told once — on the transition, not on every replay of it. Entering
+ * `restricted`, or `active` with requirements due, tells the owner the same way.
  */
 async function applyAccountState(
 	req: PayloadRequest,
@@ -402,8 +406,34 @@ async function applyAccountState(
 				});
 			if (!onCommit(commitContextOf(req), notify)) await notify();
 		}
+		return updated;
+	}
+
+	const requirementsDue =
+		state.requirementsDue ?? requirementsOf(row.requirementsDue);
+	if (
+		needsOwnerAction(state.status, requirementsDue) &&
+		!needsOwnerAction(row.status, requirementsOf(row.requirementsDue))
+	) {
+		const notify = () =>
+			notifyPaymentsOnboardingAction(req.payload, {
+				shopId: relationId(row.shop) ?? "",
+				status: state.status,
+				requirementsDue,
+			});
+		if (!onCommit(commitContextOf(req), notify)) await notify();
 	}
 	return updated;
+}
+
+/**
+ * `payments-onboarding-action`'s condition; the owner is told on entering it.
+ * Requirements count only once onboarding is over: before that they are the
+ * onboarding itself, which the owner is already in the middle of.
+ */
+function needsOwnerAction(status: string, requirementsDue: string[]): boolean {
+	if (status === "restricted") return true;
+	return status === "active" && requirementsDue.length > 0;
 }
 
 async function rowForProviderAccount(

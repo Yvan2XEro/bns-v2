@@ -74,6 +74,78 @@ function numberProperty(description?: string): JsonSchema {
 	return description ? { type: "number", description } : { type: "number" };
 }
 
+function booleanProperty(description: string): JsonSchema {
+	return { type: "boolean", description };
+}
+
+function nullableStringProperty(description: string): JsonSchema {
+	return { type: ["string", "null"], description };
+}
+
+const paymentProperties = {
+	orderId: stringProperty("Order identifier"),
+	orderNumber: stringProperty("Order number"),
+	amount: numberProperty("Amount charged, integer in the currency"),
+	currency: stringProperty("ISO currency code"),
+};
+const PAYMENT_REQUIRED = ["orderId", "orderNumber", "amount", "currency"];
+
+const payoutAccountProperties = {
+	shopId: stringProperty("Shop identifier"),
+	accountId: stringProperty("Payout account identifier"),
+	method: stringProperty('"mtn_momo", "orange_money" or "bank"'),
+	accountNumberMasked: stringProperty("Masked account number"),
+};
+const PAYOUT_ACCOUNT_REQUIRED = [
+	"shopId",
+	"accountId",
+	"method",
+	"accountNumberMasked",
+];
+
+/** The hold pair carries the reason category, never the hold's reason. */
+const holdProperties = {
+	shopId: stringProperty("Shop identifier"),
+	shopName: stringProperty("Shop display name"),
+	holdId: nullableStringProperty("Hold identifier"),
+	scope: stringProperty('"shop" or "order"'),
+	orderId: nullableStringProperty("Held order, for an order-scope hold"),
+	reasonCategory: stringProperty('"security", "review" or "operations"'),
+};
+const HOLD_REQUIRED = [
+	"shopId",
+	"shopName",
+	"holdId",
+	"scope",
+	"orderId",
+	"reasonCategory",
+];
+
+const payoutProperties = {
+	shopId: stringProperty("Shop identifier"),
+	payoutId: stringProperty("Payout identifier"),
+	amount: numberProperty("Payout amount"),
+	currency: stringProperty("ISO currency code"),
+};
+const PAYOUT_REQUIRED = ["shopId", "payoutId", "amount", "currency"];
+
+const refundProperties = {
+	refundId: stringProperty("Refund identifier"),
+	orderId: stringProperty("Order identifier"),
+	orderNumber: stringProperty("Order number"),
+	amount: numberProperty("Refund amount"),
+	currency: stringProperty("ISO currency code"),
+	reason: stringProperty("Refund reason"),
+};
+const REFUND_REQUIRED = [
+	"refundId",
+	"orderId",
+	"orderNumber",
+	"amount",
+	"currency",
+	"reason",
+];
+
 function redirect(url: string): components.RedirectDto {
 	return { url };
 }
@@ -1665,6 +1737,607 @@ const workflowSpecs: WorkflowSpec[] = [
 				pushStep("Push", "push", {
 					subject: "Conversation assignee",
 					body: "{{payload.assignedByName}} vous a assigne une conversation sur {{payload.shopName}}.",
+				}),
+			],
+		},
+	},
+	// --- P5 protected payment ------------------------------------------------
+	// Buyer payment notices open the buyer's order screen and shop ones the
+	// seller's; payouts open `/seller/payments`, account changes its setup.
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Payment Succeeded",
+			description: "Tells the buyer their protected payment went through.",
+			workflowId: "payment-succeeded",
+			tags: ["payment"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(paymentProperties, PAYMENT_REQUIRED),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Paiement reçu",
+					body: "Paiement de {{payload.amount}} {{payload.currency}} reçu pour la commande {{payload.orderNumber}}. La boutique doit maintenant l'accepter. / Payment of {{payload.amount}} {{payload.currency}} received for order {{payload.orderNumber}}. The shop now has to accept it.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Paiement reçu",
+					body: "Commande {{payload.orderNumber}} payée : {{payload.amount}} {{payload.currency}}. / Order {{payload.orderNumber}} paid: {{payload.amount}} {{payload.currency}}.",
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Paiement reçu, commande {{payload.orderNumber}} / Payment received, order {{payload.orderNumber}}",
+					body: "Paiement de {{payload.amount}} {{payload.currency}} reçu pour la commande {{payload.orderNumber}}. La boutique doit maintenant l'accepter. / Payment of {{payload.amount}} {{payload.currency}} received for order {{payload.orderNumber}}. The shop now has to accept it.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Payment Failed",
+			description:
+				"Tells the buyer the payment failed for good or expired, and the order was cancelled.",
+			workflowId: "payment-failed",
+			tags: ["payment"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...paymentProperties,
+					status: stringProperty('"failed" or "expired"'),
+					failureCode: nullableStringProperty(
+						"Provider failure code, null on expiry",
+					),
+				},
+				[...PAYMENT_REQUIRED, "status", "failureCode"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Paiement non abouti",
+					body: "Le paiement de la commande {{payload.orderNumber}} n'a pas abouti ; la commande est annulée. / Payment for order {{payload.orderNumber}} did not go through; the order is cancelled.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Paiement non abouti",
+					body: "Commande {{payload.orderNumber}} annulée : paiement non abouti. / Order {{payload.orderNumber}} cancelled: payment did not go through.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Order Paid",
+			description:
+				"Tells the shop's owner and managers an order was paid and must be accepted.",
+			workflowId: "order-paid",
+			tags: ["payment", "order"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...paymentProperties,
+					acceptBy: stringProperty("Accept deadline, ISO date"),
+				},
+				[...PAYMENT_REQUIRED, "acceptBy"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Commande payée",
+					body: "Commande {{payload.orderNumber}} payée ({{payload.amount}} {{payload.currency}}). Acceptez-la avant le {{payload.acceptBy}}. / Order {{payload.orderNumber}} paid ({{payload.amount}} {{payload.currency}}). Accept it by {{payload.acceptBy}}.",
+					redirect: redirect("/seller/orders/{{payload.orderId}}"),
+					primaryAction: action(
+						"Accepter / Accept",
+						"/seller/orders/{{payload.orderId}}",
+					),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Commande payée",
+					body: "Commande {{payload.orderNumber}} payée, à accepter avant le {{payload.acceptBy}}. / Order {{payload.orderNumber}} paid, accept by {{payload.acceptBy}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, email: true },
+		definition: {
+			name: "Payments Onboarding Action",
+			description:
+				"Tells the owner the connected payment account is restricted or has requirements due.",
+			workflowId: "payments-onboarding-action",
+			tags: ["payment", "account"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					status: stringProperty("Connected account status"),
+					requirementsCount: numberProperty("Requirements due"),
+				},
+				["shopId", "shopName", "status", "requirementsCount"],
+			),
+			preferences: preferences({ inApp: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Action requise",
+					body: "Le compte de paiement de {{payload.shopName}} demande une action ({{payload.requirementsCount}} élément(s) requis). Complétez-le pour continuer à recevoir des paiements protégés. / The payment account for {{payload.shopName}} needs attention ({{payload.requirementsCount}} item(s) required). Complete it to keep receiving protected payments.",
+					redirect: redirect("/seller/payments/setup"),
+					primaryAction: action(
+						"Compléter / Complete",
+						"/seller/payments/setup",
+					),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Action requise sur votre compte de paiement / Action needed on your payment account",
+					body: "Le compte de paiement de {{payload.shopName}} demande une action ({{payload.requirementsCount}} élément(s) requis). Complétez-le dans l'application pour continuer à recevoir des paiements protégés. / The payment account for {{payload.shopName}} needs attention ({{payload.requirementsCount}} item(s) required). Complete it in the app to keep receiving protected payments.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, email: true },
+		definition: {
+			name: "Payout Account Activated",
+			description: "Tells the owner their payout account is active.",
+			workflowId: "payout-account-activated",
+			tags: ["payout", "account"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				payoutAccountProperties,
+				PAYOUT_ACCOUNT_REQUIRED,
+			),
+			preferences: preferences({ inApp: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Compte de versement actif",
+					body: "Votre compte de versement {{payload.accountNumberMasked}} est actif. / Your payout account {{payload.accountNumberMasked}} is active.",
+					redirect: redirect("/seller/payments/setup"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				emailStep("Email", "email", {
+					subject: "Compte de versement actif / Payout account active",
+					body: "Votre compte de versement {{payload.accountNumberMasked}} est actif : vos versements y seront envoyés. / Your payout account {{payload.accountNumberMasked}} is active: your payouts will be sent there.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, email: true },
+		definition: {
+			name: "Payout Account Review",
+			description:
+				"Tells the owner the payout account name only partly matched (staff review) or did not match.",
+			workflowId: "payout-account-review",
+			tags: ["payout", "account"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...payoutAccountProperties,
+					result: stringProperty('"partial" or "mismatch"'),
+				},
+				[...PAYOUT_ACCOUNT_REQUIRED, "result"],
+			),
+			preferences: preferences({ inApp: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Compte de versement non activé",
+					body: "Votre compte de versement {{payload.accountNumberMasked}} n'a pas pu être activé automatiquement : le nom ne correspond pas à votre identité vérifiée. Consultez le détail dans l'application. / Your payout account {{payload.accountNumberMasked}} could not be activated automatically: the name does not match your verified identity. See the details in the app.",
+					redirect: redirect("/seller/payments/setup"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Compte de versement non activé / Payout account not activated",
+					body: "Votre compte de versement {{payload.accountNumberMasked}} n'a pas pu être activé automatiquement : le nom ne correspond pas à votre identité vérifiée. Consultez le détail dans l'application. / Your payout account {{payload.accountNumberMasked}} could not be activated automatically: the name does not match your verified identity. See the details in the app.",
+				}),
+			],
+		},
+	},
+	{
+		// The SMS leg is sent by `notifyPayoutAccountChanged` through
+		// `smsProvider`, not by Novu, so the channels here are push and email.
+		channels: { push: true, email: true },
+		definition: {
+			name: "Payout Account Changed",
+			description:
+				"Warns the owner the payout account changed and payouts are held, with the not-me link.",
+			workflowId: "payout-account-changed",
+			tags: ["payout", "account", "security"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...payoutAccountProperties,
+					holdUntil: stringProperty("Change hold end, ISO date"),
+					notMeUrl: stringProperty('"This was not me" link'),
+				},
+				[...PAYOUT_ACCOUNT_REQUIRED, "holdUntil", "notMeUrl"],
+			),
+			preferences: preferences({ push: true, email: true }),
+			steps: [
+				pushStep("Push", "push", {
+					subject: "Compte de versement modifié",
+					body: "Versements suspendus jusqu'au {{payload.holdUntil}}. Ce n'était pas vous ? Ouvrez cette notification. / Payouts held until {{payload.holdUntil}}. Not you? Open this notification.",
+				}),
+				emailStep("Email", "email", {
+					subject: "Compte de versement modifié / Payout account changed",
+					body: "Le compte de versement de votre boutique a été remplacé par {{payload.accountNumberMasked}}. Les versements sont suspendus jusqu'au {{payload.holdUntil}}. Ce n'était pas vous ? {{payload.notMeUrl}} / Your shop's payout account was replaced by {{payload.accountNumberMasked}}. Payouts are held until {{payload.holdUntil}}. Not you? {{payload.notMeUrl}}",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, email: true },
+		definition: {
+			name: "Payout Hold Placed",
+			description:
+				"Tells the owner payouts are on hold, with the reason category only, never the rule.",
+			workflowId: "payout-hold-placed",
+			tags: ["payout", "hold"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...holdProperties,
+					checkPayoutAccount: booleanProperty(
+						"The owner can lift the cause by fixing the payout account",
+					),
+				},
+				[...HOLD_REQUIRED, "checkPayoutAccount"],
+			),
+			preferences: preferences({ inApp: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Versements suspendus",
+					body: "Les versements de {{payload.shopName}} sont suspendus (motif : {{payload.reasonCategory}}). / Payouts for {{payload.shopName}} are on hold (reason: {{payload.reasonCategory}}).",
+					redirect: redirect("/seller/payments"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				emailStep("Email", "email", {
+					subject: "Versements suspendus / Payouts on hold",
+					body: "Les versements de {{payload.shopName}} sont suspendus (motif : {{payload.reasonCategory}}). Le détail est dans l'application. / Payouts for {{payload.shopName}} are on hold (reason: {{payload.reasonCategory}}). The details are in the app.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, email: true },
+		definition: {
+			name: "Payout Hold Released",
+			description: "Tells the owner a payout hold was released or expired.",
+			workflowId: "payout-hold-released",
+			tags: ["payout", "hold"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...holdProperties,
+					cause: stringProperty('"released" or "expired"'),
+				},
+				[...HOLD_REQUIRED, "cause"],
+			),
+			preferences: preferences({ inApp: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Versements rétablis",
+					body: "La suspension des versements de {{payload.shopName}} est levée. / The payout hold on {{payload.shopName}} is lifted.",
+					redirect: redirect("/seller/payments"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				emailStep("Email", "email", {
+					subject: "Versements rétablis / Payouts resumed",
+					body: "La suspension des versements de {{payload.shopName}} est levée. / The payout hold on {{payload.shopName}} is lifted.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Payout Sent",
+			description: "Tells the owner a payout reached their payout account.",
+			workflowId: "payout-sent",
+			tags: ["payout"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(payoutProperties, PAYOUT_REQUIRED),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Versement envoyé",
+					body: "Versement de {{payload.amount}} {{payload.currency}} envoyé sur votre compte de versement. / Payout of {{payload.amount}} {{payload.currency}} sent to your payout account.",
+					redirect: redirect("/seller/payments"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Versement envoyé",
+					body: "{{payload.amount}} {{payload.currency}} envoyés sur votre compte. / {{payload.amount}} {{payload.currency}} sent to your account.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Payout Failed",
+			description:
+				"Tells the owner a payout failed and will be retried at the next run.",
+			workflowId: "payout-failed",
+			tags: ["payout"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(payoutProperties, PAYOUT_REQUIRED),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Versement échoué",
+					body: "Le versement de {{payload.amount}} {{payload.currency}} a échoué ; il sera retenté au prochain cycle. Vérifiez votre compte de versement. / The payout of {{payload.amount}} {{payload.currency}} failed; it will be retried at the next run. Check your payout account.",
+					redirect: redirect("/seller/payments"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Versement échoué",
+					body: "Versement de {{payload.amount}} {{payload.currency}} échoué, nouvel essai au prochain cycle. / Payout of {{payload.amount}} {{payload.currency}} failed, retried at the next run.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Refund Initiated",
+			description:
+				"Tells the buyer, and the shop owner, that a refund was started.",
+			workflowId: "refund-initiated",
+			tags: ["refund"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					...refundProperties,
+					audience: stringProperty('"buyer" or "shop"'),
+					orderPath: stringProperty("The recipient's own order screen"),
+				},
+				[...REFUND_REQUIRED, "audience", "orderPath"],
+			),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Remboursement lancé",
+					body: "Remboursement de {{payload.amount}} {{payload.currency}} lancé pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} started for order {{payload.orderNumber}}.",
+					redirect: redirect("{{payload.orderPath}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Remboursement lancé",
+					body: "Commande {{payload.orderNumber}} : remboursement de {{payload.amount}} {{payload.currency}} lancé. / Order {{payload.orderNumber}}: refund of {{payload.amount}} {{payload.currency}} started.",
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Remboursement lancé, commande {{payload.orderNumber}} / Refund started, order {{payload.orderNumber}}",
+					body: "Remboursement de {{payload.amount}} {{payload.currency}} lancé pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} started for order {{payload.orderNumber}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Refund Completed",
+			description: "Tells the buyer their refund was paid out.",
+			workflowId: "refund-completed",
+			tags: ["refund"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(refundProperties, REFUND_REQUIRED),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Remboursement effectué",
+					body: "Remboursement de {{payload.amount}} {{payload.currency}} effectué pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} completed for order {{payload.orderNumber}}.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Remboursement effectué",
+					body: "Commande {{payload.orderNumber}} : {{payload.amount}} {{payload.currency}} remboursés. / Order {{payload.orderNumber}}: {{payload.amount}} {{payload.currency}} refunded.",
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Remboursement effectué, commande {{payload.orderNumber}} / Refund completed, order {{payload.orderNumber}}",
+					body: "Remboursement de {{payload.amount}} {{payload.currency}} effectué pour la commande {{payload.orderNumber}}. / Refund of {{payload.amount}} {{payload.currency}} completed for order {{payload.orderNumber}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true, email: true },
+		definition: {
+			name: "Refund Failed",
+			description:
+				"Tells the buyer a refund failed after its retry and staff are handling it.",
+			workflowId: "refund-failed",
+			tags: ["refund"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(refundProperties, REFUND_REQUIRED),
+			preferences: preferences({ inApp: true, push: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Remboursement en échec",
+					body: "Le remboursement de {{payload.amount}} {{payload.currency}} pour la commande {{payload.orderNumber}} a échoué. Notre équipe s'en occupe. / The refund of {{payload.amount}} {{payload.currency}} for order {{payload.orderNumber}} failed. Our team is handling it.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Remboursement en échec",
+					body: "Commande {{payload.orderNumber}} : le remboursement a échoué, notre équipe s'en occupe. / Order {{payload.orderNumber}}: the refund failed, our team is handling it.",
+				}),
+				emailStep("Email", "email", {
+					subject:
+						"Remboursement en échec, commande {{payload.orderNumber}} / Refund failed, order {{payload.orderNumber}}",
+					body: "Le remboursement de {{payload.amount}} {{payload.currency}} pour la commande {{payload.orderNumber}} a échoué. Notre équipe s'en occupe et revient vers vous. / The refund of {{payload.amount}} {{payload.currency}} for order {{payload.orderNumber}} failed. Our team is handling it and will get back to you.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, email: true },
+		definition: {
+			name: "Payout Receivable Written Off",
+			description:
+				"Tells the owner an unrecovered receivable was written off and protected payment suspended.",
+			workflowId: "payout-receivable-written-off",
+			tags: ["payout", "hold"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					amount: numberProperty("Written-off amount"),
+					currency: stringProperty("ISO currency code"),
+					holdId: stringProperty("The suspending hold"),
+				},
+				["shopId", "shopName", "amount", "currency", "holdId"],
+			),
+			preferences: preferences({ inApp: true, email: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Paiement protégé suspendu",
+					body: "Une somme de {{payload.amount}} {{payload.currency}} due par {{payload.shopName}} n'a pas pu être récupérée ; le paiement protégé est suspendu. / An amount of {{payload.amount}} {{payload.currency}} owed by {{payload.shopName}} could not be recovered; protected payment is suspended.",
+					redirect: redirect("/seller/payments"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				emailStep("Email", "email", {
+					subject: "Paiement protégé suspendu / Protected payment suspended",
+					body: "Une somme de {{payload.amount}} {{payload.currency}} due par {{payload.shopName}} n'a pas pu être récupérée ; le paiement protégé est suspendu. Contactez-nous pour le rétablir. / An amount of {{payload.amount}} {{payload.currency}} owed by {{payload.shopName}} could not be recovered; protected payment is suspended. Contact us to restore it.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { email: true },
+		definition: {
+			name: "Payments Reconciliation Alert",
+			description: "Tells admins a reconciliation run left open mismatches.",
+			workflowId: "payments-reconciliation-alert",
+			tags: ["payment", "staff"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					runId: stringProperty("Reconciliation run identifier"),
+					openMismatches: numberProperty("Open mismatches after the run"),
+				},
+				["runId", "openMismatches"],
+			),
+			preferences: preferences({ email: true }),
+			steps: [
+				emailStep("Email", "email", {
+					subject:
+						"[Paiements] {{payload.openMismatches}} écart(s) ouvert(s) / [Payments] {{payload.openMismatches}} open mismatch(es)",
+					body: "Le rapprochement {{payload.runId}} laisse {{payload.openMismatches}} écart(s) ouvert(s) à traiter. / Reconciliation run {{payload.runId}} left {{payload.openMismatches}} open mismatch(es) to resolve.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { email: true },
+		definition: {
+			name: "Payments Connected Account Lost",
+			description:
+				"Tells admins a shop's connected account was disabled or deauthorized and charges are blocked.",
+			workflowId: "payments-connected-account-lost",
+			tags: ["payment", "staff"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					shopName: stringProperty("Shop display name"),
+					status: stringProperty('"disabled" or "deauthorized"'),
+				},
+				["shopId", "shopName", "status"],
+			),
+			preferences: preferences({ email: true }),
+			steps: [
+				emailStep("Email", "email", {
+					subject:
+						"[Paiements] Compte connecté perdu : {{payload.shopName}} / [Payments] Connected account lost: {{payload.shopName}}",
+					body: "Le compte connecté de {{payload.shopName}} ({{payload.shopId}}) est passé à {{payload.status}}. Les encaissements sont bloqués par une suspension. / The connected account of {{payload.shopName}} ({{payload.shopId}}) became {{payload.status}}. Charges are blocked by a hold.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { email: true },
+		definition: {
+			name: "Payments Refund Staff Alert",
+			description:
+				"Tells admins a refund failed after its retry and a status mismatch awaits them.",
+			workflowId: "payments-refund-staff-alert",
+			tags: ["payment", "refund", "staff"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					refundId: stringProperty("Refund identifier"),
+					orderId: stringProperty("Order identifier"),
+					shopId: nullableStringProperty("Shop identifier"),
+					amount: numberProperty("Refund amount"),
+					currency: stringProperty("ISO currency code"),
+					reason: stringProperty("Refund reason"),
+					mismatchId: stringProperty("Open status_mismatch identifier"),
+					failureReason: nullableStringProperty("Provider failure reason"),
+				},
+				[
+					"refundId",
+					"orderId",
+					"shopId",
+					"amount",
+					"currency",
+					"reason",
+					"mismatchId",
+					"failureReason",
+				],
+			),
+			preferences: preferences({ email: true }),
+			steps: [
+				emailStep("Email", "email", {
+					subject:
+						"[Paiements] Remboursement en échec {{payload.refundId}} / [Payments] Refund failed {{payload.refundId}}",
+					body: "Le remboursement {{payload.refundId}} ({{payload.amount}} {{payload.currency}}, commande {{payload.orderId}}) a échoué deux fois : {{payload.failureReason}}. Écart {{payload.mismatchId}} à traiter. / Refund {{payload.refundId}} ({{payload.amount}} {{payload.currency}}, order {{payload.orderId}}) failed twice: {{payload.failureReason}}. Mismatch {{payload.mismatchId}} awaits you.",
 				}),
 			],
 		},
