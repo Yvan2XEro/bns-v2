@@ -139,6 +139,9 @@ services:
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # Staging only: "fake" serves protected payment from the in-memory fake
+      # provider despite NODE_ENV=production. Leave empty in production.
+      PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
       NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
       NOVU_API_URL: ${NOVU_API_URL:-https://api.novu.co}
       NOVU_EXPO_INTEGRATION_IDENTIFIER: ${NOVU_EXPO_INTEGRATION_IDENTIFIER:-}
