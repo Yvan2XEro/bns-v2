@@ -252,21 +252,17 @@ interface Eligible {
 	amounts: SplitAmountsResult;
 }
 
-async function assertEligible(
+/**
+ * Rule 2's shop-eligibility half, with no order in it: capabilities, the
+ * connected account, an active payout account, no blocking hold. Checkout's
+ * placement reuses this exact check before any order exists — the market,
+ * amount and exposure checks below stay here because they need the order.
+ */
+export async function assertShopEligibleForProtectedPayment(
 	payload: Payload,
-	order: Order,
 	shop: Shop,
-	settings: PaymentSettings,
-	env: PaymentEnv,
 	now: Date,
-): Promise<Eligible> {
-	if (!isProtectedPaymentFlagOpen(settings, env)) {
-		throw refuse(ERROR_CODES.paymentProtectedDisabled, 403);
-	}
-	const market = marketOf(settings, shop);
-	if (!market?.enabled) {
-		throw refuse(ERROR_CODES.paymentMarketUnavailable, 400);
-	}
+): Promise<void> {
 	const notEligible = refuse(ERROR_CODES.paymentShopNotEligible, 403);
 	const capabilities = shopCapabilities(shop, now);
 	if (!capabilities.protectedPayment) throw notEligible;
@@ -290,7 +286,32 @@ async function assertEligible(
 	});
 	if (payoutAccounts.totalDocs === 0) throw notEligible;
 	if (await hasBlockingHold(payload, shopId)) throw notEligible;
+}
 
+async function assertEligible(
+	payload: Payload,
+	order: Order,
+	shop: Shop,
+	settings: PaymentSettings,
+	env: PaymentEnv,
+	now: Date,
+): Promise<Eligible> {
+	if (!isProtectedPaymentFlagOpen(settings, env)) {
+		throw refuse(ERROR_CODES.paymentProtectedDisabled, 403);
+	}
+	const market = marketOf(settings, shop);
+	if (!market?.enabled) {
+		throw refuse(ERROR_CODES.paymentMarketUnavailable, 400);
+	}
+	await assertShopEligibleForProtectedPayment(payload, shop, now);
+	const notEligible = refuse(ERROR_CODES.paymentShopNotEligible, 403);
+	const capabilities = shopCapabilities(shop, now);
+
+	const shopId = String(shop.id);
+	// Re-read: `assertShopEligibleForProtectedPayment` just proved this
+	// account exists and is active; the guard below only narrows the type.
+	const account = await findConnectedAccount(payload, shopId);
+	if (!account?.providerAccountId) throw notEligible;
 	const amounts = await amountsFor(payload, order, settings, market);
 	if (amounts.buyerTotal > settings.maxOrderAmount) {
 		throw refuse(ERROR_CODES.paymentAmountTooHigh, 400);

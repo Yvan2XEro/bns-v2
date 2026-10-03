@@ -24,6 +24,7 @@ import {
 	isPilotShop,
 	type OrderSettings,
 } from "../lib/orderSettings";
+import { getPaymentSettings, isProtectedPaymentOpen } from "../lib/paymentSettings";
 import { type PickupPointView, pickupPointView } from "../lib/pickupPointView";
 import { quoteHash } from "../lib/quoteHash";
 import {
@@ -52,6 +53,8 @@ import {
 	markCartConverted,
 	revalidateCartLines,
 } from "./cart";
+import { assertShopEligibleForProtectedPayment } from "./checkoutPayment";
+import { shopMarketCountry } from "./connectedAccounts";
 import {
 	type DeliveryOption,
 	type PickupPointSnapshot,
@@ -727,10 +730,24 @@ async function buildQuote(
 	const ctx = await assertCheckoutPreconditions(payload, user, { now });
 	const { settings, lines, shop, capabilities } = ctx;
 
-	if (input.paymentMethod !== "cod") {
-		// P5's `mobile_money` is behind its own flag; until it ships this is
-		// the honest answer for any other payment method.
+	if (input.paymentMethod !== "cod" && input.paymentMethod !== "mobile_money") {
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+	}
+	if (input.paymentMethod === "mobile_money") {
+		// `mobile_money` is behind its own flag, re-checked here (not trusted
+		// from a stored setting) the same way `checkoutPayment.ts`'s intent
+		// creation re-checks it; a market/flag closed between two requests
+		// closes this at once too.
+		const paymentSettings = await getPaymentSettings(payload);
+		const countryCode = shopMarketCountry(shop, paymentSettings);
+		if (!isProtectedPaymentOpen(paymentSettings, countryCode)) {
+			throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
+		}
+		// Reuses checkoutPayment.ts's Rule 2 shop-eligibility check verbatim:
+		// the same connected-account/payout-account/hold rule a real intent
+		// would enforce, so no order is ever placed for a shop that could
+		// never actually take the payment.
+		await assertShopEligibleForProtectedPayment(payload, shop, now);
 	}
 
 	const optionId =
@@ -1091,6 +1108,11 @@ export async function placeOrder(
 		input,
 		{ now, store: options.store, ip: options.ip },
 	);
+	// `buildQuote` already refused anything else; its own response always
+	// pins `summary.paymentMethod` to "cod" (the wire shape never changes),
+	// so the actual method placed comes from the validated input instead.
+	const paymentMethod: "cod" | "mobile_money" =
+		input.paymentMethod === "mobile_money" ? "mobile_money" : "cod";
 
 	const suppliedHash =
 		typeof input.quoteHash === "string" ? input.quoteHash : "";
@@ -1146,8 +1168,9 @@ export async function placeOrder(
 						buyer: user.id,
 						shop: shopId,
 						status: "placed",
-						paymentMethod: "cod",
-						paymentStatus: "cod_pending",
+						paymentMethod,
+						paymentStatus:
+							paymentMethod === "mobile_money" ? "unpaid" : "cod_pending",
 						confirmation: {
 							method:
 								fresh.confirmationRequired === "seller_call"
