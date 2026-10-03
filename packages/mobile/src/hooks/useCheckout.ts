@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Platform } from "react-native";
+import { useEffect, useRef } from "react";
+import { AppState, Platform } from "react-native";
 import { api } from "../lib/api";
+import { shouldRefetchOnForeground } from "../lib/paymentFlow";
+import type { PaymentChannel } from "../lib/paymentStatus";
 import type {
 	DeliveryOption,
+	PaymentIntentResponse,
+	PaymentStatusView,
 	PlaceInput,
 	PlaceResponse,
 	QuoteInput,
@@ -68,4 +73,76 @@ export function usePlaceOrder() {
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
 		},
 	});
+}
+
+// ─── Protected payment (P5) ─────────────────────────────────────────────────
+
+/** The server verifies a pending attempt at most every 20s
+ * (`POLL_INTERVAL_SECONDS` in `checkoutPayment.ts`). */
+const PAYMENT_POLL_INTERVAL_MS = 20_000;
+
+export const paymentStatusKey = (orderId: string) =>
+	["orders", orderId, "payment"] as const;
+
+/**
+ * `POST /api/orders/{id}/payment-intents`. The `Idempotency-Key` header is
+ * the server's own de-dup key, not the body: a retried call with the same
+ * key replays the first attempt's answer instead of starting a second one.
+ */
+export function useCreatePaymentIntent(orderId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (input: {
+			channel: PaymentChannel;
+			phone: string;
+			idempotencyKey: string;
+		}) =>
+			api.post<PaymentIntentResponse>(
+				`/api/orders/${orderId}/payment-intents`,
+				{ channel: input.channel, phone: input.phone },
+				{ "Idempotency-Key": input.idempotencyKey },
+			),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: paymentStatusKey(orderId) });
+		},
+	});
+}
+
+/**
+ * `GET /api/orders/{id}/payment`. Polls while an attempt is open, and also
+ * refetches when the app returns to the foreground — the buyer leaves the
+ * app to approve the USSD prompt, and that return is the only signal a
+ * dismissed approval gives outside the poll. `shouldRefetchOnForeground`
+ * (pure, tested in `paymentFlow.test.ts`) decides whether a given foreground
+ * event is worth the request.
+ */
+export function usePaymentStatus(orderId: string | undefined) {
+	const query = useQuery({
+		queryKey: paymentStatusKey(orderId ?? ""),
+		queryFn: () => api.get<PaymentStatusView>(`/api/orders/${orderId}/payment`),
+		enabled: Boolean(orderId),
+		refetchInterval: (q) => {
+			const status = q.state.data?.intent?.status;
+			return status === "created" || status === "pending"
+				? PAYMENT_POLL_INTERVAL_MS
+				: false;
+		},
+	});
+
+	const refetchRef = useRef(query.refetch);
+	refetchRef.current = query.refetch;
+	const lastCheckedAtRef = useRef(Date.now());
+
+	useEffect(() => {
+		const subscription = AppState.addEventListener("change", (nextState) => {
+			if (nextState !== "active") return;
+			const now = Date.now();
+			if (!shouldRefetchOnForeground(lastCheckedAtRef.current, now)) return;
+			lastCheckedAtRef.current = now;
+			void refetchRef.current();
+		});
+		return () => subscription.remove();
+	}, []);
+
+	return query;
 }

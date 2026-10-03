@@ -212,10 +212,17 @@ export const api = {
 	getText: (path: string): Promise<string> =>
 		request<string>(path, {}, false, "text"),
 
-	post: <T>(path: string, body: unknown): Promise<T> =>
+	/** `headers` is for the rare route that needs one beyond auth and JSON
+	 * content type — `Idempotency-Key` on the payment-intents route, so far. */
+	post: <T>(
+		path: string,
+		body: unknown,
+		headers?: Record<string, string>,
+	): Promise<T> =>
 		request<T>(path, {
 			method: "POST",
 			body: JSON.stringify(body),
+			headers,
 		}),
 
 	patch: <T>(path: string, body: unknown): Promise<T> =>

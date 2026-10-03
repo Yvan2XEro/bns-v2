@@ -17,6 +17,11 @@
  * what moved and why.
  */
 import type { OrderStatusName } from "../lib/orderStatus";
+import type {
+	PaymentChannel,
+	PaymentFailureCode,
+	PaymentIntentStatus,
+} from "../lib/paymentStatus";
 
 export type { OrderStatusName, ShopOrderTab } from "../lib/orderStatus";
 
@@ -425,6 +430,42 @@ export interface ShopOrderPage extends OrderPage {
 		"to_accept" | "to_ship" | "shipped" | "delivered" | "cancelled" | "failed",
 		number
 	>;
+}
+
+// --- Protected payment (P5) -------------------------------------------------
+
+/**
+ * `POST /api/orders/{id}/payment-intents` — the plan's contracts section,
+ * pinned whole-object server-side. `checkoutUrl` is optional and absent
+ * today (neither `cm.mtn` nor `cm.orange` is a hosted-page channel); it is
+ * forward-compatible plumbing for `src/lib/paymentFlow.ts`'s hosted-checkout
+ * fallback, not a field the live API ever sends.
+ */
+export interface PaymentIntentResponse {
+	intentId: string;
+	status: "created" | "pending";
+	expiresAt: string;
+	channel: PaymentChannel;
+	attempt: number;
+	attemptsLeft: number;
+	instructions: string | null;
+	checkoutUrl?: string | null;
+}
+
+/** `GET /api/orders/{id}/payment`'s `intent`, whole-object pinned. */
+export interface PaymentIntentStatusView {
+	id: string;
+	status: PaymentIntentStatus;
+	channel: PaymentChannel;
+	failureCode: PaymentFailureCode | null;
+	expiresAt: string;
+	attempt: number;
+	attemptsLeft: number;
+}
+
+export interface PaymentStatusView {
+	orderPaymentStatus: PaymentStatus;
+	intent: PaymentIntentStatusView | null;
 }
 
 export type SellerEndReason =
