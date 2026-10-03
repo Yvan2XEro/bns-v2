@@ -13,10 +13,10 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
  * the invoice renderers are heavy enough that every ledger/payout spec in
  * this suite already stubs them.
  */
-const { sendSms } = vi.hoisted(() => ({ sendSms: vi.fn(async () => ({ status: "sent" })) }));
-vi.mock("../../src/services/smsProvider", () => ({
-	sendSms: (...args: unknown[]) => sendSms(...(args as [unknown, unknown])),
+const { sendSms } = vi.hoisted(() => ({
+	sendSms: vi.fn(async (_p: unknown, _n: unknown) => ({ status: "sent" })),
 }));
+vi.mock("../../src/services/smsProvider", () => ({ sendSms }));
 vi.mock("../../src/hooks/notificationEvents", () => ({
 	triggerNotificationEvent: vi.fn(async () => undefined),
 	hasPushCredential: vi.fn(async () => false),
