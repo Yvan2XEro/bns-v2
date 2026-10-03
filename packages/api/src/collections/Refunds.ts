@@ -176,6 +176,13 @@ export const Refunds: CollectionConfig = {
 		},
 		{ name: "idempotencyKey", type: "text", required: true, unique: true },
 		{ name: "attempts", type: "number", defaultValue: 0 },
+		// Set on the one automatic retry of a failed refund; its own failure goes to staff.
+		{
+			name: "retryOf",
+			type: "relationship",
+			relationTo: "refunds",
+			index: true,
+		},
 		{ name: "lastError", type: "text" },
 	],
 	timestamps: true,

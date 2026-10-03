@@ -123,3 +123,57 @@ export async function notifyConnectedAccountLost(
 		});
 	}
 }
+
+// --- Refund notices (Task 15's seam; Task 21 implements) -------------------
+export interface RefundNoticeInput {
+	refundId: string;
+	orderId: string;
+	buyerId: string | null;
+	shopId: string | null;
+	amount: number;
+	currency: string;
+	reason: string;
+}
+
+/** `refund-initiated`: the buyer, and the owner. */
+export async function notifyRefundInitiated(
+	_payload: Payload,
+	_notice: RefundNoticeInput,
+): Promise<void> {
+	throw pending("notifyRefundInitiated");
+}
+
+/** `refund-completed`: the buyer. */
+export async function notifyRefundCompleted(
+	_payload: Payload,
+	_notice: RefundNoticeInput,
+): Promise<void> {
+	throw pending("notifyRefundCompleted");
+}
+
+/** `refund-failed`: the buyer, once the automatic retry has failed too. */
+export async function notifyRefundFailed(
+	_payload: Payload,
+	_notice: RefundNoticeInput,
+): Promise<void> {
+	throw pending("notifyRefundFailed");
+}
+
+/** Admins: a refund failed twice and an open `status_mismatch` awaits them. */
+export async function notifyRefundStaffAlert(
+	_payload: Payload,
+	_notice: RefundNoticeInput & {
+		mismatchId: string;
+		failureReason: string | null;
+	},
+): Promise<void> {
+	throw pending("notifyRefundStaffAlert");
+}
+
+/** The owner: a receivable was written off and protected payment suspended. */
+export async function notifyReceivableWrittenOff(
+	_payload: Payload,
+	_notice: { shopId: string; amount: number; currency: string; holdId: string },
+): Promise<void> {
+	throw pending("notifyReceivableWrittenOff");
+}

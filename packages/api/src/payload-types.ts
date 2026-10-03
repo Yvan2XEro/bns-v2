@@ -1942,6 +1942,7 @@ export interface Refund {
   fundedBy?: ('connected_account' | 'platform_advance') | null;
   idempotencyKey: string;
   attempts?: number | null;
+  retryOf?: (string | null) | Refund;
   lastError?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -3787,6 +3788,7 @@ export interface RefundsSelect<T extends boolean = true> {
   fundedBy?: T;
   idempotencyKey?: T;
   attempts?: T;
+  retryOf?: T;
   lastError?: T;
   updatedAt?: T;
   createdAt?: T;

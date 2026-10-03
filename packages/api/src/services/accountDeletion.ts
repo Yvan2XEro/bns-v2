@@ -412,6 +412,22 @@ async function retainPaymentRecords(
 		}
 	}
 
+	// A refund keeps its amounts and its order; only the buyer goes.
+	for (const id of await findAllIds(
+		payload,
+		"refunds",
+		{ buyer: { equals: userId } },
+		req,
+	)) {
+		await payload.update({
+			collection: "refunds",
+			id,
+			overrideAccess: true,
+			data: { buyer: null },
+			req,
+		});
+	}
+
 	for (const intent of intents) {
 		await payload.update({
 			collection: "payment-intents",

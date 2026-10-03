@@ -156,6 +156,29 @@ function world() {
 				},
 			},
 		],
+		refunds: [
+			{
+				id: "rf-1",
+				order: "o-1",
+				paymentIntent: "pi-1",
+				buyer: "u-1",
+				shop: "s-1",
+				amount: 900,
+				breakdown: { seller: 900 },
+				status: "succeeded",
+				idempotencyKey: "order:o-1:1",
+			},
+			{
+				id: "rf-2",
+				order: "o-2",
+				paymentIntent: "pi-2",
+				buyer: "u-2",
+				shop: "s-1",
+				amount: 500,
+				status: "pending",
+				idempotencyKey: "order:o-2:1",
+			},
+		],
 		"contact-reveals": [
 			{ id: "cr-1", viewer: "u-1", seller: "u-2", listing: "l-9" },
 			{ id: "cr-2", viewer: "u-2", seller: "u-1", listing: "l-1" },
@@ -341,6 +364,15 @@ describe("deleteUserRelatedData payment retention", () => {
 		expect(phones).toEqual([
 			["pi-1", null],
 			["pi-2", "+237690000002"],
+		]);
+	});
+
+	it("keeps the deleted customer's refund without its buyer, and touches no other", () => {
+		expect(
+			payload.store.refunds.map((r) => [r.id, r.buyer, r.amount, r.status]),
+		).toEqual([
+			["rf-1", null, 900, "succeeded"],
+			["rf-2", "u-2", 500, "pending"],
 		]);
 	});
 
