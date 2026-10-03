@@ -235,20 +235,19 @@ stage. Isolate them, or serialise them.
   count falls and the mismatch stays. A task under pressure to hold 105 will
   reach for the cast the Types section forbids, and this already happened
   once in P3. So the number of `as never` occurrences is also a ceiling:
-  **95 across `packages/api/tests/`, and 80 across `packages/web/src`,
+  **86 across `packages/api/tests/`, and 78 across `packages/web/src`,
   `packages/mobile/src` **and `packages/mobile/app`** — that last path is
   where most of them are, and leaving it out is how this number was first
   published as 48.**
   Neither may rise. If holding the error count would require a new cast, the
   honest outcome is to let the count rise by one and say so in the report.
-- The API test cast ceiling moved 94 -> 95 in P4, deliberately and once.
-  `nextInvoiceNumber` reads only `req.payload` but forwards `req` into
-  Payload's own db calls, which require the full `PayloadRequest`; narrowing
-  the parameter breaks the forward, and centralising the cast in a helper only
-  moves it. The rule above says that when holding the count would need a cast,
-  the honest outcome is to let it rise by one and say so — this is that case,
-  and it is the only one so far. Do not treat it as licence: the next rise
-  needs its own reason in writing.
+- The API test cast ceiling moved 94 -> 95 in P4, deliberately and once
+  (`nextInvoiceNumber` forwards `req` into Payload's own db calls; narrowing
+  the parameter breaks the forward). It then fell to **86** at P4's close: a
+  deletion-test helper centralised eleven pre-existing casts, and the account
+  tab shed two more — which is the direction these numbers are supposed to
+  move. The client count fell 80 -> 78 the same way. A rise still needs its
+  own reason in writing.
 - Measure each number with **exactly this command**, because every
   disagreement about them so far was a difference of scope, not of fact — the
   client cast count is 80 counting test files and 52 without, and both were
@@ -256,9 +255,9 @@ stage. Isolate them, or serialise them.
 
 ```bash
 cd packages/api && bun run check-types:tests | grep -c "error TS"   # 105
-grep -ro 'as never' packages/api/tests | wc -l                      # 95
+grep -ro 'as never' packages/api/tests | wc -l                      # 86
 grep -ro 'as never' packages/web/src packages/mobile/src \
-                    packages/mobile/app | wc -l                     # 80
+                    packages/mobile/app | wc -l                     # 78
 cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
 ```
 
@@ -266,16 +265,22 @@ cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
   P3 while agents were writing came out wrong — the web/mobile cast count was
   published as 41 and was never below 48 — and a ceiling set from a moving
   tree either traps work or excuses it. These four were measured with nothing
-  running.
+  running, at P4's close. The mobile advisory figure is honest only with a
+  fresh `.expo/types/router.d.ts`; without one the same tree reads 32 and
+  hides three real errors.
 - A cast around `router.push` in `packages/mobile` is usually not a mismatch
   at all: see the note above about regenerating `.expo/types/router.d.ts`.
   Eleven of them disappeared in P3 once the types were fresh. If a task touches a spec file that holds some, fix those and say
   what the new count is. The strict-typing rule applies to tests as much as to
   source; this is where it went unenforced, and two of the five `as never`
   casts removed in P2 were hiding real defects.
-- `bun run test:int` passes: 74 files, 1043 tests, no failures. There is no
-  pre-existing failure to work around any more, so a red test is your change
-  or a real defect.
+- `bun run test:int` passes: 155 files, ~2700 tests, no failures (the exact
+  count grows with every task; the zero does not). `packages/web` is at ~470
+  and `packages/mobile` at ~580 under `bun test`. There is no pre-existing
+  failure to work around, so a red test is your change or a real defect —
+  and before calling one pre-existing, bisect: both agents who called
+  `product-stock-routes` pre-existing in P4 were measuring from bases that
+  already carried the commit that broke it.
 - `tests/smoke/api.smoke.spec.ts` is NOT in that run. It boots a real Payload
   against `DATABASE_URI` — a live Atlas cluster — where every spec under
   `tests/int/` uses the in-memory fake. Run it deliberately, before a deploy:
