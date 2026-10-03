@@ -1,4 +1,5 @@
 import { roundHalfUp, vatOf } from "./orderMath";
+import type { PaymentChannel } from "./paymentSettings";
 
 /**
  * `roundHalfUp` already rounds half-up for non-negative inputs, which is all
@@ -87,7 +88,7 @@ export function splitAmounts({
 	};
 }
 
-export type PaymentChannel = "cm.mtn" | "cm.orange";
+export type { PaymentChannel };
 
 function prefixRange(start: number, end: number): string[] {
 	const prefixes: string[] = [];
