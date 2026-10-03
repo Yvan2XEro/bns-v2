@@ -1363,6 +1363,9 @@ export async function cancelOrder(
 				current,
 				{
 					status: "cancelled",
+					...(current.paymentStatus === "cod_pending"
+						? { paymentStatus: "unpaid" as const }
+						: {}),
 					set: {
 						cancellation: {
 							...(current.cancellation ?? {}),

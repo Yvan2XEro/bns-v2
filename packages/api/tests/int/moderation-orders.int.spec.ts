@@ -65,6 +65,12 @@ describe("cancelOrder — the four reachable statuses, and nothing else", () => 
 			expect(result.status).toBe("cancelled");
 			expect(payload.store.orders[0]?.status).toBe("cancelled");
 		});
+
+		it(`moves a "${status}" COD order's payment from cod_pending to unpaid`, async () => {
+			const payload = orderWorld(status);
+			await cancelOrder(payload, MOD, "o-1", { reason: "staff_policy" });
+			expect(payload.store.orders[0]?.paymentStatus).toBe("unpaid");
+		});
 	}
 
 	for (const status of ORDER_STATUSES.filter(
