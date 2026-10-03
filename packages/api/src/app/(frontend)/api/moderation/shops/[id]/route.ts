@@ -8,7 +8,11 @@ import {
 } from "@/lib/moderationRoute";
 import { toMediaRef } from "@/lib/publicShop";
 import { relationId } from "@/lib/relationId";
-import { suspendShop, unsuspendShop } from "@/services/moderation";
+import {
+	shopPaymentsSheet,
+	suspendShop,
+	unsuspendShop,
+} from "@/services/moderation";
 import { recentShopActivity } from "@/services/shopActivity";
 
 type Params = { params: Promise<{ id: string }> };
@@ -129,46 +133,54 @@ export async function GET(request: Request, { params }: Params) {
 					: []),
 			],
 		};
-		const [activeProducts, draftProducts, reports, history, team, rawActivity] =
-			await Promise.all([
-				ctx.payload.count({
-					collection: "products",
-					where: {
-						and: [{ shop: { equals: id } }, { status: { equals: "active" } }],
-					},
-					overrideAccess: true,
-				}),
-				ctx.payload.count({
-					collection: "products",
-					where: {
-						and: [{ shop: { equals: id } }, { status: { equals: "draft" } }],
-					},
-					overrideAccess: true,
-				}),
-				ctx.payload.find({
-					collection: "reports",
-					where: reportsWhere,
-					sort: "-createdAt",
-					limit: 10,
-					depth: 1,
-					overrideAccess: true,
-				}),
-				ctx.payload.find({
-					collection: "moderation-log",
-					where: {
-						and: [
-							{ targetType: { equals: "shop" } },
-							{ targetId: { equals: String(id) } },
-						],
-					},
-					sort: "-createdAt",
-					limit: 20,
-					depth: 1,
-					overrideAccess: true,
-				}),
-				shopTeamMembers(ctx.payload, id),
-				recentShopActivity(ctx.payload, id, SHOP_TEAM_ACTIVITY_LIMIT),
-			]);
+		const [
+			activeProducts,
+			draftProducts,
+			reports,
+			history,
+			team,
+			rawActivity,
+			payments,
+		] = await Promise.all([
+			ctx.payload.count({
+				collection: "products",
+				where: {
+					and: [{ shop: { equals: id } }, { status: { equals: "active" } }],
+				},
+				overrideAccess: true,
+			}),
+			ctx.payload.count({
+				collection: "products",
+				where: {
+					and: [{ shop: { equals: id } }, { status: { equals: "draft" } }],
+				},
+				overrideAccess: true,
+			}),
+			ctx.payload.find({
+				collection: "reports",
+				where: reportsWhere,
+				sort: "-createdAt",
+				limit: 10,
+				depth: 1,
+				overrideAccess: true,
+			}),
+			ctx.payload.find({
+				collection: "moderation-log",
+				where: {
+					and: [
+						{ targetType: { equals: "shop" } },
+						{ targetId: { equals: String(id) } },
+					],
+				},
+				sort: "-createdAt",
+				limit: 20,
+				depth: 1,
+				overrideAccess: true,
+			}),
+			shopTeamMembers(ctx.payload, id),
+			recentShopActivity(ctx.payload, id, SHOP_TEAM_ACTIVITY_LIMIT),
+			shopPaymentsSheet(ctx.payload, String(id)),
+		]);
 
 		// A moderator reviewing a shop has no business reading its margins: the
 		// cost figures `variant.cost_changed` carries in `metadata` are stripped
@@ -217,6 +229,7 @@ export async function GET(request: Request, { params }: Params) {
 			history: history.docs,
 			team,
 			activity,
+			payments,
 		});
 	} catch (error) {
 		return handleModerationError("shops:get", error);

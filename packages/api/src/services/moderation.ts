@@ -2,6 +2,7 @@ import type { Payload, PayloadRequest } from "payload";
 import {
 	type ActorLike,
 	canActOn,
+	isAdmin,
 	isModerator,
 	ModerationRuleError,
 	resolveSuspensionUntil,
@@ -9,6 +10,7 @@ import {
 } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
+import type { PayoutHoldReason } from "../collections/PayoutHolds";
 import { queueMembershipChange } from "../hooks/membershipEvents";
 import { queueSystemMessage } from "../hooks/systemMessageEvents";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
@@ -19,9 +21,33 @@ import {
 	onCommit,
 	withTransaction,
 } from "../lib/transactions";
-import type { Order, OrderItem, Shop } from "../payload-types";
+import type {
+	ConnectedAccount,
+	Order,
+	OrderItem,
+	Payout,
+	PayoutAccount,
+	PayoutHold,
+	Shop,
+} from "../payload-types";
+import { findConnectedAccount } from "./connectedAccounts";
+import { openProtectedExposure } from "./exposure";
 import { applyTransition, TERMINAL_STATUSES } from "./orders/transitions";
-import { activeHolds, createHold, releaseHold } from "./payoutHolds";
+import {
+	notifyPayoutHoldPlaced,
+	notifyPayoutHoldReleased,
+} from "./paymentNotifications";
+import { activateReviewedPayoutAccount } from "./payoutAccounts";
+import {
+	activeHolds,
+	createHold,
+	findActiveHold,
+	holdReasonCategory,
+	type PayoutHoldCategory,
+	releaseHold,
+	type ShopRefundRate,
+	shopRefundRate,
+} from "./payoutHolds";
 import {
 	notifyShopSuspended,
 	notifyShopUnsuspended,
@@ -1560,4 +1586,533 @@ async function findReport(payload: Payload, id: string) {
 	} catch {
 		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
 	}
+}
+
+// ─── Payouts ─────────────────────────────────────────────────────────────────
+
+/**
+ * Who may lift a hold early, by reason. `shop_suspended` is absent on purpose:
+ * it is the suspension's own hold and only `unsuspendShop` (or the expiry
+ * job) may end it, or the shop would be suspended with its money flowing.
+ */
+const HOLD_RELEASE_RANK: Partial<
+	Record<PayoutHoldReason, "moderator" | "admin">
+> = {
+	moderation: "moderator",
+	dispute_open: "moderator",
+	return_open: "moderator",
+	fraud_signal: "admin",
+	reconciliation_mismatch: "admin",
+	payout_failed_repeatedly: "admin",
+	payout_account_changed: "admin",
+};
+
+/** Reasons staff may not place by hand: the suspension owns its hold. */
+const SYSTEM_ONLY_HOLD_REASONS: readonly PayoutHoldReason[] = [
+	"shop_suspended",
+];
+
+/**
+ * Staff who belong to the shop — its owner or an active member, whatever
+ * their shop role — never act on its money.
+ */
+async function assertNotShopMember(
+	payload: Payload,
+	actor: Actor,
+	shop: Shop,
+	req?: PayloadRequest,
+): Promise<void> {
+	if (relationId(shop.owner) === String(actor.id)) {
+		throw new ModerationError(ERROR_CODES.moderationForbidden, 403);
+	}
+	const { totalDocs } = await payload.count({
+		collection: "shop-members",
+		overrideAccess: true,
+		req,
+		where: {
+			and: [
+				{ shop: { equals: String(shop.id) } },
+				{ user: { equals: String(actor.id) } },
+				{ status: { equals: "active" } },
+			],
+		},
+	});
+	if (totalDocs > 0) {
+		throw new ModerationError(ERROR_CODES.moderationForbidden, 403);
+	}
+}
+
+function holdLogMetadata(hold: PayoutHold): Record<string, unknown> {
+	return {
+		holdId: String(hold.id),
+		scope: hold.scope,
+		orderId: relationId(hold.order),
+		reason: hold.reason,
+		until: hold.until ?? null,
+	};
+}
+
+export interface HoldPayoutsInput {
+	scope: PayoutHold["scope"];
+	orderId?: string | null;
+	reason: PayoutHoldReason;
+	/** Null or omitted: until someone releases it. */
+	untilDays?: number | null;
+	blocksCharges?: boolean;
+	note?: string | null;
+}
+
+export async function holdPayouts(
+	payload: Payload,
+	actor: Actor,
+	shopId: string,
+	input: HoldPayoutsInput,
+): Promise<PayoutHold> {
+	assertModerator(actor);
+	if (SYSTEM_ONLY_HOLD_REASONS.includes(input.reason)) {
+		throw new ModerationError(ERROR_CODES.moderationReasonInvalid, 400);
+	}
+	const shop = await findShopForModeration(payload, shopId);
+	await assertNotShopMember(payload, actor, shop);
+
+	const orderId = input.scope === "order" ? (input.orderId ?? null) : null;
+	if (input.scope === "order") {
+		const order = orderId
+			? await payload
+					.findByID({
+						collection: "orders",
+						id: orderId,
+						depth: 0,
+						overrideAccess: true,
+					})
+					.catch(() => null)
+			: null;
+		if (!order || relationId(order.shop) !== String(shopId)) {
+			throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+		}
+	}
+	const until =
+		input.untilDays == null
+			? null
+			: new Date(Date.now() + input.untilDays * 86_400_000).toISOString();
+	const note = trimmed(input.note);
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const key = {
+				scope: input.scope,
+				shop: String(shopId),
+				order: orderId,
+				reason: input.reason,
+			};
+			// `createHold` would hand the open one back; a second log entry
+			// claiming a hold this moderator did not place would be a lie.
+			if (await findActiveHold(req, key)) {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+			const hold = await createHold(req, {
+				...key,
+				until,
+				blocksCharges: input.blocksCharges === true,
+				createdByType: "moderator",
+				createdBy: actor.id,
+				note,
+			});
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "payout.hold",
+					targetType: "shop",
+					targetId: String(shopId),
+					reason: hold.reason,
+					note,
+					metadata: holdLogMetadata(hold),
+				},
+				req,
+			);
+			onCommit(commitContextOf(req), () =>
+				notifyPayoutHoldPlaced(shop, {
+					holdId: String(hold.id),
+					scope: hold.scope,
+					orderId: relationId(hold.order),
+					category: holdReasonCategory(hold.reason),
+					checkPayoutAccount: false,
+				}),
+			);
+			return hold;
+		},
+		{ user: actor },
+	);
+}
+
+/**
+ * The rank ladder applies to every active hold, the system's included: a hold
+ * the not-me path escalated in place to `fraud_signal` was never logged, so
+ * its release here is the first moderation entry it gets.
+ */
+export async function releasePayoutHold(
+	payload: Payload,
+	actor: Actor,
+	holdId: string,
+	input: { note?: string | null; shopId?: string } = {},
+): Promise<PayoutHold> {
+	assertModerator(actor);
+	const hold = await payload
+		.findByID({
+			collection: "payout-holds",
+			id: holdId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	const shopId = hold ? relationId(hold.shop) : null;
+	if (!hold || !shopId || (input.shopId && input.shopId !== shopId)) {
+		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+	}
+	const shop = await findShopForModeration(payload, shopId);
+	await assertNotShopMember(payload, actor, shop);
+
+	const rank = HOLD_RELEASE_RANK[hold.reason];
+	if (!rank) {
+		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+	}
+	if (rank === "admin" && !isAdmin(actor)) {
+		throw new ModerationError(ERROR_CODES.moderationRankTooLow, 403);
+	}
+	const note = trimmed(input.note);
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const current = await payload.findByID({
+				collection: "payout-holds",
+				id: holdId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			});
+			// Re-read in the transaction: the expiry job or another moderator
+			// may have ended it, and the ladder must judge the reason it has now.
+			if (current.status !== "active" || current.reason !== hold.reason) {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+			const released = await releaseHold(req, holdId, {
+				releasedBy: actor.id,
+				note,
+			});
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "payout.release",
+					targetType: "shop",
+					targetId: shopId,
+					reason: released.reason,
+					note,
+					metadata: holdLogMetadata(released),
+				},
+				req,
+			);
+			onCommit(commitContextOf(req), () =>
+				notifyPayoutHoldReleased(shop, {
+					holdId: String(released.id),
+					scope: released.scope,
+					orderId: relationId(released.order),
+					category: holdReasonCategory(released.reason),
+					cause: "released",
+				}),
+			);
+			return released;
+		},
+		{ user: actor },
+	);
+}
+
+export interface PayoutAccountDecision {
+	accountId: string;
+	status: PayoutAccount["status"];
+	replacedAccountIds: string[];
+	holdUntil: string | null;
+}
+
+async function decidePayoutAccount(
+	payload: Payload,
+	actor: Actor,
+	shopId: string,
+	accountId: string,
+	outcome: "approve" | "reject",
+	note: string | null,
+): Promise<PayoutAccountDecision> {
+	assertModerator(actor);
+	const shop = await findShopForModeration(payload, shopId);
+	await assertNotShopMember(payload, actor, shop);
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const account = await payload
+				.findByID({
+					collection: "payout-accounts",
+					id: accountId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null);
+			if (!account || relationId(account.shop) !== String(shopId)) {
+				throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+			}
+			if (account.status !== "pending_review") {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+
+			let decision: PayoutAccountDecision;
+			if (outcome === "approve") {
+				const activation = await activateReviewedPayoutAccount(
+					req,
+					shop,
+					account,
+				);
+				decision = {
+					accountId: String(account.id),
+					status: activation.account.status,
+					replacedAccountIds: activation.replaced.map((row) => String(row.id)),
+					holdUntil: activation.holdUntil,
+				};
+			} else {
+				const rejected = await payload.update({
+					collection: "payout-accounts",
+					id: account.id,
+					overrideAccess: true,
+					req,
+					data: { status: "rejected" },
+				});
+				decision = {
+					accountId: String(rejected.id),
+					status: rejected.status,
+					replacedAccountIds: [],
+					holdUntil: null,
+				};
+			}
+
+			await writeLog(
+				payload,
+				{
+					actor,
+					action:
+						outcome === "approve"
+							? "payout.account_approve"
+							: "payout.account_reject",
+					targetType: "shop",
+					targetId: String(shopId),
+					note,
+					metadata: {
+						accountId: String(account.id),
+						method: account.method,
+						accountNumberMasked: account.accountNumberMasked ?? "",
+						nameMatch: account.nameMatch?.result ?? null,
+						replacedAccountIds: decision.replacedAccountIds,
+						holdUntil: decision.holdUntil,
+					},
+				},
+				req,
+			);
+			return decision;
+		},
+		{ user: actor },
+	);
+}
+
+/** A `pending_review` row becomes the shop's active account. */
+export async function approvePayoutAccount(
+	payload: Payload,
+	actor: Actor,
+	shopId: string,
+	accountId: string,
+	input: { note?: string | null } = {},
+): Promise<PayoutAccountDecision> {
+	return decidePayoutAccount(
+		payload,
+		actor,
+		shopId,
+		accountId,
+		"approve",
+		trimmed(input.note),
+	);
+}
+
+export async function rejectPayoutAccount(
+	payload: Payload,
+	actor: Actor,
+	shopId: string,
+	accountId: string,
+	input: { note?: string | null } = {},
+): Promise<PayoutAccountDecision> {
+	return decidePayoutAccount(
+		payload,
+		actor,
+		shopId,
+		accountId,
+		"reject",
+		trimmed(input.note),
+	);
+}
+
+// ─── The shop sheet's payments block ─────────────────────────────────────────
+
+export const SHEET_LAST_PAYOUTS = 5;
+
+/**
+ * Staff see the hold's reason and its note, unlike the seller's setup view,
+ * which gets the category alone. Every active hold is listed, the system's
+ * as much as a moderator's, so one escalated in place is never invisible.
+ */
+export interface ShopPaymentsSheet {
+	connectedAccount: null | {
+		status: ConnectedAccount["status"];
+		chargesEnabled: boolean;
+		payoutsEnabled: boolean;
+		lastSyncedAt: string | null;
+	};
+	payoutAccount: null | {
+		id: string;
+		method: PayoutAccount["method"];
+		accountName: string;
+		accountNumberMasked: string;
+		activatedAt: string | null;
+	};
+	pendingAccounts: Array<{
+		id: string;
+		method: PayoutAccount["method"];
+		accountName: string;
+		accountNumberMasked: string;
+		nameMatch: null | {
+			result: "match" | "partial" | "mismatch";
+			identityName: string | null;
+			score: number | null;
+		};
+		createdAt: string;
+	}>;
+	holds: Array<{
+		id: string;
+		scope: PayoutHold["scope"];
+		orderId: string | null;
+		reason: PayoutHoldReason;
+		reasonCategory: PayoutHoldCategory;
+		blocksCharges: boolean;
+		until: string | null;
+		createdByType: PayoutHold["createdByType"];
+		createdBy: string | null;
+		note: string | null;
+		createdAt: string;
+	}>;
+	openExposure: number;
+	lastPayouts: Array<{
+		id: string;
+		amount: number;
+		currency: string;
+		status: Payout["status"];
+		origin: Payout["origin"];
+		failureReason: string | null;
+		createdAt: string;
+	}>;
+	refundRate: ShopRefundRate;
+}
+
+export async function shopPaymentsSheet(
+	payload: Payload,
+	shopId: string,
+): Promise<ShopPaymentsSheet> {
+	const [account, accounts, holds, openExposure, payouts, refundRate] =
+		await Promise.all([
+			findConnectedAccount(payload, shopId),
+			payload.find({
+				collection: "payout-accounts",
+				where: {
+					and: [
+						{ shop: { equals: shopId } },
+						{ status: { in: ["active", "pending_review"] } },
+					],
+				},
+				sort: "createdAt",
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+			}),
+			activeHolds(payload, { shop: shopId }),
+			openProtectedExposure(payload, shopId),
+			payload.find({
+				collection: "payouts",
+				where: { shop: { equals: shopId } },
+				sort: "-createdAt",
+				depth: 0,
+				limit: SHEET_LAST_PAYOUTS,
+				overrideAccess: true,
+			}),
+			shopRefundRate(payload, shopId),
+		]);
+
+	const active = accounts.docs.find((row) => row.status === "active");
+	return {
+		connectedAccount: account
+			? {
+					status: account.status,
+					chargesEnabled: account.chargesEnabled === true,
+					payoutsEnabled: account.payoutsEnabled === true,
+					lastSyncedAt: account.lastSyncedAt ?? null,
+				}
+			: null,
+		payoutAccount: active
+			? {
+					id: String(active.id),
+					method: active.method,
+					accountName: active.accountName,
+					accountNumberMasked: active.accountNumberMasked ?? "",
+					activatedAt: active.activatedAt ?? null,
+				}
+			: null,
+		pendingAccounts: accounts.docs
+			.filter((row) => row.status === "pending_review")
+			.map((row) => ({
+				id: String(row.id),
+				method: row.method,
+				accountName: row.accountName,
+				accountNumberMasked: row.accountNumberMasked ?? "",
+				nameMatch: row.nameMatch?.result
+					? {
+							result: row.nameMatch.result,
+							identityName: row.nameMatch.identityName ?? null,
+							score: row.nameMatch.score ?? null,
+						}
+					: null,
+				createdAt: row.createdAt,
+			})),
+		holds: holds.map((hold) => ({
+			id: String(hold.id),
+			scope: hold.scope,
+			orderId: relationId(hold.order),
+			reason: hold.reason,
+			reasonCategory: holdReasonCategory(hold.reason),
+			blocksCharges: hold.blocksCharges === true,
+			until: hold.until ?? null,
+			createdByType: hold.createdByType,
+			createdBy: relationId(hold.createdBy),
+			note: hold.note ?? null,
+			createdAt: hold.createdAt,
+		})),
+		openExposure,
+		lastPayouts: payouts.docs.map((payout) => ({
+			id: String(payout.id),
+			amount: payout.amount,
+			currency: payout.currency,
+			status: payout.status,
+			origin: payout.origin,
+			failureReason: payout.failureReason ?? null,
+			createdAt: payout.createdAt,
+		})),
+		refundRate,
+	};
 }

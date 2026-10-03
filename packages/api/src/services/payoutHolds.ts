@@ -73,6 +73,25 @@ function holdKey(input: {
 	};
 }
 
+/** The active hold `createHold` would hand back for this key, if any. */
+export async function findActiveHold(
+	req: PayloadRequest,
+	key: Pick<CreateHoldInput, "scope" | "shop" | "order" | "reason">,
+): Promise<PayoutHold | null> {
+	const existing = await req.payload.find({
+		collection: "payout-holds",
+		depth: 0,
+		limit: 1,
+		overrideAccess: true,
+		req,
+		where: holdKey({
+			...key,
+			order: key.scope === "order" ? (key.order ?? null) : null,
+		}),
+	});
+	return existing.docs[0] ?? null;
+}
+
 const isoOrNull = (value: Date | string | null | undefined): string | null =>
 	value ? new Date(value).toISOString() : null;
 
@@ -87,15 +106,8 @@ export async function createHold(
 ): Promise<PayoutHold> {
 	const { payload } = req;
 	const order = input.scope === "order" ? (input.order ?? null) : null;
-	const existing = await payload.find({
-		collection: "payout-holds",
-		depth: 0,
-		limit: 1,
-		overrideAccess: true,
-		req,
-		where: holdKey({ ...input, order }),
-	});
-	if (existing.docs[0]) return existing.docs[0];
+	const existing = await findActiveHold(req, { ...input, order });
+	if (existing) return existing;
 
 	return payload.create({
 		collection: "payout-holds",
@@ -368,14 +380,24 @@ async function scheduleFirstOrdersHoldEnd(
 	return updated;
 }
 
-async function refundRateRule(
-	req: PayloadRequest,
+export interface ShopRefundRate {
+	windowDays: number;
+	/** Protected orders created in the window. */
+	orders: number;
+	/** Of those, the ones with at least one refund that did not fail. */
+	refundedOrders: number;
+}
+
+/** The refund-rate rule's own inputs, also what staff see on the shop sheet. */
+export async function shopRefundRate(
+	payload: Payload,
 	shop: string,
-): Promise<PayoutHold[]> {
+	req?: PayloadRequest,
+): Promise<ShopRefundRate> {
 	const since = new Date(
 		Date.now() - FRAUD_REFUND_WINDOW_DAYS * DAY_MS,
 	).toISOString();
-	const recent = await req.payload.find({
+	const recent = await payload.find({
 		collection: "orders",
 		depth: 0,
 		limit: 0,
@@ -390,24 +412,40 @@ async function refundRateRule(
 		},
 	});
 	const orderIds = recent.docs.map((order) => String(order.id));
-	if (orderIds.length < FRAUD_REFUND_MIN_ORDERS) return [];
+	const refunds = orderIds.length
+		? await payload.find({
+				collection: "refunds",
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+				req,
+				where: {
+					and: [
+						{ order: { in: orderIds } },
+						{ status: { not_equals: "failed" } },
+					],
+				},
+			})
+		: { docs: [] };
+	return {
+		windowDays: FRAUD_REFUND_WINDOW_DAYS,
+		orders: orderIds.length,
+		refundedOrders: new Set(
+			refunds.docs.map((refund) => relationId(refund.order)),
+		).size,
+	};
+}
 
-	const refunds = await req.payload.find({
-		collection: "refunds",
-		depth: 0,
-		limit: 0,
-		pagination: false,
-		overrideAccess: true,
-		req,
-		where: {
-			and: [{ order: { in: orderIds } }, { status: { not_equals: "failed" } }],
-		},
-	});
-	const refunded = new Set(
-		refunds.docs.map((refund) => relationId(refund.order)),
-	).size;
+async function refundRateRule(
+	req: PayloadRequest,
+	shop: string,
+): Promise<PayoutHold[]> {
+	const rate = await shopRefundRate(req.payload, shop, req);
+	if (rate.orders < FRAUD_REFUND_MIN_ORDERS) return [];
 	// Integer comparison: refunded / orders > 10 %.
-	if (refunded * 100 <= orderIds.length * FRAUD_REFUND_RATE_PERCENT) return [];
+	if (rate.refundedOrders * 100 <= rate.orders * FRAUD_REFUND_RATE_PERCENT)
+		return [];
 
 	return [
 		await createHold(req, {

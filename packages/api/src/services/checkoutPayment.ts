@@ -34,7 +34,8 @@ import type {
 	Shop,
 } from "../payload-types";
 import { findConnectedAccount, marketOf } from "./connectedAccounts";
-import { applyTransition, TERMINAL_STATUSES } from "./orders/transitions";
+import { openProtectedExposure } from "./exposure";
+import { applyTransition } from "./orders/transitions";
 import {
 	createPaymentIntent,
 	failIntentBeforeProvider,
@@ -242,34 +243,6 @@ async function amountsFor(
 	});
 }
 
-/** Paid, not completed: what the shop could still owe back if every one went wrong. */
-async function openProtectedExposure(
-	payload: Payload,
-	shopId: string,
-	order: Order,
-): Promise<number> {
-	const { docs } = await payload.find({
-		collection: "orders",
-		where: {
-			and: [
-				{ shop: { equals: shopId } },
-				{ id: { not_equals: String(order.id) } },
-				{ paymentMethod: { equals: "mobile_money" } },
-				{ paymentStatus: { in: ["paid", "partially_refunded"] } },
-				{ status: { not_in: [...TERMINAL_STATUSES] } },
-			],
-		},
-		pagination: false,
-		depth: 0,
-		overrideAccess: true,
-	});
-	return docs.reduce(
-		(sum, open) =>
-			sum + (open.amounts?.total ?? 0) - (open.settlement?.refundedAmount ?? 0),
-		0,
-	);
-}
-
 interface Eligible {
 	market: MarketRow;
 	account: ConnectedAccount & { providerAccountId: string };
@@ -329,7 +302,11 @@ async function assertEligible(
 		settings.releaseModel === "provider_schedule"
 			? Math.floor(levelCap / 2)
 			: levelCap;
-	const exposure = await openProtectedExposure(payload, shopId, order);
+	const exposure = await openProtectedExposure(
+		payload,
+		shopId,
+		String(order.id),
+	);
 	if (exposure + amounts.buyerTotal > cap) throw notEligible;
 
 	return {

@@ -216,6 +216,127 @@ async function lockShop(req: PayloadRequest, shop: Shop): Promise<void> {
 	}
 }
 
+function noticeOf(shop: Shop, account: PayoutAccount) {
+	return {
+		shopId: String(shop.id),
+		ownerId: relationId(shop.owner) ?? relationId(account.createdBy) ?? "",
+		accountId: String(account.id),
+		method: account.method,
+		accountNumberMasked: account.accountNumberMasked ?? "",
+	};
+}
+
+async function afterCommit(
+	req: PayloadRequest,
+	work: () => Promise<void>,
+): Promise<void> {
+	if (!onCommit(commitContextOf(req), work)) await work();
+}
+
+/**
+ * Everything that follows a row becoming `active`: every other active row is
+ * replaced, a change after an earlier activation opens the 72-hour hold, and
+ * the owner is told after commit. `account` is already written as active.
+ */
+async function completeActivation(
+	req: PayloadRequest,
+	shop: Shop,
+	account: PayoutAccount,
+	previous: Date | null,
+	now: Date,
+): Promise<{ replaced: PayoutAccount[]; holdUntil: string | null }> {
+	const shopId = String(shop.id);
+	const replacing = await shopAccounts(req, shopId, {
+		and: [
+			{ status: { equals: "active" } },
+			{ id: { not_equals: String(account.id) } },
+		],
+	});
+	const replaced: PayoutAccount[] = [];
+	for (const row of replacing) {
+		replaced.push(
+			(await req.payload.update({
+				collection: "payout-accounts",
+				id: row.id,
+				overrideAccess: true,
+				req,
+				data: { status: "replaced", replacedAt: now.toISOString() },
+			})) as PayoutAccount,
+		);
+	}
+
+	let holdUntil: string | null = null;
+	// The hours come from settings (payments.payoutAccountChangeHoldHours):
+	// the constant is only the reader's own default. Hold and SMS share the
+	// one figure, so the message can never promise a window the hold does not
+	// keep.
+	const holdHours =
+		(await getPaymentSettings(req.payload)).payoutAccountChangeHoldHours ??
+		PAYOUT_CHANGE_HOLD_HOURS;
+	if (previous) {
+		holdUntil = new Date(now.getTime() + holdHours * HOUR_MS).toISOString();
+		await createHold(req, {
+			scope: "shop",
+			shop: shopId,
+			reason: "payout_account_changed",
+			until: holdUntil,
+			createdByType: "system",
+		});
+	}
+
+	const notice = noticeOf(shop, account);
+	const payload = req.payload;
+	const changedUntil = holdUntil;
+	await afterCommit(req, async () => {
+		await notifyPayoutAccountActivated(payload, notice);
+		if (changedUntil) {
+			await notifyPayoutAccountChanged(payload, {
+				...notice,
+				holdUntil: changedUntil,
+				holdHours,
+				notMeUrl: notMeUrl(shopId, notice.accountId),
+			});
+		}
+	});
+	return { replaced, holdUntil };
+}
+
+export interface PayoutAccountActivation {
+	account: PayoutAccount;
+	replaced: PayoutAccount[];
+	holdUntil: string | null;
+}
+
+/**
+ * Staff approval of a `pending_review` row: the same activation an owner's
+ * `match` gets, change hold included. Runs inside the caller's transaction;
+ * the caller has already decided who may approve.
+ */
+export async function activateReviewedPayoutAccount(
+	req: PayloadRequest,
+	shop: Shop,
+	account: PayoutAccount,
+	now: Date = new Date(),
+): Promise<PayoutAccountActivation> {
+	const previous = await lastActivation(req, String(shop.id));
+	await lockShop(req, shop);
+	const activated = (await req.payload.update({
+		collection: "payout-accounts",
+		id: account.id,
+		overrideAccess: true,
+		req,
+		data: { status: "active", activatedAt: now.toISOString() },
+	})) as PayoutAccount;
+	const { replaced, holdUntil } = await completeActivation(
+		req,
+		shop,
+		activated,
+		previous,
+		now,
+	);
+	return { account: activated, replaced, holdUntil };
+}
+
 /**
  * Validates in the spec's order, then records the row with the verdict's
  * status. Runs inside the caller's transaction (`req`). A `match` activates
@@ -289,11 +410,6 @@ export async function createPayoutAccount(
 
 	await lockShop(req, shop);
 
-	const replacing =
-		status === "active"
-			? await shopAccounts(req, shopId, { status: { equals: "active" } })
-			: [];
-
 	const account = (await req.payload.create({
 		collection: "payout-accounts",
 		overrideAccess: true,
@@ -316,62 +432,18 @@ export async function createPayoutAccount(
 		},
 	})) as PayoutAccount;
 
-	for (const row of replacing) {
-		await req.payload.update({
-			collection: "payout-accounts",
-			id: row.id,
-			overrideAccess: true,
-			req,
-			data: { status: "replaced", replacedAt: now.toISOString() },
-		});
-	}
-
-	let holdUntil: string | null = null;
-	// The hours come from settings (payments.payoutAccountChangeHoldHours):
-	// the constant is only the reader's own default. Hold and SMS share the
-	// one figure, so the message can never promise a window the hold does not
-	// keep.
-	const holdHours =
-		(await getPaymentSettings(req.payload)).payoutAccountChangeHoldHours ??
-		PAYOUT_CHANGE_HOLD_HOURS;
-	if (status === "active" && previous) {
-		holdUntil = new Date(now.getTime() + holdHours * HOUR_MS).toISOString();
-		await createHold(req, {
-			scope: "shop",
-			shop: shopId,
-			reason: "payout_account_changed",
-			until: holdUntil,
-			createdByType: "system",
-		});
-	}
-
-	const notice = {
-		shopId,
-		ownerId: relationId(shop.owner) ?? user.id,
-		accountId: String(account.id),
-		method: input.method,
-		accountNumberMasked: account.accountNumberMasked ?? "",
-	};
-	const payload = req.payload;
-	const work = async () => {
-		if (status === "active") {
-			await notifyPayoutAccountActivated(payload, notice);
-			if (holdUntil) {
-				await notifyPayoutAccountChanged(payload, {
-					...notice,
-					holdUntil,
-					holdHours,
-					notMeUrl: notMeUrl(shopId, notice.accountId),
-				});
-			}
-		} else {
-			await notifyPayoutAccountReview(payload, {
+	if (status === "active") {
+		await completeActivation(req, shop, account, previous, now);
+	} else {
+		const notice = noticeOf(shop, account);
+		const payload = req.payload;
+		await afterCommit(req, () =>
+			notifyPayoutAccountReview(payload, {
 				...notice,
 				result: status === "pending_review" ? "partial" : "mismatch",
-			});
-		}
-	};
-	if (!onCommit(commitContextOf(req), work)) await work();
+			}),
+		);
+	}
 
 	return account;
 }
