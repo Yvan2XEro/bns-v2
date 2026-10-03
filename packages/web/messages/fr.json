@@ -2604,5 +2604,8 @@
 		"seller_providerSchedule": "NotchPay effectue les versements selon son propre calendrier.",
 		"setup_cooldownUntil": "Vous pourrez le modifier à nouveau le {date}.",
 		"setup_notMeConfirmed": "Merci — nous avons lancé une vérification de sécurité et suspendu vos versements."
+	},
+	"PaymentsPay": {
+		"operatorRequired": "Choisissez un opérateur."
 	}
 }

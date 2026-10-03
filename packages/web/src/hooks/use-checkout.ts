@@ -1,13 +1,17 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
 import type { ApiError } from "~/lib/apiError";
-import { cartKey, purchasesRootKey } from "~/lib/query-keys";
+import { isTerminalStatus, pollIntervalMs } from "~/lib/payment-flow";
+import { cartKey, paymentStatusKey, purchasesRootKey } from "~/lib/query-keys";
 import { apiGet, apiPost, query } from "~/lib/shop-api";
 import type {
 	AddressInput,
 	DeliveryOption,
+	PaymentIntentResponse,
 	PaymentMethod,
+	PaymentStatusView,
 	PlaceResponse,
 	QuoteResponse,
 } from "~/types/order";
@@ -99,6 +103,64 @@ export function usePlaceOrder() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: cartKey() });
 			void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
+		},
+	});
+}
+
+export interface CreatePaymentIntentInput {
+	channel: string;
+	phone: string;
+	/** Fresh per attempt — see `payment-flow.ts#freshAttempt`. */
+	idempotencyKey: string;
+}
+
+/**
+ * `POST /api/orders/{id}/payment-intents`. The header, not the body, carries
+ * the idempotency key, so this is the one `shopApi` write that needs
+ * `apiPost`'s `headers` parameter.
+ */
+export function useCreatePaymentIntent(orderId: string) {
+	const queryClient = useQueryClient();
+	return useMutation<PaymentIntentResponse, ApiError, CreatePaymentIntentInput>(
+		{
+			mutationKey: ["orders", orderId, "payment-intent"],
+			mutationFn: ({ channel, phone, idempotencyKey }) =>
+				apiPost<PaymentIntentResponse>(
+					`/api/orders/${encodeURIComponent(orderId)}/payment-intents`,
+					{ channel, phone },
+					{ "Idempotency-Key": idempotencyKey },
+				),
+			retry: false,
+			onSuccess: () => {
+				void queryClient.invalidateQueries({
+					queryKey: paymentStatusKey(orderId),
+				});
+			},
+		},
+	);
+}
+
+/**
+ * `GET /api/orders/{id}/payment`, polled per `pollIntervalMs` — 3 s for the
+ * first 60 s of polling, then 10 s — and stopped once the latest intent
+ * reaches a terminal status. `refetchInterval` is a function so TanStack
+ * re-reads the cadence after every fetch instead of a timer this hook would
+ * have to clear by hand.
+ */
+export function usePaymentStatus(orderId: string | null, enabled = true) {
+	const startedAtRef = useRef(Date.now());
+	return useQuery<PaymentStatusView, ApiError>({
+		queryKey: paymentStatusKey(orderId ?? ""),
+		queryFn: () =>
+			apiGet<PaymentStatusView>(
+				`/api/orders/${encodeURIComponent(orderId ?? "")}/payment`,
+			),
+		enabled: Boolean(orderId) && enabled,
+		retry: false,
+		refetchInterval: (q) => {
+			const intent = q.state.data?.intent;
+			if (!intent || isTerminalStatus(intent.status)) return false;
+			return pollIntervalMs(Date.now() - startedAtRef.current);
 		},
 	});
 }

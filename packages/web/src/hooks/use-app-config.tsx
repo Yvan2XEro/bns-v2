@@ -37,6 +37,7 @@ export interface AppConfig {
 	protectedPaymentEnabled: boolean;
 	/** Rate, minimum and maximum for the buyer protection fee. Changing them affects new orders only. */
 	buyerProtection: BuyerProtectionConfig;
+	checkoutExpiryMinutes: number;
 }
 
 export const EMPTY_APP_CONFIG: AppConfig = {
@@ -53,6 +54,7 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	withdrawalDays: 15,
 	protectedPaymentEnabled: false,
 	buyerProtection: { bps: 300, min: 100, max: 15_000 },
+	checkoutExpiryMinutes: 30,
 };
 
 const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);

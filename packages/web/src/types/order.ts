@@ -17,6 +17,11 @@
  */
 
 import type { ShopOrderTab } from "~/lib/order-status";
+import type {
+	PaymentChannel,
+	PaymentFailureCode,
+	PaymentIntentStatus,
+} from "~/lib/payment-status";
 
 export type OrderStatus =
 	| "placed"
@@ -208,6 +213,36 @@ export interface PlaceResponse {
 	orderNumber: string;
 	status: OrderStatus;
 	confirmationRequired: ConfirmationRequired;
+}
+
+/**
+ * `POST /api/orders/{id}/payment-intents` (the P5 plan's contracts section,
+ * `services/checkoutPayment.ts#PaymentIntentResponse`). `status` is never
+ * `succeeded` here — a webhook can settle the intent before this answer is
+ * built, which is exactly what `/pending`'s poll is for.
+ */
+export interface PaymentIntentResponse {
+	intentId: string;
+	status: "created" | "pending";
+	expiresAt: string;
+	channel: PaymentChannel;
+	attempt: number;
+	attemptsLeft: number;
+	instructions: string | null;
+}
+
+/** `GET /api/orders/{id}/payment`, for the buyer or a member of the shop. */
+export interface PaymentStatusView {
+	orderPaymentStatus: PaymentStatus;
+	intent: null | {
+		id: string;
+		status: PaymentIntentStatus;
+		channel: PaymentChannel;
+		failureCode: PaymentFailureCode | null;
+		expiresAt: string;
+		attempt: number;
+		attemptsLeft: number;
+	};
 }
 
 export interface OrderItemView {

@@ -2603,5 +2603,8 @@
 		"seller_providerSchedule": "NotchPay pays out on its own schedule.",
 		"setup_cooldownUntil": "You can change it again on {date}.",
 		"setup_notMeConfirmed": "Thanks — we've started a security review and placed a hold on your payouts."
+	},
+	"PaymentsPay": {
+		"operatorRequired": "Choose an operator."
 	}
 }

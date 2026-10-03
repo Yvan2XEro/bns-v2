@@ -163,6 +163,10 @@ export const purchaseKey = (orderId: string) =>
 export const feeInvoiceKey = (orderId: string) =>
 	[...purchaseKey(orderId), "fee-invoice"] as const;
 
+/** One order's payment-intent status, nested under its own purchase. */
+export const paymentStatusKey = (orderId: string) =>
+	[...purchaseKey(orderId), "payment"] as const;
+
 /** Also outside: the caller is not a member of the shop yet. */
 export const invitationKey = (token: string) => ["invitations", token] as const;
 

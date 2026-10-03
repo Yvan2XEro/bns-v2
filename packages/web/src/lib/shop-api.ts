@@ -73,10 +73,19 @@ export function apiGet<T>(path: string): Promise<T> {
 	return request<T>(path);
 }
 
-export function apiPost<T>(path: string, body?: unknown): Promise<T> {
+/**
+ * `headers` is for the rare route that needs one beyond `Content-Type`
+ * (payment-intent creation's `Idempotency-Key`); every other caller omits it.
+ */
+export function apiPost<T>(
+	path: string,
+	body?: unknown,
+	headers?: HeadersInit,
+): Promise<T> {
 	return request<T>(path, {
 		method: "POST",
 		body: body === undefined ? undefined : JSON.stringify(body),
+		headers,
 	});
 }
 
