@@ -177,3 +177,55 @@ export async function notifyReceivableWrittenOff(
 ): Promise<void> {
 	throw pending("notifyReceivableWrittenOff");
 }
+
+// --- Payout notices (Task 16) ---------------------------------------------
+export interface PayoutNotice {
+	payoutId: string;
+	amount: number;
+	currency: string;
+}
+
+/** `payout-sent`: the transfer reached the seller's payout account. */
+export async function notifyPayoutSent(shop: ShopRef, notice: PayoutNotice) {
+	await trigger("payout-sent", relationId(shop.owner), {
+		shopId: String(shop.id),
+		payoutId: notice.payoutId,
+		amount: notice.amount,
+		currency: notice.currency,
+	});
+}
+
+/** `payout-failed`: the money is back in the connected account, retried at the next run. */
+export async function notifyPayoutFailed(shop: ShopRef, notice: PayoutNotice) {
+	await trigger("payout-failed", relationId(shop.owner), {
+		shopId: String(shop.id),
+		payoutId: notice.payoutId,
+		amount: notice.amount,
+		currency: notice.currency,
+	});
+}
+
+export interface PayoutHoldPlacedNotice {
+	holdId: string;
+	scope: "shop" | "order";
+	orderId: string | null;
+	category: "security" | "review" | "operations";
+	/** Set when the owner can lift the cause themselves by fixing the payout account. */
+	checkPayoutAccount: boolean;
+}
+
+/** `payout-hold-placed`, category only. */
+export async function notifyPayoutHoldPlaced(
+	shop: ShopRef,
+	notice: PayoutHoldPlacedNotice,
+) {
+	await trigger("payout-hold-placed", relationId(shop.owner), {
+		shopId: String(shop.id),
+		shopName: String(shop.name ?? ""),
+		holdId: notice.holdId,
+		scope: notice.scope,
+		orderId: notice.orderId,
+		reasonCategory: notice.category,
+		checkPayoutAccount: notice.checkPayoutAccount,
+	});
+}
