@@ -15,12 +15,15 @@ import { can, type ShopPermission } from "./shop-roles";
  *  - `services/orders/transitions.ts#STATUS_TRANSITIONS` says which status
  *    may become which, and `assertStatusAuthority` refuses every transition
  *    touching `paid`, `returned` or `disputed` unless the caller carries a
- *    P5/P6 context — which no route in this phase does. That is why `paid`
- *    offers nothing: not a missing feature, a reserved status.
+ *    P5/P6 context — except `UNRESERVED_TRANSITIONS`, P5's `paid →
+ *    accepted|cancelled`. That is why `returned` and `disputed` offer
+ *    nothing, and `paid` offers the shop's accept or decline and the buyer's
+ *    cancel.
  *  - `services/orders/acceptance.ts` carries the three narrower status lists
- *    the table in `transitions.ts` deliberately does not: `declineOrder` is
- *    `placed`/`confirmed` only, `SELLER_CANCELLABLE_STATUSES` and
- *    `BUYER_CANCELLABLE_STATUSES` are `placed`/`confirmed`/`accepted`.
+ *    the table in `transitions.ts` deliberately does not:
+ *    `DECLINABLE_STATUSES` is `placed`/`confirmed`/`paid`,
+ *    `SELLER_CANCELLABLE_STATUSES` is `placed`/`confirmed`/`accepted`, and
+ *    `BUYER_CANCELLABLE_STATUSES` is `placed`/`confirmed`/`paid`/`accepted`.
  *  - the seven delivery routes each guard `order.status !== "shipped"` and
  *    each pick their own audience: `requireOrderShopPermission(…,
  *    "orders.process")` for `handover`, `declare-delivered`,
@@ -167,7 +170,11 @@ export const ORDER_ACTIONS_BY_STATUS: Record<
 		shop: ["accept", "decline", "seller_cancel", "receipt"],
 		staff: ["staff_cancel", "receipt"],
 	},
-	paid: { buyer: ["receipt"], shop: ["receipt"], staff: ["receipt"] },
+	paid: {
+		buyer: ["cancel", "receipt"],
+		shop: ["accept", "decline", "receipt"],
+		staff: ["receipt"],
+	},
 	accepted: {
 		buyer: ["cancel", "receipt"],
 		shop: ["ship", "seller_cancel", "receipt"],

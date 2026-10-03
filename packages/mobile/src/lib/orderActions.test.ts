@@ -96,11 +96,15 @@ const TABLE: Array<{
 		actions: ["staff_cancel", "receipt"],
 	},
 
-	// `paid` is reserved for P5: `assertStatusAuthority` refuses every
-	// transition into or out of it without a reserved-phase context, so a P4
-	// screen that offered "accept" here would hand the seller a 409.
-	{ status: "paid", audience: "buyer", actions: ["receipt"] },
-	{ status: "paid", audience: "shop", actions: ["receipt"] },
+	// `paid → accepted|cancelled` are P5's unreserved rows: the shop accepts
+	// or declines, the buyer may still cancel, and the refund follows. No
+	// staff cancel: `MODERATOR_CANCELLABLE_STATUSES` does not list `paid`.
+	{ status: "paid", audience: "buyer", actions: ["cancel", "receipt"] },
+	{
+		status: "paid",
+		audience: "shop",
+		actions: ["accept", "decline", "receipt"],
+	},
 	{ status: "paid", audience: "staff", actions: ["receipt"] },
 
 	{

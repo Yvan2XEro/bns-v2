@@ -12,8 +12,12 @@ import { can, type ShopPermission } from "./shopRoles";
  *
  *  - `services/orders/transitions.ts` — `STATUS_TRANSITIONS` (which status may
  *    become which) and `RESERVED_STATUSES` / `assertStatusAuthority` (which of
- *    them this phase may write at all, which is why `paid`, `returned` and
- *    `disputed` offer nothing but the receipt);
+ *    them this phase may write at all, which is why `returned` and `disputed`
+ *    offer nothing but the receipt; `paid` is open through P5's
+ *    `UNRESERVED_TRANSITIONS`, `paid → accepted|cancelled`);
+ *  - `services/orders/acceptance.ts` — `DECLINABLE_STATUSES` (the shop's
+ *    decline, `paid` included), `SELLER_CANCELLABLE_STATUSES` and
+ *    `BUYER_CANCELLABLE_STATUSES` (the buyer's cancel, `paid` included);
  *  - `access/orderAccess.ts` — one caller has exactly one audience, staff
  *    before buyer before shop, and `requireOrderShopPermission` narrows a shop
  *    audience to one permission;
@@ -107,8 +111,8 @@ export const ORDER_ACTION_TABLE: Record<
 		staff: ["staff_cancel", "receipt"],
 	},
 	paid: {
-		buyer: ["receipt"],
-		shop: ["receipt"],
+		buyer: ["cancel", "receipt"],
+		shop: ["accept", "decline", "receipt"],
 		staff: ["receipt"],
 	},
 	accepted: {

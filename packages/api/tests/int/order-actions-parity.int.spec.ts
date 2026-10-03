@@ -33,12 +33,14 @@ import {
 import {
 	BUYER_CANCEL_REASONS,
 	BUYER_CANCELLABLE_STATUSES,
+	DECLINABLE_STATUSES,
 	SELLER_CANCELLABLE_STATUSES,
 } from "../../src/services/orders/acceptance";
 import {
 	RESERVED_STATUSES,
 	STATUS_TRANSITIONS,
 	TERMINAL_STATUSES,
+	UNRESERVED_TRANSITIONS,
 } from "../../src/services/orders/transitions";
 import { ORDER_REVIEWABLE_STATUSES } from "../../src/services/reviewRules";
 
@@ -175,12 +177,33 @@ for (const { pkg, table, declared, permissions } of CLIENTS) {
 			);
 		});
 
-		it("offers nothing but the receipt on a status this phase may not write", () => {
+		/**
+		 * A reserved status offers nothing unless a row out of it has been opened
+		 * (`UNRESERVED_TRANSITIONS`), and then only actions writing an opened
+		 * row: P5 opened `paid → accepted|cancelled`, P6 nothing yet.
+		 */
+		it("offers on a reserved status only what an opened row out of it allows", () => {
+			const opened: string[] = [];
 			for (const status of RESERVED_STATUSES) {
+				const targets = UNRESERVED_TRANSITIONS.filter(
+					([from]) => from === status,
+				).map(([, to]) => to);
 				for (const audience of ["buyer", "shop", "staff"] as const) {
-					expect(table[status][audience]).toEqual(["receipt"]);
+					for (const action of table[status][audience]) {
+						if (action === "receipt") continue;
+						opened.push(`${status}/${audience}/${action}`);
+						expect(targets).toContain(ACTION_TARGET_STATUS[action]);
+					}
+					if (targets.length === 0) {
+						expect(table[status][audience]).toEqual(["receipt"]);
+					}
 				}
 			}
+			expect(opened).toEqual([
+				"paid/buyer/cancel",
+				"paid/shop/accept",
+				"paid/shop/decline",
+			]);
 			expect(RESERVED_STATUSES.length).toBe(3);
 		});
 
@@ -215,10 +238,10 @@ for (const { pkg, table, declared, permissions } of CLIENTS) {
 					expect(STATUS_TRANSITIONS[cell.status]).toContain(target);
 				}
 			}
-			// A silently empty loop is the hazard this count closes: twelve live
-			// cells carry twenty status-changing actions between them, four of
-			// which are the staff cancel.
-			expect(checked).toHaveLength(20);
+			// A silently empty loop is the hazard this count closes: fourteen live
+			// cells carry twenty-three status-changing actions between them, four
+			// of which are the staff cancel and three of which are `paid`'s.
+			expect(checked).toHaveLength(23);
 		});
 
 		it("offers the buyer's own cancel exactly where buyerCancelOrder allows it", () => {
@@ -226,6 +249,14 @@ for (const { pkg, table, declared, permissions } of CLIENTS) {
 				table[status].buyer.includes("cancel"),
 			);
 			expect(offered.sort()).toEqual([...BUYER_CANCELLABLE_STATUSES].sort());
+		});
+
+		it("offers the shop's decline exactly where declineOrder allows it", () => {
+			const offered = ORDER_STATUS_NAMES.filter((status) =>
+				table[status].shop.includes("decline"),
+			);
+			expect(offered.sort()).toEqual([...DECLINABLE_STATUSES].sort());
+			expect(DECLINABLE_STATUSES).toContain("paid");
 		});
 
 		it("offers the shop's cancel exactly where sellerCancelOrder allows it", () => {

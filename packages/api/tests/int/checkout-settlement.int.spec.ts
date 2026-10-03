@@ -62,9 +62,15 @@ import type {
 import {
 	cancellationRefundReason,
 	refundOnOrderCancelled,
+	registerCheckoutSettlementHandlers,
 	settleCheckoutIntent,
 } from "../../src/services/checkoutSettlement";
 import { intentBalances, orderBalances } from "../../src/services/ledger";
+import {
+	buyerCancelOrder,
+	declineOrder,
+} from "../../src/services/orders/acceptance";
+import { __resetOrderEventHandlers } from "../../src/services/orders/events";
 import {
 	applyStatus,
 	failIntentBeforeProvider,
@@ -186,6 +192,15 @@ function world(seed: Record<string, Doc[]> = {}): FakePayload {
 			],
 			shops: [
 				{ id: SHOP, name: "Akwa", owner: OWNER, status: "active", stats: {} },
+			],
+			"shop-members": [
+				{
+					id: "m-owner",
+					shop: SHOP,
+					user: OWNER,
+					role: "owner",
+					status: "active",
+				},
 			],
 			orders: [orderDoc()],
 			"order-items": [
@@ -919,6 +934,67 @@ describe("refund on cancellation", () => {
 		).toEqual([
 			{
 				reason: "acceptance_timeout",
+				sourceType: "order",
+				sourceId: "o-1",
+				paymentIntent: "pi-1",
+				amount: G,
+				breakdown: {
+					seller: D,
+					commission: SPLIT.commission,
+					commissionVat: SPLIT.commissionVat,
+					buyerProtectionFee: SPLIT.buyerProtectionFee,
+				},
+			},
+		]);
+		expect(order().settlement?.refundedAmount).toBe(G);
+		expect(notifications.notifyRefundInitiated).toHaveBeenCalledTimes(1);
+	});
+
+	it.each([
+		[
+			"the shop declines it",
+			() =>
+				declineOrder(payload, { id: OWNER, role: "user" }, "o-1", {
+					reason: "seller_out_of_stock",
+				}),
+			"seller_declined",
+			"order.declined",
+		],
+		[
+			"the buyer cancels it",
+			() =>
+				buyerCancelOrder(payload, { id: BUYER, role: "user" }, "o-1", {
+					reason: "buyer_changed_mind",
+				}),
+			"order_cancelled",
+			"order.cancelled",
+		],
+	] as const)("refunds the full buyerTotal of a paid order %s before acceptance", async (_label, end, reason, eventType) => {
+		await paidOrder();
+		// The dispatch log is module state keyed by event id, and this fake's
+		// ids repeat across tests: start it clean, with the refund handler alone.
+		__resetOrderEventHandlers();
+		registerCheckoutSettlementHandlers();
+
+		await end();
+
+		expect([order().status, order().paymentStatus]).toEqual([
+			"cancelled",
+			"paid",
+		]);
+		expect(events().at(-1)?.type).toBe(eventType);
+		expect(
+			refunds().map((r) => ({
+				reason: r.reason,
+				sourceType: r.sourceType,
+				sourceId: r.sourceId,
+				paymentIntent: r.paymentIntent,
+				amount: r.amount,
+				breakdown: r.breakdown,
+			})),
+		).toEqual([
+			{
+				reason,
 				sourceType: "order",
 				sourceId: "o-1",
 				paymentIntent: "pi-1",

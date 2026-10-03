@@ -43,16 +43,27 @@ export const BUYER_CANCEL_REASONS = [
 	"buyer_ordered_by_mistake",
 ] as const satisfies readonly CancellationReason[];
 
-/** Only these three may die by the buyer's own hand; once a courier has the
+/** Only these may die by the buyer's own hand; once a courier has the
  * parcel (`shipped`), a buyer cancels by refusing it at the door, not through
  * this route. The table in `transitions.ts` still lists `shipped →
  * cancelled` as structurally valid — that row belongs to staff/dispute
  * cancellation, not this one, so the restriction lives here rather than in
- * the shared table. */
+ * the shared table. `paid` is the P4 spec's `paid → cancelled` row ("buyer"
+ * among its actors); the refund follows through `order.cancelled`. */
 export const BUYER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
 	"placed",
 	"confirmed",
+	"paid",
 	"accepted",
+];
+
+/** Before the shop has committed to the order. `paid` is a protected order
+ * the shop has not accepted yet: refusing it is the spec's "seller refusal",
+ * and `order.declined` refunds the buyer in full (`seller_declined`). */
+export const DECLINABLE_STATUSES: readonly Order["status"][] = [
+	"placed",
+	"confirmed",
+	"paid",
 ];
 
 export const SELLER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
@@ -323,7 +334,7 @@ export async function acceptOrder(
 	);
 }
 
-/** Only from `placed`/`confirmed` — before the shop has committed to the
+/** Only from `DECLINABLE_STATUSES` — before the shop has committed to the
  * order at all. A shop that wants out *after* accepting uses
  * `sellerCancelOrder` instead, which is owner/manager only and counts
  * against the shop's record. */
@@ -344,7 +355,7 @@ export async function declineOrder(
 				"orders.process",
 				req,
 			);
-			if (order.status !== "placed" && order.status !== "confirmed") {
+			if (!DECLINABLE_STATUSES.includes(order.status)) {
 				throw new ServiceError(
 					ERROR_CODES.orderInvalidTransition,
 					409,
@@ -413,7 +424,7 @@ export async function sellerCancelOrder(
 }
 
 /**
- * The buyer's own cancel, from `placed`, `confirmed` or `accepted` — never
+ * The buyer's own cancel, from `placed`, `confirmed`, `paid` or `accepted` — never
  * `shipped`: once a courier holds the parcel the buyer's only move is to
  * refuse it at the door, which Task 20's delivery routes record, not this
  * one. A cancel that came after the shop had already accepted scores against

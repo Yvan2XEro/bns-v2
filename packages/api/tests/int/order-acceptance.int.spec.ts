@@ -251,6 +251,37 @@ describe("declineOrder", () => {
 		expect((await freshOrder(payload)).status).toBe("cancelled");
 	});
 
+	it("works from paid: the seller refuses a protected order it has not accepted", async () => {
+		const payload = seed({
+			order: baseOrder({
+				status: "paid",
+				paymentMethod: "mobile_money",
+				paymentStatus: "paid",
+			}),
+			variants: [baseVariant({ stockReserved: 1 })],
+		});
+		await declineOrder(payload, managerUser, "order-1", {
+			reason: "seller_out_of_stock",
+		});
+		const order = await freshOrder(payload);
+		// The payment status is the refund's to move, not the decline's.
+		expect([order.status, order.paymentStatus, order.cancellation?.by]).toEqual(
+			["cancelled", "paid", "seller"],
+		);
+		expect(events(payload).map((e) => e.type)).toEqual(["order.declined"]);
+		expect(releases(payload)).toHaveLength(1);
+	});
+
+	it("is refused from accepted: past acceptance the shop cancels instead", async () => {
+		const payload = seed({ order: baseOrder({ status: "accepted" }) });
+		await expect(
+			declineOrder(payload, ownerUser, "order-1", {
+				reason: "seller_out_of_stock",
+			}),
+		).rejects.toMatchObject({ code: "order.invalidTransition" });
+		expect((await freshOrder(payload)).status).toBe("accepted");
+	});
+
 	it("requires a reason", async () => {
 		const payload = seed();
 		await expect(
@@ -308,6 +339,28 @@ describe("buyerCancelOrder", () => {
 		expect(order.status).toBe("cancelled");
 		expect(order.paymentStatus).toBe("unpaid");
 		expect(releases(payload)).toHaveLength(1);
+	});
+
+	it("works from paid, before the shop accepts, and leaves the payment to the refund", async () => {
+		const payload = seed({
+			order: baseOrder({
+				status: "paid",
+				paymentMethod: "mobile_money",
+				paymentStatus: "paid",
+			}),
+			variants: [baseVariant({ stockReserved: 1 })],
+		});
+		await buyerCancelOrder(payload, buyerUser, "order-1", {
+			reason: "buyer_ordered_by_mistake",
+		});
+		const order = await freshOrder(payload);
+		expect([order.status, order.paymentStatus, order.cancellation?.by]).toEqual(
+			["cancelled", "paid", "buyer"],
+		);
+		expect(events(payload).map((e) => e.type)).toEqual(["order.cancelled"]);
+		expect(releases(payload)).toHaveLength(1);
+		// Not after acceptance, so it does not score against the buyer's phone.
+		expect(payload.store["buyer-phone-scores"]).toHaveLength(0);
 	});
 
 	it("increments cancelledAfterAccept after acceptance", async () => {

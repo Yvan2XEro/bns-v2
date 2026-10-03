@@ -15,10 +15,10 @@ import { ORDER_STATUSES, type OrderStatusName } from "./order-status";
  *  - `packages/api/src/services/orders/transitions.ts` — `STATUS_TRANSITIONS`
  *    (which status may become which) and `assertStatusAuthority` (which
  *    refuses every transition touching `paid`, `returned` or `disputed`
- *    without a P5/P6 caller's context).
+ *    without a P5/P6 caller's context, except P5's `UNRESERVED_TRANSITIONS`).
  *  - `packages/api/src/services/orders/acceptance.ts` —
  *    `BUYER_CANCELLABLE_STATUSES`, `SELLER_CANCELLABLE_STATUSES`, and
- *    `declineOrder`'s own `placed`/`confirmed` guard.
+ *    `DECLINABLE_STATUSES` (`declineOrder`).
  *  - `packages/api/src/services/orders/delivery.ts` + the seven delivery
  *    routes — each one's `order.status !== "shipped"` guard and its own
  *    audience check (`requireOrderBuyer` vs `requireOrderShopPermission`).
@@ -55,11 +55,16 @@ const TABLE: Record<
 		shop: ["accept", "decline", "seller_cancel", "receipt"],
 		staff: ["staff_cancel", "receipt"],
 	},
-	// `paid` is P5's reserved status: `assertStatusAuthority` refuses every
-	// transition into or out of it from a P4 caller, and neither
-	// `BUYER_CANCELLABLE_STATUSES` nor `SELLER_CANCELLABLE_STATUSES` lists it.
-	// So nothing is offered, even though `TAB_STATUSES.to_accept` shows it.
-	paid: { buyer: ["receipt"], shop: ["receipt"], staff: ["receipt"] },
+	// `paid → accepted|cancelled` are P5's unreserved rows. The shop accepts
+	// or declines (`DECLINABLE_STATUSES`); the buyer may still cancel
+	// (`BUYER_CANCELLABLE_STATUSES`), and the refund follows either way. Not
+	// `seller_cancel` (the shop has not accepted yet) nor the staff cancel
+	// (`MODERATOR_CANCELLABLE_STATUSES` does not list `paid`).
+	paid: {
+		buyer: ["cancel", "receipt"],
+		shop: ["accept", "decline", "receipt"],
+		staff: ["receipt"],
+	},
 	accepted: {
 		buyer: ["cancel", "receipt"],
 		shop: ["ship", "seller_cancel", "receipt"],
