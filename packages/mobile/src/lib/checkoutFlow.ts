@@ -2,9 +2,11 @@ import type {
 	AddressInput,
 	ConfirmationRequired,
 	DeliveryOption,
+	PaymentMethod,
 	PlaceInput,
 	QuoteResponse,
 } from "../types/order";
+import { ERROR_CODES } from "./apiError";
 import type { AddressField } from "./checkoutForm";
 
 /**
@@ -16,6 +18,8 @@ import type { AddressField } from "./checkoutForm";
 export interface CheckoutState {
 	address: AddressInput | null;
 	option: DeliveryOption | null;
+	/** COD unless the buyer picks protected payment at the review step; the flag decides whether that choice is even offered. */
+	paymentMethod: PaymentMethod;
 	quote: QuoteResponse | null;
 	/** The summary the buyer saw before `checkout.quoteChanged`, for highlighting. */
 	previousQuote: QuoteResponse | null;
@@ -31,6 +35,7 @@ export type CheckoutAction =
 	| { type: "addressSubmitted"; address: AddressInput }
 	| { type: "addressRejected"; field: AddressField | null }
 	| { type: "optionChosen"; option: DeliveryOption }
+	| { type: "paymentMethodChosen"; method: PaymentMethod }
 	| { type: "quoteLoaded"; quote: QuoteResponse }
 	| { type: "quoteChanged"; quote: QuoteResponse; idempotencyKey: string }
 	| { type: "contractLocale"; locale: "fr" | "en" }
@@ -40,6 +45,7 @@ export function initialCheckoutState(idempotencyKey: string): CheckoutState {
 	return {
 		address: null,
 		option: null,
+		paymentMethod: "cod",
 		quote: null,
 		previousQuote: null,
 		contractLocale: null,
@@ -72,6 +78,16 @@ export function checkoutReducer(
 			return {
 				...state,
 				option: action.option,
+				quote: null,
+				previousQuote: null,
+				accepted: false,
+			};
+		// A method change re-prices the order (the protection fee), so the quote
+		// on screen is no longer the one that would be charged.
+		case "paymentMethodChosen":
+			return {
+				...state,
+				paymentMethod: action.method,
 				quote: null,
 				previousQuote: null,
 				accepted: false,
@@ -160,6 +176,23 @@ export function placeOrderBody(
 		termsAccepted: true,
 		idempotencyKey: state.idempotencyKey,
 	};
+}
+
+/**
+ * `checkout.methodUnavailable` (the method is not open for this market or
+ * shop) and `payment.shopNotEligible` (the shop itself cannot take it) both
+ * mean a mobile_money quote cannot be priced right now — COD is the only
+ * designed way forward, so a quote request in either state falls back to it.
+ */
+export function codFallbackOnQuoteError(
+	method: PaymentMethod,
+	errorCode: string | null,
+): boolean {
+	return (
+		method === "mobile_money" &&
+		(errorCode === ERROR_CODES.checkoutMethodUnavailable ||
+			errorCode === ERROR_CODES.paymentShopNotEligible)
+	);
 }
 
 /**

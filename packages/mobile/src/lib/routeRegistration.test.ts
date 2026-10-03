@@ -23,6 +23,9 @@ const P4_ROOTS = [
 	"seller/billing/**/*",
 	"seller/order-settings.tsx",
 	"moderation/order/**/*",
+	// Task 29: the P5 pay/pending screens already live under checkout/**, and
+	// the seller payments hub/setup/payouts screens join the inventory here.
+	"seller/payments/**/*",
 ];
 
 function appFiles(pattern: string): string[] {
@@ -40,9 +43,14 @@ const registered = stackScreenNames(
 );
 
 describe("every P4 screen is registered in the root stack", () => {
-	test("the roots hold the fifteen screens the plan lists", () => {
+	// Task 29 added the five P5 screens (checkout/[orderId]/pay.tsx,
+	// checkout/[orderId]/pending.tsx and the three seller/payments/** files),
+	// taking the list from fifteen to twenty.
+	test("the roots hold the twenty screens the plan lists", () => {
 		expect(p4Screens).toEqual([
 			"cart.tsx",
+			"checkout/[orderId]/pay.tsx",
+			"checkout/[orderId]/pending.tsx",
 			"checkout/address.tsx",
 			"checkout/confirmation/[id].tsx",
 			"checkout/delivery.tsx",
@@ -57,6 +65,9 @@ describe("every P4 screen is registered in the root stack", () => {
 			"seller/orders/[id].tsx",
 			"seller/orders/[id]/handover.tsx",
 			"seller/orders/index.tsx",
+			"seller/payments/index.tsx",
+			"seller/payments/payouts/[id].tsx",
+			"seller/payments/setup.tsx",
 		]);
 	});
 
@@ -82,7 +93,8 @@ describe("every P4 screen is registered in the root stack", () => {
 		const names = [
 			...new Set(p4Screens.map((f) => rootRegistrationFor(f, layoutDirs))),
 		];
-		expect(names).toHaveLength(12);
+		// 12 pre-existing roots + the three new seller/payments/** ones (Task 29).
+		expect(names).toHaveLength(15);
 		for (const name of names) {
 			const entry = new RegExp(
 				`<Stack\\.Screen\\s+name="${name.replace(/[[\]]/g, "\\$&")}"[^>]*headerShown: false`,

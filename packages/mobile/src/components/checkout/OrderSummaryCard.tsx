@@ -21,7 +21,7 @@ export function OrderSummaryCard({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const money = (amount: number) => formatXaf(amount, locale);
-	const { lines, amounts, delivery } = quote.summary;
+	const { lines, amounts, delivery, paymentMethod } = quote.summary;
 	const address = delivery.address;
 
 	return (
@@ -77,6 +77,11 @@ export function OrderSummaryCard({
 						: money(amounts.deliveryFee)}
 				</Changed>
 			</Row>
+			{paymentMethod === "mobile_money" && amounts.buyerProtectionFee > 0 ? (
+				<Row label={t("payments.summary_protectionFee")}>
+					{money(amounts.buyerProtectionFee)}
+				</Row>
+			) : null}
 			<Row label={t("checkout.total")} strong>
 				<Changed on={changed.has("total")}>{money(amounts.total)}</Changed>
 			</Row>
@@ -130,7 +135,11 @@ export function OrderSummaryCard({
 				</Text>
 			) : null}
 			<Text style={[styles.meta, { color: c.body }]}>
-				{`${t("checkout.paymentMethod")} · ${t("checkout.paymentCod")}`}
+				{`${t("checkout.paymentMethod")} · ${
+					paymentMethod === "mobile_money"
+						? t("payments.method_protected")
+						: t("checkout.paymentCod")
+				}`}
 			</Text>
 		</View>
 	);

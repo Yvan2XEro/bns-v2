@@ -18,9 +18,11 @@ import {
 	useCheckoutFlow,
 } from "@/src/components/checkout/CheckoutProvider";
 import { OrderSummaryCard } from "@/src/components/checkout/OrderSummaryCard";
+import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
 import { PreContractPanel } from "@/src/components/checkout/PreContractPanel";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { ApiError } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import {
@@ -30,6 +32,7 @@ import {
 	quoteDifferences,
 } from "@/src/lib/checkoutFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import type { PaymentMethod } from "@/src/types/order";
 
 export default function CheckoutReviewScreen() {
 	const c = useShopTheme();
@@ -50,6 +53,7 @@ function Review() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useAppLocale();
+	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const { state, dispatch, quote, place, requestQuote } = useCheckoutFlow();
 	const backToAddress = () => router.dismissTo("/checkout/address");
 
@@ -58,6 +62,22 @@ function Review() {
 		requestQuote(
 			state.address,
 			state.option,
+			state.paymentMethod,
+			(fresh) => dispatch({ type: "quoteLoaded", quote: fresh }),
+			backToAddress,
+		);
+	};
+
+	// A method change re-prices the order (the protection fee is the server's
+	// to compute, never this screen's), so it asks for a fresh quote the same
+	// way picking a different delivery option does.
+	const choosePaymentMethod = (method: PaymentMethod) => {
+		dispatch({ type: "paymentMethodChosen", method });
+		if (!state.address || !state.option) return;
+		requestQuote(
+			state.address,
+			state.option,
+			method,
 			(fresh) => dispatch({ type: "quoteLoaded", quote: fresh }),
 			backToAddress,
 		);
@@ -71,6 +91,15 @@ function Review() {
 		place.mutate(body, {
 			onSuccess: (placed) => {
 				router.dismissAll();
+				// A mobile_money placement still owes the server its payment
+				// attempt — the pay screen, never the COD confirmation.
+				if (body.paymentMethod === "mobile_money") {
+					router.replace({
+						pathname: "/checkout/[orderId]/pay",
+						params: { orderId: placed.orderId },
+					});
+					return;
+				}
 				router.replace({
 					pathname: "/checkout/confirmation/[id]",
 					params: { id: placed.orderId, c: placed.confirmationRequired },
@@ -81,6 +110,7 @@ function Review() {
 				requestQuote(
 					state.address,
 					state.option,
+					state.paymentMethod,
 					(fresh) =>
 						dispatch({
 							type: "quoteChanged",
@@ -93,35 +123,58 @@ function Review() {
 		});
 	};
 
+	// Shown above every other outcome, including a quote error: switching
+	// back to COD must stay reachable even when the protected quote the buyer
+	// just asked for comes back refused.
+	const methodPicker = protectedPaymentEnabled ? (
+		<PaymentMethodPicker
+			method={state.paymentMethod}
+			fee={
+				state.quote && state.quote.summary.paymentMethod === "mobile_money"
+					? state.quote.summary.amounts.buyerProtectionFee
+					: null
+			}
+			buyerProtection={buyerProtection}
+			locale={locale}
+			onChoose={choosePaymentMethod}
+		/>
+	) : null;
+
 	if (quote.isPending) {
 		return (
-			<View style={[formStyles.row, { padding: 16 }]}>
-				<ActivityIndicator color={c.primary} />
-				<Text style={[formStyles.hint, { color: c.muted }]}>
-					{t("checkout.loadingQuote")}
-				</Text>
+			<View style={{ padding: 16, gap: 16 }}>
+				{methodPicker}
+				<View style={formStyles.row}>
+					<ActivityIndicator color={c.primary} />
+					<Text style={[formStyles.hint, { color: c.muted }]}>
+						{t("checkout.loadingQuote")}
+					</Text>
+				</View>
 			</View>
 		);
 	}
 	if (!state.quote) {
 		return (
-			<View style={{ padding: 16, gap: 12 }}>
-				{quote.error ? (
-					<Text style={formStyles.error} accessibilityRole="alert">
-						{resolveErrorMessage(quote.error, t)}
-					</Text>
-				) : null}
-				<View style={formStyles.row}>
-					<CheckoutButton
-						variant="outline"
-						label={t("common.back")}
-						onPress={() => router.back()}
-					/>
-					<CheckoutButton
-						label={t("checkout.retryQuote")}
-						onPress={retryQuote}
-						style={{ flex: 1 }}
-					/>
+			<View style={{ padding: 16, gap: 16 }}>
+				{methodPicker}
+				<View style={{ gap: 12 }}>
+					{quote.error ? (
+						<Text style={formStyles.error} accessibilityRole="alert">
+							{resolveErrorMessage(quote.error, t)}
+						</Text>
+					) : null}
+					<View style={formStyles.row}>
+						<CheckoutButton
+							variant="outline"
+							label={t("common.back")}
+							onPress={() => router.back()}
+						/>
+						<CheckoutButton
+							label={t("checkout.retryQuote")}
+							onPress={retryQuote}
+							style={{ flex: 1 }}
+						/>
+					</View>
 				</View>
 			</View>
 		);
@@ -133,6 +186,7 @@ function Review() {
 
 	return (
 		<ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+			{methodPicker}
 			{state.previousQuote ? (
 				<View
 					style={[styles.notice, { backgroundColor: c.warningSoft }]}

@@ -4,6 +4,7 @@ import {
 	type CheckoutState,
 	canPlaceOrder,
 	checkoutReducer,
+	codFallbackOnQuoteError,
 	confirmationOutcome,
 	initialCheckoutState,
 	isConfirmationRequired,
@@ -252,6 +253,52 @@ describe("the placement body is the route's input", () => {
 		expect(new Set([key, newIdempotencyKey(), newIdempotencyKey()]).size).toBe(
 			3,
 		);
+	});
+});
+
+describe("the payment method (Task 29)", () => {
+	test("starts on COD and a change drops the quote for a fresh price", () => {
+		const state = checkoutReducer(reviewing(), {
+			type: "paymentMethodChosen",
+			method: "mobile_money",
+		});
+		expect(state.paymentMethod).toBe("mobile_money");
+		expect(state.quote).toBeNull();
+		expect(state.accepted).toBe(false);
+	});
+	test("a quote places with the method it was priced under", () => {
+		const mobileMoneyQuote = quote();
+		mobileMoneyQuote.summary.paymentMethod = "mobile_money";
+		let state = checkoutReducer(reviewing(), {
+			type: "paymentMethodChosen",
+			method: "mobile_money",
+		});
+		state = checkoutReducer(state, {
+			type: "quoteLoaded",
+			quote: mobileMoneyQuote,
+		});
+		state = checkoutReducer(state, { type: "accepted", accepted: true });
+		expect(placeOrderBody(state, "fr")?.paymentMethod).toBe("mobile_money");
+	});
+});
+
+describe("the COD fallback a refused mobile_money quote triggers (Task 29)", () => {
+	test("offered only for mobile_money, on the two refusal codes", () => {
+		expect(
+			codFallbackOnQuoteError("mobile_money", "checkout.methodUnavailable"),
+		).toBe(true);
+		expect(
+			codFallbackOnQuoteError("mobile_money", "payment.shopNotEligible"),
+		).toBe(true);
+	});
+	test("never offered for COD itself, or for an unrelated refusal", () => {
+		expect(codFallbackOnQuoteError("cod", "checkout.methodUnavailable")).toBe(
+			false,
+		);
+		expect(
+			codFallbackOnQuoteError("mobile_money", "checkout.quoteChanged"),
+		).toBe(false);
+		expect(codFallbackOnQuoteError("mobile_money", null)).toBe(false);
 	});
 });
 

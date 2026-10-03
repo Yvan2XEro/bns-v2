@@ -3,6 +3,13 @@ import { createContext, useContext } from "react";
 import { api } from "@/src/lib/api";
 import type { LaunchCityOption } from "@/src/types/order";
 
+/** `AppSettings.payments.buyerProtection`, mirrored from web's own `useAppConfig`. */
+export interface BuyerProtectionConfig {
+	bps: number;
+	min: number;
+	max: number;
+}
+
 export interface AppConfig {
 	chatUrl: string | null;
 	novuAppId: string | null;
@@ -14,6 +21,14 @@ export interface AppConfig {
 	/** The cities ordering is open in, with each one's default delivery fee. */
 	launchCities: LaunchCityOption[];
 	withdrawalDays: number;
+	/**
+	 * Server-decided (`isProtectedPaymentOpen`), fails closed like
+	 * `ordersEnabled`: a client that cannot read the flag shows "coming soon",
+	 * never a guess that it is on.
+	 */
+	protectedPaymentEnabled: boolean;
+	/** Rate, minimum and maximum for the buyer protection fee. */
+	buyerProtection: BuyerProtectionConfig;
 }
 
 const DEFAULT: AppConfig = {
@@ -29,6 +44,8 @@ const DEFAULT: AppConfig = {
 	ordersEnabled: false,
 	launchCities: [],
 	withdrawalDays: 15,
+	protectedPaymentEnabled: false,
+	buyerProtection: { bps: 300, min: 100, max: 15_000 },
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);

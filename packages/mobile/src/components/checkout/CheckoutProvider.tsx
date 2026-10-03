@@ -12,6 +12,7 @@ import {
 	type CheckoutAction,
 	type CheckoutState,
 	checkoutReducer,
+	codFallbackOnQuoteError,
 	initialCheckoutState,
 	newIdempotencyKey,
 } from "@/src/lib/checkoutFlow";
@@ -20,6 +21,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import type {
 	AddressInput,
 	DeliveryOption,
+	PaymentMethod,
 	QuoteResponse,
 } from "@/src/types/order";
 
@@ -31,6 +33,7 @@ interface CheckoutContextValue {
 	requestQuote: (
 		address: AddressInput,
 		option: DeliveryOption,
+		method: PaymentMethod,
 		onQuote: (fresh: QuoteResponse) => void,
 		onAddressRejected?: () => void,
 	) => void;
@@ -59,6 +62,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 	const requestQuote: CheckoutContextValue["requestQuote"] = (
 		address,
 		option,
+		method,
 		onQuote,
 		onAddressRejected,
 	) =>
@@ -66,7 +70,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 			{
 				address,
 				deliveryOptionId: option.optionId,
-				paymentMethod: "cod",
+				paymentMethod: method,
 				locale,
 			},
 			{
@@ -78,6 +82,15 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 					) {
 						dispatch({ type: "addressRejected", field: addressFieldOf(error) });
 						onAddressRejected?.();
+						return;
+					}
+					// The designed fallback: a refused mobile_money quote switches
+					// back to COD and re-asks immediately, rather than stranding the
+					// buyer on a method the server will never price.
+					const code = error instanceof ApiError ? error.code : null;
+					if (codFallbackOnQuoteError(method, code)) {
+						dispatch({ type: "paymentMethodChosen", method: "cod" });
+						requestQuote(address, option, "cod", onQuote, onAddressRejected);
 					}
 				},
 			},

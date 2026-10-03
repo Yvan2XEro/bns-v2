@@ -54,6 +54,7 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 		requestQuote(
 			address,
 			picked,
+			state.paymentMethod,
 			(fresh) => dispatch({ type: "quoteLoaded", quote: fresh }),
 			backToAddress,
 		);

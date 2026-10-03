@@ -17,6 +17,34 @@ export function toAppPath(url: string): string | null {
 	return null;
 }
 
+/**
+ * The five P5 payment screens (Task 29), reachable only by direct
+ * navigation, a hosted-checkout/onboarding return or an SMS link — never by
+ * a push payload (`buildExpoPushData` on the API never names them; see
+ * `notification-workflows.int.spec.ts`). Listed once so `deepLinks.test.ts`
+ * can prove each still resolves to the screen file it names, the same way a
+ * push URL does for the ones that are.
+ */
+export const PAYMENT_DEEP_LINKS: ReadonlyArray<{
+	url: string;
+	screen: string;
+}> = [
+	{ url: "buynsellem://checkout/o-1/pay", screen: "checkout/[orderId]/pay" },
+	{
+		url: "buynsellem://checkout/o-1/pending",
+		screen: "checkout/[orderId]/pending",
+	},
+	{ url: "buynsellem://seller/payments", screen: "seller/payments/index" },
+	{
+		url: "buynsellem://seller/payments/setup",
+		screen: "seller/payments/setup",
+	},
+	{
+		url: "buynsellem://seller/payments/payouts/p-1",
+		screen: "seller/payments/payouts/[id]",
+	},
+];
+
 function stringField(
 	data: Record<string, unknown>,
 	key: string,

@@ -579,6 +579,22 @@ function RootLayoutNav() {
 					name="moderation/order/[id]"
 					options={{ headerShown: false }}
 				/>
+
+				{/* P5 payments (Task 29). checkout/[orderId]/pay and
+				    checkout/[orderId]/pending need no entry of their own — they
+				    resolve to the existing "checkout" root above. */}
+				<Stack.Screen
+					name="seller/payments/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/payments/setup"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/payments/payouts/[id]"
+					options={{ headerShown: false }}
+				/>
 			</Stack>
 
 			<StatusBar style="auto" />

@@ -22,6 +22,7 @@ import { ConfirmCodeCard } from "@/src/components/purchases/ConfirmCodeCard";
 import { ConfirmReceiptSheet } from "@/src/components/purchases/ConfirmReceiptSheet";
 import { ContestSheet } from "@/src/components/purchases/ContestSheet";
 import { HandoverCard } from "@/src/components/purchases/HandoverCard";
+import { PaymentSection } from "@/src/components/purchases/PaymentSection";
 import { PurchaseSummary } from "@/src/components/purchases/PurchaseSummary";
 import { ReviewPanel } from "@/src/components/purchases/ReviewPanel";
 import { Timeline } from "@/src/components/purchases/Timeline";
@@ -148,6 +149,7 @@ export default function PurchaseScreen() {
 						</Pressable>
 					) : null}
 
+					<PaymentSection order={order} />
 					<PurchaseSummary order={order} />
 					<Timeline entries={order.timeline} />
 				</ScrollView>

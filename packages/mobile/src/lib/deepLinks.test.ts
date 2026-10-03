@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { Glob } from "bun";
 import { isScreenFile, matchRoute, routeNameOf } from "./appRoutes";
-import { notificationUrl, toAppPath } from "./deepLinks";
+import { notificationUrl, PAYMENT_DEEP_LINKS, toAppPath } from "./deepLinks";
 
 const APP_ROOT = join(import.meta.dir, "../../app");
 const ROUTES = [...new Glob("**/*").scanSync({ cwd: APP_ROOT })]
@@ -41,6 +41,16 @@ describe("the order deep links land on their screens", () => {
 
 	test("a link outside the app stays outside", () => {
 		expect(toAppPath("https://example.com/purchases/o-1")).toBeNull();
+	});
+});
+
+// Task 29: the five payment routes resolve the same way a push link does,
+// even though none of them is ever reached by one (see PAYMENT_DEEP_LINKS).
+describe("the payment deep links land on their screens", () => {
+	test.each(
+		PAYMENT_DEEP_LINKS.map(({ url, screen }) => [url, screen] as const),
+	)("%s -> %s", (url, screen) => {
+		expect(screenFor(url)).toBe(screen);
 	});
 });
 

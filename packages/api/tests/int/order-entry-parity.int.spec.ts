@@ -299,6 +299,44 @@ describe("an order push opens the right screen on the phone", () => {
 				"seller/billing/[id]",
 			],
 			["commission-invoice-paid", { invoiceId: "i-1" }, "seller/billing/[id]"],
+			// P5 payment workflows (Task 29): none of these ever reaches the
+			// three screens Task 29 itself registers (checkout/[orderId]/pay,
+			// .../pending, seller/payments/payouts/[id]) — only the buyer's and
+			// shop's order screens, and the seller payments hub and its setup
+			// screen. See PAYMENT_DEEP_LINKS in the mobile package's own
+			// deepLinks.test.ts for those three.
+			["payment-succeeded", { orderId: "o-1" }, "purchases/[id]"],
+			["payment-failed", { orderId: "o-1" }, "purchases/[id]"],
+			["refund-completed", { orderId: "o-1" }, "purchases/[id]"],
+			["refund-failed", { orderId: "o-1" }, "purchases/[id]"],
+			[
+				"refund-initiated",
+				{ orderId: "o-1", audience: "buyer" },
+				"purchases/[id]",
+			],
+			[
+				"refund-initiated",
+				{ orderId: "o-1", audience: "shop" },
+				"seller/orders/[id]",
+			],
+			["order-paid", { orderId: "o-1" }, "seller/orders/[id]"],
+			["payout-sent", { shopId: "s-1" }, "seller/payments/index"],
+			["payout-failed", { shopId: "s-1" }, "seller/payments/index"],
+			["payout-hold-placed", { shopId: "s-1" }, "seller/payments/index"],
+			["payout-hold-released", { shopId: "s-1" }, "seller/payments/index"],
+			[
+				"payout-receivable-written-off",
+				{ shopId: "s-1" },
+				"seller/payments/index",
+			],
+			[
+				"payments-onboarding-action",
+				{ shopId: "s-1" },
+				"seller/payments/setup",
+			],
+			["payout-account-activated", { shopId: "s-1" }, "seller/payments/setup"],
+			["payout-account-review", { shopId: "s-1" }, "seller/payments/setup"],
+			["payout-account-changed", { shopId: "s-1" }, "seller/payments/setup"],
 		];
 		const landed = cases.map(([workflow, payload]) => {
 			const data = buildExpoPushData(workflow, payload);
