@@ -164,7 +164,13 @@ beforeEach(() => {
 				collection: "payout-holds",
 				overrideAccess: true,
 				req,
-				data: { ...data, status: "active", blocksCharges: false },
+				data: {
+					...data,
+					until:
+						data.until instanceof Date ? data.until.toISOString() : data.until,
+					status: "active",
+					blocksCharges: false,
+				},
 			}),
 	);
 	for (const fn of Object.values(notify)) fn.mockClear();
@@ -486,7 +492,14 @@ describe("a second activation", () => {
 					collection: "payout-holds",
 					overrideAccess: true,
 					req,
-					data: { ...data, status: "active" },
+					data: {
+						...data,
+						until:
+							data.until instanceof Date
+								? data.until.toISOString()
+								: data.until,
+						status: "active",
+					},
 				});
 				throw new Error("forced failure after the hold write");
 			},

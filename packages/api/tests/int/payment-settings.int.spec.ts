@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppSettings } from "../../src/globals/AppSettings";
 import { ERROR_CODES } from "../../src/lib/errors";
 import {
@@ -268,21 +268,17 @@ describe("AppSettings beforeChange — payments", () => {
 			markets: [{ ...CM, enabled: true }],
 			gates: ALL_GATES,
 		};
-		const savedNodeEnv = process.env.NODE_ENV;
-		const savedProvider = process.env.PAYMENTS_PROVIDER;
 		try {
-			process.env.NODE_ENV = "production";
-			delete process.env.PAYMENTS_PROVIDER;
+			vi.stubEnv("NODE_ENV", "production");
+			vi.stubEnv("PAYMENTS_PROVIDER", "");
 			expect(refusalOf(everything)).toContain(
 				'no payment adapter is registered for "notchpay"',
 			);
 			// The explicit staging override stands in for an adapter.
-			process.env.PAYMENTS_PROVIDER = "fake";
+			vi.stubEnv("PAYMENTS_PROVIDER", "fake");
 			expect(refusalOf(everything)).toBeNull();
 		} finally {
-			process.env.NODE_ENV = savedNodeEnv;
-			if (savedProvider === undefined) delete process.env.PAYMENTS_PROVIDER;
-			else process.env.PAYMENTS_PROVIDER = savedProvider;
+			vi.unstubAllEnvs();
 		}
 	});
 
