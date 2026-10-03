@@ -1,3 +1,5 @@
+import type { Payload } from "payload";
+import type { PayoutMethod } from "../collections/PayoutAccounts";
 import { relationId } from "../lib/relationId";
 import type { Shop } from "../payload-types";
 import { isNotificationProviderConfigured } from "./notificationProvider";
@@ -39,4 +41,43 @@ export async function notifyPayoutHoldReleased(
 		category: notice.category,
 		cause: notice.cause,
 	});
+}
+
+// --- Payout-account notices (Task 10's seam; Task 21 implements) ---------
+export interface PayoutAccountNotice {
+	shopId: string;
+	ownerId: string;
+	accountId: string;
+	method: PayoutMethod;
+	accountNumberMasked: string;
+}
+
+export interface PayoutAccountChangedNotice extends PayoutAccountNotice {
+	holdUntil: string;
+	notMeUrl: string;
+}
+
+const pending = (name: string) =>
+	new Error(`services/paymentNotifications.${name} lands with P5 Task 21`);
+
+export async function notifyPayoutAccountActivated(
+	_payload: Payload,
+	_notice: PayoutAccountNotice,
+): Promise<void> {
+	throw pending("notifyPayoutAccountActivated");
+}
+
+export async function notifyPayoutAccountReview(
+	_payload: Payload,
+	_notice: PayoutAccountNotice & { result: "partial" | "mismatch" },
+): Promise<void> {
+	throw pending("notifyPayoutAccountReview");
+}
+
+/** `payout-account-changed`: push, email and SMS, carrying the not-me link. */
+export async function notifyPayoutAccountChanged(
+	_payload: Payload,
+	_notice: PayoutAccountChangedNotice,
+): Promise<void> {
+	throw pending("notifyPayoutAccountChanged");
 }

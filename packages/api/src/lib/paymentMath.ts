@@ -111,6 +111,15 @@ export const CHANNEL_PHONE_PREFIXES: Record<PaymentChannel, readonly string[]> =
 	};
 
 /**
+ * The international dialling code each channel's numbers carry, beside the
+ * prefixes for the same reason: a new market adds its row here.
+ */
+export const CHANNEL_DIAL_CODES: Record<PaymentChannel, string> = {
+	"cm.mtn": "237",
+	"cm.orange": "237",
+};
+
+/**
  * Accepts a Cameroon mobile number with or without the `+237`/`237` country
  * code and returns its 9-digit local form, or `null` if it isn't a 9-digit
  * number once the country code is stripped.
