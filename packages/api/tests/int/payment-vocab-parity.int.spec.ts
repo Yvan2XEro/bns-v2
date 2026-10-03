@@ -6,6 +6,11 @@ import mobileFr from "../../../mobile/src/locales/fr.json";
 import webEn from "../../../web/messages/en.json";
 import webFr from "../../../web/messages/fr.json";
 import * as web from "../../../web/src/lib/payment-status";
+import {
+	PAYOUT_ACCOUNT_STATUSES,
+	PAYOUT_METHODS,
+} from "../../src/collections/PayoutAccounts";
+import { PAYOUT_HOLD_REASONS } from "../../src/collections/PayoutHolds";
 import type { NameMatchVerdict } from "../../src/lib/nameMatch";
 import { CHANNEL_PHONE_PREFIXES } from "../../src/lib/paymentMath";
 import type {
@@ -92,29 +97,11 @@ const API_NAME_MATCH_RESULTS = keysOf<NameMatchVerdict>({
 
 const API_CHANNELS = Object.keys(CHANNEL_PHONE_PREFIXES);
 
-/**
- * Transcribed from the spec's `payout-accounts` and `payout-holds` tables:
- * neither collection exists in the API yet. Once they do, import their
- * option lists here instead.
- */
-const SPEC_PAYOUT_ACCOUNT_STATUSES = [
-	"pending_verification",
-	"pending_review",
-	"active",
-	"rejected",
-	"replaced",
-];
-const SPEC_PAYOUT_METHODS = ["mtn_momo", "orange_money", "bank"];
-const SPEC_HOLD_REASONS: readonly web.PayoutHoldReason[] = [
-	"payout_account_changed",
-	"fraud_signal",
-	"reconciliation_mismatch",
-	"dispute_open",
-	"return_open",
-	"moderation",
-	"payout_failed_repeatedly",
-	"shop_suspended",
-];
+// The collections exist now: their option lists are the one declaration, so
+// a changed enum fails here with the collection named, not a transcription.
+const SPEC_PAYOUT_ACCOUNT_STATUSES = PAYOUT_ACCOUNT_STATUSES;
+const SPEC_PAYOUT_METHODS = PAYOUT_METHODS;
+const SPEC_HOLD_REASONS: readonly web.PayoutHoldReason[] = PAYOUT_HOLD_REASONS;
 const HOLD_CATEGORIES = ["security", "review", "operations"];
 
 type KeyMap = Readonly<Record<string, string>>;
