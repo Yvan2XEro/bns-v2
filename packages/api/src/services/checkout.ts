@@ -1369,7 +1369,12 @@ export async function placeOrder(
 					sendOrderSms(req.payload, {
 						to: address.phone,
 						text: receiptSms(
-							{ orderNumber, shopName, total: fresh.summary.amounts.total },
+							{
+								orderId: String(createdOrder.id),
+								orderNumber,
+								shopName,
+								total: fresh.summary.amounts.total,
+							},
 							locale,
 						),
 					}),

@@ -781,6 +781,12 @@ describe("placeOrder: everything external fires after commit, not during", () =>
 		});
 
 		expect(sendSms).toHaveBeenCalledTimes(2); // the receipt, then the code
+		const links = sendSms.mock.calls
+			.map(
+				(call) => String(call[1]?.message).match(/purchases\/([^\s.]+)/)?.[1],
+			)
+			.filter((link) => link !== undefined);
+		expect(links).toEqual([String(orderAt(payload).id)]);
 		expect(payload.store.conversations).toHaveLength(1);
 		expect(triggerNotificationEvent).toHaveBeenCalledWith(
 			expect.objectContaining({ event: "order-placed" }),

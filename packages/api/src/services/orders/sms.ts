@@ -70,18 +70,25 @@ const SMS_BUDGET = 160;
  * code: it is an acknowledgement, not a credential — which is why the shop
  * name is the part that gives way when the message does not fit.
  *
- * It has to give way often. The French text with a nine-character name is
- * already 152 of the 160 available, so "Boutique Mama Ngono" — an entirely
- * ordinary name here — pushed it to 162 and split every receipt that shop
- * ever sent. Billed twice, on every order. */
+ * It has to give way often. The link carries the order id (24 characters),
+ * because `/purchases/{id}` is the only form the page and the API resolve;
+ * that leaves the French text about eleven characters of shop name at a
+ * five-figure total, so "Boutique Mama Ngono" — an entirely ordinary name
+ * here — would otherwise split every receipt that shop ever sent. Billed
+ * twice, on every order. */
 export function receiptSms(
-	input: { orderNumber: string; shopName: string; total: number },
+	input: {
+		orderId: string;
+		orderNumber: string;
+		shopName: string;
+		total: number;
+	},
 	locale: "fr" | "en",
 ): string {
 	const build = (shopName: string) =>
 		locale === "fr"
-			? `BuyNSellem: commande ${input.orderNumber} recue chez ${shopName}, total ${gsmAmount(input.total, "fr")} a payer a la livraison. Suivi: buynsellem.com/purchases/${input.orderNumber}.`
-			: `BuyNSellem: order ${input.orderNumber} received from ${shopName}, total ${gsmAmount(input.total, "en")} due on delivery. Track: buynsellem.com/purchases/${input.orderNumber}.`;
+			? `BuyNSellem: commande ${input.orderNumber} recue chez ${shopName}, total ${gsmAmount(input.total, "fr")} a payer a la livraison. Suivi: buynsellem.com/purchases/${input.orderId}.`
+			: `BuyNSellem: order ${input.orderNumber} received from ${shopName}, total ${gsmAmount(input.total, "en")} due on delivery. Track: buynsellem.com/purchases/${input.orderId}.`;
 
 	const full = build(input.shopName);
 	const overflow = gsm7Length(full) - SMS_BUDGET;

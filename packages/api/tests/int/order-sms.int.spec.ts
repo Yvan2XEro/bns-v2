@@ -18,6 +18,9 @@ import {
 } from "../../src/services/orders/sms";
 
 const ORDER_NUMBER = "BNS-2609-000123";
+// A real Mongo ObjectId: the tracking link carries the id, and its 24
+// characters are what the GSM-7 budget below has to absorb.
+const ORDER_ID = "66f1a2b3c4d5e6f708192a3b";
 const HANDOVER_CODE = "4821";
 const CONFIRMATION_CODE = "482913";
 const TOTAL = 47000;
@@ -30,11 +33,79 @@ describe("the four order SMS", () => {
 	it("fits the receipt SMS in one GSM-7 message", () => {
 		for (const locale of ["fr", "en"] as const) {
 			const text = receiptSms(
-				{ orderNumber: ORDER_NUMBER, shopName: "Boutique Mimi", total: TOTAL },
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Boutique Mimi",
+					total: TOTAL,
+				},
 				locale,
 			);
 			expect(gsm7Length(text)).toBeLessThanOrEqual(160);
 		}
+	});
+
+	// The web page and the API resolve an order only by id: a link carrying
+	// the BNS- number answered order.notFound on every receipt.
+	it("links the receipt to /purchases/{id}, the page that resolves", () => {
+		for (const locale of ["fr", "en"] as const) {
+			const text = receiptSms(
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Boutique Mimi",
+					total: TOTAL,
+				},
+				locale,
+			);
+			const link = text.match(/buynsellem\.com\/purchases\/([^\s.]+)/)?.[1];
+			expect(link).toBe(ORDER_ID);
+			expect(text).toContain(ORDER_NUMBER);
+		}
+	});
+
+	it("prints a short shop name whole", () => {
+		for (const locale of ["fr", "en"] as const) {
+			const text = receiptSms(
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Mimi",
+					total: TOTAL,
+				},
+				locale,
+			);
+			expect(text).toContain(" Mimi,");
+		}
+	});
+
+	it("trims a long shop name, never the link, to stay in one part", () => {
+		for (const locale of ["fr", "en"] as const) {
+			const text = receiptSms(
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Boutique Mama Ngono",
+					total: 1_250_000,
+				},
+				locale,
+			);
+			expect(gsm7Length(text)).toBeLessThanOrEqual(160);
+			expect(text).not.toContain("Boutique Mama Ngono");
+			expect(text).toContain(`buynsellem.com/purchases/${ORDER_ID}`);
+		}
+		// fr carries 8 more characters of fixed text than en, so the name
+		// gives way there first and further.
+		const fr = receiptSms(
+			{
+				orderId: ORDER_ID,
+				orderNumber: ORDER_NUMBER,
+				shopName: "Boutique Mama Ngono",
+				total: 1_250_000,
+			},
+			"fr",
+		);
+		expect(fr).toContain(" chez Boutiqu.,");
 	});
 
 	it("fits the confirmation and handover SMS in one message", () => {
@@ -58,7 +129,12 @@ describe("the four order SMS", () => {
 	it("never puts the handover code in the receipt SMS", () => {
 		for (const locale of ["fr", "en"] as const) {
 			const text = receiptSms(
-				{ orderNumber: ORDER_NUMBER, shopName: "Boutique Mimi", total: TOTAL },
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Boutique Mimi",
+					total: TOTAL,
+				},
 				locale,
 			);
 			expect(text).not.toContain(HANDOVER_CODE);
@@ -113,7 +189,12 @@ describe("the four order SMS", () => {
 		];
 		const en = [
 			receiptSms(
-				{ orderNumber: ORDER_NUMBER, shopName: "Boutique Mimi", total: TOTAL },
+				{
+					orderId: ORDER_ID,
+					orderNumber: ORDER_NUMBER,
+					shopName: "Boutique Mimi",
+					total: TOTAL,
+				},
 				"en",
 			),
 			confirmationCodeSms(
