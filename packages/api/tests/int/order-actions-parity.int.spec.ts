@@ -7,9 +7,17 @@ import {
 	type OrderAction,
 } from "../../../mobile/src/lib/orderActions";
 import {
+	BUYER_CANCEL_REASONS as mobileBuyerCancelReasons,
+	cancelSchema as mobileCancelSchema,
+} from "../../../mobile/src/lib/purchaseForms";
+import {
 	CANCELLATION_REASON_KEYS as mobileCancellationReasonKeys,
 	STAFF_CANCEL_REASONS as mobileStaffCancelReasons,
 } from "../../../mobile/src/lib/staffOrderSheet";
+import {
+	BUYER_CANCEL_REASONS as webBuyerCancelReasons,
+	cancelSchema as webCancelSchema,
+} from "../../../web/src/app/purchases/purchase-view";
 import {
 	ORDER_ACTION_PERMISSIONS as webActionPermissions,
 	ORDER_ACTION_ROUTES as webActionRoutes,
@@ -23,6 +31,7 @@ import {
 	STAFF_CANCEL_REASONS,
 } from "../../src/services/moderation";
 import {
+	BUYER_CANCEL_REASONS,
 	BUYER_CANCELLABLE_STATUSES,
 	SELLER_CANCELLABLE_STATUSES,
 } from "../../src/services/orders/acceptance";
@@ -366,5 +375,27 @@ describe("the moderation order sheet's reasons", () => {
 		expect(Object.keys(mobileCancellationReasonKeys).sort()).toEqual(
 			[...ORDER_CANCELLATION_REASONS].sort(),
 		);
+	});
+});
+
+describe("the buyer's cancel reasons", () => {
+	// cancelBuyerOrder answers order.reasonRequired to anything outside its
+	// list, so a client offering a third reason would offer a dead button.
+	it("both clients offer exactly the reasons cancelBuyerOrder accepts", () => {
+		expect(mobileBuyerCancelReasons.map((r) => r.value)).toEqual([
+			...BUYER_CANCEL_REASONS,
+		]);
+		expect(webBuyerCancelReasons.map((r) => r.value)).toEqual([
+			...BUYER_CANCEL_REASONS,
+		]);
+	});
+
+	it("both clients' cancel forms validate exactly those reasons", () => {
+		expect([...mobileCancelSchema.shape.reason.options]).toEqual([
+			...BUYER_CANCEL_REASONS,
+		]);
+		expect([...webCancelSchema.shape.reason.options]).toEqual([
+			...BUYER_CANCEL_REASONS,
+		]);
 	});
 });

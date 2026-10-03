@@ -38,7 +38,7 @@ const SELLER_END_REASONS = [
 	"seller_other",
 ] as const satisfies readonly CancellationReason[];
 
-const BUYER_CANCEL_REASONS = [
+export const BUYER_CANCEL_REASONS = [
 	"buyer_changed_mind",
 	"buyer_ordered_by_mistake",
 ] as const satisfies readonly CancellationReason[];
