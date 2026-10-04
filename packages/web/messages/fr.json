@@ -1573,6 +1573,29 @@
 			"amountExceeds": "Ce montant dépasse ce qui reste remboursable sur cette commande.",
 			"notRefundable": "Cette commande n'a aucun paiement en ligne à rembourser.",
 			"windowExpired": "Ce paiement est trop ancien pour être remboursé automatiquement. Le remboursement sera organisé directement avec le vendeur."
+		},
+		"return": {
+			"notEligible": "Cette commande n'est pas éligible à un retour.",
+			"windowClosed": "Le délai de retour pour cette commande est écoulé.",
+			"itemsInvalid": "Veuillez vérifier les articles et quantités à retourner.",
+			"alreadyOpen": "Un retour est déjà en cours pour cette commande.",
+			"invalidTransition": "Ce retour n'est pas dans un état qui permet cette action.",
+			"deductionEvidenceRequired": "Une déduction nécessite au moins une photo de l'état de l'article avant de pouvoir être appliquée.",
+			"deductionNotAllowed": "Aucune déduction ne peut être appliquée pour ce motif de retour.",
+			"refundProofInvalid": "Veuillez vérifier la preuve de remboursement : un identifiant de transaction est requis pour le mobile money, et au moins une photo de la preuve."
+		},
+		"dispute": {
+			"disabled": "Les litiges ne sont pas encore ouverts. Contactez-nous et nous suivrons votre commande.",
+			"notParty": "Vous n'êtes pas partie à cette commande, vous ne pouvez donc pas ouvrir de litige sur celle-ci.",
+			"reasonNotAllowed": "Ce motif n'est pas disponible pour vous sur cette commande.",
+			"windowClosed": "Le délai pour ouvrir un litige pour ce motif est écoulé.",
+			"alreadyOpen": "Un litige est déjà ouvert pour cette commande.",
+			"returnCaseActive": "Ces articles font déjà partie d'un retour actif. Référencez-le au lieu d'ouvrir un nouveau litige.",
+			"evidenceRequired": "Ce motif nécessite au moins une photo ou une vidéo avant de pouvoir soumettre.",
+			"evidenceLimit": "Vous avez atteint la limite de preuves pour ce litige.",
+			"invalidTransition": "Ce litige n'est pas dans un état qui permet cette action.",
+			"proposalInvalid": "Cette proposition ne peut pas être envoyée. Vérifiez le montant et le nombre de tours déjà utilisés.",
+			"refundExceedsOrder": "Ce montant de remboursement dépasse ce qui reste remboursable sur cette commande."
 		}
 	},
 	"Verification": {

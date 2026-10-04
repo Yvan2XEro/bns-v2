@@ -1572,6 +1572,29 @@
 			"amountExceeds": "This amount is more than what remains refundable on this order.",
 			"notRefundable": "This order has no online payment to refund.",
 			"windowExpired": "This payment is too old to be refunded automatically. The refund will be arranged directly with the seller."
+		},
+		"return": {
+			"notEligible": "This order is not eligible for a return.",
+			"windowClosed": "The return window for this order has closed.",
+			"itemsInvalid": "Please check the items and quantities you want to return.",
+			"alreadyOpen": "A return is already open for this order.",
+			"invalidTransition": "This return is not in a state that allows that action.",
+			"deductionEvidenceRequired": "A deduction needs at least one photo of the item's condition before it can be applied.",
+			"deductionNotAllowed": "No deduction can be applied for this return reason.",
+			"refundProofInvalid": "Please check the refund proof: a transaction ID is required for mobile money, and at least one photo of the proof."
+		},
+		"dispute": {
+			"disabled": "Disputes are not open yet. Contact us and we will follow up on your order.",
+			"notParty": "You are not a party to this order, so you cannot open a dispute on it.",
+			"reasonNotAllowed": "This reason is not available to you for this order.",
+			"windowClosed": "The window to open a dispute for this reason has closed.",
+			"alreadyOpen": "A dispute is already open for this order.",
+			"returnCaseActive": "These items are already part of an active return. Reference it instead of opening a new dispute.",
+			"evidenceRequired": "This reason needs at least one photo or video before you can submit.",
+			"evidenceLimit": "You have reached the evidence limit for this dispute.",
+			"invalidTransition": "This dispute is not in a state that allows that action.",
+			"proposalInvalid": "This proposal cannot be sent. Check the amount and the number of rounds already used.",
+			"refundExceedsOrder": "This refund amount is more than what remains refundable on this order."
 		}
 	},
 	"Verification": {

@@ -49,6 +49,14 @@ describe("the error contract is the same in all three packages", () => {
 			);
 		}
 	});
+
+	it("gives each P6 code a fallback of its own", () => {
+		for (const code of P6_CODES) {
+			expect(fallbackMessage(code)).not.toBe(
+				fallbackMessage(ERROR_CODES.unknown),
+			);
+		}
+	});
 });
 
 /** The spec's list, transcribed. Not derived from ERROR_CODES. */
@@ -132,6 +140,41 @@ describe("P5 error codes", () => {
 		expect(P5_CODES.length).toBe(24);
 		expect(P5_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
 			24,
+		);
+	});
+});
+
+/** P6's contracts list, transcribed. Not derived from ERROR_CODES. */
+const P6_CODES = [
+	"return.notEligible",
+	"return.windowClosed",
+	"return.itemsInvalid",
+	"return.alreadyOpen",
+	"return.invalidTransition",
+	"return.deductionEvidenceRequired",
+	"return.deductionNotAllowed",
+	"return.refundProofInvalid",
+	"dispute.disabled",
+	"dispute.notParty",
+	"dispute.reasonNotAllowed",
+	"dispute.windowClosed",
+	"dispute.alreadyOpen",
+	"dispute.returnCaseActive",
+	"dispute.evidenceRequired",
+	"dispute.evidenceLimit",
+	"dispute.invalidTransition",
+	"dispute.proposalInvalid",
+	"dispute.refundExceedsOrder",
+] as const;
+
+describe("P6 error codes", () => {
+	it("declares all nineteen, every one client-facing", () => {
+		const declared = new Set(Object.values(ERROR_CODES));
+		const missing = P6_CODES.filter((code) => !declared.has(code));
+		expect(missing).toEqual([]);
+		expect(P6_CODES.length).toBe(19);
+		expect(P6_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
+			19,
 		);
 	});
 });

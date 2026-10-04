@@ -153,3 +153,56 @@ describe("P5 error codes", () => {
 		});
 	});
 });
+
+const P6_CODES = {
+	returnNotEligible: "return.notEligible",
+	returnWindowClosed: "return.windowClosed",
+	returnItemsInvalid: "return.itemsInvalid",
+	returnAlreadyOpen: "return.alreadyOpen",
+	returnInvalidTransition: "return.invalidTransition",
+	returnDeductionEvidenceRequired: "return.deductionEvidenceRequired",
+	returnDeductionNotAllowed: "return.deductionNotAllowed",
+	returnRefundProofInvalid: "return.refundProofInvalid",
+	disputeDisabled: "dispute.disabled",
+	disputeNotParty: "dispute.notParty",
+	disputeReasonNotAllowed: "dispute.reasonNotAllowed",
+	disputeWindowClosed: "dispute.windowClosed",
+	disputeAlreadyOpen: "dispute.alreadyOpen",
+	disputeReturnCaseActive: "dispute.returnCaseActive",
+	disputeEvidenceRequired: "dispute.evidenceRequired",
+	disputeEvidenceLimit: "dispute.evidenceLimit",
+	disputeInvalidTransition: "dispute.invalidTransition",
+	disputeProposalInvalid: "dispute.proposalInvalid",
+	disputeRefundExceedsOrder: "dispute.refundExceedsOrder",
+} as const;
+
+describe("P6 error codes", () => {
+	it("declares all nineteen", () => {
+		expect(Object.keys(P6_CODES)).toHaveLength(19);
+	});
+
+	it.each(Object.entries(P6_CODES))("defines %s as %s", (key, code) => {
+		expect(ERROR_CODES[key as keyof typeof ERROR_CODES]).toBe(code);
+	});
+
+	it.each(Object.values(P6_CODES))("gives %s its own fallback", (code) => {
+		expect(fallbackMessage(code)).not.toBe(
+			fallbackMessage(ERROR_CODES.unknown),
+		);
+	});
+
+	it("never gives two P6 codes the same fallback", () => {
+		const messages = Object.values(P6_CODES).map(fallbackMessage);
+		expect(new Set(messages).size).toBe(19);
+	});
+
+	it("builds the shared response shape", async () => {
+		const response = errorResponse(ERROR_CODES.disputeEvidenceRequired, 422);
+		expect(response.status).toBe(422);
+		expect(await response.json()).toEqual({
+			code: "dispute.evidenceRequired",
+			message:
+				"This reason needs at least one photo or video before you can submit.",
+		});
+	});
+});

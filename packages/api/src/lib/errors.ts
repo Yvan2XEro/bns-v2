@@ -212,6 +212,29 @@ export const ERROR_CODES = {
 	refundAmountExceeds: "refund.amountExceeds",
 	refundNotRefundable: "refund.notRefundable",
 	refundWindowExpired: "refund.windowExpired",
+
+	// Returns (P6)
+	returnNotEligible: "return.notEligible",
+	returnWindowClosed: "return.windowClosed",
+	returnItemsInvalid: "return.itemsInvalid",
+	returnAlreadyOpen: "return.alreadyOpen",
+	returnInvalidTransition: "return.invalidTransition",
+	returnDeductionEvidenceRequired: "return.deductionEvidenceRequired",
+	returnDeductionNotAllowed: "return.deductionNotAllowed",
+	returnRefundProofInvalid: "return.refundProofInvalid",
+
+	// Disputes (P6)
+	disputeDisabled: "dispute.disabled",
+	disputeNotParty: "dispute.notParty",
+	disputeReasonNotAllowed: "dispute.reasonNotAllowed",
+	disputeWindowClosed: "dispute.windowClosed",
+	disputeAlreadyOpen: "dispute.alreadyOpen",
+	disputeReturnCaseActive: "dispute.returnCaseActive",
+	disputeEvidenceRequired: "dispute.evidenceRequired",
+	disputeEvidenceLimit: "dispute.evidenceLimit",
+	disputeInvalidTransition: "dispute.invalidTransition",
+	disputeProposalInvalid: "dispute.proposalInvalid",
+	disputeRefundExceedsOrder: "dispute.refundExceedsOrder",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -464,6 +487,45 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"This order has no online payment to refund.",
 	[ERROR_CODES.refundWindowExpired]:
 		"This payment is too old to be refunded automatically. The refund will be arranged directly with the seller.",
+
+	[ERROR_CODES.returnNotEligible]: "This order is not eligible for a return.",
+	[ERROR_CODES.returnWindowClosed]:
+		"The return window for this order has closed.",
+	[ERROR_CODES.returnItemsInvalid]:
+		"Please check the items and quantities you want to return.",
+	[ERROR_CODES.returnAlreadyOpen]:
+		"A return is already open for this order.",
+	[ERROR_CODES.returnInvalidTransition]:
+		"This return is not in a state that allows that action.",
+	[ERROR_CODES.returnDeductionEvidenceRequired]:
+		"A deduction needs at least one photo of the item's condition before it can be applied.",
+	[ERROR_CODES.returnDeductionNotAllowed]:
+		"No deduction can be applied for this return reason.",
+	[ERROR_CODES.returnRefundProofInvalid]:
+		"Please check the refund proof: a transaction ID is required for mobile money, and at least one photo of the proof.",
+
+	[ERROR_CODES.disputeDisabled]:
+		"Disputes are not open yet. Contact us and we will follow up on your order.",
+	[ERROR_CODES.disputeNotParty]:
+		"You are not a party to this order, so you cannot open a dispute on it.",
+	[ERROR_CODES.disputeReasonNotAllowed]:
+		"This reason is not available to you for this order.",
+	[ERROR_CODES.disputeWindowClosed]:
+		"The window to open a dispute for this reason has closed.",
+	[ERROR_CODES.disputeAlreadyOpen]:
+		"A dispute is already open for this order.",
+	[ERROR_CODES.disputeReturnCaseActive]:
+		"These items are already part of an active return. Reference it instead of opening a new dispute.",
+	[ERROR_CODES.disputeEvidenceRequired]:
+		"This reason needs at least one photo or video before you can submit.",
+	[ERROR_CODES.disputeEvidenceLimit]:
+		"You have reached the evidence limit for this dispute.",
+	[ERROR_CODES.disputeInvalidTransition]:
+		"This dispute is not in a state that allows that action.",
+	[ERROR_CODES.disputeProposalInvalid]:
+		"This proposal cannot be sent. Check the amount and the number of rounds already used.",
+	[ERROR_CODES.disputeRefundExceedsOrder]:
+		"This refund amount is more than what remains refundable on this order.",
 };
 
 export function fallbackMessage(code: ErrorCode): string {
