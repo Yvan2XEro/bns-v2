@@ -166,6 +166,7 @@ export const updateUserRating = async ({
 		where: {
 			and: [
 				{ reviewedUser: { equals: reviewedUserId } },
+				{ status: { equals: "published" } },
 				// A shop review is counted into `shops.rating` by
 				// `updateShopRating` instead; without this filter a shop owner's
 				// personal rating would move every time one of their own shop's
@@ -261,7 +262,7 @@ export const updateShopRating = async (
 	const payload = req.payload as ShopRatingPayload;
 
 	const pipeline: Record<string, unknown>[] = [
-		{ $match: { shop: toStoredId(shopId) } },
+		{ $match: { shop: toStoredId(shopId), status: "published" } },
 		{
 			$group: {
 				_id: null,

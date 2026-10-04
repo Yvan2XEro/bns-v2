@@ -82,6 +82,15 @@ export function codCaps(
 	};
 }
 
+export function codCapsWithStanding(
+	caps: CodCaps,
+	capHalved: boolean,
+): CodCaps {
+	return capHalved
+		? { ...caps, maxDailyOrders: Math.floor(caps.maxDailyOrders / 2) }
+		: caps;
+}
+
 export function shopCapabilities(
 	shop: CapabilityShop,
 	now = new Date(),

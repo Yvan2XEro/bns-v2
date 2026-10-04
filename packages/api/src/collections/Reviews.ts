@@ -25,7 +25,8 @@ export const Reviews: CollectionConfig = {
 		defaultColumns: ["reviewer", "reviewedUser", "rating", "createdAt"],
 	},
 	access: {
-		read: () => true,
+		read: ({ req }) =>
+			req.user?.role === "admin" ? true : { status: { equals: "published" } },
 		create: authenticated,
 		update: ({ req: { user } }) => {
 			if (!user) return false;
@@ -119,6 +120,16 @@ export const Reviews: CollectionConfig = {
 			admin: {
 				readOnly: true,
 			},
+		},
+		{
+			name: "status",
+			type: "select",
+			defaultValue: "published",
+			options: ["published", "held_dispute", "removed"].map((value) => ({
+				label: value,
+				value,
+			})),
+			access: { create: () => false, update: () => false },
 		},
 		{
 			name: "reviewedUser",

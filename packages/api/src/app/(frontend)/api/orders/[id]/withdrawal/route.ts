@@ -17,7 +17,10 @@ const bodySchema = z.object({
 			}),
 		)
 		.min(1),
-	reasonText: z.string().trim().max(2000).nullable().optional(),
+	reasonText: z.string().trim().max(1000).nullable().optional(),
+	returnMethod: z
+		.enum(["buyer_drop_off", "courier", "seller_pickup"])
+		.optional(),
 });
 
 export async function POST(
@@ -39,6 +42,7 @@ export async function POST(
 			await openWithdrawal(ctx.payload, ctx.user, parsedParams.data.id, {
 				items: parsedBody.data.items,
 				reasonText: parsedBody.data.reasonText ?? null,
+				returnMethod: parsedBody.data.returnMethod,
 			}),
 		);
 	} catch (error) {

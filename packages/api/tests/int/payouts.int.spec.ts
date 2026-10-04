@@ -43,6 +43,7 @@ import {
 	type LedgerLine,
 	postingFor,
 	postLedger,
+	transactionLines,
 } from "../../src/services/ledger";
 import {
 	__resetOrderEventHandlers,
@@ -59,6 +60,7 @@ import {
 	providerScheduleEligible,
 	providerScheduleRefusals,
 	providerScheduleStats,
+	receivablesToBeNetted,
 	registerPayoutHandlers,
 	releaseCompletedOrder,
 	releaseEligibleFunds,
@@ -578,6 +580,64 @@ describe("release at completed", () => {
 });
 
 describe("releaseEligibleFunds", () => {
+	it("the shared planner ignores reversed nettings and never re-nets a failed submission", async () => {
+		const payload = seed();
+		const fake = provider();
+		await paidOrder(payload, "o-1");
+		await complete(payload, "o-1");
+		await partialRefund(payload, "o-1", 0, true);
+		fake.failWhen("releasePayout", { times: 1 });
+		const first = await releaseEligibleFunds(payload, new Date(NOW), {
+			provider: fake,
+		});
+		expect(first.payouts).toMatchObject([
+			{ amount: 33_240, status: "cancelled" },
+		]);
+		const [submitted] = ofKind(payload, "refund_submitted");
+		const [netting] = ofKind(payload, "clawback_recovered");
+		const planned = () =>
+			withTransaction(payload, (req) => receivablesToBeNetted(req, "o-1"));
+		expect([...(await planned())]).toEqual([]);
+		await withTransaction(payload, async (req) => {
+			await postLedger(req, {
+				kind: "netting_reversed",
+				occurredAt: at(0),
+				sourceType: "webhook-event",
+				sourceId: "r-o-1",
+				currency: CURRENCY,
+				order: "o-1",
+				shop: SHOP,
+				reverses: netting.id,
+				entries: postingFor("netting_reversed", {
+					netting: await transactionLines(req, netting),
+				}),
+			});
+		});
+		expect([...(await planned())]).toEqual([[submitted.id, 10_000]]);
+		await withTransaction(payload, async (req) => {
+			await postLedger(req, {
+				kind: "refund_failed",
+				occurredAt: at(0),
+				sourceType: "webhook-event",
+				sourceId: "r-o-1",
+				currency: CURRENCY,
+				order: "o-1",
+				shop: SHOP,
+				reverses: submitted.id,
+				entries: postingFor("refund_failed", {
+					submitted: await transactionLines(req, submitted),
+				}),
+			});
+		});
+		expect([...(await planned())]).toEqual([]);
+		expect(await balance(payload, "seller_receivable")).toBe(0);
+		const next = await releaseEligibleFunds(payload, new Date(NOW + DAY), {
+			provider: fake,
+		});
+		expect(next.payouts).toMatchObject([{ amount: 43_240, status: "pending" }]);
+		expect(ofKind(payload, "clawback_recovered")).toHaveLength(1);
+	});
+
 	it("pays D′ net of a refund that landed after release (Review Focus 4)", async () => {
 		const payload = seed();
 		const fake = provider();

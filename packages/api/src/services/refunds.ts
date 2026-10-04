@@ -725,6 +725,35 @@ async function postingOf(
 	return docs[0] ?? null;
 }
 
+/**
+ * The nettings (`clawback_recovered`, payouts.ts's `nettingPosting`) posted
+ * against this refund's own source — the same `{sourceType, sourceId}` a
+ * `refund_submitted` carries, which `nettingPosting` copies verbatim. Never
+ * the order: two refunds on one order each key their own netting, and a
+ * failed one must reverse only its own.
+ */
+async function nettingsOf(
+	req: PayloadRequest,
+	sourceType: string,
+	sourceId: string,
+): Promise<LedgerTransaction[]> {
+	const { docs } = await req.payload.find({
+		collection: "ledger-transactions",
+		where: {
+			and: [
+				{ kind: { equals: "clawback_recovered" } },
+				{ sourceType: { equals: sourceType } },
+				{ sourceId: { equals: sourceId } },
+			],
+		},
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	return docs;
+}
+
 async function commissionEarned(
 	req: PayloadRequest,
 	orderId: string,
@@ -790,6 +819,23 @@ async function ensurePostings(
 			}),
 			reverses: String(submitted.id),
 		});
+		// A refund netted before release (payouts.ts's `netReceivables`) that
+		// then fails must give the netted money back: `refund_failed` alone
+		// would otherwise leave the receivable at −r (P5's parked debt).
+		for (const netting of await nettingsOf(
+			req,
+			submitted.sourceType,
+			submitted.sourceId,
+		)) {
+			await postLedger(req, {
+				...base,
+				kind: "netting_reversed",
+				entries: postingFor("netting_reversed", {
+					netting: await transactionLines(req, netting),
+				}),
+				reverses: String(netting.id),
+			});
+		}
 		return;
 	}
 	if (status === "created") return;

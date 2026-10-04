@@ -25,6 +25,10 @@ export const MODERATION_ACTIONS = [
 	"payout.release",
 	"payout.account_approve",
 	"payout.account_reject",
+	"dispute.resolve",
+	"dispute.request_info",
+	"dispute.redact_message",
+	"strike.revoke",
 ] as const;
 
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
@@ -100,6 +104,7 @@ export const ModerationLog: CollectionConfig = {
 				{ label: "Verification request", value: "verification-request" },
 				{ label: "Order", value: "order" },
 				{ label: "Commission invoice", value: "commission-invoice" },
+				{ label: "Dispute", value: "dispute" },
 			],
 			admin: { readOnly: true },
 		},

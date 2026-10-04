@@ -79,21 +79,77 @@ export const ReturnCases: CollectionConfig = {
 			required: true,
 			index: true,
 		},
-		{ name: "buyer", type: "relationship", relationTo: "users", index: true },
+		{
+			name: "buyer",
+			type: "relationship",
+			relationTo: "users",
+			required: true,
+			index: true,
+		},
 		{
 			name: "items",
 			type: "array",
 			fields: [
-				{ name: "orderItem", type: "relationship", relationTo: "order-items" },
+				{
+					name: "orderItem",
+					type: "relationship",
+					relationTo: "order-items",
+					required: true,
+				},
 				{
 					name: "variant",
 					type: "relationship",
 					relationTo: "product-variants",
 				},
-				{ name: "quantity", type: "number" },
+				{ name: "quantity", type: "number", min: 1 },
+				{ name: "unitPrice", type: "number", min: 0 },
+				{
+					name: "buyerCondition",
+					type: "select",
+					options: ["unopened", "opened", "used", "damaged"].map((value) => ({
+						label: value,
+						value,
+					})),
+				},
+				{
+					name: "inspection",
+					type: "group",
+					fields: [
+						{
+							name: "outcome",
+							type: "select",
+							options: [
+								"restock",
+								"damaged_by_buyer",
+								"damaged_in_transit",
+								"not_matching",
+								"missing",
+							].map((value) => ({ label: value, value })),
+						},
+						{ name: "deductionAmount", type: "number", min: 0 },
+						{ name: "note", type: "textarea", maxLength: 1000 },
+					],
+				},
 			],
 		},
 		{ name: "reasonText", type: "textarea" },
+		{
+			name: "openedByType",
+			type: "select",
+			required: true,
+			options: ["buyer", "seller", "system"].map((value) => ({
+				label: value,
+				value,
+			})),
+		},
+		{ name: "openedBy", type: "relationship", relationTo: "users" },
+		{
+			name: "dispute",
+			type: "relationship",
+			relationTo: "disputes",
+			index: true,
+		},
+		{ name: "returnRequired", type: "checkbox", defaultValue: true },
 		{
 			name: "returnMethod",
 			type: "select",
@@ -102,6 +158,87 @@ export const ReturnCases: CollectionConfig = {
 				{ label: "Courier", value: "courier" },
 				{ label: "Seller pickup", value: "seller_pickup" },
 			],
+		},
+		{ name: "returnTracking", type: "text" },
+		{
+			name: "deadlines",
+			type: "group",
+			fields: [
+				{ name: "requestDeadline", type: "date" },
+				{ name: "shipBy", type: "date" },
+				{ name: "pickupBy", type: "date" },
+				{ name: "inspectBy", type: "date" },
+				{ name: "refundBy", type: "date" },
+			],
+		},
+		{ name: "shippedAt", type: "date" },
+		{ name: "receivedAt", type: "date" },
+		{ name: "inspectedAt", type: "date" },
+		{ name: "closedAt", type: "date" },
+		{
+			name: "refund",
+			type: "group",
+			fields: [
+				{ name: "amount", type: "number", min: 0 },
+				{
+					name: "breakdown",
+					type: "group",
+					fields: [
+						{ name: "goods", type: "number", min: 0 },
+						{ name: "outboundDelivery", type: "number", min: 0 },
+						{ name: "returnShipping", type: "number", min: 0 },
+						{ name: "buyerProtectionFee", type: "number", min: 0 },
+						{ name: "deduction", type: "number", min: 0 },
+					],
+				},
+				{
+					name: "channel",
+					type: "select",
+					options: ["provider", "seller_direct"].map((value) => ({
+						label: value,
+						value,
+					})),
+				},
+				{
+					name: "providerRefund",
+					type: "relationship",
+					relationTo: "refunds",
+				},
+				{
+					name: "sellerProof",
+					type: "group",
+					fields: [
+						{
+							name: "method",
+							type: "select",
+							options: ["cash", "mtn_momo", "orange_money"].map((value) => ({
+								label: value,
+								value,
+							})),
+						},
+						{ name: "transactionId", type: "text" },
+						{ name: "amount", type: "number", min: 0 },
+						{
+							name: "evidence",
+							type: "relationship",
+							relationTo: "dispute-evidence",
+						},
+						{ name: "submittedAt", type: "date" },
+					],
+				},
+				{ name: "buyerConfirmedAt", type: "date" },
+				{ name: "contestedAt", type: "date" },
+			],
+		},
+		{
+			name: "rejectionReason",
+			type: "text",
+			admin: { readOnly: true },
+		},
+		{
+			name: "creditNote",
+			type: "relationship",
+			relationTo: "commission-invoices",
 		},
 		{
 			name: "status",
@@ -127,12 +264,10 @@ export const ReturnCases: CollectionConfig = {
 				{
 					name: "actorType",
 					type: "select",
-					options: [
-						{ label: "Buyer", value: "buyer" },
-						{ label: "Seller", value: "seller" },
-						{ label: "Staff", value: "staff" },
-						{ label: "System", value: "system" },
-					],
+					options: ["buyer", "seller", "system"].map((value) => ({
+						label: value,
+						value,
+					})),
 				},
 				{ name: "actor", type: "relationship", relationTo: "users" },
 				{ name: "at", type: "date" },

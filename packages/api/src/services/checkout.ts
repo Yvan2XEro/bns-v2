@@ -43,6 +43,7 @@ import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
 	codCaps,
+	codCapsWithStanding,
 	type ShopCapabilities,
 	shopCapabilities,
 } from "../lib/shopCapabilities";
@@ -75,6 +76,7 @@ import { appendOrderEvent, applyTransition } from "./orders/transitions";
 import { nextNumber } from "./sequences";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 import { reserve } from "./stock";
+import { shopStanding } from "./strikes";
 
 export class CheckoutError extends ServiceError {
 	constructor(
@@ -744,8 +746,10 @@ async function buildQuote(
 	// payment settings whose `buyerProtection` config price the fee below,
 	// the exact inputs `checkoutPayment.ts#amountsFor` prices from at intent
 	// time — so the two never drift apart.
-	let protectedPricing: { market: MarketRow; settings: PaymentSettings } | null =
-		null;
+	let protectedPricing: {
+		market: MarketRow;
+		settings: PaymentSettings;
+	} | null = null;
 	if (paymentMethod === "mobile_money") {
 		// `mobile_money` is behind its own flag, re-checked here (not trusted
 		// from a stored setting) the same way `checkoutPayment.ts`'s intent
@@ -815,10 +819,17 @@ async function buildQuote(
 	}
 
 	const total = subtotal + chosen.fee;
-	const shopCaps = codCaps(capabilities.effectiveLevel, settings.shopCaps);
-	if (!shopCaps) {
+	const baseShopCaps = codCaps(capabilities.effectiveLevel, settings.shopCaps);
+	if (!baseShopCaps) {
 		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
 	}
+	const standing = settings.strikeEffectsEnabled
+		? await shopStanding(payload, String(shop.id), now)
+		: null;
+	const shopCaps = codCapsWithStanding(
+		baseShopCaps,
+		standing?.restrictions.codCapHalved ?? false,
+	);
 	const buyerCapRow = settings.buyerCaps[tier as BuyerTierKey];
 
 	const [openOrders, dailyOrders] = await Promise.all([
@@ -866,7 +877,11 @@ async function buildQuote(
 	const commission = protectedPricing
 		? items.reduce(
 				(sum, item) =>
-					sum + commissionForLine(item.lineSubtotal, settings.defaultCommissionRateBps),
+					sum +
+					commissionForLine(
+						item.lineSubtotal,
+						settings.defaultCommissionRateBps,
+					),
 				0,
 			)
 		: 0;

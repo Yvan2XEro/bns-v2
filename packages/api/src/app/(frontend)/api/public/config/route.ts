@@ -8,6 +8,7 @@ import { getPayload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import { BOOST_PRICING } from "@/lib/boostPricing";
+import { getDisputeSettings, isDisputesOpen } from "@/lib/caseSettings";
 import { LAUNCH_CITIES } from "@/lib/launchCities";
 import { getOrderSettings } from "@/lib/orderSettings";
 import {
@@ -34,6 +35,7 @@ export async function GET(request?: Request) {
 	let protectedPaymentEnabled = false;
 	let buyerProtection = PAYMENT_DEFAULTS.buyerProtection;
 	let checkoutExpiryMinutes = PAYMENT_DEFAULTS.checkoutExpiryMinutes;
+	let disputesEnabled = false;
 
 	try {
 		const payload = await getPayload({ config });
@@ -73,6 +75,7 @@ export async function GET(request?: Request) {
 			country !== undefined && isProtectedPaymentOpen(paymentSettings, country);
 		buyerProtection = paymentSettings.buyerProtection;
 		checkoutExpiryMinutes = paymentSettings.checkoutExpiryMinutes;
+		disputesEnabled = isDisputesOpen(await getDisputeSettings(payload));
 	} catch {
 		enabledAuthProviders = listConfiguredOAuthProviders();
 		// A settings outage must hide ordering, not advertise it.
@@ -80,6 +83,7 @@ export async function GET(request?: Request) {
 		launchCities = [];
 		withdrawalDays = 15;
 		protectedPaymentEnabled = false;
+		disputesEnabled = false;
 	}
 
 	return Response.json({
@@ -98,5 +102,6 @@ export async function GET(request?: Request) {
 		protectedPaymentEnabled,
 		buyerProtection,
 		checkoutExpiryMinutes,
+		disputesEnabled,
 	});
 }

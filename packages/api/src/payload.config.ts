@@ -17,6 +17,11 @@ import { ConnectedAccounts } from "./collections/ConnectedAccounts";
 import { ContactReveals } from "./collections/ContactReveals";
 import { ConversationReads } from "./collections/ConversationReads";
 import { Conversations } from "./collections/Conversations";
+import { DisputeEvidence } from "./collections/DisputeEvidence";
+import { DisputeEvidenceViews } from "./collections/DisputeEvidenceViews";
+import { DisputeGateEvidence } from "./collections/DisputeGateEvidence";
+import { DisputeMessages } from "./collections/DisputeMessages";
+import { Disputes } from "./collections/Disputes";
 import { Favorites } from "./collections/Favorites";
 import { LedgerAccounts } from "./collections/LedgerAccounts";
 import { LedgerTransactions } from "./collections/LedgerTransactions";
@@ -40,11 +45,13 @@ import { Refunds } from "./collections/Refunds";
 import { Reports } from "./collections/Reports";
 import { ReturnCases } from "./collections/ReturnCases";
 import { Reviews } from "./collections/Reviews";
+import { RiskSignalOutbox } from "./collections/RiskSignalOutbox";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Sequences } from "./collections/Sequences";
 import { ShopActivityLog } from "./collections/ShopActivityLog";
 import { ShopInvitations } from "./collections/ShopInvitations";
 import { ShopMembers } from "./collections/ShopMembers";
+import { ShopStrikes } from "./collections/ShopStrikes";
 import { Shops } from "./collections/Shops";
 import { StockMovements } from "./collections/StockMovements";
 import { Tags } from "./collections/Tags";
@@ -208,6 +215,13 @@ export default buildConfig({
 		CommissionInvoices,
 		ReturnCases,
 		PaymentGateEvidence,
+		DisputeGateEvidence,
+		Disputes,
+		DisputeMessages,
+		DisputeEvidence,
+		DisputeEvidenceViews,
+		ShopStrikes,
+		RiskSignalOutbox,
 		ConnectedAccounts,
 		PayoutAccounts,
 		Refunds,

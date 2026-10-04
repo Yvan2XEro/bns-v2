@@ -888,7 +888,15 @@ const nettingPosting = (
 	memo: "refund after release netted before payout",
 });
 
-/** The nettings `netReceivables` would post now: standing refunds not yet netted, oldest first, within `unpaid`. */
+/**
+ * The nettings `netReceivables` would post now: standing refunds not yet
+ * netted, oldest first, within `unpaid`. A refund already in `failed` is
+ * skipped outright (it can never be netted or re-netted); `netted` excludes a
+ * netting refunds.ts has already reversed (`netting_reversed`), so neither
+ * set treats a failed refund's undone netting as still standing — belt and
+ * suspenders alongside the `failed` exclusion, since `refund_failed` and its
+ * `netting_reversed` always land in the same transaction.
+ */
 async function plannedNettings(
 	req: PayloadRequest,
 	order: Order,
@@ -900,15 +908,25 @@ async function plannedNettings(
 		"refund_submitted",
 		"refund_failed",
 		"clawback_recovered",
+		"netting_reversed",
 	]);
 	const failed = new Set(
 		postings
 			.filter((t) => t.kind === "refund_failed")
 			.map((t) => idOf(t.reverses)),
 	);
+	const reversedNettings = new Set(
+		postings
+			.filter((t) => t.kind === "netting_reversed")
+			.map((t) => idOf(t.reverses)),
+	);
 	const netted = new Set(
 		postings
-			.filter((t) => t.kind === "clawback_recovered")
+			.filter(
+				(t) =>
+					t.kind === "clawback_recovered" &&
+					!reversedNettings.has(String(t.id)),
+			)
 			.map((t) => t.idempotencyKey),
 	);
 	const planned: Array<{ submitted: LedgerTransaction; amount: number }> = [];
@@ -1374,7 +1392,9 @@ async function postForPayout(
 	// Only `payout_reversed` reads it, but it is harmless on the other three
 	// kinds' postings (their builders destructure `amount` alone).
 	const releaseModel: ReleaseModel =
-		payout.origin === "platform_release" ? "provider_hold" : "provider_schedule";
+		payout.origin === "platform_release"
+			? "provider_hold"
+			: "provider_schedule";
 	await postLedger(req, {
 		kind,
 		occurredAt: new Date().toISOString(),

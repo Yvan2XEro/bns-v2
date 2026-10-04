@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { checkCaps, confirmationPathFor } from "../../src/lib/orderCaps";
 import { BUYER_CAPS } from "../../src/lib/orderSettings";
-import { codCaps } from "../../src/lib/shopCapabilities";
+import { codCaps, codCapsWithStanding } from "../../src/lib/shopCapabilities";
 
 const shop = codCaps(1);
 if (!shop) throw new Error("level 1 has caps");
@@ -14,6 +14,17 @@ const input = (patch: Partial<Parameters<typeof checkCaps>[0]> = {}) => ({
 	shop,
 	buyer: BUYER_CAPS.regular,
 	...patch,
+});
+
+describe("COD standing caps", () => {
+	it("halves only the daily shop cap when standing effects apply", () => {
+		expect(codCapsWithStanding(shop, true)).toEqual({
+			maxOrderTotal: 150_000,
+			maxDailyOrders: 10,
+			maxOpenOrders: 30,
+		});
+		expect(codCapsWithStanding(shop, false)).toEqual(shop);
+	});
 });
 
 describe("checkCaps", () => {

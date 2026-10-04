@@ -36,7 +36,12 @@ import {
 	notifyRefundInitiated,
 	notifyRefundStaffAlert,
 } from "../../src/services/paymentNotifications";
-import { createHold, hasBlockingHold } from "../../src/services/payoutHolds";
+import {
+	createHold,
+	hasBlockingHold,
+	releaseHold,
+} from "../../src/services/payoutHolds";
+import { releaseEligibleFunds } from "../../src/services/payouts";
 import {
 	applyDebitEvent,
 	applyRefundEvent,
@@ -314,6 +319,173 @@ async function codeOf(work: Promise<unknown>): Promise<string> {
 	}
 	return "resolved";
 }
+
+describe("failed refund reverse-netting", () => {
+	async function releasedOrder() {
+		world({
+			shops: [
+				{ id: SHOP, name: "Boutique", owner: "u-owner", status: "active" },
+			],
+			"payout-accounts": [{ id: "pa-1", shop: SHOP, status: "active" }],
+		});
+		await charge("o-1", PAID_AT);
+		await release("o-1", NOW);
+		const stored = payload.store.orders[0];
+		stored.status = "completed";
+		stored.settlement = {
+			...order().settlement,
+			releaseEligibleAt: NOW.toISOString(),
+		};
+		return withTransaction(payload, (req) =>
+			createHold(req, {
+				scope: "order",
+				shop: SHOP,
+				order: "o-1",
+				reason: "return_open",
+				createdByType: "system",
+			}),
+		);
+	}
+
+	async function partial(sourceId: string, seller: number) {
+		const row = await request({
+			sourceType: "return-case",
+			sourceId,
+			amount: seller,
+			breakdown: { ...ZERO, seller },
+		});
+		await submit(row.id);
+		fake.script(row.idempotencyKey, [{ entity: "refund", status: "pending" }]);
+		expect((await deliver(fake.advance(row.idempotencyKey))).outcome).toBe(
+			"unchanged",
+		);
+		return row;
+	}
+
+	async function net(holdId: string, amount: number) {
+		await withTransaction(payload, (req) => releaseHold(req, holdId));
+		fake.failWhen("releasePayout", { times: 1 });
+		const batch = await releaseEligibleFunds(payload, NOW, { provider: fake });
+		expect(batch.payouts).toMatchObject([{ amount, status: "cancelled" }]);
+	}
+
+	function failure(row: Refund) {
+		fake.script(row.idempotencyKey, [{ entity: "refund", status: "failed" }]);
+		return fake.advance(row.idempotencyKey);
+	}
+
+	it("restores the netted 10,000 and pays the full 43,240 next batch without recovery", async () => {
+		const hold = await releasedOrder();
+		const row = await partial("rc-1", 10_000);
+		expect(await balance("seller_receivable")).toBe(10_000);
+		await net(hold.id, 33_240);
+		expect(await balance("seller_receivable")).toBe(0);
+		expect(await balance("seller_releasable")).toBe(33_240);
+
+		expect((await deliver(failure(row))).outcome).toBe("applied");
+		expect(await balance("seller_receivable")).toBe(0);
+		expect(await balance("seller_releasable")).toBe(43_240);
+		expect(await linesOf("netting_reversed")).toEqual([
+			{ category: "seller_releasable", debit: 0, credit: 10_000 },
+			{ category: "seller_receivable", debit: 10_000, credit: 0 },
+		]);
+		const netting = transactions().find((t) => t.kind === "clawback_recovered");
+		expect(
+			transactions().filter((t) => t.kind === "netting_reversed"),
+		).toMatchObject([{ refund: row.id, reverses: netting?.id }]);
+
+		payload.store.orders.push(orderDoc("o-2"));
+		await charge("o-2", new Date(NOW.getTime() + 1));
+		const recovery = await recoverSellerReceivables(payload, {
+			provider: fake,
+			now: NOW,
+		});
+		expect(recovery.debits).toEqual([]);
+		expect(fake.callsTo("debitConnectedAccount")).toHaveLength(0);
+		const next = await releaseEligibleFunds(payload, NOW, { provider: fake });
+		expect(next.payouts).toMatchObject([{ amount: 43_240, status: "pending" }]);
+		expect(
+			fake.callsTo("releasePayout").map(([, payout]) => payout.amount),
+		).toEqual([33_240, 43_240]);
+		expect(
+			transactions().filter((t) => t.kind === "clawback_recovered"),
+		).toHaveLength(1);
+	});
+
+	it("reverses only the failed refund's source on a two-refund order, once on duplicate delivery", async () => {
+		const hold = await releasedOrder();
+		const first = await partial("rc-1", 10_000);
+		const second = await partial("rc-2", 5_000);
+		await net(hold.id, 28_240);
+		expect(
+			transactions().filter((t) => t.kind === "clawback_recovered"),
+		).toHaveLength(2);
+		const failed = failure(second);
+		expect((await deliver(failed)).outcome).toBe("applied");
+		expect((await deliver(failed)).outcome).toBe("unchanged");
+		expect(await balance("seller_receivable")).toBe(0);
+		expect(await balance("seller_releasable")).toBe(33_240);
+		const secondSubmission = transactions().find(
+			(t) => t.kind === "refund_submitted" && t.refund === second.id,
+		);
+		const secondNetting = transactions().find(
+			(t) =>
+				t.kind === "clawback_recovered" &&
+				t.sourceId === secondSubmission?.sourceId,
+		);
+		expect(
+			transactions().filter((t) => t.kind === "netting_reversed"),
+		).toMatchObject([{ refund: second.id, reverses: secondNetting?.id }]);
+		expect(
+			transactions().filter((t) => t.kind === "netting_reversed"),
+		).toHaveLength(1);
+		expect(
+			transactions().filter((t) => t.kind === "refund_failed"),
+		).toHaveLength(1);
+		expect(refunds().find((r) => r.id === first.id)?.status).toBe("pending");
+		const next = await releaseEligibleFunds(payload, NOW, { provider: fake });
+		expect(next.payouts).toMatchObject([{ amount: 33_240, status: "pending" }]);
+		expect(
+			transactions().filter((t) => t.kind === "clawback_recovered"),
+		).toHaveLength(2);
+	});
+
+	it("posts no netting reversal for a failed refund that was never netted", async () => {
+		await releasedOrder();
+		const row = await partial("rc-1", 10_000);
+		expect(await balance("seller_receivable")).toBe(10_000);
+		expect((await deliver(failure(row))).outcome).toBe("applied");
+		expect(
+			transactions().filter((t) => t.kind === "refund_failed"),
+		).toHaveLength(1);
+		expect(
+			transactions().filter((t) => t.kind === "netting_reversed"),
+		).toHaveLength(0);
+		expect(await balance("seller_receivable")).toBe(0);
+		expect(await balance("seller_releasable")).toBe(43_240);
+	});
+
+	it("rolls back refund failure and restored funds together if the netting reversal cannot be written", async () => {
+		const hold = await releasedOrder();
+		const row = await partial("rc-1", 10_000);
+		await net(hold.id, 33_240);
+		const failed = failure(row);
+		payload.failWhen = (method, args) =>
+			method === "create" &&
+			args.collection === "ledger-transactions" &&
+			args.data?.kind === "netting_reversed";
+		await expect(deliver(failed)).rejects.toThrow();
+		expect(refunds().find((r) => r.id === row.id)?.status).toBe("pending");
+		expect(
+			transactions().filter((t) => t.kind === "refund_failed"),
+		).toHaveLength(0);
+		expect(await balance("seller_releasable")).toBe(33_240);
+		payload.failWhen = null;
+		expect((await deliver(failed)).outcome).toBe("applied");
+		expect(await balance("seller_receivable")).toBe(0);
+		expect(await balance("seller_releasable")).toBe(43_240);
+	});
+});
 
 describe("refund breakdown arithmetic", () => {
 	it("pins the worked order's components", () => {

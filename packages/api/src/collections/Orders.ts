@@ -427,6 +427,12 @@ export const Orders: CollectionConfig = {
 			],
 		},
 		{ name: "returnCase", type: "relationship", relationTo: "return-cases" },
+		{
+			name: "activeDispute",
+			type: "relationship",
+			relationTo: "disputes",
+			index: true,
+		},
 		{ name: "conversation", type: "relationship", relationTo: "conversations" },
 		{
 			name: "contract",

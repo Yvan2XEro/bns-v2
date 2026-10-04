@@ -89,7 +89,7 @@ class RedisCounterStore implements CounterStore {
 		const [count] = await client
 			.multi()
 			.incr(key)
-			.expire(key, ttlSeconds)
+			.expire(key, ttlSeconds, "NX")
 			.exec();
 		return Number(count);
 	}
@@ -112,13 +112,18 @@ export async function hitRateLimit(
 	nowMs: number = Date.now(),
 ): Promise<boolean> {
 	let limited = false;
-	for (const window of windows) {
-		const bucket = Math.floor(nowMs / (window.windowSeconds * 1000));
-		const count = await store.increment(
-			`rl:${window.name}:${subject}:${bucket}`,
-			window.windowSeconds,
-		);
-		if (count > window.limit) limited = true;
+	try {
+		for (const window of windows) {
+			const bucket = Math.floor(nowMs / (window.windowSeconds * 1000));
+			const count = await store.increment(
+				`rl:${window.name}:${subject}:${bucket}`,
+				window.windowSeconds,
+			);
+			if (count > window.limit) limited = true;
+		}
+	} catch (error) {
+		console.error("[rate-limit] rateLimit.unavailable", error);
+		return false;
 	}
 	return limited;
 }

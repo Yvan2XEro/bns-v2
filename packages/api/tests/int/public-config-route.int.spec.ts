@@ -121,6 +121,7 @@ describe("GET /api/public/config", () => {
 			protectedPaymentEnabled: false,
 			buyerProtection: { bps: 300, min: 100, max: 15_000 },
 			checkoutExpiryMinutes: 30,
+			disputesEnabled: false,
 		});
 	});
 

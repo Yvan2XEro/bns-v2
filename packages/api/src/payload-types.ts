@@ -105,6 +105,13 @@ export interface Config {
     'commission-invoices': CommissionInvoice;
     'return-cases': ReturnCase;
     'payment-gate-evidence': PaymentGateEvidence;
+    'dispute-gate-evidence': DisputeGateEvidence;
+    disputes: Dispute;
+    'dispute-messages': DisputeMessage;
+    'dispute-evidence': DisputeEvidence;
+    'dispute-evidence-views': DisputeEvidenceView;
+    'shop-strikes': ShopStrike;
+    'risk-signal-outbox': RiskSignalOutbox;
     'connected-accounts': ConnectedAccount;
     'payout-accounts': PayoutAccount;
     refunds: Refund;
@@ -166,6 +173,13 @@ export interface Config {
     'commission-invoices': CommissionInvoicesSelect<false> | CommissionInvoicesSelect<true>;
     'return-cases': ReturnCasesSelect<false> | ReturnCasesSelect<true>;
     'payment-gate-evidence': PaymentGateEvidenceSelect<false> | PaymentGateEvidenceSelect<true>;
+    'dispute-gate-evidence': DisputeGateEvidenceSelect<false> | DisputeGateEvidenceSelect<true>;
+    disputes: DisputesSelect<false> | DisputesSelect<true>;
+    'dispute-messages': DisputeMessagesSelect<false> | DisputeMessagesSelect<true>;
+    'dispute-evidence': DisputeEvidenceSelect<false> | DisputeEvidenceSelect<true>;
+    'dispute-evidence-views': DisputeEvidenceViewsSelect<false> | DisputeEvidenceViewsSelect<true>;
+    'shop-strikes': ShopStrikesSelect<false> | ShopStrikesSelect<true>;
+    'risk-signal-outbox': RiskSignalOutboxSelect<false> | RiskSignalOutboxSelect<true>;
     'connected-accounts': ConnectedAccountsSelect<false> | ConnectedAccountsSelect<true>;
     'payout-accounts': PayoutAccountsSelect<false> | PayoutAccountsSelect<true>;
     refunds: RefundsSelect<false> | RefundsSelect<true>;
@@ -609,6 +623,10 @@ export interface Category {
   image?: (string | null) | Media;
   parent?: (string | null) | Category;
   active?: boolean | null;
+  /**
+   * Enable only when a documented legal exception applies.
+   */
+  withdrawalExcluded?: boolean | null;
   /**
    * Decides which of the three built-in fields — price, condition and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one.
    */
@@ -1075,6 +1093,7 @@ export interface Order {
   };
   completionHold?: ('none' | 'return_case' | 'dispute') | null;
   returnCase?: (string | null) | ReturnCase;
+  activeDispute?: (string | null) | Dispute;
   conversation?: (string | null) | Conversation;
   contract?: {
     termsVersion?: string | null;
@@ -1209,6 +1228,10 @@ export interface CommissionLine {
  */
 export interface CommissionInvoice {
   id: string;
+  kind: 'invoice' | 'credit_note';
+  creditsInvoice?: (string | null) | CommissionInvoice;
+  sourceType?: ('dispute' | 'return-case') | null;
+  sourceId?: string | null;
   invoiceNumber: string;
   shop: string | Shop;
   periodStart?: string | null;
@@ -1305,17 +1328,63 @@ export interface ReturnCase {
   basis: 'withdrawal' | 'non_conformity' | 'late_delivery' | 'unavailable';
   order: string | Order;
   shop: string | Shop;
-  buyer?: (string | null) | User;
+  buyer: string | User;
   items?:
     | {
-        orderItem?: (string | null) | OrderItem;
+        orderItem: string | OrderItem;
         variant?: (string | null) | ProductVariant;
         quantity?: number | null;
+        unitPrice?: number | null;
+        buyerCondition?: ('unopened' | 'opened' | 'used' | 'damaged') | null;
+        inspection?: {
+          outcome?: ('restock' | 'damaged_by_buyer' | 'damaged_in_transit' | 'not_matching' | 'missing') | null;
+          deductionAmount?: number | null;
+          note?: string | null;
+        };
         id?: string | null;
       }[]
     | null;
   reasonText?: string | null;
+  openedByType: 'buyer' | 'seller' | 'system';
+  openedBy?: (string | null) | User;
+  dispute?: (string | null) | Dispute;
+  returnRequired?: boolean | null;
   returnMethod?: ('buyer_drop_off' | 'courier' | 'seller_pickup') | null;
+  returnTracking?: string | null;
+  deadlines?: {
+    requestDeadline?: string | null;
+    shipBy?: string | null;
+    pickupBy?: string | null;
+    inspectBy?: string | null;
+    refundBy?: string | null;
+  };
+  shippedAt?: string | null;
+  receivedAt?: string | null;
+  inspectedAt?: string | null;
+  closedAt?: string | null;
+  refund?: {
+    amount?: number | null;
+    breakdown?: {
+      goods?: number | null;
+      outboundDelivery?: number | null;
+      returnShipping?: number | null;
+      buyerProtectionFee?: number | null;
+      deduction?: number | null;
+    };
+    channel?: ('provider' | 'seller_direct') | null;
+    providerRefund?: (string | null) | Refund;
+    sellerProof?: {
+      method?: ('cash' | 'mtn_momo' | 'orange_money') | null;
+      transactionId?: string | null;
+      amount?: number | null;
+      evidence?: (string | null) | DisputeEvidence;
+      submittedAt?: string | null;
+    };
+    buyerConfirmedAt?: string | null;
+    contestedAt?: string | null;
+  };
+  rejectionReason?: string | null;
+  creditNote?: (string | null) | CommissionInvoice;
   status:
     | 'requested'
     | 'approved'
@@ -1349,7 +1418,7 @@ export interface ReturnCase {
               | 'expired'
             )
           | null;
-        actorType?: ('buyer' | 'seller' | 'staff' | 'system') | null;
+        actorType?: ('buyer' | 'seller' | 'system') | null;
         actor?: (string | null) | User;
         at?: string | null;
         note?: string | null;
@@ -1429,6 +1498,285 @@ export interface ProductVariant {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disputes".
+ */
+export interface Dispute {
+  id: string;
+  number: string;
+  order: string | Order;
+  shop: string | Shop;
+  buyer: string | User;
+  subject: 'goods' | 'refund';
+  items?:
+    | {
+        orderItem: string | OrderItem;
+        quantity: number;
+        id?: string | null;
+      }[]
+    | null;
+  returnCase?: (string | null) | ReturnCase;
+  reason:
+    | 'not_received'
+    | 'not_as_described'
+    | 'damaged'
+    | 'counterfeit'
+    | 'wrong_item'
+    | 'seller_no_show'
+    | 'cod_refused_abuse';
+  openedByType: 'buyer' | 'seller' | 'system';
+  openedBy?: (string | null) | User;
+  description: string;
+  requestedOutcome: 'full_refund' | 'partial_refund' | 'return_and_refund' | 'no_refund';
+  requestedAmount?: number | null;
+  paymentMethod: 'cod' | 'mobile_money';
+  amountAtStake: number;
+  status:
+    | 'open'
+    | 'awaiting_seller'
+    | 'awaiting_buyer'
+    | 'under_review'
+    | 'resolved_buyer'
+    | 'resolved_seller'
+    | 'resolved_split'
+    | 'withdrawn';
+  statusHistory?:
+    | {
+        status?:
+          | (
+              | 'open'
+              | 'awaiting_seller'
+              | 'awaiting_buyer'
+              | 'under_review'
+              | 'resolved_buyer'
+              | 'resolved_seller'
+              | 'resolved_split'
+              | 'withdrawn'
+            )
+          | null;
+        actorType?: ('buyer' | 'seller' | 'supplier' | 'moderator' | 'system') | null;
+        actor?: (string | null) | User;
+        at?: string | null;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  deadlines?: {
+    submitBy?: string | null;
+    respondBy?: string | null;
+    reviewDueAt?: string | null;
+  };
+  proposal?: {
+    amount?: number | null;
+    returnRequired?: boolean | null;
+    byType?: ('buyer' | 'seller' | 'supplier' | 'moderator' | 'system') | null;
+    by?: (string | null) | User;
+    at?: string | null;
+    expiresAt?: string | null;
+    round?: number | null;
+    status?: ('open' | 'accepted' | 'rejected' | 'lapsed') | null;
+  };
+  infoRequests?: number | null;
+  assignedTo?: (string | null) | User;
+  resolution?: {
+    outcome?:
+      | (
+          | 'open'
+          | 'awaiting_seller'
+          | 'awaiting_buyer'
+          | 'under_review'
+          | 'resolved_buyer'
+          | 'resolved_seller'
+          | 'resolved_split'
+          | 'withdrawn'
+        )
+      | null;
+    refundAmount?: number | null;
+    breakdown?: {
+      goods?: number | null;
+      outboundDelivery?: number | null;
+      returnShipping?: number | null;
+      buyerProtectionFee?: number | null;
+      deduction?: number | null;
+    };
+    returnRequired?: boolean | null;
+    returnShippingPaidBy?: ('seller' | 'buyer') | null;
+    liableParty?: ('seller' | 'supplier' | 'reseller' | 'courier' | 'buyer' | 'none') | null;
+    reasonCode?:
+      | (
+          | 'seller_no_proof'
+          | 'delivery_proven'
+          | 'item_conforms'
+          | 'item_not_conforming'
+          | 'counterfeit_confirmed'
+          | 'counterfeit_not_established'
+          | 'damage_in_transit'
+          | 'buyer_damage'
+          | 'buyer_abuse'
+          | 'review_extortion'
+          | 'partial_fault'
+          | 'agreement'
+          | 'other'
+        )
+      | null;
+    publicStatement?: {
+      fr?: string | null;
+      en?: string | null;
+    };
+    decidedByType?: ('system' | 'agreement' | 'moderator') | null;
+    decidedBy?: (string | null) | User;
+    decidedAt?: string | null;
+  };
+  effects?: {
+    returnCase?: (string | null) | ReturnCase;
+    refund?: (string | null) | Refund;
+    creditNote?: (string | null) | CommissionInvoice;
+    holdsReleased?: boolean | null;
+    strikes?: (string | ShopStrike)[] | null;
+    riskSignals?: (string | RiskSignalOutbox)[] | null;
+    reviewAction?: ('none' | 'published' | 'removed') | null;
+    certificate?: (string | null) | DisputeEvidence;
+  };
+  resale?: {
+    supplierShop?: (string | null) | Shop;
+    resellerShop?: (string | null) | Shop;
+    purchaseOrder?: string | null;
+  };
+  legalHold?: boolean | null;
+  lastMessageNotifiedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refunds".
+ */
+export interface Refund {
+  id: string;
+  order: string | Order;
+  paymentIntent: string | PaymentIntent;
+  buyer?: (string | null) | User;
+  shop?: (string | null) | Shop;
+  amount: number;
+  breakdown?: {
+    seller?: number | null;
+    commission?: number | null;
+    commissionVat?: number | null;
+    buyerProtectionFee?: number | null;
+  };
+  reason:
+    | 'order_cancelled'
+    | 'seller_declined'
+    | 'acceptance_timeout'
+    | 'late_payment'
+    | 'duplicate_payment'
+    | 'withdrawal'
+    | 'dispute'
+    | 'unavailable'
+    | 'moderation';
+  sourceType: 'order' | 'return-case' | 'dispute' | 'payment-intent' | 'moderation';
+  sourceId: string;
+  status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
+  statusHistory?:
+    | {
+        status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
+        source: 'webhook' | 'reconcile' | 'system';
+        at: string;
+        id?: string | null;
+      }[]
+    | null;
+  providerRefundId?: string | null;
+  fundedBy?: ('connected_account' | 'platform_advance') | null;
+  idempotencyKey: string;
+  attempts?: number | null;
+  retryOf?: (string | null) | Refund;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-strikes".
+ */
+export interface ShopStrike {
+  id: string;
+  shop: string | Shop;
+  kind:
+    | 'dispute_lost'
+    | 'refund_overdue'
+    | 'counterfeit_confirmed'
+    | 'no_response'
+    | 'unavailable_after_confirmation'
+    | 'review_extortion';
+  weight: number;
+  sourceType: 'dispute' | 'return-case';
+  sourceId: string;
+  status: 'active' | 'expired' | 'revoked';
+  expiresAt: string;
+  revokedBy?: (string | null) | User;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "risk-signal-outbox".
+ */
+export interface RiskSignalOutbox {
+  id: string;
+  subjectType: 'shop' | 'user' | 'phone';
+  subjectId: string;
+  signal:
+    | 'dispute_lost_seller'
+    | 'counterfeit_confirmed'
+    | 'refund_overdue'
+    | 'seller_no_response'
+    | 'unavailable_after_confirmation'
+    | 'dispute_abuse_buyer'
+    | 'cod_refusal_abuse'
+    | 'serial_withdrawal'
+    | 'evidence_reused'
+    | 'review_extortion'
+    | 'resale_collusion_suspected';
+  severity: 'low' | 'medium' | 'high';
+  sourceType: 'dispute' | 'return-case';
+  sourceId: string;
+  occurredAt: string;
+  consumedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence".
+ */
+export interface DisputeEvidence {
+  id: string;
+  dispute?: (string | null) | Dispute;
+  returnCase?: (string | null) | ReturnCase;
+  uploadedByType: 'buyer' | 'seller' | 'supplier' | 'moderator' | 'system';
+  uploadedBy?: (string | null) | User;
+  kind: 'photo' | 'video' | 'document' | 'payment_proof' | 'shipping_proof';
+  size?: number | null;
+  sha256?: string | null;
+  capturedAt?: string | null;
+  exifStripped?: boolean | null;
+  visibility: 'parties' | 'staff';
+  purgeAfter?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "conversation-reads".
  */
 export interface ConversationRead {
@@ -1447,6 +1795,7 @@ export interface ConversationRead {
 export interface Review {
   id: string;
   reviewer: string | User;
+  status?: ('published' | 'held_dispute' | 'removed') | null;
   reviewedUser: string | User;
   listing?: (string | null) | Listing;
   order?: (string | null) | Order;
@@ -1603,8 +1952,20 @@ export interface ModerationLog {
     | 'payout.hold'
     | 'payout.release'
     | 'payout.account_approve'
-    | 'payout.account_reject';
-  targetType: 'listing' | 'user' | 'report' | 'shop' | 'verification-request' | 'order' | 'commission-invoice';
+    | 'payout.account_reject'
+    | 'dispute.resolve'
+    | 'dispute.request_info'
+    | 'dispute.redact_message'
+    | 'strike.revoke';
+  targetType:
+    | 'listing'
+    | 'user'
+    | 'report'
+    | 'shop'
+    | 'verification-request'
+    | 'order'
+    | 'commission-invoice'
+    | 'dispute';
   targetId: string;
   reason?: string | null;
   /**
@@ -1909,48 +2270,54 @@ export interface PaymentGateEvidence {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "refunds".
+ * via the `definition` "dispute-gate-evidence".
  */
-export interface Refund {
+export interface DisputeGateEvidence {
   id: string;
-  order: string | Order;
-  paymentIntent: string | PaymentIntent;
-  buyer?: (string | null) | User;
-  shop?: (string | null) | Shop;
-  amount: number;
-  breakdown?: {
-    seller?: number | null;
-    commission?: number | null;
-    commissionVat?: number | null;
-    buyerProtectionFee?: number | null;
-  };
-  reason:
-    | 'order_cancelled'
-    | 'seller_declined'
-    | 'acceptance_timeout'
-    | 'late_payment'
-    | 'duplicate_payment'
-    | 'withdrawal'
-    | 'dispute'
-    | 'unavailable'
-    | 'moderation';
-  sourceType: 'order' | 'return-case' | 'dispute' | 'payment-intent' | 'moderation';
-  sourceId: string;
-  status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
-  statusHistory?:
-    | {
-        status: 'created' | 'pending' | 'processing' | 'succeeded' | 'failed';
-        source: 'webhook' | 'reconcile' | 'system';
-        at: string;
-        id?: string | null;
-      }[]
-    | null;
-  providerRefundId?: string | null;
-  fundedBy?: ('connected_account' | 'platform_advance') | null;
-  idempotencyKey: string;
-  attempts?: number | null;
-  retryOf?: (string | null) | Refund;
-  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-messages".
+ */
+export interface DisputeMessage {
+  id: string;
+  dispute: string | Dispute;
+  authorType: 'buyer' | 'seller' | 'supplier' | 'moderator' | 'system';
+  author?: (string | null) | User;
+  kind: 'message' | 'proposal' | 'proposal_response' | 'info_request' | 'decision' | 'system';
+  body?: string | null;
+  evidence?: (string | DisputeEvidence)[] | null;
+  visibility: 'parties' | 'staff';
+  redactedAt?: string | null;
+  redactedBy?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence-views".
+ */
+export interface DisputeEvidenceView {
+  id: string;
+  evidence: string | DisputeEvidence;
+  dispute?: (string | null) | Dispute;
+  returnCase?: (string | null) | ReturnCase;
+  viewer: string | User;
+  viewerRole?: string | null;
+  ipHash?: string | null;
+  userAgent?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2030,7 +2397,8 @@ export interface LedgerTransaction {
     | 'refund_complete'
     | 'refund_failed'
     | 'clawback_recovered'
-    | 'guarantee_writeoff';
+    | 'guarantee_writeoff'
+    | 'netting_reversed';
   occurredAt: string;
   postedAt: string;
   sourceType: 'webhook-event' | 'reconciliation-run' | 'order-event';
@@ -2486,6 +2854,34 @@ export interface PayloadLockedDocument {
         value: string | PaymentGateEvidence;
       } | null)
     | ({
+        relationTo: 'dispute-gate-evidence';
+        value: string | DisputeGateEvidence;
+      } | null)
+    | ({
+        relationTo: 'disputes';
+        value: string | Dispute;
+      } | null)
+    | ({
+        relationTo: 'dispute-messages';
+        value: string | DisputeMessage;
+      } | null)
+    | ({
+        relationTo: 'dispute-evidence';
+        value: string | DisputeEvidence;
+      } | null)
+    | ({
+        relationTo: 'dispute-evidence-views';
+        value: string | DisputeEvidenceView;
+      } | null)
+    | ({
+        relationTo: 'shop-strikes';
+        value: string | ShopStrike;
+      } | null)
+    | ({
+        relationTo: 'risk-signal-outbox';
+        value: string | RiskSignalOutbox;
+      } | null)
+    | ({
         relationTo: 'connected-accounts';
         value: string | ConnectedAccount;
       } | null)
@@ -2715,6 +3111,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   image?: T;
   parent?: T;
   active?: T;
+  withdrawalExcluded?: T;
   listingForm?:
     | T
     | {
@@ -2815,6 +3212,7 @@ export interface MessagesSelect<T extends boolean = true> {
  */
 export interface ReviewsSelect<T extends boolean = true> {
   reviewer?: T;
+  status?: T;
   reviewedUser?: T;
   listing?: T;
   order?: T;
@@ -3527,6 +3925,7 @@ export interface OrdersSelect<T extends boolean = true> {
       };
   completionHold?: T;
   returnCase?: T;
+  activeDispute?: T;
   conversation?: T;
   contract?:
     | T
@@ -3650,6 +4049,10 @@ export interface CommissionLinesSelect<T extends boolean = true> {
  * via the `definition` "commission-invoices_select".
  */
 export interface CommissionInvoicesSelect<T extends boolean = true> {
+  kind?: T;
+  creditsInvoice?: T;
+  sourceType?: T;
+  sourceId?: T;
   invoiceNumber?: T;
   shop?: T;
   periodStart?: T;
@@ -3692,10 +4095,66 @@ export interface ReturnCasesSelect<T extends boolean = true> {
         orderItem?: T;
         variant?: T;
         quantity?: T;
+        unitPrice?: T;
+        buyerCondition?: T;
+        inspection?:
+          | T
+          | {
+              outcome?: T;
+              deductionAmount?: T;
+              note?: T;
+            };
         id?: T;
       };
   reasonText?: T;
+  openedByType?: T;
+  openedBy?: T;
+  dispute?: T;
+  returnRequired?: T;
   returnMethod?: T;
+  returnTracking?: T;
+  deadlines?:
+    | T
+    | {
+        requestDeadline?: T;
+        shipBy?: T;
+        pickupBy?: T;
+        inspectBy?: T;
+        refundBy?: T;
+      };
+  shippedAt?: T;
+  receivedAt?: T;
+  inspectedAt?: T;
+  closedAt?: T;
+  refund?:
+    | T
+    | {
+        amount?: T;
+        breakdown?:
+          | T
+          | {
+              goods?: T;
+              outboundDelivery?: T;
+              returnShipping?: T;
+              buyerProtectionFee?: T;
+              deduction?: T;
+            };
+        channel?: T;
+        providerRefund?: T;
+        sellerProof?:
+          | T
+          | {
+              method?: T;
+              transactionId?: T;
+              amount?: T;
+              evidence?: T;
+              submittedAt?: T;
+            };
+        buyerConfirmedAt?: T;
+        contestedAt?: T;
+      };
+  rejectionReason?: T;
+  creditNote?: T;
   status?: T;
   statusHistory?:
     | T
@@ -3727,6 +4186,228 @@ export interface PaymentGateEvidenceSelect<T extends boolean = true> {
   focalX?: T;
   focalY?: T;
   sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-gate-evidence_select".
+ */
+export interface DisputeGateEvidenceSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disputes_select".
+ */
+export interface DisputesSelect<T extends boolean = true> {
+  number?: T;
+  order?: T;
+  shop?: T;
+  buyer?: T;
+  subject?: T;
+  items?:
+    | T
+    | {
+        orderItem?: T;
+        quantity?: T;
+        id?: T;
+      };
+  returnCase?: T;
+  reason?: T;
+  openedByType?: T;
+  openedBy?: T;
+  description?: T;
+  requestedOutcome?: T;
+  requestedAmount?: T;
+  paymentMethod?: T;
+  amountAtStake?: T;
+  status?: T;
+  statusHistory?:
+    | T
+    | {
+        status?: T;
+        actorType?: T;
+        actor?: T;
+        at?: T;
+        note?: T;
+        id?: T;
+      };
+  deadlines?:
+    | T
+    | {
+        submitBy?: T;
+        respondBy?: T;
+        reviewDueAt?: T;
+      };
+  proposal?:
+    | T
+    | {
+        amount?: T;
+        returnRequired?: T;
+        byType?: T;
+        by?: T;
+        at?: T;
+        expiresAt?: T;
+        round?: T;
+        status?: T;
+      };
+  infoRequests?: T;
+  assignedTo?: T;
+  resolution?:
+    | T
+    | {
+        outcome?: T;
+        refundAmount?: T;
+        breakdown?:
+          | T
+          | {
+              goods?: T;
+              outboundDelivery?: T;
+              returnShipping?: T;
+              buyerProtectionFee?: T;
+              deduction?: T;
+            };
+        returnRequired?: T;
+        returnShippingPaidBy?: T;
+        liableParty?: T;
+        reasonCode?: T;
+        publicStatement?:
+          | T
+          | {
+              fr?: T;
+              en?: T;
+            };
+        decidedByType?: T;
+        decidedBy?: T;
+        decidedAt?: T;
+      };
+  effects?:
+    | T
+    | {
+        returnCase?: T;
+        refund?: T;
+        creditNote?: T;
+        holdsReleased?: T;
+        strikes?: T;
+        riskSignals?: T;
+        reviewAction?: T;
+        certificate?: T;
+      };
+  resale?:
+    | T
+    | {
+        supplierShop?: T;
+        resellerShop?: T;
+        purchaseOrder?: T;
+      };
+  legalHold?: T;
+  lastMessageNotifiedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-messages_select".
+ */
+export interface DisputeMessagesSelect<T extends boolean = true> {
+  dispute?: T;
+  authorType?: T;
+  author?: T;
+  kind?: T;
+  body?: T;
+  evidence?: T;
+  visibility?: T;
+  redactedAt?: T;
+  redactedBy?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence_select".
+ */
+export interface DisputeEvidenceSelect<T extends boolean = true> {
+  dispute?: T;
+  returnCase?: T;
+  uploadedByType?: T;
+  uploadedBy?: T;
+  kind?: T;
+  size?: T;
+  sha256?: T;
+  capturedAt?: T;
+  exifStripped?: T;
+  visibility?: T;
+  purgeAfter?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?: T | {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dispute-evidence-views_select".
+ */
+export interface DisputeEvidenceViewsSelect<T extends boolean = true> {
+  evidence?: T;
+  dispute?: T;
+  returnCase?: T;
+  viewer?: T;
+  viewerRole?: T;
+  ipHash?: T;
+  userAgent?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shop-strikes_select".
+ */
+export interface ShopStrikesSelect<T extends boolean = true> {
+  shop?: T;
+  kind?: T;
+  weight?: T;
+  sourceType?: T;
+  sourceId?: T;
+  status?: T;
+  expiresAt?: T;
+  revokedBy?: T;
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "risk-signal-outbox_select".
+ */
+export interface RiskSignalOutboxSelect<T extends boolean = true> {
+  subjectType?: T;
+  subjectId?: T;
+  signal?: T;
+  severity?: T;
+  sourceType?: T;
+  sourceId?: T;
+  occurredAt?: T;
+  consumedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -4272,6 +4953,69 @@ export interface AppSetting {
         }[]
       | null;
   };
+  /**
+   * Read by lib/caseSettings.ts. These are the spec's legal minimums, not a feature switch — there is no returns.enabled. The withdrawal period stays orders.withdrawalDays; it and returns.refundDays are refused below 15 days until the gate record holds evidence for G1.
+   */
+  returns?: {
+    shipByDays?: number | null;
+    nonConformityShipByDays?: number | null;
+    sellerPickupDays?: number | null;
+    inspectDays?: number | null;
+    receivePresumptionDays?: number | null;
+    /**
+     * Refused below 15 days until G1 is filed.
+     */
+    refundDays?: number | null;
+    codRefundConfirmSilenceDays?: number | null;
+    lateDeliveryGraceDays?: number | null;
+    returnWaiverMaxGoodsValue?: number | null;
+    refundOutboundDeliveryOnWithdrawal?: boolean | null;
+    maxReturnShippingReimbursement?: number | null;
+  };
+  /**
+   * Read by lib/caseSettings.ts. Off: dispute creation answers dispute.disabled and clients route Report a problem to /contact; open disputes keep running. Enabling it is refused until the gate record below holds evidence for G2 and G3; strikeEffectsEnabled and a sellerLossFee above 0 are refused until it holds evidence for G4. Exposed at GET /api/public/config as disputesEnabled, re-checked against the gates on every read.
+   */
+  disputes?: {
+    enabled?: boolean | null;
+    submitAutoHours?: number | null;
+    respondHours?: number | null;
+    reminderHours?: number | null;
+    proposalHours?: number | null;
+    maxProposalRounds?: number | null;
+    reviewBusinessDays?: number | null;
+    maxInfoRequests?: number | null;
+    moderatorRefundLimit?: number | null;
+    notReceivedMaxDays?: number | null;
+    conformityWindowDays?: number | null;
+    counterfeitWindowDays?: number | null;
+    noShowWindowDays?: number | null;
+    evidenceRetentionDays?: number | null;
+    evidenceLimit?: {
+      perParty?: number | null;
+      total?: number | null;
+    };
+    /**
+     * Refused above false until G4 is filed.
+     */
+    strikeEffectsEnabled?: boolean | null;
+    /**
+     * Refused above 0 until G4 is filed.
+     */
+    sellerLossFee?: number | null;
+    /**
+     * The dispute gate record (G1 covers the returns/withdrawal minimum above). A row counts once its evidence is filed.
+     */
+    gates?:
+      | {
+          gate: 'G1' | 'G2' | 'G3' | 'G4';
+          clearedAt?: string | null;
+          clearedBy?: string | null;
+          evidence?: (string | null) | DisputeGateEvidence;
+          note?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   company?: {
     /**
      * Legal name printed on commission invoices.
@@ -4438,6 +5182,57 @@ export interface AppSettingsSelect<T extends boolean = true> {
               enabled?: T;
             };
         providerFeeBearer?: T;
+        gates?:
+          | T
+          | {
+              gate?: T;
+              clearedAt?: T;
+              clearedBy?: T;
+              evidence?: T;
+              note?: T;
+              id?: T;
+            };
+      };
+  returns?:
+    | T
+    | {
+        shipByDays?: T;
+        nonConformityShipByDays?: T;
+        sellerPickupDays?: T;
+        inspectDays?: T;
+        receivePresumptionDays?: T;
+        refundDays?: T;
+        codRefundConfirmSilenceDays?: T;
+        lateDeliveryGraceDays?: T;
+        returnWaiverMaxGoodsValue?: T;
+        refundOutboundDeliveryOnWithdrawal?: T;
+        maxReturnShippingReimbursement?: T;
+      };
+  disputes?:
+    | T
+    | {
+        enabled?: T;
+        submitAutoHours?: T;
+        respondHours?: T;
+        reminderHours?: T;
+        proposalHours?: T;
+        maxProposalRounds?: T;
+        reviewBusinessDays?: T;
+        maxInfoRequests?: T;
+        moderatorRefundLimit?: T;
+        notReceivedMaxDays?: T;
+        conformityWindowDays?: T;
+        counterfeitWindowDays?: T;
+        noShowWindowDays?: T;
+        evidenceRetentionDays?: T;
+        evidenceLimit?:
+          | T
+          | {
+              perParty?: T;
+              total?: T;
+            };
+        strikeEffectsEnabled?: T;
+        sellerLossFee?: T;
         gates?:
           | T
           | {

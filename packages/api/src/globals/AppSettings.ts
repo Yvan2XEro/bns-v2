@@ -1,4 +1,10 @@
 import type { GlobalConfig } from "payload";
+import {
+	CASE_GATE_IDS,
+	DISPUTE_DEFAULTS,
+	RETURN_DEFAULTS,
+} from "../lib/caseSettings";
+import { validateCaseSettings } from "../lib/caseSettingsValidation";
 import { LAUNCH_CITY_KEYS } from "../lib/launchCities";
 import {
 	DEFAULT_MARKETS,
@@ -60,6 +66,7 @@ export const AppSettings: GlobalConfig = {
 				if (adapterRefusal) throw new Error(adapterRefusal);
 				return data;
 			},
+			validateCaseSettings,
 		],
 	},
 	fields: [
@@ -607,6 +614,238 @@ export const AppSettings: GlobalConfig = {
 							name: "evidence",
 							type: "upload",
 							relationTo: "payment-gate-evidence",
+						},
+						{ name: "note", type: "textarea" },
+					],
+				},
+			],
+		},
+		{
+			name: "returns",
+			type: "group",
+			label: "Returns",
+			admin: {
+				description:
+					"Read by lib/caseSettings.ts. These are the spec's legal minimums, not a feature switch — there is no returns.enabled. The withdrawal period stays orders.withdrawalDays; it and returns.refundDays are refused below 15 days until the gate record holds evidence for G1.",
+			},
+			fields: [
+				{
+					name: "shipByDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.shipByDays,
+				},
+				{
+					name: "nonConformityShipByDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.nonConformityShipByDays,
+				},
+				{
+					name: "sellerPickupDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.sellerPickupDays,
+				},
+				{
+					name: "inspectDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.inspectDays,
+				},
+				{
+					name: "receivePresumptionDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.receivePresumptionDays,
+				},
+				{
+					name: "refundDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.refundDays,
+					admin: {
+						description: "Refused below 15 days until G1 is filed.",
+					},
+				},
+				{
+					name: "codRefundConfirmSilenceDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.codRefundConfirmSilenceDays,
+				},
+				{
+					name: "lateDeliveryGraceDays",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.lateDeliveryGraceDays,
+				},
+				{
+					name: "returnWaiverMaxGoodsValue",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.returnWaiverMaxGoodsValue,
+				},
+				{
+					name: "refundOutboundDeliveryOnWithdrawal",
+					type: "checkbox",
+					defaultValue: RETURN_DEFAULTS.refundOutboundDeliveryOnWithdrawal,
+				},
+				{
+					name: "maxReturnShippingReimbursement",
+					type: "number",
+					min: 0,
+					defaultValue: RETURN_DEFAULTS.maxReturnShippingReimbursement,
+				},
+			],
+		},
+		{
+			name: "disputes",
+			type: "group",
+			label: "Disputes",
+			admin: {
+				description:
+					"Read by lib/caseSettings.ts. Off: dispute creation answers dispute.disabled and clients route Report a problem to /contact; open disputes keep running. Enabling it is refused until the gate record below holds evidence for G2 and G3; strikeEffectsEnabled and a sellerLossFee above 0 are refused until it holds evidence for G4. Exposed at GET /api/public/config as disputesEnabled, re-checked against the gates on every read.",
+			},
+			fields: [
+				{
+					name: "enabled",
+					type: "checkbox",
+					defaultValue: DISPUTE_DEFAULTS.enabled,
+				},
+				{
+					name: "submitAutoHours",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.submitAutoHours,
+				},
+				{
+					name: "respondHours",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.respondHours,
+				},
+				{
+					name: "reminderHours",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.reminderHours,
+				},
+				{
+					name: "proposalHours",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.proposalHours,
+				},
+				{
+					name: "maxProposalRounds",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.maxProposalRounds,
+				},
+				{
+					name: "reviewBusinessDays",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.reviewBusinessDays,
+				},
+				{
+					name: "maxInfoRequests",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.maxInfoRequests,
+				},
+				{
+					name: "moderatorRefundLimit",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.moderatorRefundLimit,
+				},
+				{
+					name: "notReceivedMaxDays",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.notReceivedMaxDays,
+				},
+				{
+					name: "conformityWindowDays",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.conformityWindowDays,
+				},
+				{
+					name: "counterfeitWindowDays",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.counterfeitWindowDays,
+				},
+				{
+					name: "noShowWindowDays",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.noShowWindowDays,
+				},
+				{
+					name: "evidenceRetentionDays",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.evidenceRetentionDays,
+				},
+				{
+					name: "evidenceLimit",
+					type: "group",
+					fields: [
+						{
+							name: "perParty",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.evidenceLimit.perParty,
+						},
+						{
+							name: "total",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.evidenceLimit.total,
+						},
+					],
+				},
+				{
+					name: "strikeEffectsEnabled",
+					type: "checkbox",
+					defaultValue: DISPUTE_DEFAULTS.strikeEffectsEnabled,
+					admin: {
+						description: "Refused above false until G4 is filed.",
+					},
+				},
+				{
+					name: "sellerLossFee",
+					type: "number",
+					min: 0,
+					defaultValue: DISPUTE_DEFAULTS.sellerLossFee,
+					admin: {
+						description: "Refused above 0 until G4 is filed.",
+					},
+				},
+				{
+					name: "gates",
+					type: "array",
+					admin: {
+						description:
+							"The dispute gate record (G1 covers the returns/withdrawal minimum above). A row counts once its evidence is filed.",
+					},
+					fields: [
+						{
+							name: "gate",
+							type: "select",
+							required: true,
+							options: CASE_GATE_IDS.map((value) => ({ label: value, value })),
+						},
+						{ name: "clearedAt", type: "date" },
+						{ name: "clearedBy", type: "text" },
+						{
+							name: "evidence",
+							type: "upload",
+							relationTo: "dispute-gate-evidence",
 						},
 						{ name: "note", type: "textarea" },
 					],

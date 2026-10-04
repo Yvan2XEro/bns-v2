@@ -69,6 +69,7 @@ describe("buildStoragePlugins", () => {
 		expect(privateCall?.[0].collections).toEqual({
 			"verification-documents": { prefix: "verification" },
 			"payment-gate-evidence": { prefix: "payment-gates" },
+			"dispute-gate-evidence": { prefix: "dispute-gates" },
 			"buyer-fee-invoice-files": { prefix: "buyer-fee-invoices" },
 		});
 

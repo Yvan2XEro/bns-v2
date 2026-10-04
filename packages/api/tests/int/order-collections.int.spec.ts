@@ -8,6 +8,10 @@ import {
 	COMMISSION_LINE_KINDS,
 	CommissionLines,
 } from "../../src/collections/CommissionLines";
+import { DisputeEvidence } from "../../src/collections/DisputeEvidence";
+import { DisputeEvidenceViews } from "../../src/collections/DisputeEvidenceViews";
+import { DisputeMessages } from "../../src/collections/DisputeMessages";
+import { Disputes } from "../../src/collections/Disputes";
 import { OrderEvents } from "../../src/collections/OrderEvents";
 import {
 	ORDER_ITEM_FULFILLMENT_STATUSES,
@@ -22,6 +26,8 @@ import {
 	RETURN_CASE_STATUSES,
 	ReturnCases,
 } from "../../src/collections/ReturnCases";
+import { RiskSignalOutbox } from "../../src/collections/RiskSignalOutbox";
+import { ShopStrikes } from "../../src/collections/ShopStrikes";
 import config from "../../src/payload.config";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -88,6 +94,65 @@ describe("every P4 collection is registered", () => {
 		]) {
 			expect(slugs).toContain(slug);
 		}
+	});
+});
+
+describe("P6 case collections", () => {
+	it("registers each dispute support collection", async () => {
+		const slugs = (await config).collections.map(
+			(collection) => collection.slug,
+		);
+		for (const slug of [
+			"disputes",
+			"dispute-messages",
+			"dispute-evidence",
+			"dispute-evidence-views",
+			"shop-strikes",
+			"risk-signal-outbox",
+		])
+			expect(slugs).toContain(slug);
+	});
+
+	it("stores case deadlines, resolution, and return follow-up fields", () => {
+		for (const path of [
+			"order",
+			"shop",
+			"buyer",
+			"status",
+			"statusHistory",
+			"deadlines.submitBy",
+			"proposal.expiresAt",
+			"resolution.reasonCode",
+			"effects.refund",
+		])
+			expect(field(Disputes.fields as Field[], path), path).toBeDefined();
+		expect(field(ReturnCases.fields as Field[], "openedByType")).toBeDefined();
+		expect(
+			field(ReturnCases.fields as Field[], "items.inspection.outcome"),
+		).toBeDefined();
+		expect(field(ReturnCases.fields as Field[], "refundProof")).toBeDefined();
+	});
+
+	it("keeps the audit and outbox collections registered under their stable slugs", () => {
+		expect(ShopStrikes.slug).toBe("shop-strikes");
+		expect(RiskSignalOutbox.slug).toBe("risk-signal-outbox");
+		expect(DisputeEvidence.slug).toBe("dispute-evidence");
+		expect(DisputeEvidenceViews.slug).toBe("dispute-evidence-views");
+		expect(DisputeMessages.slug).toBe("dispute-messages");
+	});
+
+	it("excludes staff-only message rows from party collection reads", async () => {
+		const read = accessFn(DisputeMessages, "read");
+		if (!read) throw new Error("DisputeMessages.read is missing");
+		const result = await read({
+			req: { user: { id: "buyer-1" }, payload: fakePayload(), context: {} },
+		});
+		expect(result).toEqual({
+			and: [
+				{ visibility: { equals: "parties" } },
+				{ or: [{ "dispute.buyer": { equals: "buyer-1" } }] },
+			],
+		});
 	});
 });
 

@@ -15,6 +15,7 @@ export const LEDGER_TRANSACTION_KINDS = [
 	"refund_failed",
 	"clawback_recovered",
 	"guarantee_writeoff",
+	"netting_reversed",
 ] as const;
 export type LedgerTransactionKind = (typeof LEDGER_TRANSACTION_KINDS)[number];
 

@@ -1,4 +1,5 @@
 import type { Payload } from "payload";
+import { disputeSettingsOf, filedCaseGates } from "./caseSettings";
 import {
 	isLaunchCityKey,
 	LAUNCH_CITIES,
@@ -31,6 +32,7 @@ export interface OrderSettings {
 	buyerCaps: Record<BuyerTierKey, BuyerCapRow>;
 	termsVersion: string;
 	pilotShopIds: string[];
+	strikeEffectsEnabled: boolean;
 }
 
 export const BUYER_CAPS: Record<BuyerTierKey, BuyerCapRow> = {
@@ -67,6 +69,7 @@ const DEFAULTS: Omit<OrderSettings, "enabled" | "launchCities"> = {
 	buyerCaps: BUYER_CAPS,
 	termsVersion: "2026-09",
 	pilotShopIds: [],
+	strikeEffectsEnabled: false,
 };
 
 const intOr = (value: unknown, fallback: number): number => {
@@ -168,8 +171,18 @@ export async function getOrderSettings(
 			overrideAccess: true,
 		});
 		const orders = (global as { orders?: Record<string, unknown> }).orders;
+		const disputes = disputeSettingsOf(
+			(global as { disputes?: unknown }).disputes,
+		);
+		const strikeEffectsEnabled =
+			disputes.strikeEffectsEnabled && filedCaseGates(disputes.gates).has("G4");
 		if (!orders)
-			return { ...DEFAULTS, enabled: false, launchCities: citiesOf(undefined) };
+			return {
+				...DEFAULTS,
+				enabled: false,
+				launchCities: citiesOf(undefined),
+				strikeEffectsEnabled,
+			};
 		return {
 			...DEFAULTS,
 			enabled: orders.enabled === true,
@@ -192,6 +205,7 @@ export async function getOrderSettings(
 			pilotShopIds: Array.isArray(orders.pilotShopIds)
 				? orders.pilotShopIds.map(String)
 				: [],
+			strikeEffectsEnabled,
 		};
 	} catch {
 		return { ...DEFAULTS, enabled: false, launchCities: citiesOf(undefined) };

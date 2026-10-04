@@ -7,8 +7,10 @@ import {
 } from "../../src/lib/orderSettings";
 import { fakePayload } from "./helpers/fakePayload";
 
-const settingsGlobal = (orders: Record<string, unknown>) =>
-	fakePayload({}, { globals: { "app-settings": { orders } } });
+const settingsGlobal = (
+	orders: Record<string, unknown>,
+	disputes: Record<string, unknown> = {},
+) => fakePayload({}, { globals: { "app-settings": { orders, disputes } } });
 
 describe("getOrderSettings", () => {
 	it("fails closed when the global cannot be read", async () => {
@@ -16,10 +18,39 @@ describe("getOrderSettings", () => {
 		payload.failWhen = (method) => method === "findGlobal";
 		const settings = await getOrderSettings(payload);
 		expect(settings.enabled).toBe(false);
+		expect(settings.strikeEffectsEnabled).toBe(false);
 	});
 
 	it("fails closed when the group is absent", async () => {
 		expect((await getOrderSettings(fakePayload())).enabled).toBe(false);
+		expect((await getOrderSettings(fakePayload())).strikeEffectsEnabled).toBe(
+			false,
+		);
+	});
+
+	it("keeps strike effects disabled unless both the setting and G4 evidence exist", async () => {
+		const gate = { gate: "G4", evidence: "evidence-1", note: "Approved" };
+		const enabled = await getOrderSettings(
+			settingsGlobal(
+				{ enabled: true },
+				{ strikeEffectsEnabled: true, gates: [gate] },
+			),
+		);
+		const missingGate = await getOrderSettings(
+			settingsGlobal(
+				{ enabled: true },
+				{ strikeEffectsEnabled: true, gates: [] },
+			),
+		);
+		const disabled = await getOrderSettings(
+			settingsGlobal(
+				{ enabled: true },
+				{ strikeEffectsEnabled: false, gates: [gate] },
+			),
+		);
+		expect(enabled.strikeEffectsEnabled).toBe(true);
+		expect(missingGate.strikeEffectsEnabled).toBe(false);
+		expect(disabled.strikeEffectsEnabled).toBe(false);
 	});
 
 	it("reads the flag, the cities and every default", async () => {

@@ -45,6 +45,7 @@ import {
 } from "./payments";
 import { hasBlockingHold } from "./payoutHolds";
 import { isUniqueViolation, type ServiceUser } from "./shops";
+import { type ShopStandingView, shopStanding } from "./strikes";
 
 export const CHECKOUT_MAX_ATTEMPTS = 3;
 /** A `created`/`pending` intent younger than this blocks a new attempt. */
@@ -263,11 +264,22 @@ export async function assertShopEligibleForProtectedPayment(
 	shop: Shop,
 	now: Date,
 ): Promise<void> {
+	const standing = await shopStanding(payload, String(shop.id), now);
+	await assertShopEligibleWithStanding(payload, shop, now, standing);
+}
+
+async function assertShopEligibleWithStanding(
+	payload: Payload,
+	shop: Shop,
+	now: Date,
+	standing: ShopStandingView,
+): Promise<void> {
 	const notEligible = refuse(ERROR_CODES.paymentShopNotEligible, 403);
 	const capabilities = shopCapabilities(shop, now);
 	if (!capabilities.protectedPayment) throw notEligible;
 
 	const shopId = String(shop.id);
+	if (standing.restrictions.protectedUnavailable) throw notEligible;
 	const account = await findConnectedAccount(payload, shopId);
 	if (
 		!account?.providerAccountId ||
@@ -303,7 +315,8 @@ async function assertEligible(
 	if (!market?.enabled) {
 		throw refuse(ERROR_CODES.paymentMarketUnavailable, 400);
 	}
-	await assertShopEligibleForProtectedPayment(payload, shop, now);
+	const standing = await shopStanding(payload, String(shop.id), now);
+	await assertShopEligibleWithStanding(payload, shop, now, standing);
 	const notEligible = refuse(ERROR_CODES.paymentShopNotEligible, 403);
 	const capabilities = shopCapabilities(shop, now);
 
@@ -322,10 +335,13 @@ async function assertEligible(
 	const levelCap = capabilities.fasterPayouts
 		? settings.exposureCaps.level3
 		: settings.exposureCaps.level2;
-	const cap =
+	const baseCap =
 		settings.releaseModel === "provider_schedule"
 			? Math.floor(levelCap / 2)
 			: levelCap;
+	const cap = standing.restrictions.protectedCapHalved
+		? Math.floor(baseCap / 2)
+		: baseCap;
 	const exposure = await openProtectedExposure(
 		payload,
 		shopId,

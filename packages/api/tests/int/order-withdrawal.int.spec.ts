@@ -59,6 +59,7 @@ function seed(order: Doc, items: Doc[] = baseItems()) {
 		"order-items": items,
 		"order-events": [],
 		"return-cases": [],
+		"payout-holds": [],
 	});
 }
 
@@ -93,6 +94,15 @@ describe("openWithdrawal", () => {
 		expect(payload.store["return-cases"]).toHaveLength(1);
 		expect(payload.store["return-cases"]?.[0]?.id).toBe(result.caseId);
 		expect(payload.store["return-cases"]?.[0]?.number).toBe(result.caseNumber);
+		expect(payload.store["return-cases"]?.[0]).toMatchObject({
+			status: "awaiting_shipment",
+			returnRequired: true,
+			returnMethod: "buyer_drop_off",
+			deadlines: {
+				requestDeadline: "2026-09-16T00:00:00.000Z",
+				shipBy: "2026-09-25T00:00:00.000Z",
+			},
+		});
 	});
 
 	describe("the withdrawal window, computed from delivery", () => {
@@ -118,47 +128,59 @@ describe("openWithdrawal", () => {
 			expect(payload.store["return-cases"]).toHaveLength(1);
 		});
 
-		it("refuses one millisecond past day 15 with order.withdrawalWindowClosed", async () => {
+		it("records a rejected case one millisecond past day 15", async () => {
 			vi.setSystemTime(
 				new Date(new Date(DELIVERED_AT).getTime() + 15 * DAY_MS + 1),
 			);
 			const payload = seed(baseOrder());
 
-			await expect(
-				openWithdrawal(payload, BUYER, "order-1", oneItem()),
-			).rejects.toMatchObject({ code: "order.withdrawalWindowClosed" });
-			expect(payload.store["return-cases"]).toHaveLength(0);
+			const result = await openWithdrawal(payload, BUYER, "order-1", oneItem());
+			expect(payload.store["return-cases"]).toHaveLength(1);
+			expect(payload.store["return-cases"]?.[0]).toMatchObject({
+				id: result.caseId,
+				status: "rejected",
+				rejectionReason: "window_closed",
+			});
 		});
 	});
 
-	it("refuses a second open case with order.withdrawalAlreadyRequested, proven by counting rows rather than by the throw alone", async () => {
+	it("allows a different item but refuses the same item while its return is open", async () => {
 		vi.setSystemTime(new Date("2026-09-10T00:00:00.000Z"));
 		const payload = seed(baseOrder());
 
 		await openWithdrawal(payload, BUYER, "order-1", oneItem());
+		await openWithdrawal(payload, BUYER, "order-1", {
+			items: [{ orderItemId: "oi-2", quantity: 1 }],
+		});
+		expect(payload.store["return-cases"]).toHaveLength(2);
 		await expect(
-			openWithdrawal(payload, BUYER, "order-1", {
-				items: [{ orderItemId: "oi-2", quantity: 1 }],
-			}),
-		).rejects.toMatchObject({ code: "order.withdrawalAlreadyRequested" });
+			openWithdrawal(payload, BUYER, "order-1", oneItem()),
+		).rejects.toMatchObject({ code: "return.alreadyOpen" });
 
-		expect(payload.store["return-cases"]).toHaveLength(1);
+		expect(payload.store["return-cases"]).toHaveLength(2);
 	});
 
-	const NON_DELIVERED_STATUSES = ORDER_STATUS_NAMES.filter(
-		(status) => status !== "delivered",
+	const INELIGIBLE_STATUSES = ORDER_STATUS_NAMES.filter(
+		(status) => status !== "delivered" && status !== "completed",
 	);
 
 	it.each(
-		NON_DELIVERED_STATUSES,
+		INELIGIBLE_STATUSES,
 	)("refuses an order with status %s", async (status) => {
 		vi.setSystemTime(new Date("2026-09-10T00:00:00.000Z"));
 		const payload = seed(baseOrder({ status }));
 
 		await expect(
 			openWithdrawal(payload, BUYER, "order-1", oneItem()),
-		).rejects.toMatchObject({ code: "order.invalidTransition" });
+		).rejects.toMatchObject({ code: "return.notEligible" });
 		expect(payload.store["return-cases"]).toHaveLength(0);
+	});
+
+	it("allows a completed order while its delivered date is within the legal window", async () => {
+		vi.setSystemTime(new Date("2026-09-10T00:00:00.000Z"));
+		const payload = seed(baseOrder({ status: "completed" }));
+		const result = await openWithdrawal(payload, BUYER, "order-1", oneItem());
+		expect(payload.store["return-cases"]?.[0]?.id).toBe(result.caseId);
 	});
 
 	it("moves only the named items to return_requested", async () => {
@@ -182,7 +204,7 @@ describe("openWithdrawal", () => {
 
 		await expect(
 			openWithdrawal(payload, BUYER, "order-1", oneItem(3)),
-		).rejects.toMatchObject({ code: "generic.validation" });
+		).rejects.toMatchObject({ code: "return.itemsInvalid" });
 
 		expect(payload.store["return-cases"]).toHaveLength(0);
 		expect(
@@ -199,6 +221,55 @@ describe("openWithdrawal", () => {
 		const order = orderOf(payload);
 		expect(order.completionHold).toBe("return_case");
 		expect(order.returnCase).toBe(result.caseId);
+	});
+
+	it("holds protected funds for an open return but does not create a COD hold", async () => {
+		vi.setSystemTime(new Date("2026-09-10T00:00:00.000Z"));
+		const cod = seed(baseOrder());
+		await openWithdrawal(cod, BUYER, "order-1", oneItem());
+		expect(cod.store["payout-holds"]).toHaveLength(0);
+
+		const protectedOrder = seed(baseOrder({ paymentMethod: "mobile_money" }));
+		await openWithdrawal(protectedOrder, BUYER, "order-1", oneItem());
+		expect(protectedOrder.store["payout-holds"]).toMatchObject([
+			{
+				scope: "order",
+				shop: "s-1",
+				order: "order-1",
+				reason: "return_open",
+				status: "active",
+			},
+		]);
+	});
+
+	it("sets a seller-pickup deadline from the global return settings", async () => {
+		vi.setSystemTime(new Date("2026-09-10T00:00:00.000Z"));
+		const payload = seed(baseOrder());
+		await openWithdrawal(payload, BUYER, "order-1", {
+			...oneItem(),
+			returnMethod: "seller_pickup",
+		});
+		expect(payload.store["return-cases"]?.[0]).toMatchObject({
+			returnMethod: "seller_pickup",
+			deadlines: { pickupBy: "2026-09-15T00:00:00.000Z" },
+		});
+	});
+
+	it("refuses a category excluded from the withdrawal right", async () => {
+		vi.setSystemTime(new Date("2026-09-10T00:00:00.000Z"));
+		const payload = fakePayload({
+			orders: [baseOrder()],
+			"order-items": baseItems().map((item, index) =>
+				index === 0 ? { ...item, snapshot: { categoryId: "excluded" } } : item,
+			),
+			"order-events": [],
+			"return-cases": [],
+			categories: [{ id: "excluded", withdrawalExcluded: true }],
+		});
+		await expect(
+			openWithdrawal(payload, BUYER, "order-1", oneItem()),
+		).rejects.toMatchObject({ code: "return.notEligible" });
+		expect(payload.store["return-cases"]).toHaveLength(0);
 	});
 
 	it("writes order.withdrawal_requested exactly once", async () => {

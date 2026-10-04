@@ -39,6 +39,7 @@ const baseSettings: OrderSettings = {
 	buyerCaps: BUYER_CAPS,
 	termsVersion: "2026-09",
 	pilotShopIds: [],
+	strikeEffectsEnabled: false,
 };
 
 /**

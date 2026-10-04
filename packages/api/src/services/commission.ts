@@ -399,6 +399,7 @@ export async function issueInvoicesForWeek(
 					overrideAccess: true,
 					req,
 					data: {
+						kind: "invoice",
 						invoiceNumber,
 						shop: shopId,
 						periodStart,
@@ -512,6 +513,7 @@ export async function issueApplicationFeeInvoice(
 		overrideAccess: true,
 		req,
 		data: {
+			kind: "invoice",
 			invoiceNumber: await nextInvoiceNumber(req, INVOICE_SERIES, now),
 			shop: shopId,
 			// A one-order invoice: its period is the order's completion. The

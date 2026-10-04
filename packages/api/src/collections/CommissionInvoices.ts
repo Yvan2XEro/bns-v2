@@ -22,6 +22,8 @@ export const COMMISSION_INVOICE_STATUSES = [
 	"void",
 ] as const;
 
+export const COMMISSION_INVOICE_KINDS = ["invoice", "credit_note"] as const;
+
 /** Admin-only, from the Payload admin: staff.waiveInvoice is the one service writer. */
 const adminOnlyUpdate = {
 	update: ({ req }: { req: { user: { role?: string } | null } }) =>
@@ -55,6 +57,31 @@ export const CommissionInvoices: CollectionConfig = {
 		],
 	},
 	fields: [
+		{
+			name: "kind",
+			type: "select",
+			required: true,
+			defaultValue: "invoice",
+			options: COMMISSION_INVOICE_KINDS.map((value) => ({
+				label: value,
+				value,
+			})),
+		},
+		{
+			name: "creditsInvoice",
+			type: "relationship",
+			relationTo: "commission-invoices",
+			index: true,
+		},
+		{
+			name: "sourceType",
+			type: "select",
+			options: ["dispute", "return-case"].map((value) => ({
+				label: value,
+				value,
+			})),
+		},
+		{ name: "sourceId", type: "text", index: true },
 		{
 			name: "invoiceNumber",
 			type: "text",

@@ -135,6 +135,8 @@ export interface PostingAmounts {
 		from: "seller_pending" | "seller_releasable";
 	};
 	guarantee_writeoff: { amount: number };
+	/** The lines of the `clawback_recovered` netting being reversed, as `transactionLines` reads them. */
+	netting_reversed: { netting: readonly LedgerLine[] };
 }
 
 type Postings = {
@@ -248,6 +250,12 @@ const POSTINGS: Postings = {
 		debit("buyer_guarantee_expense", amount),
 		credit("seller_receivable", amount),
 	],
+	netting_reversed: ({ netting }) =>
+		netting.map((line) => ({
+			category: line.category,
+			debit: line.credit,
+			credit: line.debit,
+		})),
 };
 
 /** Pure: one posting kind and its amounts in, the entries out. Balance is checked by `postLedger`, not here. */

@@ -1,7 +1,13 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionBeforeChangeHook, CollectionConfig } from "payload";
 import { anyone } from "../access/anyone";
 import { isModerator } from "../access/roles";
+import {
+	getDisputeSettings,
+	hasWithdrawalExclusionApproval,
+} from "../lib/caseSettings";
+import { ERROR_CODES } from "../lib/errors";
 import { decorateCategoryWithFormPreset } from "../lib/listingFormPreset";
+import { CodedAPIError } from "../lib/serviceError";
 
 const staffOnlyWrite = {
 	create: ({ req: { user } }: { req: { user: { role?: string } | null } }) =>
@@ -41,6 +47,18 @@ const LISTING_FORM_PHOTO_MODES = [
 	{ label: "Required — at least one photo must be added", value: "required" },
 ];
 
+const enforceWithdrawalExclusionGate: CollectionBeforeChangeHook = async ({
+	data,
+	req,
+}) => {
+	if (data.withdrawalExcluded !== true) return data;
+	const settings = await getDisputeSettings(req.payload);
+	if (!hasWithdrawalExclusionApproval(settings.gates)) {
+		throw new CodedAPIError(ERROR_CODES.badRequest, 400);
+	}
+	return data;
+};
+
 export const Categories: CollectionConfig = {
 	slug: "categories",
 	admin: {
@@ -67,6 +85,7 @@ export const Categories: CollectionConfig = {
 		},
 	},
 	hooks: {
+		beforeChange: [enforceWithdrawalExclusionGate],
 		afterRead: [
 			({ doc }) => {
 				if (!doc || typeof doc !== "object") return doc;
@@ -119,6 +138,14 @@ export const Categories: CollectionConfig = {
 			name: "active",
 			type: "checkbox",
 			defaultValue: true,
+		},
+		{
+			name: "withdrawalExcluded",
+			type: "checkbox",
+			defaultValue: false,
+			admin: {
+				description: "Enable only when a documented legal exception applies.",
+			},
 		},
 		{
 			name: "listingForm",

@@ -34,6 +34,7 @@ export const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024;
 export function enforceUploadLimits(options: {
 	mimeTypes: readonly string[];
 	maxBytes: number;
+	maxBytesByMimeType?: Readonly<Record<string, number>>;
 }): CollectionBeforeOperationHook {
 	return ({ operation, req }) => {
 		if (operation !== "create" && operation !== "update") return;
@@ -43,7 +44,9 @@ export function enforceUploadLimits(options: {
 		if (!options.mimeTypes.includes(file.mimetype)) {
 			throw new CodedAPIError(ERROR_CODES.uploadInvalidType, 400);
 		}
-		if (file.size > options.maxBytes) {
+		const maxBytes =
+			options.maxBytesByMimeType?.[file.mimetype] ?? options.maxBytes;
+		if (file.size > maxBytes) {
 			throw new CodedAPIError(ERROR_CODES.uploadTooLarge, 413);
 		}
 	};
