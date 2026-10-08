@@ -53,6 +53,7 @@ import { AppSettings } from "../../src/globals/AppSettings";
 import { completeOrders } from "../../src/jobs/completeOrders";
 import { splitAmounts } from "../../src/lib/paymentMath";
 import {
+	DEFAULT_MARKETS,
 	PAYMENT_DEFAULTS,
 	type PaymentSettings,
 } from "../../src/lib/paymentSettings";
@@ -149,11 +150,7 @@ const STAGING_PAYMENTS = {
 
 const STAGING_SETTINGS: PaymentSettings = {
 	...PAYMENT_DEFAULTS,
-	...STAGING_PAYMENTS,
-	markets: STAGING_PAYMENTS.markets.map((m) => ({
-		...m,
-		channels: [...m.channels],
-	})),
+	markets: DEFAULT_MARKETS.map((m) => ({ ...m })),
 };
 
 const STAGING_ORDERS = {
