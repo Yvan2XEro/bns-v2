@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { MarketplaceProvider } from "../../../src/lib/payments/marketplace";
 import { NotchPayMarketplaceProvider } from "../../../src/lib/payments/notchpayMarketplace";
+import type { WireRequest } from "../../../src/lib/payments/notchpayWire";
 import type {
 	MarketplaceContractDriver,
 	SignedWebhook,
@@ -41,13 +42,26 @@ export function loadWebhookTemplates(
 export const hmacSha256Hex = (key: string, body: string) =>
 	createHmac("sha256", key).update(body).digest("hex");
 
-const replays = new WeakMap<MarketplaceProvider, ReplayTransport>();
+interface ModeSink {
+	setMode(key: string, value: string): void;
+	journal: WireRequest[];
+}
 
-export function makeReplayProvider(): {
+const replays = new WeakMap<MarketplaceProvider, ModeSink>();
+
+/** Lets the recorded driver steer a provider built on some other transport. */
+export function bindModeSink(
+	provider: MarketplaceProvider,
+	sink: ModeSink,
+): void {
+	replays.set(provider, sink);
+}
+
+export function makeReplayProvider(dir?: string): {
 	provider: NotchPayMarketplaceProvider;
 	replay: ReplayTransport;
 } {
-	const replay = new ReplayTransport(loadNotchpayFixtures());
+	const replay = new ReplayTransport(loadNotchpayFixtures(dir));
 	const provider = new NotchPayMarketplaceProvider({
 		publicKey: "pk_test_fixture",
 		privateKey: "sk_test_fixture",
@@ -58,7 +72,7 @@ export function makeReplayProvider(): {
 	return { provider, replay };
 }
 
-function replayOf(provider: MarketplaceProvider): ReplayTransport {
+function replayOf(provider: MarketplaceProvider): ModeSink {
 	const replay = replays.get(provider);
 	if (!replay) throw new Error("not a provider built by makeReplayProvider");
 	return replay;
@@ -94,7 +108,10 @@ export function signedFromTemplate(key: string, vars: Vars): SignedWebhook {
 	};
 }
 
-function chargeOf(replay: ReplayTransport, reference: string) {
+export function chargeOf(
+	replay: { journal: WireRequest[] },
+	reference: string,
+) {
 	const request = replay.journal.find(
 		(r) =>
 			r.method === "POST" &&
@@ -108,7 +125,10 @@ function chargeOf(replay: ReplayTransport, reference: string) {
 	return { amount: body.amount, account: body.destination.account };
 }
 
-function payoutOf(replay: ReplayTransport, reference: string) {
+export function payoutOf(
+	replay: { journal: WireRequest[] },
+	reference: string,
+) {
 	for (const request of replay.journal) {
 		const match = /^\/sync\/accounts\/([^/]+)\/payouts$/.exec(request.path);
 		const body = request.body as { reference?: string; amount?: number };

@@ -8,7 +8,7 @@ import {
 	notchpayRecordedDriver,
 	signedFromTemplate,
 } from "./helpers/notchpayContractDriver";
-import { loadNotchpayFixtures } from "./helpers/notchpayReplay";
+import { loadNotchpayFixtures, readVerified } from "./helpers/notchpayReplay";
 
 runMarketplaceContract(
 	() => makeReplayProvider().provider,
@@ -66,8 +66,8 @@ describe("NotchPay recorded driver", () => {
 	});
 });
 
-// The recorder shrinks this set; update it from the record run's output, never
-// by hand, so a tag can neither rot nor appear unledgered.
+// The record run moves tags into fixtures/notchpay/manifest/verified.json; it is
+// never edited by hand, so a tag can neither rot nor appear unledgered.
 const LEDGER = Array.from({ length: 16 }, (_, i) => `A${i + 1}`);
 
 describe("NotchPay fixture manifest", () => {
@@ -84,8 +84,12 @@ describe("NotchPay fixture manifest", () => {
 
 	it("accounts for exactly the assumptions still open", () => {
 		const present = new Set(carriers.flatMap((c) => c.assumed ?? []));
+		const verified = readVerified();
+		for (const tag of verified) expect(present.has(tag)).toBe(false);
 		expect(
-			[...present].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
+			[...present, ...verified].sort(
+				(a, b) => Number(a.slice(1)) - Number(b.slice(1)),
+			),
 		).toEqual(LEDGER);
 	});
 
