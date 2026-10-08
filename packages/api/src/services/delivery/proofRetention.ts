@@ -23,8 +23,64 @@ const openContestGuard: ProofRetentionGuard = async (payload, shipment) => {
 	return Boolean(contestBy) && Date.parse(String(contestBy)) > Date.now();
 };
 
-/** P6 pushes its open-dispute guard here; the array is the interface. */
-export const proofRetentionGuards: ProofRetentionGuard[] = [openContestGuard];
+const OPEN_DISPUTE_STATUSES = [
+	"open",
+	"awaiting_seller",
+	"awaiting_buyer",
+	"under_review",
+];
+const CLOSED_RETURN_STATUSES = [
+	"rejected",
+	"cancelled",
+	"refunded",
+	"closed",
+	"expired",
+];
+
+/** An open dispute, an open return case or a legal hold on the order's cases keeps the proofs. */
+const openCaseGuard: ProofRetentionGuard = async (payload, shipment) => {
+	const orderId = relationId(shipment.order);
+	if (!orderId) return false;
+	const disputes = await payload.find({
+		collection: "disputes",
+		where: {
+			and: [
+				{ order: { equals: orderId } },
+				{
+					or: [
+						{ status: { in: OPEN_DISPUTE_STATUSES } },
+						{ legalHold: { equals: true } },
+					],
+				},
+			],
+		},
+		depth: 0,
+		limit: 1,
+		pagination: false,
+		overrideAccess: true,
+	});
+	if (disputes.docs.length > 0) return true;
+	const cases = await payload.find({
+		collection: "return-cases",
+		where: {
+			and: [
+				{ order: { equals: orderId } },
+				{ status: { not_in: CLOSED_RETURN_STATUSES } },
+			],
+		},
+		depth: 0,
+		limit: 1,
+		pagination: false,
+		overrideAccess: true,
+	});
+	return cases.docs.length > 0;
+};
+
+/** Each phase pushes its guard here; the array is the interface. */
+export const proofRetentionGuards: ProofRetentionGuard[] = [
+	openContestGuard,
+	openCaseGuard,
+];
 
 export async function proofsAreHeld(
 	payload: Payload,

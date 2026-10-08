@@ -472,6 +472,63 @@ describe("purgeDeliveryProofs", () => {
 		});
 	});
 
+	it("keeps the proofs of a shipment whose order has an open case, and purges once it closes", async () => {
+		const payload = seeded(
+			[
+				terminal(181, "dispute", { order: "order-d" }),
+				terminal(181, "return", { order: "order-r" }),
+				terminal(181, "held", { order: "order-h" }),
+				terminal(181, "closed", { order: "order-c" }),
+			],
+			{
+				"delivery-proofs": [
+					proofRow("dispute"),
+					proofRow("return"),
+					proofRow("held"),
+					proofRow("closed"),
+				],
+				disputes: [
+					{ id: "d-1", order: "order-d", status: "under_review" },
+					{
+						id: "d-2",
+						order: "order-h",
+						status: "resolved_buyer",
+						legalHold: true,
+					},
+					{ id: "d-3", order: "order-c", status: "resolved_seller" },
+				],
+				"return-cases": [
+					{ id: "r-1", order: "order-r", status: "in_transit" },
+					{ id: "r-2", order: "order-c", status: "refunded" },
+				],
+			},
+		);
+		for (const id of ["d", "r", "h", "c"]) {
+			payload.store.orders?.push({ ...order, id: `order-${id}` });
+		}
+		expect(await purgeDeliveryProofs(payload, NOW)).toEqual({
+			shipments: ["closed"],
+			proofsDeleted: 1,
+		});
+		expect(
+			payload.store["delivery-proofs"]?.map((row) => row.shipment).sort(),
+		).toEqual(["dispute", "held", "return"]);
+
+		const dispute = payload.store.disputes?.find((row) => row.id === "d-1");
+		if (dispute) dispute.status = "resolved_seller";
+		const returnCase = payload.store["return-cases"]?.find(
+			(row) => row.id === "r-1",
+		);
+		if (returnCase) returnCase.status = "closed";
+		expect(await purgeDeliveryProofs(payload, NOW)).toEqual({
+			shipments: ["dispute", "return"],
+			proofsDeleted: 2,
+		});
+		expect(
+			payload.store["delivery-proofs"]?.map((row) => row.shipment),
+		).toEqual(["held"]);
+	});
+
 	it("honors a pushed retention guard", async () => {
 		const guard = vi.fn(async () => true);
 		proofRetentionGuards.push(guard);
