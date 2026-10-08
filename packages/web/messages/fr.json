@@ -3543,5 +3543,58 @@
 			"holdDaysInvalid": "Conservez le colis de 1 à 14 jours.",
 			"preparationInvalid": "Saisissez de 0 à 72 heures."
 		}
+	},
+	"Tracking": {
+		"shipmentNumber": "Expédition {number}",
+		"promisedBy": "Livraison prévue d'ici le {date}",
+		"step": {
+			"prepared": "Préparée",
+			"picked_up": "Récupérée",
+			"in_transit": "En route",
+			"ready": "Prête au retrait",
+			"delivered": "Livrée"
+		},
+		"state": {
+			"done": "terminée",
+			"current": "en cours",
+			"upcoming": "à venir",
+			"stopped": "interrompue"
+		},
+		"riderName": "Votre livreur : {name}",
+		"riderCall": "Appeler",
+		"attemptsTitle": "Tentatives de livraison",
+		"attemptRow": "Tentative {number}, {date} : {reason}",
+		"redeliveryScheduled": "Nouvelle livraison prévue le {date}, {window}.",
+		"rescheduleCta": "Choisir un nouveau créneau",
+		"rescheduleTitle": "Choisir un nouveau créneau",
+		"rescheduleBody": "Choisissez le jour et le moment de la prochaine tentative de livraison. Votre numéro de téléphone de livraison reste le même.",
+		"fieldDay": "Jour",
+		"fieldWindow": "Moment de la journée",
+		"fieldLandmark": "Nouveau point de repère (facultatif)",
+		"usePosition": "Partager ma position",
+		"positionCaptured": "Position ajoutée.",
+		"rescheduleSubmit": "Confirmer",
+		"rescheduleError": {
+			"dayRequired": "Choisissez un jour.",
+			"windowRequired": "Choisissez un moment de la journée.",
+			"landmarkLength": "Décrivez le point de repère en 5 à 200 caractères.",
+			"positionInvalid": "La position n'a pas pu être lue. Réessayez."
+		},
+		"pickupHours": "Horaires d'ouverture : {hours}",
+		"pickupDeadline": "À retirer avant le {date} ({left}).",
+		"openInMaps": "Ouvrir dans Maps",
+		"countdown": {
+			"days": "{count, plural, one {# jour restant} other {# jours restants}}",
+			"hours": "{count, plural, one {# heure restante} other {# heures restantes}}",
+			"minutes": "{count, plural, one {# minute restante} other {# minutes restantes}}",
+			"expired": "Le délai de retrait est dépassé."
+		},
+		"trackingLink": "Suivre chez le coursier",
+		"proofTitle": "Preuve de livraison",
+		"proofAt": "Enregistrée le {date}",
+		"proofCodeVerified": "Code vérifié",
+		"proofPhotoAlt": "Photo prise lors de la remise",
+		"contestCta": "Contester cette livraison",
+		"loadError": "Impossible de charger le suivi de livraison."
 	}
 }

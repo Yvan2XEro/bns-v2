@@ -22,6 +22,7 @@ import { PaymentSection } from "./payment-section";
 import { PurchaseSummary } from "./purchase-summary";
 import { ReviewPanel } from "./review-panel";
 import { Timeline } from "./timeline";
+import { TrackingBlock } from "./tracking-block";
 import { WithdrawalDialog, WithdrawalWindow } from "./withdrawal-dialog";
 
 export function PurchaseClient({ orderId }: { orderId: string }) {
@@ -114,6 +115,13 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 			{order.status === "shipped" && (
 				<HandoverCard order={order} actions={actions} />
 			)}
+
+			<TrackingBlock
+				order={order}
+				actions={actions}
+				now={now}
+				onContest={() => setDialog("contest_delivery")}
+			/>
 
 			<WithdrawalWindow order={order} now={now} />
 

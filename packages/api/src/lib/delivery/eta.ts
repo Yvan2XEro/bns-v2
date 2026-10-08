@@ -10,7 +10,7 @@ export interface DeliveryCalendar {
 
 export type DeliveryWindow = "morning" | "afternoon" | "evening";
 
-interface LocalDateTime {
+export interface LocalDateTime {
 	year: number;
 	month: number;
 	day: number;
@@ -29,7 +29,7 @@ const WEEKDAYS: readonly Day[] = [
 	"sat",
 ];
 
-function localParts(date: Date): LocalDateTime {
+export function localParts(date: Date): LocalDateTime {
 	if (!Number.isFinite(date.getTime())) throw new RangeError("Invalid date");
 	const parts = new Intl.DateTimeFormat("en-GB", {
 		timeZone: DELIVERY_TIMEZONE,
@@ -53,7 +53,7 @@ function localParts(date: Date): LocalDateTime {
 	};
 }
 
-function localDateAt(
+export function localDateAt(
 	date: Pick<LocalDateTime, "year" | "month" | "day">,
 	hour: number,
 	minute = 0,

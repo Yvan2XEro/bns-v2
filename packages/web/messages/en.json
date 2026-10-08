@@ -3542,5 +3542,58 @@
 			"holdDaysInvalid": "Hold between 1 and 14 days.",
 			"preparationInvalid": "Enter 0 to 72 hours."
 		}
+	},
+	"Tracking": {
+		"shipmentNumber": "Shipment {number}",
+		"promisedBy": "Expected by {date}",
+		"step": {
+			"prepared": "Prepared",
+			"picked_up": "Picked up",
+			"in_transit": "On the way",
+			"ready": "Ready for pickup",
+			"delivered": "Delivered"
+		},
+		"state": {
+			"done": "done",
+			"current": "in progress",
+			"upcoming": "to come",
+			"stopped": "stopped"
+		},
+		"riderName": "Your rider: {name}",
+		"riderCall": "Call",
+		"attemptsTitle": "Delivery attempts",
+		"attemptRow": "Attempt {number}, {date}: {reason}",
+		"redeliveryScheduled": "New delivery planned on {date}, {window}.",
+		"rescheduleCta": "Choose a new time slot",
+		"rescheduleTitle": "Choose a new time slot",
+		"rescheduleBody": "Pick the day and the time of day for the next delivery attempt. Your delivery phone number stays the same.",
+		"fieldDay": "Day",
+		"fieldWindow": "Time of day",
+		"fieldLandmark": "New landmark (optional)",
+		"usePosition": "Share my position",
+		"positionCaptured": "Position added.",
+		"rescheduleSubmit": "Confirm",
+		"rescheduleError": {
+			"dayRequired": "Choose a day.",
+			"windowRequired": "Choose a time of day.",
+			"landmarkLength": "Describe the landmark in 5 to 200 characters.",
+			"positionInvalid": "The position could not be read. Try again."
+		},
+		"pickupHours": "Opening hours: {hours}",
+		"pickupDeadline": "Collect by {date} ({left}).",
+		"openInMaps": "Open in Maps",
+		"countdown": {
+			"days": "{count, plural, one {# day left} other {# days left}}",
+			"hours": "{count, plural, one {# hour left} other {# hours left}}",
+			"minutes": "{count, plural, one {# minute left} other {# minutes left}}",
+			"expired": "The pickup deadline has passed."
+		},
+		"trackingLink": "Track with the courier",
+		"proofTitle": "Proof of delivery",
+		"proofAt": "Recorded on {date}",
+		"proofCodeVerified": "Code verified",
+		"proofPhotoAlt": "Photo taken at handover",
+		"contestCta": "Contest this delivery",
+		"loadError": "Could not load the delivery tracking."
 	}
 }
