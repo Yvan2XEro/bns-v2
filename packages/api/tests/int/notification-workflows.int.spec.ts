@@ -332,6 +332,52 @@ describe("buildExpoPushData for P7 shipment workflows", () => {
 	});
 });
 
+describe("P7 shipment job workflows", () => {
+	it("defines the pickup reminder and late workflows the delivery jobs fire", () => {
+		const reminder = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "shipment-pickup-reminder",
+		);
+		expect(reminder?.payloadSchema).toMatchObject({
+			required: ["orderId", "pickupDeadline"],
+			additionalProperties: false,
+		});
+		expect(reminder?.steps.map((step) => step.type)).toEqual([
+			"in_app",
+			"push",
+		]);
+		const late = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "shipment-late",
+		);
+		expect(late?.payloadSchema).toMatchObject({
+			required: ["shipmentId", "orderNumber"],
+			additionalProperties: false,
+		});
+		expect(late?.steps.map((step) => step.type)).toEqual(["in_app", "push"]);
+	});
+
+	it("routes the buyer reminder to the purchase and the late alert to seller orders", () => {
+		expect(
+			buildExpoPushData("shipment-pickup-reminder", {
+				orderId: "o-1",
+				pickupDeadline: "2026-10-12T00:00:00.000Z",
+			}),
+		).toEqual({ orderId: "o-1", url: "/purchases/o-1" });
+		expect(
+			buildExpoPushData("shipment-late", {
+				shipmentId: "shp-1",
+				orderNumber: "ORD-1",
+			}),
+		).toEqual({ shipmentId: "shp-1", url: "/seller/orders" });
+	});
+
+	it("covers every event the delivery job notifiers trigger", () => {
+		const ids = new Set(WORKFLOWS.map((workflow) => workflow.workflowId));
+		for (const event of ["shipment-pickup-reminder", "shipment-late"]) {
+			expect(ids.has(event)).toBe(true);
+		}
+	});
+});
+
 describe("P8 resale-link workflows", () => {
 	it("declares request, decision, and suspension workflows with explicit payload contracts", () => {
 		const expected = {

@@ -68,6 +68,9 @@ export function buildExpoPushData(
 				? { orderId, url: `/seller/orders/${orderId}` }
 				: undefined;
 		}
+		case "shipment-pickup-reminder":
+			return orderId ? { orderId, url: `/purchases/${orderId}` } : undefined;
+		case "shipment-late":
 		case "shipment-return-initiated":
 			return shipmentId ? { shipmentId, url: "/seller/orders" } : undefined;
 		case "delivery-settings-incomplete":

@@ -2464,6 +2464,72 @@ const workflowSpecs: WorkflowSpec[] = [
 	{
 		channels: { inApp: true, push: true },
 		definition: {
+			name: "Shipment Pickup Reminder",
+			description:
+				"Reminds the buyer to collect an order before its pickup deadline.",
+			workflowId: "shipment-pickup-reminder",
+			tags: ["shipment", "delivery"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					pickupDeadline: stringProperty("Pickup deadline, ISO date"),
+				},
+				["orderId", "pickupDeadline"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Retirez votre commande / Collect your order",
+					body: "Votre commande vous attend. Retirez-la avant le {{payload.pickupDeadline}}. / Your order is waiting. Collect it before {{payload.pickupDeadline}}.",
+					redirect: redirect("/purchases/{{payload.orderId}}"),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Retirez votre commande / Collect your order",
+					body: "Votre commande doit être retirée avant le {{payload.pickupDeadline}}. / Your order must be collected before {{payload.pickupDeadline}}.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shipment Late",
+			description:
+				"Tells the fulfilling shop's order managers a shipment is past its promised date.",
+			workflowId: "shipment-late",
+			tags: ["shipment", "delivery"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shipmentId: stringProperty("Shipment identifier"),
+					orderNumber: stringProperty("Human-readable order number"),
+				},
+				["shipmentId", "orderNumber"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Livraison en retard / Shipment late",
+					body: "La commande {{payload.orderNumber}} dépasse la date de livraison promise. / Order {{payload.orderNumber}} is past its promised delivery date.",
+					redirect: redirect("/seller/orders"),
+					data: { shipmentId: "{{payload.shipmentId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Livraison en retard / Shipment late",
+					body: "La commande {{payload.orderNumber}} est en retard. / Order {{payload.orderNumber}} is late.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
 			name: "Delivery Settings Incomplete",
 			description:
 				"Prompts the shop owner to finish migrating delivery settings.",
