@@ -2011,6 +2011,7 @@ export interface ReturnCase {
     deductionRespondBy?: string | null;
     refundBy?: string | null;
     refundOverdueNotifiedAt?: string | null;
+    refundOverdueEscalatedAt?: string | null;
   };
   shippedAt?: string | null;
   receivedAt?: string | null;
@@ -5839,6 +5840,7 @@ export interface ReturnCasesSelect<T extends boolean = true> {
         deductionRespondBy?: T;
         refundBy?: T;
         refundOverdueNotifiedAt?: T;
+        refundOverdueEscalatedAt?: T;
       };
   shippedAt?: T;
   receivedAt?: T;

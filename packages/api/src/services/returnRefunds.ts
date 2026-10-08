@@ -1,5 +1,6 @@
 import type { Payload, PayloadRequest } from "payload";
 import { can, resolveShopRole } from "../access/shopRoles";
+import { getReturnSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -21,7 +22,9 @@ import { findActiveHold, releaseHold } from "./payoutHolds";
 import { adjustResellerCommissionForRefund } from "./purchaseOrders";
 import { requestRefund } from "./refunds";
 import { moveCase } from "./returns";
+import { recordRiskSignal } from "./riskSignals";
 import type { ServiceUser } from "./shops";
+import { addStrike } from "./strikes";
 
 type SellerRefundMethod = NonNullable<
 	NonNullable<ReturnCase["refund"]>["sellerProof"]
@@ -437,6 +440,118 @@ export async function contestRefund(
 	);
 }
 
+const DAY_MS = 86_400_000;
+const OVERDUE_REMINDER_DAYS = 3;
+const OVERDUE_ESCALATION_DAYS = 30;
+
+/**
+ * A seller-direct refund still without proof past `refundBy`: one strike, one
+ * high signal (the moderation queue item) and a notice to both parties, then
+ * a reminder every three days; thirty days past, a second signal raises the
+ * same queue item. Stamps on the case make every step run once.
+ */
+export async function handleRefundOverdue(
+	req: PayloadRequest,
+	kase: ReturnCase,
+	now: Date,
+): Promise<void> {
+	const refundBy = kase.deadlines?.refundBy;
+	if (
+		!refundBy ||
+		Date.parse(refundBy) > now.getTime() ||
+		kase.refund?.sellerProof?.evidence
+	) {
+		return;
+	}
+	const shopId = relationId(kase.shop);
+	if (!shopId) return;
+	const caseId = String(kase.id);
+	const lastNoticeAt = kase.deadlines?.refundOverdueNotifiedAt;
+	const escalated = kase.deadlines?.refundOverdueEscalatedAt;
+	const firstNotice = !lastNoticeAt;
+	const reminderDue =
+		lastNoticeAt !== undefined &&
+		lastNoticeAt !== null &&
+		now.getTime() - Date.parse(lastNoticeAt) >= OVERDUE_REMINDER_DAYS * DAY_MS;
+	const escalate =
+		!escalated &&
+		now.getTime() - Date.parse(refundBy) >= OVERDUE_ESCALATION_DAYS * DAY_MS;
+	if (!firstNotice && !reminderDue && !escalate) return;
+
+	if (firstNotice) {
+		await addStrike(
+			req,
+			{
+				shop: shopId,
+				kind: "refund_overdue",
+				sourceType: "return-case",
+				sourceId: caseId,
+			},
+			now,
+		);
+	}
+	if (firstNotice || escalate) {
+		await recordRiskSignal(req, {
+			subjectType: "shop",
+			subjectId: shopId,
+			signal: "refund_overdue",
+			sourceType: "return-case",
+			sourceId: escalate && !firstNotice ? `${caseId}:escalated` : caseId,
+			occurredAt: now,
+		});
+	}
+	await req.payload.update({
+		collection: "return-cases",
+		id: caseId,
+		req,
+		overrideAccess: true,
+		data: {
+			deadlines: {
+				...kase.deadlines,
+				...(firstNotice || reminderDue
+					? { refundOverdueNotifiedAt: now.toISOString() }
+					: {}),
+				...(escalate ? { refundOverdueEscalatedAt: now.toISOString() } : {}),
+			},
+		},
+	});
+	if (firstNotice || reminderDue) {
+		const notify = () => notifyRefundOverdue(req, kase);
+		if (!onCommit(commitContextOf(req), notify)) await notify();
+	}
+}
+
+/**
+ * The buyer never answered a seller's proof: after the configured silence the
+ * refund counts as confirmed and the case closes on the system's authority.
+ */
+export async function handleCodConfirmSilence(
+	req: PayloadRequest,
+	kase: ReturnCase,
+	now: Date,
+): Promise<boolean> {
+	const proof = kase.refund?.sellerProof;
+	if (
+		kase.status !== "refund_pending" ||
+		kase.refund?.channel !== "seller_direct" ||
+		kase.refund.contestedAt ||
+		!proof?.evidence ||
+		!proof.submittedAt ||
+		!(proof.transactionId || proof.method === "cash")
+	) {
+		return false;
+	}
+	const { codRefundConfirmSilenceDays } = await getReturnSettings(req.payload);
+	if (
+		now.getTime() - Date.parse(proof.submittedAt) <
+		codRefundConfirmSilenceDays * DAY_MS
+	) {
+		return false;
+	}
+	await finishReturnRefund(req, kase, "system", undefined, now);
+	return true;
+}
+
 export async function advanceReturnRefunds(
 	payload: Payload,
 	now = new Date(),
@@ -462,25 +577,9 @@ export async function advanceReturnRefunds(
 				req,
 			});
 			if (kase.status !== "refund_pending") return "none";
-			if (
-				kase.deadlines?.refundBy &&
-				Date.parse(kase.deadlines.refundBy) <= now.getTime() &&
-				!kase.deadlines.refundOverdueNotifiedAt
-			) {
-				await req.payload.update({
-					collection: "return-cases",
-					id,
-					req,
-					overrideAccess: true,
-					data: {
-						deadlines: {
-							...kase.deadlines,
-							refundOverdueNotifiedAt: now.toISOString(),
-						},
-					},
-				});
-				const notify = () => notifyRefundOverdue(req, kase);
-				if (!onCommit(commitContextOf(req), notify)) await notify();
+			if (kase.refund?.channel === "seller_direct") {
+				if (await handleCodConfirmSilence(req, kase, now)) return "closed";
+				await handleRefundOverdue(req, kase, now);
 			}
 			if (!kase.refund?.channel || !kase.refund.providerRefund) {
 				const refund = await executeRefund(req, kase);

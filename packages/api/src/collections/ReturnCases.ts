@@ -175,6 +175,11 @@ export const ReturnCases: CollectionConfig = {
 					type: "date",
 					admin: { hidden: true },
 				},
+				{
+					name: "refundOverdueEscalatedAt",
+					type: "date",
+					admin: { hidden: true },
+				},
 			],
 		},
 		{ name: "shippedAt", type: "date" },
