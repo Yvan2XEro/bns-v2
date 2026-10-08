@@ -23,6 +23,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY packages/chat-client-sdk ./packages/chat-client-sdk
 COPY packages/biome-config ./packages/biome-config
 COPY packages/api/src/payload-types.ts ./packages/api/src/payload-types.ts
+COPY packages/api/src/contracts ./packages/api/src/contracts
+COPY packages/api/src/types ./packages/api/src/types
+# Self-contained pure helpers the web value-imports; anything else from api/src is type-only.
+COPY packages/api/src/lib/launchCities.ts ./packages/api/src/lib/launchCities.ts
+COPY packages/api/src/lib/delivery/eta.ts ./packages/api/src/lib/delivery/eta.ts
 COPY packages/web ./packages/web
 
 WORKDIR /app/packages/web
