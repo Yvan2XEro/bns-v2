@@ -14,11 +14,12 @@ import {
 	notifyRefundOverdue,
 	notifyRefundProofSubmitted,
 } from "./caseNotifications";
+import { issueCommissionCredit } from "./commission";
 import { openRefundContestDispute } from "./disputes";
 import { applyReservedTransition } from "./orders/transitions";
 import { findActiveHold, releaseHold } from "./payoutHolds";
-import { requestRefund } from "./refunds";
 import { adjustResellerCommissionForRefund } from "./purchaseOrders";
+import { requestRefund } from "./refunds";
 import { moveCase } from "./returns";
 import type { ServiceUser } from "./shops";
 
@@ -193,6 +194,17 @@ async function finishReturnRefund(
 	});
 	const order = await orderForCase(req, kase);
 	const orderId = String(order.id);
+	const disputeId = relationId(kase.dispute);
+	await issueCommissionCredit(
+		req,
+		{
+			order,
+			refundedGoods: Number(kase.refund?.breakdown?.goods ?? 0),
+			sourceType: disputeId ? "dispute" : "return-case",
+			sourceId: disputeId ?? String(kase.id),
+		},
+		now,
+	);
 	const [activeCases, dispute, hold] = await Promise.all([
 		req.payload.find({
 			collection: "return-cases",

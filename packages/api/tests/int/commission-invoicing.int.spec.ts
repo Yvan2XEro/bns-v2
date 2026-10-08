@@ -7,6 +7,7 @@ import { issueApplicationFeeCommissionInvoice } from "../../src/services/buyerFe
 import {
 	applyCommissionSettlement,
 	enforceOverdue,
+	issueCommissionCredit,
 	issueInvoicesForWeek,
 	payInvoice,
 	waiveInvoice,
@@ -579,5 +580,200 @@ describe("waiveInvoice", () => {
 		await expect(
 			waiveInvoice(payload, { id: "u-1", role: "user" }, "inv-1", "note"),
 		).rejects.toMatchObject({ code: "moderation.forbidden" });
+	});
+});
+
+describe("issueCommissionCredit", () => {
+	// Lines accrue this week; the weekly run invoices them the week after.
+	const NEXT_WEEK = new Date(NOW.getTime() + 7 * DAY_MS);
+	const codOrder = (id: string) => ({
+		id,
+		orderNumber: `BNS-${id}`,
+		paymentMethod: "cod",
+	});
+	const source = (refundedGoods: number, sourceId = "rc-1") => ({
+		sourceType: "return-case" as const,
+		sourceId,
+		refundedGoods,
+	});
+	const credit = (
+		payload: FakePayload,
+		order: Doc,
+		input: ReturnType<typeof source>,
+	) =>
+		withTransaction(payload, (req) =>
+			issueCommissionCredit(
+				req,
+				{ ...input, order: order as unknown as Order },
+				NOW,
+			),
+		);
+
+	it("nets an uninvoiced charge on the same weekly invoice: 3 200 - 1 200 = 2 000 HT", async () => {
+		const payload = world({
+			orders: [codOrder("o-1")],
+			"commission-lines": [chargeLine({ baseAmount: 40_000, amount: 3_200 })],
+		});
+
+		const line = await credit(payload, codOrder("o-1"), source(15_000));
+		const result = await issueInvoicesForWeek(payload, NEXT_WEEK);
+
+		expect(line).toMatchObject({
+			kind: "credit",
+			amount: 1_200,
+			baseAmount: 15_000,
+			sourceType: "return-case",
+			sourceId: "rc-1",
+			status: "open",
+		});
+		expect(invoicesOf(payload)).toHaveLength(1);
+		expect(invoicesOf(payload)[0]).toMatchObject({
+			id: result.issued[0],
+			commissionTotal: 2_000,
+			vatAmount: 385,
+			totalDue: 2_385,
+		});
+		expect(invoicesOf(payload)[0].lines).toHaveLength(2);
+	});
+
+	it("a fully refunded COD order's weekly invoice carries the credit", async () => {
+		const payload = world({
+			orders: [codOrder("o-1"), codOrder("o-2")],
+			"commission-lines": [
+				chargeLine({ baseAmount: 45_000, amount: 3_600 }),
+				chargeLine({
+					id: "cl-2",
+					order: "o-2",
+					baseAmount: 40_000,
+					amount: 3_200,
+				}),
+			],
+		});
+
+		await credit(payload, codOrder("o-1"), source(45_000));
+		await issueInvoicesForWeek(payload, NEXT_WEEK);
+
+		expect(linesOf(payload).filter((l) => l.kind === "credit")).toHaveLength(1);
+		expect(invoicesOf(payload)[0]).toMatchObject({
+			commissionTotal: 3_200,
+			vatAmount: 616,
+		});
+		expect(linesOf(payload).find((l) => l.kind === "credit")).toMatchObject({
+			amount: 3_600,
+			status: "invoiced",
+			invoice: invoicesOf(payload)[0].id,
+		});
+	});
+
+	it("writes a series-A credit note against a paid invoice at that invoice's rate", async () => {
+		const payload = world({
+			orders: [codOrder("o-1")],
+			"commission-invoices": [
+				{
+					id: "inv-1",
+					invoiceNumber: "BNS-C-2026-000099",
+					shop: "s-1",
+					status: "paid",
+					kind: "invoice",
+					vatRateBps: 1_925,
+				},
+			],
+			"commission-lines": [
+				chargeLine({
+					baseAmount: 40_000,
+					amount: 3_200,
+					status: "invoiced",
+					invoice: "inv-1",
+				}),
+			],
+		});
+
+		await credit(payload, codOrder("o-1"), source(15_000));
+
+		const note = invoicesOf(payload).find((i) => i.kind === "credit_note");
+		const creditLine = linesOf(payload).find((l) => l.kind === "credit");
+		expect(note).toMatchObject({
+			kind: "credit_note",
+			invoiceNumber: "BNS-A-2026-000001",
+			creditsInvoice: "inv-1",
+			sourceType: "return-case",
+			sourceId: "rc-1",
+			shop: "s-1",
+			commissionTotal: 1_200,
+			vatRateBps: 1_925,
+			vatAmount: 231,
+			lines: [creditLine?.id],
+		});
+
+		const next = await issueInvoicesForWeek(payload, NEXT_WEEK);
+		expect(next.issued).toEqual([]);
+		expect(next.netted).toHaveLength(1);
+		expect(linesOf(payload).find((l) => l.kind === "credit")?.status).toBe(
+			"invoiced",
+		);
+	});
+
+	it("takes the VAT rate from the credited invoice, not from today's settings", async () => {
+		const payload = world({
+			orders: [codOrder("o-1")],
+			"commission-invoices": [
+				{
+					id: "inv-1",
+					invoiceNumber: "BNS-C-2026-000099",
+					shop: "s-1",
+					status: "issued",
+					kind: "invoice",
+					vatRateBps: 1_000,
+				},
+			],
+			"commission-lines": [
+				chargeLine({
+					baseAmount: 40_000,
+					amount: 3_200,
+					status: "invoiced",
+					invoice: "inv-1",
+				}),
+			],
+		});
+
+		await credit(payload, codOrder("o-1"), source(15_000));
+
+		expect(
+			invoicesOf(payload).find((i) => i.kind === "credit_note"),
+		).toMatchObject({ vatRateBps: 1_000, vatAmount: 120 });
+	});
+
+	it("is idempotent per source and never credits past the charge", async () => {
+		const payload = world({
+			orders: [codOrder("o-1")],
+			"commission-lines": [chargeLine({ baseAmount: 40_000, amount: 3_200 })],
+		});
+
+		await credit(payload, codOrder("o-1"), source(15_000));
+		await credit(payload, codOrder("o-1"), source(15_000));
+		expect(linesOf(payload).filter((l) => l.kind === "credit")).toHaveLength(1);
+
+		await credit(payload, codOrder("o-1"), source(40_000, "rc-2"));
+		const credits = linesOf(payload).filter((l) => l.kind === "credit");
+		expect(credits.map((l) => l.amount)).toEqual([1_200, 2_000]);
+	});
+
+	it("leaves a protected order to P5's ledger", async () => {
+		const payload = world({
+			orders: [{ ...codOrder("o-1"), paymentMethod: "mobile_money" }],
+			"commission-lines": [
+				chargeLine({ paymentMethod: "mobile_money", baseAmount: 40_000 }),
+			],
+		});
+
+		const line = await credit(
+			payload,
+			{ ...codOrder("o-1"), paymentMethod: "mobile_money" },
+			source(40_000),
+		);
+
+		expect(line).toBeNull();
+		expect(linesOf(payload).filter((l) => l.kind === "credit")).toHaveLength(0);
+		expect(invoicesOf(payload)).toHaveLength(0);
 	});
 });

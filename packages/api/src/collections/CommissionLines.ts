@@ -80,6 +80,15 @@ export const CommissionLines: CollectionConfig = {
 			relationTo: "commission-invoices",
 		},
 		{ name: "accruedAt", type: "date" },
+		{
+			name: "sourceType",
+			type: "select",
+			options: ["dispute", "return-case"].map((value) => ({
+				label: value,
+				value,
+			})),
+		},
+		{ name: "sourceId", type: "text", index: true },
 	],
 	timestamps: true,
 };

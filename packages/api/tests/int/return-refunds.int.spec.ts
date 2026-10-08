@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { registerResaleAdjuster } from "../../src/lib/resale";
 import { withTransaction } from "../../src/lib/transactions";
 import { notifyRefundOverdue } from "../../src/services/caseNotifications";
+import { issueInvoicesForWeek } from "../../src/services/commission";
 import { adjustResellerCommission } from "../../src/services/purchaseOrders";
-import { registerResaleAdjuster } from "../../src/lib/resale";
 import {
 	advanceReturnRefunds,
 	confirmRefund,
@@ -125,9 +126,7 @@ describe("executeRefund", () => {
 
 		expect(payload.store["reseller-commissions"]?.[0]).toMatchObject({
 			amount: 900,
-			adjustments: [
-				{ source: "return", sourceId: "return-1", delta: -100 },
-			],
+			adjustments: [{ source: "return", sourceId: "return-1", delta: -100 }],
 		});
 	});
 
@@ -433,5 +432,91 @@ describe("seller-direct return refunds", () => {
 		expect(payload.store["order-events"]?.[0]?.type).toBe(
 			"order.return_refunded",
 		);
+	});
+
+	it("credits the commission on closing, so the weekly invoice carries it", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-10-01T09:00:00.000Z"));
+		const accruedAt = "2026-09-28T09:00:00.000Z";
+		const payload = fakePayload({
+			shops: [{ id: "shop-1", name: "Shop", handle: "shop" }],
+			orders: [
+				{
+					id: "order-1",
+					orderNumber: "BNS-1",
+					buyer: "buyer-1",
+					shop: "shop-1",
+					status: "delivered",
+					paymentMethod: "cod",
+					paymentStatus: "cod_collected",
+				},
+			],
+			"return-cases": [
+				{
+					id: "return-1",
+					number: "RET-1",
+					basis: "withdrawal",
+					order: "order-1",
+					shop: "shop-1",
+					buyer: "buyer-1",
+					openedByType: "buyer",
+					status: "refund_pending",
+					refund: {
+						amount: 40_000,
+						channel: "seller_direct",
+						breakdown: { goods: 40_000 },
+						sellerProof: { evidence: "proof-1" },
+					},
+				},
+			],
+			"commission-lines": [
+				{
+					id: "cl-1",
+					shop: "shop-1",
+					order: "order-1",
+					kind: "charge",
+					paymentMethod: "cod",
+					baseAmount: 40_000,
+					amount: 3_200,
+					status: "open",
+					accruedAt,
+				},
+				{
+					id: "cl-2",
+					shop: "shop-1",
+					order: "order-2",
+					kind: "charge",
+					paymentMethod: "cod",
+					baseAmount: 45_000,
+					amount: 3_600,
+					status: "open",
+					accruedAt,
+				},
+			],
+			"commission-invoices": [],
+			sequences: [],
+			"order-events": [],
+			"payout-holds": [],
+		});
+
+		await confirmRefund(payload, { id: "buyer-1", role: "user" }, "return-1");
+		const issued = await issueInvoicesForWeek(
+			payload,
+			new Date("2026-10-06T09:00:00.000Z"),
+		);
+
+		expect(
+			payload.store["commission-lines"]?.find((l) => l.kind === "credit"),
+		).toMatchObject({
+			order: "order-1",
+			amount: 3_200,
+			sourceType: "return-case",
+			sourceId: "return-1",
+		});
+		expect(payload.store["commission-invoices"]?.[0]).toMatchObject({
+			id: issued.issued[0],
+			commissionTotal: 3_600,
+			vatAmount: 693,
+		});
 	});
 });

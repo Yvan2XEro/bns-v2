@@ -19,6 +19,7 @@ import * as migration_20261004_000300_p7_default_delivery_origin from "./2026100
 import * as migration_20261004_000400_p7_delivery_data from "./20261004_000400_p7_delivery_data";
 import * as migration_20261004_000500_p8_resale_listing_index from "./20261004_000500_p8_resale_listing_index";
 import * as migration_20261004_000600_p9_listing_view_flushes from "./20261004_000600_p9_listing_view_flushes";
+import * as migration_20261008_000000_p6_credit_note_index from "./20261008_000000_p6_credit_note_index";
 
 export const migrations = [
 	{
@@ -125,5 +126,10 @@ export const migrations = [
 		up: migration_20261004_000600_p9_listing_view_flushes.up,
 		down: migration_20261004_000600_p9_listing_view_flushes.down,
 		name: "20261004_000600_p9_listing_view_flushes",
+	},
+	{
+		up: migration_20261008_000000_p6_credit_note_index.up,
+		down: migration_20261008_000000_p6_credit_note_index.down,
+		name: "20261008_000000_p6_credit_note_index",
 	},
 ];

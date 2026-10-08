@@ -1869,6 +1869,8 @@ export interface CommissionLine {
   status?: ('open' | 'invoiced' | 'waived') | null;
   invoice?: (string | null) | CommissionInvoice;
   accruedAt?: string | null;
+  sourceType?: ('dispute' | 'return-case') | null;
+  sourceId?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -5753,6 +5755,8 @@ export interface CommissionLinesSelect<T extends boolean = true> {
   status?: T;
   invoice?: T;
   accruedAt?: T;
+  sourceType?: T;
+  sourceId?: T;
   updatedAt?: T;
   createdAt?: T;
 }

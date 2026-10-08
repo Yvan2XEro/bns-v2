@@ -2,12 +2,14 @@ import type { Payload, PayloadRequest } from "payload";
 import { isModerator } from "../access/roles";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
+import { commissionCredit } from "../lib/caseMath";
 import { ERROR_CODES } from "../lib/errors";
 import {
 	commissionForLine,
 	invoiceTotals,
 	netting,
 	sumCommission,
+	vatOf,
 	weekBoundsDouala,
 } from "../lib/orderMath";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
@@ -185,8 +187,7 @@ export async function accrueCommission(
 		const amount = purchaseOrder.platformCommission;
 		if (amount <= 0) return null;
 		const baseAmount = purchaseOrder.items.reduce(
-			(total, poItem) =>
-				total + poItem.resellerUnitPrice * poItem.quantity,
+			(total, poItem) => total + poItem.resellerUnitPrice * poItem.quantity,
 			0,
 		);
 		let created: CommissionLine;
@@ -1198,3 +1199,128 @@ export async function getBillingView(
 }
 
 export { renderInvoiceHtml } from "../lib/commissionInvoiceDocument";
+
+export const COMMISSION_REFUND_CREDIT_REASON = "commission_refund_credit";
+
+export interface CommissionCreditSource {
+	order: Order;
+	refundedGoods: number;
+	sourceType: "dispute" | "return-case";
+	sourceId: string;
+}
+
+/**
+ * Hands back the commission share of refunded goods on a COD order, once per
+ * source. An uninvoiced charge is netted by the next weekly run; an invoiced
+ * one gets a series-A credit note at the invoice's own VAT rate, and the
+ * credit line nets on the following invoice. A protected order's commission
+ * is reversed by P5's ledger, so it never gets a second credit here.
+ */
+export async function issueCommissionCredit(
+	req: PayloadRequest,
+	input: CommissionCreditSource,
+	now = new Date(),
+): Promise<CommissionLine | null> {
+	if (input.order.paymentMethod !== "cod") return null;
+	const orderId = String(input.order.id);
+	const charge = await findExistingCharge(req, orderId);
+	if (!charge || !charge.baseAmount || !charge.shop) return null;
+
+	const { docs: existing } = await req.payload.find({
+		collection: "commission-lines",
+		where: {
+			and: [
+				{ order: { equals: orderId } },
+				{ kind: { equals: "credit" } },
+				{ reason: { equals: COMMISSION_REFUND_CREDIT_REASON } },
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	const replay = existing.find(
+		(line) =>
+			line.sourceType === input.sourceType && line.sourceId === input.sourceId,
+	);
+	if (replay) return replay;
+
+	const chargeInvoiceId =
+		charge.status === "invoiced" ? relationId(charge.invoice) : null;
+	const original = chargeInvoiceId
+		? await req.payload.findByID({
+				collection: "commission-invoices",
+				id: chargeInvoiceId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+		: null;
+	const settings = await getOrderSettings(req.payload);
+	const share = commissionCredit({
+		commissionHt: charge.amount,
+		refundedGoods: Math.min(input.refundedGoods, charge.baseAmount),
+		commissionBase: charge.baseAmount,
+		vatRateBps: original?.vatRateBps ?? settings.vatRateBps,
+	});
+	const alreadyCredited = existing.reduce((sum, line) => sum + line.amount, 0);
+	const creditHt = Math.min(share.creditHt, charge.amount - alreadyCredited);
+	if (creditHt <= 0) return null;
+
+	const line = await req.payload.create({
+		collection: "commission-lines",
+		req,
+		overrideAccess: true,
+		data: {
+			shop: relationId(charge.shop) ?? "",
+			order: orderId,
+			kind: "credit",
+			paymentMethod: "cod",
+			baseAmount: Math.min(input.refundedGoods, charge.baseAmount),
+			amount: creditHt,
+			reason: COMMISSION_REFUND_CREDIT_REASON,
+			status: "open",
+			accruedAt: now.toISOString(),
+			sourceType: input.sourceType,
+			sourceId: input.sourceId,
+		},
+	});
+	if (original) {
+		const vatRateBps = original.vatRateBps ?? settings.vatRateBps;
+		const vatAmount = vatOf(creditHt, vatRateBps);
+		const shop = await req.payload.findByID({
+			collection: "shops",
+			id: relationId(charge.shop) ?? "",
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		await req.payload.create({
+			collection: "commission-invoices",
+			req,
+			overrideAccess: true,
+			data: {
+				kind: "credit_note",
+				invoiceNumber: await nextInvoiceNumber(req, "A", now),
+				creditsInvoice: String(original.id),
+				sourceType: input.sourceType,
+				sourceId: input.sourceId,
+				shop: relationId(charge.shop) ?? "",
+				lines: [String(line.id)],
+				ordersCount: 1,
+				commissionTotal: creditHt,
+				vatRateBps,
+				vatAmount,
+				totalDue: 0,
+				currency: "XAF",
+				status: "void",
+				issuedAt: now.toISOString(),
+				sellerSnapshot: sellerSnapshotOf(shop),
+				issuerSnapshot: PLATFORM_ISSUER,
+			},
+		});
+	}
+	return line;
+}
