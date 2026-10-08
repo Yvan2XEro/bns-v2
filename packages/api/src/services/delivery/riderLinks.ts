@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Payload, PayloadRequest } from "payload";
+import type { RiderLinkView } from "../../contracts/shipments";
 import type { Coordinates } from "../../lib/delivery/geo";
 import {
 	getDeliverySettings,
@@ -34,24 +35,7 @@ const RATE_WINDOWS = {
 	ip: { name: "rider-link-ip", limit: 60, windowSeconds: 3600 },
 } as const;
 
-export interface RiderLinkView {
-	shopName: string;
-	shipmentNumber: string;
-	origin: { landmark: string | null };
-	destination: {
-		recipientFirstName: string;
-		phone: string | null;
-		city: string;
-		district: string | null;
-		landmark: string | null;
-		gps: { lat: number; lng: number } | null;
-		mapsUrl: string | null;
-	};
-	expectedCod: number | null;
-	items: Array<{ title: string; quantity: number }>;
-	attempts: Array<{ number: number; reason: string; at: string }>;
-	allowedActions: Array<"picked_up" | "attempt" | "handover" | "photo">;
-}
+export type { RiderLinkView };
 
 function hash(value: string): string {
 	return createHash("sha256").update(value).digest("hex");

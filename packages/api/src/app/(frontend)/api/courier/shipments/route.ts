@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { CourierShipmentRow } from "@/contracts/shipments";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
 import { listCourierShipments } from "@/services/delivery/courierShipments";
@@ -31,17 +32,19 @@ export async function GET(request: Request) {
 			parsed.data,
 		);
 		return Response.json({
-			rows: result.docs.map((shipment) => ({
-				id: String(shipment.id),
-				shipmentNumber: shipment.shipmentNumber,
-				status: shipment.status,
-				courierId:
-					typeof shipment.courier === "string" ? shipment.courier : null,
-				origin: shipment.origin,
-				destination: shipment.destination,
-				codCollection: shipment.codCollection ?? null,
-				rider: shipment.rider ?? null,
-			})),
+			rows: result.docs.map(
+				(shipment): CourierShipmentRow => ({
+					id: String(shipment.id),
+					shipmentNumber: shipment.shipmentNumber,
+					status: shipment.status,
+					courierId:
+						typeof shipment.courier === "string" ? shipment.courier : null,
+					origin: shipment.origin,
+					destination: shipment.destination,
+					codCollection: shipment.codCollection ?? null,
+					rider: shipment.rider ?? null,
+				}),
+			),
 			nextCursor: result.nextCursor,
 		});
 	} catch (error) {

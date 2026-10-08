@@ -98,3 +98,34 @@ export type ShipmentView =
 	| CourierShipmentView;
 
 export type ShipmentStepStatus = Shipment["status"];
+
+export interface RiderLinkView {
+	shopName: string;
+	shipmentNumber: string;
+	origin: { landmark: string | null };
+	destination: {
+		recipientFirstName: string;
+		phone: string | null;
+		city: string;
+		district: string | null;
+		landmark: string | null;
+		gps: { lat: number; lng: number } | null;
+		mapsUrl: string | null;
+	};
+	expectedCod: number | null;
+	items: Array<{ title: string; quantity: number }>;
+	attempts: Array<{ number: number; reason: string; at: string }>;
+	allowedActions: Array<"picked_up" | "attempt" | "handover" | "photo">;
+}
+
+/** One row of `GET /api/courier/shipments`. */
+export interface CourierShipmentRow {
+	id: string;
+	shipmentNumber: string;
+	status: Shipment["status"];
+	courierId: string | null;
+	origin: Shipment["origin"];
+	destination: Shipment["destination"];
+	codCollection: Shipment["codCollection"] | null;
+	rider: Shipment["rider"] | null;
+}

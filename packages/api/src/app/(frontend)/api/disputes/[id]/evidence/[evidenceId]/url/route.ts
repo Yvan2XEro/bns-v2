@@ -18,9 +18,15 @@ export async function POST(
 	if (ctx instanceof Response) return ctx;
 	try {
 		return Response.json(
-			await evidenceUrl(ctx.payload, ctx.user, parsed.data.evidenceId, {
-				userAgent: request.headers.get("user-agent") ?? undefined,
-			}, parsed.data.id),
+			await evidenceUrl(
+				ctx.payload,
+				ctx.user,
+				parsed.data.evidenceId,
+				{
+					userAgent: request.headers.get("user-agent") ?? undefined,
+				},
+				parsed.data.id,
+			),
 		);
 	} catch (error) {
 		return handleServiceError("dispute:evidence-url", error);

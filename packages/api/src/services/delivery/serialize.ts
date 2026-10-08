@@ -416,6 +416,20 @@ export async function getOrderShipmentsForBuyer(
 	if (audience.kind !== "buyer") {
 		throw new ServiceError(ERROR_CODES.notFound, 404);
 	}
+	const views = await orderShipmentViews(payload, orderId, caller);
+	return views.map((view) => {
+		if (!("canReschedule" in view)) {
+			throw new ServiceError(ERROR_CODES.notFound, 404);
+		}
+		return view;
+	});
+}
+
+async function orderShipmentViews(
+	payload: Payload,
+	orderId: string,
+	caller: OrderViewer,
+): Promise<ShipmentView[]> {
 	const rows = await payload.find({
 		collection: "shipments",
 		where: { order: { equals: orderId } },
@@ -425,13 +439,20 @@ export async function getOrderShipmentsForBuyer(
 		depth: 0,
 		overrideAccess: true,
 	});
-	const views = await Promise.all(
+	return Promise.all(
 		rows.docs.map((shipment) => shipmentViewFor(payload, shipment, caller)),
 	);
-	return views.map((view) => {
-		if (!("canReschedule" in view)) {
-			throw new ServiceError(ERROR_CODES.notFound, 404);
-		}
-		return view;
-	});
+}
+
+/** The buyer's projections for the buyer, the shop projection for either shop and staff. */
+export async function getOrderShipments(
+	payload: Payload,
+	orderId: string,
+	caller: OrderViewer,
+): Promise<ShipmentView[]> {
+	const { audience } = await requireOrderAudience(payload, caller, orderId);
+	if (audience.kind === "buyer") {
+		return getOrderShipmentsForBuyer(payload, orderId, caller);
+	}
+	return orderShipmentViews(payload, orderId, caller);
 }

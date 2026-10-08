@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
-import { getOrderShipmentsForBuyer } from "@/services/delivery/serialize";
+import { getOrderShipments } from "@/services/delivery/serialize";
 
 const paramsSchema = z.object({ orderId: z.string().trim().min(1) });
 
@@ -15,11 +15,7 @@ export async function GET(
 	if (ctx instanceof Response) return ctx;
 	try {
 		return Response.json(
-			await getOrderShipmentsForBuyer(
-				ctx.payload,
-				parsed.data.orderId,
-				ctx.user,
-			),
+			await getOrderShipments(ctx.payload, parsed.data.orderId, ctx.user),
 		);
 	} catch (error) {
 		return handleServiceError("shipments:order-list", error);

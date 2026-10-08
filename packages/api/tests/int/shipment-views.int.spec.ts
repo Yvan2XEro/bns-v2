@@ -2,7 +2,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { withTransaction } from "../../src/lib/transactions";
 import { confirmShipmentRemittance } from "../../src/services/delivery/codRemittance";
-import { shipmentViewFor } from "../../src/services/delivery/serialize";
+import {
+	getOrderShipments,
+	shipmentViewFor,
+} from "../../src/services/delivery/serialize";
 import { fakePayload } from "./helpers/fakePayload";
 
 vi.mock("../../src/lib/privateFiles", () => ({
@@ -271,6 +274,45 @@ describe("shipment audience projections", () => {
 			throw new Error("buyer projection expected");
 		}
 		expect(deliveredView.rider).toBeNull();
+	});
+
+	it("lists an order's shipments as the shop projection for a member and refuses a stranger", async () => {
+		const payload = fakePayload({
+			users: [{ id: "seller-1", role: "user" }],
+			"shop-members": [
+				{
+					id: "member-1",
+					shop: "shop-1",
+					user: "seller-1",
+					role: "staff",
+					status: "active",
+				},
+			],
+			shops: [{ id: "shop-1", name: "Shop One", status: "active", level: 2 }],
+			orders: [{ id: "order-1", buyer: "buyer-1", shop: "shop-1" }],
+			shipments: [
+				{
+					id: "shipment-1",
+					shipmentNumber: "SHP-1",
+					order: "order-1",
+					storefrontShop: "shop-1",
+					fulfillingShop: "shop-1",
+					method: "seller_delivery",
+					carrier: "self",
+					status: "pending",
+					riderLink: { tokenHash: "secret-hash", createdAt: "2026-10-01" },
+				},
+			],
+		});
+		const views = await getOrderShipments(payload, "order-1", {
+			id: "seller-1",
+			role: "user",
+		});
+		expect(views.map((view) => view.shipmentNumber)).toEqual(["SHP-1"]);
+		expect(JSON.stringify(views)).not.toContain("secret-hash");
+		await expect(
+			getOrderShipments(payload, "order-1", { id: "stranger", role: "user" }),
+		).rejects.toMatchObject({ status: 404 });
 	});
 
 	it("projects shop membership without the rider token hash and reveals cost to owner", async () => {
