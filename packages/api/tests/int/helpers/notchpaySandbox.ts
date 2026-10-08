@@ -45,10 +45,16 @@ export function sandboxConfig(env: Env): SandboxConfig {
 	const [publicKey, privateKey, hashKey, inbox, channel, phone] = REQUIRED.map(
 		([name]) => env[name] as string,
 	) as [string, string, string, string, string, string];
-	if (/live/i.test(publicKey))
-		throw new Error(
-			"NOTCHPAY_PUBLIC_KEY looks like a live key; use sandbox keys",
-		);
+	for (const [name, value] of [
+		["NOTCHPAY_PUBLIC_KEY", publicKey],
+		["NOTCHPAY_PRIVATE_KEY", privateKey],
+		["NOTCHPAY_HASH_KEY", hashKey],
+	] as const) {
+		// The private key is the one that moves money; sniffing only the
+		// public key would let a live grant through beside a sandbox key.
+		if (/live/i.test(value))
+			throw new Error(`${name} looks like a live key; use sandbox keys`);
+	}
 	return {
 		publicKey,
 		privateKey,

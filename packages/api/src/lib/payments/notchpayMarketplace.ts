@@ -560,7 +560,9 @@ export class NotchPayMarketplaceProvider implements MarketplaceProvider {
 		headers: Record<string, string | undefined>,
 	): Promise<NormalisedEvent> {
 		if (!this.hashKey) {
-			throw new Error("NotchPay webhook: NOTCHPAY_HASH_KEY is not configured");
+			// A port method never throws a bare Error; an unconfigured hash key
+			// is a verification failure, not an exception path.
+			throw new WebhookSignatureError();
 		}
 		verifyNotchPaySignature(rawBody, headers, this.hashKey);
 		let raw: unknown;

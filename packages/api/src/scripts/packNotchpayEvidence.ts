@@ -49,6 +49,7 @@ interface ContractRun {
 	passed: number;
 	failed: string[];
 	skipped: string[];
+	files: string[];
 }
 
 function contractRun(vitestJsonPath: string): ContractRun {
@@ -57,8 +58,10 @@ function contractRun(vitestJsonPath: string): ContractRun {
 		isObject(parsed) && Array.isArray(parsed.testResults)
 			? parsed.testResults
 			: [];
-	const run: ContractRun = { passed: 0, failed: [], skipped: [] };
+	const run: ContractRun = { passed: 0, failed: [], skipped: [], files: [] };
 	for (const file of files) {
+		if (isObject(file) && typeof file.name === "string")
+			run.files.push(file.name);
 		const results =
 			isObject(file) && Array.isArray(file.assertionResults)
 				? file.assertionResults
@@ -107,6 +110,10 @@ export function buildNotchpayEvidence({
 	if (run.skipped.length > 0)
 		reasons.push(`skipped contract tests: ${names(run.skipped)}`);
 	if (run.passed === 0) reasons.push("the contract run has no passing test");
+	if (!run.files.some((f) => f.includes("notchpay-marketplace-contract")))
+		reasons.push(
+			"the vitest JSON does not come from notchpay-marketplace-contract.int.spec.ts",
+		);
 	if (reasons.length > 0)
 		return { refusal: `No G5 document: ${reasons.join(". ")}.` };
 

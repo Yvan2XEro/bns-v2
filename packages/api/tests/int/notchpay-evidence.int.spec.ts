@@ -55,6 +55,9 @@ function vitestJson(statuses: Status[]) {
 		JSON.stringify({
 			testResults: [
 				{
+					// The packer refuses a JSON that does not come from the
+					// contract spec, so the seeded run names it.
+					name: "tests/int/notchpay-marketplace-contract.int.spec.ts",
 					assertionResults: statuses.map((status, i) => ({
 						status,
 						fullName: `contract test ${i}`,

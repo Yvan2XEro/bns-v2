@@ -300,3 +300,32 @@ describe("the webhook inbox", () => {
 		expect(() => parseInboxLine('{"rawBody":1}')).toThrow();
 	});
 });
+
+describe("the sandbox key guard", () => {
+	const base = {
+		NOTCHPAY_PUBLIC_KEY: "pk_sandbox_1",
+		NOTCHPAY_PRIVATE_KEY: "sk_sandbox_1",
+		NOTCHPAY_HASH_KEY: "hk_sandbox_1",
+		NOTCHPAY_WEBHOOK_INBOX: "https://inbox.test",
+		NOTCHPAY_TEST_CHANNEL: "cm.mtn",
+		NOTCHPAY_TEST_PHONE: "+237650000001",
+	};
+
+	it("refuses a live-looking PUBLIC key, naming it", () => {
+		expect(() =>
+			sandboxConfig({ ...base, NOTCHPAY_PUBLIC_KEY: "pk_live_9" }),
+		).toThrow("NOTCHPAY_PUBLIC_KEY looks like a live key");
+	});
+
+	it("refuses a live-looking PRIVATE key beside a sandbox public one — the key that moves money", () => {
+		expect(() =>
+			sandboxConfig({ ...base, NOTCHPAY_PRIVATE_KEY: "sk_live_9" }),
+		).toThrow("NOTCHPAY_PRIVATE_KEY looks like a live key");
+	});
+
+	it("refuses a live-looking HASH key", () => {
+		expect(() =>
+			sandboxConfig({ ...base, NOTCHPAY_HASH_KEY: "hk_live_9" }),
+		).toThrow("NOTCHPAY_HASH_KEY looks like a live key");
+	});
+});
