@@ -131,6 +131,7 @@ import {
 	sweepBuyerFeeInvoicesTask,
 	syncConnectedAccountTask,
 } from "./jobs";
+import { registerConfiguredAdapters } from "./lib/payments/registerAdapters";
 import { registerResaleAdjuster } from "./lib/resale";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
@@ -148,6 +149,7 @@ const dirname = path.dirname(filename);
 // P3's reaction to a level change. Explicit rather than a module side effect,
 // so nothing depends on which file happened to be imported first.
 registerShopTeamLevelListener();
+registerConfiguredAdapters();
 registerShipmentOrderEvents();
 registerPurchaseOrderOrderEvents();
 registerResaleAdjuster({ adjustResellerCommission });
