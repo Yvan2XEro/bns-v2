@@ -481,10 +481,10 @@ export async function applyOutcome(
 		reason: "dispute_open",
 	});
 	let holdsReleased = false;
-	if (hold && refundId) {
+	if (hold) {
 		await releaseHold(req, String(hold.id), {
 			releasedBy: decidedBy,
-			note: `Dispute ${dispute.number} has a refund queued.`,
+			note: `Dispute ${dispute.number} resolved.`,
 		});
 		holdsReleased = true;
 	}
