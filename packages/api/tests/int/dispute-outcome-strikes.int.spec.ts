@@ -193,7 +193,7 @@ describe("strikes beyond a moderator's resolved_buyer", () => {
 
 describe("cod_refused_abuse resolved for the seller", () => {
 	const abuse = () =>
-		dispute({ reason: "cod_refused_abuse", subject: "refusal" });
+		dispute({ reason: "cod_refused_abuse", subject: "goods" });
 	const sellerWins = () =>
 		outcome({
 			outcome: "resolved_seller",

@@ -182,9 +182,9 @@ describe("the dispute_open hold at terminal resolution", () => {
 		);
 
 		expect(payload.store.refunds).toHaveLength(0);
-		expect(payload.store["return-cases"]?.[0]?.refund?.channel).toBe(
-			"seller_direct",
-		);
+		expect(payload.store["return-cases"]?.[0]).toMatchObject({
+			refund: { channel: "seller_direct" },
+		});
 		expect(holdStatus(payload)).toBe("released");
 		expect(resolved.effects?.holdsReleased).toBe(true);
 	});
@@ -209,9 +209,9 @@ describe("the stored refund breakdown", () => {
 		};
 		expect(payload.store.refunds).toHaveLength(1);
 		expect(payload.store.refunds?.[0]?.amount).toBe(43_260);
-		expect(payload.store["return-cases"]?.[0]?.refund?.breakdown).toEqual(
-			whole,
-		);
+		expect(payload.store["return-cases"]?.[0]).toMatchObject({
+			refund: { breakdown: whole },
+		});
 		expect(resolved.resolution?.breakdown).toEqual(whole);
 	});
 
