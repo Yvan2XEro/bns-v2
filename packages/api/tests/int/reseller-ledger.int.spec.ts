@@ -431,6 +431,27 @@ describe("a reseller payout across the ledger", () => {
 		});
 	});
 
+	it("a cut under a holding payout that then fails returns the net, never the gross", async () => {
+		await submit();
+		await withTransaction(payload, (req) =>
+			adjustResellerCommission(req, "purchase-order-1", -700, {
+				source: "return",
+				sourceId: "return-1",
+			}),
+		);
+		expect(await balances(payload)).toEqual({
+			payable: -700,
+			inTransit: NET,
+			providerPosition: GROSS - OFFSET - 700,
+		});
+		await apply(payload, "failed");
+		expect(await balances(payload)).toEqual({
+			payable: GROSS - 700,
+			inTransit: 0,
+			providerPosition: GROSS - 700,
+		});
+	});
+
 	it("a refund cut on a payable commission lowers payable; on a paid-out one it does not", async () => {
 		await withTransaction(payload, (req) =>
 			adjustResellerCommission(req, "purchase-order-1", -700, {

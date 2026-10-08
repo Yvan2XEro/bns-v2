@@ -45,8 +45,9 @@ export async function postCommissionPayable(
 
 /**
  * A refund or dispute cut an unpaid commission. Only an amount that was
- * posted payable can come back off it, and not while a payout holds the
- * commission: its amount already moved to in-transit with the payout.
+ * posted payable can come back off it. Under a holding payout the cut still
+ * posts: payable dips by it, so a failed payout, which returns the gross,
+ * lands on the net.
  */
 export async function postCommissionReduced(
 	req: PayloadRequest,
@@ -54,7 +55,7 @@ export async function postCommissionReduced(
 	reduction: number,
 	adjustmentKey: string,
 ): Promise<void> {
-	if (reduction <= 0 || relationId(commission.payout)) return;
+	if (reduction <= 0) return;
 	if (
 		!(await posted(req, "reseller_commission_payable", String(commission.id)))
 	) {
