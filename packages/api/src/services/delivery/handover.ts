@@ -9,6 +9,7 @@ import type { Order, Shipment } from "../../payload-types";
 import { markDelivered } from "../orders/delivery";
 import { verifyHandoverCode } from "../orders/handover";
 import { shipAcceptedOrderInTransaction } from "../orders/shipping";
+import { assertProofPhoto } from "./proofPhotos";
 import {
 	appendShipmentEvent,
 	applyShipmentTransition,
@@ -269,6 +270,9 @@ export async function handoverShipment(
 	input: HandoverProofInput,
 	actor: ShipmentActor,
 ): Promise<Shipment> {
+	if (input.photoId) {
+		await assertProofPhoto(req, shipment, input.photoId, "handover");
+	}
 	const order = await orderForShipment(req, shipment);
 	if (order.status !== "shipped" && order.status !== "accepted") {
 		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
@@ -313,6 +317,7 @@ export async function declareDelivered(
 	if (!input.photoId) {
 		throw new ServiceError(ERROR_CODES.shipmentPhotoRequired, 400);
 	}
+	await assertProofPhoto(req, shipment, input.photoId, "declaration");
 	const order = await orderForShipment(req, shipment);
 	if (order.status !== "shipped") {
 		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);

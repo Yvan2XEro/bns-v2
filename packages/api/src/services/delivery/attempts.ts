@@ -18,6 +18,7 @@ import {
 	notifyShipmentRedeliveryScheduled,
 	notifyShipmentReturnInitiated,
 } from "./notifications";
+import { assertProofPhoto } from "./proofPhotos";
 import {
 	appendShipmentEvent,
 	applyShipmentTransition,
@@ -102,6 +103,9 @@ export async function reportAttempt(
 ): Promise<Shipment> {
 	if (shipment.status !== "in_transit" && shipment.status !== "picked_up") {
 		throw new ServiceError(ERROR_CODES.shipmentInvalidTransition, 409);
+	}
+	if (input.photoId) {
+		await assertProofPhoto(req, shipment, input.photoId, "attempt");
 	}
 	const settings = await getDeliverySettings(req.payload);
 	const attempts = shipment.attempts ?? [];

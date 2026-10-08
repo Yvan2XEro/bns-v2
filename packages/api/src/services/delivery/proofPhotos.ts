@@ -1,4 +1,7 @@
 import type { File as PayloadFile, PayloadRequest } from "payload";
+import { ERROR_CODES } from "../../lib/errors";
+import { relationId } from "../../lib/relationId";
+import { ServiceError } from "../../lib/serviceError";
 import type { DeliveryProof, Shipment } from "../../payload-types";
 
 export const PROOF_PHOTO_KINDS = [
@@ -31,4 +34,29 @@ export function createSellerProofPhoto(
 			uploadedVia: "seller_app",
 		},
 	});
+}
+
+/** A photo id is only accepted when the row is this shipment's, of the right kind. */
+export async function assertProofPhoto(
+	req: PayloadRequest,
+	shipment: Shipment,
+	photoId: string,
+	kind: ProofPhotoKind,
+): Promise<void> {
+	const photo = await req.payload
+		.findByID({
+			collection: "delivery-proofs",
+			id: photoId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+	if (
+		!photo ||
+		relationId(photo.shipment) !== String(shipment.id) ||
+		photo.kind !== kind
+	) {
+		throw new ServiceError(ERROR_CODES.shipmentPhotoRequired, 400);
+	}
 }

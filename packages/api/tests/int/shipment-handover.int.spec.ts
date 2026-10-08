@@ -230,4 +230,71 @@ describe("shipment handover", () => {
 		).rejects.toBeInstanceOf(ServiceError);
 		expect(payload.store.shipments ?? []).toHaveLength(0);
 	});
+
+	describe("declaration photo ownership", () => {
+		const seller = { type: "seller" as const, id: "seller-1" };
+		const declare = (rows: Record<string, unknown>[], photoId: string) => {
+			const payload = fakePayload(
+				{
+					orders: [
+						{
+							id: orderId,
+							orderNumber: "ORD-2610-000001",
+							shop: "shop-1",
+							buyer: "buyer-1",
+							status: "shipped",
+							paymentMethod: "cod",
+							paymentStatus: "cod_pending",
+							amounts: { total: 42000 },
+							delivery: {
+								method: "seller_delivery",
+								recipientName: "Aicha",
+								phone: "+237600000099",
+							},
+							timestamps: { acceptedAt: "2026-10-04T10:00:00.000Z" },
+						},
+					],
+					shipments: [shipment],
+					"delivery-proofs": rows,
+				},
+				{ secret },
+			);
+			return {
+				payload,
+				run: () =>
+					withTransaction(payload, (req) =>
+						declareDelivered(req, shipment, { photoId }, seller),
+					),
+			};
+		};
+
+		it("refuses a dangling proof id", async () => {
+			const { payload, run } = declare([], "missing");
+			await expect(run()).rejects.toMatchObject({
+				code: ERROR_CODES.shipmentPhotoRequired,
+			});
+			expect(payload.store.shipments?.[0]?.status).toBe("in_transit");
+		});
+
+		it("refuses another shipment's proof", async () => {
+			const { payload, run } = declare(
+				[{ id: "p-old", shipment: "other-shipment", kind: "declaration" }],
+				"p-old",
+			);
+			await expect(run()).rejects.toMatchObject({
+				code: ERROR_CODES.shipmentPhotoRequired,
+			});
+			expect(payload.store.shipments?.[0]?.status).toBe("in_transit");
+		});
+
+		it("accepts this shipment's declaration proof", async () => {
+			const { payload, run } = declare(
+				[{ id: "p-ok", shipment: shipment.id, kind: "declaration" }],
+				"p-ok",
+			);
+			const result = await run();
+			expect(result.proof?.photo).toBe("p-ok");
+			expect(payload.store.shipments?.[0]?.status).toBe("delivered");
+		});
+	});
 });
