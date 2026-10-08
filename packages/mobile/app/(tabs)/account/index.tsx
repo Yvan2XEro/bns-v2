@@ -19,12 +19,14 @@ import {
 	useModerationSummary,
 } from "@/src/hooks/useModeration";
 import { useResponsive } from "@/src/hooks/useResponsive";
+import { useCourierMembership } from "@/src/hooks/useRiderShipments";
 import { useMyShop, useShopsEnabled } from "@/src/hooks/useShops";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { courierSpaceTarget } from "@/src/lib/riderShipment";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
@@ -118,6 +120,7 @@ export default function AccountScreen() {
 	// whether the row below shows a shop or the "open a shop" invite.
 	const shopsEnabled = useShopsEnabled();
 	const { ordersEnabled } = useAppConfig();
+	const courierSpace = courierSpaceTarget(useCourierMembership().data ?? []);
 	const { data: myShop } = useMyShop();
 	const ownShop = myShop?.shop ?? null;
 	const { showConfirm } = useAlert();
@@ -409,6 +412,16 @@ export default function AccountScreen() {
 										borderColor={borderColor}
 									/>
 								</>
+							) : null}
+							{courierSpace ? (
+								<MenuItem
+									icon="bicycle-outline"
+									label={t("shipmentPanel.courierSpace")}
+									sublabel={t("shipmentPanel.courierSpaceSublabel")}
+									onPress={() => router.push(courierSpace)}
+									isDark={isDark}
+									borderColor={borderColor}
+								/>
 							) : null}
 							<MenuItem
 								icon="cube-outline"
