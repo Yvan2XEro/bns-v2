@@ -230,3 +230,12 @@ or the production client and are encoded, not asked.
 - A booted config registers the live adapter whenever `.env` carries the
   three keys, so specs that need a registry-clean start must register or
   unregister explicitly (the rehearsal registers its replay adapter over it).
+
+## Gates at close (re-verified after the review fix round)
+
+API 301 files / 4324 passed / 0 failed (12 skipped: the env-gated live
+sandbox spec). Ceilings: check-types:tests 100/100, api `as never` 86/86.
+Final review APPROVED (0 blocking); its two should-fixes landed and pinned
+(every key sniffed for live grants, each with its own refusal test; the G5
+packer refuses a vitest JSON that does not come from the contract spec) and
+the bare-Error note closed with a typed refusal.
