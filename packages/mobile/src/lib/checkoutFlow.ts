@@ -124,7 +124,7 @@ export function landmarkMissingFor(
 	address: AddressInput,
 	option: DeliveryOption,
 ): boolean {
-	return option.method === "seller_delivery" && !address.landmark;
+	return option.method !== "pickup" && !address.landmark;
 }
 
 export function canPlaceOrder(state: CheckoutState): boolean {

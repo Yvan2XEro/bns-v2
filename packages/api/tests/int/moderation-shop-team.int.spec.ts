@@ -1,5 +1,15 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakePayload } from "./helpers/fakePayload";
+
+const { getPayloadMock } = vi.hoisted(() => ({ getPayloadMock: vi.fn() }));
+
+vi.mock("@payload-config", () => ({ default: {} }));
+vi.mock("payload", async (importOriginal) => ({
+	...(await importOriginal<typeof import("payload")>()),
+	getPayload: getPayloadMock,
+}));
+
+import { GET } from "../../src/app/(frontend)/api/moderation/shops/[id]/route";
 
 /**
  * The moderation shop sheet's Team section (Task 32): the shop's active
@@ -135,24 +145,18 @@ function withAuth(payload: ReturnType<typeof seed>, user: unknown) {
 }
 
 async function callRoute(payload: ReturnType<typeof seed>, shopId = "s-1") {
-	vi.resetModules();
-	vi.doMock("@payload-config", () => ({ default: {} }));
-	vi.doMock("payload", async (importOriginal) => ({
-		...(await importOriginal<typeof import("payload")>()),
-		getPayload: async () => payload,
-	}));
-	const { GET } = await import(
-		"../../src/app/(frontend)/api/moderation/shops/[id]/route"
-	);
+	getPayloadMock.mockResolvedValue(payload);
 	return GET(new Request("http://x"), {
 		params: Promise.resolve({ id: shopId }),
 	});
 }
 
+beforeEach(() => {
+	getPayloadMock.mockReset();
+});
+
 afterEach(() => {
-	vi.doUnmock("@payload-config");
-	vi.doUnmock("payload");
-	vi.resetModules();
+	getPayloadMock.mockReset();
 });
 
 describe("GET /api/moderation/shops/{id} — Team section", () => {

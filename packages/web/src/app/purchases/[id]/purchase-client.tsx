@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
+import { useAppConfig } from "~/hooks/use-app-config";
 import { availableActions } from "~/hooks/use-order-actions";
 import { usePurchase } from "~/hooks/use-purchases";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -28,6 +29,7 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const purchase = usePurchase(orderId);
+	const { disputesEnabled } = useAppConfig();
 	const now = useNow();
 	const [dialog, setDialog] = useState<BarDialog | null>(null);
 
@@ -84,6 +86,22 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 			</header>
 
 			<ActionBar orderId={order.id} actions={actions} onOpen={setDialog} />
+
+			{disputesEnabled ? (
+				<Button variant="outline" className="min-h-11" asChild>
+					<Link href={`/purchases/${encodeURIComponent(order.id)}/problem`}>
+						{t("reportProblem")}
+					</Link>
+				</Button>
+			) : (
+				<Button variant="outline" className="min-h-11" asChild>
+					<Link
+						href={`/contact?order=${encodeURIComponent(order.orderNumber)}`}
+					>
+						{t("reportProblem")}
+					</Link>
+				</Button>
+			)}
 
 			{(has("confirm_code") || has("resend_code")) && (
 				<ConfirmCodeForm

@@ -327,6 +327,82 @@ function trustedBuyerPhoneScore(phone = BUYER_PHONE) {
 	};
 }
 
+describe("placeOrder: zone delivery snapshots", () => {
+	function zoneWorld() {
+		const payload = world();
+		payload.globals["app-settings"].delivery = { zonesEnabled: true };
+		payload.store["delivery-zones"] = [
+			{
+				id: "zone-1",
+				shop: "s-1",
+				name: "Whole city",
+				scope: "same_city",
+				city: "douala",
+				districts: [],
+				method: "seller_delivery",
+				fee: 1500,
+				etaMinHours: 4,
+				etaMaxHours: 8,
+				deliveryDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
+				active: true,
+				codAllowed: true,
+				updatedAt: NOW.toISOString(),
+			},
+		];
+		payload.store["shop-locations"] = [];
+		return payload;
+	}
+	it("stores the selected zone, fee and promised date on the placed order", async () => {
+		const payload = zoneWorld();
+		const input = await quotedInput(payload, BUYER, {
+			deliveryOptionId: "zone:zone-1",
+		});
+		await placeOrder(payload, BUYER, input, {
+			now: NOW,
+			store: new MemoryCounterStore(),
+		});
+		expect(orderAt(payload).delivery).toMatchObject({
+			optionId: "zone:zone-1",
+			zone: "zone-1",
+			fee: 1500,
+			etaMinHours: 4,
+			etaMaxHours: 8,
+			promisedBy: "2026-10-02T18:00:00.000Z",
+		});
+	});
+	it("refuses a stale quote when a zone was edited even if its fee did not change", async () => {
+		const payload = zoneWorld();
+		const input = await quotedInput(payload, BUYER, {
+			deliveryOptionId: "zone:zone-1",
+		});
+		payload.store["delivery-zones"][0].updatedAt = "2026-10-02T11:00:00.000Z";
+		await expect(
+			placeOrder(payload, BUYER, input, {
+				now: NOW,
+				store: new MemoryCounterStore(),
+			}),
+		).rejects.toMatchObject({ code: "checkout.quoteChanged", status: 409 });
+		expect(payload.store.orders).toHaveLength(0);
+	});
+	it("rechecks COD eligibility at placement instead of trusting the selected option", async () => {
+		const payload = zoneWorld();
+		const input = await quotedInput(payload, BUYER, {
+			deliveryOptionId: "zone:zone-1",
+		});
+		payload.store["delivery-zones"][0].codAllowed = false;
+		await expect(
+			placeOrder(payload, BUYER, input, {
+				now: NOW,
+				store: new MemoryCounterStore(),
+			}),
+		).rejects.toMatchObject({
+			code: "checkout.methodUnavailable",
+			status: 409,
+		});
+		expect(payload.store.orders).toHaveLength(0);
+	});
+});
+
 describe("placeOrder: re-runs every quote check", () => {
 	it("refuses with checkout.disabled when the flag is off", async () => {
 		const payload = world({ ordersEnabled: false });

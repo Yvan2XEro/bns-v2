@@ -74,7 +74,60 @@ export class NotchPayProvider implements PaymentProvider {
 		private readonly publicKey: string,
 		private readonly baseUrl = "https://api.notchpay.co",
 		private readonly hashKey?: string,
+		private readonly grantKey?: string,
 	) {}
+
+	async createTransfer(input: {
+		reference: string;
+		amount: number;
+		currency: string;
+		channel: string;
+		phone: string;
+		name: string;
+		idempotencyKey: string;
+	}): Promise<{ transferId: string; reference: string }> {
+		if (!this.grantKey) {
+			throw new Error("NotchPay transfer requires NOTCHPAY_PRIVATE_KEY");
+		}
+		const response = await fetch(`${this.baseUrl}/transfers`, {
+			method: "POST",
+			headers: {
+				Authorization: this.publicKey,
+				"X-Grant": this.grantKey,
+				"Idempotency-Key": input.idempotencyKey,
+				"Content-Type": "application/json",
+				Accept: "application/json",
+			},
+			body: JSON.stringify({
+				reference: input.reference,
+				amount: input.amount,
+				currency: input.currency,
+				channel: input.channel,
+				phone: input.phone,
+				name: input.name,
+			}),
+			signal: AbortSignal.timeout(15_000),
+		});
+		const body: unknown = await response.json().catch(() => null);
+		if (!response.ok) {
+			const error = isRecord(body) ? body : {};
+			throw new Error(
+				`NotchPay transfer (${response.status}): ${toText(error.message) || response.statusText}`,
+			);
+		}
+		const envelope = isRecord(body) ? body : {};
+		const transfer = isRecord(envelope.transfer)
+			? envelope.transfer
+			: isRecord(envelope.data)
+				? envelope.data
+				: envelope;
+		const transferId = toText(transfer.id) || toText(transfer.transfer_id);
+		const reference = toText(transfer.reference) || input.reference;
+		if (!transferId || reference !== input.reference) {
+			throw new Error("NotchPay returned an invalid transfer response");
+		}
+		return { transferId, reference };
+	}
 
 	async createPayment(
 		params: CreatePaymentParams,

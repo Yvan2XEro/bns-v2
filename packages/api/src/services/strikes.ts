@@ -1,5 +1,6 @@
 import type { Payload, PayloadRequest } from "payload";
 import { SHOP_STRIKE_KINDS } from "../collections/ShopStrikes";
+import type { ShopStandingView } from "../contracts/disputes";
 import { filedCaseGates, getDisputeSettings } from "../lib/caseSettings";
 import {
 	commitContextOf,
@@ -83,27 +84,7 @@ export async function addStrike(
 	return strike;
 }
 
-export interface ShopStandingView {
-	activeWeight: number;
-	effectsEnabled: boolean;
-	restrictions: {
-		codCapHalved: boolean;
-		protectedCapHalved: boolean;
-		protectedUnavailable: boolean;
-	};
-	strikes: Array<
-		Pick<
-			ShopStrike,
-			| "id"
-			| "kind"
-			| "weight"
-			| "status"
-			| "expiresAt"
-			| "sourceType"
-			| "createdAt"
-		>
-	>;
-}
+export type { ShopStandingView };
 
 export async function shopStanding(
 	payload: Payload,

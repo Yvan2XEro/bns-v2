@@ -11,6 +11,7 @@ import { applyAccountEvent } from "./connectedAccounts";
 import { settlePayment } from "./payments";
 import { applyFraudRules } from "./payoutHolds";
 import { applyTransferEvent } from "./payouts";
+import { applyResellerPayoutEvent } from "./resellerPayouts";
 import { applyDebitEvent, applyRefundEvent } from "./refunds";
 
 /** Transfers with this prefix are P8's reseller payouts (`services/resellerPayouts.ts`). */
@@ -47,15 +48,10 @@ async function dispatchTransfer(
 	event: TransferEvent,
 ): Promise<DispatchResult> {
 	if ((event.reference ?? "").startsWith(RESELLER_PAYOUT_REFERENCE_PREFIX)) {
-		payload.logger.info(
-			{
-				providerEventId: event.providerEventId,
-				reference: event.reference,
-				transferId: event.transferId,
-			},
-			"[webhooks] reseller payout transfer skipped until P8",
+		const outcome = await withTransaction(payload, (req) =>
+			applyResellerPayoutEvent(req, event),
 		);
-		return done("skipped_reseller");
+		return done(outcome);
 	}
 	const result = await withTransaction(payload, (req) =>
 		applyTransferEvent(req, event, { source: "webhook" }),

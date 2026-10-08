@@ -168,7 +168,13 @@ export const ReturnCases: CollectionConfig = {
 				{ name: "shipBy", type: "date" },
 				{ name: "pickupBy", type: "date" },
 				{ name: "inspectBy", type: "date" },
+				{ name: "deductionRespondBy", type: "date" },
 				{ name: "refundBy", type: "date" },
+				{
+					name: "refundOverdueNotifiedAt",
+					type: "date",
+					admin: { hidden: true },
+				},
 			],
 		},
 		{ name: "shippedAt", type: "date" },
@@ -264,7 +270,7 @@ export const ReturnCases: CollectionConfig = {
 				{
 					name: "actorType",
 					type: "select",
-					options: ["buyer", "seller", "system"].map((value) => ({
+					options: ["buyer", "seller", "system", "moderator"].map((value) => ({
 						label: value,
 						value,
 					})),

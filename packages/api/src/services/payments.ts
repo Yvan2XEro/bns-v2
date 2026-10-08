@@ -11,6 +11,8 @@ import type { PaymentIntent } from "../payload-types";
 import { PURPOSE_HANDLERS } from "./paymentPurposes";
 
 export const INTENT_TTL_MS = 24 * 60 * 60 * 1000;
+export const NOTCHPAY_SETTLEMENT_CALLBACK_PATH =
+	"/api/public/boost/webhook/notchpay";
 
 export type IntentDoc = PaymentIntent;
 type HistoryEntry = NonNullable<PaymentIntent["statusHistory"]>[number];

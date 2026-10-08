@@ -14,6 +14,7 @@ export interface ShopCapabilities {
 	protectedPayment: boolean;
 	teamMembers: boolean;
 	maxMembers: number;
+	resell: boolean;
 	supplier: boolean;
 	fasterPayouts: boolean;
 	legalInfoVerified: boolean;
@@ -30,7 +31,7 @@ export const CAPABILITY_UNLOCKS: Record<
 	2 | 3,
 	Array<keyof ShopCapabilities>
 > = {
-	2: ["protectedPayment", "teamMembers"],
+	2: ["protectedPayment", "teamMembers", "resell"],
 	3: ["supplier", "fasterPayouts", "legalInfoVerified"],
 };
 
@@ -41,6 +42,7 @@ const EMPTY: ShopCapabilities = {
 	protectedPayment: false,
 	teamMembers: false,
 	maxMembers: 1,
+	resell: false,
 	supplier: false,
 	fasterPayouts: false,
 	legalInfoVerified: false,
@@ -108,6 +110,7 @@ export function shopCapabilities(
 		protectedPayment: level >= 2,
 		teamMembers: level >= 2,
 		maxMembers: level === 3 ? 20 : level === 2 ? 5 : 1,
+		resell: level >= 2,
 		supplier: level >= 3,
 		fasterPayouts: level >= 3,
 		legalInfoVerified: level >= 3,

@@ -1016,6 +1016,56 @@ describe("verification data on account deletion", () => {
 			filename: "other.pdf",
 		});
 	});
+
+	it("clears risk-flag labels and relationships but retains hashed fraud records", async () => {
+		const payload = ownedShopWorldWithRequests();
+		payload.store["risk-flags"] = [
+			{
+				id: "user-risk",
+				subjectType: "user",
+				subjectKey: "u-1",
+				subjectRef: "u-1",
+				subjectLabel: "Aicha Mbappe",
+				evidence: { count: 2 },
+				purgeAt: "2027-01-01T00:00:00.000Z",
+			},
+			{
+				id: "owned-shop-risk",
+				subjectType: "shop",
+				subjectKey: "s-1",
+				subjectRef: "s-1",
+				subjectLabel: "Owned shop",
+				evidence: { count: 1 },
+				purgeAt: "2027-01-01T00:00:00.000Z",
+			},
+			{
+				id: "other-risk",
+				subjectType: "user",
+				subjectKey: "u-2",
+				subjectRef: "u-2",
+				subjectLabel: "Other person",
+				evidence: { count: 1 },
+			},
+		];
+
+		await runDeletion(payload, { id: "u-1" });
+
+		expect(payload.store["risk-flags"]?.[0]).toMatchObject({
+			subjectKey: "u-1",
+			subjectRef: null,
+			subjectLabel: null,
+			evidence: { count: 2 },
+		});
+		expect(payload.store["risk-flags"]?.[1]).toMatchObject({
+			subjectKey: "s-1",
+			subjectRef: null,
+			subjectLabel: null,
+		});
+		expect(payload.store["risk-flags"]?.[2]).toMatchObject({
+			subjectRef: "u-2",
+			subjectLabel: "Other person",
+		});
+	});
 });
 
 // Task 24: a buyer with a courier en route, or a shop owing commission,

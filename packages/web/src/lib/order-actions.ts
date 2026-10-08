@@ -299,7 +299,8 @@ function conditionHolds(
 		// out — from the buyer's side the two are the same fact.
 		case "contest_delivery":
 			return (
-				order.handover.method === "seller_declaration" &&
+				(order.handover.method === "seller_declaration" ||
+					order.handover.method === "carrier_pod") &&
 				insideWindow(order.deadlines.contestBy, now)
 			);
 		// `openWithdrawal`: `order.withdrawalWindowClosed` past the 15 days,

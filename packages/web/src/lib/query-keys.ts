@@ -54,6 +54,27 @@ export const moderationVerificationKeys = {
 	detail: (id: string) => ["moderation", "verification", "detail", id] as const,
 };
 
+export const caseKeys = {
+	root: ["cases"] as const,
+	returns: ["cases", "returns"] as const,
+	returnList: (
+		scope: "buyer" | "shop",
+		id: string,
+		filters: Record<string, string | boolean | undefined> = {},
+	) => ["cases", "returns", scope, id, filters] as const,
+	returnDetail: (id: string) => ["cases", "returns", "detail", id] as const,
+	disputes: ["cases", "disputes"] as const,
+	disputeList: (
+		scope: "buyer" | "shop",
+		id: string,
+		filters: Record<string, string | boolean | undefined> = {},
+	) => ["cases", "disputes", scope, id, filters] as const,
+	disputeDetail: (id: string) => ["cases", "disputes", "detail", id] as const,
+	moderation: ["cases", "moderation"] as const,
+	moderationDetail: (id: string) =>
+		["cases", "moderation", "detail", id] as const,
+};
+
 /**
  * Mirrors TanStack Query's own `partialMatchKey` (`@tanstack/query-core`,
  * `utils.ts`): recursive, structural, and driven by `prefix`'s keys rather
@@ -104,6 +125,18 @@ export const shopOrdersKey = (
 export const shopOrderKey = (shopId: string, orderId: string) =>
 	[...shopOrdersRootKey(shopId), orderId] as const;
 
+/** Purchase orders are a separate supplier/reseller resource under the shop. */
+export const purchaseOrdersRootKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "purchase-orders"] as const;
+
+export const purchaseOrdersKey = (
+	shopId: string,
+	filters: { side: "supplier" | "reseller"; status?: string; q?: string },
+) => [...purchaseOrdersRootKey(shopId), filters] as const;
+
+export const purchaseOrderKey = (shopId: string, purchaseOrderId: string) =>
+	[...purchaseOrdersRootKey(shopId), purchaseOrderId] as const;
+
 /** The shop's commission invoices, current accrual and restriction. */
 export const billingKey = (shopId: string) =>
 	[...shopScopeKey(shopId), "billing"] as const;
@@ -111,6 +144,9 @@ export const billingKey = (shopId: string) =>
 /** The shop's COD, delivery and pickup settings. */
 export const orderSettingsKey = (shopId: string) =>
 	[...shopScopeKey(shopId), "order-settings"] as const;
+
+export const shopInsightsKey = (shopId: string, period: string) =>
+	[...shopScopeKey(shopId), "insights", period] as const;
 
 /** Every view under the shop's protected-payment screens. */
 export const sellerPaymentsRootKey = (shopId: string) =>

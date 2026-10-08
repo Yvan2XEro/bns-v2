@@ -95,6 +95,7 @@ services:
       # from DATABASE_URI is the first rollback level.
       DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin${MONGO_REPLICA_SET:+&replicaSet=${MONGO_REPLICA_SET}}}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      RISK_HASH_SECRET: ${RISK_HASH_SECRET:-}
       # HMAC key for buyer-phone-scores.phoneHash; rotating it resets every refusal score
       ORDER_PHONE_PEPPER: ${ORDER_PHONE_PEPPER:?Set ORDER_PHONE_PEPPER}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
@@ -131,6 +132,10 @@ services:
       # Staging only: "fake" serves protected payment from the in-memory fake
       # provider despite NODE_ENV=production. Leave empty in production.
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      COURIER_PROVIDER: ${COURIER_PROVIDER:-}
+      YANGO_DELIVERY_BASE_URL: ${YANGO_DELIVERY_BASE_URL:-}
+      YANGO_DELIVERY_API_KEY: ${YANGO_DELIVERY_API_KEY:-}
+      YANGO_DELIVERY_WEBHOOK_SECRET: ${YANGO_DELIVERY_WEBHOOK_SECRET:-}
       # Same staging/production gate as PAYMENTS_PROVIDER above: empty in
       # production, so the protected-payment flag stays refused by policy
       # (the AppSettings gate record), not by a missing variable.

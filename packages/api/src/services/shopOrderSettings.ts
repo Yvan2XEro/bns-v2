@@ -1,4 +1,6 @@
 import type { Payload } from "payload";
+import { getDeliverySettings } from "../lib/deliverySettings";
+import { ERROR_CODES } from "../lib/errors";
 import { isLaunchCityKey } from "../lib/launchCities";
 import {
 	cityDeliveryFee,
@@ -6,6 +8,7 @@ import {
 	type OrderSettings,
 } from "../lib/orderSettings";
 import { type PickupPointView, pickupPointView } from "../lib/pickupPointView";
+import { ServiceError } from "../lib/serviceError";
 import {
 	type CodCaps,
 	codCaps,
@@ -165,6 +168,39 @@ export async function updateOrderSettings(
 		"settings.edit",
 		{ writable: true },
 	);
+	const nextSettings = merge(shop.orderSettings ?? {}, patch);
+	if (
+		nextSettings.codEnabled &&
+		(await getDeliverySettings(payload)).zonesEnabled
+	) {
+		const shopId = String(shop.id);
+		const [zones, locations] = await Promise.all([
+			payload.count({
+				collection: "delivery-zones",
+				where: {
+					and: [
+						{ shop: { equals: shopId } },
+						{ active: { equals: true } },
+						{ codAllowed: { equals: true } },
+					],
+				},
+				overrideAccess: true,
+			}),
+			payload.count({
+				collection: "shop-locations",
+				where: {
+					and: [
+						{ shop: { equals: shopId } },
+						{ active: { equals: true } },
+						{ pickupEnabled: { equals: true } },
+					],
+				},
+				overrideAccess: true,
+			}),
+		]);
+		if (zones.totalDocs + locations.totalDocs === 0)
+			throw new ServiceError(ERROR_CODES.deliveryNoActiveOption, 409);
+	}
 	// No `shopService` context: `orderSettings` is seller-owned, so the
 	// collection's own `beforeChange` guard stays in force and keeps pinning
 	// the service fields this write must not be able to reach.
@@ -173,7 +209,7 @@ export async function updateOrderSettings(
 		id: String(shop.id),
 		depth: 0,
 		overrideAccess: true,
-		data: { orderSettings: merge(shop.orderSettings ?? {}, patch) },
+		data: { orderSettings: nextSettings },
 	});
 	return view(
 		updated,

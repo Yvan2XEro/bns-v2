@@ -1,13 +1,10 @@
+import {
+	DISPUTE_EVIDENCE_REQUIREMENTS,
+	type DisputeReason,
+} from "../contracts/disputes";
 import type { Order, ReturnCase } from "../payload-types";
 
-export type DisputeReason =
-	| "not_received"
-	| "not_as_described"
-	| "damaged"
-	| "counterfeit"
-	| "wrong_item"
-	| "seller_no_show"
-	| "cod_refused_abuse";
+export type { DisputeReason } from "../contracts/disputes";
 
 export type OpenerRole = "buyer" | "shop";
 
@@ -205,18 +202,8 @@ export function openerAllowed(
 	return OPENER_ALLOWED[reason].includes(openerRole);
 }
 
-const EVIDENCE_REQUIRED: Record<DisputeReason, number> = {
-	not_received: 0,
-	not_as_described: 1,
-	damaged: 1,
-	counterfeit: 2,
-	wrong_item: 1,
-	seller_no_show: 0,
-	cod_refused_abuse: 1,
-};
-
 export function evidenceRequired(reason: DisputeReason): number {
-	return EVIDENCE_REQUIRED[reason];
+	return DISPUTE_EVIDENCE_REQUIREMENTS[reason];
 }
 
 export interface ProofRecords {

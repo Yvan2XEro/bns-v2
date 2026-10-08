@@ -68,7 +68,7 @@ export function BuyActions({
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const router = useRouter();
 	const quantityId = useId();
-	const { launchCities, withdrawalDays } = useAppConfig();
+	const { launchCities, withdrawalDays, deliveryZonesEnabled } = useAppConfig();
 	const add = useAddCartItem();
 	const [state, patch] = useReducer(reducer, initialState);
 	const line = deliveryLine(delivery, launchCities);
@@ -186,7 +186,7 @@ export function BuyActions({
 				</p>
 			)}
 
-			{line && (
+			{!deliveryZonesEnabled && line && (
 				<p className="flex items-center gap-2 text-[#334155] text-sm">
 					<Truck
 						aria-hidden="true"

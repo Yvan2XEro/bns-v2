@@ -191,6 +191,24 @@ afterEach(() => {
 
 // ─── The rank ladder ─────────────────────────────────────────────────────────
 
+describe("moderation/summary risk counts", () => {
+	it("shows all open risk flags but adds only open high flags to the badge total", async () => {
+		const payload = world({
+			"risk-flags": [
+				{ id: "risk-low", status: "open", severity: "low" },
+				{ id: "risk-high", status: "open", severity: "high" },
+				{ id: "risk-closed", status: "dismissed", severity: "high" },
+			],
+		});
+		const result = await summary(payload);
+		expect(result).toMatchObject({
+			openRiskFlags: 2,
+			highRiskFlags: 1,
+			total: 1,
+		});
+	});
+});
+
 describe("releasePayoutHold — the rank ladder, one case per reason class", () => {
 	it.each<[PayoutHoldReason]>([
 		["moderation"],

@@ -6,6 +6,7 @@ import {
 	settleCheckoutIntent,
 } from "./checkoutSettlement";
 import { applyCommissionSettlement } from "./commission";
+import { settleResellerChargePayment } from "./purchaseOrders";
 
 export interface ReportedAmount {
 	amount: number | null;
@@ -71,5 +72,13 @@ export const PURPOSE_HANDLERS: Record<
 		},
 		onAmountMismatch: (_payload, intent, reported, req) =>
 			alertCheckoutAmountMismatch(req, intent, reported),
+	},
+	reseller_charge: {
+		onSucceeded: async (payload, intent, req) => {
+			await settleResellerChargePayment(payload, intent, req);
+		},
+		onFailed: async () => {
+			// A failed charge remains open or overdue for an explicit retry.
+		},
 	},
 };

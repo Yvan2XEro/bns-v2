@@ -573,6 +573,7 @@ async function runDeletionCascade(
 	const { purgeDocumentFiles } = await import("./verificationDocuments");
 	const { clearKycNames, deleteDiditWebhookEvents, deleteOpenRequests } =
 		await import("../lib/verificationRetention");
+	const { clearDeletedUserRiskReferences } = await import("./riskRetention");
 
 	// Every shop this account ever owned, whatever its status: a shop the
 	// seller had already closed still has identity documents in the private
@@ -585,6 +586,12 @@ async function runDeletionCascade(
 		"shops",
 		{ owner: { equals: userId } },
 		req,
+	);
+	await clearDeletedUserRiskReferences(
+		payload as unknown as import("payload").Payload,
+		userId,
+		ownedShopIds,
+		req as unknown as import("payload").PayloadRequest,
 	);
 
 	// Identity documents go immediately, not on the 90-day schedule: the

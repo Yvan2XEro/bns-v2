@@ -330,6 +330,7 @@ export type ShopDocument = {
 	logoUrl: string | null;
 	ownerRating: number;
 	ownerReviews: number;
+	deliveryCities: string[];
 };
 
 export function getShopsIndex() {
@@ -339,7 +340,13 @@ export function getShopsIndex() {
 export async function configureShopsIndex(): Promise<void> {
 	await getShopsIndex().updateSettings({
 		searchableAttributes: ["name", "handle", "description", "city"],
-		filterableAttributes: ["city", "countryCode", "categoryIds", "level"],
+		filterableAttributes: [
+			"city",
+			"countryCode",
+			"categoryIds",
+			"level",
+			"deliveryCities",
+		],
 		sortableAttributes: ["publishedListingCount", "createdAt"],
 	});
 	console.log(

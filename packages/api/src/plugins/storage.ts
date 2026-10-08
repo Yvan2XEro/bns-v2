@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { Plugin } from "payload";
 import { BUYER_FEE_INVOICE_FILES_PREFIX } from "../collections/BuyerFeeInvoiceFiles";
+import { DELIVERY_PROOFS_PREFIX } from "../collections/DeliveryProofs";
 
 type StorageProvider = "s3" | "azure" | "local";
 
@@ -38,6 +39,7 @@ const privateCollections = {
 	"dispute-gate-evidence": { prefix: "dispute-gates" },
 	"dispute-evidence": { prefix: "dispute-evidence" },
 	"buyer-fee-invoice-files": { prefix: BUYER_FEE_INVOICE_FILES_PREFIX },
+	"delivery-proofs": { prefix: DELIVERY_PROOFS_PREFIX },
 } as const;
 
 /**

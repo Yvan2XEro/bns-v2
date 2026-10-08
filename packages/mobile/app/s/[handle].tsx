@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { DeliveryCities } from "@/src/components/shop/DeliveryCities";
 import { LegalBlock } from "@/src/components/shop/LegalBlock";
+import { PickupPoints } from "@/src/components/shop/PickupPoints";
 import { ShopHeader } from "@/src/components/shop/ShopHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -44,7 +46,11 @@ export default function ShopScreen() {
 	// A previous handle answers with the current one; replace so "back" does
 	// not bounce through the old address.
 	useEffect(() => {
-		if (redirectTo) router.replace(`/s/${redirectTo}` as never);
+		if (redirectTo)
+			router.replace({
+				pathname: "/s/[handle]",
+				params: { handle: redirectTo },
+			});
 	}, [redirectTo]);
 
 	const listings = useShopListings(shop?.id);
@@ -136,6 +142,8 @@ export default function ShopScreen() {
 					<View style={{ gap: 16, marginBottom: 4 }}>
 						<ShopHeader shop={shop} onShare={share} />
 						<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
+						<PickupPoints handle={shop.handle} />
+						<DeliveryCities shopId={shop.id} />
 						<Text style={[styles.section, { color: c.text }]}>
 							{t("shop.listingsTitle", { count: shop.publishedListingCount })}
 						</Text>

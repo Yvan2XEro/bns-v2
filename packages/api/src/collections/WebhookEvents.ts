@@ -36,6 +36,8 @@ export const WebhookEvents: CollectionConfig = {
 				// The shared FakeMarketplaceProvider signs every webhook in tests
 				// and staging (lib/payments/marketplaceRegistry.ts).
 				{ label: "Fake marketplace (test/staging)", value: "fake" },
+				{ label: "Yango delivery", value: "yango" },
+				{ label: "Campost delivery", value: "campost" },
 			],
 		},
 		{ name: "providerEventId", type: "text", required: true },

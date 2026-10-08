@@ -34,6 +34,20 @@ async function removeToken(): Promise<void> {
 	await SecureStore.deleteItemAsync("auth_token");
 }
 
+export async function getInstallationId(): Promise<string> {
+	const key = "bns_install_id";
+	const stored = await SecureStore.getItemAsync(key);
+	if (stored) return stored;
+	const id =
+		globalThis.crypto?.randomUUID?.() ??
+		"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (part) => {
+			const random = Math.floor(Math.random() * 16);
+			return (part === "x" ? random : (random & 0x3) | 0x8).toString(16);
+		});
+	await SecureStore.setItemAsync(key, id);
+	return id;
+}
+
 /**
  * Read the `exp` claim from a JWT without verifying it. Used only to decide
  * whether a proactive refresh is worth attempting — the native /refresh-token

@@ -24,6 +24,7 @@ vi.mock("../../src/services/smsProvider", () => ({
 import { can } from "../../src/access/shopRoles";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Order } from "../../src/payload-types";
+import { contestDelivery } from "../../src/services/orders/delivery";
 import { issueHandoverCode } from "../../src/services/orders/handover";
 import { type Doc, type FakePayload, fakePayload } from "./helpers/fakePayload";
 
@@ -334,6 +335,89 @@ describe("POST /api/orders/{id}/handover", () => {
 			.map((e) => [e.actorType, e.actorShopRole, e.actor]);
 		expect(delivered).toEqual([["seller", "staff", STAFF]]);
 	});
+
+	it("delegates to the live shipment when the legacy order route is used", async () => {
+		const payload = seed();
+		payload.store.shipments = [
+			{
+				id: "shipment-staff",
+				shipmentNumber: "SHP-2610-000001",
+				order: "o-staff",
+				storefrontShop: "s-1",
+				fulfillingShop: "s-1",
+				method: "seller_delivery",
+				carrier: "self",
+				origin: {},
+				destination: {},
+				fee: 1000,
+				status: "in_transit",
+			},
+		];
+		payload.store["shipment-events"] = [];
+		const { code } = await withTransaction(payload, (req) =>
+			issueHandoverCode(req, orderDoc(payload, "o-staff"), {
+				regenerate: false,
+			}),
+		);
+
+		asUser(payload, STAFF);
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/handover/route"
+		);
+		const response = await POST(post("/x", { code }), params("o-staff"));
+
+		expect(response.status).toBe(200);
+		expect(payload.store.shipments[0]).toMatchObject({
+			status: "delivered",
+			proof: { handoverMethod: "otp" },
+			codCollection: {
+				collectedBy: "seller",
+				remittanceStatus: "not_applicable",
+			},
+		});
+		expect(
+			payload.store.orders.find((order) => order.id === "o-staff")?.status,
+		).toBe("delivered");
+	});
+});
+
+describe("POST /api/orders/{id}/declare-delivered with a shipment", () => {
+	it("requires a delivery-proof photo and leaves both states unchanged without one", async () => {
+		const payload = seed();
+		payload.store.shipments = [
+			{
+				id: "shipment-declare",
+				shipmentNumber: "SHP-2610-000002",
+				order: "o-staff",
+				storefrontShop: "s-1",
+				fulfillingShop: "s-1",
+				method: "seller_delivery",
+				carrier: "self",
+				origin: {},
+				destination: {},
+				fee: 1000,
+				status: "in_transit",
+			},
+		];
+		payload.store["shipment-events"] = [];
+		asUser(payload, STAFF);
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/declare-delivered/route"
+		);
+
+		const response = await POST(
+			post("/x", { note: "Delivered" }),
+			params("o-staff"),
+		);
+
+		expect(response.status).toBe(400);
+		expect((await response.json()).code).toBe("shipment.photoRequired");
+		expect(payload.store.shipments[0]?.status).toBe("in_transit");
+		expect(payload.store["shipment-events"]).toHaveLength(0);
+		expect(
+			payload.store.orders.find((order) => order.id === "o-staff")?.status,
+		).toBe("shipped");
+	});
 });
 
 describe("POST /api/orders/{id}/handover-code/regenerate", () => {
@@ -387,5 +471,37 @@ describe("POST /api/orders/{id}/confirm-receipt", () => {
 		expect(
 			(payload.store.orders.find((o) => o.id === "o-confirm") as Doc).status,
 		).toBe("delivered");
+	});
+});
+
+describe("carrier proof delivery contest window", () => {
+	it("allows the buyer to contest carrier_pod within the 48-hour window", async () => {
+		const payload = seed();
+		payload.store.orders.push(
+			shippedOrder("o-carrier-pod", {
+				handover: {
+					method: "carrier_pod",
+					contestBy: "2099-10-04T12:00:00.000Z",
+				},
+			}),
+		);
+
+		const result = await withTransaction(payload, (req) =>
+			contestDelivery(req, orderDoc(payload, "o-carrier-pod"), {
+				actor: BUYER,
+			}),
+		);
+
+		expect(result.order.completionHold).toBe("dispute");
+		expect(payload.store["order-events"]).toMatchObject([
+			{ type: "order.delivery_contested", actor: BUYER },
+		]);
+		expect(payload.store.reports).toMatchObject([
+			{
+				targetType: "order",
+				targetId: "o-carrier-pod",
+				reason: "delivery_contested",
+			},
+		]);
 	});
 });

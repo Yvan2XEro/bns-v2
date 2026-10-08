@@ -130,7 +130,9 @@ describe("P6 case collections", () => {
 		expect(
 			field(ReturnCases.fields as Field[], "items.inspection.outcome"),
 		).toBeDefined();
-		expect(field(ReturnCases.fields as Field[], "refundProof")).toBeDefined();
+		expect(
+			field(ReturnCases.fields as Field[], "refund.sellerProof"),
+		).toBeDefined();
 	});
 
 	it("keeps the audit and outbox collections registered under their stable slugs", () => {

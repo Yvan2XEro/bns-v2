@@ -10,8 +10,10 @@ import {
 	useCheckoutFlow,
 } from "@/src/components/checkout/CheckoutProvider";
 import { DeliveryOptionCard } from "@/src/components/checkout/DeliveryOptionCard";
+import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useDeliveryOptions } from "@/src/hooks/useCheckout";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { landmarkMissingFor } from "@/src/lib/checkoutFlow";
@@ -35,12 +37,21 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useAppLocale();
+	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const { state, dispatch, requestQuote } = useCheckoutFlow();
-	const options = useDeliveryOptions(address.city, address.district);
+	const options = useDeliveryOptions(
+		address.city,
+		address.district,
+		state.paymentMethod,
+	);
 	const [pickedId, setPickedId] = useState(state.option?.optionId ?? null);
 	const list = options.data?.options ?? [];
 	const picked =
-		list.find((o) => o.optionId === pickedId && o.codAllowed) ?? null;
+		list.find(
+			(o) =>
+				o.optionId === pickedId &&
+				(state.paymentMethod !== "cod" || o.codAllowed),
+		) ?? null;
 	const backToAddress = () => router.dismissTo("/checkout/address");
 
 	const choose = () => {
@@ -66,6 +77,17 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 			<Text style={[formStyles.sectionTitle, { color: c.text }]}>
 				{t("checkout.deliveryOptions")}
 			</Text>
+			{protectedPaymentEnabled ? (
+				<PaymentMethodPicker
+					method={state.paymentMethod}
+					fee={null}
+					buyerProtection={buyerProtection}
+					locale={locale}
+					onChoose={(method) =>
+						dispatch({ type: "paymentMethodChosen", method })
+					}
+				/>
+			) : null}
 			{options.isPending ? (
 				<View style={formStyles.row}>
 					<ActivityIndicator color={c.primary} />
@@ -91,10 +113,21 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 						option={option}
 						locale={locale}
 						checked={option.optionId === pickedId}
+						selectable={state.paymentMethod !== "cod" || option.codAllowed}
 						onSelect={() => setPickedId(option.optionId)}
 					/>
 				))}
 			</View>
+			{options.data?.unavailable.map((option, index) => (
+				<Text
+					key={`${option.method}-${index}`}
+					style={[formStyles.hint, { color: c.warningText }]}
+				>
+					{t(`checkout.deliveryUnavailable.${option.reason}`, {
+						amount: option.minOrderSubtotal ?? 0,
+					})}
+				</Text>
+			))}
 			<View style={[formStyles.row, { marginTop: 8 }]}>
 				<CheckoutButton
 					variant="outline"

@@ -7,6 +7,7 @@ export const expireStrikesTask: TaskConfig<{
 }> = {
 	slug: "expireStrikes",
 	retries: 1,
+	schedule: [{ cron: "0 0 * * *", queue: "cases" }],
 	inputSchema: [],
 	handler: async ({ req }) => {
 		const result = await expireStrikes(req.payload);

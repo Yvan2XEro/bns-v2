@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	Modal,
@@ -20,6 +20,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { BuyBox } from "@/src/components/order/BuyBox";
+import { DeliveryEstimates } from "@/src/components/order/DeliveryEstimates";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { StatusPill } from "@/src/components/StatusPill";
@@ -31,7 +32,7 @@ import { useMyShops } from "@/src/hooks/useMyShops";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useStartConversation } from "@/src/hooks/useShopInbox";
 import { usePublicShop } from "@/src/hooks/useShops";
-import { api } from "@/src/lib/api";
+import { api, getInstallationId } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
@@ -133,6 +134,21 @@ export default function ListingDetail() {
 		queryFn: () => api.get<ListingResponse>(`/api/listings/${id}?depth=2`),
 		enabled: !!id,
 	});
+
+	const { mutate: trackListingView } = useMutation({
+		mutationFn: async (listingId: string) => {
+			const installId = await getInstallationId();
+			return api.post(
+				`/api/public/listings/${listingId}/view`,
+				{},
+				{ "X-BNS-Install-Id": installId },
+			);
+		},
+	});
+
+	useEffect(() => {
+		if (id) trackListingView(id);
+	}, [id, trackListingView]);
 
 	const { data: favData } = useQuery({
 		queryKey: ["favorite", id],
@@ -637,6 +653,12 @@ export default function ListingDetail() {
 						</View>
 					)}
 
+					<DeliveryEstimates
+						listingId={id}
+						eligible={Boolean(
+							listingProduct && listingShop && !listingShop.ordersRestrictedAt,
+						)}
+					/>
 					<BuyBox
 						listingId={id}
 						product={listingProduct}

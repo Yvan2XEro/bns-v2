@@ -1,7 +1,12 @@
 import type { Payload } from "payload";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
+import type {
+	DeliveryMethod,
+	UnavailableOption,
+} from "../contracts/deliveryQuote";
 import { queueSearchEvent } from "../hooks/searchEvents";
 import { resolveSuspension } from "../hooks/suspensionGuard";
+import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import {
 	isDistrictKey,
@@ -31,7 +36,6 @@ import {
 	type MarketRow,
 	type PaymentSettings,
 } from "../lib/paymentSettings";
-import { type PickupPointView, pickupPointView } from "../lib/pickupPointView";
 import { quoteHash } from "../lib/quoteHash";
 import {
 	type CounterStore,
@@ -324,7 +328,7 @@ function addressInvalid(field: string): never {
  */
 export function parseDeliveryAddress(
 	raw: CheckoutAddressInput,
-	method: "seller_delivery" | "pickup",
+	method: DeliveryMethod,
 ): DeliveryAddress {
 	const recipientName =
 		typeof raw.recipientName === "string" ? raw.recipientName.trim() : "";
@@ -355,7 +359,7 @@ export function parseDeliveryAddress(
 
 	const landmarkRaw =
 		typeof raw.landmark === "string" ? raw.landmark.trim() : "";
-	if (method === "seller_delivery") {
+	if (method !== "pickup") {
 		if (landmarkRaw.length < 5 || landmarkRaw.length > 200) {
 			addressInvalid("delivery.landmark");
 		}
@@ -436,11 +440,16 @@ export interface QuoteResponse {
 		};
 		paymentMethod: "cod" | "mobile_money";
 		delivery: {
-			method: "seller_delivery" | "pickup";
+			method: DeliveryMethod;
 			optionId: string;
 			etaText: string;
 			address: QuoteAddress;
 			pickupPoint?: PickupPointSnapshot;
+			zoneId?: string;
+			pickupLocationId?: string;
+			etaMinHours?: number;
+			etaMaxHours?: number;
+			promisedBy?: string;
 		};
 	};
 	preContract: ContractSnapshot;
@@ -630,27 +639,7 @@ async function priceCartLines(
 	};
 }
 
-/** The contract's `DeliveryOption`, with the pickup point a client can rely on. */
-export interface DeliveryOptionView {
-	optionId: string;
-	method: "seller_delivery" | "pickup";
-	fee: number;
-	etaText: string;
-	codAllowed: boolean;
-	pickupPoint?: PickupPointView;
-}
-
-function deliveryOptionView(option: DeliveryOption): DeliveryOptionView {
-	const point = pickupPointView(option.pickupPoint);
-	return {
-		optionId: option.optionId,
-		method: option.method,
-		fee: option.fee,
-		etaText: option.etaText,
-		codAllowed: option.codAllowed,
-		...(point ? { pickupPoint: point } : {}),
-	};
-}
+export type DeliveryOptionView = DeliveryOption;
 
 /**
  * The delivery step's own source of options, for the city the buyer is about
@@ -667,9 +656,13 @@ function deliveryOptionView(option: DeliveryOption): DeliveryOptionView {
 export async function listDeliveryOptions(
 	payload: Payload,
 	user: ServiceUser,
-	input: { city?: unknown; district?: unknown } = {},
+	input: { city?: unknown; district?: unknown; paymentMethod?: unknown } = {},
 	options: { now?: Date } = {},
-): Promise<{ city: string; options: DeliveryOptionView[] }> {
+): Promise<{
+	city: string;
+	options: DeliveryOptionView[];
+	unavailable: UnavailableOption[];
+}> {
 	const now = options.now ?? new Date();
 	const { settings, lines, shop } = await assertCheckoutPreconditions(
 		payload,
@@ -687,13 +680,21 @@ export async function listDeliveryOptions(
 
 	const { items, subtotal } = await priceCartLines(payload, lines);
 	const quoted = await quoteDelivery({
+		payload,
 		shop,
 		items,
 		subtotal,
 		destination: { city, district },
 		settings,
+		now,
+		paymentMethod:
+			input.paymentMethod === "mobile_money" ? "mobile_money" : "cod",
 	});
-	return { city, options: quoted.map(deliveryOptionView) };
+	return {
+		city,
+		options: quoted.options,
+		unavailable: quoted.unavailable,
+	};
 }
 
 /**
@@ -776,30 +777,45 @@ async function buildQuote(
 
 	const optionId =
 		typeof input.deliveryOptionId === "string" ? input.deliveryOptionId : "";
-	const method: "seller_delivery" | "pickup" = optionId.startsWith("pickup:")
+	const method: DeliveryMethod = optionId.startsWith("pickup:")
 		? "pickup"
-		: "seller_delivery";
+		: optionId.startsWith("courier:")
+			? "courier"
+			: "seller_delivery";
 
 	const address = parseDeliveryAddress(input.address, method);
 
-	if ((shop.location?.city ?? null) !== address.city) {
+	const deliverySettings = await getDeliverySettings(payload);
+	if (
+		!deliverySettings.zonesEnabled &&
+		(shop.location?.city ?? null) !== address.city
+	) {
 		throw new CheckoutError(ERROR_CODES.checkoutCityNotServed, 409);
 	}
 
 	const { items: quoteItems, subtotal } = await priceCartLines(payload, lines);
 
-	const deliveryOptions: DeliveryOption[] = await quoteDelivery({
+	const deliveryQuote = await quoteDelivery({
+		payload,
 		shop,
 		items: quoteItems,
 		subtotal,
-		destination: { city: address.city, district: address.district },
+		destination: {
+			city: address.city,
+			district: address.district,
+			...(address.gps ? { gps: address.gps } : {}),
+		},
 		settings,
+		paymentMethod,
+		now,
 	});
-	const chosen = deliveryOptions.find((option) => option.optionId === optionId);
+	const chosen = deliveryQuote.options.find(
+		(option) => option.optionId === optionId,
+	);
 	if (!chosen) {
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
 	}
-	if (!chosen.codAllowed) {
+	if (paymentMethod === "cod" && !chosen.codAllowed) {
 		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
 	}
 
@@ -942,6 +958,12 @@ async function buildQuote(
 			unitPrice: line.unitPrice,
 		})),
 		deliveryFee: chosen.fee,
+		...(deliverySettings.zonesEnabled
+			? {
+					optionId: chosen.optionId,
+					deliverySourceUpdatedAt: chosen.sourceUpdatedAt,
+				}
+			: {}),
 		method: chosen.method,
 		city: address.city,
 		paymentMethod,
@@ -972,6 +994,17 @@ async function buildQuote(
 					method: chosen.method,
 					optionId: chosen.optionId,
 					etaText: chosen.etaText,
+					...(chosen.zoneId ? { zoneId: chosen.zoneId } : {}),
+					...(chosen.pickupLocationId
+						? { pickupLocationId: chosen.pickupLocationId }
+						: {}),
+					...(chosen.promisedBy
+						? {
+								promisedBy: chosen.promisedBy,
+								etaMinHours: chosen.etaMinHours,
+								etaMaxHours: chosen.etaMaxHours,
+							}
+						: {}),
 					address: toQuoteAddress(address),
 					...(chosen.pickupPoint ? { pickupPoint: chosen.pickupPoint } : {}),
 				},
@@ -1238,6 +1271,12 @@ export async function placeOrder(
 						},
 						delivery: {
 							method: fresh.summary.delivery.method,
+							optionId: fresh.summary.delivery.optionId,
+							zone: fresh.summary.delivery.zoneId,
+							pickupLocation: fresh.summary.delivery.pickupLocationId,
+							etaMinHours: fresh.summary.delivery.etaMinHours,
+							etaMaxHours: fresh.summary.delivery.etaMaxHours,
+							promisedBy: fresh.summary.delivery.promisedBy,
 							recipientName: address.recipientName,
 							phone: address.phone,
 							city: address.city,

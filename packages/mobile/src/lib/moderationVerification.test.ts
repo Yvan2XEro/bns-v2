@@ -60,21 +60,23 @@ describe("relativeAge", () => {
 });
 
 describe("queue tabs", () => {
-	it("adds a verification tab fed by pendingVerifications", () => {
+	it("adds verification and risk tabs from their respective summary counts", () => {
 		expect(
 			queueTabs({
 				pendingListings: 2,
 				pendingReports: 1,
 				pendingVerifications: 4,
+				highRiskFlags: 3,
 			}).map((t) => t.key),
-		).toEqual(["listings", "reports", "verification"]);
+		).toEqual(["listings", "reports", "verification", "risk"]);
 		expect(
 			queueTabs({
 				pendingListings: 2,
 				pendingReports: 1,
 				pendingVerifications: 4,
+				highRiskFlags: 3,
 			}).at(-1)?.count,
-		).toBe(4);
+		).toBe(3);
 	});
 
 	it("shows no count rather than zero before the summary loads", () => {

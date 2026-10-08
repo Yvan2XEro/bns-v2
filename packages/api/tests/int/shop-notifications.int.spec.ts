@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const triggerNotificationEvent = vi.fn(async () => undefined);
+const { triggerNotificationEvent } = vi.hoisted(() => ({
+	triggerNotificationEvent: vi.fn(async () => undefined),
+}));
 vi.mock("../../src/hooks/notificationEvents", () => ({
 	triggerNotificationEvent,
 }));

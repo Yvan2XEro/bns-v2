@@ -8,13 +8,13 @@ import { cartKey, paymentStatusKey, purchasesRootKey } from "~/lib/query-keys";
 import { apiGet, apiPost, query } from "~/lib/shop-api";
 import type {
 	AddressInput,
-	DeliveryOption,
 	PaymentIntentResponse,
 	PaymentMethod,
 	PaymentStatusView,
 	PlaceResponse,
 	QuoteResponse,
 } from "~/types/order";
+import type { DeliveryQuote } from "../../../api/src/contracts/deliveryQuote";
 
 export interface CheckoutQuoteInput {
 	address: AddressInput;
@@ -44,8 +44,11 @@ export interface CheckoutPlaceInput extends CheckoutQuoteInput {
 
 export const checkoutQuoteKey = ["checkout", "quote"] as const;
 export const checkoutPlaceKey = ["checkout", "place"] as const;
-export const deliveryOptionsKey = (city: string, district: string) =>
-	["checkout", "delivery-options", city, district] as const;
+export const deliveryOptionsKey = (
+	city: string,
+	district: string,
+	paymentMethod: PaymentMethod = "cod",
+) => ["checkout", "delivery-options", city, district, paymentMethod] as const;
 
 /**
  * `GET /api/checkout/delivery-options` — the delivery step's own source, so
@@ -54,14 +57,16 @@ export const deliveryOptionsKey = (city: string, district: string) =>
 export function useDeliveryOptions(
 	city: string | null,
 	district: string | null,
+	paymentMethod: PaymentMethod = "cod",
 ) {
-	return useQuery<{ city: string; options: DeliveryOption[] }, ApiError>({
-		queryKey: deliveryOptionsKey(city ?? "", district ?? ""),
+	return useQuery<DeliveryQuote & { city: string }, ApiError>({
+		queryKey: deliveryOptionsKey(city ?? "", district ?? "", paymentMethod),
 		queryFn: () =>
 			apiGet(
 				`/api/checkout/delivery-options${query({
 					city: city ?? undefined,
 					district: district ?? undefined,
+					paymentMethod,
 				})}`,
 			),
 		enabled: Boolean(city),

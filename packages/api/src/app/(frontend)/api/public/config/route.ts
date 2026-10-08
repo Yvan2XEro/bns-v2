@@ -9,6 +9,7 @@ import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import { BOOST_PRICING } from "@/lib/boostPricing";
 import { getDisputeSettings, isDisputesOpen } from "@/lib/caseSettings";
+import { getDeliverySettings } from "@/lib/deliverySettings";
 import { LAUNCH_CITIES } from "@/lib/launchCities";
 import { getOrderSettings } from "@/lib/orderSettings";
 import {
@@ -16,6 +17,7 @@ import {
 	isProtectedPaymentOpen,
 	PAYMENT_DEFAULTS,
 } from "@/lib/paymentSettings";
+import { getResaleSettings } from "@/lib/resaleSettings";
 import { getShopSettings } from "@/lib/shopSettings";
 import { getVerificationSettings } from "@/lib/verificationSettings";
 
@@ -36,10 +38,26 @@ export async function GET(request?: Request) {
 	let buyerProtection = PAYMENT_DEFAULTS.buyerProtection;
 	let checkoutExpiryMinutes = PAYMENT_DEFAULTS.checkoutExpiryMinutes;
 	let disputesEnabled = false;
+	let insightsEnabled = false;
+	let deliveryZonesEnabled = false;
+	let couriersEnabled = false;
+	let intercityEnabled = false;
+	let resaleEnabled = false;
+	let resalePrepaidEnabled = false;
 
 	try {
 		const payload = await getPayload({ config });
 		const settings = await payload.findGlobal({ slug: "app-settings" });
+		insightsEnabled = settings.insights?.enabled ?? false;
+		const deliverySettings = await getDeliverySettings(payload);
+		const resaleSettings = await getResaleSettings(payload);
+		resaleEnabled = resaleSettings.enabled;
+		resalePrepaidEnabled = resaleSettings.prepaidEnabled;
+		deliveryZonesEnabled = deliverySettings.zonesEnabled;
+		couriersEnabled =
+			deliverySettings.zonesEnabled && deliverySettings.couriersEnabled;
+		intercityEnabled =
+			deliverySettings.zonesEnabled && deliverySettings.intercityEnabled;
 		const authSettings = (
 			settings as unknown as {
 				auth?: { enabledProviders?: string[]; enableLocalAuth?: boolean };
@@ -84,6 +102,12 @@ export async function GET(request?: Request) {
 		withdrawalDays = 15;
 		protectedPaymentEnabled = false;
 		disputesEnabled = false;
+		insightsEnabled = false;
+		deliveryZonesEnabled = false;
+		couriersEnabled = false;
+		intercityEnabled = false;
+		resaleEnabled = false;
+		resalePrepaidEnabled = false;
 	}
 
 	return Response.json({
@@ -103,5 +127,11 @@ export async function GET(request?: Request) {
 		buyerProtection,
 		checkoutExpiryMinutes,
 		disputesEnabled,
+		insightsEnabled,
+		deliveryZonesEnabled,
+		couriersEnabled,
+		intercityEnabled,
+		resaleEnabled,
+		resalePrepaidEnabled,
 	});
 }

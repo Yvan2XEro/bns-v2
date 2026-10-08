@@ -25,6 +25,7 @@ import type {
 } from "~/types/order";
 import { AddressStep } from "./address-step";
 import { DeliveryStep } from "./delivery-step";
+import { PaymentMethodPicker } from "./payment-method-picker";
 import { ReviewStep } from "./review-step";
 
 const STEPS: Array<{
@@ -95,7 +96,7 @@ export function CheckoutClient() {
 		if (!state.address) return;
 		dispatch({ type: "optionChosen", option });
 		// An address accepted under pickup rules may lack the landmark delivery needs.
-		if (option.method === "seller_delivery" && !state.address.landmark) {
+		if (option.method !== "pickup" && !state.address.landmark) {
 			dispatch({ type: "addressRejected", field: "landmark" });
 			return;
 		}
@@ -182,12 +183,24 @@ export function CheckoutClient() {
 				/>
 			)}
 			{state.step === "delivery" && state.address && (
-				<DeliveryStep
-					address={state.address}
-					selected={state.option}
-					onChoose={chooseOption}
-					onBack={() => dispatch({ type: "goTo", step: "address" })}
-				/>
+				<div className="space-y-4">
+					{protectedPaymentEnabled ? (
+						<PaymentMethodPicker
+							method={state.paymentMethod}
+							fee={null}
+							onChoose={(method) =>
+								dispatch({ type: "paymentMethodChosen", method })
+							}
+						/>
+					) : null}
+					<DeliveryStep
+						paymentMethod={state.paymentMethod}
+						address={state.address}
+						selected={state.option}
+						onChoose={chooseOption}
+						onBack={() => dispatch({ type: "goTo", step: "address" })}
+					/>
+				</div>
 			)}
 			{state.step === "review" && (
 				<ReviewStep

@@ -247,10 +247,7 @@ describe("postingFor: the postings table", () => {
 				amount: D,
 				releaseModel: "provider_schedule",
 			}),
-			expected: [
-				d("provider_position", D),
-				c("seller_payout_in_transit", D),
-			],
+			expected: [d("provider_position", D), c("seller_payout_in_transit", D)],
 			total: D,
 		},
 		{
@@ -378,6 +375,18 @@ describe("postingFor: the postings table", () => {
 				d("buyer_guarantee_expense", 3_240),
 				c("seller_receivable", 3_240),
 			],
+			total: 3_240,
+		},
+		{
+			name: "netting_reversed",
+			kind: "netting_reversed",
+			lines: postingFor("netting_reversed", {
+				netting: postingFor("clawback_recovered", {
+					amount: 3_240,
+					from: "seller_releasable",
+				}),
+			}),
+			expected: [c("seller_releasable", 3_240), d("seller_receivable", 3_240)],
 			total: 3_240,
 		},
 	];
@@ -1044,6 +1053,38 @@ describe("property: 200 legal events", () => {
 						});
 					}
 				}
+			}
+
+			const reversed = new Set(
+				transactions(payload)
+					.filter((transaction) => transaction.kind === "netting_reversed")
+					.map((transaction) => String(transaction.reverses)),
+			);
+			for (const netting of transactions(payload).filter(
+				(transaction) =>
+					transaction.kind === "clawback_recovered" &&
+					!reversed.has(String(transaction.id)),
+			)) {
+				const shop = String(netting.shop);
+				if (!Object.hasOwn(shops, shop)) continue;
+				const nettingLines = await withTransaction(payload, (req) =>
+					transactionLines(req, netting),
+				);
+				const amount = nettingLines
+					.filter((line) => line.category === "seller_receivable")
+					.reduce((sum, line) => sum + line.credit - line.debit, 0);
+				if (amount <= 0 || (await bal("seller_receivable", shop)) < amount)
+					continue;
+				steps.push(async () => {
+					await send(
+						"netting_reversed",
+						shop,
+						String(netting.order ?? "") || undefined,
+						async () =>
+							postingFor("netting_reversed", { netting: nettingLines }),
+						{ reverses: String(netting.id) },
+					);
+				});
 			}
 
 			for (const p of payouts.filter((x) => x.open)) {

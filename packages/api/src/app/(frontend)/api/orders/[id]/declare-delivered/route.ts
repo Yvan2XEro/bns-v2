@@ -4,6 +4,8 @@ import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { ServiceError } from "@/lib/serviceError";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
 import { withTransaction } from "@/lib/transactions";
+import { declareDelivered } from "@/services/delivery/handover";
+import { findLiveShipmentForOrder } from "@/services/delivery/shipments";
 import { markDelivered } from "@/services/orders/delivery";
 import { getOrderView } from "@/services/orders/queries";
 
@@ -11,6 +13,7 @@ const paramsSchema = z.object({ id: z.string().trim().min(1) });
 const bodySchema = z.object({
 	note: z.string().trim().min(1).max(500).optional(),
 	photo: z.string().trim().min(1).max(2000).optional(),
+	photoId: z.string().trim().min(1).optional(),
 });
 
 /**
@@ -45,15 +48,35 @@ export async function POST(
 
 		await withTransaction(
 			ctx.payload,
-			(req) =>
-				markDelivered(req, order, {
+			async (req) => {
+				const shipment = await findLiveShipmentForOrder(req, String(order.id));
+				if (shipment) {
+					return declareDelivered(
+						req,
+						shipment,
+						{
+							photoId: body.data.photoId ?? "",
+							note: body.data.note,
+						},
+						{
+							type: "seller",
+							id: ctx.user.id,
+							shopRole: role,
+						},
+					);
+				}
+				if (order.shipments?.length) {
+					throw new ServiceError(ERROR_CODES.shipmentInvalidTransition, 409);
+				}
+				return markDelivered(req, order, {
 					method: "seller_declaration",
 					actorType: "seller",
 					actorShopRole: role,
 					actor: ctx.user.id,
 					note: body.data.note,
 					photo: body.data.photo,
-				}),
+				});
+			},
 			{ user: ctx.user },
 		);
 

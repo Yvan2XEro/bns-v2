@@ -161,6 +161,7 @@ function assertStatusAuthority(
 export const RESERVED_ORDER_EVENT_TYPES = [
 	"order.paid",
 	"order.disputed",
+	"order.dispute_withdrawn",
 	"order.returned",
 ] as const;
 
@@ -406,4 +407,21 @@ export async function applyTransition(
 	queueOrderEvent(req, updated, written);
 
 	return { order: updated, event: written };
+}
+
+/** Run a transition owned by the P5/P6 workflow without granting that
+ * authority to unrelated callers sharing the same request. */
+export async function applyReservedTransition(
+	req: PayloadRequest,
+	order: Order,
+	request: TransitionRequest,
+	event: TransitionEventInput,
+): Promise<{ order: Order; event: OrderEvent }> {
+	const previousContext = req.context;
+	req.context = { ...previousContext, ...RESERVED_TRANSITION_CONTEXT };
+	try {
+		return await applyTransition(req, order, request, event);
+	} finally {
+		req.context = previousContext;
+	}
 }

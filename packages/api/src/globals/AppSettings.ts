@@ -5,6 +5,7 @@ import {
 	RETURN_DEFAULTS,
 } from "../lib/caseSettings";
 import { validateCaseSettings } from "../lib/caseSettingsValidation";
+import { courierAdapterPresenceRefusal } from "../lib/delivery/registry";
 import { LAUNCH_CITY_KEYS } from "../lib/launchCities";
 import {
 	DEFAULT_MARKETS,
@@ -18,6 +19,7 @@ import {
 	SETTLEMENT_MODES,
 } from "../lib/paymentSettings";
 import { adapterPresenceRefusal } from "../lib/payments/marketplaceRegistry";
+import { resalePrepaidRefusal } from "../lib/resaleSettings";
 import { assertAuthorised } from "../lib/verificationSettings";
 
 const isAdmin = ({ req }: { req: { user?: { role?: string } | null } }) =>
@@ -44,7 +46,7 @@ export const AppSettings: GlobalConfig = {
 				if (refusal) throw new Error(refusal);
 				return data;
 			},
-			({ data, originalDoc }) => {
+			({ data, originalDoc, req }) => {
 				// A global save may carry only the groups it changed; judge the
 				// document as it will be stored.
 				const stored = (originalDoc ?? {}) as Record<string, unknown>;
@@ -64,9 +66,43 @@ export const AppSettings: GlobalConfig = {
 				if (refusal) throw new Error(refusal);
 				const adapterRefusal = adapterPresenceRefusal(payments, process.env);
 				if (adapterRefusal) throw new Error(adapterRefusal);
+				const delivery = {
+					...(stored.delivery as Record<string, unknown> | undefined),
+					...(incoming.delivery as Record<string, unknown> | undefined),
+				};
+				if (delivery.couriersEnabled === true) {
+					return req.payload
+						.find({
+							collection: "couriers",
+							where: { status: { equals: "active" } },
+							limit: 100,
+							depth: 0,
+							overrideAccess: true,
+						})
+						.then(({ docs }) => {
+							const refusal = courierAdapterPresenceRefusal(delivery, docs);
+							if (refusal) throw new Error(refusal);
+							return data;
+						});
+				}
 				return data;
 			},
 			validateCaseSettings,
+			({ data, originalDoc }) => {
+				const stored = (originalDoc ?? {}) as Record<string, unknown>;
+				const incoming = data as Record<string, unknown>;
+				const resale = {
+					...(stored.resale as Record<string, unknown> | undefined),
+					...(incoming.resale as Record<string, unknown> | undefined),
+				};
+				const payments = {
+					...(stored.payments as Record<string, unknown> | undefined),
+					...(incoming.payments as Record<string, unknown> | undefined),
+				};
+				const refusal = resalePrepaidRefusal(resale, payments);
+				if (refusal) throw new Error(refusal);
+				return data;
+			},
 		],
 	},
 	fields: [
@@ -396,6 +432,62 @@ export const AppSettings: GlobalConfig = {
 			],
 		},
 		{
+			name: "delivery",
+			type: "group",
+			label: "Delivery",
+			admin: {
+				description:
+					"P7 zone-based delivery. Flags default off, so the existing flat-fee COD flow remains active until delivery zones are configured.",
+			},
+			fields: [
+				{ name: "zonesEnabled", type: "checkbox", defaultValue: false },
+				{ name: "couriersEnabled", type: "checkbox", defaultValue: false },
+				{ name: "riderLinksEnabled", type: "checkbox", defaultValue: true },
+				{ name: "intercityEnabled", type: "checkbox", defaultValue: false },
+				{
+					name: "maxAttempts",
+					type: "number",
+					min: 1,
+					max: 5,
+					defaultValue: 2,
+				},
+				{
+					name: "rescheduleHours",
+					type: "number",
+					min: 1,
+					max: 168,
+					defaultValue: 48,
+				},
+				{
+					name: "pickupHoldDaysDefault",
+					type: "number",
+					min: 1,
+					max: 30,
+					defaultValue: 7,
+				},
+				{
+					name: "gpsFarThresholdMeters",
+					type: "number",
+					min: 0,
+					max: 10_000,
+					defaultValue: 300,
+				},
+				{
+					name: "providers",
+					type: "group",
+					fields: [
+						{
+							name: "yango",
+							type: "group",
+							fields: [
+								{ name: "enabled", type: "checkbox", defaultValue: false },
+							],
+						},
+					],
+				},
+			],
+		},
+		{
 			name: "payments",
 			type: "group",
 			label: "Payments (protected payment)",
@@ -617,6 +709,77 @@ export const AppSettings: GlobalConfig = {
 						},
 						{ name: "note", type: "textarea" },
 					],
+				},
+			],
+		},
+		{
+			name: "resale",
+			label: "Resale",
+			type: "group",
+			admin: {
+				description:
+					"Resale uses COD by default. Prepaid resale requires protected payments and a filed NotchPay affiliate-flow evidence gate.",
+			},
+			fields: [
+				{
+					name: "enabled",
+					type: "checkbox",
+					defaultValue: false,
+				},
+				{
+					name: "prepaidEnabled",
+					type: "checkbox",
+					defaultValue: false,
+				},
+				{
+					name: "gates",
+					type: "array",
+					fields: [
+						{
+							name: "gate",
+							type: "select",
+							required: true,
+							options: [
+								{
+									label: "NotchPay affiliate flow",
+									value: "notchpay_affiliate",
+								},
+							],
+						},
+						{ name: "clearedAt", type: "date" },
+						{ name: "clearedBy", type: "text" },
+						{
+							name: "evidence",
+							type: "upload",
+							relationTo: "payment-gate-evidence",
+						},
+						{ name: "note", type: "textarea" },
+					],
+				},
+				{
+					name: "poAcceptHours",
+					type: "number",
+					min: 1,
+					max: 168,
+					defaultValue: 24,
+				},
+				{
+					name: "newResellerWeeklyCap",
+					type: "number",
+					min: 0,
+					defaultValue: 25_000,
+				},
+				{
+					name: "minPayout",
+					type: "number",
+					min: 0,
+					defaultValue: 2_000,
+				},
+				{
+					name: "payoutApprovalAbove",
+					type: "number",
+					min: 0,
+					defaultValue: 500_000,
 				},
 			],
 		},
@@ -850,6 +1013,22 @@ export const AppSettings: GlobalConfig = {
 						{ name: "note", type: "textarea" },
 					],
 				},
+			],
+		},
+		{
+			name: "insights",
+			label: "Seller insights",
+			type: "group",
+			fields: [{ name: "enabled", type: "checkbox", defaultValue: false }],
+		},
+		{
+			name: "risk",
+			label: "Risk and fraud prevention",
+			type: "group",
+			fields: [
+				{ name: "enabled", type: "checkbox", defaultValue: false },
+				{ name: "autoEffectsEnabled", type: "checkbox", defaultValue: false },
+				{ name: "newLimitsEnabled", type: "checkbox", defaultValue: false },
 			],
 		},
 		{

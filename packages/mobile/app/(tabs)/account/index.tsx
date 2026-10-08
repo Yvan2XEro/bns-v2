@@ -386,6 +386,22 @@ export default function AccountScreen() {
 										borderColor={borderColor}
 									/>
 									<MenuItem
+										icon="chatbubble-ellipses-outline"
+										label={t("disputes.title")}
+										sublabel={t("disputes.subtitle")}
+										onPress={() => router.push("/account/disputes")}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+									<MenuItem
+										icon="return-down-back-outline"
+										label={t("returns.title")}
+										sublabel={t("returns.subtitle")}
+										onPress={() => router.push("/account/returns")}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+									<MenuItem
 										icon="cart-outline"
 										label={t("account.cart")}
 										onPress={() => router.push("/cart")}

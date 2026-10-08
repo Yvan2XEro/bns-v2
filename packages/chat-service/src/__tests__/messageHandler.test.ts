@@ -2,13 +2,19 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { mockFetch } from "./testFetch.ts";
 
 let rateLimitCounter = 0;
+let rateLimitIncrementCalls = 0;
+let rateLimitExpireCalls = 0;
 
 const mockRedis = {
-	incr: mock(() => {
+	send: mock((command: string, args: string[]) => {
+		if (command !== "EVAL")
+			throw new Error(`Unexpected Redis command: ${command}`);
+		rateLimitIncrementCalls++;
+		rateLimitExpireCalls++;
+		if (args[1] !== "1") throw new Error("Expected one Redis key");
 		rateLimitCounter++;
 		return Promise.resolve(rateLimitCounter);
 	}),
-	expire: mock(() => Promise.resolve()),
 };
 
 mock.module("../redis.ts", () => ({
@@ -39,12 +45,8 @@ const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
 	rateLimitCounter = 0;
-	mockRedis.incr.mockImplementation(() => {
-		rateLimitCounter++;
-		return Promise.resolve(rateLimitCounter);
-	});
-	mockRedis.incr.mockClear();
-	mockRedis.expire.mockClear();
+	rateLimitIncrementCalls = 0;
+	rateLimitExpireCalls = 0;
 	(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(true);
 	(getConversationMeta as ReturnType<typeof mock>).mockResolvedValue({
 		participants: ["user-1", "user-2"],
@@ -187,10 +189,6 @@ describe("message:send", () => {
 		registerMessageHandlers(io as never, socket as never, "user-1");
 
 		rateLimitCounter = 5;
-		mockRedis.incr.mockImplementation(() => {
-			rateLimitCounter++;
-			return Promise.resolve(rateLimitCounter);
-		});
 
 		const handler = handlers.get("message:send")!;
 		await handler({
@@ -280,13 +278,15 @@ describe("message:send", () => {
 		(hasConversationAccess as ReturnType<typeof mock>).mockResolvedValue(false);
 		const { socket, io, handlers } = createMockSocketAndIo();
 		registerMessageHandlers(io as never, socket as never, "user-9");
-		mockRedis.incr.mockClear();
+		rateLimitIncrementCalls = 0;
+		rateLimitExpireCalls = 0;
 		await handlers.get("message:send")?.({
 			conversationId: "conv-1",
 			content: "x",
 			tempId: "t",
 		});
-		expect(mockRedis.incr).not.toHaveBeenCalled();
+		expect(rateLimitIncrementCalls).toBe(0);
+		expect(rateLimitExpireCalls).toBe(0);
 	});
 
 	test("broadcasts a shop conversation to the shop-inbox room as well", async () => {

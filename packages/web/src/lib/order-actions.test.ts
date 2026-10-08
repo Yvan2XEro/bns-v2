@@ -479,6 +479,23 @@ describe("each per-order condition drops exactly its own action", () => {
 		expect(actions).toEqual(["request_withdrawal", "review_shop", "receipt"]);
 	});
 
+	it("offers contest_delivery for a carrier proof of delivery", () => {
+		const actions = availableActions(
+			subject("delivered", {
+				handover: {
+					method: "carrier_pod",
+					locked: false,
+					attemptsLeft: 5,
+					regenerationsLeft: 3,
+				},
+			}),
+			"buyer",
+			null,
+			NOW,
+		);
+		expect(actions).toContain("contest_delivery");
+	});
+
 	it("drops contest_delivery once contestBy has passed", () => {
 		const actions = availableActions(
 			subject("delivered", {

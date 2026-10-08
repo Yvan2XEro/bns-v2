@@ -1,4 +1,4 @@
-import type { Payload } from "payload";
+import type { Payload, PayloadRequest } from "payload";
 import { APIError, type CollectionConfig, type Where } from "payload";
 
 import { authenticated } from "../access/authenticated";
@@ -11,6 +11,7 @@ import {
 	type SuspensionCheckable,
 } from "../hooks/suspensionGuard";
 import { validateListingAttributes } from "../hooks/validation";
+import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
 import { getListingFormPreset } from "../lib/listingFormPreset";
 import {
@@ -114,13 +115,9 @@ const shouldValidateListingForm = ({
 };
 
 /**
- * One listing per product is a raw-driver partial unique index on `product`,
- * built by migration 20260922_000000_p1_listing_product — Payload's `indexes`
- * config has no partial filter, and a plain unique index would collide on the
- * `product: null` every non-product listing stores. `syncProductListing` reads
- * the winner's listing when that index rejects its insert; if the migration
- * skipped building the index (legacy duplicates), two concurrent first
- * publishes can still leave a product with two listings. Check its logs.
+ * Product-backed listings use a raw-driver partial unique index on `(shop,
+ * product)`. Supplier listings and reseller listings share a product reference
+ * but each shop may publish it once; non-product listings are excluded.
  */
 
 /**
@@ -134,6 +131,7 @@ const shouldValidateListingForm = ({
  */
 async function deriveOrderable(
 	payload: Payload,
+	req: PayloadRequest,
 	doc: Record<string, unknown>,
 ): Promise<boolean> {
 	const shopId = relationId(doc.shop);
@@ -148,6 +146,12 @@ async function deriveOrderable(
 			overrideAccess: true,
 		})
 		.catch(() => null);
+	const deliverySettings = await getDeliverySettings(payload);
+	const deliveryOptionAvailable = deliverySettings.zonesEnabled
+		? await activeDeliveryOptionAvailable(payload, req.context, shopId, {
+				intercityEnabled: deliverySettings.intercityEnabled,
+			})
+		: undefined;
 
 	const productId = relationId(doc.product);
 	const product = productId
@@ -174,9 +178,56 @@ async function deriveOrderable(
 		shop: shop as OrderableShop | null,
 		product: product as OrderableProduct | null,
 		productAvailable,
+		deliveryOptionAvailable,
 		settings,
 	};
 	return isListingOrderable(input);
+}
+
+async function activeDeliveryOptionAvailable(
+	payload: Payload,
+	context: Record<string, unknown> | undefined,
+	shopId: string,
+	options: { intercityEnabled: boolean },
+): Promise<boolean> {
+	const cacheValue = context?.p7ActiveDeliveryOptions;
+	const cache = isRecord(cacheValue) ? cacheValue : {};
+	const cached = cache[shopId];
+	if (typeof cached === "boolean") return cached;
+
+	const zones = await payload.count({
+		collection: "delivery-zones",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ active: { equals: true } },
+				{ codAllowed: { equals: true } },
+				...(options.intercityEnabled
+					? []
+					: [{ scope: { equals: "same_city" } }]),
+			],
+		},
+		overrideAccess: true,
+	});
+	const locations = await payload.count({
+		collection: "shop-locations",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ active: { equals: true } },
+				{ pickupEnabled: { equals: true } },
+			],
+		},
+		overrideAccess: true,
+	});
+	const available = zones.totalDocs + locations.totalDocs > 0;
+	if (context)
+		context.p7ActiveDeliveryOptions = { ...cache, [shopId]: available };
+	return available;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export const Listings: CollectionConfig = {
@@ -224,12 +275,16 @@ export const Listings: CollectionConfig = {
 		// nothing for a stale write to leave behind.
 		beforeRead: [
 			async ({ doc, req }) => {
-				doc.orderable = await deriveOrderable(req.payload, doc);
+				doc.orderable = await deriveOrderable(req.payload, req, doc);
 				return doc;
 			},
 		],
 		beforeChange: [
 			async ({ data, req, operation, originalDoc }) => {
+				if (req.context?.statsService !== true) {
+					data.views =
+						originalDoc?.views ?? (operation === "create" ? 0 : undefined);
+				}
 				// Skipped for moderation writes: suspending an account cascades
 				// onto its listings, and that cascade must not be blocked by the
 				// suspension it is applying.
@@ -243,6 +298,11 @@ export const Listings: CollectionConfig = {
 
 				const productService = req.context?.productService === true;
 				const moderationWrite = req.context?.moderationAction === true;
+				const resaleService = req.context?.resaleService === true;
+
+				if (!resaleService && !moderationWrite) {
+					data.resale = originalDoc?.resale ?? null;
+				}
 
 				if (!productService) {
 					if (relationId(originalDoc?.product) && !moderationWrite) {
@@ -321,7 +381,10 @@ export const Listings: CollectionConfig = {
 							400,
 						);
 					}
-					if (relationId(product.shop) !== nextShop) {
+					if (
+						relationId(product.shop) !== nextShop &&
+						req.context?.resaleService !== true
+					) {
 						throw new APIError(
 							"A listing cannot carry a product from another shop.",
 							400,
@@ -438,7 +501,9 @@ export const Listings: CollectionConfig = {
 							})
 							.catch(() => null);
 						const ownerId = relationId(listingShop?.owner);
-						data.seller = ownerId ?? req.user?.id;
+						data.seller = resaleService
+							? req.user?.id
+							: (ownerId ?? req.user?.id);
 
 						const actorId = req.user ? String(req.user.id) : null;
 						if (actorId) {
@@ -812,6 +877,61 @@ export const Listings: CollectionConfig = {
 				},
 				{ name: "variantCount", type: "number" },
 				{ name: "trackInventory", type: "checkbox" },
+			],
+		},
+		{
+			name: "resale",
+			type: "group",
+			fields: [
+				{
+					name: "supplierShop",
+					type: "relationship",
+					relationTo: "shops",
+					admin: { readOnly: true },
+				},
+				{
+					name: "link",
+					type: "relationship",
+					relationTo: "resale-links",
+					admin: { readOnly: true },
+				},
+				{
+					name: "prices",
+					type: "array",
+					fields: [
+						{
+							name: "variant",
+							type: "relationship",
+							relationTo: "product-variants",
+							required: true,
+						},
+						{ name: "price", type: "number", required: true, min: 1 },
+					],
+				},
+				{
+					name: "desiredStatus",
+					type: "select",
+					required: true,
+					defaultValue: "draft",
+					options: ["published", "draft"].map((value) => ({
+						label: value,
+						value,
+					})),
+				},
+				{
+					name: "holds",
+					type: "select",
+					hasMany: true,
+					options: [
+						"price_below_minimum",
+						"link_inactive",
+						"product_unavailable",
+						"supplier_unavailable",
+						"reseller_ineligible",
+						"terms_not_accepted",
+						"moderation",
+					].map((value) => ({ label: value, value })),
+				},
 			],
 		},
 		{

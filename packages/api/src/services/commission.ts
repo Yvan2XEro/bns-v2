@@ -32,18 +32,17 @@ import { type Actor, ModerationError } from "./moderation";
 import { registerOrderEventHandler } from "./orders/events";
 import { notifyCommissionInvoicePaid } from "./orders/notifications";
 import { appendOrderEvent } from "./orders/transitions";
-import { createPaymentIntent, markIntentPending } from "./payments";
+import {
+	createPaymentIntent,
+	markIntentPending,
+	NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
+} from "./payments";
 import { nextInvoiceNumber } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const INVOICE_SERIES = "C" as const;
-/** Boost's webhook route settles any purpose by `intent.purpose` — the
- * consequence table is explicit that this task adds no payment machinery, so
- * the commission checkout reuses this same callback instead of a new route. */
-const SETTLEMENT_WEBHOOK_PATH = "/api/public/boost/webhook/notchpay";
-
 /**
  * No shared "platform legal identity" constant exists yet in the codebase
  * (the order-contract builder that will need one is a later task). Declared
@@ -166,6 +165,66 @@ export async function accrueCommission(
 
 	const existing = await findExistingCharge(req, String(order.id));
 	if (existing) return existing;
+	if (items.some((item) => item.sourcing === "resale")) {
+		if (items.some((item) => item.sourcing !== "resale")) {
+			throw new Error("A resale order cannot mix fulfilment sources");
+		}
+		const purchaseOrders = await req.payload.find({
+			collection: "purchase-orders",
+			where: { order: { equals: String(order.id) } },
+			limit: 1,
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const purchaseOrder = purchaseOrders.docs[0];
+		if (!purchaseOrder) {
+			throw new Error(`Resale purchase order missing for order ${order.id}`);
+		}
+		const amount = purchaseOrder.platformCommission;
+		if (amount <= 0) return null;
+		const baseAmount = purchaseOrder.items.reduce(
+			(total, poItem) =>
+				total + poItem.resellerUnitPrice * poItem.quantity,
+			0,
+		);
+		let created: CommissionLine;
+		try {
+			created = await req.payload.create({
+				collection: "commission-lines",
+				overrideAccess: true,
+				req,
+				data: {
+					shop: relationId(purchaseOrder.supplierShop) ?? "",
+					order: String(order.id),
+					kind: "charge",
+					paymentMethod: order.paymentMethod,
+					baseAmount,
+					amount,
+					status: "open",
+					accruedAt: new Date().toISOString(),
+				},
+			});
+		} catch (error) {
+			if (!isUniqueViolation(error)) throw error;
+			const recovered = await findExistingCharge(req, String(order.id));
+			if (recovered) return recovered;
+			throw error;
+		}
+		await appendOrderEvent(req, order, {
+			type: "order.commission_accrued",
+			visibility: "shop",
+			actorType: "system",
+			metadata: {
+				commissionLineId: String(created.id),
+				amount,
+				baseAmount,
+				resaleSupplierShop: relationId(purchaseOrder.supplierShop),
+			},
+		});
+		return created;
+	}
 
 	const settings = await getOrderSettings(req.payload);
 	const rated = await Promise.all(
@@ -361,10 +420,18 @@ export async function issueInvoicesForWeek(
 
 		const charges = sumByKind(lines, "charge");
 		const credits = sumByKind(lines, "credit");
+		const nonVatCredits = lines
+			.filter(
+				(line) =>
+					line.kind === "credit" &&
+					line.reason === "resale_refusal_compensation",
+			)
+			.reduce((sum, line) => sum + line.amount, 0);
 		const carryIn = sumByKind(lines, "carry_over");
 		const totals = invoiceTotals({
 			charges,
 			credits,
+			nonVatCredits,
 			carryOver: -carryIn,
 			vatRateBps: settings.vatRateBps,
 		});
@@ -765,7 +832,10 @@ export async function payInvoice(
 			amount: totalDue,
 			currency,
 			description: `Commission BuyNSellem ${invoice.invoiceNumber}`,
-			callbackUrl: new URL(SETTLEMENT_WEBHOOK_PATH, serverUrl).toString(),
+			callbackUrl: new URL(
+				NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
+				serverUrl,
+			).toString(),
 			customer: { email: user.email ?? "", name: user.name ?? undefined },
 		});
 	} catch (error) {

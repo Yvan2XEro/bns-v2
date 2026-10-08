@@ -142,7 +142,10 @@ export async function markDelivered(
 		...order.handover,
 		method: options.method,
 	};
-	if (options.method === "seller_declaration") {
+	if (
+		options.method === "seller_declaration" ||
+		options.method === "carrier_pod"
+	) {
 		handoverSet.contestBy = new Date(
 			now.getTime() + CONTEST_WINDOW_MS,
 		).toISOString();
@@ -352,7 +355,10 @@ export async function contestDelivery(
 	order: Order,
 	options: ContestDeliveryOptions,
 ): Promise<{ order: Order; event: OrderEvent }> {
-	if (order.handover?.method !== "seller_declaration") {
+	if (
+		order.handover?.method !== "seller_declaration" &&
+		order.handover?.method !== "carrier_pod"
+	) {
 		throw new ServiceError(ERROR_CODES.orderContestWindowClosed, 409);
 	}
 	const contestBy = order.handover.contestBy

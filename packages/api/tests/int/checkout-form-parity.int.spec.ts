@@ -33,7 +33,7 @@ import {
  * all three over one table — every row a single defect at a boundary, or
  * none — and requires the same verdict on the same field from each.
  */
-type Method = "seller_delivery" | "pickup";
+type Method = "seller_delivery" | "pickup" | "courier";
 
 const valid: CheckoutAddressValues = {
 	recipientName: "Awa Ngono",
@@ -94,6 +94,7 @@ const CASES: Array<{
 		values: { district: "douala.other", districtOther: "  " },
 	},
 	{ name: "no landmark, delivery", values: { landmark: "" } },
+	{ name: "no landmark, courier", values: { landmark: "" }, method: "courier" },
 	{ name: "no landmark, pickup", values: { landmark: "" }, method: "pickup" },
 	{
 		name: "blank landmark, pickup",

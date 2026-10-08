@@ -28,7 +28,13 @@ export const MODERATION_ACTIONS = [
 	"dispute.resolve",
 	"dispute.request_info",
 	"dispute.redact_message",
+	"dispute.assign",
 	"strike.revoke",
+	"resale_link.suspend",
+	"resale_link.unsuspend",
+	"risk_flag.review",
+	"risk_flag.dismiss",
+	"risk_flag.action",
 ] as const;
 
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
@@ -105,6 +111,8 @@ export const ModerationLog: CollectionConfig = {
 				{ label: "Order", value: "order" },
 				{ label: "Commission invoice", value: "commission-invoice" },
 				{ label: "Dispute", value: "dispute" },
+				{ label: "Resale link", value: "resale-link" },
+				{ label: "Risk flag", value: "risk-flag" },
 			],
 			admin: { readOnly: true },
 		},

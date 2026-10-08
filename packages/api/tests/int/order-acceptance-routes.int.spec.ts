@@ -290,6 +290,44 @@ describe("POST /api/orders/{id}/ship", () => {
 		expect(body.status).toBe("shipped");
 		expect(JSON.stringify(body)).not.toMatch(/codeHash/);
 	});
+
+	it("starts the live seller-delivery shipment through its state machine", async () => {
+		const payload = seed(baseOrder({ status: "accepted" }));
+		payload.store.shipments = [
+			{
+				id: "shipment-1",
+				shipmentNumber: "SHP-2610-000001",
+				order: "order-1",
+				storefrontShop: "shop-1",
+				fulfillingShop: "shop-1",
+				method: "seller_delivery",
+				carrier: "self",
+				origin: {},
+				destination: {},
+				fee: 0,
+				status: "pending",
+			},
+		];
+		asUser(payload, OWNER);
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/orders/[id]/ship/route"
+		);
+
+		const response = await POST(post("/x"), {
+			params: Promise.resolve({ id: "order-1" }),
+		});
+
+		expect(response.status).toBe(200);
+		expect((await response.json()).status).toBe("shipped");
+		expect(payload.store.shipments?.[0]?.status).toBe("in_transit");
+		expect(payload.store["shipment-events"]).toMatchObject([
+			{
+				type: "shipment.in_transit",
+				statusFrom: "pending",
+				statusTo: "in_transit",
+			},
+		]);
+	});
 });
 
 describe("POST /api/orders/{id}/confirm-by-call", () => {

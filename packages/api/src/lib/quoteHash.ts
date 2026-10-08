@@ -8,7 +8,9 @@ export interface QuoteHashInput {
 		unitPrice: number;
 	}>;
 	deliveryFee: number;
-	method: "seller_delivery" | "pickup";
+	method: "seller_delivery" | "pickup" | "courier";
+	optionId?: string;
+	deliverySourceUpdatedAt?: string;
 	city: string;
 	paymentMethod: "cod" | "mobile_money";
 	termsVersion: string;
@@ -32,6 +34,10 @@ export function quoteHash(input: QuoteHashInput): string {
 			}))
 			.sort((a, b) => (a.lineId < b.lineId ? -1 : a.lineId > b.lineId ? 1 : 0)),
 		deliveryFee: input.deliveryFee,
+		...(input.optionId ? { optionId: input.optionId } : {}),
+		...(input.deliverySourceUpdatedAt
+			? { deliverySourceUpdatedAt: input.deliverySourceUpdatedAt }
+			: {}),
 		method: input.method,
 		city: input.city,
 		paymentMethod: input.paymentMethod,

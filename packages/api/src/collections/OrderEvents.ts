@@ -7,11 +7,17 @@ import { staffOnly } from "../access/staff";
  * their `orders.status` values are reserved without being written by P4.
  */
 export const ORDER_EVENT_TYPES = [
+	"order.disputed",
+	"order.dispute_resolved",
+	"order.dispute_withdrawn",
+	"order.returned",
 	"order.placed",
 	"order.receipt_sent",
 	"order.confirmation_code_sent",
 	"order.confirmed",
 	"order.accepted",
+	"order.purchase_order_sent",
+	"order.purchase_order_accepted",
 	"order.declined",
 	"order.accept_reminder_sent",
 	"order.shipped",
@@ -25,9 +31,13 @@ export const ORDER_EVENT_TYPES = [
 	"order.delivery_failed",
 	"order.cancelled",
 	"order.withdrawal_requested",
+	"order.return_cancelled",
+	"order.return_expired",
+	"order.return_refunded",
 	"order.completed",
 	"order.commission_accrued",
 	"order.note_added",
+	"order.address_updated",
 ] as const;
 
 /**

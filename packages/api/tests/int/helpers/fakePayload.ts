@@ -170,12 +170,12 @@ function applyRequestContext(req: Req, context: Doc | undefined): void {
  * write a transaction made, not just some of them.
  */
 export function fakePayload(
-	seed: Record<string, Doc[]> = {},
+	seed: Record<string, object[]> = {},
 	options: Options = {},
 ) {
 	const store: Record<string, Doc[]> = {};
 	for (const [collection, docs] of Object.entries(seed))
-		store[collection] = clone(docs);
+		store[collection] = docs.map((doc) => ({ ...clone(doc) }));
 	const globals: Record<string, Doc> = clone(options.globals ?? {});
 	const journals = new Map<string, Undo[]>();
 	const writes: Array<{
@@ -284,7 +284,6 @@ export function fakePayload(
 				sort,
 				limit,
 				page = 1,
-				pagination,
 				req,
 				context,
 			} = findArgs;
@@ -294,7 +293,7 @@ export function fakePayload(
 				table(collection).filter((d) => matches(d, where)),
 				sort,
 			);
-			const unlimited = !limit || pagination === false;
+			const unlimited = !limit;
 			const size = unlimited ? all.length || 1 : limit;
 			const start = unlimited ? 0 : (page - 1) * size;
 			const docs = unlimited ? all : all.slice(start, start + size);

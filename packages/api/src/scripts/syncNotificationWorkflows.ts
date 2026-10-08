@@ -1440,7 +1440,7 @@ const workflowSpecs: WorkflowSpec[] = [
 		definition: {
 			name: "Order Delivery Declared",
 			description:
-				"Tells the buyer a seller declared the order delivered without a scanned code, and until when they can contest it.",
+				"Tells the buyer a delivery was declared without a verified handover code, and until when they can contest it.",
 			workflowId: "order-delivery-declared",
 			tags: ["order"],
 			active: true,
@@ -1458,13 +1458,13 @@ const workflowSpecs: WorkflowSpec[] = [
 			steps: [
 				inAppStep("In-App", "in-app", {
 					subject: "Livraison declaree",
-					body: "Le vendeur a declare la commande {{payload.orderNumber}} livree. / The seller declared order {{payload.orderNumber}} delivered.",
+					body: "La commande {{payload.orderNumber}} a ete signalee comme livree sans code verifie. / Order {{payload.orderNumber}} was reported delivered without a verified code.",
 					redirect: redirect("/purchases/{{payload.orderId}}"),
 					data: { orderId: "{{payload.orderId}}" },
 				}),
 				pushStep("Push", "push", {
 					subject: "Livraison declaree",
-					body: "Le vendeur a declare la commande {{payload.orderNumber}} livree.",
+					body: "La commande {{payload.orderNumber}} a ete signalee comme livree sans code verifie.",
 				}),
 			],
 		},
@@ -2342,7 +2342,335 @@ const workflowSpecs: WorkflowSpec[] = [
 			],
 		},
 	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shipment Attempt Failed",
+			description:
+				"Notifies the buyer and fulfilling shop when a delivery attempt fails.",
+			workflowId: "shipment-attempt-failed",
+			tags: ["shipment", "delivery"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					shipmentId: stringProperty("Shipment identifier"),
+					reason: stringProperty("Delivery attempt failure reason"),
+					attemptsLeft: numberProperty("Remaining delivery attempts"),
+					rescheduleBy: stringProperty("Redelivery request deadline, ISO date"),
+					audience: stringProperty('"buyer" or "shop"'),
+				},
+				[
+					"orderId",
+					"shipmentId",
+					"reason",
+					"attemptsLeft",
+					"rescheduleBy",
+					"audience",
+				],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Echec de livraison / Delivery attempt failed",
+					body: "La livraison a echoue ({{payload.reason}}). Il reste {{payload.attemptsLeft}} tentative(s). / Delivery failed ({{payload.reason}}). {{payload.attemptsLeft}} attempt(s) remain.",
+					redirect: redirect(
+						"{% if payload.audience == 'shop' %}/seller/orders/{{payload.orderId}}{% else %}/purchases/{{payload.orderId}}{% endif %}",
+					),
+					data: { orderId: "{{payload.orderId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Echec de livraison / Delivery failed",
+					body: "La livraison a echoue. Choisissez un nouveau creneau. / Delivery failed. Choose another time slot.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shipment Redelivery Scheduled",
+			description:
+				"Notifies the fulfilling shop and assigned courier team about a redelivery slot.",
+			workflowId: "shipment-redelivery-scheduled",
+			tags: ["shipment", "delivery"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					orderId: stringProperty("Order identifier"),
+					shipmentId: stringProperty("Shipment identifier"),
+					date: stringProperty("Scheduled delivery date, ISO date"),
+					window: stringProperty('"morning", "afternoon" or "evening"'),
+					audience: stringProperty('"shop" or "rider"'),
+				},
+				["orderId", "shipmentId", "date", "window", "audience"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Nouvelle tentative / Redelivery scheduled",
+					body: "Une nouvelle tentative est programmee pour {{payload.date}} ({{payload.window}}). / A new delivery attempt is scheduled for {{payload.date}} ({{payload.window}}).",
+					redirect: redirect(
+						"{% if payload.audience == 'rider' %}/rider/shipment/{{payload.shipmentId}}{% else %}/seller/orders/{{payload.orderId}}{% endif %}",
+					),
+					data: { shipmentId: "{{payload.shipmentId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Nouvelle tentative / Redelivery scheduled",
+					body: "Nouvel horaire de livraison confirme. / New delivery slot confirmed.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Shipment Return Initiated",
+			description:
+				"Notifies the fulfilling shop when a failed shipment is being returned.",
+			workflowId: "shipment-return-initiated",
+			tags: ["shipment", "delivery"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shipmentId: stringProperty("Shipment identifier"),
+					orderNumber: stringProperty("Human-readable order number"),
+					reason: stringProperty("Final delivery failure reason"),
+					audience: stringProperty('"shop"'),
+				},
+				["shipmentId", "orderNumber", "reason", "audience"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: "Colis en retour / Shipment return initiated",
+					body: "La livraison de la commande {{payload.orderNumber}} a échoué ({{payload.reason}}). Le colis est en cours de retour à la boutique. / Delivery for order {{payload.orderNumber}} failed ({{payload.reason}}). The parcel is being returned to the shop.",
+					redirect: redirect("/seller/orders"),
+					data: { shipmentId: "{{payload.shipmentId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: "Colis en retour / Shipment return initiated",
+					body: "La commande {{payload.orderNumber}} est en cours de retour à la boutique. / Order {{payload.orderNumber}} is being returned to the shop.",
+				}),
+			],
+		},
+	},
+	{
+		channels: { inApp: true, push: true },
+		definition: {
+			name: "Delivery Settings Incomplete",
+			description:
+				"Prompts the shop owner to finish migrating delivery settings.",
+			workflowId: "delivery-settings-incomplete",
+			tags: ["delivery", "shop-settings"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					needsStructuredPickupHours: booleanProperty(
+						"Pickup hours need to be entered in the structured editor",
+					),
+					noActiveOption: booleanProperty(
+						"The shop has no active COD delivery option",
+					),
+				},
+				["shopId", "needsStructuredPickupHours", "noActiveOption"],
+			),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject:
+						"Finalisez vos options de livraison / Complete delivery setup",
+					body: "Vérifiez les horaires de retrait et les options de livraison de votre boutique. / Review your shop's pickup hours and delivery options.",
+					redirect: redirect("/seller/delivery"),
+					primaryAction: action("Configurer / Configure", "/seller/delivery"),
+					data: { shopId: "{{payload.shopId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject:
+						"Finalisez vos options de livraison / Complete delivery setup",
+					body: "Vérifiez les paramètres de livraison de votre boutique. / Review your shop's delivery settings.",
+				}),
+			],
+		},
+	},
 ];
+
+const casePayloadProperties = {
+	caseId: stringProperty("Return or dispute identifier"),
+	caseNumber: stringProperty("Human-readable case number"),
+	caseTitle: stringProperty("Short bilingual notification title"),
+	message: stringProperty("Bilingual notification body"),
+	audience: stringProperty('"buyer" or "shop"'),
+};
+
+const resaleLinkBaseProperties = {
+	linkId: stringProperty("Resale link identifier"),
+	shopId: stringProperty("Shop that should receive the notification"),
+	otherShopName: stringProperty("Name of the other shop in the link"),
+};
+
+const resaleLinkWorkflowDefinitions = [
+	{
+		workflowId: "resale-link-requested",
+		name: "Resale link requested",
+		properties: {
+			...resaleLinkBaseProperties,
+			message: stringProperty("Reseller's request message"),
+		},
+		required: ["linkId", "shopId", "otherShopName", "message"],
+		subject: "Nouvelle demande de revente / New resale request",
+		body: "{{payload.otherShopName}} souhaite revendre vos produits. / {{payload.otherShopName}} wants to resell your products. {{payload.message}}",
+	},
+	{
+		workflowId: "resale-link-decided",
+		name: "Resale link decided",
+		properties: {
+			...resaleLinkBaseProperties,
+			action: stringProperty('"approved" or "declined"'),
+		},
+		required: ["linkId", "shopId", "otherShopName", "action"],
+		subject: "Demande de revente mise à jour / Resale request updated",
+		body: "Votre demande auprès de {{payload.otherShopName}} est {{payload.action}}. / Your request to {{payload.otherShopName}} was {{payload.action}}.",
+	},
+	{
+		workflowId: "resale-link-suspended",
+		name: "Resale link suspended",
+		properties: {
+			...resaleLinkBaseProperties,
+			action: stringProperty('"suspended" or "revoked"'),
+			reason: stringProperty(
+				"Reason category for the suspension or revocation",
+			),
+		},
+		required: ["linkId", "shopId", "otherShopName", "action", "reason"],
+		subject: "Accès de revente modifié / Resale access updated",
+		body: "Votre accès aux produits de {{payload.otherShopName}} est {{payload.action}}. Motif : {{payload.reason}}. / Your access to {{payload.otherShopName}} products is {{payload.action}}. Reason: {{payload.reason}}.",
+	},
+] as const;
+
+for (const workflow of resaleLinkWorkflowDefinitions) {
+	const redirectUrl = "/seller/resale/links/{{payload.linkId}}";
+	workflowSpecs.push({
+		channels: { inApp: true, push: true },
+		definition: {
+			name: workflow.name,
+			description: `Notifies a resale-link participant about ${workflow.name.toLowerCase()}.`,
+			workflowId: workflow.workflowId,
+			tags: ["resale", "resale-link"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(workflow.properties, [...workflow.required]),
+			preferences: preferences({ inApp: true, push: true }),
+			steps: [
+				inAppStep("In-App", "in-app", {
+					subject: workflow.subject,
+					body: workflow.body,
+					redirect: redirect(redirectUrl),
+					primaryAction: action("Ouvrir / Open", redirectUrl),
+					data: { linkId: "{{payload.linkId}}" },
+				}),
+				pushStep("Push", "push", {
+					subject: workflow.subject,
+					body: workflow.body,
+				}),
+			],
+		},
+	});
+}
+
+const caseWorkflowDefinitions = [
+	["return-requested", "Return requested", "in_app", "push", "email"],
+	["return-instructions", "Return instructions", "in_app", "email"],
+	["return-received", "Return received", "in_app", "push"],
+	["return-inspected", "Return inspected", "in_app", "push"],
+	["refund-proof-submitted", "Refund proof submitted", "in_app", "push"],
+	["refund-overdue", "Refund overdue", "in_app", "push", "email"],
+	["dispute-opened", "Dispute opened", "in_app", "push", "email"],
+	["dispute-message", "Dispute update", "in_app", "push"],
+	["dispute-deadline-reminder", "Dispute deadline reminder", "push", "email"],
+	[
+		"dispute-info-requested",
+		"More information requested",
+		"in_app",
+		"push",
+		"email",
+	],
+	["dispute-escalated", "Dispute under review", "in_app"],
+	["dispute-resolved", "Dispute resolved", "in_app", "push", "email"],
+	["dispute-review-overdue", "Dispute review overdue", "email"],
+	["shop-strike-added", "Shop standing updated", "in_app", "email"],
+] as const;
+
+for (const [workflowId, name, ...channels] of caseWorkflowDefinitions) {
+	const usesDisputeId = workflowId.startsWith("dispute-");
+	const usesStrikeId = workflowId === "shop-strike-added";
+	const idField = usesDisputeId
+		? "disputeId"
+		: usesStrikeId
+			? "strikeId"
+			: "returnId";
+	const fields = {
+		...casePayloadProperties,
+		[idField]: stringProperty(`${name} identifier`),
+	};
+	const required = Object.keys(fields);
+	const channelSet = new Set<string>(channels);
+	const channelConfig: ChannelConfig = {
+		inApp: channelSet.has("in_app"),
+		push: channelSet.has("push"),
+		email: channelSet.has("email"),
+	};
+	const title = "{{payload.caseTitle}}";
+	const body = "{{payload.message}}";
+	const redirectUrl = usesDisputeId
+		? "/disputes/{{payload.disputeId}}"
+		: usesStrikeId
+			? "/seller/disputes"
+			: "/returns/{{payload.returnId}}";
+	const steps: ManagedWorkflowStep[] = [];
+	if (channelConfig.inApp) {
+		steps.push(
+			inAppStep("In-App", "in-app", {
+				subject: title,
+				body,
+				redirect: redirect(redirectUrl),
+				primaryAction: action("Ouvrir / Open", redirectUrl),
+				data: { caseId: `{{payload.${idField}}}` },
+			}),
+		);
+	}
+	if (channelConfig.push) {
+		steps.push(pushStep("Push", "push", { subject: title, body }));
+	}
+	if (channelConfig.email) {
+		steps.push(emailStep("Email", "email", { subject: title, body }));
+	}
+	workflowSpecs.push({
+		channels: channelConfig,
+		definition: {
+			name,
+			description: `Notifies the relevant parties about ${name.toLowerCase()}.`,
+			workflowId,
+			tags: ["cases", usesDisputeId ? "disputes" : "returns"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(fields, required),
+			preferences: preferences(channelConfig),
+			steps,
+		},
+	});
+}
 
 /** The finished workflow definitions, e.g. for a test asserting on their shape. */
 export const WORKFLOWS = workflowSpecs.map((spec) => spec.definition);

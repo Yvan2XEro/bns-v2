@@ -62,6 +62,7 @@ export const Reports: CollectionConfig = {
 				{ label: "Message", value: "message" },
 				{ label: "Shop", value: "shop" },
 				{ label: "Order", value: "order" },
+				{ label: "Shipment", value: "shipment" },
 			],
 		},
 		{
@@ -81,6 +82,8 @@ export const Reports: CollectionConfig = {
 				{ label: "Harassment", value: "harassment" },
 				{ label: "Other", value: "other" },
 				{ label: "Delivery contested", value: "delivery_contested" },
+				{ label: "COD remittance", value: "cod_remittance" },
+				{ label: "Return overdue", value: "return_overdue" },
 			],
 		},
 		{

@@ -148,7 +148,7 @@ export function checkoutAddressSchema(
 			fail("districtOther");
 		const landmark = v.landmark.trim();
 		if (
-			(method === "seller_delivery" || landmark) &&
+			(method !== "pickup" || landmark) &&
 			(landmark.length < 5 || landmark.length > 200)
 		)
 			fail("landmark");

@@ -150,7 +150,7 @@ export function checkoutAddressSchema(
 			fail("districtOther", "errorDistrictOther");
 		const landmark = v.landmark.trim();
 		if (
-			(method === "seller_delivery" || landmark) &&
+			(method !== "pickup" || landmark) &&
 			(landmark.length < 5 || landmark.length > 200)
 		)
 			fail("landmark", "errorLandmark");

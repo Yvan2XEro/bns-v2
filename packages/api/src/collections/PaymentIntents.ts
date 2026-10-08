@@ -80,6 +80,7 @@ export const PaymentIntents: CollectionConfig = {
 				{ label: "Boost", value: "boost" },
 				{ label: "Commission", value: "commission" },
 				{ label: "Checkout", value: "checkout" },
+				{ label: "Reseller charge", value: "reseller_charge" },
 			],
 		},
 		{
@@ -90,6 +91,7 @@ export const PaymentIntents: CollectionConfig = {
 				{ label: "Boost payment", value: "boost-payment" },
 				{ label: "Commission invoice", value: "commission-invoice" },
 				{ label: "Order", value: "order" },
+				{ label: "Reseller charge", value: "reseller-charge" },
 			],
 		},
 		{ name: "targetId", type: "text", required: true, index: true },

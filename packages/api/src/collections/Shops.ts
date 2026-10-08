@@ -1,6 +1,6 @@
 import type { CollectionConfig, Where } from "payload";
 import { isAdmin, isModerator } from "../access/roles";
-import { memberShopIds } from "../access/shopRoles";
+import { can, memberShopIds, shopRoleFieldAccess } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
 import { createShopEndpoint } from "../endpoints/shops";
 import {
@@ -33,6 +33,7 @@ export const SHOP_SERVICE_FIELDS = [
 	"suspensionLogId",
 	"publishedListingCount",
 	"notifiedExpiryDays",
+	"deliveryMigrationNoticeSentAt",
 	"ordersRestrictedAt",
 	"ordersRestrictedReason",
 	"rating",
@@ -137,6 +138,14 @@ export const Shops: CollectionConfig = {
 
 				for (const field of SHOP_SERVICE_FIELDS) {
 					data[field] = originalDoc?.[field];
+				}
+				const incomingOrderSettings = data.orderSettings as
+					| Record<string, unknown>
+					| undefined;
+				if (incomingOrderSettings?.recentExternalRiders !== undefined) {
+					incomingOrderSettings.recentExternalRiders = (
+						originalDoc?.orderSettings as Record<string, unknown> | undefined
+					)?.recentExternalRiders;
 				}
 
 				// `legal` is owner-editable while the shop is below level 3 and is
@@ -295,6 +304,17 @@ export const Shops: CollectionConfig = {
 			},
 		},
 		{
+			name: "deliveryMigrationNoticeSentAt",
+			type: "date",
+			access: { read: () => false },
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description:
+					"Prevents duplicate P7 migration notices to the shop owner.",
+			},
+		},
+		{
 			/**
 			 * Declared by the shop until level 3, reviewed at level 3. The whole
 			 * group is public: it is what a buyer needs to know who they are
@@ -376,12 +396,35 @@ export const Shops: CollectionConfig = {
 			fields: [
 				{ name: "codEnabled", type: "checkbox", defaultValue: false },
 				{ name: "sellerDeliveryEnabled", type: "checkbox", defaultValue: true },
-				{ name: "deliveryFee", type: "number", min: 0, max: 20_000 },
-				{ name: "deliveryEtaText", type: "text" },
+				{
+					name: "deliveryFee",
+					type: "number",
+					min: 0,
+					max: 20_000,
+					admin: {
+						readOnly: true,
+						description:
+							"Deprecated: replaced by delivery zones; retained for the transition release.",
+					},
+				},
+				{
+					name: "deliveryEtaText",
+					type: "text",
+					admin: {
+						readOnly: true,
+						description:
+							"Deprecated: replaced by delivery zone ETA; retained for the transition release.",
+					},
+				},
 				{ name: "pickupEnabled", type: "checkbox", defaultValue: false },
 				{
 					name: "pickupPoint",
 					type: "group",
+					admin: {
+						readOnly: true,
+						description:
+							"Deprecated: replaced by shop locations; retained for the transition release.",
+					},
 					fields: [
 						{ name: "address", type: "text" },
 						{ name: "landmark", type: "text" },
@@ -394,6 +437,24 @@ export const Shops: CollectionConfig = {
 							],
 						},
 						{ name: "hours", type: "text" },
+					],
+				},
+				{
+					name: "recentExternalRiders",
+					type: "array",
+					maxRows: 10,
+					access: {
+						read: shopRoleFieldAccess(
+							(role) => can(role, "settings.edit"),
+							"id",
+						),
+						create: () => false,
+						update: () => false,
+					},
+					fields: [
+						{ name: "name", type: "text", required: true },
+						{ name: "phone", type: "text", required: true },
+						{ name: "lastUsedAt", type: "date", required: true },
 					],
 				},
 				{ name: "salesTermsExtra", type: "textarea", maxLength: 2000 },

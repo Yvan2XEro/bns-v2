@@ -15,6 +15,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { SellerHubHeader } from "@/src/components/shop/SellerHubHeader";
+import { SellerInsightsSummary } from "@/src/components/shop/SellerInsightsSummary";
 import {
 	type ManageTile,
 	SellerManageCard,
@@ -158,7 +159,7 @@ function SellerHubContent({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { ordersEnabled } = useAppConfig();
+	const { ordersEnabled, insightsEnabled, resaleEnabled } = useAppConfig();
 	const verification = useShopVerification(shop.id);
 	const { shops } = useActiveShop();
 	const inboxUnread =
@@ -226,6 +227,12 @@ function SellerHubContent({
 		string,
 		Pick<ManageTile, "icon" | "title" | "body" | "onPress" | "alert">
 	> = {
+		returns: {
+			icon: "return-down-back-outline",
+			title: t("sellerReturns.title"),
+			body: t("sellerReturns.tileBody"),
+			onPress: () => router.push("/seller/returns"),
+		},
 		orders: {
 			icon: "receipt-outline",
 			title: t("seller.tileOrders"),
@@ -239,6 +246,17 @@ function SellerHubContent({
 					pathname: "/seller/orders",
 					params: toAccept > 0 ? { tab: "to_accept" } : {},
 				}),
+		},
+		resale: {
+			icon: "repeat-outline",
+			title: t("seller.tileResaleOrders"),
+			body: t("seller.tileResaleOrdersBody"),
+			onPress: () =>
+				router.push(
+					shop?.capabilities.supplier
+						? "/seller/resale/offered"
+						: "/seller/resale/catalogue",
+				),
 		},
 		billing: {
 			icon: "card-outline",
@@ -325,7 +343,7 @@ function SellerHubContent({
 			toAccept,
 			paymentsHolds,
 		},
-		{ ordersEnabled },
+		{ ordersEnabled, resaleEnabled },
 	).map((tile) => ({
 		key: tile.key,
 		badge: tile.badge,
@@ -423,6 +441,11 @@ function SellerHubContent({
 							) : null}
 
 							<SellerManageCard tiles={manageTiles} />
+							<SellerInsightsSummary
+								enabled={insightsEnabled}
+								role={role}
+								shopId={shop.id}
+							/>
 						</>
 					) : null}
 				</View>

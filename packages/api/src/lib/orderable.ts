@@ -27,6 +27,8 @@ export interface IsListingOrderableInput {
 	 * not the first implementation of this one.
 	 */
 	productAvailable: boolean | null;
+	/** Undefined preserves P4's flat-delivery behavior while P7 is disabled. */
+	deliveryOptionAvailable?: boolean;
 	settings: OrderSettings;
 	now?: Date;
 }
@@ -51,6 +53,7 @@ export function isListingOrderable(input: IsListingOrderableInput): boolean {
 		shop,
 		product,
 		productAvailable,
+		deliveryOptionAvailable,
 		listingStatus,
 		now = new Date(),
 	} = input;
@@ -76,6 +79,7 @@ export function isListingOrderable(input: IsListingOrderableInput): boolean {
 
 	// 5. COD must be enabled for the shop (assertCheckoutPreconditions #6).
 	if (shop.orderSettings?.codEnabled !== true) return false;
+	if (deliveryOptionAvailable === false) return false;
 
 	// 6. The shop's city must be one of the settings' current launch cities
 	// (cart.ts's `orderabilityReason` "cityNotLaunch").

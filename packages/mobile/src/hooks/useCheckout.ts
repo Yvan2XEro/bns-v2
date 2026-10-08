@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
+import type { DeliveryQuote } from "../../../api/src/contracts/deliveryQuote";
 import { api } from "../lib/api";
 import { shouldRefetchOnForeground } from "../lib/paymentFlow";
 import type { PaymentChannel } from "../lib/paymentStatus";
 import type {
-	DeliveryOption,
 	PaymentIntentResponse,
 	PaymentStatusView,
 	PlaceInput,
@@ -16,8 +16,11 @@ import type {
 import { cartKey } from "./useCart";
 import { purchasesRootKey } from "./usePurchases";
 
-export const deliveryOptionsKey = (city: string, district: string) =>
-	["checkout", "delivery-options", city, district] as const;
+export const deliveryOptionsKey = (
+	city: string,
+	district: string,
+	paymentMethod: "cod" | "mobile_money" = "cod",
+) => ["checkout", "delivery-options", city, district, paymentMethod] as const;
 
 /**
  * `GET /api/checkout/delivery-options` — the delivery step's own source, so
@@ -26,14 +29,16 @@ export const deliveryOptionsKey = (city: string, district: string) =>
 export function useDeliveryOptions(
 	city: string | null,
 	district: string | null,
+	paymentMethod: "cod" | "mobile_money" = "cod",
 ) {
 	const params = new URLSearchParams();
 	if (city) params.set("city", city);
 	if (district) params.set("district", district);
+	params.set("paymentMethod", paymentMethod);
 	return useQuery({
-		queryKey: deliveryOptionsKey(city ?? "", district ?? ""),
+		queryKey: deliveryOptionsKey(city ?? "", district ?? "", paymentMethod),
 		queryFn: () =>
-			api.get<{ city: string; options: DeliveryOption[] }>(
+			api.get<DeliveryQuote & { city: string }>(
 				`/api/checkout/delivery-options?${params.toString()}`,
 			),
 		enabled: Boolean(city),

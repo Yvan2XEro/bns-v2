@@ -25,6 +25,28 @@ export const SELLER_NAV = [
 		orders: true,
 	},
 	{
+		href: "/seller/disputes",
+		key: "disputes",
+		exact: false,
+		permission: "orders.view",
+		orders: true,
+	},
+	{
+		href: "/seller/returns",
+		key: "returns",
+		exact: false,
+		permission: "orders.view",
+		orders: false,
+	},
+	{
+		href: "/seller/resale/catalogue",
+		key: "resale",
+		exact: false,
+		permission: "resale.manage",
+		orders: true,
+		resale: true,
+	},
+	{
 		href: "/seller/catalogue",
 		key: "catalogue",
 		exact: false,
@@ -112,6 +134,7 @@ export const SELLER_NAV = [
 	permission: ShopPermission | null;
 	orders: boolean;
 	protectedPayment?: boolean;
+	resale?: boolean;
 }>;
 
 export type SellerNavEntry = (typeof SELLER_NAV)[number];
@@ -121,13 +144,16 @@ export function visibleSellerNav(
 	role: ShopRole | null,
 	ordersEnabled: boolean,
 	protectedPaymentEnabled = false,
+	resaleEnabled = false,
 ): SellerNavEntry[] {
 	return SELLER_NAV.filter((entry) => {
 		const gatedByFlag =
 			"protectedPayment" in entry ? entry.protectedPayment === true : false;
+		const gatedByResale = "resale" in entry && entry.resale === true;
 		return (
 			(ordersEnabled || !entry.orders) &&
 			(protectedPaymentEnabled || !gatedByFlag) &&
+			(resaleEnabled || !gatedByResale) &&
 			(entry.permission === null || can(role, entry.permission))
 		);
 	});

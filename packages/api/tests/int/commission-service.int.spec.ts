@@ -73,6 +73,39 @@ const itemsOf = (p: FakePayload) =>
 const eventsOf = (p: FakePayload) => p.store["order-events"];
 
 describe("accrueCommission", () => {
+	it("bills the supplier platform commission for resale orders, not the reseller", async () => {
+		const payload = world({
+			shops: [
+				{ id: "supplier-1", name: "Supplier", handle: "supplier" },
+				{ id: "reseller-1", name: "Reseller", handle: "reseller" },
+			],
+			orders: [order({ shop: "reseller-1" })],
+			"order-items": [
+				item({
+					sourcing: "resale",
+					fulfillingShop: "supplier-1",
+					resaleLink: "link-1",
+				}),
+			],
+			"purchase-orders": [
+				{
+					id: "po-1",
+					order: "o-1",
+					supplierShop: "supplier-1",
+					resellerShop: "reseller-1",
+					platformCommission: 560,
+					items: [{ resellerUnitPrice: 7_000, quantity: 1 }],
+				},
+			],
+		});
+		const line = await withTransaction(payload, (req) =>
+			accrueCommission(req, orderOf(payload), itemsOf(payload)),
+		);
+
+		expect(line).toMatchObject({ shop: "supplier-1", baseAmount: 7_000, amount: 560 });
+		expect(linesOf(payload)).toHaveLength(1);
+	});
+
 	it("accrues one charge line on delivery, with the item subtotal as the base", async () => {
 		const payload = world();
 		const line = await withTransaction(payload, (req) =>

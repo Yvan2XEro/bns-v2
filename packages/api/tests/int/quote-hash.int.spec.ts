@@ -42,6 +42,11 @@ describe("quoteHash", () => {
 		["the city", { city: "yaounde" }],
 		["the payment method", { paymentMethod: "mobile_money" as const }],
 		["the terms version", { termsVersion: "2026-10" }],
+		["the chosen zone", { optionId: "seller_delivery:zone-1" }],
+		[
+			"a zone edit even when its fee stays unchanged",
+			{ deliverySourceUpdatedAt: "2026-10-05T12:00:00Z" },
+		],
 	])("changes when %s changes", (_label, patch) => {
 		expect(quoteHash({ ...base, ...patch })).not.toBe(quoteHash(base));
 	});

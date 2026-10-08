@@ -14,6 +14,10 @@ export function getProvider(name: ProviderName): PaymentProvider {
 		return new StripeProvider(key, webhookSecret);
 	}
 
+	return getNotchPayProvider();
+}
+
+export function getNotchPayProvider(): NotchPayProvider {
 	const publicKey = process.env.NOTCHPAY_PUBLIC_KEY;
 	if (!publicKey) {
 		throw new Error("NotchPay non configuré : définir NOTCHPAY_PUBLIC_KEY");
@@ -22,6 +26,7 @@ export function getProvider(name: ProviderName): PaymentProvider {
 		publicKey,
 		process.env.NOTCHPAY_BASE_URL ?? "https://api.notchpay.co",
 		process.env.NOTCHPAY_HASH_KEY,
+		process.env.NOTCHPAY_PRIVATE_KEY,
 	);
 }
 

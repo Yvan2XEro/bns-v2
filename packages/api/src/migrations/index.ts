@@ -13,6 +13,12 @@ import * as migration_20261002_000000_p4_order_indexes from "./20261002_000000_p
 import * as migration_20261002_000100_p4_review_shop_index from "./20261002_000100_p4_review_shop_index";
 import * as migration_20261003_000000_p5_invoice_indexes from "./20261003_000000_p5_invoice_indexes";
 import * as migration_20261004_000000_p6_case_indexes from "./20261004_000000_p6_case_indexes";
+import * as migration_20261004_000100_p9_risk_flags from "./20261004_000100_p9_risk_flags";
+import * as migration_20261004_000200_p7_shipment_indexes from "./20261004_000200_p7_shipment_indexes";
+import * as migration_20261004_000300_p7_default_delivery_origin from "./20261004_000300_p7_default_delivery_origin";
+import * as migration_20261004_000400_p7_delivery_data from "./20261004_000400_p7_delivery_data";
+import * as migration_20261004_000500_p8_resale_listing_index from "./20261004_000500_p8_resale_listing_index";
+import * as migration_20261004_000600_p9_listing_view_flushes from "./20261004_000600_p9_listing_view_flushes";
 
 export const migrations = [
 	{
@@ -89,5 +95,35 @@ export const migrations = [
 		up: migration_20261004_000000_p6_case_indexes.up,
 		down: migration_20261004_000000_p6_case_indexes.down,
 		name: "20261004_000000_p6_case_indexes",
+	},
+	{
+		up: migration_20261004_000100_p9_risk_flags.up,
+		down: migration_20261004_000100_p9_risk_flags.down,
+		name: "20261004_000100_p9_risk_flags",
+	},
+	{
+		up: migration_20261004_000200_p7_shipment_indexes.up,
+		down: migration_20261004_000200_p7_shipment_indexes.down,
+		name: "20261004_000200_p7_shipment_indexes",
+	},
+	{
+		up: migration_20261004_000300_p7_default_delivery_origin.up,
+		down: migration_20261004_000300_p7_default_delivery_origin.down,
+		name: "20261004_000300_p7_default_delivery_origin",
+	},
+	{
+		up: migration_20261004_000400_p7_delivery_data.up,
+		down: migration_20261004_000400_p7_delivery_data.down,
+		name: "20261004_000400_p7_delivery_data",
+	},
+	{
+		up: migration_20261004_000500_p8_resale_listing_index.up,
+		down: migration_20261004_000500_p8_resale_listing_index.down,
+		name: "20261004_000500_p8_resale_listing_index",
+	},
+	{
+		up: migration_20261004_000600_p9_listing_view_flushes.up,
+		down: migration_20261004_000600_p9_listing_view_flushes.down,
+		name: "20261004_000600_p9_listing_view_flushes",
 	},
 ];

@@ -109,6 +109,7 @@ services:
       # from DATABASE_URI is the first rollback level.
       DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin${MONGO_REPLICA_SET:+&replicaSet=${MONGO_REPLICA_SET}}}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      RISK_HASH_SECRET: ${RISK_HASH_SECRET:-}
       # HMAC key for buyer-phone-scores.phoneHash; rotating it resets every refusal score
       ORDER_PHONE_PEPPER: ${ORDER_PHONE_PEPPER:?Set ORDER_PHONE_PEPPER}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}

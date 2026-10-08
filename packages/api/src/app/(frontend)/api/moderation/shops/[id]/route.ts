@@ -245,9 +245,12 @@ export async function POST(request: Request, { params }: Params) {
 
 	try {
 		if (parsed.action === "suspend") {
-			return Response.json(
-				await suspendShop(ctx.payload, ctx.actor, id, parsed),
-			);
+			const result = await suspendShop(ctx.payload, ctx.actor, id, parsed);
+			return Response.json({
+				shopId: result.shopId,
+				until: result.until,
+				unpublishedListingIds: result.unpublishedListingIds,
+			});
 		}
 		return Response.json(
 			await unsuspendShop(ctx.payload, ctx.actor, id, parsed),

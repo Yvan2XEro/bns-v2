@@ -522,6 +522,8 @@ export interface ModerationSummary {
 	pendingListings: number;
 	pendingReports: number;
 	pendingVerifications: number;
+	openRiskFlags: number;
+	highRiskFlags: number;
 	total: number;
 }
 

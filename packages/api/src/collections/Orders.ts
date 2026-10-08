@@ -118,6 +118,7 @@ export const Orders: CollectionConfig = {
 				if (req.context?.orderService === true) return data;
 				data.status = originalDoc?.status;
 				data.paymentStatus = originalDoc?.paymentStatus;
+				data.shipments = originalDoc?.shipments;
 				return data;
 			},
 		],
@@ -207,6 +208,7 @@ export const Orders: CollectionConfig = {
 						{ label: "OTP", value: "otp" },
 						{ label: "Buyer confirmation", value: "buyer_confirmation" },
 						{ label: "Seller declaration", value: "seller_declaration" },
+						{ label: "Carrier proof of delivery", value: "carrier_pod" },
 					],
 				},
 				{ name: "verifiedAt", type: "date" },
@@ -223,6 +225,7 @@ export const Orders: CollectionConfig = {
 					type: "select",
 					options: [
 						{ label: "Seller delivery", value: "seller_delivery" },
+						{ label: "Courier", value: "courier" },
 						{ label: "Pickup", value: "pickup" },
 					],
 				},
@@ -252,7 +255,24 @@ export const Orders: CollectionConfig = {
 				{ name: "pickupPoint", type: "json" },
 				{ name: "fee", type: "number" },
 				{ name: "etaText", type: "text" },
+				{ name: "optionId", type: "text" },
+				{ name: "zone", type: "relationship", relationTo: "delivery-zones" },
+				{
+					name: "pickupLocation",
+					type: "relationship",
+					relationTo: "shop-locations",
+				},
+				{ name: "etaMinHours", type: "number", min: 0 },
+				{ name: "etaMaxHours", type: "number", min: 0 },
+				{ name: "promisedBy", type: "date" },
 			],
+		},
+		{
+			name: "shipments",
+			type: "relationship",
+			relationTo: "shipments",
+			hasMany: true,
+			admin: { readOnly: true },
 		},
 		{
 			name: "amounts",

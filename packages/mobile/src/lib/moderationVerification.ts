@@ -14,7 +14,7 @@ import type { ReviewerAction, StatusTone } from "./verification";
 
 // ─── Hub tabs ─────────────────────────────────────────────────────────────────
 
-export type QueueKey = "listings" | "reports" | "verification";
+export type QueueKey = "listings" | "reports" | "verification" | "risk";
 
 /** Turns a queue key or a relative-age unit into the suffix its locale key uses (`"listings"` → `"Listings"`). */
 export function capitalize(value: string): string {
@@ -37,6 +37,7 @@ export function queueTabs(
 				pendingListings: number;
 				pendingReports: number;
 				pendingVerifications: number;
+				highRiskFlags: number;
 		  }
 		| undefined,
 ): QueueTab[] {
@@ -44,6 +45,7 @@ export function queueTabs(
 		{ key: "listings", count: summary?.pendingListings ?? null },
 		{ key: "reports", count: summary?.pendingReports ?? null },
 		{ key: "verification", count: summary?.pendingVerifications ?? null },
+		{ key: "risk", count: summary?.highRiskFlags ?? null },
 	];
 }
 

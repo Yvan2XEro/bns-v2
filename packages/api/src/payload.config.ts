@@ -17,6 +17,10 @@ import { ConnectedAccounts } from "./collections/ConnectedAccounts";
 import { ContactReveals } from "./collections/ContactReveals";
 import { ConversationReads } from "./collections/ConversationReads";
 import { Conversations } from "./collections/Conversations";
+import { CourierMembers } from "./collections/CourierMembers";
+import { Couriers } from "./collections/Couriers";
+import { DeliveryProofs } from "./collections/DeliveryProofs";
+import { DeliveryZones } from "./collections/DeliveryZones";
 import { DisputeEvidence } from "./collections/DisputeEvidence";
 import { DisputeEvidenceViews } from "./collections/DisputeEvidenceViews";
 import { DisputeGateEvidence } from "./collections/DisputeGateEvidence";
@@ -26,6 +30,7 @@ import { Favorites } from "./collections/Favorites";
 import { LedgerAccounts } from "./collections/LedgerAccounts";
 import { LedgerTransactions } from "./collections/LedgerTransactions";
 import { Listings } from "./collections/Listings";
+import { ListingViewFlushes } from "./collections/ListingViewFlushes";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
@@ -39,17 +44,29 @@ import { PayoutHolds } from "./collections/PayoutHolds";
 import { Payouts } from "./collections/Payouts";
 import { Products } from "./collections/Products";
 import { ProductVariants } from "./collections/ProductVariants";
+import { PurchaseOrders } from "./collections/PurchaseOrders";
 import { ReconciliationMismatches } from "./collections/ReconciliationMismatches";
 import { ReconciliationRuns } from "./collections/ReconciliationRuns";
 import { Refunds } from "./collections/Refunds";
 import { Reports } from "./collections/Reports";
+import { ResaleLinks } from "./collections/ResaleLinks";
+import { ResaleTerms } from "./collections/ResaleTerms";
+import { ResaleTermsAcceptances } from "./collections/ResaleTermsAcceptances";
+import { ResellerCharges } from "./collections/ResellerCharges";
+import { ResellerCommissions } from "./collections/ResellerCommissions";
+import { ResellerPayouts } from "./collections/ResellerPayouts";
 import { ReturnCases } from "./collections/ReturnCases";
 import { Reviews } from "./collections/Reviews";
+import { RiskFlags } from "./collections/RiskFlags";
 import { RiskSignalOutbox } from "./collections/RiskSignalOutbox";
 import { SavedSearches } from "./collections/SavedSearches";
 import { Sequences } from "./collections/Sequences";
+import { ShipmentEvents } from "./collections/ShipmentEvents";
+import { Shipments } from "./collections/Shipments";
 import { ShopActivityLog } from "./collections/ShopActivityLog";
+import { ShopDailyStats } from "./collections/ShopDailyStats";
 import { ShopInvitations } from "./collections/ShopInvitations";
+import { ShopLocations } from "./collections/ShopLocations";
 import { ShopMembers } from "./collections/ShopMembers";
 import { ShopStrikes } from "./collections/ShopStrikes";
 import { Shops } from "./collections/Shops";
@@ -63,19 +80,34 @@ import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
 import {
 	abandonCartsTask,
+	applyResalePriceChangesTask,
+	advanceDisputesTask,
+	advanceReturnCasesTask,
+	aggregateShopDailyStatsTask,
 	checkSearchAlertsTask,
 	completeOrdersTask,
+	consumeRiskSignalOutboxTask,
 	dispatchOrderEventTask,
 	enforceCommissionOverdueTask,
+	enforceResaleTermsTask,
 	expireBoostsTask,
 	expireListingsTask,
 	expireOrdersTask,
+	expirePurchaseOrdersTask,
 	expirePayoutHoldsTask,
+	expireStrikesTask,
 	failStaleOrdersTask,
+	flushListingViewsTask,
 	issueCommissionInvoicesTask,
 	liftExpiredShopSuspensionsTask,
+	markOverdueResellerChargesTask,
+	payResellerCommissionsTask,
+	processCourierWebhookEventTask,
 	processKycEventTask,
 	processWebhookEventTask,
+	publishHeldReviewsTask,
+	purgeCaseEvidenceTask,
+	purgeRiskDataTask,
 	purgeShopActivityTask,
 	purgeVerificationDataTask,
 	reconcileLedgerTask,
@@ -83,13 +115,21 @@ import {
 	reconcileStockCachesTask,
 	recoverSellerReceivablesTask,
 	releaseEligibleFundsTask,
+	releaseResellerCommissionsTask,
+	renderDisputeCertificateTask,
+	retryResellerPayoutsTask,
+	refreshResaleLinkStatsTask,
 	submitRefundTask,
 	sweepBuyerFeeInvoicesTask,
 	syncConnectedAccountTask,
 } from "./jobs";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
+import { registerShipmentOrderEvents } from "./services/delivery/shipments";
+import { registerPurchaseOrderOrderEvents } from "./services/purchaseOrders";
+import { adjustResellerCommission } from "./services/purchaseOrders";
 import { registerRefundSubmissionQueue } from "./services/refunds";
+import { registerResaleAdjuster } from "./lib/resale";
 import { registerShopTeamLevelListener } from "./services/shopTeamLevel";
 
 const filename = fileURLToPath(import.meta.url);
@@ -98,6 +138,9 @@ const dirname = path.dirname(filename);
 // P3's reaction to a level change. Explicit rather than a module side effect,
 // so nothing depends on which file happened to be imported first.
 registerShopTeamLevelListener();
+registerShipmentOrderEvents();
+registerPurchaseOrderOrderEvents();
+registerResaleAdjuster({ adjustResellerCommission });
 registerRefundSubmissionQueue((payload, { refundId, waitUntil }) =>
 	payload.jobs.queue({
 		task: "submitRefund",
@@ -180,6 +223,7 @@ export default buildConfig({
 		Users,
 		Media,
 		Listings,
+		ListingViewFlushes,
 		Categories,
 		Favorites,
 		Conversations,
@@ -187,10 +231,20 @@ export default buildConfig({
 		Messages,
 		Reviews,
 		Reports,
+		ResaleLinks,
+		ResaleTerms,
+		ResaleTermsAcceptances,
 		BoostPayments,
 		PaymentIntents,
 		WebhookEvents,
 		ContactReveals,
+		DeliveryZones,
+		ShopLocations,
+		Couriers,
+		CourierMembers,
+		Shipments,
+		ShipmentEvents,
+		DeliveryProofs,
 		SavedSearches,
 		BlockedUsers,
 		Tags,
@@ -200,6 +254,10 @@ export default buildConfig({
 		ShopActivityLog,
 		ShopInvitations,
 		Products,
+		PurchaseOrders,
+		ResellerCommissions,
+		ResellerCharges,
+		ResellerPayouts,
 		ProductVariants,
 		StockMovements,
 		VerificationRequests,
@@ -214,6 +272,8 @@ export default buildConfig({
 		CommissionLines,
 		CommissionInvoices,
 		ReturnCases,
+		ShopDailyStats,
+		RiskFlags,
 		PaymentGateEvidence,
 		DisputeGateEvidence,
 		Disputes,
@@ -262,20 +322,39 @@ export default buildConfig({
 			expireListingsTask,
 			expireBoostsTask,
 			checkSearchAlertsTask,
+			consumeRiskSignalOutboxTask,
 			processWebhookEventTask,
 			reconcilePendingPaymentsTask,
 			liftExpiredShopSuspensionsTask,
 			processKycEventTask,
+			processCourierWebhookEventTask,
 			purgeVerificationDataTask,
 			purgeShopActivityTask,
+			purgeRiskDataTask,
 			abandonCartsTask,
+			applyResalePriceChangesTask,
+			advanceReturnCasesTask,
+			advanceDisputesTask,
+			purgeCaseEvidenceTask,
+			expireStrikesTask,
+			publishHeldReviewsTask,
 			issueCommissionInvoicesTask,
 			enforceCommissionOverdueTask,
+		enforceResaleTermsTask,
+		refreshResaleLinkStatsTask,
 			reconcileStockCachesTask,
+			renderDisputeCertificateTask,
 			dispatchOrderEventTask,
 			expireOrdersTask,
+			expirePurchaseOrdersTask,
 			failStaleOrdersTask,
+			flushListingViewsTask,
+			aggregateShopDailyStatsTask,
 			completeOrdersTask,
+			markOverdueResellerChargesTask,
+			payResellerCommissionsTask,
+			releaseResellerCommissionsTask,
+			retryResellerPayoutsTask,
 			...paymentTasks,
 		],
 		autoRun: [
@@ -289,6 +368,7 @@ export default buildConfig({
 			{ cron: "* * * * *", queue: "default", limit: 20 },
 			// Commission runs on its own queue so a weekly invoicing pass can
 			// never be starved by, or starve, the nightly sweeps.
+			{ cron: "*/15 * * * *", queue: "commission", limit: 20 },
 			{ cron: "0 5 * * 1", queue: "commission", limit: 20 },
 			{ cron: "0 6 * * *", queue: "commission", limit: 20 },
 			// The order lifecycle: `expireOrders` and the `dispatchOrderEvent`
@@ -297,6 +377,8 @@ export default buildConfig({
 			// measured in days.
 			{ cron: "*/5 * * * *", queue: "orders", limit: 50 },
 			{ cron: "0 * * * *", queue: "hourly", limit: 20 },
+			{ cron: "*/15 * * * *", queue: "cases", limit: 50 },
+			{ cron: "*/5 * * * *", queue: "cases", limit: 100 },
 		],
 	},
 });

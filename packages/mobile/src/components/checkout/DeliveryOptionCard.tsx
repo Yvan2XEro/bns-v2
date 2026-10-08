@@ -11,18 +11,22 @@ export function DeliveryOptionCard({
 	checked,
 	locale,
 	onSelect,
+	selectable,
 }: {
 	option: DeliveryOption;
 	checked: boolean;
 	locale: "fr" | "en";
 	onSelect: () => void;
+	selectable: boolean;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const pickup = option.method === "pickup";
 	const title = pickup
 		? t("checkout.pickupAtShop")
-		: t("checkout.sellerDelivery");
+		: option.method === "courier"
+			? t("checkout.courierDelivery")
+			: t("checkout.sellerDelivery");
 	const fee =
 		option.fee === 0 ? t("checkout.free") : formatXaf(option.fee, locale);
 	const point = option.pickupPoint;
@@ -30,16 +34,16 @@ export function DeliveryOptionCard({
 	return (
 		<Pressable
 			onPress={onSelect}
-			disabled={!option.codAllowed}
+			disabled={!selectable}
 			accessibilityRole="radio"
 			accessibilityLabel={`${title}, ${fee}`}
-			accessibilityState={{ checked, disabled: !option.codAllowed }}
+			accessibilityState={{ checked, disabled: !selectable }}
 			style={[
 				styles.card,
 				{
 					borderColor: checked ? c.primary : c.border,
 					backgroundColor: checked ? c.primarySoft : c.card,
-					opacity: option.codAllowed ? 1 : 0.6,
+					opacity: selectable ? 1 : 0.6,
 				},
 			]}
 		>
@@ -65,6 +69,20 @@ export function DeliveryOptionCard({
 			<Text style={[styles.meta, { color: c.muted }]}>
 				{t("checkout.eta", { eta: option.etaText })}
 			</Text>
+			{option.promisedBy ? (
+				<Text style={[styles.meta, { color: c.muted }]}>
+					{t("checkout.promisedBy", {
+						date: new Date(option.promisedBy).toLocaleString(locale),
+					})}
+				</Text>
+			) : null}
+			{option.freeApplied && option.originalFee ? (
+				<Text style={[styles.meta, { color: c.primary }]}>
+					{t("checkout.freeDeliveryApplied", {
+						amount: formatXaf(option.originalFee, locale),
+					})}
+				</Text>
+			) : null}
 			{point ? (
 				<View style={[styles.point, { backgroundColor: c.card }]}>
 					<Text
@@ -88,7 +106,7 @@ export function DeliveryOptionCard({
 					) : null}
 				</View>
 			) : null}
-			{option.codAllowed ? null : (
+			{selectable ? null : (
 				<Text style={[styles.meta, { color: c.warningText }]}>
 					{t("checkout.codUnavailableOption")}
 				</Text>

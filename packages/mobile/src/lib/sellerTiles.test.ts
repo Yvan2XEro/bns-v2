@@ -6,6 +6,7 @@ const counts = { inboxUnread: 4, lowStock: 2 };
 describe("visibleSellerTiles", () => {
 	test("gives an owner every tile", () => {
 		expect(visibleSellerTiles("owner", counts).map((t) => t.key)).toEqual([
+			"returns",
 			"catalogue",
 			"stock",
 			"inbox",
@@ -24,11 +25,20 @@ describe("visibleSellerTiles", () => {
 
 	test("gives a staff member only the catalogue, stock, inbox and team tiles", () => {
 		expect(visibleSellerTiles("staff", counts).map((t) => t.key)).toEqual([
+			"returns",
 			"catalogue",
 			"stock",
 			"inbox",
 			"team",
 		]);
+	});
+
+	test("keeps the legally required returns tile visible when ordering is disabled", () => {
+		expect(
+			visibleSellerTiles("owner", counts, { ordersEnabled: false }).map(
+				(tile) => tile.key,
+			),
+		).toContain("returns");
 	});
 
 	test("gives someone with no role nothing", () => {
@@ -53,6 +63,7 @@ describe("the order tiles", () => {
 
 	test("join the hub for an owner once ordering is on, orders first", () => {
 		expect(visibleSellerTiles("owner", counts, on).map((t) => t.key)).toEqual([
+			"returns",
 			"orders",
 			"catalogue",
 			"stock",
@@ -73,12 +84,19 @@ describe("the order tiles", () => {
 		expect(keys).not.toContain("orders");
 		expect(keys).not.toContain("billing");
 		expect(keys).not.toContain("payments");
-		expect(keys).toHaveLength(7);
+		expect(keys).toHaveLength(8);
 	});
 
 	test("give staff the orders tile but not billing, which needs payments.view", () => {
 		const keys = visibleSellerTiles("staff", counts, on).map((t) => t.key);
-		expect(keys).toEqual(["orders", "catalogue", "stock", "inbox", "team"]);
+		expect(keys).toEqual([
+			"returns",
+			"orders",
+			"catalogue",
+			"stock",
+			"inbox",
+			"team",
+		]);
 	});
 
 	test("carry the to-accept count as the orders badge, and no zero", () => {
@@ -103,6 +121,9 @@ describe("the order tiles", () => {
 		expect(tiles.find((t) => t.key === "payments")?.href).toBe(
 			"/seller/payments",
 		);
+		expect(tiles.find((t) => t.key === "returns")?.href).toBe(
+			"/seller/returns",
+		);
 	});
 
 	test("carries the holds count as the payments badge, and no zero", () => {
@@ -122,5 +143,31 @@ describe("the order tiles", () => {
 		expect(showsOrdersTile("staff", true)).toBe(true);
 		expect(showsOrdersTile("owner", false)).toBe(false);
 		expect(showsOrdersTile(null, true)).toBe(false);
+	});
+});
+
+describe("the resale tile", () => {
+	test("requires the server flag and resale management permission", () => {
+		const options = { ordersEnabled: true, resaleEnabled: true };
+		for (const role of ["owner", "manager"] as const) {
+			expect(
+				visibleSellerTiles(role, counts, options).map((tile) => tile.key),
+			).toContain("resale");
+		}
+		expect(
+			visibleSellerTiles("staff", counts, options).map((tile) => tile.key),
+		).not.toContain("resale");
+		expect(
+			visibleSellerTiles("staff", counts, {
+				ordersEnabled: true,
+				resaleEnabled: false,
+			}).map((tile) => tile.key),
+		).not.toContain("resale");
+		expect(
+			visibleSellerTiles("staff", counts, {
+				ordersEnabled: false,
+				resaleEnabled: true,
+			}).map((tile) => tile.key),
+		).not.toContain("resale");
 	});
 });

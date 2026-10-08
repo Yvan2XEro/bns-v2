@@ -1,16 +1,8 @@
 import type { CollectionConfig } from "payload";
+import { DISPUTE_OUTCOMES, DISPUTE_REASONS } from "../contracts/disputes";
 import { casePartyRead, serviceOnly } from "../access/caseRoles";
 
 export const DISPUTE_SUBJECTS = ["goods", "refund"] as const;
-export const DISPUTE_REASONS = [
-	"not_received",
-	"not_as_described",
-	"damaged",
-	"counterfeit",
-	"wrong_item",
-	"seller_no_show",
-	"cod_refused_abuse",
-] as const;
 export const DISPUTE_STATUSES = [
 	"open",
 	"awaiting_seller",
@@ -21,12 +13,7 @@ export const DISPUTE_STATUSES = [
 	"resolved_split",
 	"withdrawn",
 ] as const;
-export const DISPUTE_OUTCOMES = [
-	"full_refund",
-	"partial_refund",
-	"return_and_refund",
-	"no_refund",
-] as const;
+export { DISPUTE_OUTCOMES, DISPUTE_REASONS };
 export const DISPUTE_REASON_CODES = [
 	"seller_no_proof",
 	"delivery_proven",
@@ -202,7 +189,13 @@ export const Disputes: CollectionConfig = {
 		{
 			name: "deadlines",
 			type: "group",
-			fields: [date("submitBy"), date("respondBy"), date("reviewDueAt")],
+			fields: [
+				date("submitBy"),
+				date("respondBy"),
+				date("reviewDueAt"),
+				date("reminderSentAt"),
+				date("reviewOverdueNotifiedAt"),
+			],
 		},
 		{
 			name: "proposal",

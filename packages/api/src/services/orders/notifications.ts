@@ -291,7 +291,11 @@ export const notifyOrderDeliveryDeclared: OrderEventHandler = async (
 	_payload,
 	order,
 ) => {
-	if (order.handover?.method !== "seller_declaration") return;
+	if (
+		order.handover?.method !== "seller_declaration" &&
+		order.handover?.method !== "carrier_pod"
+	)
+		return;
 	const buyerId = relationId(order.buyer);
 	if (!buyerId) return;
 	await fire("order-delivery-declared", buyerId, {

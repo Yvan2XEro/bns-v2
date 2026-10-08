@@ -1,5 +1,5 @@
 import { transformListing } from "./handlers/listingCreated.ts";
-import { transformShop } from "./handlers/shopUpdated.ts";
+import { fetchDeliveryCities, transformShop } from "./handlers/shopUpdated.ts";
 import {
 	clearIndex,
 	clearShopsIndex,
@@ -104,9 +104,14 @@ export async function reindexShops(): Promise<number> {
 			docs: Record<string, unknown>[];
 			hasNextPage: boolean;
 		};
-		const docs = data.docs
-			.filter((shop) => shop.status === "active")
-			.map(transformShop);
+		const docs = await Promise.all(
+			data.docs
+				.filter((shop) => shop.status === "active")
+				.map(async (shop) => {
+					const shopId = String(shop.id);
+					return transformShop(shop, await fetchDeliveryCities(shopId));
+				}),
+		);
 		await indexShopDocuments(docs);
 		shopCount += docs.length;
 		if (!data.hasNextPage) break;

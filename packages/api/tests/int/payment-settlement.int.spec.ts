@@ -590,3 +590,126 @@ describe("commission settlement (PURPOSE_HANDLERS.commission)", () => {
 		expect(invoiceOf(payload).status).toBe("issued");
 	});
 });
+
+describe("reseller charge settlement (PURPOSE_HANDLERS.reseller_charge)", () => {
+	const chargePaid = {
+		reference: "PI-reseller-charge",
+		status: "succeeded" as const,
+		amount: 3_578,
+		currency: "XAF",
+		providerTransactionId: "trx.reseller-charge",
+	};
+
+	function resellerChargeWorld() {
+		return fakePayload({
+			shops: [
+				{ id: "shop-1", status: "active", level: 2 },
+				{ id: "supplier", status: "active", level: 3 },
+			],
+			listings: [
+				{
+					id: "resale-listing",
+					shop: "shop-1",
+					product: "product-1",
+					status: "draft",
+					moderationHold: false,
+					resale: {
+						supplierShop: "supplier",
+						desiredStatus: "published",
+						holds: ["reseller_ineligible", "price_below_minimum"],
+					},
+				},
+				{
+					id: "supplier-listing",
+					shop: "supplier",
+					product: "product-1",
+					status: "published",
+				},
+				{
+					id: "blocked-resale-listing",
+					shop: "shop-1",
+					product: "product-2",
+					status: "draft",
+					resale: {
+						supplierShop: "supplier",
+						desiredStatus: "published",
+						holds: ["reseller_ineligible"],
+					},
+				},
+				{
+					id: "unavailable-supplier-listing",
+					shop: "supplier",
+					product: "product-2",
+					status: "draft",
+				},
+			],
+			"reseller-charges": [
+				{
+					id: "rc-1",
+					resellerShop: "shop-1",
+					type: "clawback",
+					amount: 3_578,
+					status: "overdue",
+					paymentIntents: ["pi-reseller-charge"],
+				},
+			],
+			"payment-intents": [
+				{
+					id: "pi-reseller-charge",
+					purpose: "reseller_charge",
+					targetType: "reseller-charge",
+					targetId: "rc-1",
+					customer: "user-1",
+					amount: 3_578,
+					currency: "XAF",
+					provider: "notchpay",
+					providerReference: "trx.reseller-charge",
+					reference: "PI-reseller-charge",
+					status: "pending",
+					statusHistory: [],
+					idempotencyKey: "reseller-charge:rc-1",
+				},
+			],
+		});
+	}
+
+	it("marks an overdue charge paid on a matching settlement and tolerates replays", async () => {
+		const payload = resellerChargeWorld();
+
+		const result = await settlePayment(payload, {
+			...chargePaid,
+			source: "webhook",
+		});
+		const replay = await settlePayment(payload, {
+			...chargePaid,
+			source: "callback",
+		});
+
+		expect(result.outcome).toBe("applied");
+		expect(replay.outcome).toBe("unchanged");
+		expect(payload.store["reseller-charges"][0].status).toBe("paid");
+		expect(payload.store.listings[0]).toMatchObject({
+			status: "draft",
+			resale: {
+				holds: ["price_below_minimum"],
+			},
+		});
+		expect(payload.store.listings[2]).toMatchObject({
+			status: "draft",
+			resale: { holds: [] },
+		});
+	});
+
+	it("does not change a charge when the payment fails", async () => {
+		const payload = resellerChargeWorld();
+
+		const result = await settlePayment(payload, {
+			...chargePaid,
+			status: "failed",
+			source: "webhook",
+		});
+
+		expect(result.outcome).toBe("applied");
+		expect(payload.store["reseller-charges"][0].status).toBe("overdue");
+	});
+});

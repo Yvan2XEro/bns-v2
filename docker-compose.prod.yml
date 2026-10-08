@@ -10,6 +10,10 @@ services:
       # three exist — production stays off because the values are empty and
       # the AppSettings gate refuses, never because the wiring is missing.
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      COURIER_PROVIDER: ${COURIER_PROVIDER:-}
+      YANGO_DELIVERY_BASE_URL: ${YANGO_DELIVERY_BASE_URL:-}
+      YANGO_DELIVERY_API_KEY: ${YANGO_DELIVERY_API_KEY:-}
+      YANGO_DELIVERY_WEBHOOK_SECRET: ${YANGO_DELIVERY_WEBHOOK_SECRET:-}
       NOTCHPAY_PRIVATE_KEY: ${NOTCHPAY_PRIVATE_KEY:-}
       PROTECTED_PAYMENT_ALLOWED: ${PROTECTED_PAYMENT_ALLOWED:-}
 

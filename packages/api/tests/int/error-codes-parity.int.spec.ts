@@ -57,6 +57,14 @@ describe("the error contract is the same in all three packages", () => {
 			);
 		}
 	});
+
+	it("gives each P7 code a fallback of its own", () => {
+		for (const code of P7_CODES) {
+			expect(fallbackMessage(code)).not.toBe(
+				fallbackMessage(ERROR_CODES.unknown),
+			);
+		}
+	});
 });
 
 /** The spec's list, transcribed. Not derived from ERROR_CODES. */
@@ -175,6 +183,43 @@ describe("P6 error codes", () => {
 		expect(P6_CODES.length).toBe(19);
 		expect(P6_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
 			19,
+		);
+	});
+});
+
+/** P7's contracts list, transcribed. Not derived from ERROR_CODES. */
+const P7_CODES = [
+	"delivery.zoneInvalid",
+	"delivery.zoneOverlap",
+	"delivery.zoneLimitReached",
+	"delivery.cityNotLaunched",
+	"delivery.locationInvalid",
+	"delivery.locationLimitReached",
+	"delivery.noActiveOption",
+	"shipment.notFound",
+	"shipment.invalidTransition",
+	"shipment.maxAttemptsReached",
+	"shipment.photoRequired",
+	"shipment.rescheduleWindowClosed",
+	"shipment.rescheduleDateInvalid",
+	"shipment.riderLinkInvalid",
+	"shipment.notAssigned",
+	"shipment.riderConsentMissing",
+	"courier.unavailable",
+	"courier.notConfigured",
+	"courier.cityNotServed",
+	"courier.providerError",
+	"courier.cancelRefused",
+] as const;
+
+describe("P7 error codes", () => {
+	it("declares all twenty-one, every one client-facing", () => {
+		const declared = new Set(Object.values(ERROR_CODES));
+		const missing = P7_CODES.filter((code) => !declared.has(code));
+		expect(missing).toEqual([]);
+		expect(P7_CODES.length).toBe(21);
+		expect(P7_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
+			21,
 		);
 	});
 });

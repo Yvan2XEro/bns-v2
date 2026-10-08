@@ -98,7 +98,12 @@ describe("GET /api/public/config", () => {
 		vi.stubEnv("CHAT_PUBLIC_URL", "https://chat.example");
 		vi.stubEnv("NOVU_APPLICATION_IDENTIFIER", "novu-app");
 		vi.stubEnv("PUBLIC_WEB_URL", "https://web.example");
-		findGlobal.mockResolvedValue({ orders: {}, payments: {} });
+		findGlobal.mockResolvedValue({
+			orders: {},
+			payments: {},
+			insights: { enabled: false },
+			risk: { enabled: true, autoEffectsEnabled: true, newLimitsEnabled: true },
+		});
 		const { GET } = await import(
 			"../../src/app/(frontend)/api/public/config/route"
 		);
@@ -122,7 +127,91 @@ describe("GET /api/public/config", () => {
 			buyerProtection: { bps: 300, min: 100, max: 15_000 },
 			checkoutExpiryMinutes: 30,
 			disputesEnabled: false,
+			insightsEnabled: false,
+			deliveryZonesEnabled: false,
+			couriersEnabled: false,
+			intercityEnabled: false,
+			resaleEnabled: false,
+			resalePrepaidEnabled: false,
 		});
+	});
+
+	it("exposes resale flags only when their runtime gates are satisfied", async () => {
+		findGlobal.mockResolvedValue({
+			resale: {
+				enabled: true,
+				prepaidEnabled: true,
+				gates: [
+					{
+						gate: "notchpay_affiliate",
+						evidence: { id: "affiliate-evidence" },
+					},
+				],
+			},
+			payments: { protectedPayment: { enabled: false } },
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		const body = await (await GET()).json();
+		expect(body).toMatchObject({
+			resaleEnabled: true,
+			resalePrepaidEnabled: false,
+		});
+		expect(body).not.toHaveProperty("resale");
+
+		findGlobal.mockResolvedValue({
+			resale: {
+				enabled: true,
+				prepaidEnabled: true,
+				gates: [
+					{
+						gate: "notchpay_affiliate",
+						evidence: { id: "affiliate-evidence" },
+					},
+				],
+			},
+			payments: { protectedPayment: { enabled: true } },
+		});
+		expect((await (await GET()).json()).resalePrepaidEnabled).toBe(true);
+	});
+
+	it("exposes only effective public delivery flags", async () => {
+		findGlobal.mockResolvedValue({
+			orders: {},
+			payments: {},
+			delivery: {
+				zonesEnabled: true,
+				couriersEnabled: true,
+				intercityEnabled: false,
+				providers: { yango: { enabled: true } },
+			},
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		const body = await (await GET()).json();
+		expect(body).toMatchObject({
+			deliveryZonesEnabled: true,
+			couriersEnabled: true,
+			intercityEnabled: false,
+		});
+		expect(body).not.toHaveProperty("delivery");
+		expect(body).not.toHaveProperty("providers");
+	});
+
+	it("exposes the insights flag without exposing risk controls", async () => {
+		findGlobal.mockResolvedValue({
+			insights: { enabled: true },
+			risk: { enabled: true, autoEffectsEnabled: true, newLimitsEnabled: true },
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		const body = await (await GET()).json();
+		expect(body.insightsEnabled).toBe(true);
+		expect(body).not.toHaveProperty("risk");
+		expect(body).not.toHaveProperty("autoEffectsEnabled");
 	});
 
 	it("keeps protected payment off and its figures at default when the settings read throws", async () => {
@@ -143,7 +232,8 @@ describe("GET /api/public/config", () => {
 			savedEnv = process.env.PROTECTED_PAYMENT_ALLOWED;
 		});
 		afterEach(() => {
-			if (savedEnv === undefined) delete process.env.PROTECTED_PAYMENT_ALLOWED;
+			if (savedEnv === undefined)
+				process.env.PROTECTED_PAYMENT_ALLOWED = undefined;
 			else process.env.PROTECTED_PAYMENT_ALLOWED = savedEnv;
 		});
 
@@ -169,7 +259,7 @@ describe("GET /api/public/config", () => {
 
 		async function answer(state: State, query = ""): Promise<unknown> {
 			if (state.env) process.env.PROTECTED_PAYMENT_ALLOWED = "true";
-			else delete process.env.PROTECTED_PAYMENT_ALLOWED;
+			else process.env.PROTECTED_PAYMENT_ALLOWED = undefined;
 			findGlobal.mockResolvedValue({
 				payments: {
 					protectedPayment: { enabled: state.flag },

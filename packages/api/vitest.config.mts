@@ -29,5 +29,8 @@ export default defineConfig({
 		// `it(..., { timeout })` workaround repeated on every spec that
 		// happens to hit the cost first.
 		testTimeout: 15_000,
+		// Keep cold route imports below that budget on the 8-vCPU CI/dev
+		// hosts; the suite runs many Payload-backed route files in parallel.
+		maxWorkers: 4,
 	},
 });

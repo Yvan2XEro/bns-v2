@@ -488,6 +488,14 @@ function RootLayoutNav() {
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen
+					name="moderation/disputes/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/disputes/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
 					name="moderation/listing/[id]"
 					options={{ headerShown: false }}
 				/>
@@ -546,13 +554,28 @@ function RootLayoutNav() {
 				<Stack.Screen name="cart" options={{ headerShown: false }} />
 				<Stack.Screen name="checkout" options={{ headerShown: false }} />
 				<Stack.Screen name="purchases/index" options={{ headerShown: false }} />
+				<Stack.Screen name="disputes/[id]" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="account/disputes"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen name="account/returns" options={{ headerShown: false }} />
+				<Stack.Screen name="returns/[id]" options={{ headerShown: false }} />
 				<Stack.Screen name="purchases/[id]" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="purchases/[id]/problem"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen
 					name="purchases/[id]/withdrawal"
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen
 					name="seller/orders/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/returns/index"
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen

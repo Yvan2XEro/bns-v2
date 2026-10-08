@@ -42,6 +42,7 @@ import { getAuthUser, serverFetch } from "~/lib/server-api";
 import { getMyShop, getShopBadge } from "~/lib/server-shop";
 import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
+import { DeliveryEstimates } from "./delivery-estimates";
 
 export const revalidate = 3600;
 
@@ -325,7 +326,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
 			/>
-			<ViewTracker listingId={listing.id} currentViews={listing.views ?? 0} />
+			<ViewTracker listingId={listing.id} />
 			{/* Breadcrumb */}
 			<div className="border-[#E2E8F0] border-b bg-white">
 				<div className="container mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 text-[#64748B] text-sm sm:px-6 lg:px-8">
@@ -505,6 +506,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								</div>
 							)}
 						</div>
+						<DeliveryEstimates
+							listingId={String(listing.id)}
+							eligible={Boolean(productId && shop && !shop.ordersRestrictedAt)}
+						/>
 						{productId && (
 							<BuyBox
 								listingId={String(listing.id)}

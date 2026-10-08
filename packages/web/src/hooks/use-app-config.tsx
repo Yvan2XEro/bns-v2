@@ -25,6 +25,7 @@ export interface AppConfig {
 	shopsEnabled: boolean;
 	/** Gates the cart, checkout and order screens. Fails closed the same way. */
 	ordersEnabled: boolean;
+	disputesEnabled: boolean;
 	/** The cities ordering is open in, with each one's default delivery fee. */
 	launchCities: LaunchCityOption[];
 	withdrawalDays: number;
@@ -38,6 +39,12 @@ export interface AppConfig {
 	/** Rate, minimum and maximum for the buyer protection fee. Changing them affects new orders only. */
 	buyerProtection: BuyerProtectionConfig;
 	checkoutExpiryMinutes: number;
+	deliveryZonesEnabled: boolean;
+	couriersEnabled: boolean;
+	intercityEnabled: boolean;
+	insightsEnabled: boolean;
+	resaleEnabled: boolean;
+	resalePrepaidEnabled: boolean;
 }
 
 export const EMPTY_APP_CONFIG: AppConfig = {
@@ -50,11 +57,18 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	// settings outage: a client that cannot read the flag hides ordering
 	// rather than advertising it.
 	ordersEnabled: false,
+	disputesEnabled: false,
 	launchCities: [],
 	withdrawalDays: 15,
 	protectedPaymentEnabled: false,
 	buyerProtection: { bps: 300, min: 100, max: 15_000 },
 	checkoutExpiryMinutes: 30,
+	deliveryZonesEnabled: false,
+	couriersEnabled: false,
+	intercityEnabled: false,
+	insightsEnabled: false,
+	resaleEnabled: false,
+	resalePrepaidEnabled: false,
 };
 
 const AppConfigContext = createContext<AppConfig>(EMPTY_APP_CONFIG);

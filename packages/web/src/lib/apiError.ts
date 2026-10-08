@@ -128,6 +128,7 @@ export const ERROR_CODES = {
 	cartOutOfStock: "cart.outOfStock",
 	cartQuantityInvalid: "cart.quantityInvalid",
 	cartSingleShop: "cart.singleShop",
+	cartSingleFulfilment: "cart.singleFulfilment",
 	checkoutDisabled: "checkout.disabled",
 	checkoutPhoneNotVerified: "checkout.phoneNotVerified",
 	checkoutAddressInvalid: "checkout.addressInvalid",
@@ -208,6 +209,50 @@ export const ERROR_CODES = {
 	disputeInvalidTransition: "dispute.invalidTransition",
 	disputeProposalInvalid: "dispute.proposalInvalid",
 	disputeRefundExceedsOrder: "dispute.refundExceedsOrder",
+	resaleTermsNotAccepted: "resale.termsNotAccepted",
+	resaleDisabled: "resale.disabled",
+	resaleNotEnabled: "resale.notEnabled",
+	resaleSupplierNotEligible: "resale.supplierNotEligible",
+	resaleResellerNotEligible: "resale.resellerNotEligible",
+	resaleLinkInactive: "resale.linkInactive",
+	resaleLinkRequired: "resale.linkRequired",
+	resaleOwnProduct: "resale.ownProduct",
+	resaleInvalidPricing: "resale.invalidPricing",
+	resaleSupplierUndercut: "resale.supplierUndercut",
+	resaleCodRequired: "resale.codRequired",
+	resalePriceBelowMinimum: "resale.priceBelowMinimum",
+	resalePriceAboveMaximum: "resale.priceAboveMaximum",
+	resalePrepaidUnavailable: "resale.prepaidUnavailable",
+	resaleFulfilledBySupplier: "resale.fulfilledBySupplier",
+	resaleAlreadyReselling: "resale.alreadyReselling",
+	resaleChargeOverdue: "resale.chargeOverdue",
+	resaleChargeNotFound: "resale.chargeNotFound",
+	resaleChargeNotPayable: "resale.chargeNotPayable",
+	purchaseOrderNotFound: "purchaseOrder.notFound",
+	purchaseOrderInvalidTransition: "purchaseOrder.invalidTransition",
+	purchaseOrderAcceptExpired: "purchaseOrder.acceptExpired",
+	purchaseOrderTrackingRequired: "purchaseOrder.trackingRequired",
+	deliveryZoneInvalid: "delivery.zoneInvalid",
+	deliveryZoneOverlap: "delivery.zoneOverlap",
+	deliveryZoneLimitReached: "delivery.zoneLimitReached",
+	deliveryCityNotLaunched: "delivery.cityNotLaunched",
+	deliveryLocationInvalid: "delivery.locationInvalid",
+	deliveryLocationLimitReached: "delivery.locationLimitReached",
+	deliveryNoActiveOption: "delivery.noActiveOption",
+	shipmentNotFound: "shipment.notFound",
+	shipmentInvalidTransition: "shipment.invalidTransition",
+	shipmentMaxAttemptsReached: "shipment.maxAttemptsReached",
+	shipmentPhotoRequired: "shipment.photoRequired",
+	shipmentRescheduleWindowClosed: "shipment.rescheduleWindowClosed",
+	shipmentRescheduleDateInvalid: "shipment.rescheduleDateInvalid",
+	shipmentRiderLinkInvalid: "shipment.riderLinkInvalid",
+	shipmentNotAssigned: "shipment.notAssigned",
+	shipmentRiderConsentMissing: "shipment.riderConsentMissing",
+	courierUnavailable: "courier.unavailable",
+	courierNotConfigured: "courier.notConfigured",
+	courierCityNotServed: "courier.cityNotServed",
+	courierProviderError: "courier.providerError",
+	courierCancelRefused: "courier.cancelRefused",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -357,6 +402,8 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.cartOutOfStock]: "Not enough stock for this quantity.",
 	[ERROR_CODES.cartQuantityInvalid]: "Choose a quantity between 1 and 20.",
 	[ERROR_CODES.cartSingleShop]: "Your cart holds items from another shop.",
+	[ERROR_CODES.cartSingleFulfilment]:
+		"Your cart can contain items fulfilled by one supplier at a time.",
 	[ERROR_CODES.checkoutDisabled]: "Checkout is not available yet.",
 	[ERROR_CODES.checkoutPhoneNotVerified]:
 		"Verify your phone number to place an order.",
@@ -454,8 +501,7 @@ const FALLBACKS: Record<string, string> = {
 		"The return window for this order has closed.",
 	[ERROR_CODES.returnItemsInvalid]:
 		"Please check the items and quantities you want to return.",
-	[ERROR_CODES.returnAlreadyOpen]:
-		"A return is already open for this order.",
+	[ERROR_CODES.returnAlreadyOpen]: "A return is already open for this order.",
 	[ERROR_CODES.returnInvalidTransition]:
 		"This return is not in a state that allows that action.",
 	[ERROR_CODES.returnDeductionEvidenceRequired]:
@@ -473,8 +519,7 @@ const FALLBACKS: Record<string, string> = {
 		"This reason is not available to you for this order.",
 	[ERROR_CODES.disputeWindowClosed]:
 		"The window to open a dispute for this reason has closed.",
-	[ERROR_CODES.disputeAlreadyOpen]:
-		"A dispute is already open for this order.",
+	[ERROR_CODES.disputeAlreadyOpen]: "A dispute is already open for this order.",
 	[ERROR_CODES.disputeReturnCaseActive]:
 		"These items are already part of an active return. Reference it instead of opening a new dispute.",
 	[ERROR_CODES.disputeEvidenceRequired]:
@@ -487,6 +532,80 @@ const FALLBACKS: Record<string, string> = {
 		"This proposal cannot be sent. Check the amount and the number of rounds already used.",
 	[ERROR_CODES.disputeRefundExceedsOrder]:
 		"This refund amount is more than what remains refundable on this order.",
+	[ERROR_CODES.resaleTermsNotAccepted]:
+		"Accept the current resale terms for this shop before continuing.",
+	[ERROR_CODES.resaleDisabled]: "Resale is not enabled yet.",
+	[ERROR_CODES.resaleNotEnabled]: "This product is not enabled for resale.",
+	[ERROR_CODES.resaleSupplierNotEligible]:
+		"This shop does not meet the requirements to supply resale products.",
+	[ERROR_CODES.resaleResellerNotEligible]:
+		"This shop does not meet the requirements to resell products.",
+	[ERROR_CODES.resaleOwnProduct]:
+		"These shops cannot be linked because they share an owner or member.",
+	[ERROR_CODES.resaleLinkInactive]:
+		"This resale link is inactive. Ask the supplier to restore it before reselling.",
+	[ERROR_CODES.resaleLinkRequired]:
+		"Request and receive supplier approval before reselling this product.",
+	[ERROR_CODES.resaleInvalidPricing]:
+		"One or more reseller prices are outside the supplier's allowed range.",
+	[ERROR_CODES.resaleSupplierUndercut]:
+		"The reseller price cannot be below the supplier's own price.",
+	[ERROR_CODES.resaleCodRequired]:
+		"This resale product is not available with the selected payment method.",
+	[ERROR_CODES.resalePriceBelowMinimum]:
+		"The resale price is below the supplier's current minimum.",
+	[ERROR_CODES.resalePriceAboveMaximum]:
+		"The resale price is above the allowed maximum.",
+	[ERROR_CODES.resalePrepaidUnavailable]:
+		"Online payment is not available for resale orders yet.",
+	[ERROR_CODES.resaleFulfilledBySupplier]:
+		"The supplier handles shipping and delivery for this resale order.",
+	[ERROR_CODES.resaleChargeOverdue]:
+		"Pay or resolve the overdue resale charge before continuing.",
+	[ERROR_CODES.resaleChargeNotFound]: "This resale charge could not be found.",
+	[ERROR_CODES.resaleChargeNotPayable]:
+		"This resale charge is no longer payable.",
+	[ERROR_CODES.deliveryZoneInvalid]:
+		"Check the delivery zone details and try again.",
+	[ERROR_CODES.deliveryZoneOverlap]:
+		"Another active zone of this shop already covers one of these districts.",
+	[ERROR_CODES.deliveryZoneLimitReached]:
+		"This shop has reached its delivery zone limit.",
+	[ERROR_CODES.deliveryCityNotLaunched]:
+		"Delivery has not launched in this city yet.",
+	[ERROR_CODES.deliveryLocationInvalid]:
+		"Check the pickup location and its coordinates.",
+	[ERROR_CODES.deliveryLocationLimitReached]:
+		"This shop has reached its pickup location limit.",
+	[ERROR_CODES.deliveryNoActiveOption]:
+		"No delivery or pickup option is currently available for this address.",
+	[ERROR_CODES.shipmentNotFound]: "This shipment could not be found.",
+	[ERROR_CODES.shipmentInvalidTransition]:
+		"This shipment is not in a state that allows that action.",
+	[ERROR_CODES.shipmentMaxAttemptsReached]:
+		"The maximum number of delivery attempts has been reached.",
+	[ERROR_CODES.shipmentPhotoRequired]:
+		"Add the required delivery photo before continuing.",
+	[ERROR_CODES.shipmentRescheduleWindowClosed]:
+		"The window to choose a new delivery slot has closed. The parcel is being returned to the shop.",
+	[ERROR_CODES.shipmentRescheduleDateInvalid]:
+		"Choose one of the delivery dates offered for this shipment.",
+	[ERROR_CODES.shipmentRiderLinkInvalid]:
+		"This delivery link is no longer valid.",
+	[ERROR_CODES.shipmentNotAssigned]:
+		"This shipment is not assigned to your courier account.",
+	[ERROR_CODES.shipmentRiderConsentMissing]:
+		"The rider must consent before receiving a delivery assignment.",
+	[ERROR_CODES.courierUnavailable]:
+		"No courier is currently available for this delivery.",
+	[ERROR_CODES.courierNotConfigured]:
+		"Courier delivery is not configured yet. Choose another delivery option.",
+	[ERROR_CODES.courierCityNotServed]:
+		"This courier does not serve the selected city.",
+	[ERROR_CODES.courierProviderError]:
+		"The courier could not process this request. Please try again shortly.",
+	[ERROR_CODES.courierCancelRefused]:
+		"The courier refused the cancellation. The shipment remains active.",
 };
 
 export function fallbackFor(code: string): string {

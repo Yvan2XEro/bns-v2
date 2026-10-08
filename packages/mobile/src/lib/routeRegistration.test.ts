@@ -38,6 +38,19 @@ const layoutDirs = allFiles
 	.map((file) => file.replace(/\/?_layout\.tsx$/, ""))
 	.filter(Boolean);
 const p4Screens = P4_ROOTS.flatMap(appFiles).filter(isScreenFile).sort();
+const p6Screens = allFiles
+	.filter(
+		(file) =>
+			file === "account/disputes.tsx" ||
+			file === "account/returns.tsx" ||
+			file === "disputes/[id].tsx" ||
+			file === "purchases/[id]/problem.tsx" ||
+			file === "seller/returns/index.tsx" ||
+			file.startsWith("moderation/disputes/") ||
+			file === "returns/[id].tsx",
+	)
+	.filter(isScreenFile)
+	.sort();
 const registered = stackScreenNames(
 	readFileSync(join(APP_ROOT, "_layout.tsx"), "utf8"),
 );
@@ -57,6 +70,7 @@ describe("every P4 screen is registered in the root stack", () => {
 			"checkout/review.tsx",
 			"moderation/order/[id].tsx",
 			"purchases/[id].tsx",
+			"purchases/[id]/problem.tsx",
 			"purchases/[id]/withdrawal.tsx",
 			"purchases/index.tsx",
 			"seller/billing/[id].tsx",
@@ -93,8 +107,8 @@ describe("every P4 screen is registered in the root stack", () => {
 		const names = [
 			...new Set(p4Screens.map((f) => rootRegistrationFor(f, layoutDirs))),
 		];
-		// 12 pre-existing roots + the three new seller/payments/** ones (Task 29).
-		expect(names).toHaveLength(15);
+		// The problem-report flow adds one nested purchase root.
+		expect(names).toHaveLength(16);
 		for (const name of names) {
 			const entry = new RegExp(
 				`<Stack\\.Screen\\s+name="${name.replace(/[[\]]/g, "\\$&")}"[^>]*headerShown: false`,
@@ -104,5 +118,12 @@ describe("every P4 screen is registered in the root stack", () => {
 				hidden: true,
 			});
 		}
+	});
+});
+
+describe("P6 return and dispute screens are reachable", () => {
+	test.each(p6Screens)("%s has a root Stack.Screen", (file) => {
+		const name = rootRegistrationFor(file, layoutDirs);
+		expect(registered).toContain(name);
 	});
 });

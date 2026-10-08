@@ -18,6 +18,7 @@ describe("shopCapabilities", () => {
 			teamMembers: false,
 			maxMembers: 1,
 			supplier: false,
+			resell: false,
 			fasterPayouts: false,
 			legalInfoVerified: false,
 		});
@@ -33,6 +34,7 @@ describe("shopCapabilities", () => {
 			badge: "identity",
 			protectedPayment: true,
 			teamMembers: true,
+			resell: true,
 			maxMembers: 5,
 			supplier: false,
 			legalInfoVerified: false,
@@ -66,6 +68,7 @@ describe("shopCapabilities", () => {
 				badge: "phone",
 				protectedPayment: false,
 				teamMembers: false,
+				resell: false,
 				maxMembers: 1,
 			});
 		}
@@ -124,6 +127,7 @@ describe("shopCapabilities", () => {
 					protectedPayment: false,
 					teamMembers: false,
 					maxMembers: 1,
+					resell: false,
 					supplier: false,
 					fasterPayouts: false,
 					legalInfoVerified: false,
@@ -140,7 +144,11 @@ describe("shopCapabilities", () => {
 	});
 
 	it("names exactly what each next level adds", () => {
-		expect(CAPABILITY_UNLOCKS[2]).toEqual(["protectedPayment", "teamMembers"]);
+		expect(CAPABILITY_UNLOCKS[2]).toEqual([
+			"protectedPayment",
+			"teamMembers",
+			"resell",
+		]);
 		expect(CAPABILITY_UNLOCKS[3]).toEqual([
 			"supplier",
 			"fasterPayouts",

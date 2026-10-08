@@ -56,7 +56,16 @@ export type FulfillmentStatus =
 	| "return_requested"
 	| "returned";
 
-export type DeliveryMethod = "seller_delivery" | "pickup";
+export type {
+	DeliveryMethod,
+	DeliveryOption,
+	PickupPointSnapshot,
+} from "../../../api/src/contracts/deliveryQuote";
+
+import type {
+	DeliveryMethod,
+	PickupPointSnapshot,
+} from "../../../api/src/contracts/deliveryQuote";
 export type PaymentMethod = "cod" | "mobile_money";
 export type BuyerTier = "new" | "regular" | "trusted" | "watch" | "blocked";
 export type ConfirmationRequired = "none" | "sms_code" | "seller_call";
@@ -96,23 +105,6 @@ export interface CartView {
 	subtotal: number;
 	shopOrderable: boolean;
 	currency: "XAF";
-}
-
-export interface PickupPointSnapshot {
-	address: string;
-	landmark: string | null;
-	gps: { lat: number; lng: number } | null;
-	hours: string | null;
-}
-
-export interface DeliveryOption {
-	/** `"seller_delivery:douala"` or `"pickup:shop"`. */
-	optionId: string;
-	method: DeliveryMethod;
-	fee: number;
-	etaText: string;
-	codAllowed: boolean;
-	pickupPoint?: PickupPointSnapshot;
 }
 
 export interface AddressInput {
@@ -331,7 +323,12 @@ export interface OrderView {
 		resendsLeft: number;
 	};
 	handover: {
-		method: "otp" | "buyer_confirmation" | "seller_declaration" | null;
+		method:
+			| "otp"
+			| "buyer_confirmation"
+			| "seller_declaration"
+			| "carrier_pod"
+			| null;
 		locked: boolean;
 		attemptsLeft: number;
 		regenerationsLeft: number;

@@ -2,10 +2,11 @@ import type { PayloadRequest } from "payload";
 import { ERROR_CODES } from "./errors";
 import { ServiceError } from "./serviceError";
 
-export type ResaleAdjustSource = "dispute" | "cod_refusal";
+export type ResaleAdjustSource = "dispute" | "return" | "cod_refusal";
 
 export interface ResaleAdjustMeta {
 	source: ResaleAdjustSource;
+	sourceId?: string;
 	disputeId?: string;
 }
 

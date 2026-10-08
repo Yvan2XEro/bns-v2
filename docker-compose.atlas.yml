@@ -84,6 +84,7 @@ services:
       # first rollback level here is the cluster, not a URI option.
       DATABASE_URI: ${DATABASE_URI:?Set DATABASE_URI to the Atlas connection string}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
+      RISK_HASH_SECRET: ${RISK_HASH_SECRET:-}
       # HMAC key for buyer-phone-scores.phoneHash; rotating it resets every refusal score
       ORDER_PHONE_PEPPER: ${ORDER_PHONE_PEPPER:?Set ORDER_PHONE_PEPPER}
       PAYLOAD_PUBLIC_SERVER_URL: ${PAYLOAD_PUBLIC_SERVER_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
@@ -120,6 +121,10 @@ services:
       # Staging only: "fake" serves protected payment from the in-memory fake
       # provider despite NODE_ENV=production. Leave empty in production.
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      COURIER_PROVIDER: ${COURIER_PROVIDER:-}
+      YANGO_DELIVERY_BASE_URL: ${YANGO_DELIVERY_BASE_URL:-}
+      YANGO_DELIVERY_API_KEY: ${YANGO_DELIVERY_API_KEY:-}
+      YANGO_DELIVERY_WEBHOOK_SECRET: ${YANGO_DELIVERY_WEBHOOK_SECRET:-}
       # Same staging/production gate as PAYMENTS_PROVIDER above: empty in
       # production, so the protected-payment flag stays refused by policy
       # (the AppSettings gate record), not by a missing variable.

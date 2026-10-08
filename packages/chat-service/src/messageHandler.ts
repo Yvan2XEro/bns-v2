@@ -12,6 +12,8 @@ const PAYLOAD_API_URL =
 	process.env.PAYLOAD_API_URL || "http://localhost:3000/api";
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW = 1;
+const RATE_LIMIT_SCRIPT =
+	"local count = redis.call('INCR', KEYS[1]); if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]); end; return count";
 
 type SendMessagePayload = {
 	conversationId: string;
@@ -38,8 +40,15 @@ type MessageResponse = {
 async function checkRateLimit(userId: string): Promise<boolean> {
 	const redis = getRedis();
 	const key = `ratelimit:msg:${userId}`;
-	const count = await redis.incr(key);
-	if (count === 1) await redis.expire(key, RATE_LIMIT_WINDOW);
+	const result: unknown = await redis.send("EVAL", [
+		RATE_LIMIT_SCRIPT,
+		"1",
+		key,
+		String(RATE_LIMIT_WINDOW),
+	]);
+	if (typeof result !== "number")
+		throw new Error("Redis returned an invalid message rate limit counter");
+	const count = result;
 	return count <= RATE_LIMIT_MAX;
 }
 

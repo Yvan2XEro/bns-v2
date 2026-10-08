@@ -10,7 +10,10 @@ import {
 } from "../access/roles";
 import type { ModerationAction } from "../collections/ModerationLog";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
-import type { PayoutHoldReason } from "../collections/PayoutHolds";
+import {
+	PAYOUT_HOLD_REASONS,
+	type PayoutHoldReason,
+} from "../collections/PayoutHolds";
 import { queueMembershipChange } from "../hooks/membershipEvents";
 import { queueSystemMessage } from "../hooks/systemMessageEvents";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
@@ -28,8 +31,12 @@ import type {
 	Payout,
 	PayoutAccount,
 	PayoutHold,
+	ResaleLink,
+	ResellerCommission,
+	RiskFlag,
 	Shop,
 } from "../payload-types";
+import type { RiskFlagDecisionInput } from "../types/riskModeration";
 import { findConnectedAccount } from "./connectedAccounts";
 import { openProtectedExposure } from "./exposure";
 import { applyTransition, TERMINAL_STATUSES } from "./orders/transitions";
@@ -48,6 +55,12 @@ import {
 	type ShopRefundRate,
 	shopRefundRate,
 } from "./payoutHolds";
+import { updateResaleListingHold } from "./resale";
+import {
+	notifyResaleLinkDecided,
+	notifyResaleLinkSuspended,
+} from "./resaleNotifications";
+import { riskFlagRetentionDate } from "./riskRetention";
 import {
 	notifyShopSuspended,
 	notifyShopUnsuspended,
@@ -89,19 +102,27 @@ export interface Actor extends ActorLike {
 /** Every write below carries this so the collection hooks know the origin. */
 const MODERATION_CONTEXT = { moderationAction: true } as const;
 
-interface LogInput {
+export interface ModerationLogInput {
 	actor: Actor;
 	action: ModerationAction;
-	targetType: "listing" | "user" | "report" | "shop" | "order";
+	targetType:
+		| "listing"
+		| "user"
+		| "report"
+		| "shop"
+		| "order"
+		| "dispute"
+		| "resale-link"
+		| "risk-flag";
 	targetId: string;
 	reason?: string | null;
 	note?: string | null;
 	metadata?: Record<string, unknown>;
 }
 
-async function writeLog(
+export async function writeLog(
 	payload: Payload,
-	input: LogInput,
+	input: ModerationLogInput,
 	req?: PayloadRequest,
 ): Promise<{ id: string }> {
 	const created = await payload.create({
@@ -123,7 +144,7 @@ async function writeLog(
 	return { id: String(created.id) };
 }
 
-function assertModerator(actor: Actor): void {
+export function assertModerator(actor: Actor): void {
 	if (!isModerator(actor)) {
 		throw new ModerationError(ERROR_CODES.moderationForbidden, 403);
 	}
@@ -131,6 +152,10 @@ function assertModerator(actor: Actor): void {
 
 function trimmed(value: unknown): string | null {
 	return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function isPayoutHoldReason(reason: string): reason is PayoutHoldReason {
+	return PAYOUT_HOLD_REASONS.some((candidate) => candidate === reason);
 }
 
 function suspensionUntil(
@@ -158,7 +183,7 @@ function suspensionUntil(
  */
 async function lastEntry(
 	payload: Payload,
-	targetType: "user" | "shop",
+	targetType: "user" | "shop" | "resale-link",
 	targetId: string,
 	action: ModerationAction,
 	req?: PayloadRequest,
@@ -188,7 +213,7 @@ async function lastEntry(
 
 async function lastEntryMetadata(
 	payload: Payload,
-	targetType: "user" | "shop",
+	targetType: "user" | "shop" | "resale-link",
 	targetId: string,
 	action: ModerationAction,
 	req?: PayloadRequest,
@@ -196,6 +221,433 @@ async function lastEntryMetadata(
 	return (
 		(await lastEntry(payload, targetType, targetId, action, req))?.metadata ??
 		null
+	);
+}
+
+const RESALE_LINK_SUSPENSION_REASONS = [
+	"quality",
+	"pricing",
+	"fraud_review",
+	"terms",
+	"other",
+] as const;
+
+type ResaleLinkSuspensionReason =
+	(typeof RESALE_LINK_SUSPENSION_REASONS)[number];
+
+function resaleLinkSuspensionReason(
+	value: unknown,
+): ResaleLinkSuspensionReason {
+	if (
+		typeof value === "string" &&
+		RESALE_LINK_SUSPENSION_REASONS.includes(value as ResaleLinkSuspensionReason)
+	) {
+		return value as ResaleLinkSuspensionReason;
+	}
+	throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+}
+
+function objectRecord(value: unknown): Record<string, unknown> | null {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return null;
+	}
+	return Object.fromEntries(Object.entries(value));
+}
+
+function stringArray(value: unknown): string[] {
+	return Array.isArray(value)
+		? value.filter((entry): entry is string => typeof entry === "string")
+		: [];
+}
+
+async function findResaleLinkForModeration(
+	payload: Payload,
+	linkId: string,
+	req?: PayloadRequest,
+): Promise<ResaleLink> {
+	const link = await payload
+		.findByID({
+			collection: "resale-links",
+			id: linkId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+	if (!link) {
+		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+	}
+	return link;
+}
+
+async function assertCanModerateResaleLink(
+	payload: Payload,
+	actor: Actor,
+	link: ResaleLink,
+	req?: PayloadRequest,
+): Promise<{ supplierShopId: string; resellerShopId: string }> {
+	const supplierShopId = relationId(link.supplierShop);
+	const resellerShopId = relationId(link.resellerShop);
+	if (!supplierShopId || !resellerShopId) {
+		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+	}
+	const [supplierShop, resellerShop] = await Promise.all([
+		findShopForModeration(payload, supplierShopId, req),
+		findShopForModeration(payload, resellerShopId, req),
+	]);
+	await Promise.all([
+		assertNotShopMember(payload, actor, supplierShop, req),
+		assertNotShopMember(payload, actor, resellerShop, req),
+	]);
+	const supplierOwnerId = relationId(supplierShop.owner);
+	const supplierOwner = supplierOwnerId
+		? await payload
+				.findByID({
+					collection: "users",
+					id: supplierOwnerId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null)
+		: null;
+	if (!supplierOwner || !canActOn(actor, supplierOwner)) {
+		throw new ModerationError(ERROR_CODES.moderationRankTooLow, 403);
+	}
+	return { supplierShopId, resellerShopId };
+}
+
+interface ResaleCommissionSnapshot {
+	id: string;
+	previousStatus: "accrued" | "payable";
+	previousHoldReasons: string[];
+}
+
+type ResellerCommissionHoldReason = NonNullable<
+	ResellerCommission["holdReasons"]
+>[number];
+
+function commissionSnapshots(metadata: Record<string, unknown> | null) {
+	const values = objectRecord(metadata)?.commissions;
+	if (!Array.isArray(values)) return [] as ResaleCommissionSnapshot[];
+	const snapshots: ResaleCommissionSnapshot[] = [];
+	for (const value of values) {
+		const row = objectRecord(value);
+		if (
+			!row ||
+			typeof row.id !== "string" ||
+			(row.previousStatus !== "accrued" && row.previousStatus !== "payable")
+		)
+			continue;
+		snapshots.push({
+			id: row.id,
+			previousStatus: row.previousStatus,
+			previousHoldReasons: stringArray(row.previousHoldReasons),
+		});
+	}
+	return snapshots;
+}
+
+export async function suspendResaleLink(
+	payload: Payload,
+	actor: Actor,
+	linkId: string,
+	input: { reason: string; note?: string | null },
+	options: { req?: PayloadRequest } = {},
+): Promise<ResaleLink> {
+	assertModerator(actor);
+	const reason = resaleLinkSuspensionReason(input.reason);
+	const note = trimmed(input.note);
+	const initialLink = await findResaleLinkForModeration(payload, linkId);
+	const { supplierShopId, resellerShopId } = await assertCanModerateResaleLink(
+		payload,
+		actor,
+		initialLink,
+	);
+
+	const applySuspension = async (req: PayloadRequest) => {
+		const link = await findResaleLinkForModeration(payload, linkId, req);
+		const currentParties = await assertCanModerateResaleLink(
+			payload,
+			actor,
+			link,
+			req,
+		);
+		if (
+			currentParties.supplierShopId !== supplierShopId ||
+			currentParties.resellerShopId !== resellerShopId
+		) {
+			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+		}
+		if (link.status !== "approved") {
+			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+		}
+		const resaleListings = await payload.find({
+			collection: "listings",
+			where: {
+				and: [
+					{ shop: { equals: resellerShopId } },
+					{ "resale.supplierShop": { equals: supplierShopId } },
+				],
+			},
+			limit: 0,
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const orders = await payload.find({
+			collection: "purchase-orders",
+			where: { link: { equals: linkId } },
+			limit: 0,
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const orderIds = orders.docs.map((order) => String(order.id));
+		const commissions = orderIds.length
+			? await payload.find({
+					collection: "reseller-commissions",
+					where: {
+						and: [
+							{ purchaseOrder: { in: orderIds } },
+							{ status: { in: ["accrued", "payable"] } },
+						],
+					},
+					limit: 0,
+					pagination: false,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+			: { docs: [] };
+		const snapshots: ResaleCommissionSnapshot[] = [];
+		for (const commission of commissions.docs) {
+			const previousStatus = commission.status;
+			if (previousStatus !== "accrued" && previousStatus !== "payable") {
+				continue;
+			}
+			const previousHoldReasons = commission.holdReasons ?? [];
+			snapshots.push({
+				id: String(commission.id),
+				previousStatus,
+				previousHoldReasons,
+			});
+			await payload.update({
+				collection: "reseller-commissions",
+				id: commission.id,
+				data: {
+					status: "held",
+					holdReasons: [
+						...new Set([...previousHoldReasons, "moderation" as const]),
+					],
+				},
+				depth: 0,
+				overrideAccess: true,
+				req,
+			});
+		}
+
+		const updated = await payload.update({
+			collection: "resale-links",
+			id: linkId,
+			data: {
+				status: "suspended",
+				suspendedBy: "moderator",
+				suspendedReason: reason,
+				decidedBy: actor.id,
+				decidedAt: new Date().toISOString(),
+				note,
+			},
+			depth: 0,
+			overrideAccess: true,
+			context: MODERATION_CONTEXT,
+			req,
+		});
+		await updateResaleListingHold(
+			req,
+			resellerShopId,
+			"reseller",
+			"link_inactive",
+			"add",
+			supplierShopId,
+		);
+		await writeLog(
+			payload,
+			{
+				actor,
+				action: "resale_link.suspend",
+				targetType: "resale-link",
+				targetId: linkId,
+				reason,
+				note,
+				metadata: {
+					previousStatus: link.status,
+					listingIds: resaleListings.docs.map((listing) => String(listing.id)),
+					commissions: snapshots,
+				},
+			},
+			req,
+		);
+		if (
+			!onCommit(commitContextOf(req), () =>
+				notifyResaleLinkSuspended(payload, updated, "suspended", reason),
+			)
+		) {
+			await notifyResaleLinkSuspended(payload, updated, "suspended", reason);
+		}
+		return updated;
+	};
+	return options.req
+		? applySuspension(options.req)
+		: withTransaction(payload, applySuspension, {
+				user: actor,
+				context: MODERATION_CONTEXT,
+			});
+}
+
+export async function unsuspendResaleLink(
+	payload: Payload,
+	actor: Actor,
+	linkId: string,
+	input: { note?: string | null; releaseCommissions: boolean },
+): Promise<ResaleLink> {
+	assertModerator(actor);
+	const initialLink = await findResaleLinkForModeration(payload, linkId);
+	const { supplierShopId, resellerShopId } = await assertCanModerateResaleLink(
+		payload,
+		actor,
+		initialLink,
+	);
+	const note = trimmed(input.note);
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const link = await findResaleLinkForModeration(payload, linkId, req);
+			const currentParties = await assertCanModerateResaleLink(
+				payload,
+				actor,
+				link,
+				req,
+			);
+			if (
+				currentParties.supplierShopId !== supplierShopId ||
+				currentParties.resellerShopId !== resellerShopId
+			) {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+			if (link.status !== "suspended" || link.suspendedBy !== "moderator") {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+			const entry = await lastEntry(
+				payload,
+				"resale-link",
+				linkId,
+				"resale_link.suspend",
+				req,
+			);
+			if (!entry) {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+			const snapshots = commissionSnapshots(entry.metadata);
+			const releasedCommissionIds: string[] = [];
+			if (input.releaseCommissions) {
+				for (const snapshot of snapshots) {
+					const commission = await payload
+						.findByID({
+							collection: "reseller-commissions",
+							id: snapshot.id,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null);
+					if (
+						!commission ||
+						commission.status !== "held" ||
+						!(commission.holdReasons ?? []).includes("moderation")
+					)
+						continue;
+					const remaining = Array.from(
+						new Set<ResellerCommissionHoldReason>([
+							...snapshot.previousHoldReasons.filter(
+								(reason): reason is ResellerCommissionHoldReason =>
+									reason !== "moderation",
+							),
+							...(commission.holdReasons ?? []).filter(
+								(reason) => reason !== "moderation",
+							),
+						]),
+					);
+					await payload.update({
+						collection: "reseller-commissions",
+						id: commission.id,
+						data: {
+							status: remaining.length ? "held" : snapshot.previousStatus,
+							holdReasons: remaining,
+						},
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					releasedCommissionIds.push(String(commission.id));
+				}
+			}
+
+			const updated = await payload.update({
+				collection: "resale-links",
+				id: linkId,
+				data: {
+					status: "approved",
+					suspendedBy: null,
+					suspendedReason: null,
+					decidedBy: actor.id,
+					decidedAt: new Date().toISOString(),
+					note,
+				},
+				depth: 0,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				req,
+			});
+			await updateResaleListingHold(
+				req,
+				resellerShopId,
+				"reseller",
+				"link_inactive",
+				"remove",
+				supplierShopId,
+			);
+			await writeLog(
+				payload,
+				{
+					actor,
+					action: "resale_link.unsuspend",
+					targetType: "resale-link",
+					targetId: linkId,
+					note,
+					metadata: {
+						suspensionLogId: entry.id,
+						releasedCommissionIds,
+						listingIds: objectRecord(entry.metadata)
+							? stringArray(objectRecord(entry.metadata)?.listingIds)
+							: [],
+					},
+				},
+				req,
+			);
+			if (
+				!onCommit(commitContextOf(req), () =>
+					notifyResaleLinkDecided(payload, updated, "approved"),
+				)
+			) {
+				await notifyResaleLinkDecided(payload, updated, "approved");
+			}
+			return updated;
+		},
+		{ user: actor, context: MODERATION_CONTEXT },
 	);
 }
 
@@ -423,6 +875,7 @@ export interface SuspensionResult {
 	userId: string;
 	until: string | null;
 	unpublishedListingIds: string[];
+	moderationLogIds: string[];
 }
 
 export async function suspendUser(
@@ -434,6 +887,7 @@ export async function suspendUser(
 		durationDays: number | null;
 		note?: string | null;
 	},
+	options: { req?: PayloadRequest } = {},
 ): Promise<SuspensionResult> {
 	assertModerator(actor);
 
@@ -457,157 +911,155 @@ export async function suspendUser(
 		suspendedBy: actor.id,
 	};
 
-	return withTransaction(
-		payload,
-		async (req) => {
-			// Listings come down before the account is flagged. If the second write
-			// fails, the worst outcome is a few listings hidden without a sanction —
-			// recoverable, and visible in the log. The reverse order would leave a
-			// suspended seller with live listings and no record of why.
-			const unpublished = await payload.find({
-				collection: "listings",
-				depth: 0,
-				limit: 0,
-				pagination: false,
-				overrideAccess: true,
-				req,
-				where: {
-					and: [
-						{ seller: { equals: targetId } },
-						{ status: { equals: "published" } },
-					],
-				},
-			});
+	const applySuspension = async (req: PayloadRequest) => {
+		// Listings come down before the account is flagged. If the second write
+		// fails, the worst outcome is a few listings hidden without a sanction —
+		// recoverable, and visible in the log. The reverse order would leave a
+		// suspended seller with live listings and no record of why.
+		const unpublished = await payload.find({
+			collection: "listings",
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+			where: {
+				and: [
+					{ seller: { equals: targetId } },
+					{ status: { equals: "published" } },
+				],
+			},
+		});
 
-			const unpublishedListingIds = unpublished.docs.map((doc) =>
-				String(doc.id),
-			);
+		const unpublishedListingIds = unpublished.docs.map((doc) => String(doc.id));
 
-			for (const id of unpublishedListingIds) {
-				await payload.update({
-					collection: "listings",
-					id,
-					req,
-					overrideAccess: true,
-					context: MODERATION_CONTEXT,
-					data: { status: "draft", moderationHold: true },
-				});
-			}
-
+		for (const id of unpublishedListingIds) {
 			await payload.update({
-				collection: "users",
-				id: targetId,
+				collection: "listings",
+				id,
 				req,
 				overrideAccess: true,
 				context: MODERATION_CONTEXT,
-				data: suspension,
+				data: { status: "draft", moderationHold: true },
 			});
+		}
 
-			// P3: `resolveShopRole` returns null for a suspended non-owner, so
-			// every shop they belong to has a stale chat-service cache. The
-			// membership row and their conversation assignments are untouched —
-			// the owner can see and reassign deliberately, and lifting the
-			// suspension restores access with no write at all.
-			const memberships = await payload.find({
-				collection: "shop-members",
-				where: {
-					and: [
-						{ user: { equals: targetId } },
-						{ status: { equals: "active" } },
-					],
-				},
-				depth: 0,
-				limit: 0,
-				pagination: false,
-				overrideAccess: true,
-				req,
-			});
-			for (const row of memberships.docs) {
-				const memberShopId = relationId(row.shop);
-				if (memberShopId) {
-					await queueMembershipChange(commitContextOf(req), memberShopId, [
-						targetId,
-					]);
-				}
+		await payload.update({
+			collection: "users",
+			id: targetId,
+			req,
+			overrideAccess: true,
+			context: MODERATION_CONTEXT,
+			data: suspension,
+		});
+
+		// P3: `resolveShopRole` returns null for a suspended non-owner, so
+		// every shop they belong to has a stale chat-service cache. The
+		// membership row and their conversation assignments are untouched —
+		// the owner can see and reassign deliberately, and lifting the
+		// suspension restores access with no write at all.
+		const memberships = await payload.find({
+			collection: "shop-members",
+			where: {
+				and: [{ user: { equals: targetId } }, { status: { equals: "active" } }],
+			},
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+		});
+		for (const row of memberships.docs) {
+			const memberShopId = relationId(row.shop);
+			if (memberShopId) {
+				await queueMembershipChange(commitContextOf(req), memberShopId, [
+					targetId,
+				]);
 			}
+		}
 
-			// The user's own listings (shop listings included, `seller` is the
-			// user) are already drafted above, so the shop cascade below never
-			// touches listings — only the shop's own status.
-			const ownedShops = await payload.find({
-				collection: "shops",
-				depth: 0,
-				limit: 0,
-				pagination: false,
-				overrideAccess: true,
-				req,
-				where: {
-					and: [
-						{ owner: { equals: targetId } },
-						{ status: { equals: "active" } },
-					],
-				},
-			});
-			const suspendedShopIds: string[] = [];
-			// Each cascaded shop gets its own `shop.suspend` entry — the shop's own
-			// history should say why it went down, and its id is what
-			// `unsuspendUser` later matches against to tell "still on this cascade's
-			// suspension" from "independently re-suspended since".
-			const shopSuspensionLogIds: Record<string, string> = {};
-			for (const doc of ownedShops.docs) {
-				const shopId = String(doc.id);
-				const shopLog = await writeLog(
-					payload,
-					{
-						actor,
-						action: "shop.suspend",
-						targetType: "shop",
-						targetId: shopId,
-						reason,
-						note: suspension.suspendedNote,
-						metadata: {
-							until: suspension.suspendedUntil,
-							durationDays: input.durationDays ?? null,
-							unpublishedListingIds: [],
-							cascadedFromUser: targetId,
-							suspendedAt: suspension.suspendedAt,
-						},
-					},
-					req,
-				);
-				await applyShopSuspension(payload, req, shopId, suspension, shopLog.id);
-				suspendedShopIds.push(shopId);
-				shopSuspensionLogIds[shopId] = shopLog.id;
-			}
-
-			await writeLog(
+		// The user's own listings (shop listings included, `seller` is the
+		// user) are already drafted above, so the shop cascade below never
+		// touches listings — only the shop's own status.
+		const ownedShops = await payload.find({
+			collection: "shops",
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+			where: {
+				and: [
+					{ owner: { equals: targetId } },
+					{ status: { equals: "active" } },
+				],
+			},
+		});
+		const suspendedShopIds: string[] = [];
+		// Each cascaded shop gets its own `shop.suspend` entry — the shop's own
+		// history should say why it went down, and its id is what
+		// `unsuspendUser` later matches against to tell "still on this cascade's
+		// suspension" from "independently re-suspended since".
+		const shopSuspensionLogIds: Record<string, string> = {};
+		for (const doc of ownedShops.docs) {
+			const shopId = String(doc.id);
+			const shopLog = await writeLog(
 				payload,
 				{
 					actor,
-					action: "user.suspend",
-					targetType: "user",
-					targetId,
+					action: "shop.suspend",
+					targetType: "shop",
+					targetId: shopId,
 					reason,
 					note: suspension.suspendedNote,
 					metadata: {
 						until: suspension.suspendedUntil,
 						durationDays: input.durationDays ?? null,
-						unpublishedListingIds,
-						suspendedShopIds,
-						shopSuspensionLogIds,
+						unpublishedListingIds: [],
+						cascadedFromUser: targetId,
+						suspendedAt: suspension.suspendedAt,
 					},
 				},
 				req,
 			);
+			await applyShopSuspension(payload, req, shopId, suspension, shopLog.id);
+			suspendedShopIds.push(shopId);
+			shopSuspensionLogIds[shopId] = shopLog.id;
+		}
 
-			return {
-				userId: String(targetId),
-				until: suspension.suspendedUntil,
-				unpublishedListingIds,
-			};
-		},
-		{ user: actor },
-	);
+		const userSuspensionLog = await writeLog(
+			payload,
+			{
+				actor,
+				action: "user.suspend",
+				targetType: "user",
+				targetId,
+				reason,
+				note: suspension.suspendedNote,
+				metadata: {
+					until: suspension.suspendedUntil,
+					durationDays: input.durationDays ?? null,
+					unpublishedListingIds,
+					suspendedShopIds,
+					shopSuspensionLogIds,
+				},
+			},
+			req,
+		);
+
+		return {
+			userId: String(targetId),
+			until: suspension.suspendedUntil,
+			unpublishedListingIds,
+			moderationLogIds: [
+				userSuspensionLog.id,
+				...Object.values(shopSuspensionLogIds),
+			],
+		};
+	};
+	return options.req
+		? applySuspension(options.req)
+		: withTransaction(payload, applySuspension, { user: actor });
 }
 
 export async function unsuspendUser(
@@ -834,13 +1286,18 @@ interface SuspensionFields {
 	suspendedBy: string;
 }
 
-async function findShopForModeration(payload: Payload, id: string) {
+async function findShopForModeration(
+	payload: Payload,
+	id: string,
+	req?: PayloadRequest,
+) {
 	try {
 		return await payload.findByID({
 			collection: "shops",
 			id,
 			depth: 0,
 			overrideAccess: true,
+			req,
 		});
 	} catch {
 		throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
@@ -1015,10 +1472,12 @@ export async function suspendShop(
 	actor: Actor,
 	shopId: string,
 	input: { reason: string; durationDays: number | null; note?: string | null },
+	options: { req?: PayloadRequest } = {},
 ): Promise<{
 	shopId: string;
 	until: string | null;
 	unpublishedListingIds: string[];
+	moderationLogIds: string[];
 }> {
 	assertModerator(actor);
 	const reason = parseSuspensionReason(input.reason);
@@ -1037,90 +1496,90 @@ export async function suspendShop(
 		suspendedBy: actor.id,
 	};
 
-	return withTransaction(
-		payload,
-		async (req) => {
-			// Re-checked here, not just before the transaction opened: the read
-			// above and this one can straddle another suspend that lands in
-			// between, and without this re-check both would proceed, the second
-			// overwriting the first's suspension fields and orphaning its restore
-			// set (its own `unpublishedListingIds` would never be looked at again).
-			const current = await payload
-				.findByID({
-					collection: "shops",
-					id: shopId,
-					depth: 0,
-					overrideAccess: true,
-					req,
-				})
-				.catch(() => null);
-			if (!current || current.status !== "active") {
-				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
-			}
-
-			const published = await payload.find({
-				collection: "listings",
+	const applySuspension = async (req: PayloadRequest) => {
+		// Re-checked here, not just before the transaction opened: the read
+		// above and this one can straddle another suspend that lands in
+		// between, and without this re-check both would proceed, the second
+		// overwriting the first's suspension fields and orphaning its restore
+		// set (its own `unpublishedListingIds` would never be looked at again).
+		const current = await payload
+			.findByID({
+				collection: "shops",
+				id: shopId,
 				depth: 0,
-				limit: 0,
-				pagination: false,
 				overrideAccess: true,
 				req,
-				where: {
-					and: [
-						{ shop: { equals: shopId } },
-						{ status: { equals: "published" } },
-					],
-				},
-			});
-			const unpublishedListingIds = published.docs.map((doc) => String(doc.id));
-			for (const id of unpublishedListingIds) {
-				await payload.update({
-					collection: "listings",
-					id,
-					req,
-					overrideAccess: true,
-					context: MODERATION_CONTEXT,
-					data: { status: "draft", moderationHold: true },
-				});
-			}
+			})
+			.catch(() => null);
+		if (!current || current.status !== "active") {
+			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+		}
 
-			const logEntry = await writeLog(
-				payload,
-				{
-					actor,
-					action: "shop.suspend",
-					targetType: "shop",
-					targetId: shopId,
-					reason,
-					note: suspension.suspendedNote,
-					metadata: {
-						until: suspension.suspendedUntil,
-						durationDays: input.durationDays ?? null,
-						unpublishedListingIds,
-						suspendedAt: suspension.suspendedAt,
-					},
-				},
+		const published = await payload.find({
+			collection: "listings",
+			depth: 0,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+			req,
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ status: { equals: "published" } },
+				],
+			},
+		});
+		const unpublishedListingIds = published.docs.map((doc) => String(doc.id));
+		for (const id of unpublishedListingIds) {
+			await payload.update({
+				collection: "listings",
+				id,
 				req,
-			);
-			await applyShopSuspension(payload, req, shopId, suspension, logEntry.id);
-			// No removed ids: the memberships still exist, `resolveShopRole`
-			// returns null for every non-owner of a suspended shop, so the
-			// subscriber refetches and evicts whoever is no longer in the set.
-			await queueMembershipChange(commitContextOf(req), shopId);
-			// Every open order keeps running — suspension is not a cancellation —
-			// but the buyer is told the shop behind it just went down.
-			await postShopSuspensionMessages(payload, req, shopId);
-			onCommit(commitContextOf(req), () =>
-				notifyShopSuspended(shop, suspension.suspendedUntil, reason),
-			);
-			return {
-				shopId: String(shopId),
-				until: suspension.suspendedUntil,
-				unpublishedListingIds,
-			};
-		},
-		{ user: actor },
-	);
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				data: { status: "draft", moderationHold: true },
+			});
+		}
+
+		const logEntry = await writeLog(
+			payload,
+			{
+				actor,
+				action: "shop.suspend",
+				targetType: "shop",
+				targetId: shopId,
+				reason,
+				note: suspension.suspendedNote,
+				metadata: {
+					until: suspension.suspendedUntil,
+					durationDays: input.durationDays ?? null,
+					unpublishedListingIds,
+					suspendedAt: suspension.suspendedAt,
+				},
+			},
+			req,
+		);
+		await applyShopSuspension(payload, req, shopId, suspension, logEntry.id);
+		// No removed ids: the memberships still exist, `resolveShopRole`
+		// returns null for every non-owner of a suspended shop, so the
+		// subscriber refetches and evicts whoever is no longer in the set.
+		await queueMembershipChange(commitContextOf(req), shopId);
+		// Every open order keeps running — suspension is not a cancellation —
+		// but the buyer is told the shop behind it just went down.
+		await postShopSuspensionMessages(payload, req, shopId);
+		onCommit(commitContextOf(req), () =>
+			notifyShopSuspended(shop, suspension.suspendedUntil, reason),
+		);
+		return {
+			shopId: String(shopId),
+			until: suspension.suspendedUntil,
+			unpublishedListingIds,
+			moderationLogIds: [logEntry.id],
+		};
+	};
+	return options.req
+		? applySuspension(options.req)
+		: withTransaction(payload, applySuspension, { user: actor });
 }
 
 export async function unsuspendShop(
@@ -1381,6 +1840,7 @@ export async function cancelOrder(
 	actor: Actor,
 	orderId: string,
 	input: { reason: string; note?: string | null },
+	options: { req?: PayloadRequest } = {},
 ): Promise<OrderCancellationResult> {
 	assertModerator(actor);
 
@@ -1390,76 +1850,75 @@ export async function cancelOrder(
 		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
 	}
 
-	const order = await findOrderForModeration(payload, orderId);
+	const order = await findOrderForModeration(payload, orderId, options.req);
 	if (!MODERATOR_CANCELLABLE_STATUSES.includes(order.status)) {
 		throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
 	}
 
-	return withTransaction(
-		payload,
-		async (req) => {
-			// Re-read inside the transaction: the same race `suspendShop` guards
-			// against between its own pre-transaction read and its write.
-			const current = await findOrderForModeration(payload, orderId, req);
-			if (!MODERATOR_CANCELLABLE_STATUSES.includes(current.status)) {
-				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
-			}
+	const applyCancellation = async (req: PayloadRequest) => {
+		// Re-read inside the transaction: the same race `suspendShop` guards
+		// against between its own pre-transaction read and its write.
+		const current = await findOrderForModeration(payload, orderId, req);
+		if (!MODERATOR_CANCELLABLE_STATUSES.includes(current.status)) {
+			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+		}
 
-			const { order: updated } = await applyTransition(
-				req,
-				current,
-				{
-					status: "cancelled",
-					...(current.paymentStatus === "cod_pending"
-						? { paymentStatus: "unpaid" as const }
-						: {}),
-					set: {
-						cancellation: {
-							...(current.cancellation ?? {}),
-							by: "staff",
-							reason,
-							note,
-						},
-						timestamps: {
-							...(current.timestamps ?? {}),
-							cancelledAt: new Date().toISOString(),
-						},
+		const { order: updated } = await applyTransition(
+			req,
+			current,
+			{
+				status: "cancelled",
+				...(current.paymentStatus === "cod_pending"
+					? { paymentStatus: "unpaid" as const }
+					: {}),
+				set: {
+					cancellation: {
+						...(current.cancellation ?? {}),
+						by: "staff",
+						reason,
+						note,
+					},
+					timestamps: {
+						...(current.timestamps ?? {}),
+						cancelledAt: new Date().toISOString(),
 					},
 				},
-				{
-					type: "order.cancelled",
-					actorType: "staff",
-					actor: actor.id,
-					reason,
-					note,
-					visibility: "both",
-					source: "staff_console",
+			},
+			{
+				type: "order.cancelled",
+				actorType: "staff",
+				actor: actor.id,
+				reason,
+				note,
+				visibility: "both",
+				source: "staff_console",
+			},
+		);
+
+		await releaseOrderStock(req, updated);
+
+		await writeLog(
+			payload,
+			{
+				actor,
+				action: "order.cancel",
+				targetType: "order",
+				targetId: orderId,
+				reason,
+				note,
+				metadata: {
+					orderNumber: updated.orderNumber,
+					previousStatus: current.status,
 				},
-			);
+			},
+			req,
+		);
 
-			await releaseOrderStock(req, updated);
-
-			await writeLog(
-				payload,
-				{
-					actor,
-					action: "order.cancel",
-					targetType: "order",
-					targetId: orderId,
-					reason,
-					note,
-					metadata: {
-						orderNumber: updated.orderNumber,
-						previousStatus: current.status,
-					},
-				},
-				req,
-			);
-
-			return { id: String(updated.id), status: updated.status };
-		},
-		{ user: actor },
-	);
+		return { id: String(updated.id), status: updated.status };
+	};
+	return options.req
+		? applyCancellation(options.req)
+		: withTransaction(payload, applyCancellation, { user: actor });
 }
 
 /**
@@ -1591,6 +2050,363 @@ async function findReport(payload: Payload, id: string) {
 	}
 }
 
+export async function decideRiskFlag(
+	payload: Payload,
+	actor: Actor,
+	flagId: string,
+	input: RiskFlagDecisionInput,
+): Promise<{ id: string; status: RiskFlag["status"] }> {
+	assertModerator(actor);
+	const note = trimmed(input.note);
+	if (
+		(input.outcome === "dismissed" || input.outcome === "actioned") &&
+		!note
+	) {
+		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+	}
+	if (input.outcome === "actioned" && !input.action) {
+		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+	}
+	const resolution = input.resolution ?? "none";
+	if (
+		(input.outcome === "dismissed" || input.outcome === "actioned") &&
+		(!resolution || resolution === "none")
+	) {
+		throw new ModerationError(ERROR_CODES.moderationReasonRequired, 400);
+	}
+	const linkedActions: string[] = [];
+	if (input.outcome === "actioned" && input.action) {
+		if (
+			input.action.type === "hold_payouts" &&
+			!isPayoutHoldReason(input.action.reason)
+		) {
+			throw new ModerationError(ERROR_CODES.moderationReasonInvalid, 400);
+		}
+		if (
+			(input.action.type === "suspend_user" &&
+				resolution !== "user_suspended") ||
+			(input.action.type === "suspend_shop" &&
+				resolution !== "shop_suspended") ||
+			(input.action.type === "hold_payouts" && resolution !== "payouts_held") ||
+			(input.action.type === "release_holds" &&
+				resolution !== "false_positive") ||
+			(input.action.type === "suspend_resale_link" &&
+				resolution !== "resale_link_suspended") ||
+			(input.action.type === "cancel_order" && resolution !== "order_cancelled")
+		) {
+			throw new ModerationError(ERROR_CODES.moderationReasonInvalid, 400);
+		}
+	}
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			let flag: RiskFlag;
+			try {
+				flag = await payload.findByID({
+					collection: "risk-flags",
+					id: flagId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				});
+			} catch {
+				throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+			}
+			const reviewedAt = Date.parse(flag.reviewedAt ?? flag.lastSeenAt);
+			const reviewAge = Date.now() - reviewedAt;
+			const transitionAllowed =
+				flag.status === "open" ||
+				((input.outcome === "dismissed" || input.outcome === "actioned") &&
+					flag.status === "reviewed" &&
+					reviewAge >= 0 &&
+					reviewAge <= 30 * 86_400_000);
+			if (!transitionAllowed) {
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			}
+			if (input.outcome === "actioned" && input.action) {
+				const actionHold =
+					input.action.type === "release_holds"
+						? await payload
+								.findByID({
+									collection: "payout-holds",
+									id: input.action.targetId,
+									depth: 0,
+									overrideAccess: true,
+									req,
+								})
+								.catch(() => null)
+						: null;
+				const actionLink =
+					input.action.type === "suspend_resale_link"
+						? await payload
+								.findByID({
+									collection: "resale-links",
+									id: input.action.targetId,
+									depth: 0,
+									overrideAccess: true,
+									req,
+								})
+								.catch(() => null)
+						: null;
+				const actionOrder =
+					input.action.type === "cancel_order"
+						? await payload
+								.findByID({
+									collection: "orders",
+									id: input.action.targetId,
+									depth: 0,
+									overrideAccess: true,
+									req,
+								})
+								.catch(() => null)
+						: null;
+				const expectedSubjectType =
+					input.action.type === "suspend_user" ? "user" : "shop";
+				const targetMatchesFlag =
+					input.action.type === "release_holds"
+						? flag.subjectType === "shop" &&
+							relationId(actionHold?.shop) === flag.subjectKey
+						: input.action.type === "suspend_resale_link"
+							? flag.subjectType === "shop" &&
+								[
+									relationId(actionLink?.supplierShop),
+									relationId(actionLink?.resellerShop),
+								].includes(flag.subjectKey)
+							: input.action.type === "cancel_order"
+								? (flag.subjectType === "shop" &&
+										relationId(actionOrder?.shop) === flag.subjectKey) ||
+									(flag.subjectType === "user" &&
+										relationId(actionOrder?.buyer) === flag.subjectKey)
+								: flag.subjectType === expectedSubjectType &&
+									flag.subjectKey === input.action.targetId;
+				if (!targetMatchesFlag) {
+					throw new ModerationError(ERROR_CODES.moderationReasonInvalid, 400);
+				}
+				if (input.action.type === "release_holds") {
+					const released = await releasePayoutHold(
+						payload,
+						actor,
+						input.action.targetId,
+						{ note, shopId: flag.subjectKey },
+						{ req },
+					);
+					const actionLog = await payload.find({
+						collection: "moderation-log",
+						where: {
+							and: [
+								{ action: { equals: "payout.release" } },
+								{ targetId: { equals: flag.subjectKey } },
+								{ "metadata.holdId": { equals: String(released.id) } },
+							],
+						},
+						limit: 1,
+						pagination: false,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					const actionLogId = actionLog.docs[0]?.id;
+					if (!actionLogId)
+						throw new Error("Payout release moderation log was not written.");
+					linkedActions.push(String(actionLogId));
+				} else if (input.action.type === "cancel_order") {
+					await cancelOrder(
+						payload,
+						actor,
+						input.action.targetId,
+						{ reason: input.action.reason, note },
+						{ req },
+					);
+					const actionLog = await payload.find({
+						collection: "moderation-log",
+						where: {
+							and: [
+								{ action: { equals: "order.cancel" } },
+								{ targetId: { equals: input.action.targetId } },
+							],
+						},
+						limit: 1,
+						pagination: false,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					const actionLogId = actionLog.docs[0]?.id;
+					if (!actionLogId)
+						throw new Error(
+							"Order cancellation moderation log was not written.",
+						);
+					linkedActions.push(String(actionLogId));
+				} else if (input.action.type === "suspend_resale_link") {
+					await suspendResaleLink(
+						payload,
+						actor,
+						input.action.targetId,
+						{ reason: input.action.reason, note },
+						{ req },
+					);
+					const actionLog = await payload.find({
+						collection: "moderation-log",
+						where: {
+							and: [
+								{ action: { equals: "resale_link.suspend" } },
+								{ targetId: { equals: input.action.targetId } },
+							],
+						},
+						limit: 1,
+						pagination: false,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					const actionLogId = actionLog.docs[0]?.id;
+					if (!actionLogId)
+						throw new Error("Resale-link moderation log was not written.");
+					linkedActions.push(String(actionLogId));
+				} else if (input.action.type === "suspend_user") {
+					const result = await suspendUser(
+						payload,
+						actor,
+						input.action.targetId,
+						{
+							reason: input.action.reason,
+							durationDays: input.action.durationDays,
+							note,
+						},
+						{ req },
+					);
+					linkedActions.push(...result.moderationLogIds);
+				} else if (input.action.type === "suspend_shop") {
+					const result = await suspendShop(
+						payload,
+						actor,
+						input.action.targetId,
+						{
+							reason: input.action.reason,
+							durationDays: input.action.durationDays,
+							note,
+						},
+						{ req },
+					);
+					linkedActions.push(...result.moderationLogIds);
+				} else if (input.action.type === "hold_payouts") {
+					if (!isPayoutHoldReason(input.action.reason)) {
+						throw new ModerationError(
+							ERROR_CODES.moderationReasonInvalid,
+							400,
+						);
+					}
+					const hold = await holdPayouts(
+						payload,
+						actor,
+						input.action.targetId,
+						{
+							scope: "shop",
+							reason: input.action.reason,
+							untilDays: input.action.durationDays,
+							note,
+						},
+						{ req },
+					);
+					const actionLog = await payload.find({
+						collection: "moderation-log",
+						where: {
+							and: [
+								{ action: { equals: "payout.hold" } },
+								{ targetId: { equals: input.action.targetId } },
+								{ "metadata.holdId": { equals: String(hold.id) } },
+							],
+						},
+						limit: 1,
+						pagination: false,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					});
+					const actionLogId = actionLog.docs[0]?.id;
+					if (!actionLogId)
+						throw new Error("Payout hold moderation log was not written.");
+					linkedActions.push(String(actionLogId));
+				} else {
+					throw new ModerationError(ERROR_CODES.moderationReasonInvalid, 400);
+				}
+			}
+			const status = input.outcome;
+			const decidedAt = new Date();
+			const updated = await payload.update({
+				collection: "risk-flags",
+				id: flag.id,
+				overrideAccess: true,
+				context: MODERATION_CONTEXT,
+				req,
+				data: {
+					status,
+					resolution,
+					resolutionNote: note ?? undefined,
+					reviewedBy: actor.id,
+					reviewedAt: decidedAt.toISOString(),
+					purgeAt: riskFlagRetentionDate(status, decidedAt),
+				},
+			});
+
+			if (
+				status === "dismissed" &&
+				resolution === "false_positive" &&
+				flag.autoEffects?.includes("payout_hold")
+			) {
+				const holds = await payload.find({
+					collection: "payout-holds",
+					where: {
+						and: [
+							{ status: { equals: "active" } },
+							{ note: { equals: `risk-flag:${flag.id}` } },
+						],
+					},
+					limit: 0,
+					pagination: false,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				});
+				for (const hold of holds.docs) {
+					await releaseHold(req, String(hold.id), {
+						releasedBy: actor.id,
+						note: `Released after risk flag ${flag.id} was dismissed as a false positive.`,
+					});
+				}
+			}
+
+			await writeLog(
+				payload,
+				{
+					actor,
+					action:
+						status === "reviewed"
+							? "risk_flag.review"
+							: status === "actioned"
+								? "risk_flag.action"
+								: "risk_flag.dismiss",
+					targetType: "risk-flag",
+					targetId: String(flag.id),
+					reason: resolution,
+					note,
+					metadata: {
+						signal: flag.signal,
+						score: flag.score,
+						previousStatus: flag.status,
+						resolution,
+						...(linkedActions.length ? { linkedActions } : {}),
+					},
+				},
+				req,
+			);
+			return { id: String(updated.id), status: updated.status };
+		},
+		{ user: actor, context: MODERATION_CONTEXT },
+	);
+}
+
 // ─── Payouts ─────────────────────────────────────────────────────────────────
 
 /**
@@ -1670,6 +2486,7 @@ export async function holdPayouts(
 	actor: Actor,
 	shopId: string,
 	input: HoldPayoutsInput,
+	options: { req?: PayloadRequest } = {},
 ): Promise<PayoutHold> {
 	assertModerator(actor);
 	if (SYSTEM_ONLY_HOLD_REASONS.includes(input.reason)) {
@@ -1700,54 +2517,53 @@ export async function holdPayouts(
 			: new Date(Date.now() + input.untilDays * 86_400_000).toISOString();
 	const note = trimmed(input.note);
 
-	return withTransaction(
-		payload,
-		async (req) => {
-			const key = {
-				scope: input.scope,
-				shop: String(shopId),
-				order: orderId,
-				reason: input.reason,
-			};
-			// `createHold` would hand the open one back; a second log entry
-			// claiming a hold this moderator did not place would be a lie.
-			if (await findActiveHold(req, key)) {
-				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
-			}
-			const hold = await createHold(req, {
-				...key,
-				until,
-				blocksCharges: input.blocksCharges === true,
-				createdByType: "moderator",
-				createdBy: actor.id,
+	const placeHold = async (req: PayloadRequest) => {
+		const key = {
+			scope: input.scope,
+			shop: String(shopId),
+			order: orderId,
+			reason: input.reason,
+		};
+		// `createHold` would hand the open one back; a second log entry
+		// claiming a hold this moderator did not place would be a lie.
+		if (await findActiveHold(req, key)) {
+			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+		}
+		const hold = await createHold(req, {
+			...key,
+			until,
+			blocksCharges: input.blocksCharges === true,
+			createdByType: "moderator",
+			createdBy: actor.id,
+			note,
+		});
+		await writeLog(
+			payload,
+			{
+				actor,
+				action: "payout.hold",
+				targetType: "shop",
+				targetId: String(shopId),
+				reason: hold.reason,
 				note,
-			});
-			await writeLog(
-				payload,
-				{
-					actor,
-					action: "payout.hold",
-					targetType: "shop",
-					targetId: String(shopId),
-					reason: hold.reason,
-					note,
-					metadata: holdLogMetadata(hold),
-				},
-				req,
-			);
-			onCommit(commitContextOf(req), () =>
-				notifyPayoutHoldPlaced(shop, {
-					holdId: String(hold.id),
-					scope: hold.scope,
-					orderId: relationId(hold.order),
-					category: holdReasonCategory(hold.reason),
-					checkPayoutAccount: false,
-				}),
-			);
-			return hold;
-		},
-		{ user: actor },
-	);
+				metadata: holdLogMetadata(hold),
+			},
+			req,
+		);
+		onCommit(commitContextOf(req), () =>
+			notifyPayoutHoldPlaced(shop, {
+				holdId: String(hold.id),
+				scope: hold.scope,
+				orderId: relationId(hold.order),
+				category: holdReasonCategory(hold.reason),
+				checkPayoutAccount: false,
+			}),
+		);
+		return hold;
+	};
+	return options.req
+		? placeHold(options.req)
+		: withTransaction(payload, placeHold, { user: actor });
 }
 
 /**
@@ -1760,6 +2576,7 @@ export async function releasePayoutHold(
 	actor: Actor,
 	holdId: string,
 	input: { note?: string | null; shopId?: string } = {},
+	options: { req?: PayloadRequest } = {},
 ): Promise<PayoutHold> {
 	assertModerator(actor);
 	const hold = await payload
@@ -1786,51 +2603,50 @@ export async function releasePayoutHold(
 	}
 	const note = trimmed(input.note);
 
-	return withTransaction(
-		payload,
-		async (req) => {
-			const current = await payload.findByID({
-				collection: "payout-holds",
-				id: holdId,
-				depth: 0,
-				overrideAccess: true,
-				req,
-			});
-			// Re-read in the transaction: the expiry job or another moderator
-			// may have ended it, and the ladder must judge the reason it has now.
-			if (current.status !== "active" || current.reason !== hold.reason) {
-				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
-			}
-			const released = await releaseHold(req, holdId, {
-				releasedBy: actor.id,
+	const applyRelease = async (req: PayloadRequest) => {
+		const current = await payload.findByID({
+			collection: "payout-holds",
+			id: holdId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		// Re-read in the transaction: the expiry job or another moderator
+		// may have ended it, and the ladder must judge the reason it has now.
+		if (current.status !== "active" || current.reason !== hold.reason) {
+			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+		}
+		const released = await releaseHold(req, holdId, {
+			releasedBy: actor.id,
+			note,
+		});
+		await writeLog(
+			payload,
+			{
+				actor,
+				action: "payout.release",
+				targetType: "shop",
+				targetId: shopId,
+				reason: released.reason,
 				note,
-			});
-			await writeLog(
-				payload,
-				{
-					actor,
-					action: "payout.release",
-					targetType: "shop",
-					targetId: shopId,
-					reason: released.reason,
-					note,
-					metadata: holdLogMetadata(released),
-				},
-				req,
-			);
-			onCommit(commitContextOf(req), () =>
-				notifyPayoutHoldReleased(shop, {
-					holdId: String(released.id),
-					scope: released.scope,
-					orderId: relationId(released.order),
-					category: holdReasonCategory(released.reason),
-					cause: "released",
-				}),
-			);
-			return released;
-		},
-		{ user: actor },
-	);
+				metadata: holdLogMetadata(released),
+			},
+			req,
+		);
+		onCommit(commitContextOf(req), () =>
+			notifyPayoutHoldReleased(shop, {
+				holdId: String(released.id),
+				scope: released.scope,
+				orderId: relationId(released.order),
+				category: holdReasonCategory(released.reason),
+				cause: "released",
+			}),
+		);
+		return released;
+	};
+	return options.req
+		? applyRelease(options.req)
+		: withTransaction(payload, applyRelease, { user: actor });
 }
 
 export interface PayoutAccountDecision {

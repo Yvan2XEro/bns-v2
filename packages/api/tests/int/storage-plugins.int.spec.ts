@@ -70,7 +70,9 @@ describe("buildStoragePlugins", () => {
 			"verification-documents": { prefix: "verification" },
 			"payment-gate-evidence": { prefix: "payment-gates" },
 			"dispute-gate-evidence": { prefix: "dispute-gates" },
+			"dispute-evidence": { prefix: "dispute-evidence" },
 			"buyer-fee-invoice-files": { prefix: "buyer-fee-invoices" },
+			"delivery-proofs": { prefix: "delivery-proofs" },
 		});
 
 		// The public plugin still honours the flag: only the private one is forced closed.

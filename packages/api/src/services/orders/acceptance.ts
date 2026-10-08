@@ -6,25 +6,29 @@ import {
 import type { ShopRole } from "../../access/shopRoles";
 import { SHOP_SERVICE_CONTEXT } from "../../collections/Shops";
 import { ERROR_CODES } from "../../lib/errors";
-import { getOrderSettings } from "../../lib/orderSettings";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
 import { withTransaction } from "../../lib/transactions";
-import type { Order, OrderEvent, OrderItem } from "../../payload-types";
+import type { Order, OrderEvent, PurchaseOrder } from "../../payload-types";
+import { readyForPickup, startShipment } from "../delivery/handover";
+import { findLiveShipmentForOrder } from "../delivery/shipments";
+import { requireShopPermission } from "../shopGuards";
 import type { ServiceUser } from "../shops";
 import { findVariant, release } from "../stock";
 import { issueConfirmationCode, verifyConfirmationCode } from "./confirmation";
-import { issueHandoverCode } from "./handover";
+import { loadOrderItemsFor } from "./orderItems";
 import { recordCancelAfterAccept } from "./risk";
+import { shipAcceptedOrderInTransaction } from "./shipping";
 import { applyTransition } from "./transitions";
+
+export { shipAcceptedOrderInTransaction } from "./shipping";
 
 /**
  * The accept/decline/ship/cancel/confirm-by-call phase. `applyTransition`
  * (Task 8) is still the only writer of `status`; everything here decides
  * *whether* to call it and what else must happen inside the same
- * transaction. Task 20's `delivery.ts` owns the mark-failed routes past
- * `shipped` — nothing here imports it, and nothing here writes a status
- * only Task 20 is meant to reach.
+ * transaction. P7 shipment actions are delegated to the delivery service
+ * when an active shipment exists; orders without one retain the P4 path.
  */
 
 type CancellationGroup = NonNullable<Order["cancellation"]>;
@@ -71,14 +75,6 @@ export const SELLER_CANCELLABLE_STATUSES: readonly Order["status"][] = [
 	"confirmed",
 	"accepted",
 ];
-
-function localeOf(order: Order): "fr" | "en" {
-	return order.contract?.locale === "en" ? "en" : "fr";
-}
-
-function readyForPickupLabel(locale: "fr" | "en"): string {
-	return locale === "fr" ? "Prêt pour le retrait" : "Ready for pickup";
-}
 
 function trimmedNote(value: unknown): string | null {
 	return typeof value === "string" && value.trim()
@@ -155,22 +151,6 @@ async function requireBuyer(
 		throw new ServiceError(ERROR_CODES.orderNotFound, 404);
 	}
 	return order;
-}
-
-async function loadOrderItemsFor(
-	req: PayloadRequest,
-	orderId: string,
-): Promise<OrderItem[]> {
-	const { docs } = await req.payload.find({
-		collection: "order-items",
-		where: { order: { equals: orderId } },
-		depth: 0,
-		limit: 0,
-		pagination: false,
-		overrideAccess: true,
-		req,
-	});
-	return docs as OrderItem[];
 }
 
 /**
@@ -251,6 +231,10 @@ async function endOrder(
 	opts: EndOrderOptions,
 ): Promise<{ order: Order; event: OrderEvent }> {
 	const now = new Date().toISOString();
+	const items = await loadOrderItemsFor(req, String(order.id));
+	const cancellableItemIds = items
+		.filter((item) => item.fulfillmentStatus === "unfulfilled")
+		.map((item) => String(item.id));
 	const result = await applyTransition(
 		req,
 		order,
@@ -269,6 +253,9 @@ async function endOrder(
 				},
 				timestamps: { ...order.timestamps, cancelledAt: now },
 			},
+			...(cancellableItemIds.length > 0
+				? { items: { ids: cancellableItemIds, to: "cancelled" as const } }
+				: {}),
 		},
 		{
 			type: opts.eventType,
@@ -329,6 +316,112 @@ export async function acceptOrder(
 					visibility: "both",
 				},
 			);
+		},
+		{ user },
+	);
+}
+
+/** Supplier cancellation is a resale-specific actor path; P4 still owns the
+ * order transition, event, item state and stock release via `endOrder`. */
+export async function cancelResalePurchaseOrder(
+	payload: Payload,
+	user: ServiceUser,
+	purchaseOrderId: string,
+	input: { reason?: unknown; note?: unknown },
+): Promise<PurchaseOrder> {
+	const { reason, note } = parseSellerEndReason(input.reason, input.note);
+	const existing = await payload
+		.findByID({
+			collection: "purchase-orders",
+			id: purchaseOrderId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	const supplierShopId = existing ? relationId(existing.supplierShop) : null;
+	if (!existing || !supplierShopId)
+		throw new ServiceError(ERROR_CODES.purchaseOrderNotFound, 404);
+	const permission =
+		existing.status === "sent" ? "orders.process" : "orders.cancel";
+	const { role } = await requireShopPermission(
+		payload,
+		user,
+		supplierShopId,
+		permission,
+		{ writable: true },
+	);
+
+	return withTransaction(
+		payload,
+		async (req) => {
+			const purchaseOrder = await req.payload.findByID({
+				collection: "purchase-orders",
+				id: purchaseOrderId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			});
+			if (
+				purchaseOrder.status !== "sent" &&
+				purchaseOrder.status !== "accepted"
+			) {
+				throw new ServiceError(ERROR_CODES.purchaseOrderInvalidTransition, 409);
+			}
+			if (relationId(purchaseOrder.supplierShop) !== supplierShopId) {
+				throw new ServiceError(ERROR_CODES.purchaseOrderNotFound, 404);
+			}
+			const orderId = relationId(purchaseOrder.order);
+			if (!orderId)
+				throw new ServiceError(ERROR_CODES.purchaseOrderNotFound, 404);
+			const order = await req.payload.findByID({
+				collection: "orders",
+				id: orderId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			});
+			if (order.status !== "accepted")
+				throw new ServiceError(ERROR_CODES.purchaseOrderInvalidTransition, 409);
+			const orderItems = await loadOrderItemsFor(req, orderId);
+			if (
+				orderItems.length === 0 ||
+				orderItems.some(
+					(item) =>
+						item.sourcing !== "resale" ||
+						relationId(item.fulfillingShop) !== supplierShopId,
+				)
+			) {
+				throw new ServiceError(ERROR_CODES.purchaseOrderInvalidTransition, 409);
+			}
+			await endOrder(req, order, {
+				eventType: "order.cancelled",
+				by: "seller",
+				reason,
+				note,
+				actorType: "seller",
+				actorId: user.id,
+				actorShopRole: role,
+			});
+			const now = new Date().toISOString();
+			return req.payload.update({
+				collection: "purchase-orders",
+				id: purchaseOrderId,
+				req,
+				overrideAccess: true,
+				data: {
+					status: "cancelled",
+					cancellation: { by: "supplier", reason, note, at: now },
+					statusHistory: [
+						...(purchaseOrder.statusHistory ?? []),
+						{
+							status: "cancelled",
+							actor: user.id,
+							source: "supplier.cancelled",
+							at: now,
+						},
+					],
+				},
+			});
 		},
 		{ user },
 	);
@@ -483,7 +576,7 @@ export async function shipOrder(
 	payload: Payload,
 	user: ServiceUser,
 	orderId: string,
-): Promise<{ order: Order; event: OrderEvent }> {
+): Promise<void> {
 	return withTransaction(
 		payload,
 		async (req) => {
@@ -494,43 +587,40 @@ export async function shipOrder(
 				"orders.process",
 				req,
 			);
-			const items = await loadOrderItemsFor(req, orderId);
-			const settings = await getOrderSettings(payload);
-			const now = new Date();
-			const staleAt = new Date(
-				now.getTime() + settings.staleShippedDays * 86_400_000,
-			).toISOString();
-
-			const transition = await applyTransition(
-				req,
-				order,
-				{
-					status: "shipped",
-					items: { ids: items.map((item) => String(item.id)), to: "shipped" },
-					set: {
-						deadlines: { ...order.deadlines, staleAt },
-						timestamps: { ...order.timestamps, shippedAt: now.toISOString() },
-						...(order.delivery.method === "pickup"
-							? {
-									delivery: {
-										...order.delivery,
-										etaText: readyForPickupLabel(localeOf(order)),
-									},
-								}
-							: {}),
-					},
-				},
-				{
-					type: "order.shipped",
+			const shipment = await findLiveShipmentForOrder(req, String(order.id));
+			if (!shipment) {
+				if (order.shipments?.length) {
+					throw new ServiceError(ERROR_CODES.shipmentInvalidTransition, 409);
+				}
+				await shipAcceptedOrderInTransaction(req, order, {
 					actorType: "seller",
 					actor: user.id,
 					actorShopRole: role,
-					visibility: "both",
-				},
-			);
-
-			await issueHandoverCode(req, transition.order, { regenerate: false });
-			return transition;
+				});
+				return;
+			}
+			if (shipment.method === "pickup") {
+				if (order.status !== "accepted" && order.status !== "shipped") {
+					throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
+				}
+				await readyForPickup(req, shipment, {
+					type: "seller",
+					id: user.id,
+					shopRole: role,
+				});
+				return;
+			}
+			if (shipment.carrier !== "self") {
+				throw new ServiceError(ERROR_CODES.shipmentInvalidTransition, 409);
+			}
+			if (order.status !== "accepted" && order.status !== "shipped") {
+				throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
+			}
+			await startShipment(req, shipment, {
+				type: "seller",
+				id: user.id,
+				shopRole: role,
+			});
 		},
 		{ user },
 	);
@@ -711,6 +801,28 @@ export async function declineByTimeout(
 ): Promise<{ order: Order; event: OrderEvent }> {
 	return endOrder(req, order, {
 		eventType: "order.declined",
+		by: "system",
+		reason: "seller_timeout",
+		actorType: "system",
+	});
+}
+
+export async function cancelResaleOrderBySupplierTimeout(
+	req: PayloadRequest,
+	order: Order,
+): Promise<{ order: Order; event: OrderEvent }> {
+	if (order.status !== "accepted") {
+		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
+	}
+	const items = await loadOrderItemsFor(req, String(order.id));
+	if (
+		items.length === 0 ||
+		items.some((item) => item.sourcing !== "resale")
+	) {
+		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
+	}
+	return endOrder(req, order, {
+		eventType: "order.cancelled",
 		by: "system",
 		reason: "seller_timeout",
 		actorType: "system",

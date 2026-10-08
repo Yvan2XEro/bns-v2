@@ -56,9 +56,9 @@ function seed() {
 			listings: [],
 		},
 		{
-			// The partial unique index migration 20260922_000000_p1_listing_product
-			// builds: one listing per product, and any number without one.
-			uniques: { listings: [["product"]] },
+			// Product-backed listings are unique per shop/product; a source product
+			// can also have independent reseller listings.
+			uniques: { listings: [["shop", "product"]] },
 		},
 	);
 }
@@ -147,6 +147,26 @@ describe("createProduct", () => {
 				(w) => w.op === "create" && w.collection === "listings",
 			)?.context,
 		).toMatchObject({ productService: true });
+	});
+
+	it("creates the supplier listing alongside a resale listing for the same product", async () => {
+		const payload = seed();
+		payload.store.listings.push({
+			id: "reseller-listing",
+			shop: "s-reseller",
+			product: "products-1",
+			status: "published",
+			resale: { supplierShop: "s-1" },
+		});
+
+		const { product } = await createProduct(payload, U1, "s-1", input());
+
+		expect(payload.store.listings).toHaveLength(2);
+		const supplierListing = payload.store.listings.find(
+			(listing) => listing.shop === "s-1",
+		);
+		expect(supplierListing?.product).toBe(product.id);
+		expect(payload.store.products[0].listing).toBe(supplierListing?.id);
 	});
 
 	it("records initial stock as receipts", async () => {
@@ -372,6 +392,72 @@ describe("updateProduct", () => {
 			],
 		});
 		expect(payload.store.listings[0].productSummary.available).toBe(true);
+	});
+
+	it("holds resale listings when supplier stock runs out and republishes them after restock", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input(),
+		);
+		payload.store.listings.push({
+			id: "resale-listing",
+			shop: "s-reseller",
+			product: product.id,
+			status: "published",
+			resale: {
+				supplierShop: "s-1",
+				desiredStatus: "published",
+				holds: [],
+			},
+		});
+		payload.store.listings.push({
+			id: "other-resale-listing",
+			shop: "s-other-reseller",
+			product: "other-product",
+			status: "published",
+			resale: {
+				supplierShop: "s-1",
+				desiredStatus: "published",
+				holds: [],
+			},
+		});
+
+		await recordMovement(payload, U1, variants[0].id, {
+			type: "loss",
+			quantity: -3,
+		});
+		await recordMovement(payload, U1, variants[1].id, {
+			type: "loss",
+			quantity: -2,
+		});
+
+		expect(payload.store.listings[1]).toMatchObject({
+			status: "draft",
+			resale: { holds: ["supplier_unavailable"] },
+		});
+		expect(payload.store.listings[2]).toMatchObject({
+			status: "published",
+			resale: { holds: [] },
+		});
+
+		await recordStockCount(payload, U1, "s-1", {
+			counts: [
+				{ variantId: variants[0].id, counted: 3 },
+				{ variantId: variants[1].id, counted: 2 },
+			],
+		});
+
+		expect(payload.store.listings[1]).toMatchObject({
+			status: "published",
+			resale: { holds: [] },
+		});
+		expect(payload.store.listings[2]).toMatchObject({
+			status: "published",
+			resale: { holds: [] },
+		});
 	});
 
 	it("drops an archived variant's units from the published availability", async () => {

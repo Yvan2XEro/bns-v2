@@ -16,9 +16,11 @@ describe("visibleSellerNav", () => {
 		const off = keys(visibleSellerNav("owner", false));
 		expect(on.filter((key) => !off.includes(key))).toEqual([
 			"orders",
+			"disputes",
 			"billing",
 			"orderSettings",
 		]);
+		expect(off).toContain("returns");
 	});
 
 	it("gives staff the orders list but not billing or its settings", () => {
@@ -26,6 +28,13 @@ describe("visibleSellerNav", () => {
 		expect(nav).toContain("orders");
 		expect(nav).not.toContain("billing");
 		expect(nav).not.toContain("orderSettings");
+	});
+
+	it("shows the disputes queue to order viewers only when ordering is enabled", () => {
+		expect(keys(visibleSellerNav("owner", true))).toContain("disputes");
+		expect(keys(visibleSellerNav("staff", true))).toContain("disputes");
+		expect(keys(visibleSellerNav("owner", false))).not.toContain("disputes");
+		expect(keys(visibleSellerNav(null, true))).not.toContain("disputes");
 	});
 
 	it("leaves a member with no usable role only the role-free entries", () => {
@@ -46,6 +55,24 @@ describe("visibleSellerNav", () => {
 		expect(keys(visibleSellerNav("owner", true, true))).toContain("payments");
 		expect(keys(visibleSellerNav("staff", true, true))).not.toContain(
 			"payments",
+		);
+	});
+
+	it("shows resale orders only when enabled and the member can manage resale", () => {
+		expect(keys(visibleSellerNav("staff", true, false, false))).not.toContain(
+			"resale",
+		);
+		expect(keys(visibleSellerNav("staff", true, false, true))).not.toContain(
+			"resale",
+		);
+		expect(keys(visibleSellerNav("owner", true, false, true))).toContain(
+			"resale",
+		);
+		expect(keys(visibleSellerNav("manager", true, false, true))).toContain(
+			"resale",
+		);
+		expect(keys(visibleSellerNav("staff", false, false, true))).not.toContain(
+			"resale",
 		);
 	});
 });

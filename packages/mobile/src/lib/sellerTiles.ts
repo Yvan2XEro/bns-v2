@@ -14,12 +14,25 @@ const TILES: ReadonlyArray<{
 	href: string;
 	permission: ShopPermission;
 	orders?: true;
+	resale?: true;
 }> = [
+	{
+		key: "returns",
+		href: "/seller/returns",
+		permission: "orders.view",
+	},
 	{
 		key: "orders",
 		href: "/seller/orders",
 		permission: "orders.view",
 		orders: true,
+	},
+	{
+		key: "resale",
+		href: "/seller/resale/catalogue",
+		permission: "resale.manage",
+		orders: true,
+		resale: true,
 	},
 	{ key: "catalogue", href: "/seller/catalogue", permission: "catalogue.edit" },
 	{ key: "stock", href: "/seller/stock-adjust", permission: "stock.move" },
@@ -59,7 +72,9 @@ export interface SellerTileCounts {
 export function visibleSellerTiles(
 	role: ShopRole | null | undefined,
 	counts: SellerTileCounts,
-	options: { ordersEnabled: boolean } = { ordersEnabled: false },
+	options: { ordersEnabled: boolean; resaleEnabled?: boolean } = {
+		ordersEnabled: false,
+	},
 ): SellerTile[] {
 	const badges: Record<string, number> = {
 		inbox: counts.inboxUnread,
@@ -69,7 +84,9 @@ export function visibleSellerTiles(
 	};
 	return TILES.filter(
 		(tile) =>
-			(!tile.orders || options.ordersEnabled) && can(role, tile.permission),
+			(!tile.orders || options.ordersEnabled) &&
+			(!tile.resale || options.resaleEnabled === true) &&
+			can(role, tile.permission),
 	).map(({ key, href, permission }) => {
 		const badge = badges[key] ?? 0;
 		return { key, href, permission, ...(badge > 0 ? { badge } : {}) };

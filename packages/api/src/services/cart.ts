@@ -9,6 +9,7 @@ import { ServiceError } from "../lib/serviceError";
 import { type TxReq, withTransaction } from "../lib/transactions";
 import { availableOf, variantLabel } from "../lib/variants";
 import type { Cart, Listing, ProductVariant, Shop } from "../payload-types";
+import { cartRetailPrice, resolveCartOffer } from "./cartOffer";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 
 export class CartError extends ServiceError {
@@ -120,6 +121,7 @@ type OrderabilityReason =
 	| ShopOrderabilityReason
 	| "unpublished"
 	| "codNotAllowed"
+	| "resaleUnavailable"
 	| "variantArchived";
 
 async function loadShop(
@@ -190,6 +192,23 @@ async function orderabilityReason(
 			: shop;
 	const shopReason = shopOrderabilityReason(resolvedShop, settings);
 	if (shopReason) return shopReason;
+	if (listing.resale?.supplierShop) {
+		if (!resolvedShop) return "resaleUnavailable";
+		try {
+			const offer = await resolveCartOffer(
+				payload,
+				listing,
+				variant,
+				resolvedShop,
+				req,
+			);
+			if (shopOrderabilityReason(offer.fulfillingShop, settings))
+				return "resaleUnavailable";
+		} catch (error) {
+			if (error instanceof ServiceError) return "resaleUnavailable";
+			throw error;
+		}
+	}
 
 	const productId = relationId(variant.product);
 	const product = productId
@@ -319,7 +338,7 @@ async function revalidateCart(
 			available = false;
 			unavailableCode = ERROR_CODES.cartItemUnavailable;
 		} else {
-			currentPrice = variant.price;
+			currentPrice = cartRetailPrice(listing, variant);
 			const reason = await orderabilityReason(
 				payload,
 				listing,
@@ -426,6 +445,7 @@ function newItemRow(input: {
 	variant: ProductVariant;
 	shopId: string;
 	quantity: number;
+	unitPrice: number;
 }): CartItem {
 	return {
 		id: randomUUID(),
@@ -434,7 +454,7 @@ function newItemRow(input: {
 		variant: input.variant.id,
 		shop: input.shopId,
 		quantity: input.quantity,
-		priceAtAdd: input.variant.price,
+		priceAtAdd: input.unitPrice,
 		addedAt: new Date().toISOString(),
 	};
 }
@@ -458,6 +478,7 @@ async function applyAddToCart(
 		variant: ProductVariant;
 		shopId: string;
 		quantity: number;
+		unitPrice: number;
 	},
 ): Promise<Cart> {
 	const items = cart?.items ?? [];
@@ -480,6 +501,27 @@ async function applyAddToCart(
 					name: currentShop?.name ?? null,
 				},
 			});
+		}
+		const incomingFulfilment =
+			relationId(input.listing.resale?.supplierShop) ?? input.shopId;
+		for (const item of items) {
+			const currentListingId = relationId(item.listing);
+			const currentListing = currentListingId
+				? await payload
+						.findByID({
+							collection: "listings",
+							id: currentListingId,
+							depth: 0,
+							overrideAccess: true,
+							req,
+						})
+						.catch(() => null)
+				: null;
+			const existingFulfilment =
+				relationId(currentListing?.resale?.supplierShop) ??
+				relationId(item.shop);
+			if (existingFulfilment !== incomingFulfilment)
+				throw new CartError(ERROR_CODES.cartSingleFulfilment, 409);
 		}
 	}
 
@@ -579,8 +621,19 @@ export async function addCartItem(
 
 		const role = await resolveShopRole(payload, user.id, shopId, req.context);
 		if (role) throw new CartError(ERROR_CODES.checkoutSelfPurchase, 403);
+		const supplierId = relationId(listing.resale?.supplierShop);
+		if (
+			supplierId &&
+			(await resolveShopRole(payload, user.id, supplierId, req.context))
+		)
+			throw new CartError(ERROR_CODES.checkoutSelfPurchase, 403);
+		if (relationId(listing.product) !== relationId(variant.product))
+			throw new CartError(ERROR_CODES.cartItemUnavailable, 409);
 
 		await assertOrderable(payload, listing, variant, settings);
+		const unitPrice = cartRetailPrice(listing, variant);
+		if (typeof unitPrice !== "number")
+			throw new CartError(ERROR_CODES.cartItemUnavailable, 409);
 
 		let cart = await loadActiveCart(payload, user.id, req);
 		if (replace && cart && (cart.items?.length ?? 0) > 0) {
@@ -598,6 +651,7 @@ export async function addCartItem(
 			variant,
 			shopId,
 			quantity,
+			unitPrice,
 		});
 		return toCartView(payload, updated, req);
 	});

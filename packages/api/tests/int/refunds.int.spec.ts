@@ -450,7 +450,7 @@ describe("failed refund reverse-netting", () => {
 		).toHaveLength(2);
 	});
 
-	it("posts no netting reversal for a failed refund that was never netted", async () => {
+	it("posts no netting reversal for a failed refund without an original netting", async () => {
 		await releasedOrder();
 		const row = await partial("rc-1", 10_000);
 		expect(await balance("seller_receivable")).toBe(10_000);

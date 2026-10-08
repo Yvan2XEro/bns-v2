@@ -6,6 +6,8 @@ import { getCounterStore } from "@/lib/rateLimit";
 import { ServiceError } from "@/lib/serviceError";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
 import { withTransaction } from "@/lib/transactions";
+import { handoverShipment } from "@/services/delivery/handover";
+import { findLiveShipmentForOrder } from "@/services/delivery/shipments";
 import {
 	assertHandoverRateLimit,
 	markDelivered,
@@ -57,6 +59,25 @@ export async function POST(
 			await withTransaction(
 				ctx.payload,
 				async (req) => {
+					const liveShipment = await findLiveShipmentForOrder(
+						req,
+						String(order.id),
+					);
+					if (liveShipment) {
+						return handoverShipment(
+							req,
+							liveShipment,
+							{ code: body.data.code },
+							{
+								type: "seller",
+								id: ctx.user.id,
+								shopRole: role,
+							},
+						);
+					}
+					if (order.shipments?.length) {
+						throw new ServiceError(ERROR_CODES.shipmentInvalidTransition, 409);
+					}
 					await verifyHandoverCode(req, order, body.data.code, {
 						actor: { type: "seller", id: ctx.user.id },
 					});

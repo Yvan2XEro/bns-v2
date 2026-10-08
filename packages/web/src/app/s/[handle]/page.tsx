@@ -5,10 +5,12 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { cache } from "react";
 import { ListingGrid } from "~/components/listing/listing-card";
+import { DeliveryCities } from "~/components/shop/delivery-cities";
+import { PickupPoints } from "~/components/shop/pickup-points";
 import { shopUrl } from "~/components/shop/share-shop-button";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
-import { serverFetch, serverGet } from "~/lib/server-api";
+import { serverFetch } from "~/lib/server-api";
 import { shopRating } from "~/lib/shop-rating";
 import type { Listing, PublicShop } from "~/types";
 
@@ -149,6 +151,8 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 			<div className="container mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:px-8">
 				<div className="lg:col-span-1">
 					<ShopAbout shop={shop} locale={locale} />
+					<PickupPoints handle={shop.handle} />
+					<DeliveryCities shopId={shop.id} />
 				</div>
 				<div className="lg:col-span-3">
 					<form

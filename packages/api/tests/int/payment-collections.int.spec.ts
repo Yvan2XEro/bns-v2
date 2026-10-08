@@ -338,11 +338,13 @@ describe("the extensions", () => {
 			"boost",
 			"commission",
 			"checkout",
+			"reseller_charge",
 		]);
 		expect(values(PaymentIntents.fields, "targetType")).toEqual([
 			"boost-payment",
 			"commission-invoice",
 			"order",
+			"reseller-charge",
 		]);
 		expect(values(PaymentIntents.fields, "channel")).toEqual([
 			"cm.mtn",

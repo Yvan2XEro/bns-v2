@@ -18,7 +18,10 @@ const idOf = (value: unknown): string | null => {
 	return null;
 };
 
-export function transformShop(shop: Record<string, unknown>): ShopDocument {
+export function transformShop(
+	shop: Record<string, unknown>,
+	deliveryCities: string[] = [],
+): ShopDocument {
 	const location = (shop.location ?? {}) as Record<string, unknown>;
 	const owner =
 		shop.owner && typeof shop.owner === "object"
@@ -48,7 +51,24 @@ export function transformShop(shop: Record<string, unknown>): ShopDocument {
 		logoUrl: typeof logo?.url === "string" ? logo.url : null,
 		ownerRating: Number(owner?.rating ?? 0),
 		ownerReviews: Number(owner?.totalReviews ?? 0),
+		deliveryCities,
 	};
+}
+
+export async function fetchDeliveryCities(shopId: string): Promise<string[]> {
+	const response = await fetch(
+		`${PAYLOAD_API_URL}/public/shops/${encodeURIComponent(shopId)}/delivery-cities`,
+	);
+	if (!response.ok)
+		throw new Error(
+			`Failed to fetch delivery cities of shop ${shopId}: ${response.status}`,
+		);
+	const data = (await response.json()) as { deliveryCities?: unknown };
+	return Array.isArray(data.deliveryCities)
+		? data.deliveryCities.filter(
+				(city): city is string => typeof city === "string",
+			)
+		: [];
 }
 
 /** Public REST only returns published listings, which is exactly what belongs in the index. */
@@ -97,7 +117,8 @@ export async function handleShopUpdated(
 		// means a 200 here is always an active shop — there is no "200 with a
 		// suspended shop" response to branch on.
 		const shop = (await response.json()) as Record<string, unknown>;
-		await indexShopDocument(transformShop(shop));
+		const deliveryCities = await fetchDeliveryCities(shopId);
+		await indexShopDocument(transformShop(shop, deliveryCities));
 	}
 
 	if (options.reindexListings) {

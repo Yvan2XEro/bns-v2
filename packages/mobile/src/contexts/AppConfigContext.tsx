@@ -18,6 +18,7 @@ export interface AppConfig {
 	localAuthEnabled: boolean;
 	shopsEnabled: boolean;
 	ordersEnabled: boolean;
+	disputesEnabled: boolean;
 	/** The cities ordering is open in, with each one's default delivery fee. */
 	launchCities: LaunchCityOption[];
 	withdrawalDays: number;
@@ -27,6 +28,12 @@ export interface AppConfig {
 	 * never a guess that it is on.
 	 */
 	protectedPaymentEnabled: boolean;
+	deliveryZonesEnabled: boolean;
+	couriersEnabled: boolean;
+	intercityEnabled: boolean;
+	insightsEnabled: boolean;
+	resaleEnabled: boolean;
+	resalePrepaidEnabled: boolean;
 	/** Rate, minimum and maximum for the buyer protection fee. */
 	buyerProtection: BuyerProtectionConfig;
 }
@@ -42,9 +49,16 @@ const DEFAULT: AppConfig = {
 	// outage: a client that cannot read the flag must hide ordering, not
 	// advertise it.
 	ordersEnabled: false,
+	disputesEnabled: false,
 	launchCities: [],
 	withdrawalDays: 15,
 	protectedPaymentEnabled: false,
+	deliveryZonesEnabled: false,
+	couriersEnabled: false,
+	intercityEnabled: false,
+	insightsEnabled: false,
+	resaleEnabled: false,
+	resalePrepaidEnabled: false,
 	buyerProtection: { bps: 300, min: 100, max: 15_000 },
 };
 

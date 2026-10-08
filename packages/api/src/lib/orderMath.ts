@@ -31,11 +31,16 @@ export function vatOf(commissionTotal: number, vatRateBps: number): number {
 export function invoiceTotals(input: {
 	charges: number;
 	credits: number;
+	nonVatCredits?: number;
 	carryOver: number;
 	vatRateBps: number;
 }): { commissionTotal: number; vatAmount: number; totalDue: number } {
 	const commissionTotal = input.charges - input.credits + input.carryOver;
-	const vatAmount = vatOf(commissionTotal, input.vatRateBps);
+	const vatBase =
+		input.charges -
+		(input.credits - (input.nonVatCredits ?? 0)) +
+		input.carryOver;
+	const vatAmount = vatOf(vatBase, input.vatRateBps);
 	return { commissionTotal, vatAmount, totalDue: commissionTotal + vatAmount };
 }
 

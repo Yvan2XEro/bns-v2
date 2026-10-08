@@ -297,6 +297,24 @@ describe("availableActions: the deadlines the server will enforce", () => {
 		).toEqual(["contest_delivery", "review_shop", "receipt"]);
 	});
 
+	test("a carrier POD delivery remains contestable during the window", () => {
+		expect(
+			availableActions(
+				orderAt("delivered", {
+					handover: {
+						method: "carrier_pod",
+						locked: false,
+						attemptsLeft: 5,
+						regenerationsLeft: 3,
+					},
+				}),
+				"buyer",
+				null,
+				{ now: NOW },
+			),
+		).toContain("contest_delivery");
+	});
+
 	// A window that must exist to be open: `openWithdrawal` and
 	// `contestDelivery` both refuse an order with no deadline recorded, so an
 	// absent one reads as closed rather than unbounded — the opposite of the

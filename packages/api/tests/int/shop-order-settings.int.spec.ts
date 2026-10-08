@@ -30,6 +30,7 @@ type Over = {
 	shop?: Record<string, unknown>;
 	orderSettings?: Record<string, unknown> | undefined;
 	launchCities?: Array<{ key: string; deliveryFee: number }>;
+	deliveryZonesEnabled?: boolean;
 };
 
 function seed(over: Over = {}) {
@@ -99,6 +100,7 @@ function seed(over: Over = {}) {
 			uniques: { "shop-members": [["shop", "user"]] },
 			globals: {
 				"app-settings": {
+					delivery: { zonesEnabled: over.deliveryZonesEnabled === true },
 					orders: {
 						enabled: true,
 						launchCities: over.launchCities ?? [
@@ -302,6 +304,52 @@ describe("GET /api/shops/{id}/order-settings", () => {
 });
 
 describe("PATCH /api/shops/{id}/order-settings", () => {
+	it("refuses enabling COD when the shop has no active delivery option", async () => {
+		const payload = seed({
+			orderSettings: { codEnabled: false },
+			deliveryZonesEnabled: true,
+		});
+		asUser(payload, OWNER);
+		const response = await PATCH(patch({ codEnabled: true }), params("s-1"));
+
+		expect(response.status).toBe(409);
+		expect((await response.json()).code).toBe("delivery.noActiveOption");
+		expect(payload.store.shops[0].orderSettings).toMatchObject({
+			codEnabled: false,
+		});
+	});
+
+	it("allows enabling COD when the shop has an active COD delivery zone", async () => {
+		const payload = seed({
+			orderSettings: { codEnabled: false },
+			deliveryZonesEnabled: true,
+		});
+		await payload.create({
+			collection: "delivery-zones",
+			overrideAccess: true,
+			data: {
+				shop: "s-1",
+				name: "City zone",
+				scope: "same_city",
+				city: "douala",
+				method: "seller_delivery",
+				fee: 1500,
+				etaMinHours: 24,
+				etaMaxHours: 48,
+				codAllowed: true,
+				active: true,
+			},
+		});
+		asUser(payload, OWNER);
+
+		const response = await PATCH(patch({ codEnabled: true }), params("s-1"));
+
+		expect(response.status).toBe(200);
+		expect(payload.store.shops[0].orderSettings).toMatchObject({
+			codEnabled: true,
+		});
+	});
+
 	it("writes the keys it was given, keeps the rest, and answers the fresh view", async () => {
 		const payload = seed();
 		asUser(payload, MANAGER);

@@ -675,6 +675,7 @@ describe("listDeliveryOptions", () => {
 			),
 		).toEqual({
 			city: "douala",
+			unavailable: [],
 			options: [
 				{
 					optionId: "seller_delivery:douala",
@@ -760,7 +761,7 @@ describe("listDeliveryOptions", () => {
 				{ city: "yaounde" },
 				{ now: NOW },
 			),
-		).toEqual({ city: "yaounde", options: [] });
+		).toEqual({ city: "yaounde", options: [], unavailable: [] });
 	});
 
 	// Not `codAllowed: false` on an option: a product that forbids COD makes

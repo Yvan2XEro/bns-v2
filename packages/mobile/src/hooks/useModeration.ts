@@ -4,6 +4,11 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import type {
+	RiskFlagDecisionInput,
+	RiskFlagDetail,
+	RiskFlagQueuePage,
+} from "../../../api/src/types/riskModeration";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { isModerator } from "../lib/moderation";
@@ -36,6 +41,7 @@ export const moderationKeys = {
 	summary: ["moderation", "summary"] as const,
 	listings: ["moderation", "listings"] as const,
 	reports: ["moderation", "reports"] as const,
+	riskFlags: ["moderation", "risk-flags"] as const,
 	user: (id: string) => ["moderation", "user", id] as const,
 	shop: (id: string) => ["moderation", "shop", id] as const,
 };
@@ -92,6 +98,50 @@ export function usePendingReports() {
 			),
 		getNextPageParam: (last) =>
 			last.hasNextPage ? (last.nextPage ?? undefined) : undefined,
+	});
+}
+
+export function useRiskFlags() {
+	const enabled = useIsModerator();
+	return useInfiniteQuery({
+		queryKey: moderationKeys.riskFlags,
+		enabled,
+		initialPageParam: "",
+		queryFn: ({ pageParam }) => {
+			const cursor = pageParam
+				? `&cursor=${encodeURIComponent(pageParam)}`
+				: "";
+			return api.get<RiskFlagQueuePage>(
+				`/api/moderation/risk-flags?status=open${cursor}`,
+			);
+		},
+		getNextPageParam: (last) =>
+			last.hasMore ? (last.nextCursor ?? undefined) : undefined,
+	});
+}
+
+export function useRiskFlag(flagId: string | undefined) {
+	const enabled = useIsModerator();
+	return useQuery({
+		queryKey: [...moderationKeys.riskFlags, "detail", flagId ?? ""],
+		queryFn: () =>
+			api.get<RiskFlagDetail>(`/api/moderation/risk-flags/${flagId}`),
+		enabled: Boolean(flagId) && enabled,
+	});
+}
+
+export function useRiskFlagDecision() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, ...decision }: { id: string } & RiskFlagDecisionInput) =>
+			api.post(`/api/moderation/risk-flags/${id}`, decision),
+		onSuccess: (_result, variables) => {
+			queryClient.invalidateQueries({ queryKey: moderationKeys.riskFlags });
+			queryClient.invalidateQueries({ queryKey: moderationKeys.summary });
+			queryClient.invalidateQueries({
+				queryKey: [...moderationKeys.riskFlags, "detail", variables.id],
+			});
+		},
 	});
 }
 

@@ -6,6 +6,7 @@ import { FirstRunChecklist } from "~/components/seller/first-run-checklist";
 import { PublicLinkCard } from "~/components/seller/public-link-card";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
 import { getMyShop } from "~/lib/server-shop";
+import { SellerInsightsPreview } from "./insights/seller-insights-preview";
 
 export default async function SellerDashboardPage() {
 	const [mine, t] = await Promise.all([getMyShop(), getTranslations("Seller")]);
@@ -99,6 +100,10 @@ export default async function SellerDashboardPage() {
 					</Link>
 				))}
 			</div>
+
+			{!suspended && mine?.role ? (
+				<SellerInsightsPreview shopId={shop.id} role={mine.role} />
+			) : null}
 
 			{!suspended && <PublicLinkCard handle={shop.handle} name={shop.name} />}
 		</div>

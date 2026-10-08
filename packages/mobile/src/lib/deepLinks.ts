@@ -45,6 +45,24 @@ export const PAYMENT_DEEP_LINKS: ReadonlyArray<{
 	},
 ];
 
+export const CASE_DEEP_LINKS: ReadonlyArray<{
+	url: string;
+	screen: string;
+}> = [
+	{ url: "buynsellem://account/disputes", screen: "account/disputes" },
+	{ url: "buynsellem://disputes/d-1", screen: "disputes/[id]" },
+	{ url: "buynsellem://account/returns", screen: "account/returns" },
+	{ url: "buynsellem://returns/r-1", screen: "returns/[id]" },
+	{
+		url: "buynsellem://moderation/disputes",
+		screen: "moderation/disputes/index",
+	},
+	{
+		url: "buynsellem://moderation/disputes/d-1",
+		screen: "moderation/disputes/[id]",
+	},
+];
+
 function stringField(
 	data: Record<string, unknown>,
 	key: string,

@@ -53,14 +53,24 @@ export type FulfillmentStatus =
 	| "return_requested"
 	| "returned";
 
-export type DeliveryMethod = "seller_delivery" | "pickup";
+export type {
+	DeliveryMethod,
+	DeliveryOption,
+	PickupPointSnapshot,
+} from "../../../api/src/contracts/deliveryQuote";
+
+import type {
+	DeliveryMethod,
+	PickupPointSnapshot,
+} from "../../../api/src/contracts/deliveryQuote";
 export type PaymentMethod = "cod" | "mobile_money";
 export type ConfirmationRequired = "none" | "sms_code" | "seller_call";
 export type ConfirmationMethod = "verified_phone" | "sms_code" | "seller_call";
 export type HandoverMethod =
 	| "otp"
 	| "buyer_confirmation"
-	| "seller_declaration";
+	| "seller_declaration"
+	| "carrier_pod";
 export type CompletionHold = "none" | "return_case" | "dispute";
 
 /**
@@ -127,23 +137,6 @@ export interface CartView {
 }
 
 // --- Checkout -------------------------------------------------------------
-
-export interface PickupPointSnapshot {
-	address: string;
-	landmark: string | null;
-	gps: { lat: number; lng: number } | null;
-	hours: string | null;
-}
-
-export interface DeliveryOption {
-	/** `seller_delivery:{city}` or `pickup:{shopId}`. */
-	optionId: string;
-	method: DeliveryMethod;
-	fee: number;
-	etaText: string;
-	codAllowed: boolean;
-	pickupPoint?: PickupPointSnapshot;
-}
 
 /** What a checkout form submits, and what the quote echoes back. */
 export interface AddressInput {

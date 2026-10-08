@@ -1,6 +1,11 @@
 import { APIError, type CollectionConfig, type Where } from "payload";
 import { isAdmin } from "../access/roles";
-import { shopField, shopScopedRead } from "../access/shopRoles";
+import {
+	can,
+	shopField,
+	shopRoleFieldAccess,
+	shopScopedRead,
+} from "../access/shopRoles";
 import { updateProductEndpoint } from "../endpoints/products";
 import { relationId } from "../lib/relationId";
 
@@ -131,6 +136,68 @@ export const Products: CollectionConfig = {
 				{ name: "weightGrams", type: "number", min: 0 },
 				{ name: "codAllowed", type: "checkbox", defaultValue: true },
 				{ name: "pickupAllowed", type: "checkbox", defaultValue: false },
+			],
+		},
+		{
+			name: "resale",
+			type: "group",
+			access: {
+				read: shopRoleFieldAccess((role) => can(role, "resale.manage")),
+			},
+			fields: [
+				{ name: "enabled", type: "checkbox", defaultValue: false },
+				{
+					name: "approvalRequired",
+					type: "checkbox",
+					defaultValue: false,
+				},
+				{
+					name: "handlingHours",
+					type: "number",
+					min: 4,
+					max: 120,
+					defaultValue: 24,
+				},
+				{ name: "codAccepted", type: "checkbox", defaultValue: false },
+				{
+					name: "resellerNotes",
+					type: "textarea",
+					maxLength: 1000,
+				},
+				{ name: "enabledAt", type: "date", admin: { readOnly: true } },
+				{
+					name: "resellerCount",
+					type: "number",
+					min: 0,
+					defaultValue: 0,
+					admin: { readOnly: true },
+				},
+				{
+					name: "pendingChange",
+					type: "group",
+					admin: { readOnly: true },
+					fields: [
+						{ name: "effectiveAt", type: "date" },
+						{
+							name: "variants",
+							type: "array",
+							fields: [
+								{
+									name: "variant",
+									type: "relationship",
+									relationTo: "product-variants",
+								},
+								{ name: "supplierPrice", type: "number", min: 100 },
+								{ name: "minRetailPrice", type: "number", min: 0 },
+								{
+									name: "suggestedRetailPrice",
+									type: "number",
+									min: 0,
+								},
+							],
+						},
+					],
+				},
 			],
 		},
 		{ name: "returnPolicy", type: "textarea", maxLength: 2000 },

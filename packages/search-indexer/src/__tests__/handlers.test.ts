@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
-const mockAddDocuments = mock(() => Promise.resolve());
+const mockAddDocuments = mock((_documents: unknown[]) => Promise.resolve());
 const mockDeleteDocument = mock(() => Promise.resolve());
 const mockDeleteAllDocuments = mock(() => Promise.resolve());
 const mockUpdateSettings = mock(() => Promise.resolve());
@@ -168,22 +168,27 @@ const jsonResponse = (body: unknown, status = 200) =>
 	});
 
 describe("handleShopUpdated", () => {
-	test("indexes an active shop into the shops index", async () => {
-		globalThis.fetch = mock(() =>
+	test("indexes an active shop and its active delivery cities", async () => {
+		globalThis.fetch = mock((url: string) =>
 			Promise.resolve(
-				jsonResponse({
-					id: "shop-1",
-					handle: "akwatech",
-					name: "Akwa",
-					status: "active",
-					categories: [],
-					createdAt: "x",
-				}),
+				url.includes("/delivery-cities")
+					? jsonResponse({ deliveryCities: ["douala"] })
+					: jsonResponse({
+							id: "shop-1",
+							handle: "akwatech",
+							name: "Akwa",
+							status: "active",
+							categories: [],
+							createdAt: "x",
+						}),
 			),
 		) as unknown as typeof fetch;
 		await handleShopUpdated("shop-1");
 		expect(indexNames).toContain("shops");
 		expect(mockAddDocuments).toHaveBeenCalledTimes(1);
+		expect(mockAddDocuments.mock.calls[0]?.[0]?.[0]).toMatchObject({
+			deliveryCities: ["douala"],
+		});
 	});
 
 	test("removes a shop the public API no longer returns", async () => {

@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
 	deriveListingData,
 	listingStatusFor,
+	type ProductLike,
 } from "../../src/lib/productListing";
 
-const product = {
+const product: ProductLike = {
 	id: "p-1",
 	title: "iPhone 13 Pro",
 	description: "",

@@ -23,6 +23,7 @@ import {
 	useModerationSummary,
 	usePendingListings,
 	usePendingReports,
+	useRiskFlags,
 } from "@/src/hooks/useModeration";
 import { useVerificationQueue } from "@/src/hooks/useModerationVerification";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -35,8 +36,9 @@ import type {
 	ReportDoc,
 	UserDoc,
 } from "@/src/types/api";
+import type { RiskFlagQueueItem } from "../../../api/src/types/riskModeration";
 
-type QueueKey = "listings" | "reports" | "verification";
+type QueueKey = "listings" | "reports" | "verification" | "risk";
 
 function relativeAge(iso: string, t: Translate): string {
 	const minutes = Math.max(
@@ -64,6 +66,7 @@ export default function ModerationHubScreen() {
 	const summary = useModerationSummary();
 	const listings = usePendingListings();
 	const reports = usePendingReports();
+	const riskFlags = useRiskFlags();
 	// Never gated on the verification feature flag: a review already in flight
 	// must finish reviewing while intake is paused, so the hub only ever asks
 	// for the fixed "to_review" queue and never reads the flag.
@@ -74,7 +77,9 @@ export default function ModerationHubScreen() {
 			? listings.isLoading
 			: queue === "reports"
 				? reports.isLoading
-				: verifications.isLoading;
+				: queue === "verification"
+					? verifications.isLoading
+					: riskFlags.isLoading;
 
 	const items = useMemo<
 		(ListingDoc | ReportDoc | ModerationVerificationQueueItem)[]
@@ -96,7 +101,13 @@ export default function ModerationHubScreen() {
 	// bounded list, never an infinite one — so only the other two tabs ever
 	// load a next page or show a footer spinner.
 	const infiniteActive =
-		queue === "listings" ? listings : queue === "reports" ? reports : null;
+		queue === "listings"
+			? listings
+			: queue === "reports"
+				? reports
+				: queue === "risk"
+					? riskFlags
+					: null;
 
 	const onRefresh = useCallback(async () => {
 		setRefreshing(true);
@@ -105,10 +116,12 @@ export default function ModerationHubScreen() {
 				? listings
 				: queue === "reports"
 					? reports
-					: verifications;
+					: queue === "verification"
+						? verifications
+						: riskFlags;
 		await Promise.all([active.refetch(), summary.refetch()]);
 		setRefreshing(false);
-	}, [queue, listings, reports, verifications, summary]);
+	}, [queue, listings, reports, verifications, riskFlags, summary]);
 
 	const tabs = queueTabs(summary.data).map((tab) => ({
 		...tab,
@@ -124,6 +137,18 @@ export default function ModerationHubScreen() {
 					: undefined
 			}
 		>
+			<Pressable
+				accessibilityRole="button"
+				onPress={() => router.push("/moderation/disputes")}
+				style={[
+					styles.disputesLink,
+					{ borderColor: c.border, backgroundColor: c.card },
+				]}
+			>
+				<Text style={[styles.tabLabel, { color: c.primary }]}>
+					{t("moderation.disputesQueue")}
+				</Text>
+			</Pressable>
 			<View style={[styles.tabs, { borderBottomColor: c.border }]}>
 				{tabs.map((tab) => {
 					const selected = queue === tab.key;
@@ -173,6 +198,52 @@ export default function ModerationHubScreen() {
 
 			{isLoading ? (
 				<ActivityIndicator style={{ marginTop: 40 }} color={c.primary} />
+			) : queue === "risk" ? (
+				<FlashList
+					data={(riskFlags.data?.pages ?? []).flatMap((page) => page.items)}
+					keyExtractor={(item) => item.id}
+					contentContainerStyle={{
+						padding: 16,
+						...(centeredContent ? centeredContent : null),
+					}}
+					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+					refreshControl={
+						<RefreshControl
+							refreshing={refreshing}
+							onRefresh={onRefresh}
+							tintColor={c.primary}
+						/>
+					}
+					onEndReached={() => {
+						if (riskFlags.hasNextPage && !riskFlags.isFetchingNextPage) {
+							void riskFlags.fetchNextPage();
+						}
+					}}
+					onEndReachedThreshold={0.4}
+					ListEmptyComponent={
+						<EmptyState
+							illustration={riskFlags.isError ? "notFound" : "empty"}
+							title={
+								riskFlags.isError
+									? t("moderation.riskQueueFailed")
+									: t("moderation.emptyRiskTitle")
+							}
+							subtitle={
+								riskFlags.isError ? undefined : t("moderation.emptySubtitle")
+							}
+							ctaLabel={riskFlags.isError ? t("common.retry") : undefined}
+							onCta={
+								riskFlags.isError ? () => void riskFlags.refetch() : undefined
+							}
+						/>
+					}
+					ListFooterComponent={
+						riskFlags.isFetchingNextPage ? (
+							<ActivityIndicator style={{ margin: 16 }} color={c.primary} />
+						) : null
+					}
+					renderItem={({ item }) => <RiskFlagRow flag={item} t={t} c={c} />}
+				/>
 			) : (
 				<FlashList
 					data={items}
@@ -230,6 +301,52 @@ export default function ModerationHubScreen() {
 				/>
 			)}
 		</ModerationScreen>
+	);
+}
+
+function RiskFlagRow({
+	flag,
+	t,
+	c,
+}: {
+	flag: RiskFlagQueueItem;
+	t: Translate;
+	c: ReturnType<typeof useModerationTheme>;
+}) {
+	return (
+		<Pressable
+			accessibilityRole="button"
+			accessibilityLabel={`${flag.severity}: ${flag.signal}`}
+			onPress={() => router.push(`/moderation/risk/${flag.id}`)}
+			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+		>
+			<View
+				style={[
+					styles.riskBadge,
+					{
+						backgroundColor: flag.severity === "high" ? c.dangerSoft : c.bg,
+					},
+				]}
+			>
+				<Text
+					style={[
+						styles.riskScore,
+						{ color: flag.severity === "high" ? c.danger : c.primary },
+					]}
+				>
+					{flag.score}
+				</Text>
+			</View>
+			<View style={styles.cardBody}>
+				<Text style={[styles.cardTitle, { color: c.text }]} numberOfLines={1}>
+					{flag.subjectLabel ?? t("moderation.riskUnknownSubject")}
+				</Text>
+				<Text style={[styles.cardMeta, { color: c.muted }]} numberOfLines={2}>
+					{`${flag.severity === "high" ? t("moderation.riskHigh") : flag.severity === "medium" ? t("moderation.riskMedium") : t("moderation.riskLow")} · ${flag.signal.replaceAll(".", " · ").replaceAll("_", " ")} · ${t("moderation.riskOccurrences", { count: flag.occurrences ?? 1 })} · ${relativeAge(flag.lastSeenAt, t)}`}
+				</Text>
+			</View>
+			<Ionicons name="chevron-forward" size={18} color={c.muted} />
+		</Pressable>
 	);
 }
 
@@ -317,6 +434,13 @@ function ReportRow({
 }
 
 const styles = StyleSheet.create({
+	disputesLink: {
+		alignSelf: "stretch",
+		borderRadius: 10,
+		borderWidth: 1,
+		margin: 12,
+		padding: 12,
+	},
 	tabs: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
 	tab: {
 		flex: 1,
@@ -355,6 +479,14 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	riskBadge: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	riskScore: { fontSize: 14, fontFamily: Fonts.displayBold },
 	cardBody: { flex: 1, gap: 3 },
 	cardTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	cardMeta: { fontSize: 12, fontFamily: Fonts.body },

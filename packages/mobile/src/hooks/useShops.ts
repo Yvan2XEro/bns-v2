@@ -63,6 +63,8 @@ export const shopKeys = {
 	activityRoot: (shopId: string) => ["shops", shopId, "activity"] as const,
 	activity: (shopId: string, filters: ShopActivityFilters) =>
 		["shops", shopId, "activity", filters] as const,
+	insights: (shopId: string, period: string) =>
+		["shops", shopId, "insights", period] as const,
 	inboxRoot: (shopId: string) => ["shops", shopId, "inbox"] as const,
 	inbox: (shopId: string, filters: ShopInboxFilters) =>
 		["shops", shopId, "inbox", filters] as const,

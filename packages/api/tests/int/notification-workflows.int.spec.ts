@@ -204,6 +204,179 @@ describe("buildExpoPushData", () => {
 	});
 });
 
+describe("buildExpoPushData for P6 return and dispute workflows", () => {
+	it("routes return notifications to buyer or seller according to audience", () => {
+		expect(
+			buildExpoPushData("refund-overdue", {
+				returnId: "ret-1",
+				audience: "buyer",
+			}),
+		).toEqual({ returnId: "ret-1", url: "/returns/ret-1" });
+		expect(
+			buildExpoPushData("return-requested", {
+				returnId: "ret-1",
+				audience: "shop",
+			}),
+		).toEqual({ returnId: "ret-1", url: "/seller/returns/ret-1" });
+	});
+
+	it("routes dispute notifications to the shared party screen or seller list", () => {
+		expect(
+			buildExpoPushData("dispute-resolved", {
+				disputeId: "dsp-1",
+				audience: "buyer",
+			}),
+		).toEqual({ disputeId: "dsp-1", url: "/disputes/dsp-1" });
+		expect(
+			buildExpoPushData("dispute-message", {
+				disputeId: "dsp-1",
+				audience: "shop",
+			}),
+		).toEqual({ disputeId: "dsp-1", url: "/seller/disputes" });
+	});
+
+	it("routes seller strike notices and omits links without required identifiers", () => {
+		expect(
+			buildExpoPushData("shop-strike-added", { strikeId: "strike-1" }),
+		).toEqual({ strikeId: "strike-1", url: "/seller/disputes" });
+		expect(buildExpoPushData("return-inspected", {})).toBeUndefined();
+		expect(buildExpoPushData("dispute-opened", {})).toBeUndefined();
+	});
+});
+
+describe("buildExpoPushData for P7 shipment workflows", () => {
+	it("declares and routes the P7 delivery setup reminder", () => {
+		const reminder = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "delivery-settings-incomplete",
+		);
+		expect(reminder?.payloadSchema).toMatchObject({
+			required: ["shopId", "needsStructuredPickupHours", "noActiveOption"],
+		});
+		expect(reminder?.steps.map((step) => step.type)).toEqual([
+			"in_app",
+			"push",
+		]);
+		expect(
+			buildExpoPushData("delivery-settings-incomplete", { shopId: "s-1" }),
+		).toEqual({ shopId: "s-1", url: "/seller/delivery" });
+	});
+
+	it("declares the exact typed channels and fields used by the attempt notifiers", () => {
+		const failedAttempt = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "shipment-attempt-failed",
+		);
+		expect(failedAttempt?.payloadSchema).toMatchObject({
+			required: [
+				"orderId",
+				"shipmentId",
+				"reason",
+				"attemptsLeft",
+				"rescheduleBy",
+				"audience",
+			],
+		});
+		expect(failedAttempt?.steps.map((step) => step.type)).toEqual([
+			"in_app",
+			"push",
+		]);
+		const redelivery = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "shipment-redelivery-scheduled",
+		);
+		expect(redelivery?.payloadSchema).toMatchObject({
+			required: ["orderId", "shipmentId", "date", "window", "audience"],
+		});
+		expect(redelivery?.steps.map((step) => step.type)).toEqual([
+			"in_app",
+			"push",
+		]);
+	});
+
+	it("routes shipment attempts by audience and redelivery to the rider route", () => {
+		expect(
+			buildExpoPushData("shipment-attempt-failed", {
+				orderId: "o-1",
+				audience: "buyer",
+			}),
+		).toEqual({ orderId: "o-1", url: "/purchases/o-1" });
+		expect(
+			buildExpoPushData("shipment-attempt-failed", {
+				orderId: "o-1",
+				audience: "shop",
+			}),
+		).toEqual({ orderId: "o-1", url: "/seller/orders/o-1" });
+		expect(
+			buildExpoPushData("shipment-redelivery-scheduled", {
+				shipmentId: "shp-1",
+				audience: "rider",
+			}),
+		).toEqual({ shipmentId: "shp-1", url: "/rider/shipment/shp-1" });
+	});
+
+	it("declares and routes the shop notification when a shipment return starts", () => {
+		const returnInitiated = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "shipment-return-initiated",
+		);
+		expect(returnInitiated?.payloadSchema).toMatchObject({
+			required: ["shipmentId", "orderNumber", "reason", "audience"],
+		});
+		expect(returnInitiated?.steps.map((step) => step.type)).toEqual([
+			"in_app",
+			"push",
+		]);
+		expect(
+			buildExpoPushData("shipment-return-initiated", {
+				shipmentId: "shp-1",
+				audience: "shop",
+			}),
+		).toEqual({ shipmentId: "shp-1", url: "/seller/orders" });
+	});
+});
+
+describe("P8 resale-link workflows", () => {
+	it("declares request, decision, and suspension workflows with explicit payload contracts", () => {
+		const expected = {
+			"resale-link-requested": ["linkId", "shopId", "otherShopName", "message"],
+			"resale-link-decided": ["linkId", "shopId", "otherShopName", "action"],
+			"resale-link-suspended": [
+				"linkId",
+				"shopId",
+				"otherShopName",
+				"action",
+				"reason",
+			],
+		};
+		for (const [id, required] of Object.entries(expected)) {
+			const workflow = WORKFLOWS.find((item) => item.workflowId === id);
+			expect(workflow?.payloadSchema).toMatchObject({ required });
+			expect(workflow?.steps.map((step) => step.type)).toEqual([
+				"in_app",
+				"push",
+			]);
+		}
+	});
+
+	it("routes link notices to the reseller area with the requested link id", () => {
+		expect(
+			buildExpoPushData("resale-link-requested", {
+				linkId: "link-1",
+				shopId: "supplier-1",
+			}),
+		).toEqual({ linkId: "link-1", url: "/seller/resale/links/link-1" });
+		expect(
+			buildExpoPushData("resale-link-decided", {
+				linkId: "link-1",
+				shopId: "reseller-1",
+			}),
+		).toEqual({ linkId: "link-1", url: "/seller/resale/links/link-1" });
+		expect(
+			buildExpoPushData("resale-link-suspended", {
+				linkId: "link-1",
+				shopId: "reseller-1",
+			}),
+		).toEqual({ linkId: "link-1", url: "/seller/resale/links/link-1" });
+	});
+});
+
 describe("buildExpoPushData for the fifteen P4 order and commission workflows", () => {
 	it("sends order-placed and order-delivered to the buyer's purchase screen by default", () => {
 		for (const event of ["order-placed", "order-delivered"]) {
@@ -434,13 +607,7 @@ function schemaProperties(id: string): string[] {
 
 describe("the P5 payment workflows", () => {
 	it("declares all eighteen, and every payments-/payout-/refund- id is one of them", () => {
-		const p5 = ids.filter(
-			(id) =>
-				id.startsWith("payment") ||
-				id.startsWith("payout-") ||
-				id.startsWith("refund-") ||
-				id === "order-paid",
-		);
+		const p5 = ids.filter((id) => Object.hasOwn(P5_WORKFLOWS, id));
 		expect(p5.sort()).toEqual(Object.keys(P5_WORKFLOWS).sort());
 		expect(p5).toHaveLength(18);
 	});
@@ -504,6 +671,67 @@ describe("the P5 payment workflows", () => {
 					step.type,
 					2,
 				]);
+			}
+		}
+	});
+});
+
+const P6_WORKFLOW_CHANNELS: Record<string, string[]> = {
+	"return-requested": ["in_app", "push", "email"],
+	"return-instructions": ["in_app", "email"],
+	"return-received": ["in_app", "push"],
+	"return-inspected": ["in_app", "push"],
+	"refund-proof-submitted": ["in_app", "push"],
+	"refund-overdue": ["in_app", "push", "email"],
+	"dispute-opened": ["in_app", "push", "email"],
+	"dispute-message": ["in_app", "push"],
+	"dispute-deadline-reminder": ["push", "email"],
+	"dispute-info-requested": ["in_app", "push", "email"],
+	"dispute-escalated": ["in_app"],
+	"dispute-resolved": ["in_app", "push", "email"],
+	"dispute-review-overdue": ["email"],
+	"shop-strike-added": ["in_app", "email"],
+};
+
+describe("the P6 case workflows", () => {
+	it("declares exactly the fourteen case workflows from the spec", () => {
+		const p6 = ids.filter((id) => Object.hasOwn(P6_WORKFLOW_CHANNELS, id));
+		expect(p6.sort()).toEqual(Object.keys(P6_WORKFLOW_CHANNELS).sort());
+		expect(p6).toHaveLength(14);
+	});
+
+	it("uses the specified channels and requires audience plus the case payload", () => {
+		for (const [id, channels] of Object.entries(P6_WORKFLOW_CHANNELS)) {
+			const definition = workflow(id);
+			const idField = id.startsWith("dispute-")
+				? "disputeId"
+				: id === "shop-strike-added"
+					? "strikeId"
+					: "returnId";
+			expect([id, definition.steps.map((step) => step.type)]).toEqual([
+				id,
+				channels,
+			]);
+			expect(definition.payloadSchema).toMatchObject({
+				required: [
+					"caseId",
+					"caseNumber",
+					"caseTitle",
+					"message",
+					"audience",
+					idField,
+				],
+				additionalProperties: false,
+			});
+		}
+	});
+
+	it("uses only payload-namespaced variables in case notification templates", () => {
+		for (const id of Object.keys(P6_WORKFLOW_CHANNELS)) {
+			for (const step of workflow(id).steps) {
+				const serialized = JSON.stringify(step);
+				const unnamespaced = serialized.match(/{{(?!payload\.)[^{}]+}}/g);
+				expect([id, unnamespaced]).toEqual([id, null]);
 			}
 		}
 	});

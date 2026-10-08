@@ -44,8 +44,8 @@ describe("return case transitions", () => {
 				throw new Error(`unexpected allowed transition: ${from} -> ${to}`);
 			}
 		}
-		expect(allowed).toBe(16);
-		expect(refused).toBe(13 * 13 - 16);
+		expect(allowed).toBe(17);
+		expect(refused).toBe(13 * 13 - 17);
 	});
 
 	it("writes a transition and appends its actor to the history", async () => {

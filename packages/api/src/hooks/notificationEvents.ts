@@ -38,8 +38,40 @@ export function buildExpoPushData(
 	const shopId = getStringValue(payload, "shopId");
 	const orderId = getStringValue(payload, "orderId");
 	const invoiceId = getStringValue(payload, "invoiceId");
+	const returnId = getStringValue(payload, "returnId");
+	const disputeId = getStringValue(payload, "disputeId");
+	const strikeId = getStringValue(payload, "strikeId");
+	const shipmentId = getStringValue(payload, "shipmentId");
+	const resaleLinkId = getStringValue(payload, "linkId");
 
 	switch (event) {
+		case "resale-link-requested":
+		case "resale-link-decided":
+		case "resale-link-suspended":
+			return resaleLinkId
+				? { linkId: resaleLinkId, url: `/seller/resale/links/${resaleLinkId}` }
+				: undefined;
+		case "shipment-attempt-failed": {
+			if (!orderId) return undefined;
+			const audience = getStringValue(payload, "audience");
+			return audience === "shop"
+				? { orderId, url: `/seller/orders/${orderId}` }
+				: { orderId, url: `/purchases/${orderId}` };
+		}
+		case "shipment-redelivery-scheduled": {
+			if (getStringValue(payload, "audience") === "rider") {
+				return shipmentId
+					? { shipmentId, url: `/rider/shipment/${shipmentId}` }
+					: undefined;
+			}
+			return orderId
+				? { orderId, url: `/seller/orders/${orderId}` }
+				: undefined;
+		}
+		case "shipment-return-initiated":
+			return shipmentId ? { shipmentId, url: "/seller/orders" } : undefined;
+		case "delivery-settings-incomplete":
+			return shopId ? { shopId, url: "/seller/delivery" } : undefined;
 		// `order-placed` and `order-delivered` reach both the buyer and shop
 		// members from the same workflow id; `audience` (present on both
 		// payloads) is the only signal this function has to tell them apart.
@@ -163,6 +195,29 @@ export function buildExpoPushData(
 			const token = inviteUrl?.split("/invite/")[1];
 			return token ? { url: `/invite/${token}` } : undefined;
 		}
+		case "return-requested":
+		case "refund-overdue":
+			if (!returnId) return undefined;
+			return getStringValue(payload, "audience") === "shop"
+				? { returnId, url: `/seller/returns/${returnId}` }
+				: { returnId, url: `/returns/${returnId}` };
+		case "return-instructions":
+		case "return-received":
+		case "return-inspected":
+		case "refund-proof-submitted":
+			return returnId ? { returnId, url: `/returns/${returnId}` } : undefined;
+		case "dispute-opened":
+		case "dispute-message":
+		case "dispute-deadline-reminder":
+		case "dispute-info-requested":
+		case "dispute-escalated":
+		case "dispute-resolved":
+			if (!disputeId) return undefined;
+			return getStringValue(payload, "audience") === "shop"
+				? { disputeId, url: "/seller/disputes" }
+				: { disputeId, url: `/disputes/${disputeId}` };
+		case "shop-strike-added":
+			return strikeId ? { strikeId, url: "/seller/disputes" } : undefined;
 		default:
 			return undefined;
 	}

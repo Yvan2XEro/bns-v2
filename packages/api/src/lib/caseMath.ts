@@ -1,14 +1,14 @@
-import { ERROR_CODES } from "./errors";
+import type { CaseBasis } from "../contracts/caseRules";
 import { vatOf } from "./orderMath";
 import { roundXaf } from "./paymentMath";
 
+export {
+	type CaseBasis,
+	type DeductionAllowedInput,
+	type DeductionAllowedResult,
+	deductionAllowed,
+} from "../contracts/caseRules";
 export { roundXaf } from "./paymentMath";
-
-export type CaseBasis =
-	| "withdrawal"
-	| "non_conformity"
-	| "late_delivery"
-	| "unavailable";
 
 export interface CaseBreakdown {
 	goods: number;
@@ -123,40 +123,6 @@ export function splitAllocation({
 		outboundDelivery: toDelivery,
 		buyerProtectionFee: 0,
 	};
-}
-
-export interface DeductionAllowedInput {
-	basis: CaseBasis;
-	itemPrice: number;
-	amount: number;
-}
-
-export type DeductionAllowedResult =
-	| { ok: true }
-	| {
-			ok: false;
-			code:
-				| typeof ERROR_CODES.returnDeductionNotAllowed
-				| typeof ERROR_CODES.returnItemsInvalid;
-	  };
-
-/**
- * A deduction is never allowed on `non_conformity` — the product itself was
- * the problem, not the buyer's handling of it — and never above the item's
- * own price.
- */
-export function deductionAllowed({
-	basis,
-	itemPrice,
-	amount,
-}: DeductionAllowedInput): DeductionAllowedResult {
-	if (basis === "non_conformity") {
-		return { ok: false, code: ERROR_CODES.returnDeductionNotAllowed };
-	}
-	if (amount > itemPrice) {
-		return { ok: false, code: ERROR_CODES.returnItemsInvalid };
-	}
-	return { ok: true };
 }
 
 export interface CommissionCreditInput {

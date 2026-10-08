@@ -13,6 +13,9 @@ import {
 	MessageCircle,
 	Package,
 	Receipt,
+	RefreshCw,
+	RotateCcw,
+	Scale,
 	Settings,
 	ShoppingBag,
 	SlidersHorizontal,
@@ -46,6 +49,9 @@ const ICONS: Record<SellerNavKey, LucideIcon> = {
 	messages: MessageCircle,
 	settings: Settings,
 	orderSettings: SlidersHorizontal,
+	disputes: Scale,
+	returns: RotateCcw,
+	resale: RefreshCw,
 };
 
 export function SellerSidebar({
@@ -86,8 +92,14 @@ export function SellerSidebar({
 			? pathname === href
 			: pathname === href || pathname.startsWith(`${href}/`);
 
-	const { ordersEnabled, protectedPaymentEnabled } = useAppConfig();
-	const items = visibleSellerNav(role, ordersEnabled, protectedPaymentEnabled);
+	const { ordersEnabled, protectedPaymentEnabled, resaleEnabled } =
+		useAppConfig();
+	const items = visibleSellerNav(
+		role,
+		ordersEnabled,
+		protectedPaymentEnabled,
+		resaleEnabled,
+	);
 
 	const lockedNotice =
 		!role && roleReason

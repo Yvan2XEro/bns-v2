@@ -165,6 +165,19 @@ export const ProductVariants: CollectionConfig = {
 					"Set when the variant is removed from its product; movements are kept.",
 			},
 		},
+		{
+			name: "resale",
+			type: "group",
+			access: {
+				read: shopRoleFieldAccess((role) => can(role, "resale.manage")),
+			},
+			fields: [
+				{ name: "enabled", type: "checkbox", defaultValue: true },
+				{ name: "supplierPrice", type: "number", min: 100 },
+				{ name: "minRetailPrice", type: "number", min: 0 },
+				{ name: "suggestedRetailPrice", type: "number", min: 0 },
+			],
+		},
 	],
 	timestamps: true,
 };

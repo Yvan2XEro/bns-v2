@@ -1,5 +1,5 @@
 import type { CollectionConfig } from "payload";
-import { staffOnly } from "../access/staff";
+import { staffOnly, staffOnlyField } from "../access/staff";
 import { getOrderSettings } from "../lib/orderSettings";
 
 export const ORDER_ITEM_FULFILLMENT_STATUSES = [
@@ -13,11 +13,7 @@ export const ORDER_ITEM_FULFILLMENT_STATUSES = [
 ] as const;
 
 /**
- * One line per order. `purchaseOrder` (reserved for P8's resale sourcing) is
- * not declared here: it would relate to a `purchase-orders` collection that
- * does not exist until P8 creates it, and a `relationTo` naming an
- * unregistered slug has no safe meaning in Payload. P8 adds the field
- * alongside that collection.
+	 * One line per order, including its supplier-side snapshot for resale.
  */
 export const OrderItems: CollectionConfig = {
 	slug: "order-items",
@@ -90,6 +86,23 @@ export const OrderItems: CollectionConfig = {
 			type: "relationship",
 			relationTo: "shops",
 			required: true,
+		},
+		{
+			name: "purchaseOrder",
+			type: "relationship",
+			relationTo: "purchase-orders",
+			index: true,
+		},
+		{
+			name: "resaleLink",
+			type: "relationship",
+			relationTo: "resale-links",
+		},
+		{
+			name: "supplierUnitPrice",
+			type: "number",
+			min: 0,
+			access: { read: staffOnlyField },
 		},
 		{
 			name: "snapshot",

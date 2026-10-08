@@ -274,7 +274,7 @@ describe("updateShopRating", () => {
 		expect(aggregate).toHaveBeenCalledTimes(1);
 		const pipeline = aggregate.mock.calls[0][0];
 		expect(pipeline).toEqual([
-			{ $match: { shop: SHOP } },
+			{ $match: { shop: SHOP, status: "published" } },
 			{
 				$group: {
 					_id: null,
@@ -297,12 +297,14 @@ describe("updateUserRating excludes shop reviews", () => {
 					reviewedUser: OWNER,
 					shop: SHOP,
 					rating: 5,
+					status: "published",
 				},
 				{
 					id: "r-personal",
 					reviewer: OTHER_BUYER,
 					reviewedUser: OWNER,
 					rating: 1,
+					status: "published",
 				},
 			],
 			users: [{ id: OWNER, rating: 0, totalReviews: 0 }],

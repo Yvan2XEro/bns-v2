@@ -624,18 +624,14 @@ describe("processWebhookEvent entity dispatch", () => {
 		expect(ofKind("payout_complete")).toHaveLength(1);
 	});
 
-	it("an RP- transfer is P8's: logged and skipped, nothing written", async () => {
+	it("an RP- transfer without a matching reseller payout is safely ignored", async () => {
 		const outcomes = await deliverAll([
 			transferEvent("complete", { reference: "RP-77", transferId: "tr_rp" }),
 		]);
 
-		expect(outcomes).toEqual(["skipped_reseller"]);
+		expect(outcomes).toEqual(["unknown_payout"]);
 		expect(payouts()).toHaveLength(0);
 		expect(transactions()).toHaveLength(0);
-		expect(payload.logger.info).toHaveBeenCalledWith(
-			expect.objectContaining({ reference: "RP-77", transferId: "tr_rp" }),
-			"[webhooks] reseller payout transfer skipped until P8",
-		);
 		expect(rows()[0].processedAt).toEqual(expect.any(String));
 	});
 

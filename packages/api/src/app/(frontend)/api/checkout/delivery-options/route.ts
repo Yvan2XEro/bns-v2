@@ -18,6 +18,9 @@ export async function GET(request: Request) {
 			await listDeliveryOptions(ctx.payload, ctx.user, {
 				city: query.get("city") ?? undefined,
 				district: query.get("district") ?? undefined,
+				...(query.has("paymentMethod")
+					? { paymentMethod: query.get("paymentMethod") }
+					: {}),
 			}),
 		);
 	} catch (error) {

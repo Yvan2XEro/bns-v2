@@ -45,7 +45,8 @@ const shop = (
 describe("quoteDelivery", () => {
 	it("offers seller_delivery only in the shop's own city", async () => {
 		const settings = await settingsOf();
-		const options = await quoteDelivery({
+		const { options } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop(),
 			items: items(),
 			subtotal: 10_000,
@@ -57,7 +58,8 @@ describe("quoteDelivery", () => {
 
 	it("offers nothing for another city", async () => {
 		const settings = await settingsOf();
-		const options = await quoteDelivery({
+		const { options } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop(),
 			items: items(),
 			subtotal: 10_000,
@@ -69,7 +71,8 @@ describe("quoteDelivery", () => {
 
 	it("uses the shop's fee override, else the city default", async () => {
 		const settings = await settingsOf();
-		const overridden = await quoteDelivery({
+		const { options: overridden } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop({ deliveryFee: 1_500 }),
 			items: items(),
 			subtotal: 10_000,
@@ -78,7 +81,8 @@ describe("quoteDelivery", () => {
 		});
 		expect(overridden[0].fee).toBe(1_500);
 
-		const defaulted = await quoteDelivery({
+		const { options: defaulted } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop({ deliveryFee: null }),
 			items: items(),
 			subtotal: 10_000,
@@ -90,7 +94,8 @@ describe("quoteDelivery", () => {
 
 	it("offers pickup only when enabled and a pickup point is set, at fee 0", async () => {
 		const settings = await settingsOf();
-		const noPoint = await quoteDelivery({
+		const { options: noPoint } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop({
 				sellerDeliveryEnabled: false,
 				pickupEnabled: true,
@@ -103,7 +108,8 @@ describe("quoteDelivery", () => {
 		});
 		expect(noPoint).toHaveLength(0);
 
-		const withPoint = await quoteDelivery({
+		const { options: withPoint } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop({
 				sellerDeliveryEnabled: false,
 				pickupEnabled: true,
@@ -126,7 +132,8 @@ describe("quoteDelivery", () => {
 
 	it("carries codAllowed false when any product forbids COD", async () => {
 		const settings = await settingsOf();
-		const options = await quoteDelivery({
+		const { options } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop(),
 			items: [
 				{
@@ -151,14 +158,16 @@ describe("quoteDelivery", () => {
 
 	it("the optionId is stable for the same shop and city", async () => {
 		const settings = await settingsOf();
-		const first = await quoteDelivery({
+		const { options: first } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop(),
 			items: items(),
 			subtotal: 10_000,
 			destination: { city: "douala" },
 			settings,
 		});
-		const second = await quoteDelivery({
+		const { options: second } = await quoteDelivery({
+			payload: fakePayload(),
 			shop: shop(),
 			items: items(),
 			subtotal: 10_000,

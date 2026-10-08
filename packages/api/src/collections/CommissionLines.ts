@@ -63,6 +63,7 @@ export const CommissionLines: CollectionConfig = {
 		},
 		{ name: "baseAmount", type: "number" },
 		{ name: "amount", type: "number", required: true, min: 1 },
+		{ name: "reason", type: "text" },
 		{
 			name: "status",
 			type: "select",

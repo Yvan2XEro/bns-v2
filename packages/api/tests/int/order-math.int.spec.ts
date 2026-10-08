@@ -106,6 +106,18 @@ describe("invoiceTotals", () => {
 			}),
 		).toEqual({ commissionTotal: 3_500, vatAmount: 674, totalDue: 4_174 });
 	});
+
+	it("excludes refusal compensation credits from the VAT base only", () => {
+		expect(
+			invoiceTotals({
+				charges: 2_000,
+				credits: 500,
+				nonVatCredits: 500,
+				carryOver: 0,
+				vatRateBps: 1925,
+			}),
+		).toEqual({ commissionTotal: 1_500, vatAmount: 385, totalDue: 1_885 });
+	});
 });
 
 describe("weekBoundsDouala", () => {

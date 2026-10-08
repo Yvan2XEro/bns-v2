@@ -138,10 +138,16 @@ describe("isListingOrderable", () => {
 		});
 		expect(isListingOrderable(input)).toBe(false);
 	});
+
+	it("is false when delivery zones are active but the shop has no COD option", () => {
+		expect(
+			isListingOrderable(baseInput({ deliveryOptionAvailable: false })),
+		).toBe(false);
+	});
 });
 
 describe("the listing read's orderable field", () => {
-	function seed() {
+	function seed(zonesEnabled = false) {
 		return fakePayload(
 			{
 				shops: [
@@ -181,6 +187,7 @@ describe("the listing read's orderable field", () => {
 			{
 				globals: {
 					"app-settings": {
+						delivery: { zonesEnabled },
 						orders: {
 							enabled: true,
 							launchCities: [{ key: "douala", deliveryFee: 2000 }],
@@ -255,5 +262,50 @@ describe("the listing read's orderable field", () => {
 		const doc = await beforeRead({ doc: { ...raw }, req: { payload } });
 
 		expect(doc.orderable).toBe(false);
+	});
+
+	it("is false if zones are enabled and no active COD delivery option exists", async () => {
+		const payload = seed(true);
+		const raw = asRecord(
+			await payload.findByID({
+				collection: "listings",
+				id: "l-1",
+				depth: 0,
+				overrideAccess: true,
+			}),
+		);
+		const doc = await beforeRead({ doc: { ...raw }, req: { payload } });
+
+		expect(doc.orderable).toBe(false);
+	});
+
+	it("keeps orderability when an active pickup location is the COD option", async () => {
+		const payload = seed(true);
+		await payload.create({
+			collection: "shop-locations",
+			overrideAccess: true,
+			data: {
+				shop: "s-1",
+				name: "Pickup",
+				city: "douala",
+				district: "douala.other",
+				landmark: "Near the market",
+				gps: { lat: 4.05, lng: 9.7 },
+				openingHours: [{ day: "mon", opens: "08:00", closes: "17:00" }],
+				pickupEnabled: true,
+				active: true,
+			},
+		});
+		const raw = asRecord(
+			await payload.findByID({
+				collection: "listings",
+				id: "l-1",
+				depth: 0,
+				overrideAccess: true,
+			}),
+		);
+		const doc = await beforeRead({ doc: { ...raw }, req: { payload } });
+
+		expect(doc.orderable).toBe(true);
 	});
 });

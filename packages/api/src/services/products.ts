@@ -19,6 +19,7 @@ import {
 	redactManagerOnlyFields,
 } from "../lib/variants";
 import type { Listing, Product, ProductVariant, Shop } from "../payload-types";
+import { syncSupplierProductAvailability } from "./resale";
 import { requireShopMember } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 import { applyMovement, findVariant } from "./stock";
@@ -388,7 +389,11 @@ async function findProductListing(
 				req,
 			})
 			.catch(() => null);
-		if (listing) {
+		if (
+			listing &&
+			relationId(listing.shop) === relationId(product.shop) &&
+			relationId(listing.product) === String(product.id)
+		) {
 			return {
 				id: listing.id,
 				status: listing.status,
@@ -399,7 +404,12 @@ async function findProductListing(
 
 	const orphan = await req.payload.find({
 		collection: "listings",
-		where: { product: { equals: product.id } },
+		where: {
+			and: [
+				{ product: { equals: product.id } },
+				{ shop: { equals: relationId(product.shop) } },
+			],
+		},
 		depth: 0,
 		limit: 1,
 		overrideAccess: true,
@@ -425,9 +435,8 @@ export interface SyncListingOptions {
 }
 
 /**
- * Creates or refreshes the one listing that publishes a product. Everything
- * the listing shows is derived here, and the Listings hook pins those fields
- * against every other writer.
+ * Creates or refreshes the supplier's listing that publishes a product.
+ * Resale listings share the product reference but belong to other shops.
  */
 export async function syncProductListing(
 	req: PayloadRequest,
@@ -474,18 +483,20 @@ export async function syncProductListing(
 		try {
 			listing = await req.payload.create({
 				collection: "listings",
+				draft: false,
 				req,
 				overrideAccess: true,
 				context: PRODUCT_SERVICE_CONTEXT,
 				data: {
 					...derived,
 					category,
+					resale: { desiredStatus: "draft", holds: [] },
 					status: listingStatusFor(product.status, null),
 				},
 			});
 		} catch (error) {
 			// Two first publishes raced and the partial unique index on
-			// `listings.product` refused the second row. The winner's listing is
+			// `(listings.shop, listings.product)` refused the second row. The winner's listing is
 			// the one this product has, so the body re-runs and adopts it: the
 			// claim guard on `products` cannot catch this, since each writer
 			// claims a listing no *other* product owns.
@@ -500,9 +511,21 @@ export async function syncProductListing(
 			context: PRODUCT_SERVICE_CONTEXT,
 			data: { listing: listing.id },
 		});
+		await syncSupplierProductAvailability(
+			req,
+			shopId,
+			productId,
+			listing.status === "published" &&
+				derived.productSummary.available === true,
+		);
 		return listing.id;
 	}
 
+	const status = listingStatusFor(
+		product.status,
+		current.status,
+		current.moderationHold === true,
+	);
 	await req.payload.update({
 		collection: "listings",
 		id: current.id,
@@ -512,13 +535,15 @@ export async function syncProductListing(
 		data: {
 			...derived,
 			category,
-			status: listingStatusFor(
-				product.status,
-				current.status,
-				current.moderationHold === true,
-			),
+			status,
 		},
 	});
+	await syncSupplierProductAvailability(
+		req,
+		shopId,
+		productId,
+		status === "published" && derived.productSummary.available === true,
+	);
 	if (relationId(product.listing) !== current.id) {
 		await req.payload.update({
 			collection: "products",

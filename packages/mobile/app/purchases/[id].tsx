@@ -29,6 +29,7 @@ import { Timeline } from "@/src/components/purchases/Timeline";
 import { WithdrawalWindowNote } from "@/src/components/purchases/WithdrawalWindowNote";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useNow } from "@/src/hooks/useNow";
 import { usePurchase } from "@/src/hooks/usePurchases";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -43,6 +44,7 @@ export default function PurchaseScreen() {
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const purchase = usePurchase(id);
+	const config = useAppConfig();
 	const now = useNow();
 	const [sheet, setSheet] = useState<PurchaseSheet | null>(null);
 
@@ -112,6 +114,23 @@ export default function PurchaseScreen() {
 					</View>
 
 					<ActionBar order={order} actions={actions} onSheet={setSheet} />
+					{config.disputesEnabled && has("contest_delivery") ? (
+						<Pressable
+							accessibilityRole="button"
+							onPress={() =>
+								router.push({
+									pathname: "/purchases/[id]/problem",
+									params: { id: order.id },
+								})
+							}
+							style={[styles.link, { borderColor: c.border }]}
+						>
+							<Ionicons name="warning-outline" size={18} color={c.primary} />
+							<Text style={[styles.linkText, { color: c.primary }]}>
+								{t("purchases.reportProblem")}
+							</Text>
+						</Pressable>
+					) : null}
 
 					{has("confirm_code") || has("resend_code") ? (
 						<ConfirmCodeCard

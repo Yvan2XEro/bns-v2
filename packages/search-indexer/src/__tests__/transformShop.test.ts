@@ -4,20 +4,23 @@ import { transformShop } from "../handlers/shopUpdated.ts";
 describe("transformShop", () => {
 	test("maps a shop fetched at depth 1", () => {
 		expect(
-			transformShop({
-				id: "shop-1",
-				handle: "akwatech",
-				name: "Akwa Tech Store",
-				description: "Smartphones",
-				location: { city: "Douala", region: "Littoral", countryCode: "CM" },
-				categories: [{ id: "cat-1", name: "Téléphones" }, "cat-2"],
-				level: 3,
-				levelExpiresAt: "2026-03-01T00:00:00.000Z",
-				publishedListingCount: 304,
-				createdAt: "2026-09-15T00:00:00.000Z",
-				logo: { url: "/media/logo.png" },
-				owner: { id: "u-1", rating: 4.8, totalReviews: 126 },
-			}),
+			transformShop(
+				{
+					id: "shop-1",
+					handle: "akwatech",
+					name: "Akwa Tech Store",
+					description: "Smartphones",
+					location: { city: "Douala", region: "Littoral", countryCode: "CM" },
+					categories: [{ id: "cat-1", name: "Téléphones" }, "cat-2"],
+					level: 3,
+					levelExpiresAt: "2026-03-01T00:00:00.000Z",
+					publishedListingCount: 304,
+					createdAt: "2026-09-15T00:00:00.000Z",
+					logo: { url: "/media/logo.png" },
+					owner: { id: "u-1", rating: 4.8, totalReviews: 126 },
+				},
+				["douala"],
+			),
 		).toEqual({
 			id: "shop-1",
 			handle: "akwatech",
@@ -34,6 +37,7 @@ describe("transformShop", () => {
 			logoUrl: "/media/logo.png",
 			ownerRating: 4.8,
 			ownerReviews: 126,
+			deliveryCities: ["douala"],
 		});
 	});
 
