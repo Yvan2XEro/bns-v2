@@ -11,6 +11,10 @@ import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useOpenDispute } from "~/hooks/use-disputes";
 import { usePurchase } from "~/hooks/use-purchases";
 import {
+	DISPUTE_OUTCOME_LABELS,
+	DISPUTE_REASON_LABELS,
+} from "~/lib/case-status";
+import {
 	disputeProblemSchema,
 	toOpenDisputePayload,
 } from "~/lib/dispute-problem";
@@ -155,7 +159,7 @@ function ProblemReportForm({
 								] as const
 							).map((reason) => (
 								<option key={reason} value={reason}>
-									{t(`reason.${reason}`)}
+									{t(DISPUTE_REASON_LABELS[reason])}
 								</option>
 							))}
 						</select>
@@ -177,7 +181,7 @@ function ProblemReportForm({
 								] as const
 							).map((outcome) => (
 								<option key={outcome} value={outcome}>
-									{t(`outcome.${outcome}`)}
+									{t(DISPUTE_OUTCOME_LABELS[outcome])}
 								</option>
 							))}
 						</select>

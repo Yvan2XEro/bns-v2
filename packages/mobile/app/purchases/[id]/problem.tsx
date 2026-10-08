@@ -19,6 +19,10 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useOpenDispute } from "@/src/hooks/useDisputes";
 import { usePurchase } from "@/src/hooks/usePurchases";
+import {
+	DISPUTE_OUTCOME_LABELS,
+	DISPUTE_REASON_LABELS,
+} from "@/src/lib/caseStatus";
 import { requestedDisputeAmount } from "@/src/lib/disputeReport";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -182,7 +186,7 @@ export default function ReportOrderProblemScreen() {
 											<Choice
 												key={reason}
 												selected={value === reason}
-												label={t(`disputes.reason.${reason}`)}
+												label={t(DISPUTE_REASON_LABELS[reason])}
 												color={c.text}
 												border={c.border}
 												primary={c.primary}
@@ -239,7 +243,7 @@ export default function ReportOrderProblemScreen() {
 											<Choice
 												key={outcome}
 												selected={value === outcome}
-												label={t(`disputes.outcome.${outcome}`)}
+												label={t(DISPUTE_OUTCOME_LABELS[outcome])}
 												color={c.text}
 												border={c.border}
 												primary={c.primary}
@@ -340,13 +344,13 @@ export default function ReportOrderProblemScreen() {
 								{t("purchases.orderNumber", { number: order.data.orderNumber })}
 							</Text>
 							<Text style={[styles.body, { color: c.text }]}>
-								{t(`disputes.reason.${form.getValues("reason")}`)}
+								{t(DISPUTE_REASON_LABELS[form.getValues("reason")])}
 							</Text>
 							<Text style={[styles.body, { color: c.muted }]}>
 								{form.getValues("description")}
 							</Text>
 							<Text style={[styles.body, { color: c.muted }]}>
-								{t(`disputes.outcome.${form.getValues("requestedOutcome")}`)}
+								{t(DISPUTE_OUTCOME_LABELS[form.getValues("requestedOutcome")])}
 							</Text>
 						</>
 					) : null}

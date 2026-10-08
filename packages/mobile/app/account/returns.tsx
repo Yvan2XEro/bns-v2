@@ -13,6 +13,10 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useBuyerReturns } from "@/src/hooks/useReturns";
+import {
+	RETURN_BASIS_LABELS,
+	RETURN_CASE_STATUS_LABELS,
+} from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ReturnListRow } from "../../../api/src/contracts/returns";
 
@@ -115,10 +119,10 @@ function ReturnRow({
 			</View>
 			<Text style={[styles.body, { color: dark ? "#94a3b8" : "#64748b" }]}>
 				{t("returns.order", { number: item.orderNumber })} ·{" "}
-				{t(`returns.basis.${item.basis}`)}
+				{t(RETURN_BASIS_LABELS[item.basis])}
 			</Text>
 			<Text style={[styles.body, { color: dark ? "#94a3b8" : "#64748b" }]}>
-				{t(`returns.status.${item.status}`)} ·{" "}
+				{t(RETURN_CASE_STATUS_LABELS[item.status])} ·{" "}
 				{t("returns.refundAmount", {
 					amount: item.refundAmount.toLocaleString(locale),
 				})}

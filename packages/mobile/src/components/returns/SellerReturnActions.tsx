@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { useReturnAction } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { RETURN_ACTION_LABELS } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import { SELLER_RETURN_ACTIONS } from "../../../../api/src/contracts/returnInputs";
 import type { ReturnCaseView } from "../../../../api/src/contracts/returns";
@@ -35,7 +36,7 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 					<Pressable
 						key={action}
 						accessibilityRole="button"
-						accessibilityLabel={t(`returns.action.${action}`)}
+						accessibilityLabel={t(RETURN_ACTION_LABELS[action])}
 						disabled={mutation.isPending}
 						onPress={() => mutation.mutate({ action })}
 						style={{
@@ -47,7 +48,7 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 						}}
 					>
 						<Text style={{ color: "#fff" }}>
-							{t(`returns.action.${action}`)}
+							{t(RETURN_ACTION_LABELS[action])}
 						</Text>
 					</Pressable>
 				))}

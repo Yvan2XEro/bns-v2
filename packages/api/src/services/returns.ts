@@ -350,15 +350,21 @@ export async function getReturnCaseView(
 		},
 		disputeId: relationId(kase.dispute),
 		rejectionReason: kase.rejectionReason ?? null,
-		timeline: (kase.statusHistory ?? []).map((entry) => ({
-			status: entry.status ?? "",
-			actorType:
-				entry.actorType === "buyer" || entry.actorType === "seller"
-					? entry.actorType
-					: "system",
-			at: entry.at ?? "",
-			note: entry.note ?? null,
-		})),
+		timeline: (kase.statusHistory ?? []).flatMap((entry) =>
+			entry.status
+				? [
+						{
+							status: entry.status,
+							actorType:
+								entry.actorType === "buyer" || entry.actorType === "seller"
+									? entry.actorType
+									: ("system" as const),
+							at: entry.at ?? "",
+							note: entry.note ?? null,
+						},
+					]
+				: [],
+		),
 		allowedActions: returnActions(kase, audience),
 	};
 }

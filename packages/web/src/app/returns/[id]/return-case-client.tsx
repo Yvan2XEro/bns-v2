@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useReturnAction, useReturnCase } from "~/hooks/use-returns";
+import {
+	RETURN_ACTION_LABELS,
+	RETURN_CASE_STATUS_LABELS,
+	RETURN_PAYER_LABELS,
+} from "~/lib/case-status";
 import type { JsonReturnAction } from "~/lib/return-actions";
 import { returnFlowState } from "~/lib/return-flow";
 import type { ReturnAction } from "../../../../../api/src/contracts/returns";
@@ -91,7 +96,7 @@ export function ReturnCaseClient({ caseId }: { caseId: string }) {
 					</h1>
 				</div>
 				<span className="rounded-full bg-[#EFF6FF] px-3 py-1.5 font-medium text-[#1E40AF] text-sm">
-					{t(`status.${view.status}`)}
+					{t(RETURN_CASE_STATUS_LABELS[view.status])}
 				</span>
 			</header>
 
@@ -105,7 +110,7 @@ export function ReturnCaseClient({ caseId }: { caseId: string }) {
 				)}
 				<p className="mt-2 text-[#334155] text-sm">
 					{t("returnShippingPayer", {
-						payer: t(`payer.${flow.returnShippingPaidBy}`),
+						payer: t(RETURN_PAYER_LABELS[flow.returnShippingPaidBy]),
 					})}
 				</p>
 			</section>
@@ -176,7 +181,7 @@ export function ReturnCaseClient({ caseId }: { caseId: string }) {
 								className="-left-[21px] absolute top-1.5 h-2.5 w-2.5 rounded-full bg-[#2563EB]"
 							/>
 							<p className="font-medium text-[#0F172A] text-sm">
-								{t(`status.${entry.status}`)}
+								{t(RETURN_CASE_STATUS_LABELS[entry.status])}
 							</p>
 							<p className="text-[#64748B] text-xs">{date(entry.at)}</p>
 							{entry.note && (
@@ -202,7 +207,7 @@ export function ReturnCaseClient({ caseId }: { caseId: string }) {
 								onClick={() => submit(item)}
 								className="min-h-11 rounded-xl border border-[#CBD5E1] px-4 font-medium text-[#1E293B] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
 							>
-								{t(`action.${item}`)}
+								{t(RETURN_ACTION_LABELS[item])}
 							</button>
 						))}
 					</div>

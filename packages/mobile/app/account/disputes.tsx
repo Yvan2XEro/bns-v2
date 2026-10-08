@@ -13,6 +13,10 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { useBuyerDisputes } from "@/src/hooks/useDisputes";
+import {
+	DISPUTE_REASON_LABELS,
+	DISPUTE_STATUS_LABELS,
+} from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import type { DisputeListRow } from "../../../api/src/contracts/disputes";
 
@@ -111,12 +115,12 @@ function DisputeRow({
 						{ color: item.overdue ? "#dc2626" : "#6d28d9" },
 					]}
 				>
-					{t(`disputes.status.${item.status}`)}
+					{t(DISPUTE_STATUS_LABELS[item.status])}
 				</Text>
 			</View>
 			<Text style={[styles.description, { color: muted }]}>
 				{t("disputes.order", { number: item.orderNumber })} ·{" "}
-				{t(`disputes.reason.${item.reason}`)}
+				{t(DISPUTE_REASON_LABELS[item.reason])}
 			</Text>
 			<View style={styles.rowBottom}>
 				<Text style={[styles.description, { color: muted }]}>

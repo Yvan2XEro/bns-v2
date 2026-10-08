@@ -12,6 +12,10 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ModerationScreen } from "@/src/components/moderation/ModerationScreen";
 import { useModerationTheme } from "@/src/components/moderation/theme";
 import { useModerationDisputes } from "@/src/hooks/useModerationDisputes";
+import {
+	DISPUTE_REASON_LABELS,
+	DISPUTE_STATUS_LABELS,
+} from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 
 export default function ModerationDisputesQueueScreen() {
@@ -70,10 +74,10 @@ export default function ModerationDisputesQueueScreen() {
 							</View>
 							<Text style={[styles.body, { color: c.muted }]}>
 								{t("disputes.order", { number: item.orderNumber })} ·{" "}
-								{t(`disputes.status.${item.status}`)}
+								{t(DISPUTE_STATUS_LABELS[item.status])}
 							</Text>
 							<Text style={[styles.body, { color: c.muted }]}>
-								{t(`disputes.reason.${item.reason}`)} ·{" "}
+								{t(DISPUTE_REASON_LABELS[item.reason])} ·{" "}
 								{item.amountAtStake.toLocaleString()} XAF
 							</Text>
 							{item.deadline ? (

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useSellerReturns } from "~/hooks/use-returns";
+import {
+	RETURN_BASIS_LABELS,
+	RETURN_CASE_STATUS_LABELS,
+} from "~/lib/case-status";
 
 export function SellerReturnsClient({ shopId }: { shopId: string }) {
 	const t = useTranslations("Returns");
@@ -56,7 +60,7 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 												{row.number}
 											</span>
 											<span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[#475569] text-xs">
-												{t(`status.${row.status}`)}
+												{t(RETURN_CASE_STATUS_LABELS[row.status])}
 											</span>
 											{row.overdue ? (
 												<span className="rounded-full bg-red-50 px-2.5 py-1 font-medium text-red-700 text-xs">
@@ -66,7 +70,7 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 										</div>
 										<p className="mt-1 truncate text-[#64748B] text-sm">
 											{t("orderNumber", { number: row.orderNumber })} ·{" "}
-											{t(`basis.${row.basis}`)}
+											{t(RETURN_BASIS_LABELS[row.basis])}
 										</p>
 										{row.nextDeadline ? (
 											<p className="mt-1 text-[#64748B] text-xs">

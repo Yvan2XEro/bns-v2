@@ -14,6 +14,10 @@ import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useShopReturns } from "@/src/hooks/useReturns";
+import {
+	RETURN_BASIS_LABELS,
+	RETURN_CASE_STATUS_LABELS,
+} from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ReturnListRow } from "../../../../api/src/contracts/returns";
 
@@ -86,10 +90,10 @@ function ReturnRow({ item, locale }: { item: ReturnListRow; locale: string }) {
 			</View>
 			<Text style={[styles.body, { color: c.muted }]}>
 				{t("returns.order", { number: item.orderNumber })} ·{" "}
-				{t(`returns.basis.${item.basis}`)}
+				{t(RETURN_BASIS_LABELS[item.basis])}
 			</Text>
 			<Text style={[styles.body, { color: c.muted }]}>
-				{t(`returns.status.${item.status}`)} ·{" "}
+				{t(RETURN_CASE_STATUS_LABELS[item.status])} ·{" "}
 				{t("returns.refundAmount", {
 					amount: item.refundAmount.toLocaleString(locale),
 				})}

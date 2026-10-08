@@ -22,6 +22,11 @@ import {
 	useDisputeAction,
 	useUploadDisputeEvidence,
 } from "@/src/hooks/useDisputes";
+import {
+	DISPUTE_ACTION_LABELS,
+	DISPUTE_REASON_LABELS,
+	DISPUTE_STATUS_LABELS,
+} from "@/src/lib/caseStatus";
 import { disputeEvidenceStatus } from "@/src/lib/disputeEvidence";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -137,11 +142,11 @@ export default function DisputeThreadScreen() {
 					]}
 				>
 					<Text style={[styles.title, { color: colors.text }]}>
-						{t(`disputes.status.${dispute.status}`)}
+						{t(DISPUTE_STATUS_LABELS[dispute.status])}
 					</Text>
 					<Text style={[styles.body, { color: colors.muted }]}>
 						{t("disputes.order", { number: dispute.orderNumber })} ·{" "}
-						{t(`disputes.reason.${dispute.reason}`)}
+						{t(DISPUTE_REASON_LABELS[dispute.reason])}
 					</Text>
 					<Text style={[styles.amount, { color: colors.text }]}>
 						{t("disputes.amount", {
@@ -322,7 +327,7 @@ export default function DisputeThreadScreen() {
 									style={[styles.button, { borderColor: colors.border }]}
 								>
 									<Text style={[styles.actionText, { color: colors.primary }]}>
-										{t(`disputes.action.${name}`)}
+										{t(DISPUTE_ACTION_LABELS[name])}
 									</Text>
 								</Pressable>
 							))}

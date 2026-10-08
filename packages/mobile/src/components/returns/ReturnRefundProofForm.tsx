@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { useReturnAction } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { REFUND_METHOD_LABELS } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	RETURN_REFUND_METHODS,
@@ -63,7 +64,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 									checked: field.value === method,
 									disabled: submit.isPending,
 								}}
-								accessibilityLabel={t(`returns.refundMethodOptions.${method}`)}
+								accessibilityLabel={t(REFUND_METHOD_LABELS[method])}
 								disabled={submit.isPending}
 								onPress={() => field.onChange(method)}
 								style={{
@@ -76,7 +77,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 								}}
 							>
 								<Text style={{ color: c.text }}>
-									{t(`returns.refundMethodOptions.${method}`)}
+									{t(REFUND_METHOD_LABELS[method])}
 								</Text>
 							</Pressable>
 						))}

@@ -886,7 +886,11 @@
 		"loading": "Loading shop insights…",
 		"error": "Shop insights could not be loaded.",
 		"retry": "Try again",
-		"period": { "7d": "7 days", "30d": "30 days", "90d": "90 days" },
+		"period": {
+			"7d": "7 days",
+			"30d": "30 days",
+			"90d": "90 days"
+		},
 		"totals": "Performance",
 		"views": "Listing views",
 		"conversationsStarted": "Conversations",
@@ -3040,7 +3044,10 @@
 		"nextDeadline": "Next deadline: {date}",
 		"noDeadline": "No deadline",
 		"returnShippingPayer": "Return shipping is paid by {payer}.",
-		"payer": { "buyer": "you", "seller": "the seller" },
+		"payer": {
+			"buyer": "you",
+			"seller": "the seller"
+		},
 		"step": {
 			"requested": "The shop is reviewing your request.",
 			"shipping": "The item needs to be returned to the shop.",
@@ -3068,7 +3075,8 @@
 			"refund_proof": "Submit refund proof",
 			"confirm_refund": "Confirm refund received",
 			"contest_refund": "Report a refund problem",
-			"cancel": "Cancel return request"
+			"cancel": "Cancel return request",
+			"upload_evidence": "Add evidence"
 		},
 		"actionError": "That action could not be completed. Refresh the case and try again.",
 		"actionSuccess": "Your action was submitted.",
@@ -3100,7 +3108,22 @@
 			"rejected": "Declined",
 			"cancelled": "Cancelled",
 			"expired": "Expired"
-		}
+		},
+		"detailError": "This return case could not be loaded.",
+		"order": "Order {number}",
+		"deadline": "Next deadline: {date}",
+		"items": "Items in this return",
+		"returnShippingPaidBy": "Return shipping paid by {party}",
+		"shipReturn": "Send the return",
+		"method": {
+			"buyer_drop_off": "Drop off",
+			"courier": "Courier"
+		},
+		"trackingLabel": "Tracking number",
+		"trackingPlaceholder": "Optional tracking number",
+		"refundProof": "Seller refund proof",
+		"refundProofDetail": "{method} · {amount} XAF · reference {transactionId}",
+		"timeline": "Return timeline"
 	},
 	"Disputes": {
 		"title": "My disputes",
@@ -3173,6 +3196,79 @@
 		},
 		"descriptionLabel": "Describe the problem (at least 20 characters)",
 		"descriptionError": "Describe the problem in at least 20 characters.",
-		"submitReport": "Submit report"
+		"submitReport": "Submit report",
+		"disabledTitle": "Dispute reporting is unavailable",
+		"disabledBody": "Please contact support for help with this order.",
+		"contactSupport": "Contact support",
+		"reportStep": "Step {step} of 5",
+		"reportReason": "What went wrong?",
+		"reportDetails": "Describe the problem",
+		"reportOutcome": "What outcome are you requesting?",
+		"requestedAmountOptional": "Requested amount in XAF (optional)",
+		"amountError": {
+			"required": "Enter the amount you are requesting.",
+			"invalid": "Enter a positive whole amount.",
+			"over_limit": "The amount cannot exceed the order total."
+		},
+		"reportItems": "Items in this order",
+		"selectAffectedItems": "Select at least one affected item.",
+		"itemsRequired": "Select at least one item.",
+		"reportReview": "Review your report",
+		"openError": "The report could not be created. Check the details and retry.",
+		"evidenceTitle": "Evidence",
+		"evidenceProgress": "Uploaded {count} of {required} required files",
+		"evidenceFile": "{kind} · {size} KB",
+		"addEvidence": "Add photo evidence",
+		"evidenceNeeded": "{count} more file(s) required before submission.",
+		"order": "Order {number}",
+		"amount": "Amount at stake: {amount} XAF",
+		"refund": "Refund: {amount} XAF",
+		"action": {
+			"submit": "Submit dispute",
+			"withdraw": "Withdraw dispute",
+			"escalate": "Ask for review",
+			"respond_accept": "Accept resolution",
+			"proposal_accept": "Accept proposal",
+			"proposal_reject": "Reject proposal"
+		}
+	},
+	"Delivery": {
+		"statusBuyer": {
+			"pending": "Being prepared",
+			"picked_up": "Picked up by the rider",
+			"in_transit": "On the way",
+			"delivered": "Delivered",
+			"failed": "Delivery missed",
+			"returned": "Returned to seller",
+			"cancelled": "Cancelled"
+		},
+		"statusSeller": {
+			"pending": "To ship",
+			"picked_up": "Picked up",
+			"in_transit": "On the way",
+			"delivered": "Delivered",
+			"failed": "Delivery failed",
+			"returned": "Back at the shop",
+			"cancelled": "Cancelled"
+		},
+		"pendingReadyBuyer": "Ready for pickup",
+		"pendingReadySeller": "Ready for pickup",
+		"failureReason": {
+			"refused": "Refused by the recipient",
+			"absent": "Recipient absent",
+			"unreachable": "Recipient unreachable",
+			"address_not_found": "Address not found",
+			"rescheduled_by_buyer": "Rescheduled at the buyer's request",
+			"not_collected": "Parcel not collected",
+			"damaged": "Parcel damaged",
+			"other": "Other reason"
+		},
+		"window": {
+			"morning": "Morning (8am to 12pm)",
+			"afternoon": "Afternoon (12pm to 4pm)",
+			"evening": "Evening (4pm to 8pm)"
+		},
+		"freeAboveHint": "Free delivery from {amount} FCFA",
+		"minimumHint": "Delivery available from {amount} FCFA"
 	}
 }

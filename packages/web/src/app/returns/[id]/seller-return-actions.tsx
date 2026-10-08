@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { RETURN_ACTION_LABELS } from "~/lib/case-status";
 import { sellerReturnActions } from "~/lib/seller-return-actions";
 import type { ReturnCaseView } from "../../../../../api/src/contracts/returns";
 import { ReturnInspectionForm } from "./return-inspection-form";
@@ -28,7 +29,7 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 							onClick={() => action.mutate({ caseId: view.id, action: item })}
 							className="min-h-11 rounded-xl bg-[#1E40AF] px-4 font-medium text-sm text-white disabled:opacity-50"
 						>
-							{t(`action.${item}`)}
+							{t(RETURN_ACTION_LABELS[item])}
 						</button>
 					))}
 			</div>

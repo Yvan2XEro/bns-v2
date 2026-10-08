@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Controller, useForm } from "react-hook-form";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { INSPECTION_OUTCOME_LABELS } from "~/lib/case-status";
 import {
 	createReturnInspectionFormSchema,
 	RETURN_INSPECTION_OUTCOMES,
@@ -76,7 +77,7 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 								<option value="">{t("chooseInspection")}</option>
 								{RETURN_INSPECTION_OUTCOMES.map((outcome) => (
 									<option key={outcome} value={outcome}>
-										{t(`inspection.${outcome}`)}
+										{t(INSPECTION_OUTCOME_LABELS[outcome])}
 									</option>
 								))}
 							</select>

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Controller, useForm } from "react-hook-form";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { REFUND_METHOD_LABELS } from "~/lib/case-status";
 import {
 	RETURN_REFUND_METHODS,
 	type ReturnRefundProofFormInput,
@@ -62,7 +63,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 				>
 					{RETURN_REFUND_METHODS.map((method) => (
 						<option key={method} value={method}>
-							{t(`refundMethodOptions.${method}`)}
+							{t(REFUND_METHOD_LABELS[method])}
 						</option>
 					))}
 				</select>

@@ -9,6 +9,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useDispute, useDisputeAction } from "~/hooks/use-disputes";
+import {
+	DISPUTE_REASON_LABELS,
+	DISPUTE_STATUS_LABELS,
+} from "~/lib/case-status";
 import { disputeActionGroups } from "~/lib/dispute-flow";
 import { caseKeys } from "~/lib/query-keys";
 import { apiPost } from "~/lib/shop-api";
@@ -90,12 +94,12 @@ export function DisputeThreadClient({ disputeId }: { disputeId: string }) {
 							{t("case", { number: view.number })}
 						</h1>
 						<p className="mt-1 text-[#475569] text-sm">
-							{t(`reason.${view.reason}`)}
+							{t(DISPUTE_REASON_LABELS[view.reason])}
 						</p>
 					</div>
 				</div>
 				<span className="rounded-full bg-white px-3 py-1.5 font-semibold text-[#5B21B6] text-sm">
-					{t(`status.${view.status}`)}
+					{t(DISPUTE_STATUS_LABELS[view.status])}
 				</span>
 			</header>
 			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">

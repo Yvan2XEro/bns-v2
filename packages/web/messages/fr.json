@@ -887,7 +887,11 @@
 		"loading": "Chargement des statistiques…",
 		"error": "Impossible de charger les statistiques de la boutique.",
 		"retry": "Réessayer",
-		"period": { "7d": "7 jours", "30d": "30 jours", "90d": "90 jours" },
+		"period": {
+			"7d": "7 jours",
+			"30d": "30 jours",
+			"90d": "90 jours"
+		},
 		"totals": "Performances",
 		"views": "Vues des annonces",
 		"conversationsStarted": "Conversations",
@@ -3041,7 +3045,10 @@
 		"nextDeadline": "Prochaine échéance : {date}",
 		"noDeadline": "Aucune échéance",
 		"returnShippingPayer": "Les frais de retour sont à la charge de {payer}.",
-		"payer": { "buyer": "vous", "seller": "la boutique" },
+		"payer": {
+			"buyer": "vous",
+			"seller": "la boutique"
+		},
 		"step": {
 			"requested": "La boutique examine votre demande.",
 			"shipping": "L'article doit être retourné à la boutique.",
@@ -3069,7 +3076,8 @@
 			"refund_proof": "Envoyer la preuve de remboursement",
 			"confirm_refund": "Confirmer la réception du remboursement",
 			"contest_refund": "Signaler un problème de remboursement",
-			"cancel": "Annuler la demande de retour"
+			"cancel": "Annuler la demande de retour",
+			"upload_evidence": "Ajouter une preuve"
 		},
 		"actionError": "Cette action a échoué. Actualisez le dossier et réessayez.",
 		"actionSuccess": "Votre action a été envoyée.",
@@ -3101,7 +3109,22 @@
 			"rejected": "Refusé",
 			"cancelled": "Annulé",
 			"expired": "Expiré"
-		}
+		},
+		"detailError": "Impossible de charger ce dossier de retour.",
+		"order": "Commande {number}",
+		"deadline": "Prochaine échéance : {date}",
+		"items": "Articles concernés",
+		"returnShippingPaidBy": "Frais de retour à la charge de {party}",
+		"shipReturn": "Expédier le retour",
+		"method": {
+			"buyer_drop_off": "Dépôt en boutique",
+			"courier": "Coursier"
+		},
+		"trackingLabel": "Numéro de suivi",
+		"trackingPlaceholder": "Numéro de suivi facultatif",
+		"refundProof": "Preuve de remboursement du vendeur",
+		"refundProofDetail": "{method} · {amount} XAF · référence {transactionId}",
+		"timeline": "Historique du retour"
 	},
 	"Disputes": {
 		"title": "Mes litiges",
@@ -3174,6 +3197,79 @@
 		},
 		"descriptionLabel": "Décrivez le problème (20 caractères minimum)",
 		"descriptionError": "Décrivez le problème en au moins 20 caractères.",
-		"submitReport": "Envoyer le signalement"
+		"submitReport": "Envoyer le signalement",
+		"disabledTitle": "Le signalement de litige est indisponible",
+		"disabledBody": "Contactez le support pour obtenir de l'aide concernant cette commande.",
+		"contactSupport": "Contacter le support",
+		"reportStep": "Étape {step} sur 5",
+		"reportReason": "Que s'est-il passé ?",
+		"reportDetails": "Décrivez le problème",
+		"reportOutcome": "Quelle solution demandez-vous ?",
+		"requestedAmountOptional": "Montant demandé en XAF (facultatif)",
+		"amountError": {
+			"required": "Saisissez le montant demandé.",
+			"invalid": "Saisissez un montant entier positif.",
+			"over_limit": "Le montant ne peut pas dépasser le total de la commande."
+		},
+		"reportItems": "Articles de cette commande",
+		"selectAffectedItems": "Sélectionnez au moins un article concerné.",
+		"itemsRequired": "Sélectionnez au moins un article.",
+		"reportReview": "Vérifiez votre signalement",
+		"openError": "Impossible de créer le signalement. Vérifiez les informations et réessayez.",
+		"evidenceTitle": "Justificatifs",
+		"evidenceProgress": "{count} fichier(s) ajouté(s) sur {required} requis",
+		"evidenceFile": "{kind} · {size} Ko",
+		"addEvidence": "Ajouter une photo",
+		"evidenceNeeded": "{count} fichier(s) supplémentaire(s) requis avant l'envoi.",
+		"order": "Commande {number}",
+		"amount": "Montant concerné : {amount} XAF",
+		"refund": "Remboursement : {amount} XAF",
+		"action": {
+			"submit": "Soumettre le litige",
+			"withdraw": "Retirer le litige",
+			"escalate": "Demander un examen",
+			"respond_accept": "Accepter la résolution",
+			"proposal_accept": "Accepter la proposition",
+			"proposal_reject": "Refuser la proposition"
+		}
+	},
+	"Delivery": {
+		"statusBuyer": {
+			"pending": "En préparation",
+			"picked_up": "Récupérée par le livreur",
+			"in_transit": "En route",
+			"delivered": "Livrée",
+			"failed": "Livraison manquée",
+			"returned": "Retournée au vendeur",
+			"cancelled": "Annulée"
+		},
+		"statusSeller": {
+			"pending": "À expédier",
+			"picked_up": "Récupérée",
+			"in_transit": "En route",
+			"delivered": "Livrée",
+			"failed": "Échec de livraison",
+			"returned": "Revenue en boutique",
+			"cancelled": "Annulée"
+		},
+		"pendingReadyBuyer": "Prête au retrait",
+		"pendingReadySeller": "Prête au retrait",
+		"failureReason": {
+			"refused": "Refusée par le destinataire",
+			"absent": "Destinataire absent",
+			"unreachable": "Destinataire injoignable",
+			"address_not_found": "Adresse introuvable",
+			"rescheduled_by_buyer": "Reportée à la demande de l'acheteur",
+			"not_collected": "Colis non retiré",
+			"damaged": "Colis endommagé",
+			"other": "Autre raison"
+		},
+		"window": {
+			"morning": "Matin (8 h à 12 h)",
+			"afternoon": "Après-midi (12 h à 16 h)",
+			"evening": "Soirée (16 h à 20 h)"
+		},
+		"freeAboveHint": "Livraison offerte dès {amount} FCFA",
+		"minimumHint": "Livraison à partir de {amount} FCFA"
 	}
 }

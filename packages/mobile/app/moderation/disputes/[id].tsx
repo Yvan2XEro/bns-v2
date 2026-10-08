@@ -19,6 +19,10 @@ import {
 	useModerationDisputeAction,
 	usePreviewDisputeOutcome,
 } from "@/src/hooks/useModerationDisputes";
+import {
+	DISPUTE_REASON_LABELS,
+	DISPUTE_STATUS_LABELS,
+} from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import { canSubmitDisputeResolution } from "@/src/lib/moderationDisputeDecision";
 
@@ -163,11 +167,11 @@ export default function ModerationDisputeDetailScreen() {
 				) : null}
 				<Card title={t("moderationDisputes.caseSummary")} c={c}>
 					<Body
-						text={`${t("disputes.order", { number: dispute.orderNumber })} · ${t(`disputes.reason.${dispute.reason}`)}`}
+						text={`${t("disputes.order", { number: dispute.orderNumber })} · ${t(DISPUTE_REASON_LABELS[dispute.reason])}`}
 						color={c.text}
 					/>
 					<Body
-						text={`${t(`disputes.status.${dispute.status}`)} · ${dispute.amountAtStake.toLocaleString(locale)} XAF`}
+						text={`${t(DISPUTE_STATUS_LABELS[dispute.status])} · ${dispute.amountAtStake.toLocaleString(locale)} XAF`}
 						color={c.muted}
 					/>
 					<Body
@@ -208,13 +212,13 @@ export default function ModerationDisputeDetailScreen() {
 					</Pressable>
 				</Card>
 				<Card title={t("moderationDisputes.proofChecklist")} c={c}>
-						{sheet.proofChecklist.map((row) => (
-							<Body
-								key={row.requirement}
-								text={`${t(`moderationDisputes.proof.${row.requirement}`)}: ${row.established ? t("moderationDisputes.proven") : t("moderationDisputes.notProven")}${row.source ? ` · ${row.source}` : ""}`}
-								color={row.established ? c.success : c.muted}
-							/>
-						))}
+					{sheet.proofChecklist.map((row) => (
+						<Body
+							key={row.requirement}
+							text={`${t(`moderationDisputes.proof.${row.requirement}`)}: ${row.established ? t("moderationDisputes.proven") : t("moderationDisputes.notProven")}${row.source ? ` · ${row.source}` : ""}`}
+							color={row.established ? c.success : c.muted}
+						/>
+					))}
 				</Card>
 				{dispute.status === "under_review" ? (
 					<Card title={t("moderationDisputes.resolveTitle")} c={c}>
@@ -222,7 +226,7 @@ export default function ModerationDisputeDetailScreen() {
 							title={t("moderationDisputes.outcome")}
 							values={outcomes}
 							selected={form.outcome}
-							label={(value) => t(`disputes.status.${value}`)}
+							label={(value) => t(DISPUTE_STATUS_LABELS[value])}
 							onSelect={(outcome) => patch({ outcome })}
 							c={c}
 						/>

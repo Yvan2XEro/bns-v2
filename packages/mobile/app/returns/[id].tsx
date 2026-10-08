@@ -18,6 +18,12 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerReturnActions } from "@/src/components/returns/SellerReturnActions";
 import { useReturnAction, useReturnCase } from "@/src/hooks/useReturns";
+import {
+	RETURN_ACTION_LABELS,
+	RETURN_BASIS_LABELS,
+	RETURN_CASE_STATUS_LABELS,
+	RETURN_PAYER_LABELS,
+} from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ReturnAction } from "../../../api/src/contracts/returns";
 
@@ -98,8 +104,8 @@ export default function ReturnCaseScreen() {
 							{t("returns.order", { number: query.data.orderNumber })}
 						</Text>
 						<Text style={[styles.body, { color: colors.muted }]}>
-							{t(`returns.status.${query.data.status}`)} ·{" "}
-							{t(`returns.basis.${query.data.basis}`)}
+							{t(RETURN_CASE_STATUS_LABELS[query.data.status])} ·{" "}
+							{t(RETURN_BASIS_LABELS[query.data.basis])}
 						</Text>
 						<Text style={[styles.amount, { color: colors.text }]}>
 							{t("returns.refundAmount", {
@@ -134,7 +140,7 @@ export default function ReturnCaseScreen() {
 						))}
 						<Text style={[styles.body, { color: colors.muted }]}>
 							{t("returns.returnShippingPaidBy", {
-								party: t(`returns.party.${query.data.returnShippingPaidBy}`),
+								party: t(RETURN_PAYER_LABELS[query.data.returnShippingPaidBy]),
 							})}
 						</Text>
 					</View>
@@ -221,7 +227,7 @@ export default function ReturnCaseScreen() {
 								style={styles.event}
 							>
 								<Text style={[styles.body, { color: colors.text }]}>
-									{t(`returns.status.${event.status}`)}
+									{t(RETURN_CASE_STATUS_LABELS[event.status])}
 								</Text>
 								<Text style={[styles.caption, { color: colors.muted }]}>
 									{new Date(event.at).toLocaleString(i18n.language)}
@@ -244,7 +250,7 @@ export default function ReturnCaseScreen() {
 							.map((item) => (
 								<ActionButton
 									key={item}
-									label={t(`returns.action.${item}`)}
+									label={t(RETURN_ACTION_LABELS[item])}
 									pending={mutation.isPending}
 									color={
 										item === "cancel" ||

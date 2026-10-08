@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { useReturnAction } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { INSPECTION_OUTCOME_LABELS } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	createReturnInspectionFormSchema,
@@ -76,7 +77,7 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 											checked: field.value === outcome,
 											disabled: submit.isPending,
 										}}
-										accessibilityLabel={t(`returns.inspection.${outcome}`)}
+										accessibilityLabel={t(INSPECTION_OUTCOME_LABELS[outcome])}
 										disabled={submit.isPending}
 										onPress={() => field.onChange(outcome)}
 										style={{
@@ -90,7 +91,7 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 										}}
 									>
 										<Text style={{ color: c.text }}>
-											{t(`returns.inspection.${outcome}`)}
+											{t(INSPECTION_OUTCOME_LABELS[outcome])}
 										</Text>
 									</Pressable>
 								))}

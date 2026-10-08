@@ -72,7 +72,7 @@ export interface ReturnCaseView {
 	disputeId: string | null;
 	rejectionReason: string | null;
 	timeline: Array<{
-		status: string;
+		status: ReturnCaseStatus;
 		actorType: "buyer" | "seller" | "system" | "moderator";
 		at: string;
 		note: string | null;

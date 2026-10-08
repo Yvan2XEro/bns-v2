@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useBuyerDisputes } from "~/hooks/use-disputes";
+import {
+	DISPUTE_REASON_LABELS,
+	DISPUTE_STATUS_LABELS,
+} from "~/lib/case-status";
 
 export function BuyerDisputesClient() {
 	const t = useTranslations("Disputes");
@@ -60,7 +64,7 @@ export function BuyerDisputesClient() {
 												{row.number}
 											</span>
 											<span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[#475569] text-xs">
-												{t(`status.${row.status}`)}
+												{t(DISPUTE_STATUS_LABELS[row.status])}
 											</span>
 											{row.overdue ? (
 												<span className="rounded-full bg-red-50 px-2.5 py-1 font-medium text-red-700 text-xs">
@@ -70,7 +74,7 @@ export function BuyerDisputesClient() {
 										</div>
 										<p className="mt-1 truncate text-[#64748B] text-sm">
 											{t("orderNumber", { number: row.orderNumber })} ·{" "}
-											{t(`reason.${row.reason}`)}
+											{t(DISPUTE_REASON_LABELS[row.reason])}
 										</p>
 										{row.nextDeadline ? (
 											<p className="mt-1 text-[#64748B] text-xs">
