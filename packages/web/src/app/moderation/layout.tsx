@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { isModerator } from "~/lib/moderation-verification";
 import { serverFetch } from "~/lib/server-api";
 import type { User } from "~/types";
@@ -20,5 +22,24 @@ export default async function ModerationLayout({
 		: {};
 	if (!isModerator(body.user)) notFound();
 
-	return <div className="mx-auto max-w-6xl px-4 py-8">{children}</div>;
+	const t = await getTranslations("ModerationDisputes");
+	return (
+		<div className="mx-auto max-w-6xl px-4 py-8">
+			<nav className="mb-6 flex gap-4 text-sm">
+				<Link
+					href="/moderation/verification"
+					className="text-[#1E40AF] hover:underline"
+				>
+					{t("navVerification")}
+				</Link>
+				<Link
+					href="/moderation/disputes"
+					className="text-[#1E40AF] hover:underline"
+				>
+					{t("navDisputes")}
+				</Link>
+			</nav>
+			{children}
+		</div>
+	);
 }
