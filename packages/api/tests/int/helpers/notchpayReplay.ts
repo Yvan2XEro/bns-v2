@@ -75,9 +75,7 @@ export class ReplayTransport {
 	}
 
 	private modeHolds(when: string, env: Record<string, string>): boolean {
-		const [key = "", expected = ""] = substitute(when, env)
-			.toString()
-			.split("=");
+		const [key = "", expected = ""] = String(substitute(when, env)).split("=");
 		return (this.modes.get(key) ?? "initial") === expected;
 	}
 
@@ -108,9 +106,9 @@ export class ReplayTransport {
 				}
 				Object.assign(this.bound, bodyFields, pathTokens);
 				if (fixture.sets) {
-					const [key = "", value = ""] = substitute(fixture.sets, env)
-						.toString()
-						.split("=");
+					const [key = "", value = ""] = String(
+						substitute(fixture.sets, env),
+					).split("=");
 					this.modes.set(key, value);
 				}
 				return {
