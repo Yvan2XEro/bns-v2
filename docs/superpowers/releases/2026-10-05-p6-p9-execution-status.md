@@ -154,3 +154,12 @@ verification gates, and the release records required by each plan.
   seller-direct refund and need the same evidence flow.
 
 No completion claim or final commit is recorded for the remaining work.
+
+## Closed (2026-10-08)
+
+Every item of the Remaining Critical Path above is done. The branch was
+recovered, checkpoint-reviewed, fixed in two rounds, completed by a client
+wave, finally reviewed (APPROVED) and re-reviewed (ALL CLOSED). The
+authoritative close is `2026-10-08-p6-p9-release-record.md`; the SDD ledger
+(`.superpowers/sdd/2026-10-04-p6-disputes-returns/progress.md`) holds every
+ruling. This document is historical from here.

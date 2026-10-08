@@ -228,14 +228,15 @@ stage. Isolate them, or serialise them.
 - `tsconfig.json` carries `exclude: ["tests"]`, so `check-types` type-checks
   no spec file. `bun run check-types:tests` in `packages/api` does, and it is
   advisory — deliberately outside the pre-commit hook, because its backlog
-  would block every commit. **The baseline is 105 errors and it must not
-  rise.**
+  would block every commit. **The baseline is 100 errors and it must not
+  rise.** (105 at P5's close; the P6-P9 continuation brought it down to 100
+  without a single new cast.)
 - That error count alone is a **perverse incentive, so it is paired with a
   second one.** An `as never` does not fix a type error, it hides one: the
-  count falls and the mismatch stays. A task under pressure to hold 105 will
+  count falls and the mismatch stays. A task under pressure to hold 100 will
   reach for the cast the Types section forbids, and this already happened
   once in P3. So the number of `as never` occurrences is also a ceiling:
-  **86 across `packages/api/tests/`, and 78 across `packages/web/src`,
+  **86 across `packages/api/tests/`, and 77 across `packages/web/src`,
   `packages/mobile/src` **and `packages/mobile/app`** — that last path is
   where most of them are, and leaving it out is how this number was first
   published as 48.**
@@ -246,7 +247,8 @@ stage. Isolate them, or serialise them.
   the parameter breaks the forward). It then fell to **86** at P4's close: a
   deletion-test helper centralised eleven pre-existing casts, and the account
   tab shed two more — which is the direction these numbers are supposed to
-  move. The client count fell 80 -> 78 the same way. A rise still needs its
+  move. The client count fell 80 -> 78 the same way, then 78 -> 77 at the P6-P9
+  close. A rise still needs its
   own reason in writing.
 - Measure each number with **exactly this command**, because every
   disagreement about them so far was a difference of scope, not of fact — the
@@ -254,10 +256,10 @@ stage. Isolate them, or serialise them.
   reported as contradictions:
 
 ```bash
-cd packages/api && bun run check-types:tests | grep -c "error TS"   # 105
+cd packages/api && bun run check-types:tests | grep -c "error TS"   # 100
 grep -ro 'as never' packages/api/tests | wc -l                      # 86
 grep -ro 'as never' packages/web/src packages/mobile/src \
-                    packages/mobile/app | wc -l                     # 78
+                    packages/mobile/app | wc -l                     # 77
 cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
 ```
 
@@ -265,8 +267,10 @@ cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
   P3 while agents were writing came out wrong — the web/mobile cast count was
   published as 41 and was never below 48 — and a ceiling set from a moving
   tree either traps work or excuses it. These four were measured with nothing
-  running, at P5's close (where all four held their P4 values exactly: the
-  spec added ~47k lines without a single new cast or test-type error). The mobile advisory figure is honest only with a
+  running, at the P6-P9 close (types:tests fell 105 -> 100 and the client
+  casts 78 -> 77; the api casts and the mobile advisory held at 86 and 35).
+  A stale `.expo/types/router.d.ts` read 45 that day — delete the file and
+  regenerate before trusting the mobile figure. The mobile advisory figure is honest only with a
   fresh `.expo/types/router.d.ts`; without one the same tree reads 32 and
   hides three real errors.
 - A cast around `router.push` in `packages/mobile` is usually not a mismatch
