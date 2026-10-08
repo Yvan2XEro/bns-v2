@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { SignalChip } from "~/components/moderation/signal-chip";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { type ReviewerRequestDetail, statusToneKey } from "~/lib/verification";
-import { relationId } from "../../../../api/src/lib/relationId";
+import { relationId } from "~/lib/relation-id";
 
 type ReviewSignals = ReviewerRequestDetail["request"]["reviewSignals"];
 type OtherRequests = ReviewerRequestDetail["otherRequests"];

@@ -263,6 +263,13 @@ grep -ro 'as never' packages/web/src packages/mobile/src \
 cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
 ```
 
+- **The web Docker build only ships a slice of `packages/api`** (payload-types,
+  `src/contracts/`, `src/types/`, and the pure helpers its Dockerfile lists).
+  A web VALUE import from anywhere else in `api/src` passes every local gate
+  and then breaks the deploy — it did, silently, for days. Rule: web
+  value-imports from the api only through `contracts/`, `types/` or a helper
+  the Dockerfile explicitly copies; everything else must be `import type`.
+  `bun run build` in `packages/web` belongs to every release gate.
 - Measure those four numbers on a **quiet tree**. Every figure quoted during
   P3 while agents were writing came out wrong — the web/mobile cast count was
   published as 41 and was never below 48 — and a ceiling set from a moving
