@@ -159,7 +159,12 @@ function SellerHubContent({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const { ordersEnabled, insightsEnabled, resaleEnabled } = useAppConfig();
+	const {
+		ordersEnabled,
+		insightsEnabled,
+		resaleEnabled,
+		deliveryZonesEnabled,
+	} = useAppConfig();
 	const verification = useShopVerification(shop.id);
 	const { shops } = useActiveShop();
 	const inboxUnread =
@@ -258,6 +263,12 @@ function SellerHubContent({
 						: "/seller/resale/catalogue",
 				),
 		},
+		delivery: {
+			icon: "bicycle-outline",
+			title: t("deliverySettings.title"),
+			body: t("deliverySettings.tileBody"),
+			onPress: () => router.push("/seller/delivery"),
+		},
 		billing: {
 			icon: "card-outline",
 			title: t("seller.tileBilling"),
@@ -343,7 +354,7 @@ function SellerHubContent({
 			toAccept,
 			paymentsHolds,
 		},
-		{ ordersEnabled, resaleEnabled },
+		{ ordersEnabled, resaleEnabled, deliveryZonesEnabled },
 	).map((tile) => ({
 		key: tile.key,
 		badge: tile.badge,

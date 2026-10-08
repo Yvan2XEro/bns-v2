@@ -15,6 +15,7 @@ const TILES: ReadonlyArray<{
 	permission: ShopPermission;
 	orders?: true;
 	resale?: true;
+	zones?: true;
 }> = [
 	{
 		key: "returns",
@@ -49,6 +50,13 @@ const TILES: ReadonlyArray<{
 		permission: "payments.view",
 		orders: true,
 	},
+	{
+		key: "delivery",
+		href: "/seller/delivery",
+		permission: "settings.edit",
+		orders: true,
+		zones: true,
+	},
 	{ key: "team", href: "/seller/team", permission: "team.view" },
 	{ key: "activity", href: "/seller/activity", permission: "activity.view" },
 	{ key: "settings", href: "/shop/manage", permission: "settings.edit" },
@@ -72,7 +80,11 @@ export interface SellerTileCounts {
 export function visibleSellerTiles(
 	role: ShopRole | null | undefined,
 	counts: SellerTileCounts,
-	options: { ordersEnabled: boolean; resaleEnabled?: boolean } = {
+	options: {
+		ordersEnabled: boolean;
+		resaleEnabled?: boolean;
+		deliveryZonesEnabled?: boolean;
+	} = {
 		ordersEnabled: false,
 	},
 ): SellerTile[] {
@@ -86,6 +98,7 @@ export function visibleSellerTiles(
 		(tile) =>
 			(!tile.orders || options.ordersEnabled) &&
 			(!tile.resale || options.resaleEnabled === true) &&
+			(!tile.zones || options.deliveryZonesEnabled === true) &&
 			can(role, tile.permission),
 	).map(({ key, href, permission }) => {
 		const badge = badges[key] ?? 0;

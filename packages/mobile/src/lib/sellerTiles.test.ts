@@ -171,3 +171,29 @@ describe("the resale tile", () => {
 		).not.toContain("resale");
 	});
 });
+
+describe("the delivery tile", () => {
+	const only = (options: Parameters<typeof visibleSellerTiles>[2]) =>
+		visibleSellerTiles("owner", counts, options).some(
+			(tile) => tile.key === "delivery",
+		);
+
+	test("needs orders and the zones flag together", () => {
+		expect(only({ ordersEnabled: true, deliveryZonesEnabled: true })).toBe(
+			true,
+		);
+		expect(only({ ordersEnabled: true })).toBe(false);
+		expect(only({ ordersEnabled: false, deliveryZonesEnabled: true })).toBe(
+			false,
+		);
+	});
+
+	test("is for roles that can edit settings, not staff", () => {
+		expect(
+			visibleSellerTiles("staff", counts, {
+				ordersEnabled: true,
+				deliveryZonesEnabled: true,
+			}).some((tile) => tile.key === "delivery"),
+		).toBe(false);
+	});
+});
