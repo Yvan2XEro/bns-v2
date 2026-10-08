@@ -226,3 +226,28 @@ function partialMatchKey(a: unknown, b: unknown): boolean {
 	}
 	return false;
 }
+
+/** A shop's delivery settings, nested under it so a shop-wide invalidation reaches them. */
+export const deliverySettingsKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "delivery"] as const;
+export const deliveryZonesKey = (shopId: string) =>
+	[...deliverySettingsKey(shopId), "zones"] as const;
+export const deliveryLocationsKey = (shopId: string) =>
+	[...deliverySettingsKey(shopId), "locations"] as const;
+
+/** The active partner couriers; not shop-scoped, the registry is platform-wide. */
+export const couriersKey = () => ["couriers", "active"] as const;
+
+/** The buyer's shipments of one purchase, nested so every order action refreshes them. */
+export const purchaseShipmentsKey = (orderId: string) =>
+	[...purchaseKey(orderId), "shipments"] as const;
+
+/** Shop-side shipment views, one order's list and one shipment's detail. */
+export const shopShipmentsRootKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "shipments"] as const;
+export const shopOrderShipmentsKey = (shopId: string, orderId: string) =>
+	[...shopShipmentsRootKey(shopId), "order", orderId] as const;
+
+export const riderLinkKey = (token: string) => ["rider-link", token] as const;
+
+export const courierSpaceKey = () => ["courier-space"] as const;

@@ -19,6 +19,7 @@ import {
 	Settings,
 	ShoppingBag,
 	SlidersHorizontal,
+	Truck,
 	Users,
 	Wallet,
 } from "lucide-react";
@@ -52,6 +53,7 @@ const ICONS: Record<SellerNavKey, LucideIcon> = {
 	disputes: Scale,
 	returns: RotateCcw,
 	resale: RefreshCw,
+	delivery: Truck,
 };
 
 export function SellerSidebar({
@@ -92,13 +94,18 @@ export function SellerSidebar({
 			? pathname === href
 			: pathname === href || pathname.startsWith(`${href}/`);
 
-	const { ordersEnabled, protectedPaymentEnabled, resaleEnabled } =
-		useAppConfig();
+	const {
+		ordersEnabled,
+		protectedPaymentEnabled,
+		resaleEnabled,
+		deliveryZonesEnabled,
+	} = useAppConfig();
 	const items = visibleSellerNav(
 		role,
 		ordersEnabled,
 		protectedPaymentEnabled,
 		resaleEnabled,
+		deliveryZonesEnabled,
 	);
 
 	const lockedNotice =

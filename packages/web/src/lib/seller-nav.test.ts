@@ -12,12 +12,13 @@ describe("visibleSellerNav", () => {
 	});
 
 	it("hides every order entry when ordering is off, and nothing else", () => {
-		const on = keys(visibleSellerNav("owner", true));
-		const off = keys(visibleSellerNav("owner", false));
+		const on = keys(visibleSellerNav("owner", true, false, false, true));
+		const off = keys(visibleSellerNav("owner", false, false, false, true));
 		expect(on.filter((key) => !off.includes(key))).toEqual([
 			"orders",
 			"disputes",
 			"billing",
+			"delivery",
 			"orderSettings",
 		]);
 		expect(off).toContain("returns");
@@ -74,5 +75,18 @@ describe("visibleSellerNav", () => {
 		expect(keys(visibleSellerNav("staff", false, false, true))).not.toContain(
 			"resale",
 		);
+	});
+
+	it("shows delivery to settings editors only while the zones flag is on", () => {
+		expect(keys(visibleSellerNav("owner", true))).not.toContain("delivery");
+		expect(keys(visibleSellerNav("owner", true, false, false, true))).toContain(
+			"delivery",
+		);
+		expect(
+			keys(visibleSellerNav("manager", true, false, false, true)),
+		).toContain("delivery");
+		expect(
+			keys(visibleSellerNav("staff", true, false, false, true)),
+		).not.toContain("delivery");
 	});
 });

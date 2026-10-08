@@ -7,7 +7,7 @@ import { can } from "./shop-roles";
  * the entry; anything else is gated with `can`, so staff never see a link to
  * a screen the server would refuse them. `orders` entries also follow the
  * `ordersEnabled` flag, which hides every order entry point when it is off.
- * Resale (P8), Delivery (P7) and Payments (P5) join when their phase ships.
+ * Resale (P8), Delivery (P7, behind `deliveryZonesEnabled`) and Payments (P5) join when their phase ships.
  */
 export const SELLER_NAV = [
 	{
@@ -86,6 +86,14 @@ export const SELLER_NAV = [
 		protectedPayment: true,
 	},
 	{
+		href: "/seller/delivery",
+		key: "delivery",
+		exact: false,
+		permission: "settings.edit",
+		orders: true,
+		deliveryZones: true,
+	},
+	{
 		href: "/seller/team",
 		key: "team",
 		exact: false,
@@ -135,6 +143,7 @@ export const SELLER_NAV = [
 	orders: boolean;
 	protectedPayment?: boolean;
 	resale?: boolean;
+	deliveryZones?: boolean;
 }>;
 
 export type SellerNavEntry = (typeof SELLER_NAV)[number];
@@ -145,15 +154,19 @@ export function visibleSellerNav(
 	ordersEnabled: boolean,
 	protectedPaymentEnabled = false,
 	resaleEnabled = false,
+	deliveryZonesEnabled = false,
 ): SellerNavEntry[] {
 	return SELLER_NAV.filter((entry) => {
 		const gatedByFlag =
 			"protectedPayment" in entry ? entry.protectedPayment === true : false;
 		const gatedByResale = "resale" in entry && entry.resale === true;
+		const gatedByDelivery =
+			"deliveryZones" in entry && entry.deliveryZones === true;
 		return (
 			(ordersEnabled || !entry.orders) &&
 			(protectedPaymentEnabled || !gatedByFlag) &&
 			(resaleEnabled || !gatedByResale) &&
+			(deliveryZonesEnabled || !gatedByDelivery) &&
 			(entry.permission === null || can(role, entry.permission))
 		);
 	});
