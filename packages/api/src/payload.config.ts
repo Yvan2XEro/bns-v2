@@ -80,10 +80,10 @@ import { WebhookEvents } from "./collections/WebhookEvents";
 import { AppSettings } from "./globals/AppSettings";
 import {
 	abandonCartsTask,
-	applyResalePriceChangesTask,
 	advanceDisputesTask,
 	advanceReturnCasesTask,
 	aggregateShopDailyStatsTask,
+	applyResalePriceChangesTask,
 	checkSearchAlertsTask,
 	completeOrdersTask,
 	consumeRiskSignalOutboxTask,
@@ -93,20 +93,26 @@ import {
 	expireBoostsTask,
 	expireListingsTask,
 	expireOrdersTask,
-	expirePurchaseOrdersTask,
 	expirePayoutHoldsTask,
+	expirePickupHoldsTask,
+	expirePurchaseOrdersTask,
+	expireRiderLinksTask,
 	expireStrikesTask,
 	failStaleOrdersTask,
+	finalizeFailedShipmentsTask,
+	flagLateShipmentsTask,
 	flushListingViewsTask,
 	issueCommissionInvoicesTask,
 	liftExpiredShopSuspensionsTask,
 	markOverdueResellerChargesTask,
 	payResellerCommissionsTask,
+	pollCourierShipmentsTask,
 	processCourierWebhookEventTask,
 	processKycEventTask,
 	processWebhookEventTask,
 	publishHeldReviewsTask,
 	purgeCaseEvidenceTask,
+	purgeDeliveryProofsTask,
 	purgeRiskDataTask,
 	purgeShopActivityTask,
 	purgeVerificationDataTask,
@@ -114,22 +120,25 @@ import {
 	reconcilePendingPaymentsTask,
 	reconcileStockCachesTask,
 	recoverSellerReceivablesTask,
+	refreshResaleLinkStatsTask,
 	releaseEligibleFundsTask,
 	releaseResellerCommissionsTask,
+	remindReturnsTask,
 	renderDisputeCertificateTask,
 	retryResellerPayoutsTask,
-	refreshResaleLinkStatsTask,
 	submitRefundTask,
 	sweepBuyerFeeInvoicesTask,
 	syncConnectedAccountTask,
 } from "./jobs";
+import { registerResaleAdjuster } from "./lib/resale";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
 import { registerShipmentOrderEvents } from "./services/delivery/shipments";
-import { registerPurchaseOrderOrderEvents } from "./services/purchaseOrders";
-import { adjustResellerCommission } from "./services/purchaseOrders";
+import {
+	adjustResellerCommission,
+	registerPurchaseOrderOrderEvents,
+} from "./services/purchaseOrders";
 import { registerRefundSubmissionQueue } from "./services/refunds";
-import { registerResaleAdjuster } from "./lib/resale";
 import { registerShopTeamLevelListener } from "./services/shopTeamLevel";
 
 const filename = fileURLToPath(import.meta.url);
@@ -180,6 +189,41 @@ const paymentTasks = [
 	{
 		...sweepBuyerFeeInvoicesTask,
 		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
+	},
+];
+
+// Delivery calendar, same UTC rule as the money calendar above. The polling
+// task rides the frequent "delivery" queue; the lifecycle sweeps share the
+// hourly queue and the nightly ones the nightly queue.
+const deliveryTasks = [
+	processCourierWebhookEventTask,
+	{
+		...pollCourierShipmentsTask,
+		schedule: [{ cron: "*/15 * * * *", queue: "delivery" }],
+	},
+	{
+		...finalizeFailedShipmentsTask,
+		schedule: [{ cron: "0 * * * *", queue: "hourly" }],
+	},
+	{
+		...expirePickupHoldsTask,
+		schedule: [{ cron: "0 * * * *", queue: "hourly" }],
+	},
+	{
+		...flagLateShipmentsTask,
+		schedule: [{ cron: "0 * * * *", queue: "hourly" }],
+	},
+	{
+		...remindReturnsTask,
+		schedule: [{ cron: "30 6 * * *", queue: "nightly" }], // 07:30 Douala
+	},
+	{
+		...expireRiderLinksTask,
+		schedule: [{ cron: "45 2 * * *", queue: "nightly" }], // 03:45 Douala
+	},
+	{
+		...purgeDeliveryProofsTask,
+		schedule: [{ cron: "15 2 * * *", queue: "nightly" }], // 03:15 Douala
 	},
 ];
 
@@ -327,7 +371,6 @@ export default buildConfig({
 			reconcilePendingPaymentsTask,
 			liftExpiredShopSuspensionsTask,
 			processKycEventTask,
-			processCourierWebhookEventTask,
 			purgeVerificationDataTask,
 			purgeShopActivityTask,
 			purgeRiskDataTask,
@@ -340,8 +383,8 @@ export default buildConfig({
 			publishHeldReviewsTask,
 			issueCommissionInvoicesTask,
 			enforceCommissionOverdueTask,
-		enforceResaleTermsTask,
-		refreshResaleLinkStatsTask,
+			enforceResaleTermsTask,
+			refreshResaleLinkStatsTask,
 			reconcileStockCachesTask,
 			renderDisputeCertificateTask,
 			dispatchOrderEventTask,
@@ -356,6 +399,7 @@ export default buildConfig({
 			releaseResellerCommissionsTask,
 			retryResellerPayoutsTask,
 			...paymentTasks,
+			...deliveryTasks,
 		],
 		autoRun: [
 			{ cron: "0 0 * * *", queue: "nightly", limit: 10 },
@@ -379,6 +423,7 @@ export default buildConfig({
 			{ cron: "0 * * * *", queue: "hourly", limit: 20 },
 			{ cron: "*/15 * * * *", queue: "cases", limit: 50 },
 			{ cron: "*/5 * * * *", queue: "cases", limit: 100 },
+			{ cron: "*/15 * * * *", queue: "delivery", limit: 50 },
 		],
 	},
 });

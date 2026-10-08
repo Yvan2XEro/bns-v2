@@ -258,7 +258,6 @@ export interface Config {
       reconcilePendingPayments: TaskReconcilePendingPayments;
       liftExpiredShopSuspensions: TaskLiftExpiredShopSuspensions;
       processKycEvent: TaskProcessKycEvent;
-      processCourierWebhookEvent: TaskProcessCourierWebhookEvent;
       purgeVerificationData: TaskPurgeVerificationData;
       purgeShopActivity: TaskPurgeShopActivity;
       purgeRiskData: TaskPurgeRiskData;
@@ -293,6 +292,14 @@ export interface Config {
       reconcileLedger: TaskReconcileLedger;
       recoverSellerReceivables: TaskRecoverSellerReceivables;
       sweepBuyerFeeInvoices: TaskSweepBuyerFeeInvoices;
+      processCourierWebhookEvent: TaskProcessCourierWebhookEvent;
+      pollCourierShipments: TaskPollCourierShipments;
+      finalizeFailedShipments: TaskFinalizeFailedShipments;
+      expirePickupHolds: TaskExpirePickupHolds;
+      flagLateShipments: TaskFlagLateShipments;
+      remindReturns: TaskRemindReturns;
+      expireRiderLinks: TaskExpireRiderLinks;
+      purgeDeliveryProofs: TaskPurgeDeliveryProofs;
       inline: {
         input: unknown;
         output: unknown;
@@ -3608,7 +3615,6 @@ export interface PayloadJob {
           | 'reconcilePendingPayments'
           | 'liftExpiredShopSuspensions'
           | 'processKycEvent'
-          | 'processCourierWebhookEvent'
           | 'purgeVerificationData'
           | 'purgeShopActivity'
           | 'purgeRiskData'
@@ -3642,7 +3648,15 @@ export interface PayloadJob {
           | 'expirePayoutHolds'
           | 'reconcileLedger'
           | 'recoverSellerReceivables'
-          | 'sweepBuyerFeeInvoices';
+          | 'sweepBuyerFeeInvoices'
+          | 'processCourierWebhookEvent'
+          | 'pollCourierShipments'
+          | 'finalizeFailedShipments'
+          | 'expirePickupHolds'
+          | 'flagLateShipments'
+          | 'remindReturns'
+          | 'expireRiderLinks'
+          | 'purgeDeliveryProofs';
         taskID: string;
         input?:
           | {
@@ -3686,7 +3700,6 @@ export interface PayloadJob {
         | 'reconcilePendingPayments'
         | 'liftExpiredShopSuspensions'
         | 'processKycEvent'
-        | 'processCourierWebhookEvent'
         | 'purgeVerificationData'
         | 'purgeShopActivity'
         | 'purgeRiskData'
@@ -3721,6 +3734,14 @@ export interface PayloadJob {
         | 'reconcileLedger'
         | 'recoverSellerReceivables'
         | 'sweepBuyerFeeInvoices'
+        | 'processCourierWebhookEvent'
+        | 'pollCourierShipments'
+        | 'finalizeFailedShipments'
+        | 'expirePickupHolds'
+        | 'flagLateShipments'
+        | 'remindReturns'
+        | 'expireRiderLinks'
+        | 'purgeDeliveryProofs'
       )
     | null;
   queue?: string | null;
@@ -7284,18 +7305,6 @@ export interface TaskProcessKycEvent {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "TaskProcessCourierWebhookEvent".
- */
-export interface TaskProcessCourierWebhookEvent {
-  input: {
-    eventId: string;
-  };
-  output: {
-    outcome?: string | null;
-  };
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "TaskPurgeVerificationData".
  */
 export interface TaskPurgeVerificationData {
@@ -7638,6 +7647,74 @@ export interface TaskRecoverSellerReceivables {
  * via the `definition` "TaskSweepBuyerFeeInvoices".
  */
 export interface TaskSweepBuyerFeeInvoices {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskProcessCourierWebhookEvent".
+ */
+export interface TaskProcessCourierWebhookEvent {
+  input: {
+    eventId: string;
+  };
+  output: {
+    outcome?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPollCourierShipments".
+ */
+export interface TaskPollCourierShipments {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFinalizeFailedShipments".
+ */
+export interface TaskFinalizeFailedShipments {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpirePickupHolds".
+ */
+export interface TaskExpirePickupHolds {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskFlagLateShipments".
+ */
+export interface TaskFlagLateShipments {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRemindReturns".
+ */
+export interface TaskRemindReturns {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskExpireRiderLinks".
+ */
+export interface TaskExpireRiderLinks {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPurgeDeliveryProofs".
+ */
+export interface TaskPurgeDeliveryProofs {
   input?: unknown;
   output?: unknown;
 }
