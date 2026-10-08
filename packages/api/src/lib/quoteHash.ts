@@ -6,6 +6,11 @@ export interface QuoteHashInput {
 		variantId: string;
 		quantity: number;
 		unitPrice: number;
+		resale?: {
+			supplierShop: string;
+			resaleLink: string;
+			supplierUnitPrice: number;
+		};
 	}>;
 	deliveryFee: number;
 	method: "seller_delivery" | "pickup" | "courier";
@@ -31,6 +36,7 @@ export function quoteHash(input: QuoteHashInput): string {
 				variantId: line.variantId,
 				quantity: line.quantity,
 				unitPrice: line.unitPrice,
+				...(line.resale ? { resale: line.resale } : {}),
 			}))
 			.sort((a, b) => (a.lineId < b.lineId ? -1 : a.lineId > b.lineId ? 1 : 0)),
 		deliveryFee: input.deliveryFee,

@@ -64,6 +64,7 @@ import {
 	markCartConverted,
 	revalidateCartLines,
 } from "./cart";
+import { resolveCartOffer } from "./cartOffer";
 import { assertShopEligibleForProtectedPayment } from "./checkoutPayment";
 import { marketOf, shopMarketCountry } from "./connectedAccounts";
 import {
@@ -399,6 +400,12 @@ export interface QuoteSummaryItem {
 	unitPrice: number;
 	quantity: number;
 	lineSubtotal: number;
+	/** Set only for a resale line: what `placeOrder` persists on the order item. */
+	resale?: {
+		supplierShop: string;
+		resaleLink: string;
+		supplierUnitPrice: number;
+	};
 }
 
 /** One line of the quote, as the checkout screen renders it: what it is, how many, what it costs. The ids `placeOrder` needs stay on `QuoteSummaryItem`, off the wire. */
@@ -515,6 +522,7 @@ function variantLabelOf(variant: ProductVariant | null): string {
 async function buildSummaryItems(
 	payload: Payload,
 	lines: readonly CartLineView[],
+	storefront: Shop,
 ): Promise<QuoteSummaryItem[]> {
 	return Promise.all(
 		lines.map(async (line) => {
@@ -541,6 +549,26 @@ async function buildSummaryItems(
 					: null,
 			]);
 			const unitPrice = line.unitPrice;
+			let resale: QuoteSummaryItem["resale"];
+			if (listing?.resale?.supplierShop && variant) {
+				const offer = await resolveCartOffer(
+					payload,
+					listing,
+					variant,
+					storefront,
+				);
+				if (
+					offer.sourcing === "resale" &&
+					offer.resaleLink &&
+					offer.supplierUnitPrice != null
+				) {
+					resale = {
+						supplierShop: String(offer.fulfillingShop.id),
+						resaleLink: String(relationId(offer.resaleLink)),
+						supplierUnitPrice: offer.supplierUnitPrice,
+					};
+				}
+			}
 			const firstImage = listing?.images?.[0]?.image;
 			return {
 				lineId: line.id,
@@ -553,6 +581,7 @@ async function buildSummaryItems(
 				unitPrice,
 				quantity: line.quantity,
 				lineSubtotal: unitPrice * line.quantity,
+				...(resale ? { resale } : {}),
 			};
 		}),
 	);
@@ -882,7 +911,7 @@ async function buildQuote(
 		loadCompanySettings(payload),
 		loadSalesTermsTemplate(settings.termsVersion, "fr"),
 		loadSalesTermsTemplate(settings.termsVersion, "en"),
-		buildSummaryItems(payload, lines),
+		buildSummaryItems(payload, lines, shop),
 	]);
 
 	// Priced here, not left at zero: under `mobile_money` the fee the buyer
@@ -956,6 +985,7 @@ async function buildQuote(
 			variantId: line.variantId,
 			quantity: line.quantity,
 			unitPrice: line.unitPrice,
+			resale: items.find((item) => item.lineId === line.id)?.resale,
 		})),
 		deliveryFee: chosen.fee,
 		...(deliverySettings.zonesEnabled
@@ -1376,7 +1406,14 @@ export async function placeOrder(
 							listing: line.listingId || undefined,
 							product: productId ?? "",
 							variant: line.variantId,
-							fulfillingShop: shopId,
+							fulfillingShop: line.resale?.supplierShop ?? shopId,
+							...(line.resale
+								? {
+										sourcing: "resale" as const,
+										resaleLink: line.resale.resaleLink,
+										supplierUnitPrice: line.resale.supplierUnitPrice,
+									}
+								: {}),
 							fulfillmentStatus: "unfulfilled",
 							snapshot: {
 								title: line.title,
