@@ -1,5 +1,7 @@
 // @vitest-environment node
+
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ERROR_CODES } from "../../src/lib/errors";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Dispute } from "../../src/payload-types";
 import { applyOutcome } from "../../src/services/disputeOutcome";
@@ -251,5 +253,58 @@ describe("the stored refund breakdown", () => {
 				(b?.buyerProtectionFee ?? 0) -
 				(b?.deduction ?? 0),
 		).toBe(amount);
+	});
+
+	it("refuses a split between goods plus delivery and the buyer total", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const payload = world();
+
+		await expect(
+			withTransaction(payload, (req) =>
+				applyOutcome(
+					req,
+					dispute(),
+					{
+						...buyerWinsFull,
+						outcome: "resolved_split" as const,
+						refundAmount: 42_500,
+					},
+					"moderator",
+					"staff-1",
+					NOW,
+				),
+			),
+		).rejects.toMatchObject({ code: ERROR_CODES.disputeRefundExceedsOrder });
+		expect(payload.store.refunds ?? []).toHaveLength(0);
+	});
+
+	it("still accepts a split at exactly goods plus delivery", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const payload = world();
+
+		const resolved = await withTransaction(payload, (req) =>
+			applyOutcome(
+				req,
+				dispute(),
+				{
+					...buyerWinsFull,
+					outcome: "resolved_split" as const,
+					refundAmount: 42_000,
+				},
+				"moderator",
+				"staff-1",
+				NOW,
+			),
+		);
+
+		expect(resolved.resolution?.breakdown).toEqual({
+			goods: 40_000,
+			outboundDelivery: 2_000,
+			returnShipping: 0,
+			buyerProtectionFee: 0,
+			deduction: 0,
+		});
 	});
 });

@@ -79,6 +79,17 @@ function refundableCeiling(order: Order, dispute: Dispute): number {
 	);
 }
 
+/**
+ * A protected refund is either the full total (fee included) or at most
+ * goods + delivery: between the two the breakdown could not sum to the amount.
+ */
+function exceedsProtectedCeiling(order: Order, refundAmount: number): boolean {
+	const fee = Number(order.amounts?.buyerProtectionFee ?? 0);
+	if (order.paymentMethod !== "mobile_money" || fee <= 0) return false;
+	const total = Number(order.amounts?.total ?? 0);
+	return refundAmount > total - fee && refundAmount !== total;
+}
+
 /** The protection fee rides only a full refund of a protected order, as P5 refunds it. */
 function recordedBreakdown(order: Order, refundAmount: number) {
 	const goods = Number(order.amounts?.subtotal ?? 0);
@@ -297,6 +308,7 @@ export async function applyOutcome(
 		input.refundAmount > maximum ||
 		(input.outcome === "resolved_buyer" && input.refundAmount <= 0) ||
 		(input.outcome === "resolved_seller" && input.refundAmount !== 0) ||
+		exceedsProtectedCeiling(order, input.refundAmount) ||
 		(input.outcome === "resolved_split" &&
 			(input.refundAmount <= 0 || input.refundAmount >= maximum))
 	) {
