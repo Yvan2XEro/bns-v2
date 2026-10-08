@@ -17,6 +17,7 @@
 		"seed": "cross-env NODE_OPTIONS=--no-deprecation bun run src/seed/seed.ts",
 		"sync:notification-workflows": "cross-env NODE_OPTIONS=--no-deprecation tsx src/scripts/syncNotificationWorkflows.ts",
 		"backfill:shop-daily-stats": "cross-env NODE_OPTIONS=--no-deprecation tsx src/scripts/backfillShopDailyStats.ts",
+		"pack:notchpay-evidence": "cross-env NODE_OPTIONS=--no-deprecation bun src/scripts/packNotchpayEvidence.ts",
 		"start": "cross-env NODE_OPTIONS=--no-deprecation next start",
 		"test": "pnpm run test:int && pnpm run test:e2e",
 		"test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
