@@ -6,6 +6,7 @@ import "./globals.css";
 import { CategoryBar } from "~/components/layout/category-bar";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
+import { SiteChrome } from "~/components/layout/site-chrome";
 import { QueryProvider } from "~/components/query-provider";
 import {
 	type AppConfig,
@@ -126,12 +127,16 @@ export default async function RootLayout({
 							<AuthProvider>
 								<ChatProvider>
 									<div className="relative flex min-h-screen flex-col">
-										<Header
-											novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER}
-										/>
-										<CategoryBar categories={categories} />
+										<SiteChrome>
+											<Header
+												novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER}
+											/>
+											<CategoryBar categories={categories} />
+										</SiteChrome>
 										<main className="flex-1">{children}</main>
-										<Footer />
+										<SiteChrome>
+											<Footer />
+										</SiteChrome>
 									</div>
 								</ChatProvider>
 							</AuthProvider>

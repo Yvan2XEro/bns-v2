@@ -13,6 +13,7 @@ import { ActionBar } from "./action-bar";
 import { BuyerBlock } from "./buyer-block";
 import { OrderSummary } from "./order-summary";
 import { OrderTimeline } from "./order-timeline";
+import { ShipmentPanel } from "./shipment-panel";
 
 export function OrderClient({
 	shopId,
@@ -82,6 +83,11 @@ export function OrderClient({
 				<div className="space-y-5">
 					<BuyerBlock order={order} />
 					<OrderSummary order={order} />
+					<ShipmentPanel
+						order={order}
+						shopId={shopId}
+						role={mine.data?.role ?? null}
+					/>
 					<OrderTimeline timeline={order.timeline} />
 				</div>
 				<ActionBar

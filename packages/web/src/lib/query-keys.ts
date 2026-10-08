@@ -242,11 +242,9 @@ export const couriersKey = () => ["couriers", "active"] as const;
 export const purchaseShipmentsKey = (orderId: string) =>
 	[...purchaseKey(orderId), "shipments"] as const;
 
-/** Shop-side shipment views, one order's list and one shipment's detail. */
-export const shopShipmentsRootKey = (shopId: string) =>
-	[...shopScopeKey(shopId), "shipments"] as const;
+/** The shop's shipments of one order, under the order so every order mutation refreshes them. */
 export const shopOrderShipmentsKey = (shopId: string, orderId: string) =>
-	[...shopShipmentsRootKey(shopId), "order", orderId] as const;
+	[...shopOrderKey(shopId, orderId), "shipments"] as const;
 
 export const riderLinkKey = (token: string) => ["rider-link", token] as const;
 
