@@ -241,3 +241,213 @@ describe("NotchPay adapter — connected accounts", () => {
 		expect(Object.keys(ACCOUNT_STATUSES)).toHaveLength(8);
 	});
 });
+
+const chargeFixtures: NotchPayFixture[] = [
+	{
+		key: "payment-create",
+		request: { method: "POST", path: "/payments" },
+		response: {
+			status: 201,
+			body: {
+				transaction: { id: "trx_1", reference: "trx.{reference}" },
+				authorization_url: "https://pay.example/{reference}",
+			},
+		},
+		sets: "payment:{reference}=pending",
+		assumed: ["A5"],
+	},
+	{
+		key: "payment-process",
+		request: { method: "POST", path: "/payments/{ref}" },
+		response: {
+			status: 202,
+			body: {
+				status: "Accepted",
+				message: "Payment processing initiated",
+				transaction: { status: "processing" },
+			},
+		},
+		assumed: ["A5", "A6"],
+	},
+	{
+		key: "payment-failed",
+		request: { method: "GET", path: "/payments/PI-failed" },
+		response: {
+			status: 200,
+			body: {
+				transaction: {
+					status: "failed",
+					merchant_reference: "PI-failed",
+					amount: 1000,
+					currency: "xaf",
+					reference: "trx.f",
+					failure_reason: "insufficient balance",
+				},
+			},
+		},
+		assumed: ["A7"],
+	},
+	{
+		key: "payment-pending",
+		request: {
+			method: "GET",
+			path: "/payments/{ref}",
+			when: "payment:{ref}=pending",
+		},
+		response: {
+			status: 200,
+			body: {
+				transaction: {
+					status: "pending",
+					merchant_reference: "{ref}",
+					amount: 1000,
+					currency: "XAF",
+					reference: "trx.{ref}",
+					fee: 30,
+					destination: { account: "acc_1" },
+				},
+			},
+		},
+		assumed: ["A7", "A14"],
+	},
+	{
+		key: "payment-succeeded",
+		request: {
+			method: "GET",
+			path: "/payments/{ref}",
+			when: "payment:{ref}=succeeded",
+		},
+		response: {
+			status: 200,
+			body: {
+				transaction: {
+					status: "complete",
+					merchant_reference: "{ref}",
+					amount: 1000,
+					currency: "XAF",
+					reference: "trx.{ref}",
+					fee: 30,
+					destination: { account: "acc_1" },
+				},
+			},
+		},
+		assumed: ["A7", "A14"],
+	},
+	{
+		key: "payment-unknown",
+		request: {
+			method: "GET",
+			path: "/payments/{ref}",
+			when: "payment:{ref}=initial",
+		},
+		response: { status: 404, body: { message: "Payment not found" } },
+	},
+];
+
+const charge = {
+	reference: "PI-1",
+	amount: 1000,
+	currency: "XAF",
+	applicationFee: 100,
+	destination: { accountId: "acc_1", amount: 900 },
+	customer: { name: "Buyer", email: "b@b.co", phone: "+237600000000" },
+	description: "Order",
+	callbackUrl: "https://app/cb",
+};
+
+describe("NotchPay adapter — charges", () => {
+	it("creates a destination charge with fixed amounts only", async () => {
+		const { provider, replay } = build(chargeFixtures);
+		expect(await provider.createDestinationCharge(charge)).toEqual({
+			providerReference: "trx.PI-1",
+			checkoutUrl: "https://pay.example/PI-1",
+		});
+		expect(replay.journal).toEqual([
+			{
+				method: "POST",
+				path: "/payments",
+				body: {
+					amount: 1000,
+					currency: "XAF",
+					customer: charge.customer,
+					description: "Order",
+					reference: "PI-1",
+					callback: "https://app/cb",
+					application_fee: 100,
+					destination: { account: "acc_1", amount: 900 },
+				},
+			},
+		]);
+		expect(
+			"application_fee_percent" in (replay.journal[0]?.body as object),
+		).toBe(false);
+	});
+
+	it("refuses a split that does not sum, before any wire call", async () => {
+		const { provider, replay } = build(chargeFixtures);
+		await expect(
+			provider.createDestinationCharge({
+				...charge,
+				destination: { accountId: "acc_1", amount: 800 },
+			}),
+		).rejects.toMatchObject({
+			name: "ProviderRequestError",
+			method: "createDestinationCharge",
+			status: 400,
+		});
+		expect(replay.journal).toHaveLength(0);
+	});
+
+	it("starts mobile-money processing from the 202 envelope", async () => {
+		const { provider, replay } = build(chargeFixtures);
+		expect(
+			await provider.chargeMobileMoney("PI-1", {
+				channel: "cm.mtn",
+				phone: "+237600000000",
+			}),
+		).toEqual({ status: "pending", action: "Payment processing initiated" });
+		expect(replay.journal).toEqual([
+			{
+				method: "POST",
+				path: "/payments/PI-1",
+				body: { channel: "cm.mtn", data: { account_number: "+237600000000" } },
+			},
+		]);
+	});
+
+	it("verifies a payment, pending then succeeded", async () => {
+		const { provider, replay } = build(chargeFixtures);
+		await provider.createDestinationCharge(charge);
+		expect(await provider.verifyPayment("PI-1")).toEqual({
+			reference: "PI-1",
+			status: "pending",
+			amount: 1000,
+			currency: "XAF",
+			providerTransactionId: "trx.PI-1",
+			failureCode: null,
+			fee: 30,
+			accountId: "acc_1",
+		});
+		replay.setMode("payment:PI-1", "succeeded");
+		expect((await provider.verifyPayment("PI-1")).status).toBe("succeeded");
+	});
+
+	it("classifies a failure reason", async () => {
+		const { provider } = build(chargeFixtures);
+		expect(await provider.verifyPayment("PI-failed")).toMatchObject({
+			status: "failed",
+			currency: "XAF",
+			failureCode: "insufficient_funds",
+			accountId: null,
+		});
+	});
+
+	it("maps an unknown reference to a 404", async () => {
+		const { provider } = build(chargeFixtures);
+		await expect(provider.verifyPayment("PI-nope")).rejects.toMatchObject({
+			name: "ProviderRequestError",
+			method: "verifyPayment",
+			status: 404,
+		});
+	});
+});

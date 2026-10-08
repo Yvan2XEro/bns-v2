@@ -1,21 +1,25 @@
 import {
-	type ConnectedAccountStatus,
 	type CreateConnectedAccountInput,
+	type CreateDestinationChargeInput,
 	type MarketplaceMethod,
 	type MarketplaceProvider,
 	type NormalisedAccount,
+	type NormalisedPayment,
 	type PayoutSchedule,
 	ProviderRequestError,
 	ProviderUnavailableError,
 } from "./marketplace";
-import { toText } from "./notchpay";
+import { mapNotchPayStatus, toAmount, toCurrency, toText } from "./notchpay";
+import { ACCOUNT_STATUSES, failureCodeOf } from "./notchpayTables";
 import {
 	liveTransport,
 	type NotchPayTransport,
 	TransportFailure,
 	type WireRequest,
 } from "./notchpayWire";
-import { isRecord } from "./types";
+import { isRecord, type ProviderPaymentStatus } from "./types";
+
+export { ACCOUNT_STATUSES };
 
 export interface NotchPayMarketplaceConfig {
 	publicKey: string;
@@ -24,18 +28,6 @@ export interface NotchPayMarketplaceConfig {
 	baseUrl?: string;
 	transport?: NotchPayTransport;
 }
-
-/** ASSUMED(A3): the sandbox's account status vocabulary. */
-export const ACCOUNT_STATUSES: Record<string, ConnectedAccountStatus> = {
-	pending: "created",
-	created: "created",
-	onboarding: "onboarding",
-	incomplete: "onboarding",
-	restricted: "restricted",
-	active: "active",
-	disabled: "disabled",
-	deauthorized: "deauthorized",
-};
 
 const PAYOUT_SCHEDULES: readonly string[] = [
 	"manual",
@@ -61,7 +53,10 @@ type Implemented =
 	| "createConnectedAccount"
 	| "createOnboardingLink"
 	| "getConnectedAccount"
-	| "setPayoutSchedule";
+	| "setPayoutSchedule"
+	| "createDestinationCharge"
+	| "chargeMobileMoney"
+	| "verifyPayment";
 
 export class NotchPayMarketplaceProvider
 	implements Pick<MarketplaceProvider, Implemented | "id">
@@ -202,6 +197,97 @@ export class NotchPayMarketplaceProvider
 				body: { payout_schedule: schedule },
 			},
 			() => undefined,
+		);
+	}
+
+	async createDestinationCharge(
+		input: CreateDestinationChargeInput,
+	): Promise<{ providerReference: string; checkoutUrl?: string }> {
+		if (input.applicationFee + input.destination.amount !== input.amount) {
+			throw new ProviderRequestError(
+				"createDestinationCharge",
+				400,
+				"split does not sum to amount",
+			);
+		}
+		return this.call(
+			"createDestinationCharge",
+			{
+				method: "POST",
+				path: "/payments",
+				body: {
+					amount: input.amount,
+					currency: input.currency,
+					customer: input.customer,
+					description: input.description,
+					reference: input.reference,
+					callback: input.callbackUrl,
+					application_fee: input.applicationFee,
+					destination: {
+						account: input.destination.accountId,
+						amount: input.destination.amount,
+					},
+				},
+			},
+			(body) => {
+				const envelope = record(body);
+				return {
+					providerReference:
+						toText(record(envelope.transaction).reference) || input.reference,
+					checkoutUrl: toText(envelope.authorization_url) || undefined,
+				};
+			},
+		);
+	}
+
+	async chargeMobileMoney(
+		reference: string,
+		payer: { channel: string; phone: string },
+	): Promise<{ status: ProviderPaymentStatus; action?: string }> {
+		return this.call(
+			"chargeMobileMoney",
+			{
+				method: "POST",
+				path: `/payments/${enc(reference)}`,
+				body: { channel: payer.channel, data: { account_number: payer.phone } },
+			},
+			(body) => {
+				const envelope = record(body);
+				return {
+					status: mapNotchPayStatus(
+						toText(record(envelope.transaction).status),
+					),
+					action:
+						toText(envelope.action) || toText(envelope.message) || undefined,
+				};
+			},
+		);
+	}
+
+	async verifyPayment(reference: string): Promise<NormalisedPayment> {
+		return this.call(
+			"verifyPayment",
+			{ method: "GET", path: `/payments/${enc(reference)}` },
+			(body) => {
+				const envelope = record(body);
+				const trx = isRecord(envelope.transaction)
+					? envelope.transaction
+					: envelope;
+				const status = mapNotchPayStatus(toText(trx.status));
+				return {
+					reference: toText(trx.merchant_reference) || toText(trx.trxref),
+					status,
+					amount: toAmount(trx.amount),
+					currency: toCurrency(trx.currency),
+					providerTransactionId: toText(trx.reference) || reference,
+					failureCode: failureCodeOf(
+						toText(trx.failure_reason) || toText(trx.status),
+						status,
+					),
+					fee: toAmount(trx.fee),
+					accountId: toText(record(trx.destination).account) || null,
+				};
+			},
 		);
 	}
 }
