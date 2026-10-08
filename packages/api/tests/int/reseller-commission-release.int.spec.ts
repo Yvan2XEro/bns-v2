@@ -12,6 +12,7 @@ const baseData = (invoiceStatus: string, activeReturn = false) => ({
 	"reseller-commissions": [
 		{
 			id: "reseller-commission-1",
+			resellerShop: "shop-reseller-1",
 			order: "order-1",
 			purchaseOrder: "purchase-order-1",
 			status: "accrued",

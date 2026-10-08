@@ -3367,7 +3367,9 @@ export interface LedgerAccount {
     | 'platform_revenue_protection_fee'
     | 'vat_payable'
     | 'provider_fee_expense'
-    | 'buyer_guarantee_expense';
+    | 'buyer_guarantee_expense'
+    | 'reseller_commission_payable'
+    | 'reseller_payout_in_transit';
   type: 'asset' | 'liability' | 'revenue' | 'expense';
   shop?: (string | null) | Shop;
   currency: string;
@@ -3396,10 +3398,16 @@ export interface LedgerTransaction {
     | 'refund_failed'
     | 'clawback_recovered'
     | 'guarantee_writeoff'
-    | 'netting_reversed';
+    | 'netting_reversed'
+    | 'reseller_commission_payable'
+    | 'reseller_commission_reduced'
+    | 'reseller_payout_submitted'
+    | 'reseller_payout_failed'
+    | 'reseller_payout_complete'
+    | 'reseller_payout_reversed';
   occurredAt: string;
   postedAt: string;
-  sourceType: 'webhook-event' | 'reconciliation-run' | 'order-event';
+  sourceType: 'webhook-event' | 'reconciliation-run' | 'order-event' | 'resale-event';
   sourceId: string;
   order?: (string | null) | Order;
   shop?: (string | null) | Shop;

@@ -23,6 +23,8 @@ export const LEDGER_CATEGORY_TYPES = {
 	vat_payable: "liability",
 	provider_fee_expense: "expense",
 	buyer_guarantee_expense: "expense",
+	reseller_commission_payable: "liability",
+	reseller_payout_in_transit: "liability",
 } as const satisfies Record<string, LedgerAccountType>;
 
 export type LedgerCategory = keyof typeof LEDGER_CATEGORY_TYPES;

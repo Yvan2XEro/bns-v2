@@ -13,6 +13,11 @@ import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
 import type { ResellerPayout } from "../payload-types";
 import { activeHolds } from "./payoutHolds";
+import {
+	postCommissionPayable,
+	postPayoutOutcome,
+	postPayoutSubmitted,
+} from "./resellerLedger";
 import { planResellerPayout } from "./resellerPayoutPlanner";
 import { nextNumber } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
@@ -98,7 +103,9 @@ export async function getResellerFinance(
 			status: payout.status,
 			createdAt: payout.createdAt,
 		})),
-		accountRequired: !accounts.docs.some((account) => account.method !== "bank"),
+		accountRequired: !accounts.docs.some(
+			(account) => account.method !== "bank",
+		),
 	};
 }
 
@@ -222,13 +229,14 @@ export async function releaseResellerCommissions(
 				req,
 			});
 			if (invoice.status !== "paid") return false;
-			await req.payload.update({
+			const payable = await req.payload.update({
 				collection: "reseller-commissions",
 				id: String(current.id),
 				overrideAccess: true,
 				req,
 				data: { status: "payable", holdReasons: [] },
 			});
+			await postCommissionPayable(req, payable);
 			return true;
 		});
 		if (outcome) released.push(String(candidate.id));
@@ -416,6 +424,7 @@ async function createPayoutForShop(
 				statusHistory: [{ status, source: "system", at: now.toISOString() }],
 			},
 		});
+		await postPayoutSubmitted(req, payout);
 		for (const commissionId of plan.commissionIds) {
 			await payload.update({
 				collection: "reseller-commissions",
@@ -631,6 +640,9 @@ export async function applyResellerPayoutEvent(
 			],
 		},
 	});
+	if (status === "complete" || status === "failed" || status === "reversed") {
+		await postPayoutOutcome(req, payout, status);
+	}
 	if (status === "complete") {
 		for (const commissionValue of payout.commissions ?? []) {
 			const commissionId = idOf(commissionValue);

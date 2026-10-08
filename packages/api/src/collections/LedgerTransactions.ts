@@ -16,6 +16,12 @@ export const LEDGER_TRANSACTION_KINDS = [
 	"clawback_recovered",
 	"guarantee_writeoff",
 	"netting_reversed",
+	"reseller_commission_payable",
+	"reseller_commission_reduced",
+	"reseller_payout_submitted",
+	"reseller_payout_failed",
+	"reseller_payout_complete",
+	"reseller_payout_reversed",
 ] as const;
 export type LedgerTransactionKind = (typeof LEDGER_TRANSACTION_KINDS)[number];
 
@@ -23,6 +29,7 @@ export const LEDGER_SOURCE_TYPES = [
 	"webhook-event",
 	"reconciliation-run",
 	"order-event",
+	"resale-event",
 ] as const;
 
 export interface LedgerEntryInput {

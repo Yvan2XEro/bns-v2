@@ -32,6 +32,8 @@ export const SELLER_CATEGORIES: readonly LedgerCategory[] = [
 	"seller_releasable",
 	"seller_payout_in_transit",
 	"seller_receivable",
+	"reseller_commission_payable",
+	"reseller_payout_in_transit",
 ];
 
 const isSellerCategory = (category: LedgerCategory) =>
@@ -137,6 +139,20 @@ export interface PostingAmounts {
 	guarantee_writeoff: { amount: number };
 	/** The lines of the `clawback_recovered` netting being reversed, as `transactionLines` reads them. */
 	netting_reversed: { netting: readonly LedgerLine[] };
+	reseller_commission_payable: { amount: number };
+	reseller_commission_reduced: { amount: number };
+	reseller_payout_submitted: ResellerPayoutAmounts;
+	reseller_payout_failed: ResellerPayoutAmounts;
+	reseller_payout_complete: { amount: number };
+	/** Reachable only from `complete`; `gross` returns to payable, as the commissions do. */
+	reseller_payout_reversed: { gross: number };
+}
+
+/** `amount` is what NotchPay is sent: `gross` commissions less the charges `offset` against them. */
+export interface ResellerPayoutAmounts {
+	gross: number;
+	offset: number;
+	amount: number;
 }
 
 type Postings = {
@@ -256,6 +272,36 @@ const POSTINGS: Postings = {
 			debit: line.credit,
 			credit: line.debit,
 		})),
+	reseller_commission_payable: ({ amount }) => [
+		debit("provider_position", amount),
+		credit("reseller_commission_payable", amount),
+	],
+	reseller_commission_reduced: ({ amount }) => [
+		debit("reseller_commission_payable", amount),
+		credit("provider_position", amount),
+	],
+	// The offset is cash the platform never receives from the supplier's
+	// invoice (it went out as a P4 credit), so it leaves provider_position.
+	reseller_payout_submitted: ({ gross, offset, amount }) => [
+		debit("reseller_commission_payable", gross),
+		credit("reseller_payout_in_transit", amount),
+		credit("provider_position", offset),
+	],
+	reseller_payout_failed: ({ gross, offset, amount }) => [
+		debit("reseller_payout_in_transit", amount),
+		debit("provider_position", offset),
+		credit("reseller_commission_payable", gross),
+	],
+	reseller_payout_complete: ({ amount }) => [
+		debit("reseller_payout_in_transit", amount),
+		credit("provider_position", amount),
+	],
+	// `complete` already drained in-transit into provider_position: the money
+	// came back, so provider_position is debited, never in-transit credited.
+	reseller_payout_reversed: ({ gross }) => [
+		debit("provider_position", gross),
+		credit("reseller_commission_payable", gross),
+	],
 };
 
 /** Pure: one posting kind and its amounts in, the entries out. Balance is checked by `postLedger`, not here. */
@@ -306,7 +352,7 @@ const idOf = (value: unknown): string =>
 		? String(value.id)
 		: String(value);
 
-async function findTransaction(
+export async function findTransaction(
 	req: PayloadRequest,
 	idempotencyKey: string,
 ): Promise<LedgerTransaction | null> {

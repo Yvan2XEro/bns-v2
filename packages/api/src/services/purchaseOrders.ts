@@ -14,9 +14,9 @@ import { ERROR_CODES } from "../lib/errors";
 import { getProvider } from "../lib/payments";
 import { getCounterStore } from "../lib/rateLimit";
 import { relationId } from "../lib/relationId";
-import { getResaleSettings } from "../lib/resaleSettings";
 import type { ResaleAdjustMeta } from "../lib/resale";
 import { getResaleAdjuster } from "../lib/resale";
+import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
 import type {
@@ -36,13 +36,13 @@ import {
 	createShipmentForOrder,
 	findLiveShipmentForOrder,
 } from "./delivery/shipments";
+import { cancelResaleOrderBySupplierTimeout } from "./orders/acceptance";
 import {
 	assertHandoverRateLimit,
 	type DeliveryFailureReason,
 	markDelivered,
 	markDeliveryFailed,
 } from "./orders/delivery";
-import { cancelResaleOrderBySupplierTimeout } from "./orders/acceptance";
 import { registerOrderEventHandler } from "./orders/events";
 import { verifyHandoverCode } from "./orders/handover";
 import { shipAcceptedOrderInTransaction } from "./orders/shipping";
@@ -56,10 +56,11 @@ import {
 	clearResellerIneligibilityHold,
 	holdResellerListingsForIneligibility,
 } from "./resale";
+import { postCommissionReduced } from "./resellerLedger";
 import { nextNumber } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
-import { isUniqueViolation } from "./shops";
 import type { ServiceUser } from "./shops";
+import { isUniqueViolation } from "./shops";
 import { applyMovement } from "./stock";
 
 const RESALE_CHARGE_OVERDUE_MS = 60 * 24 * 60 * 60 * 1000;
@@ -203,6 +204,12 @@ export async function adjustResellerCommission(
 				],
 			},
 		});
+		await postCommissionReduced(
+			req,
+			commission,
+			reduction,
+			`${meta.source}:${meta.sourceId}`,
+		);
 		await req.payload.update({
 			collection: "purchase-orders",
 			id: purchaseOrderId,
@@ -297,7 +304,11 @@ export async function adjustResellerCommissionForRefund(
 		req,
 		String(purchaseOrder.id),
 		-reduction,
-		{ source, sourceId, ...(source === "dispute" ? { disputeId: sourceId } : {}) },
+		{
+			source,
+			sourceId,
+			...(source === "dispute" ? { disputeId: sourceId } : {}),
+		},
 	);
 }
 

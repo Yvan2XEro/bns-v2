@@ -30,6 +30,11 @@ import {
 } from "../../src/services/ledger";
 import { type FakePayload, fakePayload } from "./helpers/fakePayload";
 
+/** The reseller kinds have their own spec (reseller-ledger.int.spec.ts). */
+const P5_KINDS = LEDGER_TRANSACTION_KINDS.filter(
+	(kind) => !kind.startsWith("reseller_"),
+);
+
 const MARKET = DEFAULT_MARKETS[0];
 const CURRENCY = MARKET.currency;
 const SHOP = "shop-1";
@@ -392,9 +397,7 @@ describe("postingFor: the postings table", () => {
 	];
 
 	it("covers every posting kind", () => {
-		expect(new Set(cases.map((x) => x.kind))).toEqual(
-			new Set(LEDGER_TRANSACTION_KINDS),
-		);
+		expect(new Set(cases.map((x) => x.kind))).toEqual(new Set(P5_KINDS));
 	});
 
 	it.each(cases)("$name: exact entries, balanced", ({
@@ -1122,9 +1125,7 @@ describe("property: 200 legal events", () => {
 		}
 
 		expect(transactions(payload)).toHaveLength(EVENTS);
-		expect(Object.keys(posted).sort()).toEqual(
-			[...LEDGER_TRANSACTION_KINDS].sort(),
-		);
+		expect(Object.keys(posted).sort()).toEqual([...P5_KINDS].sort());
 		expect(shortfalls).toBeGreaterThan(0);
 
 		const recomputed = await recomputeBalances(payload);
