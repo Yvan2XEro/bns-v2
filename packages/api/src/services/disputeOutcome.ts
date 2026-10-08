@@ -43,6 +43,31 @@ function refundableCeiling(order: Order, dispute: Dispute): number {
 	);
 }
 
+/** The protection fee rides only a full refund of a protected order, as P5 refunds it. */
+function recordedBreakdown(order: Order, refundAmount: number) {
+	const goods = Number(order.amounts?.subtotal ?? 0);
+	const orderDeliveryFee = Number(
+		order.amounts?.deliveryFee ?? order.delivery.fee ?? 0,
+	);
+	const fee =
+		order.paymentMethod === "mobile_money" &&
+		refundAmount === Number(order.amounts?.total ?? 0)
+			? Number(order.amounts?.buyerProtectionFee ?? 0)
+			: 0;
+	const allocation = splitAllocation({
+		refundAmount: Math.min(refundAmount - fee, goods + orderDeliveryFee),
+		goods,
+		orderDeliveryFee,
+	});
+	return {
+		goods: allocation.goods,
+		outboundDelivery: allocation.outboundDelivery,
+		returnShipping: 0,
+		buyerProtectionFee: fee,
+		deduction: 0,
+	};
+}
+
 async function loadOrder(
 	req: PayloadRequest,
 	dispute: Dispute,
@@ -101,17 +126,7 @@ async function createRefundCase(
 	const deadline = input.returnRequired
 		? new Date(now.getTime() + settings.nonConformityShipByDays * 86_400_000)
 		: null;
-	const refundBreakdown = splitAllocation({
-		refundAmount: Math.min(
-			input.refundAmount,
-			Number(order.amounts?.subtotal ?? 0) +
-				Number(order.amounts?.deliveryFee ?? order.delivery.fee ?? 0),
-		),
-		goods: Number(order.amounts?.subtotal ?? 0),
-		orderDeliveryFee: Number(
-			order.amounts?.deliveryFee ?? order.delivery.fee ?? 0,
-		),
-	});
+	const refundBreakdown = recordedBreakdown(order, input.refundAmount);
 	const sellerDirect =
 		order.paymentMethod === "cod" ||
 		Boolean(existing?.refund?.channel === "seller_direct");
@@ -149,13 +164,7 @@ async function createRefundCase(
 			refund: {
 				amount: input.refundAmount,
 				channel: sellerDirect ? "seller_direct" : "provider",
-				breakdown: {
-					goods: refundBreakdown.goods,
-					outboundDelivery: refundBreakdown.outboundDelivery,
-					returnShipping: 0,
-					buyerProtectionFee: 0,
-					deduction: 0,
-				},
+				breakdown: refundBreakdown,
 			},
 		},
 	});
@@ -497,22 +506,7 @@ export async function applyOutcome(
 			resolution: {
 				outcome: input.outcome,
 				refundAmount: input.refundAmount,
-				breakdown: {
-					...splitAllocation({
-						refundAmount: Math.min(
-							input.refundAmount,
-							Number(order.amounts?.subtotal ?? 0) +
-								Number(order.amounts?.deliveryFee ?? order.delivery.fee ?? 0),
-						),
-						goods: Number(order.amounts?.subtotal ?? 0),
-						orderDeliveryFee: Number(
-							order.amounts?.deliveryFee ?? order.delivery.fee ?? 0,
-						),
-					}),
-					returnShipping: 0,
-					buyerProtectionFee: 0,
-					deduction: 0,
-				},
+				breakdown: recordedBreakdown(order, input.refundAmount),
 				returnRequired: input.returnRequired,
 				returnShippingPaidBy: input.returnShippingPaidBy,
 				liableParty: input.liableParty,

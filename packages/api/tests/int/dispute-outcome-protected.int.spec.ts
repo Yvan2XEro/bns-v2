@@ -52,7 +52,7 @@ function world(paidAt = NOW) {
 					deliveryFee: 2_000,
 					buyerProtectionFee: 1_260,
 					total: 43_260,
-					destinationAmount: 37_000,
+					destinationAmount: 37_260,
 					commission: 4_000,
 					commissionVat: 740,
 				},
@@ -187,5 +187,69 @@ describe("the dispute_open hold at terminal resolution", () => {
 		);
 		expect(holdStatus(payload)).toBe("released");
 		expect(resolved.effects?.holdsReleased).toBe(true);
+	});
+});
+
+describe("the stored refund breakdown", () => {
+	it("carries the protection fee on a full protected refund, in the case and the resolution", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const payload = world();
+
+		const resolved = await withTransaction(payload, (req) =>
+			applyOutcome(req, dispute(), buyerWinsFull, "moderator", "staff-1", NOW),
+		);
+
+		const whole = {
+			goods: 40_000,
+			outboundDelivery: 2_000,
+			returnShipping: 0,
+			buyerProtectionFee: 1_260,
+			deduction: 0,
+		};
+		expect(payload.store.refunds).toHaveLength(1);
+		expect(payload.store.refunds?.[0]?.amount).toBe(43_260);
+		expect(payload.store["return-cases"]?.[0]?.refund?.breakdown).toEqual(
+			whole,
+		);
+		expect(resolved.resolution?.breakdown).toEqual(whole);
+	});
+
+	it.each([
+		[10_000, 10_000, 0, 0],
+		[41_000, 40_000, 1_000, 0],
+		[43_260, 40_000, 2_000, 1_260],
+	])("sums to the refund amount for %i", async (amount, goods, outbound, fee) => {
+		vi.useFakeTimers();
+		vi.setSystemTime(NOW);
+		const payload = world();
+		const outcome =
+			amount === 43_260
+				? buyerWinsFull
+				: {
+						...buyerWinsFull,
+						outcome: "resolved_split" as const,
+						refundAmount: amount,
+					};
+
+		const resolved = await withTransaction(payload, (req) =>
+			applyOutcome(req, dispute(), outcome, "moderator", "staff-1", NOW),
+		);
+
+		const b = resolved.resolution?.breakdown;
+		expect(b).toEqual({
+			goods,
+			outboundDelivery: outbound,
+			returnShipping: 0,
+			buyerProtectionFee: fee,
+			deduction: 0,
+		});
+		expect(
+			(b?.goods ?? 0) +
+				(b?.outboundDelivery ?? 0) +
+				(b?.returnShipping ?? 0) +
+				(b?.buyerProtectionFee ?? 0) -
+				(b?.deduction ?? 0),
+		).toBe(amount);
 	});
 });
