@@ -1,17 +1,24 @@
 // @vitest-environment node
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
 	ProviderRequestError,
 	ProviderUnavailableError,
 } from "../../src/lib/payments/marketplace";
+import { parseNotchPayWebhookEvent } from "../../src/lib/payments/notchpay";
 import {
 	ACCOUNT_STATUSES,
 	NotchPayMarketplaceProvider,
 } from "../../src/lib/payments/notchpayMarketplace";
 import {
+	EVENT_KINDS,
+	parseNotchPayMarketplaceEvent,
+} from "../../src/lib/payments/notchpayMarketplaceEvents";
+import {
 	type NotchPayTransport,
 	TransportFailure,
 } from "../../src/lib/payments/notchpayWire";
+import { WebhookSignatureError } from "../../src/lib/payments/types";
 import {
 	type NotchPayFixture,
 	ReplayTransport,
@@ -858,6 +865,223 @@ describe("NotchPay adapter — refunds, transfers, balance", () => {
 		await expect(provider.debitConnectedAccount()).rejects.toMatchObject({
 			name: "ProviderCapabilityError",
 			message: "notchpay cannot debitConnectedAccount",
+		});
+	});
+});
+
+describe("NotchPay adapter — webhooks", () => {
+	const paymentData = {
+		merchant_reference: "PI-1",
+		reference: "trx.PI-1",
+		amount: 1000,
+		currency: "xaf",
+		fee: 30,
+		destination: { account: "acc_1" },
+	};
+	const refundData = {
+		id: "ref_1",
+		amount: 500,
+		currency: "XAF",
+		metadata: { payment_reference: "PI-1" },
+	};
+	const transferData = {
+		id: "tr_1",
+		account: "acc_1",
+		amount: 700,
+		currency: "XAF",
+		fee: 20,
+		message: "bank refused",
+	};
+	// [legacy name, Sync name, data]
+	const matrix: [string, string, Record<string, unknown>][] = [
+		["payment.complete", "payment.succeeded", paymentData],
+		[
+			"payment.failed",
+			"payment.failed",
+			{ ...paymentData, failure_reason: "declined" },
+		],
+		["refund.created", "refund.created", refundData],
+		["refund.complete", "refund.complete", refundData],
+		["refund.failed", "refund.failed", refundData],
+		["transfer.created", "transfer.created", transferData],
+		["transfer.complete", "transfer.complete", transferData],
+		["transfer.failed", "transfer.failed", transferData],
+		[
+			"account.application.deauthorized",
+			"account.application.deauthorized",
+			{ id: "acc_1" },
+		],
+	];
+
+	it.each(
+		matrix,
+	)("reads %s / %s identically in both spellings", (legacy, sync, data) => {
+		const fromLegacy = parseNotchPayMarketplaceEvent({
+			id: "evt_1",
+			event: legacy,
+			data,
+		});
+		const fromSync = parseNotchPayMarketplaceEvent({
+			id: "evt_1",
+			type: sync,
+			data,
+		});
+		expect(fromSync).toEqual(fromLegacy);
+		expect(fromSync.providerEventId).toBe("evt_1");
+		expect(fromSync.type).toBe(`${fromSync.entity}/${fromSync.status}`);
+	});
+
+	it("normalises the entity-specific fields", () => {
+		expect(
+			parseNotchPayMarketplaceEvent({
+				id: "e1",
+				type: "payment.failed",
+				data: { ...paymentData, failure_reason: "declined" },
+			}),
+		).toEqual({
+			providerEventId: "e1",
+			entity: "payment",
+			type: "payment/failed",
+			status: "failed",
+			reference: "PI-1",
+			amount: 1000,
+			currency: "XAF",
+			providerTransactionId: "trx.PI-1",
+			accountId: "acc_1",
+			fee: 30,
+			failureCode: "declined",
+		});
+		expect(
+			parseNotchPayMarketplaceEvent({
+				id: "e2",
+				type: "transfer.failed",
+				data: transferData,
+			}),
+		).toMatchObject({
+			entity: "transfer",
+			type: "transfer/failed",
+			transferId: "tr_1",
+			accountId: "acc_1",
+			fee: 20,
+			failureReason: "bank refused",
+		});
+		expect(
+			parseNotchPayMarketplaceEvent({
+				id: "e3",
+				type: "refund.complete",
+				data: refundData,
+			}),
+		).toMatchObject({
+			entity: "refund",
+			type: "refund/succeeded",
+			refundId: "ref_1",
+			paymentReference: "PI-1",
+		});
+		expect(
+			parseNotchPayMarketplaceEvent({
+				id: "e4",
+				type: "account.updated",
+				data: { id: "acc_1", status: "active" },
+			}),
+		).toMatchObject({
+			entity: "account",
+			status: "active",
+			accountId: "acc_1",
+		});
+	});
+
+	it("degrades an unknown name to a pending payment event without throwing", () => {
+		expect(
+			parseNotchPayMarketplaceEvent({
+				id: "e5",
+				type: "customer.created",
+				data: {},
+			}),
+		).toMatchObject({
+			entity: "payment",
+			status: "pending",
+			reference: "",
+		});
+	});
+
+	it("settles a boost payment.complete exactly as the legacy parser does", () => {
+		const body = {
+			id: "evt_boost",
+			event: "payment.complete",
+			data: {
+				merchant_reference: "BOOST-9",
+				reference: "trx.boost",
+				amount: 2500,
+				currency: "xaf",
+				status: "complete",
+			},
+		};
+		const pick = (event: {
+			reference: string;
+			status: string;
+			amount: number | null;
+			currency: string | null;
+			providerEventId: string;
+			providerTransactionId: string | null;
+		}) => ({
+			reference: event.reference,
+			status: event.status,
+			amount: event.amount,
+			currency: event.currency,
+			providerEventId: event.providerEventId,
+			providerTransactionId: event.providerTransactionId,
+		});
+		expect(pick(parseNotchPayMarketplaceEvent(body))).toEqual(
+			pick(parseNotchPayWebhookEvent(body)),
+		);
+	});
+
+	it("keeps the event table deliberate", () => {
+		expect(Object.keys(EVENT_KINDS)).toHaveLength(18);
+	});
+
+	describe("verifyWebhook", () => {
+		const { provider } = build([]);
+		const body = JSON.stringify({
+			id: "evt_1",
+			type: "payment.succeeded",
+			data: paymentData,
+		});
+		const sign = (raw: string) =>
+			createHmac("sha256", "hash-key").update(raw).digest("hex");
+
+		it.each([
+			"x-notch-signature",
+			"notchpay-signature",
+		])("accepts a body signed under %s", async (header) => {
+			expect(
+				await provider.verifyWebhook(body, { [header]: sign(body) }),
+			).toMatchObject({ entity: "payment", status: "succeeded" });
+		});
+
+		it("rejects a tampered body, a tampered signature and non-JSON", async () => {
+			await expect(
+				provider.verifyWebhook(`${body} `, { "x-notch-signature": sign(body) }),
+			).rejects.toBeInstanceOf(WebhookSignatureError);
+			await expect(
+				provider.verifyWebhook(body, {
+					"x-notch-signature": `${"0".repeat(63)}1`,
+				}),
+			).rejects.toBeInstanceOf(WebhookSignatureError);
+			await expect(provider.verifyWebhook(body, {})).rejects.toBeInstanceOf(
+				WebhookSignatureError,
+			);
+			await expect(
+				provider.verifyWebhook("not json", {
+					"x-notch-signature": sign("not json"),
+				}),
+			).rejects.toBeInstanceOf(WebhookSignatureError);
+		});
+
+		it("re-parses a stored body without a provider", () => {
+			expect(provider.parseWebhookEvent(JSON.parse(body))).toEqual(
+				parseNotchPayMarketplaceEvent(JSON.parse(body)),
+			);
 		});
 	});
 });

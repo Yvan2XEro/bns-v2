@@ -6,6 +6,7 @@ import {
 	type MarketplaceMethod,
 	type MarketplaceProvider,
 	type NormalisedAccount,
+	type NormalisedEvent,
 	type NormalisedPayment,
 	type NormalisedRefund,
 	type NormalisedRefundStatus,
@@ -16,7 +17,14 @@ import {
 	ProviderRequestError,
 	ProviderUnavailableError,
 } from "./marketplace";
-import { mapNotchPayStatus, toAmount, toCurrency, toText } from "./notchpay";
+import {
+	mapNotchPayStatus,
+	toAmount,
+	toCurrency,
+	toText,
+	verifyNotchPaySignature,
+} from "./notchpay";
+import { parseNotchPayMarketplaceEvent } from "./notchpayMarketplaceEvents";
 import {
 	ACCOUNT_STATUSES,
 	failureCodeOf,
@@ -29,7 +37,11 @@ import {
 	TransportFailure,
 	type WireRequest,
 } from "./notchpayWire";
-import { isRecord, type ProviderPaymentStatus } from "./types";
+import {
+	isRecord,
+	type ProviderPaymentStatus,
+	WebhookSignatureError,
+} from "./types";
 
 export { ACCOUNT_STATUSES };
 
@@ -67,27 +79,9 @@ function malformed(method: MarketplaceMethod): never {
 	);
 }
 
-type Implemented =
-	| "createConnectedAccount"
-	| "createOnboardingLink"
-	| "getConnectedAccount"
-	| "setPayoutSchedule"
-	| "createDestinationCharge"
-	| "chargeMobileMoney"
-	| "verifyPayment"
-	| "createRefund"
-	| "getRefund"
-	| "releasePayout"
-	| "getTransfer"
-	| "getConnectedAccountBalance"
-	| "listTransactions"
-	| "debitConnectedAccount";
-
-export class NotchPayMarketplaceProvider
-	implements Pick<MarketplaceProvider, Implemented | "id">
-{
+export class NotchPayMarketplaceProvider implements MarketplaceProvider {
 	readonly id = "notchpay" as const;
-	protected readonly hashKey: string;
+	private readonly hashKey: string;
 	private readonly transport: NotchPayTransport;
 
 	constructor(config: NotchPayMarketplaceConfig) {
@@ -559,6 +553,27 @@ export class NotchPayMarketplaceProvider
 			}
 		}
 		return out;
+	}
+
+	async verifyWebhook(
+		rawBody: string,
+		headers: Record<string, string | undefined>,
+	): Promise<NormalisedEvent> {
+		if (!this.hashKey) {
+			throw new Error("NotchPay webhook: NOTCHPAY_HASH_KEY is not configured");
+		}
+		verifyNotchPaySignature(rawBody, headers, this.hashKey);
+		let raw: unknown;
+		try {
+			raw = JSON.parse(rawBody);
+		} catch {
+			throw new WebhookSignatureError();
+		}
+		return parseNotchPayMarketplaceEvent(raw);
+	}
+
+	parseWebhookEvent(raw: unknown): NormalisedEvent {
+		return parseNotchPayMarketplaceEvent(raw);
 	}
 
 	async debitConnectedAccount(): Promise<{ debitId: string }> {
