@@ -15,7 +15,11 @@ vi.mock("../../src/hooks/searchEvents", () => ({
 
 import { hashDeliveryPhone } from "../../src/lib/phoneHash";
 import { MemoryCounterStore } from "../../src/lib/rateLimit";
-import { placeOrder, quoteCheckout } from "../../src/services/checkout";
+import {
+	listDeliveryOptions,
+	placeOrder,
+	quoteCheckout,
+} from "../../src/services/checkout";
 import { acceptOrder } from "../../src/services/orders/acceptance";
 import { __resetOrderEventHandlers } from "../../src/services/orders/events";
 import { normalizePhoneNumber } from "../../src/services/phoneVerification";
@@ -39,7 +43,12 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-const shopRow = (id: string, owner: string, level: number) => ({
+const shopRow = (
+	id: string,
+	owner: string,
+	level: number,
+	over: { deliveryFee?: number | null; pickup?: boolean } = {},
+) => ({
 	id,
 	name: id,
 	handle: id,
@@ -53,9 +62,12 @@ const shopRow = (id: string, owner: string, level: number) => ({
 	orderSettings: {
 		codEnabled: true,
 		sellerDeliveryEnabled: true,
-		deliveryFee: null,
+		deliveryFee: over.deliveryFee ?? null,
 		deliveryEtaText: "24-48h",
-		pickupEnabled: false,
+		pickupEnabled: over.pickup === true,
+		...(over.pickup
+			? { pickupPoint: { address: "Supplier depot", landmark: null } }
+			: {}),
 		salesTermsExtra: null,
 	},
 });
@@ -67,7 +79,15 @@ const supplierVariantResale = {
 	suggestedRetailPrice: 7500,
 };
 
-function world(options: { resale?: boolean } = {}) {
+function world(
+	options: {
+		resale?: boolean;
+		supplierFee?: number;
+		supplierPickup?: boolean;
+		resellerFee?: number;
+		prepaid?: boolean;
+	} = {},
+) {
 	const resale = options.resale !== false;
 	return fakePayload(
 		{
@@ -82,8 +102,13 @@ function world(options: { resale?: boolean } = {}) {
 				{ id: "u-supplier", name: "Supplier" },
 			],
 			shops: [
-				shopRow("reseller", "u-reseller", 2),
-				shopRow("supplier", "u-supplier", 3),
+				shopRow("reseller", "u-reseller", 2, {
+					deliveryFee: options.resellerFee ?? null,
+				}),
+				shopRow("supplier", "u-supplier", 3, {
+					deliveryFee: options.supplierFee ?? null,
+					pickup: options.supplierPickup,
+				}),
 			],
 			products: [
 				{
@@ -248,7 +273,10 @@ function world(options: { resale?: boolean } = {}) {
 						supportEmail: "support@buynsellem.com",
 						supportPhone: "+237600000000",
 					},
-					resale: { enabled: true },
+					resale: {
+						enabled: true,
+						prepaidEnabled: options.prepaid === true,
+					},
 				},
 			},
 			secret: "test-payload-secret",
@@ -371,5 +399,94 @@ describe("resale checkout through the real routes", () => {
 		};
 		const second = await quoteCheckout(payload, BUYER, quoteInput, opts());
 		expect(second.quoteHash).not.toBe(first.quoteHash);
+	});
+
+	describe("delivery is quoted from the supplier", () => {
+		it("charges the supplier's fee, not the storefront's, at quote and at placement", async () => {
+			const payload = world({ supplierFee: 1500, resellerFee: 3500 });
+			const quote = await quoteCheckout(payload, BUYER, quoteInput, opts());
+			expect(quote.summary.amounts).toMatchObject({
+				subtotal: 7000,
+				deliveryFee: 1500,
+				total: 8500,
+			});
+			await placeOrder(
+				payload,
+				BUYER,
+				placeInput(quote.quoteHash, "idem-d"),
+				opts(),
+			);
+			expect(payload.store.orders[0]).toMatchObject({
+				shop: "reseller",
+				amounts: { subtotal: 7000, deliveryFee: 1500, total: 8500 },
+			});
+		});
+
+		it("offers options from the supplier's city and never its pickup point", async () => {
+			const payload = world({ supplierFee: 1500, supplierPickup: true });
+			const listed = await listDeliveryOptions(
+				payload,
+				BUYER,
+				{},
+				{ now: NOW },
+			);
+			expect(listed).toEqual({
+				city: "douala",
+				options: [
+					{
+						optionId: "seller_delivery:douala",
+						method: "seller_delivery",
+						fee: 1500,
+						etaText: "24-48h",
+						codAllowed: true,
+					},
+				],
+				unavailable: [],
+			});
+		});
+
+		it("keeps quoting an own-stock cart from the storefront", async () => {
+			const payload = world({
+				resale: false,
+				supplierFee: 1500,
+				resellerFee: 3500,
+			});
+			const quote = await quoteCheckout(payload, BUYER, quoteInput, opts());
+			expect(quote.summary.amounts.deliveryFee).toBe(3500);
+		});
+
+		it("offers delivery the storefront itself could not", async () => {
+			const payload = world({ supplierFee: 1500 });
+			payload.store.shops[0].orderSettings.sellerDeliveryEnabled = false;
+			const quote = await quoteCheckout(payload, BUYER, quoteInput, opts());
+			expect(quote.summary.amounts.deliveryFee).toBe(1500);
+		});
+	});
+
+	describe("resale.prepaidUnavailable", () => {
+		const prepaid = { ...quoteInput, paymentMethod: "mobile_money" };
+
+		it("refuses protected payment on a resale cart while prepaid resale is off", async () => {
+			const payload = world();
+			await expect(
+				quoteCheckout(payload, BUYER, prepaid, opts()),
+			).rejects.toMatchObject({
+				code: "resale.prepaidUnavailable",
+				status: 409,
+			});
+			expect(payload.store.orders).toHaveLength(0);
+		});
+
+		it("does not refuse an own-stock cart for that reason", async () => {
+			const payload = world({ resale: false });
+			await expect(
+				quoteCheckout(payload, BUYER, prepaid, opts()),
+			).rejects.not.toMatchObject({ code: "resale.prepaidUnavailable" });
+		});
+
+		it("still accepts the COD resale checkout", async () => {
+			const payload = world();
+			await expect(place(payload)).resolves.toBeTruthy();
+		});
 	});
 });

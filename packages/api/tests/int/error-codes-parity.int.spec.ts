@@ -65,6 +65,14 @@ describe("the error contract is the same in all three packages", () => {
 			);
 		}
 	});
+
+	it("gives each P8 code a fallback of its own", () => {
+		for (const code of P8_CODES) {
+			expect(fallbackMessage(code)).not.toBe(
+				fallbackMessage(ERROR_CODES.unknown),
+			);
+		}
+	});
 });
 
 /** The spec's list, transcribed. Not derived from ERROR_CODES. */
@@ -220,6 +228,51 @@ describe("P7 error codes", () => {
 		expect(P7_CODES.length).toBe(21);
 		expect(P7_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
 			21,
+		);
+	});
+});
+
+/** P8's contracts list (spec "Added to lib/errors.ts"), transcribed. */
+const P8_CODES = [
+	"resale.disabled",
+	"resale.supplierNotEligible",
+	"resale.resellerNotEligible",
+	"resale.termsNotAccepted",
+	"resale.notEnabled",
+	"resale.invalidPricing",
+	"resale.supplierUndercut",
+	"resale.codRequired",
+	"resale.priceBelowMinimum",
+	"resale.priceAboveMaximum",
+	"resale.ownProduct",
+	"resale.alreadyReselling",
+	"resale.linkRequired",
+	"resale.linkInactive",
+	"resale.prepaidUnavailable",
+	"resale.fulfilledBySupplier",
+	"resale.chargeOverdue",
+	"cart.singleFulfilment",
+	"purchaseOrder.notFound",
+	"purchaseOrder.invalidTransition",
+	"purchaseOrder.acceptExpired",
+	"purchaseOrder.trackingRequired",
+] as const;
+
+describe("P8 error codes", () => {
+	it("declares all twenty-two, every one client-facing", () => {
+		const declared = new Set(Object.values(ERROR_CODES));
+		const missing = P8_CODES.filter((code) => !declared.has(code));
+		expect(missing).toEqual([]);
+		expect(P8_CODES.length).toBe(22);
+		expect(P8_CODES.filter((code) => clientFacing.includes(code))).toHaveLength(
+			22,
+		);
+	});
+
+	it("mirrors resale.prepaidUnavailable in both clients", () => {
+		expect(webCodes.resalePrepaidUnavailable).toBe("resale.prepaidUnavailable");
+		expect(mobileCodes.resalePrepaidUnavailable).toBe(
+			"resale.prepaidUnavailable",
 		);
 	});
 });

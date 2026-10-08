@@ -44,6 +44,7 @@ import {
 	type RateLimitWindow,
 } from "../lib/rateLimit";
 import { relationId } from "../lib/relationId";
+import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import {
 	codCaps,
@@ -587,6 +588,42 @@ async function buildSummaryItems(
 	);
 }
 
+/**
+ * The shop a delivery is quoted from: the supplier for resale lines (it
+ * delivers, from its own city and zones; pickup is never offered), the
+ * storefront otherwise. A cart whose lines are fulfilled by several shops has
+ * no single delivery to quote and is refused.
+ */
+async function resolveQuoteShop(
+	payload: Payload,
+	storefront: Shop,
+	items: readonly QuoteSummaryItem[],
+): Promise<{ shop: Shop; resale: boolean }> {
+	const fulfilling = new Set(
+		items.map((item) => item.resale?.supplierShop ?? String(storefront.id)),
+	);
+	if (fulfilling.size > 1) {
+		throw new CheckoutError(ERROR_CODES.cartSingleFulfilment, 409);
+	}
+	const supplierId = items.find((item) => item.resale)?.resale?.supplierShop;
+	if (!supplierId) return { shop: storefront, resale: false };
+	const supplier = await payload
+		.findByID({
+			collection: "shops",
+			id: supplierId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (!supplier) {
+		throw new CheckoutError(ERROR_CODES.orderShopUnavailable, 409);
+	}
+	return { shop: supplier, resale: true };
+}
+
+const withoutPickup = (options: DeliveryOption[]): DeliveryOption[] =>
+	options.filter((option) => option.method !== "pickup");
+
 interface CompanySettings {
 	legalName: string;
 	supportEmail: string | null;
@@ -698,10 +735,12 @@ export async function listDeliveryOptions(
 		user,
 		{ now },
 	);
+	const summary = await buildSummaryItems(payload, lines, shop);
+	const quoteFrom = await resolveQuoteShop(payload, shop, summary);
 	const city =
 		typeof input.city === "string" && input.city.trim()
 			? input.city.trim()
-			: (shop.location?.city ?? "");
+			: (quoteFrom.shop.location?.city ?? "");
 	const district =
 		typeof input.district === "string" && input.district.trim()
 			? input.district.trim()
@@ -710,7 +749,7 @@ export async function listDeliveryOptions(
 	const { items, subtotal } = await priceCartLines(payload, lines);
 	const quoted = await quoteDelivery({
 		payload,
-		shop,
+		shop: quoteFrom.shop,
 		items,
 		subtotal,
 		destination: { city, district },
@@ -721,7 +760,7 @@ export async function listDeliveryOptions(
 	});
 	return {
 		city,
-		options: quoted.options,
+		options: quoteFrom.resale ? withoutPickup(quoted.options) : quoted.options,
 		unavailable: quoted.unavailable,
 	};
 }
@@ -772,6 +811,14 @@ async function buildQuote(
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
 	}
 	const paymentMethod: "cod" | "mobile_money" = input.paymentMethod;
+	const items = await buildSummaryItems(payload, lines, shop);
+	const quoteFrom = await resolveQuoteShop(payload, shop, items);
+	if (quoteFrom.resale && paymentMethod === "mobile_money") {
+		const resaleSettings = await getResaleSettings(payload);
+		if (!resaleSettings.prepaidEnabled) {
+			throw new CheckoutError(ERROR_CODES.resalePrepaidUnavailable, 409);
+		}
+	}
 	// Set only for `mobile_money`: the market whose `vatRateBps` and the
 	// payment settings whose `buyerProtection` config price the fee below,
 	// the exact inputs `checkoutPayment.ts#amountsFor` prices from at intent
@@ -817,7 +864,7 @@ async function buildQuote(
 	const deliverySettings = await getDeliverySettings(payload);
 	if (
 		!deliverySettings.zonesEnabled &&
-		(shop.location?.city ?? null) !== address.city
+		(quoteFrom.shop.location?.city ?? null) !== address.city
 	) {
 		throw new CheckoutError(ERROR_CODES.checkoutCityNotServed, 409);
 	}
@@ -826,7 +873,7 @@ async function buildQuote(
 
 	const deliveryQuote = await quoteDelivery({
 		payload,
-		shop,
+		shop: quoteFrom.shop,
 		items: quoteItems,
 		subtotal,
 		destination: {
@@ -838,9 +885,10 @@ async function buildQuote(
 		paymentMethod,
 		now,
 	});
-	const chosen = deliveryQuote.options.find(
-		(option) => option.optionId === optionId,
-	);
+	const deliveryOptions = quoteFrom.resale
+		? withoutPickup(deliveryQuote.options)
+		: deliveryQuote.options;
+	const chosen = deliveryOptions.find((option) => option.optionId === optionId);
 	if (!chosen) {
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
 	}
@@ -907,11 +955,10 @@ async function buildQuote(
 	});
 
 	const locale = input.locale === "en" ? "en" : "fr";
-	const [company, termsFr, termsEn, items] = await Promise.all([
+	const [company, termsFr, termsEn] = await Promise.all([
 		loadCompanySettings(payload),
 		loadSalesTermsTemplate(settings.termsVersion, "fr"),
 		loadSalesTermsTemplate(settings.termsVersion, "en"),
-		buildSummaryItems(payload, lines, shop),
 	]);
 
 	// Priced here, not left at zero: under `mobile_money` the fee the buyer
