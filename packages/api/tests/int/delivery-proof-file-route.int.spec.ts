@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { signLocalFileToken } from "../../src/lib/privateFiles";
@@ -40,7 +41,7 @@ describe("delivery proof signed file route", () => {
 	it("serves a valid signed proof file with private no-store headers", async () => {
 		process.env.PAYLOAD_SECRET = "test-delivery-proof-secret";
 		const privateDir = path.join(
-			"/tmp",
+			tmpdir(),
 			`p7-proof-${process.pid}-${Date.now()}`,
 			"private-uploads",
 			"verification",
