@@ -63,6 +63,31 @@ export const CASE_DEEP_LINKS: ReadonlyArray<{
 	},
 ];
 
+/**
+ * The P7 delivery screens a link can name: the rider push route
+ * (`/rider/shipment/{id}`, mobile-only — the web has no such screen), the
+ * shop's shipment and settings screens, and the buyer's tracking block.
+ */
+export const DELIVERY_DEEP_LINKS: ReadonlyArray<{
+	url: string;
+	screen: string;
+}> = [
+	{ url: "buynsellem://purchases/o-1", screen: "purchases/[id]" },
+	{
+		url: "buynsellem://purchases/o-1/reschedule",
+		screen: "purchases/[id]/reschedule",
+	},
+	{ url: "buynsellem://rider/shipment/s-1", screen: "rider/shipment/[id]" },
+	{ url: "buynsellem://rider", screen: "rider/index" },
+	{ url: "buynsellem://seller/shipment/s-1", screen: "seller/shipment/[id]" },
+	{ url: "buynsellem://seller/delivery", screen: "seller/delivery/index" },
+	{
+		url: "buynsellem://seller/delivery/locations",
+		screen: "seller/delivery/locations",
+	},
+	{ url: "buynsellem://courier", screen: "courier/index" },
+];
+
 function stringField(
 	data: Record<string, unknown>,
 	key: string,

@@ -347,6 +347,68 @@ describe("an order push opens the right screen on the phone", () => {
 		);
 	});
 
+	// Registrations task: the real buildExpoPushData of the P6 case and P7
+	// shipment workflows, resolved against the mobile route table. A null is a
+	// push whose link names no screen file.
+	it("the case and shipment workflows land on registered screens, or on none", () => {
+		const cases: Array<[string, Record<string, string>, string | null]> = [
+			[
+				"return-requested",
+				{ returnId: "r-1", audience: "buyer" },
+				"returns/[id]",
+			],
+			[
+				"dispute-resolved",
+				{ disputeId: "d-1", audience: "buyer" },
+				"disputes/[id]",
+			],
+			[
+				"shipment-attempt-failed",
+				{ orderId: "o-1", audience: "buyer" },
+				"purchases/[id]",
+			],
+			[
+				"shipment-attempt-failed",
+				{ orderId: "o-1", audience: "shop" },
+				"seller/orders/[id]",
+			],
+			[
+				"shipment-redelivery-scheduled",
+				{ shipmentId: "s-1", audience: "rider" },
+				"rider/shipment/[id]",
+			],
+			[
+				"shipment-redelivery-scheduled",
+				{ orderId: "o-1", audience: "shop" },
+				"seller/orders/[id]",
+			],
+			["shipment-pickup-reminder", { orderId: "o-1" }, "purchases/[id]"],
+			["shipment-late", { shipmentId: "s-1" }, "seller/orders/index"],
+			[
+				"shipment-return-initiated",
+				{ shipmentId: "s-1" },
+				"seller/orders/index",
+			],
+			// Known gaps: the shop-side case and resale push links name no mobile
+			// screen (the seller returns screen is a list at /seller/returns).
+			["return-requested", { returnId: "r-1", audience: "shop" }, null],
+			["dispute-message", { disputeId: "d-1", audience: "shop" }, null],
+			["resale-link-requested", { linkId: "l-1" }, null],
+			[
+				"delivery-settings-incomplete",
+				{ shopId: "s-1" },
+				"seller/delivery/index",
+			],
+		];
+		const landed = cases.map(([workflow, payload]) => {
+			const data = buildExpoPushData(workflow, payload);
+			return [workflow, screenFor(data), schemeScreenFor(data)];
+		});
+		expect(landed).toEqual(
+			cases.map(([workflow, , screen]) => [workflow, screen, screen]),
+		);
+	});
+
 	it("the prefix the app reads is the scheme app.json registers", () => {
 		const appJson = JSON.parse(
 			readFileSync(

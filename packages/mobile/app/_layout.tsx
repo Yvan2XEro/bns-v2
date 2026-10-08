@@ -644,18 +644,12 @@ function RootLayoutNav() {
 					name="seller/shipment/[id]"
 					options={{ headerShown: false }}
 				/>
-				<Stack.Screen
-					name="rider/index"
-					options={{ headerShown: false }}
-				/>
+				<Stack.Screen name="rider/index" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="rider/shipment/[id]"
 					options={{ headerShown: false }}
 				/>
-				<Stack.Screen
-					name="courier/index"
-					options={{ headerShown: false }}
-				/>
+				<Stack.Screen name="courier/index" options={{ headerShown: false }} />
 			</Stack>
 
 			<StatusBar style="auto" />

@@ -4,6 +4,7 @@ import { Glob } from "bun";
 import { isScreenFile, matchRoute, routeNameOf } from "./appRoutes";
 import {
 	CASE_DEEP_LINKS,
+	DELIVERY_DEEP_LINKS,
 	notificationUrl,
 	PAYMENT_DEEP_LINKS,
 	toAppPath,
@@ -62,6 +63,14 @@ describe("the payment deep links land on their screens", () => {
 describe("the case deep links land on their screens", () => {
 	test.each(
 		CASE_DEEP_LINKS.map(({ url, screen }) => [url, screen] as const),
+	)("%s -> %s", (url, screen) => {
+		expect(screenFor(url)).toBe(screen);
+	});
+});
+
+describe("the delivery deep links land on their screens", () => {
+	test.each(
+		DELIVERY_DEEP_LINKS.map(({ url, screen }) => [url, screen] as const),
 	)("%s -> %s", (url, screen) => {
 		expect(screenFor(url)).toBe(screen);
 	});
