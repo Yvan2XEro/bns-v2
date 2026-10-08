@@ -3839,6 +3839,14 @@
 		"rescheduleClosed": "There is nothing to reschedule on this order."
 	},
 	"shipmentPanel": {
+		"takePhoto": "Take a photo",
+		"retakePhoto": "Retake the photo",
+		"photoAttached": "Photo ready",
+		"photoNeeded": "A photo is required to declare the delivery.",
+		"photoRefused": "That photo is refused: use a JPEG or PNG under 5 MB.",
+		"declareSubmit": "Declare delivered",
+		"orderShipments": "Shipments",
+		"openShipment": "Open shipment {{number}}",
 		"title": "Shipment",
 		"loadError": "This shipment could not be loaded.",
 		"actionFailed": "That action could not be completed.",

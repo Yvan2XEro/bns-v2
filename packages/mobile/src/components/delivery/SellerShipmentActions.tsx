@@ -17,15 +17,27 @@ import { useTranslation } from "@/src/lib/i18n";
 import { readDestination } from "@/src/lib/riderShipment";
 import {
 	type ShipmentAction,
-	shipmentActions,
+	visibleShipmentActions,
 } from "@/src/lib/shipmentActions";
 import { type DeliveryWindow, WINDOW_LABELS } from "@/src/lib/shipmentStatus";
 import { rescheduleDays } from "@/src/lib/shipmentTracking";
 import type { ShopShipmentView } from "../../../../api/src/contracts/shipments";
 import { ChoiceField } from "./FormFields";
-import { AttemptPanel, HandoverPanel, RiderPanel } from "./ShipmentPanels";
+import {
+	AttemptPanel,
+	DeclareDeliveredPanel,
+	HandoverPanel,
+	RiderPanel,
+} from "./ShipmentPanels";
 
-type Panel = "attempt" | "handover" | "rider" | "carrier" | "reschedule" | null;
+type Panel =
+	| "attempt"
+	| "declare"
+	| "handover"
+	| "rider"
+	| "carrier"
+	| "reschedule"
+	| null;
 interface State {
 	panel: Panel;
 	date: string;
@@ -51,6 +63,7 @@ const LABEL: Record<ShipmentAction, string> = {
 /** The panel each action opens; the rest act at once. */
 const PANEL_OF: Partial<Record<ShipmentAction, Exclude<Panel, null>>> = {
 	attempt: "attempt",
+	declare_delivered: "declare",
 	handover: "handover",
 	assign_rider: "rider",
 	rider_link: "rider",
@@ -103,9 +116,7 @@ export function SellerShipmentActions({
 		state.panel === "carrier" && city !== "",
 	);
 
-	const actions = shipmentActions(view, { canProcess, canSeeCosts }).filter(
-		(a) => a !== "declare_delivered" && a !== "rider_link",
-	);
+	const actions = visibleShipmentActions(view, { canProcess, canSeeCosts });
 	const close = () => patch({ panel: null });
 	const run: Partial<Record<ShipmentAction, () => void>> = {
 		start: () => start.mutate(),
@@ -160,6 +171,9 @@ export function SellerShipmentActions({
 			/>
 			{state.panel === "attempt" ? (
 				<AttemptPanel shipmentId={id} onDone={close} />
+			) : null}
+			{state.panel === "declare" ? (
+				<DeclareDeliveredPanel shipmentId={id} onDone={close} />
 			) : null}
 			{state.panel === "handover" ? (
 				<HandoverPanel shipmentId={id} onDone={close} />

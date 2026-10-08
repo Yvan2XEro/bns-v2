@@ -10,6 +10,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import {
 	useAssignShopRider,
 	useCreateRiderLink,
+	useDeclareDelivered,
 	useHandoverShipment,
 	useReportAttempt,
 } from "@/src/hooks/useShipmentActions";
@@ -21,6 +22,8 @@ import {
 	pressKey,
 } from "@/src/lib/handoverKeypad";
 import { useTranslation } from "@/src/lib/i18n";
+import { captureProofPhoto, uploadShipmentPhoto } from "@/src/lib/proofCapture";
+import { declareDeliveredBody } from "@/src/lib/proofPhoto";
 import {
 	FAILURE_REASON_LABELS,
 	type FailureReason,
@@ -40,6 +43,51 @@ function ErrorLine({ error }: { error: unknown }) {
 	);
 }
 
+type Photo = Awaited<ReturnType<typeof captureProofPhoto>>;
+
+/** Camera capture held until the action is sent; the upload happens then. */
+function PhotoField({
+	photo,
+	onChange,
+}: {
+	photo: Photo;
+	onChange: (photo: Photo) => void;
+}) {
+	const { t } = useTranslation();
+	return (
+		<View style={{ gap: 8 }}>
+			{photo ? <Text>{t("shipmentPanel.photoAttached")}</Text> : null}
+			<SheetButton
+				label={
+					photo ? t("shipmentPanel.retakePhoto") : t("shipmentPanel.takePhoto")
+				}
+				tone="secondary"
+				onPress={() => void captureProofPhoto().then((p) => p && onChange(p))}
+			/>
+		</View>
+	);
+}
+
+/** The photo is uploaded first; a refused one surfaces as the panel's error. */
+function usePhotoUpload(shipmentId: string) {
+	const { t } = useTranslation();
+	const [photo, setPhoto] = useState<Photo>(null);
+	const [refusal, setRefusal] = useState<string | null>(null);
+	const upload = async (
+		kind: "attempt" | "handover" | "declaration",
+	): Promise<string | undefined | null> => {
+		if (!photo) return undefined;
+		try {
+			setRefusal(null);
+			return await uploadShipmentPhoto(shipmentId, kind, photo);
+		} catch {
+			setRefusal(t("shipmentPanel.photoRefused"));
+			return null;
+		}
+	};
+	return { photo, setPhoto, refusal, upload };
+}
+
 /** The reason list, a note, and a fix taken when the report is sent. */
 export function AttemptPanel({
 	shipmentId,
@@ -52,12 +100,16 @@ export function AttemptPanel({
 	const attempt = useReportAttempt(shipmentId);
 	const [reason, setReason] = useState<FailureReason | null>(null);
 	const [note, setNote] = useState("");
+	const proof = usePhotoUpload(shipmentId);
 	const send = async () => {
 		if (!reason) return;
+		const photoId = await proof.upload("attempt");
+		if (photoId === null) return;
 		const gps = await tryCurrentGps();
 		attempt.mutate(
 			{
 				reason,
+				...(photoId ? { photoId } : {}),
 				...(note.trim() ? { note: note.trim() } : {}),
 				...(gps ? { gps } : {}),
 			},
@@ -78,6 +130,10 @@ export function AttemptPanel({
 				onChange={setNote}
 				onBlur={() => undefined}
 			/>
+			<PhotoField photo={proof.photo} onChange={proof.setPhoto} />
+			{proof.refusal ? (
+				<Text accessibilityRole="alert">{proof.refusal}</Text>
+			) : null}
 			<ErrorLine error={attempt.error} />
 			<SheetButton
 				label={t("shipmentPanel.reportAttempt")}
@@ -100,10 +156,13 @@ export function HandoverPanel({
 	const { t } = useTranslation();
 	const handover = useHandoverShipment(shipmentId);
 	const [code, setCode] = useState("");
+	const proof = usePhotoUpload(shipmentId);
 	const send = async () => {
+		const photoId = await proof.upload("handover");
+		if (photoId === null) return;
 		const gps = await tryCurrentGps();
 		handover.mutate(
-			{ code, ...(gps ? { gps } : {}) },
+			{ code, ...(photoId ? { photoId } : {}), ...(gps ? { gps } : {}) },
 			{
 				onSuccess: onDone,
 				onError: () => setCode(""),
@@ -121,6 +180,10 @@ export function HandoverPanel({
 					setCode(pressKey(code, key));
 				}}
 			/>
+			<PhotoField photo={proof.photo} onChange={proof.setPhoto} />
+			{proof.refusal ? (
+				<Text accessibilityRole="alert">{proof.refusal}</Text>
+			) : null}
 			<ErrorLine error={handover.error} />
 			<SheetButton
 				label={t("sellerOrders.handoverSubmit")}
@@ -202,6 +265,50 @@ export function RiderPanel({
 					onPress={submit}
 				/>
 			)}
+		</View>
+	);
+}
+
+/** The photo is mandatory: the API answers `shipment.photoRequired` without one. */
+export function DeclareDeliveredPanel({
+	shipmentId,
+	onDone,
+}: {
+	shipmentId: string;
+	onDone: () => void;
+}) {
+	const { t } = useTranslation();
+	const declare = useDeclareDelivered(shipmentId);
+	const proof = usePhotoUpload(shipmentId);
+	const [note, setNote] = useState("");
+	const send = async () => {
+		const photoId = await proof.upload("declaration");
+		if (!photoId) return;
+		const gps = await tryCurrentGps();
+		declare.mutate(declareDeliveredBody({ photoId, note, gps }), {
+			onSuccess: onDone,
+		});
+	};
+	return (
+		<View style={{ gap: 12 }}>
+			<PhotoField photo={proof.photo} onChange={proof.setPhoto} />
+			{!proof.photo ? <Text>{t("shipmentPanel.photoNeeded")}</Text> : null}
+			{proof.refusal ? (
+				<Text accessibilityRole="alert">{proof.refusal}</Text>
+			) : null}
+			<NoteField
+				label={t("shipmentPanel.note")}
+				value={note}
+				onChange={setNote}
+				onBlur={() => undefined}
+			/>
+			<ErrorLine error={declare.error} />
+			<SheetButton
+				label={t("shipmentPanel.declareSubmit")}
+				pending={declare.isPending}
+				disabled={!proof.photo}
+				onPress={() => void send()}
+			/>
 		</View>
 	);
 }

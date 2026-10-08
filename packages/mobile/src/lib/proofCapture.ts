@@ -7,6 +7,7 @@ import {
 	type ProofKind,
 	proofPhotoRefusal,
 	riderLinkPhotoPath,
+	shipmentPhotoPath,
 } from "./proofPhoto";
 
 /** Camera capture at the house quality; `null` when permission is refused or the user cancels. */
@@ -30,14 +31,9 @@ export async function captureProofPhoto(): Promise<
 		: null;
 }
 
-/**
- * Uploads through the rider-link photo route and returns the proof id the
- * attempt / handover body then carries as `photoId`. A refused photo throws
- * before any request goes out.
- */
-export async function uploadRiderLinkPhoto(
-	token: string,
-	kind: Exclude<ProofKind, "declaration">,
+async function uploadProof(
+	path: string,
+	kind: ProofKind,
 	photo: ProofAsset & { fileName?: string | null },
 ): Promise<string> {
 	const refusal = proofPhotoRefusal(photo);
@@ -46,9 +42,28 @@ export async function uploadRiderLinkPhoto(
 	const form = new FormData();
 	form.append("file", file, photo.fileName?.trim() || file.name || "proof.jpg");
 	form.append("kind", kind);
-	const created = await api.upload<{ id: string }>(
-		riderLinkPhotoPath(token),
-		form,
-	);
+	const created = await api.upload<{ id: string }>(path, form);
 	return created.id;
+}
+
+/**
+ * Uploads through the rider-link photo route and returns the proof id the
+ * attempt / handover body then carries as `photoId`. A refused photo throws
+ * before any request goes out.
+ */
+export function uploadRiderLinkPhoto(
+	token: string,
+	kind: Exclude<ProofKind, "declaration">,
+	photo: ProofAsset & { fileName?: string | null },
+): Promise<string> {
+	return uploadProof(riderLinkPhotoPath(token), kind, photo);
+}
+
+/** The same upload for a signed-in shop member (`POST /api/shipments/{id}/photo`). */
+export function uploadShipmentPhoto(
+	shipmentId: string,
+	kind: ProofKind,
+	photo: ProofAsset & { fileName?: string | null },
+): Promise<string> {
+	return uploadProof(shipmentPhotoPath(shipmentId), kind, photo);
 }

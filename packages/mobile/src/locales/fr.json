@@ -3842,6 +3842,14 @@
 		"rescheduleClosed": "Il n'y a rien à reprogrammer sur cette commande."
 	},
 	"shipmentPanel": {
+		"takePhoto": "Prendre une photo",
+		"retakePhoto": "Reprendre la photo",
+		"photoAttached": "Photo prête",
+		"photoNeeded": "Une photo est requise pour déclarer la livraison.",
+		"photoRefused": "Cette photo est refusée : utilisez un JPEG ou PNG de moins de 5 Mo.",
+		"declareSubmit": "Déclarer livré",
+		"orderShipments": "Colis",
+		"openShipment": "Ouvrir le colis {{number}}",
 		"title": "Colis",
 		"loadError": "Ce colis n'a pas pu être chargé.",
 		"actionFailed": "Cette action n'a pas pu aboutir.",

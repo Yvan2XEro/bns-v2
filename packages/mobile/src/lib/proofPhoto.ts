@@ -24,3 +24,21 @@ export function proofPhotoRefusal(asset: ProofAsset): ProofRefusal | null {
 /** The landed upload route: a rider-link holder's photo, keyed by the link's token. */
 export const riderLinkPhotoPath = (token: string) =>
 	`/api/public/rider/${encodeURIComponent(token)}/photo`;
+
+/** The signed-in upload route: a shop member's photo for an attempt, a handover or a declaration. */
+export const shipmentPhotoPath = (shipmentId: string) =>
+	`/api/shipments/${encodeURIComponent(shipmentId)}/photo`;
+
+/** The body `declare-delivered` takes: the photo is mandatory, the rest optional. */
+export function declareDeliveredBody(input: {
+	photoId: string;
+	note?: string;
+	gps?: { lat: number; lng: number } | null;
+}) {
+	const note = input.note?.trim();
+	return {
+		photoId: input.photoId,
+		...(note ? { note } : {}),
+		...(input.gps ? { gps: input.gps } : {}),
+	};
+}

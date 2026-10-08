@@ -6,6 +6,8 @@ import {
 	ACTION_TARGET,
 	type ShipmentAction,
 	shipmentActions,
+	shopShipmentLinks,
+	visibleShipmentActions,
 } from "./shipmentActions";
 
 const view = (patch: Partial<ShopShipmentView>): ShopShipmentView =>
@@ -141,5 +143,38 @@ describe("the action set mirrors the API's transition table", () => {
 							}
 						}
 		expect(checked).toBeGreaterThan(20);
+	});
+});
+
+describe("visibleShipmentActions", () => {
+	test("offers declare-delivered on an own delivery on the road and folds the rider link into assign", () => {
+		const out = visibleShipmentActions(
+			view({
+				status: "in_transit",
+				rider: { name: "Paul", phone: "+237600000000" },
+			}),
+			full,
+		);
+		expect(out).toEqual([
+			"assign_rider",
+			"handover",
+			"attempt",
+			"declare_delivered",
+		]);
+	});
+});
+
+describe("shopShipmentLinks", () => {
+	test("one link per shipment to the seller shipment screen", () => {
+		expect(
+			shopShipmentLinks([
+				{ id: "s1", shipmentNumber: "SHP-1" },
+				{ id: "s/2", shipmentNumber: "SHP-2" },
+			]),
+		).toEqual([
+			{ id: "s1", number: "SHP-1", href: "/seller/shipment/s1" },
+			{ id: "s/2", number: "SHP-2", href: "/seller/shipment/s%2F2" },
+		]);
+		expect(shopShipmentLinks([])).toEqual([]);
 	});
 });

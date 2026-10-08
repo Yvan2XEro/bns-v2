@@ -91,3 +91,26 @@ function isLive(status: ShipmentStatus): boolean {
 		status === "failed"
 	);
 }
+
+/**
+ * What the shipment screen offers as a button. `rider_link` shares the
+ * assign-rider button; `declare_delivered` is offered now that
+ * `POST /api/shipments/{id}/photo` can satisfy `photoRequired`.
+ */
+export function visibleShipmentActions(
+	view: ShopShipmentView,
+	context: ShipmentActionContext,
+): ShipmentAction[] {
+	return shipmentActions(view, context).filter((a) => a !== "rider_link");
+}
+
+/** The links the shop's order screen shows: one per shipment, to its action screen. */
+export function shopShipmentLinks(
+	shipments: ReadonlyArray<Pick<ShopShipmentView, "id" | "shipmentNumber">>,
+): Array<{ id: string; number: string; href: `/seller/shipment/${string}` }> {
+	return shipments.map((s) => ({
+		id: String(s.id),
+		number: s.shipmentNumber,
+		href: `/seller/shipment/${encodeURIComponent(String(s.id))}`,
+	}));
+}

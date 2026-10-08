@@ -5,6 +5,7 @@ import type {
 } from "../../../api/src/contracts/shipments";
 import { useAppConfig } from "../contexts/AppConfigContext";
 import { api } from "../lib/api";
+import type { declareDeliveredBody } from "../lib/proofPhoto";
 
 export const shipmentsRootKey = ["shipments"] as const;
 export const shipmentKey = (id: string) => ["shipments", "detail", id] as const;
@@ -50,12 +51,24 @@ export const useStartShipment = (id: string) =>
 export const useReadyForPickup = (id: string) =>
 	useShipmentPost<void>(id, "ready-for-pickup");
 export const useHandoverShipment = (id: string) =>
-	useShipmentPost<{ code: string; gps?: Gps; recipientName?: string }>(
-		id,
-		"handover",
-	);
+	useShipmentPost<{
+		code: string;
+		gps?: Gps;
+		recipientName?: string;
+		photoId?: string;
+	}>(id, "handover");
 export const useReportAttempt = (id: string) =>
-	useShipmentPost<{ reason: string; note?: string; gps?: Gps }>(id, "attempts");
+	useShipmentPost<{
+		reason: string;
+		note?: string;
+		gps?: Gps;
+		photoId?: string;
+	}>(id, "attempts");
+export const useDeclareDelivered = (id: string) =>
+	useShipmentPost<ReturnType<typeof declareDeliveredBody>>(
+		id,
+		"declare-delivered",
+	);
 export const useMarkReturned = (id: string) =>
 	useShipmentPost<{ reason?: string }>(id, "returned");
 export const useAssignShopRider = (id: string) =>
@@ -89,5 +102,21 @@ export function useRevokeRiderLink(shipmentId: string) {
 			),
 		onSuccess: () =>
 			queryClient.invalidateQueries({ queryKey: shipmentsRootKey }),
+	});
+}
+
+/** Shop-side list of an order's shipments (the shop audience of the shared route). */
+export const orderShopShipmentsKey = (orderId: string) =>
+	["shipments", "order", orderId] as const;
+
+export function useShopOrderShipments(orderId: string | undefined) {
+	const { deliveryZonesEnabled } = useAppConfig();
+	return useQuery({
+		queryKey: orderShopShipmentsKey(orderId ?? ""),
+		queryFn: () =>
+			api.get<ShopShipmentView[]>(
+				`/api/orders/${encodeURIComponent(orderId ?? "")}/shipments`,
+			),
+		enabled: Boolean(orderId) && deliveryZonesEnabled,
 	});
 }

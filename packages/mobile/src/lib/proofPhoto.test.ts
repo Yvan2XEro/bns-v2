@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
+	declareDeliveredBody,
 	PROOF_MAX_BYTES,
 	proofPhotoRefusal,
 	riderLinkPhotoPath,
+	shipmentPhotoPath,
 } from "./proofPhoto";
 
 describe("proofPhotoRefusal", () => {
@@ -37,5 +39,31 @@ describe("proofPhotoRefusal", () => {
 describe("riderLinkPhotoPath", () => {
 	test("encodes the token into the landed route", () => {
 		expect(riderLinkPhotoPath("a/b")).toBe("/api/public/rider/a%2Fb/photo");
+	});
+});
+
+describe("shipmentPhotoPath", () => {
+	test("targets the signed-in photo route and encodes the id", () => {
+		expect(shipmentPhotoPath("s-1")).toBe("/api/shipments/s-1/photo");
+		expect(shipmentPhotoPath("a/b")).toBe("/api/shipments/a%2Fb/photo");
+	});
+});
+
+describe("declareDeliveredBody", () => {
+	test("always carries the photo id and drops an empty note or missing fix", () => {
+		expect(
+			declareDeliveredBody({ photoId: "p-1", note: "  ", gps: null }),
+		).toEqual({ photoId: "p-1" });
+		expect(
+			declareDeliveredBody({
+				photoId: "p-1",
+				note: " left with the guard ",
+				gps: { lat: 4.05, lng: 9.7 },
+			}),
+		).toEqual({
+			photoId: "p-1",
+			note: "left with the guard",
+			gps: { lat: 4.05, lng: 9.7 },
+		});
 	});
 });
