@@ -111,6 +111,17 @@ export function isSheetAction(action: ShopBarAction): action is SheetAction {
 }
 
 /**
+ * With a live shipment the shipment screen owns these three: the legacy order
+ * routes post no proof photo, so `declare_delivered` always dead-ends and the
+ * other two duplicate it. No shipment keeps the P4 buttons unchanged.
+ */
+const PANEL_OWNED: ReadonlySet<ShopBarAction> = new Set([
+	"ship",
+	"handover",
+	"declare_delivered",
+]);
+
+/**
  * `availableActions(order, "shop", role)` and nothing else: a staff member
  * seeing no cancel is the permission matrix's answer, never a role
  * comparison made here.
@@ -119,10 +130,12 @@ export function actionBarItems(
 	order: OrderActionSubject,
 	role: ShopRole | null | undefined,
 	now?: Date,
+	liveShipment = false,
 ): ActionBarItem[] {
 	const options: AvailableActionsOptions = now ? { now } : {};
 	return availableActions(order, "shop", role, options)
 		.filter(isBarAction)
+		.filter((action) => !(liveShipment && PANEL_OWNED.has(action)))
 		.map((action) => ({ action, ...PRESENTATION[action] }));
 }
 

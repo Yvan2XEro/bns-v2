@@ -61,6 +61,17 @@ function isShopAction(action: OrderAction): action is ShopAction {
 }
 
 /**
+ * With a live shipment the shipment panel owns these three: the legacy order
+ * routes post no proof photo, so `declare_delivered` always dead-ends and the
+ * other two duplicate the panel. No shipment keeps the P4 buttons unchanged.
+ */
+const PANEL_OWNED: ReadonlySet<OrderAction> = new Set([
+	"ship",
+	"handover",
+	"declare_delivered",
+]);
+
+/**
  * The action bar is `availableActions(order, "shop", role)` and nothing else:
  * which buttons a state offers, and which a staff member does not get, is the
  * table's and the permission matrix's answer, never a role comparison here.
@@ -71,9 +82,11 @@ export function actionBarItems(
 	order: OrderView,
 	role: ShopRole | null,
 	now: Date = new Date(),
+	liveShipment = false,
 ): ActionBarItem[] {
 	return availableActions(order, "shop", role, now)
 		.filter(isShopAction)
+		.filter((action) => !(liveShipment && PANEL_OWNED.has(action)))
 		.map((action) => ({ action, ...PRESENTATION[action] }));
 }
 

@@ -9,6 +9,7 @@ import {
 	useConfirmByCall,
 	useShipOrder,
 } from "@/src/hooks/useOrderActions";
+import { useShopOrderShipments } from "@/src/hooks/useShipmentActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -49,7 +50,11 @@ export function ActionBar({
 	const all = [accept, ship, confirmByCall];
 	const failed = all.find((m) => m.isError);
 	const pending = all.some((m) => m.isPending);
-	const items = actionBarItems(order, role);
+	const shipments = useShopOrderShipments(String(order.id));
+	const liveShipment = (shipments.data ?? []).some(
+		(shipment) => shipment.status !== "cancelled",
+	);
+	const items = actionBarItems(order, role, undefined, liveShipment);
 	const close = () => setSheet(null);
 	const openHandover = () => router.push(`/seller/orders/${order.id}/handover`);
 

@@ -9,6 +9,7 @@ import {
 	useConfirmByCall,
 	useShipOrder,
 } from "~/hooks/use-order-actions";
+import { useOrderShipments } from "~/hooks/use-shop-shipments";
 import { resolveErrorMessage } from "~/lib/apiError";
 import type { ShopRole } from "~/types";
 import type { OrderView } from "~/types/order";
@@ -59,7 +60,11 @@ export function ActionBar({
 	const failed = [accept, ship, confirmByCall].find((m) => m.isError);
 	const pending = [accept, ship, confirmByCall].some((m) => m.isPending);
 
-	const items = actionBarItems(order, role);
+	const shipments = useOrderShipments(shopId, order.id, order.status);
+	const liveShipment = (shipments.data ?? []).some(
+		(shipment) => shipment.status !== "cancelled",
+	);
+	const items = actionBarItems(order, role, new Date(), liveShipment);
 	const canDeclare = items.some((item) => item.action === "declare_delivered");
 	const close = () => setDialog(null);
 

@@ -111,6 +111,34 @@ const ROLES: Array<ShopRole | null> = ["owner", "manager", "staff", null];
 const items = (o: OrderView, role: ShopRole | null): OrderAction[] =>
 	actionBarItems(o, role, NOW).map((item) => item.action);
 
+describe("a live shipment hands its three actions to the shipment panel", () => {
+	const names = (status: "accepted" | "shipped", live: boolean) =>
+		actionBarItems(order({ status }), "owner", NOW, live).map(
+			(item) => item.action,
+		);
+
+	test("hidden with a live shipment, unchanged without one", () => {
+		expect(names("accepted", false)).toEqual([
+			"ship",
+			"seller_cancel",
+			"receipt",
+		]);
+		expect(names("accepted", true)).toEqual(["seller_cancel", "receipt"]);
+		expect(names("shipped", false)).toEqual([
+			"handover",
+			"declare_delivered",
+			"report_failed_attempt",
+			"mark_delivery_failed",
+			"receipt",
+		]);
+		expect(names("shipped", true)).toEqual([
+			"report_failed_attempt",
+			"mark_delivery_failed",
+			"receipt",
+		]);
+	});
+});
+
 describe("the action bar renders exactly availableActions", () => {
 	test("for every status and every role, in the table's order", () => {
 		let cells = 0;

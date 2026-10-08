@@ -94,6 +94,25 @@ function resolves(catalogue: Json, path: string): boolean {
 }
 
 describe("the action bar is the shared table's answer", () => {
+	test("a live shipment hides the three actions its screen owns, none otherwise", () => {
+		const names = (status: "accepted" | "shipped", live: boolean) =>
+			actionBarItems(orderAt(status), "owner", NOW, live).map(
+				(item) => item.action,
+			);
+		expect(names("accepted", false)).toEqual(["ship", "seller_cancel"]);
+		expect(names("accepted", true)).toEqual(["seller_cancel"]);
+		expect(names("shipped", false)).toEqual([
+			"handover",
+			"declare_delivered",
+			"report_failed_attempt",
+			"mark_delivery_failed",
+		]);
+		expect(names("shipped", true)).toEqual([
+			"report_failed_attempt",
+			"mark_delivery_failed",
+		]);
+	});
+
 	test("an owner on a confirmed order gets accept, decline and cancel", () => {
 		const actions = actionBarItems(orderAt("confirmed"), "owner", NOW).map(
 			(item) => item.action,
