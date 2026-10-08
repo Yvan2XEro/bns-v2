@@ -28,10 +28,10 @@ export function mapNotchPayStatus(value: string): ProviderPaymentStatus {
 	return "pending";
 }
 
-const toText = (value: unknown): string =>
+export const toText = (value: unknown): string =>
 	typeof value === "string" ? value : "";
 
-const toAmount = (value: unknown): number | null => {
+export const toAmount = (value: unknown): number | null => {
 	if (typeof value === "number" && Number.isFinite(value)) return value;
 	if (
 		typeof value === "string" &&
@@ -42,7 +42,7 @@ const toAmount = (value: unknown): number | null => {
 	return null;
 };
 
-const toCurrency = (value: unknown): string | null =>
+export const toCurrency = (value: unknown): string | null =>
 	typeof value === "string" && value ? value.toUpperCase() : null;
 
 /**
