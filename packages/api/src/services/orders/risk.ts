@@ -39,14 +39,22 @@ function orderIdOf(value: string | Order | null | undefined): string | null {
 /** The refusals array is pruned to this many rows on every write (Task 10 brief). */
 const MAX_REFUSALS_KEPT = 20;
 
-type ScoredRefusalReason = "refused" | "unreachable" | "absent";
+type ScoredRefusalReason =
+	| "refused"
+	| "unreachable"
+	| "absent"
+	| "refused_abuse";
 
-/** The only three reasons a delivery failure is the buyer's fault; everything
+/** The reasons that count against a buyer: three delivery failures, plus
+ * `refused_abuse`, which only a resolved dispute writes. Everything
  * else (`timeout`, `address_not_found`, `other`) carries weight 0 in
  * `refusalWeight` and is never written to the row at all. */
 function isScoredRefusal(reason: string): reason is ScoredRefusalReason {
 	return (
-		reason === "refused" || reason === "unreachable" || reason === "absent"
+		reason === "refused" ||
+		reason === "unreachable" ||
+		reason === "absent" ||
+		reason === "refused_abuse"
 	);
 }
 

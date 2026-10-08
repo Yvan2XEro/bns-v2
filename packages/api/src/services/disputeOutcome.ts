@@ -10,6 +10,7 @@ import type { Dispute, Order, ReturnCase } from "../payload-types";
 import { notifyDisputeResolved } from "./caseNotifications";
 import { queueCertificateRender } from "./disputeCertificates";
 import { moveDispute } from "./disputes";
+import { recordRefusal } from "./orders/risk";
 import { applyReservedTransition } from "./orders/transitions";
 import { findActiveHold, releaseHold } from "./payoutHolds";
 import { adjustResellerCommissionForRefund } from "./purchaseOrders";
@@ -23,6 +24,40 @@ import { addStrike } from "./strikes";
 export type OutcomeInput = DisputeOutcomeInput;
 
 export type DecisionType = "system" | "agreement" | "moderator";
+
+const SPLIT_STRIKE_REASONS: ReadonlySet<string> = new Set([
+	"item_not_conforming",
+	"seller_no_proof",
+]);
+
+/** The buyer never took delivery, so their review is no verified purchase. */
+async function stripVerifiedPurchase(
+	req: PayloadRequest,
+	orderId: string,
+): Promise<void> {
+	const reviews = await req.payload.find({
+		collection: "reviews",
+		where: {
+			and: [
+				{ order: { equals: orderId } },
+				{ verifiedPurchase: { equals: true } },
+			],
+		},
+		limit: 100,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	for (const review of reviews.docs) {
+		await req.payload.update({
+			collection: "reviews",
+			id: String(review.id),
+			req,
+			overrideAccess: true,
+			data: { verifiedPurchase: false },
+		});
+	}
+}
 
 function isTerminal(dispute: Dispute): boolean {
 	return ["resolved_buyer", "resolved_seller", "resolved_split"].includes(
@@ -367,13 +402,16 @@ export async function applyOutcome(
 		},
 	);
 
-	const shouldStrike =
-		input.outcome === "resolved_buyer" &&
-		decidedByType === "moderator" &&
-		reviewed(dispute);
+	const moderatorDecided = decidedByType === "moderator";
+	const sellerLost =
+		input.outcome === "resolved_buyer"
+			? (moderatorDecided && reviewed(dispute)) || decidedByType === "system"
+			: input.outcome === "resolved_split" &&
+				moderatorDecided &&
+				SPLIT_STRIKE_REASONS.has(input.reasonCode);
 	const strikeIds: string[] = [];
 	const riskSignalIds: string[] = [];
-	if (shouldStrike) {
+	if (sellerLost) {
 		const strike = await addStrike(
 			req,
 			{
@@ -385,6 +423,8 @@ export async function applyOutcome(
 			now,
 		);
 		strikeIds.push(String(strike.id));
+	}
+	if (sellerLost && moderatorDecided) {
 		const signal = await recordRiskSignal(req, {
 			subjectType: "shop",
 			subjectId: shopId,
@@ -394,6 +434,26 @@ export async function applyOutcome(
 			occurredAt: now,
 		});
 		riskSignalIds.push(String(signal.id));
+	}
+	if (
+		dispute.reason === "cod_refused_abuse" &&
+		input.outcome === "resolved_seller"
+	) {
+		await recordRefusal(req, {
+			phone: order.delivery.phone,
+			orderId,
+			reason: "refused_abuse",
+		});
+		const signal = await recordRiskSignal(req, {
+			subjectType: "phone",
+			subjectId: order.delivery.phone,
+			signal: "cod_refusal_abuse",
+			sourceType: "dispute",
+			sourceId: String(dispute.id),
+			occurredAt: now,
+		});
+		riskSignalIds.push(String(signal.id));
+		await stripVerifiedPurchase(req, orderId);
 	}
 	if (input.reasonCode === "counterfeit_confirmed") {
 		const signal = await recordRiskSignal(req, {
