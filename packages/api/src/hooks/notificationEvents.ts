@@ -68,6 +68,10 @@ export function buildExpoPushData(
 				? { orderId, url: `/seller/orders/${orderId}` }
 				: undefined;
 		}
+		case "shop-weekly-insights":
+			return {
+				url: getStringValue(payload, "topActionHref") ?? "/seller/insights",
+			};
 		case "shipment-pickup-reminder":
 			return orderId ? { orderId, url: `/purchases/${orderId}` } : undefined;
 		case "shipment-late":

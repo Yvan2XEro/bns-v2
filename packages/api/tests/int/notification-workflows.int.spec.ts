@@ -378,6 +378,34 @@ describe("P7 shipment job workflows", () => {
 	});
 });
 
+describe("P9 weekly insights workflow", () => {
+	it("declares the whole summary payload and routes the push to the top action", () => {
+		const weekly = WORKFLOWS.find(
+			(workflow) => workflow.workflowId === "shop-weekly-insights",
+		);
+		expect(weekly?.payloadSchema).toMatchObject({
+			required: [
+				"shopId",
+				"from",
+				"to",
+				"gmvDelivered",
+				"ordersPlaced",
+				"ordersDelivered",
+				"responseTime",
+				"topAction",
+				"topActionHref",
+			],
+			additionalProperties: false,
+		});
+		expect(weekly?.steps.map((step) => step.type)).toEqual(["email", "push"]);
+		expect(
+			buildExpoPushData("shop-weekly-insights", {
+				topActionHref: "/seller/insights#restock",
+			}),
+		).toEqual({ url: "/seller/insights#restock" });
+	});
+});
+
 describe("P8 resale-link workflows", () => {
 	it("declares request, decision, and suspension workflows with explicit payload contracts", () => {
 		const expected = {

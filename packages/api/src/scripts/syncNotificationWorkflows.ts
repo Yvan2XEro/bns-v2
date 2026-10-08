@@ -2462,6 +2462,57 @@ const workflowSpecs: WorkflowSpec[] = [
 		},
 	},
 	{
+		channels: { email: true, push: true },
+		definition: {
+			name: "Shop Weekly Insights",
+			description:
+				"Sends shop owners and managers their seven-day summary every Monday.",
+			workflowId: "shop-weekly-insights",
+			tags: ["insights", "shop"],
+			active: true,
+			validatePayload: true,
+			isTranslationEnabled: false,
+			payloadSchema: objectSchema(
+				{
+					shopId: stringProperty("Shop identifier"),
+					from: stringProperty("First day of the summary, YYYY-MM-DD"),
+					to: stringProperty("Last day of the summary, YYYY-MM-DD"),
+					gmvDelivered: numberProperty("Delivered sales over the period, XAF"),
+					ordersPlaced: numberProperty("Orders placed over the period"),
+					ordersDelivered: numberProperty("Orders delivered over the period"),
+					responseTime: stringProperty(
+						'Median first-reply bucket ("m5", "m15", "h1", "h4", "h24", "over24h") or "none"',
+					),
+					topAction: stringProperty('First recommended action type or "none"'),
+					topActionHref: stringProperty("Seller route of the top action"),
+				},
+				[
+					"shopId",
+					"from",
+					"to",
+					"gmvDelivered",
+					"ordersPlaced",
+					"ordersDelivered",
+					"responseTime",
+					"topAction",
+					"topActionHref",
+				],
+			),
+			preferences: preferences({ email: true, push: true }),
+			steps: [
+				emailStep("Email", "email", {
+					subject:
+						"Votre semaine sur BuyNSellem / Your week on BuyNSellem ({{payload.from}} - {{payload.to}})",
+					body: "Ventes livrées : {{payload.gmvDelivered}} FCFA, {{payload.ordersDelivered}} commande(s) livrée(s) sur {{payload.ordersPlaced}}. Voir le détail : /seller/insights / Delivered sales: {{payload.gmvDelivered}} XAF, {{payload.ordersDelivered}} of {{payload.ordersPlaced}} order(s) delivered. Details: /seller/insights",
+				}),
+				pushStep("Push", "push", {
+					subject: "Votre semaine / Your week",
+					body: "{{payload.gmvDelivered}} FCFA livrés, {{payload.ordersPlaced}} commande(s). / {{payload.gmvDelivered}} XAF delivered, {{payload.ordersPlaced}} order(s).",
+				}),
+			],
+		},
+	},
+	{
 		channels: { inApp: true, push: true },
 		definition: {
 			name: "Shipment Pickup Reminder",

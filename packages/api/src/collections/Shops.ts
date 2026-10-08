@@ -34,6 +34,7 @@ export const SHOP_SERVICE_FIELDS = [
 	"publishedListingCount",
 	"notifiedExpiryDays",
 	"deliveryMigrationNoticeSentAt",
+	"weeklyInsightsSentFor",
 	"ordersRestrictedAt",
 	"ordersRestrictedReason",
 	"rating",
@@ -301,6 +302,17 @@ export const Shops: CollectionConfig = {
 				position: "sidebar",
 				description:
 					"The expiry-notice threshold (30 or 7 days) last sent for the current levelExpiresAt, so the nightly purge fires each one once. Written only by jobs/purgeVerificationData.ts through writeShop.",
+			},
+		},
+		{
+			name: "weeklyInsightsSentFor",
+			type: "text",
+			access: { read: () => false },
+			admin: {
+				readOnly: true,
+				position: "sidebar",
+				description:
+					"Start of the Douala week the weekly insights notice was last sent for; jobs/sendWeeklyInsights.ts sends each shop once per week.",
 			},
 		},
 		{

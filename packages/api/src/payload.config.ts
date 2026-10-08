@@ -126,6 +126,7 @@ import {
 	remindReturnsTask,
 	renderDisputeCertificateTask,
 	retryResellerPayoutsTask,
+	sendWeeklyInsightsTask,
 	submitRefundTask,
 	sweepBuyerFeeInvoicesTask,
 	syncConnectedAccountTask,
@@ -393,6 +394,7 @@ export default buildConfig({
 			failStaleOrdersTask,
 			flushListingViewsTask,
 			aggregateShopDailyStatsTask,
+			sendWeeklyInsightsTask,
 			completeOrdersTask,
 			markOverdueResellerChargesTask,
 			payResellerCommissionsTask,
@@ -414,6 +416,9 @@ export default buildConfig({
 			// never be starved by, or starve, the nightly sweeps.
 			{ cron: "*/15 * * * *", queue: "commission", limit: 20 },
 			{ cron: "0 5 * * 1", queue: "commission", limit: 20 },
+			// Weekly seller summaries: the schedule queues at 07:00 UTC Monday and
+			// this drains it, retrying through the morning.
+			{ cron: "*/15 7-8 * * 1", queue: "insights", limit: 20 },
 			{ cron: "0 6 * * *", queue: "commission", limit: 20 },
 			// The order lifecycle: `expireOrders` and the `dispatchOrderEvent`
 			// retries it enqueues share the five-minute "orders" queue, while

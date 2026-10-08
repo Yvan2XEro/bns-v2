@@ -45,6 +45,7 @@ export { releaseResellerCommissionsTask } from "./releaseResellerCommissions";
 export { remindReturnsTask } from "./remindReturns";
 export { renderDisputeCertificateTask } from "./renderDisputeCertificate";
 export { retryResellerPayoutsTask } from "./retryResellerPayouts";
+export { sendWeeklyInsightsTask } from "./sendWeeklyInsights";
 export { submitRefundTask } from "./submitRefund";
 export { sweepBuyerFeeInvoicesTask } from "./sweepBuyerFeeInvoices";
 export { syncConnectedAccountTask } from "./syncConnectedAccount";
