@@ -618,6 +618,44 @@ function RootLayoutNav() {
 					name="seller/payments/payouts/[id]"
 					options={{ headerShown: false }}
 				/>
+
+				{/* P7 delivery: settings, tracking reschedule, shipment, rider, courier. */}
+				<Stack.Screen
+					name="purchases/[id]/reschedule"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/delivery/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/delivery/zone/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/delivery/locations"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/delivery/location/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/shipment/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="rider/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="rider/shipment/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="courier/index"
+					options={{ headerShown: false }}
+				/>
 			</Stack>
 
 			<StatusBar style="auto" />

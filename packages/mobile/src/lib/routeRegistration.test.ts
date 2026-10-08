@@ -26,6 +26,12 @@ const P4_ROOTS = [
 	// Task 29: the P5 pay/pending screens already live under checkout/**, and
 	// the seller payments hub/setup/payouts screens join the inventory here.
 	"seller/payments/**/*",
+	// Registrations task: the P7 delivery settings, shipment, rider and
+	// courier screens.
+	"seller/delivery/**/*",
+	"seller/shipment/**/*",
+	"rider/**/*",
+	"courier/**/*",
 ];
 
 function appFiles(pattern: string): string[] {
@@ -58,8 +64,9 @@ const registered = stackScreenNames(
 describe("every P4 screen is registered in the root stack", () => {
 	// Task 29 added the five P5 screens (checkout/[orderId]/pay.tsx,
 	// checkout/[orderId]/pending.tsx and the three seller/payments/** files),
-	// taking the list from fifteen to twenty.
-	test("the roots hold the twenty screens the plan lists", () => {
+	// taking the list from fifteen to twenty. The registrations task adds the
+	// reschedule screen and the eight P7 delivery/rider/courier screens.
+	test("the roots hold the thirty screens the plan lists", () => {
 		expect(p4Screens).toEqual([
 			"cart.tsx",
 			"checkout/[orderId]/pay.tsx",
@@ -68,13 +75,21 @@ describe("every P4 screen is registered in the root stack", () => {
 			"checkout/confirmation/[id].tsx",
 			"checkout/delivery.tsx",
 			"checkout/review.tsx",
+			"courier/index.tsx",
 			"moderation/order/[id].tsx",
 			"purchases/[id].tsx",
 			"purchases/[id]/problem.tsx",
+			"purchases/[id]/reschedule.tsx",
 			"purchases/[id]/withdrawal.tsx",
 			"purchases/index.tsx",
+			"rider/index.tsx",
+			"rider/shipment/[id].tsx",
 			"seller/billing/[id].tsx",
 			"seller/billing/index.tsx",
+			"seller/delivery/index.tsx",
+			"seller/delivery/location/[id].tsx",
+			"seller/delivery/locations.tsx",
+			"seller/delivery/zone/[id].tsx",
 			"seller/order-settings.tsx",
 			"seller/orders/[id].tsx",
 			"seller/orders/[id]/handover.tsx",
@@ -82,6 +97,7 @@ describe("every P4 screen is registered in the root stack", () => {
 			"seller/payments/index.tsx",
 			"seller/payments/payouts/[id].tsx",
 			"seller/payments/setup.tsx",
+			"seller/shipment/[id].tsx",
 		]);
 	});
 
@@ -107,8 +123,8 @@ describe("every P4 screen is registered in the root stack", () => {
 		const names = [
 			...new Set(p4Screens.map((f) => rootRegistrationFor(f, layoutDirs))),
 		];
-		// The problem-report flow adds one nested purchase root.
-		expect(names).toHaveLength(16);
+		// The problem-report flow adds one nested purchase root; the reschedule screen and the eight P7 screens add nine more.
+		expect(names).toHaveLength(25);
 		for (const name of names) {
 			const entry = new RegExp(
 				`<Stack\\.Screen\\s+name="${name.replace(/[[\]]/g, "\\$&")}"[^>]*headerShown: false`,
