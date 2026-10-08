@@ -451,3 +451,413 @@ describe("NotchPay adapter — charges", () => {
 		});
 	});
 });
+
+const TRANSFER_STATUS_NAMES = [
+	"pending",
+	"sent",
+	"processing",
+	"complete",
+	"failed",
+	"reversed",
+];
+
+const moneyOutFixtures: NotchPayFixture[] = [
+	{
+		key: "refund-list-empty",
+		request: {
+			method: "GET",
+			path: "/payments/{ref}/refunds",
+			when: "refunds:{ref}=initial",
+		},
+		response: { status: 200, body: { refunds: [] } },
+	},
+	{
+		key: "refund-list-made",
+		request: {
+			method: "GET",
+			path: "/payments/{ref}/refunds",
+			when: "refunds:{ref}=made",
+		},
+		response: {
+			status: 200,
+			body: {
+				refunds: [
+					{
+						id: "ref_{refundIdempotencyKey}",
+						status: "pending",
+						amount: 500,
+						metadata: { idempotency_key: "{refundIdempotencyKey}" },
+					},
+				],
+			},
+		},
+		assumed: ["A8", "A9"],
+	},
+	{
+		key: "refund-create",
+		request: { method: "POST", path: "/refunds" },
+		response: {
+			status: 201,
+			body: {
+				refund: { id: "ref_{refundIdempotencyKey}", status: "pending" },
+			},
+		},
+		sets: "refunds:{payment}=made",
+		binds: { refundIdempotencyKey: "body.metadata.idempotency_key" },
+		assumed: ["A8"],
+	},
+	{
+		key: "refund-with-metadata",
+		request: { method: "GET", path: "/refunds/ref_meta" },
+		response: {
+			status: 200,
+			body: {
+				refund: {
+					id: "ref_meta",
+					status: "complete",
+					amount: 500,
+					currency: "xaf",
+					payment: "trx.abc",
+					metadata: { idempotency_key: "order:1:1", payment_reference: "PI-9" },
+				},
+			},
+		},
+		assumed: ["A9"],
+	},
+	{
+		key: "refund-dashboard",
+		request: { method: "GET", path: "/refunds/ref_dash" },
+		response: {
+			status: 200,
+			body: {
+				refund: {
+					id: "ref_dash",
+					status: "failed",
+					amount: 300,
+					currency: "XAF",
+					payment: "trx.abc",
+					failure_reason: "account closed",
+				},
+			},
+		},
+		assumed: ["A9"],
+	},
+	{
+		key: "payment-by-provider-reference",
+		request: { method: "GET", path: "/payments/trx.abc" },
+		response: {
+			status: 200,
+			body: { transaction: { trxref: "PI-9", status: "complete" } },
+		},
+	},
+	{
+		key: "payout-create",
+		request: { method: "POST", path: "/sync/accounts/{id}/payouts" },
+		response: { status: 201, body: { transfer: { id: "tr_pay" } } },
+		assumed: ["A10"],
+	},
+	...TRANSFER_STATUS_NAMES.map(
+		(status): NotchPayFixture => ({
+			key: `transfer-${status}`,
+			request: { method: "GET", path: `/transfers/tr_${status}` },
+			response: {
+				status: 200,
+				body: {
+					transfer: {
+						id: `tr_${status}`,
+						status,
+						account: "acc_1",
+						reference: "RP-1",
+						amount: 700,
+						currency: "XAF",
+						fee: 20,
+						message: "bank refused",
+					},
+				},
+			},
+			assumed: ["A15"],
+		}),
+	),
+	{
+		key: "transfer-alien",
+		request: { method: "GET", path: "/transfers/tr_alien" },
+		response: {
+			status: 200,
+			body: { transfer: { id: "tr_alien", status: "on_hold", amount: 1 } },
+		},
+	},
+	{
+		key: "balance-ghost",
+		request: { method: "GET", path: "/sync/accounts/ghost/balance" },
+		response: { status: 404, body: { message: "Account not found" } },
+	},
+	{
+		key: "balance",
+		request: { method: "GET", path: "/sync/accounts/{id}/balance" },
+		response: {
+			status: 200,
+			body: { balance: { available: { XAF: 1500.0, EUR: 3 }, pending: 250 } },
+		},
+		assumed: ["A11"],
+	},
+	{
+		key: "history",
+		request: { method: "GET", path: "/balance/history" },
+		response: {
+			status: 200,
+			body: {
+				items: [
+					{
+						id: "h1",
+						type: "payment",
+						reference: "trx.PI-1",
+						merchant_reference: "PI-1",
+						amount: 1000,
+						currency: "XAF",
+						fee: 30,
+						account: "acc_1",
+						created_at: "2026-10-01T10:00:00Z",
+					},
+					{
+						id: "h2",
+						type: "refund",
+						reference: "ref_meta",
+						amount: -500,
+						currency: "XAF",
+						created_at: "2026-10-02T10:00:00Z",
+					},
+					{
+						id: "h3",
+						type: "transfer",
+						reference: "tr_complete",
+						amount: -700,
+						currency: "XAF",
+						created_at: "2026-10-03T10:00:00Z",
+					},
+					{
+						id: "h4",
+						type: "adjustment",
+						reference: "ADJ-1",
+						amount: -50,
+						currency: "XAF",
+						created_at: "2026-10-04T10:00:00Z",
+					},
+				],
+			},
+		},
+		assumed: ["A12"],
+	},
+];
+
+describe("NotchPay adapter — refunds, transfers, balance", () => {
+	const refund = (key: string, amount = 500) => ({
+		paymentReference: "PI-1",
+		amount,
+		reason: "returned",
+		idempotencyKey: key,
+	});
+	const posts = (journal: { method: string }[]) =>
+		journal.filter((request) => request.method === "POST");
+
+	it("replays a refund by key with exactly one POST", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		const first = await provider.createRefund(refund("order:1:1"));
+		const second = await provider.createRefund(refund("order:1:1"));
+		expect(second).toEqual(first);
+		expect(first).toEqual({ refundId: "ref_order:1:1", status: "pending" });
+		expect(posts(replay.journal)).toEqual([
+			{
+				method: "POST",
+				path: "/refunds",
+				body: {
+					payment: "PI-1",
+					amount: 500,
+					reason: "returned",
+					metadata: {
+						idempotency_key: "order:1:1",
+						payment_reference: "PI-1",
+					},
+				},
+				idempotencyKey: "order:1:1",
+			},
+		]);
+	});
+
+	it("refuses the same key with a new amount before any write", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		await provider.createRefund(refund("order:1:1"));
+		await expect(
+			provider.createRefund(refund("order:1:1", 600)),
+		).rejects.toMatchObject({
+			name: "ProviderRequestError",
+			method: "createRefund",
+			status: 409,
+		});
+		expect(posts(replay.journal)).toHaveLength(1);
+	});
+
+	it("mints a second refund for a new key", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		const first = await provider.createRefund(refund("order:1:1"));
+		const second = await provider.createRefund(refund("order:1:2"));
+		expect(second.refundId).not.toBe(first.refundId);
+		expect(posts(replay.journal)).toHaveLength(2);
+	});
+
+	it("reads a refund from its metadata without a payment lookup", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		expect(await provider.getRefund("ref_meta")).toEqual({
+			refundId: "ref_meta",
+			paymentReference: "PI-9",
+			idempotencyKey: "order:1:1",
+			amount: 500,
+			currency: "XAF",
+			status: "succeeded",
+			failureReason: null,
+		});
+		expect(replay.journal).toHaveLength(1);
+	});
+
+	it("falls back to the payment's trxref for a dashboard refund", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		expect(await provider.getRefund("ref_dash")).toMatchObject({
+			paymentReference: "PI-9",
+			idempotencyKey: null,
+			status: "failed",
+			failureReason: "account closed",
+		});
+		expect(replay.journal.map((request) => request.path)).toEqual([
+			"/refunds/ref_dash",
+			"/payments/trx.abc",
+		]);
+	});
+
+	it("releases a payout with the reference as idempotency key", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		expect(
+			await provider.releasePayout("acc_1", {
+				amount: 700,
+				currency: "XAF",
+				reference: "PO-1",
+			}),
+		).toEqual({ transferId: "tr_pay" });
+		expect(replay.journal).toEqual([
+			{
+				method: "POST",
+				path: "/sync/accounts/acc_1/payouts",
+				body: { amount: 700, currency: "XAF", reference: "PO-1" },
+				idempotencyKey: "PO-1",
+			},
+		]);
+	});
+
+	it.each(TRANSFER_STATUS_NAMES)("reads a %s transfer", async (status) => {
+		const { provider } = build(moneyOutFixtures);
+		expect(await provider.getTransfer(`tr_${status}`)).toEqual({
+			transferId: `tr_${status}`,
+			accountId: "acc_1",
+			reference: "RP-1",
+			amount: 700,
+			currency: "XAF",
+			fee: 20,
+			status,
+			failureReason: status === "failed" ? "bank refused" : null,
+		});
+	});
+
+	it("never leaks a transfer status outside the port's vocabulary", async () => {
+		const { provider } = build(moneyOutFixtures);
+		await expect(provider.getTransfer("tr_alien")).rejects.toMatchObject({
+			name: "ProviderRequestError",
+			method: "getTransfer",
+			status: 502,
+		});
+	});
+
+	it("reads the XAF balance, and refuses an unknown account", async () => {
+		const { provider } = build(moneyOutFixtures);
+		expect(await provider.getConnectedAccountBalance("acc_1")).toEqual({
+			available: 1500,
+			pending: 250,
+		});
+		await expect(
+			provider.getConnectedAccountBalance("ghost"),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("lists one page of all four kinds, enriching refunds and transfers", async () => {
+		const { provider, replay } = build(moneyOutFixtures);
+		expect(
+			await provider.listTransactions({
+				from: new Date("2026-10-01T00:00:00Z"),
+				to: new Date("2026-10-05T00:00:00Z"),
+				page: 1,
+				accountId: "acc_1",
+			}),
+		).toEqual([
+			{
+				providerId: "h1",
+				reference: "PI-1",
+				accountId: "acc_1",
+				amount: 1000,
+				currency: "XAF",
+				fee: 30,
+				occurredAt: "2026-10-01T10:00:00Z",
+				entity: "payment",
+				status: "succeeded",
+			},
+			{
+				providerId: "ref_meta",
+				reference: "order:1:1",
+				accountId: null,
+				amount: 500,
+				currency: "XAF",
+				fee: null,
+				occurredAt: "2026-10-02T10:00:00Z",
+				entity: "refund",
+				status: "succeeded",
+			},
+			{
+				providerId: "tr_complete",
+				reference: "RP-1",
+				accountId: null,
+				amount: 700,
+				currency: "XAF",
+				fee: null,
+				occurredAt: "2026-10-03T10:00:00Z",
+				entity: "transfer",
+				status: "complete",
+			},
+			{
+				providerId: "h4",
+				reference: "ADJ-1",
+				accountId: null,
+				amount: 50,
+				currency: "XAF",
+				fee: null,
+				occurredAt: "2026-10-04T10:00:00Z",
+				entity: "debit",
+				status: "succeeded",
+			},
+		]);
+		expect(replay.journal[0]).toEqual({
+			method: "GET",
+			path: "/balance/history",
+			query: {
+				page: "1",
+				limit: "100",
+				date_start: "2026-10-01",
+				date_end: "2026-10-05",
+				account: "acc_1",
+			},
+		});
+	});
+
+	it("declares the debit gap as a capability error", async () => {
+		const { provider } = build([]);
+		await expect(provider.debitConnectedAccount()).rejects.toMatchObject({
+			name: "ProviderCapabilityError",
+			message: "notchpay cannot debitConnectedAccount",
+		});
+	});
+});

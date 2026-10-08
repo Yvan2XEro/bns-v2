@@ -1,16 +1,28 @@
 import {
 	type CreateConnectedAccountInput,
 	type CreateDestinationChargeInput,
+	type CreateRefundInput,
+	type ListTransactionsInput,
 	type MarketplaceMethod,
 	type MarketplaceProvider,
 	type NormalisedAccount,
 	type NormalisedPayment,
+	type NormalisedRefund,
+	type NormalisedRefundStatus,
+	type NormalisedTransaction,
+	type NormalisedTransfer,
 	type PayoutSchedule,
+	ProviderCapabilityError,
 	ProviderRequestError,
 	ProviderUnavailableError,
 } from "./marketplace";
 import { mapNotchPayStatus, toAmount, toCurrency, toText } from "./notchpay";
-import { ACCOUNT_STATUSES, failureCodeOf } from "./notchpayTables";
+import {
+	ACCOUNT_STATUSES,
+	failureCodeOf,
+	REFUND_STATUSES,
+	TRANSFER_STATUSES,
+} from "./notchpayTables";
 import {
 	liveTransport,
 	type NotchPayTransport,
@@ -41,6 +53,12 @@ const record = (value: unknown): Record<string, unknown> =>
 
 const enc = encodeURIComponent;
 
+/** A balance side is a bare integer or a per-currency object; XAF is the launch market's. */
+function balanceSide(value: unknown): number {
+	const amount = isRecord(value) ? value.XAF : value;
+	return Math.round(toAmount(amount) ?? 0);
+}
+
 function malformed(method: MarketplaceMethod): never {
 	throw new ProviderRequestError(
 		method,
@@ -56,7 +74,14 @@ type Implemented =
 	| "setPayoutSchedule"
 	| "createDestinationCharge"
 	| "chargeMobileMoney"
-	| "verifyPayment";
+	| "verifyPayment"
+	| "createRefund"
+	| "getRefund"
+	| "releasePayout"
+	| "getTransfer"
+	| "getConnectedAccountBalance"
+	| "listTransactions"
+	| "debitConnectedAccount";
 
 export class NotchPayMarketplaceProvider
 	implements Pick<MarketplaceProvider, Implemented | "id">
@@ -290,4 +315,263 @@ export class NotchPayMarketplaceProvider
 			},
 		);
 	}
+
+	async createRefund(
+		input: CreateRefundInput,
+	): Promise<{ refundId: string; status: NormalisedRefundStatus }> {
+		const existing = await this.call(
+			"createRefund",
+			{
+				method: "GET",
+				path: `/payments/${enc(input.paymentReference)}/refunds`,
+			},
+			(body) => {
+				const refunds = record(body).refunds;
+				return Array.isArray(refunds) ? refunds.map(record) : [];
+			},
+		);
+		const prior = existing.find(
+			(refund) =>
+				record(refund.metadata).idempotency_key === input.idempotencyKey,
+		);
+		if (prior) {
+			if (toAmount(prior.amount) !== input.amount) {
+				throw new ProviderRequestError(
+					"createRefund",
+					409,
+					"idempotency key reused with a different amount",
+				);
+			}
+			return readRefundAck("createRefund", prior);
+		}
+		return this.call(
+			"createRefund",
+			{
+				method: "POST",
+				path: "/refunds",
+				body: {
+					payment: input.paymentReference,
+					amount: input.amount,
+					reason: input.reason,
+					metadata: {
+						idempotency_key: input.idempotencyKey,
+						payment_reference: input.paymentReference,
+					},
+				},
+				idempotencyKey: input.idempotencyKey,
+			},
+			(body) => {
+				const envelope = record(body);
+				return readRefundAck(
+					"createRefund",
+					isRecord(envelope.refund) ? envelope.refund : record(envelope.data),
+				);
+			},
+		);
+	}
+
+	async getRefund(refundId: string): Promise<NormalisedRefund> {
+		const refund = await this.call(
+			"getRefund",
+			{ method: "GET", path: `/refunds/${enc(refundId)}` },
+			(body) => {
+				const envelope = record(body);
+				return isRecord(envelope.refund)
+					? envelope.refund
+					: record(envelope.data);
+			},
+		);
+		const metadata = record(refund.metadata);
+		let paymentReference = toText(metadata.payment_reference);
+		if (!paymentReference) {
+			const payment = isRecord(refund.payment)
+				? toText(refund.payment.id) || toText(refund.payment.reference)
+				: toText(refund.payment);
+			if (payment) {
+				paymentReference = await this.call(
+					"getRefund",
+					{ method: "GET", path: `/payments/${enc(payment)}` },
+					(body) => {
+						const envelope = record(body);
+						const trx = isRecord(envelope.transaction)
+							? envelope.transaction
+							: envelope;
+						return toText(trx.trxref) || toText(trx.merchant_reference);
+					},
+				);
+			}
+		}
+		const ack = readRefundAck("getRefund", refund);
+		const amount = toAmount(refund.amount);
+		if (amount === null) return malformed("getRefund");
+		return {
+			refundId: ack.refundId,
+			paymentReference,
+			idempotencyKey: toText(metadata.idempotency_key) || null,
+			amount,
+			currency: toCurrency(refund.currency) ?? "",
+			status: ack.status,
+			failureReason:
+				ack.status === "failed"
+					? toText(refund.failure_reason) || toText(refund.message) || null
+					: null,
+		};
+	}
+
+	async releasePayout(
+		accountId: string,
+		payout: { amount: number; currency: string; reference: string },
+	): Promise<{ transferId: string }> {
+		return this.call(
+			"releasePayout",
+			{
+				method: "POST",
+				path: `/sync/accounts/${enc(accountId)}/payouts`,
+				body: {
+					amount: payout.amount,
+					currency: payout.currency,
+					reference: payout.reference,
+				},
+				idempotencyKey: payout.reference,
+			},
+			(body) => {
+				const envelope = record(body);
+				const transferId =
+					toText(record(envelope.transfer).id) ||
+					toText(record(envelope.payout).id);
+				if (!transferId) return malformed("releasePayout");
+				return { transferId };
+			},
+		);
+	}
+
+	async getTransfer(transferId: string): Promise<NormalisedTransfer> {
+		return this.call(
+			"getTransfer",
+			{ method: "GET", path: `/transfers/${enc(transferId)}` },
+			(body) => {
+				const envelope = record(body);
+				const transfer = isRecord(envelope.transfer)
+					? envelope.transfer
+					: record(envelope.data);
+				const status = TRANSFER_STATUSES[toText(transfer.status).toLowerCase()];
+				const amount = toAmount(transfer.amount);
+				if (!status || amount === null) return malformed("getTransfer");
+				return {
+					transferId: toText(transfer.id) || transferId,
+					accountId: toText(transfer.account) || "",
+					reference: toText(transfer.reference) || null,
+					amount,
+					currency: toCurrency(transfer.currency) ?? "",
+					fee: toAmount(transfer.fee),
+					status,
+					failureReason:
+						status === "failed"
+							? toText(transfer.failure_reason) ||
+								toText(transfer.message) ||
+								null
+							: null,
+				};
+			},
+		);
+	}
+
+	async getConnectedAccountBalance(
+		accountId: string,
+	): Promise<{ available: number; pending: number }> {
+		return this.call(
+			"getConnectedAccountBalance",
+			{ method: "GET", path: `/sync/accounts/${enc(accountId)}/balance` },
+			(body) => {
+				const envelope = record(body);
+				const balance = isRecord(envelope.balance)
+					? envelope.balance
+					: record(envelope.data);
+				return {
+					available: balanceSide(balance.available),
+					pending: balanceSide(balance.pending),
+				};
+			},
+		);
+	}
+
+	async listTransactions(
+		input: ListTransactionsInput,
+	): Promise<NormalisedTransaction[]> {
+		const items = await this.call(
+			"listTransactions",
+			{
+				method: "GET",
+				path: "/balance/history",
+				query: {
+					page: String(input.page),
+					limit: "100",
+					date_start: input.from.toISOString().slice(0, 10),
+					date_end: input.to.toISOString().slice(0, 10),
+					...(input.accountId ? { account: input.accountId } : {}),
+				},
+			},
+			(body) => {
+				const rows = record(body).items;
+				return Array.isArray(rows) ? rows.map(record) : [];
+			},
+		);
+		const out: NormalisedTransaction[] = [];
+		for (const item of items) {
+			const amount = Math.abs(toAmount(item.amount) ?? 0);
+			const base = {
+				providerId: toText(item.id) || toText(item.reference),
+				reference: toText(item.reference) || null,
+				accountId: toText(item.account) || null,
+				amount,
+				currency: toCurrency(item.currency) ?? "",
+				fee: toAmount(item.fee),
+				occurredAt: toText(item.created_at),
+			};
+			const type = toText(item.type);
+			if (type === "payment") {
+				out.push({
+					...base,
+					reference: toText(item.merchant_reference) || base.reference,
+					entity: "payment",
+					status: "succeeded",
+				});
+			} else if (type === "refund") {
+				const refund = await this.getRefund(toText(item.reference));
+				out.push({
+					...base,
+					providerId: refund.refundId,
+					reference: refund.idempotencyKey,
+					entity: "refund",
+					status: refund.status,
+				});
+			} else if (type === "transfer") {
+				const transfer = await this.getTransfer(toText(item.reference));
+				out.push({
+					...base,
+					providerId: transfer.transferId,
+					reference: transfer.reference,
+					entity: "transfer",
+					status: transfer.status,
+				});
+			} else if (type === "adjustment") {
+				out.push({ ...base, entity: "debit", status: "succeeded" });
+			}
+		}
+		return out;
+	}
+
+	async debitConnectedAccount(): Promise<{ debitId: string }> {
+		throw new ProviderCapabilityError("notchpay", "debitConnectedAccount");
+	}
+}
+
+function readRefundAck(
+	method: MarketplaceMethod,
+	refund: Record<string, unknown>,
+): { refundId: string; status: NormalisedRefundStatus } {
+	const refundId = toText(refund.id);
+	const status = REFUND_STATUSES[toText(refund.status).toLowerCase()];
+	if (!refundId || !status) return malformed(method);
+	return { refundId, status };
 }

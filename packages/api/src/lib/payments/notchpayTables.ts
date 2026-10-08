@@ -1,4 +1,9 @@
-import type { ConnectedAccountStatus, PaymentFailureCode } from "./marketplace";
+import type {
+	ConnectedAccountStatus,
+	NormalisedRefundStatus,
+	NormalisedTransferStatus,
+	PaymentFailureCode,
+} from "./marketplace";
 import type { ProviderPaymentStatus } from "./types";
 
 /** ASSUMED(A3): the sandbox's account status vocabulary. */
@@ -32,3 +37,20 @@ export function failureCodeOf(
 	}
 	return status === "failed" ? "provider_error" : null;
 }
+
+export const REFUND_STATUSES: Record<string, NormalisedRefundStatus> = {
+	pending: "pending",
+	processing: "processing",
+	complete: "succeeded",
+	completed: "succeeded",
+	failed: "failed",
+};
+
+export const TRANSFER_STATUSES: Record<string, NormalisedTransferStatus> = {
+	pending: "pending",
+	sent: "sent",
+	processing: "processing",
+	complete: "complete",
+	failed: "failed",
+	reversed: "reversed",
+};
