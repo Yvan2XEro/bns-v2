@@ -1,0 +1,29 @@
+[
+	{
+		"key": "account-updated-active-sync",
+		"body": {
+			"id": "evt_account_active",
+			"type": "account.updated",
+			"data": { "id": "{account}", "status": "active" }
+		},
+		"assumed": ["A13", "A16"]
+	},
+	{
+		"key": "account-updated-unmapped-sync",
+		"body": {
+			"id": "evt_account_odd",
+			"type": "account.updated",
+			"data": { "id": "{account}", "status": "suspended" }
+		},
+		"assumed": ["A13", "A16"]
+	},
+	{
+		"key": "account-created-bare-sync",
+		"body": {
+			"id": "evt_account_created",
+			"type": "account.created",
+			"data": { "id": "{account}" }
+		},
+		"assumed": ["A13", "A16"]
+	}
+]

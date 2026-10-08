@@ -1,0 +1,34 @@
+[
+	{
+		"key": "payment-succeeded-sync",
+		"body": {
+			"id": "evt_{ref}_succeeded",
+			"type": "payment.succeeded",
+			"data": {
+				"merchant_reference": "{ref}",
+				"reference": "trx.{ref}",
+				"amount": "{amount}",
+				"currency": "XAF",
+				"fee": 1492,
+				"destination": { "account": "{account}" }
+			}
+		},
+		"assumed": ["A13", "A16"]
+	},
+	{
+		"key": "payment-complete-legacy",
+		"body": {
+			"id": "evt_{ref}_complete",
+			"event": "payment.complete",
+			"data": {
+				"merchant_reference": "{ref}",
+				"reference": "trx.{ref}",
+				"amount": "{amount}",
+				"currency": "XAF",
+				"fee": 1492,
+				"destination": { "account": "{account}" }
+			}
+		},
+		"assumed": ["A13", "A16"]
+	}
+]

@@ -1,0 +1,66 @@
+[
+	{
+		"key": "payout-create",
+		"request": { "method": "POST", "path": "/sync/accounts/{acct}/payouts" },
+		"response": {
+			"status": 201,
+			"body": { "transfer": { "id": "tr_{reference}" } }
+		},
+		"sets": "transfer:tr_{reference}=pending",
+		"assumed": ["A10"]
+	},
+	{
+		"key": "transfer-pending",
+		"request": {
+			"method": "GET",
+			"path": "/transfers/{id}",
+			"when": "transfer:{id}=pending"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"transfer": {
+					"id": "{id}",
+					"status": "pending",
+					"account": "{acct}",
+					"reference": "{reference}",
+					"amount": 5000,
+					"currency": "XAF"
+				}
+			}
+		},
+		"assumed": ["A15"]
+	},
+	{
+		"key": "transfer-complete",
+		"request": {
+			"method": "GET",
+			"path": "/transfers/{id}",
+			"when": "transfer:{id}=complete"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"transfer": {
+					"id": "{id}",
+					"status": "complete",
+					"account": "{acct}",
+					"reference": "{reference}",
+					"amount": 5000,
+					"currency": "XAF",
+					"fee": 50
+				}
+			}
+		},
+		"assumed": ["A15"]
+	},
+	{
+		"key": "transfer-unknown",
+		"request": {
+			"method": "GET",
+			"path": "/transfers/{id}",
+			"when": "transfer:{id}=initial"
+		},
+		"response": { "status": 404, "body": { "message": "Transfer not found" } }
+	}
+]

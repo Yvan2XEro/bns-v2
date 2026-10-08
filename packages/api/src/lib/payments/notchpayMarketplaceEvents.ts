@@ -11,7 +11,11 @@ import {
 	REFUND_STATUSES,
 	TRANSFER_STATUSES,
 } from "./notchpayTables";
-import { isRecord, type ProviderPaymentStatus } from "./types";
+import {
+	isRecord,
+	type ProviderPaymentStatus,
+	WebhookSignatureError,
+} from "./types";
 
 type EventKind =
 	| { entity: "payment"; status: ProviderPaymentStatus }
@@ -99,10 +103,16 @@ export function parseNotchPayMarketplaceEvent(raw: unknown): NormalisedEvent {
 		};
 	}
 	if (kind?.entity === "account") {
+		const reported = toText(data.status).toLowerCase();
 		const status =
 			kind.status ??
-			ACCOUNT_STATUSES[toText(data.status).toLowerCase()] ??
-			(name === "account.created" ? "created" : "onboarding");
+			(reported
+				? ACCOUNT_STATUSES[reported]
+				: name === "account.created"
+					? "created"
+					: undefined);
+		// The port's contract never invents a status; an unmapped one is refused.
+		if (!status) throw new WebhookSignatureError();
 		return {
 			...common,
 			entity: "account",

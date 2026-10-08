@@ -1,0 +1,30 @@
+[
+	{
+		"key": "refund-complete-sync",
+		"body": {
+			"id": "evt_refund_complete",
+			"type": "refund.complete",
+			"data": {
+				"id": "ref_1",
+				"amount": 3000,
+				"currency": "XAF",
+				"metadata": { "payment_reference": "{ref}" }
+			}
+		},
+		"assumed": ["A13", "A16"]
+	},
+	{
+		"key": "refund-complete-legacy",
+		"body": {
+			"id": "evt_refund_complete",
+			"event": "refund.complete",
+			"data": {
+				"id": "ref_1",
+				"amount": 3000,
+				"currency": "XAF",
+				"metadata": { "payment_reference": "{ref}" }
+			}
+		},
+		"assumed": ["A13", "A16"]
+	}
+]
