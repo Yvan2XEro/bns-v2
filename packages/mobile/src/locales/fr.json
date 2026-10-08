@@ -3808,5 +3808,37 @@
 			"holdDays": "Saisissez 1 à 14 jours.",
 			"defaultOrigin": "Seule une origine d'expédition active peut être la valeur par défaut."
 		}
+	},
+	"tracking": {
+		"title": "Livraison {{number}}",
+		"promisedBy": "Promise pour le {{date}}",
+		"rider": "Votre livreur : {{name}}",
+		"callRider": "Appeler le livreur",
+		"attempts": "{{count}} tentatives de livraison",
+		"attempts_one": "{{count}} tentative de livraison",
+		"redelivery": "Nouvelle livraison : {{date}}, {{window}}",
+		"reschedule": "Choisir un nouveau créneau",
+		"pickupExpired": "La date limite de retrait est dépassée",
+		"pickupLeft_days": "{{count}} jours pour retirer le colis",
+		"pickupLeft_days_one": "{{count}} jour pour retirer le colis",
+		"pickupLeft_hours": "{{count}} heures pour retirer le colis",
+		"pickupLeft_hours_one": "{{count}} heure pour retirer le colis",
+		"pickupLeft_minutes": "{{count}} minutes pour retirer le colis",
+		"pickupLeft_minutes_one": "{{count}} minute pour retirer le colis",
+		"openTracking": "Suivre chez le transporteur",
+		"proof": "Livré, confirmé le {{date}}",
+		"codeVerified": "Code vérifié",
+		"proofPhoto": "Photo de livraison",
+		"contest": "Signaler un problème avec cette livraison",
+		"rescheduleTitle": "Nouveau créneau de livraison",
+		"rescheduleDate": "Jour",
+		"rescheduleWindow": "Moment de la journée",
+		"rescheduleLandmark": "Nouveau point de repère (facultatif)",
+		"rescheduleLandmarkShort": "Décrivez un point de repère d'au moins 5 caractères.",
+		"usePosition": "Utiliser ma position",
+		"positionCaptured": "Position enregistrée, touchez pour actualiser",
+		"positionDenied": "L'accès à la position a été refusé. Le point de repère suffira.",
+		"rescheduleSubmit": "Confirmer le nouveau créneau",
+		"rescheduleClosed": "Il n'y a rien à reprogrammer sur cette commande."
 	}
 }

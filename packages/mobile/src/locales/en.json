@@ -3805,5 +3805,37 @@
 			"holdDays": "Enter 1 to 14 days.",
 			"defaultOrigin": "Only an active dispatch origin can be the default."
 		}
+	},
+	"tracking": {
+		"title": "Delivery {{number}}",
+		"promisedBy": "Promised by {{date}}",
+		"rider": "Your rider: {{name}}",
+		"callRider": "Call the rider",
+		"attempts": "{{count}} delivery attempts",
+		"attempts_one": "{{count}} delivery attempt",
+		"redelivery": "New delivery: {{date}}, {{window}}",
+		"reschedule": "Choose a new slot",
+		"pickupExpired": "The pickup deadline has passed",
+		"pickupLeft_days": "{{count}} days left to collect",
+		"pickupLeft_days_one": "{{count}} day left to collect",
+		"pickupLeft_hours": "{{count}} hours left to collect",
+		"pickupLeft_hours_one": "{{count}} hour left to collect",
+		"pickupLeft_minutes": "{{count}} minutes left to collect",
+		"pickupLeft_minutes_one": "{{count}} minute left to collect",
+		"openTracking": "Track with the carrier",
+		"proof": "Delivered, confirmed {{date}}",
+		"codeVerified": "Code verified",
+		"proofPhoto": "Delivery photo",
+		"contest": "Report a problem with this delivery",
+		"rescheduleTitle": "New delivery slot",
+		"rescheduleDate": "Day",
+		"rescheduleWindow": "Time of day",
+		"rescheduleLandmark": "New landmark (optional)",
+		"rescheduleLandmarkShort": "Describe a landmark in at least 5 characters.",
+		"usePosition": "Use my position",
+		"positionCaptured": "Position captured, tap to refresh",
+		"positionDenied": "Location access was refused. The landmark will do.",
+		"rescheduleSubmit": "Confirm the new slot",
+		"rescheduleClosed": "There is nothing to reschedule on this order."
 	}
 }

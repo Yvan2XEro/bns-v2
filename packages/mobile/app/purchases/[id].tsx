@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
+import { TrackingBlock } from "@/src/components/delivery/TrackingBlock";
 import { EmptyState } from "@/src/components/EmptyState";
 import {
 	ActionBar,
@@ -32,6 +33,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useNow } from "@/src/hooks/useNow";
 import { usePurchase } from "@/src/hooks/usePurchases";
+import { useOrderShipments } from "@/src/hooks/useShipments";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { availableActions, type OrderAction } from "@/src/lib/orderActions";
@@ -46,11 +48,19 @@ export default function PurchaseScreen() {
 	const purchase = usePurchase(id);
 	const config = useAppConfig();
 	const now = useNow();
+	const shipments = useOrderShipments(id).data ?? [];
 	const [sheet, setSheet] = useState<PurchaseSheet | null>(null);
 
 	const order = purchase.data;
 	const actions = order ? availableActions(order, "buyer", null, { now }) : [];
 	const has = (action: OrderAction) => actions.includes(action);
+	const reportProblem = () =>
+		router.push({
+			pathname: "/purchases/[id]/problem",
+			params: { id: order?.id ?? id },
+		});
+	const contestHere = config.disputesEnabled && has("contest_delivery");
+	const proofShown = shipments.some((view) => view.proof !== null);
 	const sheetProps = (name: PurchaseSheet) => ({
 		visible: sheet === name && has(name),
 		onClose: () => setSheet(null),
@@ -114,15 +124,25 @@ export default function PurchaseScreen() {
 					</View>
 
 					<ActionBar order={order} actions={actions} onSheet={setSheet} />
-					{config.disputesEnabled && has("contest_delivery") ? (
-						<Pressable
-							accessibilityRole="button"
-							onPress={() =>
+					{shipments.map((view) => (
+						<TrackingBlock
+							key={view.id}
+							view={view}
+							lang={lang}
+							now={now}
+							onReschedule={() =>
 								router.push({
-									pathname: "/purchases/[id]/problem",
+									pathname: "/purchases/[id]/reschedule",
 									params: { id: order.id },
 								})
 							}
+							onContest={contestHere ? reportProblem : undefined}
+						/>
+					))}
+					{contestHere && !proofShown ? (
+						<Pressable
+							accessibilityRole="button"
+							onPress={reportProblem}
 							style={[styles.link, { borderColor: c.border }]}
 						>
 							<Ionicons name="warning-outline" size={18} color={c.primary} />
