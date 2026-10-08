@@ -29,6 +29,7 @@ export const RISK_SIGNALS = [
 	"evidence_reused",
 	"review_extortion",
 	"resale_collusion_suspected",
+	"commission_credit_unpaid",
 ] as const;
 
 export const RISK_SEVERITIES = ["low", "medium", "high"] as const;

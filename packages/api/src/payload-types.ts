@@ -1868,7 +1868,7 @@ export interface CommissionLine {
   id: string;
   shop: string | Shop;
   order?: (string | null) | Order;
-  kind: 'charge' | 'credit' | 'carry_over' | 'resale_margin';
+  kind: 'charge' | 'credit' | 'carry_over' | 'resale_margin' | 'dispute_fee';
   paymentMethod?: ('cod' | 'mobile_money') | null;
   baseAmount?: number | null;
   amount: number;
@@ -2332,7 +2332,8 @@ export interface RiskSignalOutbox {
     | 'serial_withdrawal'
     | 'evidence_reused'
     | 'review_extortion'
-    | 'resale_collusion_suspected';
+    | 'resale_collusion_suspected'
+    | 'commission_credit_unpaid';
   severity: 'low' | 'medium' | 'high';
   sourceType: 'dispute' | 'return-case';
   sourceId: string;
@@ -3215,7 +3216,8 @@ export interface RiskFlag {
     | 'serial_withdrawal'
     | 'evidence_reused'
     | 'review_extortion'
-    | 'resale_collusion_suspected';
+    | 'resale_collusion_suspected'
+    | 'commission_credit_unpaid';
   score: number;
   severity: 'low' | 'medium' | 'high';
   status: 'open' | 'reviewed' | 'dismissed' | 'actioned';

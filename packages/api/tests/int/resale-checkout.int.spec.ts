@@ -47,7 +47,11 @@ const shopRow = (
 	id: string,
 	owner: string,
 	level: number,
-	over: { deliveryFee?: number | null; pickup?: boolean } = {},
+	over: {
+		deliveryFee?: number | null;
+		pickup?: boolean;
+		delivers?: boolean;
+	} = {},
 ) => ({
 	id,
 	name: id,
@@ -61,7 +65,7 @@ const shopRow = (
 	contact: { phone: "+237690000000" },
 	orderSettings: {
 		codEnabled: true,
-		sellerDeliveryEnabled: true,
+		sellerDeliveryEnabled: over.delivers !== false,
 		deliveryFee: over.deliveryFee ?? null,
 		deliveryEtaText: "24-48h",
 		pickupEnabled: over.pickup === true,
@@ -85,6 +89,7 @@ function world(
 		supplierFee?: number;
 		supplierPickup?: boolean;
 		resellerFee?: number;
+		resellerDelivers?: boolean;
 		prepaid?: boolean;
 	} = {},
 ) {
@@ -104,6 +109,7 @@ function world(
 			shops: [
 				shopRow("reseller", "u-reseller", 2, {
 					deliveryFee: options.resellerFee ?? null,
+					delivers: options.resellerDelivers,
 				}),
 				shopRow("supplier", "u-supplier", 3, {
 					deliveryFee: options.supplierFee ?? null,
@@ -456,8 +462,7 @@ describe("resale checkout through the real routes", () => {
 		});
 
 		it("offers delivery the storefront itself could not", async () => {
-			const payload = world({ supplierFee: 1500 });
-			payload.store.shops[0].orderSettings.sellerDeliveryEnabled = false;
+			const payload = world({ supplierFee: 1500, resellerDelivers: false });
 			const quote = await quoteCheckout(payload, BUYER, quoteInput, opts());
 			expect(quote.summary.amounts.deliveryFee).toBe(1500);
 		});

@@ -3,6 +3,7 @@ import { isModerator } from "../access/roles";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { commissionCredit } from "../lib/caseMath";
+import { filedCaseGates, getDisputeSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
 import {
 	commissionForLine,
@@ -25,6 +26,7 @@ import {
 import type {
 	CommissionInvoice,
 	CommissionLine,
+	Dispute,
 	Order,
 	OrderItem,
 	PaymentIntent,
@@ -39,6 +41,7 @@ import {
 	markIntentPending,
 	NOTCHPAY_SETTLEMENT_CALLBACK_PATH,
 } from "./payments";
+import { recordRiskSignal } from "./riskSignals";
 import { nextInvoiceNumber } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
@@ -419,7 +422,8 @@ export async function issueInvoicesForWeek(
 		});
 		if (already.docs[0]) continue;
 
-		const charges = sumByKind(lines, "charge");
+		const charges =
+			sumByKind(lines, "charge") + sumByKind(lines, "dispute_fee");
 		const credits = sumByKind(lines, "credit");
 		const nonVatCredits = lines
 			.filter(
@@ -1198,7 +1202,54 @@ export async function getBillingView(
 	};
 }
 
+import {
+	type CreditNoteDocument,
+	renderCreditNotePdf,
+} from "../lib/commissionInvoiceDocument";
+
 export { renderInvoiceHtml } from "../lib/commissionInvoiceDocument";
+
+/**
+ * The credit note's PDF, rendered on demand from the row (the note is
+ * immutable, so nothing is stored): the series-A twin of the buyer-fee
+ * documents, through the same text writer.
+ */
+export async function renderCreditNoteDocument(
+	payload: Payload,
+	note: CommissionInvoice,
+): Promise<Buffer> {
+	const creditedId = relationId(note.creditsInvoice);
+	const credited = creditedId
+		? await payload.findByID({
+				collection: "commission-invoices",
+				id: creditedId,
+				depth: 0,
+				overrideAccess: true,
+			})
+		: null;
+	const views = await resolveInvoiceLineViews(payload, note);
+	const orderNumbers = views.map((view) => view.orderNumber);
+	const sellerName =
+		typeof note.sellerSnapshot === "object" &&
+		note.sellerSnapshot !== null &&
+		"name" in note.sellerSnapshot &&
+		typeof note.sellerSnapshot.name === "string"
+			? note.sellerSnapshot.name
+			: "";
+	const document: CreditNoteDocument = {
+		number: note.invoiceNumber,
+		creditsNumber: credited?.invoiceNumber ?? "",
+		issuedAt: note.issuedAt ?? "",
+		sellerName,
+		orderNumbers,
+		amountHt: note.commissionTotal ?? 0,
+		vat: note.vatAmount ?? 0,
+		vatRateBps: note.vatRateBps ?? 0,
+		documentsLedgerReversal: note.settlement === "application_fee",
+		issuer: { legalName: PLATFORM_ISSUER.legalName },
+	};
+	return renderCreditNotePdf(document);
+}
 
 export const COMMISSION_REFUND_CREDIT_REASON = "commission_refund_credit";
 
@@ -1209,19 +1260,24 @@ export interface CommissionCreditSource {
 	sourceId: string;
 }
 
+const CREDIT_UNREACHABLE_DAYS = 90;
+
 /**
  * Hands back the commission share of refunded goods on a COD order, once per
  * source. An uninvoiced charge is netted by the next weekly run; an invoiced
  * one gets a series-A credit note at the invoice's own VAT rate, and the
  * credit line nets on the following invoice. A protected order's commission
- * is reversed by P5's ledger, so it never gets a second credit here.
+ * is reversed by P5's ledger, so it never gets a credit line: only when its
+ * application-fee invoice already exists (the refund came after release) does
+ * it get the note, which documents what the ledger already reversed.
  */
 export async function issueCommissionCredit(
 	req: PayloadRequest,
 	input: CommissionCreditSource,
 	now = new Date(),
 ): Promise<CommissionLine | null> {
-	if (input.order.paymentMethod !== "cod") return null;
+	const protectedOrder = input.order.paymentMethod === "mobile_money";
+	if (input.order.paymentMethod !== "cod" && !protectedOrder) return null;
 	const orderId = String(input.order.id);
 	const charge = await findExistingCharge(req, orderId);
 	if (!charge || !charge.baseAmount || !charge.shop) return null;
@@ -1258,6 +1314,11 @@ export async function issueCommissionCredit(
 				req,
 			})
 		: null;
+	if (protectedOrder) {
+		return original
+			? documentReleasedCommission(req, input, charge, original, now)
+			: null;
+	}
 	const settings = await getOrderSettings(req.payload);
 	const share = commissionCredit({
 		commissionHt: charge.amount,
@@ -1288,39 +1349,270 @@ export async function issueCommissionCredit(
 		},
 	});
 	if (original) {
-		const vatRateBps = original.vatRateBps ?? settings.vatRateBps;
-		const vatAmount = vatOf(creditHt, vatRateBps);
-		const shop = await req.payload.findByID({
-			collection: "shops",
-			id: relationId(charge.shop) ?? "",
-			depth: 0,
-			overrideAccess: true,
-			req,
-		});
-		await req.payload.create({
-			collection: "commission-invoices",
-			req,
-			overrideAccess: true,
-			data: {
-				kind: "credit_note",
-				invoiceNumber: await nextInvoiceNumber(req, "A", now),
-				creditsInvoice: String(original.id),
-				sourceType: input.sourceType,
-				sourceId: input.sourceId,
-				shop: relationId(charge.shop) ?? "",
-				lines: [String(line.id)],
-				ordersCount: 1,
-				commissionTotal: creditHt,
-				vatRateBps,
-				vatAmount,
-				totalDue: 0,
-				currency: "XAF",
-				status: "void",
-				issuedAt: now.toISOString(),
-				sellerSnapshot: sellerSnapshotOf(shop),
-				issuerSnapshot: PLATFORM_ISSUER,
-			},
+		await createCreditNote(req, {
+			original,
+			shopId: relationId(charge.shop) ?? "",
+			lineIds: [String(line.id)],
+			creditHt,
+			source: input,
+			now,
 		});
 	}
 	return line;
+}
+
+async function createCreditNote(
+	req: PayloadRequest,
+	input: {
+		original: CommissionInvoice;
+		shopId: string;
+		lineIds: string[];
+		creditHt: number;
+		source: Pick<CommissionCreditSource, "sourceType" | "sourceId">;
+		documentation?: boolean;
+		now: Date;
+	},
+): Promise<CommissionInvoice> {
+	const settings = await getOrderSettings(req.payload);
+	const vatRateBps = input.original.vatRateBps ?? settings.vatRateBps;
+	const shop = await req.payload.findByID({
+		collection: "shops",
+		id: input.shopId,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	return req.payload.create({
+		collection: "commission-invoices",
+		req,
+		overrideAccess: true,
+		data: {
+			kind: "credit_note",
+			invoiceNumber: await nextInvoiceNumber(req, "A", input.now),
+			creditsInvoice: String(input.original.id),
+			sourceType: input.source.sourceType,
+			sourceId: input.source.sourceId,
+			shop: input.shopId,
+			lines: input.lineIds,
+			ordersCount: 1,
+			commissionTotal: input.creditHt,
+			vatRateBps,
+			vatAmount: vatOf(input.creditHt, vatRateBps),
+			totalDue: 0,
+			currency: "XAF",
+			status: "void",
+			...(input.documentation
+				? { settlement: "application_fee" as const }
+				: {}),
+			issuedAt: input.now.toISOString(),
+			sellerSnapshot: sellerSnapshotOf(shop),
+			issuerSnapshot: PLATFORM_ISSUER,
+		},
+	});
+}
+
+/**
+ * Refund after release on a protected order: P5 already reversed the fee
+ * share in the ledger, so this writes the series-A note and nothing else — no
+ * credit line to net, no posting. Once per source, capped at the commission
+ * the invoice carries.
+ */
+async function documentReleasedCommission(
+	req: PayloadRequest,
+	input: CommissionCreditSource,
+	charge: CommissionLine,
+	original: CommissionInvoice,
+	now: Date,
+): Promise<null> {
+	const notes = await req.payload.find({
+		collection: "commission-invoices",
+		where: {
+			and: [
+				{ kind: { equals: "credit_note" } },
+				{ creditsInvoice: { equals: String(original.id) } },
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (
+		notes.docs.some(
+			(note) =>
+				note.sourceType === input.sourceType &&
+				note.sourceId === input.sourceId,
+		)
+	) {
+		return null;
+	}
+	const settings = await getOrderSettings(req.payload);
+	const share = commissionCredit({
+		commissionHt: charge.amount,
+		refundedGoods: Math.min(input.refundedGoods, charge.baseAmount ?? 0),
+		commissionBase: charge.baseAmount ?? 0,
+		vatRateBps: original.vatRateBps ?? settings.vatRateBps,
+	});
+	const documented = notes.docs.reduce(
+		(sum, note) => sum + (note.commissionTotal ?? 0),
+		0,
+	);
+	const creditHt = Math.min(
+		share.creditHt,
+		(original.commissionTotal ?? charge.amount) - documented,
+	);
+	if (creditHt <= 0) return null;
+	await createCreditNote(req, {
+		original,
+		shopId: relationId(charge.shop) ?? "",
+		lineIds: [String(charge.id)],
+		creditHt,
+		source: input,
+		documentation: true,
+		now,
+	});
+	return null;
+}
+
+/**
+ * The finance queue is the risk-flag queue (the same item `refund_overdue`
+ * raises): a credit BuyNSellem cannot net against any invoice is an
+ * obligation to pay the fee back by hand. The signal's source points at the
+ * credit line's own dispute or return case. Once per source.
+ */
+async function queueUnreachableCredit(
+	req: PayloadRequest,
+	line: CommissionLine,
+	now: Date,
+): Promise<boolean> {
+	const shopId = relationId(line.shop);
+	if (!shopId || !line.sourceType || !line.sourceId) return false;
+	const already = await req.payload.find({
+		collection: "risk-signal-outbox",
+		where: {
+			and: [
+				{ signal: { equals: "commission_credit_unpaid" } },
+				{ sourceType: { equals: line.sourceType } },
+				{ sourceId: { equals: line.sourceId } },
+			],
+		},
+		limit: 1,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (already.docs[0]) return false;
+	await recordRiskSignal(req, {
+		subjectType: "shop",
+		subjectId: shopId,
+		signal: "commission_credit_unpaid",
+		sourceType: line.sourceType,
+		sourceId: line.sourceId,
+		occurredAt: now,
+	});
+	return true;
+}
+
+/**
+ * Weekly, after the invoice run: an open refund credit older than 90 days, or
+ * one on a closed shop, will never net against an invoice, so staff get the
+ * queue item to pay it back by hand.
+ */
+export async function queueUnreachableCredits(
+	payload: Payload,
+	now: Date,
+): Promise<string[]> {
+	const cutoff = new Date(now.getTime() - CREDIT_UNREACHABLE_DAYS * DAY_MS);
+	const { docs } = await payload.find({
+		collection: "commission-lines",
+		where: {
+			and: [
+				{ kind: { equals: "credit" } },
+				{ status: { equals: "open" } },
+				{ reason: { equals: COMMISSION_REFUND_CREDIT_REASON } },
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const queued: string[] = [];
+	for (const line of docs) {
+		const shopId = relationId(line.shop);
+		if (!shopId) continue;
+		const shop = await payload
+			.findByID({
+				collection: "shops",
+				id: shopId,
+				depth: 0,
+				overrideAccess: true,
+			})
+			.catch(() => null);
+		const old =
+			!!line.accruedAt && Date.parse(line.accruedAt) <= cutoff.getTime();
+		if (!old && shop?.status !== "closed") continue;
+		const raised = await withTransaction(payload, (req) =>
+			queueUnreachableCredit(req, line, now),
+		);
+		if (raised) queued.push(String(line.id));
+	}
+	return queued;
+}
+
+/**
+ * The seller-loss fee: a VAT-bearing line on the shop's next invoice when a
+ * moderator decided a dispute against it. Silent while `sellerLossFee` is 0
+ * or G4 is not filed; once per dispute.
+ */
+export async function sellerLossFeeLine(
+	req: PayloadRequest,
+	dispute: Dispute,
+	now = new Date(),
+): Promise<CommissionLine | null> {
+	const settings = await getDisputeSettings(req.payload);
+	if (
+		settings.sellerLossFee <= 0 ||
+		!filedCaseGates(settings.gates).has("G4")
+	) {
+		return null;
+	}
+	const shopId = relationId(dispute.shop);
+	if (!shopId) return null;
+	const disputeId = String(dispute.id);
+	const { docs } = await req.payload.find({
+		collection: "commission-lines",
+		where: {
+			and: [
+				{ kind: { equals: "dispute_fee" } },
+				{ sourceType: { equals: "dispute" } },
+				{ sourceId: { equals: disputeId } },
+			],
+		},
+		limit: 1,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (docs[0]) return docs[0];
+	const orderId = relationId(dispute.order);
+	return req.payload.create({
+		collection: "commission-lines",
+		req,
+		overrideAccess: true,
+		data: {
+			shop: shopId,
+			...(orderId ? { order: orderId } : {}),
+			kind: "dispute_fee",
+			amount: settings.sellerLossFee,
+			reason: "seller_loss_fee",
+			status: "open",
+			accruedAt: now.toISOString(),
+			sourceType: "dispute",
+			sourceId: disputeId,
+		},
+	});
 }

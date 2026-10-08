@@ -47,6 +47,7 @@ const BASE_SCORE: Record<Signal, number> = {
 	evidence_reused: 50,
 	review_extortion: 50,
 	resale_collusion_suspected: 50,
+	commission_credit_unpaid: 50,
 };
 
 function hashSensitiveSubject(value: string): string {

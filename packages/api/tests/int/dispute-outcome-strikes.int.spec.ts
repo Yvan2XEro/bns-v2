@@ -45,57 +45,64 @@ function dispute(overrides: Partial<Dispute> = {}): Dispute {
 	} as Dispute;
 }
 
-function world(disputeDoc: Dispute = dispute()) {
-	return fakePayload({
-		orders: [
-			{
-				id: "order-1",
-				orderNumber: "BNS-1",
-				buyer: "buyer-1",
-				shop: "shop-1",
-				status: "disputed",
-				paymentMethod: "cod",
-				paymentStatus: "cod_pending",
-				completionHold: "dispute",
-				activeDispute: "dispute-1",
-				delivery: { fee: 1_000, phone: "+237670000001" },
-				amounts: { subtotal: 10_000, deliveryFee: 1_000, total: 11_000 },
-				timestamps: { shippedAt: "2026-09-30T12:00:00.000Z" },
-			},
-		],
-		"order-items": [{ id: "item-1", order: "order-1", quantity: 1 }],
-		"order-events": [],
-		disputes: [disputeDoc],
-		"dispute-messages": [],
-		"return-cases": [],
-		"purchase-orders": [],
-		"reseller-commissions": [],
-		"payout-holds": [],
-		"shop-strikes": [],
-		"risk-signal-outbox": [],
-		"buyer-phone-scores": [],
-		reviews: [
-			{
-				id: "review-1",
-				order: "order-1",
-				reviewer: "buyer-1",
-				reviewedUser: "seller-1",
-				rating: 1,
-				status: "held_dispute",
-				verifiedPurchase: true,
-			},
-			{
-				id: "review-2",
-				order: "order-9",
-				reviewer: "buyer-1",
-				reviewedUser: "seller-1",
-				rating: 5,
-				status: "published",
-				verifiedPurchase: true,
-			},
-		],
-		users: [{ id: "seller-1", rating: 0, totalReviews: 0 }],
-	});
+function world(
+	disputeDoc: Dispute = dispute(),
+	appSettings: Record<string, unknown> = {},
+) {
+	return fakePayload(
+		{
+			orders: [
+				{
+					id: "order-1",
+					orderNumber: "BNS-1",
+					buyer: "buyer-1",
+					shop: "shop-1",
+					status: "disputed",
+					paymentMethod: "cod",
+					paymentStatus: "cod_pending",
+					completionHold: "dispute",
+					activeDispute: "dispute-1",
+					delivery: { fee: 1_000, phone: "+237670000001" },
+					amounts: { subtotal: 10_000, deliveryFee: 1_000, total: 11_000 },
+					timestamps: { shippedAt: "2026-09-30T12:00:00.000Z" },
+				},
+			],
+			"order-items": [{ id: "item-1", order: "order-1", quantity: 1 }],
+			"order-events": [],
+			disputes: [disputeDoc],
+			"dispute-messages": [],
+			"return-cases": [],
+			"purchase-orders": [],
+			"reseller-commissions": [],
+			"payout-holds": [],
+			"shop-strikes": [],
+			"risk-signal-outbox": [],
+			"buyer-phone-scores": [],
+			reviews: [
+				{
+					id: "review-1",
+					order: "order-1",
+					reviewer: "buyer-1",
+					reviewedUser: "seller-1",
+					rating: 1,
+					status: "held_dispute",
+					verifiedPurchase: true,
+				},
+				{
+					id: "review-2",
+					order: "order-9",
+					reviewer: "buyer-1",
+					reviewedUser: "seller-1",
+					rating: 5,
+					status: "published",
+					verifiedPurchase: true,
+				},
+			],
+			users: [{ id: "seller-1", rating: 0, totalReviews: 0 }],
+			"commission-lines": [],
+		},
+		{ globals: { "app-settings": appSettings } },
+	);
 }
 
 const outcome = (overrides: Record<string, unknown> = {}) => ({
@@ -241,5 +248,45 @@ describe("cod_refused_abuse resolved for the seller", () => {
 		expect(payload.store["buyer-phone-scores"]).toHaveLength(0);
 		expect(payload.store.reviews?.[0]?.verifiedPurchase).toBe(true);
 		expect(payload.store["risk-signal-outbox"]).toHaveLength(0);
+	});
+});
+
+describe("the seller-loss fee on a moderator's decision", () => {
+	const g4 = [{ gate: "G4", evidence: "ev-1" }];
+	const withFee = (fee: number, gates: unknown[] = g4) => ({
+		disputes: { sellerLossFee: fee, gates },
+	});
+
+	it("writes one dispute_fee line for the configured amount, once per dispute", async () => {
+		const payload = world(dispute(), withFee(500));
+
+		await run(payload, outcome(), "moderator");
+		await run(payload, outcome(), "moderator");
+
+		expect(payload.store["commission-lines"]).toEqual([
+			expect.objectContaining({
+				shop: "shop-1",
+				order: "order-1",
+				kind: "dispute_fee",
+				amount: 500,
+				reason: "seller_loss_fee",
+				status: "open",
+				sourceType: "dispute",
+				sourceId: "dispute-1",
+			}),
+		]);
+	});
+
+	it("stays silent at the default fee, without G4, and for the system's silence default", async () => {
+		const off = world(dispute(), withFee(0));
+		await run(off, outcome(), "moderator");
+		const ungated = world(dispute(), withFee(500, []));
+		await run(ungated, outcome(), "moderator");
+		const silent = world(dispute(), withFee(500));
+		await run(silent, outcome(), "system");
+
+		expect(off.store["commission-lines"]).toHaveLength(0);
+		expect(ungated.store["commission-lines"]).toHaveLength(0);
+		expect(silent.store["commission-lines"]).toHaveLength(0);
 	});
 });

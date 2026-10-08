@@ -3,7 +3,7 @@ import { can, shopScopedRead } from "../access/shopRoles";
 import { staffOnly } from "../access/staff";
 
 /**
- * `charge` and `carry_over` are written by P4, `credit` by P6. The spec names
+ * `charge` and `carry_over` are written by P4, `credit` and `dispute_fee` by P6. The spec names
  * one P8 kind (`resale_margin`, with a `reason` field P8 also adds); it is
  * declared here, reserved and unused, the same way P4 declares `order.paid`
  * on `order-events` without ever writing it.
@@ -13,6 +13,7 @@ export const COMMISSION_LINE_KINDS = [
 	"credit",
 	"carry_over",
 	"resale_margin",
+	"dispute_fee",
 ] as const;
 
 export const COMMISSION_LINE_STATUSES = ["open", "invoiced", "waived"] as const;

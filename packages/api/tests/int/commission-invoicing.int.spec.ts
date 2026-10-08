@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { creditNoteDocumentLines } from "../../src/lib/commissionInvoiceDocument";
 import { weekBoundsDouala } from "../../src/lib/orderMath";
 import { withTransaction } from "../../src/lib/transactions";
-import type { Order, PaymentIntent } from "../../src/payload-types";
+import type { Dispute, Order, PaymentIntent } from "../../src/payload-types";
 import { issueApplicationFeeCommissionInvoice } from "../../src/services/buyerFeeInvoices";
 import {
 	applyCommissionSettlement,
@@ -10,6 +11,9 @@ import {
 	issueCommissionCredit,
 	issueInvoicesForWeek,
 	payInvoice,
+	queueUnreachableCredits,
+	renderCreditNoteDocument,
+	sellerLossFeeLine,
 	waiveInvoice,
 } from "../../src/services/commission";
 import { postingFor, postLedger } from "../../src/services/ledger";
@@ -775,5 +779,238 @@ describe("issueCommissionCredit", () => {
 		expect(line).toBeNull();
 		expect(linesOf(payload).filter((l) => l.kind === "credit")).toHaveLength(0);
 		expect(invoicesOf(payload)).toHaveLength(0);
+	});
+});
+
+describe("the post-release protected documentation case", () => {
+	const protectedOrder = {
+		id: "o-1",
+		orderNumber: "BNS-o-1",
+		paymentMethod: "mobile_money",
+	};
+	const releasedWorld = () =>
+		world({
+			orders: [protectedOrder],
+			"commission-invoices": [
+				{
+					id: "inv-app",
+					invoiceNumber: "BNS-C-2026-000010",
+					shop: "s-1",
+					status: "paid",
+					kind: "invoice",
+					settlement: "application_fee",
+					vatRateBps: 1_925,
+					commissionTotal: 3_200,
+				},
+			],
+			"commission-lines": [
+				chargeLine({
+					paymentMethod: "mobile_money",
+					baseAmount: 40_000,
+					amount: 3_200,
+					status: "invoiced",
+					invoice: "inv-app",
+				}),
+			],
+		});
+	const document = (payload: FakePayload, sourceId = "rc-1", goods = 15_000) =>
+		withTransaction(payload, (req) =>
+			issueCommissionCredit(
+				req,
+				{
+					order: protectedOrder as unknown as Order,
+					refundedGoods: goods,
+					sourceType: "return-case",
+					sourceId,
+				},
+				NOW,
+			),
+		);
+
+	it("documents what the ledger reversed: a note, no credit line, no posting", async () => {
+		const payload = releasedWorld();
+		const before = JSON.stringify(payload.store.ledger ?? []);
+
+		const line = await document(payload);
+
+		expect(line).toBeNull();
+		const notes = invoicesOf(payload).filter((i) => i.kind === "credit_note");
+		expect(notes).toHaveLength(1);
+		expect(notes[0]).toMatchObject({
+			invoiceNumber: "BNS-A-2026-000001",
+			creditsInvoice: "inv-app",
+			settlement: "application_fee",
+			commissionTotal: 1_200,
+			vatRateBps: 1_925,
+			vatAmount: 231,
+			totalDue: 0,
+			status: "void",
+			lines: ["cl-1"],
+		});
+		expect(linesOf(payload).filter((l) => l.kind === "credit")).toHaveLength(0);
+		expect(JSON.stringify(payload.store.ledger ?? [])).toBe(before);
+	});
+
+	it("is once per source and capped at the invoiced commission", async () => {
+		const payload = releasedWorld();
+		await document(payload);
+		await document(payload);
+		expect(
+			invoicesOf(payload).filter((i) => i.kind === "credit_note"),
+		).toHaveLength(1);
+
+		await document(payload, "rc-2", 40_000);
+		const totals = invoicesOf(payload)
+			.filter((i) => i.kind === "credit_note")
+			.map((i) => i.commissionTotal);
+		expect(totals).toEqual([1_200, 2_000]);
+	});
+
+	it("renders the series-A note through the text PDF writer, both languages", async () => {
+		const payload = releasedWorld();
+		await document(payload);
+		const note = invoicesOf(payload).find((i) => i.kind === "credit_note");
+		if (!note) throw new Error("note expected");
+
+		const pdf = await renderCreditNoteDocument(
+			payload,
+			note as unknown as Parameters<typeof renderCreditNoteDocument>[1],
+		);
+
+		expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+		const lines = creditNoteDocumentLines({
+			number: "BNS-A-2026-000001",
+			creditsNumber: "BNS-C-2026-000010",
+			issuedAt: NOW.toISOString(),
+			sellerName: "Shop",
+			orderNumbers: ["BNS-o-1"],
+			amountHt: 1_200,
+			vat: 231,
+			vatRateBps: 1_925,
+			documentsLedgerReversal: true,
+			issuer: { legalName: "BuyNSellem SARL" },
+		}).map((line) => line.text);
+		expect(lines[0]).toBe("Avoir — commission");
+		expect(lines).toContain("Numéro : BNS-A-2026-000001");
+		expect(lines).toContain("Avoir sur la facture : BNS-C-2026-000010");
+		expect(lines.some((text) => text.startsWith("TVA (19,25 %) :"))).toBe(true);
+		expect(lines).toContain("Credit note — commission");
+		expect(lines).toContain("Credits invoice: BNS-C-2026-000010");
+		expect(lines.some((text) => text.includes("already returned"))).toBe(true);
+	});
+});
+
+describe("unreachable commission credits", () => {
+	const credit = (overrides: Doc = {}): Doc => ({
+		id: "cr-1",
+		shop: "s-1",
+		order: "o-1",
+		kind: "credit",
+		paymentMethod: "cod",
+		baseAmount: 15_000,
+		amount: 1_200,
+		reason: "commission_refund_credit",
+		status: "open",
+		sourceType: "return-case",
+		sourceId: "rc-1",
+		accruedAt: new Date(NOW.getTime() - 91 * DAY_MS).toISOString(),
+		...overrides,
+	});
+
+	it("raises one staff queue signal for a credit open past 90 days, once", async () => {
+		const payload = world({
+			"commission-lines": [credit()],
+			"risk-signal-outbox": [],
+		});
+
+		expect(await queueUnreachableCredits(payload, NOW)).toEqual(["cr-1"]);
+		expect(await queueUnreachableCredits(payload, NOW)).toEqual([]);
+
+		expect(payload.store["risk-signal-outbox"]).toEqual([
+			expect.objectContaining({
+				subjectType: "shop",
+				subjectId: "s-1",
+				signal: "commission_credit_unpaid",
+				severity: "medium",
+				sourceType: "return-case",
+				sourceId: "rc-1",
+				occurredAt: NOW.toISOString(),
+			}),
+		]);
+	});
+
+	it("raises it at once for a closed shop and never for a fresh credit on a live one", async () => {
+		const fresh = new Date(NOW.getTime() - 10 * DAY_MS).toISOString();
+		const payload = world({
+			shops: [shop(), shop({ id: "s-2", status: "closed" })],
+			"commission-lines": [
+				credit({ id: "cr-live", accruedAt: fresh }),
+				credit({
+					id: "cr-closed",
+					shop: "s-2",
+					sourceId: "rc-2",
+					accruedAt: fresh,
+				}),
+				credit({ id: "cr-old-invoiced", status: "invoiced", sourceId: "rc-3" }),
+			],
+			"risk-signal-outbox": [],
+		});
+
+		expect(await queueUnreachableCredits(payload, NOW)).toEqual(["cr-closed"]);
+		expect(
+			payload.store["risk-signal-outbox"]?.map((row) => row.sourceId),
+		).toEqual(["rc-2"]);
+	});
+});
+
+describe("sellerLossFeeLine", () => {
+	const dispute = { id: "d-1", shop: "s-1", order: "o-1" };
+	const withSettings = (fee: number, gates: unknown[]) =>
+		fakePayload(
+			{
+				shops: [shop()],
+				orders: [{ id: "o-1", orderNumber: "BNS-1" }],
+				"commission-invoices": [],
+				"commission-lines": [],
+				sequences: [],
+			},
+			{
+				globals: {
+					"app-settings": { disputes: { sellerLossFee: fee, gates } },
+				},
+				uniques: {
+					"commission-invoices": [["invoiceNumber"], ["shop", "periodStart"]],
+				},
+			},
+		);
+	const run = (payload: FakePayload) =>
+		withTransaction(payload, (req) =>
+			sellerLossFeeLine(req, dispute as unknown as Dispute, NOW),
+		);
+
+	it("writes nothing at the default fee, and the VAT-bearing line at 500 with G4", async () => {
+		const silent = withSettings(0, [{ gate: "G4", evidence: "ev" }]);
+		expect(await run(silent)).toBeNull();
+		expect(linesOf(silent)).toHaveLength(0);
+
+		const gated = withSettings(500, [{ gate: "G4", evidence: "ev" }]);
+		await run(gated);
+		await run(gated);
+		expect(linesOf(gated)).toHaveLength(1);
+
+		await issueInvoicesForWeek(gated, new Date(NOW.getTime() + 7 * DAY_MS));
+		expect(invoicesOf(gated)[0]).toMatchObject({
+			commissionTotal: 500,
+			vatAmount: 96,
+			totalDue: 596,
+		});
+		expect(linesOf(gated)[0]).toMatchObject({
+			kind: "dispute_fee",
+			status: "invoiced",
+		});
+	});
+
+	it("is refused without a filed G4 row", async () => {
+		expect(await run(withSettings(500, []))).toBeNull();
 	});
 });

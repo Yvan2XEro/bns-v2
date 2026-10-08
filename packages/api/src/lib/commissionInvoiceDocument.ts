@@ -60,6 +60,7 @@ const copy = {
 			credit: "Avoir",
 			carry_over: "Report",
 			resale_margin: "Marge revente",
+			dispute_fee: "Frais de litige perdu",
 		},
 	},
 	en: {
@@ -82,6 +83,7 @@ const copy = {
 			credit: "Credit",
 			carry_over: "Carry-over",
 			resale_margin: "Resale margin",
+			dispute_fee: "Lost dispute fee",
 		},
 	},
 } as const;
@@ -278,4 +280,97 @@ export function buyerFeeDocumentLines(doc: BuyerFeeDocument): PdfLine[] {
 
 export function renderBuyerFeeDocumentPdf(doc: BuyerFeeDocument): Buffer {
 	return renderTextPdf(buyerFeeDocumentLines(doc));
+}
+
+// ─── Series A: the commission credit note ──────────────────────────────────
+
+export interface CreditNoteDocument {
+	number: string;
+	/** The invoice the note credits. */
+	creditsNumber: string;
+	issuedAt: string;
+	sellerName: string;
+	orderNumbers: string[];
+	amountHt: number;
+	vat: number;
+	vatRateBps: number;
+	/** The note documents a reversal P5's ledger already made. */
+	documentsLedgerReversal: boolean;
+	issuer: { legalName: string };
+}
+
+export const CREDIT_NOTE_DOCUMENT_COPY = {
+	fr: {
+		title: "Avoir — commission",
+		number: "Numéro",
+		issuedOn: "Date d'émission",
+		credits: "Avoir sur la facture",
+		issuer: "Émetteur",
+		seller: "Vendeur",
+		orders: "Commande(s)",
+		description: "Désignation",
+		service: "Remboursement de la commission sur marchandise remboursée",
+		amountHt: "Montant HT",
+		vat: "TVA",
+		amountTtc: "Montant TTC",
+		netted: "Ce montant est déduit de votre prochaine facture de commission.",
+		documented:
+			"Ce montant a déjà été restitué par le règlement protégé ; cet avoir le documente.",
+	},
+	en: {
+		title: "Credit note — commission",
+		number: "Number",
+		issuedOn: "Issue date",
+		credits: "Credits invoice",
+		issuer: "Issuer",
+		seller: "Seller",
+		orders: "Order(s)",
+		description: "Description",
+		service: "Commission refund on refunded goods",
+		amountHt: "Amount excl. VAT",
+		vat: "VAT",
+		amountTtc: "Amount incl. VAT",
+		netted: "This amount is deducted from your next commission invoice.",
+		documented:
+			"This amount was already returned through the protected settlement; this note documents it.",
+	},
+} as const;
+
+function creditNoteSection(
+	doc: CreditNoteDocument,
+	lang: "fr" | "en",
+): PdfLine[] {
+	const t = CREDIT_NOTE_DOCUMENT_COPY[lang];
+	const colon = lang === "fr" ? " :" : ":";
+	return [
+		{ text: t.title, bold: true, size: 14, gap: 12 },
+		{ text: `${t.number}${colon} ${doc.number}` },
+		{ text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang)}` },
+		{ text: `${t.credits}${colon} ${doc.creditsNumber}` },
+		{ text: `${t.issuer}${colon} ${doc.issuer.legalName}` },
+		{ text: `${t.seller}${colon} ${doc.sellerName}` },
+		{ text: `${t.orders}${colon} ${doc.orderNumbers.join(", ")}` },
+		{ text: `${t.description}${colon} ${t.service}`, gap: 6 },
+		{ text: `${t.amountHt}${colon} ${formatXaf(doc.amountHt, lang)}` },
+		{
+			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${formatXaf(doc.vat, lang)}`,
+		},
+		{
+			text: `${t.amountTtc}${colon} ${formatXaf(doc.amountHt + doc.vat, lang)}`,
+			bold: true,
+		},
+		{
+			text: doc.documentsLedgerReversal ? t.documented : t.netted,
+			gap: 6,
+		},
+	];
+}
+
+/** Pure: the credit note's text, French section then English. */
+export function creditNoteDocumentLines(doc: CreditNoteDocument): PdfLine[] {
+	return [...creditNoteSection(doc, "fr"), ...creditNoteSection(doc, "en")];
+}
+
+export function renderCreditNotePdf(doc: CreditNoteDocument): Buffer {
+	return renderTextPdf(creditNoteDocumentLines(doc));
 }

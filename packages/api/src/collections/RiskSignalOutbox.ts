@@ -15,6 +15,7 @@ export const RISK_OUTBOX_SIGNALS = [
 	"evidence_reused",
 	"review_extortion",
 	"resale_collusion_suspected",
+	"commission_credit_unpaid",
 ] as const;
 export const RISK_OUTBOX_SEVERITIES = ["low", "medium", "high"] as const;
 export const RISK_OUTBOX_SOURCES = ["dispute", "return-case"] as const;

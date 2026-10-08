@@ -4,7 +4,10 @@ import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { relationId } from "@/lib/relationId";
 import { ServiceError } from "@/lib/serviceError";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
-import { resolveInvoiceLineViews } from "@/services/commission";
+import {
+	renderCreditNoteDocument,
+	resolveInvoiceLineViews,
+} from "@/services/commission";
 import { requireShopPermission } from "@/services/shopGuards";
 
 const paramsSchema = z.object({ id: z.string().trim().min(1) });
@@ -42,6 +45,16 @@ export async function GET(
 			throw new ServiceError(ERROR_CODES.commissionInvoiceNotFound, 404);
 		}
 		await requireShopPermission(ctx.payload, ctx.user, shopId, "payments.view");
+
+		if (invoice.kind === "credit_note") {
+			const pdf = await renderCreditNoteDocument(ctx.payload, invoice);
+			return new Response(new Uint8Array(pdf), {
+				headers: {
+					"Content-Type": "application/pdf",
+					"Content-Disposition": `inline; filename="${invoice.invoiceNumber}.pdf"`,
+				},
+			});
+		}
 
 		const lines = await resolveInvoiceLineViews(ctx.payload, invoice);
 		const html = renderInvoiceHtml(invoice, lines, lang);

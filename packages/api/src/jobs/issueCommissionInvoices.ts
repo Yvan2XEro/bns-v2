@@ -1,5 +1,8 @@
 import type { Payload, TaskConfig } from "payload";
-import { issueInvoicesForWeek } from "../services/commission";
+import {
+	issueInvoicesForWeek,
+	queueUnreachableCredits,
+} from "../services/commission";
 import { notifyCommissionInvoiceIssued } from "../services/orders/notifications";
 
 /**
@@ -39,6 +42,15 @@ export async function issueCommissionInvoices(
 				"[commission] notifying an issued invoice failed; the invoice stands",
 			);
 		}
+	}
+
+	try {
+		await queueUnreachableCredits(payload, now);
+	} catch (error) {
+		payload.logger.error(
+			{ err: error },
+			"[commission] queueing unreachable credits failed; the next run retries",
+		);
 	}
 
 	return result;

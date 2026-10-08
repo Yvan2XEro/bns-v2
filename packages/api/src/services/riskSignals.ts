@@ -16,6 +16,7 @@ export const RISK_SIGNAL_SEVERITY = {
 	evidence_reused: "medium",
 	review_extortion: "medium",
 	resale_collusion_suspected: "high",
+	commission_credit_unpaid: "medium",
 } satisfies Record<RiskSignal, RiskSignalSeverity>;
 
 export function riskSignalSeverity(signal: RiskSignal): RiskSignalSeverity {

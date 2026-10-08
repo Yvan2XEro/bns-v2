@@ -8,6 +8,7 @@ import { ServiceError } from "../lib/serviceError";
 import { commitContextOf, onCommit } from "../lib/transactions";
 import type { Dispute, Order, ReturnCase } from "../payload-types";
 import { notifyDisputeResolved } from "./caseNotifications";
+import { sellerLossFeeLine } from "./commission";
 import { queueCertificateRender } from "./disputeCertificates";
 import { moveDispute } from "./disputes";
 import { recordRefusal } from "./orders/risk";
@@ -434,6 +435,7 @@ export async function applyOutcome(
 			occurredAt: now,
 		});
 		riskSignalIds.push(String(signal.id));
+		await sellerLossFeeLine(req, dispute, now);
 	}
 	if (
 		dispute.reason === "cod_refused_abuse" &&
