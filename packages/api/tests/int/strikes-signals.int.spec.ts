@@ -236,6 +236,7 @@ describe("P6 risk-signal outbox", () => {
 			["evidence_reused", "medium"],
 			["review_extortion", "medium"],
 			["resale_collusion_suspected", "high"],
+			["commission_credit_unpaid", "medium"],
 		]);
 	});
 
