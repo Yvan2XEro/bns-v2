@@ -1,5 +1,6 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from "payload";
 import { isAdmin } from "../access/roles";
+import { invalidateMarketCities } from "../lib/marketCities";
 
 type Rec = Record<string, unknown>;
 const rec = (value: unknown): Rec =>
@@ -53,7 +54,21 @@ export const MarketCities: CollectionConfig = {
 		update: ({ req: { user } }) => isAdmin(user as { role?: string } | null),
 		delete: ({ req: { user } }) => isAdmin(user as { role?: string } | null),
 	},
-	hooks: { beforeChange: [refuseInvalidCity] },
+	hooks: {
+		beforeChange: [refuseInvalidCity],
+		afterChange: [
+			({ doc, req }) => {
+				invalidateMarketCities(req.payload);
+				return doc;
+			},
+		],
+		afterDelete: [
+			({ doc, req }) => {
+				invalidateMarketCities(req.payload);
+				return doc;
+			},
+		],
+	},
 	indexes: [{ fields: ["market", "key"], unique: true }],
 	fields: [
 		{

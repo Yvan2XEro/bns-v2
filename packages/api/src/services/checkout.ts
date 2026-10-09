@@ -9,11 +9,16 @@ import { resolveSuspension } from "../hooks/suspensionGuard";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import {
-	isDistrictKey,
-	isLaunchCityKey,
 	LAUNCH_CITIES,
 	type LaunchCityKey,
+	launchCitySeedRows,
 } from "../lib/launchCities";
+import {
+	getShopMarketCities,
+	isMarketCityKey,
+	isMarketDistrictKey,
+	type MarketCity,
+} from "../lib/marketCities";
 import type { CapCheckInput } from "../lib/orderCaps";
 import { checkCaps, confirmationPathFor } from "../lib/orderCaps";
 import {
@@ -331,6 +336,7 @@ function addressInvalid(field: string): never {
 export function parseDeliveryAddress(
 	raw: CheckoutAddressInput,
 	method: DeliveryMethod,
+	cities: readonly MarketCity[] = launchCitySeedRows("seed"),
 ): DeliveryAddress {
 	const recipientName =
 		typeof raw.recipientName === "string" ? raw.recipientName.trim() : "";
@@ -343,11 +349,12 @@ export function parseDeliveryAddress(
 	if (!DELIVERY_PHONE_PATTERN.test(phone)) addressInvalid("delivery.phone");
 
 	const cityRaw = typeof raw.city === "string" ? raw.city : "";
-	if (!isLaunchCityKey(cityRaw)) addressInvalid("delivery.city");
-	const city = cityRaw;
+	if (!isMarketCityKey(cities, cityRaw)) addressInvalid("delivery.city");
+	// The Orders select still enumerates the launch keys; retyped with it.
+	const city = cityRaw as LaunchCityKey;
 
 	const district = typeof raw.district === "string" ? raw.district : "";
-	if (!district || !isDistrictKey(city, district)) {
+	if (!district || !isMarketDistrictKey(cities, city, district)) {
 		addressInvalid("delivery.district");
 	}
 
@@ -859,7 +866,11 @@ async function buildQuote(
 			? "courier"
 			: "seller_delivery";
 
-	const address = parseDeliveryAddress(input.address, method);
+	const address = parseDeliveryAddress(
+		input.address,
+		method,
+		await getShopMarketCities(payload, quoteFrom.shop),
+	);
 
 	const deliverySettings = await getDeliverySettings(payload);
 	if (

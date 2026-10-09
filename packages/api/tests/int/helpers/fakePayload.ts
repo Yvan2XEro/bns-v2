@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { vi } from "vitest";
+import { launchCitySeedRows } from "../../../src/lib/launchCities";
 
 export type Doc = Record<string, unknown>;
 
@@ -176,6 +177,11 @@ export function fakePayload(
 	const store: Record<string, Doc[]> = {};
 	for (const [collection, docs] of Object.entries(seed))
 		store[collection] = docs.map((doc) => ({ ...clone(doc) }));
+	// The CM cities are rows now; a suite that seeds its own keeps them.
+	if (!("market-cities" in seed))
+		store["market-cities"] = launchCitySeedRows("market-cm").map((row) => ({
+			...row,
+		}));
 	const globals: Record<string, Doc> = clone(options.globals ?? {});
 	const journals = new Map<string, Undo[]>();
 	const writes: Array<{
