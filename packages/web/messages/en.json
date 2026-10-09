@@ -1602,7 +1602,9 @@
 			"outOfStock": "Not enough stock for this quantity.",
 			"quantityInvalid": "Choose a quantity between 1 and 20.",
 			"singleShop": "Your cart holds items from another shop.",
-			"singleFulfilment": "Your cart can contain items fulfilled by one supplier at a time."
+			"singleFulfilment": "Your cart can contain items fulfilled by one supplier at a time.",
+			"marketMismatch": "This shop sells in another country. Finish or empty your current cart first.",
+			"shopLimitReached": "Your cart already holds the maximum number of shops. Check out or remove one before adding another."
 		},
 		"checkout": {
 			"disabled": "Checkout is not available yet.",
@@ -1612,7 +1614,9 @@
 			"methodUnavailable": "This delivery or payment method is not available.",
 			"quoteChanged": "Your order summary has changed. Please review it again.",
 			"termsNotAccepted": "Please accept the terms of sale to continue.",
-			"selfPurchase": "You cannot order from your own shop."
+			"selfPurchase": "You cannot order from your own shop.",
+			"stockChanged": "An item in your cart just sold out. Review your cart and try again.",
+			"groupUnavailable": "One of the shops in your cart can no longer take your order. Review your cart and try again."
 		},
 		"order": {
 			"notFound": "This order does not exist.",
@@ -1630,7 +1634,8 @@
 			"handoverLocked": "Too many incorrect handover codes. Ask the buyer for a new code or to confirm in the app.",
 			"contestWindowClosed": "The window to contest this delivery has closed.",
 			"withdrawalWindowClosed": "The 15-day return window has closed.",
-			"withdrawalAlreadyRequested": "A return is already in progress for this order."
+			"withdrawalAlreadyRequested": "A return is already in progress for this order.",
+			"mixedFulfilment": "Something went wrong assembling your order. Nothing was placed; please try again."
 		},
 		"commission": {
 			"invoiceNotFound": "This invoice does not exist.",
@@ -1731,6 +1736,11 @@
 			"cityNotServed": "This courier does not serve the selected city.",
 			"providerError": "The courier could not process this request. Please try again shortly.",
 			"cancelRefused": "The courier refused the cancellation. The shipment remains active."
+		},
+		"market": {
+			"unknown": "This market does not exist.",
+			"notLive": "This market is not open yet.",
+			"featureClosed": "This feature is not available in this market yet."
 		}
 	},
 	"Verification": {

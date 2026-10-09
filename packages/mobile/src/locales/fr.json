@@ -1304,7 +1304,9 @@
 			"outOfStock": "Le stock est insuffisant pour cette quantité.",
 			"quantityInvalid": "Choisissez une quantité entre 1 et 20.",
 			"singleShop": "Votre panier contient déjà des articles d'une autre boutique.",
-			"singleFulfilment": "Votre panier ne peut contenir que des articles expédiés par un même fournisseur."
+			"singleFulfilment": "Votre panier ne peut contenir que des articles expédiés par un même fournisseur.",
+			"marketMismatch": "Cette boutique vend dans un autre pays. Terminez ou videz d'abord votre panier actuel.",
+			"shopLimitReached": "Votre panier contient déjà le nombre maximum de boutiques. Passez commande ou retirez-en une avant d'en ajouter une autre."
 		},
 		"checkout": {
 			"disabled": "La commande n'est pas encore disponible.",
@@ -1314,7 +1316,9 @@
 			"methodUnavailable": "Ce mode de livraison ou de paiement n'est pas disponible.",
 			"quoteChanged": "Votre récapitulatif a changé. Veuillez le revérifier.",
 			"termsNotAccepted": "Veuillez accepter les conditions de vente pour continuer.",
-			"selfPurchase": "Vous ne pouvez pas commander dans votre propre boutique."
+			"selfPurchase": "Vous ne pouvez pas commander dans votre propre boutique.",
+			"stockChanged": "Un article de votre panier vient d'être épuisé. Vérifiez votre panier et réessayez.",
+			"groupUnavailable": "Une des boutiques de votre panier ne peut plus prendre votre commande. Vérifiez votre panier et réessayez."
 		},
 		"order": {
 			"notFound": "Cette commande n'existe pas.",
@@ -1332,7 +1336,8 @@
 			"handoverLocked": "Trop de codes de remise incorrects. Demandez un nouveau code à l'acheteur ou qu'il confirme dans l'application.",
 			"contestWindowClosed": "Le délai pour contester cette livraison est écoulé.",
 			"withdrawalWindowClosed": "Le délai de retour de 15 jours est écoulé.",
-			"withdrawalAlreadyRequested": "Un retour est déjà en cours pour cette commande."
+			"withdrawalAlreadyRequested": "Un retour est déjà en cours pour cette commande.",
+			"mixedFulfilment": "Un problème est survenu lors de la préparation de votre commande. Rien n'a été passé ; veuillez réessayer."
 		},
 		"commission": {
 			"invoiceNotFound": "Cette facture n'existe pas.",
@@ -1433,6 +1438,11 @@
 			"cityNotServed": "Ce coursier ne dessert pas la ville sélectionnée.",
 			"providerError": "Le coursier n'a pas pu traiter cette demande. Réessayez dans quelques instants.",
 			"cancelRefused": "Le coursier a refusé l'annulation. L'expédition reste active."
+		},
+		"market": {
+			"unknown": "Ce marché n'existe pas.",
+			"notLive": "Ce marché n'est pas encore ouvert.",
+			"featureClosed": "Cette fonctionnalité n'est pas encore disponible sur ce marché."
 		}
 	},
 	"cityPicker": {
