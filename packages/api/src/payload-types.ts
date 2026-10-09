@@ -86,6 +86,8 @@ export interface Config {
     'webhook-events': WebhookEvent;
     'contact-reveals': ContactReveal;
     'delivery-zones': DeliveryZone;
+    markets: Market;
+    'market-cities': MarketCity;
     'shop-locations': ShopLocation;
     couriers: Courier;
     'courier-members': CourierMember;
@@ -171,6 +173,8 @@ export interface Config {
     'webhook-events': WebhookEventsSelect<false> | WebhookEventsSelect<true>;
     'contact-reveals': ContactRevealsSelect<false> | ContactRevealsSelect<true>;
     'delivery-zones': DeliveryZonesSelect<false> | DeliveryZonesSelect<true>;
+    markets: MarketsSelect<false> | MarketsSelect<true>;
+    'market-cities': MarketCitiesSelect<false> | MarketCitiesSelect<true>;
     'shop-locations': ShopLocationsSelect<false> | ShopLocationsSelect<true>;
     couriers: CouriersSelect<false> | CouriersSelect<true>;
     'courier-members': CourierMembersSelect<false> | CourierMembersSelect<true>;
@@ -2560,6 +2564,150 @@ export interface ContactReveal {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "markets".
+ */
+export interface Market {
+  id: string;
+  countryCode: string;
+  name: string;
+  status: 'draft' | 'review' | 'live' | 'suspended';
+  currency: {
+    code: string;
+    minorUnit: number;
+    rounding: 'half_up' | 'half_even' | 'down';
+  };
+  formatting?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        /**
+         * Display-only check string.
+         */
+        patternExample?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  phone: {
+    pattern: string;
+    examples?: {
+      valid?:
+        | {
+            [k: string]: unknown;
+          }
+        | unknown[]
+        | string
+        | number
+        | boolean
+        | null;
+      invalid?:
+        | {
+            [k: string]: unknown;
+          }
+        | unknown[]
+        | string
+        | number
+        | boolean
+        | null;
+    };
+    displayExample?: string | null;
+  };
+  timezone: string;
+  languages: ('fr' | 'en')[];
+  vatRateBps: number;
+  payments: {
+    provider: 'notchpay';
+    settlementMode: 'provider_split' | 'direct_to_seller' | 'platform_collects';
+    channels?: string[] | null;
+    enabled?: boolean | null;
+  };
+  features?: {
+    cod?: boolean | null;
+    protectedPayment?: boolean | null;
+    deliveryZones?: boolean | null;
+    couriers?: boolean | null;
+    disputes?: boolean | null;
+    resale?: boolean | null;
+    resalePrepaid?: boolean | null;
+    boosts?: boolean | null;
+  };
+  /**
+   * Integers in the market's minor units.
+   */
+  amounts: {
+    minPayout: number;
+    maxOrderAmount: number;
+    exposureLevel2: number;
+    exposureLevel3: number;
+    buyerProtectionMin: number;
+    buyerProtectionMax: number;
+    defaultDeliveryFeeFallback: number;
+  };
+  regulatoryReview?: {
+    reviewedBy?: string | null;
+    reviewedAt?: string | null;
+    evidence?: (string | null) | PaymentGateEvidence;
+    note?: string | null;
+  };
+  moneyCalendar?: {
+    releaseHourLocal?: number | null;
+    reconcileHourLocal?: number | null;
+    vatPeriod?: 'calendar_month' | null;
+    lastReleaseLocalDate?: string | null;
+    lastReconcileLocalDate?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gate-evidence".
+ */
+export interface PaymentGateEvidence {
+  id: string;
+  scope?: ('gate' | 'market') | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-cities".
+ */
+export interface MarketCity {
+  id: string;
+  market: string | Market;
+  key: string;
+  label: string;
+  /**
+   * {city}.other is implicit and always accepted.
+   */
+  districts?:
+    | {
+        slug: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  defaultDeliveryFee: number;
+  active?: boolean | null;
+  sortOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "courier-members".
  */
 export interface CourierMember {
@@ -3263,25 +3411,6 @@ export interface RiskFlag {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payment-gate-evidence".
- */
-export interface PaymentGateEvidence {
-  id: string;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {};
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "dispute-gate-evidence".
  */
 export interface DisputeGateEvidence {
@@ -3850,6 +3979,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'delivery-zones';
         value: string | DeliveryZone;
+      } | null)
+    | ({
+        relationTo: 'markets';
+        value: string | Market;
+      } | null)
+    | ({
+        relationTo: 'market-cities';
+        value: string | MarketCity;
       } | null)
     | ({
         relationTo: 'shop-locations';
@@ -4592,6 +4729,119 @@ export interface DeliveryZonesSelect<T extends boolean = true> {
   active?: T;
   sortOrder?: T;
   metadata?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "markets_select".
+ */
+export interface MarketsSelect<T extends boolean = true> {
+  countryCode?: T;
+  name?: T;
+  status?: T;
+  currency?:
+    | T
+    | {
+        code?: T;
+        minorUnit?: T;
+        rounding?: T;
+      };
+  formatting?:
+    | T
+    | {
+        locale?: T;
+        symbol?: T;
+        position?: T;
+        groupSeparator?: T;
+        decimalSeparator?: T;
+        patternExample?: T;
+        id?: T;
+      };
+  phone?:
+    | T
+    | {
+        pattern?: T;
+        examples?:
+          | T
+          | {
+              valid?: T;
+              invalid?: T;
+            };
+        displayExample?: T;
+      };
+  timezone?: T;
+  languages?: T;
+  vatRateBps?: T;
+  payments?:
+    | T
+    | {
+        provider?: T;
+        settlementMode?: T;
+        channels?: T;
+        enabled?: T;
+      };
+  features?:
+    | T
+    | {
+        cod?: T;
+        protectedPayment?: T;
+        deliveryZones?: T;
+        couriers?: T;
+        disputes?: T;
+        resale?: T;
+        resalePrepaid?: T;
+        boosts?: T;
+      };
+  amounts?:
+    | T
+    | {
+        minPayout?: T;
+        maxOrderAmount?: T;
+        exposureLevel2?: T;
+        exposureLevel3?: T;
+        buyerProtectionMin?: T;
+        buyerProtectionMax?: T;
+        defaultDeliveryFeeFallback?: T;
+      };
+  regulatoryReview?:
+    | T
+    | {
+        reviewedBy?: T;
+        reviewedAt?: T;
+        evidence?: T;
+        note?: T;
+      };
+  moneyCalendar?:
+    | T
+    | {
+        releaseHourLocal?: T;
+        reconcileHourLocal?: T;
+        vatPeriod?: T;
+        lastReleaseLocalDate?: T;
+        lastReconcileLocalDate?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "market-cities_select".
+ */
+export interface MarketCitiesSelect<T extends boolean = true> {
+  market?: T;
+  key?: T;
+  label?: T;
+  districts?:
+    | T
+    | {
+        slug?: T;
+        label?: T;
+        id?: T;
+      };
+  defaultDeliveryFee?: T;
+  active?: T;
+  sortOrder?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -6024,6 +6274,7 @@ export interface RiskFlagsSelect<T extends boolean = true> {
  * via the `definition` "payment-gate-evidence_select".
  */
 export interface PaymentGateEvidenceSelect<T extends boolean = true> {
+  scope?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

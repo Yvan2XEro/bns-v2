@@ -31,6 +31,8 @@ import { LedgerAccounts } from "./collections/LedgerAccounts";
 import { LedgerTransactions } from "./collections/LedgerTransactions";
 import { Listings } from "./collections/Listings";
 import { ListingViewFlushes } from "./collections/ListingViewFlushes";
+import { MarketCities } from "./collections/MarketCities";
+import { Markets } from "./collections/Markets";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
@@ -286,6 +288,8 @@ export default buildConfig({
 		WebhookEvents,
 		ContactReveals,
 		DeliveryZones,
+		Markets,
+		MarketCities,
 		ShopLocations,
 		Couriers,
 		CourierMembers,
