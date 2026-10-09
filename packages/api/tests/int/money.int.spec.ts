@@ -7,6 +7,7 @@ import {
 } from "../../src/contracts/money";
 import { roundHalfUp } from "../../src/lib/orderMath";
 import { roundMinor, roundXaf } from "../../src/lib/paymentMath";
+import { CM_FORMATTING } from "../../src/migrations/p10Markets";
 
 // The two CM format rows Task 7 seeds.
 const CM_FR: MoneyFormat = {
@@ -82,5 +83,13 @@ describe("roundMinor", () => {
 		expect([...out].map((c) => c.codePointAt(0))).toEqual([
 			0x34, 0x37, 0x202f, 0x30, 0x30, 0x30, 0x20, 0x46, 0x43, 0x46, 0x41,
 		]);
+	});
+});
+
+describe("the CM rows the migration seeds", () => {
+	it("are the fixtures this file pins", () => {
+		const { minorUnit: _fr, ...fr } = CM_FR;
+		const { minorUnit: _en, ...en } = CM_EN;
+		expect([...CM_FORMATTING]).toEqual([fr, en]);
 	});
 });
