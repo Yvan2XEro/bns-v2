@@ -76,7 +76,7 @@ export async function getMarketCities(
 		overrideAccess: true,
 	});
 	const cities = docs
-		.flatMap((doc) => toCity(doc as unknown as Record<string, unknown>) ?? [])
+		.flatMap((doc: unknown) => toCity(doc as Record<string, unknown>) ?? [])
 		.sort(bySortOrder);
 	perPayload.set(marketId, { at: Date.now(), cities });
 	return cities;
