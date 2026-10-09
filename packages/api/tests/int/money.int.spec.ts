@@ -6,7 +6,7 @@ import {
 	type MoneyFormat,
 } from "../../src/contracts/money";
 import { roundHalfUp } from "../../src/lib/orderMath";
-import { roundMinor, roundXaf } from "../../src/lib/paymentMath";
+import { roundMinor } from "../../src/lib/paymentMath";
 import { CM_FORMATTING } from "../../src/migrations/p10Markets";
 
 // The two CM format rows Task 7 seeds.
@@ -70,11 +70,10 @@ describe("roundMinor", () => {
 		expect(roundMinor(-2.5, "half_even")).toBe(-2);
 	});
 
-	it("equals roundHalfUp on 1,000 values, and roundXaf is the alias", () => {
+	it("equals roundHalfUp on 1,000 values", () => {
 		for (let i = 0; i < 1000; i++) {
 			const v = (i - 500) * 0.37 + (i % 2) * 0.5;
 			expect(roundMinor(v, "half_up")).toBe(roundHalfUp(v));
-			expect(roundXaf(v)).toBe(roundHalfUp(v));
 		}
 	});
 

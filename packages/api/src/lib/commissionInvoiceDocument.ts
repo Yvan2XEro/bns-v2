@@ -1,6 +1,34 @@
+import {
+	formatMoney,
+	formatMoneyFallback,
+	type MoneyFormat,
+} from "../contracts/money";
 import type { CommissionInvoice, CommissionLine } from "../payload-types";
 import { formatXaf } from "./orderFormat";
 import { type PdfLine, renderTextPdf } from "./textPdf";
+
+/** What a document knows of its money: the currency and the market's formats frozen at issue. */
+export interface DocumentMoney {
+	currency?: string | null;
+	formatSnapshot?: readonly MoneyFormat[] | null;
+}
+
+/**
+ * A document renders through the snapshot it was issued with. A document
+ * from before snapshots is XAF and keeps `formatXaf`; any other currency
+ * without a row for the language reads as "CODE 1 410", never a silent FCFA.
+ */
+function moneyFormatter(
+	{ currency, formatSnapshot }: DocumentMoney,
+	lang: "fr" | "en",
+): (amount: number) => string {
+	const row = formatSnapshot?.find((format) => format.locale === lang);
+	if (row) return (amount) => formatMoney(amount, row);
+	if (currency && currency !== "XAF") {
+		return (amount) => formatMoneyFallback(amount, currency, 0);
+	}
+	return (amount) => formatXaf(amount, lang);
+}
 
 export interface InvoiceDocumentLine {
 	orderNumber: string;
@@ -101,6 +129,7 @@ export function renderInvoiceHtml(
 	lang: "fr" | "en",
 ): string {
 	const t = copy[lang];
+	const money = moneyFormatter(invoice, lang);
 	const seller = invoice.sellerSnapshot;
 	const issuer = invoice.issuerSnapshot;
 
@@ -110,8 +139,8 @@ export function renderInvoiceHtml(
 			<tr>
 				<td>${escapeHtml(line.orderNumber)}</td>
 				<td>${escapeHtml(t.kinds[line.kind])}</td>
-				<td>${escapeHtml(formatXaf(line.baseAmount, lang))}</td>
-				<td>${escapeHtml(formatXaf(line.amount, lang))}</td>
+				<td>${escapeHtml(money(line.baseAmount))}</td>
+				<td>${escapeHtml(money(line.amount))}</td>
 			</tr>`,
 		)
 		.join("");
@@ -151,16 +180,16 @@ export function renderInvoiceHtml(
 	</thead>
 	<tbody>${rows}</tbody>
 </table>
-<p>${t.commissionTotal}: ${escapeHtml(formatXaf(invoice.commissionTotal ?? 0, lang))}</p>
-<p>${t.vat}: ${escapeHtml(formatXaf(invoice.vatAmount ?? 0, lang))}</p>
-<p>${t.totalDue}: ${escapeHtml(formatXaf(invoice.totalDue ?? 0, lang))}</p>
+<p>${t.commissionTotal}: ${escapeHtml(money(invoice.commissionTotal ?? 0))}</p>
+<p>${t.vat}: ${escapeHtml(money(invoice.vatAmount ?? 0))}</p>
+<p>${t.totalDue}: ${escapeHtml(money(invoice.totalDue ?? 0))}</p>
 </body>
 </html>`;
 }
 
 // ─── Series F: the buyer protection fee invoice and its credit note ─────────
 
-export interface BuyerFeeDocument {
+export interface BuyerFeeDocument extends DocumentMoney {
 	kind: "invoice" | "credit_note";
 	number: string;
 	/** The invoice a credit note cancels. */
@@ -234,6 +263,7 @@ export function formatVatRate(bps: number, lang: "fr" | "en"): string {
 
 function feeSection(doc: BuyerFeeDocument, lang: "fr" | "en"): PdfLine[] {
 	const t = BUYER_FEE_DOCUMENT_COPY[lang];
+	const money = moneyFormatter(doc, lang);
 	const credit = doc.kind === "credit_note";
 	// French typography puts a space before the colon.
 	const colon = lang === "fr" ? " :" : ":";
@@ -256,12 +286,12 @@ function feeSection(doc: BuyerFeeDocument, lang: "fr" | "en"): PdfLine[] {
 		{ text: `${t.order}${colon} ${doc.orderNumber}` },
 		{ text: `${t.customer}${colon} ${doc.customerName}` },
 		{ text: `${t.description}${colon} ${t.service}`, gap: 6 },
-		{ text: `${t.amountHt}${colon} ${formatXaf(doc.amountHt, lang)}` },
+		{ text: `${t.amountHt}${colon} ${money(doc.amountHt)}` },
 		{
-			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${formatXaf(doc.vat, lang)}`,
+			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${money(doc.vat)}`,
 		},
 		{
-			text: `${t.amountTtc}${colon} ${formatXaf(doc.amountTtc, lang)}`,
+			text: `${t.amountTtc}${colon} ${money(doc.amountTtc)}`,
 			bold: true,
 		},
 	);
@@ -284,7 +314,7 @@ export function renderBuyerFeeDocumentPdf(doc: BuyerFeeDocument): Buffer {
 
 // ─── Series A: the commission credit note ──────────────────────────────────
 
-export interface CreditNoteDocument {
+export interface CreditNoteDocument extends DocumentMoney {
 	number: string;
 	/** The invoice the note credits. */
 	creditsNumber: string;
@@ -341,6 +371,7 @@ function creditNoteSection(
 	lang: "fr" | "en",
 ): PdfLine[] {
 	const t = CREDIT_NOTE_DOCUMENT_COPY[lang];
+	const money = moneyFormatter(doc, lang);
 	const colon = lang === "fr" ? " :" : ":";
 	return [
 		{ text: t.title, bold: true, size: 14, gap: 12 },
@@ -351,12 +382,12 @@ function creditNoteSection(
 		{ text: `${t.seller}${colon} ${doc.sellerName}` },
 		{ text: `${t.orders}${colon} ${doc.orderNumbers.join(", ")}` },
 		{ text: `${t.description}${colon} ${t.service}`, gap: 6 },
-		{ text: `${t.amountHt}${colon} ${formatXaf(doc.amountHt, lang)}` },
+		{ text: `${t.amountHt}${colon} ${money(doc.amountHt)}` },
 		{
-			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${formatXaf(doc.vat, lang)}`,
+			text: `${t.vat} (${formatVatRate(doc.vatRateBps, lang)})${colon} ${money(doc.vat)}`,
 		},
 		{
-			text: `${t.amountTtc}${colon} ${formatXaf(doc.amountHt + doc.vat, lang)}`,
+			text: `${t.amountTtc}${colon} ${money(doc.amountHt + doc.vat)}`,
 			bold: true,
 		},
 		{

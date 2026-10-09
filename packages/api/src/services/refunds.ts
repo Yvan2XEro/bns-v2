@@ -2,7 +2,8 @@ import type { Payload, PayloadRequest } from "payload";
 import type { LedgerTransactionKind } from "../collections/LedgerTransactions";
 import type { MONEY_STATUS_SOURCES } from "../collections/Refunds";
 import { ERROR_CODES } from "../lib/errors";
-import { roundXaf } from "../lib/paymentMath";
+import { roundingOfCurrency } from "../lib/markets";
+import { type Rounding, roundMinor } from "../lib/paymentMath";
 import {
 	getPaymentSettings,
 	type PaymentSettings,
@@ -125,6 +126,7 @@ export interface BreakdownInput {
 	/** The order's goods value (`amounts.subtotal`), the base the commission was charged on. */
 	goodsValue: number;
 	amount: number;
+	rounding?: Rounding;
 }
 
 /**
@@ -139,6 +141,7 @@ export function refundBreakdown({
 	refunded,
 	goodsValue,
 	amount,
+	rounding = "half_up",
 }: BreakdownInput): RefundBreakdown | null {
 	const remaining = minus(components, refunded);
 	const remainingTotal = sumOf(remaining);
@@ -154,11 +157,11 @@ export function refundBreakdown({
 	const ratio = goodsValue > 0 ? Math.min(amount / goodsValue, 1) : 1;
 	let commission = Math.min(
 		remaining.commission,
-		roundXaf(components.commission * ratio),
+		roundMinor(components.commission * ratio, rounding),
 	);
 	let commissionVat = Math.min(
 		remaining.commissionVat,
-		roundXaf(components.commissionVat * ratio),
+		roundMinor(components.commissionVat * ratio, rounding),
 	);
 	let seller = amount - commission - commissionVat;
 	if (seller > remaining.seller) {
@@ -553,6 +556,10 @@ export async function requestRefund(
 						order.amounts?.subtotal ??
 						buyerTotal - components.buyerProtectionFee,
 					amount,
+					rounding: await roundingOfCurrency(
+						tx.payload,
+						order.amounts?.currency ?? "",
+					),
 				});
 		if (!breakdown) throw refusal(ERROR_CODES.refundAmountExceeds);
 
@@ -857,7 +864,10 @@ async function ensurePostings(
 					b.buyerProtectionFee === fee
 						? feeVat
 						: fee > 0
-							? roundXaf((feeVat * b.buyerProtectionFee) / fee)
+							? roundMinor(
+									(feeVat * b.buyerProtectionFee) / fee,
+									await roundingOfCurrency(req.payload, base.currency),
+								)
 							: 0,
 				sellerPendingAvailable: balances.seller_pending ?? 0,
 				commissionEarned:

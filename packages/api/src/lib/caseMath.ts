@@ -1,6 +1,6 @@
 import type { CaseBasis } from "../contracts/caseRules";
 import { vatOf } from "./orderMath";
-import { roundXaf } from "./paymentMath";
+import { roundMinor } from "./paymentMath";
 
 export {
 	type CaseBasis,
@@ -8,7 +8,6 @@ export {
 	type DeductionAllowedResult,
 	deductionAllowed,
 } from "../contracts/caseRules";
-export { roundXaf } from "./paymentMath";
 
 export interface CaseBreakdown {
 	goods: number;
@@ -149,7 +148,10 @@ export function commissionCredit({
 	commissionBase,
 	vatRateBps,
 }: CommissionCreditInput): CommissionCreditResult {
-	const creditHt = roundXaf((commissionHt * refundedGoods) / commissionBase);
+	const creditHt = roundMinor(
+		(commissionHt * refundedGoods) / commissionBase,
+		"half_up",
+	);
 	const creditVat = vatOf(creditHt, vatRateBps);
 	return { creditHt, creditVat, creditTtc: creditHt + creditVat };
 }

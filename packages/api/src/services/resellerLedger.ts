@@ -1,4 +1,4 @@
-import type { PayloadRequest } from "payload";
+import type { Payload, PayloadRequest } from "payload";
 import type { LedgerTransactionKind } from "../collections/LedgerTransactions";
 import { relationId } from "../lib/relationId";
 import type { ResellerCommission, ResellerPayout } from "../payload-types";
@@ -9,7 +9,54 @@ import {
 	postLedger,
 } from "./ledger";
 
-const CURRENCY = "XAF";
+/** A commission is money in its order's currency, whatever the reseller's own market. */
+export async function orderCurrency(
+	payload: Payload,
+	orderId: string,
+	req?: PayloadRequest,
+): Promise<string> {
+	const { docs } = await payload.find({
+		collection: "orders",
+		where: { id: { equals: orderId } },
+		limit: 1,
+		depth: 0,
+		overrideAccess: true,
+		...(req ? { req } : {}),
+	});
+	const currency = docs[0]?.amounts?.currency;
+	if (!currency) {
+		throw new Error(`[reseller-ledger] order ${orderId} has no currency`);
+	}
+	return currency;
+}
+
+const commissionCurrency = (
+	payload: Payload,
+	commission: ResellerCommission,
+	req?: PayloadRequest,
+) => orderCurrency(payload, relationId(commission.order) ?? "", req);
+
+/** A payout carries one currency: the one of the commissions it settles. */
+export async function payoutCurrency(
+	payload: Payload,
+	payout: ResellerPayout,
+	req?: PayloadRequest,
+): Promise<string> {
+	const first = relationId(payout.commissions?.[0]);
+	if (!first) {
+		throw new Error(
+			`[reseller-ledger] payout ${payout.id} settles no commission`,
+		);
+	}
+	const commission = await payload.findByID({
+		collection: "reseller-commissions",
+		id: first,
+		depth: 0,
+		overrideAccess: true,
+		...(req ? { req } : {}),
+	});
+	return commissionCurrency(payload, commission, req);
+}
 
 const posted = async (
 	req: PayloadRequest,
@@ -37,7 +84,7 @@ export async function postCommissionPayable(
 		occurredAt: new Date(),
 		sourceType: "resale-event",
 		sourceId: String(commission.id),
-		currency: CURRENCY,
+		currency: await commissionCurrency(req.payload, commission, req),
 		shop: relationId(commission.resellerShop) ?? undefined,
 		order: relationId(commission.order) ?? undefined,
 	});
@@ -67,17 +114,17 @@ export async function postCommissionReduced(
 		occurredAt: new Date(),
 		sourceType: "resale-event",
 		sourceId: `${commission.id}:${adjustmentKey}`,
-		currency: CURRENCY,
+		currency: await commissionCurrency(req.payload, commission, req),
 		shop: relationId(commission.resellerShop) ?? undefined,
 		order: relationId(commission.order) ?? undefined,
 	});
 }
 
-const payoutPosting = (payout: ResellerPayout) => ({
+const payoutPosting = (payout: ResellerPayout, currency: string) => ({
 	occurredAt: new Date(),
 	sourceType: "resale-event" as const,
 	sourceId: String(payout.id),
-	currency: CURRENCY,
+	currency,
 	shop: relationId(payout.resellerShop) ?? undefined,
 });
 
@@ -93,7 +140,7 @@ export async function postPayoutSubmitted(
 	payout: ResellerPayout,
 ): Promise<void> {
 	await postLedger(req, {
-		...payoutPosting(payout),
+		...payoutPosting(payout, await payoutCurrency(req.payload, payout, req)),
 		kind: "reseller_payout_submitted",
 		entries: postingFor("reseller_payout_submitted", payoutAmounts(payout)),
 	});
@@ -110,7 +157,10 @@ export async function postPayoutOutcome(
 ): Promise<void> {
 	const id = String(payout.id);
 	if (!(await posted(req, "reseller_payout_submitted", id))) return;
-	const base = payoutPosting(payout);
+	const base = payoutPosting(
+		payout,
+		await payoutCurrency(req.payload, payout, req),
+	);
 	switch (outcome) {
 		case "complete":
 			await postLedger(req, {

@@ -190,7 +190,13 @@ function invoiceWorld(seed: Record<string, Doc[]> = {}) {
 	return fakePayload(
 		{
 			shops: [shop()],
-			orders: [{ id: "o-1", orderNumber: "BNS-2609-000001" }],
+			orders: [
+				{
+					id: "o-1",
+					orderNumber: "BNS-2609-000001",
+					amounts: { currency: "XAF" },
+				},
+			],
 			"commission-invoices": [],
 			"commission-lines": [],
 			sequences: [],

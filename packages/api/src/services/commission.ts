@@ -5,6 +5,7 @@ import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { commissionCredit } from "../lib/caseMath";
 import { filedCaseGates, getDisputeSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
+import { marketOfOrder } from "../lib/markets";
 import {
 	commissionForLine,
 	invoiceTotals,
@@ -59,6 +60,25 @@ export const PLATFORM_ISSUER = {
 	supportPhone: process.env.SUPPORT_PHONE ?? null,
 };
 
+/** What an invoice freezes at issue: the order's currency, its market's rate and formats. */
+async function invoiceMoneyOf(
+	payload: Payload,
+	order: Order,
+	fallbackVatRateBps: number,
+) {
+	const currency = order.amounts?.currency;
+	if (!currency)
+		throw new Error(`[commission] order ${order.id} has no currency`);
+	const market = await marketOfOrder(payload, order);
+	return {
+		currency,
+		vatRateBps: market?.vatRateBps ?? fallbackVatRateBps,
+		...(market
+			? { formatSnapshot: market.formats.map((format) => ({ ...format })) }
+			: {}),
+	};
+}
+
 export interface InvoiceLineView {
 	orderNumber: string;
 	baseAmount: number;
@@ -75,7 +95,7 @@ export interface CommissionInvoiceView {
 	commissionTotal: number;
 	vatAmount: number;
 	totalDue: number;
-	currency: "XAF";
+	currency: string;
 	status: NonNullable<CommissionInvoice["status"]>;
 	issuedAt: string;
 	dueAt: string;
@@ -422,6 +442,20 @@ export async function issueInvoicesForWeek(
 		});
 		if (already.docs[0]) continue;
 
+		const firstOrderId = relationId(lines[0]?.order);
+		const money = firstOrderId
+			? await invoiceMoneyOf(
+					payload,
+					await payload.findByID({
+						collection: "orders",
+						id: firstOrderId,
+						depth: 0,
+						overrideAccess: true,
+					}),
+					settings.vatRateBps,
+				)
+			: null;
+		if (!money) continue;
 		const charges =
 			sumByKind(lines, "charge") + sumByKind(lines, "dispute_fee");
 		const credits = sumByKind(lines, "credit");
@@ -438,7 +472,7 @@ export async function issueInvoicesForWeek(
 			credits,
 			nonVatCredits,
 			carryOver: -carryIn,
-			vatRateBps: settings.vatRateBps,
+			vatRateBps: money.vatRateBps,
 		});
 		const decision = netting({
 			commissionTotal: totals.commissionTotal,
@@ -479,10 +513,13 @@ export async function issueInvoicesForWeek(
 						lines: lines.map((line) => String(line.id)),
 						ordersCount,
 						commissionTotal: totals.commissionTotal,
-						vatRateBps: settings.vatRateBps,
+						vatRateBps: money.vatRateBps,
 						vatAmount: totals.vatAmount,
 						totalDue: decision.action === "invoice" ? totals.totalDue : 0,
-						currency: "XAF",
+						currency: money.currency,
+						...(money.formatSnapshot
+							? { formatSnapshot: money.formatSnapshot }
+							: {}),
 						status: decision.action === "invoice" ? "issued" : "void",
 						issuedAt: now.toISOString(),
 						dueAt: new Date(
@@ -577,6 +614,7 @@ export async function issueApplicationFeeInvoice(
 		req,
 	});
 	const settings = await getOrderSettings(req.payload);
+	const money = await invoiceMoneyOf(req.payload, order, settings.vatRateBps);
 	const now = new Date();
 	const completedAt = order.timestamps?.completedAt ?? now.toISOString();
 	const total = earned.commission + earned.commissionVat;
@@ -595,10 +633,11 @@ export async function issueApplicationFeeInvoice(
 			lines: [String(line.id)],
 			ordersCount: 1,
 			commissionTotal: earned.commission,
-			vatRateBps: settings.vatRateBps,
+			vatRateBps: money.vatRateBps,
 			vatAmount: earned.commissionVat,
 			totalDue: total,
-			currency: order.amounts?.currency ?? "XAF",
+			currency: money.currency,
+			...(money.formatSnapshot ? { formatSnapshot: money.formatSnapshot } : {}),
 			status: "paid",
 			settlement: "application_fee",
 			issuedAt: now.toISOString(),
@@ -1137,7 +1176,7 @@ export async function getBillingView(
 			commissionTotal: invoice.commissionTotal ?? 0,
 			vatAmount: invoice.vatAmount ?? 0,
 			totalDue: invoice.totalDue ?? 0,
-			currency: "XAF" as const,
+			currency: invoice.currency,
 			status: invoice.status ?? "issued",
 			issuedAt: invoice.issuedAt ?? "",
 			dueAt: invoice.dueAt ?? "",
@@ -1245,6 +1284,8 @@ export async function renderCreditNoteDocument(
 		amountHt: note.commissionTotal ?? 0,
 		vat: note.vatAmount ?? 0,
 		vatRateBps: note.vatRateBps ?? 0,
+		currency: note.currency,
+		formatSnapshot: note.formatSnapshot,
 		documentsLedgerReversal: note.settlement === "application_fee",
 		issuer: { legalName: PLATFORM_ISSUER.legalName },
 	};
@@ -1399,7 +1440,14 @@ async function createCreditNote(
 			vatRateBps,
 			vatAmount: vatOf(input.creditHt, vatRateBps),
 			totalDue: 0,
-			currency: "XAF",
+			currency: input.original.currency,
+			...(input.original.formatSnapshot
+				? {
+						formatSnapshot: input.original.formatSnapshot.map(
+							({ id: _id, ...format }) => format,
+						),
+					}
+				: {}),
 			status: "void",
 			...(input.documentation
 				? { settlement: "application_fee" as const }

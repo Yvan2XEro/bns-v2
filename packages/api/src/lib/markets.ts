@@ -5,7 +5,7 @@ import {
 	type MarketStatus,
 } from "../collections/Markets";
 import type { MoneyFormat } from "../contracts/money";
-import type { Shop } from "../payload-types";
+import type { Order, Shop } from "../payload-types";
 import { ERROR_CODES } from "./errors";
 import { readMarketCache, writeMarketCache } from "./marketCache";
 import type { Rounding } from "./paymentMath";
@@ -308,4 +308,34 @@ export async function marketOfShop(
 	if (match.length !== 1)
 		throw new ServiceError(ERROR_CODES.marketUnknown, 404);
 	return match[0];
+}
+
+/**
+ * How a currency rounds, from the market that sells in it. A currency with no
+ * market row keeps the half-up every launch market so far used.
+ */
+export async function roundingOfCurrency(
+	payload: Payload,
+	currency: string,
+): Promise<Rounding> {
+	const market = (await getMarkets(payload)).find(
+		(m) => m.currency.code === currency,
+	);
+	return market?.currency.rounding ?? "half_up";
+}
+
+/** The market an order was placed in: its stamped row, else the one selling in its currency. */
+export async function marketOfOrder(
+	payload: Payload,
+	order: Pick<Order, "market" | "amounts">,
+): Promise<Market | null> {
+	const markets = await getMarkets(payload);
+	const stamped = order.market
+		? String(typeof order.market === "object" ? order.market.id : order.market)
+		: null;
+	return (
+		markets.find((m) => m.id === stamped) ??
+		markets.find((m) => m.currency.code === order.amounts?.currency) ??
+		null
+	);
 }

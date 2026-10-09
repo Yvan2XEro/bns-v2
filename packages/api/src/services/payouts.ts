@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest, Where } from "payload";
 import type { PAYOUT_STATUSES } from "../collections/Payouts";
-import { roundXaf } from "../lib/paymentMath";
+import { roundingOfCurrency } from "../lib/markets";
+import { type Rounding, roundMinor } from "../lib/paymentMath";
 import {
 	getPaymentSettings,
 	type PaymentSettings,
@@ -436,11 +437,15 @@ export function earlyReleaseEligible(
 export function earlyReleaseAmount(
 	destinationAmount: number,
 	sellerPending: number,
+	rounding: Rounding = "half_up",
 ): number {
 	return Math.max(
 		0,
 		Math.min(
-			roundXaf((destinationAmount * EARLY_RELEASE_SHARE_PERCENT) / 100),
+			roundMinor(
+				(destinationAmount * EARLY_RELEASE_SHARE_PERCENT) / 100,
+				rounding,
+			),
 			sellerPending,
 		),
 	);
@@ -715,6 +720,7 @@ async function earlyReleases(
 				const amount = earlyReleaseAmount(
 					order.amounts?.destinationAmount ?? 0,
 					balances.seller_pending ?? 0,
+					await roundingOfCurrency(payload, currencyOf(order)),
 				);
 				if (amount <= 0) return false;
 				const { created } = await postLedger(req, {

@@ -409,6 +409,33 @@ async function accountFor(
 }
 
 /**
+ * An order is posted in its own market's currency only. The throw is caught by
+ * nothing: the enclosing transaction aborts and the books prefer a loud gap.
+ * An order the read cannot find is left to the relationship, not guessed at.
+ */
+async function refuseForeignCurrency(
+	req: PayloadRequest,
+	orderId: string,
+	currency: string,
+): Promise<void> {
+	const { docs } = await req.payload.find({
+		collection: "orders",
+		where: { id: { equals: orderId } },
+		limit: 1,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	const order = docs[0];
+	if (!order) return;
+	if (order.amounts?.currency !== currency) {
+		throw new LedgerPostingError(
+			`currency mismatch: posting ${currency} against order ${order.orderNumber} in ${order.amounts?.currency}`,
+		);
+	}
+}
+
+/**
  * The one writer of `ledger-transactions`. Runs inside the caller's
  * transaction (`req` from `withTransaction`): the posting and every balance
  * `$inc` commit or roll back with the event that caused them. A duplicate
@@ -429,6 +456,9 @@ export async function postLedger(
 	const idempotencyKey = ledgerIdempotencyKey(input);
 	const existing = await findTransaction(req, idempotencyKey);
 	if (existing) return { transaction: existing, created: false };
+
+	if (input.order)
+		await refuseForeignCurrency(req, input.order, input.currency);
 
 	const accounts = new Map<LedgerCategory, LedgerAccount>();
 	for (const { category } of input.entries) {
@@ -577,7 +607,14 @@ export interface LedgerIntegrity {
 	/** Every account with its cached balance (on the row) and the balance its entries give. */
 	accounts: Array<{ account: LedgerAccount; recomputed: number }>;
 	/** Stored postings whose sides differ: never edited, only reported. */
-	unbalanced: Array<{ transaction: string; debit: number; credit: number }>;
+	unbalanced: Array<{
+		transaction: string;
+		currency: string;
+		debit: number;
+		credit: number;
+	}>;
+	/** Each currency is its own books: its debits and credits must meet on their own. */
+	byCurrency: Record<string, { debit: number; credit: number }>;
 }
 
 /**
@@ -599,25 +636,34 @@ export async function ledgerIntegrity(
 	const categories = new Map(docs.map((a) => [String(a.id), a.category]));
 	const balances = new Map<string, number>();
 	for (const id of categories.keys()) balances.set(id, 0);
+	const currencies = new Map(docs.map((a) => [String(a.id), a.currency]));
 	const unbalanced: LedgerIntegrity["unbalanced"] = [];
+	const byCurrency: LedgerIntegrity["byCurrency"] = {};
 	await eachTransaction(payload, undefined, req, (transaction) => {
 		let debits = 0;
 		let credits = 0;
+		let currency = "";
 		for (const entry of transaction.entries) {
 			const id = idOf(entry.account);
 			const category = categories.get(id);
 			if (!category) throw new LedgerPostingError(`unknown account ${id}`);
 			debits += entry.debit;
 			credits += entry.credit;
+			currency = currencies.get(id) ?? currency;
 			balances.set(
 				id,
 				(balances.get(id) ?? 0) +
 					balanceDelta(category, entry.debit, entry.credit),
 			);
 		}
+		const totals = byCurrency[currency] ?? { debit: 0, credit: 0 };
+		totals.debit += debits;
+		totals.credit += credits;
+		byCurrency[currency] = totals;
 		if (debits !== credits) {
 			unbalanced.push({
 				transaction: String(transaction.id),
+				currency,
 				debit: debits,
 				credit: credits,
 			});
@@ -629,6 +675,7 @@ export async function ledgerIntegrity(
 			recomputed: balances.get(String(account.id)) ?? 0,
 		})),
 		unbalanced,
+		byCurrency,
 	};
 }
 

@@ -18,9 +18,6 @@ export function roundMinor(value: number, rounding: Rounding): number {
 	return value < 0 ? -even : even;
 }
 
-/** @deprecated use `roundMinor(v, "half_up")`; callers migrate in Task 11. */
-export const roundXaf = (value: number): number => roundMinor(value, "half_up");
-
 /**
  * VAT on a commission amount is the same half-up extraction `orderMath`
  * already does for the invoice; re-exported rather than duplicated.
@@ -41,7 +38,7 @@ export function buyerProtectionFee(
 	orderTotal: number,
 	{ bps, min, max }: BuyerProtectionFeeConfig,
 ): number {
-	const raw = roundXaf((orderTotal * bps) / 10_000);
+	const raw = roundMinor((orderTotal * bps) / 10_000, "half_up");
 	return Math.min(Math.max(raw, min), max);
 }
 
@@ -50,7 +47,7 @@ export function buyerProtectionFee(
  * computing the HT base at the given rate and taking the remainder.
  */
 export function buyerProtectionFeeVat(fee: number, vatRateBps: number): number {
-	const ht = roundXaf((fee * 10_000) / (10_000 + vatRateBps));
+	const ht = roundMinor((fee * 10_000) / (10_000 + vatRateBps), "half_up");
 	return fee - ht;
 }
 

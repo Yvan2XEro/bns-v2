@@ -6,6 +6,7 @@ import {
 	renderBuyerFeeDocumentPdf,
 } from "../lib/commissionInvoiceDocument";
 import { ERROR_CODES } from "../lib/errors";
+import { marketOfOrder } from "../lib/markets";
 import { getOrderSettings } from "../lib/orderSettings";
 import { getPaymentSettings } from "../lib/paymentSettings";
 import { createSignedDocumentUrl } from "../lib/privateFiles";
@@ -71,8 +72,10 @@ async function loadOrder(req: PayloadRequest, id: string): Promise<Order> {
 	});
 }
 
-/** The shop's market row decides the rate, as it did when the fee was split. */
+/** The order's market decides the rate; the shop's payment-settings row only backs orders that predate markets. */
 async function vatRateOf(req: PayloadRequest, order: Order): Promise<number> {
+	const orderMarket = await marketOfOrder(req.payload, order);
+	if (orderMarket) return orderMarket.vatRateBps;
 	const shopId = relationId(order.shop);
 	const shop = shopId
 		? await req.payload
@@ -147,6 +150,12 @@ export async function issueBuyerFeeInvoice(
 	const issuedAt = new Date();
 	const number = await nextInvoiceNumber(req, "F", issuedAt);
 	const vatRateBps = await vatRateOf(req, order);
+	const currency = order.amounts?.currency;
+	if (!currency) {
+		throw new Error(`[buyer-fee-invoices] order ${order.id} has no currency`);
+	}
+	const formats = (await marketOfOrder(req.payload, order))?.formats;
+	const formatSnapshot = formats?.map((format) => ({ ...format }));
 	const buyer = relationId(order.buyer);
 	const pdf = await storePdf(req, {
 		kind: "invoice",
@@ -158,6 +167,8 @@ export async function issueBuyerFeeInvoice(
 		customerName: order.delivery?.recipientName ?? "",
 		...amounts,
 		vatRateBps,
+		currency,
+		formatSnapshot,
 		issuer: PLATFORM_ISSUER,
 	});
 	return req.payload.create({
@@ -168,7 +179,8 @@ export async function issueBuyerFeeInvoice(
 			order: orderId,
 			...(buyer ? { buyer } : {}),
 			...amounts,
-			currency: order.amounts?.currency ?? "XAF",
+			currency,
+			...(formatSnapshot ? { formatSnapshot } : {}),
 			vatRateBps,
 			pdf,
 			issuedAt: issuedAt.toISOString(),
@@ -224,6 +236,8 @@ export async function creditNoteFor(
 		customerName: order.delivery?.recipientName ?? "",
 		...amounts,
 		vatRateBps: invoice.vatRateBps,
+		currency: invoice.currency,
+		formatSnapshot: invoice.formatSnapshot,
 		issuer: PLATFORM_ISSUER,
 	});
 	const buyer = relationId(invoice.buyer);
@@ -237,6 +251,13 @@ export async function creditNoteFor(
 			...(buyer ? { buyer } : {}),
 			...amounts,
 			currency: invoice.currency,
+			...(invoice.formatSnapshot
+				? {
+						formatSnapshot: invoice.formatSnapshot.map(
+							({ id: _id, ...format }) => format,
+						),
+					}
+				: {}),
 			vatRateBps: invoice.vatRateBps,
 			pdf,
 			issuedAt: issuedAt.toISOString(),

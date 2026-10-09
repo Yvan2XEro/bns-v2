@@ -7,14 +7,10 @@ import {
 	caseBreakdown,
 	commissionCredit,
 	deductionAllowed,
-	roundXaf,
 	splitAllocation,
 } from "../../src/lib/caseMath";
 import { commissionForLine } from "../../src/lib/orderMath";
-import {
-	roundXaf as paymentRoundXaf,
-	splitAmounts,
-} from "../../src/lib/paymentMath";
+import { splitAmounts } from "../../src/lib/paymentMath";
 
 /**
  * The worked order every fixture derives from (spec l.249), computed by
@@ -415,14 +411,6 @@ describe("commissionCredit", () => {
 				vatRateBps: VAT_RATE_BPS,
 			}),
 		).toEqual({ creditHt: 1_200, creditVat: 231, creditTtc: 1_431 });
-	});
-});
-
-describe("roundXaf", () => {
-	it("is paymentMath's roundXaf, not a copy", () => {
-		expect(roundXaf).toBe(paymentRoundXaf);
-		expect(roundXaf(0.5)).toBe(1);
-		expect(roundXaf(2.5)).toBe(3);
 	});
 });
 

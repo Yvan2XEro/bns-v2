@@ -3,6 +3,7 @@ import { isModerator } from "../access/roles";
 import { PAYOUT_METHOD_CHANNELS } from "../collections/PayoutAccounts";
 import type { ResellerFinanceView } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
+import { roundingOfCurrency } from "../lib/markets";
 import { getOrderSettings } from "../lib/orderSettings";
 import { getPaymentSettings, missingGates } from "../lib/paymentSettings";
 import { getNotchPayProvider } from "../lib/payments";
@@ -14,6 +15,8 @@ import { withTransaction } from "../lib/transactions";
 import type { ResellerPayout } from "../payload-types";
 import { activeHolds } from "./payoutHolds";
 import {
+	orderCurrency,
+	payoutCurrency,
 	postCommissionPayable,
 	postPayoutOutcome,
 	postPayoutSubmitted,
@@ -343,9 +346,27 @@ async function createPayoutForShop(
 		]);
 		const account = accounts.docs[0];
 		if (!account || account.method === "bank") return null;
-		const available = commissions.docs.filter(
+		const unpaid = commissions.docs.filter(
 			(commission) => !relationId(commission.payout),
 		);
+		// A payout is one currency: the oldest commission's, the rest wait their turn.
+		const currencies = new Map<string, string>();
+		for (const commission of unpaid) {
+			currencies.set(
+				String(commission.id),
+				await orderCurrency(payload, relationId(commission.order) ?? "", req),
+			);
+		}
+		const oldest = [...unpaid].sort(
+			(a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+		)[0];
+		const available = oldest
+			? unpaid.filter(
+					(commission) =>
+						currencies.get(String(commission.id)) ===
+						currencies.get(String(oldest.id)),
+				)
+			: [];
 		const openCharges = charges.docs.filter(
 			(charge) => !relationId(charge.offsetBy),
 		);
@@ -399,6 +420,10 @@ async function createPayoutForShop(
 			),
 			minimum: settings.minPayout,
 			capApplies,
+			rounding: await roundingOfCurrency(
+				payload,
+				currencies.get(String(oldest?.id)) ?? "",
+			),
 		});
 		if (plan.skipped || !plan.commissionIds.length) return null;
 		const status =
@@ -473,7 +498,7 @@ export async function submitResellerPayout(
 	const transfer = await provider.createTransfer({
 		reference: row.reference,
 		amount: row.amount,
-		currency: "XAF",
+		currency: await payoutCurrency(payload, row),
 		channel,
 		phone: account.accountNumber,
 		name: account.accountName,
