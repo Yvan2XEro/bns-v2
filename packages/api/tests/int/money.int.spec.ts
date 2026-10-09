@@ -36,13 +36,13 @@ const DECIMAL: MoneyFormat = {
 
 describe("formatMoney", () => {
 	it.each([
-		[47000, CM_FR, "47 000 FCFA"],
+		[47000, CM_FR, "47\u202F000 FCFA"],
 		[47000, CM_EN, "XAF 47,000"],
-		[0, CM_FR, "0 FCFA"],
+		[0, CM_FR, "0 FCFA"],
 		[0, CM_EN, "XAF 0"],
-		[1410, CM_FR, "1 410 FCFA"],
+		[1410, CM_FR, "1\u202F410 FCFA"],
 		[1410, CM_EN, "XAF 1,410"],
-		[-47000, CM_FR, "-47 000 FCFA"],
+		[-47000, CM_FR, "-47\u202F000 FCFA"],
 		[-47000, CM_EN, "-XAF 47,000"],
 		[123456, DECIMAL, "F 1,234.56"],
 		[5, DECIMAL, "F 0.05"],
@@ -75,5 +75,12 @@ describe("roundMinor", () => {
 			expect(roundMinor(v, "half_up")).toBe(roundHalfUp(v));
 			expect(roundXaf(v)).toBe(roundHalfUp(v));
 		}
+	});
+
+	it("pins the CM fr byte sequence: U+202F inside digits, U+0020 before FCFA", () => {
+		const out = formatMoney(47000, CM_FR);
+		expect([...out].map((c) => c.codePointAt(0))).toEqual([
+			0x34, 0x37, 0x202f, 0x30, 0x30, 0x30, 0x20, 0x46, 0x43, 0x46, 0x41,
+		]);
 	});
 });

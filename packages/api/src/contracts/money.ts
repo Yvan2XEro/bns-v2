@@ -38,11 +38,10 @@ export function formatMoney(amount: number, format: MoneyFormat): string {
 		format.groupSeparator,
 		format.decimalSeparator,
 	);
-	// The spec's MoneyFormat carries no joiner: a space-class group separator
-	// (fr's U+202F) is reused, anything else joins with a plain space.
-	const join = SPACE_CLASS.test(format.groupSeparator)
-		? format.groupSeparator
-		: " ";
+	// The spec's MoneyFormat carries no joiner. The symbol always joins with a
+	// plain U+0020: today's formatXaf groups digits with U+202F but joins
+	// "FCFA" with a plain space, and the CM byte-identity target pins that.
+	const join = " ";
 	return format.position === "before"
 		? `${sign}${format.symbol}${join}${digits}`
 		: `${sign}${digits}${join}${format.symbol}`;
