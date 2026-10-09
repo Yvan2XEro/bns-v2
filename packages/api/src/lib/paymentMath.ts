@@ -1,12 +1,25 @@
 import { roundHalfUp, vatOf } from "./orderMath";
 import type { PaymentChannel } from "./paymentSettings";
 
+export type Rounding = "half_up" | "half_even" | "down";
+
 /**
- * `roundHalfUp` already rounds half-up for non-negative inputs, which is all
- * money ever is in XAF — re-exported under the name the payment spec uses,
- * not re-implemented.
+ * `half_up` is `roundHalfUp` (away from zero at .5), `half_even` is banker's,
+ * `down` truncates toward zero.
  */
-export const roundXaf = roundHalfUp;
+export function roundMinor(value: number, rounding: Rounding): number {
+	if (rounding === "down") return Math.trunc(value);
+	if (rounding === "half_up") return roundHalfUp(value);
+	const abs = Math.abs(value);
+	const floor = Math.floor(abs);
+	const diff = abs - floor;
+	const even =
+		diff === 0.5 ? (floor % 2 === 0 ? floor : floor + 1) : Math.round(abs);
+	return value < 0 ? -even : even;
+}
+
+/** @deprecated use `roundMinor(v, "half_up")`; callers migrate in Task 11. */
+export const roundXaf = (value: number): number => roundMinor(value, "half_up");
 
 /**
  * VAT on a commission amount is the same half-up extraction `orderMath`
