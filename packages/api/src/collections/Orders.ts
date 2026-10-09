@@ -3,6 +3,7 @@ import { can, shopRoleFieldAccess } from "../access/shopRoles";
 import { staffOnly } from "../access/staff";
 import { LAUNCH_CITIES, LAUNCH_CITY_KEYS } from "../lib/launchCities";
 import { RELEASE_MODELS, SETTLEMENT_MODES } from "../lib/paymentSettings";
+import { marketField } from "./fields/formatSnapshot";
 
 export const ORDER_STATUSES = [
 	"placed",
@@ -131,6 +132,7 @@ export const Orders: CollectionConfig = {
 			unique: true,
 			index: true,
 		},
+		marketField,
 		{ name: "checkoutGroup", type: "text", index: true },
 		{ name: "idempotencyKey", type: "text", index: true },
 		{ name: "buyer", type: "relationship", relationTo: "users", index: true },
@@ -283,7 +285,7 @@ export const Orders: CollectionConfig = {
 				{ name: "discount", type: "number", defaultValue: 0 },
 				{ name: "buyerProtectionFee", type: "number", defaultValue: 0 },
 				{ name: "total", type: "number" },
-				{ name: "currency", type: "text", defaultValue: "XAF" },
+				{ name: "currency", type: "text", required: true },
 				// P5, frozen at payment by `splitAmounts` (lib/paymentMath.ts).
 				{ name: "buyerProtectionFeeVat", type: "number" },
 				{ name: "commission", type: "number" },

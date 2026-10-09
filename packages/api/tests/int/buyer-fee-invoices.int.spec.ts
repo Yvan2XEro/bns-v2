@@ -270,6 +270,7 @@ describe("issueBuyerFeeInvoice", () => {
 			amountHt: 1_182,
 			vat: 228,
 			amountTtc: 1_410,
+			currency: "XAF",
 			vatRateBps: 1_925,
 			pdf: fileId,
 			issuedAt: NOW.toISOString(),

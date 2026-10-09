@@ -1151,6 +1151,7 @@ export interface Message {
 export interface Order {
   id: string;
   orderNumber: string;
+  market?: (string | null) | Market;
   checkoutGroup?: string | null;
   idempotencyKey?: string | null;
   buyer?: (string | null) | User;
@@ -1234,13 +1235,13 @@ export interface Order {
     promisedBy?: string | null;
   };
   shipments?: (string | Shipment)[] | null;
-  amounts?: {
+  amounts: {
     subtotal?: number | null;
     deliveryFee?: number | null;
     discount?: number | null;
     buyerProtectionFee?: number | null;
     total?: number | null;
-    currency?: string | null;
+    currency: string;
     buyerProtectionFeeVat?: number | null;
     commission?: number | null;
     commissionVat?: number | null;
@@ -1339,6 +1340,125 @@ export interface Order {
   source?: ('web' | 'ios' | 'android') | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "markets".
+ */
+export interface Market {
+  id: string;
+  countryCode: string;
+  name: string;
+  status: 'draft' | 'review' | 'live' | 'suspended';
+  currency: {
+    code: string;
+    minorUnit: number;
+    rounding: 'half_up' | 'half_even' | 'down';
+  };
+  formatting?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        /**
+         * Display-only check string.
+         */
+        patternExample?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  phone: {
+    pattern: string;
+    examples?: {
+      valid?:
+        | {
+            [k: string]: unknown;
+          }
+        | unknown[]
+        | string
+        | number
+        | boolean
+        | null;
+      invalid?:
+        | {
+            [k: string]: unknown;
+          }
+        | unknown[]
+        | string
+        | number
+        | boolean
+        | null;
+    };
+    displayExample?: string | null;
+  };
+  timezone: string;
+  languages: ('fr' | 'en')[];
+  vatRateBps: number;
+  payments: {
+    provider: 'notchpay';
+    settlementMode: 'provider_split' | 'direct_to_seller' | 'platform_collects';
+    channels?: string[] | null;
+    enabled?: boolean | null;
+  };
+  features?: {
+    cod?: boolean | null;
+    protectedPayment?: boolean | null;
+    deliveryZones?: boolean | null;
+    couriers?: boolean | null;
+    disputes?: boolean | null;
+    resale?: boolean | null;
+    resalePrepaid?: boolean | null;
+    boosts?: boolean | null;
+  };
+  /**
+   * Integers in the market's minor units.
+   */
+  amounts: {
+    minPayout: number;
+    maxOrderAmount: number;
+    exposureLevel2: number;
+    exposureLevel3: number;
+    buyerProtectionMin: number;
+    buyerProtectionMax: number;
+    defaultDeliveryFeeFallback: number;
+  };
+  regulatoryReview?: {
+    reviewedBy?: string | null;
+    reviewedAt?: string | null;
+    evidence?: (string | null) | PaymentGateEvidence;
+    note?: string | null;
+  };
+  moneyCalendar?: {
+    releaseHourLocal?: number | null;
+    reconcileHourLocal?: number | null;
+    vatPeriod?: 'calendar_month' | null;
+    lastReleaseLocalDate?: string | null;
+    lastReconcileLocalDate?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-gate-evidence".
+ */
+export interface PaymentGateEvidence {
+  id: string;
+  scope?: ('gate' | 'market') | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {};
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1910,7 +2030,18 @@ export interface CommissionInvoice {
   vatRateBps?: number | null;
   vatAmount?: number | null;
   totalDue?: number | null;
-  currency?: string | null;
+  currency: string;
+  formatSnapshot?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        minorUnit: number;
+        id?: string | null;
+      }[]
+    | null;
   status?: ('issued' | 'paid' | 'overdue' | 'waived' | 'void') | null;
   settlement?: ('mobile_money' | 'application_fee') | null;
   issuedAt?: string | null;
@@ -2564,125 +2695,6 @@ export interface ContactReveal {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "markets".
- */
-export interface Market {
-  id: string;
-  countryCode: string;
-  name: string;
-  status: 'draft' | 'review' | 'live' | 'suspended';
-  currency: {
-    code: string;
-    minorUnit: number;
-    rounding: 'half_up' | 'half_even' | 'down';
-  };
-  formatting?:
-    | {
-        locale: 'fr' | 'en';
-        symbol: string;
-        position: 'before' | 'after';
-        groupSeparator: string;
-        decimalSeparator: string;
-        /**
-         * Display-only check string.
-         */
-        patternExample?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  phone: {
-    pattern: string;
-    examples?: {
-      valid?:
-        | {
-            [k: string]: unknown;
-          }
-        | unknown[]
-        | string
-        | number
-        | boolean
-        | null;
-      invalid?:
-        | {
-            [k: string]: unknown;
-          }
-        | unknown[]
-        | string
-        | number
-        | boolean
-        | null;
-    };
-    displayExample?: string | null;
-  };
-  timezone: string;
-  languages: ('fr' | 'en')[];
-  vatRateBps: number;
-  payments: {
-    provider: 'notchpay';
-    settlementMode: 'provider_split' | 'direct_to_seller' | 'platform_collects';
-    channels?: string[] | null;
-    enabled?: boolean | null;
-  };
-  features?: {
-    cod?: boolean | null;
-    protectedPayment?: boolean | null;
-    deliveryZones?: boolean | null;
-    couriers?: boolean | null;
-    disputes?: boolean | null;
-    resale?: boolean | null;
-    resalePrepaid?: boolean | null;
-    boosts?: boolean | null;
-  };
-  /**
-   * Integers in the market's minor units.
-   */
-  amounts: {
-    minPayout: number;
-    maxOrderAmount: number;
-    exposureLevel2: number;
-    exposureLevel3: number;
-    buyerProtectionMin: number;
-    buyerProtectionMax: number;
-    defaultDeliveryFeeFallback: number;
-  };
-  regulatoryReview?: {
-    reviewedBy?: string | null;
-    reviewedAt?: string | null;
-    evidence?: (string | null) | PaymentGateEvidence;
-    note?: string | null;
-  };
-  moneyCalendar?: {
-    releaseHourLocal?: number | null;
-    reconcileHourLocal?: number | null;
-    vatPeriod?: 'calendar_month' | null;
-    lastReleaseLocalDate?: string | null;
-    lastReconcileLocalDate?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payment-gate-evidence".
- */
-export interface PaymentGateEvidence {
-  id: string;
-  scope?: ('gate' | 'market') | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {};
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "market-cities".
  */
 export interface MarketCity {
@@ -3152,6 +3164,7 @@ export interface Sequence {
 export interface Cart {
   id: string;
   user: string | User;
+  market?: (string | null) | Market;
   status: 'active' | 'converted' | 'abandoned';
   items?:
     | {
@@ -3583,6 +3596,18 @@ export interface BuyerFeeInvoice {
   vat: number;
   amountTtc: number;
   vatRateBps: number;
+  currency: string;
+  formatSnapshot?:
+    | {
+        locale: 'fr' | 'en';
+        symbol: string;
+        position: 'before' | 'after';
+        groupSeparator: string;
+        decimalSeparator: string;
+        minorUnit: number;
+        id?: string | null;
+      }[]
+    | null;
   pdf?: (string | null) | BuyerFeeInvoiceFile;
   issuedAt: string;
   updatedAt: string;
@@ -5761,6 +5786,7 @@ export interface SequencesSelect<T extends boolean = true> {
  */
 export interface CartsSelect<T extends boolean = true> {
   user?: T;
+  market?: T;
   status?: T;
   items?:
     | T
@@ -5785,6 +5811,7 @@ export interface CartsSelect<T extends boolean = true> {
  */
 export interface OrdersSelect<T extends boolean = true> {
   orderNumber?: T;
+  market?: T;
   checkoutGroup?: T;
   idempotencyKey?: T;
   buyer?: T;
@@ -6070,6 +6097,17 @@ export interface CommissionInvoicesSelect<T extends boolean = true> {
   vatAmount?: T;
   totalDue?: T;
   currency?: T;
+  formatSnapshot?:
+    | T
+    | {
+        locale?: T;
+        symbol?: T;
+        position?: T;
+        groupSeparator?: T;
+        decimalSeparator?: T;
+        minorUnit?: T;
+        id?: T;
+      };
   status?: T;
   settlement?: T;
   issuedAt?: T;
@@ -6708,6 +6746,18 @@ export interface BuyerFeeInvoicesSelect<T extends boolean = true> {
   vat?: T;
   amountTtc?: T;
   vatRateBps?: T;
+  currency?: T;
+  formatSnapshot?:
+    | T
+    | {
+        locale?: T;
+        symbol?: T;
+        position?: T;
+        groupSeparator?: T;
+        decimalSeparator?: T;
+        minorUnit?: T;
+        id?: T;
+      };
   pdf?: T;
   issuedAt?: T;
   updatedAt?: T;

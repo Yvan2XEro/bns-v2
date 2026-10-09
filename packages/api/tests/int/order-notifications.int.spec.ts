@@ -462,6 +462,7 @@ describe("commission-invoice-issued", () => {
 		const invoice: CommissionInvoice = {
 			id: "inv-1",
 			kind: "invoice",
+			currency: "XAF",
 			invoiceNumber: "INV-2610-0001",
 			shop: "s-1",
 			totalDue: 15000,
@@ -658,6 +659,7 @@ describe("payload shape and the no-evidence rule", () => {
 		const invoice: CommissionInvoice = {
 			id: "inv-1",
 			kind: "invoice",
+			currency: "XAF",
 			invoiceNumber: "INV-2610-0001",
 			shop: "s-1",
 			totalDue: 15000,
