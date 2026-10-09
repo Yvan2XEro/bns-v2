@@ -14,7 +14,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type ActionBarItem,
-	actionBarItems,
+	actionBarItemsFor,
 	isPostAction,
 	isSheetAction,
 	lockedHandoverNotice,
@@ -51,10 +51,7 @@ export function ActionBar({
 	const failed = all.find((m) => m.isError);
 	const pending = all.some((m) => m.isPending);
 	const shipments = useShopOrderShipments(String(order.id));
-	const liveShipment = (shipments.data ?? []).some(
-		(shipment) => shipment.status !== "cancelled",
-	);
-	const items = actionBarItems(order, role, undefined, liveShipment);
+	const items = actionBarItemsFor(order, role, shipments.data);
 	const close = () => setSheet(null);
 	const openHandover = () => router.push(`/seller/orders/${order.id}/handover`);
 
