@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import { ERROR_CODES } from "./errors";
+import type { Market } from "./markets";
 import { ServiceError } from "./serviceError";
 
 export const PAYMENT_CHANNELS = ["cm.mtn", "cm.orange"] as const;
@@ -32,7 +33,7 @@ export interface MarketRow {
 	currency: string;
 	provider: PaymentProviderId;
 	settlementMode: SettlementMode;
-	channels: PaymentChannel[];
+	channels: string[];
 	vatRateBps: number;
 	enabled: boolean;
 }
@@ -251,6 +252,38 @@ export function paymentSettingsOf(payments: unknown): PaymentSettings {
 
 const CLOSED: PaymentSettings = { ...PAYMENT_DEFAULTS, markets: [] };
 
+const rowOf = (m: Market): MarketRow => ({
+	countryCode: m.countryCode,
+	currency: m.currency.code,
+	provider: m.payments.provider,
+	settlementMode: m.payments.settlementMode,
+	channels: m.payments.channels,
+	vatRateBps: m.vatRateBps,
+	enabled: m.payments.enabled,
+});
+
+/**
+ * The registry's non-draft markets as P5 rows. The global's own rows are read
+ * only while the collection holds no document at all (before the P10
+ * migration has run); once it holds any, rows it cannot trust mean no market,
+ * never the legacy ones. A failed read throws, so the caller closes.
+ */
+async function marketRowsOf(
+	payload: Payload,
+	legacy: MarketRow[],
+): Promise<MarketRow[]> {
+	// Lazy: markets.ts and the Markets collection read PAYMENT_PROVIDERS from
+	// this module at load time.
+	const { getMarkets } = await import("./markets");
+	const live = (await getMarkets(payload)).filter((m) => m.status !== "draft");
+	if (live.length > 0) return live.map(rowOf);
+	const { totalDocs } = await payload.count({
+		collection: "markets",
+		overrideAccess: true,
+	});
+	return totalDocs === 0 ? legacy : [];
+}
+
 /**
  * Fails closed: an unreadable global, or one with no `payments` group at all,
  * means no market and the flag off.
@@ -266,7 +299,11 @@ export async function getPaymentSettings(
 		});
 		const payments = (global as { payments?: unknown }).payments;
 		if (payments === null || typeof payments !== "object") return CLOSED;
-		return paymentSettingsOf(payments);
+		const settings = paymentSettingsOf(payments);
+		return {
+			...settings,
+			markets: await marketRowsOf(payload, settings.markets),
+		};
 	} catch {
 		return CLOSED;
 	}

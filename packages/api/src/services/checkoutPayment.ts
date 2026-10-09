@@ -12,6 +12,7 @@ import {
 	getPaymentSettings,
 	isProtectedPaymentFlagOpen,
 	type MarketRow,
+	PAYMENT_CHANNELS,
 	type PaymentChannel,
 	type PaymentEnv,
 	type PaymentSettings,
@@ -403,9 +404,9 @@ async function assertNotSelfPurchase(
 		depth: 0,
 		overrideAccess: true,
 	});
-	const dialCodes = market.channels.map(
-		(channel) => CHANNEL_DIAL_CODES[channel],
-	);
+	const dialCodes = PAYMENT_CHANNELS.filter((c) =>
+		market.channels.includes(c),
+	).map((channel) => CHANNEL_DIAL_CODES[channel]);
 	if (
 		verified.some(
 			(member) =>
@@ -424,7 +425,10 @@ function assertChannel(
 	channel: string,
 	phone: string,
 ): { channel: PaymentChannel; payerPhone: string } {
-	const known = market.channels.find((c) => c === channel);
+	// A channel without phone rules in paymentMath cannot be charged yet.
+	const known = PAYMENT_CHANNELS.find(
+		(c) => c === channel && market.channels.includes(c),
+	);
 	if (!known) throw refuse(ERROR_CODES.paymentChannelUnsupported, 400);
 	const payerPhone = payerPhoneE164(phone, known);
 	if (!payerPhone) throw refuse(ERROR_CODES.phoneInvalid, 400);
