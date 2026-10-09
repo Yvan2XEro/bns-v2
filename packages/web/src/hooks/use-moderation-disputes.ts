@@ -18,6 +18,8 @@ import type {
 export type ModerationDisputeAction =
 	| { action: "assign" }
 	| { action: "request_info"; from: "buyer" | "seller"; message: string }
+	| { action: "redact_message"; messageId: string; note: string }
+	| { action: "revoke_strike"; strikeId: string; note: string }
 	| ({ action: "resolve"; note: string } & DisputeOutcomeInput);
 
 export function useModerationDisputes(filters: DisputeQueueFilters) {

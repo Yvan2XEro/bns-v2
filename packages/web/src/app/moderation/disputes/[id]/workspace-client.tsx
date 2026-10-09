@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { DisputeEvidence } from "~/components/moderation/dispute-evidence";
+import { RedactMessageControl } from "~/components/moderation/dispute-redact-message";
 import { DisputeRequestInfo } from "~/components/moderation/dispute-request-info";
 import { DisputeResolveSheet } from "~/components/moderation/dispute-resolve-sheet";
+import { DisputeStrikes } from "~/components/moderation/dispute-strikes";
 import { Button } from "~/components/ui/button";
 import { useAuth } from "~/hooks/use-auth";
 import {
@@ -126,6 +128,12 @@ export function WorkspaceClient({ id }: { id: string }) {
 										<p className="mt-1 whitespace-pre-wrap">
 											{m.redacted ? tRoot("Disputes.redacted") : m.body}
 										</p>
+										{m.redacted ? null : (
+											<RedactMessageControl
+												disputeId={dispute.id}
+												messageId={m.id}
+											/>
+										)}
 									</li>
 								))}
 							</ol>
@@ -191,6 +199,11 @@ export function WorkspaceClient({ id }: { id: string }) {
 							<p className="text-[#64748B]">{t("resale")}</p>
 						) : null}
 					</section>
+					<DisputeStrikes
+						disputeId={dispute.id}
+						strikes={history.shopStanding.strikes}
+						viewerIsAdmin={user?.role === "admin"}
+					/>
 					<section className="space-y-1 rounded-xl border border-[#E2E8F0] bg-white p-4 text-sm">
 						<h2 className="font-semibold">{t("proofChecklist")}</h2>
 						<ul className="space-y-1">
