@@ -210,6 +210,8 @@ function seed(s: Seed = {}): FakePayload {
 	const extra = s.extra ?? {};
 	return fakePayload(
 		{
+			// The P5 market rows come from the settings under test, not the registry.
+			markets: [],
 			users: [
 				userDoc(OWNER, verified(OWNER_PHONE)),
 				userDoc(MANAGER, verified(MANAGER_PHONE)),

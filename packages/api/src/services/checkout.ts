@@ -8,17 +8,14 @@ import { queueSearchEvent } from "../hooks/searchEvents";
 import { resolveSuspension } from "../hooks/suspensionGuard";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
-import {
-	LAUNCH_CITIES,
-	type LaunchCityKey,
-	launchCitySeedRows,
-} from "../lib/launchCities";
+import { type LaunchCityKey, launchCitySeedRows } from "../lib/launchCities";
 import {
 	getShopMarketCities,
 	isMarketCityKey,
 	isMarketDistrictKey,
 	type MarketCity,
 } from "../lib/marketCities";
+import { liveMarketOfShop } from "../lib/markets";
 import type { CapCheckInput } from "../lib/orderCaps";
 import { checkCaps, confirmationPathFor } from "../lib/orderCaps";
 import {
@@ -480,6 +477,8 @@ export interface QuoteResponse {
  */
 export interface QuoteInternals {
 	shopId: string;
+	/** The market read once at quote entry; `placeOrder` copies it onto the order. */
+	marketId: string;
 	items: QuoteSummaryItem[];
 	address: DeliveryAddress;
 	/** The chosen option's pickup point, which `placeOrder` snapshots onto the order so the view can show it after the shop's own point moves. */
@@ -818,6 +817,8 @@ async function buildQuote(
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
 	}
 	const paymentMethod: "cod" | "mobile_money" = input.paymentMethod;
+	const liveMarket = await liveMarketOfShop(payload, shop);
+	const currency = liveMarket.currency.code;
 	const items = await buildSummaryItems(payload, lines, shop);
 	const quoteFrom = await resolveQuoteShop(payload, shop, items);
 	if (quoteFrom.resale && paymentMethod === "mobile_money") {
@@ -866,11 +867,8 @@ async function buildQuote(
 			? "courier"
 			: "seller_delivery";
 
-	const address = parseDeliveryAddress(
-		input.address,
-		method,
-		await getShopMarketCities(payload, quoteFrom.shop),
-	);
+	const marketCities = await getShopMarketCities(payload, quoteFrom.shop);
+	const address = parseDeliveryAddress(input.address, method, marketCities);
 
 	const deliverySettings = await getDeliverySettings(payload);
 	if (
@@ -999,6 +997,9 @@ async function buildQuote(
 	const buyerProtectionFeeAmount = protectedAmounts?.buyerProtectionFee ?? 0;
 	const quoteTotal = protectedAmounts?.buyerTotal ?? total;
 
+	const cityLabel =
+		marketCities.find((city) => city.key === address.city)?.label ??
+		address.city;
 	const preContract = buildContractSnapshot({
 		termsVersion: settings.termsVersion,
 		locale,
@@ -1023,11 +1024,11 @@ async function buildQuote(
 			quantity: item.quantity,
 			lineSubtotal: item.lineSubtotal,
 		})),
-		amounts: { subtotal, deliveryFee: chosen.fee, total },
+		amounts: { subtotal, deliveryFee: chosen.fee, total, currency },
 		delivery: {
 			areaText: {
-				fr: LAUNCH_CITIES[address.city].label,
-				en: LAUNCH_CITIES[address.city].label,
+				fr: cityLabel,
+				en: cityLabel,
 			},
 			etaText: { fr: chosen.etaText, en: chosen.etaText },
 		},
@@ -1075,7 +1076,7 @@ async function buildQuote(
 					discount: 0,
 					buyerProtectionFee: buyerProtectionFeeAmount,
 					total: quoteTotal,
-					currency: "XAF",
+					currency,
 				},
 				paymentMethod,
 				delivery: {
@@ -1103,6 +1104,7 @@ async function buildQuote(
 		},
 		internals: {
 			shopId: String(shop.id),
+			marketId: liveMarket.id,
 			items,
 			address,
 			pickupPoint: chosen.pickupPoint ?? null,
@@ -1140,7 +1142,7 @@ export interface PlaceResponse {
 		subtotal: number;
 		deliveryFee: number;
 		total: number;
-		currency: "XAF";
+		currency: string;
 	};
 	deadlines: { confirmBy: string | null; acceptBy: string | null };
 }
@@ -1186,6 +1188,12 @@ function pickupPointJson(
 	return pickupPoint ? { ...pickupPoint } : null;
 }
 
+function currencyOf(order: Order): string {
+	const currency = order.amounts?.currency;
+	if (!currency) throw new Error(`order ${order.id} carries no currency`);
+	return currency;
+}
+
 function responseFromOrder(order: Order): PlaceResponse {
 	return {
 		orderId: String(order.id),
@@ -1197,7 +1205,7 @@ function responseFromOrder(order: Order): PlaceResponse {
 			subtotal: order.amounts?.subtotal ?? 0,
 			deliveryFee: order.amounts?.deliveryFee ?? 0,
 			total: order.amounts?.total ?? 0,
-			currency: "XAF",
+			currency: currencyOf(order),
 		},
 		deadlines: {
 			confirmBy: order.deadlines?.confirmBy ?? null,
@@ -1347,6 +1355,7 @@ export async function placeOrder(
 						idempotencyKey,
 						buyer: user.id,
 						shop: shopId,
+						market: internals.marketId,
 						status: "placed",
 						paymentMethod,
 						paymentStatus:
@@ -1385,7 +1394,7 @@ export async function placeOrder(
 							discount: 0,
 							buyerProtectionFee: fresh.summary.amounts.buyerProtectionFee,
 							total: fresh.summary.amounts.total,
-							currency: "XAF",
+							currency: fresh.summary.amounts.currency,
 						},
 						risk: {
 							phoneTier: riskTierOf(tier),

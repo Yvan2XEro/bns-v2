@@ -64,6 +64,7 @@ export interface ContractSnapshotInput {
 		subtotal: number;
 		deliveryFee: number;
 		total: number;
+		currency: string;
 	};
 	delivery: {
 		areaText: { fr: string; en: string };
@@ -108,7 +109,7 @@ export interface ContractSnapshot {
 		discount: 0;
 		buyerProtectionFee: 0;
 		total: number;
-		currency: "XAF";
+		currency: string;
 	};
 	terms: { fr: string[]; en: string[] };
 	withdrawal: {
@@ -232,7 +233,7 @@ export function buildContractSnapshot(
 			discount: 0,
 			buyerProtectionFee: 0,
 			total: input.amounts.total,
-			currency: "XAF",
+			currency: input.amounts.currency,
 		},
 		terms: codTerms(input),
 		withdrawal: withdrawalBlock(input),

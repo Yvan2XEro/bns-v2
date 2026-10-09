@@ -11,6 +11,7 @@ import type {
 } from "../contracts/purchaseOrders";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
+import { liveMarketOfShop } from "../lib/markets";
 import { getProvider } from "../lib/payments";
 import { getCounterStore } from "../lib/rateLimit";
 import { relationId } from "../lib/relationId";
@@ -1718,6 +1719,15 @@ export async function payResellerCharge(
 		throw new ServiceError(ERROR_CODES.resaleChargeNotPayable, 409);
 	}
 
+	const resellerShop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const currency = (await liveMarketOfShop(payload, resellerShop)).currency
+		.code;
+
 	const { docs: attempts } = await payload.find({
 		collection: "payment-intents",
 		where: {
@@ -1748,7 +1758,7 @@ export async function payResellerCharge(
 				targetId: String(charge.id),
 				customerId: user.id,
 				amount: charge.amount,
-				currency: "XAF",
+				currency,
 				provider: "notchpay",
 				idempotencyKey: `reseller-charge:${charge.id}:${attempts.length + 1}`,
 				now,
@@ -1779,7 +1789,7 @@ export async function payResellerCharge(
 		checkout = await getProvider("notchpay").createPayment({
 			reference: String(intent.reference),
 			amount: charge.amount,
-			currency: "XAF",
+			currency,
 			description: `Resale charge ${charge.id}`,
 			callbackUrl: new URL(
 				NOTCHPAY_SETTLEMENT_CALLBACK_PATH,

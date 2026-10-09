@@ -339,3 +339,14 @@ export async function marketOfOrder(
 		null
 	);
 }
+
+/** `getLiveMarket` for the market a shop's city names; an order flow reads it once at entry. */
+export async function liveMarketOfShop(
+	payload: Payload,
+	shop: Shop,
+): Promise<Market> {
+	const market = await marketOfShop(payload, shop);
+	if (market.status !== "live")
+		throw new ServiceError(ERROR_CODES.marketNotLive, 409);
+	return market;
+}

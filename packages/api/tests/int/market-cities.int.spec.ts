@@ -26,7 +26,7 @@ import {
 	quoteCheckout,
 } from "../../src/services/checkout";
 import { createZone } from "../../src/services/delivery/zones";
-import { fakePayload } from "./helpers/fakePayload";
+import { cmMarketRow, fakePayload } from "./helpers/fakePayload";
 import { runBeforeChange } from "./helpers/runBeforeChange";
 
 const NOW = new Date("2026-10-02T10:00:00.000Z");
@@ -274,6 +274,7 @@ describe("quoteCheckout against the shop's market", () => {
 				orders: [],
 				"order-items": [],
 				"market-cities": cities,
+				markets: [cmMarketRow()],
 			},
 			{
 				globals: {
@@ -317,6 +318,17 @@ describe("quoteCheckout against the shop's market", () => {
 		await expect(
 			quote(payload, rawAddress({ district: "douala.nowhere" })),
 		).rejects.toMatchObject({ code: "checkout.addressInvalid" });
+	});
+
+	it("refuses a quote whose market is unknown or not live, before any pricing", async () => {
+		await expect(quote(world([]), rawAddress())).rejects.toMatchObject({
+			code: "market.unknown",
+		});
+		const closed = world(cmRows());
+		closed.store.markets[0].status = "suspended";
+		await expect(quote(closed, rawAddress())).rejects.toMatchObject({
+			code: "market.notLive",
+		});
 	});
 
 	it("refuses a city of another market, not just an unknown one", async () => {

@@ -19,7 +19,11 @@ import type { MarketConfig } from "../../src/contracts/marketConfig";
 import { launchCitySeedRows } from "../../src/lib/launchCities";
 import { migrateP10Markets } from "../../src/migrations/p10Markets";
 import { withRawMongo } from "./helpers/fakeMongo";
-import { type FakePayload, fakePayload } from "./helpers/fakePayload";
+import {
+	cmMarketRow,
+	type FakePayload,
+	fakePayload,
+} from "./helpers/fakePayload";
 
 const CONFIG = "../../src/app/(frontend)/api/public/config/route";
 const QUOTE = "../../src/app/(frontend)/api/checkout/quote/route";
@@ -374,7 +378,7 @@ describe("a spoofed ?country= changes what is shown, never what is charged", () 
 
 	async function run(query: string) {
 		const payload: FakePayload = await world({
-			extraMarkets: [rwanda()],
+			extraMarkets: [rwanda(), cmMarketRow()],
 			cities: [kigali, ...launchCitySeedRows("market-cm")],
 			migrate: false,
 		});
@@ -413,7 +417,7 @@ describe("a spoofed ?country= changes what is shown, never what is charged", () 
 		expect(spoofed.order.amounts.currency).toBe("XAF");
 		expect(spoofed.order.amounts).toEqual(plain.order.amounts);
 		expect(spoofed.quote).toEqual(plain.quote);
-		expect(spoofed.order.market).toEqual(plain.order.market);
-		expect(spoofed.order.market).not.toBe("market-rw");
+		expect(plain.order.market).toBe("market-cm");
+		expect(spoofed.order.market).toBe("market-cm");
 	});
 });

@@ -34,7 +34,12 @@ const baseInput: ContractSnapshotInput = {
 			lineSubtotal: 15000,
 		},
 	],
-	amounts: { subtotal: 15000, deliveryFee: 2000, total: 17000 },
+	amounts: {
+		subtotal: 15000,
+		deliveryFee: 2000,
+		total: 17000,
+		currency: "XAF",
+	},
 	delivery: {
 		areaText: { fr: "Douala", en: "Douala" },
 		etaText: { fr: "24 a 48 heures", en: "24 to 48 hours" },

@@ -158,6 +158,93 @@ function applyRequestContext(req: Req, context: Doc | undefined): void {
 			: incoming;
 }
 
+/** The CM market as the P10 migration seeds it, under the id its city rows name. */
+export function cmMarketRow(): Doc {
+	return {
+		id: "market-cm",
+		countryCode: "CM",
+		name: "Cameroon",
+		status: "live",
+		currency: { code: "XAF", minorUnit: 0, rounding: "half_up" },
+		formatting: [
+			{
+				locale: "fr",
+				symbol: "FCFA",
+				position: "after",
+				groupSeparator: "\u202f",
+				decimalSeparator: ",",
+			},
+			{
+				locale: "en",
+				symbol: "XAF",
+				position: "before",
+				groupSeparator: ",",
+				decimalSeparator: ".",
+			},
+		],
+		phone: {
+			pattern: "^\\+237[26]\\d{8}$",
+			displayExample: "+237 6XX XX XX XX",
+		},
+		timezone: "Africa/Douala",
+		languages: ["fr", "en"],
+		vatRateBps: 1925,
+		payments: {
+			provider: "notchpay",
+			settlementMode: "provider_split",
+			channels: ["cm.mtn", "cm.orange"],
+			enabled: true,
+		},
+		features: { cod: true },
+		amounts: {
+			minPayout: 1000,
+			maxOrderAmount: 1_000_000,
+			exposureLevel2: 500_000,
+			exposureLevel3: 2_000_000,
+			buyerProtectionMin: 100,
+			buyerProtectionMax: 15_000,
+			defaultDeliveryFeeFallback: 1500,
+		},
+		moneyCalendar: {
+			releaseHourLocal: 10,
+			reconcileHourLocal: 2,
+			vatPeriod: "calendar_month",
+		},
+		updatedAt: "2026-10-09T10:00:00.000Z",
+	};
+}
+
+/** A staging-only second market, live, with the registry's P5 payment row. */
+export function rwMarketRow(): Doc {
+	return {
+		...cmMarketRow(),
+		id: "market-rw",
+		countryCode: "RW",
+		name: "Rwanda",
+		currency: { code: "RWF", minorUnit: 0, rounding: "half_up" },
+		formatting: [
+			{
+				locale: "en",
+				symbol: "RWF",
+				position: "before",
+				groupSeparator: ",",
+				decimalSeparator: ".",
+			},
+		],
+		phone: { pattern: "^\\+2507\\d{8}$", displayExample: "+250 7 88 00 00 00" },
+		timezone: "Africa/Kigali",
+		languages: ["en"],
+		vatRateBps: 1800,
+		payments: {
+			provider: "notchpay",
+			settlementMode: "provider_split",
+			channels: ["rw.mtn"],
+			enabled: true,
+		},
+		features: { cod: true, protectedPayment: true, boosts: true },
+	};
+}
+
 /**
  * In-memory stand-in for the Payload local API: just the methods the services
  * call. `uniques` declares compound unique keys per collection and makes
@@ -178,6 +265,13 @@ export function fakePayload(
 	for (const [collection, docs] of Object.entries(seed))
 		store[collection] = docs.map((doc) => ({ ...clone(doc) }));
 	// The CM cities are rows now; a suite that seeds its own keeps them.
+	// A suite that configures the P5 payment markets on the global is testing
+	// the pre-migration fallback; a registry row would take precedence over it.
+	const legacyPayments =
+		(options.globals?.["app-settings"] as { payments?: unknown } | undefined)
+			?.payments !== undefined;
+	if (!("market-cities" in seed) && !("markets" in seed) && !legacyPayments)
+		store.markets = [cmMarketRow()];
 	if (!("market-cities" in seed))
 		store["market-cities"] = launchCitySeedRows("market-cm").map((row) => ({
 			...row,

@@ -580,7 +580,7 @@ describe("missing optional groups collapse to the contract's own nulls", () => {
 		confirmation: undefined,
 		handover: undefined,
 		delivery: { recipientName: "Alice Mbarga", phone: "+237600000012" },
-		amounts: undefined,
+		amounts: { currency: "XAF" },
 		risk: undefined,
 		deadlines: undefined,
 		timestamps: undefined,
@@ -671,6 +671,21 @@ describe("missing optional groups collapse to the contract's own nulls", () => {
 			conversationId: null,
 			reviewable: false,
 		});
+	});
+
+	it("refuses an order that carries no currency instead of reading it as XAF", () => {
+		const stripped = makeOrder({ amounts: undefined });
+		expect(() =>
+			serializeOrderForBuyer(
+				stripped,
+				sources({
+					items: [],
+					events: [],
+					returnCaseNumber: null,
+					conversationId: null,
+				}),
+			),
+		).toThrow("carries no currency");
 	});
 
 	it("gives a shop member the tier a scoreless order has, rather than dropping the block", () => {

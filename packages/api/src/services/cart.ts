@@ -3,6 +3,7 @@ import type { Payload, PayloadRequest } from "payload";
 import { resolveShopRole } from "../access/shopRoles";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { isLaunchCityKey } from "../lib/launchCities";
+import { liveMarketOfShop } from "../lib/markets";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -83,7 +84,8 @@ export interface CartView {
 	subtotal: number;
 	/** False when the shop itself cannot take an order right now — closed, restricted, COD off, or outside the launch cities — whatever each individual line says. */
 	shopOrderable: boolean;
-	currency: string;
+	/** Null while the cart names no shop, hence no market. */
+	currency: string | null;
 }
 
 function parseQuantity(value: unknown): number {
@@ -409,6 +411,7 @@ async function toCartView(
 ): Promise<CartView> {
 	const { lines, shop } = await revalidateCart(payload, cart, req);
 	const settings = await getOrderSettings(payload);
+	const market = shop ? await liveMarketOfShop(payload, shop) : null;
 	const subtotal = lines.reduce(
 		(sum, line) => sum + (line.available ? line.lineSubtotal : 0),
 		0,
@@ -427,7 +430,7 @@ async function toCartView(
 		subtotal,
 		shopOrderable:
 			lines.length > 0 && shopOrderabilityReason(shop, settings) === null,
-		currency: "XAF",
+		currency: market?.currency.code ?? null,
 	};
 }
 

@@ -248,6 +248,12 @@ async function amountsFor(
 	});
 }
 
+function orderCurrency(order: Order): string {
+	const currency = order.amounts?.currency;
+	if (!currency) throw new Error(`order ${order.id} carries no currency`);
+	return currency;
+}
+
 interface Eligible {
 	market: MarketRow;
 	account: ConnectedAccount & { providerAccountId: string };
@@ -613,7 +619,7 @@ export async function createCheckoutIntent(
 					targetId: String(order.id),
 					customerId: user.id,
 					amount: amounts.buyerTotal,
-					currency: market.currency,
+					currency: orderCurrency(order),
 					provider: market.provider,
 					idempotencyKey,
 					now,
@@ -705,7 +711,7 @@ export async function createCheckoutIntent(
 		charge = await provider.createDestinationCharge({
 			reference,
 			amount: amounts.buyerTotal,
-			currency: market.currency,
+			currency: orderCurrency(order),
 			applicationFee: amounts.applicationFee,
 			destination: {
 				accountId: account.providerAccountId,

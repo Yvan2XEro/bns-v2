@@ -40,7 +40,7 @@ export interface CourierQuoteParams {
 	origin: CourierAddress;
 	destination: CourierAddress;
 	parcel: { itemsCount: number; weightGrams: number; declaredValue: number };
-	cod?: { amount: number; currency: "XAF" };
+	cod?: { amount: number; currency: string };
 	readyAt: Date;
 }
 

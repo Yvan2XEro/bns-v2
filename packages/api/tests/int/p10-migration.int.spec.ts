@@ -9,7 +9,12 @@ import { quoteCheckout } from "../../src/services/checkout";
 import { renderCreditNoteDocument } from "../../src/services/commission";
 import { serializeOrderForBuyer } from "../../src/services/orders/serialize";
 import { withRawMongo } from "./helpers/fakeMongo";
-import { type Doc, type FakePayload, fakePayload } from "./helpers/fakePayload";
+import {
+	cmMarketRow,
+	type Doc,
+	type FakePayload,
+	fakePayload,
+} from "./helpers/fakePayload";
 
 const EV1 = "a".repeat(24);
 const EV2 = "b".repeat(24);
@@ -467,6 +472,12 @@ describe("P10 migration parity: stored views are byte-identical before and after
 
 	it("serializes the same order view", async () => {
 		const api = legacy({ cities: false });
+		// The serializer no longer reads a missing currency as XAF: the
+		// pre-migration baseline is the order as the backfill leaves it.
+		const stored = api.store.orders.find((order) => order.id === "o-2");
+		Object.assign(stored ?? {}, {
+			amounts: { ...(stored?.amounts as object), currency: "XAF" },
+		});
 		const before = await view(api);
 		await migrateP10Markets(api);
 		expect(await view(api)).toBe(before);
@@ -480,7 +491,11 @@ describe("P10 migration parity: stored views are byte-identical before and after
 	});
 
 	it("quotes the same JSON from the migrated rows as from the legacy literals", async () => {
-		const expected = await quote(legacy({ cities: true }));
+		// A quote now reads its market from the registry, so the legacy
+		// baseline carries the CM row the migration would otherwise create.
+		const baseline = legacy({ cities: true });
+		baseline.store.markets = [{ ...cmMarketRow(), id: "legacy-market" }];
+		const expected = await quote(baseline);
 		const api = legacy({ cities: false });
 		await migrateP10Markets(api);
 		// orderable.ts and cart.ts still read the emptied global until waves

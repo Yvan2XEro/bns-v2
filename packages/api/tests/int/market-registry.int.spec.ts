@@ -40,7 +40,7 @@ const save = (
 		data,
 		originalDoc,
 		operation: originalDoc ? "update" : "create",
-		req: { payload: fakePayload(seed) },
+		req: { payload: fakePayload({ markets: [], ...seed }) },
 	});
 
 const production = { NODE_ENV: "production" };
@@ -267,7 +267,7 @@ describe("market-cities", () => {
 	) =>
 		runBeforeChange(MarketCities, {
 			data,
-			req: { payload: fakePayload(seed) },
+			req: { payload: fakePayload({ markets: [], ...seed }) },
 		});
 	const existing = { id: "c1", market: "m1", key: "douala" };
 
@@ -355,7 +355,7 @@ describe("the market loader", () => {
 		...overrides,
 	});
 	const payloadOf = (seed: Record<string, object[]>) =>
-		fakePayload(seed) as unknown as Payload;
+		fakePayload({ markets: [], ...seed }) as unknown as Payload;
 
 	it("serves a valid row whole", async () => {
 		const [cm] = await getMarkets(payloadOf({ markets: [stored()] }));

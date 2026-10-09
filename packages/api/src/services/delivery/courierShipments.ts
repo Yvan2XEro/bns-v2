@@ -106,9 +106,7 @@ async function courierQuote(
 			weightGrams: 0,
 			declaredValue: order.amounts?.total ?? 0,
 		},
-		...(order.paymentMethod === "cod"
-			? { cod: { amount: order.amounts?.total ?? 0, currency: "XAF" as const } }
-			: {}),
+		...(order.paymentMethod === "cod" ? { cod: codOf(order) } : {}),
 		readyAt: new Date(),
 	});
 }
@@ -141,9 +139,7 @@ async function scheduleProviderCreate(
 			weightGrams: 0,
 			declaredValue: order.amounts?.total ?? 0,
 		},
-		...(order.paymentMethod === "cod"
-			? { cod: { amount: order.amounts?.total ?? 0, currency: "XAF" as const } }
-			: {}),
+		...(order.paymentMethod === "cod" ? { cod: codOf(order) } : {}),
 		readyAt: new Date(),
 		reference: shipment.shipmentNumber,
 		...(quote.providerQuoteId
@@ -183,6 +179,12 @@ async function queueProviderCreate(
 	const run = () =>
 		scheduleProviderCreate(req.payload, shipment, courier, quote, storefront);
 	if (!onCommit(commitContextOf(req), run)) await run();
+}
+
+function codOf(order: Order): { amount: number; currency: string } {
+	const currency = order.amounts?.currency;
+	if (!currency) throw new Error(`order ${order.id} carries no currency`);
+	return { amount: order.amounts?.total ?? 0, currency };
 }
 
 export async function switchShipmentCarrier(
