@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import en from "../locales/en.json";
 import fr from "../locales/fr.json";
 import type { OrderDeliveryView } from "../types/order";
@@ -7,12 +8,14 @@ import type { OrderStatusName } from "./orderStatus";
 import {
 	acceptCountdown,
 	actionBarItems,
+	actionBarItemsFor,
 	callHref,
 	DELIVERY_FAILURE_REASON_KEYS,
 	DELIVERY_FAILURE_REASONS,
 	deliveryFailureBody,
 	deliveryFailureSchema,
 	handoverScreenOpen,
+	hasLiveShipment,
 	initialShopOrderTab,
 	lockedHandoverNotice,
 	mapsUrl,
@@ -375,5 +378,45 @@ describe("calling and finding the buyer", () => {
 
 	test("with neither there is no Maps link", () => {
 		expect(mapsUrl(delivery({ landmark: null }))).toBeNull();
+	});
+});
+
+describe("the action bar's wiring of live shipments", () => {
+	const names = (
+		status: "accepted" | "shipped",
+		shipments: ReadonlyArray<{ status: string }> | undefined,
+	) =>
+		actionBarItemsFor(orderAt(status), "owner", shipments, NOW).map(
+			(item) => item.action,
+		);
+
+	test("a live shipment in the data hides the panel-owned buttons", () => {
+		expect(names("accepted", [{ status: "pending" }])).toEqual([
+			"seller_cancel",
+		]);
+		expect(names("shipped", [{ status: "in_transit" }])).toEqual([
+			"report_failed_attempt",
+			"mark_delivery_failed",
+		]);
+	});
+	test("no data, no rows or only cancelled rows keep the legacy buttons", () => {
+		for (const shipments of [undefined, [], [{ status: "cancelled" }]]) {
+			expect(names("accepted", shipments)).toEqual(["ship", "seller_cancel"]);
+		}
+	});
+	test("one live row among cancelled ones is enough", () => {
+		expect(
+			hasLiveShipment([{ status: "cancelled" }, { status: "delivered" }]),
+		).toBe(true);
+		expect(hasLiveShipment([{ status: "cancelled" }])).toBe(false);
+	});
+	test("the rendered bar feeds the shipments query data to that derivation", () => {
+		const source = readFileSync(
+			new URL("../components/sellerOrders/ActionBar.tsx", import.meta.url),
+			"utf8",
+		);
+		expect(source).toContain("useShopOrderShipments(String(order.id))");
+		expect(source).toContain("actionBarItemsFor(order, role, shipments.data)");
+		expect(source).not.toMatch(/\bactionBarItems\(/);
 	});
 });

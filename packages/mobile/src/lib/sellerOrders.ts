@@ -139,6 +139,23 @@ export function actionBarItems(
 		.map((action) => ({ action, ...PRESENTATION[action] }));
 }
 
+/** A cancelled shipment hands nothing over; any other one makes the screen the owner. */
+export function hasLiveShipment(
+	shipments: ReadonlyArray<{ status: string }> | undefined,
+): boolean {
+	return (shipments ?? []).some((shipment) => shipment.status !== "cancelled");
+}
+
+/** What the bar renders: the order's table answer minus what its shipments own. */
+export function actionBarItemsFor(
+	order: OrderActionSubject,
+	role: ShopRole | null | undefined,
+	shipments: ReadonlyArray<{ status: string }> | undefined,
+	now?: Date,
+): ActionBarItem[] {
+	return actionBarItems(order, role, now, hasLiveShipment(shipments));
+}
+
 function offers(items: readonly ActionBarItem[], action: ShopBarAction) {
 	return items.some((item) => item.action === action);
 }

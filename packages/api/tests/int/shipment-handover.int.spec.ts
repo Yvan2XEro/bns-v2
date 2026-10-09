@@ -5,6 +5,7 @@ import { hashHandoverCode } from "../../src/lib/orderCodes";
 import { ServiceError } from "../../src/lib/serviceError";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Shipment } from "../../src/payload-types";
+import { reportAttempt } from "../../src/services/delivery/attempts";
 import {
 	declareDelivered,
 	handoverShipment,
@@ -295,6 +296,125 @@ describe("shipment handover", () => {
 			const result = await run();
 			expect(result.proof?.photo).toBe("p-ok");
 			expect(payload.store.shipments?.[0]?.status).toBe("delivered");
+		});
+	});
+	describe("proof photo ownership at every call site", () => {
+		const rider = { type: "rider" as const, id: "rider-1" };
+		const orderRow = {
+			id: orderId,
+			orderNumber: "ORD-2610-000001",
+			shop: "shop-1",
+			buyer: "buyer-1",
+			status: "shipped",
+			paymentMethod: "cod",
+			paymentStatus: "cod_pending",
+			amounts: { total: 42000 },
+			delivery: {
+				method: "seller_delivery",
+				recipientName: "Aicha",
+				phone: "+237600000099",
+			},
+			handover: {
+				codeHash: hashHandoverCode(secret, orderId, code),
+				attempts: 0,
+			},
+			timestamps: { acceptedAt: "2026-10-04T10:00:00.000Z" },
+		};
+		const world = (proofs: Record<string, unknown>[]) =>
+			fakePayload(
+				{
+					orders: [orderRow],
+					shipments: [shipment],
+					"delivery-proofs": proofs,
+				},
+				{ secret },
+			);
+		const foreign = [
+			{ id: "p-foreign", shipment: "other-shipment", kind: "handover" },
+		];
+		const wrongKind = [
+			{ id: "p-wrong", shipment: shipment.id, kind: "attempt" },
+		];
+
+		it("handover refuses another shipment's photo and moves nothing", async () => {
+			const payload = world(foreign);
+			await expect(
+				withTransaction(payload, (req) =>
+					handoverShipment(
+						req,
+						shipment,
+						{ code, photoId: "p-foreign" },
+						rider,
+					),
+				),
+			).rejects.toMatchObject({
+				code: ERROR_CODES.shipmentPhotoRequired,
+				status: 400,
+			});
+			expect(payload.store.shipments?.[0]?.status).toBe("in_transit");
+			expect(payload.store.orders?.[0]?.status).toBe("shipped");
+		});
+
+		it("handover refuses this shipment's photo of the wrong kind", async () => {
+			const payload = world([
+				{ id: "p-wrong", shipment: shipment.id, kind: "declaration" },
+			]);
+			await expect(
+				withTransaction(payload, (req) =>
+					handoverShipment(req, shipment, { code, photoId: "p-wrong" }, rider),
+				),
+			).rejects.toMatchObject({ code: ERROR_CODES.shipmentPhotoRequired });
+			expect(payload.store.shipments?.[0]?.status).toBe("in_transit");
+		});
+
+		it("an attempt report refuses another shipment's photo", async () => {
+			const payload = world([
+				{ id: "p-foreign", shipment: "other-shipment", kind: "attempt" },
+			]);
+			await expect(
+				withTransaction(payload, (req) =>
+					reportAttempt(
+						req,
+						shipment,
+						{ reason: "absent", photoId: "p-foreign" },
+						rider,
+					),
+				),
+			).rejects.toMatchObject({
+				code: ERROR_CODES.shipmentPhotoRequired,
+				status: 400,
+			});
+			expect(payload.store.shipments?.[0]?.attempts ?? []).toHaveLength(0);
+		});
+
+		it("an attempt report refuses this shipment's photo of the wrong kind", async () => {
+			const payload = world(wrongKind.map((r) => ({ ...r, kind: "handover" })));
+			await expect(
+				withTransaction(payload, (req) =>
+					reportAttempt(
+						req,
+						shipment,
+						{ reason: "absent", photoId: "p-wrong" },
+						rider,
+					),
+				),
+			).rejects.toMatchObject({ code: ERROR_CODES.shipmentPhotoRequired });
+			expect(payload.store.shipments?.[0]?.attempts ?? []).toHaveLength(0);
+		});
+
+		it("the kind-mismatch branch alone refuses an own-shipment declaration photo", async () => {
+			const payload = world(wrongKind);
+			await expect(
+				withTransaction(payload, (req) =>
+					declareDelivered(
+						req,
+						shipment,
+						{ photoId: "p-wrong" },
+						{ type: "seller", id: "seller-1" },
+					),
+				),
+			).rejects.toMatchObject({ code: ERROR_CODES.shipmentPhotoRequired });
+			expect(payload.store.shipments?.[0]?.status).toBe("in_transit");
 		});
 	});
 });
