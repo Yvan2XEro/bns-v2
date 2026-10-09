@@ -38,6 +38,7 @@ export async function GET(request?: Request) {
 	let launchCities: Array<{ key: string; label: string; fee: number }> = [];
 	let withdrawalDays = 15;
 	let protectedPaymentEnabled = false;
+	let legacyMarketCountries: string[] = [];
 	let buyerProtection = PAYMENT_DEFAULTS.buyerProtection;
 	let checkoutExpiryMinutes = PAYMENT_DEFAULTS.checkoutExpiryMinutes;
 	let disputesEnabled = false;
@@ -91,8 +92,13 @@ export async function GET(request?: Request) {
 		}));
 		withdrawalDays = orderSettings.withdrawalDays;
 		const paymentSettings = await getPaymentSettings(payload);
+		legacyMarketCountries = paymentSettings.markets.map((m) => m.countryCode);
 		const country =
-			(request && new URL(request.url).searchParams.get("country")) ||
+			(request &&
+				new URL(request.url).searchParams
+					.get("country")
+					?.trim()
+					.toUpperCase()) ||
 			paymentSettings.markets[0]?.countryCode;
 		protectedPaymentEnabled =
 			country !== undefined && isProtectedPaymentOpen(paymentSettings, country);
@@ -174,7 +180,13 @@ export async function GET(request?: Request) {
 						languages: found.languages,
 					};
 				}
-			} else if (requested) {
+			} else if (
+				requested &&
+				!(registry.length === 0 && legacyMarketCountries.includes(requested))
+				// Pre-migration the registry is empty and the legacy settings are
+				// the authority: a country they know keeps its answers; the
+				// zeroing below is for a country nobody knows (the spoof rule).
+			) {
 				ordersEnabled = false;
 				launchCities = [];
 				protectedPaymentEnabled = false;
