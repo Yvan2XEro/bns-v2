@@ -849,7 +849,7 @@ export async function payInvoice(
 	const idempotencyKey = `commission:${invoice.id}:${attempts.length + 1}`;
 
 	const totalDue = invoice.totalDue ?? 0;
-	const currency = invoice.currency ?? "XAF";
+	const currency = invoice.currency;
 	const intent = await withTransaction(payload, (req) =>
 		createPaymentIntent(
 			payload,
