@@ -1,9 +1,19 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it } from "vitest";
+import type { Payload } from "payload";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { MarketCities } from "../../src/collections/MarketCities";
 import { Markets } from "../../src/collections/Markets";
+import { ERROR_CODES } from "../../src/lib/errors";
+import {
+	getLiveMarket,
+	getMarket,
+	getMarkets,
+	marketIsOpen,
+	marketOfShop,
+} from "../../src/lib/markets";
 import { SETTLEMENT_MODE_REFUSALS } from "../../src/lib/paymentSettings";
 import { registerMarketplaceProvider } from "../../src/lib/payments/marketplaceRegistry";
+import type { Shop } from "../../src/payload-types";
 import { fakePayload } from "./helpers/fakePayload";
 import { runBeforeChange } from "./helpers/runBeforeChange";
 
@@ -39,7 +49,7 @@ const withProductionEnv = () => {
 	const before = { ...process.env };
 	Object.assign(process.env, production, { PAYMENTS_PROVIDER: "" });
 	restoreEnv.push(() => {
-		process.env.NODE_ENV = before.NODE_ENV;
+		Object.assign(process.env, { NODE_ENV: before.NODE_ENV });
 		process.env.PAYMENTS_PROVIDER = before.PAYMENTS_PROVIDER;
 	});
 };
@@ -296,6 +306,236 @@ describe("market-cities", () => {
 		expect(MarketCities.indexes).toContainEqual({
 			fields: ["market", "key"],
 			unique: true,
+		});
+	});
+});
+
+describe("the market loader", () => {
+	const stored = (overrides: Record<string, unknown> = {}) => ({
+		id: "m1",
+		countryCode: "CM",
+		name: "Cameroun",
+		status: "live",
+		currency: { code: "XAF", minorUnit: 0, rounding: "half_up" },
+		formatting: [
+			{
+				locale: "fr",
+				symbol: "FCFA",
+				position: "after",
+				groupSeparator: "\u202f",
+				decimalSeparator: ",",
+			},
+		],
+		phone: { pattern: "^\\+2376\\d{8}$", displayExample: "+237 6 00 00 00 00" },
+		timezone: "Africa/Douala",
+		languages: ["fr", "en"],
+		vatRateBps: 1925,
+		payments: {
+			provider: "notchpay",
+			settlementMode: "provider_split",
+			channels: ["cm.mtn"],
+			enabled: true,
+		},
+		features: { cod: true, protectedPayment: false },
+		amounts: {
+			minPayout: 1000,
+			maxOrderAmount: 1_000_000,
+			exposureLevel2: 500_000,
+			exposureLevel3: 2_000_000,
+			buyerProtectionMin: 100,
+			buyerProtectionMax: 15_000,
+			defaultDeliveryFeeFallback: 1500,
+		},
+		moneyCalendar: {
+			releaseHourLocal: 10,
+			reconcileHourLocal: 2,
+			vatPeriod: "calendar_month",
+		},
+		updatedAt: "2026-10-09T10:00:00.000Z",
+		...overrides,
+	});
+	const payloadOf = (seed: Record<string, object[]>) =>
+		fakePayload(seed) as unknown as Payload;
+
+	it("serves a valid row whole", async () => {
+		const [cm] = await getMarkets(payloadOf({ markets: [stored()] }));
+		expect(cm.currency).toEqual({
+			code: "XAF",
+			minorUnit: 0,
+			rounding: "half_up",
+		});
+		expect(cm.formats).toEqual([
+			{
+				locale: "fr",
+				symbol: "FCFA",
+				position: "after",
+				groupSeparator: "\u202f",
+				decimalSeparator: ",",
+				minorUnit: 0,
+			},
+		]);
+		expect(cm.features.cod).toBe(true);
+		expect(cm.features.boosts).toBe(false);
+		expect(cm.amounts.defaultDeliveryFeeFallback).toBe(1500);
+	});
+
+	const broken: Array<[string, Record<string, unknown>]> = [
+		["countryCode", { countryCode: "cm" }],
+		["currency.code", { currency: { minorUnit: 0, rounding: "half_up" } }],
+		[
+			"currency.code shape",
+			{ currency: { code: "xaf", minorUnit: 0, rounding: "half_up" } },
+		],
+		[
+			"minorUnit",
+			{ currency: { code: "XAF", minorUnit: 7, rounding: "half_up" } },
+		],
+		["rounding", { currency: { code: "XAF", minorUnit: 0, rounding: "ceil" } }],
+		["phone.pattern", { phone: { pattern: "(", displayExample: "x" } }],
+		["timezone", { timezone: "Africa/Doula" }],
+		["vatRateBps", { vatRateBps: 10_001 }],
+		[
+			"payments.provider",
+			{ payments: { provider: "stripe", settlementMode: "provider_split" } },
+		],
+		[
+			"payments.settlementMode",
+			{
+				payments: { provider: "notchpay", settlementMode: "platform_collects" },
+			},
+		],
+		["amounts", { amounts: { minPayout: 1000 } }],
+		["status", { status: "open" }],
+	];
+
+	it.each(
+		broken,
+	)("drops a row with a bad %s, never repairs it", async (_name, patch) => {
+		const good = payloadOf({ markets: [stored()] });
+		expect(await getMarkets(good)).toHaveLength(1);
+		const bad = payloadOf({ markets: [stored(patch)] });
+		expect(await getMarkets(bad)).toHaveLength(0);
+		await expect(getMarket(bad, "CM")).rejects.toMatchObject({
+			code: ERROR_CODES.marketUnknown,
+		});
+		await expect(getLiveMarket(bad, "CM")).rejects.toMatchObject({
+			code: ERROR_CODES.marketUnknown,
+		});
+	});
+
+	it("refuses a country listed twice", async () => {
+		const payload = payloadOf({ markets: [stored(), stored({ id: "m2" })] });
+		expect(await getMarkets(payload)).toHaveLength(0);
+	});
+
+	it("refuses a market that is not live", async () => {
+		const payload = payloadOf({ markets: [stored({ status: "review" })] });
+		expect((await getMarket(payload, "cm")).status).toBe("review");
+		await expect(getLiveMarket(payload, "CM")).rejects.toMatchObject({
+			code: ERROR_CODES.marketNotLive,
+		});
+		await expect(getMarket(payload, "GA")).rejects.toMatchObject({
+			code: ERROR_CODES.marketUnknown,
+		});
+	});
+
+	it("opens a feature only when the market and the global flag are both on", async () => {
+		const [cm] = await getMarkets(payloadOf({ markets: [stored()] }));
+		expect(marketIsOpen(cm, "cod", true)).toBe(true);
+		expect(marketIsOpen(cm, "cod", false)).toBe(false);
+		expect(marketIsOpen(cm, "protectedPayment", true)).toBe(false);
+		expect(marketIsOpen(cm, "protectedPayment", false)).toBe(false);
+		expect(marketIsOpen({ ...cm, status: "suspended" }, "cod", true)).toBe(
+			false,
+		);
+	});
+
+	describe("marketOfShop", () => {
+		const seed = {
+			markets: [stored()],
+			"market-cities": [{ id: "c1", market: "m1", key: "douala" }],
+		};
+		const shop = (city?: string, countryCode?: string) =>
+			({ id: "s1", location: { city, countryCode } }) as Shop;
+
+		it("resolves a shop through its city's market", async () => {
+			const cm = await marketOfShop(payloadOf(seed), shop("douala"));
+			expect(cm.countryCode).toBe("CM");
+		});
+
+		it("refuses an unknown or missing city", async () => {
+			await expect(
+				marketOfShop(payloadOf(seed), shop("libreville")),
+			).rejects.toMatchObject({
+				code: ERROR_CODES.marketUnknown,
+			});
+			await expect(marketOfShop(payloadOf(seed), shop())).rejects.toMatchObject(
+				{
+					code: ERROR_CODES.marketUnknown,
+				},
+			);
+		});
+
+		it("refuses a city whose market was dropped", async () => {
+			const dropped = { ...seed, markets: [stored({ timezone: "nope" })] };
+			await expect(
+				marketOfShop(payloadOf(dropped), shop("douala")),
+			).rejects.toMatchObject({
+				code: ERROR_CODES.marketUnknown,
+			});
+		});
+
+		it("uses the shop's country when two markets share a city key", async () => {
+			const both = {
+				markets: [stored(), stored({ id: "m2", countryCode: "GA" })],
+				"market-cities": [
+					{ id: "c1", market: "m1", key: "douala" },
+					{ id: "c2", market: "m2", key: "douala" },
+				],
+			};
+			await expect(
+				marketOfShop(payloadOf(both), shop("douala")),
+			).rejects.toMatchObject({
+				code: ERROR_CODES.marketUnknown,
+			});
+			expect(
+				(await marketOfShop(payloadOf(both), shop("douala", "GA"))).id,
+			).toBe("m2");
+		});
+	});
+
+	describe("the 60 s cache", () => {
+		afterEach(() => vi.useRealTimers());
+
+		it("serves the old list until the hook invalidates it", async () => {
+			const seeded = { markets: [stored()] };
+			const payload = payloadOf(seeded);
+			expect((await getMarkets(payload))[0].name).toBe("Cameroun");
+			await payload.update({
+				collection: "markets",
+				id: "m1",
+				data: { name: "Cameroon" },
+			});
+			expect((await getMarkets(payload))[0].name).toBe("Cameroun");
+			const hook = Markets.hooks?.afterChange?.[0] as (a: unknown) => unknown;
+			await hook({ doc: {}, req: { payload } });
+			expect((await getMarkets(payload))[0].name).toBe("Cameroon");
+		});
+
+		it("expires on its own after 60 s", async () => {
+			vi.useFakeTimers();
+			const seeded = { markets: [stored()] };
+			const payload = payloadOf(seeded);
+			await getMarkets(payload);
+			await payload.update({
+				collection: "markets",
+				id: "m1",
+				data: { name: "Cameroon" },
+			});
+			vi.advanceTimersByTime(59_000);
+			expect((await getMarkets(payload))[0].name).toBe("Cameroun");
+			vi.advanceTimersByTime(2_000);
+			expect((await getMarkets(payload))[0].name).toBe("Cameroon");
 		});
 	});
 });

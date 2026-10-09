@@ -5,6 +5,7 @@ import type {
 	Payload,
 } from "payload";
 import { isAdmin } from "../access/roles";
+import { invalidateMarketCache } from "../lib/marketCache";
 import type { PaymentProviderId } from "../lib/paymentSettings";
 import {
 	PAYMENT_PROVIDERS,
@@ -251,7 +252,15 @@ export const Markets: CollectionConfig = {
 		update: adminOnly,
 		delete: () => false,
 	},
-	hooks: { beforeChange: [refuseInvalidMarket] },
+	hooks: {
+		beforeChange: [refuseInvalidMarket],
+		afterChange: [
+			({ doc, req }) => {
+				invalidateMarketCache(req.payload);
+				return doc;
+			},
+		],
+	},
 	fields: [
 		{
 			name: "countryCode",
