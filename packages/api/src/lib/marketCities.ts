@@ -1,15 +1,6 @@
 import type { Payload } from "payload";
-export interface MarketCity {
-	id: string;
-	market: string;
-	key: string;
-	label: string;
-	defaultDeliveryFee: number;
-	/** `slug` is stored without the city prefix, as `{city}.{slug}` on the wire. */
-	districts: Array<{ slug: string; label: string }>;
-	active: boolean;
-	sortOrder: number;
-}
+export type { MarketCity } from "../contracts/marketCity";
+import type { MarketCity } from "../contracts/marketCity";
 
 const CACHE_TTL_MS = 60_000;
 type Entry = { at: number; cities: MarketCity[] };

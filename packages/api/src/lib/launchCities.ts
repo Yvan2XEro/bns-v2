@@ -5,7 +5,7 @@
  * `lib/marketCities.ts`. The sync predicates below serve the callers not yet
  * migrated and are deleted with the file.
  */
-import type { MarketCity } from "./marketCities";
+import type { MarketCity } from "../contracts/marketCity";
 
 export type LaunchCityKey = "douala" | "yaounde";
 
