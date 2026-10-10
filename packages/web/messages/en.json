@@ -2185,6 +2185,14 @@
 		"retry": "Try again"
 	},
 	"Checkout": {
+		"shell": {
+			"backToCart": "Back to cart",
+			"secure": "Secure checkout",
+			"trust": "Protected payment · Your data stays private",
+			"errorTitle": "Something went wrong",
+			"errorBody": "We could not load your checkout. Please try again.",
+			"retry": "Try again"
+		},
 		"courierDelivery": "Partner courier",
 		"promisedBy": "Expected by {date}",
 		"freeDeliveryApplied": "Delivery saving: {amount}",

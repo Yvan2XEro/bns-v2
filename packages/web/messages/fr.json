@@ -2186,6 +2186,14 @@
 		"retry": "Réessayer"
 	},
 	"Checkout": {
+		"shell": {
+			"backToCart": "Retour au panier",
+			"secure": "Commande sécurisée",
+			"trust": "Paiement protégé · Vos données restent privées",
+			"errorTitle": "Une erreur est survenue",
+			"errorBody": "Impossible de charger votre commande. Veuillez réessayer.",
+			"retry": "Réessayer"
+		},
 		"courierDelivery": "Transporteur partenaire",
 		"promisedBy": "Prévu au plus tard le {date}",
 		"freeDeliveryApplied": "Économie sur la livraison : {amount}",
