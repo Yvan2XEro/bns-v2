@@ -3831,5 +3831,31 @@
 		"riderChoose": "Choisir un livreur",
 		"noConsent": "téléphone non partagé",
 		"declareRemittance": "Déclarer l'argent reversé"
+	},
+	"NotFoundPublic": {
+		"title": "Nous n'avons pas trouvé cette page",
+		"body": "L'annonce, la boutique ou la page que vous cherchez a peut-être été vendue, retirée ou déplacée. Reprenons votre visite.",
+		"home": "Retour à l'accueil",
+		"search": "Rechercher des annonces"
+	},
+	"NotFoundCheckout": {
+		"title": "Cette étape de paiement n'existe pas",
+		"body": "Votre panier et vos commandes sont en sécurité. Retournez au panier pour continuer.",
+		"cart": "Retour au panier"
+	},
+	"NotFoundSeller": {
+		"title": "Cette page n'est pas dans votre espace",
+		"body": "Elle a peut-être été déplacée, ou le lien est périmé. Reprenez depuis votre tableau de bord.",
+		"dashboard": "Retour au tableau de bord"
+	},
+	"NotFoundOps": {
+		"title": "Rien ici",
+		"body": "Cet élément n'est pas dans la file de modération, ou il a déjà été traité.",
+		"verification": "File de vérification",
+		"disputes": "File des litiges"
+	},
+	"NotFoundBare": {
+		"title": "Ce lien n'est pas valide",
+		"body": "Vérifiez le lien qui vous a été envoyé. S'il devrait encore fonctionner, demandez-en un nouveau à l'expéditeur."
 	}
 }

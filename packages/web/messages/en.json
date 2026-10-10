@@ -3830,5 +3830,31 @@
 		"riderChoose": "Choose a rider",
 		"noConsent": "phone not shared",
 		"declareRemittance": "Declare the cash handed over"
+	},
+	"NotFoundPublic": {
+		"title": "We couldn't find that page",
+		"body": "The listing, shop or page you're looking for may have been sold, removed or moved. Let's get you back to browsing.",
+		"home": "Back to home",
+		"search": "Search listings"
+	},
+	"NotFoundCheckout": {
+		"title": "This checkout step doesn't exist",
+		"body": "Your cart and your orders are safe. Head back to your cart to carry on.",
+		"cart": "Back to cart"
+	},
+	"NotFoundSeller": {
+		"title": "This page isn't in your workspace",
+		"body": "It may have moved, or the link is out of date. Pick up from your dashboard.",
+		"dashboard": "Back to dashboard"
+	},
+	"NotFoundOps": {
+		"title": "Nothing here",
+		"body": "This item is not in the moderation queue, or it has already been handled.",
+		"verification": "Verification queue",
+		"disputes": "Disputes queue"
+	},
+	"NotFoundBare": {
+		"title": "This link is not valid",
+		"body": "Check the link you were sent. If it should still work, ask the sender for a new one."
 	}
 }
