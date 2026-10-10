@@ -210,12 +210,10 @@ checking out a cart sharing a last-unit variant, and a replayed
 - The rehearsal file alone: 11 passed (4 P5 + 7 P10), run together with the
   literals guard, `market-golden` and `ledger-currency`: 32 passed.
 - Root `bun run check-types`: green.
-- Ceilings, with the AGENTS.md commands on the worktree: `check-types:tests`
-  **100** (held); api tests `grep -ro 'as never'` **88** on the base tree and
-  88 with this change (the rehearsal adds none; the published ceiling is 86,
-  so the base is already two over and needs its own written reason or a
-  sweep); client casts **77** (held); mobile advisory **31** on a tree
-  without `.expo` (router types could not be regenerated here, so the figure
-  is not the honest one: re-measure on a tree with a fresh
-  `.expo/types/router.d.ts` before republishing). Republish only at or below
-  100/86/77/35.
+- Ceilings, with the AGENTS.md commands, re-measured on the quiet main tree
+  at close: `check-types:tests` **100** (at the mark); api tests
+  `grep -ro 'as never'` **86** (at the mark — the rehearsal worktree's 88
+  was two test-fixture casts Task 23 had introduced; they were retyped and
+  removed at close, commit `794c9e3`); client casts **77** (at the mark);
+  mobile advisory **31** with a fresh `.expo/types/router.d.ts` (ceiling 35).
+  Republished at 100/86/77/35.
