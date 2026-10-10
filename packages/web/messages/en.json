@@ -42,6 +42,7 @@
 		"logIn": "Log in",
 		"signUp": "Sign up",
 		"myShop": "My shop",
+		"sellerSpace": "Seller space",
 		"openShop": "Open a shop",
 		"cart": "Cart",
 		"cartWithCount": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",

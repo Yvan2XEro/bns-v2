@@ -42,6 +42,7 @@
 		"logIn": "Connexion",
 		"signUp": "S'inscrire",
 		"myShop": "Ma boutique",
+		"sellerSpace": "Espace vendeur",
 		"openShop": "Ouvrir une boutique",
 		"cart": "Panier",
 		"cartWithCount": "Panier, {count, plural, =0 {vide} one {# article} other {# articles}}",
