@@ -65,6 +65,9 @@ services:
     environment:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?Set MEILI_MASTER_KEY}
       MEILI_ENV: ${MEILI_ENV:-production}
+      # In-place dumpless upgrade when the PINNED image is deliberately bumped;
+      # one-way — snapshot the volume before changing the pin.
+      MEILI_UPGRADE_DB: "true"
     volumes:
       - meili_data:/meili_data
     networks:
