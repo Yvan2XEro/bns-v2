@@ -17,7 +17,7 @@ import {
 import {
 	BUYER_CANCEL_REASONS as webBuyerCancelReasons,
 	cancelSchema as webCancelSchema,
-} from "../../../web/src/app/purchases/purchase-view";
+} from "../../../web/src/app/(public)/purchases/purchase-view";
 import {
 	ORDER_ACTION_PERMISSIONS as webActionPermissions,
 	ORDER_ACTION_ROUTES as webActionRoutes,
