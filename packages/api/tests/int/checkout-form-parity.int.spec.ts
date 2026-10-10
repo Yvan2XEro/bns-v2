@@ -11,19 +11,16 @@ import {
 	checkoutAddressSchema as mobileSchema,
 	toAddressInput as mobileToAddressInput,
 } from "../../../mobile/src/lib/checkoutForm";
-import { isMarketPhone, setMarket } from "../../../mobile/src/lib/market";
+import { setMarket } from "../../../mobile/src/lib/market";
 import {
 	DISTRICTS as webDistricts,
 	checkoutAddressSchema as webSchema,
 	toAddressInput as webToAddressInput,
 } from "../../../web/src/lib/checkout-form";
-import type { MarketConfig } from "../../src/contracts/marketConfig";
 import { LAUNCH_CITY_KEYS } from "../../src/lib/launchCities";
 import { ServiceError } from "../../src/lib/serviceError";
-import {
-	parseDeliveryAddress,
-	DELIVERY_PHONE_PATTERN as serverPhonePattern,
-} from "../../src/services/checkout";
+import { parseDeliveryAddress } from "../../src/services/checkout";
+import { cmRow, served, servedConfig } from "./helpers/servedMarket";
 
 /**
  * The checkout address rules exist three times: `parseDeliveryAddress` on the
@@ -126,35 +123,14 @@ const CASES: Array<{
 ];
 
 /**
- * INTERIM (Task 23 owns the full rework to "both clients validate with the
- * served pattern"): Tasks 19/21 removed the clients' phone-pattern literals.
- * Web now takes the pattern as a builder argument; mobile reads its market
- * store. Both are fed the server's own pattern here, so the three-sided
- * verdict table below still proves the rules agree.
+ * P10 (Task 23): the phone rule is served data. The row below is the CM
+ * market as the migration seeds it; the api's `marketOf` normalises it, the
+ * result is what the config route serves, and both clients are built from
+ * THAT — web takes the compiled pattern as a builder argument, mobile reads
+ * its market store. Nothing in either client names the rule.
  */
-const marketWithServerPhone: MarketConfig = {
-	countryCode: "CM",
-	name: "Cameroun",
-	currency: { code: "XAF", minorUnit: 0 },
-	formats: [],
-	phone: {
-		pattern: serverPhonePattern.source,
-		displayExample: "+237 6 99 12 44 08",
-	},
-	cities: [],
-	features: {
-		cod: true,
-		protectedPayment: false,
-		deliveryZones: false,
-		couriers: false,
-		disputes: false,
-		resale: false,
-		resalePrepaid: false,
-		boosts: false,
-	},
-	languages: ["fr", "en"],
-};
-setMarket(marketWithServerPhone);
+const servedPattern = (row = cmRow()) => served(row).phone.pattern;
+setMarket(servedConfig(cmRow()));
 
 function issuesOf(
 	schema: ReturnType<typeof webSchema> | ReturnType<typeof mobileSchema>,
@@ -171,11 +147,7 @@ function clientFields(
 ): string[] {
 	return client === "web"
 		? issuesOf(
-				webSchema(
-					LAUNCH_CITY_KEYS,
-					method,
-					new RegExp(serverPhonePattern.source),
-				),
+				webSchema(LAUNCH_CITY_KEYS, method, new RegExp(servedPattern())),
 				values,
 			)
 		: issuesOf(mobileSchema(LAUNCH_CITY_KEYS, method), values);
@@ -229,19 +201,78 @@ describe("the checkout address rules agree across the API and both clients", () 
 });
 
 describe("the values around the rules agree too", () => {
-	it("the phone rule is data: a mutated served pattern flips the verdict", () => {
-		// The literal-identity pin died with the client literals (Tasks 19/21);
-		// Task 23 replaces it with the full fixture-mutation family. Interim:
-		// the mobile store's pattern decides, not a baked-in rule.
-		expect(isMarketPhone(valid.phone)).toBe(true);
-		setMarket({
-			...marketWithServerPhone,
-			phone: { pattern: "^nothing$", displayExample: "nothing" },
+	it("the phone rule is data: mutate the served pattern and the row and both clients flip together", () => {
+		// The server's own enforcement is still the DELIVERY_PHONE_PATTERN
+		// constant (pinned against the row in the next test), so it cannot flip.
+		const base = { ...valid, phone: "+237699124408" };
+		const mutatedRow = cmRow({
+			phone: { pattern: "^\\+2377\\d{8}$", displayExample: "+237 7XX" },
 		});
+		const other = { ...valid, phone: "+237799124408" };
+		const verdicts = (row: ReturnType<typeof cmRow>, input: typeof valid) => {
+			setMarket(servedConfig(row));
+			const pattern = new RegExp(servedPattern(row));
+			return {
+				row: pattern.test(input.phone),
+				web: issuesOf(
+					webSchema(LAUNCH_CITY_KEYS, "seller_delivery", pattern),
+					input,
+				).includes("phone"),
+				mobile: issuesOf(
+					mobileSchema(LAUNCH_CITY_KEYS, "seller_delivery"),
+					input,
+				).includes("phone"),
+			};
+		};
 		try {
-			expect(isMarketPhone(valid.phone)).toBe(false);
+			// Seeded row: the 6-prefixed mobile passes, the 7-prefixed one fails.
+			expect(verdicts(cmRow(), base)).toEqual({
+				row: true,
+				web: false,
+				mobile: false,
+			});
+			expect(verdicts(cmRow(), other)).toEqual({
+				row: false,
+				web: true,
+				mobile: true,
+			});
+			// Mutated row: both verdicts invert on all sides at once.
+			expect(verdicts(mutatedRow, base)).toEqual({
+				row: false,
+				web: true,
+				mobile: true,
+			});
+			expect(verdicts(mutatedRow, other)).toEqual({
+				row: true,
+				web: false,
+				mobile: false,
+			});
 		} finally {
-			setMarket(marketWithServerPhone);
+			setMarket(servedConfig(cmRow()));
+		}
+	});
+
+	it("the seeded row's pattern is the one the server enforces, on the row's own examples", () => {
+		const row = new RegExp(servedPattern());
+		for (const [phone, ok] of [
+			["+237650000001", true],
+			["+2371650000001", false],
+			["+23765000000", false],
+			["+237222123456", false],
+		] as const) {
+			expect(row.test(phone)).toBe(ok);
+			const refused = (() => {
+				try {
+					parseDeliveryAddress(
+						webToAddressInput({ ...valid, phone }),
+						"seller_delivery",
+					);
+					return false;
+				} catch {
+					return true;
+				}
+			})();
+			expect(refused).toBe(!ok);
 		}
 	});
 
