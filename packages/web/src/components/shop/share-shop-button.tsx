@@ -1,15 +1,11 @@
 "use client";
 
+import { shopUrl } from "~/lib/shop-url";
 import { Check, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 
-const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
-
-export function shopUrl(handle: string): string {
-	return `${WEB_URL.replace(/\/$/, "")}/s/${handle}`;
-}
 
 export function ShareShopButton({
 	handle,

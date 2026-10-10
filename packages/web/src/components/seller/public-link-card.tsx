@@ -3,7 +3,8 @@
 import { Check, Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { ShareShopButton, shopUrl } from "~/components/shop/share-shop-button";
+import { ShareShopButton } from "~/components/shop/share-shop-button";
+import { shopUrl } from "~/lib/shop-url";
 
 export function PublicLinkCard({
 	handle,

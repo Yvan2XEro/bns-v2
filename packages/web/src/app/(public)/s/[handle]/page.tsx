@@ -7,7 +7,7 @@ import { cache } from "react";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { DeliveryCities } from "~/components/shop/delivery-cities";
 import { PickupPoints } from "~/components/shop/pickup-points";
-import { shopUrl } from "~/components/shop/share-shop-button";
+import { shopUrl } from "~/lib/shop-url";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
 import { serverFetch } from "~/lib/server-api";
