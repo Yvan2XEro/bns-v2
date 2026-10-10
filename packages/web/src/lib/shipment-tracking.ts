@@ -3,7 +3,7 @@ import {
 	type DeliveryWindow,
 	windowBounds,
 } from "../../../api/src/lib/delivery/eta";
-import { localDateAt, localParts } from "../../../api/src/lib/localTime";
+import { localDateAt, localParts } from "../../../api/src/lib/marketTime";
 import type { OrderStatusName } from "./order-status";
 import {
 	FAILURE_REASON_LABELS,
