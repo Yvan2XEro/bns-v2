@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { PERMANENT_REDIRECTS } from "./redirects";
 
 describe("the permanent redirect map", () => {
@@ -12,5 +14,9 @@ describe("the permanent redirect map", () => {
 				permanent: true,
 			},
 		]);
+	});
+
+	it("leaves no root loading boundary: every page lives in a group", () => {
+		expect(existsSync(join(import.meta.dir, "../app/loading.tsx"))).toBe(false);
 	});
 });
