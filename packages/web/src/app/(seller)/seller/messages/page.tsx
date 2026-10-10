@@ -5,7 +5,12 @@ import { getAuthUser, serverGet } from "~/lib/server-api";
 import type { MyShopsEntry } from "~/types";
 import { InboxClient } from "./inbox-client";
 
-export default async function SellerMessagesPage() {
+export default async function SellerMessagesPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ conversation?: string }>;
+}) {
+	const { conversation } = await searchParams;
 	const [user, cookieStore, shops] = await Promise.all([
 		getAuthUser(),
 		cookies(),
@@ -19,6 +24,11 @@ export default async function SellerMessagesPage() {
 	if (!active || !user) redirect("/shop/new");
 
 	return (
-		<InboxClient shopId={active.shopId} role={active.role} viewerId={user.id} />
+		<InboxClient
+			shopId={active.shopId}
+			role={active.role}
+			viewerId={user.id}
+			initialConversationId={conversation ?? null}
+		/>
 	);
 }

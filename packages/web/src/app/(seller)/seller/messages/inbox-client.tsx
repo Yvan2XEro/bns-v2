@@ -16,8 +16,6 @@ interface State {
 	selectedId: string | null;
 }
 
-const initialState: State = { filter: "all", q: "", selectedId: null };
-
 function reducer(state: State, patch: Partial<State>): State {
 	return { ...state, ...patch };
 }
@@ -26,13 +24,19 @@ export function InboxClient({
 	shopId,
 	role,
 	viewerId,
+	initialConversationId,
 }: {
 	shopId: string;
 	role: ShopRole | null;
 	viewerId: string;
+	initialConversationId: string | null;
 }) {
 	const locale = useLocale();
-	const [state, patch] = useReducer(reducer, initialState);
+	const [state, patch] = useReducer(reducer, {
+		filter: "all",
+		q: "",
+		selectedId: initialConversationId,
+	});
 	const debouncedQ = useDebouncedValue(state.q, 300);
 
 	useShopInboxSocket(shopId);
