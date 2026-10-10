@@ -9,6 +9,8 @@ import * as web from "../../../web/src/lib/checkout-group-flow";
 import type {
 	CheckoutGroupOrderView,
 	CheckoutGroupView,
+	SplitCartView,
+	SplitQuoteView,
 } from "../../src/contracts/checkoutGroup";
 
 /**
@@ -131,12 +133,41 @@ describe("the group stepper decides alike on web and mobile", () => {
 	});
 
 	it("both clients keep the same split-cart discriminator", () => {
-		const flat = { lines: [] } as never;
-		const split = { groups: [] } as never;
-		expect(mobile.isSplitCart(split)).toBe(web.isSplitCart(split));
-		expect(mobile.isSplitCart(flat)).toBe(web.isSplitCart(flat));
-		expect(mobile.isSplitQuote(split)).toBe(web.isSplitQuote(split));
-		expect(mobile.isSplitQuote(flat)).toBe(web.isSplitQuote(flat));
+		// The guards sniff the wire shape (the groups key), so the flat side is
+		// the other union member seen through the same lens.
+		const splitCart: SplitCartView = {
+			id: null,
+			market: null,
+			groups: [],
+			grandSubtotal: 0,
+		};
+		const splitQuote: SplitQuoteView = {
+			market: { countryCode: "CM", currency: "XAF" },
+			groups: [],
+			unavailableGroups: [],
+			grandTotal: 0,
+			quoteHash: "h",
+		};
+		const flatCart = { lines: [] };
+		const flatQuote = { quoteHash: "h" };
+		expect(mobile.isSplitCart(splitCart)).toBe(web.isSplitCart(splitCart));
+		expect(
+			mobile.isSplitCart(
+				flatCart as unknown as Parameters<typeof mobile.isSplitCart>[0],
+			),
+		).toBe(
+			web.isSplitCart(
+				flatCart as unknown as Parameters<typeof web.isSplitCart>[0],
+			),
+		);
+		expect(mobile.isSplitQuote(splitQuote)).toBe(web.isSplitQuote(splitQuote));
+		expect(
+			mobile.isSplitQuote(
+				flatQuote as Parameters<typeof mobile.isSplitQuote>[0],
+			),
+		).toBe(
+			web.isSplitQuote(flatQuote as Parameters<typeof web.isSplitQuote>[0]),
+		);
 	});
 });
 
