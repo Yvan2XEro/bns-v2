@@ -1,4 +1,4 @@
-import type { Payload } from "payload";
+import type { Payload, PayloadRequest } from "payload";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
 import type {
 	DeliveryMethod,
@@ -70,7 +70,12 @@ import {
 } from "./cart";
 import { resolveCartOffer } from "./cartOffer";
 import { assertShopEligibleForProtectedPayment } from "./checkoutPayment";
-import { quoteSplit, type SplitQuoteView } from "./checkoutSplit";
+import {
+	placeSplit,
+	quoteSplit,
+	type SplitPlaceResponse,
+	type SplitQuoteView,
+} from "./checkoutSplit";
 import { marketOf, shopMarketCountry } from "./connectedAccounts";
 import {
 	type DeliveryOption,
@@ -850,6 +855,8 @@ export interface LinesQuote {
 	commission: number;
 	marketUpdatedAt: string;
 	vatRateBps: number;
+	/** What the caps were checked against, so a split placement can re-check it with the siblings counted. */
+	capInput: CapCheckInput;
 }
 
 /**
@@ -1129,6 +1136,7 @@ export async function quoteLines(
 		commission,
 		marketUpdatedAt: liveMarket.updatedAt,
 		vatRateBps: liveMarket.vatRateBps,
+		capInput,
 		response: {
 			summary: {
 				lines: items.map((item) => ({
@@ -1216,6 +1224,8 @@ export interface CheckoutPlaceInput extends CheckoutQuoteInput {
 	quoteHash?: unknown;
 	termsAccepted?: unknown;
 	idempotencyKey?: unknown;
+	/** Split placement only: the groups to place; absent means every available one. */
+	groupKeys?: unknown;
 }
 
 export interface PlaceResponse {
@@ -1305,7 +1315,7 @@ function responseFromOrder(order: Order): PlaceResponse {
  * this alone. The partial unique index (Task 6) is the actual guard against
  * two concurrent requests for the same key — this is only the optimisation
  * that keeps a replay from redoing the quote, the reservation and the rest. */
-async function findOrderByIdempotencyKey(
+export async function findOrderByIdempotencyKey(
 	payload: Payload,
 	buyerId: string,
 	idempotencyKey: string,
@@ -1324,6 +1334,323 @@ async function findOrderByIdempotencyKey(
 		overrideAccess: true,
 	});
 	return (docs[0] as Order | undefined) ?? null;
+}
+
+export interface OrderDraft {
+	user: ServiceUser;
+	source: "web" | "ios" | "android";
+	settings: OrderSettings;
+	orderNumber: string;
+	idempotencyKey: string;
+	/** Set only by a split placement: the sibling orders' shared key. */
+	checkoutGroup?: string;
+	paymentMethod: "cod" | "mobile_money";
+	fresh: QuoteResponse;
+	internals: QuoteInternals;
+	tier: BuyerTierKey;
+	refusals: number;
+	placedAtIso: string;
+	confirmBy: string;
+	acceptBy: string;
+}
+
+/**
+ * The order row and its items, in the transaction `req` belongs to. `onItem`
+ * runs after each item is written: the flat path reserves there, line by
+ * line; a split placement defers every reservation until all its orders exist
+ * so it can take them in one global order.
+ */
+export async function createOrderRows(
+	req: PayloadRequest,
+	draft: OrderDraft,
+	onItem?: (
+		order: Order,
+		line: QuoteSummaryItem,
+		variant: ProductVariant,
+	) => Promise<void>,
+): Promise<Order> {
+	const {
+		user,
+		source,
+		settings,
+		orderNumber,
+		idempotencyKey,
+		checkoutGroup,
+		paymentMethod,
+		fresh,
+		internals,
+		tier,
+		refusals,
+		placedAtIso,
+		confirmBy,
+		acceptBy,
+	} = draft;
+	const shopId = internals.shopId;
+	const address = internals.address;
+	const createdOrder = await req.payload.create({
+		collection: "orders",
+		req,
+		overrideAccess: true,
+		context: ORDER_SERVICE_CONTEXT,
+		data: {
+			orderNumber,
+			idempotencyKey,
+			...(checkoutGroup ? { checkoutGroup } : {}),
+			buyer: user.id,
+			shop: shopId,
+			market: internals.marketId,
+			status: "placed",
+			paymentMethod,
+			paymentStatus:
+				paymentMethod === "mobile_money" ? "unpaid" : "cod_pending",
+			confirmation: {
+				method:
+					fresh.confirmationRequired === "seller_call" ? "seller_call" : null,
+			},
+			delivery: {
+				method: fresh.summary.delivery.method,
+				optionId: fresh.summary.delivery.optionId,
+				zone: fresh.summary.delivery.zoneId,
+				pickupLocation: fresh.summary.delivery.pickupLocationId,
+				etaMinHours: fresh.summary.delivery.etaMinHours,
+				etaMaxHours: fresh.summary.delivery.etaMaxHours,
+				promisedBy: fresh.summary.delivery.promisedBy,
+				recipientName: address.recipientName,
+				phone: address.phone,
+				city: address.city,
+				district: address.district,
+				districtOther: address.districtOther,
+				landmark: address.landmark,
+				instructions: address.instructions,
+				gps: address.gps
+					? { ...address.gps, capturedAt: placedAtIso }
+					: undefined,
+				pickupPoint: pickupPointJson(internals.pickupPoint),
+				fee: fresh.summary.amounts.deliveryFee,
+				etaText: fresh.summary.delivery.etaText,
+			},
+			amounts: {
+				subtotal: fresh.summary.amounts.subtotal,
+				deliveryFee: fresh.summary.amounts.deliveryFee,
+				discount: 0,
+				buyerProtectionFee: fresh.summary.amounts.buyerProtectionFee,
+				total: fresh.summary.amounts.total,
+				currency: fresh.summary.amounts.currency,
+			},
+			risk: {
+				phoneTier: riskTierOf(tier),
+				refusalsAtPlacement: refusals,
+				capsApplied: null,
+			},
+			deadlines: { confirmBy, acceptBy },
+			timestamps: { placedAt: placedAtIso },
+			contract: {
+				termsVersion: fresh.preContract.termsVersion,
+				locale: fresh.preContract.locale,
+				acceptedAt: placedAtIso,
+				snapshot: contractSnapshotJson(fresh.preContract),
+				snapshotHash: snapshotHash(fresh.preContract),
+			},
+			source,
+		},
+	});
+
+	let lineNumber = 0;
+	for (const line of internals.items) {
+		lineNumber += 1;
+
+		const variant = await req.payload.findByID({
+			collection: "product-variants",
+			id: line.variantId,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+		const listing = line.listingId
+			? await req.payload
+					.findByID({
+						collection: "listings",
+						id: line.listingId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null)
+			: null;
+		const productId = relationId(variant.product);
+		const product = productId
+			? await req.payload
+					.findByID({
+						collection: "products",
+						id: productId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null)
+			: null;
+
+		const commissionRateBps = settings.defaultCommissionRateBps;
+		const commissionAmount = commissionForLine(
+			line.lineSubtotal,
+			commissionRateBps,
+		);
+
+		await req.payload.create({
+			collection: "order-items",
+			req,
+			overrideAccess: true,
+			context: ORDER_SERVICE_CONTEXT,
+			// `draft: false` plus the explicit `fulfillmentStatus` below are
+			// required to pick the right overload of Payload's generated
+			// `create` types for this collection: without them TS resolves
+			// to the draft-discriminated union and asks for a `draft` flag
+			// this collection has no versions to support.
+			draft: false,
+			data: {
+				order: createdOrder.id,
+				lineNumber,
+				listing: line.listingId || undefined,
+				product: productId ?? "",
+				variant: line.variantId,
+				fulfillingShop: line.resale?.supplierShop ?? shopId,
+				...(line.resale
+					? {
+							sourcing: "resale" as const,
+							resaleLink: line.resale.resaleLink,
+							supplierUnitPrice: line.resale.supplierUnitPrice,
+						}
+					: {}),
+				fulfillmentStatus: "unfulfilled",
+				snapshot: {
+					title: line.title,
+					variantLabel: line.variantLabel,
+					sku: variant.sku ?? null,
+					imageUrl: line.imageUrl,
+					categoryId: listing ? relationId(listing.category) : null,
+					condition: line.condition,
+					returnPolicy: product?.returnPolicy ?? null,
+				},
+				unitPrice: line.unitPrice,
+				quantity: line.quantity,
+				lineSubtotal: line.lineSubtotal,
+				commissionRateBps,
+				commissionAmount,
+				stockTracked: variant.trackInventory === true,
+			},
+		});
+
+		await onItem?.(createdOrder, line, variant);
+	}
+	return createdOrder;
+}
+
+/** The placed event, the confirmation path the quote chose, and the receipt SMS; the order is the caller's, already written. */
+export async function finishPlacedOrder(
+	req: PayloadRequest,
+	createdOrder: Order,
+	draft: Pick<
+		OrderDraft,
+		"user" | "source" | "fresh" | "internals" | "placedAtIso"
+	>,
+): Promise<Order> {
+	const { user, source, fresh, internals, placedAtIso } = draft;
+	const address = internals.address;
+	const placedEvent = await appendOrderEvent(req, createdOrder, {
+		type: "order.placed",
+		actorType: "buyer",
+		actor: user.id,
+		visibility: "both",
+		source,
+	});
+	queueOrderEvent(req, createdOrder, placedEvent);
+
+	let finalOrder = createdOrder;
+	if (fresh.confirmationRequired === "none") {
+		const transitioned = await applyTransition(
+			req,
+			createdOrder,
+			{
+				status: "confirmed",
+				set: {
+					confirmation: {
+						...createdOrder.confirmation,
+						method: "verified_phone",
+						confirmedAt: placedAtIso,
+						confirmedBy: user.id,
+					},
+				},
+			},
+			{
+				type: "order.confirmed",
+				actorType: "system",
+				visibility: "both",
+			},
+		);
+		finalOrder = transitioned.order;
+	} else if (fresh.confirmationRequired === "sms_code") {
+		await issueConfirmationCode(req, createdOrder, { resend: false });
+		// `issueConfirmationCode` writes through `payload.update`, not
+		// `applyTransition`, so it never hands back the updated row —
+		// re-read it so the response reflects the `sms_code` method it
+		// just set rather than the pre-code snapshot.
+		finalOrder = await req.payload.findByID({
+			collection: "orders",
+			id: createdOrder.id,
+			depth: 0,
+			overrideAccess: true,
+			req,
+		});
+	}
+
+	const locale = fresh.preContract.locale;
+	const shopName = fresh.preContract.seller.name;
+	onCommit(commitContextOf(req), () =>
+		sendOrderSms(req.payload, {
+			to: address.phone,
+			text: receiptSms(
+				{
+					orderId: String(createdOrder.id),
+					orderNumber: createdOrder.orderNumber,
+					shopName,
+					total: fresh.summary.amounts.total,
+				},
+				locale,
+			),
+		}),
+	);
+	return finalOrder;
+}
+
+/** Spends one reservation; the flat path reads a lost race as a line out of stock. */
+async function reserveLine(
+	req: PayloadRequest,
+	order: Order,
+	line: QuoteSummaryItem,
+	variant: ProductVariant,
+): Promise<Awaited<ReturnType<typeof reserve>>> {
+	try {
+		return await reserve(req, {
+			variant,
+			quantity: line.quantity,
+			orderId: String(order.id),
+			orderRef: order.orderNumber,
+		});
+	} catch (error) {
+		if (
+			error instanceof ServiceError &&
+			error.code === ERROR_CODES.stockInsufficient
+		) {
+			throw new CheckoutError(ERROR_CODES.cartOutOfStock, 409, undefined, {
+				line: {
+					lineId: line.lineId,
+					listingId: line.listingId,
+					variantId: line.variantId,
+				},
+			});
+		}
+		throw error;
+	}
 }
 
 /**
@@ -1415,7 +1742,6 @@ export async function placeOrder(
 	);
 
 	const orderNumber = await nextNumber(payload, "BNS", now, internals.market);
-	const shopId = internals.shopId;
 	const placedAtIso = now.toISOString();
 	const confirmBy = new Date(
 		now.getTime() + settings.confirmHours * 60 * 60 * 1000,
@@ -1424,6 +1750,22 @@ export async function placeOrder(
 		now.getTime() + settings.acceptHours * 60 * 60 * 1000,
 	).toISOString();
 
+	const draft: OrderDraft = {
+		user,
+		source,
+		settings,
+		orderNumber,
+		idempotencyKey,
+		paymentMethod,
+		fresh,
+		internals,
+		tier,
+		refusals,
+		placedAtIso,
+		confirmBy,
+		acceptBy,
+	};
+
 	try {
 		return await withTransaction(
 			payload,
@@ -1431,196 +1773,19 @@ export async function placeOrder(
 				const cart = await loadActiveCart(req.payload, user.id);
 				if (!cart) throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
 
-				const createdOrder = await req.payload.create({
-					collection: "orders",
-					req,
-					overrideAccess: true,
-					context: ORDER_SERVICE_CONTEXT,
-					data: {
-						orderNumber,
-						idempotencyKey,
-						buyer: user.id,
-						shop: shopId,
-						market: internals.marketId,
-						status: "placed",
-						paymentMethod,
-						paymentStatus:
-							paymentMethod === "mobile_money" ? "unpaid" : "cod_pending",
-						confirmation: {
-							method:
-								fresh.confirmationRequired === "seller_call"
-									? "seller_call"
-									: null,
-						},
-						delivery: {
-							method: fresh.summary.delivery.method,
-							optionId: fresh.summary.delivery.optionId,
-							zone: fresh.summary.delivery.zoneId,
-							pickupLocation: fresh.summary.delivery.pickupLocationId,
-							etaMinHours: fresh.summary.delivery.etaMinHours,
-							etaMaxHours: fresh.summary.delivery.etaMaxHours,
-							promisedBy: fresh.summary.delivery.promisedBy,
-							recipientName: address.recipientName,
-							phone: address.phone,
-							city: address.city,
-							district: address.district,
-							districtOther: address.districtOther,
-							landmark: address.landmark,
-							instructions: address.instructions,
-							gps: address.gps
-								? { ...address.gps, capturedAt: placedAtIso }
-								: undefined,
-							pickupPoint: pickupPointJson(internals.pickupPoint),
-							fee: fresh.summary.amounts.deliveryFee,
-							etaText: fresh.summary.delivery.etaText,
-						},
-						amounts: {
-							subtotal: fresh.summary.amounts.subtotal,
-							deliveryFee: fresh.summary.amounts.deliveryFee,
-							discount: 0,
-							buyerProtectionFee: fresh.summary.amounts.buyerProtectionFee,
-							total: fresh.summary.amounts.total,
-							currency: fresh.summary.amounts.currency,
-						},
-						risk: {
-							phoneTier: riskTierOf(tier),
-							refusalsAtPlacement: refusals,
-							capsApplied: null,
-						},
-						deadlines: { confirmBy, acceptBy },
-						timestamps: { placedAt: placedAtIso },
-						contract: {
-							termsVersion: fresh.preContract.termsVersion,
-							locale: fresh.preContract.locale,
-							acceptedAt: placedAtIso,
-							snapshot: contractSnapshotJson(fresh.preContract),
-							snapshotHash: snapshotHash(fresh.preContract),
-						},
-						source,
-					},
-				});
-
 				const zeroedListingIds = new Set<string>();
-				let lineNumber = 0;
-				for (const line of internals.items) {
-					lineNumber += 1;
-
-					const variant = await req.payload.findByID({
-						collection: "product-variants",
-						id: line.variantId,
-						depth: 0,
-						overrideAccess: true,
-						req,
-					});
-					const listing = line.listingId
-						? await req.payload
-								.findByID({
-									collection: "listings",
-									id: line.listingId,
-									depth: 0,
-									overrideAccess: true,
-									req,
-								})
-								.catch(() => null)
-						: null;
-					const productId = relationId(variant.product);
-					const product = productId
-						? await req.payload
-								.findByID({
-									collection: "products",
-									id: productId,
-									depth: 0,
-									overrideAccess: true,
-									req,
-								})
-								.catch(() => null)
-						: null;
-
-					const commissionRateBps = settings.defaultCommissionRateBps;
-					const commissionAmount = commissionForLine(
-						line.lineSubtotal,
-						commissionRateBps,
-					);
-
-					await req.payload.create({
-						collection: "order-items",
-						req,
-						overrideAccess: true,
-						context: ORDER_SERVICE_CONTEXT,
-						// `draft: false` plus the explicit `fulfillmentStatus` below are
-						// required to pick the right overload of Payload's generated
-						// `create` types for this collection: without them TS resolves
-						// to the draft-discriminated union and asks for a `draft` flag
-						// this collection has no versions to support.
-						draft: false,
-						data: {
-							order: createdOrder.id,
-							lineNumber,
-							listing: line.listingId || undefined,
-							product: productId ?? "",
-							variant: line.variantId,
-							fulfillingShop: line.resale?.supplierShop ?? shopId,
-							...(line.resale
-								? {
-										sourcing: "resale" as const,
-										resaleLink: line.resale.resaleLink,
-										supplierUnitPrice: line.resale.supplierUnitPrice,
-									}
-								: {}),
-							fulfillmentStatus: "unfulfilled",
-							snapshot: {
-								title: line.title,
-								variantLabel: line.variantLabel,
-								sku: variant.sku ?? null,
-								imageUrl: line.imageUrl,
-								categoryId: listing ? relationId(listing.category) : null,
-								condition: line.condition,
-								returnPolicy: product?.returnPolicy ?? null,
-							},
-							unitPrice: line.unitPrice,
-							quantity: line.quantity,
-							lineSubtotal: line.lineSubtotal,
-							commissionRateBps,
-							commissionAmount,
-							stockTracked: variant.trackInventory === true,
-						},
-					});
-
-					let reservation: Awaited<ReturnType<typeof reserve>>;
-					try {
-						reservation = await reserve(req, {
-							variant,
-							quantity: line.quantity,
-							orderId: String(createdOrder.id),
-							orderRef: createdOrder.orderNumber,
-						});
-					} catch (error) {
-						if (
-							error instanceof ServiceError &&
-							error.code === ERROR_CODES.stockInsufficient
-						) {
-							throw new CheckoutError(
-								ERROR_CODES.cartOutOfStock,
-								409,
-								undefined,
-								{
-									line: {
-										lineId: line.lineId,
-										listingId: line.listingId,
-										variantId: line.variantId,
-									},
-								},
-							);
+				const createdOrder = await createOrderRows(
+					req,
+					draft,
+					async (order, line, variant) => {
+						const reservation = await reserveLine(req, order, line, variant);
+						if (reservation && line.listingId) {
+							if (availableOf(reservation.variant) === 0) {
+								zeroedListingIds.add(line.listingId);
+							}
 						}
-						throw error;
-					}
-
-					if (reservation && line.listingId) {
-						if (availableOf(reservation.variant) === 0) {
-							zeroedListingIds.add(line.listingId);
-						}
-					}
-				}
+					},
+				);
 
 				await recordPlacement(req, {
 					phone: address.phone,
@@ -1630,69 +1795,7 @@ export async function placeOrder(
 					String(createdOrder.id),
 				]);
 
-				const placedEvent = await appendOrderEvent(req, createdOrder, {
-					type: "order.placed",
-					actorType: "buyer",
-					actor: user.id,
-					visibility: "both",
-					source,
-				});
-				queueOrderEvent(req, createdOrder, placedEvent);
-
-				let finalOrder = createdOrder;
-				if (fresh.confirmationRequired === "none") {
-					const transitioned = await applyTransition(
-						req,
-						createdOrder,
-						{
-							status: "confirmed",
-							set: {
-								confirmation: {
-									...createdOrder.confirmation,
-									method: "verified_phone",
-									confirmedAt: placedAtIso,
-									confirmedBy: user.id,
-								},
-							},
-						},
-						{
-							type: "order.confirmed",
-							actorType: "system",
-							visibility: "both",
-						},
-					);
-					finalOrder = transitioned.order;
-				} else if (fresh.confirmationRequired === "sms_code") {
-					await issueConfirmationCode(req, createdOrder, { resend: false });
-					// `issueConfirmationCode` writes through `payload.update`, not
-					// `applyTransition`, so it never hands back the updated row —
-					// re-read it so the response reflects the `sms_code` method it
-					// just set rather than the pre-code snapshot.
-					finalOrder = await req.payload.findByID({
-						collection: "orders",
-						id: createdOrder.id,
-						depth: 0,
-						overrideAccess: true,
-						req,
-					});
-				}
-
-				const locale = fresh.preContract.locale;
-				const shopName = fresh.preContract.seller.name;
-				onCommit(commitContextOf(req), () =>
-					sendOrderSms(req.payload, {
-						to: address.phone,
-						text: receiptSms(
-							{
-								orderId: String(createdOrder.id),
-								orderNumber,
-								shopName,
-								total: fresh.summary.amounts.total,
-							},
-							locale,
-						),
-					}),
-				);
+				const finalOrder = await finishPlacedOrder(req, createdOrder, draft);
 
 				for (const listingId of zeroedListingIds) {
 					await queueSearchEvent(req, "listing.updated", listingId);
@@ -1713,4 +1816,17 @@ export async function placeOrder(
 		}
 		throw error;
 	}
+}
+
+/** What `POST /api/checkout/place` answers: one order, or the split placement behind `multiShopCartEnabled`. */
+export async function placeCheckoutResponse(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutPlaceInput,
+	options: Parameters<typeof placeOrder>[3] = {},
+): Promise<PlaceResponse | SplitPlaceResponse> {
+	const settings = await getOrderSettings(payload);
+	return settings.multiShopCartEnabled
+		? placeSplit(payload, user, input, options)
+		: placeOrder(payload, user, input, options);
 }
