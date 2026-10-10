@@ -15,6 +15,13 @@ export async function up({ payload }: MigrateUpArgs): Promise<void> {
 		{ listing: 1, date: 1 },
 		{ unique: true, name: INDEX_NAME },
 	);
+	// Mongoose's schema sync used to create a plain purgeAt_1 on boot; Mongo
+	// refuses an equivalent key with different options, so drop it first.
+	try {
+		await raw.dropIndex("purgeAt_1");
+	} catch {
+		// absent (fresh database) or a fake adapter without dropIndex
+	}
 	await raw.createIndex(
 		{ purgeAt: 1 },
 		{ expireAfterSeconds: 0, name: "listing_view_flushes_purge_at" },
