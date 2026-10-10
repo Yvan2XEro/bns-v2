@@ -10,10 +10,10 @@ import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import {
 	commissionForLine,
 	invoiceTotals,
+	marketWeekBounds,
 	netting,
 	sumCommission,
 	vatOf,
-	weekBoundsDouala,
 } from "../lib/orderMath";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { getProvider } from "../lib/payments";
@@ -398,7 +398,7 @@ export async function issueInvoicesForWeek(
 	const markets = await getMarkets(payload);
 	const latestEnd =
 		[...markets.map((m) => m.timezone), LEGACY_TIMEZONE]
-			.map((zone) => weekBoundsDouala(now, zone).periodEnd)
+			.map((zone) => marketWeekBounds(now, zone).periodEnd)
 			.sort()
 			.at(-1) ?? "";
 
@@ -442,7 +442,7 @@ export async function issueInvoicesForWeek(
 			overrideAccess: true,
 		});
 		const timezone = await timezoneOfShop(payload, shop);
-		const { periodStart, periodEnd } = weekBoundsDouala(now, timezone);
+		const { periodStart, periodEnd } = marketWeekBounds(now, timezone);
 		const lines = allLines.filter(
 			(line) => (line.accruedAt ?? "") <= periodEnd,
 		);
@@ -1159,7 +1159,7 @@ export async function resolveInvoiceLineViews(
 /**
  * The shop billing screen's one read: every invoice (newest first), the
  * still-accruing current week, and whether the shop is restricted. Current
- * week bounds are derived from `weekBoundsDouala`'s *last complete* week
+ * week bounds are derived from `marketWeekBounds`'s *last complete* week
  * rather than re-deriving the boundary a second time.
  */
 export async function getBillingView(
@@ -1206,7 +1206,7 @@ export async function getBillingView(
 		overrideAccess: true,
 	});
 	const timezone = await timezoneOfShop(payload, shop);
-	const lastWeek = weekBoundsDouala(now, timezone);
+	const lastWeek = marketWeekBounds(now, timezone);
 	const currentStart = new Date(
 		new Date(lastWeek.periodEnd).getTime() + 1,
 	).toISOString();
@@ -1281,6 +1281,17 @@ export async function renderCreditNoteDocument(
 				overrideAccess: true,
 			})
 		: null;
+	const shopId = relationId(note.shop);
+	const shop = shopId
+		? await payload
+				.findByID({
+					collection: "shops",
+					id: shopId,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null)
+		: null;
 	const views = await resolveInvoiceLineViews(payload, note);
 	const orderNumbers = views.map((view) => view.orderNumber);
 	const sellerName =
@@ -1303,6 +1314,7 @@ export async function renderCreditNoteDocument(
 		formatSnapshot: note.formatSnapshot,
 		documentsLedgerReversal: note.settlement === "application_fee",
 		issuer: { legalName: PLATFORM_ISSUER.legalName },
+		timezone: shop ? await timezoneOfShop(payload, shop) : LEGACY_TIMEZONE,
 	};
 	return renderCreditNotePdf(document);
 }

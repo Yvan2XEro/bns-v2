@@ -3,6 +3,7 @@ import { requireOrderAudience } from "../access/orderAccess";
 import { isModerator } from "../access/roles";
 import { can, type ShopRole } from "../access/shopRoles";
 import type { DisputeListRow, OpenDisputeInput } from "../contracts/disputes";
+import { businessDaysAfter } from "../lib/caseMath";
 import { getDisputeSettings, isDisputesOpen } from "../lib/caseSettings";
 import {
 	type DisputeReason,
@@ -12,6 +13,8 @@ import {
 	reasonWindow,
 } from "../lib/disputeRules";
 import { ERROR_CODES } from "../lib/errors";
+import { marketOfOrder } from "../lib/markets";
+import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
@@ -869,4 +872,29 @@ export async function openRefundContestDispute(
 		now,
 		{ bypassWindow: true, initialStatus: "awaiting_seller" },
 	);
+}
+
+/** The review SLA runs on the disputed order's market calendar. */
+export async function reviewDueAt(
+	req: PayloadRequest,
+	dispute: Pick<Dispute, "order">,
+	now: Date,
+	businessDays: number,
+): Promise<string> {
+	const orderId = relationId(dispute.order);
+	const order = orderId
+		? await req.payload.findByID({
+				collection: "orders",
+				id: orderId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+		: null;
+	const market = order ? await marketOfOrder(req.payload, order) : null;
+	return businessDaysAfter(
+		now,
+		businessDays,
+		market?.timezone ?? LEGACY_TIMEZONE,
+	).toISOString();
 }

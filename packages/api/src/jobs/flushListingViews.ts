@@ -2,7 +2,7 @@ import type { TaskConfig } from "payload";
 import { LEGACY_TIMEZONE, localParts } from "../lib/marketTime";
 import { flushListingViewHash } from "../services/listingViewFlush";
 
-export function previousDoualaBucket(
+export function previousViewBucket(
 	now: Date,
 	timezone: string = LEGACY_TIMEZONE,
 ): string {
@@ -19,7 +19,7 @@ export const flushListingViewsTask: TaskConfig<"flushListingViews"> = {
 	handler: async ({ req }) => {
 		const result = await flushListingViewHash(
 			req.payload,
-			previousDoualaBucket(new Date()),
+			previousViewBucket(new Date()),
 		);
 		return { output: result };
 	},

@@ -3,10 +3,10 @@ import { LEGACY_TIMEZONE, localDateString } from "../lib/marketTime";
 import { flushListingViewHash } from "../services/listingViewFlush";
 import {
 	aggregateShopDailyStatsForDay,
-	doualaDayWindow,
+	shopDayWindow,
 } from "../services/shopDailyAggregation";
 
-export function lastThreeDoualaDates(
+export function lastThreeShopDates(
 	now: Date,
 	timezone: string = LEGACY_TIMEZONE,
 ): string[] {
@@ -28,11 +28,11 @@ export const aggregateShopDailyStatsTask: TaskConfig<"aggregateShopDailyStats"> 
 		handler: async ({ req }) => {
 			const startedAt = Date.now();
 			const now = new Date();
-			const dates = lastThreeDoualaDates(now);
+			const dates = lastThreeShopDates(now);
 			const currentDate = dates[0];
 			if (!currentDate)
 				throw new Error("No Douala date available for shop stats.");
-			const { start } = doualaDayWindow(currentDate);
+			const { start } = shopDayWindow(currentDate);
 			const viewFlush = await flushListingViewHash(
 				req.payload,
 				currentDate.replaceAll("-", ""),

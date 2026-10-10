@@ -326,6 +326,14 @@ export async function timezoneOfShop(
 	);
 }
 
+/** The clock an order's documents read dates on: its market's, else the legacy zone. */
+export async function timezoneOfOrder(
+	payload: Payload,
+	order: Pick<Order, "market" | "amounts">,
+): Promise<string> {
+	return (await marketOfOrder(payload, order))?.timezone ?? LEGACY_TIMEZONE;
+}
+
 /**
  * How a currency rounds, from the market that sells in it. A currency with no
  * market row keeps the half-up every launch market so far used.

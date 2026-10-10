@@ -106,6 +106,7 @@ async function courierQuote(
 			weightGrams: 0,
 			declaredValue: order.amounts?.total ?? 0,
 		},
+		currency: currencyOf(order),
 		...(order.paymentMethod === "cod" ? { cod: codOf(order) } : {}),
 		readyAt: new Date(),
 	});
@@ -139,6 +140,7 @@ async function scheduleProviderCreate(
 			weightGrams: 0,
 			declaredValue: order.amounts?.total ?? 0,
 		},
+		currency: currencyOf(order),
 		...(order.paymentMethod === "cod" ? { cod: codOf(order) } : {}),
 		readyAt: new Date(),
 		reference: shipment.shipmentNumber,
@@ -181,10 +183,14 @@ async function queueProviderCreate(
 	if (!onCommit(commitContextOf(req), run)) await run();
 }
 
-function codOf(order: Order): { amount: number; currency: string } {
+function currencyOf(order: Order): string {
 	const currency = order.amounts?.currency;
 	if (!currency) throw new Error(`order ${order.id} carries no currency`);
-	return { amount: order.amounts?.total ?? 0, currency };
+	return currency;
+}
+
+function codOf(order: Order): { amount: number; currency: string } {
+	return { amount: order.amounts?.total ?? 0, currency: currencyOf(order) };
 }
 
 export async function switchShipmentCarrier(

@@ -1,4 +1,5 @@
 // @vitest-environment node
+
 import { describe, expect, it } from "vitest";
 import {
 	businessDaysAfter,
@@ -9,6 +10,7 @@ import {
 	deductionAllowed,
 	splitAllocation,
 } from "../../src/lib/caseMath";
+import { LEGACY_TIMEZONE } from "../../src/lib/marketTime";
 import { commissionForLine } from "../../src/lib/orderMath";
 import { splitAmounts } from "../../src/lib/paymentMath";
 
@@ -417,7 +419,7 @@ describe("commissionCredit", () => {
 describe("businessDaysAfter", () => {
 	it("uses the Douala weekday when UTC is still Sunday", () => {
 		const start = new Date("2026-10-11T23:30:00.000Z"); // Monday 00:30 Douala
-		expect(businessDaysAfter(start, 5).toISOString()).toBe(
+		expect(businessDaysAfter(start, 5, LEGACY_TIMEZONE).toISOString()).toBe(
 			"2026-10-18T23:30:00.000Z",
 		);
 		expect(start.toISOString()).toBe("2026-10-11T23:30:00.000Z");
@@ -425,20 +427,32 @@ describe("businessDaysAfter", () => {
 
 	it("skips a weekend start and preserves the instant for zero business days", () => {
 		const start = new Date("2026-10-10T14:00:00.000Z");
-		expect(businessDaysAfter(start, 1).toISOString()).toBe(
+		expect(businessDaysAfter(start, 1, LEGACY_TIMEZONE).toISOString()).toBe(
 			"2026-10-12T14:00:00.000Z",
 		);
-		expect(businessDaysAfter(start, 0).toISOString()).toBe(start.toISOString());
+		expect(businessDaysAfter(start, 0, LEGACY_TIMEZONE).toISOString()).toBe(
+			start.toISOString(),
+		);
 	});
 	it("Thursday + 5 business days crosses one weekend to the following Thursday", () => {
 		const start = new Date("2026-10-08T14:00:00.000Z"); // Thu 15:00 Africa/Douala
-		const result = businessDaysAfter(start, 5);
+		const result = businessDaysAfter(start, 5, LEGACY_TIMEZONE);
 		expect(result.toISOString()).toBe("2026-10-15T14:00:00.000Z"); // Thu 15:00
+	});
+
+	it("counts weekdays on the given market's calendar, not Douala's", () => {
+		const start = new Date("2026-10-09T20:00:00.000Z"); // Fri 21:00 Douala, Sat 09:00 Auckland
+		expect(businessDaysAfter(start, 5, "Pacific/Auckland").toISOString()).toBe(
+			"2026-10-15T20:00:00.000Z",
+		);
+		expect(businessDaysAfter(start, 5, LEGACY_TIMEZONE).toISOString()).toBe(
+			"2026-10-16T20:00:00.000Z",
+		);
 	});
 
 	it("a Friday-evening start crosses into the second week", () => {
 		const start = new Date("2026-10-09T19:00:00.000Z"); // Fri 20:00 Africa/Douala
-		const result = businessDaysAfter(start, 5);
+		const result = businessDaysAfter(start, 5, LEGACY_TIMEZONE);
 		expect(result.toISOString()).toBe("2026-10-16T19:00:00.000Z"); // Fri 20:00, one week later
 	});
 });

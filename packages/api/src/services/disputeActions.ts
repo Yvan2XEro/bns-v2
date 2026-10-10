@@ -1,6 +1,5 @@
 import type { Payload, PayloadRequest } from "payload";
 import { requireOrderAudience } from "../access/orderAccess";
-import { businessDaysAfter } from "../lib/caseMath";
 import { getDisputeSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
@@ -13,7 +12,7 @@ import {
 import type { Dispute } from "../payload-types";
 import { notifyDisputeEscalated } from "./caseNotifications";
 import { applyOutcome } from "./disputeOutcome";
-import { moveDispute } from "./disputes";
+import { moveDispute, reviewDueAt } from "./disputes";
 import { applyReservedTransition } from "./orders/transitions";
 import { findActiveHold, releaseHold } from "./payoutHolds";
 import type { ServiceUser } from "./shops";
@@ -238,10 +237,12 @@ export async function respondToDispute(
 				data: {
 					deadlines: {
 						...moved.deadlines,
-						reviewDueAt: businessDaysAfter(
+						reviewDueAt: await reviewDueAt(
+							req,
+							dispute,
 							now,
 							settings.reviewBusinessDays,
-						).toISOString(),
+						),
 					},
 				},
 			});
@@ -293,10 +294,12 @@ export async function answerProposal(
 					now,
 				);
 			}
-			const reviewDeadline = businessDaysAfter(
+			const reviewDeadline = await reviewDueAt(
+				req,
+				dispute,
 				now,
 				(await getDisputeSettings(req.payload)).reviewBusinessDays,
-			).toISOString();
+			);
 			const moved = await moveDispute(req, dispute, "under_review", {
 				type: partyType(role),
 				id: actor.id,
@@ -363,10 +366,12 @@ export async function escalateDispute(
 				data: {
 					deadlines: {
 						...moved.deadlines,
-						reviewDueAt: businessDaysAfter(
+						reviewDueAt: await reviewDueAt(
+							req,
+							dispute,
 							now,
 							settings.reviewBusinessDays,
-						).toISOString(),
+						),
 					},
 				},
 			});

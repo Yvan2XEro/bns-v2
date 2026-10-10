@@ -1,8 +1,4 @@
-import {
-	LEGACY_TIMEZONE,
-	lastCompleteWeekBounds,
-	localMonthBounds,
-} from "./marketTime";
+import { lastCompleteWeekBounds, localMonthBounds } from "./marketTime";
 
 /**
  * Money is integer XAF everywhere. Rounding is half **up**, per line, because
@@ -76,17 +72,17 @@ export function netting(input: {
 }
 
 /** The last complete Monday-to-Sunday week on the market's calendar, as ISO instants. */
-export function weekBoundsDouala(
+export function marketWeekBounds(
 	now: Date,
-	timezone: string = LEGACY_TIMEZONE,
+	timezone: string,
 ): { periodStart: string; periodEnd: string } {
 	return lastCompleteWeekBounds(now, timezone);
 }
 
 /** The calendar month that holds `now`: `start` inclusive, `end` exclusive. */
-export function monthBoundsDouala(
+export function marketMonthBounds(
 	now: Date,
-	timezone: string = LEGACY_TIMEZONE,
+	timezone: string,
 ): { start: string; end: string } {
 	return localMonthBounds(now, timezone);
 }

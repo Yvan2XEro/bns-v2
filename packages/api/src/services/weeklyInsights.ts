@@ -2,7 +2,7 @@ import type { Payload } from "payload";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { triggerNotificationEvent } from "../hooks/notificationEvents";
 import { timezoneOfShop } from "../lib/markets";
-import { weekBoundsDouala } from "../lib/orderMath";
+import { marketWeekBounds } from "../lib/orderMath";
 import { recipientsForShop } from "./orders/notifications";
 import { getShopInsights } from "./shopInsights";
 
@@ -53,7 +53,7 @@ export async function sendWeeklyInsights(
 		});
 		for (const shop of batch.docs) {
 			const timezone = await timezoneOfShop(payload, shop);
-			const stamp = weekBoundsDouala(now, timezone).periodStart;
+			const stamp = marketWeekBounds(now, timezone).periodStart;
 			if (shop.weeklyInsightsSentFor === stamp) continue;
 			const shopId = String(shop.id);
 			const members = await recipientsForShop(payload, shopId, "costs.view");

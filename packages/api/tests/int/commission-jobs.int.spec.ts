@@ -40,7 +40,7 @@ const DAY_MS = 86_400_000;
  * A Monday, 06:00 Africa/Douala — the hour `0 5 * * 1` fires at on a UTC
  * host. The week that has just closed is Monday 21 to Sunday 27 September
  * local time, and these two strings are written out rather than recomputed
- * from `weekBoundsDouala`: a test that derives its expectation from the same
+ * from `marketWeekBounds`: a test that derives its expectation from the same
  * function under test cannot see that function move.
  */
 const MONDAY_RUN = new Date("2026-09-28T05:00:00.000Z");

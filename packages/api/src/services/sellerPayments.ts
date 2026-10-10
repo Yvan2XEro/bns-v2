@@ -2,7 +2,7 @@ import type { Payload, PayloadRequest } from "payload";
 import type { LedgerCategory } from "../collections/LedgerAccounts";
 import { ERROR_CODES } from "../lib/errors";
 import { timezoneOfShop } from "../lib/markets";
-import { monthBoundsDouala } from "../lib/orderMath";
+import { marketMonthBounds } from "../lib/orderMath";
 import { getPaymentSettings } from "../lib/paymentSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -242,7 +242,7 @@ export async function sellerPaymentsView(
 			overrideAccess: true,
 			req,
 		});
-		const month = monthBoundsDouala(now, await timezoneOfShop(payload, shop));
+		const month = marketMonthBounds(now, await timezoneOfShop(payload, shop));
 		const paidThisMonth = payouts
 			.filter((p) => p.status === "complete")
 			.filter((p) => {

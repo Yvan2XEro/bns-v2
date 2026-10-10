@@ -116,6 +116,9 @@ export async function nextNumber(
 /**
  * Yearly invoice series, NO gaps — a tax authority reads these. It runs
  * INSIDE the caller's transaction, so an aborted invoice releases its number.
+ * The year boundary is deliberately one fixed zone: `BNS-{S}-{year}` is the
+ * Cameroonian legal entity's gapless fiscal series, so there is one year
+ * boundary per legal entity until a second entity exists.
  */
 export async function nextInvoiceNumber(
 	req: PayloadRequest,

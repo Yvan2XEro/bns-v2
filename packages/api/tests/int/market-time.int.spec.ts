@@ -7,7 +7,7 @@ import {
 	localMonthBounds,
 	localMonthOf,
 } from "../../src/lib/marketTime";
-import { monthBoundsDouala, weekBoundsDouala } from "../../src/lib/orderMath";
+import { marketMonthBounds, marketWeekBounds } from "../../src/lib/orderMath";
 import { monthKeyFor, nextNumber } from "../../src/services/sequences";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -95,11 +95,15 @@ describe("local time as a parameter", () => {
 	});
 
 	it("keeps the Douala week and month bounds the fixed-offset code produced", () => {
-		expect(weekBoundsDouala(new Date("2026-10-12T05:00:00Z"))).toEqual({
+		expect(
+			marketWeekBounds(new Date("2026-10-12T05:00:00Z"), "Africa/Douala"),
+		).toEqual({
 			periodStart: "2026-10-04T23:00:00.000Z",
 			periodEnd: "2026-10-11T22:59:59.999Z",
 		});
-		expect(monthBoundsDouala(new Date("2026-09-30T23:30:00Z"))).toEqual({
+		expect(
+			marketMonthBounds(new Date("2026-09-30T23:30:00Z"), "Africa/Douala"),
+		).toEqual({
 			start: "2026-09-30T23:00:00.000Z",
 			end: "2026-10-31T23:00:00.000Z",
 		});

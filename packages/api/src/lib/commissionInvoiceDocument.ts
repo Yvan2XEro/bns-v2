@@ -16,7 +16,7 @@ export interface DocumentMoney {
 /**
  * A document renders through the snapshot it was issued with. A document
  * from before snapshots is XAF and keeps `formatXaf`; any other currency
- * without a row for the language reads as "CODE 1 410", never a silent FCFA.
+ * without a row for the language reads as "CODE 1 410", never a silent local symbol.
  */
 function moneyFormatter(
 	{ currency, formatSnapshot }: DocumentMoney,
@@ -204,6 +204,8 @@ export interface BuyerFeeDocument extends DocumentMoney {
 	amountTtc: number;
 	vatRateBps: number;
 	issuer: { legalName: string; supportEmail: string };
+	/** The order's market zone: the day the dates read on. */
+	timezone: string;
 }
 
 /** French first: Law 2011/012 art. 6 wants both, these are PDFs, so accented. */
@@ -246,12 +248,12 @@ export const BUYER_FEE_DOCUMENT_COPY = {
 	},
 } as const;
 
-function longDate(iso: string, lang: "fr" | "en"): string {
+function longDate(iso: string, lang: "fr" | "en", timezone: string): string {
 	const date = new Date(iso);
 	if (Number.isNaN(date.getTime())) return iso;
 	return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
 		dateStyle: "long",
-		timeZone: "Africa/Douala",
+		timeZone: timezone,
 	}).format(date);
 }
 
@@ -275,7 +277,9 @@ function feeSection(doc: BuyerFeeDocument, lang: "fr" | "en"): PdfLine[] {
 			gap: 12,
 		},
 		{ text: `${t.number}${colon} ${doc.number}` },
-		{ text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang)}` },
+		{
+			text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang, doc.timezone)}`,
+		},
 	];
 	if (credit && doc.creditsNumber) {
 		lines.push({ text: `${t.credits}${colon} ${doc.creditsNumber}` });
@@ -298,7 +302,10 @@ function feeSection(doc: BuyerFeeDocument, lang: "fr" | "en"): PdfLine[] {
 	if (credit) {
 		lines.push({ text: t.refunded, gap: 6 });
 	} else if (doc.paidAt) {
-		lines.push({ text: `${t.paidOn} ${longDate(doc.paidAt, lang)}`, gap: 6 });
+		lines.push({
+			text: `${t.paidOn} ${longDate(doc.paidAt, lang, doc.timezone)}`,
+			gap: 6,
+		});
 	}
 	return lines;
 }
@@ -327,6 +334,8 @@ export interface CreditNoteDocument extends DocumentMoney {
 	/** The note documents a reversal P5's ledger already made. */
 	documentsLedgerReversal: boolean;
 	issuer: { legalName: string };
+	/** The issuing shop's market zone: the day the dates read on. */
+	timezone: string;
 }
 
 export const CREDIT_NOTE_DOCUMENT_COPY = {
@@ -376,7 +385,9 @@ function creditNoteSection(
 	return [
 		{ text: t.title, bold: true, size: 14, gap: 12 },
 		{ text: `${t.number}${colon} ${doc.number}` },
-		{ text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang)}` },
+		{
+			text: `${t.issuedOn}${colon} ${longDate(doc.issuedAt, lang, doc.timezone)}`,
+		},
 		{ text: `${t.credits}${colon} ${doc.creditsNumber}` },
 		{ text: `${t.issuer}${colon} ${doc.issuer.legalName}` },
 		{ text: `${t.seller}${colon} ${doc.sellerName}` },

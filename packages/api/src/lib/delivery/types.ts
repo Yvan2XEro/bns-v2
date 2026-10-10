@@ -40,6 +40,8 @@ export interface CourierQuoteParams {
 	origin: CourierAddress;
 	destination: CourierAddress;
 	parcel: { itemsCount: number; weightGrams: number; declaredValue: number };
+	/** The order's currency; the amounts above and any tariff are read in it. */
+	currency: string;
 	cod?: { amount: number; currency: string };
 	readyAt: Date;
 }
@@ -47,7 +49,7 @@ export interface CourierQuoteParams {
 export interface CourierQuote {
 	providerQuoteId?: string;
 	amount: number;
-	currency: "XAF";
+	currency: string;
 	etaMinHours: number;
 	etaMaxHours: number;
 	expiresAt?: Date;

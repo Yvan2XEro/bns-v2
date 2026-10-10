@@ -1,5 +1,7 @@
 // @vitest-environment node
+
 import { describe, expect, it } from "vitest";
+import { LEGACY_TIMEZONE } from "../../src/lib/marketTime";
 import {
 	buildContractSnapshot,
 	type ContractSnapshotInput,
@@ -61,6 +63,7 @@ describe("renderReceiptHtml", () => {
 				withdrawalUntil: null,
 				snapshot,
 				snapshotHash: "a".repeat(64),
+				timezone: LEGACY_TIMEZONE,
 			},
 			"fr",
 		);
@@ -70,6 +73,24 @@ describe("renderReceiptHtml", () => {
 		// Two distinct timestamps: ordered-on and printed-on.
 		expect(html).toContain("Commandee le");
 		expect(html).toContain("Imprime le");
+	});
+
+	it("prints dates on the order's market calendar", () => {
+		const render = (timezone: string) =>
+			renderReceiptHtml(
+				{
+					orderNumber: "BNS-2609-000123",
+					orderDate: "2026-10-10T23:30:00.000Z",
+					printedAt: "2026-10-10T23:30:00.000Z",
+					withdrawalUntil: null,
+					snapshot: buildContractSnapshot(baseInput),
+					snapshotHash: "a".repeat(64),
+					timezone,
+				},
+				"en",
+			);
+		expect(render(LEGACY_TIMEZONE)).toContain("11 Oct 2026");
+		expect(render("America/Los_Angeles")).toContain("10 Oct 2026");
 	});
 
 	it("renders every line with its quantity and line total", () => {
@@ -82,6 +103,7 @@ describe("renderReceiptHtml", () => {
 				withdrawalUntil: null,
 				snapshot,
 				snapshotHash: "a".repeat(64),
+				timezone: LEGACY_TIMEZONE,
 			},
 			"fr",
 		);
@@ -99,6 +121,7 @@ describe("renderReceiptHtml", () => {
 			withdrawalUntil: null,
 			snapshot,
 			snapshotHash: "a".repeat(64),
+			timezone: LEGACY_TIMEZONE,
 		};
 		expect(renderReceiptHtml(input, "fr")).toContain("17 000 FCFA");
 		expect(renderReceiptHtml(input, "en")).toContain("XAF 17,000");
@@ -119,6 +142,7 @@ describe("renderReceiptHtml", () => {
 			withdrawalUntil: null,
 			snapshot,
 			snapshotHash: "a".repeat(64),
+			timezone: LEGACY_TIMEZONE,
 		};
 		const fr = renderReceiptHtml(input, "fr");
 		const en = renderReceiptHtml(input, "en");
@@ -144,6 +168,7 @@ describe("renderReceiptHtml", () => {
 			withdrawalUntil,
 			snapshot,
 			snapshotHash: "a".repeat(64),
+			timezone: LEGACY_TIMEZONE,
 		};
 		const date = (lang: string) =>
 			new Intl.DateTimeFormat(lang, {
@@ -172,6 +197,7 @@ describe("renderReceiptHtml", () => {
 				withdrawalUntil: null,
 				snapshot,
 				snapshotHash: "a".repeat(64),
+				timezone: LEGACY_TIMEZONE,
 			},
 			"fr",
 		);

@@ -18,6 +18,7 @@ const quoteParams: CourierQuoteParams = {
 		district: "akwa",
 	},
 	parcel: { itemsCount: 2, weightGrams: 3000, declaredValue: 50_000 },
+	currency: "XAF",
 	cod: { amount: 52_000, currency: "XAF" },
 	readyAt: new Date("2026-10-04T09:00:00.000Z"),
 };

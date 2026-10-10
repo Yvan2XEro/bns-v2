@@ -1,9 +1,11 @@
 // @vitest-environment node
+
 import { describe, expect, it } from "vitest";
 import {
 	type BuyerFeeDocument,
 	buyerFeeDocumentLines,
 } from "../../src/lib/commissionInvoiceDocument";
+import { LEGACY_TIMEZONE } from "../../src/lib/marketTime";
 import { withTransaction } from "../../src/lib/transactions";
 import type {
 	LedgerAccount,
@@ -292,6 +294,7 @@ describe("the buyer fee invoice follows its order's market", () => {
 		amountTtc: 1_410,
 		vatRateBps: 1925,
 		issuer: { legalName: "BNS", supportEmail: "help@bns.example" },
+		timezone: LEGACY_TIMEZONE,
 	};
 
 	it("reads in the snapshot's own symbol, and never as FCFA for another currency", () => {

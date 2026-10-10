@@ -6,7 +6,8 @@ import {
 	renderBuyerFeeDocumentPdf,
 } from "../lib/commissionInvoiceDocument";
 import { ERROR_CODES } from "../lib/errors";
-import { marketOfOrder } from "../lib/markets";
+import { marketOfOrder, timezoneOfOrder } from "../lib/markets";
+import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import { getOrderSettings } from "../lib/orderSettings";
 import { getPaymentSettings } from "../lib/paymentSettings";
 import { createSignedDocumentUrl } from "../lib/privateFiles";
@@ -154,7 +155,8 @@ export async function issueBuyerFeeInvoice(
 	if (!currency) {
 		throw new Error(`[buyer-fee-invoices] order ${order.id} has no currency`);
 	}
-	const formats = (await marketOfOrder(req.payload, order))?.formats;
+	const market = await marketOfOrder(req.payload, order);
+	const formats = market?.formats;
 	const formatSnapshot = formats?.map((format) => ({ ...format }));
 	const buyer = relationId(order.buyer);
 	const pdf = await storePdf(req, {
@@ -170,6 +172,7 @@ export async function issueBuyerFeeInvoice(
 		currency,
 		formatSnapshot,
 		issuer: PLATFORM_ISSUER,
+		timezone: market?.timezone ?? LEGACY_TIMEZONE,
 	});
 	return req.payload.create({
 		collection: "buyer-fee-invoices",
@@ -239,6 +242,7 @@ export async function creditNoteFor(
 		currency: invoice.currency,
 		formatSnapshot: invoice.formatSnapshot,
 		issuer: PLATFORM_ISSUER,
+		timezone: await timezoneOfOrder(req.payload, order),
 	});
 	const buyer = relationId(invoice.buyer);
 	return req.payload.create({

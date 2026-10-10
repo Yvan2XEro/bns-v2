@@ -1,4 +1,4 @@
-import { previousDoualaDate } from "./shopDailyAggregation";
+import { previousShopDate } from "./shopDailyAggregation";
 
 function isCalendarDate(value: string): boolean {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -27,7 +27,7 @@ export function listShopStatsBackfillDates(
 ): string[] {
 	if (!isCalendarDate(from))
 		throw new Error("Backfill start must be a valid YYYY-MM-DD date.");
-	const through = previousDoualaDate(now);
+	const through = previousShopDate(now);
 	if (from > through)
 		throw new Error(
 			"Backfill start must be on or before the last completed Douala day.",

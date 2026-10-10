@@ -1,7 +1,9 @@
 // @vitest-environment node
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { creditNoteDocumentLines } from "../../src/lib/commissionInvoiceDocument";
-import { weekBoundsDouala } from "../../src/lib/orderMath";
+import { LEGACY_TIMEZONE } from "../../src/lib/marketTime";
+import { marketWeekBounds } from "../../src/lib/orderMath";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Dispute, Order, PaymentIntent } from "../../src/payload-types";
 import { issueApplicationFeeCommissionInvoice } from "../../src/services/buyerFeeInvoices";
@@ -38,7 +40,7 @@ function intent(overrides: Partial<PaymentIntent> = {}): PaymentIntent {
 }
 
 const NOW = new Date("2026-09-22T09:00:00.000Z"); // a Tuesday, Africa/Douala
-const { periodStart, periodEnd } = weekBoundsDouala(NOW);
+const { periodStart, periodEnd } = marketWeekBounds(NOW, "Africa/Douala");
 const DAY_MS = 86_400_000;
 
 function shop(overrides: Doc = {}): Doc {
@@ -901,6 +903,7 @@ describe("the post-release protected documentation case", () => {
 			vatRateBps: 1_925,
 			documentsLedgerReversal: true,
 			issuer: { legalName: "BuyNSellem SARL" },
+			timezone: LEGACY_TIMEZONE,
 		}).map((line) => line.text);
 		expect(lines[0]).toBe("Avoir — commission");
 		expect(lines).toContain("Numéro : BNS-A-2026-000001");

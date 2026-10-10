@@ -63,7 +63,7 @@ function storedId(value: string): unknown {
 }
 
 /** The shop-stat day on a market's wall clock, as the half-open instant range it covers. */
-export function doualaDayWindow(
+export function shopDayWindow(
 	date: string,
 	timezone: string = LEGACY_TIMEZONE,
 ): { start: Date; end: Date } {
@@ -87,7 +87,7 @@ export function doualaDayWindow(
 	};
 }
 
-export function previousDoualaDate(
+export function previousShopDate(
 	now: Date,
 	timezone: string = LEGACY_TIMEZONE,
 ): string {
@@ -102,7 +102,7 @@ function interactionPipeline(
 	shopIds: readonly string[],
 	timezone: string,
 ): Document[] {
-	const window = doualaDayWindow(date, timezone);
+	const window = shopDayWindow(date, timezone);
 	const match =
 		source.byDayField === "date"
 			? { date }
@@ -237,7 +237,7 @@ function orderEventsPipeline(
 	shopIds: readonly string[],
 	timezone: string,
 ): Document[] {
-	const window = doualaDayWindow(date, timezone);
+	const window = shopDayWindow(date, timezone);
 	return [
 		{
 			$match: {
@@ -404,7 +404,7 @@ export async function aggregateTopProductOrderMetrics(
 	const collection = adapter.collections["order-events"]?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'order-events' is unavailable.");
-	const { start, end } = doualaDayWindow(date, timezone);
+	const { start, end } = shopDayWindow(date, timezone);
 	const rows = await collection.aggregate<TopProductOrderRow>([
 		{
 			$match: {
@@ -510,7 +510,7 @@ export async function aggregateResaleMetrics(
 	const commissions = adapter.collections["reseller-commissions"]?.collection;
 	if (!purchaseOrders || !commissions)
 		throw new Error("Mongo resale collections are unavailable.");
-	const { start, end } = doualaDayWindow(date, timezone);
+	const { start, end } = shopDayWindow(date, timezone);
 	const [facetRows, commissionRows] = await Promise.all([
 		purchaseOrders
 			.aggregate<ResaleFacets>([
@@ -748,7 +748,7 @@ export async function aggregateDeliveredCogs(
 	const collection = adapter.collections["stock-movements"]?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'stock-movements' is unavailable.");
-	const { start, end } = doualaDayWindow(date, timezone);
+	const { start, end } = shopDayWindow(date, timezone);
 	const rows = await collection
 		.aggregate<{ _id?: unknown; cogsDelivered?: unknown }>([
 			{
@@ -833,7 +833,7 @@ export async function aggregateConversationMetrics(
 	const collection = adapter.collections.conversations?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'conversations' is unavailable.");
-	const { start, end } = doualaDayWindow(date, timezone);
+	const { start, end } = shopDayWindow(date, timezone);
 	const messagesUntil = new Date(
 		Math.min(now.getTime(), end.getTime() + 24 * 60 * 60_000),
 	);
@@ -1151,7 +1151,7 @@ export async function aggregateShopDailyStatsForDay(
 		(await getMarkets(payload)).map((market) => market.timezone),
 	);
 	if (zones.size === 0) zones.add(LEGACY_TIMEZONE);
-	const windows = [...zones].map((zone) => doualaDayWindow(date, zone));
+	const windows = [...zones].map((zone) => shopDayWindow(date, zone));
 	// A closed shop is in scope for the day its own market's clock put the
 	// closing in; the query takes the widest range and the loop trims.
 	const start = new Date(Math.min(...windows.map((w) => w.start.getTime())));
@@ -1191,7 +1191,7 @@ export async function aggregateShopDailyStatsForDay(
 			const zone = await timezoneOfShop(shop);
 			if (shop.status === "closed") {
 				const closedAt = shop.closedAt ? Date.parse(shop.closedAt) : Number.NaN;
-				const window = doualaDayWindow(date, zone);
+				const window = shopDayWindow(date, zone);
 				if (
 					!(
 						closedAt >= window.start.getTime() &&
@@ -1203,8 +1203,7 @@ export async function aggregateShopDailyStatsForDay(
 			byZone.set(zone, [...(byZone.get(zone) ?? []), String(shop.id)]);
 		}
 		for (const [timezone, shopIds] of byZone) {
-			const shouldSnapshotInventory =
-				date === previousDoualaDate(now, timezone);
+			const shouldSnapshotInventory = date === previousShopDate(now, timezone);
 			const savedSnapshots = shouldSnapshotInventory
 				? new Map<string, ShopDailyStat>()
 				: new Map(
