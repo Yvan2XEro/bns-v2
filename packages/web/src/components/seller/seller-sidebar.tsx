@@ -5,20 +5,16 @@ import {
 	BadgeCheck,
 	Boxes,
 	ExternalLink,
-	History,
 	Inbox,
 	LayoutDashboard,
 	Lock,
 	type LucideIcon,
-	MessageCircle,
 	Package,
-	Receipt,
 	RefreshCw,
 	RotateCcw,
 	Scale,
 	Settings,
 	ShoppingBag,
-	SlidersHorizontal,
 	Truck,
 	Users,
 	Wallet,
@@ -30,7 +26,11 @@ import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useMyShops } from "~/hooks/use-my-shops";
-import { type SellerNavKey, visibleSellerNav } from "~/lib/seller-nav";
+import {
+	activeNavKey,
+	type SellerNavKey,
+	visibleSellerNav,
+} from "~/lib/seller-nav";
 import { cn } from "~/lib/utils";
 import type { VerificationBadge } from "~/lib/verification";
 import type { MyShopRoleReason, ShopRole } from "~/types";
@@ -42,14 +42,10 @@ const ICONS: Record<SellerNavKey, LucideIcon> = {
 	catalogue: Package,
 	stock: Boxes,
 	inbox: Inbox,
-	billing: Receipt,
 	payments: Wallet,
 	team: Users,
-	activity: History,
 	verification: BadgeCheck,
-	messages: MessageCircle,
 	settings: Settings,
-	orderSettings: SlidersHorizontal,
 	disputes: Scale,
 	returns: RotateCcw,
 	resale: RefreshCw,
@@ -89,10 +85,7 @@ export function SellerSidebar({
 	const inboxUnread =
 		myShops?.find((entry) => entry.shopId === shopId)?.inboxUnread ?? 0;
 
-	const isActive = (href: string, exact?: boolean) =>
-		exact
-			? pathname === href
-			: pathname === href || pathname.startsWith(`${href}/`);
+	const activeKey = activeNavKey(pathname);
 
 	const {
 		ordersEnabled,
@@ -143,8 +136,8 @@ export function SellerSidebar({
 				ordersEnabled={ordersEnabled}
 			/>
 			<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col lg:overflow-visible">
-				{items.map(({ href, key, exact }) => {
-					const active = isActive(href, exact);
+				{items.map(({ href, key }) => {
+					const active = activeKey === key;
 					const Icon = ICONS[key];
 					return (
 						<Link

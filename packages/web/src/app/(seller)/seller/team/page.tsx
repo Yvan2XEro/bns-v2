@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getMyShop } from "~/lib/server-shop";
+import { can } from "~/lib/shop-roles";
 import { TeamClient } from "./team-client";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,5 +16,21 @@ export default async function TeamPage() {
 
 	if (!mine?.shop) return <p>{t("noShop")}</p>;
 
-	return <TeamClient shopId={mine.shop.id} role={mine.role} />;
+	const tRoot = await getTranslations();
+
+	return (
+		<>
+			{can(mine.role, "activity.view") && (
+				<div className="mb-3 text-right">
+					<Link
+						href="/seller/team/activity"
+						className="font-medium text-[#1E40AF] text-sm hover:underline"
+					>
+						{tRoot("Seller.nav.activity")}
+					</Link>
+				</div>
+			)}
+			<TeamClient shopId={mine.shop.id} role={mine.role} />
+		</>
+	);
 }
