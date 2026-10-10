@@ -10,7 +10,6 @@ export const ListingViewFlushes: CollectionConfig = {
 		update: nobody,
 		delete: nobody,
 	},
-	indexes: [{ fields: ["purgeAt"] }],
 	fields: [
 		{
 			name: "listing",

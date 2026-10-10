@@ -107,7 +107,7 @@ export const Shipments: CollectionConfig = {
 				value,
 			})),
 		},
-		{ name: "providerShipmentId", type: "text", index: true },
+		{ name: "providerShipmentId", type: "text" },
 		{
 			name: "providerStatus",
 			type: "group",
