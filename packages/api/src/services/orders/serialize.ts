@@ -232,6 +232,8 @@ export interface OrderListEntryView {
 	firstItemImageUrl: string | null;
 	shopName: string;
 	deliveryFailureReason: string | null;
+	/** Buyer list only, and only on a split order: the key that groups siblings. */
+	checkoutGroup?: string;
 	/** Shop queue only: a buyer's own list has no use for the recipient, the accept clock or the tier. */
 	recipientName?: string;
 	acceptBy?: string | null;
@@ -713,6 +715,9 @@ export function serializeOrderListEntry(
 		shopName: sources.shopName,
 		deliveryFailureReason: order.deliveryFailure?.reason ?? null,
 	};
+	if (role === "buyer" && order.checkoutGroup) {
+		entry.checkoutGroup = order.checkoutGroup;
+	}
 	if (role === "shop") {
 		entry.recipientName = order.delivery.recipientName;
 		entry.acceptBy = order.deadlines?.acceptBy ?? null;

@@ -1,7 +1,30 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { sendSms } = vi.hoisted(() => ({ sendSms: vi.fn() }));
+const { sendSms, getPayloadMock } = vi.hoisted(() => ({
+	sendSms: vi.fn(),
+	getPayloadMock: vi.fn(),
+}));
+vi.mock("@payload-config", () => ({ default: {} }));
+vi.mock("payload", async (importOriginal) => ({
+	...(await importOriginal<typeof import("payload")>()),
+	getPayload: getPayloadMock,
+}));
+vi.mock("../../src/services/paymentNotifications", async (importOriginal) => {
+	const actual =
+		await importOriginal<
+			typeof import("../../src/services/paymentNotifications")
+		>();
+	return {
+		...Object.fromEntries(
+			Object.keys(actual).map((key) => [key, vi.fn(async () => undefined)]),
+		),
+	};
+});
+vi.mock("../../src/services/buyerFeeInvoices", () => ({
+	issueBuyerFeeInvoice: vi.fn(async () => undefined),
+	issueApplicationFeeCommissionInvoice: vi.fn(async () => undefined),
+}));
 vi.mock("../../src/services/smsProvider", () => ({
 	sendSms: (...args: unknown[]) => sendSms(...args),
 }));
@@ -13,22 +36,33 @@ vi.mock("../../src/hooks/searchEvents", () => ({
 	queueSearchEvent: vi.fn(async () => undefined),
 }));
 
+import { GET as groupGET } from "../../src/app/(frontend)/api/checkout/groups/[group]/route";
+import { expireOrders } from "../../src/jobs/expireOrders";
 import { invalidateMarketCache } from "../../src/lib/marketCache";
+import { FakeMarketplaceProvider } from "../../src/lib/payments/fakeMarketplace";
 import { hashDeliveryPhone } from "../../src/lib/phoneHash";
 import { MemoryCounterStore } from "../../src/lib/rateLimit";
+import { withTransaction } from "../../src/lib/transactions";
+import type { Order, PaymentIntent } from "../../src/payload-types";
 import { addCartItem } from "../../src/services/cart";
 import {
 	type CheckoutPlaceInput,
 	placeCheckoutResponse,
 	quoteCheckoutResponse,
 } from "../../src/services/checkout";
+import { readCheckoutGroup } from "../../src/services/checkoutGroup";
+import { createCheckoutIntent } from "../../src/services/checkoutPayment";
+import { registerCheckoutSettlementHandlers } from "../../src/services/checkoutSettlement";
 import {
 	placeGroups,
 	planSplit,
 	type SplitPlaceResponse,
 	type SplitQuoteView,
 } from "../../src/services/checkoutSplit";
+import { orderBalances } from "../../src/services/ledger";
 import { __resetOrderEventHandlers } from "../../src/services/orders/events";
+import { serializeOrderListEntry } from "../../src/services/orders/serialize";
+import { applyStatus } from "../../src/services/payments";
 import { normalizePhoneNumber } from "../../src/services/phoneVerification";
 import {
 	cmMarketRow,
@@ -144,6 +178,8 @@ type WorldOptions = {
 	payments?: boolean;
 	multiShop?: boolean;
 	shopCaps?: Record<string, unknown>;
+	/** No phone score: the sms_code path keeps a protected order `placed`, which is what makes it payable. */
+	untrusted?: boolean;
 };
 
 /** A (own 25 000), B (own 15 000, the race variant), a resale line on A supplied by C (7 000). */
@@ -164,15 +200,17 @@ function world(options: WorldOptions = {}) {
 					phoneVerifiedAt: NOW.toISOString(),
 				},
 			],
-			shops: [shop("a"), shop("b"), shop("c", 3)],
+			shops: [shop("a"), shop("b"), shop("c", 3), shop("d")],
 			products: [
 				product("a", "a"),
 				product("b", "b"),
 				product("c", "c", { resale: { enabled: true, codAccepted: true } }),
+				product("d", "d"),
 			],
 			"product-variants": [
 				variant("a", "a", 25_000, 5),
 				variant("b", "b", 15_000, options.raceStock ?? 1),
+				variant("d", "d", 5000, 5),
 				variant("c", "c", 9000, 3, {
 					resale: {
 						enabled: true,
@@ -185,6 +223,7 @@ function world(options: WorldOptions = {}) {
 			listings: [
 				listing("a", "a"),
 				listing("b", "b"),
+				listing("d", "d"),
 				{
 					id: "l-res",
 					shop: "a",
@@ -226,16 +265,22 @@ function world(options: WorldOptions = {}) {
 				{ id: "ra", role: "reseller", shop: "a", version: "v1" },
 				{ id: "sa", role: "supplier", shop: "c", version: "v1" },
 			],
-			"shop-members": [],
+			"shop-members": ["a", "b", "c", "d"].map((id) => ({
+				id: `m-${id}`,
+				shop: id,
+				user: `${id}-owner`,
+				role: "owner",
+				status: "active",
+			})),
 			carts: [],
 			orders: options.orders ?? [],
 			"order-items": [],
 			"order-events": [],
 			"stock-movements": [],
 			sequences: [],
-			"buyer-phone-scores": [trusted],
+			"buyer-phone-scores": options.untrusted ? [] : [trusted],
 			markets: [cmMarketRow()],
-			"connected-accounts": ["a", "b", "c"].map((id) => ({
+			"connected-accounts": ["a", "b", "c", "d"].map((id) => ({
 				id: `ca-${id}`,
 				shop: id,
 				provider: "notchpay",
@@ -244,7 +289,7 @@ function world(options: WorldOptions = {}) {
 				chargesEnabled: true,
 				payoutsEnabled: true,
 			})),
-			"payout-accounts": ["a", "b", "c"].map((id) => ({
+			"payout-accounts": ["a", "b", "c", "d"].map((id) => ({
 				id: `pa-${id}`,
 				shop: id,
 				status: "active",
@@ -257,6 +302,10 @@ function world(options: WorldOptions = {}) {
 				carts: [["user", "status"]],
 				"buyer-phone-scores": [["phoneHash"]],
 				orders: [["buyer", "idempotencyKey"]],
+				"payment-intents": [["idempotencyKey"]],
+				refunds: [["idempotencyKey"]],
+				"ledger-accounts": [["key"]],
+				"ledger-transactions": [["idempotencyKey"]],
 			},
 			globals: {
 				"app-settings": {
@@ -265,6 +314,11 @@ function world(options: WorldOptions = {}) {
 						multiShopCartEnabled: options.multiShop ?? true,
 						launchCities: [{ key: "douala", deliveryFee: 2000 }],
 						termsVersion: "2026-09",
+						...(options.untrusted
+							? {
+									buyerCaps: { new: { maxOpenOrders: 5, maxOrderTotal: null } },
+								}
+							: {}),
 						...(options.buyerCaps ? { buyerCaps: options.buyerCaps } : {}),
 						...(options.shopCaps ? { shopCaps: options.shopCaps } : {}),
 					},
@@ -292,6 +346,7 @@ const ALL = [
 	["l-b", "v-b"],
 	["l-res", "v-c"],
 ] as const;
+const D_LINE = ["l-d", "v-d"] as const;
 
 async function fill(
 	payload: FakePayload,
@@ -706,6 +761,329 @@ describe("mobile_money, split", () => {
 			orders.map((o) => ["mobile_money", o.amounts.total]),
 		);
 		expect(rows(payload, "payment-intents")).toHaveLength(0);
+	});
+});
+
+describe("siblings are independent", () => {
+	const buyerUser = {
+		id: "u1",
+		role: "user",
+		name: "Buyer",
+		email: "u1@test.cm",
+		suspendedAt: null,
+		suspendedUntil: null,
+	} as const;
+	const MIN = 60_000;
+	let fake: FakeMarketplaceProvider;
+
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+		fake = new FakeMarketplaceProvider({ now: () => new Date() });
+		for (const id of ["a", "b", "c"])
+			fake.seedAccount({ accountId: `acct_${id}` });
+	});
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	async function placed(lines: ReadonlyArray<readonly [string, string]>) {
+		const payload = world({ payments: true, untrusted: true });
+		getPayloadMock.mockResolvedValue(payload);
+		await fill(payload, buyer, lines);
+		const res = await place(
+			payload,
+			buyer,
+			await placeInput(payload, buyer, "mobile_money"),
+		);
+		return { payload, res };
+	}
+	const order = (payload: FakePayload, id: string): Order =>
+		rows(payload, "orders").find((o) => o.id === id) as unknown as Order;
+	const intents = (payload: FakePayload, orderId?: string) =>
+		(rows(payload, "payment-intents") as unknown as PaymentIntent[]).filter(
+			(i) => !orderId || i.targetId === orderId,
+		);
+
+	async function intentFor(payload: FakePayload, orderId: string, key: string) {
+		return createCheckoutIntent(
+			{ payload },
+			order(payload, orderId),
+			buyerUser,
+			{ channel: "cm.mtn", phone: PHONE, idempotencyKey: key },
+			{ provider: fake, serverUrl: "https://api.test" },
+		);
+	}
+	async function succeed(payload: FakePayload, intentId: string) {
+		const intent = intents(payload).find((i) => String(i.id) === intentId);
+		if (!intent) throw new Error("no such intent");
+		return applyStatus(payload, intentId, {
+			status: "succeeded",
+			source: "webhook",
+			at: new Date(),
+			amount: intent.amount,
+			currency: intent.currency,
+		});
+	}
+	const states = (payload: FakePayload, ids: string[]) =>
+		ids.map((id) => [
+			order(payload, id).status,
+			order(payload, id).paymentStatus,
+		]);
+	const ledgerOf = (payload: FakePayload, orderId: string) =>
+		withTransaction(payload, (req) => orderBalances(req, orderId));
+	const countRows = (payload: FakePayload, name: string) =>
+		(payload.store[name] ?? []).length;
+
+	it("pays one sibling, expires another, leaves the third: each lives its own life", async () => {
+		const { payload, res } = await placed([ALL[0], ALL[1], D_LINE]);
+		const [one, two, three] = res.orders.map((o) => o.id);
+		const key = (n: number) => `0b7c1a52-5d0e-4c55-9a8e-3f1f6a0e000${n}`;
+
+		const before = await readCheckoutGroup(
+			payload,
+			buyer,
+			res.checkoutGroup,
+			NOW,
+		);
+		expect(
+			before.orders.map((o) => [o.id, o.paymentMethod, o.payableNow]),
+		).toEqual([
+			[one, "mobile_money", true],
+			[two, "mobile_money", true],
+			[three, "mobile_money", true],
+		]);
+
+		const first = await intentFor(payload, one, key(1));
+		await succeed(payload, first.intentId);
+		expect(states(payload, [one, two, three])).toEqual([
+			["paid", "paid"],
+			["placed", "unpaid"],
+			["placed", "unpaid"],
+		]);
+
+		// the second sibling alone ran out its window
+		const second = order(payload, two);
+		const stored = rows(payload, "orders").find(
+			(o) => o.id === two,
+		) as unknown as Order;
+		stored.timestamps = {
+			...second.timestamps,
+			placedAt: new Date(NOW.getTime() - 31 * MIN).toISOString(),
+		};
+		const frozen = {
+			ledger: await ledgerOf(payload, one),
+			transactions: countRows(payload, "ledger-transactions"),
+			intents: intents(payload, one).map((i) => [i.id, i.status, i.amount]),
+			refunds: countRows(payload, "refunds"),
+			paidOrder: JSON.stringify(order(payload, one)),
+		};
+		const stockC = variantRow(payload, "v-c").stockReserved;
+		const stockB = variantRow(payload, "v-b").stockReserved;
+
+		const swept = await expireOrders(payload);
+		expect(swept).toMatchObject({ paymentExpired: 1, errors: 0 });
+
+		expect(states(payload, [one, two, three])).toEqual([
+			["paid", "paid"],
+			["cancelled", "failed"],
+			["placed", "unpaid"],
+		]);
+		// two's reservation went back; one and three keep theirs
+		expect(variantRow(payload, "v-b").stockReserved).toBe(stockB - 1);
+		expect(variantRow(payload, "v-c").stockReserved).toBe(stockC);
+		expect(variantRow(payload, "v-a").stockReserved).toBe(1);
+
+		// no clawback: the paid sibling's money is exactly as it was
+		expect({
+			ledger: await ledgerOf(payload, one),
+			transactions: countRows(payload, "ledger-transactions"),
+			intents: intents(payload, one).map((i) => [i.id, i.status, i.amount]),
+			refunds: countRows(payload, "refunds"),
+			paidOrder: JSON.stringify(order(payload, one)),
+		}).toEqual(frozen);
+		expect(intents(payload, two)).toHaveLength(0);
+
+		const after = await readCheckoutGroup(
+			payload,
+			buyer,
+			res.checkoutGroup,
+			NOW,
+		);
+		expect(
+			after.orders.map((o) => [o.id, o.status, o.paymentStatus, o.payableNow]),
+		).toEqual([
+			[one, "paid", "paid", false],
+			[two, "cancelled", "failed", false],
+			[three, "placed", "unpaid", true],
+		]);
+	});
+
+	it("one intent per order: paying one creates none for its siblings", async () => {
+		const { payload, res } = await placed([ALL[0], ALL[1]]);
+		const [one, two] = res.orders.map((o) => o.id);
+		const intent = await intentFor(
+			payload,
+			one,
+			"0b7c1a52-5d0e-4c55-9a8e-3f1f6a0e0001",
+		);
+		expect(intents(payload)).toHaveLength(1);
+		expect(intents(payload)[0]).toMatchObject({
+			targetType: "order",
+			targetId: one,
+			currency: order(payload, one).amounts.currency,
+		});
+		expect(intents(payload, two)).toHaveLength(0);
+		expect(intent.status).toBe("pending");
+		expect(order(payload, two).paymentStatus).toBe("unpaid");
+	});
+
+	it("a refund stays on its own order: cancelling one paid sibling refunds that order alone", async () => {
+		const { payload, res } = await placed([ALL[0], ALL[1]]);
+		const [one, two] = res.orders.map((o) => o.id);
+		const a = await intentFor(
+			payload,
+			one,
+			"0b7c1a52-5d0e-4c55-9a8e-3f1f6a0e0001",
+		);
+		const b = await intentFor(
+			payload,
+			two,
+			"0b7c1a52-5d0e-4c55-9a8e-3f1f6a0e0002",
+		);
+		await succeed(payload, a.intentId);
+		await succeed(payload, b.intentId);
+
+		registerCheckoutSettlementHandlers();
+		const { declineOrder } = await import(
+			"../../src/services/orders/acceptance"
+		);
+		await declineOrder(payload, { id: "b-owner", role: "user" }, two, {
+			reason: "seller_out_of_stock",
+		});
+
+		const refunds = rows(payload, "refunds") as unknown as Array<{
+			order: string;
+			paymentIntent: string;
+			amount: number;
+		}>;
+		expect(refunds).toHaveLength(1);
+		expect(refunds[0]).toMatchObject({ order: two, paymentIntent: b.intentId });
+		expect(states(payload, [one, two])).toEqual([
+			["paid", "paid"],
+			["cancelled", expect.any(String)],
+		]);
+		expect((await ledgerOf(payload, one)).seller_pending).toBeGreaterThan(0);
+	});
+
+	it("a COD group proceeds with zero intents, where the mobile_money group has two", async () => {
+		const cod = world({ payments: true, untrusted: true });
+		await fill(cod, buyer, [ALL[0], ALL[1]]);
+		const codRes = await place(cod, buyer, await placeInput(cod, buyer, "cod"));
+		expect(intents(cod)).toHaveLength(0);
+		const view = await readCheckoutGroup(cod, buyer, codRes.checkoutGroup, NOW);
+		expect(view.orders.map((o) => [o.paymentMethod, o.payableNow])).toEqual([
+			["cod", false],
+			["cod", false],
+		]);
+
+		const { payload, res } = await placed([ALL[0], ALL[1]]);
+		for (const [n, o] of res.orders.entries()) {
+			await intentFor(
+				payload,
+				o.id,
+				`0b7c1a52-5d0e-4c55-9a8e-3f1f6a0e000${n + 1}`,
+			);
+		}
+		expect(intents(payload)).toHaveLength(2);
+	});
+});
+
+describe("the group read", () => {
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(NOW);
+	});
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	const get = (payload: FakePayload, userId: string | null, group: string) => {
+		getPayloadMock.mockResolvedValue(payload);
+		(
+			payload as unknown as {
+				auth: { mockResolvedValue: (v: unknown) => void };
+			}
+		).auth.mockResolvedValue({
+			user: userId ? { id: userId, role: "user" } : null,
+		});
+		return groupGET(new Request(`http://x/api/checkout/groups/${group}`), {
+			params: Promise.resolve({ group }),
+		});
+	};
+
+	it("answers the buyer with the whole view, and 404 to a sibling shop's member and a stranger alike", async () => {
+		const payload = world({ payments: true, untrusted: true });
+		await fill(payload, buyer, [ALL[0], ALL[1]]);
+		const placedRes = await place(
+			payload,
+			buyer,
+			await placeInput(payload, buyer, "mobile_money"),
+		);
+		const mine = await get(payload, "u1", placedRes.checkoutGroup);
+		expect(mine.status).toBe(200);
+		expect(await mine.json()).toEqual({
+			checkoutGroup: placedRes.checkoutGroup,
+			orders: placedRes.orders.map((o) => ({
+				id: o.id,
+				orderNumber: o.orderNumber,
+				shop: o.shop,
+				total: o.total,
+				currency: "XAF",
+				paymentMethod: "mobile_money",
+				status: "placed",
+				paymentStatus: "unpaid",
+				payableNow: true,
+			})),
+		});
+
+		for (const who of ["a-owner", "b-owner", "u2"]) {
+			const res = await get(payload, who, placedRes.checkoutGroup);
+			expect(res.status).toBe(404);
+			expect((await res.json()).code).toBe("order.notFound");
+		}
+		const missing = await get(payload, "u1", "CHK-0000-000000");
+		expect(missing.status).toBe(404);
+		expect((await get(payload, null, placedRes.checkoutGroup)).status).toBe(
+			401,
+		);
+	});
+
+	it("list rows carry the group for the buyer and nothing for a shop", async () => {
+		const payload = world();
+		await fill(payload, buyer, [ALL[0], ALL[1]]);
+		const placedRes = await place(
+			payload,
+			buyer,
+			await placeInput(payload, buyer),
+		);
+		const order = rows(payload, "orders")[0] as unknown as Order;
+		const sources = {
+			shopName: "x",
+			itemCount: 1,
+			firstItemTitle: "t",
+			firstItemImageUrl: null,
+		};
+		expect(serializeOrderListEntry(order, sources, "buyer").checkoutGroup).toBe(
+			placedRes.checkoutGroup,
+		);
+		expect(
+			JSON.stringify(serializeOrderListEntry(order, sources, "shop")),
+		).not.toContain(placedRes.checkoutGroup);
+		const flat = { ...order, checkoutGroup: undefined } as Order;
+		expect(serializeOrderListEntry(flat, sources, "buyer")).not.toHaveProperty(
+			"checkoutGroup",
+		);
 	});
 });
 

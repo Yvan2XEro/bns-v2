@@ -182,6 +182,21 @@ const checkoutWindowEnd = (order: Order, settings: PaymentSettings): number =>
 	toMs(order.timestamps?.placedAt ?? order.createdAt) +
 	settings.checkoutExpiryMinutes * 60_000;
 
+/** Shared with the group read: the same predicate decides "payable now" there. */
+export function isOrderPayable(
+	order: Order,
+	settings: PaymentSettings,
+	now: Date,
+): boolean {
+	return (
+		order.status === "placed" &&
+		order.paymentMethod === "mobile_money" &&
+		(order.paymentStatus === "unpaid" ||
+			order.paymentStatus === "awaiting_payment") &&
+		now.getTime() < checkoutWindowEnd(order, settings)
+	);
+}
+
 function assertPayable(
 	order: Order,
 	user: ServiceUser,
@@ -191,13 +206,9 @@ function assertPayable(
 	if (relationId(order.buyer) !== user.id) {
 		throw refuse(ERROR_CODES.paymentOrderNotPayable, 403);
 	}
-	const payable =
-		order.status === "placed" &&
-		order.paymentMethod === "mobile_money" &&
-		(order.paymentStatus === "unpaid" ||
-			order.paymentStatus === "awaiting_payment") &&
-		now.getTime() < checkoutWindowEnd(order, settings);
-	if (!payable) throw refuse(ERROR_CODES.paymentOrderNotPayable, 409);
+	if (!isOrderPayable(order, settings, now)) {
+		throw refuse(ERROR_CODES.paymentOrderNotPayable, 409);
+	}
 }
 
 // ─── Rule 2: the shop may take a protected payment for this order ────────────
