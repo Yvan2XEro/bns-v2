@@ -323,3 +323,21 @@ describe("moderationHold is staff-only to read", () => {
 		).toBe(true);
 	});
 });
+
+describe("the resale group tolerates pre-P8 listings", () => {
+	it("desiredStatus is not required — a product update re-validates the doc and null must pass", async () => {
+		// Production 400: "Resale > Desired Status" on every product update of a
+		// listing born before P8 (null in store; defaultValue only fires on
+		// create). The fake payload skips field validation, so the CONFIG is
+		// the only honest pin.
+		const { Listings } = await import("../../src/collections/Listings");
+		const resale = (Listings.fields as Array<{ name?: string; fields?: unknown[] }>).find(
+			(f) => f.name === "resale",
+		);
+		const desired = (resale?.fields as Array<{ name?: string; required?: boolean }>).find(
+			(f) => f.name === "desiredStatus",
+		);
+		expect(desired).toBeDefined();
+		expect(desired?.required).not.toBe(true);
+	});
+});
