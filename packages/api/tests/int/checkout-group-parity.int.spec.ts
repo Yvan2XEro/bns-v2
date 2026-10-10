@@ -65,6 +65,18 @@ const SEEDS: Array<[string, CheckoutGroupView]> = [
 		view([failed("a"), order({ id: "b" })]),
 	],
 	["only expired", view([expired("a"), expired("b")])],
+	[
+		"a refunded sibling was paid",
+		view([
+			order({ id: "a", paymentStatus: "refunded", payableNow: false }),
+			order({
+				id: "b",
+				paymentStatus: "partially_refunded",
+				payableNow: false,
+			}),
+			order({ id: "c" }),
+		]),
+	],
 	["a single order", view([order({ id: "a" })])],
 ];
 
@@ -106,6 +118,16 @@ describe("the group stepper decides alike on web and mobile", () => {
 		expect(cells.next).toBe("c");
 		expect(cells.position).toEqual({ n: 3, total: 3 });
 		expect(cells.done).toBe(false);
+	});
+
+	it("a refunded sibling reads paid on both sides", () => {
+		const cells = webCells(SEEDS[5][1]);
+		expect(cells.states).toEqual([
+			["a", "paid"],
+			["b", "paid"],
+			["c", "pending"],
+		]);
+		expect(mobileCells(SEEDS[5][1]).states).toEqual(cells.states);
 	});
 
 	it("both clients keep the same split-cart discriminator", () => {

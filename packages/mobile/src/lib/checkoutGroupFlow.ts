@@ -56,8 +56,16 @@ export interface GroupFlow {
 	done: boolean;
 }
 
+// A refund is a later event: the sibling was paid, so it never needs paying.
+const PAID = new Set([
+	"paid",
+	"cod_collected",
+	"refunded",
+	"partially_refunded",
+]);
+
 function stepOf(order: CheckoutGroupOrderView): OrderStep {
-	if (order.paymentStatus === "paid") return "paid";
+	if (PAID.has(order.paymentStatus)) return "paid";
 	return order.payableNow ? "pending" : "expired";
 }
 
