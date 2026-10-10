@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { HandleInput } from "~/components/shop/handle-input";
-import { shopUrl } from "~/components/shop/share-shop-button";
+import { shopUrl } from "~/lib/shop-url";
 import { Button } from "~/components/ui/button";
 import { useHandleAvailability } from "~/hooks/use-handle-availability";
 import { useChangeHandle } from "~/hooks/use-shop-settings";

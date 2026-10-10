@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { EmptyState } from "~/components/empty-state";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -56,9 +57,12 @@ export function ConversationList({
 			</div>
 			<div className="min-h-0 flex-1 overflow-y-auto">
 				{!isLoading && conversations.length === 0 && (
-					<p className="p-4 text-center text-[#64748B] text-sm">
-						{q ? t("emptyFiltered") : t("empty")}
-					</p>
+					<EmptyState
+						illustration={q ? "searching" : "messages"}
+						as="p"
+						size={120}
+						title={q ? t("emptyFiltered") : t("empty")}
+					/>
 				)}
 				{conversations.map((conversation) => {
 					const active = conversation.id === selectedId;

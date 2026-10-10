@@ -1,0 +1,120 @@
+/* Every animation sits behind no-preference: reduced motion keeps the still frame. */
+@media (prefers-reduced-motion: no-preference) {
+	.ill-anim {
+		animation-duration: var(--dur);
+		animation-delay: var(--delay);
+		animation-iteration-count: infinite;
+		animation-direction: var(--dir);
+		animation-timing-function: ease-in-out;
+	}
+	.ill-origin {
+		transform-box: view-box;
+		transform-origin: var(--ox) var(--oy);
+	}
+	.ill-fill {
+		transform-box: fill-box;
+		transform-origin: center;
+	}
+	.ill-pulse {
+		animation-name: ill-pulse;
+	}
+	.ill-float {
+		animation-name: ill-float;
+	}
+	.ill-sweep {
+		animation-name: ill-sweep;
+	}
+	.ill-orbit {
+		animation-name: ill-orbit;
+		animation-timing-function: linear;
+	}
+	.ill-scale {
+		animation-name: ill-scale;
+	}
+	.ill-wiggle {
+		animation-name: ill-wiggle;
+	}
+	.ill-flicker {
+		animation-name: ill-flicker;
+		animation-timing-function: linear;
+	}
+	.ill-entrance {
+		animation: ill-entrance 450ms ease-out both;
+	}
+}
+
+@keyframes ill-pulse {
+	from {
+		opacity: var(--from);
+	}
+	to {
+		opacity: var(--to);
+	}
+}
+@keyframes ill-float {
+	to {
+		transform: translateY(var(--dist));
+	}
+}
+@keyframes ill-sweep {
+	from {
+		transform: translateX(calc(var(--dist) * -1));
+	}
+	to {
+		transform: translateX(var(--dist));
+	}
+}
+@keyframes ill-orbit {
+	to {
+		transform: rotate(var(--to));
+	}
+}
+@keyframes ill-scale {
+	from {
+		transform: scale(var(--from));
+	}
+	to {
+		transform: scale(var(--to));
+	}
+}
+@keyframes ill-wiggle {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+	25% {
+		transform: rotate(var(--angle));
+	}
+	75% {
+		transform: rotate(calc(var(--angle) * -1));
+	}
+}
+@keyframes ill-flicker {
+	0% {
+		opacity: var(--base);
+	}
+	11.5% {
+		opacity: var(--peak);
+	}
+	30.2% {
+		opacity: var(--base);
+	}
+	39.6% {
+		opacity: calc(var(--peak) * 0.85);
+	}
+	55.4% {
+		opacity: calc(var(--base) * 0.9);
+	}
+	68.3% {
+		opacity: var(--peak);
+	}
+	100% {
+		opacity: var(--base);
+	}
+}
+@keyframes ill-entrance {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+}

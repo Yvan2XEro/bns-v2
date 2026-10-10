@@ -33,6 +33,7 @@ import { useAppConfig } from "~/hooks/use-app-config";
 import { useAuth } from "~/hooks/use-auth";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
+import { showSellerHat } from "~/lib/seller-hat";
 import { shopEntryFor } from "~/lib/shop-entry";
 import { CartButton } from "./cart-button";
 import { LocaleSwitcher } from "./locale-switcher";
@@ -54,6 +55,7 @@ export function Header({ novuAppId }: HeaderProps) {
 	const { data: myShop, error: myShopError } = useMyShop();
 	const entry = shopEntryFor(myShop, shopsEnabled, myShopError);
 	const shopEntry = entry ? { href: entry.href, label: t(entry.key) } : null;
+	const sellerHat = showSellerHat(!!user, entry);
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -130,6 +132,19 @@ export function Header({ novuAppId }: HeaderProps) {
 								</Button>
 							</Link>
 
+							{sellerHat && (
+								<Link href="/seller" className="hidden sm:block">
+									<Button
+										size="sm"
+										variant="outline"
+										className="h-9 rounded-lg border-[#1E40AF] px-3 font-semibold text-[#1E40AF] text-xs hover:bg-[#EFF6FF]"
+									>
+										<Store className="mr-1.5 h-4 w-4" />
+										{t("sellerSpace")}
+									</Button>
+								</Link>
+							)}
+
 							<Link href="/favorites" className="hidden sm:block">
 								<button
 									type="button"
@@ -193,7 +208,7 @@ export function Header({ novuAppId }: HeaderProps) {
 											{t("profile")}
 										</Link>
 									</DropdownMenuItem>
-									{shopEntry && (
+									{shopEntry && !sellerHat && (
 										<DropdownMenuItem asChild>
 											<Link href={shopEntry.href} className="cursor-pointer">
 												<Store className="mr-2 h-4 w-4" />

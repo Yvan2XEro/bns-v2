@@ -1,12 +1,4 @@
 {
-	"Demo": {
-		"serverTitle": "Server Component — next-intl",
-		"serverDescription": "This text is translated server-side with getTranslations() (zero client JS).",
-		"clientTitle": "Client Component — next-intl",
-		"clientDescription": "This text is translated client-side with useTranslations() from the React context.",
-		"currentLocale": "Active locale: {locale}",
-		"switchTo": "Switch to {lang}"
-	},
 	"Common": {
 		"search": "Search...",
 		"loading": "Loading...",
@@ -42,6 +34,7 @@
 		"logIn": "Log in",
 		"signUp": "Sign up",
 		"myShop": "My shop",
+		"sellerSpace": "Seller space",
 		"openShop": "Open a shop",
 		"cart": "Cart",
 		"cartWithCount": "Cart, {count, plural, =0 {empty} one {# item} other {# items}}",
@@ -812,6 +805,12 @@
 		}
 	},
 	"Seller": {
+		"errorRetry": "Try again",
+		"errorBackToDashboard": "Back to dashboard",
+		"tabs": {
+			"today": "Today",
+			"statistics": "Statistics"
+		},
 		"space": "Seller space",
 		"nav": {
 			"dashboard": "Dashboard",
@@ -821,7 +820,6 @@
 			"team": "Team",
 			"activity": "Activity",
 			"verification": "Verification",
-			"messages": "Messages",
 			"settings": "Settings",
 			"orders": "Orders",
 			"disputes": "Disputes",
@@ -1249,6 +1247,15 @@
 		"closeOwnerOnly": "Only the owner can close the shop."
 	},
 	"Moderation": {
+		"shell": {
+			"title": "BuyNSellem moderation",
+			"subtitle": "Internal team space",
+			"auditNotice": "Every document view is written to the audit log.",
+			"signedInAs": "Signed in as {name}",
+			"errorTitle": "Something went wrong",
+			"errorBody": "Please try again in a moment.",
+			"retry": "Try again"
+		},
 		"title": "Reviewer queue",
 		"subtitle": "Shops waiting on identity or business verification.",
 		"loading": "Loading…",
@@ -2120,7 +2127,10 @@
 		"system_order_completed": "Order {orderNumber} completed.",
 		"orderCardTitle": "Order {orderNumber}",
 		"orderCardUntitled": "Order linked to this conversation",
-		"orderCardOpen": "View order"
+		"orderCardOpen": "View order",
+		"noConversations": "No conversations yet",
+		"selectConversation": "Select a conversation",
+		"selectConversationHint": "Choose a conversation from the list to start messaging"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Order placed",
@@ -2186,6 +2196,14 @@
 		"retry": "Try again"
 	},
 	"Checkout": {
+		"shell": {
+			"backToCart": "Back to cart",
+			"secure": "Secure checkout",
+			"trust": "Protected payment · Your data stays private",
+			"errorTitle": "Something went wrong",
+			"errorBody": "We could not load your checkout. Please try again.",
+			"retry": "Try again"
+		},
 		"courierDelivery": "Partner courier",
 		"promisedBy": "Expected by {date}",
 		"freeDeliveryApplied": "Delivery saving: {amount}",
@@ -3051,6 +3069,7 @@
 		"caseLoadError": "This return case could not be loaded.",
 		"retry": "Try again",
 		"backToReturns": "Back to my returns",
+		"openInWorkspace": "Open in your seller space",
 		"progressTitle": "Return progress",
 		"nextDeadline": "Next deadline: {date}",
 		"noDeadline": "No deadline",
@@ -3137,6 +3156,7 @@
 		"timeline": "Return timeline"
 	},
 	"Disputes": {
+		"openInWorkspace": "Open in the seller workspace",
 		"title": "My disputes",
 		"subtitle": "Follow the discussion, deadlines and outcome of reported order problems.",
 		"loadError": "Your disputes could not be loaded.",
@@ -3813,5 +3833,31 @@
 		"riderChoose": "Choose a rider",
 		"noConsent": "phone not shared",
 		"declareRemittance": "Declare the cash handed over"
+	},
+	"NotFoundPublic": {
+		"title": "We couldn't find that page",
+		"body": "The listing, shop or page you're looking for may have been sold, removed or moved. Let's get you back to browsing.",
+		"home": "Back to home",
+		"search": "Search listings"
+	},
+	"NotFoundCheckout": {
+		"title": "This checkout step doesn't exist",
+		"body": "Your cart and your orders are safe. Head back to your cart to carry on.",
+		"cart": "Back to cart"
+	},
+	"NotFoundSeller": {
+		"title": "This page isn't in your workspace",
+		"body": "It may have moved, or the link is out of date. Pick up from your dashboard.",
+		"dashboard": "Back to dashboard"
+	},
+	"NotFoundOps": {
+		"title": "Nothing here",
+		"body": "This item is not in the moderation queue, or it has already been handled.",
+		"verification": "Verification queue",
+		"disputes": "Disputes queue"
+	},
+	"NotFoundBare": {
+		"title": "This link is not valid",
+		"body": "Check the link you were sent. If it should still work, ask the sender for a new one."
 	}
 }

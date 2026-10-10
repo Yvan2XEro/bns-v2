@@ -1,12 +1,4 @@
 {
-	"Demo": {
-		"serverTitle": "Composant Serveur — next-intl",
-		"serverDescription": "Ce texte est traduit côté serveur avec getTranslations() (zéro JS client).",
-		"clientTitle": "Composant Client — next-intl",
-		"clientDescription": "Ce texte est traduit côté client avec useTranslations() depuis le contexte React.",
-		"currentLocale": "Langue active : {locale}",
-		"switchTo": "Passer en {lang}"
-	},
 	"Common": {
 		"search": "Rechercher...",
 		"loading": "Chargement...",
@@ -42,6 +34,7 @@
 		"logIn": "Connexion",
 		"signUp": "S'inscrire",
 		"myShop": "Ma boutique",
+		"sellerSpace": "Espace vendeur",
 		"openShop": "Ouvrir une boutique",
 		"cart": "Panier",
 		"cartWithCount": "Panier, {count, plural, =0 {vide} one {# article} other {# articles}}",
@@ -813,6 +806,12 @@
 		}
 	},
 	"Seller": {
+		"errorRetry": "Réessayer",
+		"errorBackToDashboard": "Retour au tableau de bord",
+		"tabs": {
+			"today": "Aujourd'hui",
+			"statistics": "Statistiques"
+		},
 		"space": "Espace vendeur",
 		"nav": {
 			"dashboard": "Tableau de bord",
@@ -822,7 +821,6 @@
 			"team": "Équipe",
 			"activity": "Activité",
 			"verification": "Vérification",
-			"messages": "Messages",
 			"settings": "Paramètres",
 			"orders": "Commandes",
 			"disputes": "Litiges",
@@ -1250,6 +1248,15 @@
 		"closeOwnerOnly": "Seul le propriétaire peut fermer la boutique."
 	},
 	"Moderation": {
+		"shell": {
+			"title": "Modération BuyNSellem",
+			"subtitle": "Espace équipe interne",
+			"auditNotice": "Chaque consultation de pièce est inscrite au journal.",
+			"signedInAs": "Connecté : {name}",
+			"errorTitle": "Une erreur est survenue",
+			"errorBody": "Réessayez dans un instant.",
+			"retry": "Réessayer"
+		},
 		"title": "File d’examen",
 		"subtitle": "Boutiques en attente de vérification d’identité ou d’entreprise.",
 		"loading": "Chargement…",
@@ -2121,7 +2128,10 @@
 		"system_order_completed": "Commande {orderNumber} terminée.",
 		"orderCardTitle": "Commande {orderNumber}",
 		"orderCardUntitled": "Commande liée à cette conversation",
-		"orderCardOpen": "Voir la commande"
+		"orderCardOpen": "Voir la commande",
+		"noConversations": "Aucune conversation pour le moment",
+		"selectConversation": "Sélectionnez une conversation",
+		"selectConversationHint": "Choisissez une conversation dans la liste pour commencer à échanger"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Commande transmise",
@@ -2187,6 +2197,14 @@
 		"retry": "Réessayer"
 	},
 	"Checkout": {
+		"shell": {
+			"backToCart": "Retour au panier",
+			"secure": "Commande sécurisée",
+			"trust": "Paiement protégé · Vos données restent privées",
+			"errorTitle": "Une erreur est survenue",
+			"errorBody": "Impossible de charger votre commande. Veuillez réessayer.",
+			"retry": "Réessayer"
+		},
 		"courierDelivery": "Transporteur partenaire",
 		"promisedBy": "Prévu au plus tard le {date}",
 		"freeDeliveryApplied": "Économie sur la livraison : {amount}",
@@ -3052,6 +3070,7 @@
 		"caseLoadError": "Impossible de charger ce dossier de retour.",
 		"retry": "Réessayer",
 		"backToReturns": "Retour à mes retours",
+		"openInWorkspace": "Ouvrir dans votre espace vendeur",
 		"progressTitle": "Avancement du retour",
 		"nextDeadline": "Prochaine échéance : {date}",
 		"noDeadline": "Aucune échéance",
@@ -3138,6 +3157,7 @@
 		"timeline": "Historique du retour"
 	},
 	"Disputes": {
+		"openInWorkspace": "Ouvrir dans l'espace vendeur",
 		"title": "Mes litiges",
 		"subtitle": "Suivez les échanges, les échéances et la résolution des problèmes signalés sur vos commandes.",
 		"loadError": "Impossible de charger vos litiges.",
@@ -3814,5 +3834,31 @@
 		"riderChoose": "Choisir un livreur",
 		"noConsent": "téléphone non partagé",
 		"declareRemittance": "Déclarer l'argent reversé"
+	},
+	"NotFoundPublic": {
+		"title": "Nous n'avons pas trouvé cette page",
+		"body": "L'annonce, la boutique ou la page que vous cherchez a peut-être été vendue, retirée ou déplacée. Reprenons votre visite.",
+		"home": "Retour à l'accueil",
+		"search": "Rechercher des annonces"
+	},
+	"NotFoundCheckout": {
+		"title": "Cette étape de paiement n'existe pas",
+		"body": "Votre panier et vos commandes sont en sécurité. Retournez au panier pour continuer.",
+		"cart": "Retour au panier"
+	},
+	"NotFoundSeller": {
+		"title": "Cette page n'est pas dans votre espace",
+		"body": "Elle a peut-être été déplacée, ou le lien est périmé. Reprenez depuis votre tableau de bord.",
+		"dashboard": "Retour au tableau de bord"
+	},
+	"NotFoundOps": {
+		"title": "Rien ici",
+		"body": "Cet élément n'est pas dans la file de modération, ou il a déjà été traité.",
+		"verification": "File de vérification",
+		"disputes": "File des litiges"
+	},
+	"NotFoundBare": {
+		"title": "Ce lien n'est pas valide",
+		"body": "Vérifiez le lien qui vous a été envoyé. S'il devrait encore fonctionner, demandez-en un nouveau à l'expéditeur."
 	}
 }
