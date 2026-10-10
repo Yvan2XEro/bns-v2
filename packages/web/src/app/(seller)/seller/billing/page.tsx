@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { PaymentsTabs } from "~/components/seller/payments-tabs";
 import { getMyShop } from "~/lib/server-shop";
 import { can } from "~/lib/shop-roles";
 import { BillingClient } from "./billing-client";
@@ -20,5 +21,10 @@ export default async function BillingPage() {
 	if (!mine?.shop) redirect("/shop/new");
 	if (!can(mine.role, "payments.view")) return <BillingLocked />;
 
-	return <BillingClient shopId={mine.shop.id} />;
+	return (
+		<>
+			<PaymentsTabs />
+			<BillingClient shopId={mine.shop.id} />
+		</>
+	);
 }

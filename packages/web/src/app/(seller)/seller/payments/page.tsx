@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { PaymentsTabs } from "~/components/seller/payments-tabs";
+import { serverGet } from "~/lib/server-api";
 import { getMyShop } from "~/lib/server-shop";
 import { can } from "~/lib/shop-roles";
 import { PaymentsClient } from "./payments-client";
@@ -13,16 +15,23 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * `payments.view` gates the whole screen, same as `/seller/billing`: staff
- * process orders but do not read the shop's ledger. The screen itself does
- * not check `protectedPaymentEnabled` — the ledger keeps posting and the
- * payouts keep running while the flag is off (global constraint: turning it
- * off never strands money in flight), so an owner with history here must
- * still be able to read it. Only the sidebar entry and `/setup` read the flag.
+ * process orders but do not read the shop's ledger.
  */
 export default async function PaymentsPage() {
-	const mine = await getMyShop();
+	const [mine, config] = await Promise.all([
+		getMyShop(),
+		serverGet<{ protectedPaymentEnabled?: boolean }>("/api/public/config"),
+	]);
 	if (!mine?.shop) redirect("/shop/new");
 	if (!can(mine.role, "payments.view")) return <PaymentsLocked />;
+	// A COD-only shop has no payouts: the hub entry lands on commission rather
+	// than an empty payouts shell.
+	if (config?.protectedPaymentEnabled !== true) redirect("/seller/billing");
 
-	return <PaymentsClient shopId={mine.shop.id} />;
+	return (
+		<>
+			<PaymentsTabs />
+			<PaymentsClient shopId={mine.shop.id} />
+		</>
+	);
 }
