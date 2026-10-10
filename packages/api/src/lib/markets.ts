@@ -329,6 +329,8 @@ export async function timezoneOfShop(
 /** What a rendered amount on an order's paper or notice needs: its currency and its market's formats. */
 export interface OrderMoney {
 	currency?: string;
+	/** Known only when the order's market is readable and holds its currency. */
+	minorUnit?: number;
 	formats?: readonly MoneyFormat[];
 }
 
@@ -349,8 +351,13 @@ export async function moneyOfOrder(
 				: order;
 		if (!doc) return {};
 		const market = await marketOfOrder(payload, doc);
+		const currency = doc.amounts?.currency ?? undefined;
 		return {
-			currency: doc.amounts?.currency ?? undefined,
+			currency,
+			minorUnit:
+				market && market.currency.code === currency
+					? market.currency.minorUnit
+					: undefined,
 			formats: market?.formats,
 		};
 	} catch (error) {

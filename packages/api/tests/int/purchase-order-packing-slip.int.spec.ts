@@ -125,4 +125,34 @@ describe("purchase order packing slip", () => {
 		);
 		expect(html).toContain("16\u202f000 FCFA");
 	});
+
+	it("a known two-decimal market with no row for the slip's language prints the M9 code-first form", async () => {
+		const gbp = {
+			...cmMarketRow(),
+			id: "m-gb",
+			countryCode: "GB",
+			currency: { code: "GBP", minorUnit: 2, rounding: "half_up" },
+			formatting: [
+				{
+					locale: "fr",
+					symbol: "£",
+					position: "before",
+					groupSeparator: " ",
+					decimalSeparator: ",",
+				},
+			],
+		};
+		const payload = world(
+			{ market: "m-gb", amounts: { total: 9_000, currency: "GBP" } },
+			[gbp],
+		);
+		const html = await getPurchaseOrderPackingSlipHtml(
+			payload,
+			{ id: "supplier-user", role: "user" },
+			"po-1",
+			"en",
+		);
+		expect(html).toContain("GBP 160.00");
+		expect(html).not.toContain("16 000 GBP");
+	});
 });

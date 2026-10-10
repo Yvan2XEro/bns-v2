@@ -1,4 +1,4 @@
-import { formatMoney } from "../contracts/money";
+import { formatMoney, formatMoneyFallback } from "../contracts/money";
 import type { OrderMoney } from "./markets";
 
 /** U+202F, the narrow no-break space French typography uses between a
@@ -21,14 +21,21 @@ export function formatXaf(amount: number, locale: "fr" | "en"): string {
 	return locale === "fr" ? `${sign}${grouped} FCFA` : `${sign}XAF ${grouped}`;
 }
 
-/** An amount in the order's market format, else the bare amount and its currency word. */
+/**
+ * An amount in the order's market format; with no row for the locale, the M9
+ * code-first form; the bare amount and its currency word only when the
+ * market is unreadable (no minor unit to place the decimal point).
+ */
 export function amountText(
 	amount: number,
-	{ currency, formats }: OrderMoney,
+	{ currency, minorUnit, formats }: OrderMoney,
 	locale: "fr" | "en",
 ): string {
 	const row = formats?.find((format) => format.locale === locale);
-	return row ? formatMoney(amount, row) : `${amount} ${currency ?? ""}`.trim();
+	if (row) return formatMoney(amount, row);
+	if (currency && minorUnit !== undefined)
+		return formatMoneyFallback(amount, currency, minorUnit);
+	return `${amount} ${currency ?? ""}`.trim();
 }
 
 /** The eleven statuses, in the spec's order — the one list, re-exported by

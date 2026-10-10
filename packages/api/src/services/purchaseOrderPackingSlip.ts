@@ -1,7 +1,7 @@
 import bwipjs from "bwip-js/node";
 import type { Payload } from "payload";
 import QRCode from "qrcode";
-import { formatMoney } from "../contracts/money";
+import { formatMoney, formatMoneyFallback } from "../contracts/money";
 import { ERROR_CODES } from "../lib/errors";
 import { moneyOfOrder, type OrderMoney } from "../lib/markets";
 import { relationId } from "../lib/relationId";
@@ -32,6 +32,8 @@ function formatAmount(
 ): string {
 	const row = money.formats?.find((format) => format.locale === language);
 	if (row) return formatMoney(amount, row);
+	if (money.currency && money.minorUnit !== undefined)
+		return formatMoneyFallback(amount, money.currency, money.minorUnit);
 	const formatted = new Intl.NumberFormat("fr-FR", {
 		maximumFractionDigits: 0,
 	}).format(amount);

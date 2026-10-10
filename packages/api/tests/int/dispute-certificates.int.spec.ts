@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { formatMoney } from "../../src/contracts/money";
 import { disputeCertificateLines } from "../../src/lib/disputeCertificateDocument";
+import { amountText } from "../../src/lib/orderFormat";
 import { renderTextPdf } from "../../src/lib/textPdf";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Dispute, Order, Shop } from "../../src/payload-types";
@@ -144,6 +145,13 @@ describe("dispute decision certificate", () => {
 		expect(lines({ currency: "EUR" })).toContain(
 			"Refund / Remboursement: 4500 EUR",
 		);
+	});
+
+	it("a known market with no en row prints the M9 code-first form, in major units", () => {
+		const refund = (money: Parameters<typeof amountText>[1]) =>
+			amountText(123_456, money, "en");
+		expect(refund({ currency: "GBP", minorUnit: 2 })).toBe("GBP 1 234.56");
+		expect(refund({ currency: "XAF", minorUnit: 0 })).toBe("XAF 123 456");
 	});
 
 	it("omits missing registration fields and stores a single party-visible certificate", async () => {
