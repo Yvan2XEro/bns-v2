@@ -30,7 +30,7 @@ export function listShopStatsBackfillDates(
 	const through = previousShopDate(now);
 	if (from > through)
 		throw new Error(
-			"Backfill start must be on or before the last completed Douala day.",
+			"Backfill start must be on or before the last completed legacy-zone day.",
 		);
 	const result: string[] = [];
 	const cursor = new Date(`${from}T12:00:00.000Z`);

@@ -11,7 +11,8 @@ const ROOTS = [
 	"mobile/src",
 	"mobile/app",
 ];
-const RETIRED = /Africa\/Douala|\+2376|\bXAF\b|FCFA|\bdouala\b|\byaounde\b/;
+// No 4-digit calling code starts with 237, so a bare `+237` is always Cameroon.
+const RETIRED = /\+237|\bXAF\b|FCFA|\b(?:douala|yaound[eé])/i;
 const COMMENT = /^\s*(\/\/|\/?\*|\{\/\*)/;
 
 const SHIM =
@@ -21,9 +22,9 @@ const DEFER =
 const TZ =
 	"served MarketConfig carries no timezone yet; candidate config field";
 const LEGACY_CM = "pre-multi-currency CM-only rows and documents";
-// [path part, reason, line needle (omit = whole file)]. A hit anywhere else fails.
+// [path part, reason, line needle(s) (omit = whole file)]. A hit anywhere else fails.
 // biome-ignore format: one entry per line
-const ALLOW: Array<[string, string, string?]> = [
+const ALLOW: Array<[string, string, (string | string[])?]> = [
 	["api/src/lib/marketTime.ts", "LEGACY_TIMEZONE: the single blessed home of the zone"],
 	["api/src/migrations/", "migration seeds (p10Markets)"],
 	["api/src/payload-types.ts", "generated; the douala|yaounde enums belong to the per-market user gate"],
@@ -41,7 +42,11 @@ const ALLOW: Array<[string, string, string?]> = [
 	["api/src/lib/payments/notchpayMarketplace.ts", "provider wire key: the per-currency balance object is read at XAF until a second payout market", "value.XAF"],
 	["api/src/scripts/", "ops/seed scripts, never on a request path"],
 	["web/src/lib/shipment-tracking.ts", `DELIVERY_TIMEZONE: ${TZ}`],
-	["web/src/app/(public)/contact/page.tsx", "the business's own support line, not a market rule", "tel:+2376"],
+	["web/src/app/(public)/contact/page.tsx", "the business's own support line, not a market rule", ["tel:+2376", '"+237 652']],
+	["web/messages/", "the company's seat (governing-law courts, contact address) and placeholder examples naming a city; copy-veto, not a rule", ['"lawDesc"', '"locationValue"', '"searchNamePlaceholder"', '"etaTextPlaceholder"']],
+	["mobile/src/locales/", "placeholder example copy naming a city; copy-veto item, not a rule", ['"saveSearchNamePlaceholder"', '"saveSearchPlaceholderFallback"', '"cityPlaceholder"', '"etaTextPlaceholder"']],
+	["src/lib/cameroon-cities.ts", "Cameroon geodata for the city picker (web + mobile), not a market rule", 'region: "'],
+	["mobile/src/lib/places.ts", "world geodata for the place picker", 'name: "Yaound'],
 	["web/src/lib/checkout-form.ts", SHIM, "districts("],
 	["mobile/src/lib/checkoutForm.ts", SHIM, "districts("],
 	["mobile/src/lib/deliveryZoneForm.ts", SHIM, 'LaunchCityKey = "douala"'],
@@ -52,6 +57,7 @@ const ALLOW: Array<[string, string, string?]> = [
 	["mobile/src/components/delivery/SellerShipmentActions.tsx", `delivery date zone: ${TZ}`],
 	["mobile/src/components/delivery/TrackingBlock.tsx", `delivery date zone: ${TZ}`],
 	["mobile/app/purchases/[id]/reschedule.tsx", `delivery date zone: ${TZ}`],
+	["mobile/src/lib/shipmentTracking.ts", `delivery date zone: ${TZ}`, "DOUALA_OFFSET_MS"],
 	["mobile/src/lib/market.ts", "explicit M9 fallback for pre-market APIs; ages out with released clients", "FALLBACK_CURRENCY"],
 	["mobile/src/locales/", `common.currency, ${DEFER}`, '"currency": "XAF"'],
 	["mobile/app/(tabs)/create/index.tsx", `common.currency defaultValue, ${DEFER}`, "defaultValue"],
@@ -76,7 +82,8 @@ const files = ROOTS.flatMap((root) => walk(join(PKGS, root))).map((file) => ({
 function allowed(rel: string, line: string): boolean {
 	return ALLOW.some(
 		([part, , needle]) =>
-			rel.includes(part) && (!needle || line.includes(needle)),
+			rel.includes(part) &&
+			(!needle || [needle].flat().some((n) => line.includes(n))),
 	);
 }
 
@@ -100,7 +107,8 @@ describe("the international rule: a retired market literal fails the build", () 
 	});
 
 	it("keeps the allowlist on one screen and reasoned", () => {
-		expect(ALLOW.length).toBeLessThanOrEqual(36);
+		// 40: the widened needle (spaced/bare +237, any-case Douala/Yaoundé) surfaced honest copy and geodata rows.
+		expect(ALLOW.length).toBeLessThanOrEqual(40);
 		expect(ALLOW.filter(([, reason]) => reason.length < 8)).toEqual([]);
 	});
 

@@ -19,6 +19,7 @@ describe("marketPhoneRule", () => {
 		expect(rule.pattern.test("+33612345678")).toBe(true);
 		expect(rule.pattern.test("+237650000001")).toBe(false);
 		expect(rule.placeholder).toBe("+33612345678");
+		expect(rule.example).toBe("+33612345678");
 	});
 
 	test("no market block falls back to the E.164 shape and no placeholder", () => {
@@ -26,5 +27,6 @@ describe("marketPhoneRule", () => {
 		expect(rule.pattern.test("+33612345678")).toBe(true);
 		expect(rule.pattern.test("0612345678")).toBe(false);
 		expect(rule.placeholder).toBeUndefined();
+		expect(rule.example).toBe("+CCXXXXXXXX");
 	});
 });

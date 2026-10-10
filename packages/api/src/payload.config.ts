@@ -190,7 +190,7 @@ const paymentTasks = [
 	},
 	{
 		...recoverSellerReceivablesTask,
-		schedule: [{ cron: "0 2 * * *", queue: PAYMENTS }], // 03:00 Douala
+		schedule: [{ cron: "0 2 * * *", queue: PAYMENTS }], // 03:00 WAT
 	},
 	{
 		...sweepBuyerFeeInvoicesTask,
@@ -221,15 +221,15 @@ const deliveryTasks = [
 	},
 	{
 		...remindReturnsTask,
-		schedule: [{ cron: "30 6 * * *", queue: "nightly" }], // 07:30 Douala
+		schedule: [{ cron: "30 6 * * *", queue: "nightly" }], // 07:30 WAT
 	},
 	{
 		...expireRiderLinksTask,
-		schedule: [{ cron: "45 2 * * *", queue: "nightly" }], // 03:45 Douala
+		schedule: [{ cron: "45 2 * * *", queue: "nightly" }], // 03:45 WAT
 	},
 	{
 		...purgeDeliveryProofsTask,
-		schedule: [{ cron: "15 2 * * *", queue: "nightly" }], // 03:15 Douala
+		schedule: [{ cron: "15 2 * * *", queue: "nightly" }], // 03:15 WAT
 	},
 ];
 

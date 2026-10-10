@@ -97,7 +97,9 @@ export function AddressStep({
 
 	const errorText = (field: AddressField) => {
 		const message = formState.errors[field]?.message;
-		return isAddressErrorKey(message) ? t(message) : message;
+		return isAddressErrorKey(message)
+			? t(message, { example: phoneRule.example })
+			: message;
 	};
 	const city = watch("city");
 	const district = watch("district");

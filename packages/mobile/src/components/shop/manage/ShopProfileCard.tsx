@@ -14,6 +14,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useCategories } from "@/src/hooks/useListings";
 import { useUpdateShopForm } from "@/src/hooks/useUpdateShopForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 import type { MyShop } from "@/src/types/api";
 
 /** Name, description, city, categories and the three contact fields — one `PATCH`, one Save. */
@@ -140,7 +141,7 @@ export function ShopProfileCard({
 							onChangeText={field.onChange}
 							onBlur={field.onBlur}
 							keyboardType="phone-pad"
-							placeholder="+237 6XX XXX XXX"
+							placeholder={phoneExample()}
 							placeholderTextColor={c.muted}
 							accessibilityLabel={t("shop.contactPhone")}
 							style={inputStyle}
@@ -160,7 +161,7 @@ export function ShopProfileCard({
 							onChangeText={field.onChange}
 							onBlur={field.onBlur}
 							keyboardType="phone-pad"
-							placeholder="+237 6XX XXX XXX"
+							placeholder={phoneExample()}
 							placeholderTextColor={c.muted}
 							accessibilityLabel={t("shop.contactWhatsapp")}
 							style={inputStyle}

@@ -2272,7 +2272,7 @@
 		"openInGoogleMaps": "Ouvrir dans Google Maps",
 		"clearLocation": "Retirer la position",
 		"errorRecipientName": "Entre 2 et 60 caractères.",
-		"errorPhone": "Un numéro mobile camerounais : +237 6XX XX XX XX.",
+		"errorPhone": "Indiquez un numéro mobile valide, par exemple {example}",
 		"errorCity": "Choisissez une ville de livraison.",
 		"errorDistrict": "Choisissez un quartier de cette ville.",
 		"errorDistrictOther": "Indiquez votre quartier (2 à 60 caractères).",

@@ -59,7 +59,7 @@ export function AttemptFields({
 				id="attempt-phone"
 				label={t("pay_phone")}
 				hint={t("pay_phoneHint")}
-				error={errors.phone ? tRoot("Checkout.errorPhone") : undefined}
+				error={errors.phone ? tRoot("Checkout.errorPhone", { example: phoneRule.example }) : undefined}
 			>
 				<Controller
 					control={control}

@@ -2271,7 +2271,7 @@
 		"openInGoogleMaps": "Open in Google Maps",
 		"clearLocation": "Remove location",
 		"errorRecipientName": "Between 2 and 60 characters.",
-		"errorPhone": "A Cameroonian mobile number: +237 6XX XX XX XX.",
+		"errorPhone": "Enter a valid mobile number, for example {example}",
 		"errorCity": "Choose a delivery city.",
 		"errorDistrict": "Choose a district in this city.",
 		"errorDistrictOther": "Enter your district (2 to 60 characters).",

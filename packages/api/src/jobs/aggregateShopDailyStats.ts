@@ -31,7 +31,7 @@ export const aggregateShopDailyStatsTask: TaskConfig<"aggregateShopDailyStats"> 
 			const dates = lastThreeShopDates(now);
 			const currentDate = dates[0];
 			if (!currentDate)
-				throw new Error("No Douala date available for shop stats.");
+				throw new Error("No legacy-zone date available for shop stats.");
 			const { start } = shopDayWindow(currentDate);
 			const viewFlush = await flushListingViewHash(
 				req.payload,

@@ -1,6 +1,7 @@
 import { type Control, Controller, type FieldError } from "react-hook-form";
 import { Text, TextInput, View } from "react-native";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 import { useShopTheme } from "../theme";
 import type { PhoneFormValues } from "./schemas";
 import { fieldStyles } from "./styles";
@@ -33,7 +34,7 @@ export function PhoneNumberField({
 						onBlur={field.onBlur}
 						editable={editable}
 						keyboardType="phone-pad"
-						placeholder="+237 6XX XXX XXX"
+						placeholder={phoneExample()}
 						placeholderTextColor={c.muted}
 						accessibilityLabel={t("shop.gatePhoneLabel")}
 						style={[

@@ -312,7 +312,7 @@ export const Shops: CollectionConfig = {
 				readOnly: true,
 				position: "sidebar",
 				description:
-					"Start of the Douala week the weekly insights notice was last sent for; jobs/sendWeeklyInsights.ts sends each shop once per week.",
+					"Start of the legacy-zone (LEGACY_TIMEZONE) week the weekly insights notice was last sent for; jobs/sendWeeklyInsights.ts sends each shop once per week.",
 			},
 		},
 		{
