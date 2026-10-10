@@ -483,7 +483,7 @@ async function toCartView(
 	};
 }
 
-const summaryOf = (shop: Shop | null, id: string): CartShopView => ({
+export const summaryOf = (shop: Shop | null, id: string): CartShopView => ({
 	id,
 	name: shop?.name ?? "",
 	handle: shop?.handle ?? "",

@@ -70,9 +70,11 @@ import {
 } from "./cart";
 import { resolveCartOffer } from "./cartOffer";
 import { assertShopEligibleForProtectedPayment } from "./checkoutPayment";
+import { quoteSplit, type SplitQuoteView } from "./checkoutSplit";
 import { marketOf, shopMarketCountry } from "./connectedAccounts";
 import {
 	type DeliveryOption,
+	type DeliveryQuote,
 	type PickupPointSnapshot,
 	type QuoteItem,
 	quoteDelivery,
@@ -175,7 +177,43 @@ export async function assertCheckoutPreconditions(
 	options: { now?: Date } = {},
 ): Promise<CheckoutContext> {
 	const now = options.now ?? new Date();
+	const { settings, cart } = await assertBuyerCanCheckout(payload, user);
 
+	// 5-7. Resolved from the raw cart item (not `revalidateCartLines`'s
+	// output) and checked before the line-level pass below:
+	// `revalidateCartLines` itself treats a shop gone inactive as "the line is
+	// unavailable" (`cart.itemUnavailable`), which is the right read for the
+	// cart screen but would shadow the more specific `order.shopUnavailable`/
+	// `order.codUnavailable` this precondition owes a checkout caller.
+	const shopId = relationId(cart.items?.[0]?.shop);
+	if (!shopId) throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
+	const { shop, capabilities } = await assertShopCanSell(
+		payload,
+		shopId,
+		settings,
+		now,
+	);
+
+	// 8. Every line still available, at the requested quantity.
+	const lines = await revalidateCartLines(payload, cart);
+	const badLine = lines.find((line) => !line.available);
+	if (badLine) {
+		throw new CheckoutError(
+			badLine.unavailableCode ?? ERROR_CODES.cartItemUnavailable,
+			409,
+			undefined,
+			{ line: badLine },
+		);
+	}
+
+	return { settings, cart, lines, shop, capabilities };
+}
+
+/** Checks 1-4: the flag, the buyer and a non-empty cart; none depends on which shop sells. */
+export async function assertBuyerCanCheckout(
+	payload: Payload,
+	user: ServiceUser,
+): Promise<{ settings: OrderSettings; cart: Cart }> {
 	// 1. The feature flag.
 	const settings = await getOrderSettings(payload);
 	if (!settings.enabled) {
@@ -203,16 +241,16 @@ export async function assertCheckoutPreconditions(
 	if (!cart || (cart.items?.length ?? 0) === 0) {
 		throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
 	}
+	return { settings, cart };
+}
 
-	// 5. The shop must be active and not restricted. Resolved from the raw
-	// cart item (not `revalidateCartLines`'s output) and checked before the
-	// line-level pass below: `revalidateCartLines` itself treats a shop gone
-	// inactive as "the line is unavailable" (`cart.itemUnavailable`), which is
-	// the right read for the cart screen but would shadow the more specific
-	// `order.shopUnavailable`/`order.codUnavailable` this precondition owes a
-	// checkout caller.
-	const shopId = relationId(cart.items?.[0]?.shop);
-	if (!shopId) throw new CheckoutError(ERROR_CODES.cartEmpty, 400);
+/** Checks 5-7 for one shop: active and unrestricted, COD enabled at its level, inside the pilot list. */
+export async function assertShopCanSell(
+	payload: Payload,
+	shopId: string,
+	settings: OrderSettings,
+	now: Date,
+): Promise<{ shop: Shop; capabilities: ShopCapabilities }> {
 	const shop = await payload
 		.findByID({
 			collection: "shops",
@@ -224,31 +262,14 @@ export async function assertCheckoutPreconditions(
 	if (!shop || shop.status !== "active" || shop.ordersRestrictedAt) {
 		throw new CheckoutError(ERROR_CODES.orderShopUnavailable, 409);
 	}
-
-	// 6. The shop must have COD enabled and a level that grants it.
 	const capabilities = shopCapabilities(shop, now);
 	if (shop.orderSettings?.codEnabled !== true || !capabilities.codOrders) {
 		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
 	}
-
-	// 7. The shop must be a pilot shop, when the pilot list is non-empty.
 	if (!isPilotShop(settings, shopId)) {
 		throw new CheckoutError(ERROR_CODES.orderCodUnavailable, 409);
 	}
-
-	// 8. Every line still available, at the requested quantity.
-	const lines = await revalidateCartLines(payload, cart);
-	const badLine = lines.find((line) => !line.available);
-	if (badLine) {
-		throw new CheckoutError(
-			badLine.unavailableCode ?? ERROR_CODES.cartItemUnavailable,
-			409,
-			undefined,
-			{ line: badLine },
-		);
-	}
-
-	return { settings, cart, lines, shop, capabilities };
+	return { shop, capabilities };
 }
 
 export interface CheckoutAddressInput {
@@ -267,6 +288,8 @@ export interface CheckoutQuoteInput {
 	deliveryOptionId?: unknown;
 	paymentMethod?: unknown;
 	locale?: unknown;
+	/** Flag on: the option picked per group key; an unnamed group is quoted at its first option. */
+	deliveryByGroup?: unknown;
 }
 
 export interface DeliveryAddress {
@@ -762,27 +785,15 @@ export async function listDeliveryOptions(
 	};
 }
 
-/**
- * The buyer's own COD checkout quote: a priced promise computed fresh from
- * the current cart, the shop's current settings and the buyer's current
- * risk tier — never from anything stored. `placeOrder` (Task 19) re-runs
- * every check here and recomputes `quoteHash` rather than trusting what the
- * client hands back; a changed input (a price, a fee, the method, the city,
- * the terms version) must change the hash so a mismatch is detectable.
- *
- * Nothing here writes: a quote is never stored.
- */
-async function buildQuote(
-	payload: Payload,
+/** Counted before any lookup: a refused call is counted too. */
+export async function countQuoteAttempt(
 	user: ServiceUser,
-	input: CheckoutQuoteInput,
 	options: { store?: CounterStore; now?: Date; ip?: string } = {},
-): Promise<{ response: QuoteResponse; internals: QuoteInternals }> {
+): Promise<void> {
 	const now = options.now ?? new Date();
 	const store = options.store ?? getCounterStore();
 
-	// Counted before any lookup: the limit protects the fee table as much as
-	// it protects the server, so a refused call must be counted too.
+	// The limit protects the fee table as much as the server.
 	const [userLimited, ipLimited] = await Promise.all([
 		hitRateLimit(
 			store,
@@ -800,8 +811,62 @@ async function buildQuote(
 	if (userLimited || ipLimited) {
 		throw new CheckoutError(ERROR_CODES.rateLimited, 429);
 	}
+}
 
+/**
+ * The buyer's own COD checkout quote: a priced promise computed fresh from
+ * the current cart, the shop's current settings and the buyer's current
+ * risk tier — never from anything stored. `placeOrder` (Task 19) re-runs
+ * every check here and recomputes `quoteHash` rather than trusting what the
+ * client hands back; a changed input (a price, a fee, the method, the city,
+ * the terms version) must change the hash so a mismatch is detectable.
+ *
+ * Nothing here writes: a quote is never stored.
+ */
+async function buildQuote(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<{ response: QuoteResponse; internals: QuoteInternals }> {
+	const now = options.now ?? new Date();
+	await countQuoteAttempt(user, options);
 	const ctx = await assertCheckoutPreconditions(payload, user, { now });
+	const { response, internals } = await quoteLines(
+		payload,
+		user,
+		input,
+		ctx,
+		now,
+	);
+	return { response, internals };
+}
+
+/** What a group's quote carries beyond the single-shop response: the full option list, the commission its VAT is taken on, and the market stamp. */
+export interface LinesQuote {
+	response: QuoteResponse;
+	internals: QuoteInternals;
+	delivery: DeliveryQuote;
+	commission: number;
+	marketUpdatedAt: string;
+	vatRateBps: number;
+}
+
+/**
+ * The single-shop quote over one set of lines and the shop that sells them.
+ * The flat quote runs it once over the whole cart; the split quote runs it
+ * once per group, so a group is priced by exactly the code a single-shop cart
+ * is. `scope` is set only by the split quote: the hash is then bound to the
+ * group and the market stamp, and an unnamed option falls to the first.
+ */
+export async function quoteLines(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	ctx: Pick<CheckoutContext, "settings" | "lines" | "shop" | "capabilities">,
+	now: Date,
+	scope?: { groupKey: string },
+): Promise<LinesQuote> {
 	const { settings, lines, shop, capabilities } = ctx;
 
 	if (input.paymentMethod !== "cod" && input.paymentMethod !== "mobile_money") {
@@ -888,7 +953,10 @@ async function buildQuote(
 	const deliveryOptions = quoteFrom.resale
 		? withoutPickup(deliveryQuote.options)
 		: deliveryQuote.options;
-	const chosen = deliveryOptions.find((option) => option.optionId === optionId);
+	const chosen =
+		scope && !optionId
+			? deliveryOptions[0]
+			: deliveryOptions.find((option) => option.optionId === optionId);
 	if (!chosen) {
 		throw new CheckoutError(ERROR_CODES.checkoutMethodUnavailable, 409);
 	}
@@ -1038,11 +1106,14 @@ async function buildQuote(
 			resale: items.find((item) => item.lineId === line.id)?.resale,
 		})),
 		deliveryFee: chosen.fee,
-		...(deliverySettings.zonesEnabled
+		...(deliverySettings.zonesEnabled || scope
 			? {
 					optionId: chosen.optionId,
 					deliverySourceUpdatedAt: chosen.sourceUpdatedAt,
 				}
+			: {}),
+		...(scope
+			? { groupKey: scope.groupKey, marketUpdatedAt: liveMarket.updatedAt }
 			: {}),
 		method: chosen.method,
 		city: address.city,
@@ -1051,6 +1122,13 @@ async function buildQuote(
 	});
 
 	return {
+		delivery: {
+			options: deliveryOptions,
+			unavailable: deliveryQuote.unavailable,
+		},
+		commission,
+		marketUpdatedAt: liveMarket.updatedAt,
+		vatRateBps: liveMarket.vatRateBps,
 		response: {
 			summary: {
 				lines: items.map((item) => ({
@@ -1119,6 +1197,19 @@ export async function quoteCheckout(
 	options: { store?: CounterStore; now?: Date; ip?: string } = {},
 ): Promise<QuoteResponse> {
 	return (await buildQuote(payload, user, input, options)).response;
+}
+
+/** What `POST /api/checkout/quote` answers: the flat quote, or one per group behind `multiShopCartEnabled`. */
+export async function quoteCheckoutResponse(
+	payload: Payload,
+	user: ServiceUser,
+	input: CheckoutQuoteInput,
+	options: { store?: CounterStore; now?: Date; ip?: string } = {},
+): Promise<QuoteResponse | SplitQuoteView> {
+	const settings = await getOrderSettings(payload);
+	return settings.multiShopCartEnabled
+		? quoteSplit(payload, user, input, options)
+		: quoteCheckout(payload, user, input, options);
 }
 
 export interface CheckoutPlaceInput extends CheckoutQuoteInput {

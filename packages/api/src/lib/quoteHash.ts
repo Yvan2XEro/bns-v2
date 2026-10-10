@@ -17,6 +17,9 @@ export interface QuoteHashInput {
 	optionId?: string;
 	deliverySourceUpdatedAt?: string;
 	city: string;
+	/** Split quote only: binds a hash to its group so it cannot validate another group's placement. */
+	groupKey?: string;
+	marketUpdatedAt?: string;
 	paymentMethod: "cod" | "mobile_money";
 	termsVersion: string;
 }
@@ -43,6 +46,10 @@ export function quoteHash(input: QuoteHashInput): string {
 		...(input.optionId ? { optionId: input.optionId } : {}),
 		...(input.deliverySourceUpdatedAt
 			? { deliverySourceUpdatedAt: input.deliverySourceUpdatedAt }
+			: {}),
+		...(input.groupKey ? { groupKey: input.groupKey } : {}),
+		...(input.marketUpdatedAt
+			? { marketUpdatedAt: input.marketUpdatedAt }
 			: {}),
 		method: input.method,
 		city: input.city,

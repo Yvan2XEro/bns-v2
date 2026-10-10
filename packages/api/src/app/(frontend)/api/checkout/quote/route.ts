@@ -2,7 +2,7 @@ import { z } from "zod";
 import { clientIp } from "@/lib/clientIp";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
-import { quoteCheckout } from "@/services/checkout";
+import { quoteCheckoutResponse } from "@/services/checkout";
 
 // Shape only: every business rule on the address (length, phone format, the
 // launch city, the district, the landmark) is `quoteCheckout`'s own —
@@ -13,6 +13,7 @@ const bodySchema = z.object({
 	deliveryOptionId: z.unknown(),
 	paymentMethod: z.unknown(),
 	locale: z.unknown().optional(),
+	deliveryByGroup: z.unknown().optional(),
 });
 
 export async function POST(request: Request) {
@@ -23,9 +24,14 @@ export async function POST(request: Request) {
 	if (!body.success) return errorResponse(ERROR_CODES.badRequest, 400);
 
 	try {
-		const quote = await quoteCheckout(ctx.payload, ctx.user, body.data, {
-			ip: clientIp(request),
-		});
+		const quote = await quoteCheckoutResponse(
+			ctx.payload,
+			ctx.user,
+			body.data,
+			{
+				ip: clientIp(request),
+			},
+		);
 		return Response.json(quote);
 	} catch (error) {
 		return handleServiceError("checkout:quote", error);

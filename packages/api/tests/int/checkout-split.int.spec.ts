@@ -1,6 +1,11 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { launchCitySeedRows } from "../../src/lib/launchCities";
+import { invalidateMarketCache } from "../../src/lib/marketCache";
+import { getOrderSettings } from "../../src/lib/orderSettings";
+import { quoteHash } from "../../src/lib/quoteHash";
+import { MemoryCounterStore } from "../../src/lib/rateLimit";
+import { shopCapabilities } from "../../src/lib/shopCapabilities";
 import {
 	addCartItem,
 	addCartItemResponse,
@@ -8,10 +13,27 @@ import {
 	getCartResponse,
 	getCartView,
 	removeCartItem,
+	revalidateCartLines,
 } from "../../src/services/cart";
+import {
+	quoteCheckout,
+	quoteCheckoutResponse,
+} from "../../src/services/checkout";
+import {
+	groupLines,
+	quoteGroup,
+	type SplitQuoteView,
+} from "../../src/services/checkoutSplit";
 import { cmMarketRow, fakePayload, rwMarketRow } from "./helpers/fakePayload";
 
 const buyer = { id: "buyer" };
+
+beforeEach(() => {
+	process.env.ORDER_PHONE_PEPPER = "test-pepper";
+});
+afterEach(() => {
+	process.env.ORDER_PHONE_PEPPER = undefined;
+});
 
 const kigali = {
 	id: "rw:kigali",
@@ -322,5 +344,266 @@ describe.each([false, true])("market binding, flag %s", (flag) => {
 		await addCartItem(payload, buyer, add("l-k", "v-k")).catch(() => null);
 		await clearCart(payload, buyer);
 		expect((payload.store.carts[0] as { market?: unknown }).market).toBeNull();
+	});
+});
+
+const NOW = new Date("2026-10-02T10:00:00.000Z");
+const SELLER = {
+	codEnabled: true,
+	sellerDeliveryEnabled: true,
+	deliveryFee: null,
+	deliveryEtaText: "24-48h",
+	pickupEnabled: false,
+	salesTermsExtra: null,
+};
+const address = {
+	recipientName: "Jean Mballa",
+	phone: "+237670000001",
+	city: "douala",
+	district: "douala.akwa",
+	landmark: "Pres de la pharmacie du carrefour",
+	instructions: "Appeler avant livraison",
+};
+const quoteInput = (extra: object = {}) => ({
+	address,
+	deliveryOptionId: "seller_delivery:douala",
+	paymentMethod: "cod",
+	...extra,
+});
+
+function quoteWorld(flag: boolean) {
+	return world(flag, {
+		users: [
+			{
+				id: "buyer",
+				name: "Buyer",
+				phone: "+237670000001",
+				phoneVerifiedAt: NOW.toISOString(),
+			},
+		],
+		shops: [
+			shop("a", "douala", { orderSettings: SELLER }),
+			shop("b", "douala", { orderSettings: SELLER }),
+			shop("c", "douala", { level: 3, orderSettings: SELLER }),
+		],
+		"buyer-phone-scores": [],
+		orders: [],
+	});
+}
+
+function rowOf(
+	payload: ReturnType<typeof quoteWorld>,
+	collection: string,
+	id: string,
+) {
+	const row = payload.store[collection].find((r) => r.id === id);
+	if (!row) throw new Error(`${collection}/${id} is not seeded`);
+	return row;
+}
+
+const splitOf = async (
+	payload: ReturnType<typeof quoteWorld>,
+	extra: object = {},
+): Promise<SplitQuoteView> => {
+	const view = await quoteCheckoutResponse(payload, buyer, quoteInput(extra), {
+		now: NOW,
+		store: new MemoryCounterStore(),
+	});
+	if (!("groups" in view)) throw new Error("expected a split quote");
+	return view;
+};
+
+async function filledWorld(flag = true) {
+	const payload = quoteWorld(flag);
+	await addCartItem(payload, buyer, add("l-a", "v-a"));
+	if (flag) {
+		await addCartItem(payload, buyer, add("l-b", "v-b"));
+		await addCartItem(payload, buyer, add("l-res", "v-c"));
+	}
+	return payload;
+}
+
+function withZones(payload: ReturnType<typeof quoteWorld>) {
+	payload.globals["app-settings"].delivery = { zonesEnabled: true };
+	payload.store["shop-locations"] = [];
+	payload.store["delivery-zones"] = ["a", "b", "c"].map((id) => ({
+		id: `zone-${id}`,
+		shop: id,
+		name: "Whole city",
+		scope: "same_city",
+		city: "douala",
+		districts: [],
+		method: "seller_delivery",
+		fee: 2000,
+		etaMinHours: 4,
+		etaMaxHours: 8,
+		deliveryDays: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+		active: true,
+		codAllowed: true,
+		updatedAt: NOW.toISOString(),
+	}));
+}
+
+describe("flag on: one quote per group", () => {
+	it("quotes the worked fixture group by group", async () => {
+		const quote = await splitOf(await filledWorld());
+		expect(quote.market).toEqual({ countryCode: "CM", currency: "XAF" });
+		expect(quote.groups.map((g) => g.groupKey)).toEqual(["a:a", "b:b", "a:c"]);
+		expect(quote.groups.map((g) => g.deliveryFee)).toEqual([2000, 2000, 2000]);
+		expect(quote.groups.map((g) => g.total)).toEqual([27_000, 17_000, 9000]);
+		expect(quote.grandTotal).toBe(53_000);
+		expect(quote.unavailableGroups).toEqual([]);
+		expect(quote.quoteHash).toMatch(/^[0-9a-f]{64}$/);
+		const resale = quote.groups[2];
+		expect(resale.resale).toBe(true);
+		expect(resale.fulfillingShop.id).toBe("c");
+		expect(resale.storefrontShop.id).toBe("a");
+		expect(resale.items).toHaveLength(1);
+		expect(new Set(quote.groups.map((g) => g.quoteHash)).size).toBe(3);
+	});
+
+	it("lists a deactivated shop under unavailableGroups and leaves it out of the total", async () => {
+		const payload = await filledWorld();
+		rowOf(payload, "shops", "b").status = "suspended";
+		const quote = await splitOf(payload);
+		expect(quote.groups.map((g) => g.groupKey)).toEqual(["a:a", "a:c"]);
+		expect(quote.unavailableGroups).toEqual([
+			{ groupKey: "b:b", reason: "order.shopUnavailable" },
+		]);
+		expect(quote.grandTotal).toBe(36_000);
+	});
+
+	it("lists a group whose picked option is not offered, and honours a valid pick", async () => {
+		const payload = await filledWorld();
+		const quote = await splitOf(payload, {
+			deliveryByGroup: { "b:b": "courier:nope" },
+		});
+		expect(quote.unavailableGroups).toEqual([
+			{ groupKey: "b:b", reason: "checkout.methodUnavailable" },
+		]);
+		const picked = await splitOf(payload, {
+			deliveryByGroup: { "a:a": "seller_delivery:douala" },
+		});
+		expect(picked.groups[0].selectedOptionId).toBe("seller_delivery:douala");
+	});
+
+	it("lists a group whose stock ran out after it was carted", async () => {
+		const payload = await filledWorld();
+		const variant = rowOf(payload, "product-variants", "v-b");
+		variant.trackInventory = true;
+		variant.stockOnHand = 0;
+		variant.stockReserved = 0;
+		const quote = await splitOf(payload);
+		expect(quote.unavailableGroups).toEqual([
+			{ groupKey: "b:b", reason: "cart.outOfStock" },
+		]);
+		expect(quote.grandTotal).toBe(36_000);
+	});
+
+	it("moves the hash on a zone edit, and only on an edit", async () => {
+		const payload = await filledWorld();
+		withZones(payload);
+		const first = await splitOf(payload);
+		expect((await splitOf(payload)).quoteHash).toBe(first.quoteHash);
+		payload.store["delivery-zones"][0].updatedAt = "2026-10-02T11:00:00.000Z";
+		const second = await splitOf(payload);
+		expect(second.quoteHash).not.toBe(first.quoteHash);
+		expect(second.groups[0].quoteHash).not.toBe(first.groups[0].quoteHash);
+		expect(second.groups[1].quoteHash).toBe(first.groups[1].quoteHash);
+	});
+
+	it("moves the hash when only the last group changes", async () => {
+		const payload = await filledWorld();
+		const first = await splitOf(payload);
+		rowOf(payload, "product-variants", "v-b").price = 16_000;
+		const second = await splitOf(payload);
+		expect(second.groups[0].quoteHash).toBe(first.groups[0].quoteHash);
+		expect(second.groups[1].quoteHash).not.toBe(first.groups[1].quoteHash);
+		expect(second.quoteHash).not.toBe(first.quoteHash);
+	});
+
+	it("moves every hash when the market row is edited", async () => {
+		const payload = await filledWorld();
+		const first = await splitOf(payload);
+		payload.store.markets[0].updatedAt = "2026-10-10T10:00:00.000Z";
+		invalidateMarketCache(payload);
+		const second = await splitOf(payload);
+		expect(second.quoteHash).not.toBe(first.quoteHash);
+		for (const [i, group] of second.groups.entries())
+			expect(group.quoteHash).not.toBe(first.groups[i].quoteHash);
+	});
+
+	it("binds a group hash to its group identity", () => {
+		const input = {
+			lines: [{ lineId: "l", variantId: "v", quantity: 1, unitPrice: 100 }],
+			deliveryFee: 2000,
+			method: "seller_delivery" as const,
+			city: "douala",
+			paymentMethod: "cod" as const,
+			termsVersion: "t",
+			marketUpdatedAt: "m",
+		};
+		expect(quoteHash({ ...input, groupKey: "a:a" })).not.toBe(
+			quoteHash({ ...input, groupKey: "b:b" }),
+		);
+		expect(quoteHash({ ...input, groupKey: "a:a" })).toBe(
+			quoteHash({ ...input, groupKey: "a:a" }),
+		);
+	});
+
+	it("refuses a group assembling two fulfilling shops as an integrity error", async () => {
+		const payload = await filledWorld();
+		const cart = await payload.findByID({
+			collection: "carts",
+			id: String(payload.store.carts[0].id),
+			depth: 0,
+			overrideAccess: true,
+		});
+		const lines = await revalidateCartLines(payload, cart);
+		const [own, , resale] = lines;
+		const storefront = await payload.findByID({
+			collection: "shops",
+			id: "a",
+			depth: 0,
+			overrideAccess: true,
+		});
+		await expect(
+			quoteGroup(
+				payload,
+				buyer,
+				quoteInput(),
+				{
+					settings: await getOrderSettings(payload),
+					lines: [own, resale],
+					shop: storefront,
+					capabilities: shopCapabilities(storefront, NOW),
+				},
+				{ groupKey: "a:a" },
+				NOW,
+			),
+		).rejects.toMatchObject({ code: "cart.singleFulfilment" });
+		expect(groupLines(lines).map((g) => g.lines.length)).toEqual([1, 1, 1]);
+	});
+});
+
+describe("flag off: the quote is today's quote, byte for byte", () => {
+	it("answers the flat QuoteResponse through the flag dispatch", async () => {
+		const payload = await filledWorld(false);
+		const direct = await quoteCheckout(payload, buyer, quoteInput(), {
+			now: NOW,
+		});
+		const dispatched = await quoteCheckoutResponse(
+			payload,
+			buyer,
+			quoteInput(),
+			{
+				now: NOW,
+			},
+		);
+		expect(JSON.stringify(dispatched)).toBe(JSON.stringify(direct));
+		expect(JSON.stringify(direct.summary.amounts)).toBe(
+			'{"subtotal":25000,"deliveryFee":2000,"discount":0,"buyerProtectionFee":0,"total":27000,"currency":"XAF"}',
+		);
+		expect("groups" in dispatched).toBe(false);
 	});
 });
