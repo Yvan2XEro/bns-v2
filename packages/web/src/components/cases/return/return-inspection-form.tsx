@@ -11,8 +11,8 @@ import {
 	RETURN_INSPECTION_OUTCOMES,
 	type ReturnInspectionFormInput,
 	type ReturnInspectionFormOutput,
-} from "../../../../../../api/src/contracts/returnInputs";
-import type { ReturnCaseView } from "../../../../../../api/src/contracts/returns";
+} from "../../../../../api/src/contracts/returnInputs";
+import type { ReturnCaseView } from "../../../../../api/src/contracts/returns";
 import { ReturnEvidenceUpload } from "./return-evidence-upload";
 
 export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {

@@ -50,8 +50,9 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 					<ul className="space-y-3">
 						{query.data.rows.map((row) => (
 							<li key={row.id}>
+								{/* Spec §1 (SPLIT): a seller row stays inside the workspace. */}
 								<Link
-									href={`/returns/${encodeURIComponent(row.id)}`}
+									href={`/seller/returns/${encodeURIComponent(row.id)}`}
 									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 hover:border-[#93C5FD] hover:bg-[#F8FAFC]"
 								>
 									<div className="min-w-0">

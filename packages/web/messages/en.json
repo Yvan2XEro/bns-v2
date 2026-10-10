@@ -3063,6 +3063,7 @@
 		"caseLoadError": "This return case could not be loaded.",
 		"retry": "Try again",
 		"backToReturns": "Back to my returns",
+		"openInWorkspace": "Open in your seller space",
 		"progressTitle": "Return progress",
 		"nextDeadline": "Next deadline: {date}",
 		"noDeadline": "No deadline",

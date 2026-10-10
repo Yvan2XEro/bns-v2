@@ -3064,6 +3064,7 @@
 		"caseLoadError": "Impossible de charger ce dossier de retour.",
 		"retry": "Réessayer",
 		"backToReturns": "Retour à mes retours",
+		"openInWorkspace": "Ouvrir dans votre espace vendeur",
 		"progressTitle": "Avancement du retour",
 		"nextDeadline": "Prochaine échéance : {date}",
 		"noDeadline": "Aucune échéance",

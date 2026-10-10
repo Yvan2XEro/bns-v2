@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { useReturnAction, useReturnCase } from "~/hooks/use-returns";
 import {
 	RETURN_ACTION_LABELS,
@@ -10,7 +11,8 @@ import {
 } from "~/lib/case-status";
 import type { JsonReturnAction } from "~/lib/return-actions";
 import { returnFlowState } from "~/lib/return-flow";
-import type { ReturnAction } from "../../../../../../api/src/contracts/returns";
+import { sellerReturnActions } from "~/lib/seller-return-actions";
+import type { ReturnAction } from "../../../../../api/src/contracts/returns";
 import { SellerReturnActions } from "./seller-return-actions";
 
 const BUYER_ACTIONS: ReadonlySet<JsonReturnAction> = new Set([
@@ -26,7 +28,13 @@ function isBuyerAction(action: ReturnAction): action is JsonReturnAction {
 	return action !== "upload_evidence" && BUYER_ACTIONS.has(action);
 }
 
-export function ReturnCaseClient({ caseId }: { caseId: string }) {
+export function ReturnCaseClient({
+	caseId,
+	surface = "buyer",
+}: {
+	caseId: string;
+	surface?: "buyer" | "seller";
+}) {
 	const locale = useLocale();
 	const t = useTranslations("Returns");
 	const query = useReturnCase(caseId);
@@ -80,12 +88,32 @@ export function ReturnCaseClient({ caseId }: { caseId: string }) {
 
 	return (
 		<main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
-			<Link
-				href="/account/returns"
-				className="inline-flex min-h-11 items-center text-[#1E40AF] text-sm hover:underline"
-			>
-				{t("backToReturns")}
-			</Link>
+			{surface === "seller" ? (
+				<WorkspaceBreadcrumb
+					section="returns"
+					href="/seller/returns"
+					reference={view.number}
+				/>
+			) : (
+				<>
+					<Link
+						href="/account/returns"
+						className="inline-flex min-h-11 items-center text-[#1E40AF] text-sm hover:underline"
+					>
+						{t("backToReturns")}
+					</Link>
+					{sellerReturnActions(view.allowedActions).length > 0 && (
+						<p className="text-sm">
+							<Link
+								href={`/seller/returns/${encodeURIComponent(view.id)}`}
+								className="text-[#1E40AF] hover:underline"
+							>
+								{t("openInWorkspace")}
+							</Link>
+						</p>
+					)}
+				</>
+			)}
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<p className="text-[#64748B] text-sm">
