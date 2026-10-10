@@ -4,13 +4,10 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { QueryProvider } from "~/components/query-provider";
-import {
-	type AppConfig,
-	AppConfigProvider,
-	EMPTY_APP_CONFIG,
-} from "~/hooks/use-app-config";
+import { AppConfigProvider } from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
 import { ChatProvider } from "~/hooks/use-chat-client";
+import { type AppConfig, EMPTY_APP_CONFIG } from "~/lib/app-config";
 import { serverFetch } from "~/lib/server-api";
 
 const dmSans = DM_Sans({

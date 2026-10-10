@@ -7,7 +7,7 @@ import { useSellerPayout } from "~/hooks/use-seller-payments";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatOrderDate, formatXaf } from "~/lib/order-money";
 import { PAYOUT_STATUSES } from "~/lib/payment-status";
-import { useLocaleKey } from "../../use-locale-key";
+import { useLocaleKey } from "~/lib/use-locale-key";
 
 function isPayoutStatus(value: string): value is keyof typeof PAYOUT_STATUSES {
 	return Object.hasOwn(PAYOUT_STATUSES, value);

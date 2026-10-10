@@ -15,7 +15,7 @@ import {
 	type ZoneFormValues,
 } from "~/lib/delivery-zone-form";
 import { formatXaf } from "~/lib/order-money";
-import { useLocaleKey } from "../billing/use-locale-key";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import { FieldError, Toggle } from "../settings/orders/form-controls";
 
 const SELECT_CLASS =

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { ActionDialog } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useAvailableCouriers } from "~/hooks/use-delivery-settings";
@@ -9,9 +10,8 @@ import { useSwitchCarrier } from "~/hooks/use-shop-shipments";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatXaf } from "~/lib/order-money";
 import { eligibleCouriers, shipmentDestination } from "~/lib/shipment-panel";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { ShopShipmentView } from "../../../../../../../api/src/contracts/shipments";
-import { ActionDialog } from "../../../../(public)/purchases/[id]/action-dialog";
-import { useLocaleKey } from "../../billing/use-locale-key";
 
 /** Own delivery, or a partner courier priced from the registry; the route cancels the old carrier and creates the new one together. */
 export function ShipmentCarrierDialog({

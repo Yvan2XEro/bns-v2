@@ -6,8 +6,8 @@ import {
 	type AmountStripKey,
 	amountStripRows,
 } from "~/lib/seller-payments-view";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { SellerPaymentAmounts } from "~/types/payments";
-import { useLocaleKey } from "./use-locale-key";
 
 const LABEL_KEYS: Record<AmountStripKey, string> = {
 	awaitingDelivery: "seller_awaitingDelivery",

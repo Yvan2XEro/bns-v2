@@ -3,8 +3,8 @@
 import { ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { formatOrderDate } from "~/lib/order-money";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { BillingView } from "~/types/order";
-import { useLocaleKey } from "./use-locale-key";
 
 /** Says what is blocked, what is not, and what lifts it — never just "restricted". */
 export function RestrictionBanner({

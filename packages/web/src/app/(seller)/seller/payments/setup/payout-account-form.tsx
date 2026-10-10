@@ -23,7 +23,7 @@ import {
 	type PayoutAccountFormValues,
 	payoutAccountSchema,
 } from "~/lib/payout-account-form";
-import { useLocaleKey } from "../use-locale-key";
+import { useLocaleKey } from "~/lib/use-locale-key";
 
 export function PayoutAccountForm({
 	shopId,

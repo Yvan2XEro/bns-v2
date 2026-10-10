@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { ActionDialog } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
@@ -13,7 +14,6 @@ import {
 	type HandoverCodeValues,
 	handoverCodeSchema,
 } from "~/lib/shipment-panel";
-import { ActionDialog } from "../../../../(public)/purchases/[id]/action-dialog";
 import { ProofPhotoField } from "./proof-photo-field";
 
 interface Props {

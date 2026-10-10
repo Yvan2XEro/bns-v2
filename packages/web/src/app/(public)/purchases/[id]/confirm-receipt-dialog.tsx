@@ -1,10 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ActionDialog, type DialogControl } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { useConfirmReceipt } from "~/hooks/use-order-actions";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { ActionDialog, type DialogControl } from "./action-dialog";
 
 export function ConfirmReceiptDialog({
 	orderId,

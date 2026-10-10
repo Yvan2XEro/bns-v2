@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { ActionDialog } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { useShipmentAction } from "~/hooks/use-shop-shipments";
@@ -14,7 +15,6 @@ import {
 	attemptSchema,
 } from "~/lib/shipment-panel";
 import { FAILURE_REASON_LABELS } from "~/lib/shipment-status";
-import { ActionDialog } from "../../../../(public)/purchases/[id]/action-dialog";
 import { ProofPhotoField } from "./proof-photo-field";
 
 /**

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { CommissionInvoiceView } from "~/types/order";
 import { InvoiceStatusBadge, isPayable } from "./invoice-status";
 import { PayInvoiceButton } from "./pay-invoice-button";
-import { useLocaleKey } from "./use-locale-key";
 
 export function InvoiceList({
 	shopId,

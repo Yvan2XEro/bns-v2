@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useFieldArray, useForm } from "react-hook-form";
+import { ActionDialog, type DialogControl } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
@@ -17,7 +18,6 @@ import {
 	withdrawalPayload,
 	withdrawalSchema,
 } from "../purchase-view";
-import { ActionDialog, type DialogControl } from "./action-dialog";
 
 /**
  * The window's state in words. Whether the button exists is the action

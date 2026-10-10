@@ -3,13 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
+import { ActionDialog, type DialogControl } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { useContestDelivery } from "~/hooks/use-order-actions";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatOrderDate } from "~/lib/order-money";
 import { type ContestValues, contestSchema } from "../purchase-view";
-import { ActionDialog, type DialogControl } from "./action-dialog";
 
 /** Only ever opened from the action bar, which offers it for a seller declaration before `contestBy`. */
 export function ContestDialog({

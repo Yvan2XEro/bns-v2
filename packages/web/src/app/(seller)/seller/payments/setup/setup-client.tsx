@@ -19,8 +19,8 @@ import {
 	type PayoutMethod,
 } from "~/lib/payment-status";
 import { notMeAccountId } from "~/lib/payout-account-form";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import { HoldList } from "../hold-list";
-import { useLocaleKey } from "../use-locale-key";
 import { NotMeBanner } from "./not-me-banner";
 import { PayoutAccountForm } from "./payout-account-form";
 import { StepHeader } from "./step-header";

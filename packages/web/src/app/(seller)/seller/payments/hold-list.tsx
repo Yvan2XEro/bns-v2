@@ -4,8 +4,8 @@ import { ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { formatOrderDate } from "~/lib/order-money";
 import { holdRows } from "~/lib/seller-payments-view";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { PaymentHoldView } from "~/types/payments";
-import { useLocaleKey } from "./use-locale-key";
 
 /**
  * Every active hold on the shop or one of its orders — category only, never

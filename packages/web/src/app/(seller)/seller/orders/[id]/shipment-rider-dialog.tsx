@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { ActionDialog } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { PhoneInput } from "~/components/ui/phone-input";
@@ -14,7 +15,6 @@ import {
 	type ExternalRiderValues,
 	externalRiderSchema,
 } from "~/lib/shipment-panel";
-import { ActionDialog } from "../../../../(public)/purchases/[id]/action-dialog";
 
 /** A team member rides under their own account; anyone else is a name and a phone the link is texted to. */
 export function ShipmentRiderDialog({

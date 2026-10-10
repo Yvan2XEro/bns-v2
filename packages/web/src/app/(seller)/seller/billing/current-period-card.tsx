@@ -2,8 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { BillingView } from "~/types/order";
-import { useLocaleKey } from "./use-locale-key";
 
 export function CurrentPeriodCard({
 	period,

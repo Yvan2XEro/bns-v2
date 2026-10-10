@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
+import { ActionDialog, type DialogControl } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { useCancelOrder } from "~/hooks/use-order-actions";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -11,7 +12,6 @@ import {
 	type CancelValues,
 	cancelSchema,
 } from "../purchase-view";
-import { ActionDialog, type DialogControl } from "./action-dialog";
 
 export function CancelDialog({
 	orderId,

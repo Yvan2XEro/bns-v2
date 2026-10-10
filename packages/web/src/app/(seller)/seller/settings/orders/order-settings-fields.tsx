@@ -19,8 +19,8 @@ import {
 	toFormValues,
 	toOrderSettingsInput,
 } from "~/lib/order-settings-form";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { OrderSettingsView } from "~/types/order";
-import { useLocaleKey } from "../../billing/use-locale-key";
 import { FieldError, Section, Toggle } from "./form-controls";
 import { PickupFields } from "./pickup-fields";
 

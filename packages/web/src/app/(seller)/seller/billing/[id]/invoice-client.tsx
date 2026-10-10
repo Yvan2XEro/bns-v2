@@ -8,9 +8,9 @@ import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { invoiceDocumentUrl, useBilling } from "~/hooks/use-billing";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import { InvoiceStatusBadge, isPayable } from "../invoice-status";
 import { PayInvoiceButton } from "../pay-invoice-button";
-import { useLocaleKey } from "../use-locale-key";
 
 /**
  * The summary comes from the billing view; the invoice itself is the API's

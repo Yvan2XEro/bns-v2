@@ -10,7 +10,7 @@ import { resolveErrorMessage } from "~/lib/apiError";
 import { DISTRICTS } from "~/lib/checkout-form";
 import { unavailableHint } from "~/lib/delivery-zone-form";
 import { formatXaf } from "~/lib/order-money";
-import { useLocaleKey } from "../billing/use-locale-key";
+import { useLocaleKey } from "~/lib/use-locale-key";
 
 const SELECT_CLASS =
 	"flex h-10 w-full rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";

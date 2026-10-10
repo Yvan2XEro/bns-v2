@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { formatOrderDate, formatXaf } from "~/lib/order-money";
 import { sellerOrderRows } from "~/lib/seller-payments-view";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { SellerPaymentOrderRow } from "~/types/payments";
 import { OrderStatusLabel } from "./order-status-label";
-import { useLocaleKey } from "./use-locale-key";
 
 export function OrderBreakdown({
 	orders,

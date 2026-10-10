@@ -10,7 +10,7 @@ import {
 import { resolveErrorMessage } from "~/lib/apiError";
 import { districtName, zoneCourierId } from "~/lib/delivery-zone-form";
 import { formatXaf } from "~/lib/order-money";
-import { useLocaleKey } from "../../billing/use-locale-key";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import { DeliveryTabs } from "../delivery-tabs";
 import { DeliveryUnavailableNotice } from "../unavailable-notice";
 

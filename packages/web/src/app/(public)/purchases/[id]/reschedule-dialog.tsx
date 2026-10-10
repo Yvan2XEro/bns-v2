@@ -5,6 +5,7 @@ import { LocateFixed } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { ActionDialog, type DialogControl } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { useRescheduleShipment } from "~/hooks/use-shipments";
@@ -15,8 +16,7 @@ import {
 	toRescheduleInput,
 } from "~/lib/reschedule-form";
 import { formatDeliveryDate, rescheduleChoices } from "~/lib/shipment-tracking";
-import { useLocaleKey } from "../../../(seller)/seller/billing/use-locale-key";
-import { ActionDialog, type DialogControl } from "./action-dialog";
+import { useLocaleKey } from "~/lib/use-locale-key";
 
 /** Day and window are offered from today; the server judges the zone's delivery days. */
 export function RescheduleDialog({

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatOrderDate, formatXaf } from "~/lib/order-money";
 import { PAYOUT_STATUSES } from "~/lib/payment-status";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { SellerPayoutRow } from "~/types/payments";
-import { useLocaleKey } from "./use-locale-key";
 
 export function PayoutsTable({
 	payouts,

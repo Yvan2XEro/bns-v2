@@ -3,8 +3,8 @@
 import { Info } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { formatXaf } from "~/lib/order-money";
+import { useLocaleKey } from "~/lib/use-locale-key";
 import type { OrderSettingsView } from "~/types/order";
-import { useLocaleKey } from "../../billing/use-locale-key";
 
 /** Prints the ceilings the API sent; it has no table of its own to fall back on. */
 export function CapsNotice({
