@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
 import {
 	formatPrice,
 	formatPriceRange,
@@ -7,42 +6,17 @@ import {
 	phoneExample,
 	setMarket,
 } from "./market";
-
-const NNBSP = " ";
-
-const market = (over: Partial<MarketConfig> = {}): MarketConfig =>
-	({
-		countryCode: "CM",
-		name: "Cameroon",
-		currency: { code: "XAF", minorUnit: 0 },
-		formats: [
-			{
-				locale: "fr",
-				symbol: "FCFA",
-				position: "after",
-				groupSeparator: NNBSP,
-				decimalSeparator: ",",
-				minorUnit: 0,
-			},
-			{
-				locale: "en",
-				symbol: "XAF",
-				position: "before",
-				groupSeparator: ",",
-				decimalSeparator: ".",
-				minorUnit: 0,
-			},
-		],
-		phone: { pattern: "^\\+2376\\d{8}$", displayExample: "+237 6XX XX XX XX" },
-		...over,
-	}) as MarketConfig;
+import { marketFixture as market, NNBSP } from "./market.fixture.test";
 
 afterEach(() => setMarket(undefined));
 
 describe("formatPrice", () => {
 	test("renders the served format per locale", () => {
 		setMarket(market());
-		expect(formatPrice(47000, "fr")).toBe(`47${NNBSP}000 FCFA`);
+		const fr = formatPrice(47000, "fr");
+		expect(fr).toBe("47\u202f000 FCFA");
+		expect(fr.codePointAt(2)).toBe(0x202f);
+		expect(fr.codePointAt(6)).toBe(0x20);
 		expect(formatPrice(47000, "en-US")).toBe("XAF 47,000");
 		expect(formatPrice(-1200, "fr")).toBe(`-1${NNBSP}200 FCFA`);
 	});
@@ -70,6 +44,11 @@ describe("formatPrice", () => {
 	test("M9: no format for the locale falls back with the served currency", () => {
 		setMarket(market({ formats: [], currency: { code: "GHS", minorUnit: 2 } }));
 		expect(formatPrice(150, "en")).toBe("GHS 1.50");
+	});
+	test("late-arriving config switches fallback to the market format", () => {
+		expect(formatPrice(1410, "fr")).toBe("XAF 1 410");
+		setMarket(market());
+		expect(formatPrice(1410, "fr")).toBe("1\u202f410 FCFA");
 	});
 	test("range collapses when min equals max", () => {
 		setMarket(market());

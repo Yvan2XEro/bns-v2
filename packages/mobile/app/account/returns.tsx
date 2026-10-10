@@ -18,6 +18,7 @@ import {
 	RETURN_CASE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import type { ReturnListRow } from "../../../api/src/contracts/returns";
 
 export default function AccountReturnsScreen() {
@@ -124,7 +125,7 @@ function ReturnRow({
 			<Text style={[styles.body, { color: dark ? "#94a3b8" : "#64748b" }]}>
 				{t(RETURN_CASE_STATUS_LABELS[item.status])} ·{" "}
 				{t("returns.refundAmount", {
-					amount: item.refundAmount.toLocaleString(locale),
+					amount: formatPrice(item.refundAmount, locale),
 				})}
 			</Text>
 			{item.nextDeadline ? (

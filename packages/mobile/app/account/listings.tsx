@@ -21,7 +21,8 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 type FilterKey = "all" | "published" | "pending" | "sold" | "expired";
@@ -252,7 +253,9 @@ export default function MyListingsScreen() {
 						{item.title}
 					</Text>
 					<Text style={[styles.price, { color: primaryColor }]}>
-						{item.price ? `${item.price.toLocaleString()} XAF` : "Sur demande"}
+						{item.price
+							? formatPrice(item.price, i18n.language)
+							: "Sur demande"}
 					</Text>
 					<View style={styles.metaRow}>
 						<StatusBadge status={item.status ?? "pending"} t={t} />

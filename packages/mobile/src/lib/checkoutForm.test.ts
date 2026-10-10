@@ -21,12 +21,9 @@ import {
 	toAddressInput,
 } from "./checkoutForm";
 import { setMarket } from "./market";
+import { marketFixture } from "./market.fixture.test";
 
-beforeAll(() =>
-	setMarket({
-		phone: { pattern: "^\\+2376\\d{8}$", displayExample: "+237 6XX XX XX XX" },
-	} as never),
-);
+beforeAll(() => setMarket(marketFixture()));
 afterAll(() => setMarket(undefined));
 
 const CITIES = ["douala", "yaounde"] as const;

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext } from "react";
+import { createContext, Fragment, useContext } from "react";
 import { api } from "@/src/lib/api";
 import { setMarket } from "@/src/lib/market";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
@@ -73,20 +73,20 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 		queryKey: ["app-config"],
 		// A released API that predates a config key keeps that feature off by
 		// merging over the default rather than leaving the key undefined.
-		queryFn: async () => ({
-			...DEFAULT,
-			...(await api.get<Partial<AppConfig>>("/api/public/config")),
-		}),
+		queryFn: async () => {
+			const raw = await api.get<Partial<AppConfig>>("/api/public/config");
+			setMarket(raw.market);
+			return { ...DEFAULT, ...raw };
+		},
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: 3,
 	});
 
-	// Set during render so children formatting in this same pass already see it.
-	setMarket(config.market);
-
+	// formatPrice call sites read a module store and never re-render on their
+	// own; remounting once when the market arrives replaces the M9 fallback.
 	return (
 		<AppConfigContext.Provider value={config}>
-			{children}
+			<Fragment key={config.market?.countryCode ?? "none"}>{children}</Fragment>
 		</AppConfigContext.Provider>
 	);
 }

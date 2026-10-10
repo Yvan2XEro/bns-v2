@@ -30,7 +30,8 @@ import {
 	conversationHeader,
 	messageAuthorLabel,
 } from "@/src/lib/conversationView";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { isSystemMessage } from "@/src/lib/systemMessage";
 import type {
 	Conversation,
@@ -601,7 +602,7 @@ export function ConversationScreen({
 													},
 												]}
 											>
-												{item.listing.price.toLocaleString()} XAF
+												{formatPrice(item.listing.price, i18n.language)}
 											</Text>
 										)}
 									</View>
@@ -860,7 +861,7 @@ export function ConversationScreen({
 								</Text>
 								{attachedListing.price != null && (
 									<Text style={[styles.attachPrice, { color: primaryColor }]}>
-										{attachedListing.price.toLocaleString()} XAF
+										{formatPrice(attachedListing.price, i18n.language)}
 									</Text>
 								)}
 							</View>

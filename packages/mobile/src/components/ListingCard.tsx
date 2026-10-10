@@ -17,6 +17,8 @@ import Animated, {
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { parseDate } from "@/src/lib/formatDate";
+import i18n from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { listingShopName } from "@/src/lib/listingShop";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
@@ -235,18 +237,14 @@ export function ListingCard({
 
 				{/* ── Content ── */}
 				<View style={styles.content}>
-					{/* Price — prominent, same as web (bold lg + muted "XAF") */}
+					{/* Price — prominent, same as web */}
 					<Text
 						style={[styles.price, { color: textPrimary }]}
 						numberOfLines={1}
 					>
-						{listing.price ? listing.price.toLocaleString() : "Sur demande"}
-						{listing.price ? (
-							<Text style={[styles.priceCurrency, { color: textMuted }]}>
-								{" "}
-								XAF
-							</Text>
-						) : null}
+						{listing.price
+							? formatPrice(listing.price, i18n.language)
+							: "Sur demande"}
 					</Text>
 
 					{/* Title — 2-line clamp */}

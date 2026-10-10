@@ -154,10 +154,7 @@ function Metric({
 }
 
 function signedMoney(value: number, locale: string): string {
-	const amount = new Intl.NumberFormat(locale, {
-		maximumFractionDigits: 0,
-	}).format(Math.abs(value));
-	return `${value > 0 ? "+" : value < 0 ? "−" : ""}${amount} XAF`;
+	return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatPrice(Math.abs(value), locale)}`;
 }
 
 function signedCount(value: number, locale: string): string {

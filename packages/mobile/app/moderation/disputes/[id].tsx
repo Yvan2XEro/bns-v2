@@ -24,6 +24,7 @@ import {
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { canSubmitDisputeResolution } from "@/src/lib/moderationDisputeDecision";
 
 const outcomes = [
@@ -171,7 +172,7 @@ export default function ModerationDisputeDetailScreen() {
 						color={c.text}
 					/>
 					<Body
-						text={`${t(DISPUTE_STATUS_LABELS[dispute.status])} · ${dispute.amountAtStake.toLocaleString(locale)} XAF`}
+						text={`${t(DISPUTE_STATUS_LABELS[dispute.status])} · ${formatPrice(dispute.amountAtStake, locale)}`}
 						color={c.muted}
 					/>
 					<Body
@@ -315,21 +316,21 @@ export default function ModerationDisputeDetailScreen() {
 							>
 								<Body
 									text={t("moderationDisputes.previewRefund", {
-										amount: preview.data.refundAmount.toLocaleString(locale),
+										amount: formatPrice(preview.data.refundAmount, locale),
 									})}
 									color={c.text}
 								/>
 								<Body
 									text={t("moderationDisputes.previewBreakdown", {
-										goods: preview.data.breakdown.goods.toLocaleString(locale),
-										delivery:
-											preview.data.breakdown.outboundDelivery.toLocaleString(
-												locale,
-											),
-										protection:
-											preview.data.breakdown.buyerProtectionFee.toLocaleString(
-												locale,
-											),
+										goods: formatPrice(preview.data.breakdown.goods, locale),
+										delivery: formatPrice(
+											preview.data.breakdown.outboundDelivery,
+											locale,
+										),
+										protection: formatPrice(
+											preview.data.breakdown.buyerProtectionFee,
+											locale,
+										),
 									})}
 									color={c.muted}
 								/>

@@ -29,6 +29,7 @@ import {
 } from "@/src/lib/caseStatus";
 import { disputeEvidenceStatus } from "@/src/lib/disputeEvidence";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 
 const messageSchema = z.object({ body: z.string().trim().min(1).max(2000) });
 type MessageForm = z.infer<typeof messageSchema>;
@@ -150,7 +151,7 @@ export default function DisputeThreadScreen() {
 					</Text>
 					<Text style={[styles.amount, { color: colors.text }]}>
 						{t("disputes.amount", {
-							amount: dispute.amountAtStake.toLocaleString(locale),
+							amount: formatPrice(dispute.amountAtStake, locale),
 						})}
 					</Text>
 				</View>
@@ -169,7 +170,7 @@ export default function DisputeThreadScreen() {
 						</Text>
 						<Text style={[styles.amount, { color: colors.text }]}>
 							{t("disputes.refund", {
-								amount: dispute.resolution.refundAmount.toLocaleString(locale),
+								amount: formatPrice(dispute.resolution.refundAmount, locale),
 							})}
 						</Text>
 					</View>
@@ -298,7 +299,7 @@ export default function DisputeThreadScreen() {
 						</Text>
 						<Text style={[styles.body, { color: colors.muted }]}>
 							{t("disputes.refund", {
-								amount: dispute.proposal.amount.toLocaleString(locale),
+								amount: formatPrice(dispute.proposal.amount, locale),
 							})}
 						</Text>
 					</View>

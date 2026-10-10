@@ -18,6 +18,7 @@ import { useDeliveryOptions } from "@/src/hooks/useCheckout";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { landmarkMissingFor } from "@/src/lib/checkoutFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import type { AddressInput } from "@/src/types/order";
 
 export default function CheckoutDeliveryScreen() {
@@ -35,7 +36,7 @@ export default function CheckoutDeliveryScreen() {
 
 function DeliveryChoice({ address }: { address: AddressInput }) {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const locale = useAppLocale();
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const { state, dispatch, requestQuote } = useCheckoutFlow();
@@ -124,7 +125,7 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 					style={[formStyles.hint, { color: c.warningText }]}
 				>
 					{t(`checkout.deliveryUnavailable.${option.reason}`, {
-						amount: option.minOrderSubtotal ?? 0,
+						amount: formatPrice(option.minOrderSubtotal ?? 0, i18n.language),
 					})}
 				</Text>
 			))}
