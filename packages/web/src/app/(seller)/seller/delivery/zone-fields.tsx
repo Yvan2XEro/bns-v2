@@ -6,6 +6,7 @@ import type { UseFormReturn } from "react-hook-form";
 import { Input } from "~/components/ui/input";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useAvailableCouriers } from "~/hooks/use-delivery-settings";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { DISTRICTS } from "~/lib/checkout-form";
 import {
 	courierCostHint,
@@ -14,7 +15,6 @@ import {
 	ZONE_METHODS,
 	type ZoneFormValues,
 } from "~/lib/delivery-zone-form";
-import { formatXaf } from "~/lib/order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import { FieldError, Toggle } from "../settings/orders/form-controls";
 
@@ -44,6 +44,7 @@ function Field({
 }
 
 export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerDelivery");
 	const locale = useLocaleKey();
 	const { launchCities, couriersEnabled } = useAppConfig();
@@ -146,7 +147,7 @@ export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
 					{hint && (
 						<p className="text-[#64748B] text-xs">
 							{t("courierTariff", {
-								amount: formatXaf(hint.amount, locale),
+								amount: formatOrderMoney(hint.amount, locale),
 								min: hint.etaMinHours,
 								max: hint.etaMaxHours,
 							})}

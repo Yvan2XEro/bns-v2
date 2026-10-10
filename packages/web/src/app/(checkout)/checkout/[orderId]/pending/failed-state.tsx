@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "~/components/ui/button";
+import { useMarketPhone } from "~/hooks/use-market-phone";
 import { type ApiError, resolveErrorMessage } from "~/lib/apiError";
 import {
 	type FailedAction,
@@ -62,9 +63,10 @@ export function FailedState({
 	const tRoot = useTranslations();
 	const [editing, setEditing] = useState(false);
 
+	const phoneRule = useMarketPhone();
 	const { control, formState, handleSubmit, register, reset } =
 		useForm<PayAttemptValues>({
-			resolver: zodResolver(payAttemptSchema),
+			resolver: zodResolver(payAttemptSchema(phoneRule.pattern)),
 			defaultValues: { phone: defaultPhone },
 		});
 

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { DISTRICTS } from "~/lib/checkout-form";
-import { formatXaf } from "~/lib/order-money";
 import type { QuoteResponse } from "~/types/order";
 import { PaymentMethodLabel } from "./payment-method-label";
 import { ProtectionFeeRow } from "./protection-fee-row";
@@ -49,9 +49,10 @@ export function OrderSummary({
 	onEditAddress: () => void;
 	onEditDelivery: () => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Checkout");
 	const locale = useLocale() === "en" ? "en" : "fr";
-	const money = (amount: number) => formatXaf(amount, locale);
+	const money = (amount: number) => formatOrderMoney(amount, locale);
 	const { lines, amounts, delivery, paymentMethod } = quote.summary;
 	const protectedPayment = paymentMethod === "mobile_money";
 	const address = delivery.address;

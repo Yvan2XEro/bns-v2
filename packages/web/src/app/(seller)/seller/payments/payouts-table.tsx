@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { PAYOUT_STATUSES } from "~/lib/payment-status";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { SellerPayoutRow } from "~/types/payments";
@@ -12,6 +13,7 @@ export function PayoutsTable({
 }: {
 	payouts: readonly SellerPayoutRow[];
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	const locale = useLocaleKey();
 
@@ -54,10 +56,10 @@ export function PayoutsTable({
 										</Link>
 									</td>
 									<td className="px-4 py-3 font-semibold text-[#0F172A]">
-										{formatXaf(payout.amount, locale)}
+										{formatOrderMoney(payout.amount, locale)}
 									</td>
 									<td className="px-4 py-3 text-[#64748B]">
-										{formatXaf(payout.fee, locale)}
+										{formatOrderMoney(payout.fee, locale)}
 									</td>
 									<td className="px-4 py-3 text-[#334155]">
 										{payout.destinationMasked}

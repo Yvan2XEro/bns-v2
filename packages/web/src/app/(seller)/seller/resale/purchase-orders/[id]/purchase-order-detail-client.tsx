@@ -7,12 +7,13 @@ import { useReducer } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	usePurchaseOrder,
 	usePurchaseOrderAction,
 } from "~/hooks/use-purchase-orders";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import type { PurchaseOrderView } from "../../../../../../../../api/src/contracts/purchaseOrders";
 
 type Side = "supplier" | "reseller";
@@ -53,6 +54,7 @@ export function PurchaseOrderDetailClient({
 	purchaseOrderId: string;
 	side: Side;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerResale");
 	const tRoot = useTranslations();
 	const locale = useLocale().startsWith("fr") ? "fr" : "en";
@@ -161,13 +163,16 @@ export function PurchaseOrderDetailClient({
 									<p className="font-semibold text-[#0F172A]">{item.title}</p>
 									<p className="mt-1 text-[#64748B] text-sm">
 										{item.quantity} ×{" "}
-										{formatXaf(item.resellerUnitPrice, locale)}
+										{formatOrderMoney(item.resellerUnitPrice, locale)}
 										{item.variantLabel ? ` · ${item.variantLabel}` : ""}
 									</p>
 								</div>
 								{side === "supplier" && (
 									<p className="font-semibold text-[#334155] text-sm">
-										{formatXaf(item.supplierUnitPrice * item.quantity, locale)}
+										{formatOrderMoney(
+											item.supplierUnitPrice * item.quantity,
+											locale,
+										)}
 									</p>
 								)}
 							</li>
@@ -179,13 +184,13 @@ export function PurchaseOrderDetailClient({
 							<p className="mt-1 font-bold text-[#0F172A]">
 								{order.supplierAmount === null
 									? "—"
-									: formatXaf(order.supplierAmount, locale)}
+									: formatOrderMoney(order.supplierAmount, locale)}
 							</p>
 						</div>
 						<div className="rounded-xl bg-[#F8FAFC] p-4">
 							<p className="text-[#64748B] text-xs">{t("collectAmount")}</p>
 							<p className="mt-1 font-bold text-[#0F172A]">
-								{formatXaf(order.collectAmount, locale)}
+								{formatOrderMoney(order.collectAmount, locale)}
 							</p>
 						</div>
 					</div>
@@ -442,7 +447,7 @@ export function PurchaseOrderDetailClient({
 								<label className="block space-y-1 text-sm">
 									<span className="font-medium text-[#334155]">
 										{t("failedDeliveryCost", {
-											max: formatXaf(order.deliveryFee, locale),
+											max: formatOrderMoney(order.deliveryFee, locale),
 										})}
 									</span>
 									<input

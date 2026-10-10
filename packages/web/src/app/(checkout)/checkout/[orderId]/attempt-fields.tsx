@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { UseFormRegister } from "react-hook-form";
 import { type Control, Controller, type FieldErrors } from "react-hook-form";
 import { PhoneInput } from "~/components/ui/phone-input";
+import { useMarketPhone } from "~/hooks/use-market-phone";
 import type { PayAttemptValues } from "~/lib/payment-flow";
 import { PAYMENT_CHANNEL_LABELS } from "~/lib/payment-status";
 import { Field } from "../form-field";
@@ -26,6 +27,7 @@ export function AttemptFields({
 }) {
 	const t = useTranslations("Payments");
 	const tRoot = useTranslations();
+	const phoneRule = useMarketPhone();
 
 	return (
 		<>
@@ -66,6 +68,7 @@ export function AttemptFields({
 						<PhoneInput
 							id="attempt-phone"
 							disabled={disabled}
+							placeholder={phoneRule.placeholder}
 							value={field.value}
 							onChange={field.onChange}
 						/>

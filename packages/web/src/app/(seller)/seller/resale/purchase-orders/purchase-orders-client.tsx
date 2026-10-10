@@ -6,8 +6,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useReducer } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useShopPurchaseOrders } from "~/hooks/use-purchase-orders";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { cn } from "~/lib/utils";
 import type { PurchaseOrderView } from "../../../../../../../api/src/contracts/purchaseOrders";
 
@@ -23,6 +24,7 @@ function reducer(state: State, patch: Partial<State>): State {
 }
 
 export function PurchaseOrdersClient({ shopId }: { shopId: string }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerResale");
 	const locale = useLocale().startsWith("fr") ? "fr" : "en";
 	const [state, patch] = useReducer(reducer, {
@@ -162,7 +164,9 @@ export function PurchaseOrdersClient({ shopId }: { shopId: string }) {
 													: t("collectAmount")}
 											</p>
 											<p className="mt-1 font-bold text-[#0F172A] text-sm">
-												{amount === null ? "—" : formatXaf(amount, locale)}
+												{amount === null
+													? "—"
+													: formatOrderMoney(amount, locale)}
 											</p>
 										</div>
 										<ArrowRight

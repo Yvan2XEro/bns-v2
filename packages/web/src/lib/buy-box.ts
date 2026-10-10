@@ -59,7 +59,7 @@ export interface DeliveryLine {
 }
 
 /**
- * The listing's "Livraison à Douala : 2 000 FCFA · Retrait gratuit" line. It
+ * The listing's "Livraison à Douala : {fee} · Retrait gratuit" line. It
  * reads the same two settings `quoteDelivery` does (the shop's own fee, else
  * the launch city's default) but it is a preview only: the checkout quote is
  * what the buyer is charged, and it is recomputed server-side.

@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { BillingView } from "~/types/order";
 
@@ -10,6 +11,7 @@ export function CurrentPeriodCard({
 }: {
 	period: BillingView["currentPeriod"];
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Billing");
 	const locale = useLocaleKey();
 
@@ -31,7 +33,7 @@ export function CurrentPeriodCard({
 			</div>
 			<p className="mt-3 text-[#64748B] text-xs">{t("accruedSoFar")}</p>
 			<p className="font-bold text-2xl text-[#0F172A]">
-				{formatXaf(period.accrued, locale)}
+				{formatOrderMoney(period.accrued, locale)}
 				<span className="ml-3 font-normal text-[#334155] text-sm">
 					{t("ordersCount", { count: period.ordersCount })}
 				</span>

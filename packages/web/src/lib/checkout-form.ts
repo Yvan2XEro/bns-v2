@@ -77,9 +77,6 @@ function isDistrictOf(city: string, key: string): boolean {
 	);
 }
 
-/** A Cameroonian mobile: the delivery phone receives the confirmation SMS. */
-export const CHECKOUT_PHONE_PATTERN = /^\+2376\d{8}$/;
-
 /** Each value is a `Checkout` message key. */
 export type AddressErrorKey =
 	| "errorRecipientName"
@@ -132,6 +129,7 @@ export function isAddressErrorKey(value: unknown): value is AddressErrorKey {
 export function checkoutAddressSchema(
 	cityKeys: readonly string[],
 	method: DeliveryMethod,
+	phonePattern: RegExp,
 ) {
 	return baseSchema.superRefine((v, ctx) => {
 		const fail = (path: AddressField, message: AddressErrorKey) =>
@@ -139,7 +137,7 @@ export function checkoutAddressSchema(
 		const name = v.recipientName.trim();
 		if (name.length < 2 || name.length > 60)
 			fail("recipientName", "errorRecipientName");
-		if (!CHECKOUT_PHONE_PATTERN.test(v.phone)) fail("phone", "errorPhone");
+		if (!phonePattern.test(v.phone)) fail("phone", "errorPhone");
 		if (!cityKeys.includes(v.city)) fail("city", "errorCity");
 		if (!isDistrictOf(v.city, v.district)) fail("district", "errorDistrict");
 		const other = v.districtOther.trim();

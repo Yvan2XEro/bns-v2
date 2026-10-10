@@ -30,17 +30,19 @@ describe("showsProtectionBadge", () => {
 });
 
 describe("protectionBadgeCopy", () => {
+	const money = (amount: number) => `${amount} u`;
+
 	test("the launch defaults format to the spec's own numbers", () => {
-		expect(protectionBadgeCopy({ bps: 300, min: 100 }, "fr")).toEqual({
+		expect(protectionBadgeCopy({ bps: 300, min: 100 }, "fr", money)).toEqual({
 			rate: "3",
-			min: "100",
+			min: "100 u",
 		});
 	});
 
 	test("a fractional rate keeps its decimal", () => {
-		expect(protectionBadgeCopy({ bps: 250, min: 500 }, "en")).toEqual({
+		expect(protectionBadgeCopy({ bps: 250, min: 500 }, "en", money)).toEqual({
 			rate: "2.5",
-			min: "500",
+			min: "500 u",
 		});
 	});
 });

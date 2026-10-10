@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useAppConfig } from "~/hooks/use-app-config";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { OrderView } from "~/types/order";
 
 function AmountRow({ label, value }: { label: string; value: string }) {
@@ -16,10 +16,11 @@ function AmountRow({ label, value }: { label: string; value: string }) {
 
 /** Items, amounts and delivery details: everything here is read, nothing acts. */
 export function PurchaseSummary({ order }: { order: OrderView }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Purchases");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const { launchCities } = useAppConfig();
-	const money = (amount: number) => formatXaf(amount, locale);
+	const money = (amount: number) => formatOrderMoney(amount, locale);
 	const { delivery } = order;
 	const city =
 		launchCities.find((option) => option.key === delivery.city)?.label ??

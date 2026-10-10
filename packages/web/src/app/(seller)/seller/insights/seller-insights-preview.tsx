@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useShopInsights } from "~/hooks/use-shop-insights";
-import { formatXaf } from "~/lib/order-money";
 import type { ShopRole } from "~/types/shop";
 import { InsightActionText, responseLabel } from "./seller-insights-client";
 
@@ -15,6 +15,7 @@ export function SellerInsightsPreview({
 	shopId: string;
 	role: ShopRole;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const config = useAppConfig();
 	const allowed =
 		config.insightsEnabled && (role === "owner" || role === "manager");
@@ -33,7 +34,7 @@ export function SellerInsightsPreview({
 							<span className="text-[#64748B]">{t("gmvDelivered")}</span>
 							<br />
 							<strong className="text-[#0F172A]">
-								{formatXaf(view.totals.current.gmvDelivered, locale)}
+								{formatOrderMoney(view.totals.current.gmvDelivered, locale)}
 							</strong>
 						</p>
 						<p>

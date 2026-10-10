@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { CountStats } from "~/lib/inventory";
-import { formatXaf } from "~/lib/money";
 import { cn } from "~/lib/utils";
 
 export function InventoryStats({
@@ -15,6 +15,7 @@ export function InventoryStats({
 	/** Owner and manager only; the purchase cost is a shop secret. */
 	showCost: boolean;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Inventory");
 
 	return (
@@ -45,7 +46,7 @@ export function InventoryStats({
 							stats.costDelta < 0 ? "text-[#991b1b]" : "text-[#0F172A]",
 						)}
 					>
-						{formatXaf(stats.costDelta)}
+						{formatOrderMoney(stats.costDelta)}
 					</p>
 				</div>
 			)}

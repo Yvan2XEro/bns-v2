@@ -8,9 +8,9 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSaveOrderSettings } from "~/hooks/use-order-settings";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatXaf } from "~/lib/order-money";
 import {
 	MAX_ETA_TEXT,
 	MAX_SALES_TERMS,
@@ -33,6 +33,7 @@ export function OrderSettingsForm({
 	view: OrderSettingsView;
 	canEdit: boolean;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Billing");
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
@@ -86,7 +87,7 @@ export function OrderSettingsForm({
 									placeholder={
 										view.cityDefaultFee === null
 											? undefined
-											: formatXaf(view.cityDefaultFee, locale)
+											: formatOrderMoney(view.cityDefaultFee, locale)
 									}
 									aria-invalid={Boolean(errors.deliveryFee)}
 									aria-describedby="delivery-fee-hint"
@@ -96,7 +97,7 @@ export function OrderSettingsForm({
 									{view.cityDefaultFee === null
 										? t("deliveryFeeHintNoCity")
 										: t("deliveryFeeHint", {
-												fee: formatXaf(view.cityDefaultFee, locale),
+												fee: formatOrderMoney(view.cityDefaultFee, locale),
 											})}
 								</p>
 								<FieldError>

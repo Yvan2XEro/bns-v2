@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	type AmountStripKey,
 	amountStripRows,
@@ -20,9 +20,10 @@ const LABEL_KEYS: Record<AmountStripKey, string> = {
 /**
  * The spec's five-tile amounts strip, read verbatim off the ledger. A null
  * `readyForPayout` (`provider_schedule`) renders the provider's own-schedule
- * sentence, never a silent "0 FCFA ready".
+ * sentence, never a silent zero amount.
  */
 export function AmountStrip({ amounts }: { amounts: SellerPaymentAmounts }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	const locale = useLocaleKey();
 	const rows = amountStripRows(amounts);
@@ -45,7 +46,7 @@ export function AmountStrip({ amounts }: { amounts: SellerPaymentAmounts }) {
 							</p>
 						) : (
 							<p className="mt-1 font-bold text-[#0F172A] text-lg">
-								{formatXaf(row.amount, locale)}
+								{formatOrderMoney(row.amount, locale)}
 							</p>
 						)}
 					</div>

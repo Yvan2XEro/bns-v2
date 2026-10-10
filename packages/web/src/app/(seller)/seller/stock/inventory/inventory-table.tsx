@@ -6,8 +6,8 @@ import type {
 	FieldErrors,
 	UseFormRegister,
 } from "react-hook-form";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { CountFormState, CountRow } from "~/lib/inventory";
-import { formatXaf } from "~/lib/money";
 import { parseAmount } from "~/lib/product-form";
 import { cn } from "~/lib/utils";
 
@@ -44,6 +44,7 @@ export function InventoryTable({
 	/** Owner and manager only; the purchase cost is a shop secret. */
 	showCost: boolean;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Inventory");
 	const q = query.trim().toLowerCase();
 
@@ -124,7 +125,7 @@ export function InventoryTable({
 									<td className="px-4 py-2 text-right text-[#64748B]">
 										{delta === null || row.cost === null
 											? "—"
-											: formatXaf(delta * row.cost)}
+											: formatOrderMoney(delta * row.cost)}
 									</td>
 								)}
 							</tr>

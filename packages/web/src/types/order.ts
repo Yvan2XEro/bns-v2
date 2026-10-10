@@ -109,7 +109,7 @@ export interface CartView {
 
 export interface AddressInput {
 	recipientName: string;
-	/** E.164, `^\+2376\d{8}$`. */
+	/** E.164, validated against the market's served phone pattern. */
 	phone: string;
 	/** A launch city key. */
 	city: string;

@@ -9,6 +9,7 @@ import { Input } from "~/components/ui/input";
 import { PhoneInput } from "~/components/ui/phone-input";
 import { Textarea } from "~/components/ui/textarea";
 import { useAuth } from "~/hooks/use-auth";
+import { useMarketPhone } from "~/hooks/use-market-phone";
 import { type ApiError, resolveErrorMessage } from "~/lib/apiError";
 import {
 	ADDRESS_ERROR_KEYS,
@@ -53,6 +54,7 @@ export function AddressStep({
 		? shopCity
 		: null;
 
+	const phoneRule = useMarketPhone();
 	const {
 		control,
 		formState,
@@ -66,6 +68,7 @@ export function AddressStep({
 			checkoutAddressSchema(
 				launchCities.map((c) => c.key),
 				method,
+				phoneRule.pattern,
 			),
 		),
 		defaultValues: {
@@ -123,6 +126,7 @@ export function AddressStep({
 					render={({ field }) => (
 						<PhoneInput
 							id="phone"
+							placeholder={phoneRule.placeholder}
 							value={field.value}
 							onChange={field.onChange}
 							onBlur={field.onBlur}

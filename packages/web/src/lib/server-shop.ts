@@ -1,6 +1,8 @@
 import { cache } from "react";
 import type { VerificationBadge } from "~/lib/verification";
 import type { Category, MyShopResponse, PublicShop } from "~/types";
+import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
+import { DEFAULT_PHONE_COUNTRY } from "./phone-input";
 import { serverGet } from "./server-api";
 
 export const getMyShop = cache(
@@ -71,4 +73,12 @@ export const getAllCategories = cache(async (): Promise<Category[]> => {
 		"/api/public/categories",
 	);
 	return data?.categories ?? [];
+});
+
+/** The launch market's served block; undefined when the config is unreachable or pre-migration. */
+export const getMarket = cache(async (): Promise<MarketConfig | undefined> => {
+	const config = await serverGet<{ market?: MarketConfig }>(
+		`/api/public/config?country=${DEFAULT_PHONE_COUNTRY}`,
+	);
+	return config?.market;
 });

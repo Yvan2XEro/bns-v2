@@ -5,8 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { useDeliveryOptions } from "~/hooks/use-checkout";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatXaf } from "~/lib/order-money";
 import type {
 	AddressInput,
 	DeliveryOption,
@@ -24,6 +24,7 @@ function OptionCard({
 	onSelect: () => void;
 	selectable: boolean;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Checkout");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const id = `option-${option.optionId}`;
@@ -58,7 +59,9 @@ function OptionCard({
 				<p className="flex justify-between text-[#334155] text-sm">
 					<span>{t("fee")}</span>
 					<span>
-						{option.fee === 0 ? t("free") : formatXaf(option.fee, locale)}
+						{option.fee === 0
+							? t("free")
+							: formatOrderMoney(option.fee, locale)}
 					</span>
 				</p>
 				<p className="text-[#64748B] text-sm">
@@ -74,7 +77,7 @@ function OptionCard({
 				{option.freeApplied && option.originalFee ? (
 					<p className="text-green-700 text-sm">
 						{t("freeDeliveryApplied", {
-							amount: formatXaf(option.originalFee, locale),
+							amount: formatOrderMoney(option.originalFee, locale),
 						})}
 					</p>
 				) : null}

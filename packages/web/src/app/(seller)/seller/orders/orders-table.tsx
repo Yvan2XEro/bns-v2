@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import type { ShopOrderTab } from "~/lib/order-status";
 import type { OrderListEntry } from "~/types/order";
 import { AcceptCountdown } from "./accept-countdown";
@@ -15,6 +16,7 @@ export function OrdersTable({
 	rows: OrderListEntry[];
 	tab: ShopOrderTab;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerOrders");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
@@ -71,7 +73,7 @@ export function OrdersTable({
 								})}
 							</td>
 							<td className="px-4 py-3 text-right font-semibold text-[#0F172A]">
-								{formatXaf(row.total, locale)}
+								{formatOrderMoney(row.total, locale)}
 							</td>
 							<td className="px-4 py-3">
 								{tab === "to_accept" ? (

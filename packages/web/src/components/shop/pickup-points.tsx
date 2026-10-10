@@ -1,13 +1,14 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { usePickupPoints } from "~/hooks/use-pickup-points";
 import { googleMapsUrl } from "~/lib/checkout-form";
-import { formatXaf } from "~/lib/order-money";
 import { pickupHours } from "../../../../api/src/contracts/publicPickupPoint";
 import { LAUNCH_CITIES } from "../../../../api/src/lib/launchCities";
 
 export function PickupPoints({ handle }: { handle: string }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Shop");
 	const locale = useLocale() === "fr" ? "fr" : "en";
 	const { ordersEnabled, deliveryZonesEnabled } = useAppConfig();
@@ -51,7 +52,7 @@ export function PickupPoints({ handle }: { handle: string }) {
 							fee:
 								point.pickupFee === 0
 									? t("pickupFree")
-									: formatXaf(point.pickupFee, locale),
+									: formatOrderMoney(point.pickupFee, locale),
 						})}
 					</p>
 					<p>

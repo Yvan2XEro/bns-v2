@@ -3,9 +3,10 @@
 import { useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSellerPayout } from "~/hooks/use-seller-payments";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { PAYOUT_STATUSES } from "~/lib/payment-status";
 import { useLocaleKey } from "~/lib/use-locale-key";
 
@@ -20,6 +21,7 @@ export function PayoutDetailClient({
 	shopId: string;
 	payoutId: string;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
@@ -56,13 +58,13 @@ export function PayoutDetailClient({
 				<div>
 					<p className="text-[#64748B] text-xs">{t("seller_colAmount")}</p>
 					<p className="font-semibold text-[#0F172A]">
-						{formatXaf(view.amount, locale)}
+						{formatOrderMoney(view.amount, locale)}
 					</p>
 				</div>
 				<div>
 					<p className="text-[#64748B] text-xs">{t("seller_colFee")}</p>
 					<p className="font-semibold text-[#0F172A]">
-						{formatXaf(view.fee, locale)}
+						{formatOrderMoney(view.fee, locale)}
 					</p>
 				</div>
 				<div>
@@ -93,7 +95,7 @@ export function PayoutDetailClient({
 								{order.orderNumber}
 							</span>
 							<span className="text-[#334155]">
-								{formatXaf(order.amount, locale)}
+								{formatOrderMoney(order.amount, locale)}
 							</span>
 						</li>
 					))}

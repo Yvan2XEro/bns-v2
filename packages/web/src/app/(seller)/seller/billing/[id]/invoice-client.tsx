@@ -6,8 +6,9 @@ import { useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { invoiceDocumentUrl, useBilling } from "~/hooks/use-billing";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import { InvoiceStatusBadge, isPayable } from "../invoice-status";
 import { PayInvoiceButton } from "../pay-invoice-button";
@@ -24,6 +25,7 @@ export function InvoiceClient({
 	shopId: string;
 	invoiceId: string;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Billing");
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
@@ -96,7 +98,7 @@ export function InvoiceClient({
 				<div className="flex flex-col items-end gap-2">
 					<p className="text-[#64748B] text-xs">{t("totalDue")}</p>
 					<p className="font-bold text-2xl text-[#0F172A]">
-						{formatXaf(invoice.totalDue, locale)}
+						{formatOrderMoney(invoice.totalDue, locale)}
 					</p>
 					{isPayable(invoice.status) && (
 						<PayInvoiceButton shopId={shopId} invoiceId={invoice.id} />

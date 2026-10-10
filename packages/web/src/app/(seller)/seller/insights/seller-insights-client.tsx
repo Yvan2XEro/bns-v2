@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useShopInsights } from "~/hooks/use-shop-insights";
-import { formatXaf } from "~/lib/order-money";
 import type {
 	InsightsPeriod,
 	ShopInsightsView,
@@ -59,6 +59,7 @@ export function SellerInsightsClient({
 	shopId: string;
 	initialPeriod: InsightsPeriod;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerInsights");
 	const locale = useLocale().startsWith("fr") ? "fr" : "en";
 	const [period, setPeriod] = useState(initialPeriod);
@@ -70,7 +71,7 @@ export function SellerInsightsClient({
 				{
 					key: "gmvDelivered",
 					label: t("gmvDelivered"),
-					value: formatXaf(view.totals.current.gmvDelivered, locale),
+					value: formatOrderMoney(view.totals.current.gmvDelivered, locale),
 					delta: view.totals.delta.gmvDelivered,
 				},
 				{
@@ -291,7 +292,7 @@ export function SellerInsightsClient({
 														{number.format(product.ordersPlaced)}
 													</td>
 													<td className="px-5 py-3">
-														{formatXaf(product.gmvDelivered, locale)}
+														{formatOrderMoney(product.gmvDelivered, locale)}
 													</td>
 												</tr>
 											))}

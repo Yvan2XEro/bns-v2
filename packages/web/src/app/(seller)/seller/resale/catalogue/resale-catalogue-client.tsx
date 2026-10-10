@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	useAcceptResaleTerms,
 	useCreateResaleListing,
@@ -18,7 +19,6 @@ import {
 	useResaleCatalogue,
 } from "~/hooks/use-resale";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatXaf } from "~/lib/order-money";
 import type {
 	CreateResaleListingInput,
 	ResaleCatalogueProduct,
@@ -177,6 +177,7 @@ function ProductCard({
 	onCreate: (input: CreateResaleListingInput) => void;
 	onRequest: () => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const imageUrl = firstImageUrl(product);
 	const mustRequest =
 		product.approvalRequired && product.linkStatus !== "approved";
@@ -285,7 +286,7 @@ function ProductCard({
 								{variant.supplierPrice !== undefined ? (
 									<span className="block text-[#64748B] text-xs">
 										{t("supplierPrice")}:{" "}
-										{formatXaf(variant.supplierPrice, locale)}
+										{formatOrderMoney(variant.supplierPrice, locale)}
 									</span>
 								) : null}
 								<input

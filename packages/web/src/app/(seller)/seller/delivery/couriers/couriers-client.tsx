@@ -7,15 +7,16 @@ import {
 	useAvailableCouriers,
 	useShopZones,
 } from "~/hooks/use-delivery-settings";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { districtName, zoneCourierId } from "~/lib/delivery-zone-form";
-import { formatXaf } from "~/lib/order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import { DeliveryTabs } from "../delivery-tabs";
 import { DeliveryUnavailableNotice } from "../unavailable-notice";
 
 /** The registry as a shop sees it: who can serve its cities, at what tariff. Choosing one happens in a zone. */
 export function CouriersClient({ shopId }: { shopId: string }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerDelivery");
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
@@ -82,7 +83,7 @@ export function CouriersClient({ shopId }: { shopId: string }) {
 											{tariff.district
 												? districtName(tariff.district)
 												: t("wholeCity")}
-											: {formatXaf(tariff.amount, locale)} ·{" "}
+											: {formatOrderMoney(tariff.amount, locale)} ·{" "}
 											{t("etaHours", {
 												min: tariff.etaMinHours,
 												max: tariff.etaMaxHours,

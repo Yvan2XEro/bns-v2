@@ -26,12 +26,13 @@ export function showsProtectionBadge(
 export function protectionBadgeCopy(
 	buyerProtection: BuyerProtectionConfig,
 	locale: "fr" | "en",
+	formatMin: (amount: number) => string,
 ): { rate: string; min: string } {
 	const numberLocale = locale === "fr" ? "fr-FR" : "en-US";
 	return {
 		rate: (buyerProtection.bps / 100).toLocaleString(numberLocale, {
 			maximumFractionDigits: 2,
 		}),
-		min: Math.round(buyerProtection.min).toLocaleString(numberLocale),
+		min: formatMin(Math.round(buyerProtection.min)),
 	};
 }

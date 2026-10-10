@@ -5,9 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { EmptyState } from "~/components/empty-state";
 import { Button } from "~/components/ui/button";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { usePurchases } from "~/hooks/use-purchases";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import type { OrderListEntry } from "~/types/order";
 import {
 	PURCHASE_TAB_LABEL_KEYS,
@@ -18,6 +19,7 @@ import {
 import { StatusLabel } from "./status-label";
 
 function PurchaseRow({ entry }: { entry: OrderListEntry }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Purchases");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	return (
@@ -50,7 +52,7 @@ function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 				</div>
 				<div className="shrink-0 space-y-1 text-right">
 					<p className="font-semibold text-[#0F172A]">
-						{formatXaf(entry.total, locale)}
+						{formatOrderMoney(entry.total, locale)}
 					</p>
 					<StatusLabel status={entry.status} />
 				</div>

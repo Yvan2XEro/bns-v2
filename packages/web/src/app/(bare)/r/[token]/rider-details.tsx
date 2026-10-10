@@ -2,7 +2,7 @@
 
 import { ExternalLink, Phone } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	FAILURE_REASON_LABELS,
 	type FailureReason,
@@ -14,6 +14,7 @@ const isReason = (reason: string): reason is FailureReason =>
 
 /** Renders exactly the projection the route serves; nothing is looked up or derived from elsewhere. */
 export function RiderDetails({ view }: { view: RiderLinkView }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Rider");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
@@ -60,7 +61,7 @@ export function RiderDetails({ view }: { view: RiderLinkView }) {
 			</div>
 			{view.expectedCod !== null && (
 				<p className="rounded-xl bg-[#FFFBEB] p-3 font-semibold text-[#92400E]">
-					{t("codDue", { amount: formatXaf(view.expectedCod, locale) })}
+					{t("codDue", { amount: formatOrderMoney(view.expectedCod, locale) })}
 				</p>
 			)}
 			<ul className="space-y-1 text-[#334155] text-sm">

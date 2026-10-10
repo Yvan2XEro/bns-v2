@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { HandleInput } from "~/components/shop/handle-input";
-import { shopUrl } from "~/lib/shop-url";
 import { Button } from "~/components/ui/button";
 import { useHandleAvailability } from "~/hooks/use-handle-availability";
 import { useChangeHandle } from "~/hooks/use-shop-settings";
 import { ERROR_CODES, resolveErrorMessage } from "~/lib/apiError";
 import { type ChangeHandleValues, changeHandleSchema } from "~/lib/shop-form";
 import { isShopOwner } from "~/lib/shop-roles";
+import { shopUrl } from "~/lib/shop-url";
 import type { MyShop, ShopRole } from "~/types";
 
 const HANDLE_ERROR_CODES: string[] = [

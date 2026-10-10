@@ -2873,7 +2873,7 @@
 		"channel_cmOrange": "Orange Money",
 		"comingSoon": "Coming soon",
 		"disclosure_holder": "Your payment is collected and held by NotchPay, a payment provider. BuyNSellem never holds your money.",
-		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: {rate}% (min {min} FCFA)",
+		"disclosure_listingBadge": "Protected payment available: your money is released to the seller only after delivery. Fee: {rate}% (min {min})",
 		"disclosure_sellerLegend": "Funds are held by NotchPay. BuyNSellem never holds your money.",
 		"expired_body": "Your order was cancelled and its items were released. If money was taken from your account, it will be refunded automatically.",
 		"expired_title": "The time to pay has run out",
@@ -3299,8 +3299,8 @@
 			"afternoon": "Afternoon (12pm to 4pm)",
 			"evening": "Evening (4pm to 8pm)"
 		},
-		"freeAboveHint": "Free delivery from {amount} FCFA",
-		"minimumHint": "Delivery available from {amount} FCFA"
+		"freeAboveHint": "Free delivery from {amount}",
+		"minimumHint": "Delivery available from {amount}"
 	},
 	"ModerationDisputes": {
 		"title": "Disputes queue",
@@ -3511,9 +3511,9 @@
 		"codYes": "Cash on delivery accepted",
 		"codNo": "No cash on delivery",
 		"columnDistricts": "Districts",
-		"columnFee": "Fee (FCFA)",
-		"columnFreeAbove": "Free above (FCFA)",
-		"columnMinimum": "Minimum order (FCFA)",
+		"columnFee": "Fee",
+		"columnFreeAbove": "Free above",
+		"columnMinimum": "Minimum order",
 		"columnEta": "Delivery time",
 		"columnCod": "Cash on delivery",
 		"method": {
@@ -3563,7 +3563,7 @@
 		"testTitle": "Test an address",
 		"testBody": "See what a buyer would be offered, without saving anything.",
 		"testDistrict": "District",
-		"testSubtotal": "Cart subtotal (FCFA)",
+		"testSubtotal": "Cart subtotal",
 		"testRun": "Test",
 		"couriersBody": "Choose a courier for a zone from the Zones tab. These are the active couriers and their tariffs.",
 		"couriersEmpty": "No courier is available yet.",
@@ -3584,7 +3584,7 @@
 		"hoursCloses": "{day}: closes",
 		"fieldHoursNote": "Hours note (optional)",
 		"fieldPickup": "Buyers can collect parcels here",
-		"fieldPickupFee": "Pickup fee (FCFA)",
+		"fieldPickupFee": "Pickup fee",
 		"fieldHoldDays": "Hold days",
 		"fieldPreparation": "Preparation (hours)",
 		"fieldDispatchOrigin": "Parcels leave from here",
@@ -3600,7 +3600,7 @@
 			"hoursOrder": "Each open day must close after it opens.",
 			"hoursRequired": "Pickup needs at least one open day.",
 			"defaultNeedsOrigin": "The default origin must be an active dispatch origin.",
-			"pickupFeeInvalid": "Enter a fee between 0 and 5 000 FCFA.",
+			"pickupFeeInvalid": "Enter a fee between 0 and 5 000.",
 			"holdDaysInvalid": "Hold between 1 and 14 days.",
 			"preparationInvalid": "Enter 0 to 72 hours."
 		}

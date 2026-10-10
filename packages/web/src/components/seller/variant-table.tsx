@@ -9,7 +9,7 @@ import type {
 	UseFormSetValue,
 } from "react-hook-form";
 import { useWatch } from "react-hook-form";
-import { formatXaf } from "~/lib/money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
 
@@ -29,6 +29,7 @@ export function VariantTable({
 	setValue,
 	showCost,
 }: VariantTableProps) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("ProductEditor");
 	const locale = useLocale();
 	const rows = useWatch({ control, name: "variants" }) ?? [];
@@ -198,7 +199,7 @@ export function VariantTable({
 						: t("unitsInStock", { count: units })}
 				</span>
 				{showCost && (
-					<span>{t("costValue", { value: formatXaf(costValue) })}</span>
+					<span>{t("costValue", { value: formatOrderMoney(costValue) })}</span>
 				)}
 			</div>
 		</div>

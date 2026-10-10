@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { useNow } from "~/app/(public)/purchases/use-now";
 import { Button } from "~/components/ui/button";
 import { useCreatePaymentIntent, usePaymentStatus } from "~/hooks/use-checkout";
 import { availableActions, useCancelOrder } from "~/hooks/use-order-actions";
@@ -16,7 +17,6 @@ import {
 	freshAttempt,
 	stepFor,
 } from "~/lib/payment-flow";
-import { useNow } from "~/app/(public)/purchases/use-now";
 import { FailedState } from "./failed-state";
 import { PendingState } from "./pending-state";
 

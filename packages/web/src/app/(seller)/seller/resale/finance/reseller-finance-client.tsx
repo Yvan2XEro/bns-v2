@@ -4,8 +4,8 @@ import { ArrowLeftRight, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useResellerFinance } from "~/hooks/use-resale";
-import { formatXaf } from "~/lib/order-money";
 
 export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 	const t = useTranslations("SellerResale");
@@ -165,11 +165,12 @@ function SummaryCard({
 	amount: number;
 	locale: "fr" | "en";
 }) {
+	const formatOrderMoney = useOrderMoney();
 	return (
 		<div className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
 			<p className="text-[#64748B] text-sm">{title}</p>
 			<p className="mt-2 font-bold text-2xl text-[#0F172A]">
-				{formatXaf(amount, locale)}
+				{formatOrderMoney(amount, locale)}
 			</p>
 		</div>
 	);
@@ -201,11 +202,12 @@ function FinanceRow({
 	amount: number;
 	locale: "fr" | "en";
 }) {
+	const formatOrderMoney = useOrderMoney();
 	return (
 		<div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
 			<p className="min-w-0 truncate text-[#475569] text-sm">{label}</p>
 			<p className="shrink-0 font-semibold text-[#0F172A] text-sm">
-				{formatXaf(amount, locale)}
+				{formatOrderMoney(amount, locale)}
 			</p>
 		</div>
 	);

@@ -8,6 +8,7 @@ import { useId, useReducer } from "react";
 import { Button } from "~/components/ui/button";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useAddCartItem } from "~/hooks/use-cart";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
 	type DeliveryLineInput,
@@ -19,7 +20,6 @@ import {
 	type SingleShopConflict,
 	singleShopConflict,
 } from "~/lib/cart-lines";
-import { formatXaf } from "~/lib/order-money";
 import { isVariantInStock } from "~/lib/variants";
 import type { PublicVariantDoc } from "~/types";
 import { SingleShopDialog } from "../../cart/single-shop-dialog";
@@ -63,6 +63,7 @@ export function BuyActions({
 	signedIn: boolean;
 	delivery: DeliveryLineInput;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("BuyBox");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
@@ -196,7 +197,7 @@ export function BuyActions({
 						line.delivery &&
 							t("deliveryTo", {
 								city: line.delivery.city,
-								fee: formatXaf(line.delivery.fee, locale),
+								fee: formatOrderMoney(line.delivery.fee, locale),
 							}),
 						line.pickup && t("pickupFree"),
 					]

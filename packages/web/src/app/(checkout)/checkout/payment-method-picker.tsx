@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { PaymentMethod } from "~/types/order";
 
 /**
@@ -20,6 +20,7 @@ export function PaymentMethodPicker({
 	fee: number | null;
 	onChoose: (method: PaymentMethod) => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	const locale = useLocale() === "en" ? "en" : "fr";
 
@@ -57,7 +58,9 @@ export function PaymentMethodPicker({
 							<p className="text-[#64748B] text-xs">{option.body}</p>
 							{option.value === "mobile_money" && fee !== null && (
 								<p className="mt-1 font-medium text-[#1E40AF] text-xs">
-									{t("method_protectedFee", { fee: formatXaf(fee, locale) })}
+									{t("method_protectedFee", {
+										fee: formatOrderMoney(fee, locale),
+									})}
 								</p>
 							)}
 						</button>

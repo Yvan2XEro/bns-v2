@@ -8,6 +8,7 @@ import { AppConfigProvider } from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
 import { ChatProvider } from "~/hooks/use-chat-client";
 import { type AppConfig, EMPTY_APP_CONFIG } from "~/lib/app-config";
+import { DEFAULT_PHONE_COUNTRY } from "~/lib/phone-input";
 import { serverFetch } from "~/lib/server-api";
 
 const dmSans = DM_Sans({
@@ -58,7 +59,9 @@ export const metadata: Metadata = {
 
 async function getPublicConfig(): Promise<AppConfig> {
 	try {
-		const res = await serverFetch("/api/public/config");
+		const res = await serverFetch(
+			`/api/public/config?country=${DEFAULT_PHONE_COUNTRY}`,
+		);
 		if (!res.ok) return EMPTY_APP_CONFIG;
 		return { ...EMPTY_APP_CONFIG, ...(await res.json()) };
 	} catch {

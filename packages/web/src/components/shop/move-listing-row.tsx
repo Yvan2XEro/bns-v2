@@ -1,6 +1,6 @@
 "use client";
 
-import { formatXaf } from "~/lib/money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { Listing, Media } from "~/types";
 
 /** One selectable row of the move-listings dialog: thumbnail, title and price. */
@@ -13,6 +13,7 @@ export function MoveListingRow({
 	checked: boolean;
 	onToggle: () => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const image = listing.images?.[0]?.image as Media | string | undefined;
 	const url =
 		typeof image === "object" ? (image.thumbnailURL ?? image.url) : null;
@@ -36,7 +37,9 @@ export function MoveListingRow({
 					<p className="truncate font-medium text-[#0F172A] text-sm">
 						{listing.title}
 					</p>
-					<p className="text-[#64748B] text-xs">{formatXaf(listing.price)}</p>
+					<p className="text-[#64748B] text-xs">
+						{formatOrderMoney(listing.price)}
+					</p>
 				</div>
 			</label>
 		</li>

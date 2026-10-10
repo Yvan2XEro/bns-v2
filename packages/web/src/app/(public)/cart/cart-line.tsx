@@ -3,8 +3,8 @@
 import { ImageOff, Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { cartLineState, quantityStepper } from "~/lib/cart-lines";
-import { formatXaf } from "~/lib/order-money";
 import { cn } from "~/lib/utils";
 import type { CartLineView } from "~/types/order";
 
@@ -21,6 +21,7 @@ export function CartLine({
 	onQuantity: (quantity: number) => void;
 	onRemove: () => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Cart");
 	const state = cartLineState(line);
 	const stepper = quantityStepper(line);
@@ -67,7 +68,7 @@ export function CartLine({
 						) : null}
 					</div>
 					<p className="shrink-0 font-semibold text-[#0F172A]">
-						{formatXaf(line.lineSubtotal, locale)}
+						{formatOrderMoney(line.lineSubtotal, locale)}
 					</p>
 				</div>
 
@@ -78,7 +79,9 @@ export function CartLine({
 					<p className="text-amber-700 text-sm">
 						{t("priceChanged")}{" "}
 						<span className="text-[#64748B]">
-							{t("priceWas", { price: formatXaf(line.priceAtAdd, locale) })}
+							{t("priceWas", {
+								price: formatOrderMoney(line.priceAtAdd, locale),
+							})}
 						</span>
 					</p>
 				) : null}
