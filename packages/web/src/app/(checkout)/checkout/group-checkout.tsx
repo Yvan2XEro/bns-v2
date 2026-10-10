@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -16,6 +17,7 @@ import {
 } from "~/lib/apiError";
 import { type AddressField, addressFieldOf } from "~/lib/checkout-form";
 import { isSplitQuote, unavailableReasonKey } from "~/lib/checkout-group-flow";
+import { cartKey } from "~/lib/query-keys";
 import type {
 	AddressInput,
 	PaymentMethod,
@@ -139,6 +141,7 @@ export function GroupCheckout({
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const router = useRouter();
 	const { protectedPaymentEnabled } = useAppConfig();
+	const queryClient = useQueryClient();
 	const quoteMutation = useSplitQuote();
 	const place = useSplitPlace();
 
@@ -168,7 +171,10 @@ export function GroupCheckout({
 			{
 				onSuccess: (fresh) => {
 					// A flat answer means the server left split mode mid-checkout; the cart refetch re-renders the single-shop flow.
-					if (!isSplitQuote(fresh)) return;
+					if (!isSplitQuote(fresh)) {
+						void queryClient.invalidateQueries({ queryKey: cartKey() });
+						return;
+					}
 					setQuote(fresh);
 					setChanged(fromChange);
 					setAccepted(false);

@@ -2241,7 +2241,7 @@
 		"salesTerms": "Sales terms",
 		"withdrawalInfo": "Right of withdrawal",
 		"languageToggle": "Read in French",
-		"acceptTerms": "I accept the sales terms",
+		"acceptTerms": "I have reviewed the items, fees and totals of each order above and accept the terms of sale; each order's own contract is issued with it once placed.",
 		"placeOrder": "Place order",
 		"quoteChanged": "Your order total changed",
 		"quoteChangedBody": "Prices or fees changed since you started checkout. Review the new total before confirming.",
