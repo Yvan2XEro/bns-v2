@@ -3,7 +3,12 @@ import type { Payload, PayloadRequest } from "payload";
 import { resolveShopRole } from "../access/shopRoles";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { isLaunchCityKey } from "../lib/launchCities";
-import { liveMarketOfShop } from "../lib/markets";
+import {
+	getMarkets,
+	liveMarketOfShop,
+	type Market,
+	marketOfShop,
+} from "../lib/markets";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -67,6 +72,8 @@ export interface CartLineView {
  */
 export interface CartLineState extends CartLineView {
 	unavailableCode: ErrorCode | null;
+	/** The resale supplier when the listing is one, else the storefront; the group key's second half. */
+	fulfillingShopId: string;
 }
 
 export interface CartShopView {
@@ -87,6 +94,32 @@ export interface CartView {
 	/** Null while the cart names no shop, hence no market. */
 	currency: string | null;
 }
+
+export interface SplitCartGroup {
+	/** `{storefrontShopId}:{fulfillingShopId}`. */
+	groupKey: string;
+	storefrontShop: CartShopView;
+	fulfillingShop: CartShopView;
+	resale: boolean;
+	items: CartLineView[];
+	subtotal: number;
+}
+
+/** What `GET /api/cart` answers while `multiShopCartEnabled` is on. */
+export interface SplitCartView {
+	id: string | null;
+	/** Null while the cart is empty, hence bound to no market. */
+	market: { countryCode: string; currency: string } | null;
+	groups: SplitCartGroup[];
+	grandSubtotal: number;
+}
+
+/** Bounds the plan's M6 pins for a multi-shop cart. */
+const MAX_CART_GROUPS = 5;
+const MAX_CART_LINES = 30;
+
+export const groupKeyOf = (storefrontId: string, fulfillingId: string) =>
+	`${storefrontId}:${fulfillingId}`;
 
 function parseQuantity(value: unknown): number {
 	const quantity = typeof value === "number" ? value : Number(value);
@@ -292,12 +325,19 @@ async function revalidateCart(
 	payload: Payload,
 	cart: Cart | null,
 	req?: TxReq,
-): Promise<{ lines: CartLineState[]; shop: Shop | null }> {
+): Promise<{
+	lines: CartLineState[];
+	shop: Shop | null;
+	shops: Map<string, Shop | null>;
+}> {
 	const items = cart?.items ?? [];
-	if (items.length === 0) return { lines: [], shop: null };
+	if (items.length === 0) return { lines: [], shop: null, shops: new Map() };
 
 	const settings = await getOrderSettings(payload);
 	const shop = await loadShop(payload, relationId(items[0].shop), req);
+	const shops = new Map<string, Shop | null>([
+		[relationId(items[0].shop) ?? "", shop],
+	]);
 	const lines: CartLineState[] = [];
 
 	for (const item of items) {
@@ -305,6 +345,13 @@ async function revalidateCart(
 		const variantId = relationId(item.variant);
 		const productId = relationId(item.product);
 		const shopId = relationId(item.shop);
+		// One shop reads for the whole cart unless the flag lets lines differ.
+		let lineShop = shop;
+		if (settings.multiShopCartEnabled && shopId) {
+			if (!shops.has(shopId))
+				shops.set(shopId, await loadShop(payload, shopId, req));
+			lineShop = shops.get(shopId) ?? null;
+		}
 
 		// `depth: 1` so the first image arrives as a Media document: `imageUrl`
 		// is the one line field a client cannot resolve from an id.
@@ -346,7 +393,7 @@ async function revalidateCart(
 				listing,
 				variant,
 				settings,
-				shop,
+				lineShop,
 				req,
 			);
 			if (variant.trackInventory === true) maxQuantity = availableOf(variant);
@@ -377,10 +424,12 @@ async function revalidateCart(
 			available,
 			maxQuantity,
 			unavailableCode,
+			fulfillingShopId:
+				relationId(listing?.resale?.supplierShop) ?? shopId ?? "",
 		});
 	}
 
-	return { lines, shop };
+	return { lines, shop, shops };
 }
 
 /** The wire line: `unavailableCode` stays behind, every other field is the contract's. */
@@ -434,14 +483,101 @@ async function toCartView(
 	};
 }
 
-export async function getCartView(
+const summaryOf = (shop: Shop | null, id: string): CartShopView => ({
+	id,
+	name: shop?.name ?? "",
+	handle: shop?.handle ?? "",
+	city: shop?.location?.city ?? null,
+});
+
+async function toSplitCartView(
+	payload: Payload,
+	cart: Cart | null,
+	req?: TxReq,
+): Promise<SplitCartView> {
+	const { lines, shop, shops } = await revalidateCart(payload, cart, req);
+	if (lines.length === 0 || !shop) {
+		return {
+			id: cart ? String(cart.id) : null,
+			market: null,
+			groups: [],
+			grandSubtotal: 0,
+		};
+	}
+	const storedId = relationId(cart?.market);
+	const market =
+		(storedId
+			? (await getMarkets(payload)).find((m) => m.id === storedId)
+			: undefined) ?? (await liveMarketOfShop(payload, shop));
+
+	const groups = new Map<string, SplitCartGroup>();
+	for (const line of lines) {
+		const key = groupKeyOf(line.shopId, line.fulfillingShopId);
+		let group = groups.get(key);
+		if (!group) {
+			const resale = line.fulfillingShopId !== line.shopId;
+			if (resale && !shops.has(line.fulfillingShopId))
+				shops.set(
+					line.fulfillingShopId,
+					await loadShop(payload, line.fulfillingShopId, req),
+				);
+			group = {
+				groupKey: key,
+				storefrontShop: summaryOf(shops.get(line.shopId) ?? null, line.shopId),
+				fulfillingShop: summaryOf(
+					shops.get(line.fulfillingShopId) ?? null,
+					line.fulfillingShopId,
+				),
+				resale,
+				items: [],
+				subtotal: 0,
+			};
+			groups.set(key, group);
+		}
+		group.items.push(toLineView(line));
+		if (line.available) group.subtotal += line.lineSubtotal;
+	}
+	const list = [...groups.values()];
+	return {
+		id: cart ? String(cart.id) : null,
+		market: { countryCode: market.countryCode, currency: market.currency.code },
+		groups: list,
+		grandSubtotal: list.reduce((sum, group) => sum + group.subtotal, 0),
+	};
+}
+
+/** The flag decides which shape the wire gets; the legacy renderer stays the default. */
+async function toCartResponse(
+	payload: Payload,
+	cart: Cart | null,
+	req?: TxReq,
+): Promise<CartView | SplitCartView> {
+	const settings = await getOrderSettings(payload);
+	return settings.multiShopCartEnabled
+		? toSplitCartView(payload, cart, req)
+		: toCartView(payload, cart, req);
+}
+
+type Render<T> = (
+	payload: Payload,
+	cart: Cart | null,
+	req?: TxReq,
+) => Promise<T>;
+
+async function getCartWith<T>(
 	payload: Payload,
 	user: ServiceUser,
-): Promise<CartView> {
+	render: Render<T>,
+): Promise<T> {
 	await requireEnabled(payload);
 	const cart = await loadActiveCart(payload, user.id);
-	return toCartView(payload, cart);
+	return render(payload, cart);
 }
+
+export const getCartView = (payload: Payload, user: ServiceUser) =>
+	getCartWith(payload, user, toCartView);
+export const getCartResponse = (payload: Payload, user: ServiceUser) =>
+	getCartWith(payload, user, toCartResponse);
 
 function newItemRow(input: {
 	listing: Listing;
@@ -482,11 +618,34 @@ async function applyAddToCart(
 		shopId: string;
 		quantity: number;
 		unitPrice: number;
+		multiShop: boolean;
+		/** The incoming line's market, written only when the cart holds no line yet. */
+		marketId: string | null;
 	},
 ): Promise<Cart> {
 	const items = cart?.items ?? [];
+	const incomingFulfilment =
+		relationId(input.listing.resale?.supplierShop) ?? input.shopId;
 
-	if (items.length > 0) {
+	const fulfilmentOf = async (item: CartItem): Promise<string> => {
+		const listingId = relationId(item.listing);
+		const listing = listingId
+			? await payload
+					.findByID({
+						collection: "listings",
+						id: listingId,
+						depth: 0,
+						overrideAccess: true,
+						req,
+					})
+					.catch(() => null)
+			: null;
+		return (
+			relationId(listing?.resale?.supplierShop) ?? relationId(item.shop) ?? ""
+		);
+	};
+
+	if (items.length > 0 && !input.multiShop) {
 		const currentShopId = relationId(items[0].shop);
 		if (currentShopId && currentShopId !== input.shopId) {
 			const currentShop = await payload
@@ -505,32 +664,33 @@ async function applyAddToCart(
 				},
 			});
 		}
-		const incomingFulfilment =
-			relationId(input.listing.resale?.supplierShop) ?? input.shopId;
 		for (const item of items) {
-			const currentListingId = relationId(item.listing);
-			const currentListing = currentListingId
-				? await payload
-						.findByID({
-							collection: "listings",
-							id: currentListingId,
-							depth: 0,
-							overrideAccess: true,
-							req,
-						})
-						.catch(() => null)
-				: null;
-			const existingFulfilment =
-				relationId(currentListing?.resale?.supplierShop) ??
-				relationId(item.shop);
-			if (existingFulfilment !== incomingFulfilment)
+			if ((await fulfilmentOf(item)) !== incomingFulfilment)
 				throw new CartError(ERROR_CODES.cartSingleFulfilment, 409);
 		}
 	}
 
-	const existingLine = items.find(
-		(item) => relationId(item.variant) === input.variant.id,
+	const existingLine = items.find((item) =>
+		input.multiShop
+			? relationId(item.variant) === input.variant.id &&
+				relationId(item.listing) === input.listing.id
+			: relationId(item.variant) === input.variant.id,
 	);
+
+	if (input.multiShop && items.length > 0) {
+		const keys = new Set<string>();
+		for (const item of items)
+			keys.add(
+				groupKeyOf(relationId(item.shop) ?? "", await fulfilmentOf(item)),
+			);
+		const newGroup = !keys.has(groupKeyOf(input.shopId, incomingFulfilment));
+		if (
+			(newGroup && keys.size + 1 > MAX_CART_GROUPS) ||
+			(!existingLine && items.length + 1 > MAX_CART_LINES)
+		)
+			throw new CartError(ERROR_CODES.cartShopLimitReached, 409);
+	}
+
 	const mergedQuantity = (existingLine?.quantity ?? 0) + input.quantity;
 	if (mergedQuantity > MAX_QUANTITY) {
 		throw new CartError(ERROR_CODES.cartQuantityInvalid, 400);
@@ -554,6 +714,7 @@ async function applyAddToCart(
 					user: userId,
 					status: "active",
 					items: [newItemRow(input)],
+					...(input.marketId ? { market: input.marketId } : {}),
 					lastActivityAt: new Date().toISOString(),
 				},
 			});
@@ -578,15 +739,51 @@ async function applyAddToCart(
 		id: cart.id,
 		overrideAccess: true,
 		req,
-		data: { items: nextItems, lastActivityAt: new Date().toISOString() },
+		data: {
+			items: nextItems,
+			...(items.length === 0 && input.marketId
+				? { market: input.marketId }
+				: {}),
+			lastActivityAt: new Date().toISOString(),
+		},
 	});
 }
 
-export async function addCartItem(
+async function marketOfShopOrNull(
+	payload: Payload,
+	shop: Shop | null,
+): Promise<Market | null> {
+	if (!shop) return null;
+	try {
+		return await marketOfShop(payload, shop);
+	} catch (error) {
+		if (error instanceof ServiceError) return null;
+		throw error;
+	}
+}
+
+/** The market the cart is bound to: its stored row, else the first line's shop's. */
+async function marketOfCart(
+	payload: Payload,
+	cart: Cart,
+	req: PayloadRequest,
+): Promise<Market | null> {
+	const storedId = relationId(cart.market);
+	if (storedId)
+		return (await getMarkets(payload)).find((m) => m.id === storedId) ?? null;
+	const first = cart.items?.[0];
+	return marketOfShopOrNull(
+		payload,
+		await loadShop(payload, first ? relationId(first.shop) : null, req),
+	);
+}
+
+async function addCartItemWith<T>(
 	payload: Payload,
 	user: ServiceUser,
 	input: AddCartItemInput,
-): Promise<CartView> {
+	render: Render<T>,
+): Promise<T> {
 	const settings = await requireEnabled(payload);
 	const quantity = parseQuantity(input.quantity);
 	const listingId = relationId(input.listingId);
@@ -633,19 +830,40 @@ export async function addCartItem(
 		if (relationId(listing.product) !== relationId(variant.product))
 			throw new CartError(ERROR_CODES.cartItemUnavailable, 409);
 
+		let cart = await loadActiveCart(payload, user.id, req);
+
+		// Before orderability: a line from another market must name the market
+		// rule, not whatever its (foreign) city fails first. An unresolvable
+		// market is left to the orderability check, as before.
+		const incomingMarket = await marketOfShopOrNull(
+			payload,
+			await loadShop(payload, shopId, req),
+		);
+		const keepsLines = !replace && (cart?.items?.length ?? 0) > 0;
+		if (cart && keepsLines && incomingMarket) {
+			const cartMarket = await marketOfCart(payload, cart, req);
+			if (cartMarket && cartMarket.id !== incomingMarket.id) {
+				throw new CartError(ERROR_CODES.cartMarketMismatch, 409, undefined, {
+					cartMarket: {
+						id: cartMarket.id,
+						countryCode: cartMarket.countryCode,
+					},
+				});
+			}
+		}
+
 		await assertOrderable(payload, listing, variant, settings);
 		const unitPrice = cartRetailPrice(listing, variant);
 		if (typeof unitPrice !== "number")
 			throw new CartError(ERROR_CODES.cartItemUnavailable, 409);
 
-		let cart = await loadActiveCart(payload, user.id, req);
 		if (replace && cart && (cart.items?.length ?? 0) > 0) {
 			cart = await payload.update({
 				collection: "carts",
 				id: cart.id,
 				overrideAccess: true,
 				req,
-				data: { items: [] },
+				data: { items: [], market: null },
 			});
 		}
 
@@ -655,17 +873,31 @@ export async function addCartItem(
 			shopId,
 			quantity,
 			unitPrice,
+			multiShop: settings.multiShopCartEnabled,
+			marketId: incomingMarket?.id ?? null,
 		});
-		return toCartView(payload, updated, req);
+		return render(payload, updated, req);
 	});
 }
 
-export async function setCartItemQuantity(
+export const addCartItem = (
+	payload: Payload,
+	user: ServiceUser,
+	input: AddCartItemInput,
+) => addCartItemWith(payload, user, input, toCartView);
+export const addCartItemResponse = (
+	payload: Payload,
+	user: ServiceUser,
+	input: AddCartItemInput,
+) => addCartItemWith(payload, user, input, toCartResponse);
+
+async function setCartItemQuantityWith<T>(
 	payload: Payload,
 	user: ServiceUser,
 	lineId: unknown,
 	quantity: unknown,
-): Promise<CartView> {
+	render: Render<T>,
+): Promise<T> {
 	await requireEnabled(payload);
 	const qty = parseQuantity(quantity);
 	const line = lineIdOf(lineId);
@@ -707,15 +939,16 @@ export async function setCartItemQuantity(
 			req,
 			data: { items: nextItems, lastActivityAt: new Date().toISOString() },
 		});
-		return toCartView(payload, updated, req);
+		return render(payload, updated, req);
 	});
 }
 
-export async function removeCartItem(
+async function removeCartItemWith<T>(
 	payload: Payload,
 	user: ServiceUser,
 	lineId: unknown,
-): Promise<CartView> {
+	render: Render<T>,
+): Promise<T> {
 	await requireEnabled(payload);
 	const line = lineIdOf(lineId);
 	if (!line) throw new ServiceError(ERROR_CODES.notFound, 404);
@@ -731,32 +964,68 @@ export async function removeCartItem(
 			id: cart.id,
 			overrideAccess: true,
 			req,
-			data: { items: nextItems, lastActivityAt: new Date().toISOString() },
+			data: {
+				items: nextItems,
+				...(nextItems.length === 0 ? { market: null } : {}),
+				lastActivityAt: new Date().toISOString(),
+			},
 		});
-		return toCartView(payload, updated, req);
+		return render(payload, updated, req);
 	});
 }
 
-export async function clearCart(
+async function clearCartWith<T>(
 	payload: Payload,
 	user: ServiceUser,
-): Promise<CartView> {
+	render: Render<T>,
+): Promise<T> {
 	await requireEnabled(payload);
 
 	return withTransaction(payload, async (req) => {
 		const cart = await loadActiveCart(payload, user.id, req);
-		if (!cart) return toCartView(payload, null, req);
+		if (!cart) return render(payload, null, req);
 
 		const updated = await payload.update({
 			collection: "carts",
 			id: cart.id,
 			overrideAccess: true,
 			req,
-			data: { items: [], lastActivityAt: new Date().toISOString() },
+			data: {
+				items: [],
+				market: null,
+				lastActivityAt: new Date().toISOString(),
+			},
 		});
-		return toCartView(payload, updated, req);
+		return render(payload, updated, req);
 	});
 }
+
+export const setCartItemQuantity = (
+	payload: Payload,
+	user: ServiceUser,
+	lineId: unknown,
+	quantity: unknown,
+) => setCartItemQuantityWith(payload, user, lineId, quantity, toCartView);
+export const setCartItemQuantityResponse = (
+	payload: Payload,
+	user: ServiceUser,
+	lineId: unknown,
+	quantity: unknown,
+) => setCartItemQuantityWith(payload, user, lineId, quantity, toCartResponse);
+export const removeCartItem = (
+	payload: Payload,
+	user: ServiceUser,
+	lineId: unknown,
+) => removeCartItemWith(payload, user, lineId, toCartView);
+export const removeCartItemResponse = (
+	payload: Payload,
+	user: ServiceUser,
+	lineId: unknown,
+) => removeCartItemWith(payload, user, lineId, toCartResponse);
+export const clearCart = (payload: Payload, user: ServiceUser) =>
+	clearCartWith(payload, user, toCartView);
+export const clearCartResponse = (payload: Payload, user: ServiceUser) =>
+	clearCartWith(payload, user, toCartResponse);
 
 /**
  * Called by checkout (Tasks 18/19) inside their own transaction, once the

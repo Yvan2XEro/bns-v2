@@ -291,6 +291,15 @@ export const AppSettings: GlobalConfig = {
 					},
 				},
 				{
+					name: "multiShopCartEnabled",
+					type: "checkbox",
+					defaultValue: false,
+					admin: {
+						description:
+							"Off: a cart holds one storefront and one fulfilling shop (cart.singleShop, cart.singleFulfilment). On: lines group per (storefront, fulfilling shop), up to 5 groups and 30 lines. Read by lib/orderSettings.ts.",
+					},
+				},
+				{
 					name: "launchCities",
 					type: "array",
 					defaultValue: [

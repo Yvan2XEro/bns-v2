@@ -6956,6 +6956,10 @@ export interface AppSetting {
      */
     enabled?: boolean | null;
     /**
+     * Off: a cart holds one storefront and one fulfilling shop (cart.singleShop, cart.singleFulfilment). On: lines group per (storefront, fulfilling shop), up to 5 groups and 30 lines. Read by lib/orderSettings.ts.
+     */
+    multiShopCartEnabled?: boolean | null;
+    /**
      * Cities where checkout is open and their delivery fee. Read by lib/orderSettings.ts (deliveryFeeFor); a city absent here fails checkout.cityNotServed.
      */
     launchCities?:
@@ -7317,6 +7321,7 @@ export interface AppSettingsSelect<T extends boolean = true> {
     | T
     | {
         enabled?: T;
+        multiShopCartEnabled?: T;
         launchCities?:
           | T
           | {
