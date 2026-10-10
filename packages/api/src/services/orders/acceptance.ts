@@ -292,6 +292,10 @@ export async function acceptOrder(
 				"orders.process",
 				req,
 			);
+			// A legacy confirmed+unpaid protected order would otherwise ship unpaid.
+			if (order.paymentMethod === "mobile_money" && order.status !== "paid") {
+				throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
+			}
 			const acceptBy = order.deadlines?.acceptBy;
 			if (acceptBy && new Date(acceptBy).getTime() < Date.now()) {
 				throw new ServiceError(ERROR_CODES.orderAcceptDeadlinePassed, 409);

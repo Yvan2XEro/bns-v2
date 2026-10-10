@@ -141,11 +141,12 @@ export async function expireOrders(
 	// settlement, so the window can close without waiting on the provider.
 	const { checkoutExpiryMinutes } = await getPaymentSettings(payload);
 	// "confirmed" is the zombie a protected order could be confirmed into before
-	// payment-first orders lost their confirmation path: unpayable, so it dies
-	// on the same window as a placed one.
+	// payment-first orders lost their confirmation path, and "accepted" is that
+	// zombie accepted before acceptOrder refused it: unpayable, so both die on
+	// the same window as a placed one.
 	const unpaid = await selectOrders(payload, {
 		and: [
-			{ status: { in: ["placed", "confirmed"] } },
+			{ status: { in: ["placed", "confirmed", "accepted"] } },
 			{ paymentMethod: { equals: "mobile_money" } },
 			{ paymentStatus: { in: ["unpaid", "awaiting_payment"] } },
 			{

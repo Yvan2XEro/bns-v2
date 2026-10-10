@@ -139,6 +139,27 @@ path and has `expireOrders` sweep confirmed-and-unpaid zombies (776d62a).
   `bunx vitest run --config ./vitest.config.mts --dir tests/smoke`.
 - The P5 and NotchPay obligations stand unchanged (`2026-10-03-p5-release-record.md`,
   `2026-10-08-notchpay-adapter-release-record.md`).
+- **Pre-deploy query (the user runs it before deploying).** It lists legacy
+  protected orders that were never paid but got past `placed`/`confirmed`:
+
+  ```js
+  db.orders.find(
+    {
+      paymentMethod: "mobile_money",
+      paymentStatus: { $nin: ["paid", "refunded", "partially_refunded"] },
+      status: { $nin: ["placed", "confirmed", "cancelled"] },
+    },
+    { orderNumber: 1, status: 1, paymentStatus: 1, shop: 1, "timestamps.placedAt": 1 },
+  )
+  ```
+
+  An empty result is the expected answer (protected payment was gated off).
+  Handle any hit by hand before deploying: an `accepted` hit would be
+  cancelled by the first `expireOrders` run (`payment_expired`), but the seller
+  may already have handed over the goods; a `shipped` or later hit is not
+  touched by any job. From this release, `acceptOrder` refuses an unpaid
+  protected order (409 `order.invalidTransition`) and the sweep also selects
+  `accepted`+unpaid ones.
 
 ## The user's decisions (verbatim from the spec)
 

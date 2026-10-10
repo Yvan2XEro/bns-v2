@@ -226,6 +226,28 @@ describe("acceptOrder", () => {
 		expect(order.status).toBe("accepted");
 		expect((await freshOrder(payload)).status).toBe("accepted");
 	});
+
+	it.each([
+		"unpaid",
+		"awaiting_payment",
+	] as const)("refuses a confirmed mobile_money zombie (%s) with order.invalidTransition, before acceptBy", async (paymentStatus) => {
+		const payload = seed({
+			order: baseOrder({
+				paymentMethod: "mobile_money",
+				paymentStatus,
+				deadlines: { acceptBy: FUTURE() },
+			}),
+		});
+		await expect(
+			acceptOrder(payload, ownerUser, "order-1"),
+		).rejects.toMatchObject({ code: "order.invalidTransition", status: 409 });
+		const order = await freshOrder(payload);
+		expect([order.status, order.paymentStatus]).toEqual([
+			"confirmed",
+			paymentStatus,
+		]);
+		expect(events(payload)).toHaveLength(0);
+	});
 });
 
 describe("declineOrder", () => {
