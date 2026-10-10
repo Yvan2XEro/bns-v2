@@ -581,6 +581,36 @@ describe("confirmBySellerCall", () => {
 	});
 });
 
+describe("payment-first orders take no confirmation path", () => {
+	const protectedOrder = () =>
+		seed({
+			order: baseOrder({
+				status: "placed",
+				paymentMethod: "mobile_money",
+				paymentStatus: "unpaid",
+				deadlines: { confirmBy: FUTURE() },
+			}),
+		});
+
+	it("refuses the seller call with order.invalidTransition and leaves the order placed", async () => {
+		const payload = protectedOrder();
+		await expect(
+			confirmBySellerCall(payload, ownerUser, "order-1"),
+		).rejects.toMatchObject({ code: "order.invalidTransition", status: 409 });
+		expect((await freshOrder(payload)).status).toBe("placed");
+		expect(events(payload)).toHaveLength(0);
+	});
+
+	it("refuses the buyer's code with order.invalidTransition and leaves the order placed", async () => {
+		const payload = protectedOrder();
+		await expect(
+			confirmByBuyerCode(payload, buyerUser, "order-1", "123456"),
+		).rejects.toMatchObject({ code: "order.invalidTransition", status: 409 });
+		expect((await freshOrder(payload)).status).toBe("placed");
+		expect(events(payload)).toHaveLength(0);
+	});
+});
+
 describe("the confirmation code route", () => {
 	it("is the buyer's alone: a shop member gets order.notFound", async () => {
 		const payload = seed({ order: baseOrder({ status: "placed" }) });

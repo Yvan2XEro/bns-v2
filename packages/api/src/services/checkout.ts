@@ -1024,10 +1024,12 @@ export async function quoteLines(
 	const deliveryPhoneIsVerifiedAccountPhone = Boolean(
 		account.phoneVerifiedAt && account.phone && account.phone === address.phone,
 	);
-	const confirmationRequired = confirmationPathFor({
-		tier,
-		deliveryPhoneIsVerifiedAccountPhone,
-	});
+	// Payment is the confirmation of a protected order (placed -> paid); no
+	// confirmed state exists for it, and confirmed -> paid is not a transition.
+	const confirmationRequired =
+		paymentMethod === "cod"
+			? confirmationPathFor({ tier, deliveryPhoneIsVerifiedAccountPhone })
+			: "none";
 
 	const locale = input.locale === "en" ? "en" : "fr";
 	const [company, termsFr, termsEn] = await Promise.all([
@@ -1551,10 +1553,10 @@ export async function finishPlacedOrder(
 	createdOrder: Order,
 	draft: Pick<
 		OrderDraft,
-		"user" | "source" | "fresh" | "internals" | "placedAtIso"
+		"user" | "source" | "fresh" | "internals" | "placedAtIso" | "paymentMethod"
 	>,
 ): Promise<Order> {
-	const { user, source, fresh, internals, placedAtIso } = draft;
+	const { user, source, fresh, internals, placedAtIso, paymentMethod } = draft;
 	const address = internals.address;
 	const placedEvent = await appendOrderEvent(req, createdOrder, {
 		type: "order.placed",
@@ -1566,7 +1568,7 @@ export async function finishPlacedOrder(
 	queueOrderEvent(req, createdOrder, placedEvent);
 
 	let finalOrder = createdOrder;
-	if (fresh.confirmationRequired === "none") {
+	if (paymentMethod === "cod" && fresh.confirmationRequired === "none") {
 		const transitioned = await applyTransition(
 			req,
 			createdOrder,

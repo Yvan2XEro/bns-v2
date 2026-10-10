@@ -626,6 +626,13 @@ export async function shipOrder(
 	);
 }
 
+/** A protected order is confirmed by paying; confirmed -> paid does not exist, so confirming it would strand it. */
+function requireCodOrder(order: Order): void {
+	if (order.paymentMethod === "mobile_money") {
+		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
+	}
+}
+
 /**
  * The buyer's own code, verified by `verifyConfirmationCode` (Task 13) —
  * `placed` → `confirmed` only; the shop still has its own `acceptOrder` to
@@ -646,6 +653,7 @@ export async function confirmByBuyerCode(
 		payload,
 		async (req) => {
 			const order = await requireBuyer(payload, user, orderId, req);
+			requireCodOrder(order);
 			await verifyConfirmationCode(req, order, code.trim());
 			const now = new Date().toISOString();
 			return applyTransition(
@@ -697,6 +705,7 @@ export async function confirmBySellerCall(
 				"orders.process",
 				req,
 			);
+			requireCodOrder(order);
 			const confirmBy = order.deadlines?.confirmBy;
 			if (confirmBy && new Date(confirmBy).getTime() < Date.now()) {
 				throw new ServiceError(ERROR_CODES.orderConfirmationCodeExpired, 400);
@@ -815,10 +824,7 @@ export async function cancelResaleOrderBySupplierTimeout(
 		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
 	}
 	const items = await loadOrderItemsFor(req, String(order.id));
-	if (
-		items.length === 0 ||
-		items.some((item) => item.sourcing !== "resale")
-	) {
+	if (items.length === 0 || items.some((item) => item.sourcing !== "resale")) {
 		throw new ServiceError(ERROR_CODES.orderInvalidTransition, 409);
 	}
 	return endOrder(req, order, {

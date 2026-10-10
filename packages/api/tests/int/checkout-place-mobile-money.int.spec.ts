@@ -22,6 +22,7 @@ vi.mock("../../src/hooks/searchEvents", () => ({ queueSearchEvent }));
 
 import { launchCitySeedRows } from "../../src/lib/launchCities";
 import { FakeMarketplaceProvider } from "../../src/lib/payments/fakeMarketplace";
+import { hashDeliveryPhone } from "../../src/lib/phoneHash";
 import { MemoryCounterStore } from "../../src/lib/rateLimit";
 import type { Order } from "../../src/payload-types";
 import { getCartView } from "../../src/services/cart";
@@ -391,10 +392,9 @@ describe("placeOrder: mobile money behind the flag", () => {
 		const input = await quotedInput(payload, BUYER);
 
 		const result = await place(payload, input);
-		// A new buyer (no phone score yet) gets `sms_code`, not `none`: the
-		// order stays `placed`, which is what the payable rule requires —
-		// `confirmed` is not in its allowed set.
-		expect(result.confirmationRequired).toBe("sms_code");
+		// Payment is the confirmation: a protected order is handed no code even
+		// to a new buyer, and stays `placed`, which the payable rule requires.
+		expect(result.confirmationRequired).toBe("none");
 
 		const order = orderAt(payload);
 		expect({
@@ -430,6 +430,49 @@ describe("placeOrder: mobile money behind the flag", () => {
 			id: order.id,
 		});
 		expect(settled.paymentStatus).toBe("awaiting_payment");
+	});
+});
+
+describe("placeOrder: a trusted buyer's mobile_money order stays payable", () => {
+	it("stays placed under the auto-confirm tier and pays end to end", async () => {
+		const payload = world();
+		await payload.create({
+			collection: "buyer-phone-scores",
+			data: {
+				phoneHash: hashDeliveryPhone(BUYER_PHONE, PEPPER),
+				ordersPlaced: 3,
+				ordersDelivered: 3,
+				cancelledAfterAccept: 0,
+				blockedOverride: "none",
+				refusals: [],
+			},
+		});
+		const input = await quotedInput(payload, BUYER);
+
+		const result = await place(payload, input);
+		expect(result.confirmationRequired).toBe("none");
+		expect(result.status).toBe("placed");
+		const order = orderAt(payload);
+		expect(order.status).toBe("placed");
+		expect(order.confirmation?.method ?? null).toBeNull();
+
+		const fake = new FakeMarketplaceProvider({ now: () => NOW });
+		fake.seedAccount({ accountId: "acct_seed" });
+		const intent = await createCheckoutIntent(
+			{ payload },
+			order,
+			{
+				id: "u-buyer",
+				role: "user",
+				name: "Buyer",
+				email: "u-buyer@test.cm",
+				suspendedAt: null,
+				suspendedUntil: null,
+			},
+			{ channel: "cm.mtn", phone: BUYER_PHONE, idempotencyKey: "intent-t" },
+			{ provider: fake, now: NOW, serverUrl: "https://api.test" },
+		);
+		expect(intent.status).toBe("pending");
 	});
 });
 
@@ -507,7 +550,7 @@ describe("quoteCheckout/placeOrder: the protected quote is priced server-side (B
 			total: 12_360,
 			currency: "XAF",
 		});
-		expect(order.confirmationRequired).toBe("sms_code");
+		expect(order.confirmationRequired).toBe("none");
 	});
 
 	it("binds the quote hash to the method: a cod quote can never place a mobile_money order", async () => {

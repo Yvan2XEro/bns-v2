@@ -465,7 +465,7 @@ describe("staging rehearsal: fake provider, real routes and services, end to end
 				now: NOW,
 				store: new MemoryCounterStore(),
 			});
-			expect(placed.confirmationRequired).toBe("sms_code");
+			expect(placed.confirmationRequired).toBe("none");
 			const order = orderAt(payload);
 			expect({
 				status: order.status,

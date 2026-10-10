@@ -534,7 +534,7 @@ describe("NotchPay adapter rehearsal: real adapter on recorded fixtures, real ro
 					store: new MemoryCounterStore(),
 				},
 			);
-			expect(placed.confirmationRequired).toBe("sms_code");
+			expect(placed.confirmationRequired).toBe("none");
 			const order = orderAt(payload);
 			expect(order.amounts?.total).toBe(SPLIT.buyerTotal);
 
