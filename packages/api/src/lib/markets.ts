@@ -353,7 +353,8 @@ export async function moneyOfOrder(
 			currency: doc.amounts?.currency ?? undefined,
 			formats: market?.formats,
 		};
-	} catch {
+	} catch (error) {
+		payload.logger.warn(`[markets] moneyOfOrder degraded: ${String(error)}`);
 		return {};
 	}
 }
