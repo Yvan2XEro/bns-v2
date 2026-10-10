@@ -813,6 +813,8 @@
 		}
 	},
 	"Seller": {
+		"errorRetry": "Réessayer",
+		"errorBackToDashboard": "Retour au tableau de bord",
 		"space": "Espace vendeur",
 		"nav": {
 			"dashboard": "Tableau de bord",

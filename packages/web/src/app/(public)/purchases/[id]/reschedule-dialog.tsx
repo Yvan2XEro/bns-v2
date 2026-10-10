@@ -15,7 +15,7 @@ import {
 	toRescheduleInput,
 } from "~/lib/reschedule-form";
 import { formatDeliveryDate, rescheduleChoices } from "~/lib/shipment-tracking";
-import { useLocaleKey } from "../../../seller/billing/use-locale-key";
+import { useLocaleKey } from "../../../(seller)/seller/billing/use-locale-key";
 import { ActionDialog, type DialogControl } from "./action-dialog";
 
 /** Day and window are offered from today; the server judges the zone's delivery days. */

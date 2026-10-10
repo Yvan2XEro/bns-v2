@@ -812,6 +812,8 @@
 		}
 	},
 	"Seller": {
+		"errorRetry": "Try again",
+		"errorBackToDashboard": "Back to dashboard",
 		"space": "Seller space",
 		"nav": {
 			"dashboard": "Dashboard",

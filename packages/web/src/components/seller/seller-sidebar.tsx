@@ -116,7 +116,7 @@ export function SellerSidebar({
 			: null;
 
 	return (
-		<aside className="border-[#E2E8F0] border-b bg-white lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
+		<aside className="border-[#E2E8F0] border-b bg-white lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
 			<div className="flex items-center gap-3 p-4">
 				<ShopInitials
 					name={name}

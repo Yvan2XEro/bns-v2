@@ -14,6 +14,7 @@ import { ProductPhotosSection } from "~/components/seller/product-photos-section
 import { ProductPublicationCard } from "~/components/seller/product-publication-card";
 import { ProductVariantsSection } from "~/components/seller/product-variants-section";
 import { RecentMovements } from "~/components/seller/recent-movements";
+import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { useSaveProduct } from "~/hooks/use-save-product";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { pruneAttributeValues } from "~/lib/category-form";
@@ -121,6 +122,13 @@ export function ProductEditor({
 
 	return (
 		<form onSubmit={submit} className="space-y-5" noValidate>
+			{detail && (
+				<WorkspaceBreadcrumb
+					section="catalogue"
+					href="/seller/catalogue"
+					reference={heading}
+				/>
+			)}
 			<ProductEditorHeader
 				heading={heading}
 				isEdit={Boolean(detail)}
