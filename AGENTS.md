@@ -265,11 +265,15 @@ cd packages/mobile && bun run check-types:advisory | grep -c "error TS"  # 35
 
 - **The web Docker build only ships a slice of `packages/api`** (payload-types,
   `src/contracts/`, `src/types/`, and the pure helpers its Dockerfile lists).
-  A web VALUE import from anywhere else in `api/src` passes every local gate
-  and then breaks the deploy — it did, silently, for days. Rule: web
-  value-imports from the api only through `contracts/`, `types/` or a helper
-  the Dockerfile explicitly copies; everything else must be `import type`.
-  `bun run build` in `packages/web` belongs to every release gate.
+  ANY web import from outside that slice — `import type` included, because the
+  image's `next build` runs tsc and must RESOLVE it — passes every local gate
+  and then breaks the deploy; it did, three times. The rule is enforced by
+  `tests/int/docker-slice-guard.int.spec.ts`, which derives the shipped set
+  from the Dockerfile and walks the import graph transitively: a type the web
+  names moves into `contracts/`; a helper it calls is either there or in the
+  Dockerfile's COPY list. `bun run build` in `packages/web` belongs to every
+  release gate, and the builder stage can be simulated by copying the
+  Dockerfile's COPY set into a temp tree and running the web tsc inside it.
 - Measure those four numbers on a **quiet tree**. Every figure quoted during
   P3 while agents were writing came out wrong — the web/mobile cast count was
   published as 41 and was never below 48 — and a ceiling set from a moving
