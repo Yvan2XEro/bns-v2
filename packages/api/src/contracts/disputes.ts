@@ -1,4 +1,11 @@
-import type { ProofChecklist } from "../lib/disputeRules";
+/** Moved from lib/disputeRules: the web image's tsc must resolve every
+ * import of the contracts slice, type-only included. */
+export interface ProofChecklistRow {
+	requirement: string;
+	established: boolean;
+	source: string | null;
+}
+export type ProofChecklist = ProofChecklistRow[];
 import type { Dispute, ShopStrike } from "../payload-types";
 
 export interface DisputeOutcomeInput {

@@ -33,7 +33,7 @@ function shippedSet(): { files: Set<string>; dirs: string[] } {
 const inSlice = (rel: string, s: ReturnType<typeof shippedSet>) =>
 	s.files.has(rel) || s.dirs.some((d) => rel === d || rel.startsWith(`${d}/`));
 
-/** Relative value-import specifiers of a module (import type / export type are exempt). */
+/** Every relative import specifier of a module — type imports included: the image's tsc must resolve them. */
 function valueImports(file: string): string[] {
 	const src = readFileSync(file, "utf8");
 	const out: string[] = [];
@@ -42,20 +42,8 @@ function valueImports(file: string): string[] {
 	for (const m of src.matchAll(re)) {
 		const spec = m[2] ?? m[3];
 		if (!spec) continue;
-		if (m[1]) continue; // import type { … } — erased
-		// an import whose every binding is `type X` is also erased
-		const stmt = m[0];
-		const braces = stmt.match(/\{([\s\S]*?)\}/);
-		if (
-			braces &&
-			!stmt.match(/import\s*(\*|\w)/)?.[1]?.match(/\w/) &&
-			braces[1]
-				.split(",")
-				.map((b) => b.trim())
-				.filter(Boolean)
-				.every((b) => b.startsWith("type "))
-		)
-			continue;
+		// Type-only imports are erased at runtime but the image's `next build`
+		// still runs tsc, which must RESOLVE them — so they count as escapes too.
 		out.push(spec);
 	}
 	return out;

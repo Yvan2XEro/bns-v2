@@ -219,13 +219,11 @@ export interface ProofRecords {
 	rescheduleAccepted: boolean;
 }
 
-export interface ProofChecklistRow {
-	requirement: string;
-	established: boolean;
-	source: string | null;
-}
-
-export type ProofChecklist = ProofChecklistRow[];
+export type {
+	ProofChecklist,
+	ProofChecklistRow,
+} from "../contracts/disputes";
+import type { ProofChecklist } from "../contracts/disputes";
 
 const POD_MAX_DISTANCE_METERS = 200;
 const podWithin200m = (records: ProofRecords): boolean =>
