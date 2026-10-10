@@ -1250,6 +1250,15 @@
 		"closeOwnerOnly": "Seul le propriétaire peut fermer la boutique."
 	},
 	"Moderation": {
+		"shell": {
+			"title": "Modération BuyNSellem",
+			"subtitle": "Espace équipe interne",
+			"auditNotice": "Chaque consultation de pièce est inscrite au journal.",
+			"signedInAs": "Connecté : {name}",
+			"errorTitle": "Une erreur est survenue",
+			"errorBody": "Réessayez dans un instant.",
+			"retry": "Réessayer"
+		},
 		"title": "File d’examen",
 		"subtitle": "Boutiques en attente de vérification d’identité ou d’entreprise.",
 		"loading": "Chargement…",

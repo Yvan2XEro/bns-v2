@@ -1249,6 +1249,15 @@
 		"closeOwnerOnly": "Only the owner can close the shop."
 	},
 	"Moderation": {
+		"shell": {
+			"title": "BuyNSellem moderation",
+			"subtitle": "Internal team space",
+			"auditNotice": "Every document view is written to the audit log.",
+			"signedInAs": "Signed in as {name}",
+			"errorTitle": "Something went wrong",
+			"errorBody": "Please try again in a moment.",
+			"retry": "Try again"
+		},
 		"title": "Reviewer queue",
 		"subtitle": "Shops waiting on identity or business verification.",
 		"loading": "Loading…",
