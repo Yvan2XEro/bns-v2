@@ -164,10 +164,11 @@ registerRefundSubmissionQueue((payload, { refundId, waitUntil }) =>
 	}),
 );
 
-// Payload's scheduler reads crons in the server's zone, which is UTC in the
-// api image; Africa/Douala is UTC+1 all year, so each daily time below is the
-// Douala hour minus one. The P5 jobs are scheduled here rather than in their
-// own files so the whole money calendar reads in one place.
+// Payload's scheduler reads crons in the server's zone, UTC in the api image.
+// The release and reconcile sweeps run hourly and gate on each market's own
+// local hour (markets.moneyCalendar); the daily rows below are fixed UTC times.
+// The P5 jobs are scheduled here rather than in their own files so the whole
+// money calendar reads in one place.
 const PAYMENTS = "payments";
 const paymentTasks = [
 	submitRefundTask,
@@ -177,7 +178,7 @@ const paymentTasks = [
 	},
 	{
 		...releaseEligibleFundsTask,
-		schedule: [{ cron: "0 9 * * *", queue: PAYMENTS }], // 10:00 Douala
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
 	},
 	{
 		...expirePayoutHoldsTask,
@@ -185,7 +186,7 @@ const paymentTasks = [
 	},
 	{
 		...reconcileLedgerTask,
-		schedule: [{ cron: "30 1 * * *", queue: PAYMENTS }], // 02:30 Douala
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
 	},
 	{
 		...recoverSellerReceivablesTask,

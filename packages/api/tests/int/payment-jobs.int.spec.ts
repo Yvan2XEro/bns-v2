@@ -27,10 +27,10 @@ const P5_SCHEDULES = {
 	// Payload's scheduler reads crons in the server's zone, UTC in the api
 	// image; Africa/Douala is UTC+1 all year.
 	syncConnectedAccount: [{ cron: "0 */6 * * *", queue: "payments" }],
-	releaseEligibleFunds: [{ cron: "0 9 * * *", queue: "payments" }], // 10:00 Douala
+	releaseEligibleFunds: [{ cron: "0 * * * *", queue: "payments" }],
 	expirePayoutHolds: [{ cron: "*/15 * * * *", queue: "payments" }],
 	recoverSellerReceivables: [{ cron: "0 2 * * *", queue: "payments" }], // 03:00 Douala
-	reconcileLedger: [{ cron: "30 1 * * *", queue: "payments" }], // 02:30 Douala
+	reconcileLedger: [{ cron: "0 * * * *", queue: "payments" }],
 	sweepBuyerFeeInvoices: [{ cron: "0 * * * *", queue: "payments" }],
 };
 
