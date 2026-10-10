@@ -3150,6 +3150,7 @@
 		"timeline": "Return timeline"
 	},
 	"Disputes": {
+		"openInWorkspace": "Open in the seller workspace",
 		"title": "My disputes",
 		"subtitle": "Follow the discussion, deadlines and outcome of reported order problems.",
 		"loadError": "Your disputes could not be loaded.",

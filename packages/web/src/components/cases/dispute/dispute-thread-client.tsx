@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { useDispute, useDisputeAction } from "~/hooks/use-disputes";
 import {
 	DISPUTE_REASON_LABELS,
@@ -28,7 +29,14 @@ const ACTIONS = [
 	"proposal_reject",
 ] as const;
 
-export function DisputeThreadClient({ disputeId }: { disputeId: string }) {
+export function DisputeThreadClient({
+	disputeId,
+	surface = "buyer",
+}: {
+	disputeId: string;
+	surface?: "buyer" | "seller";
+}) {
+	const inWorkspace = surface === "seller";
 	const t = useTranslations("Disputes");
 	const locale = useLocale();
 	const queryClient = useQueryClient();
@@ -52,16 +60,17 @@ export function DisputeThreadClient({ disputeId }: { disputeId: string }) {
 	if (query.isPending) return <LoadingRows />;
 	if (query.isError || !query.data) {
 		return (
-			<main className="mx-auto max-w-4xl px-4 py-12">
+			<div className="mx-auto max-w-4xl px-4 py-12">
 				<LoadError
 					title={t("detailLoadError")}
 					onRetry={() => void query.refetch()}
 				/>
-			</main>
+			</div>
 		);
 	}
 
 	const view = query.data;
+	const Root = inWorkspace ? "div" : "main";
 	const groups = disputeActionGroups(view.allowedActions);
 	const available = ACTIONS.filter((name) => groups.response.includes(name));
 	const submitAction = (name: (typeof ACTIONS)[number]) => {
@@ -75,14 +84,37 @@ export function DisputeThreadClient({ disputeId }: { disputeId: string }) {
 	};
 
 	return (
-		<main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
+		<Root
+			className={
+				inWorkspace
+					? "space-y-6"
+					: "mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6"
+			}
+		>
+			{inWorkspace ? (
+				<WorkspaceBreadcrumb
+					section="disputes"
+					href="/seller/disputes"
+					reference={view.number}
+				/>
+			) : null}
 			<Link
-				href="/account/disputes"
+				href={inWorkspace ? "/seller/disputes" : "/account/disputes"}
 				className="inline-flex min-h-11 items-center gap-2 text-[#5B21B6] text-sm hover:underline"
 			>
 				<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 				{t("back")}
 			</Link>
+			{!inWorkspace && view.viewerRole === "seller" ? (
+				<p className="text-[#475569] text-sm">
+					<Link
+						href={`/seller/disputes/${encodeURIComponent(disputeId)}`}
+						className="font-medium text-[#5B21B6] hover:underline"
+					>
+						{t("openInWorkspace")}
+					</Link>
+				</p>
+			) : null}
 			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-white p-5">
 				<div className="flex items-start gap-3">
 					<Scale aria-hidden="true" className="mt-1 h-5 w-5 text-[#6D28D9]" />
@@ -233,6 +265,6 @@ export function DisputeThreadClient({ disputeId }: { disputeId: string }) {
 					) : null}
 				</section>
 			) : null}
-		</main>
+		</Root>
 	);
 }

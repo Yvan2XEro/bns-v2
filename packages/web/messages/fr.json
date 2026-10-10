@@ -3151,6 +3151,7 @@
 		"timeline": "Historique du retour"
 	},
 	"Disputes": {
+		"openInWorkspace": "Ouvrir dans l'espace vendeur",
 		"title": "Mes litiges",
 		"subtitle": "Suivez les échanges, les échéances et la résolution des problèmes signalés sur vos commandes.",
 		"loadError": "Impossible de charger vos litiges.",

@@ -49,7 +49,8 @@ export function SellerDisputesClient({ shopId }: { shopId: string }) {
 						{query.data.rows.map((row) => (
 							<li key={row.id}>
 								<Link
-									href={`/disputes/${encodeURIComponent(row.id)}`}
+									// The thread opens inside the workspace, not the buyer shell (spec §1).
+									href={`/seller/disputes/${encodeURIComponent(row.id)}`}
 									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 hover:border-[#C4B5FD] hover:bg-[#FAF9FF]"
 								>
 									<div className="min-w-0">
