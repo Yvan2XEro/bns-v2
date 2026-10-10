@@ -20,9 +20,11 @@ import {
 import { OrderSummaryCard } from "@/src/components/checkout/OrderSummaryCard";
 import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
 import { PreContractPanel } from "@/src/components/checkout/PreContractPanel";
+import { SplitReview } from "@/src/components/checkout/SplitReview";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useCart } from "@/src/hooks/useCart";
 import { ApiError } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import {
@@ -31,6 +33,7 @@ import {
 	placeOrderBody,
 	quoteDifferences,
 } from "@/src/lib/checkoutFlow";
+import { isSplitCart } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
 import type { PaymentMethod } from "@/src/types/order";
 
@@ -40,10 +43,19 @@ export default function CheckoutReviewScreen() {
 		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
 			<CheckoutHeader current={3} />
 			<CheckoutGate needs="option">
-				<Review />
+				<ReviewOrSplit />
 			</CheckoutGate>
 		</SafeAreaView>
 	);
+}
+
+function ReviewOrSplit() {
+	const cart = useCart();
+	const { state } = useCheckoutFlow();
+	if (cart.data && isSplitCart(cart.data) && state.address) {
+		return <SplitReview address={state.address} />;
+	}
+	return <Review />;
 }
 
 const isQuoteChanged = (error: unknown) =>

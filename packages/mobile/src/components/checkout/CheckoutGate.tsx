@@ -5,6 +5,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCart } from "@/src/hooks/useCart";
+import { cartIsEmpty, isSplitCart } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
 import { useCheckoutFlow } from "./CheckoutProvider";
 
@@ -39,7 +40,7 @@ export function CheckoutGate({
 			<EmptyState illustration="notFound" title={t("checkout.ordersClosed")} />
 		);
 	}
-	if (!cart.data || cart.data.lines.length === 0) {
+	if (!cart.data || cartIsEmpty(cart.data)) {
 		return (
 			<EmptyState
 				illustration="empty"
@@ -52,7 +53,8 @@ export function CheckoutGate({
 	if (needs !== "nothing" && !state.address) {
 		return <Redirect href="/checkout/address" />;
 	}
-	if (needs === "option" && !state.option) {
+	// A split cart picks its delivery per group, inside the review itself.
+	if (needs === "option" && !state.option && !isSplitCart(cart.data)) {
 		return <Redirect href="/checkout/delivery" />;
 	}
 	return <>{children}</>;

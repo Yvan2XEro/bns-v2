@@ -61,6 +61,7 @@ export type {
 
 import type {
 	DeliveryMethod,
+	DeliveryOption,
 	PickupPointSnapshot,
 } from "../../../api/src/contracts/deliveryQuote";
 export type PaymentMethod = "cod" | "mobile_money";
@@ -134,6 +135,34 @@ export interface CartView {
 	subtotal: number;
 	shopOrderable: boolean;
 	currency: "XAF";
+}
+
+/** `GET /api/cart` while the multi-shop flag is on (`SplitCartView` in the API's `services/cart.ts`). */
+export interface SplitCartGroup {
+	/** `{storefrontShopId}:{fulfillingShopId}`. */
+	groupKey: string;
+	storefrontShop: {
+		id: string;
+		name: string;
+		handle: string;
+		city: string | null;
+	};
+	fulfillingShop: {
+		id: string;
+		name: string;
+		handle: string;
+		city: string | null;
+	};
+	resale: boolean;
+	items: CartLineView[];
+	subtotal: number;
+}
+
+export interface SplitCartView {
+	id: string | null;
+	market: { countryCode: string; currency: string } | null;
+	groups: SplitCartGroup[];
+	grandSubtotal: number;
 }
 
 // --- Checkout -------------------------------------------------------------
@@ -239,6 +268,46 @@ export interface QuoteInput {
 	deliveryOptionId: string;
 	paymentMethod: PaymentMethod;
 	locale?: "fr" | "en";
+}
+
+/** `POST /api/checkout/quote` while the multi-shop flag is on (`SplitQuoteView` in `services/checkoutSplit.ts`). */
+export interface SplitQuoteGroup {
+	groupKey: string;
+	storefrontShop: SplitCartGroup["storefrontShop"];
+	fulfillingShop: SplitCartGroup["fulfillingShop"];
+	resale: boolean;
+	items: QuoteSummaryLine[];
+	subtotal: number;
+	delivery: { options: DeliveryOption[]; unavailable: string[] };
+	selectedOptionId: string;
+	deliveryFee: number;
+	vat: number;
+	total: number;
+	quoteHash: string;
+}
+
+export interface SplitQuoteView {
+	market: { countryCode: string; currency: string };
+	groups: SplitQuoteGroup[];
+	unavailableGroups: Array<{ groupKey: string; reason: string }>;
+	grandTotal: number;
+	quoteHash: string;
+}
+
+export interface SplitQuoteInput {
+	address: AddressInput;
+	paymentMethod: PaymentMethod;
+	locale?: "fr" | "en";
+	/** Absent picks the server's default option per group. */
+	deliveryByGroup?: Record<string, string>;
+}
+
+export interface SplitPlaceInput extends SplitQuoteInput {
+	quoteHash: string;
+	termsAccepted: true;
+	idempotencyKey: string;
+	/** Absent places every available group. */
+	groupKeys?: string[];
 }
 
 export interface PlaceInput extends QuoteInput {
@@ -400,6 +469,8 @@ export interface OrderView {
 
 export interface OrderListEntry {
 	id: string;
+	/** Buyer role, orders placed through a multi-shop checkout. */
+	checkoutGroup?: string;
 	orderNumber: string;
 	status: OrderStatus;
 	placedAt: string;

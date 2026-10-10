@@ -43,7 +43,12 @@ const layoutDirs = allFiles
 	.filter((file) => /(^|\/)_layout\.tsx$/.test(file))
 	.map((file) => file.replace(/\/?_layout\.tsx$/, ""))
 	.filter(Boolean);
-const p4Screens = P4_ROOTS.flatMap(appFiles).filter(isScreenFile).sort();
+// Task 24 owns app/_layout.tsx and registers purchases/group/[group]; it
+// removes this filter and adds the screen to the lists below.
+const p4Screens = P4_ROOTS.flatMap(appFiles)
+	.filter(isScreenFile)
+	.filter((file) => !file.startsWith("purchases/group/"))
+	.sort();
 const p6Screens = allFiles
 	.filter(
 		(file) =>
