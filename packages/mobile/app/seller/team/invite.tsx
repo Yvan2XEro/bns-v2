@@ -16,6 +16,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useInviteMemberForm } from "@/src/hooks/useInviteMemberForm";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 
 const ROLE_KEY: Record<"manager" | "staff", string> = {
 	manager: "team.roleManager",
@@ -129,7 +130,7 @@ export default function InviteMemberScreen() {
 											onChangeText={field.onChange}
 											onBlur={field.onBlur}
 											keyboardType="phone-pad"
-											placeholder="+237600000000"
+											placeholder={phoneExample()}
 											placeholderTextColor={c.muted}
 											accessibilityLabel={t("team.phoneLabel")}
 											style={[

@@ -22,12 +22,9 @@ import { usePurchase } from "@/src/hooks/usePurchases";
 import { ApiError } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
-import {
-	CHECKOUT_PHONE_PATTERN,
-	phoneFromTyping,
-} from "@/src/lib/checkoutForm";
+import { phoneFromTyping } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice, isMarketPhone, phoneExample } from "@/src/lib/market";
 import {
 	pendingReturnDeepLink,
 	withAppReturnSignal,
@@ -62,12 +59,10 @@ export default function CheckoutPayScreen() {
 
 	const data = order.data;
 	const canPay =
-		channel !== null &&
-		CHECKOUT_PHONE_PATTERN.test(phone) &&
-		!createIntent.isPending;
+		channel !== null && isMarketPhone(phone) && !createIntent.isPending;
 
 	const submit = async () => {
-		if (!channel || !CHECKOUT_PHONE_PATTERN.test(phone)) return;
+		if (!channel || !isMarketPhone(phone)) return;
 		setFormError(null);
 		try {
 			const result = await createIntent.mutateAsync({
@@ -216,7 +211,7 @@ export default function CheckoutPayScreen() {
 						onChangeText={(text) => setPhone(phoneFromTyping(text))}
 						keyboardType="phone-pad"
 						autoComplete="tel"
-						placeholder="+2376XXXXXXXX"
+						placeholder={phoneExample()}
 						placeholderTextColor={c.muted}
 						accessibilityLabel={t("payments.pay_phone")}
 						style={[
@@ -244,7 +239,7 @@ export default function CheckoutPayScreen() {
 							{t("payments.summary_protectionFee")}
 						</Text>
 						<Text style={[formStyles.label, { color: c.text }]}>
-							{formatXaf(data.amounts.buyerProtectionFee, locale)}
+							{formatPrice(data.amounts.buyerProtectionFee, locale)}
 						</Text>
 					</View>
 					<View style={formStyles.row}>
@@ -252,7 +247,7 @@ export default function CheckoutPayScreen() {
 							{t("payments.summary_total")}
 						</Text>
 						<Text style={[formStyles.label, { color: c.text }]}>
-							{formatXaf(data.amounts.total, locale)}
+							{formatPrice(data.amounts.total, locale)}
 						</Text>
 					</View>
 					<Pressable
@@ -269,7 +264,7 @@ export default function CheckoutPayScreen() {
 
 				<CheckoutButton
 					label={t("payments.pay_submit", {
-						amount: formatXaf(data.amounts.total, locale),
+						amount: formatPrice(data.amounts.total, locale),
 					})}
 					onPress={() => void submit()}
 					disabled={!canPay}

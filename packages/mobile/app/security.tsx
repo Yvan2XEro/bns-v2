@@ -21,6 +21,7 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
+import { phoneExample } from "@/src/lib/market";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -415,7 +416,7 @@ export default function SecurityScreen() {
 						label={t("settings.phoneNumberLabel")}
 						value={phoneInput}
 						onChange={setPhoneInput}
-						placeholder={t("settings.phoneNumberPlaceholder")}
+						placeholder={phoneExample()}
 						icon="call-outline"
 						{...fieldColors}
 					/>

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatOrderDate } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import {
 	ACTOR_KEYS,
 	reasonKey,
@@ -36,7 +37,7 @@ export function OrderItemsCard({ order, locale, c, t }: Props) {
 						) : null}
 					</View>
 					<Text style={[styles.text, { color: c.text }]}>
-						{formatXaf(item.lineSubtotal, locale)}
+						{formatPrice(item.lineSubtotal, locale)}
 					</Text>
 				</View>
 			))}

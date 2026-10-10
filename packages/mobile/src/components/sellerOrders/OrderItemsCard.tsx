@@ -2,14 +2,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { OrderView } from "@/src/types/order";
 
 export function OrderItemsCard({ order }: { order: OrderView }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
-	const money = (amount: number) => formatXaf(amount, lang);
+	const money = (amount: number) => formatPrice(amount, lang);
 	const { amounts, commission } = order;
 
 	const totals: [string, number][] = [

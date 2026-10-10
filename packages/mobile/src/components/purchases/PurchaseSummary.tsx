@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { OrderView } from "@/src/types/order";
 import { useShopTheme } from "../shop/theme";
 import { Card, purchaseText } from "./ui";
@@ -13,7 +13,7 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const { launchCities } = useAppConfig();
-	const money = (amount: number) => formatXaf(amount, lang);
+	const money = (amount: number) => formatPrice(amount, lang);
 	const { delivery } = order;
 	const city =
 		launchCities.find((option) => option.key === delivery.city)?.label ??

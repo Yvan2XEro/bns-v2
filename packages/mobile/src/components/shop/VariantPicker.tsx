@@ -10,7 +10,8 @@ import {
 	matchVariant,
 	resolveSelection,
 } from "@/src/lib/variantPicker";
-import { formatXaf, variantLabel } from "@/src/lib/variants";
+import { variantLabel } from "@/src/lib/variants";
+import { formatPrice } from "@/src/lib/market";
 import type { ProductDoc, PublicVariantDoc } from "@/src/types/api";
 import { useShopTheme } from "./theme";
 
@@ -155,7 +156,7 @@ export function VariantPicker({
 				</Text>
 				{current ? (
 					<Text style={[styles.price, { color: c.text }]}>
-						{formatXaf(current.price, i18n.language)}
+						{formatPrice(current.price, i18n.language)}
 					</Text>
 				) : null}
 			</View>

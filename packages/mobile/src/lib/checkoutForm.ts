@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isMarketPhone } from "./market";
 import type { AddressInput, DeliveryMethod } from "../types/order";
 
 /**
@@ -78,9 +79,6 @@ export function districtName(address: AddressInput): string {
 	);
 }
 
-/** A Cameroonian mobile: the delivery phone receives the confirmation SMS. */
-export const CHECKOUT_PHONE_PATTERN = /^\+2376\d{8}$/;
-
 /** Keeps what the buyer types close to E.164 without guessing a prefix. */
 export function phoneFromTyping(text: string): string {
 	return text.replace(/[\s-]/g, "");
@@ -137,7 +135,7 @@ export function checkoutAddressSchema(
 			});
 		const name = v.recipientName.trim();
 		if (name.length < 2 || name.length > 60) fail("recipientName");
-		if (!CHECKOUT_PHONE_PATTERN.test(v.phone)) fail("phone");
+		if (!isMarketPhone(v.phone)) fail("phone");
 		if (!cityKeys.includes(v.city)) fail("city");
 		if (!isDistrictOf(v.city, v.district)) fail("district");
 		const other = v.districtOther.trim();

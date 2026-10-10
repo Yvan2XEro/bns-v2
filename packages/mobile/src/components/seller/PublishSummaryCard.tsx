@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { type ProductFormState, parseAmount } from "@/src/lib/productForm";
-import { formatXafRange, priceRange } from "@/src/lib/variants";
+import { priceRange } from "@/src/lib/variants";
+import { formatPriceRange } from "@/src/lib/market";
 import { formStyles as f } from "./formStyles";
 
 /** Title/category/condition recap plus price range and stock, with an edit shortcut. */
@@ -45,7 +46,9 @@ export function PublishSummaryCard({
 							.join(" · ")}
 					</Text>
 					<Text style={[f.label, { color: c.text }]}>
-						{range ? formatXafRange(range.min, range.max, i18n.language) : "—"}{" "}
+						{range
+							? formatPriceRange(range.min, range.max, i18n.language)
+							: "—"}{" "}
 						· {t("product.unitsInStock", { count: units })}
 					</Text>
 				</View>

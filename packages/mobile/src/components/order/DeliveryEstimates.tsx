@@ -4,7 +4,7 @@ import { Fonts } from "@/constants/theme";
 import { useAppConfig } from "../../contexts/AppConfigContext";
 import { useDeliveryEstimates } from "../../hooks/useDeliveryEstimates";
 import { useTranslation } from "../../lib/i18n";
-import { formatXaf } from "../../lib/orderMoney";
+import { formatPrice } from "../../lib/market";
 import { SkeletonRow } from "../SkeletonCard";
 import { useShopTheme } from "../shop/theme";
 
@@ -54,7 +54,7 @@ export function DeliveryEstimates({
 							fee:
 								option.cheapestFee === 0
 									? t("buyBox.estimateFree")
-									: formatXaf(option.cheapestFee, locale),
+									: formatPrice(option.cheapestFee, locale),
 							min: option.etaMinHours,
 							max: option.etaMaxHours,
 						})}

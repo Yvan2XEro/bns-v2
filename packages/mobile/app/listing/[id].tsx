@@ -41,7 +41,7 @@ import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-import { formatXafRange } from "@/src/lib/variants";
+import { formatPriceRange } from "@/src/lib/market";
 import { publicShopBadge } from "@/src/lib/verification";
 import type {
 	Favorite,
@@ -486,7 +486,7 @@ export default function ListingDetail() {
 							{summary?.priceMin != null &&
 							summary.priceMax != null &&
 							summary.priceMax !== summary.priceMin ? (
-								formatXafRange(
+								formatPriceRange(
 									summary.priceMin,
 									summary.priceMax,
 									i18n.language,

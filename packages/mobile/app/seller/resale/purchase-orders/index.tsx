@@ -20,7 +20,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useShopPurchaseOrders } from "@/src/hooks/usePurchaseOrders";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { PurchaseOrderListRow } from "../../../../../api/src/contracts/purchaseOrders";
 
 type Side = "supplier" | "reseller";
@@ -221,7 +221,7 @@ function PurchaseOrderRow({
 			<View style={styles.line}>
 				<Text style={[styles.number, { color: c.text }]}>{row.number}</Text>
 				<Text style={[styles.amount, { color: c.text }]}>
-					{formatXaf(row.collectAmount, locale)}
+					{formatPrice(row.collectAmount, locale)}
 				</Text>
 			</View>
 			<Text style={[styles.meta, { color: c.body }]} numberOfLines={1}>

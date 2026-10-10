@@ -26,6 +26,7 @@ import {
 	toAddressInput,
 } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 
 export default function CheckoutAddressScreen() {
 	const c = useShopTheme();
@@ -109,7 +110,7 @@ function AddressForm() {
 				name="phone"
 				label={t("checkout.phone")}
 				hint={t("checkout.phoneHint")}
-				placeholder="+2376XXXXXXXX"
+				placeholder={phoneExample()}
 				keyboardType="phone-pad"
 				autoComplete="tel"
 				transform={phoneFromTyping}

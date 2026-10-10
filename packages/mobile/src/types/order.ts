@@ -141,7 +141,7 @@ export interface CartView {
 /** What a checkout form submits, and what the quote echoes back. */
 export interface AddressInput {
 	recipientName: string;
-	/** E.164, `^\+2376\d{8}$`; normalised server-side. */
+	/** E.164, matching the market's served phone pattern; normalised server-side. */
 	phone: string;
 	/** A launch city key. */
 	city: string;

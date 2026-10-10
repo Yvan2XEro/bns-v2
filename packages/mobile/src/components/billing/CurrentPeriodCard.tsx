@@ -1,7 +1,8 @@
 import { Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatOrderDate } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { BillingView } from "@/src/types/order";
 import { billingStyles as s } from "./billingStyles";
 import { useLocaleKey } from "./useLocaleKey";
@@ -30,7 +31,7 @@ export function CurrentPeriodCard({
 				{t("billing.accruedSoFar")}
 			</Text>
 			<Text style={[s.amount, { color: c.text }]}>
-				{formatXaf(period.accrued, locale)}
+				{formatPrice(period.accrued, locale)}
 			</Text>
 			<Text style={[s.body, { color: c.body }]}>
 				{t("billing.ordersCount", { count: period.ordersCount })}

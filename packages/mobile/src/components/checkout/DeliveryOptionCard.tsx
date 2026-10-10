@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { DeliveryOption } from "@/src/types/order";
 
 export function DeliveryOptionCard({
@@ -28,7 +28,7 @@ export function DeliveryOptionCard({
 			? t("checkout.courierDelivery")
 			: t("checkout.sellerDelivery");
 	const fee =
-		option.fee === 0 ? t("checkout.free") : formatXaf(option.fee, locale);
+		option.fee === 0 ? t("checkout.free") : formatPrice(option.fee, locale);
 	const point = option.pickupPoint;
 
 	return (
@@ -79,7 +79,7 @@ export function DeliveryOptionCard({
 			{option.freeApplied && option.originalFee ? (
 				<Text style={[styles.meta, { color: c.primary }]}>
 					{t("checkout.freeDeliveryApplied", {
-						amount: formatXaf(option.originalFee, locale),
+						amount: formatPrice(option.originalFee, locale),
 					})}
 				</Text>
 			) : null}

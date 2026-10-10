@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext } from "react";
 import { api } from "@/src/lib/api";
+import { setMarket } from "@/src/lib/market";
+import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
 import type { LaunchCityOption } from "@/src/types/order";
 
 /** `AppSettings.payments.buyerProtection`, mirrored from web's own `useAppConfig`. */
@@ -36,6 +38,8 @@ export interface AppConfig {
 	resalePrepaidEnabled: boolean;
 	/** Rate, minimum and maximum for the buyer protection fee. */
 	buyerProtection: BuyerProtectionConfig;
+	/** Absent from an API that predates markets; money and phone then use the M9 fallbacks. */
+	market?: MarketConfig;
 }
 
 const DEFAULT: AppConfig = {
@@ -76,6 +80,9 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: 3,
 	});
+
+	// Set during render so children formatting in this same pass already see it.
+	setMarket(config.market);
 
 	return (
 		<AppConfigContext.Provider value={config}>

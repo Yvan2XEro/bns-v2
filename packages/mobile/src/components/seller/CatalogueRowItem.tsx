@@ -12,7 +12,7 @@ import { StockChip } from "@/src/components/shop/StockChip";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
-import { formatXaf, formatXafRange } from "@/src/lib/variants";
+import { formatPrice, formatPriceRange } from "@/src/lib/market";
 import type { CatalogueRow } from "@/src/types/api";
 
 export function CatalogueRowItem({
@@ -40,9 +40,9 @@ export function CatalogueRowItem({
 					row.priceMax !== null &&
 					row.priceMax !== row.priceMin
 				? t("catalogue.fromPrice", {
-						price: formatXaf(row.priceMin, i18n.language),
+						price: formatPrice(row.priceMin, i18n.language),
 					})
-				: formatXaf(row.priceMin, i18n.language);
+				: formatPrice(row.priceMin, i18n.language);
 	const subtitle =
 		row.variantCount > 1
 			? t("catalogue.variantsPrice", { count: row.variantCount, price })
@@ -96,7 +96,7 @@ export function CatalogueRowItem({
 					row.priceMin !== null &&
 					row.variantCount > 1 ? (
 						<Text style={[styles.meta, { color: c.muted }]}>
-							{formatXafRange(row.priceMin, row.priceMax, i18n.language)}
+							{formatPriceRange(row.priceMin, row.priceMax, i18n.language)}
 						</Text>
 					) : null}
 				</View>

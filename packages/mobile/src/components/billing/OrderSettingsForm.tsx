@@ -7,7 +7,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useUpdateOrderSettings } from "@/src/hooks/useOrderSettings";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import {
 	MAX_ETA_TEXT,
 	MAX_SALES_TERMS,
@@ -110,7 +110,7 @@ export function OrderSettingsForm({
 	const defaultFee =
 		view.cityDefaultFee === null
 			? null
-			: formatXaf(view.cityDefaultFee, locale);
+			: formatPrice(view.cityDefaultFee, locale);
 
 	return (
 		<View style={{ gap: 12 }}>

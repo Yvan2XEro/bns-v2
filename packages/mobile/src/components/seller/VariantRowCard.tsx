@@ -7,11 +7,11 @@ import { useTranslation } from "@/src/lib/i18n";
 import { parseAmount, type VariantRow } from "@/src/lib/productForm";
 import {
 	formatPercent,
-	formatXaf,
 	marginPercent,
 	type ProductOption,
 	variantLabel,
 } from "@/src/lib/variants";
+import { formatPrice } from "@/src/lib/market";
 import { formStyles as f } from "./formStyles";
 
 /** One variant's SKU, price, cost, stock and threshold — a single card row. */
@@ -132,7 +132,7 @@ export function VariantRowCard({
 			</View>
 			{row.price && parseAmount(row.price) !== null ? (
 				<Text style={[f.hint, { color: c.muted }]}>
-					{formatXaf(parseAmount(row.price) ?? 0, i18n.language)}
+					{formatPrice(parseAmount(row.price) ?? 0, i18n.language)}
 				</Text>
 			) : null}
 		</View>

@@ -4,7 +4,8 @@ import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatOrderDate } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { SellerPayoutRow as SellerPayoutRowData } from "@/src/types/order";
 import { PayoutStatusBadge } from "./PayoutStatusBadge";
 
@@ -36,7 +37,7 @@ export function PayoutRow({ payout }: { payout: SellerPayoutRowData }) {
 				</Text>
 			</View>
 			<Text style={[s.cardTitle, { color: c.text, fontSize: 15 }]}>
-				{formatXaf(payout.amount, locale)}
+				{formatPrice(payout.amount, locale)}
 			</Text>
 		</Pressable>
 	);

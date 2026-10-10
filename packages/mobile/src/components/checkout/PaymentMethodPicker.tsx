@@ -3,7 +3,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import type { BuyerProtectionConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { PaymentMethod } from "@/src/types/order";
 
 const METHODS: readonly PaymentMethod[] = ["cod", "mobile_money"];
@@ -82,11 +82,11 @@ export function PaymentMethodPicker({
 								<Text style={[styles.optionFee, { color: c.primary }]}>
 									{fee !== null
 										? t("payments.method_protectedFee", {
-												fee: formatXaf(fee, locale),
+												fee: formatPrice(fee, locale),
 											})
 										: t("payments.disclosure_listingBadge", {
 												rate: buyerProtection.bps / 100,
-												min: buyerProtection.min,
+												min: formatPrice(buyerProtection.min, locale),
 											})}
 								</Text>
 							) : null}

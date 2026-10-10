@@ -5,7 +5,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useShopInsights } from "@/src/hooks/useShopInsights";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { can } from "@/src/lib/shopRoles";
 import type { ShopRole } from "@/src/types/api";
 import type { ShopInsightsView } from "../../../../api/src/types/shopInsights";
@@ -80,7 +80,7 @@ export function SellerInsightsSummary({
 			<View style={styles.metrics}>
 				<Metric
 					label={t("sellerInsights.gmv")}
-					value={formatXaf(view.totals.current.gmvDelivered, lang)}
+					value={formatPrice(view.totals.current.gmvDelivered, lang)}
 					delta={t("sellerInsights.previousDelta", {
 						value: signedMoney(view.totals.delta.gmvDelivered, lang),
 					})}

@@ -16,7 +16,8 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useSellerPayout } from "@/src/hooks/useSellerPayments";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatOrderDate } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { PAYOUT_STATUSES, type PayoutStatus } from "@/src/lib/paymentStatus";
 
 function Line({
@@ -94,7 +95,7 @@ function PayoutDetailContent({
 			>
 				<View style={styles.head}>
 					<Text style={[s.cardTitle, { color: c.text, fontSize: 18 }]}>
-						{formatXaf(detail.amount, locale)}
+						{formatPrice(detail.amount, locale)}
 					</Text>
 					<PayoutStatusBadge status={detail.status} />
 				</View>
@@ -105,13 +106,13 @@ function PayoutDetailContent({
 				/>
 				<Line
 					label={t("payments.seller_colAmount")}
-					value={formatXaf(detail.amount, locale)}
+					value={formatPrice(detail.amount, locale)}
 					c={c}
 				/>
 				{detail.fee > 0 ? (
 					<Line
 						label={t("payments.seller_colFee")}
-						value={formatXaf(detail.fee, locale)}
+						value={formatPrice(detail.fee, locale)}
 						c={c}
 					/>
 				) : null}
@@ -139,7 +140,7 @@ function PayoutDetailContent({
 								{order.orderNumber}
 							</Text>
 							<Text style={[s.meta, { color: c.text }]}>
-								{formatXaf(order.amount, locale)}
+								{formatPrice(order.amount, locale)}
 							</Text>
 						</View>
 					))

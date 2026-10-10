@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { OrderSettingsView } from "@/src/types/order";
 import { billingStyles as s } from "./billingStyles";
 import { useLocaleKey } from "./useLocaleKey";
@@ -35,7 +35,7 @@ export function CapsNotice({
 					{t("billing.capsNotice")}
 				</Text>
 				<Text style={[s.body, { color: c.body }]}>
-					{`• ${t("billing.capsMaxOrderTotal", { amount: formatXaf(caps.maxOrderTotal, locale) })}`}
+					{`• ${t("billing.capsMaxOrderTotal", { amount: formatPrice(caps.maxOrderTotal, locale) })}`}
 				</Text>
 				<Text style={[s.body, { color: c.body }]}>
 					{`• ${t("billing.capsMaxDailyOrders", { count: caps.maxDailyOrders })}`}

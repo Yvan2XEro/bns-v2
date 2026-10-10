@@ -3,7 +3,8 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatOrderDate } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { purchaseStatusKey } from "@/src/lib/purchaseActions";
 import type { OrderListEntry } from "@/src/types/order";
 import { useShopTheme } from "../shop/theme";
@@ -46,7 +47,7 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 			</View>
 			<View style={styles.side}>
 				<Text style={[styles.total, { color: c.text }]}>
-					{formatXaf(entry.total, lang)}
+					{formatPrice(entry.total, lang)}
 				</Text>
 				<View style={[styles.pill, { backgroundColor: c.primarySoft }]}>
 					<Text style={[styles.pillText, { color: c.primary }]}>

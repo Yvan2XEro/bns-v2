@@ -4,7 +4,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { canCheckout, cartTotals } from "@/src/lib/cartLines";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { CartView } from "@/src/types/order";
 
 /** The server's subtotal is authoritative; the totals only count and warn. */
@@ -30,7 +30,7 @@ export function CartSummary({
 					{t("cart.itemCount", { count: totals.itemCount })}
 				</Text>
 				<Text style={[styles.total, { color: c.text }]}>
-					{formatXaf(cart.subtotal, locale)}
+					{formatPrice(cart.subtotal, locale)}
 				</Text>
 			</View>
 			{totals.priceChangedCount > 0 ? (

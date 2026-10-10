@@ -1,7 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-	formatXaf,
-	formatXafRange,
 	generateCombinations,
 	isShopOwner,
 	marginPercent,
@@ -75,21 +73,6 @@ describe("priceRange", () => {
 
 	test("is null for an empty list", () => {
 		expect(priceRange([])).toBeNull();
-	});
-});
-
-describe("formatXaf", () => {
-	test("groups thousands with a space in French", () => {
-		expect(formatXaf(435000)).toBe("435 000 XAF");
-	});
-
-	test("groups thousands with a comma in English", () => {
-		expect(formatXaf(169200, "en")).toBe("169,200 XAF");
-	});
-
-	test("collapses a range whose ends are equal", () => {
-		expect(formatXafRange(285000, 330000)).toBe("285 000 – 330 000 XAF");
-		expect(formatXafRange(9000, 9000)).toBe("9 000 XAF");
 	});
 });
 

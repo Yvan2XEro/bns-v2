@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatOrderDate } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { statusLabelKey } from "@/src/lib/orderStatus";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { rowAcceptBy } from "@/src/lib/sellerOrders";
@@ -49,7 +50,7 @@ export function OrderRow({
 						{order.orderNumber}
 					</Text>
 					<Text style={[styles.total, { color: c.text }]}>
-						{formatXaf(order.total, lang)}
+						{formatPrice(order.total, lang)}
 					</Text>
 				</View>
 				<Text style={[styles.meta, { color: c.body }]} numberOfLines={1}>
