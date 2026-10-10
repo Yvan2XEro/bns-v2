@@ -911,7 +911,10 @@ export const Listings: CollectionConfig = {
 				{
 					name: "desiredStatus",
 					type: "select",
-					required: true,
+					// Not required: listings born before P8 store null here, and a
+					// product update re-validates the whole doc — a non-resale
+					// listing must not fail on a resale field. Consumers compare
+					// === "published", so null reads as draft.
 					defaultValue: "draft",
 					options: ["published", "draft"].map((value) => ({
 						label: value,
