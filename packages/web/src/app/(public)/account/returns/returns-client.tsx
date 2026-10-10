@@ -3,6 +3,7 @@
 import { ArrowRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useBuyerReturns } from "~/hooks/use-returns";
 import {
@@ -34,23 +35,14 @@ export function ReturnsClient() {
 				/>
 			)}
 			{query.data && query.data.rows.length === 0 && (
-				<div className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center">
-					<RotateCcw
-						aria-hidden="true"
-						className="mx-auto h-8 w-8 text-[#94A3B8]"
+				<div className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white">
+					<EmptyState
+						illustration="empty"
+						title={t("emptyTitle")}
+						subtitle={t("emptyBody")}
+						ctaLabel={t("viewPurchases")}
+						ctaHref="/purchases"
 					/>
-					<h2 className="mt-4 font-semibold text-[#0F172A]">
-						{t("emptyTitle")}
-					</h2>
-					<p className="mx-auto mt-2 max-w-md text-[#64748B] text-sm">
-						{t("emptyBody")}
-					</p>
-					<Link
-						href="/purchases"
-						className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#1E40AF] px-4 font-medium text-sm text-white"
-					>
-						{t("viewPurchases")}
-					</Link>
 				</div>
 			)}
 			{query.data && query.data.rows.length > 0 && (

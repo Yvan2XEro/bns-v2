@@ -2125,7 +2125,10 @@
 		"system_order_completed": "Commande {orderNumber} terminée.",
 		"orderCardTitle": "Commande {orderNumber}",
 		"orderCardUntitled": "Commande liée à cette conversation",
-		"orderCardOpen": "Voir la commande"
+		"orderCardOpen": "Voir la commande",
+		"noConversations": "Aucune conversation pour le moment",
+		"selectConversation": "Sélectionnez une conversation",
+		"selectConversationHint": "Choisissez une conversation dans la liste pour commencer à échanger"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Commande transmise",

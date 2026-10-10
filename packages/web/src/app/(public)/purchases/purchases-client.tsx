@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { EmptyState } from "~/components/empty-state";
 import { Button } from "~/components/ui/button";
 import { usePurchases } from "~/hooks/use-purchases";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -115,7 +116,7 @@ export function PurchasesClient() {
 				</div>
 			)}
 
-			{nothingYet && <p className="text-[#64748B]">{t("empty")}</p>}
+			{nothingYet && <EmptyState illustration="empty" title={t("empty")} />}
 			{purchases.isSuccess && !nothingYet && entries.length === 0 && (
 				<p className="text-[#64748B]">{t("tabEmpty")}</p>
 			)}

@@ -24,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { OrderHeaderCard } from "~/components/chat/order-header-card";
 import { SystemChip } from "~/components/chat/system-chip";
+import { EmptyState } from "~/components/empty-state";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import {
@@ -613,7 +614,12 @@ export function MessagesClient({
 								);
 							})
 						) : (
-							<p className="text-center text-[#64748B]">No conversations yet</p>
+							<EmptyState
+								illustration="messages"
+								size={140}
+								as="p"
+								title={t("noConversations")}
+							/>
 						)}
 					</div>
 				</div>
@@ -899,14 +905,13 @@ export function MessagesClient({
 							)}
 						</>
 					) : (
-						<div className="flex h-full flex-col items-center justify-center gap-3">
-							<Send className="h-10 w-10 text-[#94A3B8]" />
-							<p className="font-medium text-[#64748B]">
-								Select a conversation
-							</p>
-							<p className="text-[#94A3B8] text-sm">
-								Choose a conversation from the list to start messaging
-							</p>
+						<div className="flex h-full flex-col items-center justify-center">
+							<EmptyState
+								illustration="messages"
+								as="p"
+								title={t("selectConversation")}
+								subtitle={t("selectConversationHint")}
+							/>
 						</div>
 					)}
 				</div>

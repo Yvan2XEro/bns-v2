@@ -3,6 +3,7 @@
 import { ArrowRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useSellerReturns } from "~/hooks/use-returns";
 import {
@@ -35,11 +36,12 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 				/>
 			) : null}
 			{query.data?.rows.length === 0 ? (
-				<section className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center">
-					<h2 className="font-semibold text-[#0F172A]">
-						{t("sellerEmptyTitle")}
-					</h2>
-					<p className="mt-2 text-[#64748B] text-sm">{t("sellerEmptyBody")}</p>
+				<section className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white">
+					<EmptyState
+						illustration="empty"
+						title={t("sellerEmptyTitle")}
+						subtitle={t("sellerEmptyBody")}
+					/>
 				</section>
 			) : null}
 			{query.data?.rows.length ? (

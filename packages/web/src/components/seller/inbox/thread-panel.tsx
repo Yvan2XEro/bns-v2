@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
+import { EmptyState } from "~/components/empty-state";
 import { useMarkConversationRead } from "~/hooks/use-shop-inbox";
 import type { InboxConversationView, ShopRole } from "~/types";
 import { ThreadComposer } from "./thread-composer";
@@ -45,8 +46,13 @@ export function ThreadPanel({
 
 	if (!conversation) {
 		return (
-			<div className="flex h-full items-center justify-center text-[#94A3B8] text-sm">
-				{t("empty")}
+			<div className="flex h-full items-center justify-center">
+				<EmptyState
+					illustration="messages"
+					as="p"
+					size={160}
+					title={t("empty")}
+				/>
 			</div>
 		);
 	}

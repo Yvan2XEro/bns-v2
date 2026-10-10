@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
+import { EmptyState } from "~/components/empty-state";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { LoadError } from "~/components/seller/load-states";
 import { Button } from "~/components/ui/button";
@@ -782,12 +783,12 @@ export function SearchClient({
 							)}
 						</>
 					) : (
-						<div className="py-20 text-center">
-							<Search className="mx-auto mb-3 h-10 w-10 text-[#CBD5E1]" />
-							<p className="font-medium text-[#0F172A]">{t("noResults")}</p>
-							<p className="mt-1 text-[#64748B] text-sm">
-								{t("tryDifferentKeywords")}
-							</p>
+						<div className="text-center">
+							<EmptyState
+								illustration="searching"
+								title={t("noResults")}
+								subtitle={t("tryDifferentKeywords")}
+							/>
 							{hasActiveFilters() && (
 								<button
 									type="button"

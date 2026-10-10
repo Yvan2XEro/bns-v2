@@ -3,6 +3,7 @@
 import { ArrowRight, Scale } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useBuyerDisputes } from "~/hooks/use-disputes";
 import {
@@ -33,17 +34,14 @@ export function BuyerDisputesClient() {
 				/>
 			) : null}
 			{query.data?.rows.length === 0 ? (
-				<section className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center">
-					<h2 className="font-semibold text-[#0F172A]">{t("emptyTitle")}</h2>
-					<p className="mx-auto mt-2 max-w-md text-[#64748B] text-sm">
-						{t("emptyBody")}
-					</p>
-					<Link
-						href="/purchases"
-						className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#1E40AF] px-4 font-medium text-sm text-white"
-					>
-						{t("viewPurchases")}
-					</Link>
+				<section className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white">
+					<EmptyState
+						illustration="empty"
+						title={t("emptyTitle")}
+						subtitle={t("emptyBody")}
+						ctaLabel={t("viewPurchases")}
+						ctaHref="/purchases"
+					/>
 				</section>
 			) : null}
 			{query.data?.rows.length ? (

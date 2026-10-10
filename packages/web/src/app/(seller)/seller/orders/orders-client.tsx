@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useReducer } from "react";
+import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { useSellerOrders } from "~/hooks/use-seller-orders";
@@ -99,9 +100,14 @@ export function OrdersClient({
 			{query.data && !query.isError && (
 				<div aria-busy={query.isFetching} className="space-y-4">
 					{rows.length === 0 ? (
-						<p className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm">
-							{q ? t("emptySearch", { query: q }) : t("empty")}
-						</p>
+						<div className="rounded-xl border border-[#E2E8F0] bg-white">
+							<EmptyState
+								illustration={q ? "searching" : "empty"}
+								size={160}
+								as="p"
+								title={q ? t("emptySearch", { query: q }) : t("empty")}
+							/>
+						</div>
 					) : (
 						<OrdersTable rows={rows} tab={state.tab} />
 					)}
