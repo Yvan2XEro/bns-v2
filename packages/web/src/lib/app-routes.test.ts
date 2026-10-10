@@ -167,6 +167,25 @@ describe("the app route tree", () => {
 		expect(nested).toEqual([]);
 	});
 
+	// The rider token is a credential (spec: the (bare) anatomy). Nothing else
+	// pins the metadata — deleting it would leak the page to indexers and send
+	// referrers carrying the token, with no red anywhere (T12 checkpoint, item a).
+	test("the (bare) layout keeps the credential metadata", () => {
+		const source = readFileSync(path.join(APP, "(bare)", "layout.tsx"), "utf8");
+		expect(source).toContain("index: false");
+		expect(source).toContain('referrer: "no-referrer"');
+	});
+
+	// The moderation surface's existence is unadvertised below moderator rank:
+	// the gate is notFound(), never a redirect or a styled 403 (spec Task 3;
+	// T12 checkpoint, item b — the shape previously rested on review alone).
+	test("the (ops) layout gates with notFound()", () => {
+		const source = readFileSync(path.join(APP, "(ops)", "layout.tsx"), "utf8");
+		// The statement, not the docstring (which also says "notFound()").
+		expect(source).toMatch(/if \(!isModerator\([^)]*\)\) notFound\(\);/);
+		expect(source).not.toContain("redirect(");
+	});
+
 	// /s/kana-p crashed with "Attempted to call shopUrl() from the server": a
 	// server page imported a plain function from a "use client" module, and
 	// Next hands the server only a client reference for every export of one.
