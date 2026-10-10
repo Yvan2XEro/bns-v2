@@ -23,7 +23,8 @@ export function FirstRunChecklist({
 			done: hasLogo,
 			title: t("checklist.logo"),
 			detail: hasLogo ? t("checklist.logoDone") : t("checklist.logoTodo"),
-			href: "/shop/manage",
+			// Decision 2: settings moved into the workspace.
+			href: "/seller/settings",
 		},
 		{
 			key: "product",
@@ -40,7 +41,7 @@ export function FirstRunChecklist({
 				personalListings === 0
 					? t("checklist.moveDone")
 					: t("checklist.moveDetail", { count: personalListings }),
-			href: "/shop/manage?move=1",
+			href: "/seller/settings?move=1",
 		},
 		{
 			key: "share",

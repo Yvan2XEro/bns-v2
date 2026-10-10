@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { SettingsTabs } from "~/components/seller/settings-tabs";
 import { getMyShop } from "~/lib/server-shop";
 import { can } from "~/lib/shop-roles";
 import { BillingLocked } from "../../billing/billing-locked";
@@ -18,12 +19,22 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function OrderSettingsPage() {
 	const mine = await getMyShop();
 	if (!mine?.shop) redirect("/shop/new");
-	if (!can(mine.role, "payments.view")) return <BillingLocked />;
+	if (!can(mine.role, "payments.view")) {
+		return (
+			<>
+				<SettingsTabs />
+				<BillingLocked />
+			</>
+		);
+	}
 
 	return (
-		<OrderSettingsClient
-			shopId={mine.shop.id}
-			canEdit={can(mine.role, "settings.edit")}
-		/>
+		<>
+			<SettingsTabs />
+			<OrderSettingsClient
+				shopId={mine.shop.id}
+				canEdit={can(mine.role, "settings.edit")}
+			/>
+		</>
 	);
 }

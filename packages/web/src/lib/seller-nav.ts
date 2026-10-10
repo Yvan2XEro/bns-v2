@@ -101,7 +101,8 @@ export const SELLER_NAV = [
 		orders: false,
 	},
 	{
-		href: "/shop/manage",
+		// Decision 2: shop settings live in the workspace; /shop/manage 308s here.
+		href: "/seller/settings",
 		key: "settings",
 		exact: false,
 		permission: "settings.edit",

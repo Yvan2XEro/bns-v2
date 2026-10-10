@@ -80,6 +80,6 @@ describe("catalogue empty state", () => {
 		expect(html).toContain('<svg class="ill"');
 		expect(html).toContain("ill-anim");
 		expect(html).toContain('href="/seller/catalogue/new"');
-		expect(html).toContain('href="/shop/manage?move=1"');
+		expect(html).toContain('href="/seller/settings?move=1"');
 	});
 });

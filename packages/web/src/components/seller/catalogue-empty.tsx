@@ -20,7 +20,7 @@ export function CatalogueEmpty() {
 							{t("add")}
 						</Link>
 						<Link
-							href="/shop/manage?move=1"
+							href="/seller/settings?move=1"
 							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
 						>
 							{t("moveListings")}

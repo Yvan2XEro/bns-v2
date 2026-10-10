@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { PERMANENT_REDIRECTS } from "./src/lib/redirects";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -23,6 +24,9 @@ const nextConfig: NextConfig = {
 				hostname: "**",
 			},
 		],
+	},
+	async redirects() {
+		return [...PERMANENT_REDIRECTS];
 	},
 	async rewrites() {
 		return [

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { SettingsTabs } from "~/components/seller/settings-tabs";
 import { getMyShop, getTopCategories } from "~/lib/server-shop";
 import { isShopOwner } from "~/lib/shop-roles";
 import { ShopSettingsClient } from "./shop-settings-client";
@@ -9,7 +10,7 @@ type Tab = (typeof TABS)[number];
 /** Owner-only tabs: the address change and the close form both refuse a non-owner. */
 const OWNER_ONLY_TABS: readonly Tab[] = ["address", "close"];
 
-export default async function ShopManagePage({
+export default async function ShopSettingsPage({
 	searchParams,
 }: {
 	searchParams: Promise<{ tab?: string; move?: string }>;
@@ -33,13 +34,16 @@ export default async function ShopManagePage({
 		!owner && OWNER_ONLY_TABS.includes(requested) ? "profile" : requested;
 
 	return (
-		<ShopSettingsClient
-			shop={mine.shop}
-			role={mine.role}
-			personalListings={mine.counts?.personalListings ?? 0}
-			categories={categories}
-			initialTab={tab}
-			openMove={openMove}
-		/>
+		<>
+			<SettingsTabs />
+			<ShopSettingsClient
+				shop={mine.shop}
+				role={mine.role}
+				personalListings={mine.counts?.personalListings ?? 0}
+				categories={categories}
+				initialTab={tab}
+				openMove={openMove}
+			/>
+		</>
 	);
 }

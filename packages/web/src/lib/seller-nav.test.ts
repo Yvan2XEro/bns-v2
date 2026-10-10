@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { activeNavKey, visibleSellerNav } from "./seller-nav";
+import { activeNavKey, SELLER_NAV, visibleSellerNav } from "./seller-nav";
 
 const keys = (entries: { key: string }[]) => entries.map((entry) => entry.key);
 
@@ -78,6 +78,7 @@ describe("visibleSellerNav", () => {
 		expect(activeNavKey("/seller/insights")).toBe("dashboard"); // Decision 3
 		expect(activeNavKey("/seller/billing/abc")).toBe("payments"); // Decision 4
 		expect(activeNavKey("/seller/team/activity")).toBe("team");
+		expect(activeNavKey("/seller/settings")).toBe("settings"); // via the entry itself
 		expect(activeNavKey("/seller/settings/orders")).toBe("settings");
 		expect(activeNavKey("/seller/resale/links")).toBe("resale");
 		expect(activeNavKey("/messages")).toBeNull();
@@ -112,5 +113,14 @@ describe("visibleSellerNav", () => {
 		expect(
 			keys(visibleSellerNav("staff", true, false, false, true)),
 		).not.toContain("delivery");
+	});
+});
+
+// Decision 2: the old URL survives only as the permanent 308 in redirects.ts.
+describe("the settings entry", () => {
+	it("points into the workspace, never at /shop/manage", () => {
+		expect(SELLER_NAV.some((e) => e.href.startsWith("/shop/manage"))).toBe(
+			false,
+		);
 	});
 });
