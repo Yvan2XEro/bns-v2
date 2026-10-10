@@ -3859,5 +3859,24 @@
 	"NotFoundBare": {
 		"title": "This link is not valid",
 		"body": "Check the link you were sent. If it should still work, ask the sender for a new one."
+	},
+	"CheckoutGroup": {
+		"cartGroupHeading": "Order from {shop}",
+		"groupSubtotal": "Subtotal",
+		"groupDelivery": "Delivery",
+		"groupRemove": "Remove this group from the cart",
+		"stepperPosition": "Order {n} of {total}",
+		"payThisOrder": "Pay order {orderNumber}",
+		"payNoCode": "Pay — no code needed",
+		"summaryPaid": "{count, plural, =0 {No orders paid} one {# order paid} other {# orders paid}}",
+		"summaryExpired": "{count, plural, =0 {No orders expired} one {# order expired} other {# orders expired}}",
+		"summaryPending": "{count, plural, =0 {No orders pending} one {# order pending} other {# orders pending}}",
+		"marketClosedNotice": "This feature is not open in your market yet.",
+		"marketClosedCheckout": "Ordering is not open in your market yet.",
+		"unavailable_not_served": "This shop does not deliver to your address.",
+		"unavailable_below_minimum": "This shop's minimum order is not reached.",
+		"unavailable_cod_not_allowed": "This shop does not offer pay on delivery.",
+		"unavailable_shop_inactive": "This shop is not taking orders right now.",
+		"unavailable_other": "This group cannot be ordered right now."
 	}
 }

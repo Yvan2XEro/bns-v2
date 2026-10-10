@@ -3860,5 +3860,24 @@
 	"NotFoundBare": {
 		"title": "Ce lien n'est pas valide",
 		"body": "Vérifiez le lien qui vous a été envoyé. S'il devrait encore fonctionner, demandez-en un nouveau à l'expéditeur."
+	},
+	"CheckoutGroup": {
+		"cartGroupHeading": "Commande de {shop}",
+		"groupSubtotal": "Sous-total",
+		"groupDelivery": "Livraison",
+		"groupRemove": "Retirer ce groupe du panier",
+		"stepperPosition": "Commande {n} sur {total}",
+		"payThisOrder": "Payer la commande {orderNumber}",
+		"payNoCode": "Payez — aucun code nécessaire",
+		"summaryPaid": "{count, plural, =0 {Aucune commande payée} one {# commande payée} other {# commandes payées}}",
+		"summaryExpired": "{count, plural, =0 {Aucune commande expirée} one {# commande expirée} other {# commandes expirées}}",
+		"summaryPending": "{count, plural, =0 {Aucune commande en attente} one {# commande en attente} other {# commandes en attente}}",
+		"marketClosedNotice": "Cette fonctionnalité n'est pas encore ouverte sur votre marché.",
+		"marketClosedCheckout": "La commande n'est pas encore ouverte sur votre marché.",
+		"unavailable_not_served": "Cette boutique ne livre pas à votre adresse.",
+		"unavailable_below_minimum": "Le minimum de commande de cette boutique n'est pas atteint.",
+		"unavailable_cod_not_allowed": "Le paiement à la livraison n'est pas proposé par cette boutique.",
+		"unavailable_shop_inactive": "Cette boutique n'accepte plus de commandes pour le moment.",
+		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment."
 	}
 }
