@@ -2,6 +2,8 @@
 
 import { Banner, Button, Pill, ShimmerEffect } from "@payloadcms/ui";
 import { useCallback, useEffect, useState } from "react";
+import type { MarketConfig } from "../../contracts/marketConfig";
+import { formatMoney } from "../../contracts/money";
 
 interface ListingDoc {
 	id: string;
@@ -10,12 +12,33 @@ interface ListingDoc {
 	price: number;
 	createdAt: string;
 	seller?: { name?: string; email: string } | string;
+	shop?: { location?: { countryCode?: string } } | string;
 	category?: { name?: string } | string;
 	images?: { image?: { url?: string; thumbnailURL?: string } | string }[];
 }
 
+function countryOf(listing: ListingDoc): string | undefined {
+	return typeof listing.shop === "object"
+		? listing.shop.location?.countryCode?.toUpperCase()
+		: undefined;
+}
+
+function priceOf(
+	listing: ListingDoc,
+	markets: Record<string, MarketConfig>,
+): string {
+	const code = countryOf(listing);
+	const format = code
+		? markets[code]?.formats.find((f) => f.locale === "en")
+		: undefined;
+	return format
+		? formatMoney(listing.price, format)
+		: listing.price.toLocaleString();
+}
+
 export function ModerationQueueClient() {
 	const [listings, setListings] = useState<ListingDoc[]>([]);
+	const [markets, setMarkets] = useState<Record<string, MarketConfig>>({});
 	const [loading, setLoading] = useState(true);
 	const [rejectId, setRejectId] = useState<string | null>(null);
 	const [reason, setReason] = useState("");
@@ -27,7 +50,21 @@ export function ModerationQueueClient() {
 			"/api/listings?where[status][equals]=pending&sort=-createdAt&depth=1&limit=50",
 		)
 			.then((r) => r.json())
-			.then((data) => setListings(data.docs || []))
+			.then((data) => {
+				const docs: ListingDoc[] = data.docs || [];
+				setListings(docs);
+				for (const code of new Set(docs.map(countryOf))) {
+					if (!code) continue;
+					fetch(`/api/public/config?country=${code}`)
+						.then((r) => r.json())
+						.then((config) => {
+							if (config.market) {
+								setMarkets((known) => ({ ...known, [code]: config.market }));
+							}
+						})
+						.catch(() => {});
+				}
+			})
 			.catch(() => {})
 			.finally(() => setLoading(false));
 	}, []);
@@ -167,7 +204,7 @@ export function ModerationQueueClient() {
 										}}
 									>
 										{seller?.name || seller?.email || "Unknown"} ·{" "}
-										{listing.price.toLocaleString()} XAF ·{" "}
+										{priceOf(listing, markets)} ·{" "}
 										{formatDate(listing.createdAt)}
 									</div>
 									{listing.description && (

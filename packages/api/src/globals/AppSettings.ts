@@ -555,7 +555,7 @@ export const AppSettings: GlobalConfig = {
 							name: "currency",
 							type: "text",
 							required: true,
-							admin: { description: "ISO 4217, e.g. XAF." },
+							admin: { description: "ISO 4217 currency code." },
 							validate: (value: unknown) =>
 								typeof value === "string" && /^[A-Z]{3}$/.test(value)
 									? true
@@ -604,7 +604,7 @@ export const AppSettings: GlobalConfig = {
 					type: "group",
 					admin: {
 						description:
-							"Fee the buyer pays on a protected order: bps of the order total, clamped to [min, max] XAF, VAT included.",
+							"Fee the buyer pays on a protected order: bps of the order total, clamped to [min, max] in the market currency, VAT included.",
 					},
 					fields: [
 						{

@@ -326,6 +326,38 @@ export async function timezoneOfShop(
 	);
 }
 
+/** What a rendered amount on an order's paper or notice needs: its currency and its market's formats. */
+export interface OrderMoney {
+	currency?: string;
+	formats?: readonly MoneyFormat[];
+}
+
+/** Empty when the order or its market cannot be read: callers fall back to the bare currency word. */
+export async function moneyOfOrder(
+	payload: Payload,
+	order: Order | string | null | undefined,
+): Promise<OrderMoney> {
+	try {
+		const doc =
+			typeof order === "string"
+				? await payload.findByID({
+						collection: "orders",
+						id: order,
+						depth: 0,
+						overrideAccess: true,
+					})
+				: order;
+		if (!doc) return {};
+		const market = await marketOfOrder(payload, doc);
+		return {
+			currency: doc.amounts?.currency ?? undefined,
+			formats: market?.formats,
+		};
+	} catch {
+		return {};
+	}
+}
+
 /** The clock an order's documents read dates on: its market's, else the legacy zone. */
 export async function timezoneOfOrder(
 	payload: Payload,

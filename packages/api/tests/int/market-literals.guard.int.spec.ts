@@ -11,7 +11,7 @@ const ROOTS = [
 	"mobile/src",
 	"mobile/app",
 ];
-const RETIRED = /Africa\/Douala|\+2376|"XAF"|FCFA|\bdouala\b|\byaounde\b/;
+const RETIRED = /Africa\/Douala|\+2376|\bXAF\b|FCFA|\bdouala\b|\byaounde\b/;
 const COMMENT = /^\s*(\/\/|\/?\*|\{\/\*)/;
 
 const SHIM =
@@ -37,6 +37,8 @@ const ALLOW: Array<[string, string, string?]> = [
 	["api/src/lib/commissionInvoiceDocument.ts", `pre-snapshot documents are XAF (${LEGACY_CM})`, '!== "XAF"'],
 	["api/src/services/paymentBackfill.ts", `one-shot backfill of ${LEGACY_CM}`, '"XAF"'],
 	["api/src/lib/payments/fakeMarketplace.ts", "test double default currency", '"XAF"'],
+	["api/src/seed/", "seed data: category price labels"],
+	["api/src/lib/payments/notchpayMarketplace.ts", "provider wire key: the per-currency balance object is read at XAF until a second payout market", "value.XAF"],
 	["api/src/scripts/", "ops/seed scripts, never on a request path"],
 	["web/src/lib/shipment-tracking.ts", `DELIVERY_TIMEZONE: ${TZ}`],
 	["web/src/app/(public)/contact/page.tsx", "the business's own support line, not a market rule", "tel:+2376"],
