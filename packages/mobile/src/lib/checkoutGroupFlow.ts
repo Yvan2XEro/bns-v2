@@ -88,9 +88,10 @@ export function checkoutGroupFlow(view: CheckoutGroupView): GroupFlow {
 export function unavailableReasonKey(code: string): string {
 	switch (code) {
 		case ERROR_CODES.checkoutCityNotServed:
+		case ERROR_CODES.deliveryNoActiveOption:
+		case ERROR_CODES.checkoutMethodUnavailable:
 			return "checkoutGroup.unavailable_not_served";
 		case ERROR_CODES.orderCodUnavailable:
-		case ERROR_CODES.checkoutMethodUnavailable:
 			return "checkoutGroup.unavailable_cod_not_allowed";
 		case ERROR_CODES.orderShopUnavailable:
 		case ERROR_CODES.shopInactive:

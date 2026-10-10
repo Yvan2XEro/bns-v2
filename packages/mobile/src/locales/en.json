@@ -3197,11 +3197,11 @@
 		},
 		"trackingLabel": "Tracking number",
 		"trackingPlaceholder": "Optional tracking number",
-		"deductionAmount": "Deduction amount",
+		"deductionAmount": "Deduction amount ({{currency}})",
 		"inspectionNote": "Inspection note",
 		"evidenceUpload": "Upload photo evidence",
 		"evidenceUploaded": "Evidence uploaded",
-		"refundAmountLabel": "Amount",
+		"refundAmountLabel": "Amount ({{currency}})",
 		"transactionId": "Transaction reference",
 		"inspection": {
 			"restock": "Restock",

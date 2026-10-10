@@ -5,7 +5,7 @@ import { useReturnAction } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { REFUND_METHOD_LABELS } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatPrice } from "@/src/lib/market";
+import { currencyCode, formatPrice } from "@/src/lib/market";
 import {
 	RETURN_REFUND_METHODS,
 	type ReturnRefundProofFormInput,
@@ -92,8 +92,8 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 				name="amount"
 				render={({ field }) => (
 					<TextInput
-						accessibilityLabel={t("returns.refundAmountLabel")}
-						placeholder={t("returns.refundAmountLabel")}
+						accessibilityLabel={t("returns.refundAmountLabel", { currency: currencyCode() })}
+						placeholder={t("returns.refundAmountLabel", { currency: currencyCode() })}
 						placeholderTextColor={c.muted}
 						value={field.value}
 						onBlur={field.onBlur}

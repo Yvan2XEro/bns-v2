@@ -57,6 +57,10 @@ export function isMarketPhone(text: string): boolean {
 	}
 }
 
+export function currencyCode(): string {
+	return (current?.currency ?? FALLBACK_CURRENCY).code;
+}
+
 export function phoneExample(): string {
 	return current?.phone.displayExample ?? FALLBACK_EXAMPLE;
 }

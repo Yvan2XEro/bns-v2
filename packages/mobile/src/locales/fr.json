@@ -3200,11 +3200,11 @@
 		},
 		"trackingLabel": "Numéro de suivi",
 		"trackingPlaceholder": "Numéro de suivi facultatif",
-		"deductionAmount": "Montant de la retenue",
+		"deductionAmount": "Montant de la retenue ({{currency}})",
 		"inspectionNote": "Note d'inspection",
 		"evidenceUpload": "Ajouter une photo justificative",
 		"evidenceUploaded": "Justificatif envoyé",
-		"refundAmountLabel": "Montant",
+		"refundAmountLabel": "Montant ({{currency}})",
 		"transactionId": "Référence de transaction",
 		"inspection": {
 			"restock": "Remettre en stock",

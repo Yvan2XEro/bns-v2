@@ -102,6 +102,7 @@ const REASON_KEYS: Record<string, UnavailableReasonKey> = {
 	"checkout.methodUnavailable": "unavailable_not_served",
 	"order.codUnavailable": "unavailable_cod_not_allowed",
 	"order.shopUnavailable": "unavailable_shop_inactive",
+	"shop.inactive": "unavailable_shop_inactive",
 };
 
 export function unavailableReasonKey(reason: string): UnavailableReasonKey {
