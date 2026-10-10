@@ -403,13 +403,6 @@ export function titlePlaceholderCopy(categoryType: ListingCategoryType): {
 }
 
 /**
- * Platform currency. Every category prices in XAF — rent and salaries just as
- * much as goods — so this is a platform constant, not a per-category concern
- * and not translatable copy.
- */
-export const LISTING_CURRENCY = "XAF";
-
-/**
  * Render an attribute value for read-only display (the review summary):
  * booleans become yes/no, select values become their option label, and the
  * unit is appended.

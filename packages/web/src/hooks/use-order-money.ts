@@ -15,3 +15,8 @@ export function useOrderMoney() {
 		[market, active],
 	);
 }
+
+/** The market's currency code for unit labels and placeholders; empty without a market block. */
+export function useCurrencyCode(): string {
+	return useAppConfig().market?.currency.code ?? "";
+}

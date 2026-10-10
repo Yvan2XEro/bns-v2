@@ -30,6 +30,7 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useMyShop } from "~/hooks/use-my-shop";
+import { useCurrencyCode } from "~/hooks/use-order-money";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
@@ -37,7 +38,6 @@ import {
 	collectAttributeIssues,
 	collectCoreFieldIssues,
 	isProductCategory,
-	LISTING_CURRENCY,
 	pruneAttributeValues,
 	relaxPhotoRequirement,
 	resolveCategoryAttributes,
@@ -64,6 +64,7 @@ export function EditListingForm({
 	listing: Listing;
 	categories: Category[];
 }) {
+	const currencyCode = useCurrencyCode();
 	const t = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
@@ -182,8 +183,8 @@ export function EditListingForm({
 	const photoCount = keptImages.length + newImages.length;
 	// A category may rename the price, e.g. "Loyer mensuel" for a rental.
 	const priceLabel = priceField.label
-		? `${priceField.label} (${LISTING_CURRENCY})`
-		: t("priceXaf");
+		? `${priceField.label} (${currencyCode})`
+		: t("priceXaf", { currency: currencyCode });
 
 	const attributeIssues = useMemo(
 		() => collectAttributeIssues(attributes, attributeValues),

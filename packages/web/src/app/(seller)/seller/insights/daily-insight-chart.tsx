@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { useCurrencyCode } from "~/hooks/use-order-money";
 import { insightPolyline } from "~/lib/insight-chart";
 import type { ShopInsightsView } from "../../../../../../api/src/types/shopInsights";
 
@@ -13,6 +14,7 @@ export function DailyInsightChart({
 	daily: ShopInsightsView["daily"];
 }) {
 	const t = useTranslations("SellerInsights");
+	const currencyCode = useCurrencyCode();
 	const locale = useLocale();
 	const views = daily.map((item) => item.views);
 	const orders = daily.map((item) => item.ordersPlaced);
@@ -34,7 +36,10 @@ export function DailyInsightChart({
 			<div className="mb-3 flex flex-wrap gap-x-5 gap-y-2 text-xs">
 				<Legend color="bg-blue-600" label={t("chartViews")} />
 				<Legend color="bg-amber-500" label={t("chartOrders")} />
-				<Legend color="bg-emerald-600" label={t("chartGmvAxis")} />
+				<Legend
+					color="bg-emerald-600"
+					label={t("chartGmvAxis", { currency: currencyCode })}
+				/>
 			</div>
 			<svg
 				aria-label={t("chartDescription")}

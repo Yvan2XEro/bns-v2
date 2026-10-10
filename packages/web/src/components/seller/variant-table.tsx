@@ -9,7 +9,7 @@ import type {
 	UseFormSetValue,
 } from "react-hook-form";
 import { useWatch } from "react-hook-form";
-import { useOrderMoney } from "~/hooks/use-order-money";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
 
@@ -31,6 +31,7 @@ export function VariantTable({
 }: VariantTableProps) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("ProductEditor");
+	const currencyCode = useCurrencyCode();
 	const locale = useLocale();
 	const rows = useWatch({ control, name: "variants" }) ?? [];
 
@@ -76,7 +77,9 @@ export function VariantTable({
 					<thead className="bg-[#F8FAFC] text-left text-[#64748B] text-xs">
 						<tr>
 							<th className="px-3 py-2 font-semibold">{t("colVariant")}</th>
-							<th className="px-3 py-2 font-semibold">{t("colPrice")}</th>
+							<th className="px-3 py-2 font-semibold">
+								{t("colPrice", { currency: currencyCode })}
+							</th>
 							{showCost && (
 								<th className="px-3 py-2 font-semibold">{t("colCost")}</th>
 							)}

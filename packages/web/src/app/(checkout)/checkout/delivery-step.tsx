@@ -121,6 +121,7 @@ export function DeliveryStep({
 }) {
 	const t = useTranslations("Checkout");
 	const tRoot = useTranslations();
+	const formatOrderMoney = useOrderMoney();
 	const options = useDeliveryOptions(
 		address.city,
 		address.district,
@@ -165,7 +166,7 @@ export function DeliveryStep({
 			{options.data?.unavailable.map((option, index) => (
 				<p key={`${option.method}-${index}`} className="text-[#B45309] text-sm">
 					{t(`deliveryUnavailable.${option.reason}`, {
-						amount: option.minOrderSubtotal ?? 0,
+						amount: formatOrderMoney(option.minOrderSubtotal ?? 0),
 					})}
 				</p>
 			))}

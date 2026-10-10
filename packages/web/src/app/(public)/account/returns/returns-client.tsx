@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useBuyerReturns } from "~/hooks/use-returns";
 import {
 	RETURN_BASIS_LABELS,
@@ -13,6 +14,7 @@ import {
 
 export function ReturnsClient() {
 	const t = useTranslations("Returns");
+	const formatOrderMoney = useOrderMoney();
 	const query = useBuyerReturns();
 
 	return (
@@ -83,7 +85,7 @@ export function ReturnsClient() {
 									<div className="flex shrink-0 items-center gap-3">
 										<span className="hidden text-right text-[#475569] text-sm sm:block">
 											{t("refundAmount", {
-												amount: row.refundAmount.toLocaleString(),
+												amount: formatOrderMoney(row.refundAmount),
 											})}
 										</span>
 										<ArrowRight

@@ -10,6 +10,7 @@ import { z } from "zod";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
 import { useDispute, useDisputeAction } from "~/hooks/use-disputes";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
@@ -38,6 +39,7 @@ export function DisputeThreadClient({
 }) {
 	const inWorkspace = surface === "seller";
 	const t = useTranslations("Disputes");
+	const formatOrderMoney = useOrderMoney();
 	const locale = useLocale();
 	const queryClient = useQueryClient();
 	const query = useDispute(disputeId);
@@ -137,7 +139,7 @@ export function DisputeThreadClient({
 			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
 				<p className="font-semibold text-[#0F172A]">
 					{t("amountAtStake", {
-						amount: view.amountAtStake.toLocaleString(locale),
+						amount: formatOrderMoney(view.amountAtStake),
 					})}
 				</p>
 				{view.deadlines.respondBy ? (
@@ -158,7 +160,7 @@ export function DisputeThreadClient({
 						</p>
 						<p className="mt-2 font-semibold text-sm">
 							{t("refundAmount", {
-								amount: view.resolution.refundAmount.toLocaleString(locale),
+								amount: formatOrderMoney(view.resolution.refundAmount),
 							})}
 						</p>
 					</div>
@@ -237,7 +239,7 @@ export function DisputeThreadClient({
 					<h2 className="font-semibold text-amber-950">{t("proposal")}</h2>
 					<p className="mt-2 text-amber-900 text-sm">
 						{t("proposedAmount", {
-							amount: view.proposal.amount.toLocaleString(locale),
+							amount: formatOrderMoney(view.proposal.amount),
 						})}
 					</p>
 				</section>

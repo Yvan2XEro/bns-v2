@@ -6,7 +6,7 @@ import type {
 	FieldErrors,
 	UseFormRegister,
 } from "react-hook-form";
-import { useOrderMoney } from "~/hooks/use-order-money";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import type { CountFormState, CountRow } from "~/lib/inventory";
 import { parseAmount } from "~/lib/product-form";
 import { cn } from "~/lib/utils";
@@ -46,6 +46,7 @@ export function InventoryTable({
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Inventory");
+	const currencyCode = useCurrencyCode();
 	const q = query.trim().toLowerCase();
 
 	return (
@@ -65,7 +66,7 @@ export function InventoryTable({
 						</th>
 						{showCost && (
 							<th className="px-4 py-3 text-right font-semibold">
-								{t("colGapValue")}
+								{t("colGapValue", { currency: currencyCode })}
 							</th>
 						)}
 					</tr>

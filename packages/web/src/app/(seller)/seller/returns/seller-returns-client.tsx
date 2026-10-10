@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSellerReturns } from "~/hooks/use-returns";
 import {
 	RETURN_BASIS_LABELS,
@@ -13,6 +14,7 @@ import {
 
 export function SellerReturnsClient({ shopId }: { shopId: string }) {
 	const t = useTranslations("Returns");
+	const formatOrderMoney = useOrderMoney();
 	const locale = useLocale();
 	const query = useSellerReturns(shopId);
 	return (
@@ -88,7 +90,7 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 									</div>
 									<div className="flex shrink-0 items-center gap-3">
 										<span className="hidden text-right text-[#475569] text-sm sm:block">
-											{row.refundAmount.toLocaleString(locale)} XAF
+											{formatOrderMoney(row.refundAmount)}
 										</span>
 										<ArrowRight
 											aria-hidden="true"

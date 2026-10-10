@@ -30,6 +30,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import { useMyShop } from "~/hooks/use-my-shop";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
@@ -38,14 +39,13 @@ import {
 	collectCoreFieldIssues,
 	formatAttributeValue,
 	isProductCategory,
-	LISTING_CURRENCY,
 	pruneAttributeValues,
 	resolveCategoryAttributes,
 	resolveFormPreset,
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
 import { createCategorySuggester } from "~/lib/category-suggest";
-import { formatListingPrice } from "~/lib/price";
+import { hasListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import type { Category, ListingCondition } from "~/types";
 
@@ -63,6 +63,8 @@ const DURATIONS = ["30", "60", "90"] as const;
 type StepId = "describe" | "attributes" | "details" | "photos" | "review";
 
 export function CreateListingForm({ categories }: { categories: Category[] }) {
+	const currencyCode = useCurrencyCode();
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("CreateListing");
 	const tListing = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
@@ -145,8 +147,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	// A category may rename the price, e.g. "Loyer mensuel" for a rental. The
 	// currency stays attached either way.
 	const priceLabel = priceField.label
-		? `${priceField.label} (${LISTING_CURRENCY})`
-		: tListing("priceXaf");
+		? `${priceField.label} (${currencyCode})`
+		: tListing("priceXaf", { currency: currencyCode });
 
 	const attributeIssues = useMemo(
 		() => collectAttributeIssues(attributes, attributeValues),
@@ -725,9 +727,8 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 									<h3 className="font-semibold text-lg">{formData.title}</h3>
 									{priceField.enabled && (
 										<span className="font-bold text-lg text-primary">
-											{formatListingPrice(Number(formData.price)) &&
-											formData.price
-												? `${formatListingPrice(Number(formData.price))} ${LISTING_CURRENCY}`
+											{hasListingPrice(Number(formData.price)) && formData.price
+												? `${formatOrderMoney(Number(formData.price))}`
 												: tListing("noPrice")}
 										</span>
 									)}

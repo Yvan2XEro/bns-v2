@@ -40,6 +40,7 @@ import {
 	type ListingSearchParams,
 	useListingSearch,
 } from "~/hooks/use-listing-search";
+import { useCurrencyCode } from "~/hooks/use-order-money";
 import { saveSearch } from "~/lib/actions";
 import type { CameroonCity } from "~/lib/cameroon-cities";
 import type { Category, CategoryAttribute, Listing } from "~/types";
@@ -60,6 +61,7 @@ export function SearchClient({
 	favoriteIds = [],
 }: SearchClientProps) {
 	const t = useTranslations("Search");
+	const currencyCode = useCurrencyCode();
 	const tCond = useTranslations("Condition");
 	const router = useRouter();
 
@@ -391,7 +393,7 @@ export function SearchClient({
 			{/* Price range */}
 			<div className="space-y-2">
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					{t("price")}
+					{t("price", { currency: currencyCode })}
 				</Label>
 				<div className="flex gap-2">
 					<Input

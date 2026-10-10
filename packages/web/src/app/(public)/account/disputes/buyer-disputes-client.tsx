@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useBuyerDisputes } from "~/hooks/use-disputes";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
@@ -13,6 +14,7 @@ import {
 
 export function BuyerDisputesClient() {
 	const t = useTranslations("Disputes");
+	const formatOrderMoney = useOrderMoney();
 	const locale = useLocale();
 	const query = useBuyerDisputes();
 	return (
@@ -87,7 +89,7 @@ export function BuyerDisputesClient() {
 									</div>
 									<div className="flex shrink-0 items-center gap-3">
 										<span className="hidden text-right text-[#475569] text-sm sm:block">
-											{row.amountAtStake.toLocaleString(locale)} XAF
+											{formatOrderMoney(row.amountAtStake)}
 										</span>
 										<ArrowRight
 											aria-hidden="true"

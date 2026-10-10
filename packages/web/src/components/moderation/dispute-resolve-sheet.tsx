@@ -14,6 +14,7 @@ import {
 	useModerationDisputeAction,
 	usePreviewDisputeOutcome,
 } from "~/hooks/use-moderation-disputes";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { DISPUTE_STATUS_LABELS } from "~/lib/case-status";
 import {
@@ -61,6 +62,8 @@ export function DisputeResolveSheet({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const t = useTranslations("ModerationDisputes");
+	const formatOrderMoney = useOrderMoney();
+	const currencyCode = useCurrencyCode();
 	const tRoot = useTranslations();
 	const id = sheet.dispute.id;
 	const [form, patch] = useReducer(reducer, initial);
@@ -136,7 +139,9 @@ export function DisputeResolveSheet({
 						</select>
 					</label>
 					<label className="block space-y-1 text-sm">
-						<span className="font-medium">{t("refundAmount")}</span>
+						<span className="font-medium">
+							{t("refundAmount", { currency: currencyCode })}
+						</span>
 						<input
 							inputMode="numeric"
 							className={field}
@@ -148,8 +153,8 @@ export function DisputeResolveSheet({
 						/>
 						<span className="block text-[#64748B] text-xs">
 							{t("refundBounds", {
-								min: guards.bounds.min.toLocaleString(),
-								max: guards.bounds.max.toLocaleString(),
+								min: formatOrderMoney(guards.bounds.min),
+								max: formatOrderMoney(guards.bounds.max),
 							})}
 						</span>
 					</label>
@@ -166,7 +171,7 @@ export function DisputeResolveSheet({
 							className="rounded-lg bg-amber-50 p-3 text-amber-900 text-sm"
 						>
 							{t(viewerIsAdmin ? "adminOnlyAdmin" : "guard.admin_required", {
-								limit: sheet.moderatorRefundLimit.toLocaleString(),
+								limit: formatOrderMoney(sheet.moderatorRefundLimit),
 							})}
 						</p>
 					) : null}
@@ -289,16 +294,18 @@ export function DisputeResolveSheet({
 						<div className="space-y-1 rounded-lg border border-[#E2E8F0] p-3 text-sm">
 							<p className="font-semibold">
 								{t("previewRefund", {
-									amount: preview.data.refundAmount.toLocaleString(),
+									amount: formatOrderMoney(preview.data.refundAmount),
 								})}
 							</p>
 							<p className="text-[#64748B]">
 								{t("previewBreakdown", {
-									goods: preview.data.breakdown.goods.toLocaleString(),
-									delivery:
-										preview.data.breakdown.outboundDelivery.toLocaleString(),
-									protection:
-										preview.data.breakdown.buyerProtectionFee.toLocaleString(),
+									goods: formatOrderMoney(preview.data.breakdown.goods),
+									delivery: formatOrderMoney(
+										preview.data.breakdown.outboundDelivery,
+									),
+									protection: formatOrderMoney(
+										preview.data.breakdown.buyerProtectionFee,
+									),
 								})}
 							</p>
 						</div>

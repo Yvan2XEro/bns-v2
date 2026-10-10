@@ -127,7 +127,9 @@ export function TestAddress({ shopId }: { shopId: string }) {
 						return (
 							<p key={`${option.method}-${index}`} className="text-[#B45309]">
 								{t(`method.${option.method}`)} —{" "}
-								{tRoot(`Checkout.${hint.key}`, { amount: hint.amount })}
+								{tRoot(`Checkout.${hint.key}`, {
+									amount: formatOrderMoney(hint.amount),
+								})}
 							</p>
 						);
 					})}

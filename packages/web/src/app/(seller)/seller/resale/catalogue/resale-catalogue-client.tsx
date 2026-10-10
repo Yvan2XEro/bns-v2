@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
-import { useOrderMoney } from "~/hooks/use-order-money";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import {
 	useAcceptResaleTerms,
 	useCreateResaleListing,
@@ -177,6 +177,7 @@ function ProductCard({
 	onCreate: (input: CreateResaleListingInput) => void;
 	onRequest: () => void;
 }) {
+	const currencyCode = useCurrencyCode();
 	const formatOrderMoney = useOrderMoney();
 	const imageUrl = firstImageUrl(product);
 	const mustRequest =
@@ -306,7 +307,7 @@ function ProductCard({
 										})}
 										className="h-10 min-w-0 flex-1 rounded-md border border-[#CBD5E1] bg-white px-2 text-sm"
 									/>
-									<span className="text-[#64748B] text-xs">XAF</span>
+									<span className="text-[#64748B] text-xs">{currencyCode}</span>
 								</span>
 								{form.formState.errors.prices?.[index]?.price?.message ? (
 									<span role="alert" className="block text-red-700 text-xs">

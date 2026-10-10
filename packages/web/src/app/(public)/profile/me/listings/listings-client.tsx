@@ -25,8 +25,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { deleteListing, markListingAsSold, renewListing } from "~/lib/actions";
-import { formatListingPrice } from "~/lib/price";
+import { hasListingPrice } from "~/lib/price";
 import type { Listing, Media } from "~/types";
 
 function getListingImageUrl(listing: Listing): string | null {
@@ -36,6 +37,7 @@ function getListingImageUrl(listing: Listing): string | null {
 }
 
 export function MyListingsClient({ listings }: { listings: Listing[] }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
@@ -91,7 +93,9 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						)
 					: 0;
 				const imageCount = listing.images?.length || 0;
-				const formattedPrice = formatListingPrice(listing.price);
+				const formattedPrice = hasListingPrice(listing.price)
+					? formatOrderMoney(listing.price)
+					: null;
 				const expiresAt = listing.expiresAt
 					? new Date(listing.expiresAt)
 					: null;
@@ -190,12 +194,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						<div className="p-3.5">
 							<Link href={`/listing/${listing.id}`}>
 								<p className="font-bold text-[#0F172A] text-lg">
-									{formattedPrice ?? t("noPrice")}{" "}
-									{formattedPrice && (
-										<span className="font-medium text-[#64748B] text-xs">
-											XAF
-										</span>
-									)}
+									{formattedPrice ?? t("noPrice")}
 								</p>
 								<h3 className="mt-0.5 truncate text-[#334155] text-sm">
 									{listing.title}

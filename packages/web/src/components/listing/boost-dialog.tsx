@@ -14,6 +14,7 @@ import {
 } from "~/components/ui/dialog";
 import type { BoostPrice } from "~/hooks/use-app-config";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { apiErrorFrom, resolveErrorMessage } from "~/lib/apiError";
 import type { BoostDuration } from "~/types";
 
@@ -71,6 +72,7 @@ interface BoostDialogProps {
 
 export function BoostDialog({ listingId, children }: BoostDialogProps) {
 	const t = useTranslations("Boost");
+	const formatOrderMoney = useOrderMoney();
 	const tRoot = useTranslations();
 	const { stripePublishableKey, boostPricing } = useAppConfig();
 	const plans = toBoostPlans(boostPricing);
@@ -303,8 +305,8 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 									<Smartphone className="mr-2 h-4 w-4" />
 								)}
 								{paymentMethod === "card"
-									? t("continueBtn", { amount: (price ?? 0).toLocaleString() })
-									: t("payBtn", { amount: (price ?? 0).toLocaleString() })}
+									? t("continueBtn", { amount: formatOrderMoney(price ?? 0) })
+									: t("payBtn", { amount: formatOrderMoney(price ?? 0) })}
 							</Button>
 						</>
 					)}

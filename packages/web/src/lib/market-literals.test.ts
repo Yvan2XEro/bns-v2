@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const WEB = join(import.meta.dir, "..", "..");
-const FORBIDDEN = /FCFA|\+2376/;
+const FORBIDDEN = /FCFA|\+2376|\bXAF\b/;
 // The business's own support line, not a market rule.
 const EXEMPT = ["src/app/(public)/contact/page.tsx"];
 
@@ -16,7 +16,7 @@ function walk(dir: string): string[] {
 }
 
 describe("market data is served, never literal", () => {
-	test("no FCFA or +2376 in src/ or messages/ (tests and src/test fixtures excepted)", () => {
+	test("no FCFA, XAF or +2376 in src/ or messages/ (tests and src/test fixtures excepted)", () => {
 		const offenders = [
 			...walk(join(WEB, "src")),
 			...walk(join(WEB, "messages")),

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CatalogueStockCell } from "~/components/seller/catalogue-stock-cell";
 import { StatusChip } from "~/components/shop/status-chip";
-import { useOrderMoney } from "~/hooks/use-order-money";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { formatOrderMoneyRange } from "~/lib/order-money";
 import type { CatalogueRow } from "~/types";
 
@@ -44,6 +44,7 @@ function ListingNote({ row }: { row: CatalogueRow }) {
 export function CatalogueTable({ rows }: { rows: CatalogueRow[] }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Catalogue");
+	const currencyCode = useCurrencyCode();
 
 	return (
 		<div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
@@ -55,7 +56,7 @@ export function CatalogueTable({ rows }: { rows: CatalogueRow[] }) {
 							{t("colProduct")}
 						</th>
 						<th scope="col" className="px-4 py-3 font-semibold">
-							{t("colPrice")}
+							{t("colPrice", { currency: currencyCode })}
 						</th>
 						<th scope="col" className="px-4 py-3 font-semibold">
 							{t("colStock")}

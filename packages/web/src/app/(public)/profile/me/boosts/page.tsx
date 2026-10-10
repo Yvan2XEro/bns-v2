@@ -1,6 +1,9 @@
 import { ArrowLeft, ExternalLink, Rocket } from "lucide-react";
 import Link from "next/link";
+import { getLocale } from "next-intl/server";
+import { renderOrderMoney } from "~/lib/order-money";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
+import { getMarket } from "~/lib/server-shop";
 import type { BoostPayment, Listing } from "~/types";
 
 const STATUS_BADGES: Record<string, { label: string; className: string }> = {
@@ -36,13 +39,6 @@ function formatDate(dateStr: string): string {
 	});
 }
 
-function formatAmount(amount: number): string {
-	return new Intl.NumberFormat("fr-CM", {
-		style: "decimal",
-		minimumFractionDigits: 0,
-	}).format(amount);
-}
-
 function getListingTitle(listing: string | Listing): string {
 	if (typeof listing === "string") return "Listing";
 	return listing.title || "Untitled listing";
@@ -56,6 +52,7 @@ function getListingId(listing: string | Listing): string {
 export default async function BoostPaymentHistoryPage() {
 	const user = (await getAuthUser()) as { id: string } | null;
 	if (!user) return null;
+	const [locale, market] = await Promise.all([getLocale(), getMarket()]);
 
 	let payments: BoostPayment[] = [];
 	try {
@@ -113,7 +110,7 @@ export default async function BoostPaymentHistoryPage() {
 						</div>
 						<div className="flex items-center gap-3 rounded-xl bg-amber-50 px-4 py-3 text-amber-700">
 							<span className="font-extrabold text-2xl">
-								{formatAmount(totalSpent)} XAF
+								{renderOrderMoney(market, totalSpent, locale)}
 							</span>
 							<span className="font-medium text-xs opacity-80">
 								Total Spent
@@ -161,7 +158,7 @@ export default async function BoostPaymentHistoryPage() {
 									</div>
 									<div className="text-right">
 										<span className="font-bold text-[#0F172A] text-lg">
-											{formatAmount(payment.amount)} XAF
+											{renderOrderMoney(market, payment.amount, locale)}
 										</span>
 									</div>
 								</div>

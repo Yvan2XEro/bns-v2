@@ -25,7 +25,7 @@ export const DESCRIPTION_MAX = 5000;
  *
  * Only plain digits are an amount. `Number` would also read "0x1f", "1e6",
  * "+5" and "-5", and every one of those would reach the server as a price
- * nobody typed. `\s` already covers the non-breaking and narrow spaces XAF
+ * nobody typed. `\s` already covers the non-breaking and narrow spaces
  * amounts are printed with.
  */
 export function parseAmount(value: string): number | null {

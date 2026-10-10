@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Controller, useForm } from "react-hook-form";
+import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { REFUND_METHOD_LABELS } from "~/lib/case-status";
@@ -17,6 +18,8 @@ import { ReturnEvidenceUpload } from "./return-evidence-upload";
 
 export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 	const t = useTranslations("Returns");
+	const formatOrderMoney = useOrderMoney();
+	const currencyCode = useCurrencyCode();
 	const tRoot = useTranslations();
 	const submit = useReturnAction();
 	const form = useForm<
@@ -38,7 +41,9 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			onSubmit={form.handleSubmit(async (body) => {
 				if (body.amount < view.refund.amount) {
 					form.setError("amount", {
-						message: t("refundTooLow", { amount: view.refund.amount }),
+						message: t("refundTooLow", {
+							amount: formatOrderMoney(view.refund.amount),
+						}),
 					});
 					return;
 				}
@@ -69,7 +74,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 				</select>
 			</label>
 			<label className="block text-sm">
-				{t("refundAmountLabel")}
+				{t("refundAmountLabel", { currency: currencyCode })}
 				<input
 					{...form.register("amount")}
 					inputMode="numeric"

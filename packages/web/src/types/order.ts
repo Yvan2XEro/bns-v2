@@ -104,7 +104,7 @@ export interface CartView {
 	lines: CartLineView[];
 	subtotal: number;
 	shopOrderable: boolean;
-	currency: "XAF";
+	currency: string;
 }
 
 export interface AddressInput {
@@ -133,7 +133,7 @@ export interface OrderAmounts {
 	discount: 0;
 	buyerProtectionFee: 0;
 	total: number;
-	currency: "XAF";
+	currency: string;
 }
 
 export interface ContractSnapshot {
@@ -391,7 +391,7 @@ export interface CommissionInvoiceView {
 	commissionTotal: number;
 	vatAmount: number;
 	totalDue: number;
-	currency: "XAF";
+	currency: string;
 	status: "issued" | "paid" | "overdue" | "waived" | "void";
 	issuedAt: string;
 	dueAt: string;
