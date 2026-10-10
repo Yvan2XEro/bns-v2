@@ -208,6 +208,15 @@ Beyond the new grouped-cart strings, review these changed ones:
 - Live-Mongo contention for the split placements and the idempotency replay
   (the memory server only approximates it) is the user's staging pass.
 - Compat shims removal, one release after this one (step 3 above).
+- **Notification amounts carry no currency (gate on a second live market).**
+  The Novu workflow copy in `api/src/scripts/syncNotificationWorkflows.ts`
+  (order placed, commission invoice, weekly insights) prints
+  `{{payload.total}} FCFA` / `XAF`, and `services/orders/notifications.ts`
+  (`notifyOrderPlaced` and its seller SMS fallback) sends the raw
+  `order.amounts.total` with no currency. Every non-XAF order would be notified in FCFA. Before a second
+  market goes live, thread a pre-formatted amount (or the currency) into these
+  payloads and re-sync the workflows. The literals guard allows only those
+  template lines by needle.
 
 ## Staging script: the T20 reviewer's click-list (verbatim)
 
