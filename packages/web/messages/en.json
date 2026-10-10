@@ -814,6 +814,10 @@
 	"Seller": {
 		"errorRetry": "Try again",
 		"errorBackToDashboard": "Back to dashboard",
+		"tabs": {
+			"today": "Today",
+			"statistics": "Statistics"
+		},
 		"space": "Seller space",
 		"nav": {
 			"dashboard": "Dashboard",

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { FirstRunChecklist } from "~/components/seller/first-run-checklist";
 import { PublicLinkCard } from "~/components/seller/public-link-card";
+import { SectionTabs } from "~/components/seller/section-tabs";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
 import { getMyShop } from "~/lib/server-shop";
 import { SellerInsightsPreview } from "./insights/seller-insights-preview";
@@ -50,6 +51,12 @@ export default async function SellerDashboardPage() {
 
 	return (
 		<div className="space-y-6">
+			<SectionTabs
+				tabs={[
+					{ href: "/seller", label: t("tabs.today"), exact: true },
+					{ href: "/seller/insights", label: t("tabs.statistics") },
+				]}
+			/>
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<h1 className="font-bold text-2xl text-[#0F172A]">

@@ -815,6 +815,10 @@
 	"Seller": {
 		"errorRetry": "Réessayer",
 		"errorBackToDashboard": "Retour au tableau de bord",
+		"tabs": {
+			"today": "Aujourd'hui",
+			"statistics": "Statistiques"
+		},
 		"space": "Espace vendeur",
 		"nav": {
 			"dashboard": "Tableau de bord",
