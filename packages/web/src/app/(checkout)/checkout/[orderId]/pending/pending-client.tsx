@@ -27,9 +27,12 @@ import { PendingState } from "./pending-state";
  */
 export function PendingClient({
 	orderId,
+	group,
 	providerInstructions,
 }: {
 	orderId: string;
+	/** The split checkout this payment belongs to; the stepper is where the buyer goes next. */
+	group: string | null;
 	providerInstructions: string | null;
 }) {
 	const t = useTranslations("Payments");
@@ -60,14 +63,20 @@ export function PendingClient({
 
 	useEffect(() => {
 		if (step === "paid")
-			router.replace(`/purchases/${encodeURIComponent(orderId)}`);
-	}, [step, orderId, router]);
+			router.replace(
+				group
+					? `/checkout/group/${encodeURIComponent(group)}`
+					: `/purchases/${encodeURIComponent(orderId)}`,
+			);
+	}, [step, orderId, router, group]);
 
 	useEffect(() => {
 		if (status.isSuccess && !intent) {
-			router.replace(`/checkout/${encodeURIComponent(orderId)}/pay`);
+			router.replace(
+				`/checkout/${encodeURIComponent(orderId)}/pay${group ? `?g=${encodeURIComponent(group)}` : ""}`,
+			);
 		}
-	}, [status.isSuccess, intent, orderId, router]);
+	}, [status.isSuccess, intent, orderId, router, group]);
 
 	if (purchase.isPending || status.isPending || step === "paid") {
 		return (
@@ -106,7 +115,15 @@ export function PendingClient({
 				</h1>
 				<p className="text-[#334155] text-sm">{t("expired_body")}</p>
 				<Button asChild className="min-h-11">
-					<Link href="/purchases">{tRoot("Checkout.viewOrder")}</Link>
+					<Link
+						href={
+							group
+								? `/checkout/group/${encodeURIComponent(group)}`
+								: "/purchases"
+						}
+					>
+						{tRoot("Checkout.viewOrder")}
+					</Link>
 				</Button>
 			</div>
 		);

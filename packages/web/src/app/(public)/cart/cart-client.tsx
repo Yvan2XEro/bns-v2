@@ -21,7 +21,9 @@ import {
 	type SingleShopConflict,
 	singleShopConflict,
 } from "~/lib/cart-lines";
+import { isSplitCart } from "~/lib/checkout-group-flow";
 import type { CartView } from "~/types/order";
+import { CartGroups } from "./cart-groups";
 import { CartLine } from "./cart-line";
 import { SingleShopDialog } from "./single-shop-dialog";
 
@@ -132,7 +134,26 @@ export function CartClient({
 				</p>
 			) : null}
 
-			{view.lines.length === 0 ? (
+			{isSplitCart(view) ? (
+				view.groups.length === 0 ? (
+					emptyState
+				) : (
+					<CartGroups
+						cart={view}
+						locale={locale}
+						busy={busy}
+						onQuantity={(lineId, quantity) =>
+							run(() => setQuantity.mutateAsync({ lineId, quantity }))
+						}
+						onRemoveLine={(lineId) => run(() => remove.mutateAsync(lineId))}
+						onRemoveGroup={(lineIds) =>
+							run(async () => {
+								for (const lineId of lineIds) await remove.mutateAsync(lineId);
+							})
+						}
+					/>
+				)
+			) : view.lines.length === 0 ? (
 				emptyState
 			) : (
 				<>

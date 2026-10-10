@@ -21,9 +21,12 @@ export default async function PendingPage({
 	searchParams,
 }: {
 	params: Promise<{ orderId: string }>;
-	searchParams: Promise<{ instructions?: string | string[] }>;
+	searchParams: Promise<{
+		instructions?: string | string[];
+		g?: string | string[];
+	}>;
 }) {
-	const [{ orderId }, { instructions }] = await Promise.all([
+	const [{ orderId }, { instructions, g }] = await Promise.all([
 		params,
 		searchParams,
 	]);
@@ -38,6 +41,7 @@ export default async function PendingPage({
 		<div className="container mx-auto max-w-xl px-4 py-8 sm:px-6">
 			<PendingClient
 				orderId={orderId}
+				group={typeof g === "string" && g ? g : null}
 				providerInstructions={
 					typeof instructions === "string" && instructions ? instructions : null
 				}

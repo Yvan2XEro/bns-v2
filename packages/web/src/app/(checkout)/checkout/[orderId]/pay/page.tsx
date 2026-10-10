@@ -16,10 +16,12 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function PayPage({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ orderId: string }>;
+	searchParams: Promise<{ g?: string | string[] }>;
 }) {
-	const { orderId } = await params;
+	const [{ orderId }, { g }] = await Promise.all([params, searchParams]);
 	const user = await getAuthUser();
 	if (!user) {
 		redirect(
@@ -29,7 +31,10 @@ export default async function PayPage({
 
 	return (
 		<div className="container mx-auto max-w-xl px-4 py-8 sm:px-6">
-			<PayClient orderId={orderId} />
+			<PayClient
+				orderId={orderId}
+				group={typeof g === "string" && g ? g : null}
+			/>
 		</div>
 	);
 }

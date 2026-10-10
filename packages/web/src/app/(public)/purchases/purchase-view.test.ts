@@ -8,6 +8,7 @@ import {
 	BUYER_CANCEL_REASONS,
 	cancelSchema,
 	confirmCodeSchema,
+	groupPurchases,
 	handoverCardState,
 	PURCHASE_TABS,
 	purchaseTab,
@@ -217,5 +218,34 @@ describe("receiptBody", () => {
 
 	it("passes a fragment through unchanged", () => {
 		expect(receiptBody("<p>A</p>")).toBe("<p>A</p>");
+	});
+});
+
+describe("groupPurchases", () => {
+	const row = (id: string, checkoutGroup?: string) =>
+		({
+			id,
+			checkoutGroup,
+		}) as unknown as import("~/types/order").OrderListEntry;
+
+	it("collapses siblings under the first one's position and leaves singles alone", () => {
+		const items = groupPurchases([
+			row("a"),
+			row("b", "g"),
+			row("c"),
+			row("d", "g"),
+		]);
+		expect(items.map((i) => i.kind)).toEqual(["order", "group", "order"]);
+		const group = items[1];
+		expect(group?.kind === "group" && group.entries.map((e) => e.id)).toEqual([
+			"b",
+			"d",
+		]);
+	});
+
+	it("a group with one order on this tab is a plain row", () => {
+		expect(groupPurchases([row("a", "g")]).map((i) => i.kind)).toEqual([
+			"order",
+		]);
 	});
 });

@@ -3877,6 +3877,21 @@
 		"unavailable_below_minimum": "This shop's minimum order is not reached.",
 		"unavailable_cod_not_allowed": "This shop does not offer pay on delivery.",
 		"unavailable_shop_inactive": "This shop is not taking orders right now.",
-		"unavailable_other": "This group cannot be ordered right now."
+		"unavailable_other": "This group cannot be ordered right now.",
+		"groupTitle": "Your orders",
+		"retry": "Retry",
+		"deliveryAtCheckout": "Calculated at checkout",
+		"groupTotal": "Total",
+		"grandTotal": "Total to pay",
+		"acceptTerms": "I have read and accept the pre-contract of each order above.",
+		"placeAll": "Place the orders",
+		"placeAllCod": "Place the orders (pay on delivery)",
+		"unavailableHeading": "Orders that cannot be placed",
+		"statePaid": "Paid",
+		"stateExpired": "Expired",
+		"statePending": "Awaiting payment",
+		"viewPurchases": "View my purchases",
+		"purchasesHeader": "{count, plural, one {# order} other {# orders}} from one checkout",
+		"purchasesGroupLink": "Checkout summary"
 	}
 }

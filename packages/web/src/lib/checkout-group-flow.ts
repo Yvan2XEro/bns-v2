@@ -1,4 +1,11 @@
 import type {
+	CartLineView,
+	CartView,
+	QuoteResponse,
+	SplitCartView,
+	SplitQuoteView,
+} from "~/types/order";
+import type {
 	CheckoutGroupOrderView,
 	CheckoutGroupView,
 } from "../../../api/src/contracts/checkoutGroup";
@@ -63,4 +70,40 @@ export function checkoutGroupFlow(view: CheckoutGroupView): CheckoutGroupFlow {
 		summary,
 		done: nextPayable === null && summary.pending === 0,
 	};
+}
+
+/** The wire shape is the flag: a split cart answers `groups`, the legacy one `lines`. */
+export function isSplitCart(
+	cart: CartView | SplitCartView,
+): cart is SplitCartView {
+	return "groups" in cart && Array.isArray(cart.groups);
+}
+
+export function isSplitQuote(
+	quote: QuoteResponse | SplitQuoteView,
+): quote is SplitQuoteView {
+	return "groups" in quote && Array.isArray(quote.groups);
+}
+
+export function cartLinesOf(cart: CartView | SplitCartView): CartLineView[] {
+	return isSplitCart(cart) ? cart.groups.flatMap((g) => g.items) : cart.lines;
+}
+
+export type UnavailableReasonKey =
+	| "unavailable_not_served"
+	| "unavailable_below_minimum"
+	| "unavailable_cod_not_allowed"
+	| "unavailable_shop_inactive"
+	| "unavailable_other";
+
+const REASON_KEYS: Record<string, UnavailableReasonKey> = {
+	"checkout.cityNotServed": "unavailable_not_served",
+	"delivery.noActiveOption": "unavailable_not_served",
+	"checkout.methodUnavailable": "unavailable_not_served",
+	"order.codUnavailable": "unavailable_cod_not_allowed",
+	"order.shopUnavailable": "unavailable_shop_inactive",
+};
+
+export function unavailableReasonKey(reason: string): UnavailableReasonKey {
+	return REASON_KEYS[reason] ?? "unavailable_other";
 }

@@ -5,7 +5,12 @@ import type {
 	CheckoutGroupOrderView,
 	CheckoutGroupView,
 } from "../../../api/src/contracts/checkoutGroup";
-import { checkoutGroupFlow, groupOrderState } from "./checkout-group-flow";
+import {
+	checkoutGroupFlow,
+	groupOrderState,
+	isSplitCart,
+	unavailableReasonKey,
+} from "./checkout-group-flow";
 
 const shop = { id: "s", name: "Shop", handle: "shop", city: null };
 const order = (
@@ -128,5 +133,32 @@ describe("grouped screens render the server's totals as given", () => {
 				/grandTotal\s*=|grandSubtotal\s*=|total\s*\+=/,
 			);
 		}
+	});
+});
+
+describe("wire shape helpers", () => {
+	test("the groups array marks a split cart and quote", () => {
+		expect(
+			isSplitCart({ id: null, market: null, groups: [], grandSubtotal: 0 }),
+		).toBe(true);
+		expect(
+			isSplitCart({
+				id: null,
+				shop: null,
+				lines: [],
+				subtotal: 0,
+				shopOrderable: true,
+				currency: "XAF",
+			}),
+		).toBe(false);
+	});
+	test("reasons map to the copy keys, anything else to other", () => {
+		expect(unavailableReasonKey("order.codUnavailable")).toBe(
+			"unavailable_cod_not_allowed",
+		);
+		expect(unavailableReasonKey("checkout.cityNotServed")).toBe(
+			"unavailable_not_served",
+		);
+		expect(unavailableReasonKey("whatever")).toBe("unavailable_other");
 	});
 });

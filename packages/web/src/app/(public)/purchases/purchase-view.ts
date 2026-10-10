@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { OrderAction, OrderActionSubject } from "~/lib/order-actions";
 import type { OrderStatusName } from "~/lib/order-status";
-import type { OrderTimelineEntry } from "~/types/order";
+import type { OrderListEntry, OrderTimelineEntry } from "~/types/order";
 
 export const PURCHASE_TABS = ["open", "delivered", "cancelled"] as const;
 export type PurchaseTab = (typeof PURCHASE_TABS)[number];
@@ -169,4 +169,40 @@ export function handoverCardState(
 export function receiptBody(html: string): string {
 	const match = /<body[^>]*>([\s\S]*)<\/body>/i.exec(html);
 	return match ? match[1].trim() : html;
+}
+
+export type PurchaseListItem =
+	| { kind: "order"; entry: OrderListEntry }
+	| { kind: "group"; checkoutGroup: string; entries: OrderListEntry[] };
+
+/**
+ * Siblings of one split checkout collapse under a single header, placed where
+ * the group's first order sits. A group seen with one order on this tab still
+ * renders as a plain row.
+ */
+export function groupPurchases(
+	entries: readonly OrderListEntry[],
+): PurchaseListItem[] {
+	const items: PurchaseListItem[] = [];
+	const groups = new Map<string, OrderListEntry[]>();
+	for (const entry of entries) {
+		const key = entry.checkoutGroup;
+		if (!key) {
+			items.push({ kind: "order", entry });
+			continue;
+		}
+		const siblings = groups.get(key);
+		if (siblings) {
+			siblings.push(entry);
+			continue;
+		}
+		const created = [entry];
+		groups.set(key, created);
+		items.push({ kind: "group", checkoutGroup: key, entries: created });
+	}
+	return items.map((item) =>
+		item.kind === "group" && item.entries.length === 1
+			? { kind: "order", entry: item.entries[0] as OrderListEntry }
+			: item,
+	);
 }

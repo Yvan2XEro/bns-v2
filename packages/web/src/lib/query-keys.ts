@@ -249,3 +249,7 @@ export const shopOrderShipmentsKey = (shopId: string, orderId: string) =>
 export const riderLinkKey = (token: string) => ["rider-link", token] as const;
 
 export const courierSpaceKey = () => ["courier-space"] as const;
+
+/** One split checkout's sibling orders; nested under purchases so an order mutation refreshes it. */
+export const checkoutGroupKey = (group: string) =>
+	[...purchasesRootKey(), "group", group] as const;

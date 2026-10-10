@@ -11,6 +11,7 @@ import { resolveErrorMessage } from "~/lib/apiError";
 import { formatOrderDate } from "~/lib/order-money";
 import type { OrderListEntry } from "~/types/order";
 import {
+	groupPurchases,
 	PURCHASE_TAB_LABEL_KEYS,
 	PURCHASE_TABS,
 	type PurchaseTab,
@@ -124,9 +125,32 @@ export function PurchasesClient() {
 			)}
 
 			<ul className="space-y-3">
-				{entries.map((entry) => (
-					<PurchaseRow key={entry.id} entry={entry} />
-				))}
+				{groupPurchases(entries).map((item) =>
+					item.kind === "order" ? (
+						<PurchaseRow key={item.entry.id} entry={item.entry} />
+					) : (
+						<li key={item.checkoutGroup} className="space-y-3">
+							<div className="flex items-center justify-between gap-3 px-1">
+								<p className="font-semibold text-[#0F172A] text-sm">
+									{tRoot("CheckoutGroup.purchasesHeader", {
+										count: item.entries.length,
+									})}
+								</p>
+								<Link
+									href={`/checkout/group/${encodeURIComponent(item.checkoutGroup)}`}
+									className="min-h-11 content-center text-[#1E40AF] text-sm underline"
+								>
+									{tRoot("CheckoutGroup.purchasesGroupLink")}
+								</Link>
+							</div>
+							<ul className="space-y-3 border-[#DBEAFE] border-l-2 pl-3">
+								{item.entries.map((entry) => (
+									<PurchaseRow key={entry.id} entry={entry} />
+								))}
+							</ul>
+						</li>
+					),
+				)}
 			</ul>
 
 			{purchases.hasNextPage && (

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
 import { cartKey } from "~/lib/query-keys";
 import { apiDelete, apiGet, apiPatch, apiPost } from "~/lib/shop-api";
-import type { CartView } from "~/types/order";
+import type { CartView, SplitCartView } from "~/types/order";
 
 export { cartKey };
 
@@ -26,9 +26,9 @@ export interface AddCartItemInput {
  * one query key serves the page, the header count and the checkout entry.
  */
 export function useCart(enabled = true) {
-	return useQuery<CartView, ApiError>({
+	return useQuery<CartView | SplitCartView, ApiError>({
 		queryKey: cartKey(),
-		queryFn: () => apiGet<CartView>("/api/cart"),
+		queryFn: () => apiGet<CartView | SplitCartView>("/api/cart"),
 		enabled,
 		retry: false,
 	});
@@ -42,10 +42,10 @@ export function useCart(enabled = true) {
  */
 function useCartMutation<TInput>(
 	mutationKey: readonly unknown[],
-	mutationFn: (input: TInput) => Promise<CartView>,
+	mutationFn: (input: TInput) => Promise<CartView | SplitCartView>,
 ) {
 	const queryClient = useQueryClient();
-	return useMutation<CartView, ApiError, TInput>({
+	return useMutation<CartView | SplitCartView, ApiError, TInput>({
 		mutationKey,
 		mutationFn,
 		retry: false,

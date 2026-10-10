@@ -28,7 +28,13 @@ import { ProtectionSheet } from "./protection-sheet";
  * to `/pending` instead of letting them start a second one the server would
  * refuse with `payment.attemptInProgress`.
  */
-export function PayClient({ orderId }: { orderId: string }) {
+export function PayClient({
+	orderId,
+	group,
+}: {
+	orderId: string;
+	group: string | null;
+}) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	// Bound to no namespace, and called with full dotted paths, on purpose:
@@ -38,6 +44,7 @@ export function PayClient({ orderId }: { orderId: string }) {
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const router = useRouter();
+	const groupParam = group ? `g=${encodeURIComponent(group)}` : "";
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 
 	const purchase = usePurchase(orderId);
@@ -73,9 +80,11 @@ export function PayClient({ orderId }: { orderId: string }) {
 	// the entry point for an order with no attempt yet.
 	useEffect(() => {
 		if (openIntent) {
-			router.replace(`/checkout/${encodeURIComponent(orderId)}/pending`);
+			router.replace(
+				`/checkout/${encodeURIComponent(orderId)}/pending${groupParam ? `?${groupParam}` : ""}`,
+			);
 		}
-	}, [openIntent, orderId, router]);
+	}, [openIntent, orderId, router, groupParam]);
 
 	if (purchase.isPending || status.isPending) {
 		return (
@@ -110,9 +119,13 @@ export function PayClient({ orderId }: { orderId: string }) {
 			// `instructions` lives only on this response, never on the status
 			// view `/pending` itself polls — carried over here so a prompt the
 			// provider actually sent isn't replaced by the generic fallback.
-			const suffix = intent.instructions
-				? `?instructions=${encodeURIComponent(intent.instructions)}`
-				: "";
+			const params = [
+				intent.instructions
+					? `instructions=${encodeURIComponent(intent.instructions)}`
+					: "",
+				groupParam,
+			].filter(Boolean);
+			const suffix = params.length > 0 ? `?${params.join("&")}` : "";
 			router.push(`/checkout/${encodeURIComponent(orderId)}/pending${suffix}`);
 		} catch {
 			// Surfaced below from `createIntent.error` — the server never names a

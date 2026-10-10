@@ -3878,6 +3878,21 @@
 		"unavailable_below_minimum": "Le minimum de commande de cette boutique n'est pas atteint.",
 		"unavailable_cod_not_allowed": "Le paiement à la livraison n'est pas proposé par cette boutique.",
 		"unavailable_shop_inactive": "Cette boutique n'accepte plus de commandes pour le moment.",
-		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment."
+		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment.",
+		"groupTitle": "Vos commandes",
+		"retry": "Réessayer",
+		"deliveryAtCheckout": "Calculée à la commande",
+		"groupTotal": "Total",
+		"grandTotal": "Total à payer",
+		"acceptTerms": "J'ai lu et j'accepte le pré-contrat de chacune des commandes ci-dessus.",
+		"placeAll": "Passer les commandes",
+		"placeAllCod": "Passer les commandes (paiement à la livraison)",
+		"unavailableHeading": "Commandes impossibles à passer",
+		"statePaid": "Payée",
+		"stateExpired": "Expirée",
+		"statePending": "En attente de paiement",
+		"viewPurchases": "Voir mes achats",
+		"purchasesHeader": "{count, plural, one {# commande} other {# commandes}} d'un même paiement",
+		"purchasesGroupLink": "Suivi du paiement"
 	}
 }

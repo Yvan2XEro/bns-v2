@@ -64,6 +64,7 @@ export type {
 
 import type {
 	DeliveryMethod,
+	DeliveryOption,
 	PickupPointSnapshot,
 } from "../../../api/src/contracts/deliveryQuote";
 export type PaymentMethod = "cod" | "mobile_money";
@@ -198,6 +199,67 @@ export interface QuoteResponse {
 	preContract: ContractSnapshot;
 	confirmationRequired: ConfirmationRequired;
 	quoteHash: string;
+}
+
+export interface SplitShopView {
+	id: string;
+	name: string;
+	handle: string;
+	city: string | null;
+}
+
+/** `GET /api/cart` while the server's multi-shop cart is on; mirrors `services/cart.ts#SplitCartView`. */
+export interface SplitCartGroup {
+	groupKey: string;
+	storefrontShop: SplitShopView;
+	fulfillingShop: SplitShopView;
+	resale: boolean;
+	items: CartLineView[];
+	subtotal: number;
+}
+
+export interface SplitCartView {
+	id: string | null;
+	market: { countryCode: string; currency: string } | null;
+	groups: SplitCartGroup[];
+	grandSubtotal: number;
+}
+
+/** Mirrors `services/checkoutSplit.ts#SplitQuoteView`, which web cannot import. */
+export interface SplitQuoteGroup {
+	groupKey: string;
+	storefrontShop: SplitShopView;
+	fulfillingShop: SplitShopView;
+	resale: boolean;
+	items: QuoteResponse["summary"]["lines"];
+	subtotal: number;
+	delivery: { options: DeliveryOption[]; unavailable: string[] };
+	selectedOptionId: string;
+	deliveryFee: number;
+	vat: number;
+	total: number;
+	quoteHash: string;
+}
+
+export interface SplitQuoteView {
+	market: { countryCode: string; currency: string };
+	groups: SplitQuoteGroup[];
+	unavailableGroups: Array<{ groupKey: string; reason: string }>;
+	grandTotal: number;
+	quoteHash: string;
+}
+
+/** `POST /api/checkout/place` while the multi-shop cart is on. */
+export interface SplitPlaceResponse {
+	checkoutGroup: string;
+	orders: Array<{
+		id: string;
+		orderNumber: string;
+		shop: SplitShopView;
+		total: number;
+		currency: string;
+		paymentMethod: PaymentMethod;
+	}>;
 }
 
 export interface PlaceResponse {
@@ -360,6 +422,8 @@ export interface OrderListEntry {
 	firstItemImageUrl: string | null;
 	/** Buyer role. */
 	shopName: string;
+	/** Buyer role: siblings of one split checkout share it. */
+	checkoutGroup?: string;
 	/** Shop role. */
 	recipientName?: string;
 	/** Shop role. */
