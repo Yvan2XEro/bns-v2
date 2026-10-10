@@ -6,13 +6,24 @@ import { FirstRunChecklist } from "~/components/seller/first-run-checklist";
 import { PublicLinkCard } from "~/components/seller/public-link-card";
 import { SectionTabs } from "~/components/seller/section-tabs";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
+import { serverGet } from "~/lib/server-api";
 import { getMyShop } from "~/lib/server-shop";
 import { SellerInsightsPreview } from "./insights/seller-insights-preview";
 
 export default async function SellerDashboardPage() {
-	const [mine, t] = await Promise.all([getMyShop(), getTranslations("Seller")]);
+	const [mine, config, t] = await Promise.all([
+		getMyShop(),
+		serverGet<{ insightsEnabled?: boolean }>("/api/public/config"),
+		getTranslations("Seller"),
+	]);
 	const shop = mine?.shop;
 	if (!shop) redirect("/shop/new");
+	// Decision 3's tab row only when /seller/insights would let the viewer in
+	// (its page's own gate) — staff and flag-off shops otherwise get a tab that
+	// silently bounces back here.
+	const statisticsReachable =
+		config?.insightsEnabled === true &&
+		(mine.role === "owner" || mine.role === "manager");
 	const counts = mine?.counts ?? {
 		activeProducts: 0,
 		draftProducts: 0,
@@ -51,12 +62,14 @@ export default async function SellerDashboardPage() {
 
 	return (
 		<div className="space-y-6">
-			<SectionTabs
-				tabs={[
-					{ href: "/seller", label: t("tabs.today"), exact: true },
-					{ href: "/seller/insights", label: t("tabs.statistics") },
-				]}
-			/>
+			{statisticsReachable && (
+				<SectionTabs
+					tabs={[
+						{ href: "/seller", label: t("tabs.today"), exact: true },
+						{ href: "/seller/insights", label: t("tabs.statistics") },
+					]}
+				/>
+			)}
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<h1 className="font-bold text-2xl text-[#0F172A]">
