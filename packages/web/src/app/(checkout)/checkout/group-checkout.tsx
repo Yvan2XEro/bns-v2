@@ -15,7 +15,7 @@ import {
 	resolveErrorMessage,
 } from "~/lib/apiError";
 import { type AddressField, addressFieldOf } from "~/lib/checkout-form";
-import { unavailableReasonKey } from "~/lib/checkout-group-flow";
+import { isSplitQuote, unavailableReasonKey } from "~/lib/checkout-group-flow";
 import type {
 	AddressInput,
 	PaymentMethod,
@@ -167,6 +167,8 @@ export function GroupCheckout({
 			},
 			{
 				onSuccess: (fresh) => {
+					// A flat answer means the server left split mode mid-checkout; the cart refetch re-renders the single-shop flow.
+					if (!isSplitQuote(fresh)) return;
 					setQuote(fresh);
 					setChanged(fromChange);
 					setAccepted(false);

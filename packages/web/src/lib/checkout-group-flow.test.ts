@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import type { QuoteResponse } from "~/types/order";
 import type {
 	CheckoutGroupOrderView,
 	CheckoutGroupView,
@@ -9,6 +10,7 @@ import {
 	checkoutGroupFlow,
 	groupOrderState,
 	isSplitCart,
+	isSplitQuote,
 	unavailableReasonKey,
 } from "./checkout-group-flow";
 
@@ -160,5 +162,22 @@ describe("wire shape helpers", () => {
 			"unavailable_not_served",
 		);
 		expect(unavailableReasonKey("whatever")).toBe("unavailable_other");
+	});
+});
+
+describe("quote shape guard", () => {
+	const flatQuote = JSON.parse(
+		'{"summary":{},"quoteHash":"h"}',
+	) as QuoteResponse;
+	test("groups marks the split quote, the flat summary is not", () => {
+		const split = {
+			market: { countryCode: "CM", currency: "XAF" },
+			groups: [],
+			unavailableGroups: [],
+			grandTotal: 0,
+			quoteHash: "h",
+		};
+		expect(isSplitQuote(split)).toBe(true);
+		expect(isSplitQuote(flatQuote)).toBe(false);
 	});
 });
