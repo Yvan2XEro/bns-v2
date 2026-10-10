@@ -563,6 +563,10 @@ function RootLayoutNav() {
 				<Stack.Screen name="returns/[id]" options={{ headerShown: false }} />
 				<Stack.Screen name="purchases/[id]" options={{ headerShown: false }} />
 				<Stack.Screen
+					name="purchases/group/[group]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
 					name="purchases/[id]/problem"
 					options={{ headerShown: false }}
 				/>

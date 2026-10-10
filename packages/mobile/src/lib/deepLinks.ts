@@ -88,6 +88,18 @@ export const DELIVERY_DEEP_LINKS: ReadonlyArray<{
 	{ url: "buynsellem://courier", screen: "courier/index" },
 ];
 
+/** The grouped purchase a multi-shop checkout leaves behind. */
+export const GROUP_DEEP_LINKS: ReadonlyArray<{
+	url: string;
+	screen: string;
+}> = [
+	{
+		url: "buynsellem://purchases/group/cg-1",
+		screen: "purchases/group/[group]",
+	},
+	{ url: "/purchases/group/cg-1", screen: "purchases/group/[group]" },
+];
+
 function stringField(
 	data: Record<string, unknown>,
 	key: string,
