@@ -1,5 +1,6 @@
 import type { Payload } from "payload";
 import {
+	CHANNEL_KEY_PATTERN,
 	MARKET_FEATURES,
 	MARKET_STATUSES,
 	type MarketStatus,
@@ -56,7 +57,6 @@ const rec = (value: unknown): Rec =>
 
 const ROUNDINGS: readonly Rounding[] = ["half_up", "half_even", "down"];
 const LANGUAGES = ["fr", "en"] as const;
-const CHANNEL = /^[a-z]{2}\.[a-z0-9_]{2,20}$/;
 
 const text = (value: unknown): string | null =>
 	typeof value === "string" && value !== "" ? value : null;
@@ -168,7 +168,7 @@ export function marketOf(value: unknown): Market | null {
 		!provider ||
 		pay.settlementMode !== "provider_split" ||
 		!Array.isArray(channels) ||
-		!channels.every((c) => typeof c === "string" && CHANNEL.test(c))
+		!channels.every((c) => typeof c === "string" && CHANNEL_KEY_PATTERN.test(c))
 	)
 		return null;
 

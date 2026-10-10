@@ -1,8 +1,11 @@
 import type { Payload } from "payload";
+
 export type { MarketCity } from "../contracts/marketCity";
+
 import type { MarketCity } from "../contracts/marketCity";
 
-const CACHE_TTL_MS = 60_000;
+import { MARKET_CACHE_TTL_MS } from "./marketCache";
+
 type Entry = { at: number; cities: MarketCity[] };
 const caches = new WeakMap<object, Map<string, Entry>>();
 
@@ -55,7 +58,7 @@ export async function getMarketCities(
 		caches.set(payload, perPayload);
 	}
 	const hit = perPayload.get(marketId);
-	if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.cities;
+	if (hit && Date.now() - hit.at < MARKET_CACHE_TTL_MS) return hit.cities;
 	const { docs } = await payload.find({
 		collection: "market-cities",
 		where: {

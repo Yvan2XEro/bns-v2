@@ -53,6 +53,9 @@ const adminOnly: Access = ({ req: { user } }) =>
 type Rec = Record<string, unknown>;
 const rec = (value: unknown): Rec =>
 	value !== null && typeof value === "object" ? (value as Rec) : {};
+/** `{country}.{operator}` payment-channel keys; the loader validates with the same rule. */
+export const CHANNEL_KEY_PATTERN = /^[a-z]{2}\.[a-z0-9_]{2,20}$/;
+
 const strings = (value: unknown): string[] =>
 	Array.isArray(value)
 		? value.filter((v): v is string => typeof v === "string")
@@ -383,7 +386,7 @@ export const Markets: CollectionConfig = {
 					type: "text",
 					hasMany: true,
 					validate: (value: unknown) =>
-						strings(value).every((c) => /^[a-z]{2}\.[a-z0-9_]{2,20}$/.test(c))
+						strings(value).every((c) => CHANNEL_KEY_PATTERN.test(c))
 							? true
 							: "Use {country}.{operator} keys, e.g. cm.mtn.",
 				},
