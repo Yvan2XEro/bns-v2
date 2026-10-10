@@ -556,12 +556,24 @@ function myShopRoleReason(shop: Shop, now: Date): MyShopRoleReason {
  * same null the server answers everywhere else, with `roleReason` saying
  * why, rather than a role the next tap on every tile will refuse.
  */
+
+/** Rethrows with the step name so a production stack names the failing call. */
+async function step<T>(name: string, run: () => Promise<T>): Promise<T> {
+	try {
+		return await run();
+	} catch (error) {
+		const e = error as Error;
+		e.message = `[getMyShop:${name}] ${e.message}`;
+		throw e;
+	}
+}
+
 export async function getMyShop(
 	payload: Payload,
 	user: ServiceUser,
 	now: Date = new Date(),
 ): Promise<MyShopResponse> {
-	const memberships = await payload.find({
+	const memberships = await step("memberships", () => payload.find({
 		collection: "shop-members",
 		where: {
 			and: [{ user: { equals: user.id } }, { status: { equals: "active" } }],
@@ -569,7 +581,7 @@ export async function getMyShop(
 		depth: 0,
 		limit: 10,
 		overrideAccess: true,
-	});
+	}));
 
 	let shop: Shop | null = null;
 	let role: ShopRole | null = null;
@@ -585,7 +597,9 @@ export async function getMyShop(
 			.catch(() => null);
 		if (candidate && candidate.status !== "closed") {
 			shop = candidate;
-			role = await resolveShopRole(payload, user.id, String(candidate.id));
+			role = await step("resolveShopRole", () =>
+				resolveShopRole(payload, user.id, String(candidate.id)),
+			);
 			roleReason = role ? null : myShopRoleReason(candidate, now);
 			break;
 		}
@@ -594,14 +608,16 @@ export async function getMyShop(
 
 	const shopId = String(shop.id);
 	const [publicShop, active, drafts, variants, personal] = await Promise.all([
-		loadPublicShop(payload, shopId),
-		payload.count({
-			collection: "products",
-			where: {
-				and: [{ shop: { equals: shopId } }, { status: { equals: "active" } }],
-			},
-			overrideAccess: true,
-		}),
+		step("loadPublicShop", () => loadPublicShop(payload, shopId)),
+		step("countActive", () =>
+			payload.count({
+				collection: "products",
+				where: {
+					and: [{ shop: { equals: shopId } }, { status: { equals: "active" } }],
+				},
+				overrideAccess: true,
+			}),
+		),
 		payload.count({
 			collection: "products",
 			where: {
@@ -609,25 +625,31 @@ export async function getMyShop(
 			},
 			overrideAccess: true,
 		}),
-		payload.find({
-			collection: "product-variants",
-			where: { and: [{ shop: { equals: shopId } }, NOT_ARCHIVED] },
-			depth: 0,
-			limit: 0,
-			pagination: false,
-			overrideAccess: true,
-		}),
-		payload.count({
-			collection: "listings",
+		step("variants", () =>
+			payload.find({
+				collection: "product-variants",
+				// Belt and braces: a bundler-order accident once left a shared
+				// constant undefined in the prod chunk; never pass a hole into and[].
+				where: { and: [{ shop: { equals: shopId } }, NOT_ARCHIVED ?? {}] },
+				depth: 0,
+				limit: 0,
+				pagination: false,
+				overrideAccess: true,
+			}),
+		),
+		step("personalListings", () =>
+			payload.count({
+				collection: "listings",
 			where: {
 				and: [
 					{ seller: { equals: user.id } },
 					{ shop: { exists: false } },
-					{ status: { in: ["draft", "pending", "published"] } },
-				],
-			},
-			overrideAccess: true,
-		}),
+						{ status: { in: ["draft", "pending", "published"] } },
+					],
+				},
+				overrideAccess: true,
+			}),
+		),
 	]);
 
 	const low = variants.docs.filter(isLowStock);
