@@ -214,8 +214,11 @@ const NAMESPACES = [
 
 // `awaitingCount` is an ICU plural on web ({count, plural, ...}); i18next's
 // plural form is a different key shape, so the one sentence cannot be
-// byte-equal. Mobile renders no such counter. Every other key must match.
-const EXEMPT = new Set(["awaitingCount"]);
+// byte-equal. Mobile renders no such counter. `openInWorkspace` is the web
+// shell split's cross-link from the buyer case page into the seller
+// workspace; mobile has no workspace frame to link into. Every other key
+// must match.
+const EXEMPT = new Set(["awaitingCount", "openInWorkspace"]);
 
 describe("each client's case vocabulary covers the backend's enums", () => {
 	for (const { name, web: webMap, mobile: mobileMap, values } of MAPS) {
