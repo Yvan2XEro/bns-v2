@@ -1,3 +1,9 @@
+import {
+	LEGACY_TIMEZONE,
+	lastCompleteWeekBounds,
+	localMonthBounds,
+} from "./marketTime";
+
 /**
  * Money is integer XAF everywhere. Rounding is half **up**, per line, because
  * that is what the invoice shows the seller and what they will add up by hand:
@@ -69,42 +75,18 @@ export function netting(input: {
 	return { action: "invoice", carryOver: 0 };
 }
 
-const DOUALA_OFFSET_MS = 60 * 60 * 1000; // Africa/Douala is UTC+1 all year.
-
-/**
- * The last complete week in `Africa/Douala`, Monday 00:00 to Sunday
- * 23:59:59.999, returned as ISO instants. Cameroon has no DST, so a fixed
- * offset is exact — and it is a constant rather than an `Intl` round-trip so
- * the boundary is readable in a test.
- */
-export function weekBoundsDouala(now: Date): {
-	periodStart: string;
-	periodEnd: string;
-} {
-	const local = new Date(now.getTime() + DOUALA_OFFSET_MS);
-	const dayOfWeek = (local.getUTCDay() + 6) % 7; // 0 = Monday
-	const localMidnight = Date.UTC(
-		local.getUTCFullYear(),
-		local.getUTCMonth(),
-		local.getUTCDate(),
-	);
-	const thisMonday = localMidnight - dayOfWeek * 24 * 60 * 60 * 1000;
-	const start = thisMonday - 7 * 24 * 60 * 60 * 1000;
-	return {
-		periodStart: new Date(start - DOUALA_OFFSET_MS).toISOString(),
-		periodEnd: new Date(thisMonday - 1 - DOUALA_OFFSET_MS).toISOString(),
-	};
+/** The last complete Monday-to-Sunday week on the market's calendar, as ISO instants. */
+export function weekBoundsDouala(
+	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): { periodStart: string; periodEnd: string } {
+	return lastCompleteWeekBounds(now, timezone);
 }
 
-/** The calendar month in `Africa/Douala` that holds `now`, as ISO instants: `start` inclusive, `end` exclusive. */
-export function monthBoundsDouala(now: Date): { start: string; end: string } {
-	const local = new Date(now.getTime() + DOUALA_OFFSET_MS);
-	const year = local.getUTCFullYear();
-	const month = local.getUTCMonth();
-	return {
-		start: new Date(Date.UTC(year, month, 1) - DOUALA_OFFSET_MS).toISOString(),
-		end: new Date(
-			Date.UTC(year, month + 1, 1) - DOUALA_OFFSET_MS,
-		).toISOString(),
-	};
+/** The calendar month that holds `now`: `start` inclusive, `end` exclusive. */
+export function monthBoundsDouala(
+	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): { start: string; end: string } {
+	return localMonthBounds(now, timezone);
 }

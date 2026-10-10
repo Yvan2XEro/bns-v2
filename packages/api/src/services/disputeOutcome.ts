@@ -19,7 +19,7 @@ import { requestRefund } from "./refunds";
 import { moveCase } from "./returns";
 import { resolveHeldReviews } from "./reviewRelease";
 import { recordRiskSignal } from "./riskSignals";
-import { nextNumber } from "./sequences";
+import { nextNumber, sequenceMarketOfOrder } from "./sequences";
 import { addStrike } from "./strikes";
 
 export type OutcomeInput = DisputeOutcomeInput;
@@ -169,7 +169,12 @@ async function createRefundCase(
 		});
 	}
 
-	const number = await nextNumber(req.payload, "RET", now);
+	const number = await nextNumber(
+		req.payload,
+		"RET",
+		now,
+		await sequenceMarketOfOrder(req.payload, order),
+	);
 	const deadline = input.returnRequired
 		? new Date(now.getTime() + settings.nonConformityShipByDays * 86_400_000)
 		: null;

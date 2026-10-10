@@ -15,7 +15,8 @@ import {
 	isMarketDistrictKey,
 	type MarketCity,
 } from "../lib/marketCities";
-import { liveMarketOfShop } from "../lib/markets";
+import { liveMarketOfShop, type Market } from "../lib/markets";
+import { localDayStartIso } from "../lib/marketTime";
 import type { CapCheckInput } from "../lib/orderCaps";
 import { checkCaps, confirmationPathFor } from "../lib/orderCaps";
 import {
@@ -115,18 +116,6 @@ export const QUOTE_RATE_LIMITS: {
 
 const OPEN_ORDER_STATUSES = ["placed", "confirmed", "accepted", "shipped"];
 
-const DOUALA_OFFSET_MS = 60 * 60 * 1000; // Africa/Douala is UTC+1 all year, same as orderMath.ts.
-
-function dayStartDoualaIso(now: Date): string {
-	const local = new Date(now.getTime() + DOUALA_OFFSET_MS);
-	const midnightLocal = Date.UTC(
-		local.getUTCFullYear(),
-		local.getUTCMonth(),
-		local.getUTCDate(),
-	);
-	return new Date(midnightLocal - DOUALA_OFFSET_MS).toISOString();
-}
-
 async function countBuyerOpenOrders(
 	payload: Payload,
 	buyerId: string,
@@ -148,6 +137,7 @@ async function countShopDailyOrders(
 	payload: Payload,
 	shopId: string,
 	now: Date,
+	timezone: string,
 ): Promise<number> {
 	const { totalDocs } = await payload.count({
 		collection: "orders",
@@ -156,7 +146,7 @@ async function countShopDailyOrders(
 				{ shop: { equals: shopId } },
 				{
 					"timestamps.placedAt": {
-						greater_than_equal: dayStartDoualaIso(now),
+						greater_than_equal: localDayStartIso(now, timezone),
 					},
 				},
 			],
@@ -479,6 +469,7 @@ export interface QuoteInternals {
 	shopId: string;
 	/** The market read once at quote entry; `placeOrder` copies it onto the order. */
 	marketId: string;
+	market: Pick<Market, "countryCode" | "timezone">;
 	items: QuoteSummaryItem[];
 	address: DeliveryAddress;
 	/** The chosen option's pickup point, which `placeOrder` snapshots onto the order so the view can show it after the shop's own point moves. */
@@ -936,7 +927,7 @@ async function buildQuote(
 
 	const [openOrders, dailyOrders] = await Promise.all([
 		countBuyerOpenOrders(payload, user.id),
-		countShopDailyOrders(payload, String(shop.id), now),
+		countShopDailyOrders(payload, String(shop.id), now, liveMarket.timezone),
 	]);
 	const capInput: CapCheckInput = {
 		orderTotal: total,
@@ -1105,6 +1096,10 @@ async function buildQuote(
 		internals: {
 			shopId: String(shop.id),
 			marketId: liveMarket.id,
+			market: {
+				countryCode: liveMarket.countryCode,
+				timezone: liveMarket.timezone,
+			},
 			items,
 			address,
 			pickupPoint: chosen.pickupPoint ?? null,
@@ -1328,7 +1323,7 @@ export async function placeOrder(
 		now,
 	);
 
-	const orderNumber = await nextNumber(payload, "BNS", now);
+	const orderNumber = await nextNumber(payload, "BNS", now, internals.market);
 	const shopId = internals.shopId;
 	const placedAtIso = now.toISOString();
 	const confirmBy = new Date(

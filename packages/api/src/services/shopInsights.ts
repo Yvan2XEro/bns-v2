@@ -1,5 +1,7 @@
 import type { Payload } from "payload";
 import { ERROR_CODES } from "../lib/errors";
+import { timezoneOfShop } from "../lib/markets";
+import { localDateString } from "../lib/marketTime";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import type { ShopDailyStat } from "../payload-types";
@@ -43,15 +45,6 @@ const RESPONSE_BUCKETS: readonly ResponseBucket[] = [
 	"over24h",
 ];
 const DAY_MS = 86_400_000;
-
-function dateInDouala(now: Date): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(now);
-}
 
 function addDays(day: string, amount: number): string {
 	const date = new Date(`${day}T00:00:00.000Z`);
@@ -168,7 +161,14 @@ export async function getShopInsights(
 	await requireShopPermission(payload, user, shopId, "costs.view");
 
 	const days = PERIOD_DAYS[period];
-	const end = dateInDouala(options.now ?? new Date());
+	const shop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const timezone = await timezoneOfShop(payload, shop);
+	const end = localDateString(options.now ?? new Date(), timezone);
 	const currentStart = addDays(end, 1 - days);
 	const previousStart = addDays(currentStart, -days);
 	const stats = await payload.find({
@@ -267,6 +267,7 @@ export async function getShopInsights(
 		payload,
 		shopId,
 		options.now ?? new Date(),
+		timezone,
 	);
 	const totalResponseBuckets = responseBucketTotals;
 	const answeredWithinOneHour =

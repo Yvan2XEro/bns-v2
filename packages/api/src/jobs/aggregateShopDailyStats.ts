@@ -1,21 +1,16 @@
 import type { TaskConfig } from "payload";
+import { LEGACY_TIMEZONE, localDateString } from "../lib/marketTime";
 import { flushListingViewHash } from "../services/listingViewFlush";
 import {
 	aggregateShopDailyStatsForDay,
 	doualaDayWindow,
 } from "../services/shopDailyAggregation";
 
-function doualaDate(now: Date): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(now);
-}
-
-export function lastThreeDoualaDates(now: Date): string[] {
-	const previous = new Date(`${doualaDate(now)}T12:00:00.000Z`);
+export function lastThreeDoualaDates(
+	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): string[] {
+	const previous = new Date(`${localDateString(now, timezone)}T12:00:00.000Z`);
 	previous.setUTCDate(previous.getUTCDate() - 1);
 	return [0, 1, 2].map((daysAgo) => {
 		const day = new Date(previous);

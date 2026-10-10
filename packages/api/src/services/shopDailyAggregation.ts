@@ -2,8 +2,15 @@ import { createHash } from "node:crypto";
 import type { MongooseAdapter } from "@payloadcms/db-mongodb";
 import { type Document, ObjectId } from "mongodb";
 import type { Payload } from "payload";
+import { getMarkets, timezoneOfShop } from "../lib/markets";
+import {
+	LEGACY_TIMEZONE,
+	localDateAt,
+	localDateString,
+	shiftDays,
+} from "../lib/marketTime";
 import { relationId } from "../lib/relationId";
-import type { ShopDailyStat } from "../payload-types";
+import type { Shop, ShopDailyStat } from "../payload-types";
 import {
 	aggregateResponseBuckets,
 	type ResponseBurstMessage,
@@ -55,26 +62,36 @@ function storedId(value: string): unknown {
 	}
 }
 
-export function doualaDayWindow(date: string): { start: Date; end: Date } {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
-		throw new Error("A shop-stat date must be YYYY-MM-DD.");
-	const start = new Date(`${date}T00:00:00.000+01:00`);
+/** The shop-stat day on a market's wall clock, as the half-open instant range it covers. */
+export function doualaDayWindow(
+	date: string,
+	timezone: string = LEGACY_TIMEZONE,
+): { start: Date; end: Date } {
+	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+	if (!match) throw new Error("A shop-stat date must be YYYY-MM-DD.");
+	const day = {
+		year: Number(match[1]),
+		month: Number(match[2]),
+		day: Number(match[3]),
+	};
+	const probe = new Date(Date.UTC(day.year, day.month - 1, day.day));
 	if (
-		Number.isNaN(start.getTime()) ||
-		(start.toISOString().slice(0, 10) !== date && start.getUTCHours() !== 23)
+		probe.getUTCFullYear() !== day.year ||
+		probe.getUTCMonth() + 1 !== day.month ||
+		probe.getUTCDate() !== day.day
 	)
 		throw new Error("Invalid shop-stat date.");
-	return { start, end: new Date(start.getTime() + 86_400_000) };
+	return {
+		start: localDateAt(day, 0, 0, timezone),
+		end: localDateAt(shiftDays(day, 1), 0, 0, timezone),
+	};
 }
 
-export function previousDoualaDate(now: Date): string {
-	const today = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(now);
-	const previous = new Date(`${today}T12:00:00.000Z`);
+export function previousDoualaDate(
+	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): string {
+	const previous = new Date(`${localDateString(now, timezone)}T12:00:00.000Z`);
 	previous.setUTCDate(previous.getUTCDate() - 1);
 	return previous.toISOString().slice(0, 10);
 }
@@ -83,8 +100,9 @@ function interactionPipeline(
 	source: InteractionSource,
 	date: string,
 	shopIds: readonly string[],
+	timezone: string,
 ): Document[] {
-	const window = doualaDayWindow(date);
+	const window = doualaDayWindow(date, timezone);
 	const match =
 		source.byDayField === "date"
 			? { date }
@@ -132,6 +150,7 @@ export async function aggregateInteractionMetrics(
 	payload: Payload,
 	date: string,
 	shopIds: readonly string[],
+	timezone: string = LEGACY_TIMEZONE,
 ): Promise<Map<string, DailyMetricValues>> {
 	const grouped = await Promise.all(
 		INTERACTION_SOURCES.map(async (source) => ({
@@ -139,7 +158,7 @@ export async function aggregateInteractionMetrics(
 			rows: await aggregateRows(
 				payload,
 				source.slug,
-				interactionPipeline(source, date, shopIds),
+				interactionPipeline(source, date, shopIds, timezone),
 			),
 		})),
 	);
@@ -216,8 +235,9 @@ const SHOP_FAULT_REASONS = new Set([
 function orderEventsPipeline(
 	date: string,
 	shopIds: readonly string[],
+	timezone: string,
 ): Document[] {
-	const window = doualaDayWindow(date);
+	const window = doualaDayWindow(date, timezone);
 	return [
 		{
 			$match: {
@@ -308,13 +328,14 @@ export async function aggregateOrderMetrics(
 	payload: Payload,
 	date: string,
 	shopIds: readonly string[],
+	timezone: string = LEGACY_TIMEZONE,
 ): Promise<Map<string, DailyMetricValues>> {
 	const adapter = payload.db as unknown as MongooseAdapter;
 	const collection = adapter.collections["order-events"]?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'order-events' is unavailable.");
 	const rows = await collection
-		.aggregate<OrderAggregateRow>(orderEventsPipeline(date, shopIds))
+		.aggregate<OrderAggregateRow>(orderEventsPipeline(date, shopIds, timezone))
 		.toArray();
 	const metrics = new Map<string, DailyMetricValues>();
 	for (const row of rows) {
@@ -377,12 +398,13 @@ export async function aggregateTopProductOrderMetrics(
 	payload: Payload,
 	date: string,
 	shopIds: readonly string[],
+	timezone: string = LEGACY_TIMEZONE,
 ): Promise<Map<string, NonNullable<DailyMetricValues["topProducts"]>>> {
 	const adapter = payload.db as unknown as MongooseAdapter;
 	const collection = adapter.collections["order-events"]?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'order-events' is unavailable.");
-	const { start, end } = doualaDayWindow(date);
+	const { start, end } = doualaDayWindow(date, timezone);
 	const rows = await collection.aggregate<TopProductOrderRow>([
 		{
 			$match: {
@@ -481,13 +503,14 @@ export async function aggregateResaleMetrics(
 	payload: Payload,
 	date: string,
 	shopIds: readonly string[],
+	timezone: string = LEGACY_TIMEZONE,
 ): Promise<Map<string, Pick<DailyMetricValues, "resale">>> {
 	const adapter = payload.db as unknown as MongooseAdapter;
 	const purchaseOrders = adapter.collections["purchase-orders"]?.collection;
 	const commissions = adapter.collections["reseller-commissions"]?.collection;
 	if (!purchaseOrders || !commissions)
 		throw new Error("Mongo resale collections are unavailable.");
-	const { start, end } = doualaDayWindow(date);
+	const { start, end } = doualaDayWindow(date, timezone);
 	const [facetRows, commissionRows] = await Promise.all([
 		purchaseOrders
 			.aggregate<ResaleFacets>([
@@ -719,12 +742,13 @@ export async function aggregateDeliveredCogs(
 	payload: Payload,
 	date: string,
 	shopIds: readonly string[],
+	timezone: string = LEGACY_TIMEZONE,
 ): Promise<Map<string, number>> {
 	const adapter = payload.db as unknown as MongooseAdapter;
 	const collection = adapter.collections["stock-movements"]?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'stock-movements' is unavailable.");
-	const { start, end } = doualaDayWindow(date);
+	const { start, end } = doualaDayWindow(date, timezone);
 	const rows = await collection
 		.aggregate<{ _id?: unknown; cogsDelivered?: unknown }>([
 			{
@@ -801,6 +825,7 @@ export async function aggregateConversationMetrics(
 	date: string,
 	shopIds: readonly string[],
 	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
 ): Promise<
 	Map<string, Pick<DailyMetricValues, "responseBuckets" | "awaitingReply">>
 > {
@@ -808,7 +833,7 @@ export async function aggregateConversationMetrics(
 	const collection = adapter.collections.conversations?.collection;
 	if (!collection)
 		throw new Error("Mongo collection 'conversations' is unavailable.");
-	const { start, end } = doualaDayWindow(date);
+	const { start, end } = doualaDayWindow(date, timezone);
 	const messagesUntil = new Date(
 		Math.min(now.getTime(), end.getTime() + 24 * 60 * 60_000),
 	);
@@ -890,6 +915,7 @@ export async function aggregateConversationMetrics(
 				messagesByShop.get(shopId) ?? [],
 				date,
 				now,
+				timezone,
 			),
 			awaitingReply: 0,
 		});
@@ -1097,6 +1123,19 @@ function mergeMetrics(
 	return target;
 }
 
+/** `timezoneOfShop`, remembered per city for the length of one run. */
+function shopTimezones(payload: Payload) {
+	const known = new Map<string, string>();
+	return async (shop: Shop): Promise<string> => {
+		const key = `${shop.location?.countryCode ?? ""}:${shop.location?.city ?? ""}`;
+		const cached = known.get(key);
+		if (cached) return cached;
+		const zone = await timezoneOfShop(payload, shop);
+		known.set(key, zone);
+		return zone;
+	};
+}
+
 export async function aggregateShopDailyStatsForDay(
 	payload: Payload,
 	date: string,
@@ -1107,9 +1146,17 @@ export async function aggregateShopDailyStatsForDay(
 	updated: number;
 	unchanged: number;
 }> {
-	const { start, end } = doualaDayWindow(date);
 	const now = options.now ?? new Date();
-	const shouldSnapshotInventory = date === previousDoualaDate(now);
+	const zones = new Set(
+		(await getMarkets(payload)).map((market) => market.timezone),
+	);
+	if (zones.size === 0) zones.add(LEGACY_TIMEZONE);
+	const windows = [...zones].map((zone) => doualaDayWindow(date, zone));
+	// A closed shop is in scope for the day its own market's clock put the
+	// closing in; the query takes the widest range and the loop trims.
+	const start = new Date(Math.min(...windows.map((w) => w.start.getTime())));
+	const end = new Date(Math.max(...windows.map((w) => w.end.getTime())));
+	const timezoneOfShop = shopTimezones(payload);
 	let page = 1;
 	let shopsProcessed = 0;
 	let created = 0;
@@ -1139,78 +1186,103 @@ export async function aggregateShopDailyStatsForDay(
 		});
 		totalPages = shops.totalPages;
 		page++;
-		const shopIds = shops.docs.map((shop) => String(shop.id));
-		if (shopIds.length === 0) continue;
-		const savedSnapshots = shouldSnapshotInventory
-			? new Map<string, ShopDailyStat>()
-			: new Map(
-					(
-						await payload.find({
-							collection: "shop-daily-stats",
-							where: {
-								and: [{ shop: { in: shopIds } }, { date: { equals: date } }],
-							},
-							limit: shopIds.length,
-							depth: 0,
-							overrideAccess: true,
-						})
-					).docs.flatMap((row) => {
-						const id = relationId(row.shop);
-						return id ? [[id, row] as const] : [];
-					}),
-				);
-		const [
-			interactionMetrics,
-			orderMetrics,
-			productOrderMetrics,
-			inventoryMetrics,
-			conversationMetrics,
-			cogsMetrics,
-			resaleMetrics,
-		] = await Promise.all([
-			aggregateInteractionMetrics(payload, date, shopIds),
-			aggregateOrderMetrics(payload, date, shopIds),
-			aggregateTopProductOrderMetrics(payload, date, shopIds),
-			shouldSnapshotInventory
-				? aggregateInventorySnapshot(payload, shopIds)
-				: Promise.resolve(new Map()),
-			aggregateConversationMetrics(payload, date, shopIds, now),
-			aggregateDeliveredCogs(payload, date, shopIds),
-			aggregateResaleMetrics(payload, date, shopIds),
-		]);
-		for (const shopId of shopIds) {
-			const metrics = mergeMetrics(
-				mergeMetrics(
+		const byZone = new Map<string, string[]>();
+		for (const shop of shops.docs) {
+			const zone = await timezoneOfShop(shop);
+			if (shop.status === "closed") {
+				const closedAt = shop.closedAt ? Date.parse(shop.closedAt) : Number.NaN;
+				const window = doualaDayWindow(date, zone);
+				if (
+					!(
+						closedAt >= window.start.getTime() &&
+						closedAt < window.end.getTime()
+					)
+				)
+					continue;
+			}
+			byZone.set(zone, [...(byZone.get(zone) ?? []), String(shop.id)]);
+		}
+		for (const [timezone, shopIds] of byZone) {
+			const shouldSnapshotInventory =
+				date === previousDoualaDate(now, timezone);
+			const savedSnapshots = shouldSnapshotInventory
+				? new Map<string, ShopDailyStat>()
+				: new Map(
+						(
+							await payload.find({
+								collection: "shop-daily-stats",
+								where: {
+									and: [{ shop: { in: shopIds } }, { date: { equals: date } }],
+								},
+								limit: shopIds.length,
+								depth: 0,
+								overrideAccess: true,
+							})
+						).docs.flatMap((row) => {
+							const id = relationId(row.shop);
+							return id ? [[id, row] as const] : [];
+						}),
+					);
+			const [
+				interactionMetrics,
+				orderMetrics,
+				productOrderMetrics,
+				inventoryMetrics,
+				conversationMetrics,
+				cogsMetrics,
+				resaleMetrics,
+			] = await Promise.all([
+				aggregateInteractionMetrics(payload, date, shopIds, timezone),
+				aggregateOrderMetrics(payload, date, shopIds, timezone),
+				aggregateTopProductOrderMetrics(payload, date, shopIds, timezone),
+				shouldSnapshotInventory
+					? aggregateInventorySnapshot(payload, shopIds)
+					: Promise.resolve(new Map()),
+				aggregateConversationMetrics(payload, date, shopIds, now, timezone),
+				aggregateDeliveredCogs(payload, date, shopIds, timezone),
+				aggregateResaleMetrics(payload, date, shopIds, timezone),
+			]);
+			for (const shopId of shopIds) {
+				const metrics = mergeMetrics(
 					mergeMetrics(
 						mergeMetrics(
-							mergeMetrics(emptyDailyMetrics(), interactionMetrics.get(shopId)),
-							orderMetrics.get(shopId),
+							mergeMetrics(
+								mergeMetrics(
+									emptyDailyMetrics(),
+									interactionMetrics.get(shopId),
+								),
+								orderMetrics.get(shopId),
+							),
+							{ topProducts: productOrderMetrics.get(shopId) },
 						),
-						{ topProducts: productOrderMetrics.get(shopId) },
+						inventoryMetrics.get(shopId),
 					),
-					inventoryMetrics.get(shopId),
-				),
-				conversationMetrics.get(shopId),
-			);
-			metrics.cogsDelivered = cogsMetrics.get(shopId) ?? 0;
-			if (!shouldSnapshotInventory) {
-				const snapshot = savedSnapshots.get(shopId);
-				metrics.inventoryCostValue = Number(snapshot?.inventoryCostValue ?? 0);
-				metrics.outOfStockVariants = Number(snapshot?.outOfStockVariants ?? 0);
-				metrics.lowStockVariants = Number(snapshot?.lowStockVariants ?? 0);
+					conversationMetrics.get(shopId),
+				);
+				metrics.cogsDelivered = cogsMetrics.get(shopId) ?? 0;
+				if (!shouldSnapshotInventory) {
+					const snapshot = savedSnapshots.get(shopId);
+					metrics.inventoryCostValue = Number(
+						snapshot?.inventoryCostValue ?? 0,
+					);
+					metrics.outOfStockVariants = Number(
+						snapshot?.outOfStockVariants ?? 0,
+					);
+					metrics.lowStockVariants = Number(snapshot?.lowStockVariants ?? 0);
+				}
+				mergeMetrics(metrics, resaleMetrics.get(shopId));
+				const result = await upsertShopDailyStat(payload, {
+					shopId,
+					date,
+					metrics,
+					computedAt: options.computedAt ?? now.toISOString(),
+					version: options.version ?? 1,
+				});
+				shopsProcessed++;
+				if (result === "created") created++;
+				else if (result === "updated") updated++;
+				else unchanged++;
 			}
-			mergeMetrics(metrics, resaleMetrics.get(shopId));
-			const result = await upsertShopDailyStat(payload, {
-				shopId,
-				date,
-				metrics,
-				computedAt: options.computedAt ?? now.toISOString(),
-				version: options.version ?? 1,
-			});
-			shopsProcessed++;
-			if (result === "created") created++;
-			else if (result === "updated") updated++;
-			else unchanged++;
 		}
 	}
 	return { shopsProcessed, created, updated, unchanged };

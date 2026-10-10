@@ -3,7 +3,7 @@ import { isModerator } from "../access/roles";
 import { PAYOUT_METHOD_CHANNELS } from "../collections/PayoutAccounts";
 import type { ResellerFinanceView } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
-import { roundingOfCurrency } from "../lib/markets";
+import { marketOfShop, roundingOfCurrency } from "../lib/markets";
 import { getOrderSettings } from "../lib/orderSettings";
 import { getPaymentSettings, missingGates } from "../lib/paymentSettings";
 import { getNotchPayProvider } from "../lib/payments";
@@ -294,7 +294,16 @@ async function createPayoutForShop(
 	shopId: string,
 	now: Date,
 ): Promise<ResellerPayout | null> {
-	const reference = await nextNumber(payload, "RP", now);
+	const market = await payload
+		.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.then((shop) => marketOfShop(payload, shop))
+		.catch(() => undefined);
+	const reference = await nextNumber(payload, "RP", now, market);
 	return withTransaction(payload, async (req) => {
 		const paymentSettings = await getPaymentSettings(payload);
 		if (

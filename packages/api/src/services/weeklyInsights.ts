@@ -1,6 +1,7 @@
 import type { Payload } from "payload";
 import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { triggerNotificationEvent } from "../hooks/notificationEvents";
+import { timezoneOfShop } from "../lib/markets";
 import { weekBoundsDouala } from "../lib/orderMath";
 import { recipientsForShop } from "./orders/notifications";
 import { getShopInsights } from "./shopInsights";
@@ -38,7 +39,6 @@ export async function sendWeeklyInsights(
 		.catch(() => null);
 	if (settings?.insights?.enabled !== true) return { shops: [], recipients: 0 };
 
-	const stamp = weekBoundsDouala(now).periodStart;
 	const shops: string[] = [];
 	let recipients = 0;
 	for (let page = 1; ; page += 1) {
@@ -52,6 +52,8 @@ export async function sendWeeklyInsights(
 			overrideAccess: true,
 		});
 		for (const shop of batch.docs) {
+			const timezone = await timezoneOfShop(payload, shop);
+			const stamp = weekBoundsDouala(now, timezone).periodStart;
 			if (shop.weeklyInsightsSentFor === stamp) continue;
 			const shopId = String(shop.id);
 			const members = await recipientsForShop(payload, shopId, "costs.view");

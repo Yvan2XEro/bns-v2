@@ -5,7 +5,8 @@ import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { commissionCredit } from "../lib/caseMath";
 import { filedCaseGates, getDisputeSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
-import { marketOfOrder } from "../lib/markets";
+import { getMarkets, marketOfOrder, timezoneOfShop } from "../lib/markets";
+import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import {
 	commissionForLine,
 	invoiceTotals,
@@ -382,7 +383,7 @@ function sellerSnapshotOf(shop: Shop): Record<string, unknown> {
 
 /**
  * One pass over every shop with open commission lines accrued by
- * `periodEnd` (Monday–Sunday, `Africa/Douala`). Idempotent per
+ * `periodEnd` (Monday–Sunday, the shop's market timezone). Idempotent per
  * `(shop, periodStart)` two ways, same pairing as `accrueCommission`: a
  * pre-check that skips the common case, and the real unique index (Task 6)
  * whose violation is swallowed as "already issued".
@@ -391,15 +392,22 @@ export async function issueInvoicesForWeek(
 	payload: Payload,
 	now: Date,
 ): Promise<{ issued: string[]; rolledOver: string[]; netted: string[] }> {
-	const { periodStart, periodEnd } = weekBoundsDouala(now);
 	const settings = await getOrderSettings(payload);
+	// Each shop's week closes on its own market's clock; the query takes the
+	// latest close and the per-shop pass trims to the shop's own.
+	const markets = await getMarkets(payload);
+	const latestEnd =
+		[...markets.map((m) => m.timezone), LEGACY_TIMEZONE]
+			.map((zone) => weekBoundsDouala(now, zone).periodEnd)
+			.sort()
+			.at(-1) ?? "";
 
 	const { docs: openLines } = await payload.find({
 		collection: "commission-lines",
 		where: {
 			and: [
 				{ status: { equals: "open" } },
-				{ accruedAt: { less_than_equal: periodEnd } },
+				{ accruedAt: { less_than_equal: latestEnd } },
 				// P5 collects a mobile-money order's commission at source, so
 				// such a line is never owed on an invoice. `not_equals` rather
 				// than `equals: "cod"` on purpose: `credit` and `carry_over`
@@ -426,7 +434,19 @@ export async function issueInvoicesForWeek(
 	const rolledOver: string[] = [];
 	const netted: string[] = [];
 
-	for (const [shopId, lines] of byShop) {
+	for (const [shopId, allLines] of byShop) {
+		const shop = await payload.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		});
+		const timezone = await timezoneOfShop(payload, shop);
+		const { periodStart, periodEnd } = weekBoundsDouala(now, timezone);
+		const lines = allLines.filter(
+			(line) => (line.accruedAt ?? "") <= periodEnd,
+		);
+		if (lines.length === 0) continue;
 		const already = await payload.find({
 			collection: "commission-invoices",
 			where: {
@@ -484,12 +504,6 @@ export async function issueInvoicesForWeek(
 			continue;
 		}
 
-		const shop = await payload.findByID({
-			collection: "shops",
-			id: shopId,
-			depth: 0,
-			overrideAccess: true,
-		});
 		const ordersCount = new Set(
 			lines.flatMap((line) => {
 				const orderId = relationId(line.order);
@@ -1146,7 +1160,7 @@ export async function resolveInvoiceLineViews(
  * The shop billing screen's one read: every invoice (newest first), the
  * still-accruing current week, and whether the shop is restricted. Current
  * week bounds are derived from `weekBoundsDouala`'s *last complete* week
- * rather than re-deriving the `Africa/Douala` boundary a second time.
+ * rather than re-deriving the boundary a second time.
  */
 export async function getBillingView(
 	payload: Payload,
@@ -1185,7 +1199,14 @@ export async function getBillingView(
 		})),
 	);
 
-	const lastWeek = weekBoundsDouala(now);
+	const shop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const timezone = await timezoneOfShop(payload, shop);
+	const lastWeek = weekBoundsDouala(now, timezone);
 	const currentStart = new Date(
 		new Date(lastWeek.periodEnd).getTime() + 1,
 	).toISOString();
@@ -1216,12 +1237,6 @@ export async function getBillingView(
 		}),
 	).size;
 
-	const shop = await payload.findByID({
-		collection: "shops",
-		id: shopId,
-		depth: 0,
-		overrideAccess: true,
-	});
 	const restricted = shop.ordersRestrictedAt
 		? {
 				since: shop.ordersRestrictedAt,

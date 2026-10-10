@@ -8,6 +8,7 @@ import type { MoneyFormat } from "../contracts/money";
 import type { Order, Shop } from "../payload-types";
 import { ERROR_CODES } from "./errors";
 import { readMarketCache, writeMarketCache } from "./marketCache";
+import { LEGACY_TIMEZONE } from "./marketTime";
 import type { Rounding } from "./paymentMath";
 import { PAYMENT_PROVIDERS, type PaymentProviderId } from "./paymentSettings";
 import { ServiceError } from "./serviceError";
@@ -283,7 +284,7 @@ export function marketIsOpen(
 /** A shop belongs to one market through its city's row; no row means unknown. */
 export async function marketOfShop(
 	payload: Payload,
-	shop: Shop,
+	shop: Pick<Shop, "location">,
 ): Promise<Market> {
 	const key = shop.location?.city?.trim().toLowerCase();
 	if (!key) throw new ServiceError(ERROR_CODES.marketUnknown, 404);
@@ -308,6 +309,21 @@ export async function marketOfShop(
 	if (match.length !== 1)
 		throw new ServiceError(ERROR_CODES.marketUnknown, 404);
 	return match[0];
+}
+
+/**
+ * The clock a shop's analytics day runs on: its market's, or the legacy zone
+ * for a city no market claims — a stats boundary, not money, so it degrades
+ * instead of refusing.
+ */
+export async function timezoneOfShop(
+	payload: Payload,
+	shop: Pick<Shop, "location">,
+): Promise<string> {
+	return marketOfShop(payload, shop).then(
+		(market) => market.timezone,
+		() => LEGACY_TIMEZONE,
+	);
 }
 
 /**

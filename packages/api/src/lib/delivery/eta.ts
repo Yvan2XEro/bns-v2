@@ -1,7 +1,13 @@
-export const DELIVERY_TIMEZONE = "Africa/Douala";
+import {
+	type LocalParts,
+	localDateAt,
+	localParts,
+	type Weekday,
+} from "../marketTime";
+
 export const DELIVERY_DAY_START_HOUR = 8;
 
-export type Day = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+export type Day = Weekday;
 
 export interface DeliveryCalendar {
 	deliveryDays: readonly Day[];
@@ -10,14 +16,7 @@ export interface DeliveryCalendar {
 
 export type DeliveryWindow = "morning" | "afternoon" | "evening";
 
-export interface LocalDateTime {
-	year: number;
-	month: number;
-	day: number;
-	weekday: Day;
-	hour: number;
-	minute: number;
-}
+export type LocalDateTime = LocalParts;
 
 const WEEKDAYS: readonly Day[] = [
 	"sun",
@@ -28,51 +27,6 @@ const WEEKDAYS: readonly Day[] = [
 	"fri",
 	"sat",
 ];
-
-export function localParts(date: Date): LocalDateTime {
-	if (!Number.isFinite(date.getTime())) throw new RangeError("Invalid date");
-	const parts = new Intl.DateTimeFormat("en-GB", {
-		timeZone: DELIVERY_TIMEZONE,
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		weekday: "short",
-		hour: "2-digit",
-		minute: "2-digit",
-		hourCycle: "h23",
-	}).formatToParts(date);
-	const value = (type: Intl.DateTimeFormatPartTypes) =>
-		parts.find((part) => part.type === type)?.value ?? "";
-	return {
-		year: Number(value("year")),
-		month: Number(value("month")),
-		day: Number(value("day")),
-		weekday: value("weekday").slice(0, 3).toLowerCase() as Day,
-		hour: Number(value("hour")),
-		minute: Number(value("minute")),
-	};
-}
-
-export function localDateAt(
-	date: Pick<LocalDateTime, "year" | "month" | "day">,
-	hour: number,
-	minute = 0,
-): Date {
-	const target = Date.UTC(date.year, date.month - 1, date.day, hour, minute);
-	let timestamp = target;
-	for (let attempt = 0; attempt < 3; attempt += 1) {
-		const observed = localParts(new Date(timestamp));
-		const observedAsUtc = Date.UTC(
-			observed.year,
-			observed.month - 1,
-			observed.day,
-			observed.hour,
-			observed.minute,
-		);
-		timestamp += target - observedAsUtc;
-	}
-	return new Date(timestamp);
-}
 
 function nextLocalDay(date: Pick<LocalDateTime, "year" | "month" | "day">) {
 	const next = new Date(Date.UTC(date.year, date.month - 1, date.day + 1));
@@ -98,6 +52,7 @@ function assertCalendar(calendar: DeliveryCalendar): void {
 function followingDeliveryStart(
 	date: Pick<LocalDateTime, "year" | "month" | "day">,
 	deliveryDays: readonly Day[],
+	timezone: string,
 ): Date {
 	let day = date;
 	for (let offset = 1; offset <= 7; offset += 1) {
@@ -107,7 +62,7 @@ function followingDeliveryStart(
 				new Date(Date.UTC(day.year, day.month - 1, day.day)).getUTCDay()
 			];
 		if (deliveryDays.includes(weekday)) {
-			return localDateAt(day, DELIVERY_DAY_START_HOUR);
+			return localDateAt(day, DELIVERY_DAY_START_HOUR, 0, timezone);
 		}
 	}
 	throw new RangeError("Delivery calendar has no reachable delivery day");
@@ -116,6 +71,7 @@ function followingDeliveryStart(
 function followingDeliveryTime(
 	local: LocalDateTime,
 	deliveryDays: readonly Day[],
+	timezone: string,
 ) {
 	let day: Pick<LocalDateTime, "year" | "month" | "day"> = local;
 	for (let offset = 1; offset <= 7; offset += 1) {
@@ -125,15 +81,19 @@ function followingDeliveryTime(
 				new Date(Date.UTC(day.year, day.month - 1, day.day)).getUTCDay()
 			];
 		if (deliveryDays.includes(weekday)) {
-			return localDateAt(day, local.hour, local.minute);
+			return localDateAt(day, local.hour, local.minute, timezone);
 		}
 	}
 	throw new RangeError("Delivery calendar has no reachable delivery day");
 }
 
-export function nextDeliveryStart(now: Date, calendar: DeliveryCalendar): Date {
+export function nextDeliveryStart(
+	now: Date,
+	calendar: DeliveryCalendar,
+	timezone: string,
+): Date {
 	assertCalendar(calendar);
-	const localNow = localParts(now);
+	const localNow = localParts(now, timezone);
 	const [cutoffHour, cutoffMinute] = (calendar.cutoffTime ?? "23:59")
 		.split(":")
 		.map(Number);
@@ -143,7 +103,7 @@ export function nextDeliveryStart(now: Date, calendar: DeliveryCalendar): Date {
 	if (calendar.deliveryDays.includes(localNow.weekday) && !pastCutoff) {
 		return new Date(now);
 	}
-	return followingDeliveryStart(localNow, calendar.deliveryDays);
+	return followingDeliveryStart(localNow, calendar.deliveryDays, timezone);
 }
 
 export function promisedByFrom(
@@ -151,6 +111,7 @@ export function promisedByFrom(
 	preparationHours: number,
 	etaMaxHours: number,
 	calendar: DeliveryCalendar,
+	timezone: string,
 ): Date {
 	assertCalendar(calendar);
 	const hours = preparationHours + etaMaxHours;
@@ -162,9 +123,9 @@ export function promisedByFrom(
 	let guard = 0;
 	while (remainingHours > 0 && guard < 24 * 366) {
 		guard += 1;
-		const local = localParts(cursor);
+		const local = localParts(cursor, timezone);
 		if (!calendar.deliveryDays.includes(local.weekday)) {
-			cursor = followingDeliveryTime(local, calendar.deliveryDays);
+			cursor = followingDeliveryTime(local, calendar.deliveryDays, timezone);
 			continue;
 		}
 		cursor = new Date(cursor.getTime() + 3_600_000);
@@ -173,9 +134,9 @@ export function promisedByFrom(
 	if (remainingHours > 0) {
 		throw new RangeError("Delivery ETA exceeds the supported calendar horizon");
 	}
-	const local = localParts(cursor);
+	const local = localParts(cursor, timezone);
 	if (!calendar.deliveryDays.includes(local.weekday)) {
-		return followingDeliveryTime(local, calendar.deliveryDays);
+		return followingDeliveryTime(local, calendar.deliveryDays, timezone);
 	}
 	return cursor;
 }
@@ -184,6 +145,7 @@ export function pickupReadyAt(
 	now: Date,
 	preparationHours: number,
 	openingHours: readonly { day: Day; opens: string; closes: string }[],
+	timezone: string,
 ): Date {
 	if (
 		!Number.isFinite(now.getTime()) ||
@@ -192,7 +154,7 @@ export function pickupReadyAt(
 		!openingHours.length
 	)
 		throw new RangeError("Invalid pickup calendar");
-	let day = localParts(now);
+	let day = localParts(now, timezone);
 	let remaining = preparationHours * 3_600_000;
 	let cursor = now.getTime();
 	for (let offset = 0; offset < 366; offset += 1) {
@@ -210,16 +172,16 @@ export function pickupReadyAt(
 			const [closeHour, closeMinute] = period.closes.split(":").map(Number);
 			const start = Math.max(
 				cursor,
-				localDateAt(day, openHour, openMinute).getTime(),
+				localDateAt(day, openHour, openMinute, timezone).getTime(),
 			);
-			const end = localDateAt(day, closeHour, closeMinute).getTime();
+			const end = localDateAt(day, closeHour, closeMinute, timezone).getTime();
 			if (start >= end) continue;
 			if (remaining <= end - start) return new Date(start + remaining);
 			remaining -= end - start;
 			cursor = end;
 		}
 		const next = nextLocalDay(day);
-		day = localParts(localDateAt(next, 0));
+		day = localParts(localDateAt(next, 0, 0, timezone), timezone);
 	}
 	throw new RangeError("Pickup calendar exceeds the supported horizon");
 }
@@ -242,6 +204,7 @@ export function rescheduleDateAllowed(
 	date: Date,
 	calendar: DeliveryCalendar,
 	now: Date,
+	timezone: string,
 ): boolean {
 	if (
 		calendar.deliveryDays.length === 0 ||
@@ -257,5 +220,5 @@ export function rescheduleDateAllowed(
 	) {
 		return false;
 	}
-	return calendar.deliveryDays.includes(localParts(date).weekday);
+	return calendar.deliveryDays.includes(localParts(date, timezone).weekday);
 }

@@ -1,3 +1,4 @@
+import { LEGACY_TIMEZONE, localDateString } from "../lib/marketTime";
 export type ResponseBurstMessage = {
 	conversationId: string;
 	senderSide: "buyer" | "shop";
@@ -17,15 +18,6 @@ export type ResponseBuckets = {
 const SILENCE_MS = 12 * 60 * 60 * 1000;
 const RESPONSE_DEADLINE_MS = 24 * 60 * 60 * 1000;
 
-function doualaDate(timestamp: number): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(timestamp);
-}
-
 function emptyBuckets(): ResponseBuckets {
 	return { m5: 0, m15: 0, h1: 0, h4: 0, h24: 0, over24h: 0, unanswered: 0 };
 }
@@ -34,6 +26,7 @@ export function aggregateResponseBuckets(
 	messages: readonly ResponseBurstMessage[],
 	date: string,
 	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
 ): ResponseBuckets {
 	const byConversation = new Map<
 		string,
@@ -64,7 +57,11 @@ export function aggregateResponseBuckets(
 
 		for (let index = 0; index < bursts.length; index++) {
 			const startedAt = bursts[index];
-			if (startedAt === undefined || doualaDate(startedAt) !== date) continue;
+			if (
+				startedAt === undefined ||
+				localDateString(new Date(startedAt), timezone) !== date
+			)
+				continue;
 			const nextBurstAt = bursts[index + 1] ?? Number.POSITIVE_INFINITY;
 			const deadline = startedAt + RESPONSE_DEADLINE_MS;
 			const response = conversation.find(

@@ -1,23 +1,13 @@
 import type { TaskConfig } from "payload";
+import { LEGACY_TIMEZONE, localParts } from "../lib/marketTime";
 import { flushListingViewHash } from "../services/listingViewFlush";
 
-export function previousDoualaBucket(now: Date): string {
-	const parts = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).formatToParts(now);
-	const fields = Object.fromEntries(
-		parts.map(({ type, value }) => [type, value]),
-	);
-	const previousDay = new Date(
-		Date.UTC(
-			Number(fields.year),
-			Number(fields.month) - 1,
-			Number(fields.day) - 1,
-		),
-	);
+export function previousDoualaBucket(
+	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): string {
+	const { year, month, day } = localParts(now, timezone);
+	const previousDay = new Date(Date.UTC(year, month - 1, day - 1));
 	return `${previousDay.getUTCFullYear()}${String(previousDay.getUTCMonth() + 1).padStart(2, "0")}${String(previousDay.getUTCDate()).padStart(2, "0")}`;
 }
 

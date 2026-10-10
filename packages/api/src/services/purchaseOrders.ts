@@ -58,7 +58,7 @@ import {
 	holdResellerListingsForIneligibility,
 } from "./resale";
 import { postCommissionReduced } from "./resellerLedger";
-import { nextNumber } from "./sequences";
+import { nextNumber, sequenceMarketOfOrder } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 import { isUniqueViolation } from "./shops";
@@ -434,7 +434,13 @@ export async function createPurchaseOrderForAcceptedOrder(
 		"deliveryFee",
 	);
 	const sentAt = now.toISOString();
-	const number = await nextNumber(payload, "PO", now, { width: 4 });
+	const number = await nextNumber(
+		payload,
+		"PO",
+		now,
+		await sequenceMarketOfOrder(payload, order),
+		{ width: 4 },
+	);
 	const settings = await getResaleSettings(payload);
 	return withTransaction(payload, async (req) => {
 		const current = await req.payload.find({

@@ -6,7 +6,7 @@ import { ServiceError } from "../../lib/serviceError";
 import { RetryTransaction, withTransaction } from "../../lib/transactions";
 import type { Order, Shipment, ShopLocation } from "../../payload-types";
 import { registerOrderEventHandler } from "../orders/events";
-import { nextNumber } from "../sequences";
+import { nextNumber, sequenceMarketOfOrder } from "../sequences";
 import { defaultOrigin } from "./locations";
 import {
 	appendShipmentEvent,
@@ -92,7 +92,12 @@ export async function createShipmentForOrder(
 	});
 	if (existing.docs[0]) return existing.docs[0];
 	const now = new Date();
-	const shipmentNumber = await nextNumber(payload, "SHP", now);
+	const shipmentNumber = await nextNumber(
+		payload,
+		"SHP",
+		now,
+		await sequenceMarketOfOrder(payload, order),
+	);
 
 	return withTransaction(payload, async (req) => {
 		const live = await findLiveShipmentForOrder(req, String(order.id));
