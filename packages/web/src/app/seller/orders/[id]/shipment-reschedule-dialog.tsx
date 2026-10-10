@@ -6,7 +6,7 @@ import { Button } from "~/components/ui/button";
 import { useShipmentAction } from "~/hooks/use-shop-shipments";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatDeliveryDate, rescheduleChoices } from "~/lib/shipment-tracking";
-import { ActionDialog } from "../../../purchases/[id]/action-dialog";
+import { ActionDialog } from "../../../(public)/purchases/[id]/action-dialog";
 import { useLocaleKey } from "../../billing/use-locale-key";
 
 /** The same slots the buyer is offered; the zone's delivery days are the server's call. */

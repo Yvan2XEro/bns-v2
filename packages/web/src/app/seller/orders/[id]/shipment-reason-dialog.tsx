@@ -14,7 +14,7 @@ import {
 	attemptSchema,
 } from "~/lib/shipment-panel";
 import { FAILURE_REASON_LABELS } from "~/lib/shipment-status";
-import { ActionDialog } from "../../../purchases/[id]/action-dialog";
+import { ActionDialog } from "../../../(public)/purchases/[id]/action-dialog";
 import { ProofPhotoField } from "./proof-photo-field";
 
 /**

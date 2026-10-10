@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useNow } from "~/app/purchases/use-now";
+import { useNow } from "~/app/(public)/purchases/use-now";
 import { useOrderShipments } from "~/hooks/use-shop-shipments";
 import { resolveErrorMessage } from "~/lib/apiError";
 import type { ShopRole } from "~/types";

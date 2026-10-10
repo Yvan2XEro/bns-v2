@@ -13,7 +13,7 @@ import {
 	type HandoverCodeValues,
 	handoverCodeSchema,
 } from "~/lib/shipment-panel";
-import { ActionDialog } from "../../../purchases/[id]/action-dialog";
+import { ActionDialog } from "../../../(public)/purchases/[id]/action-dialog";
 import { ProofPhotoField } from "./proof-photo-field";
 
 interface Props {

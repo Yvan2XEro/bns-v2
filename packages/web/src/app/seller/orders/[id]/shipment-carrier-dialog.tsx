@@ -10,7 +10,7 @@ import { resolveErrorMessage } from "~/lib/apiError";
 import { formatXaf } from "~/lib/order-money";
 import { eligibleCouriers, shipmentDestination } from "~/lib/shipment-panel";
 import type { ShopShipmentView } from "../../../../../../api/src/contracts/shipments";
-import { ActionDialog } from "../../../purchases/[id]/action-dialog";
+import { ActionDialog } from "../../../(public)/purchases/[id]/action-dialog";
 import { useLocaleKey } from "../../billing/use-locale-key";
 
 /** Own delivery, or a partner courier priced from the registry; the route cancels the old carrier and creates the new one together. */

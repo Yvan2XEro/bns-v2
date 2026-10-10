@@ -10,7 +10,7 @@ import {
 } from "~/lib/case-status";
 import type { JsonReturnAction } from "~/lib/return-actions";
 import { returnFlowState } from "~/lib/return-flow";
-import type { ReturnAction } from "../../../../../api/src/contracts/returns";
+import type { ReturnAction } from "../../../../../../api/src/contracts/returns";
 import { SellerReturnActions } from "./seller-return-actions";
 
 const BUYER_ACTIONS: ReadonlySet<JsonReturnAction> = new Set([

@@ -7,7 +7,7 @@ import {
 	FAILURE_REASON_LABELS,
 	type FailureReason,
 } from "~/lib/shipment-status";
-import type { RiderLinkView } from "../../../../../api/src/contracts/shipments";
+import type { RiderLinkView } from "../../../../../../api/src/contracts/shipments";
 
 const isReason = (reason: string): reason is FailureReason =>
 	reason in FAILURE_REASON_LABELS;

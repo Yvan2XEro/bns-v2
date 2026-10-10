@@ -1,4 +1,3 @@
-// Serves only the segments not yet in a group (checkout, seller, moderation, shop/manage). Task 10 deletes this file once the last one moves.
 export default function Loading() {
 	return (
 		<div className="flex flex-col">

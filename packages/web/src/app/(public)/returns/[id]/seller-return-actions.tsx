@@ -5,7 +5,7 @@ import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { RETURN_ACTION_LABELS } from "~/lib/case-status";
 import { sellerReturnActions } from "~/lib/seller-return-actions";
-import type { ReturnCaseView } from "../../../../../api/src/contracts/returns";
+import type { ReturnCaseView } from "../../../../../../api/src/contracts/returns";
 import { ReturnInspectionForm } from "./return-inspection-form";
 import { ReturnRefundProofForm } from "./return-refund-proof-form";
 

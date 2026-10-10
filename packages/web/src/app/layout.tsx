@@ -3,10 +3,6 @@ import { DM_Sans, Outfit } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
-import { CategoryBar } from "~/components/layout/category-bar";
-import { Footer } from "~/components/layout/footer";
-import { Header } from "~/components/layout/header";
-import { SiteChrome } from "~/components/layout/site-chrome";
 import { QueryProvider } from "~/components/query-provider";
 import {
 	type AppConfig,
@@ -16,7 +12,6 @@ import {
 import { AuthProvider } from "~/hooks/use-auth";
 import { ChatProvider } from "~/hooks/use-chat-client";
 import { serverFetch } from "~/lib/server-api";
-import type { Category } from "~/types";
 
 const dmSans = DM_Sans({
 	subsets: ["latin"],
@@ -74,24 +69,12 @@ async function getPublicConfig(): Promise<AppConfig> {
 	}
 }
 
-async function getCategories(): Promise<Category[]> {
-	try {
-		const res = await serverFetch("/api/public/categories?depth=1");
-		if (!res.ok) return [];
-		const data = await res.json();
-		return data.categories || [];
-	} catch {
-		return [];
-	}
-}
-
 export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	const [categories, locale, messages, config] = await Promise.all([
-		getCategories(),
+	const [locale, messages, config] = await Promise.all([
 		getLocale(),
 		getMessages(),
 		getPublicConfig(),
@@ -125,20 +108,7 @@ export default async function RootLayout({
 					<QueryProvider>
 						<AppConfigProvider initialConfig={config}>
 							<AuthProvider>
-								<ChatProvider>
-									<div className="relative flex min-h-screen flex-col">
-										<SiteChrome>
-											<Header
-												novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER}
-											/>
-											<CategoryBar categories={categories} />
-										</SiteChrome>
-										<main className="flex-1">{children}</main>
-										<SiteChrome>
-											<Footer />
-										</SiteChrome>
-									</div>
-								</ChatProvider>
+								<ChatProvider>{children}</ChatProvider>
 							</AuthProvider>
 						</AppConfigProvider>
 					</QueryProvider>

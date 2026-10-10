@@ -16,7 +16,7 @@ import {
 	freshAttempt,
 	stepFor,
 } from "~/lib/payment-flow";
-import { useNow } from "../../../purchases/use-now";
+import { useNow } from "../../../(public)/purchases/use-now";
 import { FailedState } from "./failed-state";
 import { PendingState } from "./pending-state";
 

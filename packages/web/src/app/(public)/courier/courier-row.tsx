@@ -15,8 +15,8 @@ import {
 } from "~/lib/courier-space";
 import { formatXaf } from "~/lib/order-money";
 import { shipmentStatusLabel } from "~/lib/shipment-status";
-import type { CourierShipmentRow } from "../../../../api/src/contracts/shipments";
-import type { CourierMember } from "../../../../api/src/payload-types";
+import type { CourierShipmentRow } from "../../../../../api/src/contracts/shipments";
+import type { CourierMember } from "../../../../../api/src/payload-types";
 
 export function CourierRow({
 	row,

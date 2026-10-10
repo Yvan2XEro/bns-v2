@@ -8,7 +8,7 @@ import {
 	formatDeliveryDate,
 	type ProofCard,
 } from "~/lib/shipment-tracking";
-import type { BuyerShipmentView } from "../../../../../api/src/contracts/shipments";
+import type { BuyerShipmentView } from "../../../../../../api/src/contracts/shipments";
 
 export function RiderCard({
 	rider,

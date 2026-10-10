@@ -14,7 +14,7 @@ import {
 	type ExternalRiderValues,
 	externalRiderSchema,
 } from "~/lib/shipment-panel";
-import { ActionDialog } from "../../../purchases/[id]/action-dialog";
+import { ActionDialog } from "../../../(public)/purchases/[id]/action-dialog";
 
 /** A team member rides under their own account; anyone else is a name and a phone the link is texted to. */
 export function ShipmentRiderDialog({

@@ -16,7 +16,7 @@ import {
 	trackingSteps,
 } from "~/lib/shipment-tracking";
 import type { OrderView } from "~/types/order";
-import type { BuyerShipmentView } from "../../../../../api/src/contracts/shipments";
+import type { BuyerShipmentView } from "../../../../../../api/src/contracts/shipments";
 import { RescheduleDialog } from "./reschedule-dialog";
 import {
 	AttemptList,
