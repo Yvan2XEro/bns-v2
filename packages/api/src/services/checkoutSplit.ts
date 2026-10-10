@@ -1,4 +1,9 @@
 import type { Payload } from "payload";
+import type {
+	SplitPlaceResponse,
+	SplitQuoteGroup,
+	SplitQuoteView,
+} from "../contracts/checkoutGroup";
 import { queueSearchEvent } from "../hooks/searchEvents";
 import { ERROR_CODES } from "../lib/errors";
 import { sha256 } from "../lib/hash";
@@ -36,36 +41,12 @@ import {
 	type QuoteSummaryLine,
 	quoteLines,
 } from "./checkout";
-import type { DeliveryOption } from "./deliveryQuote";
 import { recordPlacement, scoreCheckout } from "./orders/risk";
 import { nextNumber } from "./sequences";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 import { reserve } from "./stock";
 
-export interface SplitQuoteGroup {
-	groupKey: string;
-	storefrontShop: CartShopView;
-	fulfillingShop: CartShopView;
-	resale: boolean;
-	items: QuoteSummaryLine[];
-	subtotal: number;
-	delivery: { options: DeliveryOption[]; unavailable: string[] };
-	selectedOptionId: string;
-	deliveryFee: number;
-	/** VAT on the platform commission of this group, at the market's rate. */
-	vat: number;
-	total: number;
-	/** Bound to this group: it validates no other group's placement. */
-	quoteHash: string;
-}
-
-export interface SplitQuoteView {
-	market: { countryCode: string; currency: string };
-	groups: SplitQuoteGroup[];
-	unavailableGroups: Array<{ groupKey: string; reason: string }>;
-	grandTotal: number;
-	quoteHash: string;
-}
+export type { SplitPlaceResponse, SplitQuoteGroup, SplitQuoteView };
 
 export interface QuoteGroup {
 	groupKey: string;
@@ -280,18 +261,6 @@ export async function planSplit(
 			),
 		},
 	};
-}
-
-export interface SplitPlaceResponse {
-	checkoutGroup: string;
-	orders: Array<{
-		id: string;
-		orderNumber: string;
-		shop: CartShopView;
-		total: number;
-		currency: string;
-		paymentMethod: "cod" | "mobile_money";
-	}>;
 }
 
 type PlaceOptions = {

@@ -1,5 +1,6 @@
 import type { Payload, PayloadRequest } from "payload";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
+import type { QuoteSummaryLine } from "../contracts/checkoutGroup";
 import type {
 	DeliveryMethod,
 	UnavailableOption,
@@ -431,15 +432,7 @@ export interface QuoteSummaryItem {
 	};
 }
 
-/** One line of the quote, as the checkout screen renders it: what it is, how many, what it costs. The ids `placeOrder` needs stay on `QuoteSummaryItem`, off the wire. */
-export interface QuoteSummaryLine {
-	title: string;
-	variantLabel: string;
-	unitPrice: number;
-	quantity: number;
-	lineSubtotal: number;
-	imageUrl: string | null;
-}
+export type { QuoteSummaryLine };
 
 /**
  * The address the quote echoes back, in the same shape the checkout form

@@ -201,66 +201,16 @@ export interface QuoteResponse {
 	quoteHash: string;
 }
 
-export interface SplitShopView {
-	id: string;
-	name: string;
-	handle: string;
-	city: string | null;
-}
-
-/** `GET /api/cart` while the server's multi-shop cart is on; mirrors `services/cart.ts#SplitCartView`. */
-export interface SplitCartGroup {
-	groupKey: string;
-	storefrontShop: SplitShopView;
-	fulfillingShop: SplitShopView;
-	resale: boolean;
-	items: CartLineView[];
-	subtotal: number;
-}
-
-export interface SplitCartView {
-	id: string | null;
-	market: { countryCode: string; currency: string } | null;
-	groups: SplitCartGroup[];
-	grandSubtotal: number;
-}
-
-/** Mirrors `services/checkoutSplit.ts#SplitQuoteView`, which web cannot import. */
-export interface SplitQuoteGroup {
-	groupKey: string;
-	storefrontShop: SplitShopView;
-	fulfillingShop: SplitShopView;
-	resale: boolean;
-	items: QuoteResponse["summary"]["lines"];
-	subtotal: number;
-	delivery: { options: DeliveryOption[]; unavailable: string[] };
-	selectedOptionId: string;
-	deliveryFee: number;
-	vat: number;
-	total: number;
-	quoteHash: string;
-}
-
-export interface SplitQuoteView {
-	market: { countryCode: string; currency: string };
-	groups: SplitQuoteGroup[];
-	unavailableGroups: Array<{ groupKey: string; reason: string }>;
-	grandTotal: number;
-	quoteHash: string;
-}
-
-/** `POST /api/checkout/place` while the multi-shop cart is on. */
-export interface SplitPlaceResponse {
-	checkoutGroup: string;
-	orders: Array<{
-		id: string;
-		orderNumber: string;
-		shop: SplitShopView;
-		total: number;
-		currency: string;
-		paymentMethod: PaymentMethod;
-	}>;
-}
+// The split views are the server's own contracts now (the shipped slice), so
+// the mirror this file used to carry cannot drift.
+export type {
+	CartShopView as SplitShopView,
+	SplitCartGroup,
+	SplitCartView,
+	SplitPlaceResponse,
+	SplitQuoteGroup,
+	SplitQuoteView,
+} from "../../../api/src/contracts/checkoutGroup";
 
 export interface PlaceResponse {
 	orderId: string;

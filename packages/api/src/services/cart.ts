@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { Payload, PayloadRequest } from "payload";
 import { resolveShopRole } from "../access/shopRoles";
+import type {
+	CartLineView,
+	CartShopView,
+	SplitCartGroup,
+	SplitCartView,
+} from "../contracts/checkoutGroup";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { isLaunchCityKey } from "../lib/launchCities";
 import {
@@ -43,26 +49,12 @@ export interface AddCartItemInput {
 	replace?: unknown;
 }
 
-export interface CartLineView {
-	/** The array row id, which is what the line routes address. */
-	id: string;
-	listingId: string;
-	productId: string;
-	variantId: string;
-	shopId: string;
-	title: string;
-	variantLabel: string;
-	imageUrl: string | null;
-	quantity: number;
-	/** The price now, which is what the buyer would be charged. Falls back to `priceAtAdd` when the listing or variant can no longer be read at all — such a line is never `available`, so the fallback renders a row rather than pricing one. */
-	unitPrice: number;
-	priceAtAdd: number;
-	priceChanged: boolean;
-	lineSubtotal: number;
-	available: boolean;
-	/** The cap the stepper may raise this line to; null when the variant is untracked. */
-	maxQuantity: number | null;
-}
+export type {
+	CartLineView,
+	CartShopView,
+	SplitCartGroup,
+	SplitCartView,
+} from "../contracts/checkoutGroup";
 
 /**
  * One line plus the refusal code behind an unavailable one. Internal: the code
@@ -76,13 +68,6 @@ export interface CartLineState extends CartLineView {
 	fulfillingShopId: string;
 }
 
-export interface CartShopView {
-	id: string;
-	name: string;
-	handle: string;
-	city: string | null;
-}
-
 export interface CartView {
 	/** Null when the buyer has no active cart. */
 	id: string | null;
@@ -93,25 +78,6 @@ export interface CartView {
 	shopOrderable: boolean;
 	/** Null while the cart names no shop, hence no market. */
 	currency: string | null;
-}
-
-export interface SplitCartGroup {
-	/** `{storefrontShopId}:{fulfillingShopId}`. */
-	groupKey: string;
-	storefrontShop: CartShopView;
-	fulfillingShop: CartShopView;
-	resale: boolean;
-	items: CartLineView[];
-	subtotal: number;
-}
-
-/** What `GET /api/cart` answers while `multiShopCartEnabled` is on. */
-export interface SplitCartView {
-	id: string | null;
-	/** Null while the cart is empty, hence bound to no market. */
-	market: { countryCode: string; currency: string } | null;
-	groups: SplitCartGroup[];
-	grandSubtotal: number;
 }
 
 /** Bounds the plan's M6 pins for a multi-shop cart. */
