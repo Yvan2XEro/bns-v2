@@ -82,7 +82,7 @@ import {
 	releaseEligibleFunds,
 } from "../../src/services/payouts";
 import { processWebhookEvent } from "../../src/services/webhookEvents";
-import { type Doc, type FakePayload, fakePayload } from "./helpers/fakePayload";
+import { type Doc, type FakePayload, fakePayload, cmMarketRow } from "./helpers/fakePayload";
 import {
 	chargeOf,
 	makeReplayProvider,
@@ -186,6 +186,9 @@ function savesCleanly(
 function world(): FakePayload {
 	return fakePayload(
 		{
+			// P10 ships whole: the deployable world always has the CM market
+			// migrated into the registry, and checkout resolves through it.
+			markets: [cmMarketRow()],
 			users: [
 				{
 					...OWNER,

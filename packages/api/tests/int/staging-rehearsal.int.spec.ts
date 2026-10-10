@@ -70,7 +70,7 @@ import {
 	runReconciliation,
 } from "../../src/services/reconciliation";
 import { processWebhookEvent } from "../../src/services/webhookEvents";
-import { type Doc, type FakePayload, fakePayload } from "./helpers/fakePayload";
+import { type Doc, type FakePayload, fakePayload, cmMarketRow } from "./helpers/fakePayload";
 
 const { POST: onboardingPOST } = await import(
 	"../../src/app/(frontend)/api/shops/[id]/payments/onboarding/route"
@@ -142,6 +142,9 @@ function savesCleanly(payments: Record<string, unknown>, orders: Record<string, 
 function world(): FakePayload {
 	return fakePayload(
 		{
+			// P10 ships whole: the deployable world always has the CM market
+			// migrated into the registry, and checkout resolves through it.
+			markets: [cmMarketRow()],
 			users: [
 				{
 					...OWNER,
