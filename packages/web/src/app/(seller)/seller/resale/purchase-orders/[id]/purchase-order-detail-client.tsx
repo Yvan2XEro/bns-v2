@@ -1,7 +1,6 @@
 "use client";
 
-import { ArrowLeft, MapPin, PackageCheck, Printer } from "lucide-react";
-import Link from "next/link";
+import { MapPin, PackageCheck, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useReducer } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";

@@ -7,7 +7,6 @@ export default function Loading() {
 			<div className="mb-4 flex gap-2">
 				{Array.from({ length: 3 }).map((_, i) => (
 					<div
-						// biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
 						key={i}
 						className="h-9 w-28 animate-pulse rounded-lg bg-[#E2E8F0]"
 					/>
@@ -16,7 +15,6 @@ export default function Loading() {
 			<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
 				{Array.from({ length: 6 }).map((_, i) => (
 					<div
-						// biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
 						key={i}
 						className="h-14 animate-pulse border-[#F1F5F9] border-b bg-white"
 					/>
