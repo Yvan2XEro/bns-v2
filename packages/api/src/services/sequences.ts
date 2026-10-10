@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest } from "payload";
 import { type Market, marketOfOrder, marketOfShop } from "../lib/markets";
 import { LEGACY_TIMEZONE, localMonthKey } from "../lib/marketTime";
+import { relationId } from "../lib/relationId";
 import type { Order, Shop } from "../payload-types";
 
 /** The slice of a market a counter needs: whose series, on whose clock. */
@@ -32,7 +33,15 @@ export async function sequenceMarketOfOrder(
 	payload: Payload,
 	order: Pick<Order, "market" | "amounts">,
 ): Promise<SequenceMarket> {
-	return (await marketOfOrder(payload, order)) ?? LEGACY_MARKET;
+	const market = await marketOfOrder(payload, order);
+	if (market) return market;
+	// A stamp that resolves to nothing is a dangling relationship, not a pre-P10 order.
+	if (order.market) {
+		payload.logger.warn(
+			`[sequences] order market ${relationId(order.market)} not found, numbering in the legacy series`,
+		);
+	}
+	return LEGACY_MARKET;
 }
 
 export async function sequenceMarketOfShop(

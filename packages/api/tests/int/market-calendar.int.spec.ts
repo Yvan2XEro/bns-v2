@@ -122,6 +122,23 @@ describe("market money calendar", () => {
 			expect(stampOf(api, "CM", stampField)).toBe("2026-10-09");
 		});
 
+		it("catches up a missed hour later the same local day, once, and not before the hour", async () => {
+			// Ruling (T18 checkpoint): the hour is a floor, not an equality. A worker
+			// down through the market's hour still runs its day; the stamp keeps it
+			// from running twice.
+			const api = await world();
+			at(`2026-10-09T${miss}:00Z`);
+			await run(task, api);
+			expect(counter.calls).toBe(0);
+			at(
+				`2026-10-09T${hit.replace(/^\d\d/, (h) => String(Number(h) + 3).padStart(2, "0"))}:00Z`,
+			);
+			await run(task, api);
+			await run(task, api);
+			expect(counter.calls).toBe(1);
+			expect(stampOf(api, "CM", stampField)).toBe("2026-10-09");
+		});
+
 		it("run twice in the same hour is one batch and one stamp", async () => {
 			const api = await world();
 			at(`2026-10-09T${hit}:00Z`);
@@ -160,7 +177,9 @@ describe("market money calendar", () => {
 			await run(task, api);
 			expect(counter.calls).toBe(1);
 			expect(stampOf(api, "CM", stampField)).toBe("2026-10-09");
-			expect(stampOf(api, "BR", stampField)).toBeUndefined();
+			// Catch-up: reconcile's BR hour already passed on its previous local day,
+			// so BR may stamp that day, but never CM's date.
+			expect(stampOf(api, "BR", stampField)).not.toBe("2026-10-09");
 			invalidateMarketCache(api);
 			at(`2026-10-09T${String(brHour).padStart(2, "0")}:00:00Z`);
 			await run(task, api);

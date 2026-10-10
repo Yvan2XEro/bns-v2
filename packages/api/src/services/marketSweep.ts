@@ -18,8 +18,8 @@ const rec = (v: unknown): Rec =>
 	v !== null && typeof v === "object" ? (v as Rec) : {};
 
 /**
- * The crons fire hourly in UTC; each market's own local hour decides whether
- * it is due. The body is not market-scoped (one provider account), so it runs
+ * The crons fire hourly in UTC; each market's own local hour (and day stamp)
+ * decides whether it is due. The body is not market-scoped (one provider account), so it runs
  * once for however many markets are due, and each one's stamp is written only
  * after it succeeds: a failed run leaves the day unstamped and the job's retry
  * runs it again.
@@ -34,7 +34,10 @@ export async function runMarketSweep<T>(
 	const due: { market: Market; date: string }[] = [];
 	for (const market of await getMarkets(payload)) {
 		const local = localDateAndHour(now, market.timezone);
-		if (local.hour !== market.moneyCalendar[field.hour]) continue;
+		// Catch-up, not a strict hour: a worker down through the market's hour
+		// still runs it later the same local day. The day stamp below is what
+		// keeps `>=` from running it twice.
+		if (local.hour < market.moneyCalendar[field.hour]) continue;
 		// Fresh read: the market list is cached for a minute, the stamp must not be.
 		const doc = await payload.findByID({
 			collection: "markets",

@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, type Mock } from "vitest";
 import {
 	formatSequence,
 	monthKeyFor,
 	nextInvoiceNumber,
 	nextNumber,
+	sequenceMarketOfOrder,
 } from "../../src/services/sequences";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -93,5 +94,29 @@ describe("nextInvoiceNumber", () => {
 			await nextInvoiceNumber(req, "F", at("2026-10-12T08:00:00.000Z")),
 		).toBe("BNS-F-2026-000001");
 		expect(payload.writes.at(-1)?.transactionID).toBe("tx-1");
+	});
+});
+
+describe("sequenceMarketOfOrder legacy fallback", () => {
+	it("warns when an order carrying a market stamp resolves to nothing, and stays silent for a pre-market order", async () => {
+		const api = fakePayload({ markets: [] });
+		const warn = api.logger.warn as Mock;
+		const amounts = {
+			subtotal: 1,
+			deliveryFee: 0,
+			total: 1,
+			currency: "ZZZ",
+		};
+		const legacy = await sequenceMarketOfOrder(api, { amounts });
+		expect(legacy.countryCode).toBe("CM");
+		expect(warn).not.toHaveBeenCalled();
+
+		const dangling = await sequenceMarketOfOrder(api, {
+			market: "market-gone",
+			amounts,
+		});
+		expect(dangling.countryCode).toBe("CM");
+		expect(warn).toHaveBeenCalledTimes(1);
+		expect(String(warn.mock.calls[0][0])).toContain("market-gone");
 	});
 });
