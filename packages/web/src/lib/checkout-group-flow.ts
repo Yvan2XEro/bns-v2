@@ -19,13 +19,21 @@ const PAID = new Set([
 	"partially_refunded",
 ]);
 
-/** A settled order is paid; an order out of its window and unpaid is expired; the rest wait. */
+/**
+ * A settled order is paid; an order out of its window and unpaid is expired,
+ * including a mobile-money one the sweep has not cancelled yet; the rest
+ * (cash on delivery) wait.
+ */
 export function groupOrderState(
 	order: CheckoutGroupOrderView,
 ): GroupOrderState {
 	if (PAID.has(order.paymentStatus)) return "paid";
 	if (order.payableNow) return "pending";
-	if (order.status === "cancelled" || order.paymentStatus === "failed") {
+	if (
+		order.paymentMethod === "mobile_money" ||
+		order.status === "cancelled" ||
+		order.paymentStatus === "failed"
+	) {
 		return "expired";
 	}
 	return "pending";

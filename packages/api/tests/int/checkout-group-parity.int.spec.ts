@@ -80,7 +80,23 @@ const SEEDS: Array<[string, CheckoutGroupView]> = [
 		]),
 	],
 	["a single order", view([order({ id: "a" })])],
+	[
+		"window passed, not yet swept",
+		view([
+			order({ id: "a", payableNow: false }),
+			order({ id: "b", paymentStatus: "awaiting_payment", payableNow: false }),
+			order({ id: "c" }),
+		]),
+	],
 ];
+const cod = (id: string) =>
+	order({
+		id,
+		paymentMethod: "cod",
+		status: "confirmed",
+		paymentStatus: "cod_pending",
+		payableNow: false,
+	});
 
 function webCells(v: CheckoutGroupView) {
 	const flow = web.checkoutGroupFlow(v);
@@ -130,6 +146,37 @@ describe("the group stepper decides alike on web and mobile", () => {
 			["c", "pending"],
 		]);
 		expect(mobileCells(SEEDS[5][1]).states).toEqual(cells.states);
+	});
+
+	it("a sibling past its window reads expired on both sides before the sweep cancels it", () => {
+		const cells = webCells(SEEDS[7][1]);
+		expect(cells.states).toEqual([
+			["a", "expired"],
+			["b", "expired"],
+			["c", "pending"],
+		]);
+		expect(cells.summary).toEqual({ paid: 0, expired: 2, pending: 1 });
+		expect(cells.position).toEqual({ n: 3, total: 3 });
+	});
+
+	it("a COD group: neither side offers a payment, and the declared shape difference holds", () => {
+		const seed = view([cod("a"), cod("b")]);
+		const { next: webNext, position: webPosition } = webCells(seed);
+		const { next: mobileNext, position: mobilePosition } = mobileCells(seed);
+		expect({ next: mobileNext, position: mobilePosition }).toEqual({
+			next: webNext,
+			position: webPosition,
+		});
+		expect(webNext).toBeNull();
+		// Web lists every sibling and leaves COD pending; mobile steps mobile money only.
+		expect(webCells(seed)).toMatchObject({
+			states: [
+				["a", "pending"],
+				["b", "pending"],
+			],
+			done: false,
+		});
+		expect(mobileCells(seed)).toMatchObject({ states: [], done: true });
 	});
 
 	it("both clients keep the same split-cart discriminator", () => {

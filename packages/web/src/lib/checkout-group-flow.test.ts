@@ -86,10 +86,23 @@ describe("checkoutGroupFlow", () => {
 		expect(flow.done).toBe(true);
 	});
 
-	test("an unpaid order outside its window but not cancelled stays pending, unpayable", () => {
+	test("an unpaid mobile-money order outside its window reads expired before the sweep cancels it", () => {
 		const o = order({ id: "x", payableNow: false });
+		expect(groupOrderState(o)).toBe("expired");
+		const flow = checkoutGroupFlow(view([o]));
+		expect(flow.nextPayable).toBeNull();
+		expect(flow.done).toBe(true);
+	});
+
+	test("a cash-on-delivery sibling waits: nothing to pay, never expired", () => {
+		const o = order({
+			id: "x",
+			paymentMethod: "cod",
+			status: "confirmed",
+			paymentStatus: "cod_pending",
+			payableNow: false,
+		});
 		expect(groupOrderState(o)).toBe("pending");
-		expect(checkoutGroupFlow(view([o])).nextPayable).toBeNull();
 	});
 
 	test("the first payable in server order is next", () => {
