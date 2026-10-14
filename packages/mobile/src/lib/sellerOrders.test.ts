@@ -10,6 +10,7 @@ import {
 	actionBarItems,
 	actionBarItemsFor,
 	callHref,
+	cityLabel,
 	DELIVERY_FAILURE_REASON_KEYS,
 	DELIVERY_FAILURE_REASONS,
 	deliveryFailureBody,
@@ -418,5 +419,17 @@ describe("the action bar's wiring of live shipments", () => {
 		expect(source).toContain("useShopOrderShipments(String(order.id))");
 		expect(source).toContain("actionBarItemsFor(order, role, shipments.data)");
 		expect(source).not.toMatch(/\bactionBarItems\(/);
+	});
+});
+
+describe("cityLabel", () => {
+	test("shows a launch city key or name as its label", () => {
+		expect(cityLabel("douala")).toBe("Douala");
+		expect(cityLabel("yaounde")).toBe("Yaoundé");
+		expect(cityLabel("Douala")).toBe("Douala");
+	});
+
+	test("leaves any other city as stored", () => {
+		expect(cityLabel("Bafoussam")).toBe("Bafoussam");
 	});
 });

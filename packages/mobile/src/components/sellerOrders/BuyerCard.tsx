@@ -3,7 +3,12 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { callHref, districtLabel, mapsUrl } from "@/src/lib/sellerOrders";
+import {
+	callHref,
+	cityLabel,
+	districtLabel,
+	mapsUrl,
+} from "@/src/lib/sellerOrders";
 import type { OrderView } from "@/src/types/order";
 import { TierBadge } from "./TierBadge";
 
@@ -17,7 +22,7 @@ export function BuyerCard({ order }: { order: OrderView }) {
 	const { delivery } = order;
 	const tel = callHref(delivery);
 	const maps = mapsUrl(delivery);
-	const place = [districtLabel(delivery), delivery.city]
+	const place = [districtLabel(delivery), cityLabel(delivery.city)]
 		.filter(Boolean)
 		.join(", ");
 

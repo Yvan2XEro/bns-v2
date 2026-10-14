@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { OrderShipmentsLinks } from "@/src/components/delivery/OrderShipmentsLinks";
 import { EmptyState } from "@/src/components/EmptyState";
+import { OrderProgress } from "@/src/components/purchases/OrderProgress";
 import { ActionBar } from "@/src/components/sellerOrders/ActionBar";
 import { BuyerCard } from "@/src/components/sellerOrders/BuyerCard";
 import { OrderItemsCard } from "@/src/components/sellerOrders/OrderItemsCard";
@@ -102,6 +103,7 @@ export default function SellerOrderScreen() {
 						{t(`orderStatus.${statusLabelKey(order.status, "seller")}`)}
 					</Text>
 				</View>
+				<OrderProgress status={order.status} timestamps={order.timestamps} />
 				<ActionBar order={order} shopId={shop.shopId} role={shop.role} />
 				<OrderShipmentsLinks orderId={String(order.id)} />
 				<BuyerCard order={order} />

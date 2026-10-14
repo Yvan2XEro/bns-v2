@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+	LAUNCH_CITIES,
+	launchCityKeyOf,
+} from "../../../api/src/lib/launchCities";
 import type { ShopRole } from "../types/api";
 import type {
 	BuyerTier,
@@ -368,6 +372,12 @@ export function districtLabel(delivery: OrderDeliveryView): string {
 		.split(/[-_]/)
 		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
 		.join(" ");
+}
+
+/** A delivery city as people read it: "Douala", not the stored key "douala". */
+export function cityLabel(city: string): string {
+	const key = launchCityKeyOf(city);
+	return key ? LAUNCH_CITIES[key].label : city;
 }
 
 /** The GPS pin when shared, else the landmark with its district and city. */

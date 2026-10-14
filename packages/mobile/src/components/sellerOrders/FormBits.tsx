@@ -105,18 +105,20 @@ export function SheetButton({
 	tone = "primary",
 	pending,
 	disabled,
+	outline,
 }: {
 	label: string;
 	onPress: () => void;
 	tone?: "primary" | "secondary" | "danger";
 	pending?: boolean;
 	disabled?: boolean;
+	/** A destructive action shown beside the main one: red text, no fill. */
+	outline?: boolean;
 }) {
 	const c = useShopTheme();
-	const filled = tone !== "secondary";
-	const bg =
-		tone === "danger" ? c.danger : tone === "primary" ? c.primary : c.card;
-	const fg = filled ? "#fff" : c.primary;
+	const filled = tone !== "secondary" && !(outline && tone === "danger");
+	const bg = !filled ? c.card : tone === "danger" ? c.danger : c.primary;
+	const fg = filled ? "#fff" : tone === "danger" ? c.danger : c.primary;
 	return (
 		<Pressable
 			onPress={onPress}
@@ -128,7 +130,7 @@ export function SheetButton({
 				styles.button,
 				{
 					backgroundColor: bg,
-					borderColor: filled ? bg : c.border,
+					borderColor: filled ? bg : tone === "danger" ? c.danger : c.border,
 					opacity: disabled || pending ? 0.5 : 1,
 				},
 			]}

@@ -102,6 +102,7 @@ export function ActionBar({
 						key={item.action}
 						label={t(item.labelKey)}
 						tone={item.tone}
+						outline
 						disabled={pending}
 						onPress={() => press(item)}
 					/>
