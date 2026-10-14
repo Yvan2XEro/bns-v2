@@ -10,10 +10,11 @@ interface FakePayload {
 	db: { collections: Record<string, { collection: unknown }> };
 }
 
-function fakeMongo() {
+function fakeMongo(duplicateRows: unknown[] = []) {
 	const createdIndexes: Array<{ keys: unknown; options: unknown }> = [];
 	const droppedIndexes: string[] = [];
 	const reviews = {
+		aggregate: vi.fn(() => ({ toArray: async () => duplicateRows })),
 		createIndex: vi.fn(async (keys: unknown, options: unknown) => {
 			createdIndexes.push({ keys, options });
 			return "ok";
@@ -96,6 +97,33 @@ describe("p4 review shop index migration", () => {
 				"reviewer_1_reviewedUser_1_shop_1_unique",
 		);
 		expect(matches).toHaveLength(2);
+	});
+
+	it("never fails the deploy on legacy duplicates: builds nothing and logs the groups", async () => {
+		const { payload, createdIndexes, droppedIndexes } = fakeMongo([
+			{
+				_id: { reviewer: "u1", reviewedUser: "u2", shop: null },
+				ids: ["r1", "r2"],
+				count: 2,
+			},
+		]);
+
+		await expect(runUp(payload)).resolves.toBeUndefined();
+
+		expect(createdIndexes).toEqual([]);
+		expect(droppedIndexes).toEqual([]);
+		expect(payload.logger.error).toHaveBeenCalledWith(
+			expect.objectContaining({
+				groups: [
+					{
+						reviewer: "u1",
+						reviewedUser: "u2",
+						shop: null,
+						reviewIds: ["r1", "r2"],
+					},
+				],
+			}),
+		);
 	});
 
 	it("down drops the three-field index and restores P0's two-field one", async () => {

@@ -15,6 +15,10 @@ import {
 	categoryCatchUpFingerprint,
 } from "./categoryCatchUp";
 import { isNotificationProviderConfigured } from "./notificationProvider";
+import {
+	ensureReviewUniqueIndex,
+	reviewsCollection,
+} from "./reviewUniqueIndex";
 import { aggregateShopDailyStatsForDay } from "./shopDailyAggregation";
 import {
 	automaticBackfillStart,
@@ -45,6 +49,22 @@ export function bootTasks(): DeployTask<Payload>[] {
 				await catchUpCategories(payload, {
 					log: (line) => payload.logger.info(`[categories] ${line.trim()}`),
 				});
+			},
+		},
+		{
+			// The migration skips the index while legacy duplicates exist. Thrown
+			// rather than recorded, so every start retries until staff have
+			// resolved them; the log lists the review ids.
+			name: "review-unique-index",
+			fingerprint: "v1",
+			run: async (payload) => {
+				const { created, duplicates } = await ensureReviewUniqueIndex(
+					reviewsCollection(payload),
+				);
+				if (!created)
+					throw new Error(
+						`${duplicates.length} duplicate review group(s) to resolve: ${JSON.stringify(duplicates)}`,
+					);
 			},
 		},
 		{
