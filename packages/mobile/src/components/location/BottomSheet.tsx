@@ -13,7 +13,7 @@ import {
 	GestureDetector,
 	GestureHandlerRootView,
 } from "react-native-gesture-handler";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
@@ -30,6 +30,8 @@ import { useTranslation } from "@/src/lib/i18n";
 
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 900;
+/** Space kept above the sheet when the keyboard squeezes it. */
+const TOP_GAP = 12;
 
 /**
  * A bottom sheet that slides over a dimmed screen and closes on a tap
@@ -58,6 +60,8 @@ export function BottomSheet({
 	const { isTablet } = useResponsive();
 	const reducedMotion = useReducedMotion();
 	const offset = useSharedValue(height);
+	const keyboard = useReanimatedKeyboardAnimation();
+	const baseHeight = height * heightRatio;
 
 	useEffect(() => {
 		if (!visible) {
@@ -97,9 +101,21 @@ export function BottomSheet({
 			}
 		});
 
-	const sheetStyle = useAnimatedStyle(() => ({
-		transform: [{ translateY: offset.value }],
-	}));
+	// The keyboard shrinks the sheet instead of pushing it: lifting a sheet of
+	// fixed height by the keyboard's height sends its top, header and search
+	// field included, off the top of the screen.
+	const sheetStyle = useAnimatedStyle(() => {
+		const keyboardHeight = -keyboard.height.value;
+		return {
+			height: Math.min(
+				baseHeight,
+				height - insets.top - TOP_GAP - keyboardHeight,
+			),
+			marginBottom: keyboardHeight,
+			paddingBottom: insets.bottom * (1 - keyboard.progress.value),
+			transform: [{ translateY: offset.value }],
+		};
+	});
 	const backdropStyle = useAnimatedStyle(() => ({
 		opacity: 1 - Math.min(1, offset.value / height),
 	}));
@@ -122,8 +138,7 @@ export function BottomSheet({
 						accessibilityLabel={t("common.close")}
 					/>
 				</Animated.View>
-				<KeyboardAvoidingView
-					behavior="padding"
+				<View
 					style={[styles.wrap, isTablet && styles.wrapTablet]}
 					pointerEvents="box-none"
 				>
@@ -131,11 +146,7 @@ export function BottomSheet({
 						accessibilityViewIsModal
 						style={[
 							styles.sheet,
-							{
-								backgroundColor: c.bg,
-								height: height * heightRatio,
-								paddingBottom: insets.bottom,
-							},
+							{ backgroundColor: c.bg },
 							isTablet && styles.sheetTablet,
 							sheetStyle,
 						]}
@@ -163,7 +174,7 @@ export function BottomSheet({
 						</GestureDetector>
 						{children}
 					</Animated.View>
-				</KeyboardAvoidingView>
+				</View>
 			</GestureHandlerRootView>
 		</Modal>
 	);

@@ -1465,7 +1465,13 @@
 		"geocodeUnavailable": "Impossible de nommer votre position. Recherchez votre ville.",
 		"clear": "Effacer",
 		"chipLabel": "Localisation : {{place}}",
-		"chipHint": "Changer la ville des annonces affichées"
+		"chipHint": "Changer la ville des annonces affichées",
+		"cardTitleAll": "Annonces de tout le pays",
+		"cardTitlePlace": "Annonces à {{place}}",
+		"cardBodyAll": "Choisissez votre ville pour voir d'abord les annonces près de chez vous.",
+		"cardBodyPlace": "Les annonces de cette ville passent en premier. Changez quand vous voulez.",
+		"cardChoose": "Choisir",
+		"cardChange": "Changer"
 	},
 	"tagPicker": {
 		"title": "Choisir des tags",

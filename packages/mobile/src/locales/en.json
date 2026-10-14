@@ -1462,7 +1462,13 @@
 		"geocodeUnavailable": "We couldn't name your position. Search for your city.",
 		"clear": "Clear",
 		"chipLabel": "Location: {{place}}",
-		"chipHint": "Change the city of the listings shown"
+		"chipHint": "Change the city of the listings shown",
+		"cardTitleAll": "Listings from the whole country",
+		"cardTitlePlace": "Listings in {{place}}",
+		"cardBodyAll": "Pick your city to see listings near you first.",
+		"cardBodyPlace": "Listings from this city come first. Change it anytime.",
+		"cardChoose": "Choose",
+		"cardChange": "Change"
 	},
 	"tagPicker": {
 		"title": "Choose tags",

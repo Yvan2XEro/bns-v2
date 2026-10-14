@@ -40,7 +40,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
-import { LocationChip } from "@/src/components/location/LocationChip";
+import { LocationCard } from "@/src/components/location/LocationCard";
+import { SearchField } from "@/src/components/SearchBar";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
@@ -540,52 +541,19 @@ export default function HomeScreen() {
 
 				{/* ── Ligne 2 : Barre de recherche  |  Annuler ── */}
 				<View style={styles.searchRow}>
-					<View
-						style={[
-							styles.searchWrap,
-							{
-								backgroundColor: cardBg,
-								borderColor: isSearchMode ? primaryColor : borderColor,
-							},
-						]}
-					>
-						<View
-							style={[
-								styles.searchIconCircle,
-								{ backgroundColor: isSearchMode ? primaryColor : accentBg },
-							]}
-						>
-							<Ionicons
-								name="search"
-								size={15}
-								color={isSearchMode ? "#fff" : primaryColor}
-							/>
-						</View>
-						<TextInput
-							ref={inputRef}
-							value={query}
-							onChangeText={handleQueryChange}
-							onFocus={onSearchFocus}
-							placeholder={t("home.searchPlaceholderDetailed")}
-							placeholderTextColor={mutedColor}
-							style={[
-								styles.searchInput,
-								{ color: textColor, fontFamily: Fonts.body },
-							]}
-							returnKeyType="search"
-						/>
-						{query.length > 0 && (
-							<Pressable
-								onPress={() => {
-									setQuery("");
-									setDebouncedQuery("");
-								}}
-								hitSlop={10}
-							>
-								<Ionicons name="close-circle" size={18} color={mutedColor} />
-							</Pressable>
-						)}
-					</View>
+					<SearchField
+						ref={inputRef}
+						value={query}
+						onChangeText={handleQueryChange}
+						onFocus={onSearchFocus}
+						onClear={() => {
+							setQuery("");
+							setDebouncedQuery("");
+						}}
+						active={isSearchMode}
+						placeholder={t("home.searchPlaceholderDetailed")}
+						style={styles.searchField}
+					/>
 
 					{/* Bouton Annuler animé */}
 					<Animated.View style={cancelStyle}>
@@ -596,11 +564,6 @@ export default function HomeScreen() {
 						</Pressable>
 					</Animated.View>
 				</View>
-				{isSearchMode ? null : (
-					<View style={styles.locationRow}>
-						<LocationChip />
-					</View>
-				)}
 			</View>
 
 			{/* ══ Content ══ */}
@@ -805,6 +768,11 @@ export default function HomeScreen() {
 								</ScrollView>
 							</View>
 						)}
+
+						{/* Localisation du fil */}
+						<View style={styles.locationSection}>
+							<LocationCard />
+						</View>
 
 						{/* À la une */}
 						{boostedListings.length > 0 && (
@@ -1225,33 +1193,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		gap: 6,
 	},
-	searchWrap: {
-		flex: 1,
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		borderRadius: 16,
-		borderWidth: 1.5,
-		paddingHorizontal: 8,
-		paddingVertical: 8,
-		shadowColor: "#1e40af",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.08,
-		shadowRadius: 6,
-		elevation: 2,
-	},
-	searchIconCircle: {
-		width: 32,
-		height: 32,
-		borderRadius: 10,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	searchInput: {
-		flex: 1,
-		fontSize: 15,
-		padding: 0,
-	},
+	searchField: { flex: 1 },
 	cancelBtn: {
 		paddingHorizontal: 2,
 		alignItems: "center",
@@ -1280,7 +1222,7 @@ const styles = StyleSheet.create({
 	sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
 	sectionTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
 	sectionTitleShrink: { flexShrink: 1 },
-	locationRow: { marginTop: 10 },
+	locationSection: { marginTop: 20 },
 	seeAll: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	catList: { paddingHorizontal: 16, gap: 8 },
 
