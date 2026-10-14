@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -19,6 +18,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SearchBar } from "@/src/components/SearchBar";
 import { SkeletonConversationRow } from "@/src/components/SkeletonCard";
+import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { useMyShops } from "@/src/hooks/useMyShops";
@@ -40,6 +40,7 @@ interface ConversationListRow {
 	>;
 	lastMessage?: { content?: string | null } | null;
 	listing?: { title?: string | null } | null;
+	order?: { orderNumber?: string | null } | string | null;
 	updatedAt?: string;
 	unreadCount?: number;
 }
@@ -67,6 +68,12 @@ function isViewerShopSide(conv: ConversationListRow, userId: string): boolean {
 	return buyerId !== null && buyerId !== userId;
 }
 
+function orderNumberOf(conv: ConversationListRow): string | null {
+	return conv.order && typeof conv.order === "object"
+		? (conv.order.orderNumber ?? null)
+		: null;
+}
+
 function formatTime(dateStr: string): string {
 	const d = new Date(dateStr);
 	const now = new Date();
@@ -78,7 +85,7 @@ function formatTime(dateStr: string): string {
 	return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
-type FilterTab = "all" | "unread";
+type FilterTab = "all" | "unread" | "orders";
 
 export default function MessagesScreen() {
 	const { showError, showConfirm } = useAlert();
@@ -166,13 +173,15 @@ export default function MessagesScreen() {
 		let list = conversations;
 		if (filter === "unread")
 			list = list.filter((c) => (c.unreadCount ?? 0) > 0);
+		if (filter === "orders") list = list.filter((c) => Boolean(c.order));
 		if (search.trim()) {
 			const q = search.trim().toLowerCase();
 			list = list.filter((c) => {
 				const other =
 					c.participants?.find((p: any) => p.id !== user?.id) ??
 					c.participants?.[0];
-				const name = (other?.name ?? "").toLowerCase();
+				const name =
+					`${other?.name ?? ""} ${shopOf(c)?.name ?? ""}`.toLowerCase();
 				const lastMsg = (c.lastMessage?.content ?? "").toLowerCase();
 				const listing = (c.listing?.title ?? "").toLowerCase();
 				return name.includes(q) || lastMsg.includes(q) || listing.includes(q);
@@ -292,6 +301,22 @@ export default function MessagesScreen() {
 		const unread = (item.unreadCount ?? 0) > 0;
 		const isOnline = other?.id ? onlineUsers.has(other.id) : false;
 		const chip = showsShopChip(item);
+		// The buyer talks to the shop, not to whoever owns it.
+		const shop = shopOf(item);
+		const title =
+			shop && !isViewerShopSide(item, user.id)
+				? shop.name
+				: (other?.name ?? t("messages.user"));
+		const orderNumber = orderNumberOf(item);
+		const listingTitle = item.listing?.title ?? null;
+		const context = orderNumber
+			? listingTitle
+				? t("messages.orderContext", {
+						number: orderNumber,
+						title: listingTitle,
+					})
+				: t("messages.orderContextShort", { number: orderNumber })
+			: listingTitle;
 
 		return (
 			<Swipeable
@@ -320,24 +345,15 @@ export default function MessagesScreen() {
 				>
 					{/* Avatar */}
 					<View style={styles.avatarContainer}>
-						{other?.avatar?.url ? (
-							<Image
-								source={{ uri: other.avatar.url }}
-								style={styles.avatar}
-								contentFit="cover"
-							/>
-						) : (
-							<View
-								style={[
-									styles.avatarPlaceholder,
-									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-								]}
-							>
-								<Text style={[styles.avatarLetter, { color: primaryColor }]}>
-									{other?.name?.[0]?.toUpperCase() ?? "?"}
-								</Text>
-							</View>
-						)}
+						<ShopAvatar
+							name={title}
+							logo={
+								shop && !isViewerShopSide(item, user.id)
+									? null
+									: (other?.avatar?.url ?? null)
+							}
+							size={50}
+						/>
 						{unread && !isOnline && <View style={styles.unreadDot} />}
 						{isOnline && (
 							<View style={[styles.onlineDot, { borderColor: cardBg }]} />
@@ -360,7 +376,7 @@ export default function MessagesScreen() {
 									]}
 									numberOfLines={1}
 								>
-									{other?.name ?? t("messages.user")}
+									{title}
 								</Text>
 								{chip ? (
 									<View
@@ -381,11 +397,19 @@ export default function MessagesScreen() {
 								{item.updatedAt ? formatTime(item.updatedAt) : ""}
 							</Text>
 						</View>
+						{context ? (
+							<Text
+								style={[styles.convContext, { color: mutedColor }]}
+								numberOfLines={1}
+							>
+								{context}
+							</Text>
+						) : null}
 						<Text
 							style={[
 								styles.convLastMsg,
 								{
-									color: mutedColor,
+									color: unread ? textColor : mutedColor,
 									fontFamily: unread ? Fonts.bodySemibold : Fonts.body,
 								},
 							]}
@@ -475,17 +499,19 @@ export default function MessagesScreen() {
 
 			{/* Filter pills */}
 			<View style={[styles.filterRow, { backgroundColor: bg }]}>
-				{(["all", "unread"] as FilterTab[]).map((tab) => {
+				{(["all", "unread", "orders"] as FilterTab[]).map((tab) => {
 					const active = filter === tab;
 					const label =
 						tab === "all"
 							? t("common.all")
-							: unreadCount > 0
-								? t("messages.unreadWithCount").replace(
-										"{{count}}",
-										String(unreadCount),
-									)
-								: t("messages.unread");
+							: tab === "orders"
+								? t("messages.filterOrders")
+								: unreadCount > 0
+									? t("messages.unreadWithCount").replace(
+											"{{count}}",
+											String(unreadCount),
+										)
+									: t("messages.unread");
 					return (
 						<Pressable
 							key={tab}
@@ -633,15 +659,6 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	avatarContainer: { position: "relative", marginRight: 12 },
-	avatar: { width: 50, height: 50, borderRadius: 25 },
-	avatarPlaceholder: {
-		width: 50,
-		height: 50,
-		borderRadius: 25,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	avatarLetter: { fontSize: 20, fontFamily: Fonts.displayBold },
 	unreadDot: {
 		position: "absolute",
 		bottom: 1,
@@ -678,6 +695,7 @@ const styles = StyleSheet.create({
 	},
 	shopChipText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
 	convTime: { fontSize: 12, fontFamily: Fonts.body },
+	convContext: { fontSize: 12, fontFamily: Fonts.body, marginBottom: 2 },
 	convLastMsg: { fontSize: 13, fontFamily: Fonts.body },
 	unreadBadge: {
 		minWidth: 20,

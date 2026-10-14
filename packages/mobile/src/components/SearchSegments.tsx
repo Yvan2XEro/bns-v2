@@ -47,14 +47,32 @@ export function SearchSegments({
 						<Text
 							style={[
 								styles.segmentText,
+								{ color: isActive ? primaryColor : mutedColor },
+							]}
+						>
+							{t(`search.segment_${key}`)}
+						</Text>
+						<View
+							style={[
+								styles.badge,
 								{
-									color: isActive ? primaryColor : mutedColor,
-									fontFamily: Fonts.bodySemibold,
+									backgroundColor: isActive
+										? primaryColor
+										: isDark
+											? "#1e293b"
+											: "#f1f5f9",
 								},
 							]}
 						>
-							{t(`search.segment_${key}`)} {count.toLocaleString()}
-						</Text>
+							<Text
+								style={[
+									styles.badgeText,
+									{ color: isActive ? "#ffffff" : mutedColor },
+								]}
+							>
+								{count.toLocaleString()}
+							</Text>
+						</View>
 					</Pressable>
 				);
 			})}
@@ -70,6 +88,8 @@ const styles = StyleSheet.create({
 	},
 	segment: {
 		flex: 1,
+		flexDirection: "row",
+		gap: 6,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingVertical: 12,
@@ -77,5 +97,13 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 2,
 		borderBottomColor: "transparent",
 	},
-	segmentText: { fontSize: 14 },
+	segmentText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	badge: {
+		minWidth: 22,
+		paddingHorizontal: 7,
+		paddingVertical: 1,
+		borderRadius: 999,
+		alignItems: "center",
+	},
+	badgeText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 });

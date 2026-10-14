@@ -23,6 +23,7 @@ import { ConfirmCodeCard } from "@/src/components/purchases/ConfirmCodeCard";
 import { ConfirmReceiptSheet } from "@/src/components/purchases/ConfirmReceiptSheet";
 import { ContestSheet } from "@/src/components/purchases/ContestSheet";
 import { HandoverCard } from "@/src/components/purchases/HandoverCard";
+import { OrderProgress } from "@/src/components/purchases/OrderProgress";
 import { PaymentSection } from "@/src/components/purchases/PaymentSection";
 import { PurchaseSummary } from "@/src/components/purchases/PurchaseSummary";
 import { ReviewPanel } from "@/src/components/purchases/ReviewPanel";
@@ -122,6 +123,8 @@ export default function PurchaseScreen() {
 							})}
 						</Text>
 					</View>
+
+					<OrderProgress status={order.status} timestamps={order.timestamps} />
 
 					<ActionBar order={order} actions={actions} onSheet={setSheet} />
 					{shipments.map((view) => (

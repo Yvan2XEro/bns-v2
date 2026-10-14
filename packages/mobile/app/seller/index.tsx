@@ -14,7 +14,10 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
-import { SellerHubHeader } from "@/src/components/shop/SellerHubHeader";
+import {
+	HUB_HEADER_BG,
+	SellerHubHeader,
+} from "@/src/components/shop/SellerHubHeader";
 import { SellerInsightsSummary } from "@/src/components/shop/SellerInsightsSummary";
 import {
 	type ManageTile,
@@ -364,7 +367,7 @@ function SellerHubContent({
 	return (
 		<SafeAreaView
 			edges={["top"]}
-			style={[styles.safe, { backgroundColor: c.header }]}
+			style={[styles.safe, { backgroundColor: HUB_HEADER_BG }]}
 		>
 			<ScrollView
 				style={{ backgroundColor: c.bg }}

@@ -23,7 +23,6 @@ import { BuyBox } from "@/src/components/order/BuyBox";
 import { DeliveryEstimates } from "@/src/components/order/DeliveryEstimates";
 import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
-import { StatusPill } from "@/src/components/StatusPill";
 import { ShopSellerCard } from "@/src/components/shop/ShopSellerCard";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
@@ -40,6 +39,7 @@ import { isOwnShop } from "@/src/lib/buyBox";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
+import { conditionLabelKey } from "@/src/lib/listingCondition";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { formatXafRange } from "@/src/lib/variants";
 import { publicShopBadge } from "@/src/lib/verification";
@@ -322,22 +322,59 @@ export default function ListingDetail() {
 
 	const actionBarInset = safeBottom + 120;
 
+	const categoryName =
+		listing.category && typeof listing.category === "object"
+			? listing.category.name
+			: null;
+	const conditionKey = conditionLabelKey(listing.condition);
+
 	const listingTags = Array.isArray(listing.tags)
 		? listing.tags.filter(isListingTag)
 		: [];
 
 	return (
 		<View style={[styles.root, { backgroundColor: bg }]}>
-			{/* Fixed back button — always visible over image */}
-			<Pressable
-				onPress={() => router.back()}
-				style={[
-					styles.backBtn,
-					{ top: safeTop + 12, backgroundColor: "rgba(0,0,0,0.45)" },
-				]}
+			{/* Floating actions — always visible over the gallery */}
+			<View
+				style={[styles.topBar, { top: safeTop + 12 }]}
+				pointerEvents="box-none"
 			>
-				<Ionicons name="arrow-back" size={20} color="#fff" />
-			</Pressable>
+				<Pressable
+					onPress={() => router.back()}
+					style={styles.floatBtn}
+					accessibilityRole="button"
+					accessibilityLabel={t("listing.back")}
+				>
+					<Ionicons name="chevron-back" size={22} color="#0f172a" />
+				</Pressable>
+				<View style={styles.topBarEnd}>
+					<Pressable
+						onPress={handleShare}
+						style={styles.floatBtn}
+						accessibilityRole="button"
+						accessibilityLabel={t("listing.share")}
+					>
+						<Ionicons name="share-outline" size={20} color="#0f172a" />
+					</Pressable>
+					{!isOwner && (
+						<Pressable
+							onPress={() => toggleFav()}
+							style={styles.floatBtn}
+							accessibilityRole="button"
+							accessibilityLabel={
+								isFavorite ? t("listing.saved") : t("listing.save")
+							}
+							accessibilityState={{ selected: isFavorite }}
+						>
+							<Ionicons
+								name={isFavorite ? "heart" : "heart-outline"}
+								size={20}
+								color={isFavorite ? "#ef4444" : "#0f172a"}
+							/>
+						</Pressable>
+					)}
+				</View>
+			</View>
 
 			<ScrollView
 				showsVerticalScrollIndicator={false}
@@ -428,61 +465,12 @@ export default function ListingDetail() {
 				</View>
 
 				{/* Content — capped + centred on tablets so text stays readable */}
-				<View style={[styles.content, centeredContent]}>
-					{/* Price & Title */}
-					<View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
-						{/* ── Actions row: share + favorite ── */}
-						<View style={styles.actionsRow}>
-							<Pressable
-								onPress={handleShare}
-								style={[
-									styles.actionBtn,
-									{
-										backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
-										borderColor,
-									},
-								]}
-							>
-								<Ionicons name="share-outline" size={16} color={primaryColor} />
-								<Text style={[styles.actionBtnText, { color: primaryColor }]}>
-									{t("listing.share")}
-								</Text>
-							</Pressable>
-							{!isOwner && (
-								<Pressable
-									onPress={() => toggleFav()}
-									style={[
-										styles.actionBtn,
-										{
-											backgroundColor: isFavorite
-												? isDark
-													? "#3f1212"
-													: "#fef2f2"
-												: isDark
-													? "#0b1120"
-													: "#f1f5f9",
-											borderColor: isFavorite ? "#fca5a5" : borderColor,
-										},
-									]}
-								>
-									<Ionicons
-										name={isFavorite ? "heart" : "heart-outline"}
-										size={16}
-										color={isFavorite ? "#ef4444" : primaryColor}
-									/>
-									<Text
-										style={[
-											styles.actionBtnText,
-											{ color: isFavorite ? "#ef4444" : primaryColor },
-										]}
-									>
-										{isFavorite ? t("listing.saved") : t("listing.save")}
-									</Text>
-								</Pressable>
-							)}
-						</View>
-
-						<Text style={[styles.price, { color: priceColor }]}>
+				<View
+					style={[styles.content, { backgroundColor: bg }, centeredContent]}
+				>
+					{/* Price, title, chips, meta — straight on the sheet, no card */}
+					<View style={styles.hero}>
+						<Text style={[styles.price, { color: primaryColor }]}>
 							{summary?.priceMin != null &&
 							summary.priceMax != null &&
 							summary.priceMax !== summary.priceMin ? (
@@ -499,30 +487,22 @@ export default function ListingDetail() {
 									</Text>
 								</>
 							) : (
-								"Sur demande"
+								t("listing.priceOnRequest")
 							)}
 						</Text>
 						<Text style={[styles.title, { color: textColor }]}>
 							{listing.title}
 						</Text>
-						<View style={styles.metaRow}>
-							{listing.condition && <StatusPill status={listing.condition} />}
-							{listing.isBoosted && <StatusPill status="boosted" />}
-						</View>
 						<View style={styles.metaRow2}>
 							<View style={styles.metaItem}>
-								<Ionicons
-									name="location-outline"
-									size={13}
-									color={mutedColor}
-								/>
+								<Ionicons name="location-outline" size={14} color="#f59e0b" />
 								<Text style={[styles.metaText, { color: mutedColor }]}>
 									{listing.location ?? "—"}
 								</Text>
 							</View>
 							{timeAgo && (
 								<View style={styles.metaItem}>
-									<Ionicons name="time-outline" size={13} color={mutedColor} />
+									<Ionicons name="time-outline" size={14} color={mutedColor} />
 									<Text style={[styles.metaText, { color: mutedColor }]}>
 										{timeAgo}
 									</Text>
@@ -530,13 +510,46 @@ export default function ListingDetail() {
 							)}
 							{listing.viewCount > 0 && (
 								<View style={styles.metaItem}>
-									<Ionicons name="eye-outline" size={13} color={mutedColor} />
+									<Ionicons name="eye-outline" size={14} color={mutedColor} />
 									<Text style={[styles.metaText, { color: mutedColor }]}>
 										{listing.viewCount}
 									</Text>
 								</View>
 							)}
 						</View>
+						{(categoryName || conditionKey || listing.isBoosted) && (
+							<View style={styles.chips}>
+								{categoryName && (
+									<View
+										style={[
+											styles.chip,
+											{ backgroundColor: isDark ? "#1e293b" : "#f1f5f9" },
+										]}
+									>
+										<Text style={[styles.chipText, { color: textColor }]}>
+											{categoryName}
+										</Text>
+									</View>
+								)}
+								{conditionKey && (
+									<View
+										style={[styles.chip, styles.chipOutline, { borderColor }]}
+									>
+										<Text style={[styles.chipText, { color: textColor }]}>
+											{t(conditionKey)}
+										</Text>
+									</View>
+								)}
+								{listing.isBoosted && (
+									<View style={[styles.chip, styles.chipFeatured]}>
+										<Ionicons name="flash" size={12} color="#b45309" />
+										<Text style={[styles.chipText, { color: "#92400e" }]}>
+											{t("listing.featured")}
+										</Text>
+									</View>
+								)}
+							</View>
+						)}
 					</View>
 
 					{/* Description */}
@@ -581,16 +594,7 @@ export default function ListingDetail() {
 									)}
 									<View style={styles.attrsGrid}>
 										{group.items.map((attr) => (
-											<View
-												key={attr.slug}
-												style={[
-													styles.attrItem,
-													{
-														backgroundColor: isDark ? "#0b1120" : "#f8fafc",
-														borderColor,
-													},
-												]}
-											>
+											<View key={attr.slug} style={styles.attrItem}>
 												<Text style={[styles.attrKey, { color: mutedColor }]}>
 													{attr.label}
 												</Text>
@@ -983,38 +987,56 @@ const styles = StyleSheet.create({
 	boostedText: { color: "#fff", fontSize: 12, fontFamily: Fonts.displayBold },
 
 	// ── Content ──
-	content: { padding: 16, gap: 12 },
+	// Rises over the gallery's bottom edge like a sheet.
+	content: {
+		marginTop: -20,
+		borderTopLeftRadius: 24,
+		borderTopRightRadius: 24,
+		paddingHorizontal: 16,
+		paddingTop: 20,
+		paddingBottom: 16,
+		gap: 12,
+	},
 	card: { borderRadius: 14, borderWidth: 1, padding: 16 },
 
-	// ── Share / Favorite actions ──
-	actionsRow: {
+	topBar: {
+		position: "absolute",
+		left: 16,
+		right: 16,
+		zIndex: 20,
 		flexDirection: "row",
-		gap: 8,
-		marginBottom: 14,
+		justifyContent: "space-between",
 	},
-	actionBtn: {
+	topBarEnd: { flexDirection: "row", gap: 10 },
+	floatBtn: {
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: "#ffffff",
+		alignItems: "center",
+		justifyContent: "center",
+		shadowColor: "#0f172a",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.15,
+		shadowRadius: 6,
+		elevation: 3,
+	},
+	hero: { gap: 8, marginBottom: 4 },
+	chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+	chip: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 6,
-		borderRadius: 10,
-		borderWidth: 1,
-		paddingHorizontal: 14,
-		paddingVertical: 8,
+		gap: 4,
+		borderRadius: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 4,
 	},
-	actionBtnText: {
-		fontSize: 13,
-		fontFamily: Fonts.bodySemibold,
-	},
-
-	price: { fontSize: 26, fontFamily: Fonts.displayExtrabold, marginBottom: 6 },
+	chipOutline: { borderWidth: 1 },
+	chipFeatured: { backgroundColor: "#fef3c7" },
+	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	price: { fontSize: 28, fontFamily: Fonts.displayExtrabold },
 	priceSuffix: { fontSize: 16, fontFamily: Fonts.body },
-	title: {
-		fontSize: 18,
-		fontFamily: Fonts.displayBold,
-		marginBottom: 10,
-		lineHeight: 24,
-	},
-	metaRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+	title: { fontSize: 19, fontFamily: Fonts.displayBold, lineHeight: 25 },
 	metaRow2: { flexDirection: "row", gap: 12, flexWrap: "wrap" },
 	metaItem: { flexDirection: "row", alignItems: "center", gap: 4 },
 	metaText: { fontSize: 13, fontFamily: Fonts.body },
@@ -1033,16 +1055,10 @@ const styles = StyleSheet.create({
 		letterSpacing: 0.6,
 		marginBottom: 6,
 	},
-	attrsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-	attrItem: {
-		borderRadius: 8,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		minWidth: "45%",
-	},
-	attrKey: { fontSize: 11, fontFamily: Fonts.bodySemibold, marginBottom: 2 },
-	attrVal: { fontSize: 14, fontFamily: Fonts.bodyMedium },
+	attrsGrid: { flexDirection: "row", flexWrap: "wrap", rowGap: 14 },
+	attrItem: { width: "50%", paddingRight: 12 },
+	attrKey: { fontSize: 12, fontFamily: Fonts.body, marginBottom: 2 },
+	attrVal: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	sellerRow: {
 		flexDirection: "row",
 		alignItems: "center",

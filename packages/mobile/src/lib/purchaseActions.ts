@@ -42,6 +42,29 @@ export function purchaseTab(status: OrderStatusName): PurchaseTab {
 	return TAB_OF_STATUS[status];
 }
 
+export type PurchaseStatusTone = "neutral" | "progress" | "success" | "danger";
+
+const TONE_OF_STATUS: Record<OrderStatusName, PurchaseStatusTone> = {
+	placed: "neutral",
+	confirmed: "progress",
+	paid: "progress",
+	accepted: "progress",
+	shipped: "progress",
+	disputed: "danger",
+	delivered: "success",
+	completed: "success",
+	returned: "neutral",
+	cancelled: "danger",
+	delivery_failed: "danger",
+};
+
+/** The colour family of a status pill on the buyer's purchase list. */
+export function purchaseStatusTone(
+	status: OrderStatusName,
+): PurchaseStatusTone {
+	return TONE_OF_STATUS[status];
+}
+
 /** The status as the buyer reads it, fully qualified for `t()`. */
 export function purchaseStatusKey(status: OrderStatusName): string {
 	return `orderStatus.${statusLabelKey(status, "buyer")}`;

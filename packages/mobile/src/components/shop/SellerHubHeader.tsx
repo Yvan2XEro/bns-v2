@@ -8,6 +8,11 @@ import type { MyShop } from "@/src/types/api";
 import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
 
+/** The hub's header band: dark in both themes, like the design's seller space. */
+export const HUB_HEADER_BG = "#0f172a";
+const ON_DARK = "#ffffff";
+const ON_DARK_MUTED = "#94a3b8";
+
 /**
  * Rich top section of the seller hub — avatar, shop name, a link to the
  * public page and a share action. Distinct from the generic `SellerHeader`
@@ -28,7 +33,7 @@ export function SellerHubHeader({
 	const { t } = useTranslation();
 
 	return (
-		<View style={[styles.top, { backgroundColor: c.header }]}>
+		<View style={[styles.top, { backgroundColor: HUB_HEADER_BG }]}>
 			<View style={styles.topRow}>
 				<Pressable
 					onPress={() =>
@@ -41,7 +46,7 @@ export function SellerHubHeader({
 					accessibilityRole="button"
 					accessibilityLabel={t("common.back")}
 				>
-					<Ionicons name="arrow-back" size={22} color={c.text} />
+					<Ionicons name="arrow-back" size={22} color={ON_DARK} />
 				</Pressable>
 				<ShopAvatar
 					name={shop.name}
@@ -50,10 +55,10 @@ export function SellerHubHeader({
 					radius={12}
 				/>
 				<View style={{ flex: 1 }}>
-					<Text style={[styles.shopName, { color: c.text }]} numberOfLines={1}>
+					<Text style={[styles.shopName, { color: ON_DARK }]} numberOfLines={1}>
 						{shop.name}
 					</Text>
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.meta, { color: ON_DARK_MUTED }]}>
 						{t("seller.space")}
 					</Text>
 				</View>
@@ -64,31 +69,30 @@ export function SellerHubHeader({
 					accessibilityRole="button"
 					accessibilityLabel={t("seller.publicPage")}
 				>
-					<Ionicons name="storefront-outline" size={22} color={c.primary} />
+					<Ionicons name="storefront-outline" size={22} color={ON_DARK} />
 				</Pressable>
 			</View>
 
-			<View
-				style={[
-					styles.linkCard,
-					{ backgroundColor: c.card, borderColor: c.border },
-				]}
-			>
+			<View style={styles.linkCard}>
 				<View style={{ flex: 1 }}>
-					<Text style={[styles.meta, { color: c.muted }]}>
+					<Text style={[styles.meta, { color: ON_DARK_MUTED }]}>
 						{t("seller.publicPage")}
 					</Text>
-					<Text style={[styles.link, { color: c.primary }]} numberOfLines={1}>
+					<Text style={[styles.link, { color: ON_DARK }]} numberOfLines={1}>
 						{shopUrlLabel(shop.handle, webUrl)}
 					</Text>
 				</View>
 				<Pressable
 					onPress={onShare}
-					style={[styles.shareBtn, { backgroundColor: c.primary }]}
+					style={[styles.shareBtn, { backgroundColor: c.sell }]}
 					accessibilityRole="button"
 					accessibilityLabel={t("shop.shareLabel", { name: shop.name })}
 				>
-					<Ionicons name="share-social-outline" size={16} color="#fff" />
+					<Ionicons
+						name="share-social-outline"
+						size={16}
+						color={HUB_HEADER_BG}
+					/>
 					<Text style={styles.shareText}>{t("seller.share")}</Text>
 				</Pressable>
 			</View>
@@ -113,7 +117,7 @@ const styles = StyleSheet.create({
 		gap: 10,
 		padding: 12,
 		borderRadius: 14,
-		borderWidth: StyleSheet.hairlineWidth,
+		backgroundColor: "rgba(255,255,255,0.08)",
 	},
 	link: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	shareBtn: {
@@ -125,5 +129,9 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		minHeight: 44,
 	},
-	shareText: { color: "#fff", fontSize: 13, fontFamily: Fonts.bodySemibold },
+	shareText: {
+		color: HUB_HEADER_BG,
+		fontSize: 13,
+		fontFamily: Fonts.bodySemibold,
+	},
 });

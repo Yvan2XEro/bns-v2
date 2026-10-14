@@ -31,9 +31,10 @@ export default function PurchasesScreen() {
 	const purchases = usePurchases();
 
 	const pages = purchases.data?.pages ?? [];
-	const entries = pages
-		.flatMap((page) => page.docs)
-		.filter((entry) => purchaseTab(entry.status) === tab);
+	const all = pages.flatMap((page) => page.docs);
+	const entries = all.filter((entry) => purchaseTab(entry.status) === tab);
+	const countOf = (key: PurchaseTab) =>
+		all.filter((entry) => purchaseTab(entry.status) === key).length;
 	const nothingYet =
 		purchases.isSuccess &&
 		!purchases.hasNextPage &&
@@ -46,29 +47,51 @@ export default function PurchasesScreen() {
 		>
 			<SellerHeader title={t("purchases.title")} />
 
-			<View style={styles.tabs} accessibilityRole="tablist">
+			<View
+				style={[styles.tabs, { backgroundColor: c.neutralSoft }]}
+				accessibilityRole="tablist"
+			>
 				{PURCHASE_TABS.map((key) => {
 					const selected = tab === key;
+					const count = countOf(key);
 					return (
 						<Pressable
 							key={key}
 							onPress={() => setTab(key)}
 							accessibilityRole="tab"
 							accessibilityState={{ selected }}
-							accessibilityLabel={t(PURCHASE_TAB_LABEL_KEYS[key])}
+							accessibilityLabel={`${t(PURCHASE_TAB_LABEL_KEYS[key])} ${count}`}
 							style={[
 								styles.tab,
-								{ backgroundColor: selected ? c.primary : c.primarySoft },
+								selected && [styles.tabSelected, { backgroundColor: c.card }],
 							]}
 						>
 							<Text
 								style={[
 									styles.tabText,
-									{ color: selected ? "#ffffff" : c.primary },
+									{ color: selected ? c.primary : c.muted },
 								]}
+								numberOfLines={1}
 							>
 								{t(PURCHASE_TAB_LABEL_KEYS[key])}
 							</Text>
+							{count > 0 ? (
+								<View
+									style={[
+										styles.tabCount,
+										{ backgroundColor: selected ? c.primarySoft : c.card },
+									]}
+								>
+									<Text
+										style={[
+											styles.tabCountText,
+											{ color: selected ? c.primary : c.muted },
+										]}
+									>
+										{count}
+									</Text>
+								</View>
+							) : null}
 						</Pressable>
 					);
 				})}
@@ -142,17 +165,37 @@ const styles = StyleSheet.create({
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	tabs: {
 		flexDirection: "row",
-		gap: 8,
-		paddingHorizontal: 16,
-		paddingTop: 12,
+		gap: 4,
+		marginHorizontal: 16,
+		marginTop: 12,
+		padding: 4,
+		borderRadius: 14,
 	},
 	tab: {
-		minHeight: 44,
-		borderRadius: 12,
-		paddingHorizontal: 14,
+		flex: 1,
+		flexDirection: "row",
+		minHeight: 40,
+		borderRadius: 11,
+		paddingHorizontal: 8,
+		gap: 6,
+		alignItems: "center",
 		justifyContent: "center",
 	},
-	tabText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	tabSelected: {
+		shadowColor: "#0f172a",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.08,
+		shadowRadius: 3,
+		elevation: 1,
+	},
+	tabText: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
+	tabCount: {
+		minWidth: 20,
+		paddingHorizontal: 6,
+		borderRadius: 999,
+		alignItems: "center",
+	},
+	tabCountText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	empty: {
 		fontSize: 14,
 		fontFamily: Fonts.body,

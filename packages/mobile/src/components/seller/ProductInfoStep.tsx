@@ -4,6 +4,7 @@ import { CategoryField } from "@/src/components/CategorySheet";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCategories } from "@/src/hooks/useListings";
 import { useTranslation } from "@/src/lib/i18n";
+import { CONDITION_LABEL_KEYS } from "@/src/lib/listingCondition";
 import {
 	getCategoryAttributes,
 	getListingFormPreset,
@@ -23,13 +24,6 @@ const CONDITIONS: ListingCondition[] = [
 	"fair",
 	"poor",
 ];
-const CONDITION_KEYS: Record<ListingCondition, string> = {
-	new: "conditions.new",
-	like_new: "conditions.likeNew",
-	good: "conditions.good",
-	fair: "conditions.fair",
-	poor: "conditions.poor",
-};
 
 export function ProductInfoStep({
 	form,
@@ -133,7 +127,7 @@ export function ProductInfoStep({
 											},
 										]}
 										accessibilityRole="button"
-										accessibilityLabel={t(CONDITION_KEYS[value])}
+										accessibilityLabel={t(CONDITION_LABEL_KEYS[value])}
 										accessibilityState={{ selected: active }}
 									>
 										<Text
@@ -142,7 +136,7 @@ export function ProductInfoStep({
 												{ color: active ? c.primary : c.body },
 											]}
 										>
-											{t(CONDITION_KEYS[value])}
+											{t(CONDITION_LABEL_KEYS[value])}
 										</Text>
 									</Pressable>
 								);

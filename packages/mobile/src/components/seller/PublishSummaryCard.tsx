@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
+import { CONDITION_LABEL_KEYS } from "@/src/lib/listingCondition";
 import { type ProductFormState, parseAmount } from "@/src/lib/productForm";
 import { formatXafRange, priceRange } from "@/src/lib/variants";
 import { formStyles as f } from "./formStyles";
@@ -34,11 +35,7 @@ export function PublishSummaryCard({
 					<Text style={[f.hint, { color: c.muted }]}>
 						{[
 							form.category?.name,
-							form.condition
-								? t(
-										`conditions.${form.condition === "like_new" ? "likeNew" : form.condition}`,
-									)
-								: null,
+							form.condition ? t(CONDITION_LABEL_KEYS[form.condition]) : null,
 							t("product.variantsCount", { count: form.variants.length }),
 						]
 							.filter(Boolean)

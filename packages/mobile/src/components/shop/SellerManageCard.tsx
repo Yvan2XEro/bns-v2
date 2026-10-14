@@ -27,14 +27,14 @@ export function SellerManageCard({ tiles }: { tiles: ManageTile[] }) {
 			<Text style={[styles.sectionLabel, { color: c.muted }]}>
 				{t("seller.manage")}
 			</Text>
-			<View
-				style={[
-					styles.card,
-					{ backgroundColor: c.card, borderColor: c.border },
-				]}
-			>
+			<View style={styles.grid}>
 				{tiles.map(({ key, ...tile }, index) => (
-					<Tile key={key} {...tile} last={index === tiles.length - 1} />
+					<Tile
+						key={key}
+						{...tile}
+						// An odd last tile takes the whole row instead of leaving a hole.
+						wide={tiles.length % 2 === 1 && index === tiles.length - 1}
+					/>
 				))}
 			</View>
 		</>
@@ -48,48 +48,49 @@ function Tile({
 	onPress,
 	alert,
 	badge,
-	last,
-}: ManageTile & { last: boolean }) {
+	wide,
+}: ManageTile & { wide: boolean }) {
 	const c = useShopTheme();
 	return (
 		<Pressable
 			onPress={onPress}
-			style={[
+			style={({ pressed }) => [
 				styles.tile,
-				!last && {
-					borderBottomWidth: StyleSheet.hairlineWidth,
-					borderBottomColor: c.border,
-				},
+				wide && styles.tileWide,
+				{ backgroundColor: c.card, borderColor: c.border },
+				pressed && styles.pressed,
 			]}
 			accessibilityRole="button"
 			accessibilityLabel={badge ? `${title} (${badge})` : title}
 		>
-			<View
-				style={[
-					styles.tileIcon,
-					{ backgroundColor: alert ? c.warningSoft : c.primarySoft },
-				]}
-			>
-				<Ionicons
-					name={icon}
-					size={18}
-					color={alert ? c.warningText : c.primary}
-				/>
-			</View>
-			<View style={{ flex: 1 }}>
-				<Text style={[styles.tileTitle, { color: c.text }]}>{title}</Text>
-				<Text
-					style={[styles.tileBody, { color: alert ? c.warningText : c.muted }]}
+			<View style={styles.tileTop}>
+				<View
+					style={[
+						styles.tileIcon,
+						{ backgroundColor: alert ? c.warningSoft : c.primarySoft },
+					]}
 				>
-					{body}
-				</Text>
-			</View>
-			{badge ? (
-				<View style={[styles.badge, { backgroundColor: c.sell }]}>
-					<Text style={styles.badgeText}>{badge > 99 ? "99+" : badge}</Text>
+					<Ionicons
+						name={icon}
+						size={20}
+						color={alert ? c.warningText : c.primary}
+					/>
 				</View>
-			) : null}
-			<Ionicons name="chevron-forward" size={16} color={c.muted} />
+				{badge ? (
+					<View style={[styles.badge, { backgroundColor: c.sell }]}>
+						<Text style={styles.badgeText}>{badge > 99 ? "99+" : badge}</Text>
+					</View>
+				) : null}
+			</View>
+			<Text style={[styles.tileTitle, { color: c.text }]} numberOfLines={1}>
+				{title}
+			</Text>
+			<Text
+				style={[styles.tileBody, { color: alert ? c.warningText : c.muted }]}
+				numberOfLines={2}
+			>
+				{body}
+			</Text>
 		</Pressable>
 	);
 }
@@ -101,21 +102,33 @@ const styles = StyleSheet.create({
 		textTransform: "uppercase",
 		letterSpacing: 0.5,
 	},
-	card: {
-		borderRadius: 16,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 0,
+	grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+	tile: {
+		// Two per row: a basis under half that grows to fill the row.
+		width: "45%",
+		flexGrow: 1,
+		gap: 4,
+		padding: 14,
+		borderRadius: 18,
+		borderWidth: 1,
 	},
-	tile: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+	tileWide: { width: "100%" },
+	pressed: { opacity: 0.85 },
+	tileTop: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		justifyContent: "space-between",
+		marginBottom: 8,
+	},
 	tileIcon: {
-		width: 36,
-		height: 36,
-		borderRadius: 10,
+		width: 40,
+		height: 40,
+		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	tileTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	tileBody: { fontSize: 12, fontFamily: Fonts.body },
+	tileTitle: { fontSize: 15, fontFamily: Fonts.displayBold },
+	tileBody: { fontSize: 12, fontFamily: Fonts.body, lineHeight: 16 },
 	badge: {
 		minWidth: 20,
 		height: 20,
@@ -123,7 +136,6 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 5,
-		marginRight: 4,
 	},
 	badgeText: { color: "#fff", fontSize: 11, fontFamily: Fonts.displayBold },
 });

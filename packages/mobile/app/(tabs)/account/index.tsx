@@ -246,11 +246,13 @@ export default function AccountScreen() {
 							>
 								{user.name}
 							</Text>
-							<ReviewStars
-								rating={user.rating ?? 0}
-								showCount
-								count={user.totalReviews}
-							/>
+							{(user.totalReviews ?? 0) > 0 && (
+								<ReviewStars
+									rating={user.rating ?? 0}
+									showCount
+									count={user.totalReviews}
+								/>
+							)}
 							{memberSince && (
 								<Text style={[styles.memberSince, { color: mutedColor }]}>
 									{t("account.memberSince")} {memberSince}
@@ -367,7 +369,7 @@ export default function AccountScreen() {
 					{/* Mon activité */}
 					<View style={styles.section}>
 						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
-							{t("account.sectionActivity")}
+							{t("account.sectionPurchases")}
 						</Text>
 						<View
 							style={[
@@ -424,14 +426,6 @@ export default function AccountScreen() {
 								/>
 							) : null}
 							<MenuItem
-								icon="cube-outline"
-								label={t("account.myListings")}
-								sublabel={t("account.myListingsSublabel")}
-								onPress={() => router.push("/account/listings")}
-								isDark={isDark}
-								borderColor={borderColor}
-							/>
-							<MenuItem
 								icon="heart-outline"
 								label={t("account.favorites")}
 								sublabel={t("account.favoritesSublabel")}
@@ -443,6 +437,31 @@ export default function AccountScreen() {
 								icon="bookmark-outline"
 								label={t("account.savedSearches")}
 								onPress={() => router.push("/account/searches")}
+								isDark={isDark}
+								borderColor="transparent"
+							/>
+						</View>
+					</View>
+
+					{/* Mes annonces */}
+					<View style={styles.section}>
+						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
+							{t("account.sectionListings")}
+						</Text>
+						<View
+							style={[
+								styles.sectionCard,
+								{
+									backgroundColor: cardBg,
+									borderColor: isDark ? "#1e3a5f" : "#e2e8f0",
+								},
+							]}
+						>
+							<MenuItem
+								icon="cube-outline"
+								label={t("account.myListings")}
+								sublabel={t("account.myListingsSublabel")}
+								onPress={() => router.push("/account/listings")}
 								isDark={isDark}
 								borderColor={borderColor}
 							/>
@@ -664,6 +683,7 @@ const styles = StyleSheet.create({
 	section: { paddingHorizontal: 16, marginBottom: 12 },
 	sectionLabel: {
 		fontSize: 11,
+		textTransform: "uppercase",
 		fontFamily: Fonts.bodySemibold,
 		letterSpacing: 1,
 		marginBottom: 8,
