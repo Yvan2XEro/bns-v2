@@ -156,6 +156,7 @@ export function BuyActions({
 						},
 					]}
 				>
+					<Ionicons name="bag-handle-outline" size={18} color="#ffffff" />
 					<Text style={[styles.buttonText, { color: "#ffffff" }]}>
 						{t("buyBox.buyNow")}
 					</Text>
@@ -219,14 +220,16 @@ const styles = StyleSheet.create({
 	},
 	button: {
 		flex: 1,
-		minHeight: 44,
-		borderRadius: 12,
+		flexDirection: "row",
+		gap: 6,
+		minHeight: 50,
+		borderRadius: 14,
 		borderWidth: 1,
 		alignItems: "center",
 		justifyContent: "center",
 		paddingHorizontal: 12,
 	},
-	buttonText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
+	buttonText: { fontSize: 15, fontFamily: Fonts.displayBold },
 	added: { minHeight: 44, justifyContent: "center" },
 	small: { fontSize: 13, fontFamily: Fonts.body },
 	badges: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

@@ -65,7 +65,12 @@ export function ShopHeader({
 						{shop.description}
 					</Text>
 				) : null}
-				<View style={styles.stats}>
+				<View
+					style={[
+						styles.stats,
+						{ borderColor: c.border, backgroundColor: c.card },
+					]}
+				>
 					<Stat
 						icon="star"
 						iconColor="#f59e0b"
@@ -109,7 +114,7 @@ function Stat({
 }) {
 	const c = useShopTheme();
 	return (
-		<View style={styles.stat}>
+		<View style={[styles.stat, { borderLeftColor: c.border }]}>
 			<View style={styles.statTop}>
 				<Ionicons name={icon} size={14} color={iconColor} />
 				<Text style={[styles.statValue, { color: c.text }]}>{value}</Text>
@@ -134,8 +139,22 @@ const styles = StyleSheet.create({
 	},
 	link: { fontSize: 13, fontFamily: Fonts.bodySemibold, paddingVertical: 4 },
 	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
-	stats: { flexDirection: "row", gap: 12, marginTop: 4 },
-	stat: { flex: 1 },
+	stats: {
+		flexDirection: "row",
+		marginTop: 6,
+		borderWidth: 1,
+		borderRadius: 16,
+		paddingVertical: 10,
+		overflow: "hidden",
+	},
+	// Hairline separators between the cells; the first one's sits under the card's edge.
+	stat: {
+		flex: 1,
+		alignItems: "center",
+		borderLeftWidth: StyleSheet.hairlineWidth,
+		marginLeft: -StyleSheet.hairlineWidth,
+		paddingHorizontal: 6,
+	},
 	statTop: { flexDirection: "row", alignItems: "center", gap: 4 },
 	statValue: { fontSize: 16, fontFamily: Fonts.displayBold },
 	statLabel: { fontSize: 12, fontFamily: Fonts.body },

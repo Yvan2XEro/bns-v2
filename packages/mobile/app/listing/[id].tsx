@@ -127,7 +127,6 @@ export default function ListingDetail() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
-	const priceColor = isDark ? "#e2e8f0" : "#0f172a";
 
 	const { data: listingData, isLoading } = useQuery({
 		queryKey: ["listing", id],
@@ -552,6 +551,29 @@ export default function ListingDetail() {
 						)}
 					</View>
 
+					{/* Buying sits right under the price, as in the design. */}
+					<DeliveryEstimates
+						listingId={id}
+						eligible={Boolean(
+							listingProduct && listingShop && !listingShop.ordersRestrictedAt,
+						)}
+					/>
+					<BuyBox
+						listingId={id}
+						product={listingProduct}
+						shop={
+							listingShop
+								? {
+										id: listingShop.id,
+										restricted: Boolean(listingShop.ordersRestrictedAt),
+									}
+								: null
+						}
+						orderable={listing.orderable}
+						ownShop={ownShop}
+						productAvailable={summary?.available ?? null}
+						signedIn={Boolean(user)}
+					/>
 					{/* Description */}
 					<View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
 						<Text style={[styles.sectionTitle, { color: textColor }]}>
@@ -657,28 +679,6 @@ export default function ListingDetail() {
 						</View>
 					)}
 
-					<DeliveryEstimates
-						listingId={id}
-						eligible={Boolean(
-							listingProduct && listingShop && !listingShop.ordersRestrictedAt,
-						)}
-					/>
-					<BuyBox
-						listingId={id}
-						product={listingProduct}
-						shop={
-							listingShop
-								? {
-										id: listingShop.id,
-										restricted: Boolean(listingShop.ordersRestrictedAt),
-									}
-								: null
-						}
-						orderable={listing.orderable}
-						ownShop={ownShop}
-						productAvailable={summary?.available ?? null}
-						signedIn={Boolean(user)}
-					/>
 					{listingShop ? (
 						<ShopSellerCard
 							shop={listingShop}

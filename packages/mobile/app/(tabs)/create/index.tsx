@@ -212,7 +212,6 @@ export default function CreateScreen() {
 	// ── Animations ────────────────────────────────────────────────
 	const translateX = useSharedValue(0);
 	const opacity = useSharedValue(1);
-	const progressAnim = useSharedValue(20);
 	const stepRef = useRef<StepId>("describe");
 
 	const goToStep = (next: StepId) => {
@@ -232,20 +231,12 @@ export default function CreateScreen() {
 			duration: 260,
 			easing: Easing.out(Easing.ease),
 		});
-		progressAnim.value = withTiming(((to + 1) / steps.length) * 100, {
-			duration: 380,
-			easing: Easing.out(Easing.cubic),
-		});
 	};
 
 	const stepAnimStyle = useAnimatedStyle(() => ({
 		flex: 1,
 		transform: [{ translateX: translateX.value }],
 		opacity: opacity.value,
-	}));
-
-	const progressBarStyle = useAnimatedStyle(() => ({
-		width: `${progressAnim.value}%` as any,
 	}));
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -567,20 +558,20 @@ export default function CreateScreen() {
 				</Pressable>
 			</View>
 
-			{/* ── Progress bar ── */}
-			<View
-				style={[
-					styles.progressTrack,
-					{ backgroundColor: isDark ? "#1e293b" : "#e2e8f0" },
-				]}
-			>
-				<Animated.View
-					style={[
-						styles.progressFill,
-						{ backgroundColor: primary },
-						progressBarStyle,
-					]}
-				/>
+			{/* ── Progress: one segment per step ── */}
+			<View style={styles.progressTrack}>
+				{steps.map((id, index) => (
+					<View
+						key={id}
+						style={[
+							styles.progressSegment,
+							{
+								backgroundColor:
+									index <= stepIndex ? primary : isDark ? "#1e293b" : "#e2e8f0",
+							},
+						]}
+					/>
+				))}
 			</View>
 
 			{/* ── Content ── */}
@@ -1986,12 +1977,12 @@ const styles = StyleSheet.create({
 
 	/* ── Progress ── */
 	progressTrack: {
-		height: 3,
+		flexDirection: "row",
+		gap: 6,
+		paddingHorizontal: 16,
+		paddingVertical: 6,
 	},
-	progressFill: {
-		height: 3,
-		borderRadius: 2,
-	},
+	progressSegment: { flex: 1, height: 4, borderRadius: 2 },
 
 	/* ── Step headings ── */
 	stepTitle: {

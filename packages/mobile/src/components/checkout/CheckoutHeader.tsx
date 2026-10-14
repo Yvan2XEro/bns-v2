@@ -26,19 +26,31 @@ export function CheckoutHeader({ current }: { current: 1 | 2 | 3 }) {
 				accessibilityRole="summary"
 			>
 				{STEPS.map(({ step, label }) => (
-					<Text
+					<View
 						key={step}
-						style={[
-							styles.step,
-							{
-								color: step <= current ? c.primary : c.muted,
-								fontFamily: step === current ? Fonts.bodySemibold : Fonts.body,
-							},
-						]}
+						style={styles.step}
 						accessibilityState={{ selected: step === current }}
 					>
-						{t(label)}
-					</Text>
+						<View
+							style={[
+								styles.bar,
+								{ backgroundColor: step <= current ? c.primary : c.border },
+							]}
+						/>
+						<Text
+							style={[
+								styles.label,
+								{
+									color: step <= current ? c.primary : c.muted,
+									fontFamily:
+										step === current ? Fonts.bodySemibold : Fonts.body,
+								},
+							]}
+							numberOfLines={1}
+						>
+							{step}. {t(label)}
+						</Text>
+					</View>
 				))}
 			</View>
 		</View>
@@ -48,10 +60,13 @@ export function CheckoutHeader({ current }: { current: 1 | 2 | 3 }) {
 const styles = StyleSheet.create({
 	steps: {
 		flexDirection: "row",
-		gap: 16,
+		gap: 8,
 		paddingHorizontal: 16,
-		paddingVertical: 10,
+		paddingTop: 4,
+		paddingBottom: 10,
 		borderBottomWidth: StyleSheet.hairlineWidth,
 	},
-	step: { fontSize: 13 },
+	step: { flex: 1, gap: 6 },
+	bar: { height: 4, borderRadius: 2 },
+	label: { fontSize: 12 },
 });

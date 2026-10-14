@@ -2608,7 +2608,13 @@
 		"shopNotOrderable": "Cette boutique ne prend pas de commandes pour le moment.",
 		"ordersClosed": "La commande en ligne n'est pas encore disponible.",
 		"signInToView": "Connectez-vous pour voir votre panier",
-		"errorTitle": "Panier non mis à jour"
+		"errorTitle": "Panier non mis à jour",
+		"available_one": "{{count}} disponible",
+		"available_other": "{{count}} disponibles",
+		"headerSummary_one": "{{count}} article · 1 boutique",
+		"headerSummary_other": "{{count}} articles · 1 boutique",
+		"deliveryNext": "Mode et frais de livraison à l'étape suivante.",
+		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter."
 	},
 	"checkout": {
 		"courierDelivery": "Transporteur partenaire",
@@ -3536,7 +3542,7 @@
 		"estimateCost": "{{method}} : {{fee}} · {{min}}-{{max}} h",
 		"estimateNotice": "Estimation pour un article. Frais et date de livraison confirmés au paiement.",
 		"addToCart": "Ajouter au panier",
-		"buyNow": "Commander maintenant",
+		"buyNow": "Commander",
 		"quantity": "Quantité",
 		"decrease": "Diminuer la quantité",
 		"increase": "Augmenter la quantité",

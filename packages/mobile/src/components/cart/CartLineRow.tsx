@@ -9,6 +9,9 @@ import { formatXaf } from "@/src/lib/orderMoney";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import type { CartLineView } from "@/src/types/order";
 
+/** Stock left is worth showing only once it is low enough to matter. */
+const LOW_STOCK = 5;
+
 export function CartLineRow({
 	line,
 	locale,
@@ -29,7 +32,7 @@ export function CartLineRow({
 	const image = resolveImageUrl(line.imageUrl);
 	const stepStyle = (enabled: boolean) => [
 		styles.step,
-		{ borderColor: c.border, opacity: enabled && !busy ? 1 : 0.4 },
+		{ opacity: enabled && !busy ? 1 : 0.35 },
 	];
 
 	return (
@@ -55,21 +58,17 @@ export function CartLineRow({
 				)}
 			</View>
 			<View style={styles.body}>
-				<View style={styles.row}>
-					<View style={{ flex: 1 }}>
-						<Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
-							{line.title}
-						</Text>
-						{line.variantLabel ? (
-							<Text style={[styles.meta, { color: c.muted }]}>
-								{line.variantLabel}
-							</Text>
-						) : null}
-					</View>
-					<Text style={[styles.title, { color: c.text }]}>
-						{formatXaf(line.lineSubtotal, locale)}
+				<Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
+					{line.title}
+				</Text>
+				{line.variantLabel ? (
+					<Text style={[styles.meta, { color: c.muted }]} numberOfLines={1}>
+						{line.variantLabel}
 					</Text>
-				</View>
+				) : null}
+				<Text style={[styles.price, { color: c.text }]}>
+					{formatXaf(line.lineSubtotal, locale)}
+				</Text>
 				{state === "unavailable" ? (
 					<Text style={[styles.meta, { color: c.dangerText }]}>
 						{t("cart.unavailable")}
@@ -84,45 +83,55 @@ export function CartLineRow({
 					</Text>
 				) : null}
 				<View style={styles.row}>
-					<View style={styles.stepper}>
-						<Pressable
-							onPress={() => onQuantity(line.quantity - 1)}
-							disabled={busy || !stepper.canDecrease}
-							accessibilityRole="button"
-							accessibilityLabel={t("cart.decrease", { title: line.title })}
-							style={stepStyle(stepper.canDecrease)}
-						>
-							<Ionicons name="remove" size={18} color={c.text} />
-						</Pressable>
-						<Text
-							style={[styles.quantity, { color: c.text }]}
-							accessibilityLabel={`${t("cart.quantity")} ${line.quantity}`}
-							accessibilityLiveRegion="polite"
-						>
-							{line.quantity}
-						</Text>
-						<Pressable
-							onPress={() => onQuantity(line.quantity + 1)}
-							disabled={busy || !stepper.canIncrease}
-							accessibilityRole="button"
-							accessibilityLabel={t("cart.increase", { title: line.title })}
-							style={stepStyle(stepper.canIncrease)}
-						>
-							<Ionicons name="add" size={18} color={c.text} />
-						</Pressable>
-					</View>
 					<Pressable
 						onPress={onRemove}
 						disabled={busy}
 						accessibilityRole="button"
 						accessibilityLabel={t("cart.removeItem", { title: line.title })}
 						style={[styles.remove, { opacity: busy ? 0.4 : 1 }]}
+						hitSlop={6}
 					>
-						<Ionicons name="trash-outline" size={16} color={c.danger} />
-						<Text style={[styles.meta, { color: c.danger }]}>
+						<Ionicons name="close" size={14} color={c.muted} />
+						<Text style={[styles.removeText, { color: c.muted }]}>
 							{t("cart.remove")}
 						</Text>
 					</Pressable>
+					<View style={styles.rowEnd}>
+						{line.maxQuantity != null && line.maxQuantity <= LOW_STOCK ? (
+							<Text style={[styles.meta, { color: c.muted }]}>
+								{t("cart.available", { count: line.maxQuantity })}
+							</Text>
+						) : null}
+						<View style={[styles.stepper, { borderColor: c.border }]}>
+							<Pressable
+								onPress={() => onQuantity(line.quantity - 1)}
+								disabled={busy || !stepper.canDecrease}
+								accessibilityRole="button"
+								accessibilityLabel={t("cart.decrease", { title: line.title })}
+								style={stepStyle(stepper.canDecrease)}
+								hitSlop={4}
+							>
+								<Ionicons name="remove" size={16} color={c.text} />
+							</Pressable>
+							<Text
+								style={[styles.quantity, { color: c.text }]}
+								accessibilityLabel={`${t("cart.quantity")} ${line.quantity}`}
+								accessibilityLiveRegion="polite"
+							>
+								{line.quantity}
+							</Text>
+							<Pressable
+								onPress={() => onQuantity(line.quantity + 1)}
+								disabled={busy || !stepper.canIncrease}
+								accessibilityRole="button"
+								accessibilityLabel={t("cart.increase", { title: line.title })}
+								style={stepStyle(stepper.canIncrease)}
+								hitSlop={4}
+							>
+								<Ionicons name="add" size={16} color={c.primary} />
+							</Pressable>
+						</View>
+					</View>
 				</View>
 				{stepper.atMax ? (
 					<Text style={[styles.meta, { color: c.muted }]}>
@@ -140,45 +149,46 @@ const styles = StyleSheet.create({
 		gap: 12,
 		padding: 12,
 		borderRadius: 16,
-		borderWidth: StyleSheet.hairlineWidth,
+		borderWidth: 1,
 	},
 	thumb: {
 		width: 72,
 		height: 72,
-		borderRadius: 12,
+		borderRadius: 14,
 		alignItems: "center",
 		justifyContent: "center",
 		overflow: "hidden",
 	},
-	body: { flex: 1, gap: 6 },
+	body: { flex: 1, gap: 3 },
 	row: {
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
 		gap: 8,
+		marginTop: 6,
 	},
-	title: { fontSize: 15, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
-	stepper: { flexDirection: "row", alignItems: "center", gap: 6 },
-	step: {
-		width: 44,
-		height: 44,
-		borderRadius: 12,
+	rowEnd: { flexDirection: "row", alignItems: "center", gap: 10 },
+	title: { fontSize: 15, fontFamily: Fonts.displayBold, lineHeight: 20 },
+	price: { fontSize: 16, fontFamily: Fonts.displayBold, marginTop: 2 },
+	meta: { fontSize: 12, fontFamily: Fonts.body },
+	stepper: {
+		flexDirection: "row",
+		alignItems: "center",
 		borderWidth: 1,
+		borderRadius: 12,
+	},
+	step: {
+		width: 36,
+		height: 36,
 		alignItems: "center",
 		justifyContent: "center",
 	},
 	quantity: {
-		minWidth: 28,
+		minWidth: 24,
 		textAlign: "center",
-		fontSize: 16,
+		fontSize: 15,
 		fontFamily: Fonts.bodySemibold,
 	},
-	remove: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		minHeight: 44,
-		paddingHorizontal: 8,
-	},
+	remove: { flexDirection: "row", alignItems: "center", gap: 3, minHeight: 36 },
+	removeText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 });
