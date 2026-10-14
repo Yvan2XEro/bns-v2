@@ -192,6 +192,30 @@ Critical variables:
 | `REDIS_PASSWORD` | Redis password |
 | `PAYLOAD_SECRET` | Payload secret key (min 32 chars) |
 | `MEILI_MASTER_KEY` | Meilisearch master key |
+| `ORDER_PHONE_PEPPER` | HMAC key for buyer-phone refusal scores — compose refuses to start without it; never rotate casually |
+| `RISK_HASH_SECRET` | ≥ 32 chars; risk-signal hashing |
+| `VERIFICATION_HASH_PEPPER` | HMAC key for verification document/IP hashes |
+| `S3_PRIVATE_BUCKET` / `AZURE_STORAGE_PRIVATE_CONTAINER_NAME` | With S3 or Azure storage, a private bucket/container distinct from the public one — the API refuses to start without it |
+
+### What a deploy does by itself
+
+Pushing is the whole release: nothing is run by hand on the host afterwards.
+
+| Step | Where | When |
+|------|-------|------|
+| MongoDB becomes a single-node replica set (key file generated into the `mongo_keyfile` volume, `rs.initiate` by the healthcheck) | `mongodb` service | First start after the upgrade; an existing standalone database is converted in place, data untouched — about ten seconds of database restart |
+| Payload migrations (`packages/api/src/migrations`) | API boot, `src/instrumentation.ts`, before it serves traffic | Every start; applied ones are skipped. A failing migration stops the container (visible in `docker compose logs api`) rather than serving a half-migrated database |
+| Job crons (expiry, payments, commission, nightly sweeps) | API boot | Every start |
+| Novu workflow sync, category catch-up, shop-stats backfill | API boot, in the background (`src/services/bootTasks.ts`) | Once per change of what they would write, recorded in the `deploy_tasks` collection; a failure is logged and retried at the next start |
+| Meilisearch documents rebuilt in place | `search-indexer` start | When `DOCUMENT_VERSION` in `packages/search-indexer/src/reindex.ts` differs from the one stored in the `indexer-meta` index |
+
+New one-off work goes into `bootTasks()` (or a migration, for schema and data
+changes) — never into a "run this after deploying" note. Bump
+`DOCUMENT_VERSION` whenever a listing or shop search document changes shape.
+
+Features shipped behind `AppSettings` switches (shops, verification, protected
+payment, delivery, resale…) still start off: turning one on is a product
+decision made in the admin panel, not a deploy step.
 
 ### Required GitHub Actions secrets
 

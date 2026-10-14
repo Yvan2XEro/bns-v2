@@ -11,6 +11,33 @@ import {
 	startFilterableAttributeRefresh,
 } from "./meilisearch.ts";
 import { createSubscriber, type SearchEvent } from "./redis.ts";
+import { ensureDocumentsCurrent } from "./reindex.ts";
+
+const REBUILD_ATTEMPTS = 20;
+const REBUILD_RETRY_MS = 60_000;
+
+/**
+ * Brings the documents up to `DOCUMENT_VERSION` in the background, while live
+ * events keep flowing. The API may still be applying migrations when this
+ * worker starts, so a failure is retried rather than fatal.
+ */
+async function rebuildWhenStale(): Promise<void> {
+	for (let attempt = 1; attempt <= REBUILD_ATTEMPTS; attempt++) {
+		try {
+			await ensureDocumentsCurrent();
+			return;
+		} catch (error) {
+			console.warn(
+				`[search-indexer] rebuild attempt ${attempt}/${REBUILD_ATTEMPTS} failed:`,
+				error instanceof Error ? error.message : error,
+			);
+			await new Promise((resolve) => setTimeout(resolve, REBUILD_RETRY_MS));
+		}
+	}
+	console.error(
+		"[search-indexer] gave up rebuilding stale documents; restart the worker to retry",
+	);
+}
 
 async function handleEvent(event: SearchEvent): Promise<void> {
 	console.log(`[search-indexer] Processing event: ${JSON.stringify(event)}`);
@@ -56,6 +83,8 @@ async function main(): Promise<void> {
 	await subscriber.start();
 
 	console.log("[search-indexer] Worker is running, waiting for events...");
+
+	void rebuildWhenStale();
 
 	const shutdown = async () => {
 		console.log("[search-indexer] Shutting down...");

@@ -131,6 +131,7 @@ import {
 	sweepBuyerFeeInvoicesTask,
 	syncConnectedAccountTask,
 } from "./jobs";
+import { afterCollectionsReady } from "./lib/migrationsReady";
 import { registerResaleAdjuster } from "./lib/resale";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
@@ -357,7 +358,7 @@ export default buildConfig({
 		url: process.env.DATABASE_URI || "",
 		migrationDir: path.resolve(dirname, "migrations"),
 		// Applied at startup when NODE_ENV=production, before the API serves traffic.
-		prodMigrations: migrations,
+		prodMigrations: afterCollectionsReady(migrations),
 	}),
 	sharp,
 	plugins: await buildStoragePlugins(),

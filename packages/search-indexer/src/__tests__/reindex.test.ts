@@ -7,17 +7,34 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 const mockConfigureShopsIndex = mock(() => Promise.resolve());
 const mockClearShopsIndex = mock(() => Promise.resolve());
 const mockIndexShopDocuments = mock((_docs: unknown[]) => Promise.resolve());
+const mockClearIndex = mock(() => Promise.resolve());
+const mockIndexDocuments = mock((_docs: unknown[]) => Promise.resolve());
+const mockPruneListings = mock((_keep: Set<string>) => Promise.resolve(1));
+const mockPruneShops = mock((_keep: Set<string>) => Promise.resolve(0));
+let storedVersion: string | null = null;
+const mockWriteDocumentVersion = mock((version: string) => {
+	storedVersion = version;
+	return Promise.resolve();
+});
 
 mock.module("../meilisearch.ts", () => ({
 	configureIndex: mock(() => Promise.resolve()),
-	clearIndex: mock(() => Promise.resolve()),
-	indexDocuments: mock(() => Promise.resolve()),
+	clearIndex: mockClearIndex,
+	indexDocuments: mockIndexDocuments,
 	configureShopsIndex: mockConfigureShopsIndex,
 	clearShopsIndex: mockClearShopsIndex,
 	indexShopDocuments: mockIndexShopDocuments,
+	pruneListings: mockPruneListings,
+	pruneShops: mockPruneShops,
+	readDocumentVersion: () => Promise.resolve(storedVersion),
+	writeDocumentVersion: mockWriteDocumentVersion,
 }));
 
-import { reindexShops } from "../reindex.ts";
+import {
+	DOCUMENT_VERSION,
+	ensureDocumentsCurrent,
+	reindexShops,
+} from "../reindex.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -31,6 +48,12 @@ beforeEach(() => {
 	mockConfigureShopsIndex.mockClear();
 	mockClearShopsIndex.mockClear();
 	mockIndexShopDocuments.mockClear();
+	mockClearIndex.mockClear();
+	mockIndexDocuments.mockClear();
+	mockPruneListings.mockClear();
+	mockPruneShops.mockClear();
+	mockWriteDocumentVersion.mockClear();
+	storedVersion = null;
 });
 
 afterEach(() => {
@@ -104,5 +127,81 @@ describe("reindexShops", () => {
 		) as unknown as typeof fetch;
 
 		expect(reindexShops()).rejects.toThrow("Failed to fetch shops: 500");
+	});
+});
+
+describe("ensureDocumentsCurrent", () => {
+	const listing = {
+		id: "l-1",
+		title: "Moto",
+		status: "published",
+		category: { id: "c", slug: "motos" },
+		createdAt: "x",
+		updatedAt: "x",
+	};
+
+	function serve() {
+		globalThis.fetch = mock((url: string) => {
+			if (url.includes("/listings?"))
+				return Promise.resolve(
+					jsonResponse({
+						docs: [listing, { ...listing, id: "l-2", status: "draft" }],
+						hasNextPage: false,
+						totalDocs: 2,
+					}),
+				);
+			if (url.includes("/shops?"))
+				return Promise.resolve(
+					jsonResponse({
+						docs: [
+							{
+								id: "s-1",
+								handle: "a",
+								name: "A",
+								status: "active",
+								categories: [],
+								createdAt: "x",
+							},
+						],
+						hasNextPage: false,
+					}),
+				);
+			return Promise.resolve(jsonResponse({ docs: [] }));
+		}) as unknown as typeof fetch;
+	}
+
+	test("rebuilds in place, prunes what is gone, then records the version", async () => {
+		serve();
+
+		expect(await ensureDocumentsCurrent()).toBe(true);
+
+		// Never cleared: search keeps answering while the rebuild runs.
+		expect(mockClearIndex).not.toHaveBeenCalled();
+		expect(mockClearShopsIndex).not.toHaveBeenCalled();
+		const indexed = mockIndexDocuments.mock.calls[0]?.[0] as Array<{
+			id: string;
+		}>;
+		expect(indexed.map((doc) => doc.id)).toEqual(["l-1"]);
+		expect([...(mockPruneListings.mock.calls[0]?.[0] ?? [])]).toEqual(["l-1"]);
+		expect([...(mockPruneShops.mock.calls[0]?.[0] ?? [])]).toEqual(["s-1"]);
+		expect(storedVersion).toBe(DOCUMENT_VERSION);
+	});
+
+	test("does nothing once the stored version is current", async () => {
+		storedVersion = DOCUMENT_VERSION;
+		serve();
+
+		expect(await ensureDocumentsCurrent()).toBe(false);
+		expect(mockIndexDocuments).not.toHaveBeenCalled();
+		expect(mockWriteDocumentVersion).not.toHaveBeenCalled();
+	});
+
+	test("records no version when the rebuild fails, so the next start redoes it", async () => {
+		globalThis.fetch = mock(() =>
+			Promise.resolve(new Response("fail", { status: 502 })),
+		) as unknown as typeof fetch;
+
+		await expect(ensureDocumentsCurrent()).rejects.toThrow();
+		expect(storedVersion).toBeNull();
 	});
 });

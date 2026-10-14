@@ -3,6 +3,7 @@ import type {
 	MigrateUpArgs,
 	MongooseAdapter,
 } from "@payloadcms/db-mongodb";
+import { commitTransaction } from "payload";
 import { auditLegacyReviews } from "../services/reviewAudit";
 
 const INDEX_NAME = "reviewer_1_reviewedUser_1_unique";
@@ -35,6 +36,11 @@ export async function up({ payload, req }: MigrateUpArgs): Promise<void> {
 		return;
 	}
 
+	// An index build waits for every open transaction on its collection, and
+	// Payload keeps this migration's transaction open until the migration
+	// returns: build it inside and it waits on itself until Mongo aborts the
+	// transaction at 60 s. Commit the data part first.
+	await commitTransaction(req);
 	await reviewsCollection(payload).createIndex(
 		{ reviewer: 1, reviewedUser: 1 },
 		{ unique: true, name: INDEX_NAME },

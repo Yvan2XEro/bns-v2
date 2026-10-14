@@ -371,3 +371,60 @@ export async function deleteShopDocument(id: string): Promise<void> {
 export async function clearShopsIndex(): Promise<void> {
 	await getShopsIndex().deleteAllDocuments();
 }
+
+// ─── Automatic reindex bookkeeping ───────────────────────────────────────────
+
+type DocumentIndex = ReturnType<typeof getIndex>;
+
+/** A rebuild queues every batch first; the marker waits behind all of them. */
+const TASK_TIMEOUT_MS = 10 * 60 * 1000;
+
+/** Every document id an index holds, page by page. */
+async function documentIds(index: DocumentIndex): Promise<string[]> {
+	const ids: string[] = [];
+	const limit = 1000;
+	for (let offset = 0; ; offset += limit) {
+		const page = await index.getDocuments<{ id: string }>({
+			fields: ["id"],
+			limit,
+			offset,
+		});
+		for (const doc of page.results) ids.push(String(doc.id));
+		if (page.results.length < limit) return ids;
+	}
+}
+
+/** Deletes every document whose id is not in `keep`; returns how many. */
+async function prune(index: DocumentIndex, keep: Set<string>): Promise<number> {
+	const stale = (await documentIds(index)).filter((id) => !keep.has(id));
+	if (stale.length > 0)
+		await index.deleteDocuments(stale).waitTask({ timeout: TASK_TIMEOUT_MS });
+	return stale.length;
+}
+
+export const pruneListings = (keep: Set<string>) => prune(getIndex(), keep);
+export const pruneShops = (keep: Set<string>) => prune(getShopsIndex(), keep);
+
+const META_INDEX_NAME = "indexer-meta";
+const VERSION_DOC_ID = "documents";
+
+/** The document version the indexes were last fully rebuilt with. */
+export async function readDocumentVersion(): Promise<string | null> {
+	try {
+		const doc = await getClient()
+			.index(META_INDEX_NAME)
+			.getDocument<{ version?: unknown }>(VERSION_DOC_ID);
+		return typeof doc.version === "string" ? doc.version : null;
+	} catch {
+		// No meta index or no document yet: never rebuilt automatically.
+		return null;
+	}
+}
+
+/** Waits for Meilisearch to apply it, so it lands after every queued batch. */
+export async function writeDocumentVersion(version: string): Promise<void> {
+	await getClient()
+		.index(META_INDEX_NAME)
+		.addDocuments([{ id: VERSION_DOC_ID, version }], { primaryKey: "id" })
+		.waitTask({ timeout: TASK_TIMEOUT_MS });
+}

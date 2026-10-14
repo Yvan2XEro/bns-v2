@@ -3,6 +3,7 @@ import type {
 	MigrateUpArgs,
 	MongooseAdapter,
 } from "@payloadcms/db-mongodb";
+import { commitTransaction } from "payload";
 import { backfillContactRevealWindows } from "../services/contactRevealBackfill";
 
 const contactRevealsCollection = (payload: MigrateUpArgs["payload"]) =>
@@ -22,6 +23,11 @@ export async function up({ payload, req }: MigrateUpArgs): Promise<void> {
 		});
 	}
 
+	// An index build waits for every open transaction on its collection, and
+	// Payload keeps this migration's transaction open until the migration
+	// returns: build it inside and it waits on itself until Mongo aborts the
+	// transaction at 60 s. Commit the data part first.
+	await commitTransaction(req);
 	// Built here from clean data, with Mongo's default name, so it is the same
 	// index the collection config declares and creating it twice is a no-op.
 	await contactRevealsCollection(payload).createIndex(

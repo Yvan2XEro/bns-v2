@@ -40,3 +40,33 @@ export function listShopStatsBackfillDates(
 	}
 	return result;
 }
+
+const MAX_AUTOMATIC_BACKFILL_DAYS = 365;
+
+function doualaDate(at: Date): string {
+	return new Intl.DateTimeFormat("en-CA", {
+		timeZone: "Africa/Douala",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).format(at);
+}
+
+/**
+ * Where the deploy-time backfill starts: the day the first shop opened, never
+ * more than a year back, or `null` when there is no completed day to fill.
+ */
+export function automaticBackfillStart(
+	firstShopCreatedAt: Date | null,
+	now = new Date(),
+): string | null {
+	if (!firstShopCreatedAt || Number.isNaN(firstShopCreatedAt.getTime()))
+		return null;
+	const floor = new Date(
+		now.getTime() - MAX_AUTOMATIC_BACKFILL_DAYS * 86_400_000,
+	);
+	const from = doualaDate(
+		firstShopCreatedAt < floor ? floor : firstShopCreatedAt,
+	);
+	return from > previousDoualaDate(now) ? null : from;
+}

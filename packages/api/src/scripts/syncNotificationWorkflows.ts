@@ -1,4 +1,5 @@
 import type * as components from "@novu/api/models/components";
+import { fingerprintOf } from "../lib/deployTasks";
 import {
 	getNotificationProvider,
 	isNotificationProviderConfigured,
@@ -2845,16 +2846,21 @@ async function syncWorkflow(
 	return "updated";
 }
 
-async function main() {
-	const dryRun = process.argv.includes("--dry-run");
+/** Changes whenever a workflow definition does, so a deploy re-syncs only then. */
+export function notificationWorkflowsFingerprint(): string {
+	return fingerprintOf(workflowSpecs);
+}
 
-	if (!isNotificationProviderConfigured()) {
-		console.error(
-			"[notifications] NOVU_SECRET_KEY is required to sync notification workflows.",
-		);
-		process.exit(1);
-	}
-
+/**
+ * Creates or updates every workflow in Novu. Idempotent: an existing workflow
+ * is fetched first and updated in place. Run at API boot by the deploy tasks
+ * whenever the fingerprint above changes, and by hand through `main` below.
+ */
+export async function syncNotificationWorkflows(
+	options: { dryRun?: boolean; log?: (line: string) => void } = {},
+): Promise<{ created: number; updated: number }> {
+	const dryRun = options.dryRun === true;
+	const log = options.log ?? console.log;
 	let created = 0;
 	let updated = 0;
 
@@ -2863,14 +2869,27 @@ async function main() {
 		if (result === "created") created += 1;
 		if (result === "updated") updated += 1;
 
-		console.log(
+		log(
 			`[notifications] ${dryRun ? "would sync" : "synced"} workflow "${spec.definition.workflowId}" (${result})`,
 		);
 	}
 
-	console.log(
+	log(
 		`[notifications] ${dryRun ? "dry run complete" : "sync complete"}: ${created} created, ${updated} updated.`,
 	);
+	return { created, updated };
+}
+
+async function main() {
+	if (!isNotificationProviderConfigured()) {
+		console.error(
+			"[notifications] NOVU_SECRET_KEY is required to sync notification workflows.",
+		);
+		process.exit(1);
+	}
+	await syncNotificationWorkflows({
+		dryRun: process.argv.includes("--dry-run"),
+	});
 }
 
 // Guarded: a test imports this module for `WORKFLOWS` alone, and must not

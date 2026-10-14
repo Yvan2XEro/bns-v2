@@ -21,29 +21,47 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-bns}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_DB:-bns}
-    # Multi-document transactions need a replica set, and a replica set with
-    # authentication needs a key file. Both are opt-in through
-    # MONGO_REPLICA_SET: leave it empty and mongod starts standalone, set it to
-    # rs0 once the key file exists on the host and rs.initiate has been run
-    # there. This file is deployed unattended, so the default must stay empty.
-    command: mongod --bind_ip_all ${MONGO_REPLICA_SET:+--replSet ${MONGO_REPLICA_SET} --keyFile /data/keyfile/mongo-keyfile}
+    # A single-node replica set, because Payload only runs multi-document
+    # transactions against one. Nothing to do on the host, ever: the key file
+    # an authenticated replica set requires is generated into its own volume
+    # on first start, and the healthcheck initiates the set the first time it
+    # finds it uninitiated — a fresh volume and an existing standalone
+    # database alike, data untouched.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        keyfile=/data/keyfile/mongo-keyfile
+        if [ ! -s "$$keyfile" ]; then
+          tr -dc 'A-Za-z0-9+/' < /dev/urandom | head -c 756 > "$$keyfile"
+        fi
+        chown 999:999 "$$keyfile"
+        chmod 400 "$$keyfile"
+        exec docker-entrypoint.sh mongod --bind_ip_all --replSet rs0 --keyFile "$$keyfile"
+    # WiredTiger holds a file open per collection and per index; Docker's
+    # default soft limit (1024 on some hosts) crashes mongod mid-write.
+    ulimits:
+      nofile:
+        soft: 64000
+        hard: 64000
     volumes:
       - mongo_data:/data/db
-      - ${MONGO_KEYFILE_PATH:-/dev/null}:/data/keyfile/mongo-keyfile:ro
+      - mongo_keyfile:/data/keyfile
     networks:
       - bns-network
     healthcheck:
-      # Healthy when standalone, or when the replica set has a primary; a
-      # member started with --replSet but never initiated stays unhealthy.
+      # Initiates the set when it has never been — its member is the name the
+      # api dials, mongodb:27017 — then reports healthy only once this node is
+      # the writable primary, about ten seconds after a start.
       test:
-        [
-          "CMD-SHELL",
-          "mongosh --quiet --eval 'const h = db.hello(); quit(db.adminCommand(\"ping\").ok === 1 && h.isreplicaset !== true && (h.setName === undefined || h.isWritablePrimary === true) ? 0 : 1)'",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
+        - CMD-SHELL
+        - >-
+          mongosh --quiet -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'try { rs.status() } catch (e) { if (e.codeName !== "NotYetInitialized") throw e; rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "mongodb:27017" }] }) } quit(db.hello().isWritablePrimary ? 0 : 1)'
+      interval: 5s
+      timeout: 10s
+      retries: 24
+      start_period: 60s
 
   redis:
     image: redis:7-alpine
@@ -108,9 +126,9 @@ services:
     image: ${IMAGE_REGISTRY}/api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
-      # replicaSet is the switch that turns Payload transactions on; dropping it
-      # from DATABASE_URI is the first rollback level.
-      DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin${MONGO_REPLICA_SET:+&replicaSet=${MONGO_REPLICA_SET}}}
+      # replicaSet is what turns Payload transactions on; a DATABASE_URI
+      # without it is the rollback (mongod stays a replica set, harmlessly).
+      DATABASE_URI: ${DATABASE_URI:-mongodb://${MONGO_USER:-bns}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB:-bns}?authSource=admin&replicaSet=rs0}
       PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Set PAYLOAD_SECRET}
       RISK_HASH_SECRET: ${RISK_HASH_SECRET:-}
       # HMAC key for buyer-phone-scores.phoneHash; rotating it resets every refusal score
@@ -290,6 +308,7 @@ services:
 
 volumes:
   mongo_data:
+  mongo_keyfile:
   redis_data:
   meili_data:
   api_media:
