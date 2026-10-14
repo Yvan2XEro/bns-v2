@@ -7,6 +7,7 @@ import {
 	isLaunchCityKey,
 	LAUNCH_CITIES,
 	LAUNCH_CITY_KEYS,
+	launchCityKeyOf,
 } from "../../src/lib/launchCities";
 import { codCaps } from "../../src/lib/shopCapabilities";
 
@@ -75,5 +76,22 @@ describe("codCaps", () => {
 			maxDailyOrders: 20,
 			maxOpenOrders: 30,
 		});
+	});
+});
+
+describe("launchCityKeyOf", () => {
+	it("maps a key or a label, whatever its case and accents, to the key", () => {
+		expect(launchCityKeyOf("douala")).toBe("douala");
+		expect(launchCityKeyOf("Douala")).toBe("douala");
+		expect(launchCityKeyOf("Yaoundé")).toBe("yaounde");
+		expect(launchCityKeyOf("YAOUNDE")).toBe("yaounde");
+		expect(launchCityKeyOf(" Douala ")).toBe("douala");
+	});
+
+	it("is null for any other place or value", () => {
+		expect(launchCityKeyOf("Bafoussam")).toBeNull();
+		expect(launchCityKeyOf("")).toBeNull();
+		expect(launchCityKeyOf(null)).toBeNull();
+		expect(launchCityKeyOf(undefined)).toBeNull();
 	});
 });

@@ -1,4 +1,4 @@
-import { isLaunchCityKey } from "./launchCities";
+import { launchCityKeyOf } from "./launchCities";
 import { isPilotShop, type OrderSettings } from "./orderSettings";
 import { type CapabilityShop, shopCapabilities } from "./shopCapabilities";
 
@@ -83,12 +83,8 @@ export function isListingOrderable(input: IsListingOrderableInput): boolean {
 
 	// 6. The shop's city must be one of the settings' current launch cities
 	// (cart.ts's `orderabilityReason` "cityNotLaunch").
-	const city = shop.location?.city;
-	if (
-		!city ||
-		!isLaunchCityKey(city) ||
-		!settings.launchCities.some((entry) => entry.key === city)
-	) {
+	const city = launchCityKeyOf(shop.location?.city);
+	if (!city || !settings.launchCities.some((entry) => entry.key === city)) {
 		return false;
 	}
 

@@ -122,6 +122,19 @@ describe("isListingOrderable", () => {
 		expect(isListingOrderable(input)).toBe(false);
 	});
 
+	it("reads a shop city stored by name, as the shop forms send it", () => {
+		for (const city of ["Douala", "Yaoundé", " yaounde "]) {
+			const input = baseInput({
+				shop: { ...baseShop(), location: { city } },
+			});
+			expect(isListingOrderable(input)).toBe(true);
+		}
+		const bafoussam = baseInput({
+			shop: { ...baseShop(), location: { city: "Bafoussam" } },
+		});
+		expect(isListingOrderable(bafoussam)).toBe(false);
+	});
+
 	it("is false when the product forbids COD", () => {
 		const input = baseInput({ product: { delivery: { codAllowed: false } } });
 		expect(isListingOrderable(input)).toBe(false);

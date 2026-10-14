@@ -7,6 +7,7 @@ import {
 import type { DeliveryEstimateCache } from "../../lib/delivery/estimateCache";
 import { getDeliverySettings } from "../../lib/deliverySettings";
 import { ERROR_CODES } from "../../lib/errors";
+import { launchCityKeyOf } from "../../lib/launchCities";
 import { getOrderSettings } from "../../lib/orderSettings";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
@@ -38,7 +39,10 @@ export async function publicDeliveryEstimates(
 		depth: 0,
 		overrideAccess: false,
 	});
-	const city = destination.city ?? homeLocation?.city ?? shop.location?.city;
+	const city =
+		launchCityKeyOf(destination.city) ??
+		launchCityKeyOf(homeLocation?.city) ??
+		launchCityKeyOf(shop.location?.city);
 	if (!city) return { perMethod: [] };
 	const settings = await getOrderSettings(payload);
 	const delivery = await getDeliverySettings(payload);

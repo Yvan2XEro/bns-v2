@@ -119,6 +119,28 @@ export function isLaunchCityKey(value: unknown): value is LaunchCityKey {
 	return typeof value === "string" && value in LAUNCH_CITIES;
 }
 
+const fold = (value: string) =>
+	value
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.trim()
+		.toLowerCase();
+
+/**
+ * The launch city a stored place names, by key or by label: shops keep the
+ * city as typed or picked ("Douala", "Yaoundé"), while checkout, carts and
+ * zones speak in keys. Null for any other place.
+ */
+export function launchCityKeyOf(value: unknown): LaunchCityKey | null {
+	if (typeof value !== "string") return null;
+	const folded = fold(value);
+	return (
+		LAUNCH_CITY_KEYS.find(
+			(key) => key === folded || fold(LAUNCH_CITIES[key].label) === folded,
+		) ?? null
+	);
+}
+
 export function districtKeysOf(city: LaunchCityKey): readonly string[] {
 	return LAUNCH_CITIES[city].districts.map((slug) => `${city}.${slug}`);
 }

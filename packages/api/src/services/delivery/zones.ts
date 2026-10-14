@@ -14,6 +14,7 @@ import {
 	isLaunchCityKey,
 	LAUNCH_CITY_KEYS,
 	type LaunchCityKey,
+	launchCityKeyOf,
 } from "../../lib/launchCities";
 import { getOrderSettings } from "../../lib/orderSettings";
 import { relationId } from "../../lib/relationId";
@@ -97,7 +98,10 @@ async function assertZoneInput(
 			depth: 0,
 			overrideAccess: true,
 		});
-		if (locations.totalDocs === 0 && shop.location?.city !== input.city)
+		if (
+			locations.totalDocs === 0 &&
+			launchCityKeyOf(shop.location?.city) !== input.city
+		)
 			throw new ServiceError(ERROR_CODES.deliveryCityNotLaunched, 400);
 	} else {
 		const settings = await getDeliverySettings(payload);

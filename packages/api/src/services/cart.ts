@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Payload, PayloadRequest } from "payload";
 import { resolveShopRole } from "../access/shopRoles";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
-import { isLaunchCityKey } from "../lib/launchCities";
+import { launchCityKeyOf } from "../lib/launchCities";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -154,12 +154,8 @@ export function shopOrderabilityReason(
 	if (!shop || shop.status !== "active") return "shopInactive";
 	if (shop.ordersRestrictedAt) return "shopRestricted";
 	if (shop.orderSettings?.codEnabled !== true) return "codDisabled";
-	const city = shop.location?.city;
-	if (
-		!city ||
-		!isLaunchCityKey(city) ||
-		!settings.launchCities.some((entry) => entry.key === city)
-	) {
+	const city = launchCityKeyOf(shop.location?.city);
+	if (!city || !settings.launchCities.some((entry) => entry.key === city)) {
 		return "cityNotLaunch";
 	}
 	return null;
@@ -420,7 +416,8 @@ async function toCartView(
 					id: String(shop.id),
 					name: shop.name,
 					handle: shop.handle,
-					city: shop.location?.city ?? null,
+					city:
+						launchCityKeyOf(shop.location?.city) ?? shop.location?.city ?? null,
 				}
 			: null,
 		lines: lines.map(toLineView),

@@ -13,6 +13,7 @@ import {
 	isLaunchCityKey,
 	LAUNCH_CITIES,
 	type LaunchCityKey,
+	launchCityKeyOf,
 } from "../lib/launchCities";
 import type { CapCheckInput } from "../lib/orderCaps";
 import { checkCaps, confirmationPathFor } from "../lib/orderCaps";
@@ -740,7 +741,7 @@ export async function listDeliveryOptions(
 	const city =
 		typeof input.city === "string" && input.city.trim()
 			? input.city.trim()
-			: (quoteFrom.shop.location?.city ?? "");
+			: (launchCityKeyOf(quoteFrom.shop.location?.city) ?? "");
 	const district =
 		typeof input.district === "string" && input.district.trim()
 			? input.district.trim()
@@ -864,7 +865,7 @@ async function buildQuote(
 	const deliverySettings = await getDeliverySettings(payload);
 	if (
 		!deliverySettings.zonesEnabled &&
-		(quoteFrom.shop.location?.city ?? null) !== address.city
+		launchCityKeyOf(quoteFrom.shop.location?.city) !== address.city
 	) {
 		throw new CheckoutError(ERROR_CODES.checkoutCityNotServed, 409);
 	}

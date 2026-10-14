@@ -1,7 +1,7 @@
 import type { Payload } from "payload";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
-import { isLaunchCityKey } from "../lib/launchCities";
+import { launchCityKeyOf } from "../lib/launchCities";
 import {
 	cityDeliveryFee,
 	getOrderSettings,
@@ -46,15 +46,13 @@ function derived(
 	settings: OrderSettings,
 	now: Date,
 ): { caps: CodCaps | null; cityDefaultFee: number | null } {
-	const city = shop.location?.city;
+	const city = launchCityKeyOf(shop.location?.city);
 	return {
 		caps: codCaps(
 			shopCapabilities(shop, now).effectiveLevel,
 			settings.shopCaps,
 		),
-		cityDefaultFee: isLaunchCityKey(city)
-			? cityDeliveryFee(settings, city)
-			: null,
+		cityDefaultFee: city ? cityDeliveryFee(settings, city) : null,
 	};
 }
 
