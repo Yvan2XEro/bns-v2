@@ -21,7 +21,8 @@ export interface CountListingViewInput {
 }
 
 function keyedHash(value: string): string {
-	const secret = process.env.RISK_HASH_SECRET ?? process.env.PAYLOAD_SECRET;
+	// `||`, not `??`: compose passes an unset RISK_HASH_SECRET as "".
+	const secret = process.env.RISK_HASH_SECRET || process.env.PAYLOAD_SECRET;
 	if (!secret || secret.length < 32) {
 		throw new Error("A 32-character server secret is required for view keys.");
 	}
