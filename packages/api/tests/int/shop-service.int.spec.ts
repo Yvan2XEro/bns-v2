@@ -92,6 +92,29 @@ describe("createShop", () => {
 		expect(payload.writes.every((w) => w.transactionID)).toBe(true);
 	});
 
+	it("stores the region and country of the place the owner picked", async () => {
+		const payload = seed();
+		await createShop(
+			payload,
+			U1,
+			{
+				handle: "kribibeach",
+				name: "Kribi Beach",
+				city: "Kribi",
+				region: "Sud",
+				country: "Cameroun",
+				countryCode: "cm",
+			},
+			NOW,
+		);
+		expect(payload.store.shops[0]?.location).toEqual({
+			city: "Kribi",
+			region: "Sud",
+			country: "Cameroun",
+			countryCode: "CM",
+		});
+	});
+
 	it("refuses when shops are disabled", async () => {
 		await expect(
 			createShop(

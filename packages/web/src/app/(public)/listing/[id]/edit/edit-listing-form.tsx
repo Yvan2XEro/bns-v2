@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
+import { LocationField } from "~/components/location/location-field";
 import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -18,7 +19,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
-import { CitySelect } from "~/components/ui/city-select";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -30,7 +30,6 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useMyShop } from "~/hooks/use-my-shop";
-import type { CameroonCity } from "~/lib/cameroon-cities";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
 	type CategoryAttributeSpec,
@@ -48,6 +47,7 @@ import { listingShopId } from "~/lib/listing-shop";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
 import type { Category, Listing, ListingCondition, Media } from "~/types";
+import { placeCoords } from "../../../../../../../api/src/contracts/places";
 
 /** Maximum number of images a listing can carry (enforced server-side too). */
 const MAX_LISTING_IMAGES = 3;
@@ -152,14 +152,14 @@ export function EditListingForm({
 	const [newImages, setNewImages] = useState<File[]>([]);
 	const [newPreviews, setNewPreviews] = useState<string[]>([]);
 
-	const initialCoordinates =
-		listing.coordinates?.lat && listing.coordinates?.lng
-			? { lat: listing.coordinates.lat, lng: listing.coordinates.lng }
-			: null;
 	const [coordinates, setCoordinates] = useState<{
 		lat: number;
 		lng: number;
-	} | null>(initialCoordinates);
+	} | null>(
+		listing.coordinates?.lat && listing.coordinates?.lng
+			? { lat: listing.coordinates.lat, lng: listing.coordinates.lng }
+			: null,
+	);
 
 	const [formData, setFormData] = useState({
 		title: listing.title,
@@ -431,16 +431,13 @@ export function EditListingForm({
 						)}
 						<div className="space-y-2">
 							<Label htmlFor="location">{t("localisation")}</Label>
-							<CitySelect
+							<LocationField
+								id="location"
 								value={formData.location}
-								onChange={(city: CameroonCity | null) => {
-									setFormData((p) => ({
-										...p,
-										location: city?.name ?? "",
-									}));
-									setCoordinates(
-										city ? { lat: city.lat, lng: city.lng } : null,
-									);
+								clearable={false}
+								onChange={(place) => {
+									setFormData((p) => ({ ...p, location: place?.name ?? "" }));
+									setCoordinates(placeCoords(place));
 								}}
 							/>
 						</div>

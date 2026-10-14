@@ -386,7 +386,6 @@ export default function FiltersModal() {
 					borderColor={borderColor}
 					textColor={textColor}
 					mutedColor={mutedColor}
-					primaryColor={primaryColor}
 				/>
 
 				{/* ── Rayon ── */}

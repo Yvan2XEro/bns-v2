@@ -3,19 +3,20 @@
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CitySelect } from "~/components/ui/city-select";
-import type { CameroonCity } from "~/lib/cameroon-cities";
+import { LocationField } from "~/components/location/location-field";
+import { usePlacePreferences } from "~/hooks/use-place-preferences";
 
 export function HomeSearchBar() {
 	const router = useRouter();
 	const [query, setQuery] = useState("");
-	const [city, setCity] = useState<CameroonCity | null>(null);
+	// The city scope is a remembered preference: "All cities" until chosen.
+	const { browsePlace, setBrowsePlace } = usePlacePreferences();
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		const params = new URLSearchParams();
 		if (query.trim()) params.set("q", query.trim());
-		if (city) params.set("location", city.name);
+		if (browsePlace) params.set("location", browsePlace.name);
 		router.push(`/search?${params.toString()}`);
 	};
 
@@ -36,14 +37,12 @@ export function HomeSearchBar() {
 					<div className="hidden items-center py-2 sm:flex">
 						<div className="h-9 w-px bg-[#E2E8F0]" />
 					</div>
-					<div className="hidden shrink-0 sm:flex sm:w-[17rem]">
-						<CitySelect
-							value={city?.name ?? ""}
-							onChange={setCity}
-							placeholder="Choisir une ville"
+					<div className="shrink-0 border-[#F1F5F9] border-t sm:w-[17rem] sm:border-t-0">
+						<LocationField
+							value={browsePlace}
+							onChange={setBrowsePlace}
 							variant="hero"
-							className="w-full"
-							dropdownClassName="right-0 left-auto"
+							browse
 						/>
 					</div>
 					<button

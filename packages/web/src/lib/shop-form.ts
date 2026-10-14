@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Place } from "../../../api/src/contracts/places";
 import { E164_PATTERN } from "./phone-input";
 import { HANDLE_MAX, HANDLE_MIN, isHandleFormatValid } from "./shop-handle";
 
@@ -19,7 +20,7 @@ export const createShopSchema = z.object({
 		.min(HANDLE_MIN)
 		.max(HANDLE_MAX)
 		.refine(isHandleFormatValid),
-	city: z.string().max(80),
+	city: z.custom<Place | null>(),
 	categories: z.array(z.string()).max(SHOP_CATEGORIES_MAX),
 });
 
@@ -29,14 +30,39 @@ export type CreateShopValues = z.infer<typeof createShopSchema>;
 export const shopProfileSchema = z.object({
 	name: z.string().trim().min(SHOP_NAME_MIN).max(SHOP_NAME_MAX),
 	description: z.string().max(SHOP_DESCRIPTION_MAX),
-	city: z.string(),
-	region: z.string(),
+	city: z.custom<Place | null>(),
 	categories: z.array(z.string()).max(SHOP_CATEGORIES_MAX),
 	logo: z.object({ id: z.string().nullable(), url: z.string().nullable() }),
 	banner: z.object({ id: z.string().nullable(), url: z.string().nullable() }),
 });
 
 export type ShopProfileValues = z.infer<typeof shopProfileSchema>;
+
+/** What `shops.location` stores for the place the owner picked. */
+export function shopLocationOf(place: Place | null) {
+	return {
+		city: place?.name || null,
+		region: place?.region || null,
+		country: place ? (place.country ?? null) : null,
+		countryCode: place ? (place.countryCode ?? null) : null,
+	};
+}
+
+export function placeOfShopLocation(location: {
+	city?: string | null;
+	region?: string | null;
+	country?: string | null;
+	countryCode?: string | null;
+}): Place | null {
+	if (!location.city) return null;
+	return {
+		name: location.city,
+		region: location.region ?? "",
+		...(location.country ? { country: location.country } : {}),
+		...(location.countryCode ? { countryCode: location.countryCode } : {}),
+		source: "saved",
+	};
+}
 
 /**
  * The contacts tab. Each field is optional; an empty string clears it — but

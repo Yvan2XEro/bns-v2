@@ -134,7 +134,9 @@
 		"freshListings": "Tout juste ajoutés",
 		"enableLocation": "Activer la localisation",
 		"enableLocationSub": "Découvrez les annonces autour de vous",
-		"noNearby": "Aucune annonce dans un rayon de 50 km"
+		"noNearby": "Aucune annonce dans un rayon de 50 km",
+		"recentListingsIn": "Annonces récentes à {{city}}",
+		"noListingsIn": "Aucune annonce à {{city}} pour le moment."
 	},
 	"search": {
 		"title": "Rechercher",
@@ -1436,15 +1438,34 @@
 		}
 	},
 	"cityPicker": {
-		"title": "Choisir une ville",
 		"placeholder": "Choisir une ville",
-		"searchPlaceholder": "Rechercher une ville, une région ou un pays…",
-		"triggerHint": "Ouvre la liste des villes",
-		"empty": "Aucune ville trouvée",
-		"useTyped": "Utiliser « {{query}} »",
-		"useMyLocation": "Utiliser ma position",
+		"triggerHint": "Ouvre la liste des villes"
+	},
+	"locationSheet": {
+		"title": "Choisir une localisation",
+		"browseTitle": "Où cherchez-vous ?",
+		"searchPlaceholder": "Ville, quartier…",
+		"nearMe": "Autour de moi",
+		"nearMeHint": "Utiliser ma position actuelle",
+		"locating": "Localisation en cours…",
+		"allCities": "Toutes les villes",
+		"allCitiesHint": "Voir les annonces de tout le pays",
+		"seeAllCities": "Voir toutes les villes",
 		"recent": "Récents",
-		"detected": "Position détectée"
+		"popular": "Villes populaires",
+		"results": "Résultats",
+		"listingsCount_one": "{{count}} annonce",
+		"listingsCount": "{{count}} annonces",
+		"useTyped": "Utiliser « {{query}} »",
+		"noResults": "Aucun lieu trouvé pour « {{query}} ».",
+		"searchFailed": "La recherche de lieux ne répond pas. Vous pouvez utiliser le texte saisi.",
+		"permissionDenied": "Autorisez la localisation dans les réglages pour utiliser votre position.",
+		"servicesDisabled": "Activez la localisation de l'appareil pour utiliser votre position.",
+		"positionUnavailable": "Position introuvable pour le moment. Réessayez ou recherchez une ville.",
+		"geocodeUnavailable": "Impossible de nommer votre position. Recherchez votre ville.",
+		"clear": "Effacer",
+		"chipLabel": "Localisation : {{place}}",
+		"chipHint": "Changer la ville des annonces affichées"
 	},
 	"tagPicker": {
 		"title": "Choisir des tags",

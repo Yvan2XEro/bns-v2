@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useAuth } from "./auth";
+import { useTranslation } from "./i18n";
 import type { Place } from "./places";
 import {
 	clearUserLocation,
+	configureUserLocation,
 	type DetectResult,
 	detectUserLocation,
 	getUserLocationState,
@@ -10,6 +13,7 @@ import {
 	type LocationPermission,
 	type ProfileHomeLocation,
 	reconcileUserLocationForUser,
+	setBrowsePlace,
 	setManualLocation,
 	subscribeUserLocation,
 	type UserLocation,
@@ -55,6 +59,10 @@ export interface UseUserLocation {
 	selectPlace: (place: Place) => Promise<UserLocation>;
 	/** The remembered location as a `Place`, to seed a picker. */
 	asPlace: Place | null;
+	/** The city the home feed is scoped to; `null` browses every city. */
+	browsePlace: Place | null;
+	/** Scope the home feed: a city (also remembered as the location) or all. */
+	setBrowsePlace: (place: Place | null) => Promise<void>;
 	clear: () => Promise<void>;
 }
 
@@ -64,6 +72,13 @@ export function useUserLocation(): UseUserLocation {
 		getUserLocationState,
 	);
 	const { user } = useAuth();
+	const { photonUrl } = useAppConfig();
+	const { i18n } = useTranslation();
+
+	// Before hydration: the silent refresh it may start names the position.
+	useEffect(() => {
+		configureUserLocation({ photonUrl, lang: i18n.language });
+	}, [photonUrl, i18n.language]);
 
 	// Reads storage and the already-granted permission. Never prompts.
 	useEffect(() => {
@@ -91,6 +106,10 @@ export function useUserLocation(): UseUserLocation {
 		[],
 	);
 	const clear = useCallback(() => clearUserLocation(), []);
+	const changeBrowsePlace = useCallback(
+		(place: Place | null) => setBrowsePlace(place),
+		[],
+	);
 
 	const coords = useMemo(() => {
 		const { lat, lng } = state.location ?? {};
@@ -116,6 +135,8 @@ export function useUserLocation(): UseUserLocation {
 		refreshSilently,
 		selectPlace,
 		asPlace,
+		browsePlace: state.browseAll ? null : asPlace,
+		setBrowsePlace: changeBrowsePlace,
 		clear,
 	};
 }

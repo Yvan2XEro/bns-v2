@@ -5,23 +5,25 @@ import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Controller, useForm, useWatch } from "react-hook-form";
+import { LocationField } from "~/components/location/location-field";
 import {
 	type CategoryChipOption,
 	CategoryChips,
 } from "~/components/shop/category-chips";
 import { MediaField } from "~/components/shop/media-field";
 import { Button } from "~/components/ui/button";
-import { CitySelect } from "~/components/ui/city-select";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { useUpdateShop } from "~/hooks/use-shop-settings";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
+	placeOfShopLocation,
 	SHOP_CATEGORIES_MAX,
 	SHOP_DESCRIPTION_MAX,
 	SHOP_NAME_MAX,
 	type ShopProfileValues,
+	shopLocationOf,
 	shopProfileSchema,
 } from "~/lib/shop-form";
 import type { Category, MyShop } from "~/types";
@@ -38,15 +40,14 @@ export function ProfileForm({
 	const router = useRouter();
 	const updateShop = useUpdateShop(shop.id);
 
-	const { control, formState, handleSubmit, register, setError, setValue } =
+	const { control, formState, handleSubmit, register, setError } =
 		useForm<ShopProfileValues>({
 			resolver: zodResolver(shopProfileSchema),
 			mode: "onChange",
 			defaultValues: {
 				name: shop.name,
 				description: shop.description ?? "",
-				city: shop.location.city ?? "",
-				region: shop.location.region ?? "",
+				city: placeOfShopLocation(shop.location),
 				categories: shop.categories.map((category) => category.id),
 				logo: { id: shop.logo?.id ?? null, url: shop.logo?.url ?? null },
 				banner: {
@@ -74,12 +75,7 @@ export function ProfileForm({
 				description: values.description.trim() || null,
 				logo: values.logo.id,
 				banner: values.banner.id,
-				location: {
-					city: values.city || null,
-					region: values.region || null,
-					country: "Cameroun",
-					countryCode: "CM",
-				},
+				location: shopLocationOf(values.city),
 				categories: values.categories,
 			});
 			router.refresh();
@@ -154,13 +150,10 @@ export function ProfileForm({
 					control={control}
 					name="city"
 					render={({ field }) => (
-						<CitySelect
+						<LocationField
 							id="shop-city"
 							value={field.value}
-							onChange={(selectedCity) => {
-								field.onChange(selectedCity?.name ?? "");
-								setValue("region", selectedCity?.region ?? "");
-							}}
+							onChange={field.onChange}
 						/>
 					)}
 				/>

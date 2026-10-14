@@ -14,6 +14,8 @@ export interface AppConfig {
 	chatUrl: string | null;
 	novuAppId: string | null;
 	webUrl: string | null;
+	/** Photon geocoder behind every place picker; `null` until config loads. */
+	photonUrl: string | null;
 	enabledAuthProviders: string[];
 	localAuthEnabled: boolean;
 	shopsEnabled: boolean;
@@ -42,6 +44,7 @@ const DEFAULT: AppConfig = {
 	chatUrl: null,
 	novuAppId: null,
 	webUrl: null,
+	photonUrl: null,
 	enabledAuthProviders: ["google", "apple", "facebook"],
 	localAuthEnabled: true,
 	shopsEnabled: false,

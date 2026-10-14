@@ -134,7 +134,9 @@
 		"freshListings": "Just Added",
 		"enableLocation": "Enable location",
 		"enableLocationSub": "Discover listings around you",
-		"noNearby": "No listings within 50 km"
+		"noNearby": "No listings within 50 km",
+		"recentListingsIn": "Recent listings in {{city}}",
+		"noListingsIn": "No listings in {{city}} yet."
 	},
 	"search": {
 		"title": "Search",
@@ -1433,15 +1435,34 @@
 		}
 	},
 	"cityPicker": {
-		"title": "Choose a city",
 		"placeholder": "Choose a city",
-		"searchPlaceholder": "Search a city, region or country…",
-		"triggerHint": "Opens the city list",
-		"empty": "No city found",
-		"useTyped": "Use \"{{query}}\"",
-		"useMyLocation": "Use my location",
+		"triggerHint": "Opens the city list"
+	},
+	"locationSheet": {
+		"title": "Choose a location",
+		"browseTitle": "Where are you looking?",
+		"searchPlaceholder": "City, neighbourhood…",
+		"nearMe": "Near me",
+		"nearMeHint": "Use my current location",
+		"locating": "Finding your location…",
+		"allCities": "All cities",
+		"allCitiesHint": "See listings from the whole country",
+		"seeAllCities": "See all cities",
 		"recent": "Recent",
-		"detected": "Detected location"
+		"popular": "Popular cities",
+		"results": "Results",
+		"listingsCount_one": "{{count}} listing",
+		"listingsCount": "{{count}} listings",
+		"useTyped": "Use “{{query}}”",
+		"noResults": "No place found for “{{query}}”.",
+		"searchFailed": "Place search is not responding. You can use what you typed.",
+		"permissionDenied": "Allow location access in Settings to use your position.",
+		"servicesDisabled": "Turn on device location to use your position.",
+		"positionUnavailable": "Your position is unavailable right now. Try again or search for a city.",
+		"geocodeUnavailable": "We couldn't name your position. Search for your city.",
+		"clear": "Clear",
+		"chipLabel": "Location: {{place}}",
+		"chipHint": "Change the city of the listings shown"
 	},
 	"tagPicker": {
 		"title": "Choose tags",

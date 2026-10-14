@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import type { HandleStatus } from "@/src/components/shop/HandleField";
@@ -10,6 +10,7 @@ import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import type { Place } from "@/src/lib/places";
 import { normalizeHandle } from "@/src/lib/shopHandle";
+import { useUserLocation } from "@/src/lib/useUserLocation";
 import { useCreateShop } from "./useShops";
 
 const HANDLE_ERROR_CODES: ReadonlySet<string> = new Set([
@@ -46,10 +47,16 @@ export function useCreateShopForm() {
 		[],
 	);
 
+	// Pre-filled with the remembered city: most shops sell where their owner is.
+	const { asPlace } = useUserLocation();
 	const form = useForm<CreateShopFormValues>({
 		resolver: zodResolver(createShopSchema),
-		defaultValues: { name: "", handle: "", city: null, categories: [] },
+		defaultValues: { name: "", handle: "", city: asPlace, categories: [] },
 	});
+	// The remembered place can arrive after the first render (storage read).
+	useEffect(() => {
+		if (asPlace && !form.getValues("city")) form.setValue("city", asPlace);
+	}, [asPlace, form]);
 
 	const name = form.watch("name");
 	const nameOk = name.trim().length >= 2 && name.trim().length <= 60;
@@ -69,6 +76,9 @@ export function useCreateShopForm() {
 				handle: values.handle,
 				name: values.name.trim(),
 				city: values.city?.name,
+				region: values.city?.region || undefined,
+				country: values.city?.country,
+				countryCode: values.city?.countryCode,
 				categories: values.categories.map((cat) => cat.id),
 			},
 			{

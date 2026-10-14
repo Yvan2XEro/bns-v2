@@ -48,6 +48,10 @@ export interface CreateShopInput {
 	name: unknown;
 	description?: unknown;
 	city?: unknown;
+	/** From the place picker; the profile's remembered place fills in otherwise. */
+	region?: unknown;
+	country?: unknown;
+	countryCode?: unknown;
 	categories?: unknown;
 }
 
@@ -370,12 +374,19 @@ export async function createShop(
 
 	const city = trimmedString(input.city, 80);
 	const home = account.homeLocation ?? {};
+	const fromHome = home.city === city;
+	const countryCode = trimmedString(input.countryCode, 2)?.toUpperCase();
 	const location = city
 		? {
 				city,
-				region: home.city === city ? (home.region ?? null) : null,
-				country: home.country ?? "Cameroun",
-				countryCode: home.countryCode ?? "CM",
+				region:
+					trimmedString(input.region, 80) ??
+					(fromHome ? (home.region ?? null) : null),
+				country: trimmedString(input.country, 80) ?? home.country ?? "Cameroun",
+				countryCode:
+					countryCode && /^[A-Z]{2}$/.test(countryCode)
+						? countryCode
+						: (home.countryCode ?? "CM"),
 			}
 		: undefined;
 
@@ -573,15 +584,17 @@ export async function getMyShop(
 	user: ServiceUser,
 	now: Date = new Date(),
 ): Promise<MyShopResponse> {
-	const memberships = await step("memberships", () => payload.find({
-		collection: "shop-members",
-		where: {
-			and: [{ user: { equals: user.id } }, { status: { equals: "active" } }],
-		},
-		depth: 0,
-		limit: 10,
-		overrideAccess: true,
-	}));
+	const memberships = await step("memberships", () =>
+		payload.find({
+			collection: "shop-members",
+			where: {
+				and: [{ user: { equals: user.id } }, { status: { equals: "active" } }],
+			},
+			depth: 0,
+			limit: 10,
+			overrideAccess: true,
+		}),
+	);
 
 	let shop: Shop | null = null;
 	let role: ShopRole | null = null;
@@ -640,10 +653,10 @@ export async function getMyShop(
 		step("personalListings", () =>
 			payload.count({
 				collection: "listings",
-			where: {
-				and: [
-					{ seller: { equals: user.id } },
-					{ shop: { exists: false } },
+				where: {
+					and: [
+						{ seller: { equals: user.id } },
+						{ shop: { exists: false } },
 						{ status: { in: ["draft", "pending", "published"] } },
 					],
 				},

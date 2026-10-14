@@ -17,6 +17,8 @@ export interface AppConfig {
 	stripePublishableKey: string | null;
 	chatUrl: string | null;
 	novuAppId: string | null;
+	/** Photon geocoder behind every place picker, served by the API. */
+	photonUrl: string | null;
 	boostPricing: BoostPrice[];
 	/** Gates shop creation only. Fails closed: "unavailable" reads as "off". */
 	shopsEnabled: boolean;
@@ -48,6 +50,7 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	stripePublishableKey: null,
 	chatUrl: null,
 	novuAppId: null,
+	photonUrl: null,
 	boostPricing: [],
 	shopsEnabled: false,
 	// The three values `GET /api/public/config` itself falls back to on a

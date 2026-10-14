@@ -980,7 +980,6 @@ export default function EditListingScreen() {
 							borderColor={borderColor}
 							textColor={textColor}
 							mutedColor={mutedColor}
-							primaryColor={primaryColor}
 						/>
 					</View>
 

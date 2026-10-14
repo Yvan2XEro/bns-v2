@@ -351,3 +351,41 @@ h6 {
 		animation: none;
 	}
 }
+
+/* Place picker: a sheet rising from the bottom on phones, a dialog popping
+   in on wider screens. */
+@keyframes location-overlay-in {
+	from {
+		opacity: 0;
+	}
+}
+@keyframes location-sheet-up {
+	from {
+		transform: translateY(100%);
+	}
+}
+/* `scale`, not `transform`: Tailwind 4 centres the dialog with the separate
+   `translate` property, which a transform keyframe would compound. */
+@keyframes location-dialog-in {
+	from {
+		opacity: 0;
+		scale: 0.97;
+	}
+}
+.location-overlay[data-state="open"] {
+	animation: location-overlay-in 200ms ease-out;
+}
+.location-sheet[data-state="open"] {
+	animation: location-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (min-width: 640px) {
+	.location-sheet[data-state="open"] {
+		animation: location-dialog-in 180ms ease-out;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.location-overlay[data-state="open"],
+	.location-sheet[data-state="open"] {
+		animation: none;
+	}
+}

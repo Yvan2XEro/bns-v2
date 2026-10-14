@@ -21,6 +21,8 @@ import { getResaleSettings } from "@/lib/resaleSettings";
 import { getShopSettings } from "@/lib/shopSettings";
 import { getVerificationSettings } from "@/lib/verificationSettings";
 
+const DEFAULT_PHOTON_URL = "https://photon.overbrand.net";
+
 /**
  * The caller's market is `?country=` when given, else the first market row —
  * the launch market — so a client that does not send one yet still learns
@@ -115,6 +117,9 @@ export async function GET(request?: Request) {
 		chatUrl: process.env.CHAT_PUBLIC_URL ?? null,
 		novuAppId: process.env.NOVU_APPLICATION_IDENTIFIER ?? null,
 		webUrl: process.env.PUBLIC_WEB_URL ?? null,
+		// Geocoder for the place pickers. Defaulted, not optional: without it
+		// neither client can search a city.
+		photonUrl: process.env.PHOTON_URL || DEFAULT_PHOTON_URL,
 		enabledAuthProviders,
 		localAuthEnabled,
 		shopsEnabled,

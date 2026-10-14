@@ -94,14 +94,13 @@ export function ShopProfileCard({
 					name="city"
 					render={({ field }) => (
 						<CityPicker
-							value={field.value?.name ?? ""}
+							value={field.value}
 							onSelect={field.onChange}
 							onClear={() => field.onChange(null)}
 							inputBg={c.input}
 							borderColor={c.border}
 							textColor={c.text}
 							mutedColor={c.muted}
-							primaryColor={c.primary}
 						/>
 					)}
 				/>

@@ -14,6 +14,7 @@ data:
   PAYLOAD_ALLOWED_ORIGINS: "https://buynsellem.com,https://www.buynsellem.com"
   PUBLIC_WEB_URL: "https://buynsellem.com"
   CHAT_PUBLIC_URL: "https://chat.buynsellem.com"
+  PHOTON_URL: "https://photon.overbrand.net"
   NEXT_PUBLIC_API_URL: "https://api.buynsellem.com"
   NOTCHPAY_BASE_URL: "https://api.notchpay.co"
   NOVU_API_URL: "https://api.novu.co"

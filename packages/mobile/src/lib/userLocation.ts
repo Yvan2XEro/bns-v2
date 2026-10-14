@@ -5,7 +5,7 @@ import {
 	formatPlaceLabel,
 	type Place,
 	rememberPlace,
-	resolveCoordsToPlace,
+	reversePlace,
 } from "./places";
 
 /**
@@ -21,6 +21,11 @@ import {
  * flag. Everything else uses `getForegroundPermissionsAsync`, which reads a
  * decision the user has already made and never shows a dialog. An unexplained
  * location dialog on the first screen is a documented App Review rejection.
+ *
+ * Two separate things are remembered. `location` is "where I am": it seeds
+ * every place picker and pre-fills a new listing or shop. `browseAll` is the
+ * home feed's scope: a new user browses every city until they pick one, and
+ * "All cities" never forgets their own city.
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -29,6 +34,8 @@ export type UserLocationSource = "device" | "manual";
 
 export interface UserLocation {
 	city: string | null;
+	/** Neighbourhood inside `city`, device-only like the coordinates. */
+	district?: string | null;
 	region: string | null;
 	country: string | null;
 	/** ISO 3166-1 alpha-2, uppercase. */
@@ -65,6 +72,8 @@ export interface UserLocationState {
 	permission: LocationPermission;
 	detecting: boolean;
 	lastFailure: LocationFailure | null;
+	/** Home feed scope: every city, or only `location.city`. */
+	browseAll: boolean;
 }
 
 export interface DetectResult {
@@ -73,6 +82,7 @@ export interface DetectResult {
 }
 
 const STORAGE_KEY = "user_location_v1";
+const BROWSE_SCOPE_KEY = "browse_scope_v1";
 
 /** Silent refresh only kicks in once the stored fix is older than this. */
 const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
@@ -88,6 +98,7 @@ let state: UserLocationState = {
 	permission: "unknown",
 	detecting: false,
 	lastFailure: null,
+	browseAll: true,
 };
 
 const listeners = new Set<() => void>();
@@ -116,10 +127,24 @@ export function __resetUserLocationStore() {
 		permission: "unknown",
 		detecting: false,
 		lastFailure: null,
+		browseAll: true,
 	};
 	hydration = null;
+	geocoder = { photonUrl: null };
 	syncedUserId = undefined;
 	profileUserId = null;
+}
+
+// ─── Geocoder ─────────────────────────────────────────────────────────────────
+
+let geocoder: { photonUrl: string | null; lang?: string } = { photonUrl: null };
+
+/** Set from `useUserLocation`, which reads `photonUrl` from the app config. */
+export function configureUserLocation(next: {
+	photonUrl: string | null;
+	lang?: string;
+}) {
+	geocoder = next;
 }
 
 // ─── Conversions ──────────────────────────────────────────────────────────────
@@ -131,6 +156,7 @@ export function placeToUserLocation(
 ): UserLocation {
 	return {
 		city: place.name || null,
+		district: place.district ?? null,
 		region: place.region || null,
 		country: place.country ?? null,
 		countryCode: place.countryCode ?? null,
@@ -145,12 +171,13 @@ export function placeToUserLocation(
 export function userLocationToPlace(location: UserLocation): Place {
 	return {
 		name: location.city ?? "",
+		...(location.district ? { district: location.district } : {}),
 		region: location.region ?? "",
 		country: location.country ?? undefined,
 		countryCode: location.countryCode ?? undefined,
 		lat: location.lat ?? undefined,
 		lng: location.lng ?? undefined,
-		source: location.source === "device" ? "device" : "custom",
+		source: location.source === "device" ? "device" : "saved",
 	};
 }
 
@@ -166,6 +193,7 @@ function isUserLocation(value: unknown): value is UserLocation {
 function normalize(raw: Partial<UserLocation>): UserLocation {
 	const place: Place = {
 		name: raw.city ?? "",
+		...(raw.district ? { district: raw.district } : {}),
 		region: raw.region ?? "",
 		country: raw.country ?? undefined,
 		countryCode: raw.countryCode ?? undefined,
@@ -173,6 +201,7 @@ function normalize(raw: Partial<UserLocation>): UserLocation {
 	};
 	return {
 		city: raw.city ?? null,
+		district: raw.district ?? null,
 		region: raw.region ?? null,
 		country: raw.country ?? null,
 		countryCode: raw.countryCode?.toUpperCase() ?? null,
@@ -209,6 +238,14 @@ async function readStored(): Promise<UserLocation | null> {
 		return isUserLocation(parsed) ? normalize(parsed) : null;
 	} catch {
 		return null;
+	}
+}
+
+async function readBrowseAll(): Promise<boolean> {
+	try {
+		return (await AsyncStorage.getItem(BROWSE_SCOPE_KEY)) !== "city";
+	} catch {
+		return true;
 	}
 }
 
@@ -258,11 +295,17 @@ let hydration: Promise<void> | null = null;
 export function hydrateUserLocation(): Promise<void> {
 	if (hydration) return hydration;
 	hydration = (async () => {
-		const [stored, permission] = await Promise.all([
+		const [stored, permission, browseAll] = await Promise.all([
 			readStored(),
 			peekLocationPermission(),
+			readBrowseAll(),
 		]);
-		setState({ location: stored, hydrated: true, permission });
+		setState({
+			location: stored,
+			hydrated: true,
+			permission,
+			browseAll: browseAll || !stored?.city,
+		});
 
 		if (permission === "granted") {
 			const age = stored?.updatedAt
@@ -332,7 +375,11 @@ export async function detectUserLocation(
 		const lat = position.coords.latitude;
 		const lng = position.coords.longitude;
 
-		const place = await resolveCoordsToPlace(lat, lng, "device");
+		const place = await reversePlace(
+			geocoder.photonUrl,
+			{ lat, lng },
+			geocoder.lang,
+		);
 		const location = place
 			? placeToUserLocation(place, "device", { lat, lng })
 			: coordsOnlyLocation(lat, lng);
@@ -371,8 +418,23 @@ export async function setManualLocation(place: Place): Promise<UserLocation> {
 	return location;
 }
 
+/**
+ * The home feed's scope. Choosing a city there is also the strongest signal
+ * of where the user is, so it becomes their location as well.
+ */
+export async function setBrowsePlace(place: Place | null): Promise<void> {
+	setState({ browseAll: place === null });
+	try {
+		await AsyncStorage.setItem(BROWSE_SCOPE_KEY, place ? "city" : "all");
+	} catch {
+		// Costs the scope on next launch, nothing more.
+	}
+	if (place) await setManualLocation(place);
+}
+
 /** Forgets the location on this device and on the profile. */
 export async function clearUserLocation(): Promise<void> {
+	setState({ browseAll: true });
 	await persist(null);
 }
 

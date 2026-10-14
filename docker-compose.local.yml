@@ -152,6 +152,9 @@ services:
       FACEBOOK_OAUTH_APP_ID: ${FACEBOOK_OAUTH_APP_ID:-}
       FACEBOOK_OAUTH_APP_SECRET: ${FACEBOOK_OAUTH_APP_SECRET:-}
       PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://buynsellem.com}
+      # Photon geocoder (komoot/photon) served to web and mobile through
+      # /api/public/config — clients carry no geocoder setting of their own.
+      PHOTON_URL: ${PHOTON_URL:-https://photon.overbrand.net}
       # Storage
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
       S3_BUCKET: ${S3_BUCKET:-}

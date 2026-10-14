@@ -122,6 +122,9 @@ export interface CreateShopInput {
 	name: string;
 	description?: string;
 	city?: string;
+	region?: string;
+	country?: string;
+	countryCode?: string;
 	categories?: string[];
 }
 

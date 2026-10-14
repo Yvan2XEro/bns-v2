@@ -16,6 +16,7 @@ services:
       YANGO_DELIVERY_WEBHOOK_SECRET: ${YANGO_DELIVERY_WEBHOOK_SECRET:-}
       NOTCHPAY_PRIVATE_KEY: ${NOTCHPAY_PRIVATE_KEY:-}
       PROTECTED_PAYMENT_ALLOWED: ${PROTECTED_PAYMENT_ALLOWED:-}
+      PHOTON_URL: ${PHOTON_URL:-https://photon.overbrand.net}
 
   web:
     build: !reset null

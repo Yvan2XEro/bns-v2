@@ -22,6 +22,9 @@ export const createShopEndpoint: Endpoint = {
 				name: body.name,
 				description: body.description,
 				city: body.city,
+				region: body.region,
+				country: body.country,
+				countryCode: body.countryCode,
 				categories: body.categories,
 			});
 			return Response.json({ shop }, { status: 201 });

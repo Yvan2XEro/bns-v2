@@ -91,6 +91,8 @@ interface FormData {
 	duration: number;
 	location: string;
 	coordinates: { lat: number; lng: number } | null;
+	/** The picked place, for display: a neighbourhood is shown with its city. */
+	place: Place | null;
 	attributes: Record<string, any>;
 	images: UploadedImage[];
 	tags: string[];
@@ -111,6 +113,7 @@ function createEmptyForm(): FormData {
 		duration: 30,
 		location: "",
 		coordinates: null,
+		place: null,
 		attributes: {},
 		images: [],
 		tags: [],
@@ -269,6 +272,7 @@ export default function CreateScreen() {
 				: {
 						...f,
 						location: rememberedPlace.name,
+						place: rememberedPlace,
 						coordinates:
 							rememberedPlace.lat != null && rememberedPlace.lng != null
 								? { lat: rememberedPlace.lat, lng: rememberedPlace.lng }
@@ -474,6 +478,7 @@ export default function CreateScreen() {
 		// it again on every new ad is the thing `useUserLocation` exists to avoid.
 		if (rememberedPlace?.name) {
 			blank.location = rememberedPlace.name;
+			blank.place = rememberedPlace;
 			blank.coordinates =
 				rememberedPlace.lat != null && rememberedPlace.lng != null
 					? { lat: rememberedPlace.lat, lng: rememberedPlace.lng }
@@ -824,6 +829,7 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 		setForm((f: any) => ({
 			...f,
 			location: place.name,
+			place,
 			// A place typed by hand has no coordinates; store null rather than
 			// an object of undefined, which would break the radius search.
 			coordinates:
@@ -832,7 +838,12 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 					: null,
 		}));
 	const handleCityClear = () =>
-		setForm((f: any) => ({ ...f, location: "", coordinates: null }));
+		setForm((f: any) => ({
+			...f,
+			location: "",
+			coordinates: null,
+			place: null,
+		}));
 
 	const canProceed =
 		form.title.trim() &&
@@ -993,14 +1004,13 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 					colors={colors}
 				/>
 				<CityPicker
-					value={form.location}
+					value={form.place ?? form.location}
 					onSelect={handleCitySelect}
 					onClear={handleCityClear}
 					inputBg={inputBg}
 					borderColor={border}
 					textColor={textColor}
 					mutedColor={mutedColor}
-					primaryColor={primary}
 				/>
 			</View>
 

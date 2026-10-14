@@ -1,22 +1,15 @@
 "use client";
 
-import {
-	Bookmark,
-	Check,
-	MapPin,
-	Search,
-	SlidersHorizontal,
-	X,
-} from "lucide-react";
+import { Bookmark, Check, Search, SlidersHorizontal, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { EmptyState } from "~/components/empty-state";
 import { ListingGrid } from "~/components/listing/listing-card";
+import { LocationField } from "~/components/location/location-field";
 import { LoadError } from "~/components/seller/load-states";
 import { Button } from "~/components/ui/button";
-import { CitySelect } from "~/components/ui/city-select";
 import {
 	Dialog,
 	DialogContent,
@@ -41,8 +34,11 @@ import {
 	useListingSearch,
 } from "~/hooks/use-listing-search";
 import { saveSearch } from "~/lib/actions";
-import type { CameroonCity } from "~/lib/cameroon-cities";
 import type { Category, CategoryAttribute, Listing } from "~/types";
+import {
+	type Place,
+	placeCoords,
+} from "../../../../../api/src/contracts/places";
 
 interface SearchClientProps {
 	categories: Category[];
@@ -69,13 +65,13 @@ export function SearchClient({
 	const [attributes, setAttributes] = useState<CategoryAttribute[]>([]);
 	const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-	const [nearMe, setNearMe] = useState(false);
-	const [geoCoords, setGeoCoords] = useState<{
-		lat: number;
-		lng: number;
-	} | null>(null);
-	const [geoRadius, setGeoRadius] = useState(initialParams.radius || "50");
-	const [geoLoading, setGeoLoading] = useState(false);
+	// A neighbourhood or the user's own position searches a radius around it;
+	// a city filters on the city itself, which also finds listings that carry
+	// no coordinates.
+	const [geoPlace, setGeoPlace] = useState<Place | null>(null);
+	const geoCoords = placeCoords(geoPlace);
+	const nearMe = geoCoords !== null;
+	const [geoRadius, setGeoRadius] = useState(initialParams.radius || "10");
 
 	const [filters, setFilters] = useState({
 		q: initialParams.q || "",
@@ -258,32 +254,13 @@ export function SearchClient({
 		router.push(`/search?${newParams.toString()}`);
 	}
 
-	function handleNearMeToggle() {
-		if (nearMe) {
-			setNearMe(false);
-			setGeoCoords(null);
-			return;
-		}
-		if (!navigator.geolocation) {
-			alert(t("geolocationNotSupported"));
-			return;
-		}
-		setGeoLoading(true);
-		navigator.geolocation.getCurrentPosition(
-			(position) => {
-				setGeoCoords({
-					lat: position.coords.latitude,
-					lng: position.coords.longitude,
-				});
-				setNearMe(true);
-				setGeoLoading(false);
-			},
-			(error) => {
-				console.error("Geolocation error:", error);
-				alert(t("couldNotGetLocation"));
-				setGeoLoading(false);
-			},
-		);
+	function handlePlaceChange(place: Place | null) {
+		const radiusSearch =
+			place !== null &&
+			(place.kind === "district" || place.source === "device") &&
+			placeCoords(place) !== null;
+		setGeoPlace(radiusSearch ? place : null);
+		updateFilter("location", place && !radiusSearch ? place.name : "");
 	}
 
 	function handleRadiusChange(value: string) {
@@ -291,8 +268,7 @@ export function SearchClient({
 	}
 
 	function clearFilters() {
-		setNearMe(false);
-		setGeoCoords(null);
+		setGeoPlace(null);
 		setFilters({
 			q: "",
 			category: "",
@@ -417,43 +393,11 @@ export function SearchClient({
 				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
 					{t("location")}
 				</Label>
-				<CitySelect
-					value={filters.location}
-					onChange={(city: CameroonCity | null) => {
-						updateFilter("location", city?.name ?? "");
-						if (city) {
-							setGeoCoords({ lat: city.lat, lng: city.lng });
-							setNearMe(true);
-						} else {
-							if (!nearMe) setGeoCoords(null);
-						}
-					}}
-					className="h-9 text-sm"
+				<LocationField
+					value={geoPlace ?? filters.location}
+					onChange={handlePlaceChange}
+					title={t("location")}
 				/>
-			</div>
-
-			{/* Near me */}
-			<div className="space-y-2">
-				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					{t("nearMe")}
-				</Label>
-				<button
-					type="button"
-					onClick={handleNearMeToggle}
-					disabled={geoLoading}
-					className={`flex h-9 w-full items-center justify-center gap-2 rounded-lg border font-medium text-sm transition-colors ${
-						nearMe
-							? "border-[#1E40AF] bg-[#1E40AF]/10 text-[#1E40AF]"
-							: "border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F8FAFC]"
-					}`}
-				>
-					<MapPin className="h-4 w-4" />
-					{geoLoading
-						? t("locating")
-						: nearMe
-							? t("nearMeOn")
-							: t("useMyLocation")}
-				</button>
 				{nearMe && (
 					<Select value={geoRadius} onValueChange={handleRadiusChange}>
 						<SelectTrigger className="h-9 rounded-lg text-sm">

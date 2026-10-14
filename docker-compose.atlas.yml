@@ -138,6 +138,9 @@ services:
       NOVU_EXPO_INTEGRATION_IDENTIFIER: ${NOVU_EXPO_INTEGRATION_IDENTIFIER:-}
       CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-https://${CHAT_DOMAIN:-chat.buynsellem.com}}
       PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-https://${WEB_DOMAIN:-buynsellem.com}}
+      # Photon geocoder (komoot/photon) served to web and mobile through
+      # /api/public/config — clients carry no geocoder setting of their own.
+      PHOTON_URL: ${PHOTON_URL:-https://photon.overbrand.net}
       # Storage
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
       S3_BUCKET: ${S3_BUCKET:-}

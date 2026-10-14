@@ -4,9 +4,9 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { LocationField } from "~/components/location/location-field";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { ShopCard } from "~/components/shop/shop-card";
-import { CitySelect } from "~/components/ui/city-select";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { useShopSearch } from "~/hooks/use-shop-search";
 
@@ -60,7 +60,7 @@ export function ShopSearchClient({
 					/>
 				</div>
 				<div className="sm:w-60">
-					<CitySelect
+					<LocationField
 						value={city}
 						onChange={(selected) => setCity(selected?.name ?? "")}
 						placeholder={t("allCities")}

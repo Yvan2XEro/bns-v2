@@ -133,7 +133,7 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 					name="city"
 					render={({ field }) => (
 						<CityPicker
-							value={field.value?.name ?? ""}
+							value={field.value}
 							onSelect={field.onChange}
 							onClear={() => field.onChange(null)}
 							placeholder={t("shop.cityPlaceholder")}
@@ -141,7 +141,6 @@ export function ShopDetailsForm({ phone }: { phone: PhoneStatus }) {
 							borderColor={c.border}
 							textColor={c.text}
 							mutedColor={c.muted}
-							primaryColor={c.primary}
 						/>
 					)}
 				/>

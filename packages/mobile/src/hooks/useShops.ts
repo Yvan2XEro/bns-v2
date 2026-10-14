@@ -196,6 +196,9 @@ export function useCreateShop() {
 			name: string;
 			description?: string;
 			city?: string;
+			region?: string;
+			country?: string;
+			countryCode?: string;
 			categories?: string[];
 		}) => api.post<{ shop: PublicShop }>("/api/shops", body),
 		onSuccess: invalidate,

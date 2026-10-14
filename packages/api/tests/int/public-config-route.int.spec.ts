@@ -112,6 +112,7 @@ describe("GET /api/public/config", () => {
 			chatUrl: "https://chat.example",
 			novuAppId: "novu-app",
 			webUrl: "https://web.example",
+			photonUrl: "https://photon.overbrand.net",
 			enabledAuthProviders: expect.any(Array),
 			localAuthEnabled: true,
 			shopsEnabled: false,
@@ -133,6 +134,17 @@ describe("GET /api/public/config", () => {
 			intercityEnabled: false,
 			resaleEnabled: false,
 			resalePrepaidEnabled: false,
+		});
+	});
+
+	it("serves the PHOTON_URL override to the place pickers", async () => {
+		vi.stubEnv("PHOTON_URL", "https://geo.example");
+		findGlobal.mockResolvedValue({});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		expect(await (await GET()).json()).toMatchObject({
+			photonUrl: "https://geo.example",
 		});
 	});
 

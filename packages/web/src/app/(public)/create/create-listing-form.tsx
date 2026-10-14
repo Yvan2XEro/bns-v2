@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDialogField } from "~/components/category-picker";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
+import { LocationField } from "~/components/location/location-field";
 import { PublishInShopToggle } from "~/components/shop/publish-in-shop-toggle";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -17,7 +18,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "~/components/ui/card";
-import { CitySelect } from "~/components/ui/city-select";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -30,7 +30,7 @@ import {
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
 import { useMyShop } from "~/hooks/use-my-shop";
-import type { CameroonCity } from "~/lib/cameroon-cities";
+import { usePlacePreferences } from "~/hooks/use-place-preferences";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
 import {
 	type CategoryAttributeSpec,
@@ -48,6 +48,10 @@ import { createCategorySuggester } from "~/lib/category-suggest";
 import { formatListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import type { Category, ListingCondition } from "~/types";
+import {
+	type Place,
+	placeCoords,
+} from "../../../../../api/src/contracts/places";
 
 /** Maximum number of images a listing can carry (enforced server-side too). */
 const MAX_LISTING_IMAGES = 3;
@@ -100,10 +104,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const [images, setImages] = useState<File[]>([]);
 	const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-	const [coordinates, setCoordinates] = useState<{
-		lat: number;
-		lng: number;
-	} | null>(null);
+	const [place, setPlace] = useState<Place | null>(null);
 	const [duration, setDuration] = useState("30");
 	const [formData, setFormData] = useState({
 		title: "",
@@ -112,6 +113,24 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		location: "",
 		condition: "" as ListingCondition | "",
 	});
+
+	const choosePlace = (next: Place | null) => {
+		setPlace(next);
+		setFormData((p) => ({ ...p, location: next?.name ?? "" }));
+	};
+
+	// The remembered city is a preference, not part of the draft: asking for it
+	// on every new ad is what it exists to avoid. It is read from the browser
+	// after hydration, and fills the field once, never over a choice.
+	const { place: rememberedPlace } = usePlacePreferences();
+	const prefilledRef = useRef(false);
+	useEffect(() => {
+		if (prefilledRef.current || !rememberedPlace) return;
+		prefilledRef.current = true;
+		if (formData.location) return;
+		setPlace(rememberedPlace);
+		setFormData((p) => ({ ...p, location: rememberedPlace.name }));
+	}, [rememberedPlace, formData.location]);
 
 	/**
 	 * Set the moment the seller opens the category modal themselves. From then on
@@ -414,6 +433,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				listingData.condition = formData.condition;
 			}
 
+			const coordinates = placeCoords(place);
 			if (coordinates) {
 				listingData.coordinates = coordinates;
 			}
@@ -574,17 +594,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								)}
 								<div className="space-y-2">
 									<Label htmlFor="location">{tListing("localisation")}</Label>
-									<CitySelect
-										value={formData.location}
-										onChange={(city: CameroonCity | null) => {
-											setFormData((p) => ({
-												...p,
-												location: city?.name ?? "",
-											}));
-											setCoordinates(
-												city ? { lat: city.lat, lng: city.lng } : null,
-											);
-										}}
+									<LocationField
+										id="location"
+										value={place ?? formData.location}
+										clearable={false}
+										onChange={choosePlace}
 									/>
 								</div>
 							</div>

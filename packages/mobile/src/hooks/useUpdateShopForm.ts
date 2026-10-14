@@ -30,7 +30,7 @@ function defaultValues(shop: MyShop): ShopProfileFormValues {
 					region: shop.location.region ?? "",
 					country: shop.location.country ?? undefined,
 					countryCode: shop.location.countryCode ?? undefined,
-					source: "custom",
+					source: "saved",
 				}
 			: null,
 		categories: shop.categories.map((cat) => ({ id: cat.id, name: cat.name })),

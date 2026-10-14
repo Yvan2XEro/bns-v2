@@ -5,17 +5,18 @@ import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Controller, useForm, useWatch } from "react-hook-form";
+import { LocationField } from "~/components/location/location-field";
 import { CategoryChips } from "~/components/shop/category-chips";
 import { HandleInput } from "~/components/shop/handle-input";
 import { PhoneRequirement } from "~/components/shop/phone-requirement";
 import { ShopPreviewCard } from "~/components/shop/shop-preview-card";
 import { Button } from "~/components/ui/button";
-import { CitySelect } from "~/components/ui/city-select";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useCreateShop } from "~/hooks/use-create-shop";
 import { useHandleAvailability } from "~/hooks/use-handle-availability";
 import { usePhoneStatus } from "~/hooks/use-phone-status";
+import { usePlacePreferences } from "~/hooks/use-place-preferences";
 import { ERROR_CODES, resolveErrorMessage } from "~/lib/apiError";
 import {
 	type CreateShopValues,
@@ -38,6 +39,8 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 	const router = useRouter();
 	const createShop = useCreateShop();
 	const { data: phoneStatus } = usePhoneStatus();
+	// Most shops sell where their owner is: start from the remembered city.
+	const { place: myPlace } = usePlacePreferences();
 
 	const {
 		control,
@@ -50,7 +53,7 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 	} = useForm<CreateShopValues>({
 		resolver: zodResolver(createShopSchema),
 		mode: "onChange",
-		defaultValues: { name: "", handle: "", city: "", categories: [] },
+		defaultValues: { name: "", handle: "", city: myPlace, categories: [] },
 	});
 
 	const name = useWatch({ control, name: "name" });
@@ -70,7 +73,16 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 			await createShop.mutateAsync({
 				handle: values.handle,
 				name: values.name.trim(),
-				...(values.city ? { city: values.city } : {}),
+				...(values.city
+					? {
+							city: values.city.name,
+							...(values.city.region ? { region: values.city.region } : {}),
+							...(values.city.country ? { country: values.city.country } : {}),
+							...(values.city.countryCode
+								? { countryCode: values.city.countryCode }
+								: {}),
+						}
+					: {}),
 				...(values.categories.length > 0
 					? { categories: values.categories }
 					: {}),
@@ -150,10 +162,10 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 					control={control}
 					name="city"
 					render={({ field }) => (
-						<CitySelect
+						<LocationField
 							id="shop-city"
 							value={field.value}
-							onChange={(city) => field.onChange(city?.name ?? "")}
+							onChange={field.onChange}
 							placeholder={t("cityPlaceholder")}
 						/>
 					)}

@@ -40,6 +40,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CategoryIcon } from "@/src/components/CategoryIcon";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { LocationChip } from "@/src/components/location/LocationChip";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
@@ -245,7 +246,10 @@ export default function HomeScreen() {
 		permission: locationPermission,
 		detecting: locationDetecting,
 		requestDetection,
+		browsePlace,
+		setBrowsePlace,
 	} = useUserLocation();
+	const browseCity = browsePlace?.name ?? null;
 
 	// A city the user picked by hand carries coordinates too, so "near you"
 	// works with no permission at all once a location is remembered.
@@ -316,10 +320,12 @@ export default function HomeScreen() {
 		isError: recentError,
 		refetch: refetchRecent,
 	} = useQuery({
-		queryKey: ["listings", "recent"],
+		queryKey: ["listings", "recent", browseCity],
 		queryFn: () =>
 			api.get<{ hits: any[]; total: number }>(
-				"/api/public/search?limit=20&sort=newest&offset=0",
+				`/api/public/search?limit=20&sort=newest&offset=0${
+					browseCity ? `&location=${encodeURIComponent(browseCity)}` : ""
+				}`,
 			),
 	});
 	const { data: featuredData } = useQuery({
@@ -590,6 +596,11 @@ export default function HomeScreen() {
 						</Pressable>
 					</Animated.View>
 				</View>
+				{isSearchMode ? null : (
+					<View style={styles.locationRow}>
+						<LocationChip />
+					</View>
+				)}
 			</View>
 
 			{/* ══ Content ══ */}
@@ -871,8 +882,17 @@ export default function HomeScreen() {
 						{/* Annonces récentes */}
 						<View style={styles.section}>
 							<View style={styles.sectionHeader}>
-								<Text style={[styles.sectionTitle, { color: textColor }]}>
-									{t("home.recentListings")}
+								<Text
+									style={[
+										styles.sectionTitle,
+										styles.sectionTitleShrink,
+										{ color: textColor },
+									]}
+									numberOfLines={1}
+								>
+									{browseCity
+										? t("home.recentListingsIn", { city: browseCity })
+										: t("home.recentListings")}
 								</Text>
 								<Pressable onPress={onSearchFocus}>
 									<Text style={[styles.seeAll, { color: primaryColor }]}>
@@ -898,9 +918,21 @@ export default function HomeScreen() {
 								<EmptyState
 									icon="storefront-outline"
 									title={t("home.noListings")}
-									subtitle={t("home.noListingsSub")}
-									ctaLabel={t("home.publish")}
-									onCta={() => router.push("/(tabs)/create")}
+									subtitle={
+										browseCity
+											? t("home.noListingsIn", { city: browseCity })
+											: t("home.noListingsSub")
+									}
+									ctaLabel={
+										browseCity
+											? t("locationSheet.seeAllCities")
+											: t("home.publish")
+									}
+									onCta={() =>
+										browseCity
+											? void setBrowsePlace(null)
+											: router.push("/(tabs)/create")
+									}
 								/>
 							) : (
 								<View style={styles.grid}>
@@ -1247,6 +1279,8 @@ const styles = StyleSheet.create({
 	},
 	sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
 	sectionTitle: { fontSize: 17, fontFamily: Fonts.displayBold },
+	sectionTitleShrink: { flexShrink: 1 },
+	locationRow: { marginTop: 10 },
 	seeAll: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 	catList: { paddingHorizontal: 16, gap: 8 },
 
