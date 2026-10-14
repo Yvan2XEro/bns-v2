@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	createZone,
 	deactivateZone,
+	publicDeliveryCities,
 	resolveZonesFor,
 	updateZone,
 } from "../../src/services/delivery/zones";
@@ -128,6 +129,63 @@ describe("P7 delivery zones", () => {
 			name: "Douala central",
 			freeAboveSubtotal: 20_000,
 			minOrderSubtotal: 3_000,
+		});
+	});
+
+	it("lists the cities an active shop's active zones reach, in launch order", async () => {
+		const payload = fakePayload({
+			shops: [shop, { ...shop, id: "shop-closed", status: "closed" }],
+			"delivery-zones": [
+				{
+					id: "z1",
+					shop: shop.id,
+					scope: "same_city",
+					city: "douala",
+					active: true,
+				},
+				{
+					id: "z2",
+					shop: shop.id,
+					scope: "intercity",
+					city: "douala",
+					destinationCities: ["yaounde"],
+					active: true,
+				},
+				{
+					id: "z3",
+					shop: "shop-other",
+					scope: "same_city",
+					city: "yaounde",
+					active: true,
+				},
+			],
+		});
+		await expect(publicDeliveryCities(payload, shop.id)).resolves.toEqual({
+			deliveryCities: ["douala", "yaounde"],
+		});
+		await expect(
+			publicDeliveryCities(payload, "shop-closed"),
+		).rejects.toMatchObject({ status: 404 });
+		await expect(
+			publicDeliveryCities(payload, "missing"),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("is empty for a shop without active zones", async () => {
+		const payload = fakePayload({
+			shops: [shop],
+			"delivery-zones": [
+				{
+					id: "z1",
+					shop: shop.id,
+					scope: "same_city",
+					city: "douala",
+					active: false,
+				},
+			],
+		});
+		await expect(publicDeliveryCities(payload, shop.id)).resolves.toEqual({
+			deliveryCities: [],
 		});
 	});
 });

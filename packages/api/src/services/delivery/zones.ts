@@ -4,6 +4,7 @@ import {
 	DELIVERY_METHODS,
 	DELIVERY_SCOPES,
 } from "../../collections/DeliveryZones";
+import type { PublicDeliveryCities } from "../../contracts/publicPickupPoint";
 import { queueSearchEvent } from "../../hooks/searchEvents";
 import { getDeliverySettings } from "../../lib/deliverySettings";
 import { ERROR_CODES } from "../../lib/errors";
@@ -11,6 +12,7 @@ import {
 	districtKeysOf,
 	isDistrictKey,
 	isLaunchCityKey,
+	LAUNCH_CITY_KEYS,
 	type LaunchCityKey,
 } from "../../lib/launchCities";
 import { getOrderSettings } from "../../lib/orderSettings";
@@ -391,6 +393,51 @@ export async function resolveZonesFor(
 		}
 	}
 	return resolved;
+}
+
+/**
+ * The launch cities an active shop's active zones reach — its own city for a
+ * same-city zone, every destination for an intercity one — in launch order.
+ * Feeds the shop page's "Livre à …" line and the search index's
+ * `deliveryCities` filter, so an unknown or closed shop is a 404 rather than
+ * an empty list.
+ */
+export async function publicDeliveryCities(
+	payload: Payload,
+	shopId: string,
+): Promise<PublicDeliveryCities> {
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	if (!shop || shop.status !== "active")
+		throw new ServiceError(ERROR_CODES.shopNotFound, 404);
+
+	const zones = await payload.find({
+		collection: "delivery-zones",
+		where: {
+			and: [{ shop: { equals: shopId } }, { active: { equals: true } }],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const reached = new Set<string>();
+	for (const zone of zones.docs) {
+		if (zone.scope === "intercity") {
+			for (const city of zone.destinationCities ?? []) reached.add(city);
+		} else {
+			reached.add(zone.city);
+		}
+	}
+	return {
+		deliveryCities: LAUNCH_CITY_KEYS.filter((city) => reached.has(city)),
+	};
 }
 
 export async function testShopDelivery(
