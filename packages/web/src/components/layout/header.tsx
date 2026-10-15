@@ -13,6 +13,7 @@ import { useAuth } from "~/hooks/use-auth";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useNavCategories } from "~/hooks/use-nav-categories";
 import { usePlacePreferences } from "~/hooks/use-place-preferences";
+import { useScrolledPast } from "~/hooks/use-scrolled-past";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
 import {
 	accountSections,
@@ -87,6 +88,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 	};
 
 	const themed = Boolean(shop);
+	const condensed = useScrolledPast("[data-shop-title]", themed);
 	const iconTone = themed
 		? "text-[var(--shop-head-muted)] hover:bg-white/10 hover:text-[var(--shop-head-fg)] focus-visible:ring-[var(--shop-head-fg)]"
 		: "text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:ring-[#93C5FD]";
@@ -108,45 +110,51 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 				{shop && <style>{shopHeaderCss(`.${SHOP_HEAD}`, shop.theme)}</style>}
 				<div className="relative">
 					<div className="container mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6 md:h-16 md:gap-3 lg:px-8">
-						<Link
-							href="/"
-							aria-label={t("home")}
-							className="flex shrink-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
-						>
-							<Image
-								src="/logo.png"
-								alt=""
-								width={32}
-								height={32}
-								className="h-8 w-8 object-contain"
-							/>
-							<span
+						{/* One fixed slot: the shop's identity takes the brand's place once
+						    its own title has scrolled away, so nothing beside it moves. */}
+						<div className="relative h-10 w-8 shrink-0 lg:w-40">
+							<Link
+								href="/"
+								aria-label={t("home")}
+								aria-hidden={condensed || undefined}
+								tabIndex={condensed ? -1 : undefined}
 								className={cn(
-									"font-bold font-heading text-lg",
-									themed ? "hidden lg:inline" : "hidden sm:inline",
+									"absolute inset-0 flex items-center gap-2 rounded-lg transition-[opacity,transform] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] motion-reduce:transition-none",
+									condensed && "-translate-y-2 pointer-events-none opacity-0",
 								)}
 							>
-								Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
-							</span>
-						</Link>
-
-						{shop && (
-							<Link
-								href={`/s/${shop.handle}`}
-								className="flex min-w-0 items-center gap-2 rounded-lg border-white/25 border-l pl-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--shop-head-fg)] md:max-w-[12rem]"
-							>
-								<span aria-hidden="true">
+								<Image
+									src="/logo.png"
+									alt=""
+									width={32}
+									height={32}
+									className="h-8 w-8 shrink-0 object-contain"
+								/>
+								<span className="hidden whitespace-nowrap font-bold font-heading text-lg lg:inline">
+									Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
+								</span>
+							</Link>
+							{shop && (
+								<Link
+									href={`/s/${shop.handle}`}
+									aria-hidden={!condensed || undefined}
+									tabIndex={condensed ? undefined : -1}
+									className={cn(
+										"absolute inset-0 flex min-w-0 items-center gap-2 rounded-lg transition-[opacity,transform] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--shop-head-fg)] motion-reduce:transition-none",
+										!condensed && "pointer-events-none translate-y-2 opacity-0",
+									)}
+								>
 									<ShopInitials
 										name={shop.name}
 										logoUrl={shop.logoUrl}
-										className="h-7 w-7 rounded-lg text-[11px]"
+										className="h-8 w-8 shrink-0 rounded-lg text-[11px]"
 									/>
-								</span>
-								<span className="truncate font-semibold text-sm">
-									{shop.name}
-								</span>
-							</Link>
-						)}
+									<span className="hidden truncate font-semibold text-sm lg:inline">
+										{shop.name}
+									</span>
+								</Link>
+							)}
+						</div>
 
 						<div className="hidden md:block">
 							<CategoriesMenu
@@ -158,7 +166,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 							/>
 						</div>
 
-						<div className="hidden min-w-[22rem] flex-1 md:flex lg:min-w-[28rem]">
+						<div className="hidden min-w-[16rem] flex-1 md:flex lg:min-w-[20rem] xl:min-w-[26rem]">
 							<HeaderSearch shop={shop} />
 						</div>
 						<div className="flex-1 md:hidden" />

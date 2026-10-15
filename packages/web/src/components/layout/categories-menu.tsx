@@ -247,7 +247,7 @@ export function CategoriesMenu({
 				)}
 			>
 				<LayoutGrid aria-hidden="true" className="h-4 w-4" />
-				<span className="sr-only lg:not-sr-only">{t("allCategories")}</span>
+				<span className="sr-only xl:not-sr-only">{t("allCategories")}</span>
 				<ChevronDown
 					aria-hidden="true"
 					className={cn("h-4 w-4 transition-transform", open && "rotate-180")}

@@ -59,7 +59,10 @@ export function ShopHero({
 					<div className="flex min-w-0 flex-1 flex-col gap-4 sm:pt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
 						<div className="min-w-0">
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-								<h1 className="break-words font-extrabold text-2xl text-[#0F172A] tracking-tight sm:text-[32px] sm:leading-tight">
+								<h1
+									data-shop-title=""
+									className="break-words font-extrabold text-2xl text-[#0F172A] tracking-tight sm:text-[32px] sm:leading-tight"
+								>
 									{shop.name}
 								</h1>
 								<LevelBadge badge={shop.badge} />
