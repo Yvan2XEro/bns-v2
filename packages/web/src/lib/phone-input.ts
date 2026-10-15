@@ -1,4 +1,9 @@
-import { type Country, parsePhoneNumber } from "react-phone-number-input";
+// Straight from libphonenumber-js, not "react-phone-number-input": the root
+// layout (a server component) imports this module, and that package's entry
+// also exports its React components, which crash under the server build.
+import parsePhoneNumber, { type CountryCode } from "libphonenumber-js";
+
+type Country = CountryCode;
 
 /** Cameroon: the market. Every other country stays reachable through the picker. */
 export const DEFAULT_PHONE_COUNTRY: Country = "CM";
