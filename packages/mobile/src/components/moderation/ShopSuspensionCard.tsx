@@ -19,9 +19,18 @@ export function ShopSuspensionCard({
 }: ShopSuspensionCardProps) {
 	if (!suspension.active) {
 		return (
-			<Text style={[styles.meta, { color: c.muted }]}>
-				{t("moderation.noActiveSuspension")}
-			</Text>
+			<View
+				style={[
+					styles.card,
+					styles.row,
+					{ backgroundColor: c.card, borderColor: c.border },
+				]}
+			>
+				<Ionicons name="checkmark-circle-outline" size={20} color={c.success} />
+				<Text style={[styles.sanctionTitle, { color: c.text }]}>
+					{t("moderation.noActiveSuspension")}
+				</Text>
+			</View>
 		);
 	}
 
