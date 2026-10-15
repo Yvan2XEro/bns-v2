@@ -66,6 +66,7 @@ les restes précis.
 
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
+| W38 | Modération web | Console complète : file d'attente, signalements, risques, boutiques, journal, détail à droite | Vérifications et litiges seulement (le reste dans l'admin Payload et l'app) | Fonction |
 
 ## Décisions prises (octobre 2026)
 

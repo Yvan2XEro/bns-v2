@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { LocaleSwitcher } from "~/components/layout/locale-switcher";
+import { OpsNav } from "~/components/ops/ops-nav";
 import { isModerator } from "~/lib/moderation-verification";
 import { serverFetch } from "~/lib/server-api";
 import type { User } from "~/types";
@@ -33,28 +33,18 @@ export default async function OpsLayout({
 	];
 	return (
 		<div className="min-h-screen bg-[#F8FAFC] lg:flex">
-			<aside className="border-[#E2E8F0] border-b bg-white lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
+			<aside className="border-[#1E293B] border-b bg-[#0F172A] lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
 				<div className="p-4">
-					<p className="font-bold text-[#0F172A] text-sm">
+					<p className="font-bold text-sm text-white">
 						{tShell("shell.title")}
 					</p>
-					<p className="text-[#64748B] text-xs">{tShell("shell.subtitle")}</p>
+					<p className="text-[#94A3B8] text-xs">{tShell("shell.subtitle")}</p>
 				</div>
-				<nav className="flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-col">
-					{entries.map((entry) => (
-						<Link
-							key={entry.href}
-							href={entry.href}
-							className="shrink-0 rounded-lg px-3 py-2 font-medium text-[#334155] text-sm hover:bg-[#F8FAFC]"
-						>
-							{entry.label}
-						</Link>
-					))}
-				</nav>
+				<OpsNav entries={entries} />
 				<div className="px-2 pb-2">
 					<LocaleSwitcher />
 				</div>
-				<p className="hidden p-4 text-[#94A3B8] text-xs lg:block">
+				<p className="m-3 hidden rounded-lg bg-white/5 p-3 text-[#CBD5E1] text-xs lg:block">
 					{tShell("shell.auditNotice")}
 				</p>
 			</aside>
