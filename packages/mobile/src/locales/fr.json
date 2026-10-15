@@ -3754,7 +3754,13 @@
 		"order_paidProtected": "Payé par paiement protégé.",
 		"order_refundsTitle": "Remboursements",
 		"order_refundDelay": "Un remboursement arrive généralement sur votre compte mobile money sous {{days}} jours.",
-		"order_feeInvoice": "Télécharger la facture des frais"
+		"order_feeInvoice": "Télécharger la facture des frais",
+		"protectedBadge": "Protégé",
+		"money_title": "Où va votre argent ?",
+		"money_heldTitle": "Détenu par le prestataire de paiement",
+		"money_releaseTitle": "Versé à la boutique après la livraison",
+		"money_refundTitle": "Remboursé si la commande n'aboutit pas",
+		"pay_mobileMoney": "Mobile money"
 	},
 	"delivery": {
 		"statusBuyer": {

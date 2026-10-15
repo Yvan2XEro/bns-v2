@@ -3751,7 +3751,13 @@
 		"order_paidProtected": "Paid with protected payment.",
 		"order_refundsTitle": "Refunds",
 		"order_refundDelay": "A refund usually reaches your mobile money account within {{days}} days.",
-		"order_feeInvoice": "Download the fee invoice"
+		"order_feeInvoice": "Download the fee invoice",
+		"protectedBadge": "Protected",
+		"money_title": "Where does your money go?",
+		"money_heldTitle": "Held by the payment provider",
+		"money_releaseTitle": "Paid to the shop after delivery",
+		"money_refundTitle": "Refunded if the order doesn't go through",
+		"pay_mobileMoney": "Mobile money"
 	},
 	"delivery": {
 		"statusBuyer": {
