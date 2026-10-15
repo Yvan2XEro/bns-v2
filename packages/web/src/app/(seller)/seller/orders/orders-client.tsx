@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Download, MapPin, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { toast } from "sonner";
 import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
@@ -25,6 +25,7 @@ import { cn } from "~/lib/utils";
 import type { ShopRole } from "~/types";
 import type { OrderListEntry, ShopOrderPage } from "~/types/order";
 import {
+	acceptableSelection,
 	areaLabel,
 	type ListTab,
 	PERIODS,
@@ -109,7 +110,17 @@ export function OrdersClient({
 	const settings = useOrderSettings(can(role, "payments.view") ? shopId : null);
 
 	const counts = query.data?.pages[0]?.counts;
-	const rows = (query.data?.pages ?? []).flatMap((page) => page.docs);
+	const rows = useMemo(
+		() => (query.data?.pages ?? []).flatMap((page) => page.docs),
+		[query.data],
+	);
+
+	useEffect(() => {
+		setSelected((current) => {
+			const keep = acceptableSelection(rows, current, role, now);
+			return keep.length === current.size ? current : new Set(keep);
+		});
+	}, [rows, role, now]);
 
 	function update(next: Partial<State>) {
 		patch(next);
@@ -239,9 +250,7 @@ export function OrdersClient({
 	].filter(Boolean);
 
 	const tabs: ListTab[] = ["all", ...SHOP_ORDER_TABS];
-	const selectedIds = rows
-		.filter((row) => selected.has(row.id))
-		.map((row) => row.id);
+	const selectedIds = acceptableSelection(rows, selected, role, now);
 	const canProcess = can(role, "orders.process");
 
 	return (
@@ -381,7 +390,11 @@ export function OrdersClient({
 					<button
 						type="button"
 						disabled={bulkAccept.isPending}
-						onClick={() => bulkAccept.mutate(selectedIds)}
+						onClick={() =>
+							bulkAccept.mutate(
+								acceptableSelection(rows, selected, role, new Date()),
+							)
+						}
 						className="inline-flex h-[34px] items-center rounded-lg bg-[#1E40AF] px-3 font-semibold text-[13px] text-white hover:bg-[#1E3A8A] disabled:opacity-50"
 					>
 						{tList("acceptSelected", { count: selectedIds.length })}

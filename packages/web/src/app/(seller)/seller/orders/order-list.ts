@@ -86,6 +86,22 @@ export function rowAction(
 	return null;
 }
 
+/** The selected orders that can still be accepted: a refresh may have cancelled one or run out its deadline. */
+export function acceptableSelection(
+	rows: ReadonlyArray<
+		Pick<OrderListEntry, "id" | "status" | "acceptBy" | "hasShipment">
+	>,
+	selected: ReadonlySet<string>,
+	role: ShopRole | null,
+	now: Date,
+): string[] {
+	return rows
+		.filter(
+			(row) => selected.has(row.id) && rowAction(row, role, now) === "accept",
+		)
+		.map((row) => row.id);
+}
+
 export type StatusPill =
 	| "toAccept"
 	| "toShip"

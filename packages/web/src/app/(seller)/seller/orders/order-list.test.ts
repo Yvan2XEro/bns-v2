@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { OrderListEntry } from "~/types/order";
 import {
+	acceptableSelection,
 	areaLabel,
 	csvCell,
 	isListTab,
@@ -35,6 +36,21 @@ function row(patch: Partial<OrderListEntry> = {}): OrderListEntry {
 		...patch,
 	};
 }
+
+describe("bulk accept sends only the orders still acceptable", () => {
+	test("a selected order cancelled, accepted or past its deadline after a refresh is dropped", () => {
+		const rows = [
+			row({ id: "o-1" }),
+			row({ id: "o-2", status: "cancelled" }),
+			row({ id: "o-3", acceptBy: EARLIER }),
+			row({ id: "o-4", status: "accepted" }),
+			row({ id: "o-5" }),
+		];
+		const selected = new Set(["o-1", "o-2", "o-3", "o-4", "o-gone"]);
+		expect(acceptableSelection(rows, selected, "owner", NOW)).toEqual(["o-1"]);
+		expect(acceptableSelection(rows, selected, null, NOW)).toEqual([]);
+	});
+});
 
 describe("rowAction mirrors the order page's action table", () => {
 	test("a confirmed or paid order offers accept to anyone holding orders.process", () => {
