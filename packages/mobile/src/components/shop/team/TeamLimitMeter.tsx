@@ -37,7 +37,6 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		borderWidth: 1,
 		padding: 14,
-		marginHorizontal: 16,
 		marginBottom: 12,
 	},
 	seats: { fontSize: 14, fontFamily: Fonts.bodySemibold },

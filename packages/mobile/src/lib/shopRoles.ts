@@ -101,3 +101,38 @@ export function can(
 export function canSeeCost(role: ShopRole | null | undefined): boolean {
 	return can(role, "costs.view");
 }
+
+export type MatrixArea =
+	| "catalogue"
+	| "stock"
+	| "costs"
+	| "orders"
+	| "payments"
+	| "team";
+export type MatrixCell = "full" | "view" | "none";
+
+/** Each area's acting permission, and the read-only one when there is a lesser level. */
+const MATRIX_AREAS: ReadonlyArray<{
+	area: MatrixArea;
+	act: ShopPermission;
+	view?: ShopPermission;
+}> = [
+	{ area: "catalogue", act: "catalogue.edit" },
+	{ area: "stock", act: "stock.move" },
+	{ area: "costs", act: "costs.edit", view: "costs.view" },
+	{ area: "orders", act: "orders.process", view: "orders.view" },
+	{ area: "payments", act: "payments.manage", view: "payments.view" },
+	{ area: "team", act: "team.inviteStaff", view: "team.view" },
+];
+
+export const MATRIX_ROLES: readonly ShopRole[] = ["owner", "manager", "staff"];
+
+/** The "who can do what" table, read from `ROLE_PERMISSIONS` so it can never drift from it. */
+export function roleMatrix(): { area: MatrixArea; cells: MatrixCell[] }[] {
+	return MATRIX_AREAS.map(({ area, act, view }) => ({
+		area,
+		cells: MATRIX_ROLES.map((role) =>
+			can(role, act) ? "full" : view && can(role, view) ? "view" : "none",
+		),
+	}));
+}

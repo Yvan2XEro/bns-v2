@@ -2474,7 +2474,18 @@
 		"remove": "Remove from team",
 		"removeConfirmMessage": "Remove {{name}} from the team? They will lose access immediately.",
 		"recentActivity": "Recent activity",
-		"activityEmpty": "No recent activity for this member."
+		"activityEmpty": "No recent activity for this member.",
+		"matrixTitle": "Who can do what",
+		"matrixArea": {
+			"catalogue": "Catalogue",
+			"stock": "Stock",
+			"costs": "Purchase costs",
+			"orders": "Orders",
+			"payments": "Payments",
+			"team": "Team"
+		},
+		"matrixViewOnly": "View only",
+		"matrixNote": "Managers can see payments but cannot change the payout account."
 	},
 	"shopActivity": {
 		"title": "Activity",

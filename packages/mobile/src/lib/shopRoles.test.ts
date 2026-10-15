@@ -3,6 +3,7 @@ import {
 	can,
 	canSeeCost,
 	ROLE_PERMISSIONS,
+	roleMatrix,
 	type ShopPermission,
 } from "./shopRoles";
 
@@ -83,5 +84,17 @@ describe("canSeeCost", () => {
 		expect(canSeeCost("manager")).toBe(true);
 		expect(canSeeCost("staff")).toBe(false);
 		expect(canSeeCost(null)).toBe(false);
+	});
+});
+
+describe("roleMatrix", () => {
+	test("reads the role table: managers see payments without managing them", () => {
+		const rows = Object.fromEntries(
+			roleMatrix().map((row) => [row.area, row.cells]),
+		);
+		expect(rows.catalogue).toEqual(["full", "full", "full"]);
+		expect(rows.payments).toEqual(["full", "view", "none"]);
+		expect(rows.costs).toEqual(["full", "full", "none"]);
+		expect(rows.team).toEqual(["full", "full", "view"]);
 	});
 });

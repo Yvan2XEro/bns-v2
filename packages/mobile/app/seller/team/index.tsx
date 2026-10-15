@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { MemberRow } from "@/src/components/shop/team/MemberRow";
 import { PendingInvitationRow } from "@/src/components/shop/team/PendingInvitationRow";
+import { RoleMatrix } from "@/src/components/shop/team/RoleMatrix";
 import { TeamLimitMeter } from "@/src/components/shop/team/TeamLimitMeter";
 import { TeamLocked } from "@/src/components/shop/team/TeamLocked";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -179,6 +181,7 @@ function PendingSection({
 
 	return (
 		<View style={styles.footer}>
+			<RoleMatrix />
 			<Text style={[styles.sectionTitle, { color: c.text }]}>
 				{t("team.pending")}
 			</Text>
@@ -214,6 +217,7 @@ function PendingSection({
 							{ backgroundColor: c.primary, opacity: isFull ? 0.5 : 1 },
 						]}
 					>
+						<Ionicons name="person-add-outline" size={18} color="#fff" />
 						<Text style={styles.inviteText}>{t("team.invite")}</Text>
 					</Pressable>
 					{isFull ? (
@@ -236,7 +240,9 @@ const styles = StyleSheet.create({
 	meta: { fontSize: 13, fontFamily: Fonts.body },
 	inviteWrap: { marginTop: 12, gap: 6 },
 	inviteBtn: {
-		minHeight: 44,
+		flexDirection: "row",
+		gap: 8,
+		minHeight: 50,
 		borderRadius: 12,
 		alignItems: "center",
 		justifyContent: "center",

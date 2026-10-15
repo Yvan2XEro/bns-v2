@@ -2477,7 +2477,18 @@
 		"remove": "Retirer de l'équipe",
 		"removeConfirmMessage": "Retirer {{name}} de l'équipe ? L'accès sera perdu immédiatement.",
 		"recentActivity": "Activité récente",
-		"activityEmpty": "Aucune activité récente pour ce membre."
+		"activityEmpty": "Aucune activité récente pour ce membre.",
+		"matrixTitle": "Qui peut faire quoi",
+		"matrixArea": {
+			"catalogue": "Catalogue",
+			"stock": "Stock",
+			"costs": "Coûts d'achat",
+			"orders": "Commandes",
+			"payments": "Paiements",
+			"team": "Équipe"
+		},
+		"matrixViewOnly": "Consultation seule",
+		"matrixNote": "Le manager consulte les paiements sans pouvoir changer le compte de versement."
 	},
 	"shopActivity": {
 		"title": "Activité",
