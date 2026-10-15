@@ -20,14 +20,30 @@ export const ReconciliationRuns: CollectionConfig = {
 		delete: nobody,
 	},
 	fields: [
-		{ name: "startedAt", type: "date", required: true, index: true },
-		{ name: "finishedAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "startedAt",
+					type: "date",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{ name: "finishedAt", type: "date", admin: { width: "50%" } },
+			],
+		},
 		{
 			name: "window",
 			type: "group",
 			fields: [
-				{ name: "from", type: "date" },
-				{ name: "to", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "from", type: "date", admin: { width: "50%" } },
+						{ name: "to", type: "date", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{
@@ -45,10 +61,35 @@ export const ReconciliationRuns: CollectionConfig = {
 			name: "counts",
 			type: "group",
 			fields: [
-				{ name: "checked", type: "number", defaultValue: 0 },
-				{ name: "matched", type: "number", defaultValue: 0 },
-				{ name: "autoFixed", type: "number", defaultValue: 0 },
-				{ name: "mismatches", type: "number", defaultValue: 0 },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "checked",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "matched",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "autoFixed",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "mismatches",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+					],
+				},
 			],
 		},
 		{ name: "error", type: "text" },

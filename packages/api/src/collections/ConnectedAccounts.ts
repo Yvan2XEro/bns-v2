@@ -56,49 +56,94 @@ export const ConnectedAccounts: CollectionConfig = {
 	indexes: [{ fields: ["shop", "provider"], unique: true }],
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "provider",
+					type: "select",
+					required: true,
+					defaultValue: "notchpay",
+					options: options(CONNECTED_ACCOUNT_PROVIDERS),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "provider",
-			type: "select",
-			required: true,
-			defaultValue: "notchpay",
-			options: options(CONNECTED_ACCOUNT_PROVIDERS),
+			type: "row",
+			fields: [
+				{
+					name: "providerAccountId",
+					type: "text",
+					unique: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "accountType",
+					type: "select",
+					required: true,
+					defaultValue: "express",
+					options: options(CONNECTED_ACCOUNT_TYPES),
+					validate: (value: unknown) =>
+						value !== "standard" ||
+						"A standard account lets the seller change the payout schedule and defeat release control.",
+					admin: { width: "33%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "created",
+					index: true,
+					options: options(CONNECTED_ACCOUNT_STATUSES),
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{ name: "providerAccountId", type: "text", unique: true },
 		{
-			name: "accountType",
-			type: "select",
-			required: true,
-			defaultValue: "express",
-			options: options(CONNECTED_ACCOUNT_TYPES),
-			validate: (value: unknown) =>
-				value !== "standard" ||
-				"A standard account lets the seller change the payout schedule and defeat release control.",
+			type: "row",
+			fields: [
+				{
+					name: "chargesEnabled",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "50%" },
+				},
+				{
+					name: "payoutsEnabled",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "created",
-			index: true,
-			options: options(CONNECTED_ACCOUNT_STATUSES),
-		},
-		{ name: "chargesEnabled", type: "checkbox", defaultValue: false },
-		{ name: "payoutsEnabled", type: "checkbox", defaultValue: false },
 		{ name: "requirementsDue", type: "json" },
-		{ name: "kycStatus", type: "text" },
-		{ name: "kycName", type: "text" },
 		{
-			name: "payoutSchedule",
-			type: "select",
-			options: options(PAYOUT_SCHEDULES),
+			type: "row",
+			fields: [
+				{ name: "kycStatus", type: "text", admin: { width: "50%" } },
+				{ name: "kycName", type: "text", admin: { width: "50%" } },
+			],
 		},
-		{ name: "lastSyncedAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "payoutSchedule",
+					type: "select",
+					options: options(PAYOUT_SCHEDULES),
+					admin: { width: "50%" },
+				},
+				{ name: "lastSyncedAt", type: "date", admin: { width: "50%" } },
+			],
+		},
 	],
 	timestamps: true,
 };

@@ -73,52 +73,100 @@ export const PaymentIntents: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "purpose",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Boost", value: "boost" },
-				{ label: "Commission", value: "commission" },
-				{ label: "Checkout", value: "checkout" },
-				{ label: "Reseller charge", value: "reseller_charge" },
+			type: "row",
+			fields: [
+				{
+					name: "purpose",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Boost", value: "boost" },
+						{ label: "Commission", value: "commission" },
+						{ label: "Checkout", value: "checkout" },
+						{ label: "Reseller charge", value: "reseller_charge" },
+					],
+					admin: { width: "33%" },
+				},
+				{
+					name: "targetType",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Boost payment", value: "boost-payment" },
+						{ label: "Commission invoice", value: "commission-invoice" },
+						{ label: "Order", value: "order" },
+						{ label: "Reseller charge", value: "reseller-charge" },
+					],
+					admin: { width: "33%" },
+				},
+				{
+					name: "targetId",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "34%" },
+				},
 			],
 		},
 		{
-			name: "targetType",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Boost payment", value: "boost-payment" },
-				{ label: "Commission invoice", value: "commission-invoice" },
-				{ label: "Order", value: "order" },
-				{ label: "Reseller charge", value: "reseller-charge" },
+			type: "row",
+			fields: [
+				{
+					name: "customer",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{ name: "customerDeletedAt", type: "date", admin: { width: "50%" } },
 			],
 		},
-		{ name: "targetId", type: "text", required: true, index: true },
 		{
-			name: "customer",
-			type: "relationship",
-			relationTo: "users",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "amount",
+					type: "number",
+					required: true,
+					validate: (value: unknown) =>
+						(typeof value === "number" &&
+							Number.isInteger(value) &&
+							value >= 0) ||
+						"Amount must be a whole number in the currency's smallest unit",
+					admin: { width: "33%" },
+				},
+				{
+					name: "currency",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "provider",
+					type: "select",
+					required: true,
+					options: PROVIDER_OPTIONS,
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{ name: "customerDeletedAt", type: "date" },
 		{
-			name: "amount",
-			type: "number",
-			required: true,
-			validate: (value: unknown) =>
-				(typeof value === "number" && Number.isInteger(value) && value >= 0) ||
-				"Amount must be a whole number in the currency's smallest unit",
+			type: "row",
+			fields: [
+				{
+					name: "providerReference",
+					type: "text",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "reference",
+					type: "text",
+					unique: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "currency", type: "text", required: true },
-		{
-			name: "provider",
-			type: "select",
-			required: true,
-			options: PROVIDER_OPTIONS,
-		},
-		{ name: "providerReference", type: "text", index: true },
-		{ name: "reference", type: "text", unique: true },
 		{
 			name: "status",
 			type: "select",
@@ -132,69 +180,127 @@ export const PaymentIntents: CollectionConfig = {
 			type: "array",
 			fields: [
 				{
-					name: "status",
-					type: "select",
-					required: true,
-					options: STATUS_OPTIONS,
-				},
-				{
-					name: "source",
-					type: "select",
-					required: true,
-					options: [
-						{ label: "Webhook", value: "webhook" },
-						{ label: "Callback", value: "callback" },
-						{ label: "Reconciliation", value: "reconcile" },
-						{ label: "System", value: "system" },
+					type: "row",
+					fields: [
+						{
+							name: "status",
+							type: "select",
+							required: true,
+							options: STATUS_OPTIONS,
+							admin: { width: "50%" },
+						},
+						{
+							name: "source",
+							type: "select",
+							required: true,
+							options: [
+								{ label: "Webhook", value: "webhook" },
+								{ label: "Callback", value: "callback" },
+								{ label: "Reconciliation", value: "reconcile" },
+								{ label: "System", value: "system" },
+							],
+							admin: { width: "50%" },
+						},
 					],
 				},
-				{ name: "at", type: "date", required: true },
-				{ name: "note", type: "text" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "at",
+							type: "date",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{ name: "note", type: "text", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
-		{ name: "idempotencyKey", type: "text", required: true, unique: true },
-		{ name: "checkoutUrl", type: "text" },
-		{ name: "expiresAt", type: "date", index: true },
-		{ name: "settledAmount", type: "number" },
-		{ name: "settledCurrency", type: "text" },
 		{
-			name: "channel",
-			type: "select",
-			options: Object.keys(CHANNEL_PHONE_PREFIXES).map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "idempotencyKey",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "33%" },
+				},
+				{ name: "checkoutUrl", type: "text", admin: { width: "33%" } },
+				{
+					name: "expiresAt",
+					type: "date",
+					index: true,
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
-			// Nulled by P0's account-deletion anonymisation with `customer`.
-			name: "payerPhone",
-			type: "text",
-			access: { read: customerOrStaffField },
+			type: "row",
+			fields: [
+				{ name: "settledAmount", type: "number", admin: { width: "33%" } },
+				{ name: "settledCurrency", type: "text", admin: { width: "33%" } },
+				{
+					name: "channel",
+					type: "select",
+					options: Object.keys(CHANNEL_PHONE_PREFIXES).map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
-			name: "connectedAccount",
-			type: "relationship",
-			relationTo: "connected-accounts",
+			type: "row",
+			fields: [
+				{
+					// Nulled by P0's account-deletion anonymisation with `customer`.
+					name: "payerPhone",
+					type: "text",
+					access: { read: customerOrStaffField },
+					admin: { width: "50%" },
+				},
+				{
+					name: "connectedAccount",
+					type: "relationship",
+					relationTo: "connected-accounts",
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "destinationAmount",
-			type: "number",
-			validate: isWholeAtLeastZero,
-		},
-		{ name: "applicationFee", type: "number", validate: isWholeAtLeastZero },
-		{
-			name: "attempt",
-			type: "number",
-			min: 1,
-			max: 3,
-			validate: (value: unknown) =>
-				value === null ||
-				value === undefined ||
-				(typeof value === "number" &&
-					Number.isInteger(value) &&
-					value >= 1 &&
-					value <= 3) ||
-				"An intent is attempt 1, 2 or 3.",
+			type: "row",
+			fields: [
+				{
+					name: "destinationAmount",
+					type: "number",
+					validate: isWholeAtLeastZero,
+					admin: { width: "33%" },
+				},
+				{
+					name: "applicationFee",
+					type: "number",
+					validate: isWholeAtLeastZero,
+					admin: { width: "33%" },
+				},
+				{
+					name: "attempt",
+					type: "number",
+					min: 1,
+					max: 3,
+					validate: (value: unknown) =>
+						value === null ||
+						value === undefined ||
+						(typeof value === "number" &&
+							Number.isInteger(value) &&
+							value >= 1 &&
+							value <= 3) ||
+						"An intent is attempt 1, 2 or 3.",
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
 			name: "failureCode",

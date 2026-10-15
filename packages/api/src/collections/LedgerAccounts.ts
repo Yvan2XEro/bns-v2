@@ -54,23 +54,52 @@ export const LedgerAccounts: CollectionConfig = {
 		delete: nobody,
 	},
 	fields: [
-		{ name: "key", type: "text", required: true, unique: true },
 		{
-			name: "category",
-			type: "select",
-			required: true,
-			index: true,
-			options: options(LEDGER_CATEGORIES),
-		},
-		{
-			name: "type",
-			type: "select",
-			required: true,
-			options: options(LEDGER_ACCOUNT_TYPES),
+			type: "row",
+			fields: [
+				{
+					name: "key",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "category",
+					type: "select",
+					required: true,
+					index: true,
+					options: options(LEDGER_CATEGORIES),
+					admin: { width: "33%" },
+				},
+				{
+					name: "type",
+					type: "select",
+					required: true,
+					options: options(LEDGER_ACCOUNT_TYPES),
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{ name: "shop", type: "relationship", relationTo: "shops", index: true },
-		{ name: "currency", type: "text", required: true },
-		{ name: "balance", type: "number", required: true, defaultValue: 0 },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "currency",
+					type: "text",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "balance",
+					type: "number",
+					required: true,
+					defaultValue: 0,
+					admin: { width: "50%" },
+				},
+			],
+		},
 	],
 	timestamps: true,
 };

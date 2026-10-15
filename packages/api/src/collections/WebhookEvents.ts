@@ -25,23 +25,34 @@ export const WebhookEvents: CollectionConfig = {
 	indexes: [{ fields: ["provider", "providerEventId"], unique: true }],
 	fields: [
 		{
-			name: "provider",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "NotchPay", value: "notchpay" },
-				{ label: "Stripe", value: "stripe" },
-				{ label: "Didit", value: "didit" },
-				{ label: "Smile ID", value: "smileid" },
-				// The shared FakeMarketplaceProvider signs every webhook in tests
-				// and staging (lib/payments/marketplaceRegistry.ts).
-				{ label: "Fake marketplace (test/staging)", value: "fake" },
-				{ label: "Yango delivery", value: "yango" },
-				{ label: "Campost delivery", value: "campost" },
+			type: "row",
+			fields: [
+				{
+					name: "provider",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "NotchPay", value: "notchpay" },
+						{ label: "Stripe", value: "stripe" },
+						{ label: "Didit", value: "didit" },
+						{ label: "Smile ID", value: "smileid" },
+						// The shared FakeMarketplaceProvider signs every webhook in tests
+						// and staging (lib/payments/marketplaceRegistry.ts).
+						{ label: "Fake marketplace (test/staging)", value: "fake" },
+						{ label: "Yango delivery", value: "yango" },
+						{ label: "Campost delivery", value: "campost" },
+					],
+					admin: { width: "33%" },
+				},
+				{
+					name: "providerEventId",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{ name: "type", type: "text", admin: { width: "34%" } },
 			],
 		},
-		{ name: "providerEventId", type: "text", required: true },
-		{ name: "type", type: "text" },
 		{ name: "reference", type: "text", index: true },
 		/**
 		 * The provider's own transaction id, kept beside our reference because
@@ -53,9 +64,24 @@ export const WebhookEvents: CollectionConfig = {
 		{ name: "providerReference", type: "text", index: true },
 		{ name: "payloadHash", type: "text", required: true },
 		{ name: "raw", type: "json" },
-		{ name: "receivedAt", type: "date", required: true },
-		{ name: "processedAt", type: "date" },
-		{ name: "attempts", type: "number", defaultValue: 0 },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "receivedAt",
+					type: "date",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{ name: "processedAt", type: "date", admin: { width: "33%" } },
+				{
+					name: "attempts",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "34%" },
+				},
+			],
+		},
 		{ name: "lastError", type: "text" },
 	],
 	timestamps: true,

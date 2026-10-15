@@ -47,55 +47,104 @@ export const PayoutHolds: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "scope",
-			type: "select",
-			required: true,
-			options: options(PAYOUT_HOLD_SCOPES),
+			type: "row",
+			fields: [
+				{
+					name: "scope",
+					type: "select",
+					required: true,
+					options: options(PAYOUT_HOLD_SCOPES),
+					admin: { width: "33%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					index: true,
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData: unknown },
+					) =>
+						(siblingData as { scope?: unknown }).scope !== "order" ||
+						Boolean(value) ||
+						"An order hold must name its order.",
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "reason",
+					type: "select",
+					required: true,
+					options: options(PAYOUT_HOLD_REASONS),
+					admin: { width: "50%" },
+				},
+				{
+					name: "blocksCharges",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			index: true,
-			validate: (value: unknown, { siblingData }: { siblingData: unknown }) =>
-				(siblingData as { scope?: unknown }).scope !== "order" ||
-				Boolean(value) ||
-				"An order hold must name its order.",
+			type: "row",
+			fields: [
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "active",
+					index: true,
+					options: options(PAYOUT_HOLD_STATUSES),
+					admin: { width: "50%" },
+				},
+				// Null means the hold lasts until someone releases it.
+				{ name: "until", type: "date", index: true, admin: { width: "50%" } },
+			],
 		},
 		{
-			name: "reason",
-			type: "select",
-			required: true,
-			options: options(PAYOUT_HOLD_REASONS),
+			type: "row",
+			fields: [
+				{
+					name: "createdByType",
+					type: "select",
+					required: true,
+					options: options(PAYOUT_HOLD_CREATORS),
+					admin: { width: "50%" },
+				},
+				{
+					name: "createdBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "blocksCharges", type: "checkbox", defaultValue: false },
 		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "active",
-			index: true,
-			options: options(PAYOUT_HOLD_STATUSES),
+			type: "row",
+			fields: [
+				{
+					name: "releasedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "33%" },
+				},
+				{ name: "releasedAt", type: "date", admin: { width: "33%" } },
+				{ name: "note", type: "text", admin: { width: "34%" } },
+			],
 		},
-		// Null means the hold lasts until someone releases it.
-		{ name: "until", type: "date", index: true },
-		{
-			name: "createdByType",
-			type: "select",
-			required: true,
-			options: options(PAYOUT_HOLD_CREATORS),
-		},
-		{ name: "createdBy", type: "relationship", relationTo: "users" },
-		{ name: "releasedBy", type: "relationship", relationTo: "users" },
-		{ name: "releasedAt", type: "date" },
-		{ name: "note", type: "text" },
 	],
 	timestamps: true,
 };

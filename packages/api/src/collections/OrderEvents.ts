@@ -63,80 +63,131 @@ export const OrderEvents: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			required: true,
-			index: true,
-		},
-		{
-			name: "type",
-			type: "select",
-			required: true,
-			index: true,
-			options: ORDER_EVENT_TYPES.map((value) => ({ label: value, value })),
-		},
-		{
-			name: "actorType",
-			type: "select",
-			options: [
-				{ label: "Buyer", value: "buyer" },
-				{ label: "Seller", value: "seller" },
-				{ label: "Staff", value: "staff" },
-				{ label: "System", value: "system" },
-				{ label: "Courier", value: "courier" },
+			type: "row",
+			fields: [
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "type",
+					type: "select",
+					required: true,
+					index: true,
+					options: ORDER_EVENT_TYPES.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
 			],
 		},
-		{ name: "actor", type: "relationship", relationTo: "users" },
 		{
-			name: "actorShopRole",
-			type: "select",
-			options: [
-				{ label: "Owner", value: "owner" },
-				{ label: "Manager", value: "manager" },
-				{ label: "Staff", value: "staff" },
+			type: "row",
+			fields: [
+				{
+					name: "actorType",
+					type: "select",
+					options: [
+						{ label: "Buyer", value: "buyer" },
+						{ label: "Seller", value: "seller" },
+						{ label: "Staff", value: "staff" },
+						{ label: "System", value: "system" },
+						{ label: "Courier", value: "courier" },
+					],
+					admin: { width: "33%" },
+				},
+				{
+					name: "actor",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "33%" },
+				},
+				{
+					name: "actorShopRole",
+					type: "select",
+					options: [
+						{ label: "Owner", value: "owner" },
+						{ label: "Manager", value: "manager" },
+						{ label: "Staff", value: "staff" },
+					],
+					admin: { width: "34%" },
+				},
 			],
 		},
-		{ name: "statusFrom", type: "text" },
-		{ name: "statusTo", type: "text" },
-		{ name: "paymentStatusFrom", type: "text" },
-		{ name: "paymentStatusTo", type: "text" },
+		{
+			type: "row",
+			fields: [
+				{ name: "statusFrom", type: "text", admin: { width: "50%" } },
+				{ name: "statusTo", type: "text", admin: { width: "50%" } },
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{ name: "paymentStatusFrom", type: "text", admin: { width: "50%" } },
+				{ name: "paymentStatusTo", type: "text", admin: { width: "50%" } },
+			],
+		},
 		{
 			name: "items",
 			type: "array",
 			fields: [
-				{ name: "orderItem", type: "relationship", relationTo: "order-items" },
-				{ name: "fulfillmentFrom", type: "text" },
-				{ name: "fulfillmentTo", type: "text" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "orderItem",
+							type: "relationship",
+							relationTo: "order-items",
+							admin: { width: "33%" },
+						},
+						{ name: "fulfillmentFrom", type: "text", admin: { width: "33%" } },
+						{ name: "fulfillmentTo", type: "text", admin: { width: "34%" } },
+					],
+				},
 			],
 		},
-		{ name: "reason", type: "text" },
-		{ name: "note", type: "text" },
+		{
+			type: "row",
+			fields: [
+				{ name: "reason", type: "text", admin: { width: "50%" } },
+				{ name: "note", type: "text", admin: { width: "50%" } },
+			],
+		},
 		// Never codes or hashes — the order's own `codeHash` fields are closed
 		// to read for everyone; this must not become the back door that undoes
 		// that.
 		{ name: "metadata", type: "json" },
 		{
-			name: "visibility",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Buyer", value: "buyer" },
-				{ label: "Shop", value: "shop" },
-				{ label: "Both", value: "both" },
-				{ label: "Staff", value: "staff" },
-			],
-		},
-		{
-			name: "source",
-			type: "select",
-			options: [
-				{ label: "Web", value: "web" },
-				{ label: "iOS", value: "ios" },
-				{ label: "Android", value: "android" },
-				{ label: "Job", value: "job" },
-				{ label: "Staff console", value: "staff_console" },
-				{ label: "Webhook", value: "webhook" },
+			type: "row",
+			fields: [
+				{
+					name: "visibility",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Buyer", value: "buyer" },
+						{ label: "Shop", value: "shop" },
+						{ label: "Both", value: "both" },
+						{ label: "Staff", value: "staff" },
+					],
+					admin: { width: "50%" },
+				},
+				{
+					name: "source",
+					type: "select",
+					options: [
+						{ label: "Web", value: "web" },
+						{ label: "iOS", value: "ios" },
+						{ label: "Android", value: "android" },
+						{ label: "Job", value: "job" },
+						{ label: "Staff console", value: "staff_console" },
+						{ label: "Webhook", value: "webhook" },
+					],
+					admin: { width: "50%" },
+				},
 			],
 		},
 	],

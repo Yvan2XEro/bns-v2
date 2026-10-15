@@ -57,46 +57,73 @@ export const PurchaseOrders: CollectionConfig = {
 		{ fields: ["resellerShop", "status"] },
 	],
 	fields: [
-		{ name: "number", type: "text", required: true, unique: true },
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			required: true,
-			unique: true,
+			type: "row",
+			fields: [
+				{
+					name: "number",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					required: true,
+					unique: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "supplierShop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "supplierShop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "resellerShop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "link",
+					type: "relationship",
+					relationTo: "resale-links",
+					required: true,
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
-			name: "resellerShop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{
-			name: "link",
-			type: "relationship",
-			relationTo: "resale-links",
-			required: true,
-		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "sent",
-			options: options(PURCHASE_ORDER_STATUSES),
-		},
-		{
-			name: "paymentMethod",
-			type: "select",
-			required: true,
-			options: options(["cod", "mobile_money"]),
+			type: "row",
+			fields: [
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "sent",
+					options: options(PURCHASE_ORDER_STATUSES),
+					admin: { width: "50%" },
+				},
+				{
+					name: "paymentMethod",
+					type: "select",
+					required: true,
+					options: options(["cod", "mobile_money"]),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "items",
@@ -105,62 +132,178 @@ export const PurchaseOrders: CollectionConfig = {
 			minRows: 1,
 			fields: [
 				{
-					name: "orderItem",
-					type: "relationship",
-					relationTo: "order-items",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "orderItem",
+							type: "relationship",
+							relationTo: "order-items",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "variant",
+							type: "relationship",
+							relationTo: "product-variants",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "variant",
-					type: "relationship",
-					relationTo: "product-variants",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "title",
+							type: "text",
+							required: true,
+							admin: { width: "33%" },
+						},
+						{ name: "variantLabel", type: "text", admin: { width: "33%" } },
+						{ name: "sku", type: "text", admin: { width: "34%" } },
+					],
 				},
-				{ name: "title", type: "text", required: true },
-				{ name: "variantLabel", type: "text" },
-				{ name: "sku", type: "text" },
-				{ name: "quantity", type: "number", required: true, min: 1 },
-				{ ...money("supplierUnitPrice"), required: true, min: 1 },
-				{ ...money("resellerUnitPrice"), required: true, min: 1 },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "quantity",
+							type: "number",
+							required: true,
+							min: 1,
+							admin: { width: "33%" },
+						},
+						{
+							...money("supplierUnitPrice"),
+							required: true,
+							min: 1,
+							admin: { width: "33%" },
+						},
+						{
+							...money("resellerUnitPrice"),
+							required: true,
+							min: 1,
+							admin: { width: "34%" },
+						},
+					],
+				},
 			],
 		},
-		money("supplierAmount"),
-		{ name: "deliveryFee", type: "number", required: true, min: 0 },
 		{
-			name: "collectAmount",
-			type: "number",
-			required: true,
-			min: 0,
+			type: "row",
+			fields: [
+				{ ...money("supplierAmount"), admin: { width: "33%" } },
+				{
+					name: "deliveryFee",
+					type: "number",
+					required: true,
+					min: 0,
+					admin: { width: "33%" },
+				},
+				{
+					name: "collectAmount",
+					type: "number",
+					required: true,
+					min: 0,
+					admin: { width: "34%" },
+				},
+			],
 		},
-		money("platformCommission"),
-		money("resellerCommission"),
+		{
+			type: "row",
+			fields: [
+				{ ...money("platformCommission"), admin: { width: "50%" } },
+				{ ...money("resellerCommission"), admin: { width: "50%" } },
+			],
+		},
 		{
 			name: "branding",
 			type: "group",
 			required: true,
 			fields: [
-				{ name: "name", type: "text", required: true },
-				{ name: "handle", type: "text", required: true },
-				{ name: "logo", type: "upload", relationTo: "media" },
-				{ name: "phone", type: "text" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "name",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "handle",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "logo",
+							type: "upload",
+							relationTo: "media",
+							admin: { width: "50%" },
+						},
+						{ name: "phone", type: "text", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
-		{ name: "sentAt", type: "date", required: true },
-		{ name: "acceptBy", type: "date", required: true },
-		{ name: "acceptedAt", type: "date" },
-		{ name: "shipBy", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "sentAt",
+					type: "date",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "acceptBy",
+					type: "date",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{ name: "acceptedAt", type: "date", admin: { width: "50%" } },
+				{ name: "shipBy", type: "date", admin: { width: "50%" } },
+			],
+		},
 		{
 			name: "tracking",
 			type: "group",
 			fields: [
 				{
-					name: "carrier",
-					type: "select",
-					options: options(["own_courier", "yango", "other"]),
+					type: "row",
+					fields: [
+						{
+							name: "carrier",
+							type: "select",
+							options: options(["own_courier", "yango", "other"]),
+							admin: { width: "50%" },
+						},
+						{ name: "trackingNumber", type: "text", admin: { width: "50%" } },
+					],
 				},
-				{ name: "trackingNumber", type: "text" },
-				{ name: "trackingUrl", type: "text" },
-				{ name: "shipment", type: "relationship", relationTo: "shipments" },
+				{
+					type: "row",
+					fields: [
+						{ name: "trackingUrl", type: "text", admin: { width: "50%" } },
+						{
+							name: "shipment",
+							type: "relationship",
+							relationTo: "shipments",
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -168,17 +311,23 @@ export const PurchaseOrders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "by",
-					type: "select",
-					options: options([
-						"supplier",
-						"reseller",
-						"buyer",
-						"system",
-						"staff",
-					]),
+					type: "row",
+					fields: [
+						{
+							name: "by",
+							type: "select",
+							options: options([
+								"supplier",
+								"reseller",
+								"buyer",
+								"system",
+								"staff",
+							]),
+							admin: { width: "50%" },
+						},
+						{ name: "reason", type: "text", admin: { width: "50%" } },
+					],
 				},
-				{ name: "reason", type: "text" },
 				{ name: "note", type: "textarea" },
 				{ name: "at", type: "date" },
 			],
@@ -187,18 +336,35 @@ export const PurchaseOrders: CollectionConfig = {
 			name: "return",
 			type: "group",
 			fields: [
-				{ name: "reason", type: "text" },
 				{
-					name: "liability",
-					type: "select",
-					options: options(["supplier", "reseller", "buyer"]),
+					type: "row",
+					fields: [
+						{ name: "reason", type: "text", admin: { width: "50%" } },
+						{
+							name: "liability",
+							type: "select",
+							options: options(["supplier", "reseller", "buyer"]),
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "failedDeliveryCost", type: "number", min: 0 },
-				{ name: "receivedAt", type: "date" },
 				{
-					name: "condition",
-					type: "select",
-					options: options(["resellable", "damaged"]),
+					type: "row",
+					fields: [
+						{
+							name: "failedDeliveryCost",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "receivedAt", type: "date", admin: { width: "33%" } },
+						{
+							name: "condition",
+							type: "select",
+							options: options(["resellable", "damaged"]),
+							admin: { width: "34%" },
+						},
+					],
 				},
 			],
 		},
@@ -206,10 +372,40 @@ export const PurchaseOrders: CollectionConfig = {
 			name: "statusHistory",
 			type: "array",
 			fields: [
-				{ name: "status", type: "text", required: true },
-				{ name: "actor", type: "relationship", relationTo: "users" },
-				{ name: "source", type: "text", required: true },
-				{ name: "at", type: "date", required: true },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "status",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "actor",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "50%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "source",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "at",
+							type: "date",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 	],

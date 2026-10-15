@@ -40,56 +40,107 @@ export const CommissionLines: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{ name: "order", type: "relationship", relationTo: "orders", index: true },
-		{
-			name: "kind",
-			type: "select",
-			required: true,
-			index: true,
-			options: COMMISSION_LINE_KINDS.map((value) => ({ label: value, value })),
-		},
-		{
-			name: "paymentMethod",
-			type: "select",
-			options: [
-				{ label: "Cash on delivery", value: "cod" },
-				{ label: "Mobile money", value: "mobile_money" },
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					index: true,
+					admin: { width: "50%" },
+				},
 			],
 		},
-		{ name: "baseAmount", type: "number" },
-		{ name: "amount", type: "number", required: true, min: 1 },
-		{ name: "reason", type: "text" },
 		{
-			name: "status",
-			type: "select",
-			defaultValue: "open",
-			index: true,
-			options: COMMISSION_LINE_STATUSES.map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "kind",
+					type: "select",
+					required: true,
+					index: true,
+					options: COMMISSION_LINE_KINDS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "paymentMethod",
+					type: "select",
+					options: [
+						{ label: "Cash on delivery", value: "cod" },
+						{ label: "Mobile money", value: "mobile_money" },
+					],
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "invoice",
-			type: "relationship",
-			relationTo: "commission-invoices",
+			type: "row",
+			fields: [
+				{ name: "baseAmount", type: "number", admin: { width: "33%" } },
+				{
+					name: "amount",
+					type: "number",
+					required: true,
+					min: 1,
+					admin: { width: "33%" },
+				},
+				{ name: "reason", type: "text", admin: { width: "34%" } },
+			],
 		},
-		{ name: "accruedAt", type: "date" },
 		{
-			name: "sourceType",
-			type: "select",
-			options: ["dispute", "return-case"].map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "status",
+					type: "select",
+					defaultValue: "open",
+					index: true,
+					options: COMMISSION_LINE_STATUSES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "invoice",
+					type: "relationship",
+					relationTo: "commission-invoices",
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "sourceId", type: "text", index: true },
+		{
+			type: "row",
+			fields: [
+				{ name: "accruedAt", type: "date", admin: { width: "33%" } },
+				{
+					name: "sourceType",
+					type: "select",
+					options: ["dispute", "return-case"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "sourceId",
+					type: "text",
+					index: true,
+					admin: { width: "34%" },
+				},
+			],
+		},
 	],
 	timestamps: true,
 };

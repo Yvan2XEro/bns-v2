@@ -79,40 +79,57 @@ export const PayoutAccounts: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "method",
+					type: "select",
+					required: true,
+					options: options(PAYOUT_METHODS),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "method",
-			type: "select",
-			required: true,
-			options: options(PAYOUT_METHODS),
+			type: "row",
+			fields: [
+				{
+					name: "accountName",
+					type: "text",
+					required: true,
+					minLength: 2,
+					maxLength: 80,
+					admin: { width: "33%" },
+				},
+				{
+					name: "accountNumber",
+					type: "text",
+					required: true,
+					// The full number is an owner matter: a manager sees the masked copy.
+					access: {
+						read: shopRoleFieldAccess((role) => can(role, "payments.manage")),
+					},
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData: unknown },
+					) =>
+						payoutAccountNumberProblem(
+							(siblingData as { method?: unknown }).method,
+							value,
+						) ?? true,
+					admin: { width: "33%" },
+				},
+				{ name: "accountNumberMasked", type: "text", admin: { width: "34%" } },
+			],
 		},
-		{
-			name: "accountName",
-			type: "text",
-			required: true,
-			minLength: 2,
-			maxLength: 80,
-		},
-		{
-			name: "accountNumber",
-			type: "text",
-			required: true,
-			// The full number is an owner matter: a manager sees the masked copy.
-			access: {
-				read: shopRoleFieldAccess((role) => can(role, "payments.manage")),
-			},
-			validate: (value: unknown, { siblingData }: { siblingData: unknown }) =>
-				payoutAccountNumberProblem(
-					(siblingData as { method?: unknown }).method,
-					value,
-				) ?? true,
-		},
-		{ name: "accountNumberMasked", type: "text" },
 		{
 			name: "status",
 			type: "select",
@@ -125,20 +142,42 @@ export const PayoutAccounts: CollectionConfig = {
 			name: "nameMatch",
 			type: "group",
 			fields: [
-				{ name: "identityName", type: "text" },
-				{ name: "providerName", type: "text" },
 				{
-					name: "result",
-					type: "select",
-					options: options(NAME_MATCH_RESULTS),
+					type: "row",
+					fields: [
+						{ name: "identityName", type: "text", admin: { width: "50%" } },
+						{ name: "providerName", type: "text", admin: { width: "50%" } },
+					],
 				},
-				{ name: "score", type: "number", min: 0, max: 1 },
-				{ name: "checkedAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "result",
+							type: "select",
+							options: options(NAME_MATCH_RESULTS),
+							admin: { width: "33%" },
+						},
+						{
+							name: "score",
+							type: "number",
+							min: 0,
+							max: 1,
+							admin: { width: "33%" },
+						},
+						{ name: "checkedAt", type: "date", admin: { width: "34%" } },
+					],
+				},
 			],
 		},
-		{ name: "providerRecipientId", type: "text" },
-		{ name: "activatedAt", type: "date" },
-		{ name: "replacedAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{ name: "providerRecipientId", type: "text", admin: { width: "33%" } },
+				{ name: "activatedAt", type: "date", admin: { width: "33%" } },
+				{ name: "replacedAt", type: "date", admin: { width: "34%" } },
+			],
+		},
 		{ name: "createdBy", type: "relationship", relationTo: "users" },
 	],
 	timestamps: true,

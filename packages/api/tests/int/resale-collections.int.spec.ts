@@ -44,25 +44,29 @@ describe("P8 resale collections", () => {
 			expect(group?.type).toBe("group");
 		}
 		const orderItemFields = new Set(
-			OrderItems.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(OrderItems.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		);
 		for (const name of ["purchaseOrder", "resaleLink", "supplierUnitPrice"]) {
 			expect(orderItemFields.has(name), `missing order-items.${name}`).toBe(
 				true,
 			);
 		}
-		const supplierUnitPrice = OrderItems.fields
+		const supplierUnitPrice = dataFields(OrderItems.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "supplierUnitPrice");
 		expect(supplierUnitPrice?.access?.read).toBe(staffOnlyField);
 		expect(
-			CommissionLines.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(CommissionLines.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		).toContain("reason");
-		const purpose = PaymentIntents.fields
+		const purpose = dataFields(PaymentIntents.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "purpose");
 		expect(JSON.stringify(purpose)).toContain("reseller_charge");
-		const targetType = PaymentIntents.fields
+		const targetType = dataFields(PaymentIntents.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "targetType");
 		expect(JSON.stringify(targetType)).toContain("reseller-charge");
@@ -172,16 +176,18 @@ describe("P8 resale collections", () => {
 		expect(PurchaseOrders.indexes).toContainEqual({
 			fields: ["supplierShop", "status"],
 		});
-		const numberField = PurchaseOrders.fields
+		const numberField = dataFields(PurchaseOrders.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "number");
-		const orderField = PurchaseOrders.fields
+		const orderField = dataFields(PurchaseOrders.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "order");
 		expect(numberField).toMatchObject({ unique: true, required: true });
 		expect(orderField).toMatchObject({ unique: true, required: true });
 		const fields = new Set(
-			PurchaseOrders.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(PurchaseOrders.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		);
 		for (const name of [
 			"number",
@@ -213,7 +219,7 @@ describe("P8 resale collections", () => {
 	});
 
 	it("limits purchase-order money fields to members with payment access", async () => {
-		const supplierAmount = PurchaseOrders.fields
+		const supplierAmount = dataFields(PurchaseOrders.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "supplierAmount");
 		const read = supplierAmount?.access?.read;
@@ -252,7 +258,7 @@ describe("P8 resale collections", () => {
 				doc,
 			}),
 		).toBe(false);
-		const collectAmount = PurchaseOrders.fields
+		const collectAmount = dataFields(PurchaseOrders.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "collectAmount");
 		expect(collectAmount?.access?.read).toBeUndefined();

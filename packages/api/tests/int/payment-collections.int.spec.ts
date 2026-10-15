@@ -24,6 +24,7 @@ import { ReconciliationRuns } from "../../src/collections/ReconciliationRuns";
 import { Refunds } from "../../src/collections/Refunds";
 import config from "../../src/payload.config";
 import { type Doc, fakePayload, matches } from "./helpers/fakePayload";
+import { dataFields, fieldAt } from "./helpers/fields";
 
 // Access functions take Payload's generic `AccessArgs`; these specs hand them
 // a partial `req`, so the function is widened to accept it (the idiom of
@@ -192,7 +193,7 @@ describe("the ten payment collections: who reads, who writes", () => {
 });
 
 const field = (fields: Field[], name: string): AnyField => {
-	const found = (fields as AnyField[]).find((f) => f.name === name);
+	const found = fieldAt(fields, name) as AnyField | undefined;
 	if (!found) throw new Error(`no field ${name}`);
 	return found;
 };
@@ -289,7 +290,9 @@ describe("ledger-transactions refuses an unbalanced posting at the collection", 
 
 describe("payout-accounts leaves one-active-per-shop to the service", () => {
 	const uniques = (c: CollectionConfig) => [
-		...(c.fields as AnyField[]).filter((f) => f.unique).map((f) => f.name),
+		...(dataFields(c.fields) as AnyField[])
+			.filter((f) => f.unique)
+			.map((f) => f.name),
 		...(c.indexes ?? []).filter((i) => i.unique).map((i) => i.fields.join("+")),
 	];
 
@@ -490,7 +493,7 @@ describe("the collection-level rules", () => {
 	});
 
 	it("lets the admin write only status and note on a mismatch", () => {
-		const writable = (ReconciliationMismatches.fields as AnyField[])
+		const writable = (dataFields(ReconciliationMismatches.fields) as AnyField[])
 			.filter((f) => f.name !== "createdAt" && f.name !== "updatedAt")
 			.filter((f) => f.access?.update === undefined)
 			.map((f) => f.name);

@@ -41,90 +41,118 @@ export const BoostPayments: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: true,
-		},
-		{
-			// Nulled when the customer deletes their account; the record is kept.
-			name: "user",
-			type: "relationship",
-			relationTo: "users",
-			required: false,
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "amount",
-			type: "number",
-			required: true,
-		},
-		{
-			name: "duration",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "7 days", value: "7" },
-				{ label: "14 days", value: "14" },
-				{ label: "30 days", value: "30" },
+			type: "row",
+			fields: [
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					// Nulled when the customer deletes their account; the record is kept.
+					name: "user",
+					type: "relationship",
+					relationTo: "users",
+					required: false,
+					admin: { width: "50%", readOnly: true },
+				},
 			],
 		},
 		{
-			name: "status",
-			type: "select",
-			options: [
-				{ label: "Pending", value: "pending" },
-				{ label: "Completed", value: "completed" },
-				{ label: "Failed", value: "failed" },
-				{ label: "Refunded", value: "refunded" },
+			type: "row",
+			fields: [
+				{
+					name: "amount",
+					type: "number",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "duration",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "7 days", value: "7" },
+						{ label: "14 days", value: "14" },
+						{ label: "30 days", value: "30" },
+					],
+					admin: { width: "33%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					options: [
+						{ label: "Pending", value: "pending" },
+						{ label: "Completed", value: "completed" },
+						{ label: "Failed", value: "failed" },
+						{ label: "Refunded", value: "refunded" },
+					],
+					defaultValue: "pending",
+					required: true,
+					admin: { width: "34%" },
+				},
 			],
-			defaultValue: "pending",
-			required: true,
 		},
 		{
-			name: "paymentProvider",
-			type: "select",
-			options: [
-				{ label: "NotchPay", value: "notchpay" },
-				{ label: "Stripe (Apple Pay)", value: "stripe" },
+			type: "row",
+			fields: [
+				{
+					name: "paymentProvider",
+					type: "select",
+					options: [
+						{ label: "NotchPay", value: "notchpay" },
+						{ label: "Stripe (Apple Pay)", value: "stripe" },
+					],
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "paymentReference",
+					type: "text",
+					admin: { width: "50%" },
+				},
 			],
-			required: true,
 		},
 		{
-			name: "paymentReference",
-			type: "text",
+			type: "row",
+			fields: [
+				{
+					name: "paymentUrl",
+					type: "text",
+					admin: { width: "50%" },
+				},
+				{
+					// The window this purchase paid for, reserved on the first activation
+					// so replaying it converges on the same end instead of stacking a
+					// second window on top of the first.
+					name: "boostedUntil",
+					type: "date",
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "paymentUrl",
-			type: "text",
-		},
-		{
-			// The window this purchase paid for, reserved on the first activation
-			// so replaying it converges on the same end instead of stacking a
-			// second window on top of the first.
-			name: "boostedUntil",
-			type: "date",
-			admin: { readOnly: true },
-		},
-		{
-			name: "paymentIntent",
-			type: "relationship",
-			relationTo: "payment-intents",
-			admin: { readOnly: true },
-		},
-		{
-			name: "customerDeletedAt",
-			type: "date",
-			admin: { readOnly: true },
-		},
-		{
-			name: "createdAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "paymentIntent",
+					type: "relationship",
+					relationTo: "payment-intents",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "customerDeletedAt",
+					type: "date",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "createdAt",
+					type: "date",
+					admin: { width: "34%", readOnly: true },
+				},
+			],
 		},
 	],
 	timestamps: true,

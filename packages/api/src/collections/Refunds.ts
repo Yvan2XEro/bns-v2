@@ -91,20 +91,44 @@ export const Refunds: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "paymentIntent",
+					type: "relationship",
+					relationTo: "payment-intents",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "paymentIntent",
-			type: "relationship",
-			relationTo: "payment-intents",
-			required: true,
+			type: "row",
+			fields: [
+				{
+					name: "buyer",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "buyer", type: "relationship", relationTo: "users", index: true },
-		{ name: "shop", type: "relationship", relationTo: "shops", index: true },
 		{
 			name: "amount",
 			type: "number",
@@ -119,25 +143,52 @@ export const Refunds: CollectionConfig = {
 			name: "breakdown",
 			type: "group",
 			fields: [
-				{ name: "seller", type: "number" },
-				{ name: "commission", type: "number" },
-				{ name: "commissionVat", type: "number" },
-				{ name: "buyerProtectionFee", type: "number" },
+				{
+					type: "row",
+					fields: [
+						{ name: "seller", type: "number", admin: { width: "50%" } },
+						{ name: "commission", type: "number", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "commissionVat", type: "number", admin: { width: "50%" } },
+						{
+							name: "buyerProtectionFee",
+							type: "number",
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
-			name: "reason",
-			type: "select",
-			required: true,
-			options: options(REFUND_REASONS),
+			type: "row",
+			fields: [
+				{
+					name: "reason",
+					type: "select",
+					required: true,
+					options: options(REFUND_REASONS),
+					admin: { width: "33%" },
+				},
+				{
+					name: "sourceType",
+					type: "select",
+					required: true,
+					options: options(REFUND_SOURCE_TYPES),
+					admin: { width: "33%" },
+				},
+				{
+					name: "sourceId",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{
-			name: "sourceType",
-			type: "select",
-			required: true,
-			options: options(REFUND_SOURCE_TYPES),
-		},
-		{ name: "sourceId", type: "text", required: true, index: true },
 		{
 			name: "status",
 			type: "select",
@@ -151,39 +202,84 @@ export const Refunds: CollectionConfig = {
 			type: "array",
 			fields: [
 				{
-					name: "status",
-					type: "select",
-					required: true,
-					options: options(REFUND_STATUSES),
+					type: "row",
+					fields: [
+						{
+							name: "status",
+							type: "select",
+							required: true,
+							options: options(REFUND_STATUSES),
+							admin: { width: "33%" },
+						},
+						{
+							name: "source",
+							type: "select",
+							required: true,
+							options: options(MONEY_STATUS_SOURCES),
+							admin: { width: "33%" },
+						},
+						{
+							name: "at",
+							type: "date",
+							required: true,
+							admin: { width: "34%" },
+						},
+					],
 				},
-				{
-					name: "source",
-					type: "select",
-					required: true,
-					options: options(MONEY_STATUS_SOURCES),
-				},
-				{ name: "at", type: "date", required: true },
 			],
 		},
 		// Unique when set: Payload makes a non-required unique index sparse, so
 		// the field must be left out, never written as null, until it is known.
-		{ name: "providerRefundId", type: "text", unique: true },
 		{
-			name: "fundedBy",
-			type: "select",
-			defaultValue: "connected_account",
-			options: options(REFUND_FUNDED_BY),
+			type: "row",
+			fields: [
+				{
+					name: "providerRefundId",
+					type: "text",
+					unique: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "fundedBy",
+					type: "select",
+					defaultValue: "connected_account",
+					options: options(REFUND_FUNDED_BY),
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "idempotencyKey", type: "text", required: true, unique: true },
-		{ name: "attempts", type: "number", defaultValue: 0 },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "idempotencyKey",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "attempts",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "50%" },
+				},
+			],
+		},
 		// Set on the one automatic retry of a failed refund; its own failure goes to staff.
 		{
-			name: "retryOf",
-			type: "relationship",
-			relationTo: "refunds",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "retryOf",
+					type: "relationship",
+					relationTo: "refunds",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{ name: "lastError", type: "text", admin: { width: "50%" } },
+			],
 		},
-		{ name: "lastError", type: "text" },
 	],
 	timestamps: true,
 };

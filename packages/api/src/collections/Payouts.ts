@@ -44,76 +44,139 @@ export const Payouts: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "connectedAccount",
+					type: "relationship",
+					relationTo: "connected-accounts",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "payoutAccount",
+					type: "relationship",
+					relationTo: "payout-accounts",
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
-			name: "connectedAccount",
-			type: "relationship",
-			relationTo: "connected-accounts",
-			required: true,
+			type: "row",
+			fields: [
+				{
+					name: "amount",
+					type: "number",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{ name: "fee", type: "number", admin: { width: "33%" } },
+				{
+					name: "currency",
+					type: "text",
+					required: true,
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{
-			name: "payoutAccount",
-			type: "relationship",
-			relationTo: "payout-accounts",
-		},
-		{ name: "amount", type: "number", required: true },
-		{ name: "fee", type: "number" },
-		{ name: "currency", type: "text", required: true },
 		{
 			// Empty for a `provider_schedule` payout the provider created itself.
 			name: "orders",
 			type: "array",
 			fields: [
 				{
-					name: "order",
-					type: "relationship",
-					relationTo: "orders",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "order",
+							type: "relationship",
+							relationTo: "orders",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "amount",
+							type: "number",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "amount", type: "number", required: true },
 			],
 		},
 		{
-			name: "origin",
-			type: "select",
-			required: true,
-			options: options(PAYOUT_ORIGINS),
-		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "scheduled",
-			index: true,
-			options: options(PAYOUT_STATUSES),
+			type: "row",
+			fields: [
+				{
+					name: "origin",
+					type: "select",
+					required: true,
+					options: options(PAYOUT_ORIGINS),
+					admin: { width: "50%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "scheduled",
+					index: true,
+					options: options(PAYOUT_STATUSES),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "statusHistory",
 			type: "array",
 			fields: [
 				{
-					name: "status",
-					type: "select",
-					required: true,
-					options: options(PAYOUT_STATUSES),
+					type: "row",
+					fields: [
+						{
+							name: "status",
+							type: "select",
+							required: true,
+							options: options(PAYOUT_STATUSES),
+							admin: { width: "33%" },
+						},
+						{
+							name: "source",
+							type: "select",
+							required: true,
+							options: options(MONEY_STATUS_SOURCES),
+							admin: { width: "33%" },
+						},
+						{
+							name: "at",
+							type: "date",
+							required: true,
+							admin: { width: "34%" },
+						},
+					],
 				},
-				{
-					name: "source",
-					type: "select",
-					required: true,
-					options: options(MONEY_STATUS_SOURCES),
-				},
-				{ name: "at", type: "date", required: true },
 			],
 		},
 		// Sparse unique: leave it out, never null, until the provider answers.
-		{ name: "providerTransferId", type: "text", unique: true },
-		{ name: "failureReason", type: "text" },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "providerTransferId",
+					type: "text",
+					unique: true,
+					admin: { width: "50%" },
+				},
+				{ name: "failureReason", type: "text", admin: { width: "50%" } },
+			],
+		},
 	],
 	timestamps: true,
 };
