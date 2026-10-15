@@ -82,7 +82,7 @@ function Tile({
 					</View>
 				) : null}
 			</View>
-			<Text style={[styles.tileTitle, { color: c.text }]} numberOfLines={1}>
+			<Text style={[styles.tileTitle, { color: c.text }]} numberOfLines={2}>
 				{title}
 			</Text>
 			<Text

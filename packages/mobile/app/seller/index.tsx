@@ -16,7 +16,8 @@ import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import {
 	HUB_HEADER_BG,
-	SellerHubHeader,
+	SellerHubBar,
+	SellerHubLinkCard,
 } from "@/src/components/shop/SellerHubHeader";
 import { SellerInsightsSummary } from "@/src/components/shop/SellerInsightsSummary";
 import {
@@ -369,6 +370,7 @@ function SellerHubContent({
 			edges={["top"]}
 			style={[styles.safe, { backgroundColor: HUB_HEADER_BG }]}
 		>
+			<SellerHubBar shop={shop} />
 			<ScrollView
 				style={{ backgroundColor: c.bg }}
 				contentContainerStyle={{ paddingBottom: 40 }}
@@ -383,7 +385,7 @@ function SellerHubContent({
 					/>
 				}
 			>
-				<SellerHubHeader shop={shop} webUrl={webUrl} onShare={share} />
+				<SellerHubLinkCard shop={shop} webUrl={webUrl} onShare={share} />
 				<View style={styles.switcher}>
 					<ShopSwitcher />
 				</View>

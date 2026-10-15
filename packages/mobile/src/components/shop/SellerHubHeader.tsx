@@ -14,26 +14,16 @@ const ON_DARK = "#ffffff";
 const ON_DARK_MUTED = "#94a3b8";
 
 /**
- * Rich top section of the seller hub — avatar, shop name, a link to the
- * public page and a share action. Distinct from the generic `SellerHeader`
- * every other seller screen uses: the hub carries shop identity rather than
- * just a screen title, so it keeps its own back button instead of composing
- * `SellerHeader`.
+ * The seller hub's bar — back, avatar, shop name, public page. Distinct from
+ * the generic `SellerHeader` every other seller screen uses: the hub carries
+ * shop identity rather than just a screen title. Rendered outside the hub's
+ * scroll view so it stays put while the content moves.
  */
-export function SellerHubHeader({
-	shop,
-	webUrl,
-	onShare,
-}: {
-	shop: MyShop;
-	webUrl: string | null;
-	onShare: () => void;
-}) {
-	const c = useShopTheme();
+export function SellerHubBar({ shop }: { shop: MyShop }) {
 	const { t } = useTranslation();
 
 	return (
-		<View style={[styles.top, { backgroundColor: HUB_HEADER_BG }]}>
+		<View style={[styles.bar, { backgroundColor: HUB_HEADER_BG }]}>
 			<View style={styles.topRow}>
 				<Pressable
 					onPress={() =>
@@ -72,7 +62,25 @@ export function SellerHubHeader({
 					<Ionicons name="storefront-outline" size={22} color={ON_DARK} />
 				</Pressable>
 			</View>
+		</View>
+	);
+}
 
+/** The public link and share action, on the dark band under the bar; scrolls away with the content. */
+export function SellerHubLinkCard({
+	shop,
+	webUrl,
+	onShare,
+}: {
+	shop: MyShop;
+	webUrl: string | null;
+	onShare: () => void;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+
+	return (
+		<View style={[styles.band, { backgroundColor: HUB_HEADER_BG }]}>
 			<View style={styles.linkCard}>
 				<View style={{ flex: 1 }}>
 					<Text style={[styles.meta, { color: ON_DARK_MUTED }]}>
@@ -101,7 +109,8 @@ export function SellerHubHeader({
 }
 
 const styles = StyleSheet.create({
-	top: { padding: 16, gap: 14 },
+	bar: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+	band: { paddingHorizontal: 16, paddingBottom: 16 },
 	topRow: { flexDirection: "row", alignItems: "center", gap: 12 },
 	iconHit: {
 		width: 44,
