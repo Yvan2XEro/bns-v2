@@ -34,6 +34,14 @@ function put(doc: Doc, path: string, value: unknown): void {
 	cur[keys[keys.length - 1]] = value;
 }
 
+function drop(doc: Doc, path: string): void {
+	const keys = path.split(".");
+	const parent = at(doc, keys.slice(0, -1).join("."));
+	const target = keys.length === 1 ? doc : parent;
+	if (target && typeof target === "object")
+		delete (target as Doc)[keys[keys.length - 1]];
+}
+
 function hit(doc: Doc, filter: Doc): boolean {
 	return Object.entries(filter).every(([path, cond]) => {
 		const value = at(doc, path === "_id" ? "id" : path);
@@ -54,19 +62,34 @@ export function withRawMongo(api: FakePayload): FakePayload {
 		api.store[slug] ??= [];
 		return api.store[slug];
 	};
+	const apply = (row: Doc, update: { $set?: Doc; $unset?: Doc }) => {
+		for (const [k, v] of Object.entries(update.$set ?? {}))
+			put(row, k, plain(v));
+		for (const k of Object.keys(update.$unset ?? {})) drop(row, k);
+	};
 	const collection = (slug: string) => ({
 		async insertOne(doc: Doc) {
 			const { _id, ...rest } = plain(doc) as Doc;
 			table(slug).push({ id: _id, ...rest });
 		},
-		async updateOne(filter: Doc, update: { $set: Doc }) {
-			const row = table(slug).find((d) => hit(d, filter));
-			if (row)
-				for (const [k, v] of Object.entries(update.$set)) put(row, k, plain(v));
+		/** A cursor over copies, as the driver hands out; `_id` mirrors `id`. */
+		find(filter: Doc = {}) {
+			const rows = table(slug)
+				.filter((d) => hit(d, filter))
+				.map((d) => ({ _id: d.id, ...structuredClone(d) }));
+			return {
+				async *[Symbol.asyncIterator]() {
+					yield* rows;
+				},
+			};
 		},
-		async updateMany(filter: Doc, update: { $set: Doc }) {
+		async updateOne(filter: Doc, update: { $set?: Doc; $unset?: Doc }) {
+			const row = table(slug).find((d) => hit(d, filter));
+			if (row) apply(row, update);
+		},
+		async updateMany(filter: Doc, update: { $set?: Doc; $unset?: Doc }) {
 			for (const row of table(slug).filter((d) => hit(d, filter)))
-				for (const [k, v] of Object.entries(update.$set)) put(row, k, plain(v));
+				apply(row, update);
 		},
 	});
 	const collections = new Proxy(

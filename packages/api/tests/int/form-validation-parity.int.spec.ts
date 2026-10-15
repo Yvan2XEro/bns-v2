@@ -324,6 +324,18 @@ describe("classified listing rules", () => {
 		]);
 	});
 
+	it("refuses a tag the chosen category does not get, once tags are loaded", () => {
+		expect(
+			listingInputIssues(
+				{ ...body, tags: ["t-delivery", "t-visit"] },
+				{ preset: product, tags: ["t-delivery"] },
+			),
+		).toEqual([{ path: "tags", rule: "category", params: { count: 1 } }]);
+		expect(
+			listingInputIssues({ ...body, tags: ["t-visit"] }, { preset: product }),
+		).toEqual([]);
+	});
+
 	it("refuses a fourth image only when the listing grows past three", () => {
 		const four = Array.from({ length: 4 }, (_, i) => ({ image: `m${i}` }));
 		expect(
@@ -344,7 +356,18 @@ describe("the listings hook answers with the field it refuses", () => {
 	) => Promise<Record<string, unknown>>;
 	const payload = fakePayload({
 		categories: [
-			{ id: "cat-1", slug: "phones", listingForm: { type: "product" } },
+			{ id: "cat-0", slug: "electronics", listingForm: { type: "product" } },
+			{
+				id: "cat-1",
+				slug: "phones",
+				parent: "cat-0",
+				listingForm: { type: "product" },
+			},
+			{ id: "cat-9", slug: "holiday", listingForm: { type: "rental" } },
+		],
+		tags: [
+			{ id: "t-delivery", slug: "delivery", categories: ["cat-0"] },
+			{ id: "t-visit", slug: "visit", categories: ["cat-9"] },
 		],
 	});
 	const create = (data: Record<string, unknown>) =>
@@ -383,6 +406,36 @@ describe("the listings hook answers with the field it refuses", () => {
 				errors: [{ path: "attributes.brand", message: "Marque is required" }],
 			},
 		});
+	});
+
+	it("a tag inherited from an ancestor category is accepted", async () => {
+		await expect(
+			create({ price: 10, tags: ["t-delivery"] }),
+		).resolves.toMatchObject({ tags: ["t-delivery"] });
+	});
+
+	it("a tag the category does not get is a ValidationError on `tags`", async () => {
+		await expect(
+			create({ price: 10, tags: ["t-delivery", "t-visit"] }),
+		).rejects.toMatchObject({
+			status: 400,
+			data: { errors: [{ path: "tags" }] },
+		});
+	});
+
+	it("the product service drops the tags a new category does not get", async () => {
+		const data = await beforeChange({
+			operation: "update",
+			data: {
+				title: "iPhone",
+				category: "cat-9",
+				price: 10,
+				tags: ["t-delivery", "t-visit"],
+			},
+			originalDoc: { category: "cat-1", tags: ["t-delivery", "t-visit"] },
+			req: { payload, user: null, context: { productService: true } },
+		});
+		expect(data.tags).toEqual(["t-visit"]);
 	});
 
 	it("both clients read those paths back out of the response body", () => {

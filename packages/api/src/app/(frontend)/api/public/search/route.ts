@@ -3,6 +3,7 @@ import { MeiliSearch } from "meilisearch";
 import type { Where } from "payload";
 import { getPayload } from "payload";
 import { activeShopIds } from "@/lib/activeShopIds";
+import { tagsForCategory } from "@/lib/categoryTags";
 import { quoteFilterValue } from "@/lib/meiliFilter";
 import { relationId } from "@/lib/relationId";
 import { shopCapabilities } from "@/lib/shopCapabilities";
@@ -518,10 +519,20 @@ export async function GET(request: Request) {
 	}
 
 	if (tagsParam) {
-		const tagSlugs = tagsParam
+		let tagSlugs = tagsParam
 			.split(",")
 			.map((s) => s.trim())
 			.filter(Boolean);
+		// Tags are category-scoped: one that cannot apply to the searched
+		// category is dropped rather than left to empty the results.
+		if (category && tagSlugs.length > 0) {
+			const applicable = new Set(
+				(await tagsForCategory(await getPayload({ config }), category)).map(
+					(tag) => tag.slug,
+				),
+			);
+			tagSlugs = tagSlugs.filter((slug) => applicable.has(slug));
+		}
 		if (tagSlugs.length > 0) {
 			const tagList = tagSlugs.map(quoteFilterValue).join(", ");
 			filters.push(`tags IN [${tagList}]`);

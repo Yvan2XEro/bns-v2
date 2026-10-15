@@ -22,6 +22,7 @@ import * as migration_20261004_000600_p9_listing_view_flushes from "./20261004_0
 import * as migration_20261008_000000_p6_credit_note_index from "./20261008_000000_p6_credit_note_index";
 import * as migration_20261009_000000_p10_markets from "./20261009_000000_p10_markets";
 import * as migration_20261015_000000_p10_stock_count_open_index from "./20261015_000000_p10_stock_count_open_index";
+import * as migration_20261016_000000_tags_category_scope from "./20261016_000000_tags_category_scope";
 
 export const migrations = [
 	{
@@ -143,5 +144,10 @@ export const migrations = [
 		up: migration_20261015_000000_p10_stock_count_open_index.up,
 		down: migration_20261015_000000_p10_stock_count_open_index.down,
 		name: "20261015_000000_p10_stock_count_open_index",
+	},
+	{
+		up: migration_20261016_000000_tags_category_scope.up,
+		down: migration_20261016_000000_tags_category_scope.down,
+		name: "20261016_000000_tags_category_scope",
 	},
 ];

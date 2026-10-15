@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fakePayload } from "./helpers/fakePayload";
 
 const getPayloadMock = vi.fn();
 const findMock = vi.fn();
@@ -464,6 +465,28 @@ describe("public search route", () => {
 				`tags=${encodeURIComponent('deal" OR 1=1 --')}`,
 			);
 			expect(filter).toContain('tags IN ["deal\\" OR 1=1 --"]');
+		});
+
+		it("keeps only the tags the searched category gets", async () => {
+			getPayloadMock.mockResolvedValue(
+				fakePayload({
+					categories: [
+						{ id: "cat-goods" },
+						{ id: "cat-phones", parent: "cat-goods" },
+						{ id: "cat-holiday" },
+					],
+					tags: [
+						{ id: "t-1", slug: "delivery", categories: ["cat-goods"] },
+						{ id: "t-2", slug: "visit", categories: ["cat-holiday"] },
+					],
+				}),
+			);
+			expect(
+				await filterFor("category=cat-phones&tags=delivery,visit"),
+			).toContain('tags IN ["delivery"]');
+			expect(
+				await filterFor("category=cat-holiday&tags=delivery"),
+			).not.toContain("tags IN");
 		});
 
 		it("answers 503 rather than crashing when the filter is refused", async () => {

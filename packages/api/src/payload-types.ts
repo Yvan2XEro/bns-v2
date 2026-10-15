@@ -921,6 +921,10 @@ export interface Tag {
    * Optional emoji to display with the tag (e.g. 🤝)
    */
   emoji?: string | null;
+  /**
+   * Categories this tag is offered in. A category also gets the tags of every category above it, so pick the highest one where the tag still makes sense. A tag with no category is offered nowhere.
+   */
+  categories?: (string | Category)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -5214,6 +5218,7 @@ export interface TagsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   emoji?: T;
+  categories?: T;
   updatedAt?: T;
   createdAt?: T;
 }

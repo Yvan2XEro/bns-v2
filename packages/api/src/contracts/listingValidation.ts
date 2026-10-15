@@ -3,6 +3,7 @@ import {
 	attributeValueIssues,
 } from "./categoryAttributes";
 import type { FieldIssue } from "./formIssues";
+import { listingTagIssues } from "./listingTags";
 
 /**
  * The rules a classified listing (`POST`/`PATCH /api/listings`) is held to.
@@ -99,6 +100,8 @@ export interface ListingValidationContext {
 	attributes?: readonly AttributeRuleDef[] | null;
 	/** Growing past the image cap is refused; a legacy listing already over it is not. */
 	previousImageCount?: number;
+	/** Ids of the tags that apply to the chosen category, once the form has loaded them. */
+	tags?: readonly string[] | null;
 }
 
 export function listingInputIssues(
@@ -152,6 +155,10 @@ export function listingInputIssues(
 	}
 	if (preset?.photos?.enabled && preset.photos.required && images === 0) {
 		issues.push({ path: "images", rule: "required" });
+	}
+
+	if (context.tags) {
+		issues.push(...listingTagIssues(body.tags, context.tags));
 	}
 
 	if (context.attributes) {

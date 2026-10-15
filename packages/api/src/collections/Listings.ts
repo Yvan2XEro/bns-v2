@@ -11,6 +11,11 @@ import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 import { resolveShopRole, shopField } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
 import {
+	keepApplicableTags,
+	listingTagIssues,
+	relationIds,
+} from "../contracts/listingTags";
+import {
 	LISTING_LIMITS,
 	listingConditionIssue,
 	listingPriceIssue,
@@ -22,6 +27,7 @@ import {
 	type SuspensionCheckable,
 } from "../hooks/suspensionGuard";
 import { validateListingAttributes } from "../hooks/validation";
+import { tagsForCategory } from "../lib/categoryTags";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
 import { getListingFormPreset } from "../lib/listingFormPreset";
@@ -497,6 +503,34 @@ export const Listings: CollectionConfig = {
 					}
 				}
 
+				const selectedTags = relationIds(data.tags);
+				const tagsTouched =
+					operation === "create" ||
+					relationId(data.category) !== relationId(originalDoc?.category) ||
+					selectedTags.join() !== relationIds(originalDoc?.tags).join();
+				if (tagsTouched && selectedTags.length > 0) {
+					const categoryId = relationId(data.category);
+					const applicable = categoryId
+						? (await tagsForCategory(req.payload, categoryId, req)).map((tag) =>
+								String(tag.id),
+							)
+						: [];
+					if (listingTagIssues(selectedTags, applicable).length > 0) {
+						// The product service re-files a listing when its product moves
+						// category, and nobody is there to pick tags again: the ones that
+						// stopped applying go. A seller's own write is refused instead,
+						// so the form can say which field to fix.
+						if (productService || moderationWrite) {
+							data.tags = keepApplicableTags(selectedTags, applicable);
+						} else {
+							throw fieldError(
+								"tags",
+								"A tag does not apply to this listing's category",
+							);
+						}
+					}
+				}
+
 				if (operation === "create") {
 					const listingShopId = relationId(data.shop);
 					if (listingShopId) {
@@ -876,8 +910,7 @@ export const Listings: CollectionConfig = {
 		{
 			name: "tags",
 			type: "relationship",
-			// biome-ignore lint/suspicious/noExplicitAny: tags collection not yet in generated types
-			relationTo: "tags" as any,
+			relationTo: "tags",
 			hasMany: true,
 		},
 		shopField({ picker: false }),

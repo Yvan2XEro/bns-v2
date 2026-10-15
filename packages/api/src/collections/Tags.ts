@@ -4,7 +4,7 @@ export const Tags: CollectionConfig = {
 	slug: "tags",
 	admin: {
 		useAsTitle: "name",
-		defaultColumns: ["name", "slug", "emoji"],
+		defaultColumns: ["name", "slug", "emoji", "categories"],
 	},
 	access: {
 		read: () => true,
@@ -50,6 +50,17 @@ export const Tags: CollectionConfig = {
 			type: "text",
 			admin: {
 				description: "Optional emoji to display with the tag (e.g. 🤝)",
+			},
+		},
+		{
+			name: "categories",
+			type: "relationship",
+			relationTo: "categories",
+			hasMany: true,
+			index: true,
+			admin: {
+				description:
+					"Categories this tag is offered in. A category also gets the tags of every category above it, so pick the highest one where the tag still makes sense. A tag with no category is offered nowhere.",
 			},
 		},
 	],
