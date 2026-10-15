@@ -141,6 +141,11 @@ services:
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}
+      # The API recognises chat-service by this address: it is the one caller
+      # allowed to name a message's sender. Unset here, every websocket message
+      # is refused as "not a participant" (fail-closed by design).
+      CHAT_SERVICE_EMAIL: ${CHAT_SERVICE_EMAIL}
+      CHAT_PUBLIC_URL: ${CHAT_PUBLIC_URL:-http://chat.buynsellem.com}
       NOVU_APPLICATION_IDENTIFIER: ${NOVU_APPLICATION_IDENTIFIER:-}
       NOVU_API_URL: ${NOVU_API_URL:-https://api.novu.co}
       NOVU_EXPO_INTEGRATION_IDENTIFIER: ${NOVU_EXPO_INTEGRATION_IDENTIFIER:-}
