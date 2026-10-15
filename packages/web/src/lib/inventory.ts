@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { optionalAmount } from "./product-form";
-import type { PopulatedVariant } from "./shop-api";
+import { relationId } from "./relation-id";
+import type { InventoryVariant } from "./shop-api";
 import { variantLabel } from "./variants";
 
 export interface InventoryDraft {
@@ -90,6 +91,8 @@ export const countFormSchema = z.object({
 			sku: z.string().nullable(),
 			expected: z.number(),
 			cost: z.number().nullable(),
+			image: z.string().nullable().optional(),
+			categoryId: z.string().nullable().optional(),
 			counted: optionalAmount,
 		}),
 	),
@@ -100,22 +103,31 @@ export type CountRow = CountFormState["rows"][number];
 
 /** Tracked variants of the shop, sorted by product, with any saved draft merged in. */
 export function rowsFromVariants(
-	variants: PopulatedVariant[],
+	variants: InventoryVariant[],
 	draft: InventoryDraft,
 	defaultLabel: string,
 ): CountRow[] {
 	return variants
 		.filter((variant) => variant.trackInventory)
-		.map((variant) => ({
-			variantId: variant.id,
-			productTitle:
-				typeof variant.product === "object" ? variant.product.title : "",
-			label: variantLabel(variant.optionValues, defaultLabel),
-			sku: variant.sku,
-			expected: variant.stockOnHand,
-			cost: variant.cost ?? null,
-			counted: draft.counts[variant.id] ?? "",
-		}))
+		.map((variant) => {
+			const product =
+				typeof variant.product === "object" ? variant.product : null;
+			const image = product?.images?.[0]?.image;
+			return {
+				variantId: variant.id,
+				productTitle: product?.title ?? "",
+				label: variantLabel(variant.optionValues, defaultLabel),
+				sku: variant.sku,
+				expected: variant.stockOnHand,
+				cost: variant.cost ?? null,
+				image:
+					image && typeof image === "object"
+						? (image.thumbnailURL ?? image.url ?? null)
+						: null,
+				categoryId: relationId(product?.category),
+				counted: draft.counts[variant.id] ?? "",
+			};
+		})
 		.sort((a, b) => a.productTitle.localeCompare(b.productTitle));
 }
 
@@ -140,4 +152,72 @@ export function draftFromRows(
  */
 export function hasAnyInput(rows: Pick<CountRow, "counted">[]): boolean {
 	return rows.some((row) => row.counted.trim() !== "");
+}
+
+export type CountFilter = "all" | "todo" | "counted" | "gap";
+
+function matchesFilter(
+	filter: CountFilter,
+	expected: number,
+	counted: number | null,
+): boolean {
+	if (filter === "todo") return counted === null;
+	if (filter === "counted") return counted !== null;
+	if (filter === "gap") return counted !== null && counted !== expected;
+	return true;
+}
+
+/**
+ * The form keeps every row (so nothing typed is lost to a filter); this picks
+ * the indexes the table shows, in order, before pagination.
+ */
+export function visibleRowIndexes(
+	rows: Pick<
+		CountRow,
+		"productTitle" | "label" | "sku" | "expected" | "counted" | "categoryId"
+	>[],
+	options: {
+		filter: CountFilter;
+		query: string;
+		/** A category and its descendants; null shows every category. */
+		categoryIds: ReadonlySet<string> | null;
+		parse: (value: string) => number | null;
+	},
+): number[] {
+	const q = options.query.trim().toLowerCase();
+	const indexes: number[] = [];
+	rows.forEach((row, index) => {
+		if (options.categoryIds && !options.categoryIds.has(row.categoryId ?? "")) {
+			return;
+		}
+		const haystack =
+			`${row.productTitle} ${row.label} ${row.sku ?? ""}`.toLowerCase();
+		if (q && !haystack.includes(q)) return;
+		if (
+			!matchesFilter(options.filter, row.expected, options.parse(row.counted))
+		)
+			return;
+		indexes.push(index);
+	});
+	return indexes;
+}
+
+/** A category id and every id below it, from the flat category list. */
+export function categoryFamily(
+	categories: { id: string; parent?: unknown }[],
+	categoryId: string,
+): Set<string> {
+	const ids = new Set([categoryId]);
+	let grew = true;
+	while (grew) {
+		grew = false;
+		for (const category of categories) {
+			const parent = relationId(category.parent);
+			if (parent && ids.has(parent) && !ids.has(category.id)) {
+				ids.add(category.id);
+				grew = true;
+			}
+		}
+	}
+	return ids;
 }

@@ -12,29 +12,18 @@ type Json = { [key: string]: Json | string };
  * shipped rendering their own key path to users while every gate was green.
  * This test asks the other question: does every key the code calls exist?
  *
- * The ceiling is the pre-existing backlog measured when this test was
- * written, on 2026-10-02: 336, entirely false positives from one known
- * limitation of this scanner, not 336 real missing translations. A file
- * that calls `useTranslations` more than once — `create-listing-form.tsx`
- * alone calls it five times, for `CreateListing`, `Listing`, `Common`,
- * `Condition` and `Shop` — has every one of those namespaces attributed to
- * every literal `t("...")` call in the file, because this function collects
- * *all* namespaces found anywhere in a file and cross-multiplies them
- * against every `t(` call, not just the namespace the call's own variable
- * was bound to (`tListing`, `tCommon`, …; only a call through a variable
- * literally named `t` is matched at all). `CreateListing.photosDesc` is the
- * real key; `Listing.photosDesc`, `Common.photosDesc`,
- * `Condition.photosDesc` and `Shop.photosDesc` are the four false alarms
- * generated alongside it. None of the 336 touch a Task 7 file or namespace
- * (verified: every missing entry's file is pre-existing, none of this
- * task's `OrderStatus`/`Cart`/`Checkout`/`Purchases`/`SellerOrders`/`Billing`
- * namespaces call `t()` from a screen yet — Task 7 links out to nothing).
- * A real fix (naming each hook's variable so this scanner can tell them
- * apart, or scoping namespace collection per call) lowers the number and
- * the constant below drops with it; a new screen that forgets a translation
- * raises it and fails here.
+ * Each literal call is resolved through the translator variable it is made
+ * on: `tCommon("cancel")` is checked against the namespace of the nearest
+ * preceding `const tCommon = useTranslations("Common")` (or a
+ * `tCommon: ReturnType<typeof useTranslations<"Common">>` parameter). The
+ * first version of this scanner multiplied every namespace in a file by
+ * every `t(` call in it and carried a backlog of 336 such false alarms; with
+ * per-variable resolution the backlog is zero. A bare `t` with no binding in
+ * its file (a translator passed down untyped) is still checked against every
+ * namespace the file names, so the ceiling stays above zero only if one of
+ * those reappears.
  */
-const PRE_EXISTING_MISSING_CEILING = 336;
+const PRE_EXISTING_MISSING_CEILING = 0;
 
 function sourceFiles(dir: string): string[] {
 	return readdirSync(dir).flatMap((entry) => {
@@ -44,18 +33,40 @@ function sourceFiles(dir: string): string[] {
 	});
 }
 
+const BINDING =
+	/\b(?:const|let)\s+(\w+)\s*=\s*(?:await\s+)?(?:\w+\(\s*)?(?:await\s+)?(?:useTranslations|getTranslations)\(\s*(?:"([^"]+)"|\{[^}]*?namespace:\s*"([^"]+)"[^}]*\})?\s*\)/g;
+const TYPED_PARAM =
+	/\b(\w+)\??:\s*ReturnType<\s*typeof\s+(?:useTranslations|getTranslations)<\s*"([^"]+)"\s*>\s*>/g;
+
 function calledKeys(): Array<{ file: string; key: string }> {
 	const out: Array<{ file: string; key: string }> = [];
 	for (const file of sourceFiles(join(import.meta.dir, ".."))) {
 		const text = readFileSync(file, "utf8");
-		// One namespace per file is the convention; a file using two is listed twice.
 		const namespaces = [
 			...text.matchAll(/(?:useTranslations|getTranslations)\(\s*"([^"]+)"/g),
 		].map((m) => m[1]);
-		if (namespaces.length === 0) continue;
-		for (const match of text.matchAll(/\bt\(\s*"([^"{}$]+)"/g)) {
-			for (const namespace of namespaces)
-				out.push({ file, key: `${namespace}.${match[1]}` });
+		const bindings = [
+			...[...text.matchAll(BINDING)].map((m) => ({
+				name: m[1],
+				namespace: m[2] ?? m[3] ?? "",
+				at: m.index,
+			})),
+			...[...text.matchAll(TYPED_PARAM)].map((m) => ({
+				name: m[1],
+				namespace: m[2],
+				at: m.index,
+			})),
+		];
+		if (namespaces.length === 0 && bindings.length === 0) continue;
+		for (const match of text.matchAll(/\b(\w+)\(\s*"([^"{}$]+)"/g)) {
+			const [, name, key] = match;
+			const own = bindings
+				.filter((b) => b.name === name && b.at < match.index)
+				.sort((a, b) => a.at - b.at)
+				.at(-1);
+			const scope = own ? [own.namespace] : name === "t" ? namespaces : [];
+			for (const namespace of scope)
+				out.push({ file, key: namespace ? `${namespace}.${key}` : key });
 		}
 	}
 	return out;

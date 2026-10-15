@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { LocationField } from "~/components/location/location-field";
 import {
@@ -27,21 +28,39 @@ import {
 	shopProfileSchema,
 } from "~/lib/shop-form";
 import type { Category, MyShop } from "~/types";
+import { type FormBarState, useReportFormBar } from "./form-bar";
 import { ShopInitials } from "./shop-initials";
+
+/** The profile as typed, for a live preview of the public page. */
+export interface ShopProfileDraft {
+	name: string;
+	description: string;
+	city: string;
+	categoryIds: string[];
+	logoUrl: string | null;
+	bannerUrl: string | null;
+}
 
 export function ProfileForm({
 	shop,
 	categories,
+	formId,
+	onStateChange,
+	onDraftChange,
 }: {
 	shop: MyShop;
 	categories: Category[];
+	/** Set when the page header holds Save: the form's own button is dropped. */
+	formId?: string;
+	onStateChange?: (state: FormBarState) => void;
+	onDraftChange?: (draft: ShopProfileDraft) => void;
 }) {
 	const t = useTranslations("ShopManage");
 	const tRoot = useTranslations();
 	const router = useRouter();
 	const updateShop = useUpdateShop(shop.id);
 
-	const { control, formState, handleSubmit, register, setError } =
+	const { control, formState, handleSubmit, register, reset, setError } =
 		useForm<ShopProfileValues>({
 			resolver: zodResolver(shopProfileSchema),
 			mode: "onChange",
@@ -61,6 +80,39 @@ export function ProfileForm({
 	const description = useWatch({ control, name: "description" });
 	const name = useWatch({ control, name: "name" });
 	const selected = useWatch({ control, name: "categories" });
+	const city = useWatch({ control, name: "city" });
+	const logo = useWatch({ control, name: "logo" });
+	const banner = useWatch({ control, name: "banner" });
+
+	useEffect(() => {
+		onDraftChange?.({
+			name,
+			description,
+			city: [city?.name, city?.region].filter(Boolean).join(", "),
+			categoryIds: selected,
+			logoUrl: logo.url,
+			bannerUrl: banner.url,
+		});
+	}, [
+		onDraftChange,
+		name,
+		description,
+		city?.name,
+		city?.region,
+		selected,
+		logo.url,
+		banner.url,
+	]);
+
+	useReportFormBar(
+		onStateChange,
+		{
+			dirty: formState.isDirty,
+			canSave: formState.isValid && formState.isDirty,
+			pending: updateShop.isPending,
+		},
+		() => reset(),
+	);
 
 	// Categories already on the shop stay selectable even if they are not roots.
 	const options: CategoryChipOption[] = [
@@ -80,6 +132,7 @@ export function ProfileForm({
 				location: shopLocationOf(values.city),
 				categories: values.categories,
 			});
+			reset(values);
 			router.refresh();
 		} catch (error) {
 			setError("root", { message: resolveErrorMessage(error, tRoot) });
@@ -87,7 +140,7 @@ export function ProfileForm({
 	});
 
 	return (
-		<form onSubmit={onSubmit} className="space-y-6" noValidate>
+		<form id={formId} onSubmit={onSubmit} className="space-y-6" noValidate>
 			<Controller
 				control={control}
 				name="logo"
@@ -193,16 +246,18 @@ export function ProfileForm({
 			{formState.errors.root?.message && (
 				<p className="text-red-700 text-sm">{formState.errors.root.message}</p>
 			)}
-			<Button
-				type="submit"
-				disabled={!formState.isValid || updateShop.isPending}
-				className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
-			>
-				{updateShop.isPending && (
-					<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-				)}
-				{t("save")}
-			</Button>
+			{!formId && (
+				<Button
+					type="submit"
+					disabled={!formState.isValid || updateShop.isPending}
+					className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				>
+					{updateShop.isPending && (
+						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+					)}
+					{t("save")}
+				</Button>
+			)}
 		</form>
 	);
 }

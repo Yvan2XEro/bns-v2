@@ -17,15 +17,25 @@ import {
 	toNullablePhone,
 } from "~/lib/shop-form";
 import type { MyShop } from "~/types";
+import { type FormBarState, useReportFormBar } from "./form-bar";
 
-export function ContactsForm({ shop }: { shop: MyShop }) {
+export function ContactsForm({
+	shop,
+	formId,
+	onStateChange,
+}: {
+	shop: MyShop;
+	/** Set when the page header holds Save: the form's own button is dropped. */
+	formId?: string;
+	onStateChange?: (state: FormBarState) => void;
+}) {
 	const t = useTranslations("ShopManage");
 	const tPhone = useTranslations("PhoneVerification");
 	const tRoot = useTranslations();
 	const router = useRouter();
 	const updateShop = useUpdateShop(shop.id);
 
-	const { control, formState, handleSubmit, register, setError } =
+	const { control, formState, handleSubmit, register, reset, setError } =
 		useForm<ShopContactsValues>({
 			resolver: zodResolver(shopContactsSchema),
 			mode: "onChange",
@@ -36,6 +46,16 @@ export function ContactsForm({ shop }: { shop: MyShop }) {
 			},
 		});
 
+	useReportFormBar(
+		onStateChange,
+		{
+			dirty: formState.isDirty,
+			canSave: formState.isValid && formState.isDirty,
+			pending: updateShop.isPending,
+		},
+		() => reset(),
+	);
+
 	const onSubmit = handleSubmit(async (values) => {
 		try {
 			await updateShop.mutateAsync({
@@ -45,6 +65,7 @@ export function ContactsForm({ shop }: { shop: MyShop }) {
 					email: values.email.trim() || null,
 				},
 			});
+			reset(values);
 			router.refresh();
 		} catch (error) {
 			setError("root", { message: resolveErrorMessage(error, tRoot) });
@@ -52,7 +73,7 @@ export function ContactsForm({ shop }: { shop: MyShop }) {
 	});
 
 	return (
-		<form onSubmit={onSubmit} className="space-y-4" noValidate>
+		<form id={formId} onSubmit={onSubmit} className="space-y-4" noValidate>
 			<p className="text-[#64748B] text-sm">{t("contactsHint")}</p>
 			<div className="space-y-1.5">
 				<Label htmlFor="contact-phone">{t("contactPhone")}</Label>
@@ -112,16 +133,18 @@ export function ContactsForm({ shop }: { shop: MyShop }) {
 			{formState.errors.root?.message && (
 				<p className="text-red-700 text-sm">{formState.errors.root.message}</p>
 			)}
-			<Button
-				type="submit"
-				disabled={!formState.isValid || updateShop.isPending}
-				className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
-			>
-				{updateShop.isPending && (
-					<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-				)}
-				{t("save")}
-			</Button>
+			{!formId && (
+				<Button
+					type="submit"
+					disabled={!formState.isValid || updateShop.isPending}
+					className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				>
+					{updateShop.isPending && (
+						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+					)}
+					{t("save")}
+				</Button>
+			)}
 		</form>
 	);
 }

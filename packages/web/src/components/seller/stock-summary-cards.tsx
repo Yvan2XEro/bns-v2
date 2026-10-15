@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { cn } from "~/lib/utils";
 import type { StockSummary } from "~/types";
@@ -8,6 +9,7 @@ import type { StockSummary } from "~/types";
 export function StockSummaryCards({ summary }: { summary: StockSummary }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Stock");
+	const ts = useCatalogueStockT("stock");
 	const locale = useLocale();
 	const firstAlert = summary.lowStock[0] ?? summary.outOfStock[0] ?? null;
 
@@ -20,7 +22,10 @@ export function StockSummaryCards({ summary }: { summary: StockSummary }) {
 		{
 			label: t("unitsOnHand"),
 			value: summary.unitsOnHand.toLocaleString(locale),
-			hint: t("trackedVariants", { count: summary.trackedVariants }),
+			hint:
+				summary.trackedProducts === undefined
+					? t("trackedVariants", { count: summary.trackedVariants })
+					: ts("trackedProducts", { count: summary.trackedProducts }),
 		},
 		{
 			label: t("unitsReserved"),

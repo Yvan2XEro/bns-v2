@@ -1,22 +1,28 @@
-import { FileText, Package, Plus } from "lucide-react";
+import { BadgeCheck, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { FirstRunChecklist } from "~/components/seller/first-run-checklist";
-import { PublicLinkCard } from "~/components/seller/public-link-card";
 import { SectionTabs } from "~/components/seller/section-tabs";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
 import { serverGet } from "~/lib/server-api";
 import { getMyShop } from "~/lib/server-shop";
 import { can } from "~/lib/shop-roles";
-import { SellerInsightsPreview } from "./insights/seller-insights-preview";
-import { SellerTodayCards } from "./today-cards";
+import {
+	DashboardSubtitle,
+	RecentOrders,
+	SellerTodayCards,
+	WeekStats,
+} from "./today-cards";
 
 export default async function SellerDashboardPage() {
-	const [mine, config, t] = await Promise.all([
+	const [mine, config, tSeller, tDash] = await Promise.all([
 		getMyShop(),
-		serverGet<{ insightsEnabled?: boolean }>("/api/public/config"),
+		serverGet<{ insightsEnabled?: boolean; ordersEnabled?: boolean }>(
+			"/api/public/config",
+		),
 		getTranslations("Seller"),
+		getTranslations("SellerDashboard"),
 	]);
 	const shop = mine?.shop;
 	if (!shop) redirect("/shop/new");
@@ -34,63 +40,65 @@ export default async function SellerDashboardPage() {
 		personalListings: 0,
 	};
 
-	const tiles = [
-		{
-			icon: Package,
-			label: t("tiles.active"),
-			value: counts.activeProducts,
-			href: "/seller/catalogue?status=active",
-		},
-		{
-			icon: FileText,
-			label: t("tiles.drafts"),
-			value: counts.draftProducts,
-			href: "/seller/catalogue?status=draft",
-		},
-	];
-
 	// A suspended shop cannot publish and its public page is hidden, so the
 	// actions that would lead there are left out rather than shown as usual.
 	const suspended = shop.status === "suspended";
+	const canViewOrders = can(mine.role, "orders.view");
+	const showOrders =
+		!suspended && canViewOrders && config?.ordersEnabled === true;
+	const pending = {
+		shopId: shop.id,
+		canViewOrders,
+		canReply: can(mine.role, "inbox.reply"),
+		lowStock: counts.lowStockVariants,
+	};
+	// The design's nudge is for a level-2 shop: business verification is what
+	// unlocks supplying resellers.
+	const nudgeLevel3 =
+		!suspended &&
+		shop.badge === "identity" &&
+		can(mine.role, "verification.submit");
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-[22px]">
 			{statisticsReachable && (
 				<SectionTabs
 					tabs={[
-						{ href: "/seller", label: t("tabs.today"), exact: true },
-						{ href: "/seller/insights", label: t("tabs.statistics") },
+						{ href: "/seller", label: tSeller("tabs.today"), exact: true },
+						{ href: "/seller/insights", label: tSeller("tabs.statistics") },
 					]}
 				/>
 			)}
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
-						{t("dashboard")}
+			<div className="flex flex-wrap items-end justify-between gap-3">
+				<div className="space-y-1">
+					<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-[-0.4px]">
+						{tSeller("dashboard")}
 					</h1>
-					<p className="text-[#64748B] text-sm">{shop.name}</p>
+					{suspended ? (
+						<p className="text-[#64748B] text-sm">{shop.name}</p>
+					) : (
+						<DashboardSubtitle {...pending} />
+					)}
 				</div>
 				{!suspended && (
-					<div className="flex gap-2">
+					<div className="flex gap-2.5">
 						<ShareShopButton
 							handle={shop.handle}
 							name={shop.name}
-							label={t("shareShop")}
+							label={tSeller("shareShop")}
 						/>
 						<Link
 							href="/seller/catalogue/new"
 							className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
 						>
 							<Plus aria-hidden="true" className="h-4 w-4" />
-							{t("addProduct")}
+							{tSeller("addProduct")}
 						</Link>
 					</div>
 				)}
 			</div>
 
-			{!suspended && can(mine.role, "orders.view") && (
-				<SellerTodayCards shopId={shop.id} lowStock={counts.lowStockVariants} />
-			)}
+			{!suspended && <SellerTodayCards {...pending} />}
 
 			{!suspended && (
 				<FirstRunChecklist
@@ -101,25 +109,37 @@ export default async function SellerDashboardPage() {
 				/>
 			)}
 
-			<div className="grid gap-4 sm:grid-cols-2">
-				{tiles.map(({ icon: Icon, label, value, href }) => (
-					<Link
-						key={label}
-						href={href}
-						className="rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[#93C5FD]"
-					>
-						<Icon aria-hidden="true" className="h-5 w-5 text-[#1E40AF]" />
-						<p className="mt-3 font-bold text-2xl text-[#0F172A]">{value}</p>
-						<p className="text-[#64748B] text-sm">{label}</p>
-					</Link>
-				))}
-			</div>
-
-			{!suspended && mine?.role ? (
-				<SellerInsightsPreview shopId={shop.id} role={mine.role} />
-			) : null}
-
-			{!suspended && <PublicLinkCard handle={shop.handle} name={shop.name} />}
+			{(showOrders || nudgeLevel3) && (
+				<div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+					{showOrders ? <RecentOrders shopId={shop.id} /> : <div />}
+					<div className="flex flex-col gap-4">
+						{showOrders && <WeekStats shopId={shop.id} />}
+						{nudgeLevel3 && (
+							<section className="flex flex-col gap-2 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] p-4">
+								<span className="inline-flex items-center gap-1 self-start rounded-full bg-[#DBEAFE] py-[3px] pr-[9px] pl-1.5 font-semibold text-[#1E40AF] text-xs">
+									<BadgeCheck
+										aria-hidden="true"
+										className="h-[13px] w-[13px]"
+									/>
+									{tDash("level2Badge")}
+								</span>
+								<h2 className="font-bold text-[#0F172A] text-base">
+									{tDash("level3Title")}
+								</h2>
+								<p className="text-[#334155] text-sm leading-5">
+									{tDash("level3Body")}
+								</p>
+								<Link
+									href="/seller/verification/business"
+									className="font-semibold text-[#1E40AF] text-sm hover:underline"
+								>
+									{tDash("level3Action")}
+								</Link>
+							</section>
+						)}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

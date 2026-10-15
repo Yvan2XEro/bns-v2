@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useReducer, useState } from "react";
+import { ActivityFeed } from "~/components/seller/team/activity-feed";
 import { InviteDialog } from "~/components/seller/team/invite-dialog";
 import { MemberActionDialogs } from "~/components/seller/team/member-action-dialogs";
 import { MemberTable } from "~/components/seller/team/member-table";
-import { PendingInvitations } from "~/components/seller/team/pending-invitations";
 import { RoleMatrix } from "~/components/seller/team/role-matrix";
-import { TeamLimitMeter } from "~/components/seller/team/team-limit-meter";
 import { TeamLocked } from "~/components/seller/team/team-locked";
 import { Button } from "~/components/ui/button";
 import {
@@ -52,7 +51,7 @@ function TeamSkeleton() {
 }
 
 /**
- * Orchestrates the five pieces of `/seller/team`: the state they share
+ * Orchestrates the pieces of `/seller/team`: the state they share
  * (which dialog is open, which member it targets) lives here in one
  * `useReducer`, so a component below never has to guess whether a sibling
  * dialog is already open for a different member.
@@ -201,25 +200,22 @@ export function TeamClient({
 				</p>
 			)}
 
-			<TeamLimitMeter team={view} />
-
-			<MemberTable
-				members={view.members}
-				role={role}
-				onChangeRole={(member) => patch({ roleTarget: member })}
-				onRemove={(member) => patch({ confirmRemove: member })}
-			/>
-
-			<RoleMatrix />
-
-			<PendingInvitations
-				invitations={view.invitations}
-				role={role}
-				onResend={handleResend}
-				onRevoke={handleRevoke}
-				resendingId={resendingId}
-				revokingId={revokingId}
-			/>
+			<div className="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1fr)_360px]">
+				<div className="min-w-0 space-y-[18px]">
+					<MemberTable
+						team={view}
+						role={role}
+						onChangeRole={(member) => patch({ roleTarget: member })}
+						onRemove={(member) => patch({ confirmRemove: member })}
+						onResend={handleResend}
+						onRevoke={handleRevoke}
+						resendingId={resendingId}
+						revokingId={revokingId}
+					/>
+					<RoleMatrix />
+				</div>
+				{canViewActivity && <ActivityFeed shopId={shopId} />}
+			</div>
 
 			<InviteDialog
 				shopId={shopId}

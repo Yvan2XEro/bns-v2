@@ -12,6 +12,7 @@ import {
 	shopVariantsKey,
 	stockSummaryKey,
 } from "~/hooks/use-stock";
+import { stockCountOverviewKey } from "~/hooks/use-stock-count-session";
 import type { ApiError } from "~/lib/apiError";
 import { shopApi } from "~/lib/shop-api";
 import type { StockCountResult } from "~/types";
@@ -19,6 +20,7 @@ import type { StockCountResult } from "~/types";
 export interface StockCountVariables {
 	counts: { variantId: string; counted: number }[];
 	note?: string;
+	sessionId?: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export function useStockCount(
 				shopVariantsKey(shopId),
 				catalogueRootKey(shopId),
 				myShopKey,
+				stockCountOverviewKey(shopId),
 			]) {
 				void queryClient.invalidateQueries({ queryKey });
 			}

@@ -5,6 +5,8 @@ import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import type { ShopSearchHit } from "~/types";
 
+export const PREVIEW_TILES = 3;
+
 export function VerifiedShops({ shops }: { shops: ShopSearchHit[] }) {
 	const t = useTranslations("Home");
 	const locale = useLocale();
@@ -32,7 +34,16 @@ export function VerifiedShops({ shops }: { shops: ShopSearchHit[] }) {
 							href={`/s/${shop.handle}`}
 							className="hover:-translate-y-1 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white transition-all duration-200 hover:border-[#93C5FD] hover:shadow-lg"
 						>
-							<div className="h-[72px] bg-[#1E3A8A] bg-[length:14px_14px] bg-[radial-gradient(rgba(255,255,255,0.14)_1px,transparent_1px)]" />
+							{shop.bannerUrl ? (
+								// biome-ignore lint/performance/noImgElement: banners come from arbitrary storage hosts
+								<img
+									src={shop.bannerUrl}
+									alt=""
+									className="h-[72px] w-full object-cover"
+								/>
+							) : (
+								<div className="h-[72px] bg-[#1E3A8A] bg-[length:14px_14px] bg-[radial-gradient(rgba(255,255,255,0.14)_1px,transparent_1px)]" />
+							)}
 							<div className="-mt-7 flex flex-col gap-2 px-4 pb-4">
 								<ShopInitials
 									name={shop.name}
@@ -65,6 +76,25 @@ export function VerifiedShops({ shops }: { shops: ShopSearchHit[] }) {
 										</>
 									)}
 								</p>
+								<div className="mt-1 grid grid-cols-3 gap-1.5">
+									{Array.from({ length: PREVIEW_TILES }, (_, index) => {
+										const preview = shop.previews?.[index];
+										return preview?.imageUrl ? (
+											// biome-ignore lint/performance/noImgElement: listing photos come from arbitrary storage hosts
+											<img
+												key={preview.id}
+												src={preview.imageUrl}
+												alt={preview.title}
+												className="h-14 w-full rounded-lg bg-[#F1F5F9] object-cover"
+											/>
+										) : (
+											<span
+												key={preview?.id ?? `empty-${index}`}
+												className="block h-14 rounded-lg bg-[#F1F5F9]"
+											/>
+										);
+									})}
+								</div>
 							</div>
 						</Link>
 					))}

@@ -12,10 +12,12 @@ export function ShopHero({
 	shop,
 	rating,
 	locale,
+	tabs,
 }: {
 	shop: PublicShop;
 	rating: ShopRatingDisplay | null;
 	locale: string;
+	tabs?: React.ReactNode;
 }) {
 	const t = useTranslations("Shop");
 	const since = new Date(shop.owner.memberSince).getFullYear();
@@ -38,7 +40,9 @@ export function ShopHero({
 					/>
 				)}
 			</div>
-			<div className="container mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
+			<div
+				className={`container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${tabs ? "" : "pb-6"}`}
+			>
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
 					<ShopInitials
 						name={shop.name}
@@ -97,6 +101,7 @@ export function ShopHero({
 						</div>
 					</div>
 				</div>
+				{tabs}
 			</div>
 		</section>
 	);

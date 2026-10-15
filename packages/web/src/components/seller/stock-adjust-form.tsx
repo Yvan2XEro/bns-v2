@@ -29,9 +29,12 @@ export function StockAdjustForm({
 	onChangeVariant,
 	onSaved,
 	onCancel,
+	defaults,
 }: {
 	shopId: string;
 	variant: PickedVariant;
+	/** A preset, e.g. the stock page's "record a receipt" with a dated note. */
+	defaults?: Partial<MovementFormState>;
 	/** Absent when the drawer was opened on one variant from the editor. */
 	onChangeVariant: (() => void) | null;
 	onSaved: () => void;
@@ -48,7 +51,7 @@ export function StockAdjustForm({
 	const { control, formState, handleSubmit, register, setError, setValue } =
 		useForm<MovementFormState>({
 			resolver,
-			defaultValues: emptyMovementForm,
+			defaultValues: { ...emptyMovementForm, ...defaults },
 			mode: "onChange",
 		});
 

@@ -54,7 +54,7 @@ export const SELLER_NAV = [
 		orders: false,
 	},
 	{
-		href: "/seller/resale/catalogue",
+		href: "/seller/resale",
 		key: "resale",
 		exact: false,
 		permission: "resale.manage",

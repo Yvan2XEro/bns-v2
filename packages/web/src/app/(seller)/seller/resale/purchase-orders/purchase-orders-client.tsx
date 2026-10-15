@@ -23,12 +23,18 @@ function reducer(state: State, patch: Partial<State>): State {
 	return { ...state, ...patch };
 }
 
-export function PurchaseOrdersClient({ shopId }: { shopId: string }) {
+export function PurchaseOrdersClient({
+	shopId,
+	initialSide = "supplier",
+}: {
+	shopId: string;
+	initialSide?: Side;
+}) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerResale");
 	const locale = useLocale().startsWith("fr") ? "fr" : "en";
 	const [state, patch] = useReducer(reducer, {
-		side: "supplier",
+		side: initialSide,
 		search: "",
 	});
 	const queryText = useDebouncedValue(state.search.trim(), 300);

@@ -2,18 +2,29 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
-import { apiGet, apiPost } from "~/lib/shop-api";
+import type { SupplierResaleSettingsInput } from "~/lib/resale-hub";
+import { apiGet, apiPatch, apiPost } from "~/lib/shop-api";
 import type {
 	CreateResaleListingInput,
 	CurrentResaleTerms,
 	ResaleCataloguePage,
 	ResaleLinkListPage,
 	ResellerFinanceView,
+	ResoldListingPage,
 	SupplierResaleProduct,
+	SupplierResaleSettingsView,
+	UpdateResaleListingPricesInput,
 } from "../../../api/src/contracts/resale";
 
-export const resaleCatalogueKey = (shopId: string, query: string) =>
-	["shops", shopId, "resale-catalogue", query] as const;
+export const resaleCatalogueKey = (
+	shopId: string,
+	query: string,
+	supplier = "",
+) => ["shops", shopId, "resale-catalogue", query, supplier] as const;
+export const resoldListingsKey = (shopId: string) =>
+	["shops", shopId, "resale-catalogue", "resold"] as const;
+export const supplierResaleSettingsKey = (productId: string) =>
+	["resale-settings", productId] as const;
 export const resaleTermsKey = (role: "supplier" | "reseller") =>
 	["resale-terms", role] as const;
 export const resaleLinksKey = (
@@ -89,12 +100,17 @@ export function useDecideResaleLink(shopId: string) {
 	});
 }
 
-export function useResaleCatalogue(shopId: string | null, search: string) {
+export function useResaleCatalogue(
+	shopId: string | null,
+	search: string,
+	supplier = "",
+) {
 	const query = search.trim();
 	const params = new URLSearchParams({ shop: shopId ?? "" });
 	if (query) params.set("q", query);
+	if (supplier) params.set("supplier", supplier);
 	return useQuery<ResaleCataloguePage, ApiError>({
-		queryKey: resaleCatalogueKey(shopId ?? "", query),
+		queryKey: resaleCatalogueKey(shopId ?? "", query, supplier),
 		queryFn: () =>
 			apiGet<ResaleCataloguePage>(`/api/resale/catalogue?${params.toString()}`),
 		enabled: Boolean(shopId),
@@ -117,7 +133,10 @@ export function useCurrentResaleTerms(
 	});
 }
 
-export function useAcceptResaleTerms(shopId: string) {
+export function useAcceptResaleTerms(
+	shopId: string,
+	role: "supplier" | "reseller" = "reseller",
+) {
 	const queryClient = useQueryClient();
 	return useMutation<
 		unknown,
@@ -126,7 +145,7 @@ export function useAcceptResaleTerms(shopId: string) {
 	>({
 		mutationFn: ({ version, locale }) =>
 			apiPost(`/api/shops/${encodeURIComponent(shopId)}/resale-terms/accept`, {
-				role: "reseller",
+				role,
 				version,
 				locale,
 				client: "web",
@@ -134,6 +153,73 @@ export function useAcceptResaleTerms(shopId: string) {
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
 				queryKey: ["shops", shopId, "resale-catalogue"],
+			});
+			await queryClient.invalidateQueries({ queryKey: ["resale-settings"] });
+			await queryClient.invalidateQueries({
+				queryKey: supplierResaleProductsKey(shopId),
+			});
+		},
+	});
+}
+
+export function useResoldListings(shopId: string) {
+	return useQuery<ResoldListingPage, ApiError>({
+		queryKey: resoldListingsKey(shopId),
+		queryFn: () =>
+			apiGet<ResoldListingPage>(
+				`/api/shops/${encodeURIComponent(shopId)}/resale-listings`,
+			),
+		enabled: Boolean(shopId),
+		retry: false,
+	});
+}
+
+export function useUpdateResaleListingPrices(shopId: string) {
+	const queryClient = useQueryClient();
+	return useMutation<
+		unknown,
+		ApiError,
+		UpdateResaleListingPricesInput & { listingId: string }
+	>({
+		mutationFn: ({ listingId, prices }) =>
+			apiPatch(
+				`/api/shops/${encodeURIComponent(shopId)}/resale-listings/${encodeURIComponent(listingId)}`,
+				{ prices },
+			),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: ["shops", shopId, "resale-catalogue"],
+			});
+		},
+	});
+}
+
+export function useSupplierResaleSettings(productId: string) {
+	return useQuery<SupplierResaleSettingsView, ApiError>({
+		queryKey: supplierResaleSettingsKey(productId),
+		queryFn: () =>
+			apiGet<SupplierResaleSettingsView>(
+				`/api/products/${encodeURIComponent(productId)}/resale`,
+			),
+		enabled: Boolean(productId),
+		retry: false,
+	});
+}
+
+export function useSaveSupplierResaleSettings(
+	shopId: string,
+	productId: string,
+) {
+	const queryClient = useQueryClient();
+	return useMutation<unknown, ApiError, SupplierResaleSettingsInput>({
+		mutationFn: (input) =>
+			apiPatch(`/api/products/${encodeURIComponent(productId)}/resale`, input),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({
+				queryKey: supplierResaleSettingsKey(productId),
+			});
+			await queryClient.invalidateQueries({
+				queryKey: supplierResaleProductsKey(shopId),
 			});
 		},
 	});

@@ -138,7 +138,18 @@ export interface ShopSearchHit {
 	ownerRating: number;
 	ownerReviews: number;
 	createdAt: string;
+	bannerUrl: string | null;
+	/** Only when asked for with `previews=N`. */
+	previews?: ShopPreview[];
 }
+
+export interface ShopPreview {
+	id: string;
+	title: string;
+	imageUrl: string | null;
+}
+
+export type ShopSearchSort = "relevance" | "products" | "newest";
 
 export interface ShopSearchResponse {
 	hits: ShopSearchHit[];
@@ -164,6 +175,13 @@ export interface CatalogueRow {
 	listingId: string | null;
 	listingStatus: string | null;
 	updatedAt: string;
+	provenance?: "own" | "resale";
+	supplier?: { id: string; name: string } | null;
+	/** Resale rows: whether the supplier can still ship; never a unit count. */
+	supplierAvailable?: boolean | null;
+	skus?: string[];
+	categoryId?: string | null;
+	singleVariantId?: string | null;
 }
 
 export interface CatalogueResponse {
@@ -178,6 +196,7 @@ export interface CatalogueResponse {
 		archived: number;
 		low: number;
 		out: number;
+		resale?: number;
 	};
 }
 
@@ -210,6 +229,8 @@ export interface PublicVariantDoc {
 	price: number;
 	trackInventory: boolean;
 	available: boolean;
+	/** Units left, only when tracked and at most 10; null means a plain "in stock". */
+	availableCount?: number | null;
 }
 
 export interface MovementRow {
@@ -261,6 +282,7 @@ export interface ProductInput {
 		pickupAllowed?: boolean;
 	};
 	returnPolicy?: string | null;
+	warrantyMonths?: number | null;
 }
 
 export interface ProductSaveResponse {
@@ -295,6 +317,7 @@ export interface StockSummary {
 	unitsOnHand: number;
 	unitsReserved: number;
 	trackedVariants: number;
+	trackedProducts?: number;
 	lowStock: VariantAlert[];
 	outOfStock: VariantAlert[];
 }
@@ -326,6 +349,8 @@ export interface TeamMemberView {
 	joinedAt: string | null;
 	suspended: boolean;
 	inboxNotifications?: InboxNotificationPreference;
+	/** Only for a caller holding `activity.view`; null when nothing is logged. */
+	lastActivity?: { at: string; action: ShopActivityAction } | null;
 }
 
 /** The invitation's target arrives already masked by the server. */
@@ -450,4 +475,20 @@ export interface MyShopsEntry {
 	role: ShopRole;
 	capabilities: ShopCapabilities;
 	inboxUnread: number;
+}
+
+export interface StockCountSessionView {
+	id: string;
+	status: "open" | "completed" | "cancelled";
+	startedAt: string;
+	startedBy: { id: string; name: string } | null;
+	location: { id: string; name: string } | null;
+	counts: Record<string, string>;
+	updatedAt: string;
+}
+
+export interface StockCountOverview {
+	session: StockCountSessionView | null;
+	lastCompletedAt: string | null;
+	locations: { id: string; name: string }[];
 }

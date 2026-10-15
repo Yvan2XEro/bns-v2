@@ -1,20 +1,14 @@
 "use client";
 
-import { Minus, Plus, RotateCcw, Truck, Wallet } from "lucide-react";
+import { Minus, Plus, ShoppingBag, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useId, useReducer } from "react";
 import { Button } from "~/components/ui/button";
-import { useAppConfig } from "~/hooks/use-app-config";
 import { useAddCartItem } from "~/hooks/use-cart";
-import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
-import {
-	type DeliveryLineInput,
-	deliveryLine,
-	signInToAddHref,
-} from "~/lib/buy-box";
+import { signInToAddHref } from "~/lib/buy-box";
 import {
 	type AddToCartRequest,
 	type SingleShopConflict,
@@ -48,31 +42,25 @@ function reducer(state: State, patch: Partial<State>): State {
 }
 
 const stepButton =
-	"flex h-11 w-11 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#334155] hover:bg-[#F8FAFC] disabled:opacity-40";
+	"flex h-full w-8 items-center justify-center text-[#334155] disabled:text-[#94A3B8]";
 
 export function BuyActions({
 	listingId,
 	shopId,
 	variant,
 	signedIn,
-	delivery,
 }: {
 	listingId: string;
 	shopId: string | null;
 	variant: PublicVariantDoc | null;
 	signedIn: boolean;
-	delivery: DeliveryLineInput;
 }) {
-	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("BuyBox");
 	const tRoot = useTranslations();
-	const locale = useLocale() === "en" ? "en" : "fr";
 	const router = useRouter();
 	const quantityId = useId();
-	const { launchCities, withdrawalDays, deliveryZonesEnabled } = useAppConfig();
 	const add = useAddCartItem();
 	const [state, patch] = useReducer(reducer, initialState);
-	const line = deliveryLine(delivery, launchCities);
 	const buyable = variant !== null && isVariantInStock(variant);
 
 	function send(
@@ -112,63 +100,66 @@ export function BuyActions({
 	}
 
 	return (
-		<div className="space-y-4 border-[#E2E8F0] border-t pt-4">
-			<div className="flex items-center gap-3">
-				<span id={`${quantityId}-label`} className="text-[#64748B] text-sm">
-					{t("quantity")}
-				</span>
-				<button
+		<div className="space-y-3">
+			<span id={`${quantityId}-label`} className="sr-only">
+				{t("quantity")}
+			</span>
+			<div className="flex gap-2.5">
+				<div className="flex h-12 w-28 shrink-0 items-center justify-between rounded-lg border border-[#E2E8F0] px-1 font-semibold text-[#0F172A]">
+					<button
+						type="button"
+						className={stepButton}
+						aria-label={t("decrease")}
+						aria-controls={quantityId}
+						disabled={state.quantity <= 1}
+						onClick={() => patch({ quantity: state.quantity - 1 })}
+					>
+						<Minus aria-hidden="true" className="h-4 w-4" />
+					</button>
+					<output
+						id={quantityId}
+						aria-labelledby={`${quantityId}-label`}
+						aria-live="polite"
+						className="min-w-6 text-center"
+					>
+						{state.quantity}
+					</output>
+					<button
+						type="button"
+						className={stepButton}
+						aria-label={t("increase")}
+						aria-controls={quantityId}
+						onClick={() => patch({ quantity: state.quantity + 1 })}
+					>
+						<Plus aria-hidden="true" className="h-4 w-4" />
+					</button>
+				</div>
+				{/* "Commander" goes straight to checkout with this item; the cart
+				    stays reachable through the quieter add below. */}
+				<Button
 					type="button"
-					className={stepButton}
-					aria-label={t("decrease")}
-					aria-controls={quantityId}
-					disabled={state.quantity <= 1}
-					onClick={() => patch({ quantity: state.quantity - 1 })}
+					className="h-12 flex-1 gap-2 bg-[#1E40AF] font-bold text-[15px] hover:bg-[#1E3A8A]"
+					disabled={!buyable || add.isPending}
+					onClick={() => submit(true)}
 				>
-					<Minus aria-hidden="true" className="h-4 w-4" />
-				</button>
-				<output
-					id={quantityId}
-					aria-labelledby={`${quantityId}-label`}
-					aria-live="polite"
-					className="min-w-8 text-center font-semibold text-[#0F172A]"
-				>
-					{state.quantity}
-				</output>
-				<button
-					type="button"
-					className={stepButton}
-					aria-label={t("increase")}
-					aria-controls={quantityId}
-					onClick={() => patch({ quantity: state.quantity + 1 })}
-				>
-					<Plus aria-hidden="true" className="h-4 w-4" />
-				</button>
+					<ShoppingBag aria-hidden="true" className="h-[18px] w-[18px]" />
+					{t("order")}
+				</Button>
 			</div>
 
 			{!buyable && (
 				<p className="text-[#991b1b] text-sm">{t("chooseVariant")}</p>
 			)}
 
-			<div className="grid gap-2 sm:grid-cols-2">
-				<Button
-					type="button"
-					variant="outline"
-					className="min-h-11"
-					disabled={!buyable || add.isPending}
-					onClick={() => submit(false)}
-				>
-					{t("addToCart")}
-				</Button>
-				<Button
-					type="button"
-					className="min-h-11 bg-[#1E40AF] hover:bg-[#1E3A8A]"
-					disabled={!buyable || add.isPending}
-					onClick={() => submit(true)}
-				>
-					{t("buyNow")}
-				</Button>
-			</div>
+			<button
+				type="button"
+				className="flex w-full items-center justify-center gap-1.5 font-medium text-[#1E40AF] text-sm hover:underline disabled:opacity-50 disabled:hover:no-underline"
+				disabled={!buyable || add.isPending}
+				onClick={() => submit(false)}
+			>
+				<ShoppingCart aria-hidden="true" className="h-4 w-4" />
+				{t("addToCart")}
+			</button>
 
 			{state.added && (
 				<output className="block text-[#166534] text-sm">
@@ -186,36 +177,6 @@ export function BuyActions({
 					{state.error}
 				</p>
 			)}
-
-			{!deliveryZonesEnabled && line && (
-				<p className="flex items-center gap-2 text-[#334155] text-sm">
-					<Truck
-						aria-hidden="true"
-						className="h-4 w-4 shrink-0 text-[#1E40AF]"
-					/>
-					{[
-						line.delivery &&
-							t("deliveryTo", {
-								city: line.delivery.city,
-								fee: formatOrderMoney(line.delivery.fee, locale),
-							}),
-						line.pickup && t("pickupFree"),
-					]
-						.filter(Boolean)
-						.join(" · ")}
-				</p>
-			)}
-
-			<div className="flex flex-wrap gap-2">
-				<span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2.5 py-1 font-medium text-[#166534] text-xs">
-					<Wallet aria-hidden="true" className="h-3.5 w-3.5" />
-					{t("codBadge")}
-				</span>
-				<span className="inline-flex items-center gap-1 rounded-full bg-[#EFF6FF] px-2.5 py-1 font-medium text-[#1E40AF] text-xs">
-					<RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
-					{t("returnBadge", { days: withdrawalDays })}
-				</span>
-			</div>
 
 			<SingleShopDialog
 				conflict={state.conflict}

@@ -32,7 +32,13 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 	const purchase = usePurchase(orderId);
 	const { disputesEnabled } = useAppConfig();
 	const now = useNow();
-	const [dialog, setDialog] = useState<BarDialog | null>(null);
+	// The list card's "return the item" shortcut lands here; the dialog's own
+	// `has()` guard still decides whether it may open.
+	const [dialog, setDialog] = useState<BarDialog | null>(() =>
+		typeof window !== "undefined" && window.location.hash === "#withdrawal"
+			? "request_withdrawal"
+			: null,
+	);
 
 	if (purchase.isPending) {
 		return (
@@ -116,17 +122,24 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 				<HandoverCard order={order} actions={actions} />
 			)}
 
-			<TrackingBlock
-				order={order}
-				actions={actions}
-				now={now}
-				onContest={() => setDialog("contest_delivery")}
-			/>
+			{/* The list cards link to these anchors. */}
+			<div id="tracking" className="scroll-mt-24">
+				<TrackingBlock
+					order={order}
+					actions={actions}
+					now={now}
+					onContest={() => setDialog("contest_delivery")}
+				/>
+			</div>
 
-			<WithdrawalWindow order={order} now={now} />
+			<div id="withdrawal" className="scroll-mt-24">
+				<WithdrawalWindow order={order} now={now} />
+			</div>
 
 			{has("review_shop") && (
-				<ReviewPanel orderId={order.id} shopName={order.shop.name} />
+				<div id="review" className="scroll-mt-24">
+					<ReviewPanel orderId={order.id} shopName={order.shop.name} />
+				</div>
 			)}
 
 			{order.conversationId && (

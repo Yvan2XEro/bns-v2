@@ -16,13 +16,17 @@ import type {
 	ProductDetailResponse,
 	ProductInput,
 	ProductSaveResponse,
+	ProductStatus,
 	PublicInvitationView,
 	PublicShop,
 	PublicVariantDoc,
 	ShopActivityView,
 	ShopRole,
 	ShopSearchResponse,
+	ShopSearchSort,
+	StockCountOverview,
 	StockCountResult,
+	StockCountSessionView,
 	StockSummary,
 	TeamMemberView,
 	TeamView,
@@ -164,6 +168,25 @@ export type PopulatedVariant = Omit<VariantDoc, "product"> & {
 	product: string | { id: string; title: string };
 };
 
+/** A variant read at depth 2: its product, with that product's category and photos. */
+export type InventoryVariant = Omit<VariantDoc, "product"> & {
+	product:
+		| string
+		| {
+				id: string;
+				title: string;
+				category?: string | { id: string } | null;
+				images?:
+					| {
+							image?:
+								| string
+								| { url?: string | null; thumbnailURL?: string | null }
+								| null;
+					  }[]
+					| null;
+		  };
+};
+
 export interface MovementInput {
 	type: ClientMovementType;
 	quantity: number;
@@ -229,6 +252,7 @@ export const shopApi = {
 		city?: string;
 		category?: string;
 		minShopLevel?: number;
+		sort?: ShopSearchSort;
 		limit?: number;
 		offset?: number;
 	}) => request<ShopSearchResponse>(`/api/public/search/shops${query(params)}`),
@@ -241,9 +265,21 @@ export const shopApi = {
 			q?: string;
 			page?: number;
 			limit?: number;
+			category?: string;
+			sort?: string;
+			provenance?: string;
 		},
 	) =>
 		request<CatalogueResponse>(`/api/shops/${shopId}/products${query(params)}`),
+
+	setProductsStatus: (
+		shopId: string,
+		body: { productIds: string[]; status: ProductStatus },
+	) =>
+		request<{ updated: string[] }>(`/api/shops/${shopId}/products/status`, {
+			method: "POST",
+			body: JSON.stringify(body),
+		}),
 
 	createProduct: (shopId: string, input: ProductInput) =>
 		request<ProductSaveResponse>(`/api/shops/${shopId}/products`, {
@@ -285,7 +321,11 @@ export const shopApi = {
 
 	stockCounts: (
 		shopId: string,
-		body: { counts: { variantId: string; counted: number }[]; note?: string },
+		body: {
+			counts: { variantId: string; counted: number }[];
+			note?: string;
+			sessionId?: string;
+		},
 	) =>
 		request<StockCountResult>(`/api/shops/${shopId}/stock-counts`, {
 			method: "POST",
@@ -297,6 +337,33 @@ export const shopApi = {
 	shopVariants: (shopId: string) =>
 		request<{ docs: PopulatedVariant[] }>(
 			`/api/product-variants?where[shop][equals]=${shopId}&limit=0&depth=1`,
+		).then((page) => ({
+			docs: page.docs.filter((variant) => !variant.archivedAt),
+		})),
+
+	stockCountOverview: (shopId: string) =>
+		request<StockCountOverview>(`/api/shops/${shopId}/stock-count-sessions`),
+
+	startStockCount: (shopId: string, body: { locationId?: string | null }) =>
+		request<StockCountSessionView>(
+			`/api/shops/${shopId}/stock-count-sessions`,
+			{ method: "POST", body: JSON.stringify(body) },
+		),
+
+	saveStockCountProgress: (
+		shopId: string,
+		sessionId: string,
+		body: { counts: Record<string, string>; locationId?: string | null },
+	) =>
+		request<StockCountSessionView>(
+			`/api/shops/${shopId}/stock-count-sessions/${sessionId}`,
+			{ method: "PATCH", body: JSON.stringify(body) },
+		),
+
+	// Depth 2 reaches the product's photos, for the count screen's thumbnails.
+	inventoryVariants: (shopId: string) =>
+		request<{ docs: InventoryVariant[] }>(
+			`/api/product-variants?where[shop][equals]=${shopId}&limit=0&depth=2`,
 		).then((page) => ({
 			docs: page.docs.filter((variant) => !variant.archivedAt),
 		})),

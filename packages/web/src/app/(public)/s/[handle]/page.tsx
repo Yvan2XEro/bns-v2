@@ -11,10 +11,22 @@ import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
 import { serverFetch } from "~/lib/server-api";
 import { type CategoryNode, groupedCounts } from "~/lib/shop-category-groups";
+import {
+	parsePage,
+	parseShopSort,
+	parseShopTab,
+	type ShopPageState,
+	type ShopSort,
+	type ShopTab,
+	shopPageHref,
+} from "~/lib/shop-page-params";
 import { shopRating } from "~/lib/shop-rating";
 import { shopUrl } from "~/lib/shop-url";
 import type { Category, Listing, PublicShop } from "~/types";
 import { ShopCategories } from "./shop-categories";
+import { ShopReviews } from "./shop-reviews";
+import { ShopSortSelect } from "./shop-sort-select";
+import { ShopTabs } from "./shop-tabs";
 
 const PAGE_SIZE = 24;
 
@@ -36,10 +48,12 @@ async function getShopListings(
 	shopId: string,
 	q: string,
 	category: string,
+	sort: ShopSort,
 	page: number,
 ): Promise<{ hits: Listing[]; total: number }> {
 	const params = new URLSearchParams({
 		shop: shopId,
+		sort,
 		limit: String(PAGE_SIZE),
 		offset: String((page - 1) * PAGE_SIZE),
 	});
@@ -104,7 +118,13 @@ async function getCategoryTree(): Promise<Map<string, CategoryNode>> {
 
 interface PageProps {
 	params: Promise<{ handle: string }>;
-	searchParams: Promise<{ q?: string; page?: string; category?: string }>;
+	searchParams: Promise<{
+		q?: string;
+		page?: string;
+		category?: string;
+		sort?: string;
+		tab?: string;
+	}>;
 }
 
 export async function generateMetadata({
@@ -149,6 +169,8 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 		q = "",
 		page: pageParam,
 		category: categoryParam = "",
+		sort: sortParam,
+		tab: tabParam,
 	} = await searchParams;
 	const result = await lookupShop(handle);
 
@@ -156,15 +178,21 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 	if ("redirectTo" in result) permanentRedirect(`/s/${result.redirectTo}`);
 
 	const { shop } = result;
-	const page = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
+	const tab = parseShopTab(tabParam);
+	const page = parsePage(pageParam);
 	const category = categoryParam.trim();
+	const sort = parseShopSort(sortParam);
+	const onListings = tab === "listings";
+	const noListings = { hits: [] as Listing[], total: 0 };
 	const [locale, t, listings, categoryCounts, categoryTree] = await Promise.all(
 		[
 			getLocale(),
 			getTranslations("Shop"),
-			getShopListings(shop.id, q.trim(), category, page),
-			getShopCategoryCounts(shop.id),
-			getCategoryTree(),
+			onListings
+				? getShopListings(shop.id, q.trim(), category, sort, page)
+				: noListings,
+			onListings ? getShopCategoryCounts(shop.id) : null,
+			onListings ? getCategoryTree() : new Map<string, CategoryNode>(),
 		],
 	);
 	const named = categoryCounts
@@ -200,18 +228,19 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 		},
 	};
 
-	const shopHref = (target: { page?: number; category?: string | null }) => {
-		const next = new URLSearchParams();
-		if (q) next.set("q", q);
-		const nextCategory =
-			target.category === undefined ? category : target.category;
-		if (nextCategory) next.set("category", nextCategory);
-		if (target.page && target.page > 1) next.set("page", String(target.page));
-		const text = next.toString();
-		return `/s/${shop.handle}${text ? `?${text}` : ""}`;
-	};
+	const state: ShopPageState = { tab, q, category, sort, page };
+	const shopHref = (target: Partial<ShopPageState>) =>
+		shopPageHref(shop.handle, { ...state, page: 1, ...target });
 	const pageHref = (target: number) => shopHref({ page: target });
-	const categoryHref = (id: string | null) => shopHref({ category: id });
+	const categoryHref = (id: string | null) => shopHref({ category: id ?? "" });
+	const tabHref = (target: ShopTab) =>
+		shopPageHref(shop.handle, {
+			tab: target,
+			q: "",
+			category: "",
+			sort: "newest",
+			page: 1,
+		});
 
 	return (
 		<div className="bg-[#F8FAFC]">
@@ -220,95 +249,132 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
 			/>
-			<ShopHero shop={shop} rating={rating} locale={locale} />
-			<div className="container mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:px-8">
-				<div className="lg:col-span-1">
-					<ShopAbout
-						shop={shop}
-						locale={locale}
-						categoryNav={
-							categoryList ? (
-								<ShopCategories
-									layout="sidebar"
-									{...categoryList}
-									selected={selectedCategory}
-									hrefFor={categoryHref}
-								/>
-							) : undefined
-						}
+			<ShopHero
+				shop={shop}
+				rating={rating}
+				locale={locale}
+				tabs={
+					<ShopTabs
+						active={tab}
+						hrefFor={tabHref}
+						reviewCount={shop.totalReviews}
 					/>
-					<PickupPoints handle={shop.handle} />
-					<DeliveryCities shopId={shop.id} />
+				}
+			/>
+			{tab === "reviews" && (
+				<div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+					<ShopReviews
+						shopId={shop.id}
+						page={page}
+						rating={rating}
+						locale={locale}
+						pageHref={pageHref}
+					/>
 				</div>
-				<div className="min-w-0 lg:col-span-3">
-					{categoryList && (
-						<ShopCategories
-							layout="chips"
-							{...categoryList}
-							selected={selectedCategory}
-							hrefFor={categoryHref}
+			)}
+			{tab === "about" && (
+				<div className="container mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-3 lg:px-8">
+					<div className="lg:col-span-2">
+						<ShopAbout shop={shop} locale={locale} full />
+					</div>
+					<div className="space-y-4">
+						<DeliveryCities shopId={shop.id} handle={shop.handle} />
+						<PickupPoints handle={shop.handle} />
+					</div>
+				</div>
+			)}
+			{onListings && (
+				<div className="container mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-4 lg:px-8">
+					<div className="lg:col-span-1">
+						<ShopAbout
+							shop={shop}
+							locale={locale}
+							categoryNav={
+								categoryList ? (
+									<ShopCategories
+										layout="sidebar"
+										{...categoryList}
+										selected={selectedCategory}
+										hrefFor={categoryHref}
+									/>
+								) : undefined
+							}
 						/>
-					)}
-					<form
-						action={`/s/${shop.handle}`}
-						className="mb-4 flex items-center gap-3"
-					>
-						{category && (
-							<input type="hidden" name="category" value={category} />
-						)}
-						<div className="relative flex-1 sm:max-w-[340px]">
-							<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
-							<input
-								type="search"
-								name="q"
-								defaultValue={q}
-								placeholder={t("searchInShop")}
-								className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
+						<div className="mt-4">
+							<DeliveryCities shopId={shop.id} handle={shop.handle} />
+						</div>
+					</div>
+					<div className="min-w-0 lg:col-span-3">
+						{categoryList && (
+							<ShopCategories
+								layout="chips"
+								{...categoryList}
+								selected={selectedCategory}
+								hrefFor={categoryHref}
 							/>
-						</div>
-						<span className="ml-auto shrink-0 text-[#64748B] text-sm">
-							{t("products", { count: listings.total })}
-						</span>
-					</form>
-					{listings.hits.length === 0 ? (
-						<div className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center text-[#64748B] text-sm">
-							{q
-								? t("noResultsInShop", { q })
-								: category
-									? t("noResultsInCategory")
-									: t("emptyShop")}
-						</div>
-					) : (
-						<ListingGrid
-							listings={listings.hits}
-							className="lg:grid-cols-3 xl:grid-cols-4"
-						/>
-					)}
-					{totalPages > 1 && (
-						<div className="mt-6 flex items-center justify-center gap-3 text-sm">
-							{page > 1 && (
-								<Link
-									href={pageHref(page - 1)}
-									className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
-								>
-									{t("previous")}
-								</Link>
+						)}
+						<form
+							action={`/s/${shop.handle}`}
+							className="mb-4 flex flex-wrap items-center gap-3"
+						>
+							{category && (
+								<input type="hidden" name="category" value={category} />
 							)}
-							<span className="text-[#64748B]">
-								{page} / {totalPages}
+							<div className="relative min-w-[200px] flex-1 sm:max-w-[340px]">
+								<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
+								<input
+									type="search"
+									name="q"
+									defaultValue={q}
+									placeholder={t("searchInShop")}
+									className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
+								/>
+							</div>
+							<span className="ml-auto shrink-0 text-[#64748B] text-sm">
+								{t("products", { count: listings.total })}
 							</span>
-							{page < totalPages && (
-								<Link
-									href={pageHref(page + 1)}
-									className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
-								>
-									{t("next")}
-								</Link>
-							)}
-						</div>
-					)}
+							<ShopSortSelect value={sort} />
+						</form>
+						{listings.hits.length === 0 ? (
+							<div className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center text-[#64748B] text-sm">
+								{q
+									? t("noResultsInShop", { q })
+									: category
+										? t("noResultsInCategory")
+										: t("emptyShop")}
+							</div>
+						) : (
+							<ListingGrid
+								listings={listings.hits}
+								className="lg:grid-cols-3 xl:grid-cols-4"
+							/>
+						)}
+						{totalPages > 1 && (
+							<div className="mt-6 flex items-center justify-center gap-3 text-sm">
+								{page > 1 && (
+									<Link
+										href={pageHref(page - 1)}
+										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
+									>
+										{t("previous")}
+									</Link>
+								)}
+								<span className="text-[#64748B]">
+									{page} / {totalPages}
+								</span>
+								{page < totalPages && (
+									<Link
+										href={pageHref(page + 1)}
+										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
+									>
+										{t("next")}
+									</Link>
+								)}
+							</div>
+						)}
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

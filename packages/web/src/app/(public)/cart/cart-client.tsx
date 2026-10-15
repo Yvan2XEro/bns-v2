@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useReducer, useRef } from "react";
+import { CartShopHeader } from "~/components/shop/cart-shop-header";
 import { Button } from "~/components/ui/button";
 import { useAppConfig } from "~/hooks/use-app-config";
 import {
@@ -159,20 +160,11 @@ export function CartClient({
 				<>
 					<section className="space-y-3">
 						{view.shop ? (
-							<h2 className="font-semibold text-[#0F172A]">
-								<Link
-									href={`/s/${view.shop.handle}`}
-									className="hover:text-[#1E40AF] hover:underline"
-								>
-									{t("shopHeader", { shop: view.shop.name })}
-								</Link>
-								{view.shop.city ? (
-									<span className="ml-2 font-normal text-[#64748B] text-sm">
-										{view.shop.city}
-									</span>
-								) : null}
+							<h2 className="sr-only">
+								{t("shopHeader", { shop: view.shop.name })}
 							</h2>
 						) : null}
+						{view.shop ? <CartShopHeader shop={view.shop} /> : null}
 						<ul className="space-y-3">
 							{view.lines.map((line) => (
 								<CartLine
@@ -226,6 +218,11 @@ function CartSummary({
 				<span className="font-bold text-[#0F172A] text-xl">
 					{formatOrderMoney(totals.subtotal, locale)}
 				</span>
+			</div>
+			{/* No address yet, so no quote: the fee is the next step's to state. */}
+			<div className="flex items-center justify-between text-sm">
+				<span className="text-[#64748B]">{t("deliveryRow")}</span>
+				<span className="text-[#64748B]">{t("deliveryNextStep")}</span>
 			</div>
 			{totals.priceChangedCount > 0 ? (
 				<p className="text-amber-700 text-sm">

@@ -4,41 +4,43 @@ import { useEffect, useRef } from "react";
 import type { UseFormReset } from "react-hook-form";
 import {
 	type CountFormState,
-	loadDraft,
+	type InventoryDraft,
 	rowsFromVariants,
 } from "~/lib/inventory";
-import type { PopulatedVariant } from "~/lib/shop-api";
+import type { InventoryVariant } from "~/lib/shop-api";
 
 /**
- * Hydrates the count form once per shop, from whichever arrives: the saved
- * draft (read synchronously) plus the variant list (a query). A later
- * background refetch of the same query (e.g. on window focus) must not wipe
- * counts the seller is mid-typing, hence the one-shot guard — keyed by
- * shopId so switching shops re-hydrates instead of keeping the previous
- * shop's rows.
+ * Hydrates the count form once per shop, once both the variant list and the
+ * server-side count (or the knowledge that there is none) have arrived. A
+ * later background refetch (e.g. on window focus) must not wipe counts the
+ * seller is mid-typing, hence the one-shot guard — keyed by shopId so
+ * switching shops re-hydrates instead of keeping the previous shop's rows.
  */
 export function useInventoryHydration({
 	shopId,
 	variants,
+	draft,
 	defaultLabel,
 	reset,
-	onDraftLoaded,
 }: {
 	shopId: string;
-	variants: PopulatedVariant[] | undefined;
+	variants: InventoryVariant[] | undefined;
+	/** Undefined while the session is still loading; null when there is none. */
+	draft: InventoryDraft | null | undefined;
 	defaultLabel: string;
 	reset: UseFormReset<CountFormState>;
-	onDraftLoaded: (startedAt: string) => void;
 }) {
 	const initializedFor = useRef<string | null>(null);
 	useEffect(() => {
-		if (initializedFor.current === shopId || !variants) return;
+		if (initializedFor.current === shopId || !variants || draft === undefined)
+			return;
 		initializedFor.current = shopId;
-		const draft = loadDraft(shopId) ?? {
-			startedAt: new Date().toISOString(),
-			counts: {},
-		};
-		onDraftLoaded(draft.startedAt);
-		reset({ rows: rowsFromVariants(variants, draft, defaultLabel) });
-	}, [variants, shopId, reset, defaultLabel, onDraftLoaded]);
+		reset({
+			rows: rowsFromVariants(
+				variants,
+				draft ?? { startedAt: new Date().toISOString(), counts: {} },
+				defaultLabel,
+			),
+		});
+	}, [variants, draft, shopId, reset, defaultLabel]);
 }

@@ -39,6 +39,27 @@ export function useShopLocations(shopId: string) {
 	});
 }
 
+/** Mirrors `CourierStatsView` in `packages/api/src/services/delivery/courierStats.ts`. */
+export interface CourierStats {
+	from: string;
+	runs: number;
+	finished: number;
+	delivered: number;
+	averageCourierCost: number | null;
+}
+
+/** This month's partner-courier runs for the shop, asked for only while couriers are on. */
+export function useCourierStats(shopId: string) {
+	const { couriersEnabled } = useAppConfig();
+	return useQuery<CourierStats, ApiError>({
+		queryKey: [...deliveryZonesKey(shopId), "courier-stats"],
+		queryFn: () =>
+			apiGet<CourierStats>(`${shopPath(shopId)}/delivery-zones/courier-stats`),
+		enabled: couriersEnabled,
+		retry: false,
+	});
+}
+
 /**
  * The registry's active couriers through the collection's own read access
  * (staff-only fields are stripped for a shop member), asked for only while

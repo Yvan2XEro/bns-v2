@@ -34,6 +34,10 @@ export interface SellerPayoutRow {
 	fee: number;
 	destinationMasked: string;
 	status: PayoutStatus;
+	orderCount: number;
+	commissionHt: number;
+	vat: number;
+	gross: number;
 }
 
 export interface SellerPaymentOrderRow {
@@ -81,6 +85,7 @@ export interface PayoutAccountSummary {
 	accountNumberMasked: string;
 	status: PayoutAccountStatus;
 	activatedAt: string | null;
+	nameMatch?: NameMatchVerdict | null;
 }
 
 export interface PendingPayoutAccountSummary {

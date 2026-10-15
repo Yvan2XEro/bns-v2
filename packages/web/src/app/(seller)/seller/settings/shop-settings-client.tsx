@@ -1,20 +1,49 @@
 "use client";
 
+import { ExternalLink, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { CloseShopForm } from "~/components/shop/close-shop-form";
 import { ContactsForm } from "~/components/shop/contacts-form";
+import type { FormBarState } from "~/components/shop/form-bar";
 import { HandleForm } from "~/components/shop/handle-form";
 import { LegalForm } from "~/components/shop/legal-form";
 import { MoveListingsDialog } from "~/components/shop/move-listings-dialog";
-import { ProfileForm } from "~/components/shop/profile-form";
+import {
+	ProfileForm,
+	type ShopProfileDraft,
+} from "~/components/shop/profile-form";
+import { ShopPagePreview } from "~/components/shop/shop-page-preview";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { placeOfShopLocation } from "~/lib/shop-form";
 import { isShopOwner } from "~/lib/shop-roles";
 import type { Category, MyShop, ShopRole } from "~/types";
 
 type Tab = "profile" | "address" | "contacts" | "legal" | "listings" | "close";
+
+/** The tabs whose form saves through the header's Cancel / Save pair. */
+const FORM_IDS: Partial<Record<Tab, string>> = {
+	profile: "shop-settings-profile",
+	contacts: "shop-settings-contacts",
+	legal: "shop-settings-legal",
+};
+
+const TRIGGER =
+	"rounded-none border-transparent border-b-2 bg-transparent px-0 py-2.5 font-semibold text-[#64748B] text-[15px] data-[state=active]:border-[#1E40AF] data-[state=active]:bg-transparent data-[state=active]:text-[#1E40AF] data-[state=active]:shadow-none";
+
+function draftOf(shop: MyShop): ShopProfileDraft {
+	const place = placeOfShopLocation(shop.location);
+	return {
+		name: shop.name,
+		description: shop.description ?? "",
+		city: [place?.name, place?.region].filter(Boolean).join(", "),
+		categoryIds: shop.categories.map((category) => category.id),
+		logoUrl: shop.logo?.url ?? null,
+		bannerUrl: shop.banner?.url ?? null,
+	};
+}
 
 export function ShopSettingsClient({
 	shop,
@@ -31,83 +60,200 @@ export function ShopSettingsClient({
 	initialTab: Tab;
 	openMove: boolean;
 }) {
-	const t = useTranslations("ShopManage");
+	const tManage = useTranslations("ShopManage");
+	const tBar = useTranslations("ShopSettingsPreview");
 	const [tab, setTab] = useState<Tab>(initialTab);
 	const [moveOpen, setMoveOpen] = useState(openMove);
+	const [bar, setBar] = useState<FormBarState | null>(null);
+	const [draft, setDraft] = useState<ShopProfileDraft>(() => draftOf(shop));
+	const onDraftChange = useCallback(
+		(next: ShopProfileDraft) => setDraft(next),
+		[],
+	);
+	const onStateChange = useCallback((next: FormBarState) => setBar(next), []);
 	const suspended = shop.status !== "active";
 	// The address change and the close form are owner-only levers the server
 	// refuses for anyone else, so their tabs are not offered either.
 	const owner = isShopOwner(role);
+	const formId = FORM_IDS[tab];
+	const formBar = formId ? bar : null;
+
+	const categoryNames = draft.categoryIds
+		.map(
+			(id) =>
+				categories.find((category) => category.id === id)?.name ??
+				shop.categories.find((category) => category.id === id)?.name,
+		)
+		.filter((name): name is string => Boolean(name));
+
+	function changeTab(next: Tab) {
+		setBar(null);
+		setTab(next);
+	}
+
+	const card = (title: string, body: React.ReactNode) => (
+		<div className="rounded-xl border border-[#E2E8F0] bg-white">
+			<div className="flex items-center justify-between gap-3 border-[#E2E8F0] border-b px-[18px] py-3.5">
+				<h2 className="font-bold text-[#0F172A] text-base">{title}</h2>
+				{formBar?.dirty && (
+					<span className="flex items-center gap-1.5 font-semibold text-[#B45309] text-[13px]">
+						<span className="h-2 w-2 rounded-full bg-[#F59E0B]" />
+						{tBar("unsaved")}
+					</span>
+				)}
+			</div>
+			<div className="p-[18px]">{body}</div>
+		</div>
+	);
 
 	return (
-		<div className="space-y-5">
-			<div className="flex flex-wrap items-center justify-between gap-3">
-				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+		<div className="space-y-[18px]">
+			<div className="flex flex-wrap items-end justify-between gap-4">
+				<div className="space-y-1">
+					<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-[-0.4px]">
+						{tManage("title")}
+					</h1>
 					<p className="text-[#64748B] text-sm">
-						{t("subtitle", { handle: shop.handle })}
+						{tManage("subtitle", { handle: shop.handle })}
 					</p>
 				</div>
-				<Link
-					href={`/s/${shop.handle}`}
-					className="h-10 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-sm leading-10"
-				>
-					{t("viewShop")}
-				</Link>
+				<div className="flex flex-wrap items-center gap-2.5">
+					<Link
+						href={`/s/${shop.handle}`}
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC]"
+					>
+						<ExternalLink aria-hidden="true" className="h-4 w-4" />
+						{tManage("viewShop")}
+					</Link>
+					{formId && (
+						<>
+							<button
+								type="button"
+								disabled={!formBar?.dirty || formBar.pending}
+								onClick={() => formBar?.reset()}
+								className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+							>
+								{tBar("cancel")}
+							</button>
+							<button
+								type="submit"
+								form={formId}
+								disabled={!formBar?.canSave || formBar.pending}
+								className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A] disabled:opacity-50"
+							>
+								{formBar?.pending && (
+									<LoaderCircle className="h-4 w-4 animate-spin" />
+								)}
+								{tManage("save")}
+							</button>
+						</>
+					)}
+				</div>
 			</div>
-			<Tabs
-				value={tab}
-				onValueChange={(value) => setTab(value as Tab)}
-				className="max-w-4xl"
-			>
-				<TabsList>
-					<TabsTrigger value="profile">{t("tabProfile")}</TabsTrigger>
+			<Tabs value={tab} onValueChange={(value) => changeTab(value as Tab)}>
+				<TabsList className="h-auto w-full justify-start gap-7 overflow-x-auto rounded-none border-[#E2E8F0] border-b bg-transparent p-0">
+					<TabsTrigger value="profile" className={TRIGGER}>
+						{tManage("tabProfile")}
+					</TabsTrigger>
 					{owner && (
-						<TabsTrigger value="address">{t("tabAddress")}</TabsTrigger>
+						<TabsTrigger value="address" className={TRIGGER}>
+							{tManage("tabAddress")}
+						</TabsTrigger>
 					)}
-					<TabsTrigger value="contacts">{t("tabContacts")}</TabsTrigger>
-					<TabsTrigger value="legal">{t("tabLegal")}</TabsTrigger>
-					<TabsTrigger value="listings">{t("tabListings")}</TabsTrigger>
-					{owner && <TabsTrigger value="close">{t("tabClose")}</TabsTrigger>}
+					<TabsTrigger value="contacts" className={TRIGGER}>
+						{tManage("tabContacts")}
+					</TabsTrigger>
+					<TabsTrigger value="legal" className={TRIGGER}>
+						{tManage("tabLegal")}
+					</TabsTrigger>
+					<TabsTrigger value="listings" className={TRIGGER}>
+						{tManage("tabListings")}
+					</TabsTrigger>
+					{owner && (
+						<TabsTrigger value="close" className={TRIGGER}>
+							{tManage("tabClose")}
+						</TabsTrigger>
+					)}
 				</TabsList>
-				<div className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-6">
-					<TabsContent value="profile">
-						<ProfileForm shop={shop} categories={categories} />
+				<TabsContent value="profile" className="mt-[18px]">
+					<div className="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1fr)_520px]">
+						{card(
+							tManage("tabProfile"),
+							<ProfileForm
+								shop={shop}
+								categories={categories}
+								formId={FORM_IDS.profile}
+								onStateChange={onStateChange}
+								onDraftChange={onDraftChange}
+							/>,
+						)}
+						<div className="xl:sticky xl:top-4">
+							<ShopPagePreview
+								shop={shop}
+								draft={draft}
+								categoryNames={categoryNames}
+							/>
+						</div>
+					</div>
+				</TabsContent>
+				{owner && (
+					<TabsContent value="address" className="mt-[18px] max-w-4xl">
+						{card(
+							tManage("tabAddress"),
+							<HandleForm shop={shop} role={role} />,
+						)}
 					</TabsContent>
-					{owner && (
-						<TabsContent value="address">
-							<HandleForm shop={shop} role={role} />
-						</TabsContent>
+				)}
+				<TabsContent value="contacts" className="mt-[18px] max-w-4xl">
+					{card(
+						tManage("tabContacts"),
+						<ContactsForm
+							shop={shop}
+							formId={FORM_IDS.contacts}
+							onStateChange={onStateChange}
+						/>,
 					)}
-					<TabsContent value="contacts">
-						<ContactsForm shop={shop} />
-					</TabsContent>
-					<TabsContent value="legal">
-						<LegalForm shop={shop} />
-					</TabsContent>
-					<TabsContent value="listings">
+				</TabsContent>
+				<TabsContent value="legal" className="mt-[18px] max-w-4xl">
+					{card(
+						tManage("tabLegal"),
+						<LegalForm
+							shop={shop}
+							formId={FORM_IDS.legal}
+							onStateChange={onStateChange}
+						/>,
+					)}
+				</TabsContent>
+				<TabsContent value="listings" className="mt-[18px] max-w-4xl">
+					{card(
+						tManage("tabListings"),
 						<div className="space-y-3">
 							<p className="text-[#334155] text-sm">
-								{t("listingsBody", { count: personalListings })}
+								{tManage("listingsBody", { count: personalListings })}
 							</p>
 							<Button
 								onClick={() => setMoveOpen(true)}
 								disabled={suspended}
 								className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
 							>
-								{t("moveTitle")}
+								{tManage("moveTitle")}
 							</Button>
 							{suspended && (
-								<p className="text-[#991b1b] text-xs">{t("moveSuspended")}</p>
+								<p className="text-[#991b1b] text-xs">
+									{tManage("moveSuspended")}
+								</p>
 							)}
-						</div>
-					</TabsContent>
-					{owner && (
-						<TabsContent value="close">
-							<CloseShopForm shop={shop} role={role} />
-						</TabsContent>
+						</div>,
 					)}
-				</div>
+				</TabsContent>
+				{owner && (
+					<TabsContent value="close" className="mt-[18px] max-w-4xl">
+						{card(
+							tManage("tabClose"),
+							<CloseShopForm shop={shop} role={role} />,
+						)}
+					</TabsContent>
+				)}
 			</Tabs>
 			<MoveListingsDialog
 				shopId={shop.id}

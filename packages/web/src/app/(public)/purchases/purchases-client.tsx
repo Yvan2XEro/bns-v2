@@ -1,5 +1,6 @@
 "use client";
 
+import { Clock } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -14,20 +15,62 @@ import {
 	groupPurchases,
 	PURCHASE_TAB_LABEL_KEYS,
 	PURCHASE_TABS,
+	type PurchaseArrival,
+	type PurchaseCardActionKind,
 	type PurchaseTab,
+	purchaseArrival,
+	purchaseCardActions,
 	purchaseTab,
 } from "./purchase-view";
 import { StatusLabel } from "./status-label";
+import { useNow } from "./use-now";
 
-function PurchaseRow({ entry }: { entry: OrderListEntry }) {
+const CARD_ACTION_KEYS: Record<PurchaseCardActionKind, string> = {
+	confirm: "cardConfirm",
+	track: "cardTrack",
+	track_courier: "cardTrackCourier",
+	review: "cardReview",
+	return: "cardReturn",
+};
+
+function ArrivalLine({
+	arrival,
+	locale,
+}: {
+	arrival: PurchaseArrival;
+	locale: "fr" | "en";
+}) {
+	const t = useTranslations("Purchases");
+	const text =
+		arrival.kind === "eta"
+			? t("arrivalEta", { eta: arrival.text })
+			: arrival.kind === "promised"
+				? t("arrivalPromised", {
+						date: new Date(arrival.at).toLocaleString(locale, {
+							dateStyle: "medium",
+							timeStyle: "short",
+						}),
+					})
+				: t("returnUntil", { date: formatOrderDate(arrival.at, locale) });
+	return (
+		<p className="flex items-center gap-1.5 text-[#334155] text-sm">
+			<Clock aria-hidden className="h-4 w-4 shrink-0 text-[#1E40AF]" />
+			{text}
+		</p>
+	);
+}
+
+function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Purchases");
 	const locale = useLocale() === "en" ? "en" : "fr";
+	const actions = purchaseCardActions(entry, now);
+	const arrival = purchaseArrival(entry, actions);
 	return (
-		<li>
+		<li className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition hover:border-[#93C5FD]">
 			<Link
 				href={`/purchases/${encodeURIComponent(entry.id)}`}
-				className="flex min-h-11 items-center gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition hover:border-[#93C5FD]"
+				className="flex min-h-11 items-center gap-4 p-4"
 			>
 				{entry.firstItemImageUrl ? (
 					// biome-ignore lint/performance/noImgElement: remote order snapshot URL, not a static asset
@@ -58,6 +101,32 @@ function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 					<StatusLabel status={entry.status} />
 				</div>
 			</Link>
+			{arrival || actions.length > 0 ? (
+				<div className="flex flex-wrap items-center justify-between gap-3 border-[#F1F5F9] border-t px-4 py-3">
+					{arrival ? (
+						<ArrivalLine arrival={arrival} locale={locale} />
+					) : (
+						<span />
+					)}
+					{actions.length > 0 ? (
+						<div className="flex flex-wrap gap-2">
+							{actions.map((action, index) => (
+								<Button
+									key={action.kind}
+									asChild
+									size="sm"
+									variant={index === 0 ? "default" : "outline"}
+									className="min-h-11"
+								>
+									<Link href={action.href}>
+										{t(CARD_ACTION_KEYS[action.kind])}
+									</Link>
+								</Button>
+							))}
+						</div>
+					) : null}
+				</div>
+			) : null}
 		</li>
 	);
 }
@@ -67,6 +136,7 @@ export function PurchasesClient() {
 	const tRoot = useTranslations();
 	const [tab, setTab] = useState<PurchaseTab>("open");
 	const purchases = usePurchases();
+	const now = useNow();
 
 	const entries = (purchases.data?.pages ?? [])
 		.flatMap((page) => page.docs)
@@ -127,7 +197,7 @@ export function PurchasesClient() {
 			<ul className="space-y-3">
 				{groupPurchases(entries).map((item) =>
 					item.kind === "order" ? (
-						<PurchaseRow key={item.entry.id} entry={item.entry} />
+						<PurchaseRow key={item.entry.id} entry={item.entry} now={now} />
 					) : (
 						<li key={item.checkoutGroup} className="space-y-3">
 							<div className="flex items-center justify-between gap-3 px-1">
@@ -145,7 +215,7 @@ export function PurchasesClient() {
 							</div>
 							<ul className="space-y-3 border-[#DBEAFE] border-l-2 pl-3">
 								{item.entries.map((entry) => (
-									<PurchaseRow key={entry.id} entry={entry} />
+									<PurchaseRow key={entry.id} entry={entry} now={now} />
 								))}
 							</ul>
 						</li>

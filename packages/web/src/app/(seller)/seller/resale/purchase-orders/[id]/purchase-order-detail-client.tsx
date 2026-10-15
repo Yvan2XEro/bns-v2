@@ -13,6 +13,7 @@ import {
 } from "~/hooks/use-purchase-orders";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { formatOrderDate } from "~/lib/order-money";
+import { resaleHref } from "~/lib/resale-hub";
 import type { PurchaseOrderView } from "../../../../../../../../api/src/contracts/purchaseOrders";
 
 type Side = "supplier" | "reseller";
@@ -55,6 +56,7 @@ export function PurchaseOrderDetailClient({
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerResale");
+	const tHub = useTranslations("SellerResaleHub");
 	const tRoot = useTranslations();
 	const locale = useLocale().startsWith("fr") ? "fr" : "en";
 	const { deliveryZonesEnabled } = useAppConfig();
@@ -115,25 +117,52 @@ export function PurchaseOrderDetailClient({
 		<div className="space-y-6">
 			<WorkspaceBreadcrumb
 				section="resale"
-				href={`/seller/resale/purchase-orders?side=${side}`}
+				href={
+					side === "supplier"
+						? resaleHref("supplier", "orders")
+						: "/seller/resale/purchase-orders?side=reseller"
+				}
 				reference={order.number}
 			/>
 
-			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:p-7">
-				<div>
-					<p className="font-semibold text-[#B45309] text-xs uppercase tracking-[0.18em]">
-						{t("number")}
-					</p>
-					<h1 className="mt-2 font-bold text-2xl text-[#0F172A]">
-						{order.number}
-					</h1>
-					<p className="mt-2 text-[#64748B] text-sm">
-						{order.branding.name} · {formatOrderDate(order.sentAt, locale)}
+			<header className="flex flex-wrap items-end justify-between gap-4">
+				<div className="flex flex-col gap-1">
+					<div className="flex flex-wrap items-center gap-2.5">
+						<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-tight">
+							{order.number}
+						</h1>
+						<span className="rounded-full bg-[#DBEAFE] px-2.5 py-0.5 font-semibold text-[#1E40AF] text-xs">
+							{statusLabels[order.status]}
+						</span>
+					</div>
+					<p className="text-[#64748B] text-sm">
+						{[
+							tHub("receivedOn", {
+								date: formatOrderDate(order.sentAt, locale),
+							}),
+							order.status === "sent" || order.status === "accepted"
+								? tHub("shipBefore", {
+										date: formatOrderDate(
+											order.shipBy ?? order.acceptBy,
+											locale,
+										),
+									})
+								: null,
+							side === "reseller" ? order.branding.name : null,
+						]
+							.filter(Boolean)
+							.join(" · ")}
 					</p>
 				</div>
-				<span className="rounded-full bg-[#FEF3C7] px-3 py-1.5 font-semibold text-[#92400E] text-sm">
-					{statusLabels[order.status]}
-				</span>
+				<a
+					href={slipUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC]"
+				>
+					<Printer aria-hidden="true" className="h-4 w-4" />
+					{tHub("printLabel")}
+				</a>
 			</header>
 
 			{actionError && (
@@ -146,54 +175,158 @@ export function PurchaseOrderDetailClient({
 			)}
 
 			<div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(17rem,0.8fr)]">
-				<section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-					<h2 className="font-bold text-[#0F172A]">{t("items")}</h2>
-					<ul className="divide-y divide-[#E2E8F0]">
-						{order.items.map((item) => (
-							<li
-								key={
-									typeof item.orderItem === "object"
-										? item.orderItem.id
-										: item.orderItem
-								}
-								className="flex flex-wrap items-center justify-between gap-3 py-3"
-							>
-								<div>
-									<p className="font-semibold text-[#0F172A]">{item.title}</p>
-									<p className="mt-1 text-[#64748B] text-sm">
-										{item.quantity} ×{" "}
-										{formatOrderMoney(item.resellerUnitPrice, locale)}
-										{item.variantLabel ? ` · ${item.variantLabel}` : ""}
-									</p>
-								</div>
-								{side === "supplier" && (
-									<p className="font-semibold text-[#334155] text-sm">
+				<div className="space-y-5">
+					<section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+						<div className="flex flex-wrap items-center justify-between gap-2">
+							<h2 className="font-bold text-[#0F172A]">
+								{tHub("itemsAndAmounts")}
+							</h2>
+							<span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 font-semibold text-[#334155] text-xs">
+								{tHub(
+									order.paymentMethod === "cod"
+										? "paymentCod"
+										: "paymentMobileMoney",
+								)}
+							</span>
+						</div>
+						<ul className="divide-y divide-[#E2E8F0]">
+							{order.items.map((item) => (
+								<li
+									key={
+										typeof item.orderItem === "object"
+											? item.orderItem.id
+											: item.orderItem
+									}
+									className="flex flex-wrap items-center justify-between gap-3 py-3"
+								>
+									<div>
+										<p className="font-semibold text-[#0F172A]">
+											{item.title}
+											<span className="font-normal text-[#64748B]">
+												{" "}
+												×{item.quantity}
+											</span>
+										</p>
+										<p className="mt-1 text-[#64748B] text-sm">
+											{[item.sku, item.variantLabel]
+												.filter(Boolean)
+												.join(" · ")}
+										</p>
+									</div>
+									{side === "supplier" ? (
+										<p className="text-right text-[#334155] text-sm">
+											<span className="font-semibold">
+												{formatOrderMoney(item.supplierUnitPrice, locale)} ×{" "}
+												{item.quantity}
+											</span>
+											<span className="block text-[#64748B] text-xs">
+												{tHub("supplierPriceShort")}
+											</span>
+										</p>
+									) : null}
+								</li>
+							))}
+						</ul>
+						<dl className="space-y-2 rounded-xl bg-[#F8FAFC] p-4 text-sm">
+							{order.items.map((item) => (
+								<div
+									key={`sale-${typeof item.orderItem === "object" ? item.orderItem.id : item.orderItem}`}
+									className="flex justify-between gap-3"
+								>
+									<dt className="text-[#64748B]">
+										{item.title} ·{" "}
+										{formatOrderMoney(item.resellerUnitPrice, locale)} ×{" "}
+										{item.quantity}
+									</dt>
+									<dd className="font-semibold tabular-nums">
 										{formatOrderMoney(
-											item.supplierUnitPrice * item.quantity,
+											item.resellerUnitPrice * item.quantity,
 											locale,
 										)}
-									</p>
-								)}
-							</li>
-						))}
-					</ul>
-					<div className="grid gap-3 border-[#E2E8F0] border-t pt-4 sm:grid-cols-2">
-						<div className="rounded-xl bg-[#F8FAFC] p-4">
-							<p className="text-[#64748B] text-xs">{t("amount")}</p>
-							<p className="mt-1 font-bold text-[#0F172A]">
-								{order.supplierAmount === null
-									? "—"
-									: formatOrderMoney(order.supplierAmount, locale)}
-							</p>
-						</div>
-						<div className="rounded-xl bg-[#F8FAFC] p-4">
-							<p className="text-[#64748B] text-xs">{t("collectAmount")}</p>
-							<p className="mt-1 font-bold text-[#0F172A]">
-								{formatOrderMoney(order.collectAmount, locale)}
-							</p>
-						</div>
-					</div>
-				</section>
+									</dd>
+								</div>
+							))}
+							<div className="flex justify-between gap-3">
+								<dt className="text-[#64748B]">{tHub("delivery")}</dt>
+								<dd className="font-semibold tabular-nums">
+									{formatOrderMoney(order.deliveryFee, locale)}
+								</dd>
+							</div>
+							<div className="flex justify-between gap-3 border-[#E2E8F0] border-t pt-2">
+								<dt className="font-semibold text-[#0F172A]">
+									{order.paymentMethod === "cod"
+										? tHub("collectOnHandover")
+										: tHub("orderTotal")}
+								</dt>
+								<dd className="font-bold text-[#0F172A] tabular-nums">
+									{formatOrderMoney(order.collectAmount, locale)}
+								</dd>
+							</div>
+						</dl>
+						{side === "supplier" && order.supplierAmount !== null ? (
+							<div className="space-y-2 text-sm">
+								<h3 className="font-semibold text-[#0F172A]">
+									{tHub("split")}
+								</h3>
+								<dl className="space-y-1.5">
+									<div className="flex justify-between gap-3">
+										<dt className="text-[#64748B]">{tHub("splitSupplier")}</dt>
+										<dd className="font-semibold tabular-nums">
+											{formatOrderMoney(order.supplierAmount, locale)}
+										</dd>
+									</div>
+									<div className="flex justify-between gap-3">
+										<dt className="text-[#64748B]">{tHub("splitDelivery")}</dt>
+										<dd className="font-semibold tabular-nums">
+											{formatOrderMoney(order.deliveryFee, locale)}
+										</dd>
+									</div>
+									{order.platformCommission !== null &&
+									order.resellerCommission !== null ? (
+										<div className="flex justify-between gap-3">
+											<dt className="text-[#64748B]">
+												{tHub("splitBilled")}
+												<span className="block text-xs">
+													{tHub("splitBilledNote")}
+												</span>
+											</dt>
+											<dd className="font-semibold tabular-nums">
+												{formatOrderMoney(
+													order.platformCommission + order.resellerCommission,
+													locale,
+												)}
+											</dd>
+										</div>
+									) : null}
+								</dl>
+							</div>
+						) : null}
+					</section>
+					{order.statusHistory?.length ? (
+						<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+							<h2 className="font-bold text-[#0F172A]">{tHub("timeline")}</h2>
+							<ol className="space-y-3 border-[#E2E8F0] border-l-2 pl-4">
+								{order.statusHistory.map((entry, index) => (
+									<li
+										key={`${entry.status}-${entry.at}-${index}`}
+										className="text-sm"
+									>
+										<p className="font-semibold text-[#0F172A]">
+											{entry.status in statusLabels
+												? statusLabels[
+														entry.status as PurchaseOrderView["status"]
+													]
+												: entry.status}
+										</p>
+										<p className="text-[#64748B] text-xs">
+											{formatOrderDate(entry.at, locale)}
+										</p>
+									</li>
+								))}
+							</ol>
+						</section>
+					) : null}
+				</div>
 
 				<aside className="space-y-4">
 					<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
@@ -235,15 +368,6 @@ export function PurchaseOrderDetailClient({
 						<p className="text-[#475569] text-sm">
 							{formatOrderDate(order.shipBy ?? order.acceptBy, locale)}
 						</p>
-						<a
-							href={slipUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] px-4 font-semibold text-[#334155] text-sm hover:bg-[#F8FAFC]"
-						>
-							<Printer aria-hidden="true" className="h-4 w-4" />
-							{t("printSlip")}
-						</a>
 						{canAccept && (
 							<button
 								type="button"

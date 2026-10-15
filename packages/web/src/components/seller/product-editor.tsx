@@ -3,8 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	Controller,
+	type FieldPath,
+	type Resolver,
+	useForm,
+	useWatch,
+} from "react-hook-form";
 import { ProductChecklistCard } from "~/components/seller/product-checklist-card";
 import { ProductDeliverySection } from "~/components/seller/product-delivery-section";
 import { ProductEditorHeader } from "~/components/seller/product-editor-header";
@@ -15,14 +21,25 @@ import { ProductPublicationCard } from "~/components/seller/product-publication-
 import { ProductVariantsSection } from "~/components/seller/product-variants-section";
 import { RecentMovements } from "~/components/seller/recent-movements";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
+import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useSaveProduct } from "~/hooks/use-save-product";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { pruneAttributeValues } from "~/lib/category-form";
 import {
+	clearProductDraft,
+	loadProductDraft,
+	saveProductDraft,
+} from "~/lib/product-draft";
+import {
 	emptyState,
+	encodeIssue,
+	type FieldIssue,
+	issueInErrors,
 	type ProductFormState,
-	productFormSchema,
+	type ProductIssueContext,
+	productFormSchemaFor,
 	resolveProductCategory,
+	serverProductIssues,
 	stateAfterSave,
 	stateFromDetail,
 	toProductInput,
@@ -57,6 +74,18 @@ export function ProductEditor({
 	const [defaultValues] = useState<ProductFormState>(() =>
 		detail ? stateFromDetail(detail.response) : emptyState(),
 	);
+	// The rules depend on the chosen category, read at validation time.
+	const issueContext = useRef<ProductIssueContext>({
+		attributes: [],
+		preset: resolveProductCategory(categories, null).preset,
+		includeCost: false,
+	});
+	const resolver: Resolver<ProductFormState> = (values, context, options) =>
+		zodResolver(productFormSchemaFor(issueContext.current))(
+			values,
+			context,
+			options,
+		);
 	const {
 		clearErrors,
 		control,
@@ -67,8 +96,9 @@ export function ProductEditor({
 		reset,
 		setError,
 		setValue,
+		watch,
 	} = useForm<ProductFormState>({
-		resolver: zodResolver(productFormSchema),
+		resolver,
 		defaultValues,
 	});
 
@@ -83,6 +113,21 @@ export function ProductEditor({
 	// cost happens to be set. An owner whose variants have no cost yet still
 	// gets the column, and a staff member never does, on either page.
 	const showCost = canSeeCost(role);
+	issueContext.current = {
+		attributes: categoryContext.attributes,
+		preset: categoryContext.preset,
+		includeCost: showCost,
+	};
+
+	const errors = formState.errors;
+	const issueAt = (path: string): FieldIssue | null =>
+		issueInErrors(errors, path);
+	const revealFirstIssue = () =>
+		window.requestAnimationFrame(() =>
+			document
+				.querySelector("[data-field-issue]")
+				?.scrollIntoView({ block: "center", behavior: "smooth" }),
+		);
 
 	const onValid = async (values: ProductFormState) => {
 		clearErrors("root");
@@ -99,22 +144,83 @@ export function ProductEditor({
 				files: values.newImages.map((draft) => draft.file),
 			});
 			if (detail) reset(stateAfterSave(values, result, result.uploadedIds));
-			else router.replace(`/seller/catalogue/${result.product.id}`);
+			else {
+				discardDraft();
+				router.replace(`/seller/catalogue/${result.product.id}`);
+			}
 		} catch (error) {
-			setError("root", { message: resolveErrorMessage(error, tRoot) });
+			const issues = serverProductIssues(error, values);
+			const onFields = issues.filter((issue) => !issue.path.startsWith("root"));
+			onFields.forEach((issue, index) => {
+				setError(
+					issue.path as FieldPath<ProductFormState>,
+					{ type: issue.rule, message: encodeIssue(issue) },
+					{ shouldFocus: index === 0 },
+				);
+			});
+			if (onFields.length === 0 || onFields.length < issues.length) {
+				setError("root", { message: resolveErrorMessage(error, tRoot) });
+			}
+			if (onFields.length > 0) revealFirstIssue();
 		}
 	};
 
-	const submit = handleSubmit(onValid, () =>
-		setError("root", { message: t("fixIssues") }),
-	);
+	const submit = handleSubmit(onValid, () => {
+		setError("root", { message: t("fixIssues") });
+		revealFirstIssue();
+	});
 
 	const submitAs = (status: ProductStatus) => {
 		setValue("status", status);
 		void submit();
 	};
 
+	// A new product is kept on this device as it is typed (photos excepted),
+	// restored after mount so the server render and the first client render
+	// agree.
+	const te = useCatalogueStockT("editor");
+	const [autosavedAt, setAutosavedAt] = useState<string | null>(null);
+	const [restored, setRestored] = useState(false);
+	const restoreChecked = useRef(false);
+	useEffect(() => {
+		if (detail || restoreChecked.current) return;
+		restoreChecked.current = true;
+		const draft = loadProductDraft(shopId);
+		if (!draft) return;
+		reset({ ...emptyState(), ...draft.state, newImages: [] });
+		setAutosavedAt(draft.savedAt);
+		setRestored(true);
+	}, [detail, reset, shopId]);
+	// Set once the draft is done with (created, or cancelled), so a save
+	// still waiting on its timer cannot write it back.
+	const draftDiscarded = useRef(false);
+	useEffect(() => {
+		if (detail) return;
+		let timer: number | undefined;
+		const subscription = watch(() => {
+			window.clearTimeout(timer);
+			timer = window.setTimeout(() => {
+				if (draftDiscarded.current) return;
+				const draft = saveProductDraft(shopId, getValues());
+				if (draft) setAutosavedAt(draft.savedAt);
+			}, 1500);
+		});
+		return () => {
+			subscription.unsubscribe();
+			window.clearTimeout(timer);
+		};
+	}, [detail, watch, getValues, shopId]);
+	const discardDraft = () => {
+		draftDiscarded.current = true;
+		clearProductDraft(shopId);
+	};
+	const cancel = () => {
+		discardDraft();
+		router.push("/seller/catalogue");
+	};
+
 	const heading = detail ? title || t("untitled") : t("newProduct");
+	const listing = detail?.response.listing ?? null;
 	const saved = saveProduct.isSuccess && !formState.isDirty;
 	// The zod resolver runs before the mutation starts, so the mutation's own
 	// flag leaves a window in which a second click creates a second product.
@@ -135,7 +241,18 @@ export function ProductEditor({
 				savedStatus={detail?.response.product.status ?? null}
 				pending={pending}
 				onSubmitAs={submitAs}
+				updatedAt={detail?.response.product.updatedAt ?? null}
+				previewHref={
+					listing?.status === "published" ? `/listing/${listing.id}` : null
+				}
+				autosavedAt={autosavedAt}
+				onCancel={detail ? undefined : cancel}
 			/>
+			{restored && (
+				<p className="rounded-lg bg-[#EFF6FF] px-3 py-2 text-[#1E3A8A] text-sm">
+					{te("restored")}
+				</p>
+			)}
 
 			{formState.errors.root?.message && (
 				<p
@@ -159,19 +276,18 @@ export function ProductEditor({
 						setValue={setValue}
 						categories={categories}
 						categoryContext={categoryContext}
-						titleInvalid={Boolean(formState.errors.title)}
-						categoryInvalid={Boolean(formState.errors.categoryId)}
+						issueAt={issueAt}
 					/>
-					<ProductPhotosSection control={control} />
+					<ProductPhotosSection control={control} issueAt={issueAt} />
 					<ProductVariantsSection
 						control={control}
 						register={register}
 						setValue={setValue}
 						getValues={getValues}
 						showCost={showCost}
-						priceInvalid={Boolean(formState.errors.variants)}
+						issueAt={issueAt}
 					/>
-					<ProductDeliverySection register={register} />
+					<ProductDeliverySection register={register} issueAt={issueAt} />
 				</div>
 
 				<div className="space-y-5">

@@ -10,9 +10,12 @@ export function InventoryStats({
 	total,
 	units,
 	showCost,
+	startedBy,
 }: {
 	stats: CountStats;
 	total: number;
+	/** "commencé à 08:30 par Aïcha M.", once the count exists on the server. */
+	startedBy: string | null;
 	units: { counted: number; expected: number };
 	/** Owner and manager only; the purchase cost is a shop secret. */
 	showCost: boolean;
@@ -47,6 +50,7 @@ export function InventoryStats({
 				</div>
 				<p className="text-[#64748B] text-[13px]">
 					{t("variantsProgress", { counted: stats.counted, total })}
+					{startedBy && ` · ${startedBy}`}
 				</p>
 			</div>
 			<Figure

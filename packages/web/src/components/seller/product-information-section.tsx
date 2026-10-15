@@ -9,6 +9,11 @@ import type {
 import { Controller, useWatch } from "react-hook-form";
 import { CategoryDialogField } from "~/components/category-picker";
 import { EditorSection } from "~/components/seller/editor-section";
+import {
+	type IssueAt,
+	ProductIssueText,
+	useProductIssueMessage,
+} from "~/components/seller/product-issue-text";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
@@ -35,8 +40,7 @@ interface ProductInformationSectionProps {
 	setValue: UseFormSetValue<ProductFormState>;
 	categories: Category[];
 	categoryContext: ProductCategoryContext;
-	titleInvalid: boolean;
-	categoryInvalid: boolean;
+	issueAt: IssueAt;
 }
 
 export function ProductInformationSection({
@@ -45,8 +49,7 @@ export function ProductInformationSection({
 	setValue,
 	categories,
 	categoryContext,
-	titleInvalid,
-	categoryInvalid,
+	issueAt,
 }: ProductInformationSectionProps) {
 	const t = useTranslations("ProductEditor");
 	const tCondition = useTranslations("Condition");
@@ -54,6 +57,13 @@ export function ProductInformationSection({
 	const description = useWatch({ control, name: "description" });
 	const condition = useWatch({ control, name: "condition" });
 	const { attributes, category, preset } = categoryContext;
+	const issueMessage = useProductIssueMessage();
+	const titleIssue = issueAt("title");
+	const attributeIssues: Record<string, string> = {};
+	for (const attribute of attributes) {
+		const issue = issueAt(`attributeValues.${attribute.slug}`);
+		if (issue) attributeIssues[attribute.slug] = issueMessage(issue);
+	}
 
 	// A category switch takes its own fields with it: values from the previous
 	// category would be sent as attributes this one never declared.
@@ -70,18 +80,16 @@ export function ProductInformationSection({
 					<Input
 						id="product-title"
 						maxLength={TITLE_MAX}
-						aria-invalid={titleInvalid}
+						aria-invalid={Boolean(titleIssue)}
 						{...register("title")}
 					/>
-					<p
-						className={
-							titleInvalid ? "text-red-600 text-xs" : "text-[#94A3B8] text-xs"
-						}
-					>
-						{titleInvalid
-							? t("titleError")
-							: `${title?.length ?? 0} / ${TITLE_MAX}`}
-					</p>
+					{titleIssue ? (
+						<ProductIssueText issue={titleIssue} />
+					) : (
+						<p className="text-[#94A3B8] text-xs">
+							{`${title?.length ?? 0} / ${TITLE_MAX}`}
+						</p>
+					)}
 				</div>
 
 				<div className="space-y-1.5">
@@ -112,9 +120,7 @@ export function ProductInformationSection({
 							/>
 						)}
 					/>
-					{categoryInvalid && (
-						<p className="text-red-600 text-xs">{t("categoryError")}</p>
-					)}
+					<ProductIssueText issue={issueAt("categoryId")} />
 				</div>
 
 				{preset.fields.condition.enabled && (
@@ -129,7 +135,10 @@ export function ProductInformationSection({
 									type="button"
 									aria-pressed={condition === value}
 									onClick={() =>
-										setValue("condition", value, { shouldDirty: true })
+										setValue("condition", value, {
+											shouldDirty: true,
+											shouldValidate: true,
+										})
 									}
 									className={
 										condition === value
@@ -141,6 +150,7 @@ export function ProductInformationSection({
 								</button>
 							))}
 						</div>
+						<ProductIssueText issue={issueAt("condition")} />
 					</fieldset>
 				)}
 
@@ -151,6 +161,7 @@ export function ProductInformationSection({
 						<CategoryAttributeFields
 							attributes={attributes}
 							values={field.value}
+							issues={attributeIssues}
 							onChange={(slug, value) =>
 								field.onChange({ ...field.value, [slug]: value })
 							}
@@ -164,8 +175,10 @@ export function ProductInformationSection({
 						id="product-description"
 						rows={5}
 						maxLength={DESCRIPTION_MAX}
+						aria-invalid={Boolean(issueAt("description"))}
 						{...register("description")}
 					/>
+					<ProductIssueText issue={issueAt("description")} />
 					<p className="text-[#94A3B8] text-xs">
 						{description?.length ?? 0} /{" "}
 						{DESCRIPTION_MAX.toLocaleString("fr-FR")}

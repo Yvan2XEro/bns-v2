@@ -7,31 +7,19 @@ import type {
 	UseFormRegister,
 } from "react-hook-form";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
-import type { CountFormState, CountRow } from "~/lib/inventory";
+import type { CountFilter, CountFormState, CountRow } from "~/lib/inventory";
 import { parseAmount } from "~/lib/product-form";
 import { cn } from "~/lib/utils";
 
-export type Filter = "all" | "todo" | "counted" | "gap";
+export type Filter = CountFilter;
 export const FILTERS: Filter[] = ["all", "todo", "counted", "gap"];
-
-function matchesFilter(
-	filter: Filter,
-	expected: number,
-	counted: number | null,
-): boolean {
-	if (filter === "todo") return counted === null;
-	if (filter === "counted") return counted !== null;
-	if (filter === "gap") return counted !== null && counted !== expected;
-	return true;
-}
 
 export function InventoryTable({
 	fields,
 	rows,
 	register,
 	errors,
-	filter,
-	query,
+	indexes,
 	showCost,
 }: {
 	fields: FieldArrayWithId<CountFormState, "rows", "id">[];
@@ -39,18 +27,17 @@ export function InventoryTable({
 	register: UseFormRegister<CountFormState>;
 	/** Per-row validation errors from a failed submit; drives the invalid highlight. */
 	errors: FieldErrors<CountFormState>["rows"];
-	filter: Filter;
-	query: string;
+	/** The rows to show, in order: filtered and paginated by the caller. */
+	indexes: number[];
 	/** Owner and manager only; the purchase cost is a shop secret. */
 	showCost: boolean;
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Inventory");
 	const currencyCode = useCurrencyCode();
-	const q = query.trim().toLowerCase();
 
 	return (
-		<div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
+		<div className="overflow-x-auto">
 			<table className="w-full min-w-[760px] text-sm">
 				<thead className="border-[#E2E8F0] border-b bg-[#F8FAFC] text-left text-[#64748B] text-xs uppercase">
 					<tr>
@@ -75,13 +62,11 @@ export function InventoryTable({
 					</tr>
 				</thead>
 				<tbody>
-					{fields.map((field, index) => {
+					{indexes.map((index) => {
+						const field = fields[index];
+						if (!field) return null;
 						const row = rows[index] ?? field;
 						const counted = parseAmount(row.counted);
-						const haystack =
-							`${row.productTitle} ${row.label} ${row.sku ?? ""}`.toLowerCase();
-						if (q && !haystack.includes(q)) return null;
-						if (!matchesFilter(filter, row.expected, counted)) return null;
 						const delta = counted === null ? null : counted - row.expected;
 						const invalid = Boolean(errors?.[index]?.counted);
 						return (
@@ -90,12 +75,26 @@ export function InventoryTable({
 								className="border-[#F1F5F9] border-b last:border-0"
 							>
 								<td className="px-4 py-2">
-									<p className="font-medium text-[#0F172A]">
-										{row.productTitle}
-									</p>
-									<p className="text-[#94A3B8] text-xs">
-										{[row.label, row.sku].filter(Boolean).join(" · ")}
-									</p>
+									<div className="flex items-center gap-3">
+										<div className="h-[38px] w-[38px] shrink-0 overflow-hidden rounded-lg bg-[#F1F5F9] print:hidden">
+											{row.image && (
+												// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
+												<img
+													src={row.image}
+													alt=""
+													className="h-full w-full object-cover"
+												/>
+											)}
+										</div>
+										<div className="min-w-0">
+											<p className="font-medium text-[#0F172A]">
+												{row.productTitle}
+											</p>
+											<p className="text-[#94A3B8] text-xs">
+												{[row.label, row.sku].filter(Boolean).join(" · ")}
+											</p>
+										</div>
+									</div>
 								</td>
 								<td className="px-4 py-2 text-right">{row.expected}</td>
 								<td className="w-28 px-4 py-2">

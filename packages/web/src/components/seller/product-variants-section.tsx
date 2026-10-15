@@ -7,11 +7,14 @@ import type {
 	UseFormRegister,
 	UseFormSetValue,
 } from "react-hook-form";
-import { useFieldArray, useWatch } from "react-hook-form";
+import { useFieldArray, useFormState, useWatch } from "react-hook-form";
 import { EditorSection } from "~/components/seller/editor-section";
 import { OptionEditor } from "~/components/seller/option-editor";
+import {
+	type IssueAt,
+	ProductIssueText,
+} from "~/components/seller/product-issue-text";
 import { VariantTable } from "~/components/seller/variant-table";
-import { useCurrencyCode } from "~/hooks/use-order-money";
 import {
 	type OptionRow,
 	type ProductFormState,
@@ -24,7 +27,7 @@ interface ProductVariantsSectionProps {
 	setValue: UseFormSetValue<ProductFormState>;
 	getValues: UseFormGetValues<ProductFormState>;
 	showCost: boolean;
-	priceInvalid: boolean;
+	issueAt: IssueAt;
 }
 
 export function ProductVariantsSection({
@@ -33,11 +36,11 @@ export function ProductVariantsSection({
 	setValue,
 	getValues,
 	showCost,
-	priceInvalid,
+	issueAt,
 }: ProductVariantsSectionProps) {
 	const t = useTranslations("ProductEditor");
-	const currencyCode = useCurrencyCode();
 	const options = useWatch({ control, name: "options" }) ?? [];
+	const { isSubmitted } = useFormState({ control });
 	// The rows are the registered inputs of the table, so the array itself is
 	// owned by react-hook-form rather than rebuilt around it.
 	const { replace: replaceVariants } = useFieldArray({
@@ -46,7 +49,10 @@ export function ProductVariantsSection({
 	});
 
 	const applyOptions = (next: OptionRow[]) => {
-		setValue("options", next, { shouldDirty: true });
+		setValue("options", next, {
+			shouldDirty: true,
+			shouldValidate: isSubmitted,
+		});
 		replaceVariants(reconcileVariants(next, getValues("variants")));
 	};
 
@@ -71,19 +77,21 @@ export function ProductVariantsSection({
 		>
 			<div className="space-y-4">
 				{options.length > 0 && (
-					<OptionEditor options={options} onChange={applyOptions} />
+					<OptionEditor
+						options={options}
+						onChange={applyOptions}
+						issueAt={issueAt}
+					/>
 				)}
+				<ProductIssueText issue={issueAt("options")} />
 				<VariantTable
 					control={control}
 					register={register}
 					setValue={setValue}
 					showCost={showCost}
+					issueAt={issueAt}
 				/>
-				{priceInvalid && (
-					<p className="text-red-600 text-xs">
-						{t("priceError", { currency: currencyCode })}
-					</p>
-				)}
+				<ProductIssueText issue={issueAt("variants")} />
 			</div>
 		</EditorSection>
 	);

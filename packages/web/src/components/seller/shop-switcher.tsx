@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronsUpDown, Store } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -11,7 +11,6 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { useMyShops } from "~/hooks/use-my-shops";
 import { ACTIVE_SHOP_COOKIE } from "~/lib/active-shop";
-import { cn } from "~/lib/utils";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -20,19 +19,31 @@ function setActiveShopCookie(shopId: string) {
 }
 
 /**
- * Only the inbox reads `ACTIVE_SHOP_COOKIE` today (the rest of the seller
- * space is still keyed off `GET /api/shops/mine`'s single shop), so picking a
- * shop here changes which shop's conversations `/seller/messages` shows —
- * `activeShopId` is the shop that screen is currently resolving to.
+ * The sidebar's dark header, which opens the shop list when the user belongs
+ * to more than one shop. Only the inbox reads `ACTIVE_SHOP_COOKIE` today (the
+ * rest of the seller space is still keyed off `GET /api/shops/mine`'s single
+ * shop), so picking a shop here changes which shop's conversations
+ * `/seller/messages` shows — `activeShopId` is the shop that screen is
+ * currently resolving to.
  */
-export function ShopSwitcher({ activeShopId }: { activeShopId: string }) {
+export function ShopSwitcher({
+	activeShopId,
+	children,
+}: {
+	activeShopId: string;
+	/** The header's own content: logo, name and subtitle. */
+	children: React.ReactNode;
+}) {
 	const t = useTranslations("Inbox");
 	const router = useRouter();
 	const { data: shops } = useMyShops();
 
-	if (!shops || shops.length < 2) return null;
+	const header =
+		"flex w-full items-center gap-2.5 border-[#1E293B] border-b p-4 text-left";
 
-	const active = shops.find((entry) => entry.shopId === activeShopId);
+	if (!shops || shops.length < 2) {
+		return <div className={header}>{children}</div>;
+	}
 
 	function select(shopId: string) {
 		if (shopId === activeShopId) return;
@@ -43,21 +54,16 @@ export function ShopSwitcher({ activeShopId }: { activeShopId: string }) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
-				className={cn(
-					"flex items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 font-medium text-[#334155] text-sm hover:bg-[#F8FAFC]",
-				)}
+				className={`${header} hover:bg-white/5`}
 				aria-label={t("switchShop")}
 			>
-				<Store aria-hidden="true" className="h-4 w-4 shrink-0" />
-				<span className="max-w-40 truncate">
-					{active?.name ?? t("switchShop")}
-				</span>
+				{children}
 				<ChevronsUpDown
 					aria-hidden="true"
-					className="h-4 w-4 shrink-0 opacity-50"
+					className="h-4 w-4 shrink-0 text-[#94A3B8]"
 				/>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end">
+			<DropdownMenuContent align="start" className="w-56">
 				{shops.map((entry) => (
 					<DropdownMenuItem
 						key={entry.shopId}

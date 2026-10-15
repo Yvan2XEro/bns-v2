@@ -7,8 +7,15 @@ import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSupplierResaleProducts } from "~/hooks/use-resale";
 import { resolveErrorMessage } from "~/lib/apiError";
 
-export function ResaleOfferedClient({ shopId }: { shopId: string }) {
+export function ResaleOfferedClient({
+	shopId,
+	embedded = false,
+}: {
+	shopId: string;
+	embedded?: boolean;
+}) {
 	const t = useTranslations("SellerResaleOffered");
+	const tHub = useTranslations("SellerResaleHub");
 	const formatOrderMoney = useOrderMoney();
 	const tRoot = useTranslations();
 	const query = useSupplierResaleProducts(shopId);
@@ -17,35 +24,14 @@ export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 		: null;
 	return (
 		<section className="space-y-6">
-			<header className="flex flex-wrap items-end justify-between gap-4">
-				<div>
+			{embedded ? null : (
+				<header>
 					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
 					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
 						{t("description")}
 					</p>
-				</div>
-				<nav aria-label={t("navigation")} className="flex flex-wrap gap-2">
-					<Link
-						className="min-h-11 rounded-lg border border-[#B45309] bg-[#FFFBEB] px-4 py-3 font-semibold text-[#92400E] text-sm"
-						href="/seller/resale/offered"
-						aria-current="page"
-					>
-						{t("title")}
-					</Link>
-					<Link
-						className="min-h-11 rounded-lg border border-[#E2E8F0] bg-white px-4 py-3 font-semibold text-[#334155] text-sm"
-						href="/seller/resale/resellers"
-					>
-						{t("resellers")}
-					</Link>
-					<Link
-						className="min-h-11 rounded-lg border border-[#E2E8F0] bg-white px-4 py-3 font-semibold text-[#334155] text-sm"
-						href="/seller/resale/purchase-orders"
-					>
-						{t("purchaseOrders")}
-					</Link>
-				</nav>
-			</header>
+				</header>
+			)}
 			{error ? (
 				<p
 					role="alert"
@@ -81,9 +67,24 @@ export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 										units: product.unitsDelivered30d,
 									})}
 								</p>
+								<p className="mt-1 text-[#64748B] text-xs">
+									{[
+										product.approvalRequired
+											? tHub("ruleApprovalAll")
+											: tHub("ruleApprovalNone"),
+										typeof product.handlingHours === "number"
+											? tHub("ruleHandling", {
+													hours: product.handlingHours,
+												})
+											: null,
+										product.codAccepted ? tHub("filterCod") : null,
+									]
+										.filter(Boolean)
+										.join(" · ")}
+								</p>
 							</div>
 							<Link
-								href={`/seller/catalogue/${encodeURIComponent(product.productId)}`}
+								href={`/seller/resale/products/${encodeURIComponent(product.productId)}`}
 								className="inline-flex min-h-11 items-center rounded-lg bg-[#0F172A] px-4 font-semibold text-sm text-white"
 							>
 								{t("editProduct")}
@@ -104,6 +105,7 @@ export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 								<thead className="border-[#E2E8F0] border-b text-[#64748B]">
 									<tr>
 										<th className="py-3 pr-4">{t("variant")}</th>
+										<th className="py-3 pr-4">{tHub("supplierStock")}</th>
 										<th className="py-3 pr-4">{t("supplierPrice")}</th>
 										<th className="py-3 pr-4">{t("minimum")}</th>
 										<th className="py-3 pr-4">{t("suggested")}</th>
@@ -119,6 +121,11 @@ export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 											>
 												{variant.sku || t("defaultVariant")}
 											</th>
+											<td className="py-3 pr-4">
+												{typeof variant.stock === "number"
+													? variant.stock
+													: tHub("stockUntracked")}
+											</td>
 											<td className="py-3 pr-4">
 												{formatOrderMoney(variant.supplierPrice)}
 											</td>

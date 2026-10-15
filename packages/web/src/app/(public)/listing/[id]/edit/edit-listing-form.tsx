@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
+import { FieldIssueSummary } from "~/components/listing/field-issue-summary";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { LocationField } from "~/components/location/location-field";
@@ -43,6 +44,11 @@ import {
 	resolveFormPreset,
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
+import {
+	type FieldIssue,
+	responseIssues,
+	webListingIssues,
+} from "~/lib/listing-issues";
 import { listingShopId } from "~/lib/listing-shop";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
@@ -198,6 +204,51 @@ export function EditListingForm({
 
 	const titleCopy = titlePlaceholderCopy(categoryPreset.categoryType);
 
+	// The API's own rules on the body `handleSave` would send. The image cap
+	// only refuses growth, so a legacy listing already over it stays editable.
+	const draftBody = {
+		title: formData.title,
+		description: formData.description,
+		location: formData.location,
+		category: selectedCategory?.id ?? null,
+		price:
+			priceField.enabled && formData.price ? Number(formData.price) : undefined,
+		condition: conditionField.enabled ? formData.condition || null : null,
+		images: [...keptImages, ...newImages],
+		attributes: pruneAttributeValues(attributes, attributeValues),
+	};
+	const draftIssues = webListingIssues(draftBody, {
+		preset: categoryPreset.fields,
+		attributes,
+		previousImageCount: existingImages.length,
+	});
+	const draftKey = JSON.stringify({ ...draftBody, images: photoCount });
+	const [refused, setRefused] = useState<{
+		key: string;
+		issues: FieldIssue[];
+	} | null>(null);
+	const serverIssues = refused?.key === draftKey ? refused.issues : [];
+	const attributeNames = Object.fromEntries(
+		attributes.map((attribute) => [attribute.slug, attribute.name]),
+	);
+	const issueSummary = (
+		<>
+			<FieldIssueSummary
+				issues={serverIssues}
+				attributeNames={attributeNames}
+				refused
+			/>
+			{showErrors ? (
+				<FieldIssueSummary
+					issues={draftIssues.filter(
+						(issue) => !serverIssues.some((known) => known.path === issue.path),
+					)}
+					attributeNames={attributeNames}
+				/>
+			) : null}
+		</>
+	);
+
 	function handleCategoryChange(categoryId: string) {
 		const category = categories.find((c) => c.id === categoryId) || null;
 		setSelectedCategory(category);
@@ -242,7 +293,8 @@ export function EditListingForm({
 		formData.description &&
 		selectedCategory &&
 		missingCoreFields.length === 0 &&
-		attributeIssues.length === 0
+		attributeIssues.length === 0 &&
+		draftIssues.length === 0
 	);
 
 	async function handleSave() {
@@ -269,10 +321,16 @@ export function EditListingForm({
 					body: fd,
 					credentials: "include",
 				});
-				if (uploadRes.ok) {
-					const data = await uploadRes.json();
-					newImageIds.push(data.doc?.id ?? data.id);
+				// A photo that did not upload must not vanish from the listing unnoticed.
+				if (!uploadRes.ok) {
+					setRefused({
+						key: draftKey,
+						issues: [{ path: "images", rule: "uploadFailed" }],
+					});
+					return;
 				}
+				const data = await uploadRes.json();
+				newImageIds.push(data.doc?.id ?? data.id);
 			}
 
 			const allImageIds = [...keptImages.map((img) => img.id), ...newImageIds];
@@ -315,7 +373,12 @@ export function EditListingForm({
 				credentials: "include",
 			});
 
-			if (!res.ok) throw new Error(t("failedToUpdate"));
+			if (!res.ok) {
+				const issues = await responseIssues(res);
+				if (issues.length === 0) throw new Error(t("failedToUpdate"));
+				setRefused({ key: draftKey, issues });
+				return;
+			}
 			router.push(`/listing/${listing.id}`);
 			router.refresh();
 		} catch {
@@ -735,6 +798,7 @@ export function EditListingForm({
 				</div>
 			)}
 
+			{issueSummary}
 			{/* Save */}
 			<div className="flex justify-end gap-3">
 				<Button
@@ -743,7 +807,7 @@ export function EditListingForm({
 				>
 					{tCommon("cancel")}
 				</Button>
-				<Button onClick={handleSave} disabled={isSaving || !canSave}>
+				<Button onClick={handleSave} disabled={isSaving}>
 					{isSaving ? (
 						<>
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

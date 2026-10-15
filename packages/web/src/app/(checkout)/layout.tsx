@@ -13,7 +13,7 @@ export default async function CheckoutLayout({
 		<div className="flex min-h-screen flex-col">
 			<Header novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER} />
 			<div className="border-[#E2E8F0] border-b bg-white">
-				<div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+				<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
 					<Link
 						href="/cart"
 						className="inline-flex items-center gap-2 text-[#1E40AF] text-sm hover:underline"

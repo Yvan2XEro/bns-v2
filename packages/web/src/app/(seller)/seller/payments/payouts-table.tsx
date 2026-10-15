@@ -8,64 +8,107 @@ import { PAYOUT_STATUSES } from "~/lib/payment-status";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { SellerPayoutRow } from "~/types/payments";
 
+/** Gross, the commission and VAT taken before sending, and what arrived. */
 export function PayoutsTable({
 	payouts,
+	onExport,
 }: {
 	payouts: readonly SellerPayoutRow[];
+	onExport: () => void;
 }) {
 	const formatOrderMoney = useOrderMoney();
-	const t = useTranslations("Payments");
+	const tPayments = useTranslations("Payments");
+	const tPage = useTranslations("PaymentsPage");
 	const locale = useLocaleKey();
 
 	return (
-		<section aria-labelledby="payouts-title" className="space-y-3">
-			<h2 id="payouts-title" className="font-semibold text-[#0F172A]">
-				{t("seller_payoutsTitle")}
-			</h2>
+		<section
+			aria-labelledby="payouts-title"
+			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+		>
+			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
+				<h2 id="payouts-title" className="font-bold text-[#0F172A] text-base">
+					{tPayments("seller_payoutsTitle")}
+				</h2>
+				{payouts.length > 0 && (
+					<button
+						type="button"
+						onClick={onExport}
+						className="font-semibold text-[#1E40AF] text-[13px] hover:underline"
+					>
+						{tPage("export")}
+					</button>
+				)}
+			</div>
 			{payouts.length === 0 ? (
-				<p className="rounded-2xl border border-[#E2E8F0] border-dashed bg-white px-6 py-10 text-center text-[#64748B] text-sm">
-					{t("seller_noPayouts")}
+				<p className="px-6 py-10 text-center text-[#64748B] text-sm">
+					{tPayments("seller_noPayouts")}
 				</p>
 			) : (
-				<div className="overflow-x-auto rounded-2xl border border-[#E2E8F0] bg-white">
-					<table className="w-full text-left text-sm">
-						<thead className="border-[#E2E8F0] border-b text-[#64748B] text-xs">
+				<div className="overflow-x-auto">
+					<table className="w-full min-w-[640px] text-left text-sm">
+						<thead className="bg-[#F8FAFC] text-[#64748B] text-xs">
 							<tr>
-								<th className="px-4 py-2 font-medium">{t("seller_colDate")}</th>
-								<th className="px-4 py-2 font-medium">
-									{t("seller_colAmount")}
+								<th className="px-[18px] py-2.5 font-medium">
+									{tPage("colPayout")}
 								</th>
-								<th className="px-4 py-2 font-medium">{t("seller_colFee")}</th>
-								<th className="px-4 py-2 font-medium">
-									{t("seller_colDestination")}
+								<th className="px-3 py-2.5 text-right font-medium">
+									{tPage("colGross")}
 								</th>
-								<th className="px-4 py-2 font-medium">
-									{t("seller_colStatus")}
+								<th className="px-3 py-2.5 text-right font-medium">
+									{tPayments("seller_colCommission")}
+								</th>
+								<th className="px-3 py-2.5 text-right font-medium">
+									{tPayments("seller_colVat")}
+								</th>
+								<th className="px-3 py-2.5 text-right font-medium">
+									{tPage("colNetPaid")}
+								</th>
+								<th className="px-[18px] py-2.5 font-medium">
+									{tPayments("seller_colStatus")}
 								</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-[#E2E8F0]">
+						<tbody className="divide-y divide-[#F1F5F9]">
 							{payouts.map((payout) => (
 								<tr key={payout.id}>
-									<td className="px-4 py-3">
+									<td className="whitespace-nowrap px-[18px] py-3">
 										<Link
 											href={`/seller/payments/payouts/${encodeURIComponent(payout.id)}`}
-											className="inline-flex min-h-6 items-center text-[#1E40AF] hover:underline"
+											className="font-semibold text-[#1E40AF] hover:underline"
 										>
 											{formatOrderDate(payout.date, locale)}
 										</Link>
+										<p className="text-[#64748B] text-xs">
+											{tPage("orderCount", { count: payout.orderCount })}
+											{payout.destinationMasked
+												? ` · ${payout.destinationMasked}`
+												: ""}
+										</p>
 									</td>
-									<td className="px-4 py-3 font-semibold text-[#0F172A]">
-										{formatOrderMoney(payout.amount, locale)}
+									<td className="whitespace-nowrap px-3 py-3 text-right text-[#334155] tabular-nums">
+										{formatOrderMoney(payout.gross, locale)}
 									</td>
-									<td className="px-4 py-3 text-[#64748B]">
-										{formatOrderMoney(payout.fee, locale)}
+									<td className="whitespace-nowrap px-3 py-3 text-right text-[#64748B] tabular-nums">
+										− {formatOrderMoney(payout.commissionHt, locale)}
 									</td>
-									<td className="px-4 py-3 text-[#334155]">
-										{payout.destinationMasked}
+									<td className="whitespace-nowrap px-3 py-3 text-right text-[#64748B] tabular-nums">
+										− {formatOrderMoney(payout.vat, locale)}
 									</td>
-									<td className="px-4 py-3 text-[#334155]">
-										{t(PAYOUT_STATUSES[payout.status])}
+									<td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
+										<p className="font-bold text-[#0F172A]">
+											{formatOrderMoney(payout.amount, locale)}
+										</p>
+										{payout.fee > 0 && (
+											<p className="text-[#64748B] text-xs">
+												{tPage("providerFee", {
+													amount: formatOrderMoney(payout.fee, locale),
+												})}
+											</p>
+										)}
+									</td>
+									<td className="px-[18px] py-3 text-[#334155]">
+										{tPayments(PAYOUT_STATUSES[payout.status])}
 									</td>
 								</tr>
 							))}

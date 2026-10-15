@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { getMyShop } from "~/lib/server-shop";
+import { getAllCategories, getMyShop } from "~/lib/server-shop";
 import { canSeeCost } from "~/lib/shop-roles";
 import { InventoryClient } from "./inventory-client";
 
@@ -11,9 +11,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function InventoryPage() {
-	const mine = await getMyShop();
+	const [mine, categories] = await Promise.all([
+		getMyShop(),
+		getAllCategories(),
+	]);
 	if (!mine?.shop) redirect("/shop/new");
 	return (
-		<InventoryClient shopId={mine.shop.id} showCost={canSeeCost(mine.role)} />
+		<InventoryClient
+			shopId={mine.shop.id}
+			showCost={canSeeCost(mine.role)}
+			categories={categories}
+		/>
 	);
 }

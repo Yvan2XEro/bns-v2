@@ -3,6 +3,10 @@
 import { Plus, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import {
+	type IssueAt,
+	ProductIssueText,
+} from "~/components/seller/product-issue-text";
 import { MAX_OPTIONS, type OptionRow } from "~/lib/product-form";
 
 function ValueAdder({ onAdd }: { onAdd: (value: string) => void }) {
@@ -44,10 +48,12 @@ function NameField({
 	name,
 	taken,
 	onCommit,
+	issue,
 }: {
 	name: string;
 	taken: string[];
 	onCommit: (name: string) => void;
+	issue: ReturnType<IssueAt>;
 }) {
 	const t = useTranslations("ProductEditor");
 	const [draft, setDraft] = useState(name);
@@ -82,11 +88,13 @@ function NameField({
 				onBlur={commit}
 				placeholder={t("optionName")}
 				aria-label={t("optionName")}
-				aria-invalid={duplicate}
+				aria-invalid={duplicate || Boolean(issue)}
 				className="h-9 w-full rounded-md border border-[#E2E8F0] px-3 font-semibold text-sm outline-none focus:border-[#93C5FD]"
 			/>
-			{duplicate && (
+			{duplicate ? (
 				<p className="mt-1 text-red-600 text-xs">{t("optionNameDuplicate")}</p>
+			) : (
+				<ProductIssueText issue={issue} />
 			)}
 		</div>
 	);
@@ -95,9 +103,11 @@ function NameField({
 export function OptionEditor({
 	options,
 	onChange,
+	issueAt,
 }: {
 	options: OptionRow[];
 	onChange: (options: OptionRow[]) => void;
+	issueAt: IssueAt;
 }) {
 	const t = useTranslations("ProductEditor");
 
@@ -121,6 +131,7 @@ export function OptionEditor({
 								.map((other) => other.name.trim())
 								.filter(Boolean)}
 							onCommit={(name) => update(index, { ...option, name })}
+							issue={issueAt(`options.${index}.name`)}
 						/>
 						<button
 							type="button"
@@ -163,6 +174,7 @@ export function OptionEditor({
 							}}
 						/>
 					</div>
+					<ProductIssueText issue={issueAt(`options.${index}.values`)} />
 				</div>
 			))}
 			{options.length < MAX_OPTIONS && (

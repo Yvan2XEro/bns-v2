@@ -179,6 +179,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 	const product = listingProduct(listing);
 	const summary = productSummaryOf(listing);
 	const delivery = product?.delivery ?? {};
+	const warrantyMonths = product?.warrantyMonths ?? 0;
 	const priceRange =
 		summary &&
 		summary.priceMin !== null &&
@@ -452,6 +453,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										{conditionMap[listing.condition]}
 									</Badge>
 								)}
+								{warrantyMonths > 0 && (
+									<Badge className="border-transparent bg-[#FEF3C7] text-[#92400E] hover:bg-[#FEF3C7]">
+										{t("shopWarranty", { months: warrantyMonths })}
+									</Badge>
+								)}
 								{isBoosted && (
 									<Badge variant="boost">
 										<Zap className="mr-1 h-3 w-3" />
@@ -523,10 +529,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							{/* Buy box first, as in the design: price, variants and the
 							    order action sit at the top of the column, above the seller. */}
 							{productId && (
-								<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
-									<p className="font-bold text-3xl text-[#1E40AF]">
-										{priceRange ?? formattedPrice ?? t("noPrice")}
-									</p>
+								<div className="rounded-xl border border-[#E2E8F0] bg-white p-[22px]">
 									<BuyBox
 										listingId={String(listing.id)}
 										productId={productId}
@@ -545,6 +548,17 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										codAllowed={delivery.codAllowed === true}
 										pickupAllowed={delivery.pickupAllowed === true}
 										shopBadge={shopBadge}
+										priceFallback={priceRange ?? formattedPrice ?? t("noPrice")}
+										handlingHours={delivery.handlingHours ?? null}
+										ask={
+											!isOwner && (
+												<MessageSellerButton
+													listingId={String(listing.id)}
+													signedIn={Boolean(authUser)}
+													secondary
+												/>
+											)
+										}
 										delivery={{
 											city: shop?.location?.city ?? null,
 											sellerDeliveryEnabled:
@@ -560,15 +574,6 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										listingId={String(listing.id)}
 										eligible={Boolean(shop && !shop.ordersRestrictedAt)}
 									/>
-									{!isOwner && (
-										<div className="mt-4">
-											<MessageSellerButton
-												listingId={String(listing.id)}
-												signedIn={Boolean(authUser)}
-												secondary
-											/>
-										</div>
-									)}
 								</div>
 							)}
 							{/* Seller card */}

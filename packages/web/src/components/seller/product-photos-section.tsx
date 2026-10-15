@@ -6,12 +6,18 @@ import { Controller, useWatch } from "react-hook-form";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { EditorSection } from "~/components/seller/editor-section";
 import { ExistingImages } from "~/components/seller/existing-images";
+import {
+	type IssueAt,
+	ProductIssueText,
+} from "~/components/seller/product-issue-text";
 import { MAX_IMAGES, type ProductFormState } from "~/lib/product-form";
 
 export function ProductPhotosSection({
 	control,
+	issueAt,
 }: {
 	control: Control<ProductFormState>;
+	issueAt: IssueAt;
 }) {
 	const t = useTranslations("ProductEditor");
 	const existingImages = useWatch({ control, name: "existingImages" }) ?? [];
@@ -62,6 +68,7 @@ export function ProductPhotosSection({
 					/>
 				)}
 				<p className="text-[#94A3B8] text-xs">{t("photosHint")}</p>
+				<ProductIssueText issue={issueAt("newImages")} />
 			</div>
 		</EditorSection>
 	);

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { OrderAction, OrderActionSubject } from "~/lib/order-actions";
+import {
+	availableActions,
+	type OrderAction,
+	type OrderActionSubject,
+} from "~/lib/order-actions";
 import type { OrderStatusName } from "~/lib/order-status";
 import type { OrderListEntry, OrderTimelineEntry } from "~/types/order";
 
@@ -205,4 +209,91 @@ export function groupPurchases(
 			? { kind: "order", entry: item.entries[0] as OrderListEntry }
 			: item,
 	);
+}
+
+export type PurchaseCardActionKind =
+	| "confirm"
+	| "track"
+	| "track_courier"
+	| "review"
+	| "return";
+
+export interface PurchaseCardAction {
+	kind: PurchaseCardActionKind;
+	/** The order page, at the panel that carries the action. */
+	href: string;
+}
+
+/** Statuses still moving towards the buyer; a dispute is open but not travelling. */
+const TRACKABLE: ReadonlySet<OrderStatusName> = new Set([
+	"placed",
+	"confirmed",
+	"paid",
+	"accepted",
+	"shipped",
+]);
+
+/**
+ * A list card's shortcuts, read off the same `availableActions` the order
+ * page renders, so a card never offers what the page (and the API) would
+ * refuse. Every shortcut opens the order page, where the action itself runs.
+ * A row from an API that does not send `actionSubject` yet only gets the
+ * tracking link, which needs nothing but the status.
+ */
+export function purchaseCardActions(
+	entry: OrderListEntry,
+	now: Date,
+): PurchaseCardAction[] {
+	const page = `/purchases/${encodeURIComponent(entry.id)}`;
+	const actions = entry.actionSubject
+		? availableActions(
+				{ ...entry.actionSubject, status: entry.status },
+				"buyer",
+				null,
+				now,
+			)
+		: [];
+	const out: PurchaseCardAction[] = [];
+	if (actions.includes("confirm_code")) {
+		out.push({ kind: "confirm", href: page });
+	} else if (TRACKABLE.has(entry.status)) {
+		const courier =
+			entry.status === "shipped" && entry.arrival?.method === "courier";
+		out.push({
+			kind: courier ? "track_courier" : "track",
+			href: `${page}#tracking`,
+		});
+	}
+	if (actions.includes("review_shop"))
+		out.push({ kind: "review", href: `${page}#review` });
+	if (actions.includes("request_withdrawal"))
+		out.push({ kind: "return", href: `${page}#withdrawal` });
+	return out;
+}
+
+export type PurchaseArrival =
+	| { kind: "promised"; at: string }
+	| { kind: "eta"; text: string }
+	| { kind: "returnUntil"; at: string };
+
+/**
+ * The card's time line: the promised arrival while the order travels (the
+ * shop's own estimate when no date was promised), and the return deadline
+ * once a return can still be asked for.
+ */
+export function purchaseArrival(
+	entry: OrderListEntry,
+	actions: readonly PurchaseCardAction[],
+): PurchaseArrival | null {
+	if (TRACKABLE.has(entry.status) && entry.arrival) {
+		if (entry.arrival.promisedBy)
+			return { kind: "promised", at: entry.arrival.promisedBy };
+		if (entry.arrival.etaText)
+			return { kind: "eta", text: entry.arrival.etaText };
+		return null;
+	}
+	const until = entry.actionSubject?.deadlines.withdrawalUntil;
+	if (until && actions.some((action) => action.kind === "return"))
+		return { kind: "returnUntil", at: until };
+	return null;
 }

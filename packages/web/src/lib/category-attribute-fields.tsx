@@ -40,6 +40,8 @@ interface CategoryAttributeFieldsProps {
 	 * number) always show, since they mean the user typed something invalid.
 	 */
 	showRequiredErrors?: boolean;
+	/** Refusals already worded by the caller, by slug; they win over the local check. */
+	issues?: Record<string, string>;
 }
 
 export function CategoryAttributeFields({
@@ -47,6 +49,7 @@ export function CategoryAttributeFields({
 	values,
 	onChange,
 	showRequiredErrors = false,
+	issues,
 }: CategoryAttributeFieldsProps) {
 	const t = asFallbackTranslator(useTranslations("Listing"));
 
@@ -82,7 +85,8 @@ export function CategoryAttributeFields({
 	function renderField(attribute: CategoryAttributeSpec) {
 		const value = values[attribute.slug] ?? "";
 		const issue = validateAttributeValue(attribute, value);
-		const message = issue ? issueMessage(issue) : null;
+		const message =
+			issues?.[attribute.slug] ?? (issue ? issueMessage(issue) : null);
 		const errorId = message ? `attr-${attribute.slug}-error` : undefined;
 		const placeholder = translateOr(
 			t,
@@ -101,6 +105,7 @@ export function CategoryAttributeFields({
 				>
 					<SelectTrigger
 						id={`attr-${attribute.slug}`}
+						aria-invalid={message ? true : undefined}
 						aria-describedby={errorId}
 					>
 						<SelectValue placeholder={placeholder} />
@@ -122,6 +127,7 @@ export function CategoryAttributeFields({
 				>
 					<SelectTrigger
 						id={`attr-${attribute.slug}`}
+						aria-invalid={message ? true : undefined}
 						aria-describedby={errorId}
 					>
 						<SelectValue placeholder={placeholder} />
@@ -174,7 +180,11 @@ export function CategoryAttributeFields({
 				</Label>
 				{control}
 				{message && (
-					<p id={errorId} className="text-destructive text-xs">
+					<p
+						id={errorId}
+						data-field-issue=""
+						className="text-destructive text-xs"
+					>
 						{message}
 					</p>
 				)}

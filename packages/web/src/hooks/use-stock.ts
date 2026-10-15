@@ -2,10 +2,11 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type PopulatedVariant, shopApi } from "~/lib/shop-api";
-import type { ClientMovementType, MovementPage, StockSummary } from "~/types";
+import type { MovementPage, StockSummary } from "~/types";
 
 export interface MovementsParams {
-	type?: ClientMovementType;
+	/** One type, or several comma-separated (e.g. "reservation,release"). */
+	type?: string;
 	page: number;
 	limit: number;
 }

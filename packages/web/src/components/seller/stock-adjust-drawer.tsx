@@ -9,6 +9,7 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { useVariant } from "~/hooks/use-variants";
+import type { MovementFormState } from "~/lib/stock";
 import { StockAdjustForm } from "./stock-adjust-form";
 import { type PickedVariant, toPicked, VariantPicker } from "./variant-picker";
 
@@ -18,12 +19,14 @@ export function StockAdjustDrawer({
 	onOpenChange,
 	initialVariantId,
 	onSaved,
+	defaults,
 }: {
 	shopId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	initialVariantId?: string | null;
 	onSaved: () => void;
+	defaults?: Partial<MovementFormState>;
 }) {
 	const t = useTranslations("Stock");
 
@@ -41,22 +44,29 @@ export function StockAdjustDrawer({
 					initialVariantId={initialVariantId ?? null}
 					onOpenChange={onOpenChange}
 					onSaved={onSaved}
+					defaults={defaults}
 				/>
 			</DialogContent>
 		</Dialog>
 	);
 }
 
-function StockAdjustBody({
+/**
+ * Pick a variant, then record one movement for it. Shared by the drawer and
+ * the stock page's fixed side panel; `onOpenChange(false)` means "done".
+ */
+export function StockAdjustBody({
 	shopId,
 	initialVariantId,
 	onOpenChange,
 	onSaved,
+	defaults,
 }: {
 	shopId: string;
 	initialVariantId: string | null;
 	onOpenChange: (open: boolean) => void;
 	onSaved: () => void;
+	defaults?: Partial<MovementFormState>;
 }) {
 	const t = useTranslations("Stock");
 	const [picked, setPicked] = useState<PickedVariant | null>(null);
@@ -86,6 +96,7 @@ function StockAdjustBody({
 			key={variant.id}
 			shopId={shopId}
 			variant={variant}
+			defaults={defaults}
 			onChangeVariant={initialVariantId ? null : () => setPicked(null)}
 			onSaved={() => {
 				onSaved();

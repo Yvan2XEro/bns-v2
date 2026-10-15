@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useReducer } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
@@ -23,9 +22,11 @@ function reducer(state: State, patch: Partial<State>): State {
 export function ResaleLinksClient({
 	shopId,
 	side,
+	embedded = false,
 }: {
 	shopId: string;
 	side: Side;
+	embedded?: boolean;
 }) {
 	const t = useTranslations("SellerResaleLinks");
 	const tRoot = useTranslations();
@@ -65,55 +66,22 @@ export function ResaleLinksClient({
 
 	return (
 		<section className="space-y-6">
-			<header className="flex flex-wrap items-end justify-between gap-4">
-				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
-						{t(side === "supplier" ? "supplierTitle" : "resellerTitle")}
-					</h1>
-					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
-						{t(
-							side === "supplier"
-								? "supplierDescription"
-								: "resellerDescription",
-						)}
-					</p>
-				</div>
-				<nav aria-label={t("navigation")} className="flex flex-wrap gap-2">
-					{side === "supplier" ? (
-						<Link
-							href="/seller/resale/offered"
-							className="inline-flex min-h-11 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#334155] text-sm"
-						>
-							{t("offeredProducts")}
-						</Link>
-					) : null}
-					<Link
-						href={
-							side === "supplier"
-								? "/seller/resale/resellers"
-								: "/seller/resale/suppliers"
-						}
-						aria-current="page"
-						className="inline-flex min-h-11 items-center rounded-lg border border-[#B45309] bg-[#FFFBEB] px-4 font-semibold text-[#92400E] text-sm"
-					>
-						{t(side === "supplier" ? "supplierTitle" : "resellerTitle")}
-					</Link>
-					{side === "reseller" ? (
-						<Link
-							href="/seller/resale/catalogue"
-							className="inline-flex min-h-11 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#334155] text-sm"
-						>
-							{t("catalogue")}
-						</Link>
-					) : null}
-					<Link
-						href="/seller/resale/purchase-orders"
-						className="inline-flex min-h-11 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#334155] text-sm"
-					>
-						{t("purchaseOrders")}
-					</Link>
-				</nav>
-			</header>
+			{embedded ? null : (
+				<header className="flex flex-wrap items-end justify-between gap-4">
+					<div>
+						<h1 className="font-bold text-2xl text-[#0F172A]">
+							{t(side === "supplier" ? "supplierTitle" : "resellerTitle")}
+						</h1>
+						<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
+							{t(
+								side === "supplier"
+									? "supplierDescription"
+									: "resellerDescription",
+							)}
+						</p>
+					</div>
+				</header>
+			)}
 			<div className="flex flex-wrap items-center gap-3">
 				<label className="grid gap-1 font-medium text-[#334155] text-sm">
 					<span>{t("filter")}</span>
@@ -223,6 +191,12 @@ function LinkCard({
 						{link.partnerShop.handle
 							? `@${link.partnerShop.handle}`
 							: t("shopHandleUnavailable")}
+						{link.partnerShop.level ? (
+							<>
+								{" · "}
+								<LevelLabel level={link.partnerShop.level} />
+							</>
+						) : null}
 					</p>
 				</div>
 				<span className="rounded-full bg-[#FEF3C7] px-3 py-1 font-semibold text-[#92400E] text-xs">
@@ -369,6 +343,11 @@ function LinkCard({
 			) : null}
 		</article>
 	);
+}
+
+function LevelLabel({ level }: { level: number }) {
+	const t = useTranslations("SellerResaleHub");
+	return <>{t(`levelName_${Math.min(Math.max(level, 1), 3)}`)}</>;
 }
 
 function Metric({ value, label }: { value: number; label: string }) {

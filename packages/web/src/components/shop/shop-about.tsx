@@ -8,11 +8,14 @@ export function ShopAbout({
 	shop,
 	locale,
 	categoryNav,
+	full = false,
 }: {
 	shop: PublicShop;
 	locale: string;
 	/** Replaces the declared category chips when the page could count listings per category. */
 	categoryNav?: React.ReactNode;
+	/** The "À propos" tab adds the legal block and the owner; the listings sidebar stops at the categories. */
+	full?: boolean;
 }) {
 	const t = useTranslations("Shop");
 	const memberSince = new Date(shop.owner.memberSince).toLocaleDateString(
@@ -46,27 +49,29 @@ export function ShopAbout({
 						</div>
 					</div>
 				))}
-			<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
-			<Link
-				href={`/profile/${shop.owner.id}`}
-				className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[#93C5FD]"
-			>
-				<Avatar className="h-11 w-11">
-					<AvatarImage src={shop.owner.avatar?.url ?? undefined} />
-					<AvatarFallback className="bg-[#1E40AF] text-white">
-						{shop.owner.name.charAt(0)}
-					</AvatarFallback>
-				</Avatar>
-				<div>
-					<p className="text-[#94A3B8] text-xs">{t("ownedBy")}</p>
-					<p className="font-semibold text-[#0F172A] text-sm">
-						{shop.owner.name}
-					</p>
-					<p className="text-[#64748B] text-xs">
-						{t("memberSince", { date: memberSince })}
-					</p>
-				</div>
-			</Link>
+			{full && <LegalBlock legal={shop.legal} verified={shop.legalVerified} />}
+			{full && (
+				<Link
+					href={`/profile/${shop.owner.id}`}
+					className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[#93C5FD]"
+				>
+					<Avatar className="h-11 w-11">
+						<AvatarImage src={shop.owner.avatar?.url ?? undefined} />
+						<AvatarFallback className="bg-[#1E40AF] text-white">
+							{shop.owner.name.charAt(0)}
+						</AvatarFallback>
+					</Avatar>
+					<div>
+						<p className="text-[#94A3B8] text-xs">{t("ownedBy")}</p>
+						<p className="font-semibold text-[#0F172A] text-sm">
+							{shop.owner.name}
+						</p>
+						<p className="text-[#64748B] text-xs">
+							{t("memberSince", { date: memberSince })}
+						</p>
+					</div>
+				</Link>
+			)}
 		</aside>
 	);
 }

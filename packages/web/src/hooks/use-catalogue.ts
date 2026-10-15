@@ -11,6 +11,9 @@ export interface CatalogueParams {
 	q?: string;
 	page: number;
 	limit: number;
+	category?: string;
+	sort?: string;
+	provenance?: string;
 }
 
 /**

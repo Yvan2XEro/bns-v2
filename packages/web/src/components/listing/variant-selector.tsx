@@ -7,6 +7,13 @@ import { useOrderMoney } from "~/hooks/use-order-money";
 import { publicVariantsQuery } from "~/hooks/use-variants";
 import { cn } from "~/lib/utils";
 import {
+	colourSwatch,
+	isColourOption,
+	isPaleSwatch,
+	optionValuePrice,
+	stockStatus,
+} from "~/lib/variant-display";
+import {
 	isOptionValueUnavailable,
 	isVariantInStock,
 	matchVariant,
@@ -20,18 +27,20 @@ import type { PublicVariantDoc } from "~/types";
  * is asking — unlike the raw `/api/product-variants` the seller-facing
  * `VariantPicker` uses, which legitimately widens for a shop member's own
  * draft product. The response carries no `cost` and no `stockOnHand`/
- * `stockReserved`, only the server-derived `available` boolean, so this
- * component never computes stock client-side — it only ever reads
- * `isVariantInStock`, which is honest for that boolean on this payload and
- * for a shop member's raw payload alike (see `lib/variants.ts`).
+ * `stockReserved`, only the server-derived `available` boolean and a count
+ * the server caps (`availableCount`), so this component never computes stock
+ * client-side.
  */
 export function VariantSelector({
 	productId,
+	priceFallback,
 	codAllowed,
 	pickupAllowed,
 	children,
 }: {
 	productId: string;
+	/** The product's price or range, shown until a variant is selected. */
+	priceFallback: string;
 	codAllowed: boolean;
 	pickupAllowed: boolean;
 	/** The buy box's controls, given the variant currently selected (null while none matches). */
@@ -83,78 +92,113 @@ export function VariantSelector({
 
 	const current = matchVariant(variants, selected);
 
-	if (variants.length === 0) return null;
+	const stock = current ? stockStatus(current) : null;
 
 	return (
-		<div className="mt-4 space-y-4">
-			{options.map((option) => (
-				<div key={option.name}>
-					<p className="text-[#64748B] text-sm">
-						{option.name} :{" "}
-						<span className="font-semibold text-[#0F172A]">
-							{selected[option.name]}
-						</span>
-					</p>
-					<div className="mt-2 flex flex-wrap gap-2">
-						{option.values.map((value) => {
-							// Unavailable everywhere → genuinely unselectable. Available in
-							// some other combination → selectable; picking it resolves the
-							// rest of the selection to a combination that is actually in
-							// stock, rather than a dead end the buyer cannot buy from.
-							const unavailable = isOptionValueUnavailable(
-								variants,
-								option.name,
-								value,
-							);
-							const active = selected[option.name] === value;
-							return (
-								<button
-									key={value}
-									type="button"
-									disabled={unavailable}
-									aria-pressed={active}
-									aria-label={
-										unavailable ? `${value} — ${t("variantSoldOut")}` : value
-									}
-									onClick={() =>
-										setManualSelection(
-											resolveSelection(variants, selected, option.name, value),
-										)
-									}
-									className={cn(
-										"rounded-lg border px-3 py-1.5 font-medium text-sm",
-										active
-											? "border-[#1E40AF] bg-[#EFF6FF] text-[#1E40AF]"
-											: "border-[#E2E8F0] text-[#334155]",
-										unavailable &&
-											"cursor-not-allowed text-[#94A3B8] line-through opacity-60",
-									)}
-								>
-									{value}
-								</button>
-							);
-						})}
-					</div>
-				</div>
-			))}
-			{current && (
-				<div className="flex items-center justify-between rounded-lg bg-[#F8FAFC] px-3 py-2 text-sm">
-					<span
-						className={
-							isVariantInStock(current) ? "text-[#166534]" : "text-[#991b1b]"
-						}
+		<div className="space-y-[18px]">
+			<div className="space-y-1.5">
+				<p className="font-bold text-3xl text-[#1E40AF]">
+					{current ? formatOrderMoney(current.price, locale) : priceFallback}
+				</p>
+				{stock && (
+					<p
+						className={cn(
+							"flex items-center gap-1.5 font-semibold text-sm",
+							stock.kind === "inStock" ? "text-[#15803D]" : "text-[#991B1B]",
+						)}
 					>
-						{!current.trackInventory
-							? t("variantInStock")
-							: isVariantInStock(current)
-								? t("variantAvailable")
-								: t("variantSoldOut")}
-					</span>
-					<span className="font-bold text-[#0F172A]">
-						{formatOrderMoney(current.price, locale)}
-					</span>
-				</div>
-			)}
+						<span
+							aria-hidden="true"
+							className={cn(
+								"h-2 w-2 rounded-full",
+								stock.kind === "inStock" ? "bg-[#16A34A]" : "bg-[#DC2626]",
+							)}
+						/>
+						{stock.kind === "soldOut"
+							? t("variantSoldOut")
+							: stock.count !== null
+								? t("variantInStockCount", { count: stock.count })
+								: t("variantInStock")}
+					</p>
+				)}
+			</div>
+			{options.map((option) => {
+				const colour = isColourOption(option.name);
+				return (
+					<div key={option.name}>
+						<p className="font-semibold text-[#334155] text-[13px]">
+							{option.name}
+							{selected[option.name] && ` : ${selected[option.name]}`}
+						</p>
+						<div className="mt-2 flex flex-wrap gap-2">
+							{option.values.map((value) => {
+								// Unavailable everywhere → genuinely unselectable. Available in
+								// some other combination → selectable; picking it resolves the
+								// rest of the selection to a combination that is actually in
+								// stock, rather than a dead end the buyer cannot buy from.
+								const unavailable = isOptionValueUnavailable(
+									variants,
+									option.name,
+									value,
+								);
+								const active = selected[option.name] === value;
+								const swatch = colour ? colourSwatch(value) : null;
+								const otherPrice = unavailable
+									? null
+									: optionValuePrice(variants, selected, option.name, value);
+								return (
+									<button
+										key={value}
+										type="button"
+										disabled={unavailable}
+										aria-pressed={active}
+										aria-label={
+											unavailable
+												? `${value} — ${t("variantSoldOut")}`
+												: undefined
+										}
+										onClick={() =>
+											setManualSelection(
+												resolveSelection(
+													variants,
+													selected,
+													option.name,
+													value,
+												),
+											)
+										}
+										className={cn(
+											"flex h-[38px] items-center gap-1.5 rounded-lg px-3.5 font-medium text-sm",
+											active
+												? "border-2 border-[#1E40AF] bg-[#EFF6FF] font-semibold text-[#1E40AF]"
+												: "border border-[#E2E8F0] bg-white text-[#334155]",
+											unavailable &&
+												"cursor-not-allowed text-[#94A3B8] line-through opacity-60",
+										)}
+									>
+										{swatch && (
+											<span
+												aria-hidden="true"
+												className={cn(
+													"h-3.5 w-3.5 rounded-full",
+													isPaleSwatch(swatch) && "border border-[#CBD5E1]",
+												)}
+												style={{ background: swatch }}
+											/>
+										)}
+										{value}
+										{otherPrice !== null && (
+											<span className="font-normal text-[#64748B]">
+												· {formatOrderMoney(otherPrice, locale)}
+											</span>
+										)}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				);
+			})}
 			{(codAllowed || pickupAllowed) && (
 				<p className="text-[#64748B] text-xs">
 					{[

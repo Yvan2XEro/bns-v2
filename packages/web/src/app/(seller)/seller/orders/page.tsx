@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getMyShop } from "~/lib/server-shop";
+import { isListTab } from "./order-list";
 import { OrdersClient } from "./orders-client";
-import { isShopOrderTab } from "./seller-orders";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("SellerOrders");
@@ -21,7 +21,9 @@ export default async function SellerOrdersPage({
 	return (
 		<OrdersClient
 			shopId={mine.shop.id}
-			initialTab={isShopOrderTab(params.tab) ? params.tab : "to_accept"}
+			role={mine.role}
+			shopCity={mine.shop.location.city}
+			initialTab={isListTab(params.tab) ? params.tab : "all"}
 		/>
 	);
 }

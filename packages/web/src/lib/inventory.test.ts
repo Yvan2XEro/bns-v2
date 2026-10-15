@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { countFormSchema, hasAnyInput } from "./inventory";
+import {
+	categoryFamily,
+	countFormSchema,
+	hasAnyInput,
+	visibleRowIndexes,
+} from "./inventory";
 
 /** A valid row shape, minus `counted`, reused across cases below. */
 const baseRow = {
@@ -69,5 +74,77 @@ describe("hasAnyInput", () => {
 
 	test("is false for an empty list", () => {
 		expect(hasAnyInput([])).toBe(false);
+	});
+});
+
+describe("visibleRowIndexes", () => {
+	const rows = [
+		{ ...baseRow, categoryId: "c-phones", counted: "5" },
+		{
+			...baseRow,
+			variantId: "v2",
+			sku: "AT-2",
+			categoryId: "c-watch",
+			counted: "",
+		},
+		{
+			...baseRow,
+			variantId: "v3",
+			label: "L",
+			categoryId: "c-phones",
+			counted: "3",
+		},
+	];
+	const parse = (value: string) => (value.trim() ? Number(value) : null);
+
+	test("combines the tab, the search and the category", () => {
+		expect(
+			visibleRowIndexes(rows, {
+				filter: "counted",
+				query: "",
+				categoryIds: null,
+				parse,
+			}),
+		).toEqual([0, 2]);
+		expect(
+			visibleRowIndexes(rows, {
+				filter: "gap",
+				query: "",
+				categoryIds: null,
+				parse,
+			}),
+		).toEqual([2]);
+		expect(
+			visibleRowIndexes(rows, {
+				filter: "all",
+				query: "at-2",
+				categoryIds: null,
+				parse,
+			}),
+		).toEqual([1]);
+		expect(
+			visibleRowIndexes(rows, {
+				filter: "all",
+				query: "",
+				categoryIds: new Set(["c-watch"]),
+				parse,
+			}),
+		).toEqual([1]);
+	});
+});
+
+describe("categoryFamily", () => {
+	test("includes every level below the category", () => {
+		expect(
+			categoryFamily(
+				[
+					{ id: "a" },
+					{ id: "b", parent: "a" },
+					{ id: "c", parent: { id: "b" } },
+					{ id: "d" },
+				],
+				"a",
+			),
+		).toEqual(new Set(["a", "b", "c"]));
 	});
 });

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryDialogField } from "~/components/category-picker";
+import { FieldIssueSummary } from "~/components/listing/field-issue-summary";
 import { ImagePicker } from "~/components/listing/image-picker";
 import { TagPicker } from "~/components/listing/tag-picker";
 import { LocationField } from "~/components/location/location-field";
@@ -45,6 +46,13 @@ import {
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
 import { createCategorySuggester } from "~/lib/category-suggest";
+import {
+	type FieldIssue,
+	firstListingIssueStep,
+	issuesOnStep,
+	responseIssues,
+	webListingIssues,
+} from "~/lib/listing-issues";
 import { hasListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import type { Category, ListingCondition } from "~/types";
@@ -179,6 +187,30 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		photoCount: images.length,
 	});
 
+	// The API's own rules on the body `handleSubmit` would send.
+	const draftBody = {
+		title: formData.title,
+		description: formData.description,
+		location: formData.location,
+		category: selectedCategory?.id ?? null,
+		price:
+			priceField.enabled && formData.price ? Number(formData.price) : undefined,
+		condition: conditionField.enabled ? formData.condition || null : null,
+		images,
+		attributes: pruneAttributeValues(attributes, attributeValues),
+	};
+	const draftIssues = webListingIssues(draftBody, {
+		preset: categoryPreset.fields,
+		attributes,
+	});
+	// A refusal stays on screen until the form changes.
+	const draftKey = JSON.stringify({ ...draftBody, images: images.length });
+	const [refused, setRefused] = useState<{
+		key: string;
+		issues: FieldIssue[];
+	} | null>(null);
+	const serverIssues = refused?.key === draftKey ? refused.issues : [];
+
 	const titleCopy = titlePlaceholderCopy(categoryPreset.categoryType);
 
 	// The photo step is part of the form only when the category asks for
@@ -218,6 +250,23 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		{ id: "review", label: t("review"), description: t("reviewDesc") },
 	];
 	const currentStep = STEPS[Math.min(step, STEPS.length - 1)];
+	const goToIssues = (issues: FieldIssue[]) => {
+		const target = firstListingIssueStep(
+			issues,
+			STEPS.map((s) => s.id),
+		);
+		const index = STEPS.findIndex((s) => s.id === target);
+		if (index !== -1) setStep(index);
+	};
+	const stepServerIssues = issuesOnStep(serverIssues, currentStep.id);
+	const stepDraftIssues = showErrors
+		? issuesOnStep(draftIssues, currentStep.id).filter(
+				(issue) => !stepServerIssues.some((known) => known.path === issue.path),
+			)
+		: [];
+	const attributeNames = Object.fromEntries(
+		attributes.map((attribute) => [attribute.slug, attribute.name]),
+	);
 	const photosRequiredMessage = translateOr(
 		tListing,
 		"photosRequired",
@@ -334,6 +383,12 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	}
 
 	function canProceed(): boolean {
+		if (
+			currentStep.id !== "review" &&
+			issuesOnStep(draftIssues, currentStep.id).length > 0
+		) {
+			return false;
+		}
 		switch (currentStep.id) {
 			case "describe":
 				return !!(formData.title && formData.description && selectedCategory);
@@ -371,6 +426,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		if (!selectedCategory) return;
 		// The details step may have been left before an attribute was filled in
 		// (e.g. via the stepper), so re-check everything before sending.
+		if (draftIssues.length > 0) {
+			setShowErrors(true);
+			goToIssues(draftIssues);
+			return;
+		}
 		if (
 			missingCoreFields.length > 0 ||
 			attributeIssues.length > 0 ||
@@ -411,10 +471,16 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					body: fd,
 					credentials: "include",
 				});
-				if (uploadRes.ok) {
-					const data = await uploadRes.json();
-					imageIds.push(data.doc?.id ?? data.id);
+				// A photo that did not upload must not vanish from the listing
+				// unnoticed: the seller is sent back to the photos to deal with it.
+				if (!uploadRes.ok) {
+					const issues = [{ path: "images", rule: "uploadFailed" }];
+					setRefused({ key: draftKey, issues });
+					goToIssues(issues);
+					return;
 				}
+				const data = await uploadRes.json();
+				imageIds.push(data.doc?.id ?? data.id);
 			}
 
 			const listingData: Record<string, unknown> = {
@@ -450,7 +516,13 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				credentials: "include",
 			});
 
-			if (!res.ok) throw new Error(tListing("failedToCreate"));
+			if (!res.ok) {
+				const issues = await responseIssues(res);
+				if (issues.length === 0) throw new Error(tListing("failedToCreate"));
+				setRefused({ key: draftKey, issues });
+				goToIssues(issues);
+				return;
+			}
 			const listing = await res.json();
 			router.push(`/listing/${listing.doc?.id || listing.id}`);
 		} catch {
@@ -499,6 +571,15 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 					<CardDescription>{currentStep.description}</CardDescription>
 				</CardHeader>
 				<CardContent>
+					<FieldIssueSummary
+						issues={stepServerIssues}
+						attributeNames={attributeNames}
+						refused
+					/>
+					<FieldIssueSummary
+						issues={stepDraftIssues}
+						attributeNames={attributeNames}
+					/>
 					{/* Describe */}
 					{currentStep.id === "describe" && (
 						<div className="space-y-5">

@@ -7,10 +7,12 @@ import { useTranslations } from "next-intl";
 export function InventoryHeader({
 	startedLabel,
 	onSaveDraft,
+	savingDraft,
 	submitting,
 	submitDisabled,
 }: {
 	startedLabel: string;
+	savingDraft: boolean;
 	onSaveDraft: () => void;
 	submitting: boolean;
 	submitDisabled: boolean;
@@ -43,7 +45,8 @@ export function InventoryHeader({
 				<button
 					type="button"
 					onClick={onSaveDraft}
-					className="h-10 rounded-lg border border-[#E2E8F0] bg-white px-4 text-sm"
+					disabled={savingDraft}
+					className="h-10 rounded-lg border border-[#E2E8F0] bg-white px-4 text-sm disabled:opacity-50"
 				>
 					{t("resumeLater")}
 				</button>

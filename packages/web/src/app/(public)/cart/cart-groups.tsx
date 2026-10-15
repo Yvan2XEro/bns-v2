@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { LevelBadge } from "~/components/shop/level-badge";
 import { Button } from "~/components/ui/button";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import type { CartLineView, SplitCartView } from "~/types/order";
@@ -46,6 +47,11 @@ export function CartGroups({
 										shop: group.fulfillingShop.name,
 									})}
 								</Link>
+								<LevelBadge
+									badge={group.fulfillingShop.badge}
+									size="sm"
+									className="ml-2 align-middle"
+								/>
 							</h2>
 							<Button
 								type="button"

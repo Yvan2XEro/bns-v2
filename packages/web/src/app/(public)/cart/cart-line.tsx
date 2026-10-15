@@ -134,6 +134,12 @@ export function CartLine({
 
 				{stepper.atMax ? (
 					<p className="text-[#64748B] text-xs">{t("maxQuantity")}</p>
+				) : state !== "unavailable" &&
+					line.stockLeft !== undefined &&
+					line.stockLeft !== null ? (
+					<p className="text-[#64748B] text-xs">
+						{t("stockLeft", { count: line.stockLeft })}
+					</p>
 				) : null}
 			</div>
 		</li>

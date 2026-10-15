@@ -1,15 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "~/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from "~/components/ui/dialog";
 import { useCreateZone, useUpdateZone } from "~/hooks/use-delivery-settings";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
@@ -28,6 +24,11 @@ export interface ZoneDrawerTarget {
 	city: string;
 }
 
+/**
+ * The zone form as a side panel beside the table rather than a modal, so the
+ * other zones stay readable while one is edited. On a narrow screen the
+ * column stacks below the table, hence the scroll on open.
+ */
 export function ZoneDrawer({
 	shopId,
 	target,
@@ -49,6 +50,13 @@ export function ZoneDrawer({
 	});
 	const { handleSubmit, setError, formState } = form;
 	const pending = create.isPending || update.isPending;
+	const panel = useRef<HTMLElement>(null);
+
+	// The caller keys the panel by zone, so this runs once per opened zone.
+	useEffect(() => {
+		panel.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		panel.current?.focus({ preventScroll: true });
+	}, []);
 
 	const onSubmit = handleSubmit(async (values) => {
 		const input = zoneToInput(values);
@@ -74,35 +82,49 @@ export function ZoneDrawer({
 	});
 
 	return (
-		<Dialog open onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className="max-h-[90vh] overflow-y-auto">
-				<DialogHeader>
-					<DialogTitle>
-						{target.zone ? t("editZone") : t("addZone")}
-					</DialogTitle>
-				</DialogHeader>
-				<form onSubmit={onSubmit} className="space-y-4" noValidate>
-					<ZoneFields form={form} />
-					{formState.errors.root?.message && (
-						<p role="alert" className="text-red-700 text-sm">
-							{formState.errors.root.message}
-						</p>
-					)}
-					<div className="flex justify-end gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							className="min-h-11"
-							onClick={onClose}
-						>
-							{t("cancel")}
-						</Button>
-						<Button type="submit" className="min-h-11" disabled={pending}>
-							{t("save")}
-						</Button>
-					</div>
-				</form>
-			</DialogContent>
-		</Dialog>
+		<section
+			ref={panel}
+			tabIndex={-1}
+			aria-labelledby="zone-panel-title"
+			className="overflow-hidden rounded-2xl border border-[#BFDBFE] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.14)] outline-none"
+		>
+			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
+				<h2
+					id="zone-panel-title"
+					className="font-bold text-[#0F172A] text-base"
+				>
+					{target.zone ? t("editZone") : t("addZone")}
+				</h2>
+				<button
+					type="button"
+					onClick={onClose}
+					aria-label={t("cancel")}
+					className="rounded-lg p-1 text-[#64748B] hover:bg-[#F1F5F9]"
+				>
+					<X aria-hidden="true" className="h-[18px] w-[18px]" />
+				</button>
+			</div>
+			<form onSubmit={onSubmit} className="space-y-4 px-[18px] py-4" noValidate>
+				<ZoneFields form={form} />
+				{formState.errors.root?.message && (
+					<p role="alert" className="text-red-700 text-sm">
+						{formState.errors.root.message}
+					</p>
+				)}
+				<div className="flex gap-2.5">
+					<Button
+						type="button"
+						variant="outline"
+						className="min-h-11"
+						onClick={onClose}
+					>
+						{t("cancel")}
+					</Button>
+					<Button type="submit" className="min-h-11 flex-1" disabled={pending}>
+						{t("save")}
+					</Button>
+				</div>
+			</form>
+		</section>
 	);
 }

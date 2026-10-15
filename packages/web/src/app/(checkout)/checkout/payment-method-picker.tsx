@@ -15,28 +15,42 @@ export function PaymentMethodPicker({
 	method,
 	fee,
 	onChoose,
+	codOnly = false,
+	embedded = false,
 }: {
 	method: PaymentMethod;
 	fee: number | null;
 	onChoose: (method: PaymentMethod) => void;
+	/** Protected payment is off: the one method left is shown, not hidden. */
+	codOnly?: boolean;
+	/** Inside a checkout section that already titles it. */
+	embedded?: boolean;
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	const locale = useLocale() === "en" ? "en" : "fr";
 
-	const options: Array<{ value: PaymentMethod; title: string; body: string }> =
-		[
-			{ value: "cod", title: t("method_cod"), body: t("method_codBody") },
-			{
-				value: "mobile_money",
-				title: t("method_protected"),
-				body: t("method_protectedBody"),
-			},
-		];
+	const all: Array<{ value: PaymentMethod; title: string; body: string }> = [
+		{ value: "cod", title: t("method_cod"), body: t("method_codBody") },
+		{
+			value: "mobile_money",
+			title: t("method_protected"),
+			body: t("method_protectedBody"),
+		},
+	];
+	const options = codOnly ? all.filter((o) => o.value === "cod") : all;
 
 	return (
-		<fieldset className="space-y-3 rounded-2xl border border-[#E2E8F0] p-4">
-			<legend className="px-1 font-semibold text-[#0F172A]">
+		<fieldset
+			className={
+				embedded
+					? "space-y-3"
+					: "space-y-3 rounded-2xl border border-[#E2E8F0] p-4"
+			}
+		>
+			<legend
+				className={embedded ? "sr-only" : "px-1 font-semibold text-[#0F172A]"}
+			>
 				{t("method_title")}
 			</legend>
 			<div className="grid gap-2 sm:grid-cols-2">

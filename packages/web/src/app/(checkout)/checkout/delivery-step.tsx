@@ -2,8 +2,6 @@
 
 import { LoaderCircle, MapPin, Store, Truck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
-import { Button } from "~/components/ui/button";
 import { useDeliveryOptions } from "~/hooks/use-checkout";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -106,18 +104,24 @@ function OptionCard({
 	);
 }
 
-export function DeliveryStep({
+/**
+ * The delivery options for the address, picked in place: choosing one is
+ * what asks the server for the quote, so the summary beside it always shows
+ * the option on screen. `disabled` while the address above is being edited,
+ * since an option chosen then would be priced for the old address.
+ */
+export function DeliveryOptions({
 	address,
-	selected,
+	selectedId,
 	onChoose,
-	onBack,
 	paymentMethod,
+	disabled,
 }: {
 	address: AddressInput;
-	selected: DeliveryOption | null;
+	selectedId: string | null;
 	onChoose: (option: DeliveryOption) => void;
-	onBack: () => void;
 	paymentMethod: PaymentMethod;
+	disabled: boolean;
 }) {
 	const t = useTranslations("Checkout");
 	const tRoot = useTranslations();
@@ -127,19 +131,11 @@ export function DeliveryStep({
 		address.district,
 		paymentMethod,
 	);
-	const [pickedId, setPickedId] = useState(selected?.optionId ?? null);
 	const list = options.data?.options ?? [];
-	const picked =
-		list.find(
-			(o) =>
-				o.optionId === pickedId && (paymentMethod !== "cod" || o.codAllowed),
-		) ?? null;
 
 	return (
-		<fieldset className="space-y-4">
-			<legend className="mb-2 font-semibold text-[#0F172A] text-lg">
-				{t("deliveryOptions")}
-			</legend>
+		<fieldset disabled={disabled} className="space-y-3 disabled:opacity-60">
+			<legend className="sr-only">{t("deliveryOptions")}</legend>
 			{options.isPending && (
 				<p className="flex items-center gap-2 text-[#64748B] text-sm">
 					<LoaderCircle className="h-4 w-4 animate-spin" />
@@ -154,15 +150,17 @@ export function DeliveryStep({
 			{options.isSuccess && list.length === 0 && (
 				<p className="text-[#334155] text-sm">{t("noDeliveryOptions")}</p>
 			)}
-			{list.map((option) => (
-				<OptionCard
-					key={option.optionId}
-					option={option}
-					checked={option.optionId === pickedId}
-					onSelect={() => setPickedId(option.optionId)}
-					selectable={paymentMethod !== "cod" || option.codAllowed}
-				/>
-			))}
+			<div className="grid gap-3 sm:grid-cols-2">
+				{list.map((option) => (
+					<OptionCard
+						key={option.optionId}
+						option={option}
+						checked={option.optionId === selectedId}
+						onSelect={() => onChoose(option)}
+						selectable={paymentMethod !== "cod" || option.codAllowed}
+					/>
+				))}
+			</div>
 			{options.data?.unavailable.map((option, index) => (
 				<p key={`${option.method}-${index}`} className="text-[#B45309] text-sm">
 					{t(`deliveryUnavailable.${option.reason}`, {
@@ -170,24 +168,6 @@ export function DeliveryStep({
 					})}
 				</p>
 			))}
-			<div className="flex gap-3">
-				<Button
-					type="button"
-					variant="outline"
-					className="min-h-11"
-					onClick={onBack}
-				>
-					{t("back")}
-				</Button>
-				<Button
-					type="button"
-					className="min-h-11 flex-1 bg-[#1E40AF] hover:bg-[#1E3A8A]"
-					disabled={!picked}
-					onClick={() => picked && onChoose(picked)}
-				>
-					{t("continue")}
-				</Button>
-			</div>
 		</fieldset>
 	);
 }

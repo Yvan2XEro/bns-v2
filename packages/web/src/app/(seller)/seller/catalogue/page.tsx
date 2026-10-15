@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { type CatalogueFilter, isCatalogueFilter } from "~/lib/catalogue";
-import { getMyShop } from "~/lib/server-shop";
+import { getAllCategories, getMyShop } from "~/lib/server-shop";
+import { can } from "~/lib/shop-roles";
 import { CatalogueClient } from "./catalogue-client";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,7 +16,11 @@ export default async function CataloguePage({
 }: {
 	searchParams: Promise<{ status?: string; stock?: string }>;
 }) {
-	const [mine, params] = await Promise.all([getMyShop(), searchParams]);
+	const [mine, params, categories] = await Promise.all([
+		getMyShop(),
+		searchParams,
+		getAllCategories(),
+	]);
 	if (!mine?.shop) redirect("/shop/new");
 
 	const requested = params.stock ?? params.status ?? "all";
@@ -24,6 +29,15 @@ export default async function CataloguePage({
 		: "all";
 
 	return (
-		<CatalogueClient shopId={mine.shop.id} initialFilter={initialFilter} />
+		<CatalogueClient
+			shopId={mine.shop.id}
+			initialFilter={initialFilter}
+			categories={categories}
+			permissions={{
+				resale: can(mine.role, "resale.manage"),
+				archive: can(mine.role, "catalogue.archive"),
+				costs: can(mine.role, "costs.view"),
+			}}
+		/>
 	);
 }

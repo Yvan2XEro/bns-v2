@@ -9,6 +9,10 @@ import type {
 	UseFormSetValue,
 } from "react-hook-form";
 import { useWatch } from "react-hook-form";
+import {
+	type IssueAt,
+	ProductIssueText,
+} from "~/components/seller/product-issue-text";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
@@ -21,13 +25,17 @@ interface VariantTableProps {
 	register: UseFormRegister<ProductFormState>;
 	setValue: UseFormSetValue<ProductFormState>;
 	showCost: boolean;
+	issueAt: IssueAt;
 }
+
+const invalidCell = "border-red-500 focus:border-red-500";
 
 export function VariantTable({
 	control,
 	register,
 	setValue,
 	showCost,
+	issueAt,
 }: VariantTableProps) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("ProductEditor");
@@ -93,6 +101,10 @@ export function VariantTable({
 					</thead>
 					<tbody>
 						{rows.map((row, index) => {
+							const at = (field: string) =>
+								issueAt(`variants.${index}.${field}`);
+							const cellFor = (field: string) =>
+								at(field) ? `${cell} ${invalidCell}` : cell;
 							const margin = marginPercent(
 								parseAmount(row.price),
 								parseAmount(row.cost),
@@ -110,16 +122,20 @@ export function VariantTable({
 											{...register(`variants.${index}.sku`)}
 											placeholder={t("skuPlaceholder")}
 											aria-label={t("skuPlaceholder")}
-											className="mt-1 h-8 w-24 rounded-md border border-[#E2E8F0] px-2 text-xs uppercase outline-none focus:border-[#93C5FD]"
+											aria-invalid={Boolean(at("sku"))}
+											className={`mt-1 h-8 w-24 rounded-md border px-2 text-xs uppercase outline-none ${at("sku") ? invalidCell : "border-[#E2E8F0] focus:border-[#93C5FD]"}`}
 										/>
+										<ProductIssueText issue={at("sku")} />
 									</td>
 									<td className="w-32 px-2 py-2">
 										<input
 											{...register(`variants.${index}.price`)}
 											inputMode="numeric"
 											aria-label={t("colPrice")}
-											className={cell}
+											aria-invalid={Boolean(at("price"))}
+											className={cellFor("price")}
 										/>
+										<ProductIssueText issue={at("price")} />
 									</td>
 									{showCost && (
 										<td className="w-32 px-2 py-2">
@@ -127,8 +143,10 @@ export function VariantTable({
 												{...register(`variants.${index}.cost`)}
 												inputMode="numeric"
 												aria-label={t("colCost")}
-												className={cell}
+												aria-invalid={Boolean(at("cost"))}
+												className={cellFor("cost")}
 											/>
+											<ProductIssueText issue={at("cost")} />
 										</td>
 									)}
 									{showCost && (
@@ -152,14 +170,18 @@ export function VariantTable({
 												</Link>
 											</div>
 										) : (
-											<input
-												{...register(`variants.${index}.initialStock`)}
-												inputMode="numeric"
-												disabled={!row.trackInventory}
-												placeholder="0"
-												aria-label={t("colStock")}
-												className={cell}
-											/>
+											<>
+												<input
+													{...register(`variants.${index}.initialStock`)}
+													inputMode="numeric"
+													disabled={!row.trackInventory}
+													placeholder="0"
+													aria-label={t("colStock")}
+													aria-invalid={Boolean(at("initialStock"))}
+													className={cellFor("initialStock")}
+												/>
+												<ProductIssueText issue={at("initialStock")} />
+											</>
 										)}
 									</td>
 									<td className="w-20 px-3 py-2">
@@ -167,8 +189,10 @@ export function VariantTable({
 											{...register(`variants.${index}.threshold`)}
 											inputMode="numeric"
 											aria-label={t("colThreshold")}
-											className={cell}
+											aria-invalid={Boolean(at("threshold"))}
+											className={cellFor("threshold")}
 										/>
+										<ProductIssueText issue={at("threshold")} />
 									</td>
 									<td className="w-16 px-3 py-2 pt-4 text-center">
 										<input

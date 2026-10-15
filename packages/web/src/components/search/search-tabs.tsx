@@ -1,26 +1,32 @@
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "~/lib/utils";
 
 export function SearchTabs({
 	active,
 	q,
+	counts,
 }: {
 	active: "listings" | "shops";
 	q: string;
+	/** A count the server could not read is left off rather than shown as 0. */
+	counts?: { listings: number | null; shops: number | null };
 }) {
 	const t = useTranslations("Search");
+	const locale = useLocale();
 	const query = q ? `q=${encodeURIComponent(q)}` : "";
 	const tabs = [
 		{
 			key: "listings" as const,
 			href: `/search${query ? `?${query}` : ""}`,
 			label: t("tabListings"),
+			count: counts?.listings ?? null,
 		},
 		{
 			key: "shops" as const,
 			href: `/search?tab=shops${query ? `&${query}` : ""}`,
 			label: t("tabShops"),
+			count: counts?.shops ?? null,
 		},
 	];
 
@@ -32,13 +38,25 @@ export function SearchTabs({
 						key={tab.key}
 						href={tab.href}
 						className={cn(
-							"-mb-px border-b-2 pb-2 font-semibold text-sm",
+							"-mb-px flex items-center gap-1.5 border-b-2 pb-2 font-semibold text-sm",
 							active === tab.key
 								? "border-[#1E40AF] text-[#1E40AF]"
 								: "border-transparent text-[#64748B] hover:text-[#0F172A]",
 						)}
 					>
 						{tab.label}
+						{tab.count !== null && (
+							<span
+								className={cn(
+									"rounded-[10px] px-[7px] py-px font-semibold text-xs tabular-nums",
+									active === tab.key
+										? "bg-[#1E40AF] text-white"
+										: "bg-[#E2E8F0] text-[#64748B]",
+								)}
+							>
+								{tab.count.toLocaleString(locale)}
+							</span>
+						)}
 					</Link>
 				))}
 			</div>

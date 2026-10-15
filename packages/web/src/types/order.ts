@@ -91,6 +91,8 @@ export interface CartLineView {
 	available: boolean;
 	/** Null when the variant is untracked. */
 	maxQuantity: number | null;
+	/** Units still on sale; null when untracked, absent from an older API. */
+	stockLeft?: number | null;
 }
 
 export interface CartView {
@@ -101,6 +103,10 @@ export interface CartView {
 		name: string;
 		handle: string;
 		city: string | null;
+		logoUrl?: string | null;
+		badge?: "phone" | "identity" | "business" | null;
+		rating?: number;
+		totalReviews?: number;
 	} | null;
 	lines: CartLineView[];
 	subtotal: number;
@@ -374,14 +380,47 @@ export interface OrderListEntry {
 	shopName: string;
 	/** Buyer role: siblings of one split checkout share it. */
 	checkoutGroup?: string;
+	/** Buyer role: what `availableActions` reads besides the status. */
+	actionSubject?: Omit<OrderActionFields, "status">;
+	/** Buyer role: the delivery promise, never the address. */
+	arrival?: {
+		method: DeliveryMethod;
+		etaText: string;
+		promisedBy: string | null;
+	};
 	/** Shop role. */
 	recipientName?: string;
 	/** Shop role. */
 	acceptBy?: string | null;
 	/** Shop role. */
 	phoneTier?: BuyerTier;
+	/** Shop role. */
+	paymentMethod?: PaymentMethod;
+	/** Shop role. */
+	paymentStatus?: PaymentStatus;
+	/** Shop role: neighbourhood and city labels, either may be null. */
+	area?: { district: string | null; city: string | null };
+	/** Shop role: the first resold line's supplier and purchase order. */
+	resale?: {
+		purchaseOrderNumber: string | null;
+		supplierName: string | null;
+	} | null;
+	/** Shop role: a shipment exists, so shipping happens on the order page. */
+	hasShipment?: boolean;
 	deliveryFailureReason?: string | null;
 }
+
+type OrderActionFields = Pick<
+	OrderView,
+	| "status"
+	| "confirmation"
+	| "handover"
+	| "deadlines"
+	| "deliveryFailure"
+	| "completionHold"
+	| "returnCaseNumber"
+	| "reviewable"
+>;
 
 export interface OrderPage {
 	docs: OrderListEntry[];

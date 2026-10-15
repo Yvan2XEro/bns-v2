@@ -3,7 +3,7 @@ import en from "~/../messages/en.json";
 import fr from "~/../messages/fr.json";
 import { availableActions } from "~/lib/order-actions";
 import { ORDER_STATUSES } from "~/lib/order-status";
-import type { OrderView } from "~/types/order";
+import type { OrderListEntry, OrderView } from "~/types/order";
 import {
 	BUYER_CANCEL_REASONS,
 	cancelSchema,
@@ -11,6 +11,8 @@ import {
 	groupPurchases,
 	handoverCardState,
 	PURCHASE_TABS,
+	purchaseArrival,
+	purchaseCardActions,
 	purchaseTab,
 	receiptBody,
 	reviewSchema,
@@ -247,5 +249,181 @@ describe("groupPurchases", () => {
 		expect(groupPurchases([row("a", "g")]).map((i) => i.kind)).toEqual([
 			"order",
 		]);
+	});
+});
+
+describe("purchaseCardActions", () => {
+	const NOW = new Date("2026-09-20T10:00:00.000Z");
+	// Carries a `status` of its own: the row's status must win over it.
+	const subject = shipped({});
+	function entry(overrides: Partial<OrderListEntry> = {}): OrderListEntry {
+		return {
+			id: "o-1",
+			orderNumber: "BNS-1",
+			status: "shipped",
+			placedAt: "2026-09-18T10:00:00.000Z",
+			total: 287_000,
+			itemCount: 1,
+			firstItemTitle: "iPhone 13 Pro",
+			firstItemImageUrl: null,
+			shopName: "Akwa Tech Store",
+			actionSubject: subject,
+			arrival: {
+				method: "seller_delivery",
+				etaText: "sous 24 h",
+				promisedBy: null,
+			},
+			...overrides,
+		};
+	}
+
+	it("tracks an order on its way, and a courier parcel with the courier wording", () => {
+		expect(purchaseCardActions(entry(), NOW)).toEqual([
+			{ kind: "track", href: "/purchases/o-1#tracking" },
+		]);
+		expect(
+			purchaseCardActions(
+				entry({
+					arrival: { method: "courier", etaText: "", promisedBy: null },
+				}),
+				NOW,
+			).map((a) => a.kind),
+		).toEqual(["track_courier"]);
+	});
+
+	it("offers the code confirmation instead of tracking while the code is owed", () => {
+		const kinds = purchaseCardActions(
+			entry({
+				status: "placed",
+				actionSubject: {
+					...subject,
+					confirmation: { ...subject.confirmation, required: "sms_code" },
+				},
+			}),
+			NOW,
+		).map((a) => a.kind);
+		expect(kinds).toEqual(["confirm"]);
+	});
+
+	it("offers review and return on a delivered order exactly when the order page would", () => {
+		const delivered = entry({
+			status: "delivered",
+			actionSubject: {
+				...subject,
+				reviewable: true,
+				deadlines: {
+					...subject.deadlines,
+					withdrawalUntil: "2026-09-25T10:00:00.000Z",
+				},
+			},
+		});
+		const page = availableActions(
+			{ ...shipped({}), ...delivered.actionSubject, status: "delivered" },
+			"buyer",
+			null,
+			NOW,
+		);
+		expect(page).toContain("review_shop");
+		expect(page).toContain("request_withdrawal");
+		expect(purchaseCardActions(delivered, NOW)).toEqual([
+			{ kind: "review", href: "/purchases/o-1#review" },
+			{ kind: "return", href: "/purchases/o-1#withdrawal" },
+		]);
+	});
+
+	it("hides return past the window and review once the shop is reviewed", () => {
+		const closed = entry({
+			status: "delivered",
+			actionSubject: {
+				...subject,
+				reviewable: false,
+				deadlines: {
+					...subject.deadlines,
+					withdrawalUntil: "2026-09-19T10:00:00.000Z",
+				},
+			},
+		});
+		expect(purchaseCardActions(closed, NOW)).toEqual([]);
+	});
+
+	it("falls back to tracking alone when the API sends no action fields", () => {
+		expect(
+			purchaseCardActions(
+				entry({ status: "delivered", actionSubject: undefined }),
+				NOW,
+			),
+		).toEqual([]);
+		expect(
+			purchaseCardActions(entry({ actionSubject: undefined }), NOW).map(
+				(a) => a.kind,
+			),
+		).toEqual(["track"]);
+	});
+
+	it("never tracks a dispute or a closed order", () => {
+		for (const status of ["disputed", "cancelled", "completed"] as const) {
+			expect(
+				purchaseCardActions(entry({ status }), NOW).filter(
+					(a) => a.kind === "track",
+				),
+			).toEqual([]);
+		}
+	});
+});
+
+describe("purchaseArrival", () => {
+	const base: OrderListEntry = {
+		id: "o-1",
+		orderNumber: "BNS-1",
+		status: "shipped",
+		placedAt: "2026-09-18T10:00:00.000Z",
+		total: 1,
+		itemCount: 1,
+		firstItemTitle: "x",
+		firstItemImageUrl: null,
+		shopName: "s",
+	};
+
+	it("prefers the promised date, then the shop's estimate", () => {
+		expect(
+			purchaseArrival(
+				{
+					...base,
+					arrival: {
+						method: "seller_delivery",
+						etaText: "sous 24 h",
+						promisedBy: "2026-09-20T17:00:00.000Z",
+					},
+				},
+				[],
+			),
+		).toEqual({ kind: "promised", at: "2026-09-20T17:00:00.000Z" });
+		expect(
+			purchaseArrival(
+				{
+					...base,
+					arrival: { method: "pickup", etaText: "sous 24 h", promisedBy: null },
+				},
+				[],
+			),
+		).toEqual({ kind: "eta", text: "sous 24 h" });
+	});
+
+	it("shows the return deadline only alongside the return shortcut", () => {
+		const delivered = {
+			...base,
+			status: "delivered" as const,
+			actionSubject: {
+				...shipped({}),
+				deadlines: {
+					...shipped({}).deadlines,
+					withdrawalUntil: "2026-09-25T10:00:00.000Z",
+				},
+			},
+		};
+		expect(purchaseArrival(delivered, [])).toBeNull();
+		expect(
+			purchaseArrival(delivered, [{ kind: "return", href: "/x" }]),
+		).toEqual({ kind: "returnUntil", at: "2026-09-25T10:00:00.000Z" });
 	});
 });
