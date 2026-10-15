@@ -5,6 +5,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formStyles as f } from "@/src/components/seller/formStyles";
 import { ShopAddressCard } from "@/src/components/shop/manage/ShopAddressCard";
+import { ShopBrandColorCard } from "@/src/components/shop/manage/ShopBrandColorCard";
 import { ShopBrandingCard } from "@/src/components/shop/manage/ShopBrandingCard";
 import { ShopCloseCard } from "@/src/components/shop/manage/ShopCloseCard";
 import { ShopLegalCard } from "@/src/components/shop/manage/ShopLegalCard";
@@ -44,6 +45,7 @@ export default function ShopSettingsScreen() {
 				keyboardShouldPersistTaps="handled"
 			>
 				<ShopBrandingCard shop={shop} readOnly={readOnly} />
+				<ShopBrandColorCard shop={shop} readOnly={readOnly} />
 				<ShopProfileCard shop={shop} readOnly={readOnly} />
 				<ShopAddressCard
 					shop={shop}

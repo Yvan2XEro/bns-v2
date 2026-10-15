@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { BadgeLevel, ListingShopRef, UserDoc } from "@/src/types/api";
+import { useBrandFor } from "./brand";
 import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
@@ -12,6 +13,7 @@ import { useShopTheme } from "./theme";
 export function ShopSellerCard({
 	shop,
 	badge,
+	brandColor,
 	owner,
 }: {
 	shop: ListingShopRef;
@@ -23,9 +25,12 @@ export function ShopSellerCard({
 	 * approval has expired.
 	 */
 	badge: BadgeLevel | null;
+	/** From the public shop read; the populated relation may not carry it. */
+	brandColor?: string | null;
 	owner: UserDoc | null;
 }) {
 	const c = useShopTheme();
+	const brand = useBrandFor(brandColor ?? shop.brandColor);
 	const { t } = useTranslation();
 	const logoUrl =
 		typeof shop.logo === "object" && shop.logo
@@ -53,7 +58,14 @@ export function ShopSellerCard({
 			onPress={() => router.push(`/s/${shop.handle}`)}
 			accessibilityRole="button"
 			accessibilityLabel={t("shop.viewShopLabel", { name: shop.name })}
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+			style={[
+				styles.card,
+				{
+					backgroundColor: c.card,
+					borderColor: c.border,
+					borderLeftColor: brand.accent,
+				},
+			]}
 		>
 			<ShopAvatar name={shop.name} logo={logoUrl} size={48} radius={12} />
 			<View style={{ flex: 1, gap: 3 }}>
@@ -70,7 +82,7 @@ export function ShopSellerCard({
 					</Text>
 				) : null}
 			</View>
-			<Ionicons name="chevron-forward" size={16} color={c.muted} />
+			<Ionicons name="chevron-forward" size={16} color={brand.accentText} />
 		</Pressable>
 	);
 }
@@ -82,6 +94,7 @@ const styles = StyleSheet.create({
 		gap: 12,
 		borderRadius: 16,
 		borderWidth: StyleSheet.hairlineWidth,
+		borderLeftWidth: 4,
 		padding: 14,
 		marginBottom: 12,
 		minHeight: 44,

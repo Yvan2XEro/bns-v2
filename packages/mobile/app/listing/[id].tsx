@@ -665,6 +665,11 @@ export default function ListingDetail() {
 						<ShopSellerCard
 							shop={listingShop}
 							badge={shopBadge}
+							brandColor={
+								shopBadgeData && "shop" in shopBadgeData
+									? shopBadgeData.shop.brandColor
+									: null
+							}
 							owner={seller && typeof seller === "object" ? seller : null}
 						/>
 					) : null}

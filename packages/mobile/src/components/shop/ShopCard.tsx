@@ -8,13 +8,22 @@ import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
 
-export function ShopCard({ hit }: { hit: ShopSearchHit }) {
+export function ShopCard({
+	hit,
+	sponsored = false,
+}: {
+	hit: ShopSearchHit;
+	sponsored?: boolean;
+}) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const open = () => router.push(`/s/${hit.handle}`);
+	const own = (hit.totalReviews ?? 0) > 0;
+	const reviews = own ? (hit.totalReviews ?? 0) : hit.ownerReviews;
+	const value = own ? (hit.rating ?? 0) : hit.ownerRating;
 	const rating =
-		hit.ownerReviews > 0
-			? `${hit.ownerRating.toFixed(1).replace(".", ",")} (${hit.ownerReviews})`
+		reviews > 0
+			? `${value.toFixed(1).replace(".", ",")} (${reviews})`
 			: t("shop.newShop");
 
 	return (
@@ -30,9 +39,16 @@ export function ShopCard({ hit }: { hit: ShopSearchHit }) {
 					{hit.name}
 				</Text>
 				<View style={styles.row}>
+					{sponsored ? (
+						<View style={[styles.sponsored, { borderColor: c.border }]}>
+							<Text style={[styles.sponsoredText, { color: c.body }]}>
+								{t("search.sponsored")}
+							</Text>
+						</View>
+					) : null}
 					<LevelBadge badge={hit.badge} size="sm" />
 					<View style={styles.row}>
-						{hit.ownerReviews > 0 ? (
+						{reviews > 0 ? (
 							<Ionicons name="star" size={12} color="#f59e0b" />
 						) : null}
 						<Text style={[styles.meta, { color: c.body }]}>{rating}</Text>
@@ -81,4 +97,16 @@ const styles = StyleSheet.create({
 		paddingVertical: 6,
 	},
 	viewText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	sponsored: {
+		borderWidth: 1,
+		borderRadius: 6,
+		paddingHorizontal: 6,
+		paddingVertical: 1,
+	},
+	sponsoredText: {
+		fontSize: 10,
+		fontFamily: Fonts.bodySemibold,
+		textTransform: "uppercase",
+		letterSpacing: 0.4,
+	},
 });

@@ -7,6 +7,7 @@ import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { shopUrlLabel } from "@/src/lib/shopHandle";
 import type { PublicShop } from "@/src/types/api";
+import { useShopBrand } from "./brand";
 import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
 import { useShopTheme } from "./theme";
@@ -19,6 +20,7 @@ export function ShopHeader({
 	onShare: () => void;
 }) {
 	const c = useShopTheme();
+	const brand = useShopBrand();
 	const { t } = useTranslation();
 	const { webUrl } = useAppConfig();
 	const banner = resolveImageUrl(shop.banner?.url ?? null);
@@ -28,7 +30,7 @@ export function ShopHeader({
 
 	return (
 		<View>
-			<View style={[styles.banner, { backgroundColor: c.primary }]}>
+			<View style={[styles.banner, { backgroundColor: brand.headerBg }]}>
 				{banner ? (
 					<Image
 						source={{ uri: banner }}
@@ -55,7 +57,7 @@ export function ShopHeader({
 						accessibilityRole="button"
 						accessibilityLabel={t("shop.shareLabel", { name: shop.name })}
 					>
-						<Text style={[styles.link, { color: c.primary }]}>
+						<Text style={[styles.link, { color: brand.accentText }]}>
 							{shopUrlLabel(shop.handle, webUrl)}
 						</Text>
 					</Pressable>

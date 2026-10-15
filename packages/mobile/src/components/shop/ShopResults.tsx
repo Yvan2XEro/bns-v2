@@ -20,6 +20,7 @@ export function ShopResults({
 	const search = useShopSearch(params, true);
 	const hits: ShopSearchHit[] =
 		search.data?.pages.flatMap((p) => p?.hits ?? []) ?? [];
+	const sponsored: ShopSearchHit[] = search.data?.pages[0]?.sponsored ?? [];
 	const total = search.data?.pages[0]?.total ?? 0;
 
 	if (search.isLoading) {
@@ -38,7 +39,7 @@ export function ShopResults({
 			/>
 		);
 	}
-	if (hits.length === 0) {
+	if (hits.length === 0 && sponsored.length === 0) {
 		return (
 			<EmptyState
 				illustration="searching"
@@ -63,11 +64,16 @@ export function ShopResults({
 			keyExtractor={(hit) => hit.id}
 			contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
 			ListHeaderComponent={
-				<Text style={[styles.count, { color: c.text }]}>
-					{params.city
-						? t("search.shopsCountIn", { count: total, city: params.city })
-						: t("search.shopsCount", { count: total })}
-				</Text>
+				<View style={{ gap: 10, marginBottom: sponsored.length ? 10 : 0 }}>
+					<Text style={[styles.count, { color: c.text }]}>
+						{params.city
+							? t("search.shopsCountIn", { count: total, city: params.city })
+							: t("search.shopsCount", { count: total })}
+					</Text>
+					{sponsored.map((hit) => (
+						<ShopCard key={hit.id} hit={hit} sponsored />
+					))}
+				</View>
 			}
 			ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 			renderItem={({ item }) => <ShopCard hit={item} />}

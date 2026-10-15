@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import {
 	ActivityIndicator,
@@ -15,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
+import { ShopBrandProvider, useBrandFor } from "@/src/components/shop/brand";
 import { DeliveryCities } from "@/src/components/shop/DeliveryCities";
 import { LegalBlock } from "@/src/components/shop/LegalBlock";
 import { PickupPoints } from "@/src/components/shop/PickupPoints";
@@ -42,6 +44,7 @@ export default function ShopScreen() {
 	const { data, error, isLoading, refetch } = usePublicShop(handle);
 	const redirectTo = data && "redirectTo" in data ? data.redirectTo : null;
 	const shop: PublicShop | null = data && "shop" in data ? data.shop : null;
+	const brand = useBrandFor(shop?.brandColor);
 
 	// A previous handle answers with the current one; replace so "back" does
 	// not bounce through the old address.
@@ -105,138 +108,156 @@ export default function ShopScreen() {
 	const phone = telLink(shop.contact.phone);
 
 	return (
-		<View style={[styles.root, { backgroundColor: c.bg }]}>
-			<Pressable
-				onPress={back}
-				style={[styles.backBtn, { top: insets.top + 10 }]}
-				hitSlop={8}
-				accessibilityRole="button"
-				accessibilityLabel={t("common.back")}
-			>
-				<Ionicons name="arrow-back" size={20} color="#fff" />
-			</Pressable>
-			<Pressable
-				onPress={share}
-				style={[styles.shareBtn, { top: insets.top + 10 }]}
-				hitSlop={8}
-				accessibilityRole="button"
-				accessibilityLabel={t("shop.shareLabel", { name: shop.name })}
-			>
-				<Ionicons name="share-outline" size={20} color="#fff" />
-			</Pressable>
-
-			<FlashList
-				data={rows}
-				keyExtractor={(_, index) => String(index)}
-				contentContainerStyle={{
-					padding: 16,
-					paddingBottom: insets.bottom + 110,
-				}}
-				onEndReached={() =>
-					listings.hasNextPage &&
-					!listings.isFetchingNextPage &&
-					listings.fetchNextPage()
-				}
-				onEndReachedThreshold={0.5}
-				ListHeaderComponent={
-					<View style={{ gap: 16, marginBottom: 4 }}>
-						<ShopHeader shop={shop} onShare={share} />
-						<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
-						<PickupPoints handle={shop.handle} />
-						<DeliveryCities shopId={shop.id} />
-						<Text style={[styles.section, { color: c.text }]}>
-							{t("shop.listingsTitle", { count: shop.publishedListingCount })}
-						</Text>
-					</View>
-				}
-				renderItem={({ item }) => (
-					<View style={[styles.row, { gap: gutter }]}>
-						{item.map((listing) => (
-							<ListingCard
-								key={listing.id}
-								listing={{
-									...listing,
-									price: listing.price ?? undefined,
-									isBoosted: Boolean(
-										listing.boostedUntil &&
-											new Date(listing.boostedUntil) > new Date(),
-									),
-								}}
-								width={cardWidth}
-								isFavorite={favoriteIds.has(listing.id)}
-								onToggleFavorite={() => toggleFavorite({ ...listing })}
-								onPress={(id) => router.push(`/listing/${id}`)}
-							/>
-						))}
-					</View>
-				)}
-				ListEmptyComponent={
-					listings.isLoading ? (
-						<ActivityIndicator color={c.primary} style={{ margin: 24 }} />
-					) : (
-						<Text style={[styles.empty, { color: c.muted }]}>
-							{t("shop.noListings")}
-						</Text>
-					)
-				}
-				ListFooterComponent={
-					<Pressable
-						onPress={() =>
-							router.push({
-								pathname: "/report",
-								params: { targetType: "shop", targetId: shop.id },
-							})
-						}
-						style={styles.report}
-						accessibilityRole="button"
-						accessibilityLabel={t("shop.report")}
-					>
-						<Ionicons name="flag-outline" size={14} color={c.muted} />
-						<Text style={[styles.reportText, { color: c.muted }]}>
-							{t("shop.report")}
-						</Text>
-					</Pressable>
-				}
-			/>
-
-			{whatsapp || phone ? (
-				<View
-					style={[
-						styles.actionBar,
-						{
-							backgroundColor: c.card,
-							borderTopColor: c.border,
-							paddingBottom: insets.bottom + 12,
-						},
-					]}
+		<ShopBrandProvider brandColor={shop.brandColor}>
+			<View style={[styles.root, { backgroundColor: c.bg }]}>
+				<StatusBar style={shop.banner?.url ? "light" : brand.statusBarStyle} />
+				<Pressable
+					onPress={back}
+					style={[styles.backBtn, { top: insets.top + 10 }]}
+					hitSlop={8}
+					accessibilityRole="button"
+					accessibilityLabel={t("common.back")}
 				>
-					{phone ? (
+					<Ionicons name="arrow-back" size={20} color="#fff" />
+				</Pressable>
+				<Pressable
+					onPress={share}
+					style={[styles.shareBtn, { top: insets.top + 10 }]}
+					hitSlop={8}
+					accessibilityRole="button"
+					accessibilityLabel={t("shop.shareLabel", { name: shop.name })}
+				>
+					<Ionicons name="share-outline" size={20} color="#fff" />
+				</Pressable>
+
+				<FlashList
+					data={rows}
+					keyExtractor={(_, index) => String(index)}
+					contentContainerStyle={{
+						padding: 16,
+						paddingBottom: insets.bottom + 110,
+					}}
+					onEndReached={() =>
+						listings.hasNextPage &&
+						!listings.isFetchingNextPage &&
+						listings.fetchNextPage()
+					}
+					onEndReachedThreshold={0.5}
+					ListHeaderComponent={
+						<View style={{ gap: 16, marginBottom: 4 }}>
+							<ShopHeader shop={shop} onShare={share} />
+							<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
+							<PickupPoints handle={shop.handle} />
+							<DeliveryCities shopId={shop.id} />
+							<Text style={[styles.section, { color: c.text }]}>
+								{t("shop.listingsTitle", { count: shop.publishedListingCount })}
+							</Text>
+						</View>
+					}
+					renderItem={({ item }) => (
+						<View style={[styles.row, { gap: gutter }]}>
+							{item.map((listing) => (
+								<ListingCard
+									key={listing.id}
+									listing={{
+										...listing,
+										price: listing.price ?? undefined,
+										isBoosted: Boolean(
+											listing.boostedUntil &&
+												new Date(listing.boostedUntil) > new Date(),
+										),
+									}}
+									width={cardWidth}
+									isFavorite={favoriteIds.has(listing.id)}
+									onToggleFavorite={() => toggleFavorite({ ...listing })}
+									onPress={(id) => router.push(`/listing/${id}`)}
+								/>
+							))}
+						</View>
+					)}
+					ListEmptyComponent={
+						listings.isLoading ? (
+							<ActivityIndicator
+								color={brand.accentText}
+								style={{ margin: 24 }}
+							/>
+						) : (
+							<Text style={[styles.empty, { color: c.muted }]}>
+								{t("shop.noListings")}
+							</Text>
+						)
+					}
+					ListFooterComponent={
 						<Pressable
-							onPress={() => Linking.openURL(phone)}
-							style={[styles.secondaryBtn, { borderColor: c.border }]}
+							onPress={() =>
+								router.push({
+									pathname: "/report",
+									params: { targetType: "shop", targetId: shop.id },
+								})
+							}
+							style={styles.report}
 							accessibilityRole="button"
-							accessibilityLabel={t("shop.call")}
+							accessibilityLabel={t("shop.report")}
 						>
-							<Ionicons name="call-outline" size={18} color={c.primary} />
-							<Text style={[styles.secondaryText, { color: c.primary }]}>
-								{t("shop.call")}
+							<Ionicons name="flag-outline" size={14} color={c.muted} />
+							<Text style={[styles.reportText, { color: c.muted }]}>
+								{t("shop.report")}
 							</Text>
 						</Pressable>
-					) : null}
-					{whatsapp ? (
-						<Pressable
-							onPress={() => Linking.openURL(whatsapp)}
-							style={[styles.primaryBtn, { backgroundColor: c.primary }]}
-							accessibilityRole="button"
-							accessibilityLabel={t("shop.whatsapp")}
-						>
-							<Ionicons name="logo-whatsapp" size={18} color="#fff" />
-							<Text style={styles.primaryText}>{t("shop.whatsapp")}</Text>
-						</Pressable>
-					) : null}
-				</View>
-			) : null}
-		</View>
+					}
+				/>
+
+				{whatsapp || phone ? (
+					<View
+						style={[
+							styles.actionBar,
+							{
+								backgroundColor: c.card,
+								borderTopColor: c.border,
+								paddingBottom: insets.bottom + 12,
+							},
+						]}
+					>
+						{phone ? (
+							<Pressable
+								onPress={() => Linking.openURL(phone)}
+								style={[styles.secondaryBtn, { borderColor: brand.accentText }]}
+								accessibilityRole="button"
+								accessibilityLabel={t("shop.call")}
+							>
+								<Ionicons
+									name="call-outline"
+									size={18}
+									color={brand.accentText}
+								/>
+								<Text
+									style={[styles.secondaryText, { color: brand.accentText }]}
+								>
+									{t("shop.call")}
+								</Text>
+							</Pressable>
+						) : null}
+						{whatsapp ? (
+							<Pressable
+								onPress={() => Linking.openURL(whatsapp)}
+								style={[styles.primaryBtn, { backgroundColor: brand.accent }]}
+								accessibilityRole="button"
+								accessibilityLabel={t("shop.whatsapp")}
+							>
+								<Ionicons
+									name="logo-whatsapp"
+									size={18}
+									color={brand.onAccent}
+								/>
+								<Text style={[styles.primaryText, { color: brand.onAccent }]}>
+									{t("shop.whatsapp")}
+								</Text>
+							</Pressable>
+						) : null}
+					</View>
+				) : null}
+			</View>
+		</ShopBrandProvider>
 	);
 }
 

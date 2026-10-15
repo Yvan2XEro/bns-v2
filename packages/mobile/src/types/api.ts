@@ -656,6 +656,8 @@ export interface PublicShop {
 	legalVerified: boolean;
 	legal: ShopLegal | null;
 	publishedListingCount: number;
+	/** "#RRGGBB" picked by the shop; null keeps the platform colours. */
+	brandColor?: string | null;
 	createdAt: string;
 	owner: {
 		id: string;
@@ -725,11 +727,16 @@ export interface ShopSearchHit {
 	logoUrl: string | null;
 	ownerRating: number;
 	ownerReviews: number;
+	/** The shop's own verified-purchase rating; `ownerRating` is the person's. */
+	rating?: number;
+	totalReviews?: number;
 	createdAt: string;
 }
 
 export interface ShopSearchResponse {
 	hits: ShopSearchHit[];
+	/** Paid slots, first page only, never repeated in `hits`; always labelled. */
+	sponsored?: ShopSearchHit[];
 	total: number;
 	limit: number;
 	offset: number;
@@ -930,6 +937,7 @@ export interface ListingShopRef {
 	status?: ShopStatus;
 	logo?: Media | string | null;
 	publishedListingCount?: number;
+	brandColor?: string | null;
 	/** Set while commission arrears pause the shop's orders. */
 	ordersRestrictedAt?: string | null;
 }

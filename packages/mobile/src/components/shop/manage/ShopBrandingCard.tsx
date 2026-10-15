@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formStyles as f } from "@/src/components/seller/formStyles";
+import { useBrandFor } from "@/src/components/shop/brand";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -31,6 +32,7 @@ export function ShopBrandingCard({
 	const { t } = useTranslation();
 	const { showError } = useAlert();
 	const updateShop = useUpdateShop(shop.id);
+	const brand = useBrandFor(shop.brandColor);
 	const [uploading, setUploading] = useState<"logo" | "banner" | null>(null);
 
 	const upload = async (kind: "logo" | "banner") => {
@@ -61,7 +63,7 @@ export function ShopBrandingCard({
 				onPress={() => upload("banner")}
 				accessibilityRole="button"
 				accessibilityLabel={t("shop.banner")}
-				style={[styles.banner, { backgroundColor: c.primary }]}
+				style={[styles.banner, { backgroundColor: brand.headerBg }]}
 			>
 				{bannerUri ? (
 					<Image
@@ -73,7 +75,9 @@ export function ShopBrandingCard({
 				{uploading === "banner" ? (
 					<ActivityIndicator color="#fff" />
 				) : (
-					<Text style={styles.bannerText}>{t("shop.banner")}</Text>
+					<Text style={[styles.bannerText, { color: brand.headerFg }]}>
+						{t("shop.banner")}
+					</Text>
 				)}
 			</Pressable>
 			<View style={f.row}>
