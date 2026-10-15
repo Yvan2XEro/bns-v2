@@ -4,6 +4,7 @@ import {
 	canSeeCost,
 	isShopOwner,
 	ROLE_PERMISSIONS,
+	roleMatrix,
 	type ShopPermission,
 } from "./shop-roles";
 
@@ -71,5 +72,17 @@ describe("the two aliases the shipped screens use", () => {
 	test("isShopOwner is still the role, not a permission", () => {
 		expect(isShopOwner("owner")).toBe(true);
 		expect(isShopOwner("manager")).toBe(false);
+	});
+});
+
+describe("roleMatrix", () => {
+	test("reads the role table: managers see payments, staff cannot cancel orders", () => {
+		const rows = Object.fromEntries(
+			roleMatrix().map((row) => [row.area, row.cells]),
+		);
+		expect(rows.payments).toEqual(["full", "limited", "none"]);
+		expect(rows.orders).toEqual(["full", "full", "limited"]);
+		expect(rows.stock).toEqual(["full", "full", "full"]);
+		expect(rows.settings).toEqual(["full", "limited", "none"]);
 	});
 });

@@ -2064,7 +2064,50 @@
 		"resend": "Renvoyer",
 		"resendExhausted": "Ne peut pas encore être renvoyée",
 		"revoke": "Révoquer",
-		"noShop": "Vous n'avez pas encore de boutique."
+		"noShop": "Vous n'avez pas encore de boutique.",
+		"matrix": {
+			"title": "Rôles et permissions",
+			"fixed": "Rôles fixes",
+			"permission": "Permission",
+			"full": "Accès complet",
+			"limited": "Accès limité",
+			"none": "Aucun accès",
+			"oneOwner": "Un seul propriétaire par boutique",
+			"areas": {
+				"catalogue": {
+					"name": "Catalogue",
+					"detail": "Produits, photos, prix de vente"
+				},
+				"stock": {
+					"name": "Stock",
+					"detail": "Réceptions, corrections, inventaire"
+				},
+				"costs": {
+					"name": "Coûts d'achat",
+					"detail": "Coût unitaire et marges"
+				},
+				"orders": {
+					"name": "Commandes",
+					"detail": "Accepter, expédier, annuler"
+				},
+				"inbox": {
+					"name": "Messages",
+					"detail": "Boîte de réception partagée"
+				},
+				"payments": {
+					"name": "Paiements",
+					"detail": "Soldes, versements, compte de versement"
+				},
+				"team": {
+					"name": "Équipe",
+					"detail": "Inviter, changer les rôles"
+				},
+				"settings": {
+					"name": "Paramètres",
+					"detail": "Boutique, adresse de la page"
+				}
+			}
+		}
 	},
 	"Invite": {
 		"invitedBy": "{name} vous invite à rejoindre",

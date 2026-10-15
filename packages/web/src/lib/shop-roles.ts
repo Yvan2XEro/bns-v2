@@ -123,3 +123,46 @@ export function canSeeCost(role: ShopRole | null | undefined): boolean {
 export function isShopOwner(role: ShopRole | null | undefined): boolean {
 	return role === "owner";
 }
+
+export type MatrixArea =
+	| "catalogue"
+	| "stock"
+	| "costs"
+	| "orders"
+	| "inbox"
+	| "payments"
+	| "team"
+	| "settings";
+export type MatrixCell = "full" | "limited" | "none";
+
+/** Each area's full permission, and the lesser one that counts as limited access. */
+const MATRIX_AREAS: ReadonlyArray<{
+	area: MatrixArea;
+	full: ShopPermission;
+	limited?: ShopPermission;
+}> = [
+	{ area: "catalogue", full: "catalogue.archive", limited: "catalogue.edit" },
+	{ area: "stock", full: "stock.move" },
+	{ area: "costs", full: "costs.edit", limited: "costs.view" },
+	{ area: "orders", full: "orders.cancel", limited: "orders.process" },
+	{ area: "inbox", full: "inbox.assignOthers", limited: "inbox.reply" },
+	{ area: "payments", full: "payments.manage", limited: "payments.view" },
+	{ area: "team", full: "team.manageManagers", limited: "team.inviteStaff" },
+	{ area: "settings", full: "settings.handle", limited: "settings.edit" },
+];
+
+export const MATRIX_ROLES: readonly ShopRole[] = ["owner", "manager", "staff"];
+
+/** The roles-and-permissions table, read from the role table so it can never drift from it. */
+export function roleMatrix(): { area: MatrixArea; cells: MatrixCell[] }[] {
+	return MATRIX_AREAS.map(({ area, full, limited }) => ({
+		area,
+		cells: MATRIX_ROLES.map((role) =>
+			can(role, full)
+				? "full"
+				: limited && can(role, limited)
+					? "limited"
+					: "none",
+		),
+	}));
+}

@@ -2063,7 +2063,50 @@
 		"resend": "Resend",
 		"resendExhausted": "Cannot resend yet",
 		"revoke": "Revoke",
-		"noShop": "You do not have a shop yet."
+		"noShop": "You do not have a shop yet.",
+		"matrix": {
+			"title": "Roles and permissions",
+			"fixed": "Fixed roles",
+			"permission": "Permission",
+			"full": "Full access",
+			"limited": "Limited access",
+			"none": "No access",
+			"oneOwner": "One owner per shop",
+			"areas": {
+				"catalogue": {
+					"name": "Catalogue",
+					"detail": "Products, photos, selling prices"
+				},
+				"stock": {
+					"name": "Stock",
+					"detail": "Receipts, corrections, stock counts"
+				},
+				"costs": {
+					"name": "Purchase costs",
+					"detail": "Unit cost and margins"
+				},
+				"orders": {
+					"name": "Orders",
+					"detail": "Accept, ship, cancel"
+				},
+				"inbox": {
+					"name": "Messages",
+					"detail": "Shared inbox"
+				},
+				"payments": {
+					"name": "Payments",
+					"detail": "Balances, payouts, payout account"
+				},
+				"team": {
+					"name": "Team",
+					"detail": "Invite, change roles"
+				},
+				"settings": {
+					"name": "Settings",
+					"detail": "Shop, page address"
+				}
+			}
+		}
 	},
 	"Invite": {
 		"invitedBy": "{name} invited you to join",

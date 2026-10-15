@@ -6,6 +6,7 @@ import { InviteDialog } from "~/components/seller/team/invite-dialog";
 import { MemberActionDialogs } from "~/components/seller/team/member-action-dialogs";
 import { MemberTable } from "~/components/seller/team/member-table";
 import { PendingInvitations } from "~/components/seller/team/pending-invitations";
+import { RoleMatrix } from "~/components/seller/team/role-matrix";
 import { TeamLimitMeter } from "~/components/seller/team/team-limit-meter";
 import { TeamLocked } from "~/components/seller/team/team-locked";
 import { Button } from "~/components/ui/button";
@@ -184,6 +185,8 @@ export function TeamClient({
 				onChangeRole={(member) => patch({ roleTarget: member })}
 				onRemove={(member) => patch({ confirmRemove: member })}
 			/>
+
+			<RoleMatrix />
 
 			<PendingInvitations
 				invitations={view.invitations}
