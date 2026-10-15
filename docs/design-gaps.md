@@ -57,6 +57,8 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 | M19 | Vérification | Liste des documents demandés sous le niveau suivant, bouton fixe « Vérifier mon entreprise » | Documents listés dans le parcours de vérification | Décision |
 | M20 | Paramètres de la boutique | Lignes « libellé · valeur › » qui ouvrent chaque champ, logo posé sur la bannière | Formulaires dépliés en cartes | Décision |
 | M21 | États vides / erreur | Pastille d'icône dans un rond, bouton secondaire en lien, bandeau « Hors ligne » avec données en cache | Illustrations, pas de mode hors ligne | Décision |
+| M22 | Vérification entreprise | Prise de vue du document dans l'app (cadre, détection des bords, plusieurs pages) | Choix d'une photo dans la galerie | Fonction |
+| M23 | Commandes (refus) | Récapitulatif de la commande et conséquences du refus dans la feuille | Motifs et note seulement | Décision |
 | M18 | Fiche produit | Vue d'ensemble (variantes avec stock et marge, menu « … », bouton Aperçu) | Éditeur complet du produit sur un seul écran | Décision |
 
 ## Web
@@ -68,7 +70,5 @@ Comparaison pas encore faite.
 - Achat : paiement en attente (demande de paiement réelle requise), étapes
   paiement et récapitulatif du tunnel.
 - Vendeur : fiche produit en revente (la revente est désactivée et aucune boutique de niveau 3 n'existe dans les données de démo).
-- Ops / vérification : parcours de vérification (début, document, selfie,
-  statut), versements, équipe et invitation, boîte de réception boutique,
-  commission, livraison, réponse à un litige, revue de vérification, refus de
-  commande, produits revendus.
+- Ops : zones et échecs de livraison, produits revendus (fonctions désactivées
+  dans les données de démo), revue de vérification côté modération.
