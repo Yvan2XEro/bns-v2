@@ -423,7 +423,7 @@
 		"howItWorks": "Comment ça marche",
 		"sellIn3Steps": "Vendez en 3 étapes simples",
 		"sellSubtitle": "De la photo au paiement en quelques minutes. Pas de processus compliqué.",
-		"snapList": "Photo & announce",
+		"snapList": "Photographiez & publiez",
 		"snapDesc": "Prenez une photo, ajoutez une description et fixez votre prix.",
 		"chatNegotiate": "Discuter & négocier",
 		"chatDesc": "Les acheteurs vous contactent directement. Convenez d'un accord.",
@@ -437,7 +437,16 @@
 		"activeUsers": "utilisateurs actifs",
 		"listings": "annonces",
 		"cities": "villes",
-		"verifiedSellers": "vendeurs vérifiés"
+		"verifiedSellers": "vendeurs vérifiés",
+		"whatLookingFor": "Que recherchez-vous ?",
+		"rotatingWords": "un téléphone|une voiture|un meuble|de l'électronique|des vêtements|une bonne affaire",
+		"popularTerms": "iPhone|Voiture|Appartement meublé|PS5",
+		"trustShops": "Boutiques vérifiées",
+		"trustShopsDetail": "par niveaux",
+		"trustCod": "Paiement à la livraison",
+		"trustCodDetail": "dans votre ville",
+		"trustChat": "Messagerie intégrée",
+		"trustChatDetail": "avant de vous engager"
 	},
 	"NotFound": {
 		"title": "Page non trouvée",
@@ -2041,30 +2050,46 @@
 			"target": "Cible"
 		},
 		"actions": {
-			"member.invited": "Membre invité",
-			"member.invitation_resent": "Invitation renvoyée",
-			"member.invitation_revoked": "Invitation révoquée",
-			"member.joined": "A rejoint l'équipe",
-			"member.role_changed": "Rôle modifié",
-			"member.removed": "Membre retiré",
-			"member.left": "A quitté l'équipe",
-			"member.paused": "Membre mis en pause",
-			"member.resumed": "Membre réactivé",
-			"product.created": "Produit créé",
-			"product.updated": "Produit mis à jour",
-			"product.published": "Produit publié",
-			"product.archived": "Produit archivé",
-			"variant.price_changed": "Prix modifié",
-			"variant.cost_changed": "Coût modifié",
-			"stock.moved": "Stock déplacé",
-			"listing.attached": "Annonce rattachée",
-			"listing.detached": "Annonce détachée",
-			"shop.updated": "Boutique mise à jour",
-			"shop.handle_changed": "Identifiant modifié",
-			"shop.closed": "Boutique fermée",
-			"conversation.assigned": "Conversation assignée",
-			"conversation.status_changed": "Statut de conversation modifié",
-			"verification.submitted": "Vérification soumise"
+			"member": {
+				"invited": "Membre invité",
+				"invitation_resent": "Invitation renvoyée",
+				"invitation_revoked": "Invitation révoquée",
+				"joined": "A rejoint l'équipe",
+				"role_changed": "Rôle modifié",
+				"removed": "Membre retiré",
+				"left": "A quitté l'équipe",
+				"paused": "Membre mis en pause",
+				"resumed": "Membre réactivé"
+			},
+			"product": {
+				"created": "Produit créé",
+				"updated": "Produit mis à jour",
+				"published": "Produit publié",
+				"archived": "Produit archivé"
+			},
+			"variant": {
+				"price_changed": "Prix modifié",
+				"cost_changed": "Coût modifié"
+			},
+			"stock": {
+				"moved": "Stock déplacé"
+			},
+			"listing": {
+				"attached": "Annonce rattachée",
+				"detached": "Annonce détachée"
+			},
+			"shop": {
+				"updated": "Boutique mise à jour",
+				"handle_changed": "Identifiant modifié",
+				"closed": "Boutique fermée"
+			},
+			"conversation": {
+				"assigned": "Conversation assignée",
+				"status_changed": "Statut de conversation modifié"
+			},
+			"verification": {
+				"submitted": "Vérification soumise"
+			}
 		},
 		"targets": {
 			"shop": "Boutique",

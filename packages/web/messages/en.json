@@ -436,7 +436,16 @@
 		"activeUsers": "active users",
 		"listings": "listings",
 		"cities": "cities",
-		"verifiedSellers": "verified sellers"
+		"verifiedSellers": "verified sellers",
+		"whatLookingFor": "What are you looking for?",
+		"rotatingWords": "a phone|a car|furniture|electronics|fashion|a deal",
+		"popularTerms": "iPhone|Car|Furnished apartment|PS5",
+		"trustShops": "Verified shops",
+		"trustShopsDetail": "by level",
+		"trustCod": "Cash on delivery",
+		"trustCodDetail": "in your city",
+		"trustChat": "Built-in messaging",
+		"trustChatDetail": "before you commit"
 	},
 	"NotFound": {
 		"title": "Page not found",
@@ -2040,30 +2049,46 @@
 			"target": "Target"
 		},
 		"actions": {
-			"member.invited": "Member invited",
-			"member.invitation_resent": "Invitation resent",
-			"member.invitation_revoked": "Invitation revoked",
-			"member.joined": "Member joined",
-			"member.role_changed": "Role changed",
-			"member.removed": "Member removed",
-			"member.left": "Member left",
-			"member.paused": "Member paused",
-			"member.resumed": "Member resumed",
-			"product.created": "Product created",
-			"product.updated": "Product updated",
-			"product.published": "Product published",
-			"product.archived": "Product archived",
-			"variant.price_changed": "Price changed",
-			"variant.cost_changed": "Cost changed",
-			"stock.moved": "Stock moved",
-			"listing.attached": "Listing attached",
-			"listing.detached": "Listing detached",
-			"shop.updated": "Shop updated",
-			"shop.handle_changed": "Handle changed",
-			"shop.closed": "Shop closed",
-			"conversation.assigned": "Conversation assigned",
-			"conversation.status_changed": "Conversation status changed",
-			"verification.submitted": "Verification submitted"
+			"member": {
+				"invited": "Member invited",
+				"invitation_resent": "Invitation resent",
+				"invitation_revoked": "Invitation revoked",
+				"joined": "Member joined",
+				"role_changed": "Role changed",
+				"removed": "Member removed",
+				"left": "Member left",
+				"paused": "Member paused",
+				"resumed": "Member resumed"
+			},
+			"product": {
+				"created": "Product created",
+				"updated": "Product updated",
+				"published": "Product published",
+				"archived": "Product archived"
+			},
+			"variant": {
+				"price_changed": "Price changed",
+				"cost_changed": "Cost changed"
+			},
+			"stock": {
+				"moved": "Stock moved"
+			},
+			"listing": {
+				"attached": "Listing attached",
+				"detached": "Listing detached"
+			},
+			"shop": {
+				"updated": "Shop updated",
+				"handle_changed": "Handle changed",
+				"closed": "Shop closed"
+			},
+			"conversation": {
+				"assigned": "Conversation assigned",
+				"status_changed": "Conversation status changed"
+			},
+			"verification": {
+				"submitted": "Verification submitted"
+			}
 		},
 		"targets": {
 			"shop": "Shop",

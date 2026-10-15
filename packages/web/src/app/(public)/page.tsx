@@ -4,12 +4,10 @@ import {
 	Camera,
 	ChevronRight,
 	Clock,
-	MapPin,
 	MessageSquare,
 	Shield,
-	Star,
 	Tag,
-	Users,
+	Truck,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -81,60 +79,6 @@ export default async function HomePage() {
 			getUserFavoriteIds(),
 		]);
 
-	const defaultCategories: Category[] = [
-		{
-			id: "real-estate",
-			name: "Real Estate",
-			slug: "real-estate",
-			icon: "🏠",
-			createdAt: "",
-			updatedAt: "",
-		},
-		{
-			id: "vehicles",
-			name: "Vehicles",
-			slug: "vehicles",
-			icon: "🚗",
-			createdAt: "",
-			updatedAt: "",
-		},
-		{
-			id: "electronics",
-			name: "Electronics",
-			slug: "electronics",
-			icon: "📱",
-			createdAt: "",
-			updatedAt: "",
-		},
-		{
-			id: "furniture",
-			name: "Furniture",
-			slug: "furniture",
-			icon: "🛋️",
-			createdAt: "",
-			updatedAt: "",
-		},
-		{
-			id: "fashion",
-			name: "Fashion",
-			slug: "fashion",
-			icon: "👕",
-			createdAt: "",
-			updatedAt: "",
-		},
-		{
-			id: "jobs",
-			name: "Jobs",
-			slug: "jobs",
-			icon: "💼",
-			createdAt: "",
-			updatedAt: "",
-		},
-	];
-
-	const displayCategories =
-		categories.length > 0 ? categories : defaultCategories;
-
 	return (
 		<div className="flex flex-col">
 			{/* ── Hero (Leboncoin / OLX style: clean, search-focused) ── */}
@@ -156,16 +100,18 @@ export default async function HomePage() {
 
 						{/* Quick category pills (OLX style) */}
 						<div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-							<span className="text-blue-200 text-xs">Popular:</span>
-							{["iPhone", "Car", "Apartment", "Laptop", "PS5"].map((term) => (
-								<Link
-									key={term}
-									href={`/search?q=${term}`}
-									className="rounded-full border border-white/20 px-3 py-1 text-white/80 text-xs transition-all duration-200 hover:scale-105 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95"
-								>
-									{term}
-								</Link>
-							))}
+							<span className="text-blue-200 text-xs">{t("popular")}</span>
+							{t("popularTerms")
+								.split("|")
+								.map((term) => (
+									<Link
+										key={term}
+										href={`/search?q=${encodeURIComponent(term)}`}
+										className="rounded-full border border-white/20 px-3 py-1 text-white/80 text-xs transition-all duration-200 hover:scale-105 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95"
+									>
+										{term}
+									</Link>
+								))}
 						</div>
 					</div>
 				</div>
@@ -175,56 +121,62 @@ export default async function HomePage() {
 			<section className="border-[#DBEAFE] border-b bg-white">
 				<div className="container mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-6 px-4 py-4 sm:gap-10 sm:px-6 lg:px-8">
 					{[
-						{ icon: Users, value: "10K+", label: "active users" },
-						{ icon: Tag, value: "50K+", label: "listings" },
-						{ icon: MapPin, value: "100+", label: "cities" },
-						{ icon: Shield, value: "Verified", label: "sellers" },
+						{
+							icon: Shield,
+							title: t("trustShops"),
+							detail: t("trustShopsDetail"),
+						},
+						{ icon: Truck, title: t("trustCod"), detail: t("trustCodDetail") },
+						{
+							icon: MessageSquare,
+							title: t("trustChat"),
+							detail: t("trustChatDetail"),
+						},
 					].map((s) => (
-						<div
-							key={s.label}
-							className="flex items-center gap-2 text-sm transition-transform duration-200 hover:scale-105"
-						>
+						<div key={s.title} className="flex items-center gap-2 text-sm">
 							<s.icon className="h-4 w-4 text-[#1E40AF]" />
-							<span className="font-semibold text-[#0F172A]">{s.value}</span>
-							<span className="text-[#64748B]">{s.label}</span>
+							<span className="font-semibold text-[#0F172A]">{s.title}</span>
+							<span className="text-[#64748B]">{s.detail}</span>
 						</div>
 					))}
 				</div>
 			</section>
 
 			{/* ── Categories (Leboncoin style: clean grid with count) ── */}
-			<section className="bg-white py-10">
-				<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-					<div className="mb-6 flex items-center justify-between">
-						<h2 className="font-bold text-[#0F172A] text-xl">
-							{t("browseByCategory")}
-						</h2>
-						<Link
-							href="/search"
-							className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
-						>
-							{t("allCategories")}
-							<ChevronRight className="h-4 w-4" />
-						</Link>
-					</div>
-					<div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-						{displayCategories.map((category) => (
+			{categories.length > 0 ? (
+				<section className="bg-white py-10">
+					<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+						<div className="mb-6 flex items-center justify-between">
+							<h2 className="font-bold text-[#0F172A] text-xl">
+								{t("browseByCategory")}
+							</h2>
 							<Link
-								key={category.id || category.slug}
-								href={`/search?category=${category.id || category.slug}`}
-								className="group hover:-translate-y-1 flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 hover:bg-[#F0F4FF] active:scale-95"
+								href="/search"
+								className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
 							>
-								<div className="transition-all duration-200 group-hover:scale-110 group-hover:shadow-blue-500/10 group-hover:shadow-md">
-									<CategoryIcon category={category} size={48} />
-								</div>
-								<span className="text-center font-medium text-[#0F172A] text-xs sm:text-sm">
-									{category.name}
-								</span>
+								{t("allCategories")}
+								<ChevronRight className="h-4 w-4" />
 							</Link>
-						))}
+						</div>
+						<div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+							{categories.map((category) => (
+								<Link
+									key={category.id || category.slug}
+									href={`/search?category=${category.id || category.slug}`}
+									className="group hover:-translate-y-1 flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 hover:bg-[#F0F4FF] active:scale-95"
+								>
+									<div className="transition-all duration-200 group-hover:scale-110 group-hover:shadow-blue-500/10 group-hover:shadow-md">
+										<CategoryIcon category={category} size={48} />
+									</div>
+									<span className="text-center font-medium text-[#0F172A] text-xs sm:text-sm">
+										{category.name}
+									</span>
+								</Link>
+							))}
+						</div>
 					</div>
-				</div>
-			</section>
+				</section>
+			) : null}
 
 			{/* ── Featured / Boosted (Marketplace style: horizontal highlight) ── */}
 			{featuredListings.length > 0 && (
@@ -251,18 +203,18 @@ export default async function HomePage() {
 					<div className="mb-6 flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<h2 className="font-bold text-[#0F172A] text-xl">
-								Fresh listings
+								{t("freshListings")}
 							</h2>
 							<div className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 font-medium text-emerald-700 text-xs">
 								<Clock className="h-3 w-3" />
-								New
+								{t("new")}
 							</div>
 						</div>
 						<Link
 							href="/search"
 							className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
 						>
-							See all
+							{t("seeAll")}
 							<ChevronRight className="h-4 w-4" />
 						</Link>
 					</div>
@@ -271,13 +223,11 @@ export default async function HomePage() {
 					) : (
 						<div className="rounded-2xl border-2 border-[#DBEAFE] border-dashed py-16 text-center">
 							<Tag className="mx-auto mb-3 h-10 w-10 text-[#94A3B8]" />
-							<p className="font-medium text-[#0F172A]">No listings yet</p>
-							<p className="mt-1 text-[#64748B] text-sm">
-								Be the first to post!
-							</p>
+							<p className="font-medium text-[#0F172A]">{t("noListingsYet")}</p>
+							<p className="mt-1 text-[#64748B] text-sm">{t("beFirst")}</p>
 							<Link href="/create">
 								<Button className="mt-4" variant="accent">
-									Post a listing
+									{t("postListing")}
 								</Button>
 							</Link>
 						</div>
@@ -293,13 +243,13 @@ export default async function HomePage() {
 					<div className="mb-12 text-center">
 						<span className="inline-flex items-center gap-1.5 rounded-full bg-[#EFF6FF] px-3 py-1 font-semibold text-[#1E40AF] text-xs">
 							<Zap className="h-3 w-3" />
-							How it works
+							{t("howItWorks")}
 						</span>
 						<h2 className="mt-3 font-extrabold text-2xl text-[#0F172A] sm:text-3xl">
-							Sell in 3 easy steps
+							{t("sellIn3Steps")}
 						</h2>
 						<p className="mx-auto mt-2 max-w-md text-[#64748B] text-sm">
-							From photo to payment in minutes. No complicated process.
+							{t("sellSubtitle")}
 						</p>
 					</div>
 
@@ -312,8 +262,8 @@ export default async function HomePage() {
 							{
 								icon: Camera,
 								step: "1",
-								title: "Snap & list",
-								desc: "Take a photo, add a description and set your price.",
+								title: t("snapList"),
+								desc: t("snapDesc"),
 								color: "from-[#1E40AF] to-[#3B82F6]",
 								shadow: "shadow-blue-500/25",
 								accent: "#1E40AF",
@@ -321,8 +271,8 @@ export default async function HomePage() {
 							{
 								icon: MessageSquare,
 								step: "2",
-								title: "Chat & negotiate",
-								desc: "Buyers message you directly. Agree on a deal.",
+								title: t("chatNegotiate"),
+								desc: t("chatDesc"),
 								color: "from-[#2563EB] to-[#60A5FA]",
 								shadow: "shadow-blue-400/25",
 								accent: "#2563EB",
@@ -330,8 +280,8 @@ export default async function HomePage() {
 							{
 								icon: BadgeCheck,
 								step: "3",
-								title: "Sell & earn",
-								desc: "Meet up, hand over, and get paid. Simple.",
+								title: t("sellEarn"),
+								desc: t("sellDesc"),
 								color: "from-[#F59E0B] to-[#FBBF24]",
 								shadow: "shadow-amber-500/25",
 								accent: "#F59E0B",
@@ -376,56 +326,10 @@ export default async function HomePage() {
 								size="lg"
 								className="rounded-2xl bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] px-8 font-bold shadow-blue-500/20 shadow-lg"
 							>
-								Start selling now
+								{t("startSelling")}
 								<ArrowRight className="ml-2 h-5 w-5" />
 							</Button>
 						</Link>
-					</div>
-				</div>
-			</section>
-
-			{/* ── Testimonial strip (Mercari style: simple review bar) ── */}
-			<section className="relative bg-[#F8FAFF] py-10">
-				<div className="pattern-dots absolute inset-0" />
-				<div className="container relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-					<div className="flex flex-col items-center gap-6 md:flex-row md:justify-center md:gap-12">
-						{[
-							{
-								text: "Sold my old phone in 2 hours!",
-								name: "Marie K.",
-								stars: 5,
-							},
-							{
-								text: "Found an amazing deal on a car nearby.",
-								name: "Jean P.",
-								stars: 5,
-							},
-							{
-								text: "Super easy to use. Highly recommend.",
-								name: "Aisha D.",
-								stars: 5,
-							},
-						].map((review) => (
-							<div
-								key={review.name}
-								className="hover:-translate-y-0.5 flex items-start gap-3 text-sm transition-all duration-200 hover:opacity-90"
-							>
-								<div className="flex gap-0.5">
-									{Array.from({ length: review.stars }).map((_, i) => (
-										<Star
-											key={i}
-											className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]"
-										/>
-									))}
-								</div>
-								<div>
-									<p className="text-[#0F172A]">&ldquo;{review.text}&rdquo;</p>
-									<p className="mt-0.5 text-[#64748B] text-xs">
-										&mdash; {review.name}
-									</p>
-								</div>
-							</div>
-						))}
 					</div>
 				</div>
 			</section>
@@ -435,18 +339,15 @@ export default async function HomePage() {
 				<div className="pattern-grid absolute inset-0 opacity-40" />
 				<div className="container relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
 					<h2 className="mb-3 font-bold text-2xl text-white sm:text-3xl">
-						Got something to sell?
+						{t("gotSomethingSell")}
 					</h2>
-					<p className="mx-auto mb-6 max-w-md text-blue-100">
-						It&apos;s free. It takes 30 seconds. Thousands of buyers are
-						waiting.
-					</p>
+					<p className="mx-auto mb-6 max-w-md text-blue-100">{t("freeFast")}</p>
 					<Link href="/create">
 						<Button
 							size="lg"
 							className="rounded-2xl bg-[#F59E0B] px-10 font-bold text-[#0F172A] text-base shadow-amber-500/25 shadow-lg hover:bg-[#D97706]"
 						>
-							Start selling
+							{t("startSellingBtn")}
 							<ArrowRight className="ml-2 h-5 w-5" />
 						</Button>
 					</Link>

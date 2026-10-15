@@ -57,8 +57,10 @@ describe("locale parity", () => {
 	});
 
 	test("every one of the twenty-four activity actions is translated in both", () => {
+		// Nested by group: next-intl refuses "." inside a key, so
+		// "member.invited" lives at actions.member.invited.
 		const actions = (node: Json) =>
-			Object.keys(((node.shopActivity as Json).actions as Json) ?? {});
+			leafPaths(((node.shopActivity as Json).actions as Json) ?? {});
 		expect(actions(en as Json)).toHaveLength(24);
 		expect(actions(fr as Json).sort()).toEqual(actions(en as Json).sort());
 	});
@@ -247,5 +249,18 @@ describe("locale parity", () => {
 			});
 			expect(identical.length).toBeLessThan(enLeaves.length);
 		}
+	});
+
+	test("no key carries a dot, which next-intl refuses on every page", () => {
+		const dotted: string[] = [];
+		const walk = (node: Json, path: string) => {
+			for (const [key, value] of Object.entries(node)) {
+				if (key.includes(".")) dotted.push(`${path}${key}`);
+				if (typeof value === "object") walk(value, `${path}${key}.`);
+			}
+		};
+		walk(en as Json, "en:");
+		walk(fr as Json, "fr:");
+		expect(dotted).toEqual([]);
 	});
 });

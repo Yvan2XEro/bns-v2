@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-const words = [
-	"a phone",
-	"a car",
-	"furniture",
-	"electronics",
-	"fashion",
-	"a deal",
-];
+import { useTranslations } from "next-intl";
+import { useEffect, useMemo, useState } from "react";
 
 export function RotatingText() {
+	const t = useTranslations("Home");
+	const list = t("rotatingWords");
+	const words = useMemo(() => list.split("|"), [list]);
 	const [index, setIndex] = useState(0);
 	const [displayed, setDisplayed] = useState("");
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -40,11 +35,11 @@ export function RotatingText() {
 		}, speed);
 
 		return () => clearTimeout(timeout);
-	}, [displayed, isDeleting, index]);
+	}, [displayed, isDeleting, index, words]);
 
 	return (
 		<>
-			What are you looking for?
+			{t("whatLookingFor")}
 			<span className="mt-1 block text-[#F59E0B]">
 				{displayed}
 				<span className="ml-0.5 inline-block h-[0.9em] w-[3px] animate-blink bg-[#F59E0B] align-middle" />

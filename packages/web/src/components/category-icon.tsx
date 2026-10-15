@@ -1,4 +1,68 @@
+import {
+	Armchair,
+	Baby,
+	Bike,
+	BookOpen,
+	Briefcase,
+	Building,
+	Car,
+	CarFront,
+	Cpu,
+	Dumbbell,
+	Flower,
+	Gamepad2,
+	House,
+	Laptop,
+	type LucideIcon,
+	Monitor,
+	Mountain,
+	Package,
+	Plane,
+	Refrigerator,
+	Shirt,
+	Smartphone,
+	Sofa,
+	Store,
+	Truck,
+	Watch,
+	Wrench,
+} from "lucide-react";
 import type { Category, Media } from "~/types";
+
+/**
+ * Categories store a Lucide icon name (`packages/api/src/seed`); each one the
+ * seed and the category catch-up use is mapped here, so the picker never
+ * prints the bare name and the bundle carries only these icons.
+ */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+	armchair: Armchair,
+	baby: Baby,
+	bike: Bike,
+	"book-open": BookOpen,
+	briefcase: Briefcase,
+	building: Building,
+	car: Car,
+	"car-front": CarFront,
+	cpu: Cpu,
+	dumbbell: Dumbbell,
+	flower: Flower,
+	"gamepad-2": Gamepad2,
+	home: House,
+	house: House,
+	laptop: Laptop,
+	monitor: Monitor,
+	mountain: Mountain,
+	package: Package,
+	plane: Plane,
+	refrigerator: Refrigerator,
+	shirt: Shirt,
+	smartphone: Smartphone,
+	sofa: Sofa,
+	store: Store,
+	truck: Truck,
+	watch: Watch,
+	wrench: Wrench,
+};
 
 interface CategoryIconProps {
 	category: Category;
@@ -37,35 +101,27 @@ export function CategoryIcon({
 		);
 	}
 
-	if (category.icon) {
-		return (
-			<div
-				className={`flex items-center justify-center rounded-full bg-[#EFF6FF] ${className ?? ""}`}
-				style={{ width: size, height: size }}
-			>
-				<span
-					style={{ fontSize: size * 0.5 }}
-					role="img"
-					aria-label={category.name}
-				>
-					{category.icon}
-				</span>
-			</div>
-		);
-	}
+	const Icon = category.icon ? CATEGORY_ICONS[category.icon] : undefined;
+	// Admin-entered icons that are not one of ours: an emoji still reads as
+	// one; anything else (a name we do not map) falls back to the package.
+	const emoji =
+		!Icon && category.icon && !/^[a-z0-9-]+$/.test(category.icon)
+			? category.icon
+			: null;
+	const Glyph = Icon ?? Package;
 
 	return (
 		<div
-			className={`flex items-center justify-center rounded-full bg-[#EFF6FF] ${className ?? ""}`}
+			className={`flex items-center justify-center rounded-full bg-[#EFF6FF] text-[#1E40AF] ${className ?? ""}`}
 			style={{ width: size, height: size }}
+			role="img"
+			aria-label={category.name}
 		>
-			<span
-				style={{ fontSize: size * 0.5 }}
-				role="img"
-				aria-label={category.name}
-			>
-				📦
-			</span>
+			{emoji ? (
+				<span style={{ fontSize: size * 0.5 }}>{emoji}</span>
+			) : (
+				<Glyph size={Math.round(size * 0.46)} strokeWidth={1.75} aria-hidden />
+			)}
 		</div>
 	);
 }
