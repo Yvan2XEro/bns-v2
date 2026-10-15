@@ -48,34 +48,58 @@ export const VerificationDocuments: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "request",
-			type: "relationship",
-			relationTo: "verification-requests",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "request",
+					type: "relationship",
+					relationTo: "verification-requests",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "kind",
+					type: "select",
+					required: true,
+					options: DOCUMENT_KINDS.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+				{ name: "sha256", type: "text", index: true, admin: { width: "50%" } },
+			],
 		},
 		{
-			name: "kind",
-			type: "select",
-			required: true,
-			options: DOCUMENT_KINDS.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					// The stored `filename` is `{uuid}.{ext}`: a seller's own filename can
+					// carry their name, and a filename is the one part of an upload that
+					// ends up in a URL.
+					name: "originalFilename",
+					type: "text",
+					admin: { width: "50%" },
+				},
+				{
+					name: "uploadedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "sha256", type: "text", index: true },
-		{
-			// The stored `filename` is `{uuid}.{ext}`: a seller's own filename can
-			// carry their name, and a filename is the one part of an upload that
-			// ends up in a URL.
-			name: "originalFilename",
-			type: "text",
-		},
-		{ name: "uploadedBy", type: "relationship", relationTo: "users" },
 		{
 			name: "duplicateOf",
 			type: "relationship",

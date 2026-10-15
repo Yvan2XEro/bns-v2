@@ -16,8 +16,26 @@ export const Sequences: CollectionConfig = {
 		delete: () => false,
 	},
 	fields: [
-		{ name: "key", type: "text", required: true, unique: true, index: true },
-		{ name: "value", type: "number", required: true, defaultValue: 0 },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "key",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "value",
+					type: "number",
+					required: true,
+					defaultValue: 0,
+					admin: { width: "50%" },
+				},
+			],
+		},
 	],
 	timestamps: true,
 };

@@ -31,21 +31,38 @@ export const ConversationReads: CollectionConfig = {
 	indexes: [{ fields: ["conversation", "user"], unique: true }],
 	fields: [
 		{
-			name: "conversation",
-			type: "relationship",
-			relationTo: "conversations",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "conversation",
+					type: "relationship",
+					relationTo: "conversations",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "user",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "user",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{ name: "lastReadAt", type: "date", admin: { width: "50%" } },
+				{
+					name: "lastReadMessage",
+					type: "relationship",
+					relationTo: "messages",
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "lastReadAt", type: "date" },
-		{ name: "lastReadMessage", type: "relationship", relationTo: "messages" },
 	],
 	timestamps: true,
 };

@@ -30,7 +30,7 @@ import { RiskSignalOutbox } from "../../src/collections/RiskSignalOutbox";
 import { ShopStrikes } from "../../src/collections/ShopStrikes";
 import config from "../../src/payload.config";
 import { fakePayload } from "./helpers/fakePayload";
-import { fieldAt } from "./helpers/fields";
+import { dataFields, fieldAt } from "./helpers/fields";
 
 type FieldAccessFn = (args: unknown) => unknown;
 type AccessFn = (args: unknown) => unknown;
@@ -406,7 +406,7 @@ describe("buyer-phone-scores field shape", () => {
 	});
 
 	it("holds no phone field — only phoneHash", () => {
-		const names = (BuyerPhoneScores.fields as Field[]).map((f) => f.name);
+		const names = dataFields(BuyerPhoneScores.fields).map((f) => f.name);
 		expect(names).toContain("phoneHash");
 		expect(names).not.toContain("phone");
 	});

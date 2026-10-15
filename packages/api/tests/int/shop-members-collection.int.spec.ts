@@ -6,6 +6,7 @@ import {
 } from "../../src/collections/ShopMembers";
 import { isUniqueViolation } from "../../src/services/shops";
 import { fakePayload } from "./helpers/fakePayload";
+import { dataFields } from "./helpers/fields";
 
 type Field = {
 	name?: string;
@@ -16,7 +17,7 @@ type Field = {
 	defaultValue?: unknown;
 };
 
-const fields = ShopMembers.fields as Field[];
+const fields = dataFields(ShopMembers.fields) as Field[];
 const field = (name: string) => fields.find((f) => f.name === name);
 
 describe("shop-members fields", () => {

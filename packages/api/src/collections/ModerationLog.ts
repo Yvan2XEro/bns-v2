@@ -62,71 +62,81 @@ export const ModerationLog: CollectionConfig = {
 	},
 	fields: [
 		{
-			/**
-			 * Optional only for system entries: scheduled expiry of a draft
-			 * request and a stale-claim release have no human behind them, and
-			 * `actorRole: "system"` is what the entry means. Every human action
-			 * still fails validation without an actor, so an action cannot be
-			 * taken anonymously by leaving the field out.
-			 */
-			name: "actor",
-			type: "relationship",
-			relationTo: "users",
-			index: true,
-			admin: { readOnly: true },
-			validate: (
-				value: unknown,
-				{ siblingData }: { siblingData: { actorRole?: string } },
-			) =>
-				value || siblingData?.actorRole === "system"
-					? true
-					: "An actor is required unless the entry is a system entry.",
-		},
-		{
-			// Snapshot, not a join: roles change, the entry must keep saying what
-			// authority the action was taken under.
-			name: "actorRole",
-			type: "text",
-			required: true,
-			admin: { readOnly: true },
-		},
-		{
-			name: "action",
-			type: "select",
-			required: true,
-			index: true,
-			options: MODERATION_ACTIONS.map((value) => ({ label: value, value })),
-			admin: { readOnly: true },
-		},
-		{
-			name: "targetType",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Listing", value: "listing" },
-				{ label: "User", value: "user" },
-				{ label: "Report", value: "report" },
-				{ label: "Shop", value: "shop" },
-				{ label: "Verification request", value: "verification-request" },
-				{ label: "Order", value: "order" },
-				{ label: "Commission invoice", value: "commission-invoice" },
-				{ label: "Dispute", value: "dispute" },
-				{ label: "Resale link", value: "resale-link" },
-				{ label: "Risk flag", value: "risk-flag" },
+			type: "row",
+			fields: [
+				{
+					/**
+					 * Optional only for system entries: scheduled expiry of a draft
+					 * request and a stale-claim release have no human behind them, and
+					 * `actorRole: "system"` is what the entry means. Every human action
+					 * still fails validation without an actor, so an action cannot be
+					 * taken anonymously by leaving the field out.
+					 */
+					name: "actor",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData: { actorRole?: string } },
+					) =>
+						value || siblingData?.actorRole === "system"
+							? true
+							: "An actor is required unless the entry is a system entry.",
+				},
+				{
+					// Snapshot, not a join: roles change, the entry must keep saying what
+					// authority the action was taken under.
+					name: "actorRole",
+					type: "text",
+					required: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "action",
+					type: "select",
+					required: true,
+					index: true,
+					options: MODERATION_ACTIONS.map((value) => ({ label: value, value })),
+					admin: { width: "33%", readOnly: true },
+				},
 			],
-			admin: { readOnly: true },
 		},
 		{
-			name: "targetId",
-			type: "text",
-			required: true,
-			index: true,
-			admin: { readOnly: true },
-		},
-		{
-			name: "reason",
-			type: "text",
-			admin: { readOnly: true },
+			type: "row",
+			fields: [
+				{
+					name: "targetType",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Listing", value: "listing" },
+						{ label: "User", value: "user" },
+						{ label: "Report", value: "report" },
+						{ label: "Shop", value: "shop" },
+						{ label: "Verification request", value: "verification-request" },
+						{ label: "Order", value: "order" },
+						{ label: "Commission invoice", value: "commission-invoice" },
+						{ label: "Dispute", value: "dispute" },
+						{ label: "Resale link", value: "resale-link" },
+						{ label: "Risk flag", value: "risk-flag" },
+					],
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "targetId",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "reason",
+					type: "text",
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 		{
 			name: "note",

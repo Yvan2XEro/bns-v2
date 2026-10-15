@@ -12,14 +12,31 @@ export const ListingViewFlushes: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: true,
+			type: "row",
+			fields: [
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: true,
+					admin: { width: "25%" },
+				},
+				{ name: "date", type: "text", required: true, admin: { width: "25%" } },
+				{
+					name: "views",
+					type: "number",
+					required: true,
+					min: 1,
+					admin: { width: "25%" },
+				},
+				{
+					name: "purgeAt",
+					type: "date",
+					required: true,
+					admin: { width: "25%" },
+				},
+			],
 		},
-		{ name: "date", type: "text", required: true },
-		{ name: "views", type: "number", required: true, min: 1 },
-		{ name: "purgeAt", type: "date", required: true },
 	],
 	timestamps: true,
 };

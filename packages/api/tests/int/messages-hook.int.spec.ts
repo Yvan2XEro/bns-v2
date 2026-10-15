@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Messages } from "../../src/collections/Messages";
 import { fakePayload } from "./helpers/fakePayload";
+import { fieldAt } from "./helpers/fields";
 
 type Hook = (args: Record<string, unknown>) => Promise<Record<string, unknown>>;
 const beforeChange = (Messages.hooks?.beforeChange as Hook[])[0];
@@ -241,10 +242,10 @@ describe("blocking still applies", () => {
 describe("senderSide and formerMemberAuthor are service-only", () => {
 	type FieldAccessFn = (args: unknown) => unknown;
 	const fieldAccess = (name: string, operation: "create" | "update") => {
-		const field = Messages.fields.find(
-			(f) => "name" in f && f.name === name,
-		) as { access?: Record<string, FieldAccessFn> };
-		return field.access?.[operation] as FieldAccessFn;
+		const field = fieldAt(Messages.fields, name) as
+			| { access?: Record<string, FieldAccessFn> }
+			| undefined;
+		return field?.access?.[operation] as FieldAccessFn;
 	};
 	const asBody = (user: Record<string, unknown> | null) => ({ req: { user } });
 

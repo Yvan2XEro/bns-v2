@@ -44,31 +44,36 @@ export const Reports: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "reporter",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "targetType",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Listing", value: "listing" },
-				{ label: "User", value: "user" },
-				{ label: "Message", value: "message" },
-				{ label: "Shop", value: "shop" },
-				{ label: "Order", value: "order" },
-				{ label: "Shipment", value: "shipment" },
+			type: "row",
+			fields: [
+				{
+					name: "reporter",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "targetType",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Listing", value: "listing" },
+						{ label: "User", value: "user" },
+						{ label: "Message", value: "message" },
+						{ label: "Shop", value: "shop" },
+						{ label: "Order", value: "order" },
+						{ label: "Shipment", value: "shipment" },
+					],
+					admin: { width: "33%" },
+				},
+				{
+					name: "targetId",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
 			],
-		},
-		{
-			name: "targetId",
-			type: "text",
-			required: true,
 		},
 		{
 			name: "reason",
@@ -109,19 +114,20 @@ export const Reports: CollectionConfig = {
 			},
 		},
 		{
-			name: "resolvedBy",
-			type: "relationship",
-			relationTo: "users",
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "createdAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "resolvedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "createdAt",
+					type: "date",
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 	],
 	timestamps: true,

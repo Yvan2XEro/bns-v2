@@ -338,29 +338,33 @@ export const Messages: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "conversation",
-			type: "relationship",
-			relationTo: "conversations",
-			required: true,
-		},
-		{
-			name: "sender",
-			type: "relationship",
-			relationTo: "users",
-			admin: {
-				readOnly: true,
-			},
-			// Required for a `user` message, null for a `system` one — the
-			// `beforeChange` guard above is what actually enforces "null only
-			// from the order service"; this just keeps an ordinary message from
-			// being saved senderless.
-			validate: (
-				value: unknown,
-				{ siblingData }: { siblingData?: { kind?: string } },
-			) =>
-				value || siblingData?.kind === "system"
-					? true
-					: "A sender is required.",
+			type: "row",
+			fields: [
+				{
+					name: "conversation",
+					type: "relationship",
+					relationTo: "conversations",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "sender",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "50%", readOnly: true },
+					// Required for a `user` message, null for a `system` one — the
+					// `beforeChange` guard above is what actually enforces "null only
+					// from the order service"; this just keeps an ordinary message from
+					// being saved senderless.
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData?: { kind?: string } },
+					) =>
+						value || siblingData?.kind === "system"
+							? true
+							: "A sender is required.",
+				},
+			],
 		},
 		{
 			name: "content",
@@ -368,78 +372,99 @@ export const Messages: CollectionConfig = {
 			required: true,
 		},
 		{
-			name: "kind",
-			type: "select",
-			defaultValue: "user",
-			index: true,
-			options: [
-				{ label: "User", value: "user" },
-				{ label: "System", value: "system" },
+			type: "row",
+			fields: [
+				{
+					name: "kind",
+					type: "select",
+					defaultValue: "user",
+					index: true,
+					options: [
+						{ label: "User", value: "user" },
+						{ label: "System", value: "system" },
+					],
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "systemEvent",
+					type: "text",
+					admin: {
+						width: "50%",
+						readOnly: true,
+						description:
+							'An order-event type, e.g. "order.placed". System messages only.',
+					},
+				},
 			],
-			admin: { readOnly: true },
-		},
-		{
-			name: "systemEvent",
-			type: "text",
-			admin: {
-				readOnly: true,
-				description:
-					'An order-event type, e.g. "order.placed". System messages only.',
-			},
 		},
 		{ name: "systemParams", type: "json", admin: { readOnly: true } },
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			index: true,
-			admin: { readOnly: true },
-		},
-		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: false,
-		},
-		{
-			name: "read",
-			type: "checkbox",
-			defaultValue: false,
-		},
-		{
-			name: "senderSide",
-			type: "select",
-			index: true,
-			options: [
-				{ label: "Buyer", value: "buyer" },
-				{ label: "Shop", value: "shop" },
+			type: "row",
+			fields: [
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: false,
+					admin: { width: "33%" },
+				},
+				{
+					name: "read",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "33%" },
+				},
 			],
-			// Derived in `beforeChange` for a shop conversation only. Without
-			// this, a body-supplied `senderSide` on a classic conversation
-			// routes `afterChange` into the shop notification branch, which
-			// resolves no recipient and the message never notifies anyone.
-			// `overrideAccess` (the hook's own assignment, and the service
-			// paths) bypasses field access entirely, so this only closes the
-			// ordinary REST caller.
-			access: { create: () => false, update: () => false },
-			admin: {
-				readOnly: true,
-				description: "Set on shop conversations only; absent on a classic one.",
-			},
 		},
 		{
-			name: "formerMemberAuthor",
-			type: "checkbox",
-			defaultValue: false,
-			// Written only by account deletion, via `overrideAccess`. REST
-			// access control covers only incoming data from a request, not
-			// mutations made within a hook via `overrideAccess`.
-			access: { create: () => false, update: () => false },
-			admin: {
-				readOnly: true,
-				description:
-					'The author deleted their account; the message is re-attributed to the shop owner and shown as "Former member".',
-			},
+			type: "row",
+			fields: [
+				{
+					name: "senderSide",
+					type: "select",
+					index: true,
+					options: [
+						{ label: "Buyer", value: "buyer" },
+						{ label: "Shop", value: "shop" },
+					],
+					// Derived in `beforeChange` for a shop conversation only. Without
+					// this, a body-supplied `senderSide` on a classic conversation
+					// routes `afterChange` into the shop notification branch, which
+					// resolves no recipient and the message never notifies anyone.
+					// `overrideAccess` (the hook's own assignment, and the service
+					// paths) bypasses field access entirely, so this only closes the
+					// ordinary REST caller.
+					access: { create: () => false, update: () => false },
+					admin: {
+						width: "50%",
+						readOnly: true,
+						description:
+							"Set on shop conversations only; absent on a classic one.",
+					},
+				},
+				{
+					name: "formerMemberAuthor",
+					type: "checkbox",
+					defaultValue: false,
+					// Written only by account deletion, via `overrideAccess`. REST
+					// access control covers only incoming data from a request, not
+					// mutations made within a hook via `overrideAccess`.
+					access: { create: () => false, update: () => false },
+					admin: {
+						width: "50%",
+						readOnly: true,
+						description:
+							'The author deleted their account; the message is re-attributed to the shop owner and shown as "Former member".',
+					},
+				},
+			],
 		},
 		{
 			name: "createdAt",

@@ -73,13 +73,25 @@ export const ShopDailyStats: CollectionConfig = {
 	indexes: [{ fields: ["shop", "date"], unique: true }],
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "date",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "date", type: "text", required: true, index: true },
 		...[
 			"views",
 			"phoneReveals",
@@ -98,20 +110,33 @@ export const ShopDailyStats: CollectionConfig = {
 			"lowStockVariants",
 			"awaitingReply",
 		].map(count),
-		{ name: "gmvDelivered", type: "number", min: 0, defaultValue: 0 },
 		{
-			name: "cogsDelivered",
-			type: "number",
-			min: 0,
-			defaultValue: 0,
-			access: { read: costFieldAccess },
-		},
-		{
-			name: "inventoryCostValue",
-			type: "number",
-			min: 0,
-			defaultValue: 0,
-			access: { read: costFieldAccess },
+			type: "row",
+			fields: [
+				{
+					name: "gmvDelivered",
+					type: "number",
+					min: 0,
+					defaultValue: 0,
+					admin: { width: "33%" },
+				},
+				{
+					name: "cogsDelivered",
+					type: "number",
+					min: 0,
+					defaultValue: 0,
+					access: { read: costFieldAccess },
+					admin: { width: "33%" },
+				},
+				{
+					name: "inventoryCostValue",
+					type: "number",
+					min: 0,
+					defaultValue: 0,
+					access: { read: costFieldAccess },
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
 			name: "responseBuckets",
@@ -144,9 +169,24 @@ export const ShopDailyStats: CollectionConfig = {
 				{ name: "commissionAccrued", type: "number", min: 0, defaultValue: 0 },
 			],
 		},
-		{ name: "computedAt", type: "date" },
-		{ name: "version", type: "number", defaultValue: 1 },
-		{ name: "metricsHash", type: "text", required: true },
+		{
+			type: "row",
+			fields: [
+				{ name: "computedAt", type: "date", admin: { width: "33%" } },
+				{
+					name: "version",
+					type: "number",
+					defaultValue: 1,
+					admin: { width: "33%" },
+				},
+				{
+					name: "metricsHash",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+			],
+		},
 	],
 	timestamps: true,
 };

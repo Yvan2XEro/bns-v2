@@ -44,37 +44,87 @@ export const RiskSignalOutbox: CollectionConfig = {
 	],
 	fields: [
 		{
-			name: "subjectType",
-			type: "select",
-			required: true,
-			index: true,
-			options: RISK_OUTBOX_SUBJECT_TYPES.map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "subjectType",
+					type: "select",
+					required: true,
+					index: true,
+					options: RISK_OUTBOX_SUBJECT_TYPES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "subjectId",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "signal",
+					type: "select",
+					required: true,
+					options: RISK_OUTBOX_SIGNALS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+			],
 		},
-		{ name: "subjectId", type: "text", required: true, index: true },
 		{
-			name: "signal",
-			type: "select",
-			required: true,
-			options: RISK_OUTBOX_SIGNALS.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "severity",
+					type: "select",
+					required: true,
+					options: RISK_OUTBOX_SEVERITIES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "sourceType",
+					type: "select",
+					required: true,
+					options: RISK_OUTBOX_SOURCES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "sourceId",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "severity",
-			type: "select",
-			required: true,
-			options: RISK_OUTBOX_SEVERITIES.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "occurredAt",
+					type: "date",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "consumedAt",
+					type: "date",
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{
-			name: "sourceType",
-			type: "select",
-			required: true,
-			options: RISK_OUTBOX_SOURCES.map((value) => ({ label: value, value })),
-		},
-		{ name: "sourceId", type: "text", required: true },
-		{ name: "occurredAt", type: "date", required: true, index: true },
-		{ name: "consumedAt", type: "date", index: true },
 	],
 	timestamps: true,
 };

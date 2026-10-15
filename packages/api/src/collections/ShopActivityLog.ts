@@ -76,37 +76,60 @@ export const ShopActivityLog: CollectionConfig = {
 	fields: [
 		shopField({ required: true, picker: false }),
 		{
-			name: "actor",
-			type: "relationship",
-			relationTo: "users",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "actor",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "actorRole",
+					type: "text",
+					required: true,
+					admin: {
+						width: "50%",
+						description:
+							"Snapshot at the time of the action: owner, manager, staff or system.",
+					},
+				},
+			],
 		},
 		{
-			name: "actorRole",
-			type: "text",
-			required: true,
-			admin: {
-				description:
-					"Snapshot at the time of the action: owner, manager, staff or system.",
-			},
+			type: "row",
+			fields: [
+				{
+					name: "action",
+					type: "select",
+					required: true,
+					index: true,
+					options: SHOP_ACTIVITY_ACTIONS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "targetType",
+					type: "select",
+					required: true,
+					options: SHOP_ACTIVITY_TARGET_TYPES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "targetId",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
-		{
-			name: "action",
-			type: "select",
-			required: true,
-			index: true,
-			options: SHOP_ACTIVITY_ACTIONS.map((value) => ({ label: value, value })),
-		},
-		{
-			name: "targetType",
-			type: "select",
-			required: true,
-			options: SHOP_ACTIVITY_TARGET_TYPES.map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{ name: "targetId", type: "text", required: true, index: true },
 		{
 			name: "metadata",
 			type: "json",

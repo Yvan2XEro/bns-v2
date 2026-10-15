@@ -1,3 +1,4 @@
+import type { Field as PayloadField } from "payload";
 import { describe, expect, it } from "vitest";
 import {
 	MODERATION_ACTIONS,
@@ -10,6 +11,7 @@ import {
 	VERIFICATION_STATUSES,
 	VerificationRequests,
 } from "../../src/collections/VerificationRequests";
+import { dataFields } from "./helpers/fields";
 
 type Field = {
 	name?: string;
@@ -21,7 +23,9 @@ type Field = {
 };
 
 const field = (fields: Field[], name: string): Field | undefined =>
-	fields.find((f) => f.name === name);
+	dataFields(fields as PayloadField[]).find((f) => f.name === name) as
+		| Field
+		| undefined;
 
 const OWNER = { req: { user: { id: "u-1", role: "user" } } };
 const MOD = { req: { user: { id: "m-1", role: "moderator" } } };
@@ -133,18 +137,16 @@ describe("moderation-log", () => {
 		]) {
 			expect(MODERATION_ACTIONS).toContain(action);
 		}
-		const targetType = (ModerationLog.fields as Field[]).find(
-			(f) => f.name === "targetType",
-		) as { options: { value: string }[] };
+		const targetType = field(ModerationLog.fields as Field[], "targetType") as {
+			options: { value: string }[];
+		};
 		expect(targetType.options.map((o) => o.value)).toContain(
 			"verification-request",
 		);
 	});
 
 	it("requires an actor unless the entry is a system one", () => {
-		const actor = (ModerationLog.fields as Field[]).find(
-			(f) => f.name === "actor",
-		);
+		const actor = field(ModerationLog.fields as Field[], "actor");
 		expect(actor?.required).toBeFalsy();
 		const validate = actor?.validate as (
 			v: unknown,

@@ -6,6 +6,7 @@ import {
 	revealContactPhone,
 } from "../../src/services/contactReveal";
 import { fakePayload } from "./helpers/fakePayload";
+import { fieldAt } from "./helpers/fields";
 
 const NOW = new Date("2026-09-15T10:00:00.000Z");
 const HOUR = 3_600_000;
@@ -239,9 +240,7 @@ describe("access wiring", () => {
 
 	it("hands the phone field to its owner and to staff only", async () => {
 		const { Users } = await import("../../src/collections/Users");
-		const phone = Users.fields.find(
-			(field) => "name" in field && field.name === "phone",
-		);
+		const phone = fieldAt(Users.fields, "phone");
 		const read = phone && "access" in phone ? phone.access?.read : undefined;
 		expect(read).toBeDefined();
 		expect(run(read, { req: { user: USER }, id: "u-1" })).toBe(true);

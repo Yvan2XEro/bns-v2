@@ -31,54 +31,93 @@ export const BuyerPhoneScores: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "phoneHash",
-			type: "text",
-			required: true,
-			unique: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "phoneHash",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "ordersPlaced",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "33%" },
+				},
+				{
+					name: "ordersDelivered",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "33%" },
+				},
+			],
 		},
-		{ name: "ordersPlaced", type: "number", defaultValue: 0 },
-		{ name: "ordersDelivered", type: "number", defaultValue: 0 },
 		{
 			name: "refusals",
 			type: "array",
 			fields: [
-				{ name: "order", type: "relationship", relationTo: "orders" },
 				{
-					name: "reason",
-					type: "select",
-					options: [
-						{ label: "Refused", value: "refused" },
-						{ label: "Unreachable", value: "unreachable" },
-						{ label: "Absent", value: "absent" },
-						{ label: "Refused (abuse)", value: "refused_abuse" },
+					type: "row",
+					fields: [
+						{
+							name: "order",
+							type: "relationship",
+							relationTo: "orders",
+							admin: { width: "33%" },
+						},
+						{
+							name: "reason",
+							type: "select",
+							options: [
+								{ label: "Refused", value: "refused" },
+								{ label: "Unreachable", value: "unreachable" },
+								{ label: "Absent", value: "absent" },
+								{ label: "Refused (abuse)", value: "refused_abuse" },
+							],
+							admin: { width: "33%" },
+						},
+						{ name: "at", type: "date", admin: { width: "33%" } },
 					],
 				},
-				{ name: "at", type: "date" },
 			],
 		},
-		{ name: "cancelledAfterAccept", type: "number", defaultValue: 0 },
 		{
-			name: "tier",
-			type: "select",
-			defaultValue: "new",
-			index: true,
-			options: BUYER_PHONE_TIERS.map((value) => ({ label: value, value })),
-		},
-		{
-			name: "blockedOverride",
-			type: "select",
-			defaultValue: "none",
-			options: [
-				{ label: "None", value: "none" },
-				{ label: "Unblocked", value: "unblocked" },
-				{ label: "Blocked", value: "blocked" },
+			type: "row",
+			fields: [
+				{
+					name: "cancelledAfterAccept",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "33%" },
+				},
+				{
+					name: "tier",
+					type: "select",
+					defaultValue: "new",
+					index: true,
+					options: BUYER_PHONE_TIERS.map((value) => ({ label: value, value })),
+					admin: { width: "33%" },
+				},
+				{
+					name: "blockedOverride",
+					type: "select",
+					defaultValue: "none",
+					options: [
+						{ label: "None", value: "none" },
+						{ label: "Unblocked", value: "unblocked" },
+						{ label: "Blocked", value: "blocked" },
+					],
+					// Staff override, but a *moderator* may not set it — only an admin,
+					// from the Payload admin panel. `staffOnly`/`access.update` above
+					// already closes REST entirely; this is the extra admin-only door
+					// for the one path that still reaches this field.
+					access: { update: ({ req }) => isAdmin(req.user) },
+					admin: { width: "33%" },
+				},
 			],
-			// Staff override, but a *moderator* may not set it — only an admin,
-			// from the Payload admin panel. `staffOnly`/`access.update` above
-			// already closes REST entirely; this is the extra admin-only door
-			// for the one path that still reaches this field.
-			access: { update: ({ req }) => isAdmin(req.user) },
 		},
 	],
 	timestamps: true,

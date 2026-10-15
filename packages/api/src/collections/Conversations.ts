@@ -157,62 +157,111 @@ export const Conversations: CollectionConfig = {
 			hasMany: true,
 			required: true,
 		},
-		{ name: "listing", type: "relationship", relationTo: "listings" },
-		{ name: "lastMessage", type: "relationship", relationTo: "messages" },
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			index: true,
-			admin: { readOnly: true },
-		},
-		{
-			name: "buyer",
-			type: "relationship",
-			relationTo: "users",
-			index: true,
-			admin: { readOnly: true },
-		},
-		{
-			// Set once by `services/orders/chat.ts` (a later task) when the
-			// conversation is created for an order; pinned afterwards like
-			// `shop`/`buyer`. Not declared `unique`: the order service is the
-			// collection's sole writer of this field, so there is no concurrent
-			// REST race for a database-level constraint to close, unlike
-			// `carts`/`orders`/`commission-lines` in the P4 index migration.
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			index: true,
-			admin: { readOnly: true },
-		},
-		{
-			name: "assignee",
-			type: "relationship",
-			relationTo: "users",
-			index: true,
-			admin: { readOnly: true },
-		},
-		{ name: "assignedAt", type: "date", admin: { readOnly: true } },
-		{
-			name: "assignedBy",
-			type: "relationship",
-			relationTo: "users",
-			admin: { readOnly: true },
-		},
-		{
-			name: "inboxStatus",
-			type: "select",
-			defaultValue: "open",
-			index: true,
-			options: [
-				{ label: "Open", value: "open" },
-				{ label: "Done", value: "done" },
+			type: "row",
+			fields: [
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					admin: { width: "50%" },
+				},
+				{
+					name: "lastMessage",
+					type: "relationship",
+					relationTo: "messages",
+					admin: { width: "50%" },
+				},
 			],
 		},
-		{ name: "lastMessageAt", type: "date", index: true },
-		{ name: "awaitingReply", type: "checkbox", defaultValue: false },
-		{ name: "updatedAt", type: "date", admin: { readOnly: true } },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "buyer",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					// Set once by `services/orders/chat.ts` (a later task) when the
+					// conversation is created for an order; pinned afterwards like
+					// `shop`/`buyer`. Not declared `unique`: the order service is the
+					// collection's sole writer of this field, so there is no concurrent
+					// REST race for a database-level constraint to close, unlike
+					// `carts`/`orders`/`commission-lines` in the P4 index migration.
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{
+					name: "assignee",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "assignedAt",
+					type: "date",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "assignedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "33%", readOnly: true },
+				},
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{
+					name: "inboxStatus",
+					type: "select",
+					defaultValue: "open",
+					index: true,
+					options: [
+						{ label: "Open", value: "open" },
+						{ label: "Done", value: "done" },
+					],
+					admin: { width: "25%" },
+				},
+				{
+					name: "lastMessageAt",
+					type: "date",
+					index: true,
+					admin: { width: "25%" },
+				},
+				{
+					name: "awaitingReply",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "25%" },
+				},
+				{
+					name: "updatedAt",
+					type: "date",
+					admin: { width: "25%", readOnly: true },
+				},
+			],
+		},
 	],
 	timestamps: true,
 };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Messages } from "../../src/collections/Messages";
+import { fieldAt } from "./helpers/fields";
 import { runBeforeChange } from "./helpers/runBeforeChange";
 
 describe("system messages", () => {
@@ -42,9 +43,9 @@ describe("system messages", () => {
 	});
 
 	it("still requires a sender for a user message", async () => {
-		const field = Messages.fields.find(
-			(f) => "name" in f && f.name === "sender",
-		) as { validate?: (value: unknown, options: unknown) => unknown };
+		const field = fieldAt(Messages.fields, "sender") as {
+			validate?: (value: unknown, options: unknown) => unknown;
+		};
 		expect(field.validate?.(undefined, { siblingData: { kind: "user" } })).toBe(
 			"A sender is required.",
 		);

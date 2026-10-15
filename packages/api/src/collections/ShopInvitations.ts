@@ -41,78 +41,126 @@ export const ShopInvitations: CollectionConfig = {
 	fields: [
 		shopField({ required: true, picker: false }),
 		{
-			name: "role",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Manager", value: "manager" },
-				{ label: "Staff", value: "staff" },
+			type: "row",
+			fields: [
+				{
+					name: "role",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Manager", value: "manager" },
+						{ label: "Staff", value: "staff" },
+					],
+					admin: { width: "50%" },
+				},
+				{
+					name: "channel",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Phone", value: "phone" },
+						{ label: "Email", value: "email" },
+					],
+					admin: { width: "50%" },
+				},
 			],
 		},
 		{
-			name: "channel",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Phone", value: "phone" },
-				{ label: "Email", value: "email" },
+			type: "row",
+			fields: [
+				{
+					name: "phone",
+					type: "text",
+					index: true,
+					validate: requiredFor("phone", "A phone number"),
+					admin: { width: "50%" },
+				},
+				{
+					name: "email",
+					type: "text",
+					index: true,
+					validate: requiredFor("email", "An email address"),
+					admin: { width: "50%" },
+				},
 			],
 		},
 		{
-			name: "phone",
-			type: "text",
-			index: true,
-			validate: requiredFor("phone", "A phone number"),
+			type: "row",
+			fields: [
+				{
+					// `{shopId}:{channel}:{target}`, carried by the partial unique index
+					// the migration builds, so two racing invites to the same person
+					// cannot both become pending.
+					name: "pendingKey",
+					type: "text",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "tokenHash",
+					type: "text",
+					required: true,
+					unique: true,
+					// Never leaves the database: the raw token is only in the link, and
+					// its hash is enough to guess nothing but still enough to confirm a
+					// guess if it were readable.
+					access: { read: () => false },
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "email",
-			type: "text",
-			index: true,
-			validate: requiredFor("email", "An email address"),
+			type: "row",
+			fields: [
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "pending",
+					index: true,
+					options: INVITATION_STATUSES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "invitedBy",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "expiresAt",
+					type: "date",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			// `{shopId}:{channel}:{target}`, carried by the partial unique index
-			// the migration builds, so two racing invites to the same person
-			// cannot both become pending.
-			name: "pendingKey",
-			type: "text",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "sendCount",
+					type: "number",
+					required: true,
+					defaultValue: 1,
+					min: 0,
+					admin: { width: "25%" },
+				},
+				{ name: "lastSentAt", type: "date", admin: { width: "25%" } },
+				{
+					name: "acceptedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "25%" },
+				},
+				{ name: "respondedAt", type: "date", admin: { width: "25%" } },
+			],
 		},
-		{
-			name: "tokenHash",
-			type: "text",
-			required: true,
-			unique: true,
-			// Never leaves the database: the raw token is only in the link, and
-			// its hash is enough to guess nothing but still enough to confirm a
-			// guess if it were readable.
-			access: { read: () => false },
-		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "pending",
-			index: true,
-			options: INVITATION_STATUSES.map((value) => ({ label: value, value })),
-		},
-		{
-			name: "invitedBy",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-		},
-		{ name: "expiresAt", type: "date", required: true, index: true },
-		{
-			name: "sendCount",
-			type: "number",
-			required: true,
-			defaultValue: 1,
-			min: 0,
-		},
-		{ name: "lastSentAt", type: "date" },
-		{ name: "acceptedBy", type: "relationship", relationTo: "users" },
-		{ name: "respondedAt", type: "date" },
 	],
 	timestamps: true,
 };

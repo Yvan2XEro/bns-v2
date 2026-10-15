@@ -277,35 +277,43 @@ export const Users: CollectionConfig = {
 			relationTo: "media",
 		},
 		{
-			name: "role",
-			type: "select",
-			hasMany: false,
-			options: [
-				{ label: "User", value: "user" },
-				{ label: "Moderator", value: "moderator" },
-				{ label: "Admin", value: "admin" },
+			type: "row",
+			fields: [
+				{
+					name: "role",
+					type: "select",
+					hasMany: false,
+					options: [
+						{ label: "User", value: "user" },
+						{ label: "Moderator", value: "moderator" },
+						{ label: "Admin", value: "admin" },
+					],
+					defaultValue: "user",
+					required: true,
+					saveToJWT: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "authProvider",
+					type: "select",
+					defaultValue: "local",
+					options: [
+						{ label: "Local", value: "local" },
+						{ label: "Google", value: "google" },
+						{ label: "Apple", value: "apple" },
+						{ label: "Facebook", value: "facebook" },
+					],
+					required: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "providerAccountId",
+					type: "text",
+					index: true,
+					required: true,
+					admin: { width: "33%" },
+				},
 			],
-			defaultValue: "user",
-			required: true,
-			saveToJWT: true,
-		},
-		{
-			name: "authProvider",
-			type: "select",
-			defaultValue: "local",
-			options: [
-				{ label: "Local", value: "local" },
-				{ label: "Google", value: "google" },
-				{ label: "Apple", value: "apple" },
-				{ label: "Facebook", value: "facebook" },
-			],
-			required: true,
-		},
-		{
-			name: "providerAccountId",
-			type: "text",
-			index: true,
-			required: true,
 		},
 		{
 			name: "authProviders",
@@ -337,107 +345,110 @@ export const Users: CollectionConfig = {
 			],
 		},
 		{
-			name: "rating",
-			type: "number",
-			min: 0,
-			max: 5,
-			defaultValue: 0,
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "totalReviews",
-			type: "number",
-			defaultValue: 0,
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "rating",
+					type: "number",
+					min: 0,
+					max: 5,
+					defaultValue: 0,
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "totalReviews",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 		{
 			name: "bio",
 			type: "textarea",
 		},
 		{
-			name: "phone",
-			type: "text",
-			// Buyers get a seller's number from POST /api/listings/:id/contact-phone,
-			// which is rate limited and recorded; the public user document never carries it.
-			access: {
-				read: selfOrStaffField,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "phone",
+					type: "text",
+					// Buyers get a seller's number from POST /api/listings/:id/contact-phone,
+					// which is rate limited and recorded; the public user document never carries it.
+					access: {
+						read: selfOrStaffField,
+					},
+					admin: { width: "33%" },
+				},
+				{
+					name: "phoneVerified",
+					type: "checkbox",
+					virtual: true,
+					access: {
+						read: selfOrStaffField,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "pendingPhone",
+					type: "text",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "phoneVerified",
-			type: "checkbox",
-			virtual: true,
-			access: {
-				read: selfOrStaffField,
-			},
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "phoneVerifiedAt",
+					type: "date",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "50%", readOnly: true },
+				},
+				{
+					name: "phoneVerificationCodeHash",
+					type: "text",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "pendingPhone",
-			type: "text",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "phoneVerifiedAt",
-			type: "date",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "phoneVerificationCodeHash",
-			type: "text",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "phoneVerificationExpiresAt",
-			type: "date",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "phoneVerificationAttempts",
-			type: "number",
-			defaultValue: 0,
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "phoneVerificationLastSentAt",
-			type: "date",
-			access: {
-				read: () => false,
-			},
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "phoneVerificationExpiresAt",
+					type: "date",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "phoneVerificationAttempts",
+					type: "number",
+					defaultValue: 0,
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "phoneVerificationLastSentAt",
+					type: "date",
+					access: {
+						read: () => false,
+					},
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 		{
 			// Free text the user typed into their profile ("Douala", "Bonabéri,
@@ -464,36 +475,56 @@ export const Users: CollectionConfig = {
 					"Structured place last confirmed by the user, kept in sync with the mobile app.",
 			},
 			fields: [
-				{ name: "city", type: "text", index: true },
-				{ name: "region", type: "text" },
-				{ name: "country", type: "text" },
 				{
-					name: "countryCode",
-					type: "text",
-					maxLength: 2,
-					admin: { description: "ISO 3166-1 alpha-2, uppercase." },
-				},
-				// No lat/lng here on purpose. The privacy policy states the profile
-				// location is "a place name you enter, not GPS coordinates", and
-				// that coordinates travel only with a single search request with no
-				// history kept. Storing them would contradict both and would change
-				// the App Privacy declaration. Coordinates stay on the device, which
-				// is all the "listings near you" search needs.
-				{
-					name: "source",
-					type: "select",
-					options: [
-						{ label: "Device", value: "device" },
-						{ label: "Chosen by user", value: "manual" },
+					type: "row",
+					fields: [
+						{
+							name: "city",
+							type: "text",
+							index: true,
+							admin: { width: "33%" },
+						},
+						{ name: "region", type: "text", admin: { width: "33%" } },
+						{ name: "country", type: "text", admin: { width: "33%" } },
 					],
 				},
 				{
-					name: "updatedAt",
-					type: "date",
-					admin: {
-						description:
-							"Conflict resolution between the device copy and this one — last write wins.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "countryCode",
+							type: "text",
+							maxLength: 2,
+							admin: {
+								width: "33%",
+								description: "ISO 3166-1 alpha-2, uppercase.",
+							},
+						},
+						// No lat/lng here on purpose. The privacy policy states the profile
+						// location is "a place name you enter, not GPS coordinates", and
+						// that coordinates travel only with a single search request with no
+						// history kept. Storing them would contradict both and would change
+						// the App Privacy declaration. Coordinates stay on the device, which
+						// is all the "listings near you" search needs.
+						{
+							name: "source",
+							type: "select",
+							options: [
+								{ label: "Device", value: "device" },
+								{ label: "Chosen by user", value: "manual" },
+							],
+							admin: { width: "33%" },
+						},
+						{
+							name: "updatedAt",
+							type: "date",
+							admin: {
+								width: "33%",
+								description:
+									"Conflict resolution between the device copy and this one — last write wins.",
+							},
+						},
+					],
 				},
 			],
 		},

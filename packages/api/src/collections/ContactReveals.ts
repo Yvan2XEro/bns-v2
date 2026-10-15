@@ -16,33 +16,47 @@ export const ContactReveals: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "seller",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "seller",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
-		},
-		{
-			name: "viewer",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
-		},
-		{
-			// 24-hour bucket number. Stored so the unique index below can settle
-			// two concurrent reveals; the service still decides what to write
-			// from a rolling 24-hour lookup.
-			name: "revealWindow",
-			type: "number",
-			required: true,
+			type: "row",
+			fields: [
+				{
+					name: "viewer",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					// 24-hour bucket number. Stored so the unique index below can settle
+					// two concurrent reveals; the service still decides what to write
+					// from a rolling 24-hour lookup.
+					name: "revealWindow",
+					type: "number",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 	],
 	indexes: [{ fields: ["viewer", "listing", "revealWindow"], unique: true }],

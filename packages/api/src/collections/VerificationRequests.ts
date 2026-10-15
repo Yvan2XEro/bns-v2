@@ -133,26 +133,33 @@ export const VerificationRequests: CollectionConfig = {
 	],
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{
-			name: "requestedLevel",
-			type: "number",
-			required: true,
-			min: 2,
-			max: 3,
-			admin: { description: "2 = identity, 3 = business." },
-		},
-		{
-			name: "submittedBy",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "requestedLevel",
+					type: "number",
+					required: true,
+					min: 2,
+					max: 3,
+					admin: { width: "33%", description: "2 = identity, 3 = business." },
+				},
+				{
+					name: "submittedBy",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
 			name: "status",
@@ -167,18 +174,40 @@ export const VerificationRequests: CollectionConfig = {
 			type: "array",
 			fields: [
 				{
-					name: "status",
-					type: "select",
-					required: true,
-					options: options(VERIFICATION_STATUSES),
-				},
-				{ name: "at", type: "date", required: true },
-				{ name: "actor", type: "relationship", relationTo: "users" },
-				{
-					name: "source",
-					type: "select",
-					required: true,
-					options: options(["seller", "reviewer", "vendor", "system"] as const),
+					type: "row",
+					fields: [
+						{
+							name: "status",
+							type: "select",
+							required: true,
+							options: options(VERIFICATION_STATUSES),
+							admin: { width: "25%" },
+						},
+						{
+							name: "at",
+							type: "date",
+							required: true,
+							admin: { width: "25%" },
+						},
+						{
+							name: "actor",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "25%" },
+						},
+						{
+							name: "source",
+							type: "select",
+							required: true,
+							options: options([
+								"seller",
+								"reviewer",
+								"vendor",
+								"system",
+							] as const),
+							admin: { width: "25%" },
+						},
+					],
 				},
 			],
 		},
@@ -198,12 +227,18 @@ export const VerificationRequests: CollectionConfig = {
 			name: "consent",
 			type: "group",
 			fields: [
-				{ name: "acceptedAt", type: "date" },
-				{ name: "version", type: "text" },
 				{
-					name: "locale",
-					type: "select",
-					options: options(["fr", "en"] as const),
+					type: "row",
+					fields: [
+						{ name: "acceptedAt", type: "date", admin: { width: "33%" } },
+						{ name: "version", type: "text", admin: { width: "33%" } },
+						{
+							name: "locale",
+							type: "select",
+							options: options(["fr", "en"] as const),
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
@@ -216,29 +251,62 @@ export const VerificationRequests: CollectionConfig = {
 			},
 			fields: [
 				{
-					name: "provider",
-					type: "select",
-					options: options(["didit", "smileid"] as const),
+					type: "row",
+					fields: [
+						{
+							name: "provider",
+							type: "select",
+							options: options(["didit", "smileid"] as const),
+							admin: { width: "33%" },
+						},
+						{
+							name: "sessionRef",
+							type: "text",
+							index: true,
+							admin: { width: "33%" },
+						},
+						{
+							name: "status",
+							type: "select",
+							defaultValue: "not_started",
+							options: options(KYC_STATUSES),
+							admin: { width: "33%" },
+						},
+					],
 				},
-				{ name: "sessionRef", type: "text", index: true },
 				{
-					name: "status",
-					type: "select",
-					defaultValue: "not_started",
-					options: options(KYC_STATUSES),
+					type: "row",
+					fields: [
+						{
+							name: "attempts",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "50%" },
+						},
+						{ name: "decidedAt", type: "date", admin: { width: "50%" } },
+					],
 				},
-				{ name: "attempts", type: "number", defaultValue: 0 },
-				{ name: "decidedAt", type: "date" },
 				{
-					name: "documentType",
-					type: "select",
-					options: options([
-						"national_id",
-						"passport",
-						"residence_permit",
-					] as const),
+					type: "row",
+					fields: [
+						{
+							name: "documentType",
+							type: "select",
+							options: options([
+								"national_id",
+								"passport",
+								"residence_permit",
+							] as const),
+							admin: { width: "50%" },
+						},
+						{
+							name: "documentCountry",
+							type: "text",
+							maxLength: 2,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "documentCountry", type: "text", maxLength: 2 },
 				{
 					// HMAC-SHA256 of the normalised number under VERIFICATION_HASH_PEPPER.
 					// The number itself never reaches the database.
@@ -247,23 +315,54 @@ export const VerificationRequests: CollectionConfig = {
 					index: true,
 					access: { read: reviewerField },
 				},
-				{ name: "documentNumberLast4", type: "text", maxLength: 4 },
-				{ name: "documentExpiresAt", type: "date" },
-				{ name: "givenNames", type: "text" },
-				{ name: "familyName", type: "text" },
 				{
-					// Derived from the date of birth, which is never stored.
-					name: "adult",
-					type: "checkbox",
-					defaultValue: false,
+					type: "row",
+					fields: [
+						{
+							name: "documentNumberLast4",
+							type: "text",
+							maxLength: 4,
+							admin: { width: "50%" },
+						},
+						{
+							name: "documentExpiresAt",
+							type: "date",
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "livenessPassed", type: "checkbox", defaultValue: false },
 				{
-					name: "faceMatchScore",
-					type: "number",
-					min: 0,
-					max: 100,
-					access: { read: reviewerField },
+					type: "row",
+					fields: [
+						{ name: "givenNames", type: "text", admin: { width: "50%" } },
+						{ name: "familyName", type: "text", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							// Derived from the date of birth, which is never stored.
+							name: "adult",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "33%" },
+						},
+						{
+							name: "livenessPassed",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "33%" },
+						},
+						{
+							name: "faceMatchScore",
+							type: "number",
+							min: 0,
+							max: 100,
+							access: { read: reviewerField },
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
 					name: "vendorWarnings",
@@ -271,11 +370,21 @@ export const VerificationRequests: CollectionConfig = {
 					access: { read: reviewerField },
 				},
 				{
-					name: "vendorReviewUrl",
-					type: "text",
-					access: { read: reviewerField },
+					type: "row",
+					fields: [
+						{
+							name: "vendorReviewUrl",
+							type: "text",
+							access: { read: reviewerField },
+							admin: { width: "50%" },
+						},
+						{
+							name: "vendorDataDeletedAt",
+							type: "date",
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "vendorDataDeletedAt", type: "date" },
 			],
 		},
 		{
@@ -284,27 +393,77 @@ export const VerificationRequests: CollectionConfig = {
 			admin: { description: "Level 3 only." },
 			fields: [
 				{
-					name: "businessType",
-					type: "select",
-					options: options(BUSINESS_TYPES),
+					type: "row",
+					fields: [
+						{
+							name: "businessType",
+							type: "select",
+							options: options(BUSINESS_TYPES),
+							admin: { width: "33%" },
+						},
+						{
+							name: "legalName",
+							type: "text",
+							maxLength: 120,
+							admin: { width: "33%" },
+						},
+						{
+							name: "tradeName",
+							type: "text",
+							maxLength: 120,
+							admin: { width: "33%" },
+						},
+					],
 				},
-				{ name: "legalName", type: "text", maxLength: 120 },
-				{ name: "tradeName", type: "text", maxLength: 120 },
-				{ name: "rccmNumber", type: "text", maxLength: 40, index: true },
 				{
-					name: "entreprenantDeclarationNumber",
-					type: "text",
-					maxLength: 40,
-					index: true,
+					type: "row",
+					fields: [
+						{
+							name: "rccmNumber",
+							type: "text",
+							maxLength: 40,
+							index: true,
+							admin: { width: "33%" },
+						},
+						{
+							name: "entreprenantDeclarationNumber",
+							type: "text",
+							maxLength: 40,
+							index: true,
+							admin: { width: "33%" },
+						},
+						{
+							name: "niu",
+							type: "text",
+							maxLength: 14,
+							index: true,
+							admin: { width: "33%" },
+						},
+					],
 				},
-				{ name: "niu", type: "text", maxLength: 14, index: true },
 				{ name: "registeredAddress", type: "textarea", maxLength: 500 },
-				{ name: "city", type: "text", maxLength: 80 },
-				{ name: "legalRepresentativeName", type: "text", maxLength: 120 },
 				{
-					name: "legalRepresentativeIsOwner",
-					type: "checkbox",
-					defaultValue: true,
+					type: "row",
+					fields: [
+						{
+							name: "city",
+							type: "text",
+							maxLength: 80,
+							admin: { width: "33%" },
+						},
+						{
+							name: "legalRepresentativeName",
+							type: "text",
+							maxLength: 120,
+							admin: { width: "33%" },
+						},
+						{
+							name: "legalRepresentativeIsOwner",
+							type: "checkbox",
+							defaultValue: true,
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
@@ -314,27 +473,45 @@ export const VerificationRequests: CollectionConfig = {
 			access: { read: reviewerField },
 			fields: [
 				{
-					name: "code",
-					type: "select",
-					required: true,
-					options: options(REVIEW_SIGNAL_CODES),
-				},
-				{ name: "detail", type: "text" },
-				{
-					name: "relatedRequest",
-					type: "relationship",
-					relationTo: "verification-requests",
+					type: "row",
+					fields: [
+						{
+							name: "code",
+							type: "select",
+							required: true,
+							options: options(REVIEW_SIGNAL_CODES),
+							admin: { width: "33%" },
+						},
+						{ name: "detail", type: "text", admin: { width: "33%" } },
+						{
+							name: "relatedRequest",
+							type: "relationship",
+							relationTo: "verification-requests",
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
 		{
-			name: "assignee",
-			type: "relationship",
-			relationTo: "users",
-			index: true,
-			access: { read: reviewerField },
+			type: "row",
+			fields: [
+				{
+					name: "assignee",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					access: { read: reviewerField },
+					admin: { width: "50%" },
+				},
+				{
+					name: "claimedAt",
+					type: "date",
+					access: { read: reviewerField },
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "claimedAt", type: "date", access: { read: reviewerField } },
 		{
 			name: "infoRequests",
 			type: "array",
@@ -347,13 +524,24 @@ export const VerificationRequests: CollectionConfig = {
 				},
 				{ name: "message", type: "textarea", required: true },
 				{
-					name: "requestedBy",
-					type: "relationship",
-					relationTo: "users",
-					access: { read: reviewerField },
+					type: "row",
+					fields: [
+						{
+							name: "requestedBy",
+							type: "relationship",
+							relationTo: "users",
+							access: { read: reviewerField },
+							admin: { width: "33%" },
+						},
+						{
+							name: "requestedAt",
+							type: "date",
+							required: true,
+							admin: { width: "33%" },
+						},
+						{ name: "respondedAt", type: "date", admin: { width: "33%" } },
+					],
 				},
-				{ name: "requestedAt", type: "date", required: true },
-				{ name: "respondedAt", type: "date" },
 			],
 		},
 		{
@@ -361,13 +549,19 @@ export const VerificationRequests: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "decidedBy",
-					type: "relationship",
-					relationTo: "users",
-					access: { read: reviewerField },
+					type: "row",
+					fields: [
+						{
+							name: "decidedBy",
+							type: "relationship",
+							relationTo: "users",
+							access: { read: reviewerField },
+							admin: { width: "33%" },
+						},
+						{ name: "decidedAt", type: "date", admin: { width: "33%" } },
+						{ name: "reasonCode", type: "text", admin: { width: "33%" } },
+					],
 				},
-				{ name: "decidedAt", type: "date" },
-				{ name: "reasonCode", type: "text" },
 				{ name: "sellerMessage", type: "textarea" },
 				{
 					name: "internalNote",
@@ -377,10 +571,25 @@ export const VerificationRequests: CollectionConfig = {
 				{ name: "checklist", type: "json", access: { read: reviewerField } },
 			],
 		},
-		{ name: "submittedAt", type: "date", index: true },
-		{ name: "approvedAt", type: "date" },
-		{ name: "expiresAt", type: "date", index: true },
-		{ name: "revokedAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "submittedAt",
+					type: "date",
+					index: true,
+					admin: { width: "25%" },
+				},
+				{ name: "approvedAt", type: "date", admin: { width: "25%" } },
+				{
+					name: "expiresAt",
+					type: "date",
+					index: true,
+					admin: { width: "25%" },
+				},
+				{ name: "revokedAt", type: "date", admin: { width: "25%" } },
+			],
+		},
 		{
 			name: "supersedes",
 			type: "relationship",

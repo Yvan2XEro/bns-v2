@@ -14,6 +14,7 @@ import {
 	invitationExpiresAt,
 	isInvitationUsable,
 } from "../../src/lib/invitationTokens";
+import { dataFields, fieldAt } from "./helpers/fields";
 
 describe("normalizeInvitationTarget", () => {
 	it("normalises a Cameroonian number written with spaces to E.164", () => {
@@ -170,33 +171,31 @@ describe("the collection", () => {
 	});
 
 	it("never exposes tokenHash", () => {
-		const field = (
-			ShopInvitations.fields as Array<{
-				name?: string;
-				access?: { read?: () => boolean };
-			}>
-		).find((f) => f.name === "tokenHash");
+		const field = fieldAt(ShopInvitations.fields, "tokenHash") as
+			| { access?: { read?: () => boolean } }
+			| undefined;
 		expect(field?.access?.read?.()).toBe(false);
 	});
 
 	it("has no field for the raw token, only its hash", () => {
-		const names = (ShopInvitations.fields as Array<{ name?: string }>).map(
-			(f) => f.name,
-		);
+		const names = dataFields(ShopInvitations.fields).map((f) => f.name);
 		expect(names).toContain("tokenHash");
 		expect(names).not.toContain("token");
 	});
 
 	it("requires phone for a phone invitation and email for an email one", () => {
-		const fields = ShopInvitations.fields as Array<{
-			name?: string;
+		type Validated = {
 			validate?: (
 				value: unknown,
 				args: { siblingData: Record<string, unknown> },
 			) => true | string;
-		}>;
-		const phone = fields.find((f) => f.name === "phone");
-		const email = fields.find((f) => f.name === "email");
+		};
+		const phone = fieldAt(ShopInvitations.fields, "phone") as
+			| Validated
+			| undefined;
+		const email = fieldAt(ShopInvitations.fields, "email") as
+			| Validated
+			| undefined;
 		expect(
 			phone?.validate?.(undefined, { siblingData: { channel: "phone" } }),
 		).toBeTypeOf("string");
