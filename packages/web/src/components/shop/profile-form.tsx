@@ -27,6 +27,7 @@ import {
 	shopProfileSchema,
 } from "~/lib/shop-form";
 import type { Category, MyShop } from "~/types";
+import { ShopInitials } from "./shop-initials";
 
 export function ProfileForm({
 	shop,
@@ -58,6 +59,7 @@ export function ProfileForm({
 		});
 
 	const description = useWatch({ control, name: "description" });
+	const name = useWatch({ control, name: "name" });
 	const selected = useWatch({ control, name: "categories" });
 
 	// Categories already on the shop stay selectable even if they are not roots.
@@ -95,6 +97,12 @@ export function ProfileForm({
 						hint={t("logoHint")}
 						previewUrl={field.value.url}
 						shape="square"
+						placeholder={
+							<ShopInitials
+								name={name || shop.name}
+								className="h-full w-full text-2xl"
+							/>
+						}
 						onUploaded={(id, url) => field.onChange({ id, url })}
 						onRemove={() => field.onChange({ id: null, url: null })}
 					/>
@@ -109,6 +117,9 @@ export function ProfileForm({
 						hint={t("bannerHint")}
 						previewUrl={field.value.url}
 						shape="banner"
+						placeholder={
+							<div className="pattern-dots-light h-full w-full bg-[#1E40AF]" />
+						}
 						onUploaded={(id, url) => field.onChange({ id, url })}
 						onRemove={() => field.onChange({ id: null, url: null })}
 					/>

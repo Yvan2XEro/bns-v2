@@ -14,6 +14,7 @@ export function MediaField({
 	onUploaded,
 	onRemove,
 	shape,
+	placeholder,
 }: {
 	label: string;
 	hint: string;
@@ -21,6 +22,8 @@ export function MediaField({
 	onUploaded: (id: string, url: string) => void;
 	onRemove: () => void;
 	shape: "square" | "banner";
+	/** Shown while there is no image, e.g. the shop's initials for a logo. */
+	placeholder?: React.ReactNode;
 }) {
 	const t = useTranslations("ShopManage");
 	const tRoot = useTranslations();
@@ -48,9 +51,11 @@ export function MediaField({
 						: "h-20 w-48 overflow-hidden rounded-lg bg-[#F1F5F9]"
 				}
 			>
-				{previewUrl && (
+				{previewUrl ? (
 					// biome-ignore lint/performance/noImgElement: preview of an upload or of stored media
 					<img src={previewUrl} alt="" className="h-full w-full object-cover" />
+				) : (
+					placeholder
 				)}
 			</div>
 			<div className="space-y-1">
