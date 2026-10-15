@@ -1,3 +1,5 @@
+import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -15,6 +17,7 @@ export function CheckoutButton({
 	disabled = false,
 	loading = false,
 	variant = "primary",
+	icon,
 	style,
 }: {
 	label: string;
@@ -22,6 +25,7 @@ export function CheckoutButton({
 	disabled?: boolean;
 	loading?: boolean;
 	variant?: "primary" | "outline";
+	icon?: ComponentProps<typeof Ionicons>["name"];
 	style?: ViewStyle;
 }) {
 	const c = useShopTheme();
@@ -47,9 +51,14 @@ export function CheckoutButton({
 			{loading ? (
 				<ActivityIndicator color={primary ? "#fff" : c.primary} />
 			) : (
-				<Text style={[styles.text, { color: primary ? "#fff" : c.text }]}>
-					{label}
-				</Text>
+				<>
+					{icon ? (
+						<Ionicons name={icon} size={18} color={primary ? "#fff" : c.text} />
+					) : null}
+					<Text style={[styles.text, { color: primary ? "#fff" : c.text }]}>
+						{label}
+					</Text>
+				</>
 			)}
 		</Pressable>
 	);
@@ -60,6 +69,8 @@ const styles = StyleSheet.create({
 		minHeight: 52,
 		borderRadius: 14,
 		paddingHorizontal: 16,
+		flexDirection: "row",
+		gap: 8,
 		alignItems: "center",
 		justifyContent: "center",
 	},

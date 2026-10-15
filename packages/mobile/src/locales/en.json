@@ -2718,7 +2718,22 @@
 		"noMoreAttempts": "No attempts left: the seller will call you to confirm.",
 		"confirmCode": "Confirm order",
 		"codeSentAgain": "A new code was sent",
-		"continueShopping": "Continue shopping"
+		"continueShopping": "Continue shopping",
+		"orderPlaced": "Order placed",
+		"orderNumberLine": "No. {{number}}",
+		"nextTitle": "What happens next?",
+		"nextAccept": "Accepted within 48 h",
+		"nextAcceptBody": "{{shop}} confirms availability. Without an answer within 48 h, the order is cancelled.",
+		"nextDelivery": "Delivery to {{place}}",
+		"nextDeliveryBody": "The seller calls you before arriving.",
+		"nextPickup": "Pickup at the shop",
+		"nextPickupBody": "The shop lets you know when the order is ready.",
+		"nextHandover": "Handover code",
+		"nextHandoverCodBody": "Check the parcel, give the code you received by SMS, then pay {{amount}}.",
+		"nextHandoverPaidBody": "Check the parcel, then give the code you received by SMS.",
+		"trackOrder": "Track my order",
+		"writeToShop": "Message the shop",
+		"payOnDelivery": "{{amount}} to pay on delivery"
 	},
 	"purchases": {
 		"title": "My orders",
@@ -2846,7 +2861,18 @@
 		"event_paid": "Payment received",
 		"event_disputed": "Dispute opened",
 		"event_returned": "Order returned",
-		"event_other": "Order updated"
+		"event_other": "Order updated",
+		"reviewVerified": "Verified purchase",
+		"reviewRatingWords": {
+			"1": "Disappointing",
+			"2": "Fair",
+			"3": "Good",
+			"4": "Very good",
+			"5": "Excellent"
+		},
+		"reviewPickRating": "Tap a star",
+		"reviewCounter": "{{count}} / {{max}}",
+		"reviewVerifiedNote": "Only buyers whose order was delivered can review a shop."
 	},
 	"sellerOrders": {
 		"title": "Orders",

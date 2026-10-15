@@ -2721,7 +2721,22 @@
 		"noMoreAttempts": "Plus d'essai disponible : le vendeur vous appellera pour confirmer.",
 		"confirmCode": "Confirmer la commande",
 		"codeSentAgain": "Un nouveau code a été envoyé",
-		"continueShopping": "Continuer mes achats"
+		"continueShopping": "Continuer mes achats",
+		"orderPlaced": "Commande passée",
+		"orderNumberLine": "N° {{number}}",
+		"nextTitle": "Et maintenant ?",
+		"nextAccept": "Acceptation sous 48 h",
+		"nextAcceptBody": "{{shop}} confirme la disponibilité. Sans réponse sous 48 h, la commande est annulée.",
+		"nextDelivery": "Livraison à {{place}}",
+		"nextDeliveryBody": "Le vendeur vous appelle avant d'arriver.",
+		"nextPickup": "Retrait en boutique",
+		"nextPickupBody": "La boutique vous prévient quand la commande est prête.",
+		"nextHandover": "Code de remise",
+		"nextHandoverCodBody": "Vérifiez le colis, donnez le code reçu par SMS puis payez {{amount}}.",
+		"nextHandoverPaidBody": "Vérifiez le colis puis donnez le code reçu par SMS.",
+		"trackOrder": "Suivre ma commande",
+		"writeToShop": "Écrire à la boutique",
+		"payOnDelivery": "{{amount}} à payer à la livraison"
 	},
 	"purchases": {
 		"title": "Mes commandes",
@@ -2849,7 +2864,18 @@
 		"event_paid": "Paiement reçu",
 		"event_disputed": "Litige ouvert",
 		"event_returned": "Commande retournée",
-		"event_other": "Commande mise à jour"
+		"event_other": "Commande mise à jour",
+		"reviewVerified": "Achat vérifié",
+		"reviewRatingWords": {
+			"1": "Décevant",
+			"2": "Moyen",
+			"3": "Correct",
+			"4": "Très bien",
+			"5": "Excellent"
+		},
+		"reviewPickRating": "Touchez une étoile",
+		"reviewCounter": "{{count}} / {{max}}",
+		"reviewVerifiedNote": "Seuls les acheteurs d'une commande livrée peuvent noter une boutique."
 	},
 	"sellerOrders": {
 		"title": "Commandes",

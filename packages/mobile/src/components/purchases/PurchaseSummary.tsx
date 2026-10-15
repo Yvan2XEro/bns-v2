@@ -89,9 +89,11 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 						? t("purchases.deliveryPickup")
 						: t("purchases.deliverySeller")}
 				</Text>
-				<Text style={[purchaseText.muted, { color: c.muted }]}>
-					{t("purchases.deliveryEta", { eta: delivery.etaText })}
-				</Text>
+				{delivery.etaText ? (
+					<Text style={[purchaseText.muted, { color: c.muted }]}>
+						{t("purchases.deliveryEta", { eta: delivery.etaText })}
+					</Text>
+				) : null}
 				{row(
 					t("purchases.deliveryRecipient"),
 					`${delivery.recipientName}, ${delivery.phone}`,
