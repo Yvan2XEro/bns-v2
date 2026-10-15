@@ -56,6 +56,7 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 | M11 | Liste des commandes | Boutons Accepter / Refuser sur chaque carte | Actions seulement dans le détail de la commande | Fonction |
 | M19 | Vérification | Liste des documents demandés sous le niveau suivant, bouton fixe « Vérifier mon entreprise » | Documents listés dans le parcours de vérification | Décision |
 | M20 | Paramètres de la boutique | Lignes « libellé · valeur › » qui ouvrent chaque champ, logo posé sur la bannière | Formulaires dépliés en cartes | Décision |
+| M21 | États vides / erreur | Pastille d'icône dans un rond, bouton secondaire en lien, bandeau « Hors ligne » avec données en cache | Illustrations, pas de mode hors ligne | Décision |
 | M18 | Fiche produit | Vue d'ensemble (variantes avec stock et marge, menu « … », bouton Aperçu) | Éditeur complet du produit sur un seul écran | Décision |
 
 ## Web
@@ -67,10 +68,8 @@ Comparaison pas encore faite.
 - Achat : paiement en attente, paiement protégé, étapes
   paiement et récapitulatif du tunnel.
 - Vendeur : fiche produit en revente (la revente est désactivée et aucune boutique de niveau 3 n'existe dans les données de démo).
-- P1 : création de produit, réglages boutique, recherche de boutiques,
-  passage par le téléphone, états vides/erreur, premier lancement boutique,
-  déplacement d'annonces, fiche modération boutique, fiche produit acheteur,
-  anglais + mode sombre.
+- P1 : création de produit, premier lancement boutique, fiche modération
+  boutique, fiche produit acheteur.
 - Ops / vérification : parcours de vérification (début, document, selfie,
   statut), versements, équipe et invitation, boîte de réception boutique,
   commission, livraison, réponse à un litige, revue de vérification, refus de

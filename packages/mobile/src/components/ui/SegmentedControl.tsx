@@ -34,6 +34,9 @@ export function SegmentedControl<K extends string>({
 	style?: StyleProp<ViewStyle>;
 }) {
 	const c = useShopTheme();
+	// In dark mode `card` and `neutralSoft` are the same slate; the raised
+	// segment needs a step lighter to read as selected.
+	const raised = c.isDark ? "#334155" : c.card;
 	return (
 		<View
 			style={[styles.track, { backgroundColor: c.neutralSoft }, style]}
@@ -53,7 +56,7 @@ export function SegmentedControl<K extends string>({
 						accessibilityLabel={count ? `${label} ${count}` : label}
 						style={[
 							styles.segment,
-							selected && [styles.selected, { backgroundColor: c.card }],
+							selected && [styles.selected, { backgroundColor: raised }],
 						]}
 					>
 						<Text
@@ -66,7 +69,7 @@ export function SegmentedControl<K extends string>({
 							<View
 								style={[
 									styles.count,
-									{ backgroundColor: selected ? c.primarySoft : c.card },
+									{ backgroundColor: selected ? c.primarySoft : raised },
 								]}
 							>
 								<Text
