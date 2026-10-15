@@ -2612,9 +2612,9 @@
 		"signInToView": "Connectez-vous pour voir votre panier",
 		"errorTitle": "Panier non mis à jour",
 		"available_one": "{{count}} disponible",
-		"available_other": "{{count}} disponibles",
+		"available": "{{count}} disponibles",
 		"headerSummary_one": "{{count}} article · 1 boutique",
-		"headerSummary_other": "{{count}} articles · 1 boutique",
+		"headerSummary": "{{count}} articles · 1 boutique",
 		"deliveryNext": "Mode et frais de livraison à l'étape suivante.",
 		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter."
 	},

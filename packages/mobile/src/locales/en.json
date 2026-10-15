@@ -2609,9 +2609,9 @@
 		"signInToView": "Sign in to see your cart",
 		"errorTitle": "Cart not updated",
 		"available_one": "{{count}} available",
-		"available_other": "{{count}} available",
+		"available": "{{count}} available",
 		"headerSummary_one": "{{count}} item · 1 shop",
-		"headerSummary_other": "{{count}} items · 1 shop",
+		"headerSummary": "{{count}} items · 1 shop",
 		"deliveryNext": "Delivery method and fee on the next step.",
 		"codNote": "You pay on delivery, in cash or by mobile money. You have {{days}} days after delivery to withdraw."
 	},
