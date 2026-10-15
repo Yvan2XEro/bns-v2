@@ -221,6 +221,13 @@ export type CheckoutAction =
 	| { type: "contractLocale"; locale: "fr" | "en" }
 	| { type: "accepted"; accepted: boolean };
 
+export function optionFitsMethod(
+	option: DeliveryOption,
+	method: PaymentMethod,
+): boolean {
+	return method !== "cod" || option.codAllowed;
+}
+
 export function initialCheckoutState(idempotencyKey: string): CheckoutState {
 	return {
 		step: "address",
@@ -273,15 +280,21 @@ export function checkoutReducer(
 				accepted: false,
 			};
 		// A method change re-prices the order (the protection fee), so the quote
-		// on screen is no longer the one that would be charged.
-		case "paymentMethodChosen":
+		// on screen is no longer the one that would be charged. An option the
+		// new method refuses is dropped: quoting it again would only be refused.
+		case "paymentMethodChosen": {
+			const keeps =
+				state.option !== null && optionFitsMethod(state.option, action.method);
 			return {
 				...state,
 				paymentMethod: action.method,
+				option: keeps ? state.option : null,
+				step: state.option && !keeps ? "delivery" : state.step,
 				quote: null,
 				previousQuote: null,
 				accepted: false,
 			};
+		}
 		case "quoteLoaded":
 			return {
 				...state,

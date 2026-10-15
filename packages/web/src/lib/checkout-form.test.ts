@@ -17,6 +17,7 @@ import {
 	DISTRICTS,
 	googleMapsUrl,
 	initialCheckoutState,
+	optionFitsMethod,
 	placeOrderBody,
 	quoteDifferences,
 	resendSecondsLeft,
@@ -343,6 +344,44 @@ describe("the three steps", () => {
 		expect(canPlaceOrder(after)).toBe(false);
 		expect(after.quote?.quoteHash).toBe("h-10000-3500");
 		expect(after.previousQuote?.quoteHash).toBe("h-10000-2000");
+	});
+
+	test("switching to cash on delivery drops an option that refuses it", () => {
+		let state = checkoutReducer(initialCheckoutState("idem-1"), {
+			type: "addressSubmitted",
+			address: toAddressInput(valid),
+		});
+		state = checkoutReducer(state, {
+			type: "paymentMethodChosen",
+			method: "mobile_money",
+		});
+		const prepaidOnly = { ...option, codAllowed: false };
+		state = checkoutReducer(state, {
+			type: "optionChosen",
+			option: prepaidOnly,
+		});
+		state = checkoutReducer(state, { type: "quoteLoaded", quote: quote({}) });
+		expect(optionFitsMethod(prepaidOnly, "cod")).toBe(false);
+
+		state = checkoutReducer(state, {
+			type: "paymentMethodChosen",
+			method: "cod",
+		});
+
+		expect(state.paymentMethod).toBe("cod");
+		expect(state.option).toBeNull();
+		expect(state.quote).toBeNull();
+		expect(state.step).toBe("delivery");
+	});
+
+	test("switching method keeps an option that allows both", () => {
+		const state = checkoutReducer(reviewing(), {
+			type: "paymentMethodChosen",
+			method: "mobile_money",
+		});
+		expect(state.option?.optionId).toBe(option.optionId);
+		expect(state.step).toBe("review");
+		expect(state.quote).toBeNull();
 	});
 
 	test("an address the server refused sends the buyer back to that field", () => {

@@ -17,6 +17,7 @@ import {
 	checkoutReducer,
 	DISTRICTS,
 	initialCheckoutState,
+	optionFitsMethod,
 	placeOrderBody,
 } from "~/lib/checkout-form";
 import { cartLinesOf, isSplitCart } from "~/lib/checkout-group-flow";
@@ -248,8 +249,11 @@ export function CheckoutClient() {
 	// to compute, never this screen's), so it asks for a fresh quote the same
 	// way picking a different delivery option does.
 	const choosePaymentMethod = (method: PaymentMethod) => {
+		// A quote in flight priced the old method.
+		quoteSeq.current += 1;
 		dispatch({ type: "paymentMethodChosen", method });
 		if (state.step !== "review" || !state.address || !state.option) return;
+		if (!optionFitsMethod(state.option, method)) return;
 		requestQuote(state.address, state.option, method, (fresh) =>
 			dispatch({ type: "quoteLoaded", quote: fresh }),
 		);
