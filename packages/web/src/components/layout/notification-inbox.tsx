@@ -1,18 +1,60 @@
 "use client";
 
-import { Inbox } from "@novu/nextjs";
+import { type BellRenderer, Inbox } from "@novu/nextjs";
+import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "~/hooks/use-auth";
+import { cn } from "~/lib/utils";
+
+type UnreadCount = Parameters<BellRenderer>[0];
 
 interface NotificationInboxProps {
 	applicationIdentifier: string;
-	/** The bell's colour, for a header painted in a shop's colours. */
-	bellColor?: string;
+	/** Visible under the icon from xl, like the header's other icons. */
+	label: string;
+	/** The header icons' colour classes, so the bell matches them in a shop too. */
+	tone: string;
+}
+
+/** Drawn like the header's Favoris / Messages icons, with the same red count. */
+function HeaderBell({
+	label,
+	tone,
+	count,
+}: {
+	label: string;
+	tone: string;
+	count: number;
+}) {
+	return (
+		<span
+			className={cn(
+				"flex h-10 min-w-10 cursor-pointer flex-col items-center justify-center rounded-lg px-1.5 text-[11px]",
+				tone,
+			)}
+		>
+			<span className="relative">
+				<Bell aria-hidden="true" className="h-5 w-5" />
+				{count > 0 && (
+					<span className="-top-1.5 -right-2 absolute flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-bold text-[10px] text-white">
+						{count > 99 ? "99+" : count}
+					</span>
+				)}
+			</span>
+			<span className="sr-only xl:not-sr-only">{label}</span>
+		</span>
+	);
+}
+
+function unreadTotal(unread: UnreadCount): number {
+	if (typeof unread === "number") return unread;
+	return unread?.total ?? 0;
 }
 
 export function NotificationInbox({
 	applicationIdentifier,
-	bellColor = "#64748B",
+	label,
+	tone,
 }: NotificationInboxProps) {
 	const { user } = useAuth();
 	const [subscriberHash, setSubscriberHash] = useState<string | null>(null);
@@ -26,13 +68,17 @@ export function NotificationInbox({
 			.catch(console.error);
 	}, [user]);
 
-	if (!user || !subscriberHash) return null;
+	if (!user || !subscriberHash)
+		return <HeaderBell label={label} tone={tone} count={0} />;
 
 	return (
 		<Inbox
 			applicationIdentifier={applicationIdentifier}
 			subscriberId={user.id}
 			subscriberHash={subscriberHash}
+			renderBell={(unread) => (
+				<HeaderBell label={label} tone={tone} count={unreadTotal(unread)} />
+			)}
 			appearance={{
 				variables: {
 					colorPrimary: "#1E40AF",
@@ -45,11 +91,6 @@ export function NotificationInbox({
 					colorForeground: "#0f172a",
 					colorNeutral: "#e2e8f0",
 					fontSize: "14px",
-				},
-				elements: {
-					bellIcon: {
-						color: bellColor,
-					},
 				},
 			}}
 		/>

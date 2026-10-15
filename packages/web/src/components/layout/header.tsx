@@ -195,18 +195,11 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 								</NavIcon>
 							)}
 							{signedIn && novuAppId && (
-								<div className="flex flex-col items-center">
-									<NotificationInbox
-										applicationIdentifier={novuAppId}
-										bellColor={themed ? "var(--shop-head-fg)" : "#475569"}
-									/>
-									<span
-										aria-hidden="true"
-										className="-mt-1 hidden text-[11px] xl:block"
-									>
-										{t("alerts")}
-									</span>
-								</div>
+								<NotificationInbox
+									applicationIdentifier={novuAppId}
+									label={t("alerts")}
+									tone={iconTone}
+								/>
 							)}
 							{signedIn && (
 								<CartButton
