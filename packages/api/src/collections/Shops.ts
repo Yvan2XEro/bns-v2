@@ -210,8 +210,24 @@ export const Shops: CollectionConfig = {
 			type: "array",
 			admin: { readOnly: true },
 			fields: [
-				{ name: "handle", type: "text", required: true, index: true },
-				{ name: "until", type: "date", required: true },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "handle",
+							type: "text",
+							required: true,
+							index: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "until",
+							type: "date",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{ name: "handleChangedAt", type: "date", admin: { readOnly: true } },
@@ -223,19 +239,54 @@ export const Shops: CollectionConfig = {
 			name: "contact",
 			type: "group",
 			fields: [
-				{ name: "phone", type: "text", maxLength: 30 },
-				{ name: "whatsapp", type: "text", maxLength: 30 },
-				{ name: "email", type: "email" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "phone",
+							type: "text",
+							maxLength: 30,
+							admin: { width: "33%" },
+						},
+						{
+							name: "whatsapp",
+							type: "text",
+							maxLength: 30,
+							admin: { width: "33%" },
+						},
+						{ name: "email", type: "email", admin: { width: "33%" } },
+					],
+				},
 			],
 		},
 		{
 			name: "location",
 			type: "group",
 			fields: [
-				{ name: "city", type: "text", index: true },
-				{ name: "region", type: "text" },
-				{ name: "country", type: "text" },
-				{ name: "countryCode", type: "text", maxLength: 2 },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "city",
+							type: "text",
+							index: true,
+							admin: { width: "50%" },
+						},
+						{ name: "region", type: "text", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "country", type: "text", admin: { width: "50%" } },
+						{
+							name: "countryCode",
+							type: "text",
+							maxLength: 2,
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -336,14 +387,44 @@ export const Shops: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "businessType",
-					type: "select",
-					options: BUSINESS_TYPES.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "businessType",
+							type: "select",
+							options: BUSINESS_TYPES.map((value) => ({ label: value, value })),
+							admin: { width: "50%" },
+						},
+						{
+							name: "legalName",
+							type: "text",
+							maxLength: 120,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "legalName", type: "text", maxLength: 120 },
-				{ name: "rccmNumber", type: "text", maxLength: 40 },
-				{ name: "niu", type: "text", maxLength: 14 },
-				{ name: "verifiedAt", type: "date", admin: { readOnly: true } },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "rccmNumber",
+							type: "text",
+							maxLength: 40,
+							admin: { width: "33%" },
+						},
+						{
+							name: "niu",
+							type: "text",
+							maxLength: 14,
+							admin: { width: "33%" },
+						},
+						{
+							name: "verifiedAt",
+							type: "date",
+							admin: { width: "33%", readOnly: true },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -406,27 +487,49 @@ export const Shops: CollectionConfig = {
 			name: "orderSettings",
 			type: "group",
 			fields: [
-				{ name: "codEnabled", type: "checkbox", defaultValue: false },
-				{ name: "sellerDeliveryEnabled", type: "checkbox", defaultValue: true },
 				{
-					name: "deliveryFee",
-					type: "number",
-					min: 0,
-					max: 20_000,
-					admin: {
-						readOnly: true,
-						description:
-							"Deprecated: replaced by delivery zones; retained for the transition release.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "codEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+						{
+							name: "sellerDeliveryEnabled",
+							type: "checkbox",
+							defaultValue: true,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "deliveryEtaText",
-					type: "text",
-					admin: {
-						readOnly: true,
-						description:
-							"Deprecated: replaced by delivery zone ETA; retained for the transition release.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "deliveryFee",
+							type: "number",
+							min: 0,
+							max: 20_000,
+							admin: {
+								width: "50%",
+								readOnly: true,
+								description:
+									"Deprecated: replaced by delivery zones; retained for the transition release.",
+							},
+						},
+						{
+							name: "deliveryEtaText",
+							type: "text",
+							admin: {
+								width: "50%",
+								readOnly: true,
+								description:
+									"Deprecated: replaced by delivery zone ETA; retained for the transition release.",
+							},
+						},
+					],
 				},
 				{ name: "pickupEnabled", type: "checkbox", defaultValue: false },
 				{
@@ -438,14 +541,24 @@ export const Shops: CollectionConfig = {
 							"Deprecated: replaced by shop locations; retained for the transition release.",
 					},
 					fields: [
-						{ name: "address", type: "text" },
-						{ name: "landmark", type: "text" },
+						{
+							type: "row",
+							fields: [
+								{ name: "address", type: "text", admin: { width: "50%" } },
+								{ name: "landmark", type: "text", admin: { width: "50%" } },
+							],
+						},
 						{
 							name: "gps",
 							type: "group",
 							fields: [
-								{ name: "lat", type: "number" },
-								{ name: "lng", type: "number" },
+								{
+									type: "row",
+									fields: [
+										{ name: "lat", type: "number", admin: { width: "50%" } },
+										{ name: "lng", type: "number", admin: { width: "50%" } },
+									],
+								},
 							],
 						},
 						{ name: "hours", type: "text" },
@@ -464,9 +577,29 @@ export const Shops: CollectionConfig = {
 						update: () => false,
 					},
 					fields: [
-						{ name: "name", type: "text", required: true },
-						{ name: "phone", type: "text", required: true },
-						{ name: "lastUsedAt", type: "date", required: true },
+						{
+							type: "row",
+							fields: [
+								{
+									name: "name",
+									type: "text",
+									required: true,
+									admin: { width: "33%" },
+								},
+								{
+									name: "phone",
+									type: "text",
+									required: true,
+									admin: { width: "33%" },
+								},
+								{
+									name: "lastUsedAt",
+									type: "date",
+									required: true,
+									admin: { width: "33%" },
+								},
+							],
+						},
 					],
 				},
 				{ name: "salesTermsExtra", type: "textarea", maxLength: 2000 },
@@ -504,10 +637,35 @@ export const Shops: CollectionConfig = {
 			type: "group",
 			admin: { readOnly: true },
 			fields: [
-				{ name: "ordersDelivered", type: "number", defaultValue: 0 },
-				{ name: "ordersCancelledBySeller", type: "number", defaultValue: 0 },
-				{ name: "ordersAutoCancelled", type: "number", defaultValue: 0 },
-				{ name: "ordersDeliveryFailed", type: "number", defaultValue: 0 },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "ordersDelivered",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "ordersCancelledBySeller",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "ordersAutoCancelled",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "ordersDeliveryFailed",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "25%" },
+						},
+					],
+				},
 			],
 		},
 	],

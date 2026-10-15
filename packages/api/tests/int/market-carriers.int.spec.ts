@@ -7,6 +7,7 @@ import { Markets } from "../../src/collections/Markets";
 import { Orders } from "../../src/collections/Orders";
 import config from "../../src/payload.config";
 import { fakePayload } from "./helpers/fakePayload";
+import { dataFields } from "./helpers/fields";
 import { runBeforeChange } from "./helpers/runBeforeChange";
 
 type Field = {
@@ -23,7 +24,9 @@ type Field = {
 
 const find = (fields: Field[], path: string): Field | undefined => {
 	const [head, ...rest] = path.split(".");
-	const found = fields.find((f) => f.name === head);
+	const found = (
+		dataFields(fields as Parameters<typeof dataFields>[0]) as Field[]
+	).find((f) => f.name === head);
 	return rest.length === 0 || !found
 		? found
 		: find(found.fields ?? [], rest.join("."));

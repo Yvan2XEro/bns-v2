@@ -137,37 +137,51 @@ export const AppSettings: GlobalConfig = {
 			label: "SMS",
 			fields: [
 				{
-					name: "provider",
-					type: "select",
-					defaultValue: "avlytext",
-					options: [
-						{ label: "AvlyText", value: "avlytext" },
-						{ label: "MTarget", value: "mtarget" },
+					type: "row",
+					fields: [
 						{
-							label: "Console (development only — logs instead of sending)",
-							value: "console",
+							name: "provider",
+							type: "select",
+							defaultValue: "avlytext",
+							options: [
+								{ label: "AvlyText", value: "avlytext" },
+								{ label: "MTarget", value: "mtarget" },
+								{
+									label: "Console (development only — logs instead of sending)",
+									value: "console",
+								},
+							],
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "defaultSender",
+							type: "text",
+							label: "Default sender",
+							admin: { width: "50%" },
 						},
 					],
-					required: true,
-				},
-				{
-					name: "defaultSender",
-					type: "text",
-					label: "Default sender",
 				},
 				{
 					name: "avlytext",
 					type: "group",
 					fields: [
 						{
-							name: "apiKey",
-							type: "text",
-							label: "API key",
-						},
-						{
-							name: "sender",
-							type: "text",
-							label: "Sender override",
+							type: "row",
+							fields: [
+								{
+									name: "apiKey",
+									type: "text",
+									label: "API key",
+									admin: { width: "50%" },
+								},
+								{
+									name: "sender",
+									type: "text",
+									label: "Sender override",
+									admin: { width: "50%" },
+								},
+							],
 						},
 					],
 				},
@@ -176,14 +190,21 @@ export const AppSettings: GlobalConfig = {
 					type: "group",
 					fields: [
 						{
-							name: "apiKey",
-							type: "text",
-							label: "API key",
-						},
-						{
-							name: "sender",
-							type: "text",
-							label: "Sender override",
+							type: "row",
+							fields: [
+								{
+									name: "apiKey",
+									type: "text",
+									label: "API key",
+									admin: { width: "50%" },
+								},
+								{
+									name: "sender",
+									type: "text",
+									label: "Sender override",
+									admin: { width: "50%" },
+								},
+							],
 						},
 					],
 				},
@@ -257,8 +278,13 @@ export const AppSettings: GlobalConfig = {
 							"Recorded in the processing register. Verification cannot be enabled until all four are set.",
 					},
 					fields: [
-						{ name: "reference", type: "text" },
-						{ name: "grantedAt", type: "date" },
+						{
+							type: "row",
+							fields: [
+								{ name: "reference", type: "text", admin: { width: "50%" } },
+								{ name: "grantedAt", type: "date", admin: { width: "50%" } },
+							],
+						},
 						{
 							name: "transfersAuthorised",
 							type: "checkbox",
@@ -312,20 +338,27 @@ export const AppSettings: GlobalConfig = {
 					},
 					fields: [
 						{
-							name: "key",
-							type: "select",
-							required: true,
-							options: LAUNCH_CITY_KEYS.map((key) => ({
-								label: key,
-								value: key,
-							})),
-						},
-						{
-							name: "deliveryFee",
-							type: "number",
-							required: true,
-							min: 0,
-							max: 20_000,
+							type: "row",
+							fields: [
+								{
+									name: "key",
+									type: "select",
+									required: true,
+									options: LAUNCH_CITY_KEYS.map((key) => ({
+										label: key,
+										value: key,
+									})),
+									admin: { width: "50%" },
+								},
+								{
+									name: "deliveryFee",
+									type: "number",
+									required: true,
+									min: 0,
+									max: 20_000,
+									admin: { width: "50%" },
+								},
+							],
 						},
 					],
 				},
@@ -341,68 +374,96 @@ export const AppSettings: GlobalConfig = {
 					},
 				},
 				{
-					name: "vatRateBps",
-					type: "number",
-					defaultValue: 1925,
-					admin: { description: "Basis points of VAT applied to invoices." },
+					type: "row",
+					fields: [
+						{
+							name: "vatRateBps",
+							type: "number",
+							defaultValue: 1925,
+							admin: {
+								width: "33%",
+								description: "Basis points of VAT applied to invoices.",
+							},
+						},
+						{
+							name: "minInvoiceAmount",
+							type: "number",
+							defaultValue: 500,
+							admin: {
+								width: "33%",
+								description:
+									"Smallest commission invoice the platform will issue.",
+							},
+						},
+						{
+							name: "invoiceDueDays",
+							type: "number",
+							defaultValue: 7,
+							admin: {
+								width: "33%",
+								description: "Days a shop has to pay a commission invoice.",
+							},
+						},
+					],
 				},
 				{
-					name: "minInvoiceAmount",
-					type: "number",
-					defaultValue: 500,
-					admin: {
-						description: "Smallest commission invoice the platform will issue.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "restrictAfterOverdueDays",
+							type: "number",
+							defaultValue: 3,
+							admin: {
+								width: "33%",
+								description:
+									"Days an invoice may stay overdue before new COD orders are refused.",
+							},
+						},
+						{
+							name: "confirmHours",
+							type: "number",
+							defaultValue: 24,
+							admin: {
+								width: "33%",
+								description: "Hours a shop has to confirm a new order.",
+							},
+						},
+						{
+							name: "acceptHours",
+							type: "number",
+							defaultValue: 48,
+							admin: {
+								width: "33%",
+								description:
+									"Hours a buyer has to accept delivery before escalation.",
+							},
+						},
+					],
 				},
 				{
-					name: "invoiceDueDays",
-					type: "number",
-					defaultValue: 7,
-					admin: {
-						description: "Days a shop has to pay a commission invoice.",
-					},
-				},
-				{
-					name: "restrictAfterOverdueDays",
-					type: "number",
-					defaultValue: 3,
-					admin: {
-						description:
-							"Days an invoice may stay overdue before new COD orders are refused.",
-					},
-				},
-				{
-					name: "confirmHours",
-					type: "number",
-					defaultValue: 24,
-					admin: { description: "Hours a shop has to confirm a new order." },
-				},
-				{
-					name: "acceptHours",
-					type: "number",
-					defaultValue: 48,
-					admin: {
-						description:
-							"Hours a buyer has to accept delivery before escalation.",
-					},
-				},
-				{
-					name: "withdrawalDays",
-					type: "number",
-					defaultValue: 15,
-					admin: {
-						description:
-							"Days after delivery before collected cash is withdrawable. Exposed at GET /api/public/config.",
-					},
-				},
-				{
-					name: "staleShippedDays",
-					type: "number",
-					defaultValue: 14,
-					admin: {
-						description:
-							"Days an order may sit 'shipped' before it is flagged stale.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "withdrawalDays",
+							type: "number",
+							defaultValue: 15,
+							admin: {
+								width: "50%",
+								description:
+									"Days after delivery before collected cash is withdrawable. Exposed at GET /api/public/config.",
+							},
+						},
+						{
+							name: "staleShippedDays",
+							type: "number",
+							defaultValue: 14,
+							admin: {
+								width: "50%",
+								description:
+									"Days an order may sit 'shipped' before it is flagged stale.",
+							},
+						},
+					],
 				},
 				{
 					name: "shopCaps",
@@ -449,37 +510,76 @@ export const AppSettings: GlobalConfig = {
 					"P7 zone-based delivery. Flags default off, so the existing flat-fee COD flow remains active until delivery zones are configured.",
 			},
 			fields: [
-				{ name: "zonesEnabled", type: "checkbox", defaultValue: false },
-				{ name: "couriersEnabled", type: "checkbox", defaultValue: false },
-				{ name: "riderLinksEnabled", type: "checkbox", defaultValue: true },
-				{ name: "intercityEnabled", type: "checkbox", defaultValue: false },
 				{
-					name: "maxAttempts",
-					type: "number",
-					min: 1,
-					max: 5,
-					defaultValue: 2,
+					type: "row",
+					fields: [
+						{
+							name: "zonesEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+						{
+							name: "couriersEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+						{
+							name: "riderLinksEnabled",
+							type: "checkbox",
+							defaultValue: true,
+							admin: { width: "25%" },
+						},
+						{
+							name: "intercityEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+					],
 				},
 				{
-					name: "rescheduleHours",
-					type: "number",
-					min: 1,
-					max: 168,
-					defaultValue: 48,
+					type: "row",
+					fields: [
+						{
+							name: "maxAttempts",
+							type: "number",
+							min: 1,
+							max: 5,
+							defaultValue: 2,
+							admin: { width: "50%" },
+						},
+						{
+							name: "rescheduleHours",
+							type: "number",
+							min: 1,
+							max: 168,
+							defaultValue: 48,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "pickupHoldDaysDefault",
-					type: "number",
-					min: 1,
-					max: 30,
-					defaultValue: 7,
-				},
-				{
-					name: "gpsFarThresholdMeters",
-					type: "number",
-					min: 0,
-					max: 10_000,
-					defaultValue: 300,
+					type: "row",
+					fields: [
+						{
+							name: "pickupHoldDaysDefault",
+							type: "number",
+							min: 1,
+							max: 30,
+							defaultValue: 7,
+							admin: { width: "50%" },
+						},
+						{
+							name: "gpsFarThresholdMeters",
+							type: "number",
+							min: 0,
+							max: 10_000,
+							defaultValue: 300,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
 					name: "providers",
@@ -542,43 +642,61 @@ export const AppSettings: GlobalConfig = {
 					},
 					fields: [
 						{
-							name: "countryCode",
-							type: "text",
-							required: true,
-							admin: { description: "ISO 3166-1 alpha-2, e.g. CM." },
-							validate: (value: unknown) =>
-								typeof value === "string" && /^[A-Z]{2}$/.test(value)
-									? true
-									: "Two upper-case letters (ISO 3166-1 alpha-2).",
+							type: "row",
+							fields: [
+								{
+									name: "countryCode",
+									type: "text",
+									required: true,
+									admin: {
+										width: "50%",
+										description: "ISO 3166-1 alpha-2, e.g. CM.",
+									},
+									validate: (value: unknown) =>
+										typeof value === "string" && /^[A-Z]{2}$/.test(value)
+											? true
+											: "Two upper-case letters (ISO 3166-1 alpha-2).",
+								},
+								{
+									name: "currency",
+									type: "text",
+									required: true,
+									admin: {
+										width: "50%",
+										description: "ISO 4217 currency code.",
+									},
+									validate: (value: unknown) =>
+										typeof value === "string" && /^[A-Z]{3}$/.test(value)
+											? true
+											: "Three upper-case letters (ISO 4217).",
+								},
+							],
 						},
 						{
-							name: "currency",
-							type: "text",
-							required: true,
-							admin: { description: "ISO 4217 currency code." },
-							validate: (value: unknown) =>
-								typeof value === "string" && /^[A-Z]{3}$/.test(value)
-									? true
-									: "Three upper-case letters (ISO 4217).",
-						},
-						{
-							name: "provider",
-							type: "select",
-							required: true,
-							options: PAYMENT_PROVIDERS.map((value) => ({
-								label: value,
-								value,
-							})),
-						},
-						{
-							name: "settlementMode",
-							type: "select",
-							required: true,
-							defaultValue: "provider_split",
-							options: SETTLEMENT_MODES.map((value) => ({
-								label: value,
-								value,
-							})),
+							type: "row",
+							fields: [
+								{
+									name: "provider",
+									type: "select",
+									required: true,
+									options: PAYMENT_PROVIDERS.map((value) => ({
+										label: value,
+										value,
+									})),
+									admin: { width: "50%" },
+								},
+								{
+									name: "settlementMode",
+									type: "select",
+									required: true,
+									defaultValue: "provider_split",
+									options: SETTLEMENT_MODES.map((value) => ({
+										label: value,
+										value,
+									})),
+									admin: { width: "50%" },
+								},
+							],
 						},
 						{
 							name: "channels",
@@ -590,13 +708,24 @@ export const AppSettings: GlobalConfig = {
 							})),
 						},
 						{
-							name: "vatRateBps",
-							type: "number",
-							required: true,
-							min: 0,
-							max: 10_000,
+							type: "row",
+							fields: [
+								{
+									name: "vatRateBps",
+									type: "number",
+									required: true,
+									min: 0,
+									max: 10_000,
+									admin: { width: "50%" },
+								},
+								{
+									name: "enabled",
+									type: "checkbox",
+									defaultValue: false,
+									admin: { width: "50%" },
+								},
+							],
 						},
-						{ name: "enabled", type: "checkbox", defaultValue: false },
 					],
 				},
 				{
@@ -608,49 +737,71 @@ export const AppSettings: GlobalConfig = {
 					},
 					fields: [
 						{
-							name: "bps",
-							type: "number",
-							min: 0,
-							max: 10_000,
-							defaultValue: PAYMENT_DEFAULTS.buyerProtection.bps,
-						},
-						{
-							name: "min",
-							type: "number",
-							min: 0,
-							defaultValue: PAYMENT_DEFAULTS.buyerProtection.min,
-						},
-						{
-							name: "max",
-							type: "number",
-							min: 0,
-							defaultValue: PAYMENT_DEFAULTS.buyerProtection.max,
+							type: "row",
+							fields: [
+								{
+									name: "bps",
+									type: "number",
+									min: 0,
+									max: 10_000,
+									defaultValue: PAYMENT_DEFAULTS.buyerProtection.bps,
+									admin: { width: "33%" },
+								},
+								{
+									name: "min",
+									type: "number",
+									min: 0,
+									defaultValue: PAYMENT_DEFAULTS.buyerProtection.min,
+									admin: { width: "33%" },
+								},
+								{
+									name: "max",
+									type: "number",
+									min: 0,
+									defaultValue: PAYMENT_DEFAULTS.buyerProtection.max,
+									admin: { width: "33%" },
+								},
+							],
 						},
 					],
 				},
 				{
-					name: "checkoutExpiryMinutes",
-					type: "number",
-					min: 1,
-					defaultValue: PAYMENT_DEFAULTS.checkoutExpiryMinutes,
+					type: "row",
+					fields: [
+						{
+							name: "checkoutExpiryMinutes",
+							type: "number",
+							min: 1,
+							defaultValue: PAYMENT_DEFAULTS.checkoutExpiryMinutes,
+							admin: { width: "50%" },
+						},
+						{
+							name: "payoutAccountChangeHoldHours",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.payoutAccountChangeHoldHours,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "payoutAccountChangeHoldHours",
-					type: "number",
-					min: 0,
-					defaultValue: PAYMENT_DEFAULTS.payoutAccountChangeHoldHours,
-				},
-				{
-					name: "minPayout",
-					type: "number",
-					min: 0,
-					defaultValue: PAYMENT_DEFAULTS.minPayout,
-				},
-				{
-					name: "maxOrderAmount",
-					type: "number",
-					min: 0,
-					defaultValue: PAYMENT_DEFAULTS.maxOrderAmount,
+					type: "row",
+					fields: [
+						{
+							name: "minPayout",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.minPayout,
+							admin: { width: "50%" },
+						},
+						{
+							name: "maxOrderAmount",
+							type: "number",
+							min: 0,
+							defaultValue: PAYMENT_DEFAULTS.maxOrderAmount,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
 					name: "exposureCaps",
@@ -661,16 +812,23 @@ export const AppSettings: GlobalConfig = {
 					},
 					fields: [
 						{
-							name: "level2",
-							type: "number",
-							min: 0,
-							defaultValue: PAYMENT_DEFAULTS.exposureCaps.level2,
-						},
-						{
-							name: "level3",
-							type: "number",
-							min: 0,
-							defaultValue: PAYMENT_DEFAULTS.exposureCaps.level3,
+							type: "row",
+							fields: [
+								{
+									name: "level2",
+									type: "number",
+									min: 0,
+									defaultValue: PAYMENT_DEFAULTS.exposureCaps.level2,
+									admin: { width: "50%" },
+								},
+								{
+									name: "level3",
+									type: "number",
+									min: 0,
+									defaultValue: PAYMENT_DEFAULTS.exposureCaps.level3,
+									admin: { width: "50%" },
+								},
+							],
 						},
 					],
 				},
@@ -704,13 +862,19 @@ export const AppSettings: GlobalConfig = {
 					},
 					fields: [
 						{
-							name: "gate",
-							type: "select",
-							required: true,
-							options: GATE_IDS.map((value) => ({ label: value, value })),
+							type: "row",
+							fields: [
+								{
+									name: "gate",
+									type: "select",
+									required: true,
+									options: GATE_IDS.map((value) => ({ label: value, value })),
+									admin: { width: "33%" },
+								},
+								{ name: "clearedAt", type: "date", admin: { width: "33%" } },
+								{ name: "clearedBy", type: "text", admin: { width: "33%" } },
+							],
 						},
-						{ name: "clearedAt", type: "date" },
-						{ name: "clearedBy", type: "text" },
 						{
 							name: "evidence",
 							type: "upload",
@@ -731,32 +895,45 @@ export const AppSettings: GlobalConfig = {
 			},
 			fields: [
 				{
-					name: "enabled",
-					type: "checkbox",
-					defaultValue: false,
-				},
-				{
-					name: "prepaidEnabled",
-					type: "checkbox",
-					defaultValue: false,
+					type: "row",
+					fields: [
+						{
+							name: "enabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+						{
+							name: "prepaidEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
 					name: "gates",
 					type: "array",
 					fields: [
 						{
-							name: "gate",
-							type: "select",
-							required: true,
-							options: [
+							type: "row",
+							fields: [
 								{
-									label: "NotchPay affiliate flow",
-									value: "notchpay_affiliate",
+									name: "gate",
+									type: "select",
+									required: true,
+									options: [
+										{
+											label: "NotchPay affiliate flow",
+											value: "notchpay_affiliate",
+										},
+									],
+									admin: { width: "33%" },
 								},
+								{ name: "clearedAt", type: "date", admin: { width: "33%" } },
+								{ name: "clearedBy", type: "text", admin: { width: "33%" } },
 							],
 						},
-						{ name: "clearedAt", type: "date" },
-						{ name: "clearedBy", type: "text" },
 						{
 							name: "evidence",
 							type: "upload",
@@ -766,29 +943,43 @@ export const AppSettings: GlobalConfig = {
 					],
 				},
 				{
-					name: "poAcceptHours",
-					type: "number",
-					min: 1,
-					max: 168,
-					defaultValue: 24,
+					type: "row",
+					fields: [
+						{
+							name: "poAcceptHours",
+							type: "number",
+							min: 1,
+							max: 168,
+							defaultValue: 24,
+							admin: { width: "50%" },
+						},
+						{
+							name: "newResellerWeeklyCap",
+							type: "number",
+							min: 0,
+							defaultValue: 25_000,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "newResellerWeeklyCap",
-					type: "number",
-					min: 0,
-					defaultValue: 25_000,
-				},
-				{
-					name: "minPayout",
-					type: "number",
-					min: 0,
-					defaultValue: 2_000,
-				},
-				{
-					name: "payoutApprovalAbove",
-					type: "number",
-					min: 0,
-					defaultValue: 500_000,
+					type: "row",
+					fields: [
+						{
+							name: "minPayout",
+							type: "number",
+							min: 0,
+							defaultValue: 2_000,
+							admin: { width: "50%" },
+						},
+						{
+							name: "payoutApprovalAbove",
+							type: "number",
+							min: 0,
+							defaultValue: 500_000,
+							admin: { width: "50%" },
+						},
+					],
 				},
 			],
 		},
@@ -802,72 +993,103 @@ export const AppSettings: GlobalConfig = {
 			},
 			fields: [
 				{
-					name: "shipByDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.shipByDays,
+					type: "row",
+					fields: [
+						{
+							name: "shipByDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.shipByDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "nonConformityShipByDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.nonConformityShipByDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "sellerPickupDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.sellerPickupDays,
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
-					name: "nonConformityShipByDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.nonConformityShipByDays,
+					type: "row",
+					fields: [
+						{
+							name: "inspectDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.inspectDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "receivePresumptionDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.receivePresumptionDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "refundDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.refundDays,
+							admin: {
+								width: "33%",
+								description: "Refused below 15 days until G1 is filed.",
+							},
+						},
+					],
 				},
 				{
-					name: "sellerPickupDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.sellerPickupDays,
+					type: "row",
+					fields: [
+						{
+							name: "codRefundConfirmSilenceDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.codRefundConfirmSilenceDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "lateDeliveryGraceDays",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.lateDeliveryGraceDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "returnWaiverMaxGoodsValue",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.returnWaiverMaxGoodsValue,
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
-					name: "inspectDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.inspectDays,
-				},
-				{
-					name: "receivePresumptionDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.receivePresumptionDays,
-				},
-				{
-					name: "refundDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.refundDays,
-					admin: {
-						description: "Refused below 15 days until G1 is filed.",
-					},
-				},
-				{
-					name: "codRefundConfirmSilenceDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.codRefundConfirmSilenceDays,
-				},
-				{
-					name: "lateDeliveryGraceDays",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.lateDeliveryGraceDays,
-				},
-				{
-					name: "returnWaiverMaxGoodsValue",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.returnWaiverMaxGoodsValue,
-				},
-				{
-					name: "refundOutboundDeliveryOnWithdrawal",
-					type: "checkbox",
-					defaultValue: RETURN_DEFAULTS.refundOutboundDeliveryOnWithdrawal,
-				},
-				{
-					name: "maxReturnShippingReimbursement",
-					type: "number",
-					min: 0,
-					defaultValue: RETURN_DEFAULTS.maxReturnShippingReimbursement,
+					type: "row",
+					fields: [
+						{
+							name: "refundOutboundDeliveryOnWithdrawal",
+							type: "checkbox",
+							defaultValue: RETURN_DEFAULTS.refundOutboundDeliveryOnWithdrawal,
+							admin: { width: "50%" },
+						},
+						{
+							name: "maxReturnShippingReimbursement",
+							type: "number",
+							min: 0,
+							defaultValue: RETURN_DEFAULTS.maxReturnShippingReimbursement,
+							admin: { width: "50%" },
+						},
+					],
 				},
 			],
 		},
@@ -886,76 +1108,108 @@ export const AppSettings: GlobalConfig = {
 					defaultValue: DISPUTE_DEFAULTS.enabled,
 				},
 				{
-					name: "submitAutoHours",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.submitAutoHours,
+					type: "row",
+					fields: [
+						{
+							name: "submitAutoHours",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.submitAutoHours,
+							admin: { width: "33%" },
+						},
+						{
+							name: "respondHours",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.respondHours,
+							admin: { width: "33%" },
+						},
+						{
+							name: "reminderHours",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.reminderHours,
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
-					name: "respondHours",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.respondHours,
+					type: "row",
+					fields: [
+						{
+							name: "proposalHours",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.proposalHours,
+							admin: { width: "33%" },
+						},
+						{
+							name: "maxProposalRounds",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.maxProposalRounds,
+							admin: { width: "33%" },
+						},
+						{
+							name: "reviewBusinessDays",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.reviewBusinessDays,
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
-					name: "reminderHours",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.reminderHours,
+					type: "row",
+					fields: [
+						{
+							name: "maxInfoRequests",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.maxInfoRequests,
+							admin: { width: "33%" },
+						},
+						{
+							name: "moderatorRefundLimit",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.moderatorRefundLimit,
+							admin: { width: "33%" },
+						},
+						{
+							name: "notReceivedMaxDays",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.notReceivedMaxDays,
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
-					name: "proposalHours",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.proposalHours,
-				},
-				{
-					name: "maxProposalRounds",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.maxProposalRounds,
-				},
-				{
-					name: "reviewBusinessDays",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.reviewBusinessDays,
-				},
-				{
-					name: "maxInfoRequests",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.maxInfoRequests,
-				},
-				{
-					name: "moderatorRefundLimit",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.moderatorRefundLimit,
-				},
-				{
-					name: "notReceivedMaxDays",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.notReceivedMaxDays,
-				},
-				{
-					name: "conformityWindowDays",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.conformityWindowDays,
-				},
-				{
-					name: "counterfeitWindowDays",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.counterfeitWindowDays,
-				},
-				{
-					name: "noShowWindowDays",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.noShowWindowDays,
+					type: "row",
+					fields: [
+						{
+							name: "conformityWindowDays",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.conformityWindowDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "counterfeitWindowDays",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.counterfeitWindowDays,
+							admin: { width: "33%" },
+						},
+						{
+							name: "noShowWindowDays",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.noShowWindowDays,
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
 					name: "evidenceRetentionDays",
@@ -968,35 +1222,49 @@ export const AppSettings: GlobalConfig = {
 					type: "group",
 					fields: [
 						{
-							name: "perParty",
-							type: "number",
-							min: 0,
-							defaultValue: DISPUTE_DEFAULTS.evidenceLimit.perParty,
-						},
-						{
-							name: "total",
-							type: "number",
-							min: 0,
-							defaultValue: DISPUTE_DEFAULTS.evidenceLimit.total,
+							type: "row",
+							fields: [
+								{
+									name: "perParty",
+									type: "number",
+									min: 0,
+									defaultValue: DISPUTE_DEFAULTS.evidenceLimit.perParty,
+									admin: { width: "50%" },
+								},
+								{
+									name: "total",
+									type: "number",
+									min: 0,
+									defaultValue: DISPUTE_DEFAULTS.evidenceLimit.total,
+									admin: { width: "50%" },
+								},
+							],
 						},
 					],
 				},
 				{
-					name: "strikeEffectsEnabled",
-					type: "checkbox",
-					defaultValue: DISPUTE_DEFAULTS.strikeEffectsEnabled,
-					admin: {
-						description: "Refused above false until G4 is filed.",
-					},
-				},
-				{
-					name: "sellerLossFee",
-					type: "number",
-					min: 0,
-					defaultValue: DISPUTE_DEFAULTS.sellerLossFee,
-					admin: {
-						description: "Refused above 0 until G4 is filed.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "strikeEffectsEnabled",
+							type: "checkbox",
+							defaultValue: DISPUTE_DEFAULTS.strikeEffectsEnabled,
+							admin: {
+								width: "50%",
+								description: "Refused above false until G4 is filed.",
+							},
+						},
+						{
+							name: "sellerLossFee",
+							type: "number",
+							min: 0,
+							defaultValue: DISPUTE_DEFAULTS.sellerLossFee,
+							admin: {
+								width: "50%",
+								description: "Refused above 0 until G4 is filed.",
+							},
+						},
+					],
 				},
 				{
 					name: "gates",
@@ -1007,13 +1275,22 @@ export const AppSettings: GlobalConfig = {
 					},
 					fields: [
 						{
-							name: "gate",
-							type: "select",
-							required: true,
-							options: CASE_GATE_IDS.map((value) => ({ label: value, value })),
+							type: "row",
+							fields: [
+								{
+									name: "gate",
+									type: "select",
+									required: true,
+									options: CASE_GATE_IDS.map((value) => ({
+										label: value,
+										value,
+									})),
+									admin: { width: "33%" },
+								},
+								{ name: "clearedAt", type: "date", admin: { width: "33%" } },
+								{ name: "clearedBy", type: "text", admin: { width: "33%" } },
+							],
 						},
-						{ name: "clearedAt", type: "date" },
-						{ name: "clearedBy", type: "text" },
 						{
 							name: "evidence",
 							type: "upload",
@@ -1035,9 +1312,29 @@ export const AppSettings: GlobalConfig = {
 			label: "Risk and fraud prevention",
 			type: "group",
 			fields: [
-				{ name: "enabled", type: "checkbox", defaultValue: false },
-				{ name: "autoEffectsEnabled", type: "checkbox", defaultValue: false },
-				{ name: "newLimitsEnabled", type: "checkbox", defaultValue: false },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "enabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "33%" },
+						},
+						{
+							name: "autoEffectsEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "33%" },
+						},
+						{
+							name: "newLimitsEnabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "33%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -1046,23 +1343,34 @@ export const AppSettings: GlobalConfig = {
 			label: "Company",
 			fields: [
 				{
-					name: "legalName",
-					type: "text",
-					admin: { description: "Legal name printed on commission invoices." },
-				},
-				{
-					name: "rccm",
-					type: "text",
-					admin: {
-						description: "RCCM trade register number printed on invoices.",
-					},
-				},
-				{
-					name: "niu",
-					type: "text",
-					admin: {
-						description: "Tax identification number (NIU) printed on invoices.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "legalName",
+							type: "text",
+							admin: {
+								width: "33%",
+								description: "Legal name printed on commission invoices.",
+							},
+						},
+						{
+							name: "rccm",
+							type: "text",
+							admin: {
+								width: "33%",
+								description: "RCCM trade register number printed on invoices.",
+							},
+						},
+						{
+							name: "niu",
+							type: "text",
+							admin: {
+								width: "33%",
+								description:
+									"Tax identification number (NIU) printed on invoices.",
+							},
+						},
+					],
 				},
 				{
 					name: "address",
@@ -1070,14 +1378,25 @@ export const AppSettings: GlobalConfig = {
 					admin: { description: "Registered address printed on invoices." },
 				},
 				{
-					name: "supportEmail",
-					type: "text",
-					admin: { description: "Support contact shown to buyers and shops." },
-				},
-				{
-					name: "supportPhone",
-					type: "text",
-					admin: { description: "Support contact shown to buyers and shops." },
+					type: "row",
+					fields: [
+						{
+							name: "supportEmail",
+							type: "text",
+							admin: {
+								width: "50%",
+								description: "Support contact shown to buyers and shops.",
+							},
+						},
+						{
+							name: "supportPhone",
+							type: "text",
+							admin: {
+								width: "50%",
+								description: "Support contact shown to buyers and shops.",
+							},
+						},
+					],
 				},
 			],
 		},

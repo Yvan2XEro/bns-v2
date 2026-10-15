@@ -72,22 +72,34 @@ export const MarketCities: CollectionConfig = {
 	indexes: [{ fields: ["market", "key"], unique: true }],
 	fields: [
 		{
-			name: "market",
-			type: "relationship",
-			relationTo: "markets",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "market",
+					type: "relationship",
+					relationTo: "markets",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "key",
+					type: "text",
+					required: true,
+					validate: (value: unknown) =>
+						typeof value === "string" && /^[a-z0-9-]{2,30}$/.test(value)
+							? true
+							: "Use 2-30 lower-case letters, digits or hyphens.",
+					admin: { width: "33%" },
+				},
+				{
+					name: "label",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
-		{
-			name: "key",
-			type: "text",
-			required: true,
-			validate: (value: unknown) =>
-				typeof value === "string" && /^[a-z0-9-]{2,30}$/.test(value)
-					? true
-					: "Use 2-30 lower-case letters, digits or hyphens.",
-		},
-		{ name: "label", type: "text", required: true },
 		{
 			name: "districts",
 			type: "array",
@@ -98,17 +110,33 @@ export const MarketCities: CollectionConfig = {
 			],
 		},
 		{
-			name: "defaultDeliveryFee",
-			type: "number",
-			required: true,
-			min: 0,
-			validate: (value: unknown) =>
-				Number.isInteger(value) && (value as number) >= 0
-					? true
-					: "A fee is a non-negative integer in minor units.",
+			type: "row",
+			fields: [
+				{
+					name: "defaultDeliveryFee",
+					type: "number",
+					required: true,
+					min: 0,
+					validate: (value: unknown) =>
+						Number.isInteger(value) && (value as number) >= 0
+							? true
+							: "A fee is a non-negative integer in minor units.",
+					admin: { width: "33%" },
+				},
+				{
+					name: "active",
+					type: "checkbox",
+					defaultValue: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "sortOrder",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "33%" },
+				},
+			],
 		},
-		{ name: "active", type: "checkbox", defaultValue: true },
-		{ name: "sortOrder", type: "number", defaultValue: 0 },
 	],
 	timestamps: true,
 };

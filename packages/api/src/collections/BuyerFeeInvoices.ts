@@ -27,38 +27,91 @@ export const BuyerFeeInvoices: CollectionConfig = {
 		delete: nobody,
 	},
 	fields: [
-		{ name: "number", type: "text", required: true, unique: true },
 		{
-			name: "kind",
-			type: "select",
-			required: true,
-			defaultValue: "invoice",
-			options: BUYER_FEE_INVOICE_KINDS.map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "number",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "kind",
+					type: "select",
+					required: true,
+					defaultValue: "invoice",
+					options: BUYER_FEE_INVOICE_KINDS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "creditsInvoice",
-			type: "relationship",
-			relationTo: "buyer-fee-invoices",
-			validate: (value: unknown, { siblingData }: { siblingData: unknown }) =>
-				(siblingData as { kind?: unknown }).kind !== "credit_note" ||
-				Boolean(value) ||
-				"A credit note names the invoice it credits.",
+			type: "row",
+			fields: [
+				{
+					name: "creditsInvoice",
+					type: "relationship",
+					relationTo: "buyer-fee-invoices",
+					validate: (
+						value: unknown,
+						{ siblingData }: { siblingData: unknown },
+					) =>
+						(siblingData as { kind?: unknown }).kind !== "credit_note" ||
+						Boolean(value) ||
+						"A credit note names the invoice it credits.",
+					admin: { width: "33%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "buyer",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "amountHt",
+					type: "number",
+					required: true,
+					admin: { width: "25%" },
+				},
+				{
+					name: "vat",
+					type: "number",
+					required: true,
+					admin: { width: "25%" },
+				},
+				{
+					name: "amountTtc",
+					type: "number",
+					required: true,
+					admin: { width: "25%" },
+				},
+				{
+					name: "vatRateBps",
+					type: "number",
+					required: true,
+					admin: { width: "25%" },
+				},
+			],
 		},
-		{ name: "buyer", type: "relationship", relationTo: "users", index: true },
-		{ name: "amountHt", type: "number", required: true },
-		{ name: "vat", type: "number", required: true },
-		{ name: "amountTtc", type: "number", required: true },
-		{ name: "vatRateBps", type: "number", required: true },
 		{ name: "currency", type: "text", required: true },
 		formatSnapshotField,
 		// Bilingual FR/EN (Law 2011/012 art. 6).

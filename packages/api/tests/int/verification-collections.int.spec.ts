@@ -168,8 +168,10 @@ describe("shops and users field additions", () => {
 		expect(names).toEqual(
 			expect.arrayContaining(["levelExpiresAt", "verifiedAt", "legal"]),
 		);
-		const legal =
-			(Shops.fields as Field[]).find((f) => f.name === "legal")?.fields ?? [];
+		const legal = dataFields(
+			((Shops.fields as Field[]).find((f) => f.name === "legal")?.fields ??
+				[]) as PayloadField[],
+		);
 		expect(legal.map((f) => f.name)).toEqual([
 			"businessType",
 			"legalName",

@@ -133,41 +133,82 @@ export const Orders: CollectionConfig = {
 			index: true,
 		},
 		marketField,
-		{ name: "checkoutGroup", type: "text", index: true },
-		{ name: "idempotencyKey", type: "text", index: true },
-		{ name: "buyer", type: "relationship", relationTo: "users", index: true },
-		{ name: "buyerDeletedAt", type: "date" },
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			index: true,
-			options: ORDER_STATUSES.map((value) => ({ label: value, value })),
-			admin: { readOnly: true },
-		},
-		{
-			name: "paymentMethod",
-			type: "select",
-			required: true,
-			options: [
-				{ label: "Cash on delivery", value: "cod" },
-				{ label: "Mobile money", value: "mobile_money" },
+			type: "row",
+			fields: [
+				{
+					name: "checkoutGroup",
+					type: "text",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "idempotencyKey",
+					type: "text",
+					index: true,
+					admin: { width: "50%" },
+				},
 			],
 		},
 		{
-			name: "paymentStatus",
-			type: "select",
-			required: true,
-			index: true,
-			options: ORDER_PAYMENT_STATUSES.map((value) => ({ label: value, value })),
-			admin: { readOnly: true },
+			type: "row",
+			fields: [
+				{
+					name: "buyer",
+					type: "relationship",
+					relationTo: "users",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{ name: "buyerDeletedAt", type: "date", admin: { width: "50%" } },
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					index: true,
+					options: ORDER_STATUSES.map((value) => ({ label: value, value })),
+					admin: { width: "50%", readOnly: true },
+				},
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{
+					name: "paymentMethod",
+					type: "select",
+					required: true,
+					options: [
+						{ label: "Cash on delivery", value: "cod" },
+						{ label: "Mobile money", value: "mobile_money" },
+					],
+					admin: { width: "50%" },
+				},
+				{
+					name: "paymentStatus",
+					type: "select",
+					required: true,
+					index: true,
+					options: ORDER_PAYMENT_STATUSES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 		{
 			name: "confirmation",
@@ -186,12 +227,37 @@ export const Orders: CollectionConfig = {
 				// proof of possession, not something even the buyer who received
 				// it by SMS needs to read back from the API.
 				{ name: "codeHash", type: "text", access: { read: () => false } },
-				{ name: "codeExpiresAt", type: "date" },
-				{ name: "attempts", type: "number", defaultValue: 0 },
-				{ name: "sentAt", type: "date" },
-				{ name: "resendCount", type: "number", defaultValue: 0 },
-				{ name: "confirmedAt", type: "date" },
-				{ name: "confirmedBy", type: "relationship", relationTo: "users" },
+				{
+					type: "row",
+					fields: [
+						{ name: "codeExpiresAt", type: "date", admin: { width: "33%" } },
+						{
+							name: "attempts",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "sentAt", type: "date", admin: { width: "33%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "resendCount",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "confirmedAt", type: "date", admin: { width: "33%" } },
+						{
+							name: "confirmedBy",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "33%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -199,23 +265,54 @@ export const Orders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{ name: "codeHash", type: "text", access: { read: () => false } },
-				{ name: "attempts", type: "number", defaultValue: 0 },
-				{ name: "lockedAt", type: "date" },
-				{ name: "sentAt", type: "date" },
-				{ name: "regenerateCount", type: "number", defaultValue: 0 },
 				{
-					name: "method",
-					type: "select",
-					options: [
-						{ label: "OTP", value: "otp" },
-						{ label: "Buyer confirmation", value: "buyer_confirmation" },
-						{ label: "Seller declaration", value: "seller_declaration" },
-						{ label: "Carrier proof of delivery", value: "carrier_pod" },
+					type: "row",
+					fields: [
+						{
+							name: "attempts",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "lockedAt", type: "date", admin: { width: "33%" } },
+						{ name: "sentAt", type: "date", admin: { width: "33%" } },
 					],
 				},
-				{ name: "verifiedAt", type: "date" },
-				{ name: "verifiedBy", type: "relationship", relationTo: "users" },
-				{ name: "contestBy", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "regenerateCount",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "50%" },
+						},
+						{
+							name: "method",
+							type: "select",
+							options: [
+								{ label: "OTP", value: "otp" },
+								{ label: "Buyer confirmation", value: "buyer_confirmation" },
+								{ label: "Seller declaration", value: "seller_declaration" },
+								{ label: "Carrier proof of delivery", value: "carrier_pod" },
+							],
+							admin: { width: "50%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "verifiedAt", type: "date", admin: { width: "33%" } },
+						{
+							name: "verifiedBy",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "33%" },
+						},
+						{ name: "contestBy", type: "date", admin: { width: "33%" } },
+					],
+				},
 			],
 		},
 		{
@@ -223,50 +320,118 @@ export const Orders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "method",
-					type: "select",
-					options: [
-						{ label: "Seller delivery", value: "seller_delivery" },
-						{ label: "Courier", value: "courier" },
-						{ label: "Pickup", value: "pickup" },
+					type: "row",
+					fields: [
+						{
+							name: "method",
+							type: "select",
+							options: [
+								{ label: "Seller delivery", value: "seller_delivery" },
+								{ label: "Courier", value: "courier" },
+								{ label: "Pickup", value: "pickup" },
+							],
+							admin: { width: "33%" },
+						},
+						{
+							name: "recipientName",
+							type: "text",
+							required: true,
+							minLength: 2,
+							maxLength: 60,
+							admin: { width: "33%" },
+						},
+						{
+							name: "phone",
+							type: "text",
+							required: true,
+							admin: { width: "33%" },
+						},
 					],
 				},
 				{
-					name: "recipientName",
-					type: "text",
-					required: true,
-					minLength: 2,
-					maxLength: 60,
+					type: "row",
+					fields: [
+						{
+							name: "city",
+							type: "select",
+							options: cityOptions,
+							admin: { width: "33%" },
+						},
+						{ name: "district", type: "text", admin: { width: "33%" } },
+						{
+							name: "districtOther",
+							type: "text",
+							minLength: 2,
+							maxLength: 60,
+							admin: { width: "33%" },
+						},
+					],
 				},
-				{ name: "phone", type: "text", required: true },
-				{ name: "city", type: "select", options: cityOptions },
-				{ name: "district", type: "text" },
-				{ name: "districtOther", type: "text", minLength: 2, maxLength: 60 },
 				{ name: "landmark", type: "text", minLength: 5, maxLength: 200 },
 				{
 					name: "gps",
 					type: "group",
 					fields: [
-						{ name: "lat", type: "number" },
-						{ name: "lng", type: "number" },
-						{ name: "accuracyMeters", type: "number" },
-						{ name: "capturedAt", type: "date" },
+						{
+							type: "row",
+							fields: [
+								{ name: "lat", type: "number", admin: { width: "25%" } },
+								{ name: "lng", type: "number", admin: { width: "25%" } },
+								{
+									name: "accuracyMeters",
+									type: "number",
+									admin: { width: "25%" },
+								},
+								{ name: "capturedAt", type: "date", admin: { width: "25%" } },
+							],
+						},
 					],
 				},
 				{ name: "instructions", type: "textarea", maxLength: 300 },
 				{ name: "pickupPoint", type: "json" },
-				{ name: "fee", type: "number" },
-				{ name: "etaText", type: "text" },
-				{ name: "optionId", type: "text" },
-				{ name: "zone", type: "relationship", relationTo: "delivery-zones" },
 				{
-					name: "pickupLocation",
-					type: "relationship",
-					relationTo: "shop-locations",
+					type: "row",
+					fields: [
+						{ name: "fee", type: "number", admin: { width: "33%" } },
+						{ name: "etaText", type: "text", admin: { width: "33%" } },
+						{ name: "optionId", type: "text", admin: { width: "33%" } },
+					],
 				},
-				{ name: "etaMinHours", type: "number", min: 0 },
-				{ name: "etaMaxHours", type: "number", min: 0 },
-				{ name: "promisedBy", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "zone",
+							type: "relationship",
+							relationTo: "delivery-zones",
+							admin: { width: "50%" },
+						},
+						{
+							name: "pickupLocation",
+							type: "relationship",
+							relationTo: "shop-locations",
+							admin: { width: "50%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "etaMinHours",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{
+							name: "etaMaxHours",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "promisedBy", type: "date", admin: { width: "33%" } },
+					],
+				},
 			],
 		},
 		{
@@ -280,18 +445,61 @@ export const Orders: CollectionConfig = {
 			name: "amounts",
 			type: "group",
 			fields: [
-				{ name: "subtotal", type: "number" },
-				{ name: "deliveryFee", type: "number" },
-				{ name: "discount", type: "number", defaultValue: 0 },
-				{ name: "buyerProtectionFee", type: "number", defaultValue: 0 },
-				{ name: "total", type: "number" },
-				{ name: "currency", type: "text", required: true },
-				// P5, frozen at payment by `splitAmounts` (lib/paymentMath.ts).
-				{ name: "buyerProtectionFeeVat", type: "number" },
-				{ name: "commission", type: "number" },
-				{ name: "commissionVat", type: "number" },
-				{ name: "applicationFee", type: "number" },
-				{ name: "destinationAmount", type: "number" },
+				{
+					type: "row",
+					fields: [
+						{ name: "subtotal", type: "number", admin: { width: "33%" } },
+						{ name: "deliveryFee", type: "number", admin: { width: "33%" } },
+						{
+							name: "discount",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "33%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "buyerProtectionFee",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "total", type: "number", admin: { width: "33%" } },
+						{
+							name: "currency",
+							type: "text",
+							required: true,
+							admin: { width: "33%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						// P5, frozen at payment by `splitAmounts` (lib/paymentMath.ts).
+						{
+							name: "buyerProtectionFeeVat",
+							type: "number",
+							admin: { width: "33%" },
+						},
+						{ name: "commission", type: "number", admin: { width: "33%" } },
+						{ name: "commissionVat", type: "number", admin: { width: "33%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "applicationFee", type: "number", admin: { width: "50%" } },
+						{
+							name: "destinationAmount",
+							type: "number",
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -302,30 +510,63 @@ export const Orders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "mode",
-					type: "select",
-					options: ORDER_SETTLEMENT_MODES.map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "mode",
+							type: "select",
+							options: ORDER_SETTLEMENT_MODES.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+						{
+							name: "releaseModel",
+							type: "select",
+							options: ORDER_RELEASE_MODELS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "releaseModel",
-					type: "select",
-					options: ORDER_RELEASE_MODELS.map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "connectedAccount",
+							type: "relationship",
+							relationTo: "connected-accounts",
+							admin: { width: "33%" },
+						},
+						{
+							name: "releaseEligibleAt",
+							type: "date",
+							index: true,
+							admin: { width: "33%" },
+						},
+						{ name: "releasedAt", type: "date", admin: { width: "33%" } },
+					],
 				},
 				{
-					name: "connectedAccount",
-					type: "relationship",
-					relationTo: "connected-accounts",
+					type: "row",
+					fields: [
+						{
+							name: "payout",
+							type: "relationship",
+							relationTo: "payouts",
+							admin: { width: "50%" },
+						},
+						{
+							name: "refundedAmount",
+							type: "number",
+							defaultValue: 0,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "releaseEligibleAt", type: "date", index: true },
-				{ name: "releasedAt", type: "date" },
-				{ name: "payout", type: "relationship", relationTo: "payouts" },
-				{ name: "refundedAmount", type: "number", defaultValue: 0 },
 			],
 		},
 		{
@@ -337,20 +578,28 @@ export const Orders: CollectionConfig = {
 			access: { read: commissionFieldAccess },
 			fields: [
 				{
-					name: "rateBps",
-					type: "number",
-					access: { read: commissionFieldAccess },
-				},
-				{
-					name: "amount",
-					type: "number",
-					access: { read: commissionFieldAccess },
-				},
-				{
-					name: "line",
-					type: "relationship",
-					relationTo: "commission-lines",
-					access: { read: commissionFieldAccess },
+					type: "row",
+					fields: [
+						{
+							name: "rateBps",
+							type: "number",
+							access: { read: commissionFieldAccess },
+							admin: { width: "33%" },
+						},
+						{
+							name: "amount",
+							type: "number",
+							access: { read: commissionFieldAccess },
+							admin: { width: "33%" },
+						},
+						{
+							name: "line",
+							type: "relationship",
+							relationTo: "commission-lines",
+							access: { read: commissionFieldAccess },
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
@@ -359,16 +608,26 @@ export const Orders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "phoneTier",
-					type: "select",
-					options: [
-						{ label: "New", value: "new" },
-						{ label: "Regular", value: "regular" },
-						{ label: "Trusted", value: "trusted" },
-						{ label: "Watch", value: "watch" },
+					type: "row",
+					fields: [
+						{
+							name: "phoneTier",
+							type: "select",
+							options: [
+								{ label: "New", value: "new" },
+								{ label: "Regular", value: "regular" },
+								{ label: "Trusted", value: "trusted" },
+								{ label: "Watch", value: "watch" },
+							],
+							admin: { width: "50%" },
+						},
+						{
+							name: "refusalsAtPlacement",
+							type: "number",
+							admin: { width: "50%" },
+						},
 					],
 				},
-				{ name: "refusalsAtPlacement", type: "number" },
 				{ name: "capsApplied", type: "json" },
 			],
 		},
@@ -376,25 +635,45 @@ export const Orders: CollectionConfig = {
 			name: "deadlines",
 			type: "group",
 			fields: [
-				{ name: "confirmBy", type: "date" },
-				{ name: "acceptBy", type: "date" },
-				{ name: "staleAt", type: "date" },
-				{ name: "completeAt", type: "date" },
-				{ name: "withdrawalUntil", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "confirmBy", type: "date", admin: { width: "33%" } },
+						{ name: "acceptBy", type: "date", admin: { width: "33%" } },
+						{ name: "staleAt", type: "date", admin: { width: "33%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "completeAt", type: "date", admin: { width: "50%" } },
+						{ name: "withdrawalUntil", type: "date", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{
 			name: "timestamps",
 			type: "group",
 			fields: [
-				{ name: "placedAt", type: "date" },
-				{ name: "confirmedAt", type: "date" },
-				{ name: "acceptedAt", type: "date" },
-				{ name: "shippedAt", type: "date" },
-				{ name: "deliveredAt", type: "date" },
-				{ name: "completedAt", type: "date" },
-				{ name: "cancelledAt", type: "date" },
-				{ name: "failedAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "placedAt", type: "date", admin: { width: "25%" } },
+						{ name: "confirmedAt", type: "date", admin: { width: "25%" } },
+						{ name: "acceptedAt", type: "date", admin: { width: "25%" } },
+						{ name: "shippedAt", type: "date", admin: { width: "25%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "deliveredAt", type: "date", admin: { width: "25%" } },
+						{ name: "completedAt", type: "date", admin: { width: "25%" } },
+						{ name: "cancelledAt", type: "date", admin: { width: "25%" } },
+						{ name: "failedAt", type: "date", admin: { width: "25%" } },
+					],
+				},
 			],
 		},
 		{
@@ -402,22 +681,29 @@ export const Orders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "by",
-					type: "select",
-					options: [
-						{ label: "Buyer", value: "buyer" },
-						{ label: "Seller", value: "seller" },
-						{ label: "Staff", value: "staff" },
-						{ label: "System", value: "system" },
+					type: "row",
+					fields: [
+						{
+							name: "by",
+							type: "select",
+							options: [
+								{ label: "Buyer", value: "buyer" },
+								{ label: "Seller", value: "seller" },
+								{ label: "Staff", value: "staff" },
+								{ label: "System", value: "system" },
+							],
+							admin: { width: "50%" },
+						},
+						{
+							name: "reason",
+							type: "select",
+							options: ORDER_CANCELLATION_REASONS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
 					],
-				},
-				{
-					name: "reason",
-					type: "select",
-					options: ORDER_CANCELLATION_REASONS.map((value) => ({
-						label: value,
-						value,
-					})),
 				},
 				{ name: "note", type: "text" },
 			],
@@ -427,52 +713,97 @@ export const Orders: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "reason",
-					type: "select",
-					options: ORDER_DELIVERY_FAILURE_REASONS.map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "reason",
+							type: "select",
+							options: ORDER_DELIVERY_FAILURE_REASONS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+						{
+							name: "attempts",
+							type: "number",
+							defaultValue: 0,
+							max: 2,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "attempts", type: "number", defaultValue: 0, max: 2 },
 				{ name: "note", type: "text" },
 			],
 		},
 		{
-			name: "completionHold",
-			type: "select",
-			defaultValue: "none",
-			options: [
-				{ label: "None", value: "none" },
-				{ label: "Return case", value: "return_case" },
-				{ label: "Dispute", value: "dispute" },
+			type: "row",
+			fields: [
+				{
+					name: "completionHold",
+					type: "select",
+					defaultValue: "none",
+					options: [
+						{ label: "None", value: "none" },
+						{ label: "Return case", value: "return_case" },
+						{ label: "Dispute", value: "dispute" },
+					],
+					admin: { width: "50%" },
+				},
+				{
+					name: "returnCase",
+					type: "relationship",
+					relationTo: "return-cases",
+					admin: { width: "50%" },
+				},
 			],
 		},
-		{ name: "returnCase", type: "relationship", relationTo: "return-cases" },
 		{
-			name: "activeDispute",
-			type: "relationship",
-			relationTo: "disputes",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "activeDispute",
+					type: "relationship",
+					relationTo: "disputes",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "conversation",
+					type: "relationship",
+					relationTo: "conversations",
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "conversation", type: "relationship", relationTo: "conversations" },
 		{
 			name: "contract",
 			type: "group",
 			fields: [
-				{ name: "termsVersion", type: "text" },
 				{
-					name: "locale",
-					type: "select",
-					options: [
-						{ label: "French", value: "fr" },
-						{ label: "English", value: "en" },
+					type: "row",
+					fields: [
+						{ name: "termsVersion", type: "text", admin: { width: "33%" } },
+						{
+							name: "locale",
+							type: "select",
+							options: [
+								{ label: "French", value: "fr" },
+								{ label: "English", value: "en" },
+							],
+							admin: { width: "33%" },
+						},
+						{ name: "acceptedAt", type: "date", admin: { width: "33%" } },
 					],
 				},
-				{ name: "acceptedAt", type: "date" },
 				{ name: "snapshot", type: "json" },
-				{ name: "snapshotHash", type: "text" },
-				{ name: "receiptSentAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "snapshotHash", type: "text", admin: { width: "50%" } },
+						{ name: "receiptSentAt", type: "date", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{

@@ -51,35 +51,66 @@ export const Carts: CollectionConfig = {
 			maxRows: 30,
 			fields: [
 				{
-					name: "listing",
-					type: "relationship",
-					relationTo: "listings",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "listing",
+							type: "relationship",
+							relationTo: "listings",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "product",
+							type: "relationship",
+							relationTo: "products",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "product",
-					type: "relationship",
-					relationTo: "products",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "variant",
+							type: "relationship",
+							relationTo: "product-variants",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							// The listing's (storefront) shop. The single-shop-per-cart rule
+							// applies to this field in P4; orders are later split by
+							// fulfilling shop once P8/P10 land.
+							name: "shop",
+							type: "relationship",
+							relationTo: "shops",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "variant",
-					type: "relationship",
-					relationTo: "product-variants",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "quantity",
+							type: "number",
+							required: true,
+							min: 1,
+							max: 20,
+							admin: { width: "33%" },
+						},
+						{
+							name: "priceAtAdd",
+							type: "number",
+							required: true,
+							admin: { width: "33%" },
+						},
+						{ name: "addedAt", type: "date", admin: { width: "33%" } },
+					],
 				},
-				{
-					// The listing's (storefront) shop. The single-shop-per-cart rule
-					// applies to this field in P4; orders are later split by
-					// fulfilling shop once P8/P10 land.
-					name: "shop",
-					type: "relationship",
-					relationTo: "shops",
-					required: true,
-				},
-				{ name: "quantity", type: "number", required: true, min: 1, max: 20 },
-				{ name: "priceAtAdd", type: "number", required: true },
-				{ name: "addedAt", type: "date" },
 			],
 		},
 		{

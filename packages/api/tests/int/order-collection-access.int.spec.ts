@@ -5,6 +5,7 @@ import { CommissionLines } from "../../src/collections/CommissionLines";
 import { Orders } from "../../src/collections/Orders";
 import { ReturnCases } from "../../src/collections/ReturnCases";
 import { type Doc, fakePayload, matches } from "./helpers/fakePayload";
+import { fieldAt } from "./helpers/fields";
 
 // Every real `Access`/`FieldAccess` function takes a generic `AccessArgs<T>`
 // Payload's own REST handling supplies. These specs drive the same
@@ -103,12 +104,9 @@ describe("orders: who may read the raw REST collection", () => {
 });
 
 describe("orders.commission: who may read the money", () => {
-	const commissionGroup = (Orders.fields as Doc[]).find(
-		(f) => f.name === "commission",
-	) as { fields: Doc[] };
-	const amountField = commissionGroup.fields.find(
-		(f) => f.name === "amount",
-	) as { access?: { read?: AnyAccessFn } };
+	const amountField = fieldAt(Orders.fields, "commission.amount") as {
+		access?: { read?: AnyAccessFn };
+	};
 	const doc = { shop: "s-1" };
 
 	it("a shop owner can read commission", async () => {

@@ -59,88 +59,159 @@ export const CommissionInvoices: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "kind",
-			type: "select",
-			required: true,
-			defaultValue: "invoice",
-			options: COMMISSION_INVOICE_KINDS.map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "kind",
+					type: "select",
+					required: true,
+					defaultValue: "invoice",
+					options: COMMISSION_INVOICE_KINDS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "creditsInvoice",
+					type: "relationship",
+					relationTo: "commission-invoices",
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "creditsInvoice",
-			type: "relationship",
-			relationTo: "commission-invoices",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "sourceType",
+					type: "select",
+					options: ["dispute", "return-case"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "sourceId",
+					type: "text",
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "sourceType",
-			type: "select",
-			options: ["dispute", "return-case"].map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "invoiceNumber",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "sourceId", type: "text", index: true },
 		{
-			name: "invoiceNumber",
-			type: "text",
-			required: true,
-			unique: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "periodStart",
+					type: "date",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{ name: "periodEnd", type: "date", admin: { width: "50%" } },
+			],
 		},
-		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{ name: "periodStart", type: "date", index: true },
-		{ name: "periodEnd", type: "date" },
 		{
 			name: "lines",
 			type: "relationship",
 			relationTo: "commission-lines",
 			hasMany: true,
 		},
-		{ name: "ordersCount", type: "number" },
-		{ name: "commissionTotal", type: "number" },
-		{ name: "vatRateBps", type: "number" },
-		{ name: "vatAmount", type: "number" },
-		{ name: "totalDue", type: "number" },
-		{ name: "currency", type: "text", required: true },
+		{
+			type: "row",
+			fields: [
+				{ name: "ordersCount", type: "number", admin: { width: "33%" } },
+				{ name: "commissionTotal", type: "number", admin: { width: "33%" } },
+				{ name: "vatRateBps", type: "number", admin: { width: "33%" } },
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{ name: "vatAmount", type: "number", admin: { width: "33%" } },
+				{ name: "totalDue", type: "number", admin: { width: "33%" } },
+				{
+					name: "currency",
+					type: "text",
+					required: true,
+					admin: { width: "33%" },
+				},
+			],
+		},
 		formatSnapshotField,
 		{
-			name: "status",
-			type: "select",
-			defaultValue: "issued",
-			index: true,
-			options: COMMISSION_INVOICE_STATUSES.map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "status",
+					type: "select",
+					defaultValue: "issued",
+					index: true,
+					options: COMMISSION_INVOICE_STATUSES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "settlement",
+					type: "select",
+					defaultValue: "mobile_money",
+					index: true,
+					options: COMMISSION_INVOICE_SETTLEMENTS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "settlement",
-			type: "select",
-			defaultValue: "mobile_money",
-			index: true,
-			options: COMMISSION_INVOICE_SETTLEMENTS.map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{ name: "issuedAt", type: "date", admin: { width: "33%" } },
+				{ name: "dueAt", type: "date", admin: { width: "33%" } },
+				{ name: "paidAt", type: "date", admin: { width: "33%" } },
+			],
 		},
-		{ name: "issuedAt", type: "date" },
-		{ name: "dueAt", type: "date" },
-		{ name: "paidAt", type: "date" },
-		{ name: "restrictedAt", type: "date" },
-		// Makes the dueAt-2d reminder idempotent across daily enforcement runs:
-		// without a marker, every run between the reminder point and dueAt would
-		// re-send it. Added by Task 14 (services/commission.ts#enforceOverdue);
-		// no other field here can carry this flag.
-		{ name: "dueSoonReminderSentAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{ name: "restrictedAt", type: "date", admin: { width: "50%" } },
+				// Makes the dueAt-2d reminder idempotent across daily enforcement runs:
+				// without a marker, every run between the reminder point and dueAt would
+				// re-send it. Added by Task 14 (services/commission.ts#enforceOverdue);
+				// no other field here can carry this flag.
+				{
+					name: "dueSoonReminderSentAt",
+					type: "date",
+					admin: { width: "50%" },
+				},
+			],
+		},
 		{
 			name: "paymentIntents",
 			type: "relationship",
@@ -150,12 +221,23 @@ export const CommissionInvoices: CollectionConfig = {
 		{ name: "sellerSnapshot", type: "json" },
 		{ name: "issuerSnapshot", type: "json" },
 		{
-			name: "waivedBy",
-			type: "relationship",
-			relationTo: "users",
-			access: adminOnlyUpdate,
+			type: "row",
+			fields: [
+				{
+					name: "waivedBy",
+					type: "relationship",
+					relationTo: "users",
+					access: adminOnlyUpdate,
+					admin: { width: "50%" },
+				},
+				{
+					name: "waivedNote",
+					type: "text",
+					access: adminOnlyUpdate,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "waivedNote", type: "text", access: adminOnlyUpdate },
 	],
 	timestamps: true,
 };

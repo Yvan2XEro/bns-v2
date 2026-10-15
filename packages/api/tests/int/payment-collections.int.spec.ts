@@ -372,7 +372,7 @@ describe("the extensions", () => {
 	});
 
 	it("orders gain the settlement group and the frozen split amounts", () => {
-		const amounts = field(Orders.fields, "amounts").fields ?? [];
+		const amounts = dataFields(field(Orders.fields, "amounts").fields ?? []);
 		expect(amounts.map((f) => f.name)).toEqual([
 			"subtotal",
 			"deliveryFee",
@@ -386,7 +386,9 @@ describe("the extensions", () => {
 			"applicationFee",
 			"destinationAmount",
 		]);
-		const settlement = field(Orders.fields, "settlement").fields ?? [];
+		const settlement = dataFields(
+			field(Orders.fields, "settlement").fields ?? [],
+		);
 		expect(settlement.map((f) => f.name)).toEqual([
 			"mode",
 			"releaseModel",

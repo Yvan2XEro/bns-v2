@@ -68,19 +68,25 @@ export const Couriers: CollectionConfig = {
 	hooks: { beforeChange: [refuseCitiesOutsideOneMarket] },
 	fields: [
 		{
-			name: "key",
-			type: "text",
-			required: true,
-			unique: true,
-			index: true,
-			access: { read: staffOnlyField },
-			validate: (value: unknown) =>
-				value == null ||
-				(typeof value === "string" && /^[a-z0-9-]{3,30}$/.test(value))
-					? true
-					: "Use 3–30 lowercase letters, numbers or hyphens.",
+			type: "row",
+			fields: [
+				{
+					name: "key",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					access: { read: staffOnlyField },
+					validate: (value: unknown) =>
+						value == null ||
+						(typeof value === "string" && /^[a-z0-9-]{3,30}$/.test(value))
+							? true
+							: "Use 3–30 lowercase letters, numbers or hyphens.",
+					admin: { width: "50%" },
+				},
+				{ name: "name", type: "text", required: true, admin: { width: "50%" } },
+			],
 		},
-		{ name: "name", type: "text", required: true },
 		{ name: "logo", type: "upload", relationTo: "media" },
 		{
 			name: "provider",
@@ -115,26 +121,48 @@ export const Couriers: CollectionConfig = {
 			type: "array",
 			fields: [
 				{
-					name: "city",
-					type: "select",
-					required: true,
-					options: LAUNCH_CITY_KEYS.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "city",
+							type: "select",
+							required: true,
+							options: LAUNCH_CITY_KEYS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+						{ name: "district", type: "text", admin: { width: "50%" } },
+					],
 				},
-				{ name: "district", type: "text" },
-				{ name: "amount", type: "number", required: true, min: 0 },
 				{
-					name: "etaMinHours",
-					type: "number",
-					required: true,
-					min: 1,
-					max: 720,
-				},
-				{
-					name: "etaMaxHours",
-					type: "number",
-					required: true,
-					min: 1,
-					max: 720,
+					type: "row",
+					fields: [
+						{
+							name: "amount",
+							type: "number",
+							required: true,
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{
+							name: "etaMinHours",
+							type: "number",
+							required: true,
+							min: 1,
+							max: 720,
+							admin: { width: "33%" },
+						},
+						{
+							name: "etaMaxHours",
+							type: "number",
+							required: true,
+							min: 1,
+							max: 720,
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
@@ -148,34 +176,46 @@ export const Couriers: CollectionConfig = {
 			type: "group",
 			access: { read: staffOnlyField },
 			fields: [
-				{ name: "phone", type: "text" },
-				{ name: "email", type: "email" },
+				{
+					type: "row",
+					fields: [
+						{ name: "phone", type: "text", admin: { width: "50%" } },
+						{ name: "email", type: "email", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "disabled",
-			index: true,
-			options: ["active", "paused", "disabled"].map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{
-			name: "billingMode",
-			type: "select",
-			required: true,
-			defaultValue: "shop_account",
-			access: { read: staffOnlyField },
-			options: ["shop_account", "platform_account"].map((value) => ({
-				label: value,
-				value,
-			})),
-			validate: (value: unknown) =>
-				value === "shop_account" ||
-				"P7 allows shop_account only; delivery money must not pass through BuyNSellem.",
+			type: "row",
+			fields: [
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "disabled",
+					index: true,
+					options: ["active", "paused", "disabled"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "billingMode",
+					type: "select",
+					required: true,
+					defaultValue: "shop_account",
+					access: { read: staffOnlyField },
+					options: ["shop_account", "platform_account"].map((value) => ({
+						label: value,
+						value,
+					})),
+					validate: (value: unknown) =>
+						value === "shop_account" ||
+						"P7 allows shop_account only; delivery money must not pass through BuyNSellem.",
+					admin: { width: "50%" },
+				},
+			],
 		},
 	],
 	timestamps: true,

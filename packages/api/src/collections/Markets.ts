@@ -266,47 +266,68 @@ export const Markets: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "countryCode",
-			type: "text",
-			required: true,
-			unique: true,
-			index: true,
-			validate: (value: unknown) =>
-				typeof value === "string" && /^[A-Z]{2}$/.test(value)
-					? true
-					: "Use an ISO 3166-1 alpha-2 code, upper case.",
-		},
-		{ name: "name", type: "text", required: true },
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "draft",
-			index: true,
-			options: MARKET_STATUSES.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "countryCode",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					validate: (value: unknown) =>
+						typeof value === "string" && /^[A-Z]{2}$/.test(value)
+							? true
+							: "Use an ISO 3166-1 alpha-2 code, upper case.",
+					admin: { width: "33%" },
+				},
+				{ name: "name", type: "text", required: true, admin: { width: "33%" } },
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "draft",
+					index: true,
+					options: MARKET_STATUSES.map((value) => ({ label: value, value })),
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
 			name: "currency",
 			type: "group",
 			fields: [
 				{
-					name: "code",
-					type: "text",
-					required: true,
-					validate: (value: unknown) =>
-						typeof value === "string" && /^[A-Z]{3}$/.test(value)
-							? true
-							: "Use an ISO 4217 code, upper case.",
-				},
-				{ name: "minorUnit", type: "number", required: true, min: 0, max: 3 },
-				{
-					name: "rounding",
-					type: "select",
-					required: true,
-					options: ["half_up", "half_even", "down"].map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "code",
+							type: "text",
+							required: true,
+							validate: (value: unknown) =>
+								typeof value === "string" && /^[A-Z]{3}$/.test(value)
+									? true
+									: "Use an ISO 4217 code, upper case.",
+							admin: { width: "33%" },
+						},
+						{
+							name: "minorUnit",
+							type: "number",
+							required: true,
+							min: 0,
+							max: 3,
+							admin: { width: "33%" },
+						},
+						{
+							name: "rounding",
+							type: "select",
+							required: true,
+							options: ["half_up", "half_even", "down"].map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
@@ -315,23 +336,50 @@ export const Markets: CollectionConfig = {
 			type: "array",
 			fields: [
 				{
-					name: "locale",
-					type: "select",
-					required: true,
-					options: ["fr", "en"].map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "locale",
+							type: "select",
+							required: true,
+							options: ["fr", "en"].map((value) => ({ label: value, value })),
+							admin: { width: "33%" },
+						},
+						{
+							name: "symbol",
+							type: "text",
+							required: true,
+							admin: { width: "33%" },
+						},
+						{
+							name: "position",
+							type: "select",
+							required: true,
+							options: ["before", "after"].map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "33%" },
+						},
+					],
 				},
-				{ name: "symbol", type: "text", required: true },
 				{
-					name: "position",
-					type: "select",
-					required: true,
-					options: ["before", "after"].map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "groupSeparator",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "decimalSeparator",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "groupSeparator", type: "text", required: true },
-				{ name: "decimalSeparator", type: "text", required: true },
 				{
 					name: "patternExample",
 					type: "text",
@@ -369,17 +417,30 @@ export const Markets: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "provider",
-					type: "select",
-					required: true,
-					options: PAYMENT_PROVIDERS.map((value) => ({ label: value, value })),
-				},
-				{
-					name: "settlementMode",
-					type: "select",
-					required: true,
-					defaultValue: "provider_split",
-					options: SETTLEMENT_MODES.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "provider",
+							type: "select",
+							required: true,
+							options: PAYMENT_PROVIDERS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+						{
+							name: "settlementMode",
+							type: "select",
+							required: true,
+							defaultValue: "provider_split",
+							options: SETTLEMENT_MODES.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
 					name: "channels",
@@ -426,8 +487,13 @@ export const Markets: CollectionConfig = {
 			name: "regulatoryReview",
 			type: "group",
 			fields: [
-				{ name: "reviewedBy", type: "text" },
-				{ name: "reviewedAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "reviewedBy", type: "text", admin: { width: "50%" } },
+						{ name: "reviewedAt", type: "date", admin: { width: "50%" } },
+					],
+				},
 				{
 					name: "evidence",
 					type: "relationship",
@@ -441,34 +507,47 @@ export const Markets: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "releaseHourLocal",
-					type: "number",
-					defaultValue: 10,
-					min: 0,
-					max: 23,
+					type: "row",
+					fields: [
+						{
+							name: "releaseHourLocal",
+							type: "number",
+							defaultValue: 10,
+							min: 0,
+							max: 23,
+							admin: { width: "33%" },
+						},
+						{
+							name: "reconcileHourLocal",
+							type: "number",
+							defaultValue: 2,
+							min: 0,
+							max: 23,
+							admin: { width: "33%" },
+						},
+						{
+							name: "vatPeriod",
+							type: "select",
+							defaultValue: "calendar_month",
+							options: [{ label: "calendar_month", value: "calendar_month" }],
+							admin: { width: "33%" },
+						},
+					],
 				},
 				{
-					name: "reconcileHourLocal",
-					type: "number",
-					defaultValue: 2,
-					min: 0,
-					max: 23,
-				},
-				{
-					name: "vatPeriod",
-					type: "select",
-					defaultValue: "calendar_month",
-					options: [{ label: "calendar_month", value: "calendar_month" }],
-				},
-				{
-					name: "lastReleaseLocalDate",
-					type: "text",
-					admin: { readOnly: true },
-				},
-				{
-					name: "lastReconcileLocalDate",
-					type: "text",
-					admin: { readOnly: true },
+					type: "row",
+					fields: [
+						{
+							name: "lastReleaseLocalDate",
+							type: "text",
+							admin: { width: "50%", readOnly: true },
+						},
+						{
+							name: "lastReconcileLocalDate",
+							type: "text",
+							admin: { width: "50%", readOnly: true },
+						},
+					],
 				},
 			],
 		},
