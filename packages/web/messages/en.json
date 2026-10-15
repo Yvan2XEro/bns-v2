@@ -455,7 +455,12 @@
 	"Error": {
 		"title": "Something went wrong",
 		"description": "An unexpected error occurred. Please try again.",
-		"reload": "Reload page"
+		"reload": "Reload page",
+		"tryAgain": "Try again",
+		"backHome": "Back to home",
+		"errorId": "Error ID: {digest}",
+		"tryLater": "Please try again in a moment.",
+		"descriptionHome": "An unexpected error occurred. Please try again or return to the home page."
 	},
 	"Condition": {
 		"new": "New",

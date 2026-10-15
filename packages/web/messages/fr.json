@@ -456,7 +456,12 @@
 	"Error": {
 		"title": "Une erreur s'est produite",
 		"description": "Une erreur inattendue s'est produite. Veuillez réessayer.",
-		"reload": "Recharger la page"
+		"reload": "Recharger la page",
+		"tryAgain": "Réessayer",
+		"backHome": "Retour à l'accueil",
+		"errorId": "Référence : {digest}",
+		"tryLater": "Réessayez dans un instant.",
+		"descriptionHome": "Une erreur inattendue s'est produite. Réessayez ou revenez à l'accueil."
 	},
 	"Condition": {
 		"new": "Neuf",
