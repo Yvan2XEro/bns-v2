@@ -162,6 +162,48 @@ function citiesOf(value: unknown): OrderSettings["launchCities"] {
 	});
 }
 
+/**
+ * The open launch cities. A non-empty stored list still decides, as before
+ * P10. The P10 migration moves the cities onto `market-cities` rows and
+ * leaves `orders.launchCities` empty; read as-is, that empty list closed
+ * every city and the cart refused everything (`cityNotLaunch`). So an empty
+ * or missing list now means "the active market-cities rows"; without any
+ * rows the stored value keeps its old meaning.
+ */
+async function openLaunchCities(
+	payload: Payload,
+	stored: unknown,
+): Promise<OrderSettings["launchCities"]> {
+	if (Array.isArray(stored) && stored.length > 0) return citiesOf(stored);
+	const rows = await payload
+		.find({
+			collection: "market-cities",
+			where: { active: { equals: true } },
+			limit: 0,
+			pagination: false,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.then((found) => found.docs)
+		.catch(() => []);
+	// No rows: the stored answer stands — an explicit empty list closes every
+	// city, a missing one falls back to the seed defaults.
+	if (rows.length === 0) return citiesOf(stored);
+	return rows.flatMap((row) =>
+		isLaunchCityKey(row.key)
+			? [
+					{
+						key: row.key,
+						deliveryFee: intOr(
+							row.defaultDeliveryFee,
+							LAUNCH_CITIES[row.key].defaultDeliveryFee,
+						),
+					},
+				]
+			: [],
+	);
+}
+
 /** Fails closed: an unreadable settings global means ordering stays off. */
 export async function getOrderSettings(
 	payload: Payload,
@@ -188,7 +230,7 @@ export async function getOrderSettings(
 		return {
 			...DEFAULTS,
 			enabled: orders.enabled === true,
-			launchCities: citiesOf(orders.launchCities),
+			launchCities: await openLaunchCities(payload, orders.launchCities),
 			defaultCommissionRateBps: intOr(orders.defaultCommissionRateBps, 800),
 			vatRateBps: intOr(orders.vatRateBps, 1925),
 			minInvoiceAmount: intOr(orders.minInvoiceAmount, 500),

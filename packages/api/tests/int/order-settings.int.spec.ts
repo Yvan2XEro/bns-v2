@@ -13,6 +13,18 @@ const settingsGlobal = (
 ) => fakePayload({}, { globals: { "app-settings": { orders, disputes } } });
 
 describe("getOrderSettings", () => {
+	it("reads the active market cities once P10 has emptied the stored list", async () => {
+		// The P10 migration moves the cities onto market-cities rows and sets
+		// orders.launchCities to []; read literally, that closed every city.
+		const settings = await getOrderSettings(
+			settingsGlobal({ enabled: true, launchCities: [] }),
+		);
+		expect(settings.launchCities.map((c) => c.key).sort()).toEqual([
+			"douala",
+			"yaounde",
+		]);
+	});
+
 	it("fails closed when the global cannot be read", async () => {
 		const payload = fakePayload();
 		payload.failWhen = (method) => method === "findGlobal";
