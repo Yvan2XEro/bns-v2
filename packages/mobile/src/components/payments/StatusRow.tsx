@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Fonts } from "@/constants/theme";
 import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
@@ -91,11 +92,8 @@ function StatusLine({
 			<Text style={[s.meta, { color: c.muted }]}>{label}</Text>
 			<Text
 				style={[
-					s.meta,
-					{
-						color: tone === "warn" ? c.warningText : c.text,
-						fontWeight: "600",
-					},
+					styles.value,
+					{ color: tone === "warn" ? c.warningText : c.text },
 				]}
 			>
 				{value}
@@ -106,6 +104,7 @@ function StatusLine({
 
 const styles = StyleSheet.create({
 	row: { flexDirection: "row", alignItems: "center", gap: 10 },
-	lines: { flex: 1, gap: 6 },
-	line: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+	lines: { flex: 1, gap: 10 },
+	line: { gap: 1 },
+	value: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

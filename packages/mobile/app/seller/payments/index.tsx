@@ -55,8 +55,8 @@ function PaymentsContent({ shopId }: { shopId: string }) {
 	const view = payments.data;
 	const header = (
 		<View style={styles.header}>
-			<StatusRow setup={setup.data} holdsCount={view.holds.length} />
 			<AmountsCard amounts={view.amounts} />
+			<StatusRow setup={setup.data} holdsCount={view.holds.length} />
 			<View
 				style={[s.card, { backgroundColor: c.card, borderColor: c.border }]}
 			>
