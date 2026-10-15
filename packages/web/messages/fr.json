@@ -1,4 +1,7 @@
 {
+	"LocaleSwitcher": {
+		"label": "Langue"
+	},
 	"ProductIssues": {
 		"invalid": "Cette valeur a été refusée. Vérifiez-la.",
 		"required": "Ce champ est obligatoire.",
