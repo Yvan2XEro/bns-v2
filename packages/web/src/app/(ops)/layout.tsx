@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { LocaleSwitcher } from "~/components/layout/locale-switcher";
 import { isModerator } from "~/lib/moderation-verification";
 import { serverFetch } from "~/lib/server-api";
 import type { User } from "~/types";
@@ -50,6 +51,9 @@ export default async function OpsLayout({
 						</Link>
 					))}
 				</nav>
+				<div className="px-2 pb-2">
+					<LocaleSwitcher />
+				</div>
 				<p className="hidden p-4 text-[#94A3B8] text-xs lg:block">
 					{tShell("shell.auditNotice")}
 				</p>

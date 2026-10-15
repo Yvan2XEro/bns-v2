@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { LocaleSwitcher } from "~/components/layout/locale-switcher";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useMyShops } from "~/hooks/use-my-shops";
@@ -211,6 +212,7 @@ export function SellerSidebar({
 					<ArrowLeftRight aria-hidden="true" className="h-[18px] w-[18px]" />
 					{tSeller("buyerMode")}
 				</Link>
+				<LocaleSwitcher tone="dark" className="h-10 px-3 text-sm" />
 			</div>
 		</aside>
 	);
