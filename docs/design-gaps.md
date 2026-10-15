@@ -43,6 +43,7 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 | M9 | Tunnel, étape adresse | Adresses enregistrées + carte | Grille de puces de quartiers | Fonction |
 | M10 | Suivi de commande | Code de remise affiché en clair | Code envoyé uniquement par SMS | Décision (sécurité) |
 | M12 | Avis | Photos jointes à l'avis (5 max.) | Note et commentaire seulement | Fonction |
+| M14 | Signaler un problème | Une seule page, preuves (photos, vidéo) jointes dès l'envoi | Parcours en 5 étapes ; les justificatifs s'ajoutent ensuite dans le dossier | Décision |
 | M13 | Commande passée | Ligne « Reçu de commande » ouvrant le reçu | Reçu accessible depuis le détail de la commande | Fonction |
 
 ### Vendeur
@@ -57,7 +58,7 @@ Comparaison pas encore faite.
 
 ## Écrans pas encore comparés
 
-- Achat : litige (ouverture, échanges), suivi de
+- Achat : échanges du litige, suivi de
   livraison, rétractation, paiement en attente, paiement protégé, étapes
   paiement et récapitulatif du tunnel.
 - Vendeur : fiche produit, ajustement de stock, revente, vérification.

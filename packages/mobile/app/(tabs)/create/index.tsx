@@ -27,6 +27,7 @@ import { CityPicker } from "@/src/components/CityPicker";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
+import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	CATEGORIES_QUERY_KEY,
@@ -559,20 +560,7 @@ export default function CreateScreen() {
 			</View>
 
 			{/* ── Progress: one segment per step ── */}
-			<View style={styles.progressTrack}>
-				{steps.map((id, index) => (
-					<View
-						key={id}
-						style={[
-							styles.progressSegment,
-							{
-								backgroundColor:
-									index <= stepIndex ? primary : isDark ? "#1e293b" : "#e2e8f0",
-							},
-						]}
-					/>
-				))}
-			</View>
+			<StepSegments count={steps.length} current={stepIndex} />
 
 			{/* ── Content ── */}
 			<View
@@ -1976,13 +1964,6 @@ const styles = StyleSheet.create({
 	},
 
 	/* ── Progress ── */
-	progressTrack: {
-		flexDirection: "row",
-		gap: 6,
-		paddingHorizontal: 16,
-		paddingVertical: 6,
-	},
-	progressSegment: { flex: 1, height: 4, borderRadius: 2 },
 
 	/* ── Step headings ── */
 	stepTitle: {

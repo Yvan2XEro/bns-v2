@@ -3139,7 +3139,7 @@
 		"disabledTitle": "Dispute reporting is unavailable",
 		"disabledBody": "Please contact support for help with this order.",
 		"contactSupport": "Contact support",
-		"reportTitle": "Report an order problem",
+		"reportTitle": "Report a problem",
 		"reportStep": "Step {{step}} of 5",
 		"reportReason": "What went wrong?",
 		"reportDetails": "Describe the problem",
@@ -3232,7 +3232,11 @@
 		"selectAtLeastOne": "Select at least one item and quantity.",
 		"reasonLabel": "What went wrong?",
 		"outcomeLabel": "What resolution are you requesting?",
-		"descriptionLabel": "Describe the problem (at least 20 characters)"
+		"descriptionLabel": "Describe the problem (at least 20 characters)",
+		"nextTitle": "What happens next?",
+		"nextShop": "The shop is asked to respond",
+		"nextMediation": "Without an agreement, Buy'N'Sellem mediation decides",
+		"nextKeepItem": "Keep the item and its packaging until then"
 	},
 	"returns": {
 		"chooseInspection": "Choose an inspection result",

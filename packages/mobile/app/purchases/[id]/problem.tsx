@@ -14,8 +14,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { EmptyState } from "@/src/components/EmptyState";
+import { PurchaseStatusPill } from "@/src/components/purchases/PurchaseRow";
+import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { useShopTheme } from "@/src/components/shop/theme";
+import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useOpenDispute } from "@/src/hooks/useDisputes";
 import { usePurchase } from "@/src/hooks/usePurchases";
@@ -25,6 +29,7 @@ import {
 } from "@/src/lib/caseStatus";
 import { requestedDisputeAmount } from "@/src/lib/disputeReport";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatXaf } from "@/src/lib/orderMoney";
 import {
 	BUYER_DISPUTE_OUTCOMES,
 	BUYER_DISPUTE_REASONS,
@@ -47,8 +52,9 @@ const problemSchema = z.object({
 type ProblemForm = z.infer<typeof problemSchema>;
 
 export default function ReportOrderProblemScreen() {
-	const dark = useColorScheme() === "dark";
+	const c = useShopTheme();
 	const { t } = useTranslation();
+	const lang = useAppLocale();
 	const params = useLocalSearchParams<{ id: string }>();
 	const id = Array.isArray(params.id) ? params.id[0] : params.id;
 	const order = usePurchase(id);
@@ -65,14 +71,6 @@ export default function ReportOrderProblemScreen() {
 			items: [],
 		},
 	});
-	const c = {
-		bg: dark ? "#0b1120" : "#f8fafc",
-		card: dark ? "#111c2e" : "#fff",
-		text: dark ? "#e2e8f0" : "#0f172a",
-		muted: dark ? "#94a3b8" : "#64748b",
-		border: dark ? "#1e3a5f" : "#e2e8f0",
-		primary: dark ? "#60a5fa" : "#1e40af",
-	};
 
 	if (!config.disputesEnabled) {
 		return (
@@ -140,32 +138,49 @@ export default function ReportOrderProblemScreen() {
 
 	return (
 		<SafeAreaView
-			edges={["top"]}
+			edges={["top", "bottom"]}
 			style={[styles.safe, { backgroundColor: c.bg }]}
 		>
-			<View style={[styles.header, { borderBottomColor: c.border }]}>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel={t("common.back")}
-					onPress={() =>
-						step ? setStep((current) => current - 1) : router.back()
-					}
-					hitSlop={12}
-				>
-					<Ionicons name="arrow-back" size={22} color={c.text} />
-				</Pressable>
-				<Text style={[styles.headerTitle, { color: c.text }]}>
-					{t("disputes.reportTitle")}
-				</Text>
-				<Text style={[styles.step, { color: c.muted }]}>{step + 1}/5</Text>
-			</View>
+			<SellerHeader
+				title={t("disputes.reportTitle")}
+				subtitle={t("purchases.orderNumber", {
+					number: order.data.orderNumber,
+				})}
+				onBack={() =>
+					step ? setStep((current) => current - 1) : router.back()
+				}
+			/>
+			<StepSegments count={5} current={step} />
 			<ScrollView
 				contentContainerStyle={styles.content}
 				keyboardShouldPersistTaps="handled"
 			>
-				<Text style={[styles.subtitle, { color: c.muted }]}>
-					{t("disputes.reportStep", { step: step + 1 })}
-				</Text>
+				<View
+					style={[
+						styles.orderCard,
+						{ backgroundColor: c.card, borderColor: c.border },
+					]}
+				>
+					<View style={[styles.orderIcon, { backgroundColor: c.primarySoft }]}>
+						<Ionicons name="bag-handle-outline" size={20} color={c.primary} />
+					</View>
+					<View style={{ flex: 1, minWidth: 0 }}>
+						<Text
+							style={[styles.orderTitle, { color: c.text }]}
+							numberOfLines={1}
+						>
+							{order.data.items[0]?.title ?? order.data.orderNumber}
+						</Text>
+						<Text
+							style={[styles.orderMeta, { color: c.muted }]}
+							numberOfLines={1}
+						>
+							{order.data.shop.name} ·{" "}
+							{formatXaf(order.data.amounts.total, lang)}
+						</Text>
+					</View>
+					<PurchaseStatusPill status={order.data.status} />
+				</View>
 				<View
 					style={[
 						styles.card,
@@ -181,15 +196,12 @@ export default function ReportOrderProblemScreen() {
 								control={form.control}
 								name="reason"
 								render={({ field: { onChange, value } }) => (
-									<View style={styles.choices}>
+									<View style={styles.grid}>
 										{BUYER_DISPUTE_REASONS.map((reason) => (
 											<Choice
 												key={reason}
 												selected={value === reason}
 												label={t(DISPUTE_REASON_LABELS[reason])}
-												color={c.text}
-												border={c.border}
-												primary={c.primary}
 												onPress={() => onChange(reason)}
 											/>
 										))}
@@ -217,7 +229,11 @@ export default function ReportOrderProblemScreen() {
 										style={[
 											styles.input,
 											styles.multiline,
-											{ color: c.text, borderColor: c.border },
+											{
+												color: c.text,
+												borderColor: c.border,
+												backgroundColor: c.input,
+											},
 										]}
 									/>
 								)}
@@ -244,9 +260,6 @@ export default function ReportOrderProblemScreen() {
 												key={outcome}
 												selected={value === outcome}
 												label={t(DISPUTE_OUTCOME_LABELS[outcome])}
-												color={c.text}
-												border={c.border}
-												primary={c.primary}
 												onPress={() => onChange(outcome)}
 											/>
 										))}
@@ -269,7 +282,11 @@ export default function ReportOrderProblemScreen() {
 										onChangeText={onChange}
 										style={[
 											styles.input,
-											{ color: c.text, borderColor: c.border },
+											{
+												color: c.text,
+												borderColor: c.border,
+												backgroundColor: c.input,
+											},
 										]}
 									/>
 								)}
@@ -305,9 +322,6 @@ export default function ReportOrderProblemScreen() {
 													key={item.id}
 													selected={selected}
 													label={`${item.title} × ${item.quantity}`}
-													color={c.text}
-													border={c.border}
-													primary={c.primary}
 													role="checkbox"
 													onPress={() =>
 														onChange(
@@ -355,11 +369,44 @@ export default function ReportOrderProblemScreen() {
 						</>
 					) : null}
 				</View>
+				{step === 4 ? (
+					<View
+						style={[
+							styles.card,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.title, { color: c.text }]}>
+							{t("disputes.nextTitle")}
+						</Text>
+						{(
+							[
+								["time-outline", "disputes.nextShop"],
+								["scale-outline", "disputes.nextMediation"],
+								["cube-outline", "disputes.nextKeepItem"],
+							] as const
+						).map(([icon, key]) => (
+							<View key={key} style={styles.nextRow}>
+								<Ionicons name={icon} size={18} color={c.text} />
+								<Text style={[styles.nextText, { color: c.text }]}>
+									{t(key)}
+								</Text>
+							</View>
+						))}
+						<Text style={[styles.note, { color: c.muted }]}>
+							{t("disputes.reviewTerms")}
+						</Text>
+					</View>
+				) : null}
 				{open.isError ? (
 					<Text accessibilityRole="alert" style={styles.error}>
 						{t("disputes.openError")}
 					</Text>
 				) : null}
+			</ScrollView>
+			<View
+				style={[styles.bar, { backgroundColor: c.card, borderColor: c.border }]}
+			>
 				<Pressable
 					accessibilityRole="button"
 					disabled={open.isPending}
@@ -374,7 +421,7 @@ export default function ReportOrderProblemScreen() {
 								: t("common.continue")}
 					</Text>
 				</Pressable>
-			</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }
@@ -382,34 +429,41 @@ export default function ReportOrderProblemScreen() {
 function Choice({
 	selected,
 	label,
-	color,
-	border,
-	primary,
 	role = "radio",
 	onPress,
 }: {
 	selected: boolean;
 	label: string;
-	color: string;
-	border: string;
-	primary: string;
 	role?: "radio" | "checkbox";
 	onPress: () => void;
 }) {
+	const c = useShopTheme();
+	const mark =
+		role === "radio"
+			? selected
+				? "radio-button-on"
+				: "radio-button-off"
+			: selected
+				? "checkbox"
+				: "square-outline";
 	return (
 		<Pressable
 			accessibilityRole={role}
-			accessibilityState={{ selected }}
+			accessibilityState={{ checked: selected }}
 			onPress={onPress}
 			style={[
 				styles.choice,
 				{
-					borderColor: selected ? primary : border,
-					backgroundColor: selected ? `${primary}18` : "transparent",
+					borderColor: selected ? c.primary : c.border,
+					borderWidth: selected ? 1.5 : 1,
+					backgroundColor: selected ? c.primarySoft : c.card,
 				},
 			]}
 		>
-			<Text style={[styles.body, { color: selected ? primary : color }]}>
+			<Ionicons name={mark} size={20} color={selected ? c.primary : c.muted} />
+			<Text
+				style={[styles.choiceText, { color: selected ? c.primary : c.text }]}
+			>
 				{label}
 			</Text>
 		</Pressable>
@@ -418,39 +472,62 @@ function Choice({
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
-	header: {
-		alignItems: "center",
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		flexDirection: "row",
-		gap: 14,
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-	},
-	headerTitle: { flex: 1, fontFamily: Fonts.displaySemibold, fontSize: 17 },
-	step: { fontFamily: Fonts.bodySemibold },
 	content: { padding: 16, paddingBottom: 32, gap: 14 },
-	subtitle: { fontFamily: Fonts.body, fontSize: 14 },
-	card: { borderRadius: 14, borderWidth: 1, gap: 13, padding: 16 },
+	orderCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		borderRadius: 16,
+		borderWidth: 1,
+		padding: 12,
+	},
+	orderIcon: {
+		width: 44,
+		height: 44,
+		borderRadius: 12,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	orderTitle: { fontFamily: Fonts.displayBold, fontSize: 15 },
+	orderMeta: { fontFamily: Fonts.body, fontSize: 12, marginTop: 2 },
+	card: { borderRadius: 16, borderWidth: 1, gap: 13, padding: 16 },
 	title: { fontFamily: Fonts.displaySemibold, fontSize: 17 },
 	label: { fontFamily: Fonts.bodySemibold, fontSize: 13 },
 	body: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 21 },
 	choices: { gap: 8 },
+	grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	choice: {
-		borderRadius: 10,
-		borderWidth: 1,
-		minHeight: 44,
-		justifyContent: "center",
-		padding: 11,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 10,
+		borderRadius: 12,
+		minHeight: 48,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		flexGrow: 1,
+		flexBasis: "45%",
 	},
-	input: { borderRadius: 10, borderWidth: 1, minHeight: 44, padding: 11 },
+	choiceText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	nextRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+	nextText: { flex: 1, fontFamily: Fonts.bodySemibold, fontSize: 14 },
+	note: { fontFamily: Fonts.body, fontSize: 12, lineHeight: 18 },
+	bar: { padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+	input: {
+		borderRadius: 12,
+		borderWidth: 1,
+		minHeight: 46,
+		padding: 12,
+		fontFamily: Fonts.body,
+		fontSize: 15,
+	},
 	multiline: { minHeight: 150, textAlignVertical: "top" },
 	error: { color: "#dc2626", fontFamily: Fonts.bodySemibold },
 	button: {
 		alignItems: "center",
-		borderRadius: 10,
+		borderRadius: 14,
 		justifyContent: "center",
-		minHeight: 48,
+		minHeight: 52,
 		padding: 12,
 	},
-	buttonText: { color: "#fff", fontFamily: Fonts.bodySemibold },
+	buttonText: { color: "#fff", fontFamily: Fonts.displayBold, fontSize: 16 },
 });

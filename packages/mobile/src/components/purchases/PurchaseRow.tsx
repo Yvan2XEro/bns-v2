@@ -11,7 +11,7 @@ import {
 	purchaseStatusKey,
 	purchaseStatusTone,
 } from "@/src/lib/purchaseActions";
-import type { OrderListEntry } from "@/src/types/order";
+import type { OrderListEntry, OrderStatusName } from "@/src/types/order";
 import { ShopAvatar } from "../shop/ShopAvatar";
 import { useShopTheme } from "../shop/theme";
 
@@ -25,14 +25,26 @@ const TONES: Record<
 	danger: { light: ["#fee2e2", "#991b1b"], dark: ["#450a0a", "#fca5a5"] },
 };
 
+/** The buyer-facing status as a tinted pill with a dot. */
+export function PurchaseStatusPill({ status }: { status: OrderStatusName }) {
+	const isDark = useColorScheme() === "dark";
+	const { t } = useTranslation();
+	const [bg, fg] = TONES[purchaseStatusTone(status)][isDark ? "dark" : "light"];
+	return (
+		<View style={[styles.pill, { backgroundColor: bg }]}>
+			<View style={[styles.dot, { backgroundColor: fg }]} />
+			<Text style={[styles.pillText, { color: fg }]}>
+				{t(purchaseStatusKey(status))}
+			</Text>
+		</View>
+	);
+}
+
 export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 	const c = useShopTheme();
-	const isDark = useColorScheme() === "dark";
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const number = t("purchases.orderNumber", { number: entry.orderNumber });
-	const [pillBg, pillText] =
-		TONES[purchaseStatusTone(entry.status)][isDark ? "dark" : "light"];
 
 	return (
 		<Pressable
@@ -73,12 +85,7 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 							{entry.shopName}
 						</Text>
 					</View>
-					<View style={[styles.pill, { backgroundColor: pillBg }]}>
-						<View style={[styles.dot, { backgroundColor: pillText }]} />
-						<Text style={[styles.pillText, { color: pillText }]}>
-							{t(purchaseStatusKey(entry.status))}
-						</Text>
-					</View>
+					<PurchaseStatusPill status={entry.status} />
 				</View>
 				<Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
 					{entry.firstItemTitle}

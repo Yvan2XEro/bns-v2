@@ -3142,7 +3142,7 @@
 		"disabledTitle": "Le signalement de litige est indisponible",
 		"disabledBody": "Contactez le support pour obtenir de l'aide concernant cette commande.",
 		"contactSupport": "Contacter le support",
-		"reportTitle": "Signaler un problème de commande",
+		"reportTitle": "Signaler un problème",
 		"reportStep": "Étape {{step}} sur 5",
 		"reportReason": "Que s'est-il passé ?",
 		"reportDetails": "Décrivez le problème",
@@ -3235,7 +3235,11 @@
 		"selectAtLeastOne": "Sélectionnez au moins un article et une quantité.",
 		"reasonLabel": "Quel est le problème ?",
 		"outcomeLabel": "Quelle résolution demandez-vous ?",
-		"descriptionLabel": "Décrivez le problème (20 caractères minimum)"
+		"descriptionLabel": "Décrivez le problème (20 caractères minimum)",
+		"nextTitle": "Et ensuite ?",
+		"nextShop": "La boutique est invitée à répondre",
+		"nextMediation": "Sans accord, la médiation Buy'N'Sellem décide",
+		"nextKeepItem": "Gardez l'article et son emballage d'ici là"
 	},
 	"returns": {
 		"chooseInspection": "Choisissez un résultat d'inspection",
