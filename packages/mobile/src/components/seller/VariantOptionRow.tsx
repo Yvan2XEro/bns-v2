@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
+import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ProductOption } from "@/src/lib/variants";
+import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 
 /**
@@ -18,6 +20,8 @@ export function VariantOptionRow({
 	onRemove,
 	onRemoveValue,
 	onAddValue,
+	nameIssue,
+	valuesIssue,
 }: {
 	option: ProductOption;
 	readOnly?: boolean;
@@ -25,6 +29,8 @@ export function VariantOptionRow({
 	onRemove: () => void;
 	onRemoveValue: (value: string) => void;
 	onAddValue: (value: string) => void;
+	nameIssue?: FieldIssue;
+	valuesIssue?: FieldIssue;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -62,7 +68,7 @@ export function VariantOptionRow({
 							flex: 1,
 							color: c.text,
 							backgroundColor: c.input,
-							borderColor: c.border,
+							borderColor: nameIssue ? ISSUE_BORDER : c.border,
 						},
 					]}
 					accessibilityLabel={t("product.optionNamePlaceholder")}
@@ -79,6 +85,7 @@ export function VariantOptionRow({
 					</Pressable>
 				) : null}
 			</View>
+			<FieldIssueText issue={nameIssue} />
 			<View style={f.chips}>
 				{option.values.map((value) => (
 					<Pressable
@@ -113,6 +120,7 @@ export function VariantOptionRow({
 					/>
 				) : null}
 			</View>
+			<FieldIssueText issue={valuesIssue} />
 		</View>
 	);
 }

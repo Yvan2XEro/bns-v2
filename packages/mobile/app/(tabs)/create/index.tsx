@@ -27,6 +27,7 @@ import { CityPicker } from "@/src/components/CityPicker";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
+import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
 import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
 import {
@@ -40,6 +41,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { createCategorySuggester } from "@/src/lib/categorySuggest";
+import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type AttributeIssue,
@@ -51,6 +53,7 @@ import {
 	groupListingAttributes,
 	isProductListingCategory,
 	type ListingAttribute,
+	listingDraftIssues,
 	maskDateInput,
 	sanitizeNumberInput,
 	sanitizePriceInput,
@@ -60,6 +63,7 @@ import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { isSuspended } from "@/src/lib/moderation";
 import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
+import { listingIssueStep } from "../../../../api/src/contracts/listingValidation";
 
 const DURATIONS = [30, 60, 90];
 
@@ -129,7 +133,7 @@ export default function CreateScreen() {
 	const { width: SCREEN_W, centeredContent } = useResponsive();
 	const { asPlace: rememberedPlace, hydrated: locationHydrated } =
 		useUserLocation();
-	const { showAlert } = useAlert();
+	const { showAlert, showError } = useAlert();
 	const didPrefillLocationRef = useRef(false);
 	const [step, setStep] = useState<StepId>("describe");
 	const [form, setForm] = useState<FormData>(createEmptyForm);
@@ -177,6 +181,19 @@ export default function CreateScreen() {
 		() => getListingFormPreset(form.category),
 		[form.category],
 	);
+
+	// What the API would refuse, by step. Shown once the seller tries to move
+	// on; the server's own refusal is shown until the form changes.
+	const draftIssues = useMemo(
+		() => listingDraftIssues(form, categoryAttributes),
+		[form, categoryAttributes],
+	);
+	const [attempted, setAttempted] = useState(false);
+	const [refused, setRefused] = useState<{
+		form: FormData;
+		issues: FieldIssue[];
+	} | null>(null);
+	const serverIssues = refused?.form === form ? refused.issues : [];
 
 	// The wizard for this category: a step only exists when it has something
 	// to ask. A category with no attributes never shows an attributes step, and
@@ -452,7 +469,52 @@ export default function CreateScreen() {
 		inputBg,
 	};
 
-	const goNext = () => goToStep(steps[stepIndex + 1] ?? "review");
+	const issuesOn = (id: StepId): FieldIssue[] => {
+		const onStep = (issue: FieldIssue) => listingIssueStep(issue.path) === id;
+		const server = serverIssues.filter(onStep);
+		const local = attempted
+			? draftIssues.filter(
+					(issue) =>
+						onStep(issue) && !server.some((known) => known.path === issue.path),
+				)
+			: [];
+		return [...server, ...local];
+	};
+	const blockedOn = (id: StepId) =>
+		draftIssues.some((issue) => listingIssueStep(issue.path) === id);
+	const firstStepWith = (issues: FieldIssue[]) =>
+		steps.find((id) =>
+			issues.some((issue) => listingIssueStep(issue.path) === id),
+		);
+
+	const goNext = () => {
+		if (blockedOn(currentStep)) {
+			setAttempted(true);
+			return;
+		}
+		setAttempted(false);
+		goToStep(steps[stepIndex + 1] ?? "review");
+	};
+	const stepGate = {
+		issues: issuesOn(currentStep),
+		blocked: blockedOn(currentStep),
+		onBlocked: () => setAttempted(true),
+	};
+
+	/** The last gate before sending: rewinds to the step that owns a problem. */
+	const readyToSubmit = () => {
+		const blocking = firstStepWith(draftIssues);
+		if (!blocking) return true;
+		setAttempted(true);
+		goToStep(blocking);
+		showError(t("create.publishError"), t("formIssues.fixStep"));
+		return false;
+	};
+	const handleRefused = (issues: FieldIssue[]) => {
+		setRefused({ form, issues });
+		const step = firstStepWith(issues);
+		if (step) goToStep(step);
+	};
 
 	/** Anything the seller would be sorry to lose. */
 	const hasDraft = Boolean(
@@ -576,6 +638,7 @@ export default function CreateScreen() {
 							onCategoryClear={handleCategoryClear}
 							categoryWasGuessed={categoryWasGuessed}
 							onNext={goNext}
+							gate={stepGate}
 							colors={colors}
 						/>
 					)}
@@ -584,6 +647,7 @@ export default function CreateScreen() {
 							form={form}
 							setForm={setForm}
 							onNext={goNext}
+							gate={stepGate}
 							colors={colors}
 						/>
 					)}
@@ -593,6 +657,7 @@ export default function CreateScreen() {
 							setForm={setForm}
 							attributes={categoryAttributes}
 							onNext={goNext}
+							gate={stepGate}
 							colors={colors}
 						/>
 					)}
@@ -601,6 +666,7 @@ export default function CreateScreen() {
 							form={form}
 							setForm={setForm}
 							onNext={goNext}
+							gate={stepGate}
 							colors={colors}
 						/>
 					)}
@@ -610,6 +676,9 @@ export default function CreateScreen() {
 							attributes={categoryAttributes}
 							setStep={goToStep}
 							onPublished={resetForm}
+							readyToSubmit={readyToSubmit}
+							onRefused={handleRefused}
+							serverIssues={serverIssues}
 							colors={colors}
 						/>
 					)}
@@ -636,6 +705,7 @@ function DescribeStep({
 	onCategoryClear,
 	categoryWasGuessed,
 	onNext,
+	gate,
 	colors,
 }: any) {
 	const { bg, cardBg, textColor, mutedColor, border, inputBg } = colors;
@@ -754,10 +824,11 @@ function DescribeStep({
 				/>
 			</View>
 
+			<FieldIssueList issues={gate.issues} attributes={[]} />
 			<NextButton
 				label={t("common.next")}
-				onPress={onNext}
-				active={canProceed}
+				onPress={canProceed && !gate.blocked ? onNext : gate.onBlocked}
+				active={canProceed && !gate.blocked}
 				colors={colors}
 			/>
 		</ScrollView>
@@ -766,7 +837,7 @@ function DescribeStep({
 
 // ─── Details Step ──────────────────────────────────────────────────────────────
 
-function DetailsStep({ form, setForm, onNext, colors }: any) {
+function DetailsStep({ form, setForm, onNext, gate, colors }: any) {
 	const {
 		bg,
 		cardBg,
@@ -1043,10 +1114,11 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 				</View>
 			</View>
 
+			<FieldIssueList issues={gate.issues} attributes={[]} />
 			<NextButton
 				label={t("create.continue")}
-				onPress={canProceed ? onNext : undefined}
-				active={!!canProceed}
+				onPress={canProceed && !gate.blocked ? onNext : gate.onBlocked}
+				active={!!canProceed && !gate.blocked}
 				colors={colors}
 			/>
 		</ScrollView>
@@ -1055,7 +1127,14 @@ function DetailsStep({ form, setForm, onNext, colors }: any) {
 
 // ─── Attributes Step ───────────────────────────────────────────────────────────
 
-function AttributesStep({ form, setForm, attributes, onNext, colors }: any) {
+function AttributesStep({
+	form,
+	setForm,
+	attributes,
+	onNext,
+	gate,
+	colors,
+}: any) {
 	const { bg, textColor, mutedColor, border } = colors;
 	const { t } = useTranslation();
 	const list: ListingAttribute[] = attributes ?? [];
@@ -1109,10 +1188,11 @@ function AttributesStep({ form, setForm, attributes, onNext, colors }: any) {
 				</View>
 			))}
 
+			<FieldIssueList issues={gate.issues} attributes={list} />
 			<NextButton
 				label={t("create.continue")}
-				onPress={canProceed ? onNext : undefined}
-				active={canProceed}
+				onPress={canProceed && !gate.blocked ? onNext : gate.onBlocked}
+				active={canProceed && !gate.blocked}
 				colors={colors}
 			/>
 		</ScrollView>
@@ -1311,7 +1391,7 @@ function attributeIssueMessage(
 
 // ─── Photos Step ───────────────────────────────────────────────────────────────
 
-function PhotosStep({ form, setForm, onNext, colors }: any) {
+function PhotosStep({ form, setForm, onNext, gate, colors }: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
 	const { t } = useTranslation();
 	// Whether a photo is mandatory is the category's call, not this screen's.
@@ -1514,10 +1594,11 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 					{t("create.photoRequired")}
 				</Text>
 			)}
+			<FieldIssueList issues={gate.issues} attributes={[]} />
 			<NextButton
 				label={t("create.continue")}
-				onPress={onNext}
-				active={!photosRequired || form.images.length > 0}
+				onPress={gate.blocked ? gate.onBlocked : onNext}
+				active={(!photosRequired || form.images.length > 0) && !gate.blocked}
 				colors={colors}
 			/>
 		</ScrollView>
@@ -1526,7 +1607,16 @@ function PhotosStep({ form, setForm, onNext, colors }: any) {
 
 // ─── Review Step ───────────────────────────────────────────────────────────────
 
-function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
+function ReviewStep({
+	form,
+	attributes,
+	setStep,
+	onPublished,
+	readyToSubmit,
+	onRefused,
+	serverIssues,
+	colors,
+}: any) {
 	const { user } = useAuth();
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
@@ -1593,6 +1683,12 @@ function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 			router.push("/(tabs)/account");
 		},
 		onError: (err: any) => {
+			const refused = serverFieldIssues(err);
+			if (refused.length > 0) {
+				onRefused(refused);
+				showError(t("create.publishError"), t("formIssues.serverRefused"));
+				return;
+			}
 			showError(
 				t("create.publishError"),
 				resolveErrorMessage(err, t, t("create.publishErrorMsg")),
@@ -1605,17 +1701,7 @@ function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 	// a hidden price is never "missing", and the wizard is rewound to the step
 	// that owns the problem rather than failing with a server error.
 	const submit = (status: "draft" | "pending") => {
-		if (showsPrice && categoryPreset.fields.price.required && !form.price) {
-			showError(t("create.publishError"), t("create.priceRequired"));
-			setStep("details");
-			return;
-		}
-		if (!areAttributesValid(categoryAttributes, form.attributes ?? {})) {
-			showError(t("create.publishError"), t("errors.validation"));
-			setStep("attributes");
-			return;
-		}
-		publish(status);
+		if (readyToSubmit()) publish(status);
 	};
 
 	const attrRows = categoryAttributes
@@ -1764,6 +1850,8 @@ function ReviewStep({ form, attributes, setStep, onPublished, colors }: any) {
 				/>
 			) : null}
 
+			<FieldIssueList issues={serverIssues} attributes={categoryAttributes} />
+
 			{/* Submit for review */}
 			<Pressable
 				onPress={() => submit("pending")}
@@ -1826,11 +1914,14 @@ function FieldHeader({ icon, label, required, colors }: any) {
 	);
 }
 
+/** Pressing it while inactive still calls `onPress`, so a step can say why it is blocked. */
 function NextButton({ label, onPress, active, colors }: any) {
 	const { primary, mutedColor, isDark } = colors;
 	return (
 		<Pressable
-			onPress={active ? onPress : undefined}
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityState={{ disabled: !active }}
 			style={[
 				styles.nextBtn,
 				{

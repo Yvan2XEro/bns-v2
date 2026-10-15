@@ -3,6 +3,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCategories } from "@/src/hooks/useListings";
+import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import { CONDITION_LABEL_KEYS } from "@/src/lib/listingCondition";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/src/lib/listingForm";
 import type { ProductFormState } from "@/src/lib/productForm";
 import type { ListingCondition } from "@/src/types/api";
+import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 import { ProductAttributeInput } from "./ProductAttributeInput";
 import { ProductPhotosCard } from "./ProductPhotosCard";
@@ -28,11 +30,12 @@ const CONDITIONS: ListingCondition[] = [
 export function ProductInfoStep({
 	form,
 	setForm,
-	showErrors,
+	issues = [],
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
-	showErrors?: boolean;
+	/** What the server would refuse on this step, once the seller tried to move on. */
+	issues?: FieldIssue[];
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -43,6 +46,8 @@ export function ProductInfoStep({
 		f.input,
 		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
 	];
+	const flagged = (path: string) =>
+		issueAt(issues, path) ? { borderColor: ISSUE_BORDER } : null;
 
 	const setAttr = (slug: string, value: string) =>
 		setForm((s) => ({ ...s, attributes: { ...s.attributes, [slug]: value } }));
@@ -50,6 +55,7 @@ export function ProductInfoStep({
 	return (
 		<View style={{ gap: 14 }}>
 			<ProductPhotosCard form={form} setForm={setForm} />
+			<FieldIssueText issue={issueAt(issues, "images")} />
 
 			<View
 				style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}
@@ -68,12 +74,10 @@ export function ProductInfoStep({
 					maxLength={120}
 					placeholder={t("product.titlePlaceholder")}
 					placeholderTextColor={c.muted}
-					style={inputStyle}
+					style={[...inputStyle, flagged("title")]}
 					accessibilityLabel={t("product.titleLabel")}
 				/>
-				{showErrors && form.title.trim().length < 3 ? (
-					<Text style={f.error}>{t("product.titleError")}</Text>
-				) : null}
+				<FieldIssueText issue={issueAt(issues, "title")} />
 
 				<Text style={[f.label, { color: c.body }]}>
 					{t("product.categoryLabel")} *
@@ -97,9 +101,7 @@ export function ProductInfoStep({
 						inputBg: c.input,
 					}}
 				/>
-				{showErrors && !form.category ? (
-					<Text style={f.error}>{t("product.categoryError")}</Text>
-				) : null}
+				<FieldIssueText issue={issueAt(issues, "category")} />
 
 				{preset.fields.condition.enabled ? (
 					<>
@@ -142,8 +144,11 @@ export function ProductInfoStep({
 								);
 							})}
 						</View>
+						<FieldIssueText issue={issueAt(issues, "condition")} />
 					</>
-				) : null}
+				) : (
+					<FieldIssueText issue={issueAt(issues, "condition")} />
+				)}
 
 				{groupListingAttributes(attributes).map((section) => (
 					<View key={section.key} style={{ gap: 10 }}>
@@ -158,6 +163,7 @@ export function ProductInfoStep({
 								attribute={attr}
 								value={form.attributes[attr.slug] ?? ""}
 								onChange={(value) => setAttr(attr.slug, value)}
+								issue={issueAt(issues, `attributes.${attr.slug}`)}
 							/>
 						))}
 					</View>
@@ -180,9 +186,10 @@ export function ProductInfoStep({
 					multiline
 					placeholder={t("product.descriptionPlaceholder")}
 					placeholderTextColor={c.muted}
-					style={[...inputStyle, f.multiline]}
+					style={[...inputStyle, f.multiline, flagged("description")]}
 					accessibilityLabel={t("product.descriptionLabel")}
 				/>
+				<FieldIssueText issue={issueAt(issues, "description")} />
 			</View>
 		</View>
 	);

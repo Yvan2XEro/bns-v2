@@ -21,16 +21,17 @@ import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
+import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type AttributeIssue,
-	areAttributesValid,
 	deserializeAttributeValues,
 	getAttributeIssue,
 	getCategoryAttributes,
@@ -38,6 +39,7 @@ import {
 	groupListingAttributes,
 	isProductListingCategory,
 	type ListingAttribute,
+	listingDraftIssues,
 	maskDateInput,
 	sanitizeNumberInput,
 	sanitizePriceInput,
@@ -483,6 +485,39 @@ export default function EditListingScreen() {
 		[categoryAttributes],
 	);
 
+	// The same rules the API applies to this PATCH; the category is not edited
+	// here, so a bare id stands in for it when only the id is known.
+	const draft = {
+		title,
+		description,
+		price: showsPrice ? price : "",
+		condition: showsCondition ? condition : null,
+		location,
+		category: category ?? (categoryId ? { id: categoryId } : null),
+		attributes,
+		images,
+	};
+	const draftIssues = listingDraftIssues(draft, categoryAttributes, {
+		previousImageCount: Array.isArray(listing?.images)
+			? listing.images.length
+			: 0,
+	});
+	const draftKey = JSON.stringify(draft);
+	const [attempted, setAttempted] = useState(false);
+	const [refused, setRefused] = useState<{
+		key: string;
+		issues: FieldIssue[];
+	} | null>(null);
+	const serverIssues = refused?.key === draftKey ? refused.issues : [];
+	const visibleIssues = [
+		...serverIssues,
+		...(attempted
+			? draftIssues.filter(
+					(issue) => !serverIssues.some((known) => known.path === issue.path),
+				)
+			: []),
+	];
+
 	// The inputs edit strings; the stored JSON holds real numbers and booleans.
 	// Hydration is keyed so it runs once per listing *and* once more if the
 	// attribute list only arrives with the separately fetched category — never on
@@ -610,21 +645,25 @@ export default function EditListingScreen() {
 			showSuccess(t("edit.saveSuccess"), t("edit.saveSuccessMsg"));
 			router.back();
 		},
-		onError: (err: any) =>
-			showError(t("edit.errorTitle"), resolveErrorMessage(err, t)),
+		onError: (err: any) => {
+			const issues = serverFieldIssues(err);
+			if (issues.length > 0) {
+				setRefused({ key: draftKey, issues });
+				showError(t("edit.errorTitle"), t("formIssues.serverRefused"));
+				return;
+			}
+			showError(t("edit.errorTitle"), resolveErrorMessage(err, t));
+		},
 	});
 
 	const updateAttr = (slug: string, value: any) =>
 		setAttributes((prev) => ({ ...prev, [slug]: value }));
 	const handleSavePress = () => {
 		// Only a field the preset actually shows may block the save: a hidden
-		// price must never be "required".
-		if (showsPrice && requiresPrice && !price) {
-			showError(t("edit.errorTitle"), t("create.priceRequired"));
-			return;
-		}
-		if (!areAttributesValid(categoryAttributes, attributes)) {
-			showError(t("edit.errorTitle"), t("errors.validation"));
+		// price is never "required", which `listingDraftIssues` already knows.
+		if (draftIssues.length > 0) {
+			setAttempted(true);
+			showError(t("edit.errorTitle"), t("formIssues.fixStep"));
 			return;
 		}
 		save();
@@ -687,6 +726,10 @@ export default function EditListingScreen() {
 				bottomOffset={20}
 				showsVerticalScrollIndicator={false}
 			>
+				<FieldIssueList
+					issues={visibleIssues}
+					attributes={categoryAttributes}
+				/>
 				{activeShop && !shopMismatch ? (
 					<PublishInShopToggle
 						shopName={activeShop.name}
@@ -1285,6 +1328,10 @@ export default function EditListingScreen() {
 					</View>
 				</SectionCard>
 
+				<FieldIssueList
+					issues={visibleIssues}
+					attributes={categoryAttributes}
+				/>
 				{/* Submit */}
 				<AnimatedPressable
 					// Goes through the same guard as the header button — this one used

@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Switch, Text, TextInput, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ProductFormState } from "@/src/lib/productForm";
+import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 
 /** Cash-on-delivery, pickup, preparation time and return policy. */
@@ -10,10 +12,12 @@ export function PublishDeliveryCard({
 	form,
 	setForm,
 	readOnly,
+	issues = [],
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
 	readOnly?: boolean;
+	issues?: FieldIssue[];
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -21,6 +25,8 @@ export function PublishDeliveryCard({
 		f.input,
 		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
 	];
+	const flagged = (path: string) =>
+		issueAt(issues, path) ? { borderColor: ISSUE_BORDER } : null;
 
 	return (
 		<View style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}>
@@ -51,9 +57,10 @@ export function PublishDeliveryCard({
 				keyboardType="number-pad"
 				placeholder="24"
 				placeholderTextColor={c.muted}
-				style={inputStyle}
+				style={[...inputStyle, flagged("delivery.handlingHours")]}
 				accessibilityLabel={t("product.handling")}
 			/>
+			<FieldIssueText issue={issueAt(issues, "delivery.handlingHours")} />
 			<Text style={[f.label, { color: c.body }]}>
 				{t("product.returnPolicy")}
 			</Text>
@@ -66,9 +73,10 @@ export function PublishDeliveryCard({
 				multiline
 				placeholder={t("product.returnPolicyPlaceholder")}
 				placeholderTextColor={c.muted}
-				style={[...inputStyle, f.multiline]}
+				style={[...inputStyle, f.multiline, flagged("returnPolicy")]}
 				accessibilityLabel={t("product.returnPolicy")}
 			/>
+			<FieldIssueText issue={issueAt(issues, "returnPolicy")} />
 		</View>
 	);
 }

@@ -53,7 +53,7 @@ export function SellerHubBar({ shop }: { shop: MyShop }) {
 					</Text>
 				</View>
 				<Pressable
-					onPress={() => router.push(`/s/${shop.handle}` as never)}
+					onPress={() => router.push(`/s/${shop.handle}`)}
 					style={styles.iconHit}
 					hitSlop={8}
 					accessibilityRole="button"

@@ -1,11 +1,13 @@
 import { Pressable, Text, TextInput, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type ListingAttribute,
 	maskDateInput,
 	sanitizeNumberInput,
 } from "@/src/lib/listingForm";
+import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 
 /** One category attribute: a chip picker for select/boolean, a text input otherwise. */
@@ -13,17 +15,23 @@ export function ProductAttributeInput({
 	attribute,
 	value,
 	onChange,
+	issue,
 }: {
 	attribute: ListingAttribute;
 	value: string;
 	onChange: (value: string) => void;
+	issue?: FieldIssue;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const label = `${attribute.name}${attribute.unit ? ` (${attribute.unit})` : ""}${attribute.required ? " *" : ""}`;
 	const inputStyle = [
 		f.input,
-		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
+		{
+			color: c.text,
+			backgroundColor: c.input,
+			borderColor: issue ? ISSUE_BORDER : c.border,
+		},
 	];
 
 	const choices =
@@ -92,6 +100,7 @@ export function ProductAttributeInput({
 					accessibilityLabel={label}
 				/>
 			)}
+			<FieldIssueText issue={issue} />
 		</View>
 	);
 }

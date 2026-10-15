@@ -2,12 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import type { Dispatch, SetStateAction } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type ProductFormState,
 	parseAmount,
 	type VariantRow,
 } from "@/src/lib/productForm";
+import { FieldIssueText } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 import { VariantOptionsEditor } from "./VariantOptionsEditor";
 import { VariantRowCard } from "./VariantRowCard";
@@ -18,6 +20,7 @@ export function VariantsStep({
 	editing,
 	readOnly,
 	canManageCost,
+	issues = [],
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
@@ -26,6 +29,7 @@ export function VariantsStep({
 	readOnly?: boolean;
 	/** Purchase cost and margin are owner/manager-only; see `canManageShop`. */
 	canManageCost: boolean;
+	issues?: FieldIssue[];
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -59,7 +63,12 @@ export function VariantsStep({
 
 	return (
 		<View style={{ gap: 14 }}>
-			<VariantOptionsEditor form={form} setForm={setForm} readOnly={readOnly} />
+			<VariantOptionsEditor
+				form={form}
+				setForm={setForm}
+				readOnly={readOnly}
+				issues={issues}
+			/>
 
 			<View
 				style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}
@@ -98,10 +107,13 @@ export function VariantsStep({
 					) : null}
 				</View>
 
-				{form.variants.map((row) => (
+				<FieldIssueText issue={issueAt(issues, "variants")} />
+				{form.variants.map((row, index) => (
 					<VariantRowCard
 						key={row.key}
 						row={row}
+						index={index}
+						issues={issues}
 						options={form.options}
 						readOnly={readOnly}
 						canManageCost={canManageCost}

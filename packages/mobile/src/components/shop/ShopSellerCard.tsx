@@ -50,7 +50,7 @@ export function ShopSellerCard({
 
 	return (
 		<Pressable
-			onPress={() => router.push(`/s/${shop.handle}` as never)}
+			onPress={() => router.push(`/s/${shop.handle}`)}
 			accessibilityRole="button"
 			accessibilityLabel={t("shop.viewShopLabel", { name: shop.name })}
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}

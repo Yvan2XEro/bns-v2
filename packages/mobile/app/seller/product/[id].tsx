@@ -1,6 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import {
+	type Dispatch,
+	type SetStateAction,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,15 +24,17 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useProductSubmit } from "@/src/hooks/useProductSubmit";
 import { useMyShop, useProductDetail } from "@/src/hooks/useShops";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import { getCategoryAttributes } from "@/src/lib/listingForm";
 import {
+	canLeaveStep,
 	emptyProductForm,
+	firstProductIssueStep,
 	fromProductDetail,
-	infoIssues,
 	type ProductFormState,
+	productFormIssues,
 	toProductInput,
-	variantIssues,
 } from "@/src/lib/productForm";
 import { canSeeCost } from "@/src/lib/shopRoles";
 
@@ -48,7 +57,18 @@ export default function ProductScreen() {
 	const [loaded, setLoaded] = useState(creating);
 	const [step, setStep] = useState<1 | 2 | 3>(1);
 	const [showErrors, setShowErrors] = useState(false);
+	const [serverIssues, setServerIssues] = useState<FieldIssue[]>([]);
 	const readOnly = shop?.status !== "active";
+
+	// Any edit may be the fix for what the server refused, so its verdict is
+	// dropped and the form's own rules take over again.
+	const editForm = useCallback<Dispatch<SetStateAction<ProductFormState>>>(
+		(update) => {
+			setServerIssues([]);
+			setForm(update);
+		},
+		[],
+	);
 
 	useEffect(() => {
 		if (!creating && detail.data && !loaded) {
@@ -63,24 +83,46 @@ export default function ProductScreen() {
 	);
 	const role = creating ? mine.data?.role : detail.data?.role;
 	const canManageCost = canSeeCost(role);
+	const formIssues = useMemo(
+		() => productFormIssues(form, attributes),
+		[form, attributes],
+	);
+	const visibleIssues = useMemo(
+		() => [
+			...serverIssues,
+			...(showErrors
+				? formIssues.filter(
+						(issue) => !serverIssues.some((s) => s.path === issue.path),
+					)
+				: []),
+		],
+		[serverIssues, showErrors, formIssues],
+	);
 
 	const submit = () => {
 		setShowErrors(true);
-		if (infoIssues(form).length > 0) {
-			if (creating) setStep(1);
-			showError(t("product.saveError"), t("product.fixInfo"));
-			return;
-		}
-		if (variantIssues(form).length > 0) {
-			if (creating) setStep(2);
-			showError(t("product.saveError"), t("product.fixVariants"));
+		const blocking = firstProductIssueStep(formIssues);
+		if (blocking) {
+			if (creating) setStep(blocking);
+			showError(t("product.saveError"), t("formIssues.fixStep"));
 			return;
 		}
 
 		const input = toProductInput(form, attributes);
 		save(input, {
-			onError: (error) =>
-				showError(t("product.saveError"), resolveErrorMessage(error, t)),
+			onError: (error) => {
+				const refused = serverFieldIssues(error);
+				if (refused.length === 0) {
+					showError(t("product.saveError"), resolveErrorMessage(error, t));
+					return;
+				}
+				// Back to the step that shows the refused field, with the field
+				// highlighted, instead of a banner the seller cannot act on.
+				setServerIssues(refused);
+				const step = firstProductIssueStep(refused);
+				if (creating && step) setStep(step);
+				showError(t("product.saveError"), t("formIssues.serverRefused"));
+			},
 			onSuccess: (result) => {
 				if (creating) {
 					showSuccess(
@@ -113,13 +155,9 @@ export default function ProductScreen() {
 
 	const next = () => {
 		setShowErrors(true);
-		if (step === 1 && infoIssues(form).length === 0) {
-			setShowErrors(false);
-			setStep(2);
-		} else if (step === 2 && variantIssues(form).length === 0) {
-			setShowErrors(false);
-			setStep(3);
-		}
+		if (!canLeaveStep(formIssues, step)) return;
+		setShowErrors(false);
+		setStep((step + 1) as 2 | 3);
 	};
 
 	if (!creating && (detail.isLoading || !loaded)) {
@@ -176,17 +214,17 @@ export default function ProductScreen() {
 				{creating ? (
 					<ProductWizardContent
 						form={form}
-						setForm={setForm}
+						setForm={editForm}
 						step={step}
-						showErrors={showErrors}
+						issues={visibleIssues}
 						canManageCost={canManageCost}
 						onEditInfo={() => setStep(1)}
 					/>
 				) : (
 					<ProductEditorContent
 						form={form}
-						setForm={setForm}
-						showErrors={showErrors}
+						setForm={editForm}
+						issues={visibleIssues}
 						readOnly={readOnly}
 						canManageCost={canManageCost}
 						listing={detail.data?.listing ?? null}

@@ -2,12 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import type { Dispatch, SetStateAction } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	MAX_OPTIONS,
 	type ProductFormState,
 	syncVariantRows,
 } from "@/src/lib/productForm";
+import { FieldIssueText } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 import { VariantOptionRow } from "./VariantOptionRow";
 
@@ -21,10 +23,12 @@ export function VariantOptionsEditor({
 	form,
 	setForm,
 	readOnly,
+	issues = [],
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
 	readOnly?: boolean;
+	issues?: FieldIssue[];
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -110,9 +114,14 @@ export function VariantOptionsEditor({
 							onRemove={() => removeOption(index)}
 							onRemoveValue={(value) => removeValue(index, value)}
 							onAddValue={(value) => addValue(index, value)}
+							nameIssue={issueAt(issues, `options.${index}.name`)}
+							valuesIssue={issueAt(issues, `options.${index}.values`)}
 						/>
 					))
 				: null}
+			{form.hasVariants ? (
+				<FieldIssueText issue={issueAt(issues, "options")} />
+			) : null}
 
 			{form.hasVariants && form.options.length < MAX_OPTIONS && !readOnly ? (
 				<Pressable

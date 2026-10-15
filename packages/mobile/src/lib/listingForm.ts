@@ -1,3 +1,6 @@
+import type { FieldIssue } from "../../../api/src/contracts/formIssues";
+import { listingInputIssues } from "../../../api/src/contracts/listingValidation";
+
 /**
  * Category-driven shape of the listing form.
  *
@@ -583,4 +586,65 @@ export function formatAttributeValue(
 	}
 
 	return attribute.unit ? `${value} ${attribute.unit}` : value;
+}
+
+// ─── Whole-form validation ────────────────────────────────────────────────────
+
+/** The classified-listing form as both mobile screens hold it. */
+export interface ListingDraft {
+	title: string;
+	description: string;
+	price: string;
+	condition: string | null;
+	location: string;
+	category: unknown;
+	attributes: Record<string, unknown>;
+	images: unknown[];
+}
+
+/**
+ * Everything `POST`/`PATCH /api/listings` would refuse in this draft, on the
+ * body's paths, plus what the category's form marks required. The rules are
+ * the API's own (`listingInputIssues`); the attributes are also checked as
+ * typed, so "12a" in a number field is caught before it is dropped on send.
+ */
+export function listingDraftIssues(
+	draft: ListingDraft,
+	attributes: ListingAttribute[],
+	options: { previousImageCount?: number } = {},
+): FieldIssue[] {
+	const preset = getListingFormPreset(draft.category);
+	const category = asRecord(draft.category);
+	const issues: FieldIssue[] = [];
+	for (const [slug, issue] of Object.entries(
+		getAttributeIssues(attributes, draft.attributes),
+	)) {
+		issues.push({
+			path: `attributes.${slug}`,
+			rule: issue.code,
+			...(issue.code === "min" ? { params: { min: issue.bound } } : {}),
+			...(issue.code === "max" ? { params: { max: issue.bound } } : {}),
+		});
+	}
+	const body = {
+		title: draft.title,
+		description: draft.description,
+		location: draft.location,
+		category: category?.id ?? null,
+		price:
+			preset.fields.price.enabled && draft.price.trim()
+				? Number(draft.price)
+				: undefined,
+		condition: preset.fields.condition.enabled ? draft.condition || null : null,
+		images: draft.images,
+		attributes: serializeAttributeValues(attributes, draft.attributes),
+	};
+	for (const issue of listingInputIssues(body, {
+		preset: preset.fields,
+		attributes,
+		previousImageCount: options.previousImageCount,
+	})) {
+		if (!issues.some((known) => known.path === issue.path)) issues.push(issue);
+	}
+	return issues;
 }

@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import type { Dispatch, SetStateAction } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ProductFormState } from "@/src/lib/productForm";
 import type { MovementRow } from "@/src/types/api";
@@ -16,7 +17,7 @@ import { VariantsStep } from "./VariantsStep";
 export function ProductEditorContent({
 	form,
 	setForm,
-	showErrors,
+	issues,
 	readOnly,
 	canManageCost,
 	listing,
@@ -24,7 +25,7 @@ export function ProductEditorContent({
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
-	showErrors?: boolean;
+	issues: FieldIssue[];
 	readOnly: boolean;
 	canManageCost: boolean;
 	listing: { id: string; views: number; favorites: number } | null;
@@ -40,6 +41,7 @@ export function ProductEditorContent({
 				setForm={setForm}
 				statuses={["active", "archived", "draft"]}
 				readOnly={readOnly}
+				issues={issues}
 			/>
 			{listing ? (
 				<Pressable
@@ -70,8 +72,9 @@ export function ProductEditorContent({
 				editing
 				readOnly={readOnly}
 				canManageCost={canManageCost}
+				issues={issues}
 			/>
-			<ProductInfoStep form={form} setForm={setForm} showErrors={showErrors} />
+			<ProductInfoStep form={form} setForm={setForm} issues={issues} />
 			<ProductMovementsCard movements={movements} />
 		</>
 	);

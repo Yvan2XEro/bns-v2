@@ -11,7 +11,7 @@ import { useShopTheme } from "./theme";
 export function ShopCard({ hit }: { hit: ShopSearchHit }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const open = () => router.push(`/s/${hit.handle}` as never);
+	const open = () => router.push(`/s/${hit.handle}`);
 	const rating =
 		hit.ownerReviews > 0
 			? `${hit.ownerRating.toFixed(1).replace(".", ",")} (${hit.ownerReviews})`

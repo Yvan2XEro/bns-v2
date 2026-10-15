@@ -1,14 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import type { ListingAttribute } from "./listingForm";
 import {
+	canLeaveStep,
 	emptyProductForm,
 	emptyVariantRow,
+	firstProductIssueStep,
 	fromProductDetail,
-	infoIssues,
 	parseAmount,
+	productFormIssues,
+	productStepIssues,
 	syncVariantRows,
 	toProductInput,
-	variantIssues,
 } from "./productForm";
 
 const ATTRS: ListingAttribute[] = [
@@ -301,15 +303,132 @@ describe("syncVariantRows", () => {
 });
 
 describe("issues", () => {
-	test("reports a short title and a missing category", () => {
+	const paths = (form: ReturnType<typeof filled>, attrs = ATTRS) =>
+		productFormIssues(form, attrs).map((issue) => issue.path);
+
+	test("reports a short title and a missing category on the info step", () => {
 		const form = emptyProductForm();
 		form.title = "ab";
-		expect(infoIssues(form).sort()).toEqual(["category", "title"]);
+		const info = productStepIssues(productFormIssues(form, ATTRS), "info");
+		expect(info.map((issue) => issue.path).sort()).toEqual([
+			"category",
+			"title",
+		]);
 	});
 
-	test("reports a variant without a price", () => {
+	test("a blank price is missing, never sent as 0", () => {
 		const form = filled();
-		expect(variantIssues(form)).toEqual(["price"]);
+		expect(productFormIssues(form, ATTRS)).toContainEqual({
+			path: "variants.0.price",
+			rule: "required",
+		});
+	});
+
+	test("a complete form has nothing the server would refuse", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		expect(productFormIssues(form, ATTRS)).toEqual([]);
+	});
+
+	test("a required category attribute blocks the info step", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		form.attributes = {};
+		const attrs = [{ ...ATTRS[0], required: true }];
+		expect(paths(form, attrs)).toEqual(["attributes.brand"]);
+		expect(firstProductIssueStep(productFormIssues(form, attrs))).toBe(1);
+	});
+
+	test("a select value outside the category's options is refused like the server does", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		const attrs = [
+			{
+				name: "Couleur",
+				slug: "color",
+				type: "select" as const,
+				required: false,
+				options: [{ value: "red", label: "Rouge" }],
+			},
+		];
+		form.attributes = { color: "blue" };
+		expect(paths(form, attrs)).toEqual(["attributes.color"]);
+	});
+
+	test("two variants with the same SKU are caught on the variants step", () => {
+		const form = filled();
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: ["Noir", "Blanc"] }];
+		form.variants = syncVariantRows(form);
+		for (const row of form.variants) {
+			row.price = "1000";
+			row.sku = "S24";
+		}
+		const issues = productFormIssues(form, ATTRS);
+		expect(issues).toEqual([{ path: "variants.1.sku", rule: "duplicate" }]);
+		expect(firstProductIssueStep(issues)).toBe(2);
+	});
+
+	test("variants switched on without any option value are refused", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: [] }];
+		expect(paths(form)).toEqual(["options"]);
+	});
+
+	test("an option value longer than the server allows is caught", () => {
+		const form = filled();
+		form.hasVariants = true;
+		form.options = [{ name: "Couleur", values: ["x".repeat(31)] }];
+		form.variants = syncVariantRows(form);
+		form.variants[0].price = "1000";
+		expect(paths(form)).toContain("options.0.values");
+	});
+
+	test("a preparation time over 720 hours blocks the publish step", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		form.handlingHours = "721";
+		const issues = productFormIssues(form, ATTRS);
+		expect(issues).toEqual([
+			{ path: "delivery.handlingHours", rule: "max", params: { max: 720 } },
+		]);
+		expect(firstProductIssueStep(issues)).toBe(3);
+	});
+
+	test("a return policy over 2000 characters is caught", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		form.returnPolicy = "x".repeat(2001);
+		expect(paths(form)).toEqual(["returnPolicy"]);
+	});
+});
+
+describe("wizard step gating", () => {
+	test("a step holding a value the server refuses cannot be left", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		const attrs = [{ ...ATTRS[1], max: 24 }];
+		form.attributes = { warranty: "36" };
+		const issues = productFormIssues(form, attrs);
+		expect(canLeaveStep(issues, 1)).toBe(false);
+		expect(canLeaveStep(issues, 2)).toBe(true);
+	});
+
+	test("the variants step cannot be left with a variant priced blank", () => {
+		const issues = productFormIssues(filled(), ATTRS);
+		expect(canLeaveStep(issues, 1)).toBe(true);
+		expect(canLeaveStep(issues, 2)).toBe(false);
+	});
+
+	test("the server's refusal of a taken SKU sends the seller back to the variants step", () => {
+		expect(
+			firstProductIssueStep([{ path: "variants.0.sku", rule: "taken" }]),
+		).toBe(2);
+		expect(
+			firstProductIssueStep([{ path: "attributes.brand", rule: "invalid" }]),
+		).toBe(1);
 	});
 });
 

@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { parseAmount, type VariantRow } from "@/src/lib/productForm";
@@ -12,17 +13,22 @@ import {
 	type ProductOption,
 	variantLabel,
 } from "@/src/lib/variants";
+import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 
 /** One variant's SKU, price, cost, stock and threshold — a single card row. */
 export function VariantRowCard({
 	row,
+	index,
+	issues,
 	options,
 	readOnly,
 	canManageCost,
 	onChange,
 }: {
 	row: VariantRow;
+	index: number;
+	issues: FieldIssue[];
 	options: ProductOption[];
 	readOnly?: boolean;
 	canManageCost: boolean;
@@ -40,6 +46,10 @@ export function VariantRowCard({
 		: null;
 	const label =
 		variantLabel(row.optionValues, options) || t("product.defaultVariant");
+	const issueOf = (field: string) =>
+		issueAt(issues, `variants.${index}.${field}`);
+	const flagged = (field: string) =>
+		issueOf(field) ? { borderColor: ISSUE_BORDER } : null;
 
 	return (
 		<View style={[styles.variant, { borderTopColor: c.border }]}>
@@ -53,6 +63,7 @@ export function VariantRowCard({
 					</Text>
 				) : null}
 			</View>
+			<FieldIssueText issue={issueOf("optionValues")} />
 			<TextInput
 				value={row.sku}
 				editable={!readOnly}
@@ -60,9 +71,10 @@ export function VariantRowCard({
 				autoCapitalize="characters"
 				placeholder={t("product.skuPlaceholder")}
 				placeholderTextColor={c.muted}
-				style={inputStyle}
+				style={[...inputStyle, flagged("sku")]}
 				accessibilityLabel={t("product.skuPlaceholder")}
 			/>
+			<FieldIssueText issue={issueOf("sku")} />
 			<View style={styles.grid}>
 				<Cell label={t("product.price")}>
 					<TextInput
@@ -70,9 +82,10 @@ export function VariantRowCard({
 						editable={!readOnly}
 						onChangeText={(v) => onChange({ price: v.replace(/\D/g, "") })}
 						keyboardType="number-pad"
-						style={inputStyle}
+						style={[...inputStyle, flagged("price")]}
 						accessibilityLabel={t("product.price")}
 					/>
+					<FieldIssueText issue={issueOf("price")} />
 				</Cell>
 				{canManageCost ? (
 					<Cell label={t("product.cost")}>
@@ -81,9 +94,10 @@ export function VariantRowCard({
 							editable={!readOnly}
 							onChangeText={(v) => onChange({ cost: v.replace(/\D/g, "") })}
 							keyboardType="number-pad"
-							style={inputStyle}
+							style={[...inputStyle, flagged("cost")]}
 							accessibilityLabel={t("product.cost")}
 						/>
+						<FieldIssueText issue={issueOf("cost")} />
 					</Cell>
 				) : null}
 				<Cell label={row.id ? t("product.stock") : t("product.initialStock")}>
@@ -112,10 +126,11 @@ export function VariantRowCard({
 								onChange({ initialStock: v.replace(/\D/g, "") })
 							}
 							keyboardType="number-pad"
-							style={inputStyle}
+							style={[...inputStyle, flagged("initialStock")]}
 							accessibilityLabel={t("product.initialStock")}
 						/>
 					)}
+					<FieldIssueText issue={issueOf("initialStock")} />
 				</Cell>
 				<Cell label={t("product.threshold")}>
 					<TextInput
@@ -125,9 +140,10 @@ export function VariantRowCard({
 							onChange({ lowStockThreshold: v.replace(/\D/g, "") })
 						}
 						keyboardType="number-pad"
-						style={inputStyle}
+						style={[...inputStyle, flagged("lowStockThreshold")]}
 						accessibilityLabel={t("product.threshold")}
 					/>
+					<FieldIssueText issue={issueOf("lowStockThreshold")} />
 				</Cell>
 			</View>
 			{row.price && parseAmount(row.price) !== null ? (

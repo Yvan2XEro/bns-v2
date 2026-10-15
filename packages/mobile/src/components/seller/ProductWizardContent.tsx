@@ -2,8 +2,13 @@ import type { Dispatch, SetStateAction } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
+import type { FieldIssue } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
-import { type ProductFormState, variantIssues } from "@/src/lib/productForm";
+import {
+	type ProductFormState,
+	productStepIssues,
+	WIZARD_STEPS,
+} from "@/src/lib/productForm";
 import { formStyles as f } from "./formStyles";
 import { ProductInfoStep } from "./ProductInfoStep";
 import { PublishStep } from "./PublishStep";
@@ -14,19 +19,21 @@ export function ProductWizardContent({
 	form,
 	setForm,
 	step,
-	showErrors,
+	issues,
 	canManageCost,
 	onEditInfo,
 }: {
 	form: ProductFormState;
 	setForm: Dispatch<SetStateAction<ProductFormState>>;
 	step: 1 | 2 | 3;
-	showErrors: boolean;
+	/** The issues to show; empty until the seller tries to move on or the server refuses. */
+	issues: FieldIssue[];
 	canManageCost: boolean;
 	onEditInfo: () => void;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const stepIssues = productStepIssues(issues, WIZARD_STEPS[step]);
 
 	return (
 		<>
@@ -39,17 +46,14 @@ export function ProductWizardContent({
 				</Text>
 			</View>
 			{step === 1 ? (
-				<ProductInfoStep
-					form={form}
-					setForm={setForm}
-					showErrors={showErrors}
-				/>
+				<ProductInfoStep form={form} setForm={setForm} issues={stepIssues} />
 			) : null}
 			{step === 2 ? (
 				<VariantsStep
 					form={form}
 					setForm={setForm}
 					canManageCost={canManageCost}
+					issues={stepIssues}
 				/>
 			) : null}
 			{step === 3 ? (
@@ -58,10 +62,13 @@ export function ProductWizardContent({
 					setForm={setForm}
 					statuses={["active", "draft"]}
 					onEditInfo={onEditInfo}
+					issues={stepIssues}
 				/>
 			) : null}
-			{step === 2 && showErrors && variantIssues(form).length > 0 ? (
-				<Text style={f.error}>{t("product.fixVariants")}</Text>
+			{stepIssues.length > 0 ? (
+				<Text style={f.error} accessibilityRole="alert">
+					{t("formIssues.fixStep")}
+				</Text>
 			) : null}
 		</>
 	);

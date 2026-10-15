@@ -1,3 +1,14 @@
+import {
+	type FieldIssue,
+	firstIssueStep,
+} from "../../../api/src/contracts/formIssues";
+import {
+	PRODUCT_LIMITS,
+	PRODUCT_STEPS,
+	type ProductStep,
+	productInputIssues,
+	productIssueStep,
+} from "../../../api/src/contracts/productValidation";
 import type {
 	Category,
 	ListingCondition,
@@ -7,7 +18,9 @@ import type {
 } from "../types/api";
 import {
 	deserializeAttributeValues,
+	getAttributeIssues,
 	getCategoryAttributes,
+	getListingFormPreset,
 	type ListingAttribute,
 	serializeAttributeValues,
 } from "./listingForm";
@@ -50,11 +63,8 @@ export interface ProductFormState {
 	returnPolicy: string;
 }
 
-export type InfoIssue = "title" | "category" | "description" | "images";
-export type VariantIssue = "price" | "options";
-
-export const MAX_PRODUCT_IMAGES = 10;
-export const MAX_OPTIONS = 3;
+export const MAX_PRODUCT_IMAGES = PRODUCT_LIMITS.imagesMax;
+export const MAX_OPTIONS = PRODUCT_LIMITS.optionsMax;
 
 /**
  * Digits and spaces only — a thousands separator survives, but a decimal
@@ -299,23 +309,73 @@ export function fromProductDetail(
 	};
 }
 
-export function infoIssues(state: ProductFormState): InfoIssue[] {
-	const issues: InfoIssue[] = [];
-	const title = state.title.trim();
-	if (title.length < 3 || title.length > 120) issues.push("title");
-	if (!state.category) issues.push("category");
-	if (state.description.length > 5000) issues.push("description");
-	if (state.images.length > MAX_PRODUCT_IMAGES) issues.push("images");
+/**
+ * Everything the API would refuse in this form, on the paths of the body it
+ * receives. The rules are the server's own (`productInputIssues`), run on what
+ * `toProductInput` would send — except that an amount the seller left blank
+ * or typed wrong stays missing here instead of becoming 0. The form adds the
+ * category's own demands on top: its attributes as typed, and a condition when
+ * the category marks it required.
+ */
+export function productFormIssues(
+	state: ProductFormState,
+	attributes: ListingAttribute[],
+): FieldIssue[] {
+	const input = toProductInput(state, attributes);
+	const body = {
+		...input,
+		variants: input.variants.map((variant, index) => ({
+			...variant,
+			price: parseAmount(state.variants[index]?.price ?? ""),
+		})),
+	};
+	const issues: FieldIssue[] = [];
+	const add = (issue: FieldIssue) => {
+		if (!issues.some((known) => known.path === issue.path)) issues.push(issue);
+	};
+
+	for (const [slug, issue] of Object.entries(
+		getAttributeIssues(attributes, state.attributes),
+	)) {
+		add({
+			path: `attributes.${slug}`,
+			rule: issue.code,
+			...(issue.code === "min" ? { params: { min: issue.bound } } : {}),
+			...(issue.code === "max" ? { params: { max: issue.bound } } : {}),
+		});
+	}
+	if (state.hasVariants && cleanOptions(state.options).length === 0) {
+		add({ path: "options", rule: "required" });
+	}
+	const preset = getListingFormPreset(state.category);
+	if (preset.fields.condition.required && !state.condition) {
+		add({ path: "condition", rule: "required" });
+	}
+	for (const issue of productInputIssues(body, { attributes })) add(issue);
 	return issues;
 }
 
-export function variantIssues(state: ProductFormState): VariantIssue[] {
-	const issues: VariantIssue[] = [];
-	if (state.hasVariants && cleanOptions(state.options).length === 0) {
-		issues.push("options");
-	}
-	if (state.variants.some((row) => parseAmount(row.price) === null)) {
-		issues.push("price");
-	}
-	return issues;
+/** The issues the given wizard step shows. */
+export function productStepIssues(
+	issues: FieldIssue[],
+	step: ProductStep,
+): FieldIssue[] {
+	return issues.filter((issue) => productIssueStep(issue.path) === step);
+}
+
+/** The first step holding one of the issues, as the wizard's 1-based number. */
+export function firstProductIssueStep(issues: FieldIssue[]): 1 | 2 | 3 | null {
+	const step = firstIssueStep(issues, productIssueStep, PRODUCT_STEPS);
+	return step ? ((PRODUCT_STEPS.indexOf(step) + 1) as 1 | 2 | 3) : null;
+}
+
+export const WIZARD_STEPS: Record<1 | 2 | 3, ProductStep> = {
+	1: "info",
+	2: "variants",
+	3: "publish",
+};
+
+/** "Continue" leaves a step only when nothing on it would be refused. */
+export function canLeaveStep(issues: FieldIssue[], step: 1 | 2 | 3): boolean {
+	return productStepIssues(issues, WIZARD_STEPS[step]).length === 0;
 }
