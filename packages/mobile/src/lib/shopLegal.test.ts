@@ -1,5 +1,11 @@
-import { describe, expect, it } from "bun:test";
-import { legalBlockLines, legalFormSchema } from "./shopLegal";
+import { describe, expect, it, test } from "bun:test";
+import en from "../locales/en.json";
+import fr from "../locales/fr.json";
+import {
+	businessTypeLabelKey,
+	legalBlockLines,
+	legalFormSchema,
+} from "./shopLegal";
 
 describe("legalBlockLines", () => {
 	it("shows only the fields the shop actually declared", () => {
@@ -61,5 +67,20 @@ describe("legalFormSchema", () => {
 			niu: "M12345678901-M",
 		});
 		expect(result.success).toBe(false);
+	});
+});
+
+describe("businessTypeLabelKey", () => {
+	test("names a key under `shop` in both locales for every type", () => {
+		for (const type of [
+			"entreprenant",
+			"sole_trader",
+			"company",
+			"cooperative",
+		] as const) {
+			const key = businessTypeLabelKey(type);
+			expect(typeof (fr.shop as Record<string, unknown>)[key]).toBe("string");
+			expect(typeof (en.shop as Record<string, unknown>)[key]).toBe("string");
+		}
 	});
 });

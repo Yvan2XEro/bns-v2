@@ -26,7 +26,7 @@ export function PaymentsOrderRow({ order }: { order: SellerPaymentsOrderRow }) {
 					{order.orderNumber}
 				</Text>
 				<Text style={[s.meta, { color: c.muted }]}>
-					{t(statusLabelKey(order.status, "seller"))}
+					{t(`orderStatus.${statusLabelKey(order.status, "seller")}`)}
 				</Text>
 			</View>
 			<Line

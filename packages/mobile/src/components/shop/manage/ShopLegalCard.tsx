@@ -60,7 +60,7 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 									disabled={disabled}
 									onPress={() => field.onChange(active ? "" : type)}
 									accessibilityRole="button"
-									accessibilityLabel={t(businessTypeLabelKey(type))}
+									accessibilityLabel={t(`shop.${businessTypeLabelKey(type)}`)}
 									style={[
 										f.chip,
 										{
@@ -73,7 +73,7 @@ export function ShopLegalCard({ shop }: { shop: MyShop }) {
 									<Text
 										style={[f.chipText, { color: active ? "#fff" : c.text }]}
 									>
-										{t(businessTypeLabelKey(type))}
+										{t(`shop.${businessTypeLabelKey(type)}`)}
 									</Text>
 								</Pressable>
 							);
