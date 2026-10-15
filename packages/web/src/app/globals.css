@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../components/illustrations/illustrations.css";
+@import "../components/auth/auth.css";
 
 @theme inline {
 	--color-background: var(--background);

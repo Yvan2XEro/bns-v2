@@ -1,0 +1,107 @@
+/* Auth screens: the market scene and the soft backdrop. Motion only runs under
+   no-preference, so reduced motion keeps the still frame. */
+@media (prefers-reduced-motion: no-preference) {
+	.auth-float {
+		animation: auth-float 6s ease-in-out infinite;
+	}
+	.auth-float-slow {
+		animation: auth-float 9s ease-in-out infinite;
+	}
+	.auth-sway {
+		transform-box: fill-box;
+		transform-origin: 50% 0;
+		animation: auth-sway 5s ease-in-out infinite;
+	}
+	.auth-pop {
+		transform-box: fill-box;
+		transform-origin: 0 100%;
+		animation: auth-pop 7s ease-in-out infinite;
+	}
+	.auth-route {
+		animation: auth-route 2.4s linear infinite;
+	}
+	.auth-twinkle {
+		transform-box: fill-box;
+		transform-origin: center;
+		animation: auth-twinkle 3.2s ease-in-out infinite;
+	}
+	.auth-blob {
+		animation: auth-blob 22s ease-in-out infinite alternate;
+	}
+	.auth-rise {
+		animation: auth-rise 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+	}
+}
+
+@keyframes auth-float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+}
+@keyframes auth-sway {
+	0%,
+	100% {
+		transform: rotate(-5deg);
+	}
+	50% {
+		transform: rotate(5deg);
+	}
+}
+@keyframes auth-pop {
+	0%,
+	8% {
+		opacity: 0;
+		transform: scale(0.6) translateY(6px);
+	}
+	16%,
+	78% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+	90%,
+	100% {
+		opacity: 0;
+		transform: scale(0.9) translateY(-4px);
+	}
+}
+@keyframes auth-route {
+	to {
+		stroke-dashoffset: -28;
+	}
+}
+@keyframes auth-twinkle {
+	0%,
+	100% {
+		opacity: 0.25;
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.1);
+	}
+}
+@keyframes auth-blob {
+	0% {
+		transform: translate3d(0, 0, 0) scale(1);
+	}
+	50% {
+		transform: translate3d(3%, -4%, 0) scale(1.06);
+	}
+	100% {
+		transform: translate3d(-3%, 3%, 0) scale(0.97);
+	}
+}
+@keyframes auth-rise {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

@@ -8,6 +8,7 @@ import path from "node:path";
 const SRC = path.resolve(import.meta.dir, "..");
 const APP = path.join(SRC, "app");
 const SHELLS = [
+	"(auth)",
 	"(bare)",
 	"(checkout)",
 	"(ops)",

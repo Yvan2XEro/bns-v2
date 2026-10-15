@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Button } from "~/components/ui/button";
 import { type SocialAuthProvider, useAuth } from "~/hooks/use-auth";
+import { orderedProviders, SOCIAL_PROVIDER_ORDER } from "~/lib/auth-form";
+import { cn } from "~/lib/utils";
 
 function GoogleIcon() {
 	return (
-		<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+		<svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true">
 			<path
 				d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"
 				fill="#4285F4"
@@ -32,8 +33,8 @@ function GoogleIcon() {
 function AppleIcon() {
 	return (
 		<svg
-			width="18"
-			height="18"
+			width="20"
+			height="20"
 			viewBox="0 0 24 24"
 			aria-hidden="true"
 			fill="currentColor"
@@ -46,77 +47,102 @@ function AppleIcon() {
 function FacebookIcon() {
 	return (
 		<svg
-			width="18"
-			height="18"
+			width="20"
+			height="20"
 			viewBox="0 0 24 24"
 			aria-hidden="true"
-			fill="#1877F2"
+			fill="currentColor"
 		>
 			<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
 		</svg>
 	);
 }
 
-const ALL_PROVIDERS: Array<{
-	label: string;
-	value: SocialAuthProvider;
-	Icon: () => React.ReactElement;
-}> = [
-	{ label: "Google", value: "google", Icon: GoogleIcon },
-	{ label: "Apple", value: "apple", Icon: AppleIcon },
-	{ label: "Facebook", value: "facebook", Icon: FacebookIcon },
-];
+// Each mark on its own brand surface: Google's white button with the
+// four-colour G, Apple's black, Facebook's blue with the white "f".
+const PROVIDERS: Record<
+	SocialAuthProvider,
+	{ label: string; Icon: () => React.ReactElement; className: string }
+> = {
+	google: {
+		label: "Google",
+		Icon: GoogleIcon,
+		className:
+			"border border-[#747775] bg-white text-[#1F1F1F] hover:bg-[#F8FAFF] focus-visible:ring-[#1E40AF]",
+	},
+	apple: {
+		label: "Apple",
+		Icon: AppleIcon,
+		className:
+			"border border-black bg-black text-white hover:bg-[#1F1F1F] focus-visible:ring-[#1E40AF]",
+	},
+	facebook: {
+		label: "Facebook",
+		Icon: FacebookIcon,
+		className:
+			"border border-[#1877F2] bg-[#1877F2] text-white hover:bg-[#166FE5] focus-visible:ring-[#1E40AF]",
+	},
+};
+
+/**
+ * Providers the API has enabled, in display order. `null` while loading; a
+ * failed lookup falls back to all three, as before.
+ */
+export function useSocialProviders(): SocialAuthProvider[] | null {
+	const [providers, setProviders] = useState<SocialAuthProvider[] | null>(null);
+	useEffect(() => {
+		fetch("/api/public/auth/providers")
+			.then((r) => r.json())
+			.then((data: { providers: string[] }) =>
+				setProviders(orderedProviders(data.providers ?? [])),
+			)
+			.catch(() => setProviders([...SOCIAL_PROVIDER_ORDER]));
+	}, []);
+	return providers;
+}
 
 export function SocialAuthButtons({
+	providers,
 	redirectTo = "/",
 }: {
+	providers: SocialAuthProvider[] | null;
 	redirectTo?: string;
 }) {
 	const t = useTranslations("Auth");
 	const { loginWithProvider } = useAuth();
-	const [enabledProviders, setEnabledProviders] = useState<
-		SocialAuthProvider[]
-	>([]);
 
-	useEffect(() => {
-		fetch("/api/public/auth/providers")
-			.then((r) => r.json())
-			.then((data: { providers: SocialAuthProvider[] }) =>
-				setEnabledProviders(data.providers),
-			)
-			.catch(() => setEnabledProviders(["google", "apple", "facebook"]));
-	}, []);
-
-	const visible = ALL_PROVIDERS.filter((p) =>
-		enabledProviders.includes(p.value),
-	);
-
-	if (visible.length === 0) return null;
-
-	return (
-		<div className="space-y-3">
-			<div className="flex items-center gap-3">
-				<div className="h-px flex-1 bg-[#E2E8F0]" />
-				<span className="text-[#64748B] text-xs uppercase tracking-[0.18em]">
-					{t("orContinueWith")}
-				</span>
-				<div className="h-px flex-1 bg-[#E2E8F0]" />
-			</div>
-
-			<div className="grid gap-2">
-				{visible.map(({ label, value, Icon }) => (
-					<Button
-						className="w-full justify-start gap-3 rounded-xl border-[#E2E8F0] bg-white px-4 text-[#0F172A] hover:bg-[#F8FAFC]"
-						key={value}
-						onClick={() => loginWithProvider(value, redirectTo)}
-						type="button"
-						variant="outline"
-					>
-						<Icon />
-						{t("continueWith", { provider: label })}
-					</Button>
+	if (providers === null)
+		return (
+			<div className="grid gap-3" aria-hidden="true">
+				{SOCIAL_PROVIDER_ORDER.map((p) => (
+					<div
+						key={p}
+						className="h-12 animate-pulse rounded-2xl bg-[#EEF2FF]"
+					/>
 				))}
 			</div>
-		</div>
+		);
+
+	return (
+		<ul className="grid gap-3">
+			{providers.map((value) => {
+				const { label, Icon, className } = PROVIDERS[value];
+				return (
+					<li key={value}>
+						<button
+							type="button"
+							onClick={() => loginWithProvider(value, redirectTo)}
+							className={cn(
+								"flex h-12 w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl px-4 font-medium text-sm shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]",
+								className,
+							)}
+						>
+							<Icon />
+							{t("continueWith", { provider: label })}
+						</button>
+					</li>
+				);
+			})}
+		</ul>
 	);
 }
