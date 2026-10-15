@@ -28,8 +28,16 @@ export interface CategoryRow {
 	attributes: Rec[];
 }
 
-const idText = (value: unknown): string | null => {
+// A raw ObjectId also has an `id` (its 12 raw bytes), so it must be read as
+// hex before the populated-relation case.
+export const idText = (value: unknown): string | null => {
 	if (value === null || value === undefined || value === "") return null;
+	if (
+		typeof value === "object" &&
+		typeof (value as { toHexString?: unknown }).toHexString === "function"
+	) {
+		return (value as { toHexString(): string }).toHexString();
+	}
 	if (typeof value === "object" && "id" in (value as Rec)) {
 		return idText((value as Rec).id);
 	}

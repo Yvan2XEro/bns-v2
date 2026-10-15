@@ -1,7 +1,11 @@
 // @vitest-environment node
+import { ObjectId } from "mongodb";
+import type { Payload } from "payload";
 import { describe, expect, it } from "vitest";
 import {
+	chainOf,
 	goodsCover,
+	idText,
 	loadCategoryRows,
 	migrateTagCategoryScope,
 } from "../../src/migrations/tagsCategoryScope";
@@ -105,5 +109,46 @@ describe("tags category scope migration", () => {
 		});
 		expect(payload.store.tags).toEqual(before.tags);
 		expect(payload.store.listings).toEqual(before.listings);
+	});
+});
+
+describe("ids as MongoDB stores them", () => {
+	// Production rows carry ObjectIds, whose own `id` is their 12 raw bytes;
+	// read through the relation branch they turned into garbage that the
+	// migration then failed to cast back, and the API could not boot.
+	it("reads an ObjectId as its hex string", () => {
+		const hex = "65f0c0ffee0000000000abcd";
+		expect(idText(new ObjectId(hex))).toBe(hex);
+		expect(idText({ id: hex })).toBe(hex);
+		expect(idText(hex)).toBe(hex);
+	});
+
+	it("builds the category chain from ObjectId _id and parent", async () => {
+		const root = new ObjectId();
+		const child = new ObjectId();
+		const docs = [
+			{ _id: root, slug: "vehicles", parent: null },
+			{ _id: child, slug: "cars", parent: root },
+		];
+		const payload = {
+			db: {
+				collections: {
+					categories: {
+						collection: {
+							find: () =>
+								(async function* () {
+									yield* docs;
+								})(),
+						},
+					},
+				},
+			},
+		} as unknown as Payload;
+		const rows = await loadCategoryRows(payload);
+		expect([...rows.keys()]).toEqual([root.toHexString(), child.toHexString()]);
+		expect(chainOf(rows, child.toHexString()).map((row) => row.slug)).toEqual([
+			"cars",
+			"vehicles",
+		]);
 	});
 });
