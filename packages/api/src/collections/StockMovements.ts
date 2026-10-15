@@ -113,44 +113,96 @@ export const StockMovements: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "variant",
-			type: "relationship",
-			relationTo: "product-variants",
-			required: true,
-			index: true,
-		},
-		{
-			name: "product",
-			type: "relationship",
-			relationTo: "products",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "variant",
+					type: "relationship",
+					relationTo: "product-variants",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "product",
+					type: "relationship",
+					relationTo: "products",
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		shopField({ required: true, picker: false }),
 		{
-			name: "type",
-			type: "select",
-			required: true,
-			index: true,
-			options: MOVEMENT_TYPES.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "type",
+					type: "select",
+					required: true,
+					index: true,
+					options: MOVEMENT_TYPES.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+				{
+					name: "quantity",
+					type: "number",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "quantity", type: "number", required: true },
 		{
-			name: "unitCost",
-			type: "number",
-			min: 0,
-			// A shop secret, same predicate as `product-variants.cost`. The
-			// service redacts it for `listMovements` on top of this
-			// (`redactCost: !can(role, "costs.view")`), but the raw REST
-			// collection needs the same gate: latent while P1 creates owner rows
-			// only, live the moment a manager or staff membership exists.
-			access: { read: shopRoleFieldAccess((role) => can(role, "costs.view")) },
+			type: "row",
+			fields: [
+				{
+					name: "unitCost",
+					type: "number",
+					min: 0,
+					// A shop secret, same predicate as `product-variants.cost`. The
+					// service redacts it for `listMovements` on top of this
+					// (`redactCost: !can(role, "costs.view")`), but the raw REST
+					// collection needs the same gate: latent while P1 creates owner rows
+					// only, live the moment a manager or staff membership exists.
+					access: {
+						read: shopRoleFieldAccess((role) => can(role, "costs.view")),
+					},
+					admin: { width: "50%" },
+				},
+				{
+					name: "stockAfter",
+					type: "number",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "stockAfter", type: "number", required: true },
-		{ name: "note", type: "text", maxLength: 500 },
-		{ name: "actor", type: "relationship", relationTo: "users" },
-		{ name: "orderRef", type: "text" },
-		{ name: "order", type: "relationship", relationTo: "orders", index: true },
-		{ name: "reservedAfter", type: "number" },
+		{
+			type: "row",
+			fields: [
+				{ name: "note", type: "text", maxLength: 500, admin: { width: "50%" } },
+				{
+					name: "actor",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "50%" },
+				},
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{ name: "orderRef", type: "text", admin: { width: "33%" } },
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					index: true,
+					admin: { width: "33%" },
+				},
+				{ name: "reservedAfter", type: "number", admin: { width: "33%" } },
+			],
+		},
 	],
 	timestamps: true,
 };

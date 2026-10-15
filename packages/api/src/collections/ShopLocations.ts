@@ -68,35 +68,89 @@ export const ShopLocations: CollectionConfig = {
 	indexes: [{ fields: ["shop", "active"] }],
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "name",
+					type: "text",
+					required: true,
+					minLength: 2,
+					maxLength: 60,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "name", type: "text", required: true, minLength: 2, maxLength: 60 },
 		{
-			name: "city",
-			type: "select",
-			required: true,
-			options: LAUNCH_CITY_KEYS.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "city",
+					type: "select",
+					required: true,
+					options: LAUNCH_CITY_KEYS.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+				{
+					name: "district",
+					type: "text",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "district", type: "text", required: true },
-		{ name: "address", type: "text", maxLength: 200 },
 		{
-			name: "landmark",
-			type: "text",
-			required: true,
-			minLength: 5,
-			maxLength: 200,
+			type: "row",
+			fields: [
+				{
+					name: "address",
+					type: "text",
+					maxLength: 200,
+					admin: { width: "50%" },
+				},
+				{
+					name: "landmark",
+					type: "text",
+					required: true,
+					minLength: 5,
+					maxLength: 200,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "gps",
 			type: "group",
 			required: true,
 			fields: [
-				{ name: "lat", type: "number", required: true, min: -90, max: 90 },
-				{ name: "lng", type: "number", required: true, min: -180, max: 180 },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "lat",
+							type: "number",
+							required: true,
+							min: -90,
+							max: 90,
+							admin: { width: "50%" },
+						},
+						{
+							name: "lng",
+							type: "number",
+							required: true,
+							min: -180,
+							max: 180,
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -111,47 +165,103 @@ export const ShopLocations: CollectionConfig = {
 			type: "array",
 			fields: [
 				{
-					name: "day",
-					type: "select",
-					required: true,
-					options: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map(
-						(value) => ({ label: value, value }),
-					),
-				},
-				{
-					name: "opens",
-					type: "text",
-					required: true,
-					validate: (value: unknown) =>
-						typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
-							? true
-							: "Use 24-hour HH:mm format.",
-				},
-				{
-					name: "closes",
-					type: "text",
-					required: true,
-					validate: (value: unknown) =>
-						typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
-							? true
-							: "Use 24-hour HH:mm format.",
+					type: "row",
+					fields: [
+						{
+							name: "day",
+							type: "select",
+							required: true,
+							options: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map(
+								(value) => ({ label: value, value }),
+							),
+							admin: { width: "33%" },
+						},
+						{
+							name: "opens",
+							type: "text",
+							required: true,
+							validate: (value: unknown) =>
+								typeof value === "string" &&
+								/^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+									? true
+									: "Use 24-hour HH:mm format.",
+							admin: { width: "33%" },
+						},
+						{
+							name: "closes",
+							type: "text",
+							required: true,
+							validate: (value: unknown) =>
+								typeof value === "string" &&
+								/^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+									? true
+									: "Use 24-hour HH:mm format.",
+							admin: { width: "33%" },
+						},
+					],
 				},
 			],
 		},
 		{ name: "openingHoursNote", type: "text" },
-		{ name: "pickupEnabled", type: "checkbox", defaultValue: false },
-		{ name: "pickupFee", type: "number", min: 0, max: 5_000, defaultValue: 0 },
-		{ name: "holdDays", type: "number", min: 1, max: 14, defaultValue: 7 },
 		{
-			name: "preparationHours",
-			type: "number",
-			min: 0,
-			max: 72,
-			defaultValue: 2,
+			type: "row",
+			fields: [
+				{
+					name: "pickupEnabled",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "25%" },
+				},
+				{
+					name: "pickupFee",
+					type: "number",
+					min: 0,
+					max: 5_000,
+					defaultValue: 0,
+					admin: { width: "25%" },
+				},
+				{
+					name: "holdDays",
+					type: "number",
+					min: 1,
+					max: 14,
+					defaultValue: 7,
+					admin: { width: "25%" },
+				},
+				{
+					name: "preparationHours",
+					type: "number",
+					min: 0,
+					max: 72,
+					defaultValue: 2,
+					admin: { width: "25%" },
+				},
+			],
 		},
-		{ name: "isDispatchOrigin", type: "checkbox", defaultValue: false },
-		{ name: "isDefaultOrigin", type: "checkbox", defaultValue: false },
-		{ name: "active", type: "checkbox", defaultValue: true, index: true },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "isDispatchOrigin",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "33%" },
+				},
+				{
+					name: "isDefaultOrigin",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "33%" },
+				},
+				{
+					name: "active",
+					type: "checkbox",
+					defaultValue: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
+		},
 		{ name: "metadata", type: "json" },
 	],
 	timestamps: true,

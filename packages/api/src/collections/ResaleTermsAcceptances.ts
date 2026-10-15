@@ -24,49 +24,85 @@ export const ResaleTermsAcceptances: CollectionConfig = {
 	],
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "role",
+					type: "select",
+					required: true,
+					options: ["supplier", "reseller"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "role",
-			type: "select",
-			required: true,
-			options: ["supplier", "reseller"].map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "terms",
+					type: "relationship",
+					relationTo: "resale-terms",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "version",
+					type: "text",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "terms",
-			type: "relationship",
-			relationTo: "resale-terms",
-			required: true,
-		},
-		{ name: "version", type: "text", required: true },
-		{
-			name: "acceptedBy",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-		},
-		{ name: "acceptedAt", type: "date", required: true },
-		{
-			name: "locale",
-			type: "select",
-			required: true,
-			options: ["fr", "en"].map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "acceptedBy",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "acceptedAt",
+					type: "date",
+					required: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "client",
-			type: "select",
-			required: true,
-			options: ["web", "ios", "android"].map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "locale",
+					type: "select",
+					required: true,
+					options: ["fr", "en"].map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+				{
+					name: "client",
+					type: "select",
+					required: true,
+					options: ["web", "ios", "android"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+			],
 		},
 	],
 	timestamps: true,

@@ -17,6 +17,7 @@ import { ResellerCommissions } from "../../src/collections/ResellerCommissions";
 import { ResellerPayouts } from "../../src/collections/ResellerPayouts";
 import config from "../../src/payload.config";
 import { fakePayload } from "./helpers/fakePayload";
+import { dataFields } from "./helpers/fields";
 
 function fieldHasName(field: Field): field is Field & FieldAffectingData {
 	return "name" in field && field.type !== "ui";
@@ -30,13 +31,13 @@ function invoke(access: unknown, args: unknown): unknown {
 
 describe("P8 resale collections", () => {
 	it("adds the resale schema to products, variants, listings, orders and payments", () => {
-		const productResale = Products.fields
+		const productResale = dataFields(Products.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "resale");
-		const variantResale = ProductVariants.fields
+		const variantResale = dataFields(ProductVariants.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "resale");
-		const listingResale = Listings.fields
+		const listingResale = dataFields(Listings.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "resale");
 		for (const group of [productResale, variantResale, listingResale]) {
@@ -71,7 +72,9 @@ describe("P8 resale collections", () => {
 		expect(ResellerCharges.slug).toBe("reseller-charges");
 		expect(ResellerPayouts.slug).toBe("reseller-payouts");
 		const chargeFields = new Set(
-			ResellerCharges.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(ResellerCharges.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		);
 		for (const name of [
 			"resellerShop",
@@ -90,7 +93,9 @@ describe("P8 resale collections", () => {
 			);
 		}
 		const payoutFields = new Set(
-			ResellerPayouts.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(ResellerPayouts.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		);
 		for (const name of [
 			"reference",
@@ -135,7 +140,7 @@ describe("P8 resale collections", () => {
 			unique: true,
 		});
 		const fields = new Set(
-			ResellerCommissions.fields
+			dataFields(ResellerCommissions.fields)
 				.filter(fieldHasName)
 				.map((field) => field.name),
 		);
@@ -274,7 +279,9 @@ describe("P8 resale collections", () => {
 			unique: true,
 		});
 		const fields = new Set(
-			ResaleTerms.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(ResaleTerms.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		);
 		for (const name of [
 			"role",
@@ -289,7 +296,7 @@ describe("P8 resale collections", () => {
 		]) {
 			expect(fields.has(name), `missing resale-terms.${name}`).toBe(true);
 		}
-		const version = ResaleTerms.fields
+		const version = dataFields(ResaleTerms.fields)
 			.filter(fieldHasName)
 			.find((field) => field.name === "version");
 		if (version?.type !== "text") throw new Error("version must be text");
@@ -311,7 +318,9 @@ describe("P8 resale collections", () => {
 			unique: true,
 		});
 		const fields = new Set(
-			ResaleLinks.fields.filter(fieldHasName).map((field) => field.name),
+			dataFields(ResaleLinks.fields)
+				.filter(fieldHasName)
+				.map((field) => field.name),
 		);
 		for (const field of [
 			"supplierShop",

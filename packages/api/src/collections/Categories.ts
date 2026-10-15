@@ -95,15 +95,22 @@ export const Categories: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "name",
-			type: "text",
-			required: true,
-		},
-		{
-			name: "slug",
-			type: "text",
-			required: true,
-			unique: true,
+			type: "row",
+			fields: [
+				{
+					name: "name",
+					type: "text",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "slug",
+					type: "text",
+					required: true,
+					unique: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "description",
@@ -135,17 +142,25 @@ export const Categories: CollectionConfig = {
 			hasMany: false,
 		},
 		{
-			name: "active",
-			type: "checkbox",
-			defaultValue: true,
-		},
-		{
-			name: "withdrawalExcluded",
-			type: "checkbox",
-			defaultValue: false,
-			admin: {
-				description: "Enable only when a documented legal exception applies.",
-			},
+			type: "row",
+			fields: [
+				{
+					name: "active",
+					type: "checkbox",
+					defaultValue: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "withdrawalExcluded",
+					type: "checkbox",
+					defaultValue: false,
+					admin: {
+						width: "50%",
+						description:
+							"Enable only when a documented legal exception applies.",
+					},
+				},
+			],
 		},
 		{
 			name: "listingForm",
@@ -192,28 +207,35 @@ export const Categories: CollectionConfig = {
 					},
 				},
 				{
-					name: "price",
-					type: "select",
-					required: false,
-					defaultValue: "auto",
-					label: "Price field",
-					options: LISTING_FORM_FIELD_MODES,
-					admin: {
-						description:
-							"Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.",
-					},
-				},
-				{
-					name: "condition",
-					type: "select",
-					required: false,
-					defaultValue: "auto",
-					label: "Condition field",
-					options: LISTING_FORM_FIELD_MODES,
-					admin: {
-						description:
-							"Whether the seller is asked how worn the item is (new, like new, good…). Hide it wherever the question makes no sense, such as a holiday rental or a plot of land.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "price",
+							type: "select",
+							required: false,
+							defaultValue: "auto",
+							label: "Price field",
+							options: LISTING_FORM_FIELD_MODES,
+							admin: {
+								width: "50%",
+								description:
+									"Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.",
+							},
+						},
+						{
+							name: "condition",
+							type: "select",
+							required: false,
+							defaultValue: "auto",
+							label: "Condition field",
+							options: LISTING_FORM_FIELD_MODES,
+							admin: {
+								width: "50%",
+								description:
+									"Whether the seller is asked how worn the item is (new, like new, good…). Hide it wherever the question makes no sense, such as a holiday rental or a plot of land.",
+							},
+						},
+					],
 				},
 				{
 					name: "photos",
@@ -249,36 +271,51 @@ export const Categories: CollectionConfig = {
 			},
 			fields: [
 				{
-					name: "name",
-					type: "text",
-					required: true,
-				},
-				{
-					name: "slug",
-					type: "text",
-					required: true,
-				},
-				{
-					name: "type",
-					type: "select",
-					required: true,
-					options: [
-						{ label: "Text", value: "text" },
-						{ label: "Number", value: "number" },
-						{ label: "Select", value: "select" },
-						{ label: "Boolean", value: "boolean" },
-						{ label: "Date", value: "date" },
+					type: "row",
+					fields: [
+						{
+							name: "name",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "slug",
+							type: "text",
+							required: true,
+							admin: { width: "50%" },
+						},
 					],
 				},
 				{
-					name: "required",
-					type: "checkbox",
-					defaultValue: false,
-				},
-				{
-					name: "filterable",
-					type: "checkbox",
-					defaultValue: false,
+					type: "row",
+					fields: [
+						{
+							name: "type",
+							type: "select",
+							required: true,
+							options: [
+								{ label: "Text", value: "text" },
+								{ label: "Number", value: "number" },
+								{ label: "Select", value: "select" },
+								{ label: "Boolean", value: "boolean" },
+								{ label: "Date", value: "date" },
+							],
+							admin: { width: "50%" },
+						},
+						{
+							name: "required",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+						{
+							name: "filterable",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "25%" },
+						},
+					],
 				},
 				{
 					name: "options",
@@ -315,47 +352,60 @@ export const Categories: CollectionConfig = {
 					},
 				},
 				{
-					name: "min",
-					type: "number",
-					required: false,
-					label: "Minimum value",
-					admin: {
-						condition: (_data, siblingData) => siblingData?.type === "number",
-						description:
-							"Smallest value accepted, inclusive. Leave empty for no lower bound.",
-					},
-				},
-				{
-					name: "max",
-					type: "number",
-					required: false,
-					label: "Maximum value",
-					admin: {
-						condition: (_data, siblingData) => siblingData?.type === "number",
-						description:
-							"Largest value accepted, inclusive. Leave empty for no upper bound.",
-					},
+					type: "row",
+					fields: [
+						{
+							name: "min",
+							type: "number",
+							required: false,
+							label: "Minimum value",
+							admin: {
+								width: "50%",
+								condition: (_data, siblingData) =>
+									siblingData?.type === "number",
+								description:
+									"Smallest value accepted, inclusive. Leave empty for no lower bound.",
+							},
+						},
+						{
+							name: "max",
+							type: "number",
+							required: false,
+							label: "Maximum value",
+							admin: {
+								width: "50%",
+								condition: (_data, siblingData) =>
+									siblingData?.type === "number",
+								description:
+									"Largest value accepted, inclusive. Leave empty for no upper bound.",
+							},
+						},
+					],
 				},
 			],
 		},
 		{
-			// Overrides `AppSettings.orders.defaultCommissionRateBps` for every
-			// order item filed under this category. Collection-level access
-			// already restricts writes to staff; this is the same rule stated
-			// again at the field, since it is the one field here with money
-			// consequences.
-			name: "commissionRateBps",
-			type: "number",
-			min: 0,
-			max: 2000,
-			access: staffOnlyWrite,
-		},
-		{
-			name: "createdAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					// Overrides `AppSettings.orders.defaultCommissionRateBps` for every
+					// order item filed under this category. Collection-level access
+					// already restricts writes to staff; this is the same rule stated
+					// again at the field, since it is the one field here with money
+					// consequences.
+					name: "commissionRateBps",
+					type: "number",
+					min: 0,
+					max: 2000,
+					access: staffOnlyWrite,
+					admin: { width: "50%" },
+				},
+				{
+					name: "createdAt",
+					type: "date",
+					admin: { width: "50%", readOnly: true },
+				},
+			],
 		},
 	],
 	timestamps: true,

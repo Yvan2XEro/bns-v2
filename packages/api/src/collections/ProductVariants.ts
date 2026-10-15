@@ -97,50 +97,78 @@ export const ProductVariants: CollectionConfig = {
 		shopField({ required: true, picker: false }),
 		{ name: "optionValues", type: "json" },
 		{
-			name: "sku",
-			type: "text",
-			index: true,
-			maxLength: 60,
-			// Shop data, same as the stock counters below: any active member
-			// (staff records receipts against a SKU, not just owner/manager), but
-			// nobody outside the shop — `listPublicVariants`' buyer-facing view
-			// omits it on purpose.
-			access: { read: shopRoleFieldAccess((role) => role !== null) },
-		},
-		{ name: "price", type: "number", required: true, min: 0 },
-		{
-			name: "cost",
-			type: "number",
-			min: 0,
-			// A shop secret: nobody outside the shop's management reads it,
-			// through this collection or through a populated relation.
-			access: { read: shopRoleFieldAccess((role) => can(role, "costs.view")) },
-		},
-		{ name: "trackInventory", type: "checkbox", defaultValue: true },
-		{
-			name: "stockOnHand",
-			type: "number",
-			defaultValue: 0,
-			admin: { readOnly: true },
-			// Exact counts are shop data: an outsider gets `available` below,
-			// never the raw number a competitor could read off every listing.
-			access: { read: shopRoleFieldAccess((role) => role !== null) },
-		},
-		{
-			name: "stockReserved",
-			type: "number",
-			defaultValue: 0,
-			admin: { readOnly: true },
-			access: { read: shopRoleFieldAccess((role) => role !== null) },
+			type: "row",
+			fields: [
+				{
+					name: "sku",
+					type: "text",
+					index: true,
+					maxLength: 60,
+					// Shop data, same as the stock counters below: any active member
+					// (staff records receipts against a SKU, not just owner/manager), but
+					// nobody outside the shop — `listPublicVariants`' buyer-facing view
+					// omits it on purpose.
+					access: { read: shopRoleFieldAccess((role) => role !== null) },
+					admin: { width: "33%" },
+				},
+				{
+					name: "price",
+					type: "number",
+					required: true,
+					min: 0,
+					admin: { width: "33%" },
+				},
+				{
+					name: "cost",
+					type: "number",
+					min: 0,
+					// A shop secret: nobody outside the shop's management reads it,
+					// through this collection or through a populated relation.
+					access: {
+						read: shopRoleFieldAccess((role) => can(role, "costs.view")),
+					},
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "lowStockThreshold",
-			type: "number",
-			min: 0,
-			// Tells a reader how close to running dry a shop is: a shop secret,
-			// same predicate as `cost` — manage-only. `stockSummary` (the shaped
-			// route that surfaces it) already requires `costs.view`.
-			access: { read: shopRoleFieldAccess((role) => can(role, "costs.view")) },
+			type: "row",
+			fields: [
+				{
+					name: "trackInventory",
+					type: "checkbox",
+					defaultValue: true,
+					admin: { width: "25%" },
+				},
+				{
+					name: "stockOnHand",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "25%", readOnly: true },
+					// Exact counts are shop data: an outsider gets `available` below,
+					// never the raw number a competitor could read off every listing.
+					access: { read: shopRoleFieldAccess((role) => role !== null) },
+				},
+				{
+					name: "stockReserved",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "25%", readOnly: true },
+					access: { read: shopRoleFieldAccess((role) => role !== null) },
+				},
+				{
+					name: "lowStockThreshold",
+					type: "number",
+					min: 0,
+					// Tells a reader how close to running dry a shop is: a shop secret,
+					// same predicate as `cost` — manage-only. `stockSummary` (the shaped
+					// route that surfaces it) already requires `costs.view`.
+					access: {
+						read: shopRoleFieldAccess((role) => can(role, "costs.view")),
+					},
+					admin: { width: "25%" },
+				},
+			],
 		},
 		{
 			name: "available",
@@ -172,10 +200,35 @@ export const ProductVariants: CollectionConfig = {
 				read: shopRoleFieldAccess((role) => can(role, "resale.manage")),
 			},
 			fields: [
-				{ name: "enabled", type: "checkbox", defaultValue: true },
-				{ name: "supplierPrice", type: "number", min: 100 },
-				{ name: "minRetailPrice", type: "number", min: 0 },
-				{ name: "suggestedRetailPrice", type: "number", min: 0 },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "enabled",
+							type: "checkbox",
+							defaultValue: true,
+							admin: { width: "25%" },
+						},
+						{
+							name: "supplierPrice",
+							type: "number",
+							min: 100,
+							admin: { width: "25%" },
+						},
+						{
+							name: "minRetailPrice",
+							type: "number",
+							min: 0,
+							admin: { width: "25%" },
+						},
+						{
+							name: "suggestedRetailPrice",
+							type: "number",
+							min: 0,
+							admin: { width: "25%" },
+						},
+					],
+				},
 			],
 		},
 	],

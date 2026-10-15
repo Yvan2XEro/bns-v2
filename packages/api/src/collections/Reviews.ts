@@ -113,54 +113,83 @@ export const Reviews: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "reviewer",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "reviewer",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "status",
+					type: "select",
+					defaultValue: "published",
+					options: ["published", "held_dispute", "removed"].map((value) => ({
+						label: value,
+						value,
+					})),
+					access: { create: () => false, update: () => false },
+					admin: { width: "33%" },
+				},
+				{
+					name: "reviewedUser",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "status",
-			type: "select",
-			defaultValue: "published",
-			options: ["published", "held_dispute", "removed"].map((value) => ({
-				label: value,
-				value,
-			})),
-			access: { create: () => false, update: () => false },
+			type: "row",
+			fields: [
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: false,
+					admin: { width: "33%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					admin: { width: "33%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					index: true,
+					admin: { width: "33%" },
+				},
+			],
 		},
 		{
-			name: "reviewedUser",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-		},
-		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: false,
-		},
-		{ name: "order", type: "relationship", relationTo: "orders" },
-		{ name: "shop", type: "relationship", relationTo: "shops", index: true },
-		{
-			// Service-set: the order review path (a later task) is the only
-			// writer, matching P3's I1 — a client claiming this itself is a
-			// field-level rule, not a hook comment, so it is closed here even
-			// before that service exists.
-			name: "verifiedPurchase",
-			type: "checkbox",
-			defaultValue: false,
-			access: { create: () => false },
-		},
-		{
-			name: "rating",
-			type: "number",
-			required: true,
-			min: 1,
-			max: 5,
+			type: "row",
+			fields: [
+				{
+					// Service-set: the order review path (a later task) is the only
+					// writer, matching P3's I1 — a client claiming this itself is a
+					// field-level rule, not a hook comment, so it is closed here even
+					// before that service exists.
+					name: "verifiedPurchase",
+					type: "checkbox",
+					defaultValue: false,
+					access: { create: () => false },
+					admin: { width: "50%" },
+				},
+				{
+					name: "rating",
+					type: "number",
+					required: true,
+					min: 1,
+					max: 5,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "comment",

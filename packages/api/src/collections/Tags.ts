@@ -23,19 +23,27 @@ export const Tags: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "name",
-			type: "text",
-			required: true,
-		},
-		{
-			name: "slug",
-			type: "text",
-			required: true,
-			unique: true,
-			index: true,
-			admin: {
-				description: "URL-safe identifier (e.g. negotiable, delivery, urgent)",
-			},
+			type: "row",
+			fields: [
+				{
+					name: "name",
+					type: "text",
+					required: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "slug",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					admin: {
+						width: "50%",
+						description:
+							"URL-safe identifier (e.g. negotiable, delivery, urgent)",
+					},
+				},
+			],
 		},
 		{
 			name: "emoji",

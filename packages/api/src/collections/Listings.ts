@@ -751,65 +751,78 @@ export const Listings: CollectionConfig = {
 			],
 		},
 		{
-			name: "location",
-			type: "text",
-			required: true,
-			index: true,
-		},
-		{
-			name: "seller",
-			type: "relationship",
-			relationTo: "users",
-			required: false,
-			hasMany: false,
-			// admin: {
-			// 	readOnly: true,
-			// },
-		},
-		{
-			name: "category",
-			type: "relationship",
-			relationTo: "categories",
-			required: true,
-			index: true,
-		},
-		{
-			name: "status",
-			type: "select",
-			options: [
-				{ label: "Draft", value: "draft" },
-				{ label: "Pending review", value: "pending" },
-				{ label: "Published", value: "published" },
-				{ label: "Rejected", value: "rejected" },
-				{ label: "Sold", value: "sold" },
-				{ label: "Expired", value: "expired" },
-				{ label: "Deleted", value: "deleted" },
+			type: "row",
+			fields: [
+				{
+					name: "location",
+					type: "text",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "seller",
+					type: "relationship",
+					relationTo: "users",
+					required: false,
+					hasMany: false,
+					admin: { width: "50%" },
+					// admin: {
+					// 	readOnly: true,
+					// },
+				},
 			],
-			defaultValue: "draft",
-			required: true,
-			index: true,
 		},
 		{
-			name: "boostedUntil",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "category",
+					type: "relationship",
+					relationTo: "categories",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					options: [
+						{ label: "Draft", value: "draft" },
+						{ label: "Pending review", value: "pending" },
+						{ label: "Published", value: "published" },
+						{ label: "Rejected", value: "rejected" },
+						{ label: "Sold", value: "sold" },
+						{ label: "Expired", value: "expired" },
+						{ label: "Deleted", value: "deleted" },
+					],
+					defaultValue: "draft",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "expiresAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "views",
-			type: "number",
-			defaultValue: 0,
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "boostedUntil",
+					type: "date",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "expiresAt",
+					type: "date",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "views",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 		{
 			name: "attributes",
@@ -819,8 +832,13 @@ export const Listings: CollectionConfig = {
 			name: "coordinates",
 			type: "group",
 			fields: [
-				{ name: "lat", type: "number" },
-				{ name: "lng", type: "number" },
+				{
+					type: "row",
+					fields: [
+						{ name: "lat", type: "number", admin: { width: "50%" } },
+						{ name: "lng", type: "number", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{
@@ -865,8 +883,13 @@ export const Listings: CollectionConfig = {
 					"Derived from the product's variants by the product service.",
 			},
 			fields: [
-				{ name: "priceMin", type: "number" },
-				{ name: "priceMax", type: "number" },
+				{
+					type: "row",
+					fields: [
+						{ name: "priceMin", type: "number", admin: { width: "50%" } },
+						{ name: "priceMax", type: "number", admin: { width: "50%" } },
+					],
+				},
 				{
 					name: "available",
 					type: "checkbox",
@@ -875,8 +898,17 @@ export const Listings: CollectionConfig = {
 							"Buyer-safe purchasability signal, not a unit count — the exact aggregate stays on the privileged catalogue view only.",
 					},
 				},
-				{ name: "variantCount", type: "number" },
-				{ name: "trackInventory", type: "checkbox" },
+				{
+					type: "row",
+					fields: [
+						{ name: "variantCount", type: "number", admin: { width: "50%" } },
+						{
+							name: "trackInventory",
+							type: "checkbox",
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -884,28 +916,45 @@ export const Listings: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "supplierShop",
-					type: "relationship",
-					relationTo: "shops",
-					admin: { readOnly: true },
-				},
-				{
-					name: "link",
-					type: "relationship",
-					relationTo: "resale-links",
-					admin: { readOnly: true },
+					type: "row",
+					fields: [
+						{
+							name: "supplierShop",
+							type: "relationship",
+							relationTo: "shops",
+							admin: { width: "50%", readOnly: true },
+						},
+						{
+							name: "link",
+							type: "relationship",
+							relationTo: "resale-links",
+							admin: { width: "50%", readOnly: true },
+						},
+					],
 				},
 				{
 					name: "prices",
 					type: "array",
 					fields: [
 						{
-							name: "variant",
-							type: "relationship",
-							relationTo: "product-variants",
-							required: true,
+							type: "row",
+							fields: [
+								{
+									name: "variant",
+									type: "relationship",
+									relationTo: "product-variants",
+									required: true,
+									admin: { width: "50%" },
+								},
+								{
+									name: "price",
+									type: "number",
+									required: true,
+									min: 1,
+									admin: { width: "50%" },
+								},
+							],
 						},
-						{ name: "price", type: "number", required: true, min: 1 },
 					],
 				},
 				{

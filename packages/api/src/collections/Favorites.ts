@@ -56,28 +56,30 @@ export const Favorites: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "user",
-			type: "relationship",
-			relationTo: "users",
-			required: false,
-			index: true,
-			admin: {
-				readOnly: true,
-			},
-		},
-		{
-			name: "listing",
-			type: "relationship",
-			relationTo: "listings",
-			required: true,
-			index: true,
-		},
-		{
-			name: "createdAt",
-			type: "date",
-			admin: {
-				readOnly: true,
-			},
+			type: "row",
+			fields: [
+				{
+					name: "user",
+					type: "relationship",
+					relationTo: "users",
+					required: false,
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "listing",
+					type: "relationship",
+					relationTo: "listings",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "createdAt",
+					type: "date",
+					admin: { width: "33%", readOnly: true },
+				},
+			],
 		},
 	],
 	timestamps: true,

@@ -15,6 +15,7 @@ import {
 	Listings,
 } from "../../src/collections/Listings";
 import { fakePayload } from "./helpers/fakePayload";
+import { dataFields, fieldAt } from "./helpers/fields";
 
 const beforeChange = Listings.hooks?.beforeChange?.[0] as (
 	args: unknown,
@@ -297,7 +298,7 @@ describe("deleting a product listing", () => {
 // Shops.suspendedNote already follows for the shop's owner.
 describe("moderationHold is staff-only to read", () => {
 	const fieldAccess = () => {
-		const group = Listings.fields.find(
+		const group = dataFields(Listings.fields).find(
 			(f) => "name" in f && f.name === "moderationHold",
 		) as { access?: { read?: (args: unknown) => unknown } };
 		return group.access?.read as (args: unknown) => unknown;
@@ -331,12 +332,9 @@ describe("the resale group tolerates pre-P8 listings", () => {
 		// create). The fake payload skips field validation, so the CONFIG is
 		// the only honest pin.
 		const { Listings } = await import("../../src/collections/Listings");
-		const resale = (Listings.fields as Array<{ name?: string; fields?: unknown[] }>).find(
-			(f) => f.name === "resale",
-		);
-		const desired = (resale?.fields as Array<{ name?: string; required?: boolean }>).find(
-			(f) => f.name === "desiredStatus",
-		);
+		const desired = fieldAt(Listings.fields, "resale.desiredStatus") as
+			| { required?: boolean }
+			| undefined;
 		expect(desired).toBeDefined();
 		expect(desired?.required).not.toBe(true);
 	});

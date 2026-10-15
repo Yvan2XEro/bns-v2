@@ -87,21 +87,28 @@ export const Products: CollectionConfig = {
 		},
 		{ name: "description", type: "textarea", maxLength: 5000 },
 		{
-			name: "category",
-			type: "relationship",
-			relationTo: "categories",
-			required: true,
-			index: true,
-		},
-		{
-			name: "condition",
-			type: "select",
-			options: [
-				{ label: "New", value: "new" },
-				{ label: "Like New", value: "like_new" },
-				{ label: "Good", value: "good" },
-				{ label: "Fair", value: "fair" },
-				{ label: "Poor", value: "poor" },
+			type: "row",
+			fields: [
+				{
+					name: "category",
+					type: "relationship",
+					relationTo: "categories",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "condition",
+					type: "select",
+					options: [
+						{ label: "New", value: "new" },
+						{ label: "Like New", value: "like_new" },
+						{ label: "Good", value: "good" },
+						{ label: "Fair", value: "fair" },
+						{ label: "Poor", value: "poor" },
+					],
+					admin: { width: "50%" },
+				},
 			],
 		},
 		{ name: "attributes", type: "json" },
@@ -138,10 +145,41 @@ export const Products: CollectionConfig = {
 			name: "delivery",
 			type: "group",
 			fields: [
-				{ name: "handlingHours", type: "number", min: 0, max: 720 },
-				{ name: "weightGrams", type: "number", min: 0 },
-				{ name: "codAllowed", type: "checkbox", defaultValue: true },
-				{ name: "pickupAllowed", type: "checkbox", defaultValue: false },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "handlingHours",
+							type: "number",
+							min: 0,
+							max: 720,
+							admin: { width: "50%" },
+						},
+						{
+							name: "weightGrams",
+							type: "number",
+							min: 0,
+							admin: { width: "50%" },
+						},
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "codAllowed",
+							type: "checkbox",
+							defaultValue: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "pickupAllowed",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -151,32 +189,63 @@ export const Products: CollectionConfig = {
 				read: shopRoleFieldAccess((role) => can(role, "resale.manage")),
 			},
 			fields: [
-				{ name: "enabled", type: "checkbox", defaultValue: false },
 				{
-					name: "approvalRequired",
-					type: "checkbox",
-					defaultValue: false,
+					type: "row",
+					fields: [
+						{
+							name: "enabled",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+						{
+							name: "approvalRequired",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "handlingHours",
-					type: "number",
-					min: 4,
-					max: 120,
-					defaultValue: 24,
+					type: "row",
+					fields: [
+						{
+							name: "handlingHours",
+							type: "number",
+							min: 4,
+							max: 120,
+							defaultValue: 24,
+							admin: { width: "50%" },
+						},
+						{
+							name: "codAccepted",
+							type: "checkbox",
+							defaultValue: false,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "codAccepted", type: "checkbox", defaultValue: false },
 				{
 					name: "resellerNotes",
 					type: "textarea",
 					maxLength: 1000,
 				},
-				{ name: "enabledAt", type: "date", admin: { readOnly: true } },
 				{
-					name: "resellerCount",
-					type: "number",
-					min: 0,
-					defaultValue: 0,
-					admin: { readOnly: true },
+					type: "row",
+					fields: [
+						{
+							name: "enabledAt",
+							type: "date",
+							admin: { width: "50%", readOnly: true },
+						},
+						{
+							name: "resellerCount",
+							type: "number",
+							min: 0,
+							defaultValue: 0,
+							admin: { width: "50%", readOnly: true },
+						},
+					],
 				},
 				{
 					name: "pendingChange",
@@ -189,16 +258,33 @@ export const Products: CollectionConfig = {
 							type: "array",
 							fields: [
 								{
-									name: "variant",
-									type: "relationship",
-									relationTo: "product-variants",
-								},
-								{ name: "supplierPrice", type: "number", min: 100 },
-								{ name: "minRetailPrice", type: "number", min: 0 },
-								{
-									name: "suggestedRetailPrice",
-									type: "number",
-									min: 0,
+									type: "row",
+									fields: [
+										{
+											name: "variant",
+											type: "relationship",
+											relationTo: "product-variants",
+											admin: { width: "25%" },
+										},
+										{
+											name: "supplierPrice",
+											type: "number",
+											min: 100,
+											admin: { width: "25%" },
+										},
+										{
+											name: "minRetailPrice",
+											type: "number",
+											min: 0,
+											admin: { width: "25%" },
+										},
+										{
+											name: "suggestedRetailPrice",
+											type: "number",
+											min: 0,
+											admin: { width: "25%" },
+										},
+									],
 								},
 							],
 						},

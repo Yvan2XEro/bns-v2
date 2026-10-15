@@ -11,6 +11,7 @@ import {
 	trustLoadedVariant,
 } from "../../src/collections/StockMovements";
 import { type Doc, fakePayload, matches } from "./helpers/fakePayload";
+import { dataFields } from "./helpers/fields";
 
 const seed = () =>
 	fakePayload({
@@ -177,7 +178,7 @@ describe("cost price stays a shop secret", () => {
 	// client actually uses, the same way `read(ProductVariants)` above covers
 	// the collection-level REST read.
 	const cost = () => {
-		const field = ProductVariants.fields.find(
+		const field = dataFields(ProductVariants.fields).find(
 			(f) => "name" in f && f.name === "cost",
 		) as { access?: { read?: FieldAccessFn } };
 		return field.access?.read as FieldAccessFn;
@@ -233,7 +234,7 @@ describe("cost price stays a shop secret", () => {
 // gets `available` (below) instead of the number.
 describe("stock counters stay shop data", () => {
 	const fieldAccess = (name: "stockOnHand" | "stockReserved") => {
-		const field = ProductVariants.fields.find(
+		const field = dataFields(ProductVariants.fields).find(
 			(f) => "name" in f && f.name === name,
 		) as { access?: { read?: FieldAccessFn } };
 		return field.access?.read as FieldAccessFn;
@@ -296,7 +297,7 @@ describe("stock counters stay shop data", () => {
 // facing view omits it on purpose.
 describe("sku stays shop data", () => {
 	const fieldAccess = () => {
-		const field = ProductVariants.fields.find(
+		const field = dataFields(ProductVariants.fields).find(
 			(f) => "name" in f && f.name === "sku",
 		) as { access?: { read?: FieldAccessFn } };
 		return field.access?.read as FieldAccessFn;
@@ -337,7 +338,7 @@ describe("sku stays shop data", () => {
 // surfaces it) already requires `{ manage: true }`.
 describe("low stock threshold is manager-only", () => {
 	const fieldAccess = () => {
-		const field = ProductVariants.fields.find(
+		const field = dataFields(ProductVariants.fields).find(
 			(f) => "name" in f && f.name === "lowStockThreshold",
 		) as { access?: { read?: FieldAccessFn } };
 		return field.access?.read as FieldAccessFn;
@@ -431,7 +432,7 @@ describe("stock movements access", () => {
 // live the moment a `manager`/`staff` membership exists.
 describe("stock movement unit cost stays a shop secret", () => {
 	const fieldAccess = () => {
-		const field = StockMovements.fields.find(
+		const field = dataFields(StockMovements.fields).find(
 			(f) => "name" in f && f.name === "unitCost",
 		) as { access?: { read?: FieldAccessFn } };
 		return field.access?.read as FieldAccessFn;

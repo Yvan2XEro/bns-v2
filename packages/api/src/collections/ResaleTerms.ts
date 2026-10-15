@@ -50,39 +50,55 @@ export const ResaleTerms: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "role",
-			type: "select",
-			required: true,
-			options: ["supplier", "reseller"].map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{
-			name: "version",
-			type: "text",
-			required: true,
-			validate: (value: unknown) => {
-				if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-					return "Use YYYY-MM-DD version format.";
-				}
-				const date = new Date(`${value}T00:00:00.000Z`);
-				return date.toISOString().slice(0, 10) === value
-					? true
-					: "Use a valid calendar date for the terms version.";
-			},
+			type: "row",
+			fields: [
+				{
+					name: "role",
+					type: "select",
+					required: true,
+					options: ["supplier", "reseller"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{
+					name: "version",
+					type: "text",
+					required: true,
+					validate: (value: unknown) => {
+						if (
+							typeof value !== "string" ||
+							!/^\d{4}-\d{2}-\d{2}$/.test(value)
+						) {
+							return "Use YYYY-MM-DD version format.";
+						}
+						const date = new Date(`${value}T00:00:00.000Z`);
+						return date.toISOString().slice(0, 10) === value
+							? true
+							: "Use a valid calendar date for the terms version.";
+					},
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{ name: "bodyFr", type: "richText", required: true },
 		{ name: "bodyEn", type: "richText", required: true },
 		{ name: "summaryFr", type: "textarea" },
 		{ name: "summaryEn", type: "textarea" },
-		{ name: "publishedAt", type: "date" },
 		{
-			name: "requiresReacceptance",
-			type: "checkbox",
-			defaultValue: false,
+			type: "row",
+			fields: [
+				{ name: "publishedAt", type: "date", admin: { width: "33%" } },
+				{
+					name: "requiresReacceptance",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "33%" },
+				},
+				{ name: "enforceAt", type: "date", admin: { width: "33%" } },
+			],
 		},
-		{ name: "enforceAt", type: "date" },
 	],
 	timestamps: true,
 };
