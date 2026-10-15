@@ -3031,7 +3031,13 @@
 		"summary_delivery": "Livraison",
 		"summary_goods": "Articles",
 		"summary_protectionFee": "Frais de protection acheteur (TVA incluse)",
-		"summary_total": "Total à payer"
+		"summary_total": "Total à payer",
+		"protectedBadge": "Protégé",
+		"money_title": "Où va votre argent ?",
+		"money_heldTitle": "Détenu par le prestataire de paiement",
+		"money_releaseTitle": "Versé à la boutique après la livraison",
+		"money_refundTitle": "Remboursé si la commande n'aboutit pas",
+		"pay_mobileMoney": "Mobile money"
 	},
 	"PaymentsPay": {
 		"operatorRequired": "Choisissez un opérateur."

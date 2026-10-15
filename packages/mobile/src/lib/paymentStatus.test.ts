@@ -228,8 +228,10 @@ describe("the payments namespace", () => {
 		// setup_fieldInvalid, setup_saveFailed, setup_onboardingFailed) have no
 		// web counterpart: mobile shows them as toast titles and empty-state
 		// screens, a paradigm web's inline-disabled-button approach does not
-		// need the same copy for.
-		expect(Object.keys(enNs)).toHaveLength(159);
+		// need the same copy for. The protected-pay screen redesign added six
+		// more mobile-only keys (protectedBadge, pay_mobileMoney and the four
+		// money_* rows of "where does your money go").
+		expect(Object.keys(enNs)).toHaveLength(165);
 	});
 
 	test("carries the same placeholders in both languages, in i18next's double braces", () => {

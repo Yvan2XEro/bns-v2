@@ -3030,7 +3030,13 @@
 		"summary_delivery": "Delivery",
 		"summary_goods": "Goods",
 		"summary_protectionFee": "Buyer protection fee (VAT included)",
-		"summary_total": "Total to pay"
+		"summary_total": "Total to pay",
+		"protectedBadge": "Protected",
+		"money_title": "Where does your money go?",
+		"money_heldTitle": "Held by the payment provider",
+		"money_releaseTitle": "Paid to the shop after delivery",
+		"money_refundTitle": "Refunded if the order doesn't go through",
+		"pay_mobileMoney": "Mobile money"
 	},
 	"PaymentsPay": {
 		"operatorRequired": "Choose an operator."
