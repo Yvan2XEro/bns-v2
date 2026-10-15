@@ -4094,6 +4094,7 @@
 		"boolean": "Répondez par oui ou non.",
 		"date": "Saisissez une date valide (JJ/MM/AAAA).",
 		"notFound": "Ce choix n’est plus disponible. Choisissez-en un autre.",
+		"category": "Un tag ne correspond pas à cette catégorie. Retirez-le.",
 		"variantsCount": "Un produit compte de 1 à {{max}} variantes. Retirez des valeurs d’option.",
 		"variantsSingle": "Un produit sans option n’a qu’une seule variante.",
 		"optionsRequired": "Ajoutez au moins une option avec une valeur, ou désactivez les variantes.",

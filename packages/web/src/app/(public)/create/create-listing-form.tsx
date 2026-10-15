@@ -30,6 +30,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
+import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import { usePlacePreferences } from "~/hooks/use-place-preferences";
@@ -46,6 +47,7 @@ import {
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
 import { createCategorySuggester } from "~/lib/category-suggest";
+import { keepApplicableTags } from "~/lib/category-tags";
 import {
 	type FieldIssue,
 	firstListingIssueStep,
@@ -82,6 +84,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
 	const tShop = useTranslations("Shop");
+	const tIssues = useTranslations("FormIssues");
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 
@@ -112,6 +115,20 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	/** Set once the user tries to move on, so "required" errors stay unobtrusive. */
 	const [showErrors, setShowErrors] = useState(false);
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
+	const { tags: categoryTags } = useCategoryTags(selectedCategory?.id);
+	const applicableTagIds = useMemo(
+		() => categoryTags?.map((tag) => tag.id) ?? null,
+		[categoryTags],
+	);
+	// Tags are scoped to categories: a new category takes back the ones it
+	// does not get, so the server never has to refuse them.
+	useEffect(() => {
+		if (!applicableTagIds) return;
+		setSelectedTags((prev) => {
+			const kept = keepApplicableTags(prev, applicableTagIds);
+			return kept.length === prev.length ? prev : kept;
+		});
+	}, [applicableTagIds]);
 	const [images, setImages] = useState<File[]>([]);
 	const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 	const [place, setPlace] = useState<Place | null>(null);
@@ -198,10 +215,12 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		condition: conditionField.enabled ? formData.condition || null : null,
 		images,
 		attributes: pruneAttributeValues(attributes, attributeValues),
+		tags: selectedTags,
 	};
 	const draftIssues = webListingIssues(draftBody, {
 		preset: categoryPreset.fields,
 		attributes,
+		tags: applicableTagIds,
 	});
 	// A refusal stays on screen until the form changes.
 	const draftKey = JSON.stringify({ ...draftBody, images: images.length });
@@ -729,9 +748,16 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 							<div className="space-y-2">
 								<Label>{translateOr(tListing, "tags", "Tags")}</Label>
 								<TagPicker
+									tags={categoryTags}
 									selectedIds={selectedTags}
 									onChange={setSelectedTags}
 								/>
+								{showErrors &&
+									draftIssues.some((issue) => issue.path === "tags") && (
+										<p className="text-destructive text-xs">
+											{tIssues("rule_category")}
+										</p>
+									)}
 							</div>
 
 							<div className="space-y-2">

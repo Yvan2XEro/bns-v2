@@ -99,7 +99,7 @@ export default function SearchScreen() {
 		params.minPrice,
 		params.maxPrice,
 		params.conditions,
-		params.tags,
+		params.category && params.tags,
 		params.location,
 		verifiedOnly,
 		...Object.values(attrParams),
@@ -133,7 +133,8 @@ export default function SearchScreen() {
 		...(params.minPrice ? { minPrice: params.minPrice as string } : {}),
 		...(params.maxPrice ? { maxPrice: params.maxPrice as string } : {}),
 		...(params.conditions ? { condition: params.conditions as string } : {}),
-		...(params.tags ? { tags: params.tags as string } : {}),
+		// Tags are category-scoped: without a category there is none to filter on.
+		...(params.category && params.tags ? { tags: params.tags as string } : {}),
 		...(params.location ? { location: params.location as string } : {}),
 		...(params.location && params.radius
 			? { radius: params.radius as string }

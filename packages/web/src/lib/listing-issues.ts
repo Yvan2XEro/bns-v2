@@ -23,6 +23,8 @@ export function webListingIssues(
 		preset: ListingPresetFields;
 		attributes: readonly AttributeRuleDef[];
 		previousImageCount?: number;
+		/** Ids of the tags the category gets, once loaded. */
+		tags?: readonly string[] | null;
 	},
 ): FieldIssue[] {
 	return listingInputIssues(body, context);
@@ -64,6 +66,7 @@ const LABEL_KEYS: Record<string, string> = {
 	condition: "fieldCondition",
 	location: "fieldLocation",
 	images: "fieldImages",
+	tags: "fieldTags",
 };
 
 /** The `FormIssues` key naming the field at `path`, or null for an attribute or an unknown field. */
@@ -83,6 +86,7 @@ const RULE_KEYS = new Set([
 	"text",
 	"notFound",
 	"uploadFailed",
+	"category",
 ]);
 
 /** The `FormIssues` key wording the rule; anything unknown reads as "refused". */

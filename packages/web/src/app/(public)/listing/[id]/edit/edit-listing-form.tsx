@@ -4,7 +4,7 @@ import { LoaderCircle, Save, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CategoryDropdown } from "~/components/category-picker";
 import { FieldIssueSummary } from "~/components/listing/field-issue-summary";
 import { ImagePicker } from "~/components/listing/image-picker";
@@ -30,6 +30,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
+import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { CategoryAttributeFields } from "~/lib/category-attribute-fields";
@@ -44,6 +45,7 @@ import {
 	resolveFormPreset,
 	titlePlaceholderCopy,
 } from "~/lib/category-form";
+import { keepApplicableTags, relationIds } from "~/lib/category-tags";
 import {
 	type FieldIssue,
 	responseIssues,
@@ -75,6 +77,7 @@ export function EditListingForm({
 	const tCommon = useTranslations("Common");
 	const tCond = useTranslations("Condition");
 	const tShop = useTranslations("Shop");
+	const tIssues = useTranslations("FormIssues");
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -125,6 +128,11 @@ export function EditListingForm({
 		resolveCategoryAttributes(currentCategory),
 	);
 	const [showErrors, setShowErrors] = useState(false);
+	const { tags: categoryTags } = useCategoryTags(selectedCategory?.id);
+	const applicableTagIds = useMemo(
+		() => categoryTags?.map((tag) => tag.id) ?? null,
+		[categoryTags],
+	);
 
 	const initialAttrs: Record<string, string> = {};
 	if (
@@ -148,12 +156,17 @@ export function EditListingForm({
 			})
 			.filter((img): img is ExistingImage => img !== null) || [];
 
-	const initialTagIds: string[] = Array.isArray((listing as any).tags)
-		? (listing as any).tags.map((tag: any) =>
-				typeof tag === "object" && tag !== null ? String(tag.id) : String(tag),
-			)
-		: [];
-	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTagIds);
+	const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() =>
+		relationIds((listing as { tags?: unknown }).tags),
+	);
+	// A tag the category no longer gets goes with the category change.
+	useEffect(() => {
+		if (!applicableTagIds) return;
+		setSelectedTagIds((prev) => {
+			const kept = keepApplicableTags(prev, applicableTagIds);
+			return kept.length === prev.length ? prev : kept;
+		});
+	}, [applicableTagIds]);
 
 	const [keptImages, setKeptImages] = useState<ExistingImage[]>(existingImages);
 	const [newImages, setNewImages] = useState<File[]>([]);
@@ -216,11 +229,13 @@ export function EditListingForm({
 		condition: conditionField.enabled ? formData.condition || null : null,
 		images: [...keptImages, ...newImages],
 		attributes: pruneAttributeValues(attributes, attributeValues),
+		tags: selectedTagIds,
 	};
 	const draftIssues = webListingIssues(draftBody, {
 		preset: categoryPreset.fields,
 		attributes,
 		previousImageCount: existingImages.length,
+		tags: applicableTagIds,
 	});
 	const draftKey = JSON.stringify({ ...draftBody, images: photoCount });
 	const [refused, setRefused] = useState<{
@@ -550,9 +565,16 @@ export function EditListingForm({
 					<div className="space-y-2">
 						<Label>{translateOr(t, "tags", "Tags")}</Label>
 						<TagPicker
+							tags={categoryTags}
 							selectedIds={selectedTagIds}
 							onChange={setSelectedTagIds}
 						/>
+						{showErrors &&
+							draftIssues.some((issue) => issue.path === "tags") && (
+								<p className="text-destructive text-xs">
+									{tIssues("rule_category")}
+								</p>
+							)}
 					</div>
 
 					<div className="space-y-2">

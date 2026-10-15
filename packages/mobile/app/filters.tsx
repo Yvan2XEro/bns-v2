@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Pressable,
 	ScrollView,
@@ -18,12 +18,14 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CityPicker } from "@/src/components/CityPicker";
 import { TagPicker } from "@/src/components/TagPicker";
+import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
 } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
+import { pruneTagSlugs } from "@/src/lib/categoryTags";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatAttributeOptionLabel } from "@/src/lib/listingAttributes";
 import type { Place } from "@/src/lib/places";
@@ -79,17 +81,14 @@ export default function FiltersModal() {
 	);
 	const [verifiedOnly, setVerifiedOnly] = useState(rawParams.verified === "1");
 
-	const { data: tagsData } = useQuery({
-		queryKey: ["tags"],
-		queryFn: () => api.get<any[]>("/api/public/tags"),
-		staleTime: 3600000,
-	});
-	const availableTags: any[] = Array.isArray(tagsData) ? tagsData : [];
-
-	const _toggleTag = (slug: string) =>
-		setSelectedTags((prev) =>
-			prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
-		);
+	// Tags belong to categories: only the selected category's are offered, and
+	// a picked tag the new category does not get is dropped.
+	const { tags: availableTags, loaded: tagsLoaded } =
+		useCategoryTags(selectedCategory);
+	useEffect(() => {
+		if (!tagsLoaded) return;
+		setSelectedTags((slugs) => pruneTagSlugs(slugs, availableTags));
+	}, [tagsLoaded, availableTags]);
 
 	// Attributs dynamiques — initialisés depuis les params attr_*
 	const [attributeFilters, setAttributeFilters] = useState<
@@ -146,7 +145,8 @@ export default function FiltersModal() {
 		if (maxPrice) filterParams.maxPrice = maxPrice;
 		if (selectedConditions.length)
 			filterParams.conditions = selectedConditions.join(",");
-		if (selectedTags.length) filterParams.tags = selectedTags.join(",");
+		if (selectedCategory && selectedTags.length)
+			filterParams.tags = selectedTags.join(",");
 		if (verifiedOnly) filterParams.verified = "1";
 		if (location) filterParams.location = location;
 		if (location) filterParams.radius = String(radius);

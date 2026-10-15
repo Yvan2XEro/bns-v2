@@ -30,6 +30,7 @@ import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
 import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import {
 	CATEGORIES_QUERY_KEY,
 	CATEGORIES_STALE_TIME_MS,
@@ -41,6 +42,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { createCategorySuggester } from "@/src/lib/categorySuggest";
+import { pruneTagIds } from "@/src/lib/categoryTags";
 import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -184,9 +186,24 @@ export default function CreateScreen() {
 
 	// What the API would refuse, by step. Shown once the seller tries to move
 	// on; the server's own refusal is shown until the form changes.
+	// Tags belong to the category: once the new category's tags are known, the
+	// ones it does not get are dropped, and the shared rule checks the rest.
+	const { tags: categoryTags, applicableIds: applicableTagIds } =
+		useCategoryTags(form.category?.id);
+	useEffect(() => {
+		if (!applicableTagIds) return;
+		setForm((f) => {
+			const tags = pruneTagIds(f.tags, applicableTagIds);
+			return tags === f.tags ? f : { ...f, tags };
+		});
+	}, [applicableTagIds]);
+
 	const draftIssues = useMemo(
-		() => listingDraftIssues(form, categoryAttributes),
-		[form, categoryAttributes],
+		() =>
+			listingDraftIssues(form, categoryAttributes, {
+				applicableTags: applicableTagIds,
+			}),
+		[form, categoryAttributes, applicableTagIds],
 	);
 	const [attempted, setAttempted] = useState(false);
 	const [refused, setRefused] = useState<{
@@ -646,6 +663,7 @@ export default function CreateScreen() {
 						<DetailsStep
 							form={form}
 							setForm={setForm}
+							availableTags={categoryTags}
 							onNext={goNext}
 							gate={stepGate}
 							colors={colors}
@@ -837,7 +855,14 @@ function DescribeStep({
 
 // ─── Details Step ──────────────────────────────────────────────────────────────
 
-function DetailsStep({ form, setForm, onNext, gate, colors }: any) {
+function DetailsStep({
+	form,
+	setForm,
+	availableTags,
+	onNext,
+	gate,
+	colors,
+}: any) {
 	const {
 		bg,
 		cardBg,
@@ -866,12 +891,6 @@ function DetailsStep({ form, setForm, onNext, gate, colors }: any) {
 		{ key: "fair", label: t("conditions.fair"), icon: "remove-circle-outline" },
 		{ key: "poor", label: t("conditions.poor"), icon: "construct-outline" },
 	];
-
-	const { data: tagsData } = useQuery({
-		queryKey: ["tags"],
-		queryFn: () => api.get<any[]>("/api/public/tags"),
-	});
-	const availableTags: any[] = Array.isArray(tagsData) ? tagsData : [];
 
 	const update = (key: string, val: any) =>
 		setForm((f: any) => ({ ...f, [key]: val }));

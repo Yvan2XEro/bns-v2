@@ -23,11 +23,13 @@ import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { pruneTagIds } from "@/src/lib/categoryTags";
 import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -394,7 +396,6 @@ export default function EditListingScreen() {
 	const [uploading, setUploading] = useState(false);
 	const [nextStatus, setNextStatus] = useState<"draft" | "pending">("pending");
 	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-	const [availableTags, setAvailableTags] = useState<any[]>([]);
 	const { data: myShop } = useMyShop();
 	const activeShop = myShop?.shop?.status === "active" ? myShop.shop : null;
 	const [inShop, setInShop] = useState(false);
@@ -468,13 +469,14 @@ export default function EditListingScreen() {
 		router.replace(`/seller/product/${productId}` as never);
 	}, [listing?.product]);
 
-	// Fetch available tags
+	// Only the tags this category gets are offered; one the listing still
+	// carries from before tags were scoped is dropped on save.
+	const { tags: availableTags, applicableIds: applicableTagIds } =
+		useCategoryTags(categoryId);
 	useEffect(() => {
-		api
-			.get<any[]>("/api/public/tags")
-			.then((data) => setAvailableTags(Array.isArray(data) ? data : []))
-			.catch(() => {});
-	}, []);
+		if (!applicableTagIds) return;
+		setSelectedTagIds((ids) => pruneTagIds(ids, applicableTagIds));
+	}, [applicableTagIds, selectedTagIds]);
 
 	const categoryAttributes = useMemo(
 		() => getCategoryAttributes(category),
@@ -496,11 +498,13 @@ export default function EditListingScreen() {
 		category: category ?? (categoryId ? { id: categoryId } : null),
 		attributes,
 		images,
+		tags: selectedTagIds,
 	};
 	const draftIssues = listingDraftIssues(draft, categoryAttributes, {
 		previousImageCount: Array.isArray(listing?.images)
 			? listing.images.length
 			: 0,
+		applicableTags: applicableTagIds,
 	});
 	const draftKey = JSON.stringify(draft);
 	const [attempted, setAttempted] = useState(false);

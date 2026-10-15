@@ -38,6 +38,7 @@
 		"fieldCondition": "État",
 		"fieldLocation": "Localisation",
 		"fieldImages": "Photos",
+		"fieldTags": "Tags",
 		"rule_invalid": "Cette valeur a été refusée. Vérifiez-la.",
 		"rule_required": "Ce champ est obligatoire.",
 		"rule_maxItems": "{max} au maximum.",
@@ -48,7 +49,8 @@
 		"rule_boolean": "Répondez par oui ou non.",
 		"rule_date": "Saisissez une date valide.",
 		"rule_text": "Saisissez un texte.",
-		"rule_notFound": "Ce choix n’est plus disponible. Choisissez-en un autre."
+		"rule_notFound": "Ce choix n’est plus disponible. Choisissez-en un autre.",
+		"rule_category": "Certains tags ne s'appliquent pas à cette catégorie. Retirez-les."
 	},
 	"SellerOrderList": {
 		"title": "Commandes",

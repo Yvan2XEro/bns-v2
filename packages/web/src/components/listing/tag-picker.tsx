@@ -2,33 +2,19 @@
 
 import { ChevronDown, Tag, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type { TagItem } from "~/lib/category-tags";
 import { cn } from "~/lib/utils";
 
-interface TagItem {
-	id: string;
-	name: string;
-	slug: string;
-	emoji?: string;
-}
-
 interface TagPickerProps {
+	/** The tags the chosen category gets (see `useCategoryTags`); null while loading. */
+	tags: TagItem[] | null;
 	selectedIds: string[];
 	onChange: (ids: string[]) => void;
 }
 
-export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
-	const [tags, setTags] = useState<TagItem[]>([]);
+export function TagPicker({ tags, selectedIds, onChange }: TagPickerProps) {
 	const [open, setOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		fetch("/api/public/tags")
-			.then((r) => r.json())
-			.then((data) => setTags(Array.isArray(data) ? data : []))
-			.catch(() => {
-				// silently fail — tags are optional
-			});
-	}, []);
 
 	useEffect(() => {
 		function onClickOutside(e: MouseEvent) {
@@ -43,7 +29,7 @@ export function TagPicker({ selectedIds, onChange }: TagPickerProps) {
 		return () => document.removeEventListener("mousedown", onClickOutside);
 	}, [open]);
 
-	if (tags.length === 0) return null;
+	if (!tags || tags.length === 0) return null;
 
 	const atMax = selectedIds.length >= 5;
 	const selectedTags = tags.filter((t) => selectedIds.includes(t.id));

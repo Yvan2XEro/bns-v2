@@ -38,6 +38,7 @@
 		"fieldCondition": "Condition",
 		"fieldLocation": "Location",
 		"fieldImages": "Photos",
+		"fieldTags": "Tags",
 		"rule_invalid": "This value was refused. Please check it.",
 		"rule_required": "This field is required.",
 		"rule_maxItems": "At most {max}.",
@@ -48,7 +49,8 @@
 		"rule_boolean": "Answer yes or no.",
 		"rule_date": "Enter a valid date.",
 		"rule_text": "Enter text.",
-		"rule_notFound": "This choice is no longer available. Pick another one."
+		"rule_notFound": "This choice is no longer available. Pick another one.",
+		"rule_category": "Some tags do not apply to this category. Remove them."
 	},
 	"SellerOrderList": {
 		"title": "Orders",

@@ -28,6 +28,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
+import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import {
 	type ListingSearchParams,
@@ -35,6 +36,7 @@ import {
 } from "~/hooks/use-listing-search";
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { saveSearch } from "~/lib/actions";
+import { scopedTagSlugs } from "~/lib/category-tags";
 import type { Category, CategoryAttribute, Listing } from "~/types";
 import {
 	type Place,
@@ -99,16 +101,20 @@ export function SearchClient({
 		}, 350);
 	};
 
-	const [availableTags, setAvailableTags] = useState<
-		{ id: string; name: string; slug: string; emoji?: string }[]
-	>([]);
-
+	// Tags are scoped to categories: only the searched category's are offered,
+	// none without a category, and a filter it cannot match is dropped.
+	const { tags: categoryTags } = useCategoryTags(filters.category || null);
+	const availableTags = categoryTags ?? [];
 	useEffect(() => {
-		fetch("/api/public/tags")
-			.then((r) => r.json())
-			.then((data) => setAvailableTags(Array.isArray(data) ? data : []))
-			.catch(() => {});
-	}, []);
+		if (!categoryTags) return;
+		setFilters((prev) => {
+			const current = prev.tags.split(",").filter(Boolean);
+			const kept = scopedTagSlugs(current, categoryTags);
+			return kept.length === current.length
+				? prev
+				: { ...prev, tags: kept.join(",") };
+		});
+	}, [categoryTags]);
 
 	const [attributeFilters, setAttributeFilters] = useState<
 		Record<string, string>
@@ -129,7 +135,7 @@ export function SearchClient({
 			location: filters.location || undefined,
 			sort: filters.sort || undefined,
 			condition: filters.condition || undefined,
-			tags: filters.tags || undefined,
+			tags: (filters.category && filters.tags) || undefined,
 			// The API applies this floor twice — once against the index, once
 			// against live shop data after hydration — so it is never
 			// re-filtered client-side here; this only forwards the intent.
@@ -176,7 +182,7 @@ export function SearchClient({
 		if (filters.sort && filters.sort !== "newest")
 			params.set("sort", filters.sort);
 		if (filters.condition) params.set("condition", filters.condition);
-		if (filters.tags) params.set("tags", filters.tags);
+		if (filters.category && filters.tags) params.set("tags", filters.tags);
 		if (filters.verified) params.set("verified", filters.verified);
 		for (const [key, value] of Object.entries(attributeFilters)) {
 			if (value) params.set(`attr_${key}`, value);

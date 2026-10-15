@@ -244,6 +244,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 			tags?: Array<string | Tag>;
 		}
 	).tags;
+	// Tags are scoped to categories, so a tag link searches within this one.
+	const tagCategoryId =
+		typeof listing.category === "string"
+			? listing.category
+			: listing.category?.id;
 	const listingTags = Array.isArray(rawTags)
 		? rawTags.filter(
 				(tag): tag is Tag => typeof tag === "object" && tag !== null,
@@ -467,7 +472,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								{listingTags.map((tag) => (
 									<Link
 										key={String(tag.id ?? tag.slug ?? tag.name)}
-										href={`/search?tags=${encodeURIComponent(tag.slug ?? "")}`}
+										href={`/search?${new URLSearchParams({
+											...(tagCategoryId ? { category: tagCategoryId } : {}),
+											tags: tag.slug ?? "",
+										}).toString()}`}
 									>
 										<Badge
 											variant="outline"

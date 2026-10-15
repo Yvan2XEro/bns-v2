@@ -4091,6 +4091,7 @@
 		"boolean": "Answer yes or no.",
 		"date": "Enter a valid date (DD/MM/YYYY).",
 		"notFound": "This choice is no longer available. Pick another one.",
+		"category": "A tag does not apply to this category. Remove it.",
 		"variantsCount": "A product needs 1 to {{max}} variants. Remove some option values.",
 		"variantsSingle": "A product without options has a single variant.",
 		"optionsRequired": "Add at least one option with a value, or turn variants off.",

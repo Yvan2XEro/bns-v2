@@ -13,6 +13,7 @@ const LABEL_KEYS: Record<string, string> = {
 	condition: "create.conditionRowLabel",
 	location: "create.locationRowLabel",
 	images: "create.photosRowLabel",
+	tags: "create.tagsFieldLabel",
 };
 
 /**

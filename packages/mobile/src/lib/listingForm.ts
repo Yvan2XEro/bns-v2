@@ -600,6 +600,7 @@ export interface ListingDraft {
 	category: unknown;
 	attributes: Record<string, unknown>;
 	images: unknown[];
+	tags?: string[];
 }
 
 /**
@@ -611,7 +612,11 @@ export interface ListingDraft {
 export function listingDraftIssues(
 	draft: ListingDraft,
 	attributes: ListingAttribute[],
-	options: { previousImageCount?: number } = {},
+	options: {
+		previousImageCount?: number;
+		/** Ids of the tags the category gets; null until they are loaded. */
+		applicableTags?: readonly string[] | null;
+	} = {},
 ): FieldIssue[] {
 	const preset = getListingFormPreset(draft.category);
 	const category = asRecord(draft.category);
@@ -638,11 +643,13 @@ export function listingDraftIssues(
 		condition: preset.fields.condition.enabled ? draft.condition || null : null,
 		images: draft.images,
 		attributes: serializeAttributeValues(attributes, draft.attributes),
+		tags: draft.tags ?? [],
 	};
 	for (const issue of listingInputIssues(body, {
 		preset: preset.fields,
 		attributes,
 		previousImageCount: options.previousImageCount,
+		tags: options.applicableTags ?? null,
 	})) {
 		if (!issues.some((known) => known.path === issue.path)) issues.push(issue);
 	}
