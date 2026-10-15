@@ -1,0 +1,97 @@
+// Admin density. Payload ships its styles inside `@layer payload-default`,
+// so these unlayered rules win without !important. Only spacing changes here;
+// field order and grouping live in the collection configs (rows, tabs,
+// collapsibles).
+
+.render-fields,
+.render-fields--margins-small {
+	--spacing-field: calc(var(--base) * 0.6);
+}
+
+// Groups, arrays and collapsibles get one field gap around them, not two.
+.render-fields:not(.render-fields--margins-small)
+	> .field-type:is(
+		.group-field,
+		.blocks-field,
+		.array-field,
+		.collapsible-field,
+		.rich-text
+	) {
+	margin-top: var(--spacing-field);
+	margin-bottom: var(--spacing-field);
+}
+
+.group-field--top-level {
+	padding-top: calc(var(--base) * 0.9);
+	padding-bottom: calc(var(--base) * 0.9);
+}
+
+.group-field__header {
+	margin-bottom: calc(var(--base) * 0.5);
+	padding-bottom: 0;
+}
+
+.group-field__header h3,
+.group-field__title {
+	font-size: 1rem;
+	margin: 0;
+}
+
+.field-label {
+	margin-bottom: calc(var(--base) * 0.25);
+}
+
+.field-description {
+	margin-top: calc(var(--base) * 0.2);
+	font-size: 0.8125rem;
+	line-height: 1.35;
+}
+
+// Side-by-side fields: a tighter gutter so three fit on a laptop screen.
+.row__fields {
+	gap: calc(var(--base) * 0.6);
+	row-gap: var(--spacing-field);
+}
+
+.collapsible__content {
+	padding: calc(var(--base) * 0.75);
+}
+
+.collapsible__toggle-wrap {
+	min-height: calc(var(--base) * 2);
+}
+
+.tabs-field__tabs {
+	margin-bottom: calc(var(--base) * 0.75);
+}
+
+.tabs-field__tab-button {
+	padding-top: calc(var(--base) * 0.4);
+	padding-bottom: calc(var(--base) * 0.4);
+}
+
+.field-type.textarea textarea {
+	min-height: calc(var(--base) * 4);
+}
+
+.array-field__header {
+	margin-bottom: calc(var(--base) * 0.5);
+}
+
+.array-field__draggable-rows > * + * {
+	margin-top: calc(var(--base) * 0.4);
+}
+
+// The edit view's header and sidebar breathe less.
+.doc-header {
+	padding-top: calc(var(--base) * 0.75);
+	padding-bottom: calc(var(--base) * 0.5);
+}
+
+.document-fields__main .render-fields {
+	padding-top: calc(var(--base) * 0.75);
+}
+
+.document-fields__sidebar-fields {
+	padding-top: calc(var(--base) * 0.75);
+}
