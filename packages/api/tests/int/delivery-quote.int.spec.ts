@@ -56,6 +56,19 @@ describe("quoteDelivery", () => {
 		expect(options.map((o) => o.method)).toEqual(["seller_delivery"]);
 	});
 
+	it("offers seller_delivery to a shop whose city is stored by name", async () => {
+		const settings = await settingsOf();
+		const { options } = await quoteDelivery({
+			payload: fakePayload(),
+			shop: { ...shop(), location: { city: "Douala" } },
+			items: items(),
+			subtotal: 10_000,
+			destination: { city: "douala" },
+			settings,
+		});
+		expect(options.map((o) => o.optionId)).toEqual(["seller_delivery:douala"]);
+	});
+
 	it("offers nothing for another city", async () => {
 		const settings = await settingsOf();
 		const { options } = await quoteDelivery({

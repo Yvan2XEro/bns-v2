@@ -3,7 +3,7 @@ import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { queueSearchEvent } from "../hooks/searchEvents";
 import { FAILURE_REASONS, type FailureReason } from "../lib/delivery/types";
 import { getDeliverySettings } from "../lib/deliverySettings";
-import { isLaunchCityKey } from "../lib/launchCities";
+import { launchCityKeyOf } from "../lib/launchCities";
 import { cityDeliveryFee, getOrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { notifyDeliverySettingsIncomplete } from "../services/delivery/notifications";
@@ -30,10 +30,10 @@ export async function migrateP4DeliveryData(payload: Payload): Promise<void> {
 	});
 
 	for (const shop of shops.docs) {
-		const city = shop.location?.city;
+		const city = launchCityKeyOf(shop.location?.city);
 		const shopId = String(shop.id);
 		const legacy = shop.orderSettings;
-		if (!isLaunchCityKey(city) || !legacy) continue;
+		if (!city || !legacy) continue;
 		let deliveryChanged = false;
 
 		if (legacy.codEnabled && legacy.sellerDeliveryEnabled) {

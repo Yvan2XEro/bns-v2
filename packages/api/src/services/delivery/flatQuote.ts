@@ -1,4 +1,4 @@
-import { isLaunchCityKey } from "../../lib/launchCities";
+import { launchCityKeyOf } from "../../lib/launchCities";
 import { cityDeliveryFee } from "../../lib/orderSettings";
 import type { DeliveryOption, DeliveryQuoteInput } from "../deliveryQuote";
 
@@ -12,22 +12,16 @@ export async function flatQuote(
 ): Promise<DeliveryOption[]> {
 	const options: DeliveryOption[] = [];
 	const codAllowed = input.items.every((item) => item.codAllowed);
-	const shopCity = input.shop.location?.city ?? null;
+	const shopCity = launchCityKeyOf(input.shop.location?.city);
 	const settings = input.shop.orderSettings;
 
 	if (
 		settings?.sellerDeliveryEnabled === true &&
 		shopCity &&
-		shopCity === input.destination.city
+		shopCity === launchCityKeyOf(input.destination.city)
 	) {
-		// A shop outside the launch cities has no city default to fall back to;
-		// `isListingOrderable` already keeps its listings unorderable, so the
-		// zero here is a shape, never a fee a buyer is charged.
 		const fee =
-			settings.deliveryFee ??
-			(isLaunchCityKey(shopCity)
-				? cityDeliveryFee(input.settings, shopCity)
-				: 0);
+			settings.deliveryFee ?? cityDeliveryFee(input.settings, shopCity);
 		options.push({
 			optionId: `seller_delivery:${shopCity}`,
 			method: "seller_delivery",

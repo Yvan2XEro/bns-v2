@@ -248,4 +248,23 @@ describe("P4 to P7 delivery migration", () => {
 				?.deliveryMigrationNoticeSentAt,
 		).toEqual(expect.any(String));
 	});
+
+	it("migrates a shop whose city is stored by name under the city key", async () => {
+		const api = fakePayload({
+			shops: [
+				{
+					...shop("shop-named", {
+						codEnabled: true,
+						sellerDeliveryEnabled: true,
+					}),
+					location: { city: "Douala" },
+				},
+			],
+		});
+
+		await migrateP4DeliveryData(api as unknown as Payload);
+
+		expect(api.store["delivery-zones"]).toHaveLength(1);
+		expect(api.store["delivery-zones"]?.[0]).toMatchObject({ city: "douala" });
+	});
 });
