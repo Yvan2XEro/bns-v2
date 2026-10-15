@@ -104,7 +104,9 @@
 		"callbackTitle": "Signing you in...",
 		"callbackSubtitle": "Returning to the app",
 		"errorTitle": "Error",
-		"errorGeneric": "An error occurred"
+		"errorGeneric": "An error occurred",
+		"showPassword": "Show password",
+		"hidePassword": "Hide password"
 	},
 	"home": {
 		"searchPlaceholder": "What are you looking for?",

@@ -104,7 +104,9 @@
 		"callbackTitle": "Connexion en cours...",
 		"callbackSubtitle": "Retour à l'application",
 		"errorTitle": "Erreur",
-		"errorGeneric": "Une erreur est survenue"
+		"errorGeneric": "Une erreur est survenue",
+		"showPassword": "Afficher le mot de passe",
+		"hidePassword": "Masquer le mot de passe"
 	},
 	"home": {
 		"searchPlaceholder": "Que cherchez-vous ?",
