@@ -468,3 +468,18 @@ describe("the buyer cancellation copy and the order model agree", () => {
 		expect(shippedKeys(fr as Json)).toEqual(expected);
 	});
 });
+
+describe("plural keys", () => {
+	test("use the v4 `_one` suffix, never v3's `_plural` that i18next no longer reads", () => {
+		const v3: string[] = [];
+		const walk = (node: Json, path: string) => {
+			for (const [key, value] of Object.entries(node)) {
+				if (typeof value === "object") walk(value, `${path}${key}.`);
+				else if (key.endsWith("_plural")) v3.push(`${path}${key}`);
+			}
+		};
+		walk(fr as Json, "fr:");
+		walk(en as Json, "en:");
+		expect(v3).toEqual([]);
+	});
+});

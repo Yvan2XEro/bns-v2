@@ -32,7 +32,9 @@ export function ShopCard({ hit }: { hit: ShopSearchHit }) {
 				<View style={styles.row}>
 					<LevelBadge badge={hit.badge} size="sm" />
 					<View style={styles.row}>
-						<Ionicons name="star" size={12} color="#f59e0b" />
+						{hit.ownerReviews > 0 ? (
+							<Ionicons name="star" size={12} color="#f59e0b" />
+						) : null}
 						<Text style={[styles.meta, { color: c.body }]}>{rating}</Text>
 					</View>
 				</View>
