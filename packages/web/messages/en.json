@@ -2760,7 +2760,7 @@
 		"columnItems": "Items",
 		"columnTotal": "Total",
 		"columnDeadline": "Deadline",
-		"columnTier": "Customer",
+		"columnTier": "Reliability",
 		"tierNew": "New",
 		"tierRegular": "Regular",
 		"tierTrusted": "Trusted",

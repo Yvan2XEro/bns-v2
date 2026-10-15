@@ -2761,7 +2761,7 @@
 		"columnItems": "Articles",
 		"columnTotal": "Total",
 		"columnDeadline": "Échéance",
-		"columnTier": "Client",
+		"columnTier": "Fiabilité",
 		"tierNew": "Nouveau",
 		"tierRegular": "Régulier",
 		"tierTrusted": "Fiable",
