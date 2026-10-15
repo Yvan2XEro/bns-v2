@@ -391,6 +391,53 @@ describe("public search route", () => {
 			expect(filter).not.toContain("DROP");
 		});
 
+		it("a parent category also matches its subcategories, at any depth", async () => {
+			findMock.mockImplementation(async ({ collection }) =>
+				collection === "categories"
+					? {
+							docs: [
+								{ id: "electronics", parent: null },
+								{ id: "phones", parent: "electronics" },
+								{ id: "android", parent: { id: "phones" } },
+								{ id: "fashion", parent: null },
+							],
+						}
+					: { docs: [], totalDocs: 0 },
+			);
+			const filter = await filterFor("category=electronics");
+			expect(filter).toContain(
+				'categoryId IN ["electronics", "phones", "android"]',
+			);
+			expect(filter).not.toContain("fashion");
+		});
+
+		it("a parent category also matches its subcategories on the Payload path", async () => {
+			findMock.mockImplementation(async ({ collection }) =>
+				collection === "categories"
+					? {
+							docs: [
+								{ id: "electronics", parent: null },
+								{ id: "phones", parent: "electronics" },
+							],
+						}
+					: { docs: [], totalDocs: 0 },
+			);
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			await GET(
+				new Request(
+					"http://localhost:3000/api/public/search?category=electronics&boosted=true",
+				),
+			);
+			const listingsQuery = findMock.mock.calls
+				.map(([args]) => args)
+				.find((args) => args.collection === "listings");
+			expect(listingsQuery.where.category).toEqual({
+				in: ["electronics", "phones"],
+			});
+		});
+
 		it("quotes a category id instead of splicing it into the filter", async () => {
 			const filter = await filterFor(
 				`category=${encodeURIComponent('abc" OR status = draft')}`,

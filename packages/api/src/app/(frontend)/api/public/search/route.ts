@@ -203,6 +203,36 @@ interface FallbackParams {
 }
 
 /**
+ * A category and every category under it, so filtering on a parent finds the
+ * listings filed in its subcategories too. Ids are what both paths filter on.
+ */
+async function categoryWithDescendants(
+	payload: Awaited<ReturnType<typeof getPayload>>,
+	categoryId: string,
+): Promise<string[]> {
+	const result = await payload.find({
+		collection: "categories",
+		select: { parent: true },
+		depth: 0,
+		limit: 0,
+		pagination: false,
+	});
+	const children = new Map<string, string[]>();
+	for (const doc of result?.docs ?? []) {
+		const parent = relationId((doc as { parent?: unknown }).parent);
+		if (!parent) continue;
+		children.set(parent, [...(children.get(parent) ?? []), String(doc.id)]);
+	}
+	const ids = [categoryId];
+	for (let i = 0; i < ids.length; i++) {
+		for (const child of children.get(ids[i]) ?? []) {
+			if (!ids.includes(child)) ids.push(child);
+		}
+	}
+	return ids;
+}
+
+/**
  * A shop's published listings counted per category id, for the shop page's
  * category list. Only ever asked with a shop filter, so the scan is bounded by
  * one shop's catalogue, and it reads nothing but each listing's category.
@@ -268,7 +298,8 @@ async function runPayloadListingSearch(
 	}
 
 	if (category) {
-		where.category = { equals: category };
+		const ids = await categoryWithDescendants(payload, category);
+		where.category = ids.length > 1 ? { in: ids } : { equals: category };
 	}
 
 	if (shopParam) {
@@ -435,7 +466,15 @@ export async function GET(request: Request) {
 	const filters: string[] = ["status = published"];
 
 	if (category) {
-		filters.push(`categoryId = ${quoteFilterValue(category)}`);
+		const ids = await categoryWithDescendants(
+			await getPayload({ config }),
+			category,
+		);
+		filters.push(
+			ids.length > 1
+				? `categoryId IN [${ids.map(quoteFilterValue).join(", ")}]`
+				: `categoryId = ${quoteFilterValue(category)}`,
+		);
 	}
 
 	if (shopParam) {
