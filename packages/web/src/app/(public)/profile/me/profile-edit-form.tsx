@@ -126,7 +126,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 										// biome-ignore lint/performance/noImgElement: blob preview URL
 										<img
 											src={avatarPreview}
-											alt="Avatar"
+											alt={t("profilePhoto")}
 											className="h-full w-full object-cover"
 										/>
 									) : (

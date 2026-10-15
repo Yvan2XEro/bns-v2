@@ -162,7 +162,8 @@
 		"noShopsTitle": "No shop found",
 		"noShopsBody": "Try another word or a wider city.",
 		"clearFilters": "Clear the filters",
-		"verifiedShopsOnly": "Verified shops only"
+		"verifiedShopsOnly": "Verified shops only",
+		"closeFilters": "Close filters"
 	},
 	"LocationPicker": {
 		"title": "Choose a location",

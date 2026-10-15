@@ -163,7 +163,8 @@
 		"noShopsTitle": "Aucune boutique trouvée",
 		"noShopsBody": "Essayez un autre mot ou élargissez la ville.",
 		"clearFilters": "Effacer les filtres",
-		"verifiedShopsOnly": "Boutiques vérifiées uniquement"
+		"verifiedShopsOnly": "Boutiques vérifiées uniquement",
+		"closeFilters": "Fermer les filtres"
 	},
 	"LocationPicker": {
 		"title": "Choisir une localisation",

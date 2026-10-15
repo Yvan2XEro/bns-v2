@@ -756,7 +756,7 @@ export function SearchClient({
 						type="button"
 						className="absolute inset-0 bg-black/40"
 						onClick={() => setShowMobileFilters(false)}
-						aria-label="Close filters"
+						aria-label={t("closeFilters")}
 					/>
 					<div className="absolute right-0 bottom-0 left-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl">
 						<div className="mb-4 flex items-center justify-between">
