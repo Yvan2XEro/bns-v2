@@ -328,7 +328,8 @@
 		"noCategoriesFound": "No category matches",
 		"clearCategory": "Remove the category",
 		"characteristics": "Characteristics",
-		"characteristicsDesc": "The details buyers use to filter."
+		"characteristicsDesc": "The details buyers use to filter.",
+		"allCategories": "All categories"
 	},
 	"Profile": {
 		"myProfile": "My Profile",

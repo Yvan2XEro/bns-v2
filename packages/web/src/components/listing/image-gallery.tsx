@@ -20,7 +20,6 @@ interface ImageGalleryProps {
 
 export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 	const t = useTranslations("Listing");
-	const tCommon = useTranslations("Common");
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [lightboxOpen, setLightboxOpen] = useState(false);
 	const [lightboxIdx, setLightboxIdx] = useState(0);
@@ -178,7 +177,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 								setZoomed(false);
 							}}
 							className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-							aria-label={tCommon("close")}
+							aria-label={t("closeLightbox")}
 						>
 							<X className="h-5 w-5" />
 						</button>

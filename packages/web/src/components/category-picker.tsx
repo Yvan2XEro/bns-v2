@@ -125,8 +125,6 @@ export function CategoryDropdown({
 	showAll = false,
 }: CategoryDropdownProps) {
 	const t = useTranslations("CreateListing");
-	const tSearch = useTranslations("Search");
-	const tListing = useTranslations("Listing");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const ref = useRef<HTMLDivElement>(null);
@@ -168,7 +166,7 @@ export function CategoryDropdown({
 				<span className={selectedCat ? "text-[#0F172A]" : "text-[#94A3B8]"}>
 					{selectedCat
 						? selectedCat.name
-						: (placeholder ?? tListing("selectACategory"))}
+						: (placeholder ?? t("chooseCategory"))}
 				</span>
 				<ChevronDown className="h-4 w-4 text-[#94A3B8]" />
 			</button>
@@ -215,7 +213,7 @@ export function CategoryDropdown({
 										: "text-[#475569]"
 								}`}
 							>
-								{tSearch("allCategories")}
+								{t("allCategories")}
 							</button>
 						)}
 						{filtered.map((cat) => {

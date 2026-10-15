@@ -329,7 +329,8 @@
 		"noCategoriesFound": "Aucune catégorie ne correspond",
 		"clearCategory": "Retirer la catégorie",
 		"characteristics": "Caractéristiques",
-		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer."
+		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer.",
+		"allCategories": "Toutes les catégories"
 	},
 	"Profile": {
 		"myProfile": "Mon profil",
