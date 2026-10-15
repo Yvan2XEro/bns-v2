@@ -5,6 +5,7 @@ import {
 	requireOrderAudience,
 } from "../../access/orderAccess";
 import { ERROR_CODES } from "../../lib/errors";
+import { timezoneOfOrder } from "../../lib/markets";
 import type { ContractSnapshot } from "../../lib/orderContract";
 import {
 	type OrderStatusName,
@@ -468,6 +469,7 @@ export async function getOrderReceiptHtml(
 			withdrawalUntil: order.deadlines?.withdrawalUntil ?? null,
 			snapshot,
 			snapshotHash,
+			timezone: await timezoneOfOrder(payload, order),
 		},
 		lang,
 	);

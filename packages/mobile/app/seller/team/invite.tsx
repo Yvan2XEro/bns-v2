@@ -17,6 +17,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useInviteMemberForm } from "@/src/hooks/useInviteMemberForm";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 
 /**
  * `inviteSchema`'s own issues carry "required" or "invalid" as their
@@ -125,7 +126,7 @@ export default function InviteMemberScreen() {
 											onChangeText={field.onChange}
 											onBlur={field.onBlur}
 											keyboardType="phone-pad"
-											placeholder="+237600000000"
+											placeholder={phoneExample()}
 											placeholderTextColor={c.muted}
 											accessibilityLabel={t("team.phoneLabel")}
 											style={[

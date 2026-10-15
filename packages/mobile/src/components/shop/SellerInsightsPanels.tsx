@@ -4,7 +4,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { sparklineHeights } from "@/src/lib/insightChart";
-import { formatXaf } from "@/src/lib/variants";
+import { formatPrice } from "@/src/lib/market";
 import type { ShopInsightsView } from "../../../../api/src/types/shopInsights";
 
 export function InsightsHeader({
@@ -47,7 +47,7 @@ export function InsightsHeader({
 		},
 		{
 			label: t("sellerInsights.gmv"),
-			value: formatXaf(view.totals.current.gmvDelivered, lang),
+			value: formatPrice(view.totals.current.gmvDelivered, lang),
 			values: view.daily.map((day) => day.gmvDelivered),
 			delta: t("sellerInsights.previousDelta", {
 				value: signed(view.totals.delta.gmvDelivered, lang),
@@ -248,7 +248,7 @@ export function InsightProductRow({
 				</Text>
 			</View>
 			<Text style={[styles.rowTitle, { color: c.text }]}>
-				{formatXaf(product.gmvDelivered, i18n.language)}
+				{formatPrice(product.gmvDelivered, i18n.language)}
 			</Text>
 		</View>
 	);
@@ -368,10 +368,7 @@ function responseLabel(
 }
 
 function signed(value: number, locale: string): string {
-	const amount = new Intl.NumberFormat(locale, {
-		maximumFractionDigits: 0,
-	}).format(Math.abs(value));
-	return `${value > 0 ? "+" : value < 0 ? "−" : ""}${amount} XAF`;
+	return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatPrice(Math.abs(value), locale)}`;
 }
 
 function signedCount(value: number, locale: string): string {

@@ -2,7 +2,6 @@
 import { describe, expect, it } from "vitest";
 import {
 	DELIVERY_DAY_START_HOUR,
-	DELIVERY_TIMEZONE,
 	type DeliveryCalendar,
 	nextDeliveryStart,
 	pickupReadyAt,
@@ -11,6 +10,7 @@ import {
 	windowBounds,
 } from "../../src/lib/delivery/eta";
 
+const DOUALA = "Africa/Douala";
 const MONDAY_TO_SATURDAY: DeliveryCalendar = {
 	deliveryDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
 	cutoffTime: "17:00",
@@ -19,21 +19,28 @@ const MONDAY_TO_SATURDAY: DeliveryCalendar = {
 describe("delivery calendar", () => {
 	it("keeps pickup preparation inside the opening hours, carrying the remainder to the next open day", () => {
 		expect(
-			pickupReadyAt(new Date("2026-10-05T15:00:00.000Z"), 2, [
-				{ day: "mon", opens: "09:00", closes: "17:00" },
-				{ day: "tue", opens: "09:00", closes: "17:00" },
-			]).toISOString(),
+			pickupReadyAt(
+				new Date("2026-10-05T15:00:00.000Z"),
+				2,
+				[
+					{ day: "mon", opens: "09:00", closes: "17:00" },
+					{ day: "tue", opens: "09:00", closes: "17:00" },
+				],
+				DOUALA,
+			).toISOString(),
 		).toBe("2026-10-06T09:00:00.000Z");
 	});
 	it("does not promise pickup before the location opens", () => {
 		expect(
-			pickupReadyAt(new Date("2026-10-04T10:00:00.000Z"), 2, [
-				{ day: "mon", opens: "09:00", closes: "17:00" },
-			]).toISOString(),
+			pickupReadyAt(
+				new Date("2026-10-04T10:00:00.000Z"),
+				2,
+				[{ day: "mon", opens: "09:00", closes: "17:00" }],
+				DOUALA,
+			).toISOString(),
 		).toBe("2026-10-05T10:00:00.000Z");
 	});
-	it("declares Douala as the only delivery timezone and starts the workday at 08:00", () => {
-		expect(DELIVERY_TIMEZONE).toBe("Africa/Douala");
+	it("starts the workday at 08:00", () => {
 		expect(DELIVERY_DAY_START_HOUR).toBe(8);
 	});
 
@@ -42,15 +49,16 @@ describe("delivery calendar", () => {
 			nextDeliveryStart(
 				new Date("2026-10-09T18:00:00.000Z"),
 				MONDAY_TO_SATURDAY,
+				DOUALA,
 			).toISOString(),
 		).toBe("2026-10-10T07:00:00.000Z");
 	});
 
 	it("keeps an order before cutoff at its current instant", () => {
 		const now = new Date("2026-10-09T14:00:00.000Z");
-		expect(nextDeliveryStart(now, MONDAY_TO_SATURDAY).toISOString()).toBe(
-			now.toISOString(),
-		);
+		expect(
+			nextDeliveryStart(now, MONDAY_TO_SATURDAY, DOUALA).toISOString(),
+		).toBe(now.toISOString());
 	});
 
 	it("moves a Sunday order to Monday at 08:00 Douala time", () => {
@@ -58,6 +66,7 @@ describe("delivery calendar", () => {
 			nextDeliveryStart(
 				new Date("2026-10-11T11:00:00.000Z"),
 				MONDAY_TO_SATURDAY,
+				DOUALA,
 			).toISOString(),
 		).toBe("2026-10-12T07:00:00.000Z");
 	});
@@ -66,10 +75,11 @@ describe("delivery calendar", () => {
 		const start = nextDeliveryStart(
 			new Date("2026-10-09T18:00:00.000Z"),
 			MONDAY_TO_SATURDAY,
+			DOUALA,
 		);
-		expect(promisedByFrom(start, 2, 48, MONDAY_TO_SATURDAY).toISOString()).toBe(
-			"2026-10-13T09:00:00.000Z",
-		);
+		expect(
+			promisedByFrom(start, 2, 48, MONDAY_TO_SATURDAY, DOUALA).toISOString(),
+		).toBe("2026-10-13T09:00:00.000Z");
 	});
 
 	it("allows only delivery days within the next seven days for rescheduling", () => {
@@ -79,6 +89,7 @@ describe("delivery calendar", () => {
 				new Date("2026-10-10T12:00:00.000Z"),
 				MONDAY_TO_SATURDAY,
 				now,
+				DOUALA,
 			),
 		).toBe(true);
 		expect(
@@ -86,6 +97,7 @@ describe("delivery calendar", () => {
 				new Date("2026-10-11T12:00:00.000Z"),
 				MONDAY_TO_SATURDAY,
 				now,
+				DOUALA,
 			),
 		).toBe(false);
 		expect(
@@ -93,6 +105,7 @@ describe("delivery calendar", () => {
 				new Date("2026-10-17T12:00:00.000Z"),
 				MONDAY_TO_SATURDAY,
 				now,
+				DOUALA,
 			),
 		).toBe(false);
 	});

@@ -3,8 +3,8 @@ import { ERROR_CODES } from "./apiError";
 import {
 	canResend,
 	codFallbackOffered,
-	failedActions,
 	FOREGROUND_REFRESH_MIN_INTERVAL_MS,
+	failedActions,
 	formatCountdown,
 	isPastExpiry,
 	NOTIFICATION_LEAD_MS,

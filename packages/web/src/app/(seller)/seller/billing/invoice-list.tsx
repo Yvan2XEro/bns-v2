@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { CommissionInvoiceView } from "~/types/order";
 import { InvoiceStatusBadge, isPayable } from "./invoice-status";
@@ -15,6 +16,7 @@ export function InvoiceList({
 	shopId: string;
 	invoices: CommissionInvoiceView[];
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Billing");
 	const locale = useLocaleKey();
 
@@ -59,7 +61,7 @@ export function InvoiceList({
 					</div>
 					<div className="flex items-center gap-4">
 						<p className="font-bold text-[#0F172A]">
-							{formatXaf(invoice.totalDue, locale)}
+							{formatOrderMoney(invoice.totalDue, locale)}
 						</p>
 						{isPayable(invoice.status) && (
 							<PayInvoiceButton shopId={shopId} invoiceId={invoice.id} />

@@ -491,6 +491,77 @@ describe("expireOrders", () => {
 		expect(eventsOf(payload, "order-3")).toHaveLength(0);
 	});
 
+	it("sweeps a confirmed+unpaid mobile_money zombie on the placed window, releases its stock, and is idempotent", async () => {
+		const zombie = (overrides: Doc) =>
+			baseOrder({
+				paymentMethod: "mobile_money",
+				paymentStatus: "unpaid",
+				status: "confirmed",
+				...overrides,
+			});
+		const payload = world({
+			orders: [
+				zombie({ timestamps: { placedAt: at(-2 * HOUR) } }),
+				zombie({
+					id: "order-2",
+					orderNumber: "BNS-2610-000002",
+					timestamps: { placedAt: at(-29 * 60_000) },
+				}),
+			],
+			items: [baseItem()],
+			variants: [baseVariant({ stockOnHand: 5, stockReserved: 1 })],
+		});
+
+		const first = await expireOrders(payload);
+		const second = await expireOrders(payload);
+
+		expect(first).toMatchObject({ paymentExpired: 1, errors: 0 });
+		expect(second).toMatchObject({ paymentExpired: 0, errors: 0 });
+		const dead = liveOrder(payload);
+		expect([dead.status, dead.paymentStatus]).toEqual(["cancelled", "failed"]);
+		expect(groupOf(dead, "cancellation")).toEqual({
+			by: "system",
+			reason: "payment_expired",
+			note: null,
+		});
+		expect(releases(payload).map((row) => row.order)).toEqual(["order-1"]);
+		expect(payload.store["product-variants"][0].stockReserved).toBe(0);
+		expect(statusOf(payload, "order-2")).toBe("confirmed");
+	});
+
+	it("sweeps an accepted+unpaid mobile_money zombie a seller accepted before the guard, and is idempotent", async () => {
+		const zombie = (overrides: Doc) =>
+			baseOrder({
+				paymentMethod: "mobile_money",
+				paymentStatus: "unpaid",
+				status: "accepted",
+				...overrides,
+			});
+		const payload = world({
+			orders: [
+				zombie({ timestamps: { placedAt: at(-2 * HOUR) } }),
+				zombie({
+					id: "order-2",
+					orderNumber: "BNS-2610-000002",
+					paymentStatus: "paid",
+					timestamps: { placedAt: at(-2 * HOUR) },
+				}),
+			],
+			items: [baseItem()],
+			variants: [baseVariant({ stockOnHand: 5, stockReserved: 1 })],
+		});
+
+		const first = await expireOrders(payload);
+		const second = await expireOrders(payload);
+
+		expect(first).toMatchObject({ paymentExpired: 1, errors: 0 });
+		expect(second).toMatchObject({ paymentExpired: 0, errors: 0 });
+		const dead = liveOrder(payload);
+		expect([dead.status, dead.paymentStatus]).toEqual(["cancelled", "failed"]);
+		expect(releases(payload).map((row) => row.order)).toEqual(["order-1"]);
+		expect(statusOf(payload, "order-2")).toBe("accepted");
+	});
+
 	it("times out a paid mobile_money order at acceptBy with seller_timeout, and reminds before it", async () => {
 		const paid = (overrides: Doc) =>
 			baseOrder({

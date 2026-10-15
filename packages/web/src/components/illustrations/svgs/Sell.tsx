@@ -187,7 +187,7 @@ export default function Sell({ color = B.base, size = 200 }: Props) {
 				strokeWidth={2}
 				strokeLinecap="round"
 			/>
-			{/* XAF on coin */}
+			{/* currency on coin */}
 			<ellipse cx={50} cy={115} rx={12} ry={4} fill={Y.base} opacity={0.3} />
 
 			{/* Floating coin particles */}
@@ -252,7 +252,7 @@ export default function Sell({ color = B.base, size = 200 }: Props) {
 				{/* Amount */}
 				<rect x={80} y={96} width={40} height={10} rx={5} fill={Y.base} />
 				<rect x={82} y={112} width={36} height={6} rx={3} fill={Y.light} />
-				{/* XAF */}
+				{/* currency */}
 				<rect x={84} y={124} width={32} height={6} rx={3} fill={Y.mid} />
 				{/* Tag shine */}
 				<APath

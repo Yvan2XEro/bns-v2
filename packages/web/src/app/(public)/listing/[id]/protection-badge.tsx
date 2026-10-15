@@ -3,6 +3,7 @@
 import { ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { protectionBadgeCopy } from "~/lib/payment-disclosure";
 
 /**
@@ -17,7 +18,12 @@ export function ProtectionBadge() {
 	const t = useTranslations("Payments");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const { buyerProtection } = useAppConfig();
-	const { rate, min } = protectionBadgeCopy(buyerProtection, locale);
+	const formatOrderMoney = useOrderMoney();
+	const { rate, min } = protectionBadgeCopy(
+		buyerProtection,
+		locale,
+		formatOrderMoney,
+	);
 	return (
 		<div className="mt-4 flex items-start gap-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-sm">
 			<ShieldCheck

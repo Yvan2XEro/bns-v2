@@ -173,6 +173,7 @@ const world = () =>
 			orders: [
 				{
 					id: "order-1",
+					amounts: { currency: "XAF" },
 					status: "completed",
 					completionHold: null,
 					timestamps: {

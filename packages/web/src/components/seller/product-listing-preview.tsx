@@ -1,10 +1,11 @@
 "use client";
 
 import { ImageIcon } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { Control } from "react-hook-form";
 import { useWatch } from "react-hook-form";
-import { formatXafRange } from "~/lib/money";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { formatOrderMoneyRange } from "~/lib/order-money";
 import { type ProductFormState, parseAmount } from "~/lib/product-form";
 
 /**
@@ -18,7 +19,7 @@ export function ProductListingPreview({
 	control: Control<ProductFormState>;
 }) {
 	const t = useTranslations("ProductEditor");
-	const locale = useLocale();
+	const formatOrderMoney = useOrderMoney();
 	// Named fields, not the whole form: only what the card actually draws.
 	const [
 		title,
@@ -66,7 +67,11 @@ export function ProductListingPreview({
 				<div className="p-3">
 					<p className="font-bold text-[#0F172A] text-lg">
 						{prices.length > 0
-							? formatXafRange(Math.min(...prices), Math.max(...prices), locale)
+							? formatOrderMoneyRange(
+									formatOrderMoney,
+									Math.min(...prices),
+									Math.max(...prices),
+								)
 							: "—"}
 					</p>
 					<p className="text-[#334155] text-sm">

@@ -21,13 +21,14 @@ import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type { Category, ListingDoc, UserDoc } from "@/src/types/api";
 
 export default function ModerateListingScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const c = useModerationTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { centeredContent } = useResponsive();
 	const { showError, showSuccess } = useAlert();
 	const [rejecting, setRejecting] = useState(false);
@@ -140,7 +141,7 @@ export default function ModerateListingScreen() {
 							</Text>
 							{typeof data.price === "number" ? (
 								<Text style={[styles.price, { color: c.primary }]}>
-									{data.price.toLocaleString()} {t("currency.xaf")}
+									{formatPrice(data.price, i18n.language)}
 								</Text>
 							) : null}
 							{category ? (

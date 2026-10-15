@@ -1,4 +1,5 @@
 import { FlashList } from "@shopify/flash-list";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -17,6 +18,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
 import { usePurchases } from "@/src/hooks/usePurchases";
 import { resolveErrorMessage } from "@/src/lib/apiError";
+import { withGroupHeaders } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	PURCHASE_TAB_LABEL_KEYS,
@@ -24,6 +26,28 @@ import {
 	type PurchaseTab,
 	purchaseTab,
 } from "@/src/lib/purchaseActions";
+
+function GroupHeader({ checkoutGroup }: { checkoutGroup: string }) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	return (
+		<Pressable
+			onPress={() =>
+				router.push({
+					pathname: "/purchases/group/[group]",
+					params: { group: checkoutGroup },
+				})
+			}
+			accessibilityRole="button"
+			accessibilityLabel={t("checkoutGroup.openGroup")}
+			style={styles.groupHeader}
+		>
+			<Text style={[styles.groupHeaderText, { color: c.primary }]}>
+				{t("checkoutGroup.purchasesHeader")}
+			</Text>
+		</Pressable>
+	);
+}
 
 export default function PurchasesScreen() {
 	const c = useShopTheme();
@@ -36,6 +60,7 @@ export default function PurchasesScreen() {
 	const entries = all.filter((entry) => purchaseTab(entry.status) === tab);
 	const countOf = (key: PurchaseTab) =>
 		all.filter((entry) => purchaseTab(entry.status) === key).length;
+	const items = withGroupHeaders(entries);
 	const nothingYet =
 		purchases.isSuccess &&
 		!purchases.hasNextPage &&
@@ -75,9 +100,20 @@ export default function PurchasesScreen() {
 				<EmptyState illustration="empty" title={t("purchases.empty")} />
 			) : (
 				<FlashList
-					data={entries}
-					keyExtractor={(entry) => entry.id}
-					renderItem={({ item }) => <PurchaseRow entry={item} />}
+					data={items}
+					keyExtractor={(item) =>
+						item.kind === "header"
+							? `group:${item.checkoutGroup}`
+							: item.entry.id
+					}
+					getItemType={(item) => item.kind}
+					renderItem={({ item }) =>
+						item.kind === "header" ? (
+							<GroupHeader checkoutGroup={item.checkoutGroup} />
+						) : (
+							<PurchaseRow entry={item.entry} />
+						)
+					}
 					contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
 					ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
 					refreshControl={
@@ -138,5 +174,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 12,
 	},
+	groupHeader: { minHeight: 44, justifyContent: "center" },
+	groupHeaderText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	moreText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 });

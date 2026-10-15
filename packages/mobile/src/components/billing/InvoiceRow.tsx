@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { isPayable } from "@/src/lib/billing";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
+import { formatOrderDate } from "@/src/lib/orderMoney";
 import type { CommissionInvoiceView } from "@/src/types/order";
 import { billingStyles as s } from "./billingStyles";
 import { InvoiceStatusBadge } from "./InvoiceStatusBadge";
@@ -60,7 +61,7 @@ export function InvoiceRow({
 							})}
 				</Text>
 				<Text style={[s.cardTitle, { color: c.text }]}>
-					{formatXaf(invoice.totalDue, locale)}
+					{formatPrice(invoice.totalDue, locale)}
 				</Text>
 			</Pressable>
 			{isPayable(invoice.status) ? (

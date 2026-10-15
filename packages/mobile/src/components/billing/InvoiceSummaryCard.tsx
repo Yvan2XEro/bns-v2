@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { INVOICE_LINE_KIND_KEYS } from "@/src/lib/billing";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { CommissionInvoiceView } from "@/src/types/order";
 import { billingStyles as s } from "./billingStyles";
 import { useLocaleKey } from "./useLocaleKey";
@@ -28,7 +28,7 @@ export function InvoiceSummaryCard({
 				{label}
 			</Text>
 			<Text style={[strong ? s.cardTitle : s.body, { color: c.text }]}>
-				{formatXaf(amount, locale)}
+				{formatPrice(amount, locale)}
 			</Text>
 		</View>
 	);
@@ -55,7 +55,7 @@ export function InvoiceSummaryCard({
 								</Text>
 							</View>
 							<Text style={[s.body, { color: c.text }]}>
-								{formatXaf(line.amount, locale)}
+								{formatPrice(line.amount, locale)}
 							</Text>
 						</View>
 					))}

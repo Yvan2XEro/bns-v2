@@ -1,6 +1,7 @@
 import type { CollectionConfig } from "payload";
 import { isModerator } from "../access/roles";
 import { nobody } from "../access/staff";
+import { formatSnapshotField } from "./fields/formatSnapshot";
 
 export const BUYER_FEE_INVOICE_KINDS = ["invoice", "credit_note"] as const;
 
@@ -58,6 +59,8 @@ export const BuyerFeeInvoices: CollectionConfig = {
 		{ name: "vat", type: "number", required: true },
 		{ name: "amountTtc", type: "number", required: true },
 		{ name: "vatRateBps", type: "number", required: true },
+		{ name: "currency", type: "text", required: true },
+		formatSnapshotField,
 		// Bilingual FR/EN (Law 2011/012 art. 6).
 		{ name: "pdf", type: "upload", relationTo: "buyer-fee-invoice-files" },
 		{ name: "issuedAt", type: "date", required: true },

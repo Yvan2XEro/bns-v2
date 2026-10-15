@@ -1,3 +1,12 @@
+/**
+ * COMPAT SHIM, removed with the P10 literals guard (Task 25's release): the
+ * market-cities collection is the source of truth. `LAUNCH_CITIES` stays as
+ * SEED DATA ONLY (Task 7 seeds the CM rows from it); read cities through
+ * `lib/marketCities.ts`. The sync predicates below serve the callers not yet
+ * migrated and are deleted with the file.
+ */
+import type { MarketCity } from "../contracts/marketCity";
+
 export type LaunchCityKey = "douala" | "yaounde";
 
 export interface LaunchCity {
@@ -156,4 +165,21 @@ export function districtLabel(key: string): string | null {
 		return isLaunchCityKey(city) ? "Autre" : null;
 	}
 	return DISTRICT_LABELS[key] ?? null;
+}
+
+/** The seed constants as `market-cities` rows for one market. */
+export function launchCitySeedRows(market: string): MarketCity[] {
+	return LAUNCH_CITY_KEYS.map((key, index) => ({
+		id: `${market}:${key}`,
+		market,
+		key,
+		label: LAUNCH_CITIES[key].label,
+		defaultDeliveryFee: LAUNCH_CITIES[key].defaultDeliveryFee,
+		districts: LAUNCH_CITIES[key].districts.map((slug) => ({
+			slug,
+			label: DISTRICT_LABELS[`${key}.${slug}`] ?? slug,
+		})),
+		active: true,
+		sortOrder: index,
+	}));
 }

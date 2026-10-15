@@ -4,13 +4,16 @@
  * Clients fetch this once at startup to avoid baking keys into builds.
  */
 import config from "@payload-config";
-import { getPayload } from "payload";
+import { getPayload, type Payload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
+import type { MarketConfig } from "@/contracts/marketConfig";
 import { BOOST_PRICING } from "@/lib/boostPricing";
 import { getDisputeSettings, isDisputesOpen } from "@/lib/caseSettings";
 import { getDeliverySettings } from "@/lib/deliverySettings";
 import { LAUNCH_CITIES } from "@/lib/launchCities";
+import { getMarketCities } from "@/lib/marketCities";
+import { getMarkets, marketIsOpen } from "@/lib/markets";
 import { getOrderSettings } from "@/lib/orderSettings";
 import {
 	getPaymentSettings,
@@ -37,6 +40,7 @@ export async function GET(request?: Request) {
 	let launchCities: Array<{ key: string; label: string; fee: number }> = [];
 	let withdrawalDays = 15;
 	let protectedPaymentEnabled = false;
+	let legacyMarketCountries: string[] = [];
 	let buyerProtection = PAYMENT_DEFAULTS.buyerProtection;
 	let checkoutExpiryMinutes = PAYMENT_DEFAULTS.checkoutExpiryMinutes;
 	let disputesEnabled = false;
@@ -46,9 +50,11 @@ export async function GET(request?: Request) {
 	let intercityEnabled = false;
 	let resaleEnabled = false;
 	let resalePrepaidEnabled = false;
+	let payloadRef: Payload | undefined;
 
 	try {
 		const payload = await getPayload({ config });
+		payloadRef = payload;
 		const settings = await payload.findGlobal({ slug: "app-settings" });
 		insightsEnabled = settings.insights?.enabled ?? false;
 		const deliverySettings = await getDeliverySettings(payload);
@@ -88,8 +94,13 @@ export async function GET(request?: Request) {
 		}));
 		withdrawalDays = orderSettings.withdrawalDays;
 		const paymentSettings = await getPaymentSettings(payload);
+		legacyMarketCountries = paymentSettings.markets.map((m) => m.countryCode);
 		const country =
-			(request && new URL(request.url).searchParams.get("country")) ||
+			(request &&
+				new URL(request.url).searchParams
+					.get("country")
+					?.trim()
+					.toUpperCase()) ||
 			paymentSettings.markets[0]?.countryCode;
 		protectedPaymentEnabled =
 			country !== undefined && isProtectedPaymentOpen(paymentSettings, country);
@@ -110,6 +121,87 @@ export async function GET(request?: Request) {
 		intercityEnabled = false;
 		resaleEnabled = false;
 		resalePrepaidEnabled = false;
+	}
+
+	// Presentation only: the query never reaches a charge, and a country that
+	// is not a live market is never replaced by another one.
+	const requested = request
+		? new URL(request.url).searchParams.get("country")?.trim().toUpperCase()
+		: undefined;
+	let market: MarketConfig | undefined;
+	if (payloadRef) {
+		try {
+			const registry = await getMarkets(payloadRef);
+			const found = requested
+				? registry.find((m) => m.countryCode === requested)
+				: registry[0];
+			if (found?.status === "live") {
+				const rows = await getMarketCities(payloadRef, found);
+				// Released clients read the flat list; it is the market's rows now.
+				launchCities = rows.map((city) => ({
+					key: city.key,
+					label: city.label,
+					fee: city.defaultDeliveryFee,
+				}));
+				if (requested) {
+					const open = (
+						feature: Parameters<typeof marketIsOpen>[1],
+						on: boolean,
+					) => marketIsOpen(found, feature, on);
+					market = {
+						countryCode: found.countryCode,
+						name: found.name,
+						currency: {
+							code: found.currency.code,
+							minorUnit: found.currency.minorUnit,
+						},
+						formats: found.formats,
+						phone: found.phone,
+						cities: rows.map((city) => ({
+							key: city.key,
+							label: city.label,
+							districts: city.districts.map(({ slug, label }) => ({
+								key: slug,
+								label,
+							})),
+							fee: city.defaultDeliveryFee,
+						})),
+						features: {
+							cod: open("cod", ordersEnabled),
+							protectedPayment: open(
+								"protectedPayment",
+								protectedPaymentEnabled,
+							),
+							deliveryZones: open("deliveryZones", deliveryZonesEnabled),
+							couriers: open("couriers", couriersEnabled),
+							disputes: open("disputes", disputesEnabled),
+							resale: open("resale", resaleEnabled),
+							resalePrepaid: open("resalePrepaid", resalePrepaidEnabled),
+							boosts: open("boosts", true),
+						},
+						languages: found.languages,
+					};
+				}
+			} else if (
+				requested &&
+				!(registry.length === 0 && legacyMarketCountries.includes(requested))
+				// Pre-migration the registry is empty and the legacy settings are
+				// the authority: a country they know keeps its answers; the
+				// zeroing below is for a country nobody knows (the spoof rule).
+			) {
+				ordersEnabled = false;
+				launchCities = [];
+				protectedPaymentEnabled = false;
+				disputesEnabled = false;
+				deliveryZonesEnabled = false;
+				couriersEnabled = false;
+				intercityEnabled = false;
+				resaleEnabled = false;
+				resalePrepaidEnabled = false;
+			}
+		} catch {
+			// An unreadable registry leaves the legacy answer; the block stays absent.
+		}
 	}
 
 	return Response.json({
@@ -138,5 +230,6 @@ export async function GET(request?: Request) {
 		intercityEnabled,
 		resaleEnabled,
 		resalePrepaidEnabled,
+		...(market ? { market } : {}),
 	});
 }

@@ -4,9 +4,9 @@ import { ExternalLink, Phone } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useShipmentRemittance } from "~/hooks/use-shop-shipments";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatXaf } from "~/lib/order-money";
 import {
 	gpsLink,
 	panelActions,
@@ -97,6 +97,7 @@ export function ShipmentCard({
 	cod: boolean;
 	now: Date;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerShipments");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
@@ -151,7 +152,7 @@ export function ShipmentCard({
 			{cash?.expectedAmount != null && (
 				<p className="text-[#334155] text-sm">
 					{t("cod", {
-						amount: formatXaf(cash.expectedAmount, locale),
+						amount: formatOrderMoney(cash.expectedAmount, locale),
 						status: t(
 							`remittance.${cash.remittanceStatus ?? "not_applicable"}`,
 						),

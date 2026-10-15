@@ -22,6 +22,7 @@ import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import i18n, { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 
 function getErrorMessage(error: unknown, fallback: string): string {
 	// `error instanceof Error` was always true for a failed request, so the
@@ -415,7 +416,7 @@ export default function SecurityScreen() {
 						label={t("settings.phoneNumberLabel")}
 						value={phoneInput}
 						onChange={setPhoneInput}
-						placeholder={t("settings.phoneNumberPlaceholder")}
+						placeholder={phoneExample()}
 						icon="call-outline"
 						{...fieldColors}
 					/>

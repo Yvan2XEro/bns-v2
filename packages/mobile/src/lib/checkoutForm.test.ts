@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
 	LAUNCH_CITY_KEYS as API_LAUNCH_CITY_KEYS,
 	districtKeysOf as apiDistrictKeysOf,
@@ -20,6 +20,11 @@ import {
 	phoneFromTyping,
 	toAddressInput,
 } from "./checkoutForm";
+import { setMarket } from "./market";
+import { marketFixture } from "./market.fixture.test";
+
+beforeAll(() => setMarket(marketFixture()));
+afterAll(() => setMarket(undefined));
 
 const CITIES = ["douala", "yaounde"] as const;
 
@@ -55,7 +60,7 @@ describe("the address schema mirrors parseDeliveryAddress", () => {
 			"recipientName",
 		]);
 	});
-	test("phone: only a +2376 mobile in E.164", () => {
+	test("phone: only a mobile matching the served market pattern", () => {
 		expect(issues({ phone: "+237677000000" })).toEqual([]);
 		expect(issues({ phone: "+237222123456" })).toEqual(["phone"]);
 		expect(issues({ phone: "+23769912440" })).toEqual(["phone"]);

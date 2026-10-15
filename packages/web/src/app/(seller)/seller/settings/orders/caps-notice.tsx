@@ -2,7 +2,7 @@
 
 import { Info } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { OrderSettingsView } from "~/types/order";
 
@@ -12,6 +12,7 @@ export function CapsNotice({
 }: {
 	caps: NonNullable<OrderSettingsView["caps"]>;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Billing");
 	const locale = useLocaleKey();
 
@@ -31,7 +32,7 @@ export function CapsNotice({
 				<ul className="list-disc space-y-0.5 pl-4 text-[#1E3A8A]">
 					<li>
 						{t("capsMaxOrderTotal", {
-							amount: formatXaf(caps.maxOrderTotal, locale),
+							amount: formatOrderMoney(caps.maxOrderTotal, locale),
 						})}
 					</li>
 					<li>{t("capsMaxDailyOrders", { count: caps.maxDailyOrders })}</li>

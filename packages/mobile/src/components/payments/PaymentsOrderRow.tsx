@@ -3,7 +3,8 @@ import { billingStyles as s } from "@/src/components/billing/billingStyles";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
+import { formatOrderDate } from "@/src/lib/orderMoney";
 import { statusLabelKey } from "@/src/lib/orderStatus";
 import type { SellerPaymentsOrderRow } from "@/src/types/order";
 
@@ -11,7 +12,7 @@ export function PaymentsOrderRow({ order }: { order: SellerPaymentsOrderRow }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const locale = useLocaleKey();
-	const money = (value: number) => formatXaf(value, locale);
+	const money = (value: number) => formatPrice(value, locale);
 
 	return (
 		<View

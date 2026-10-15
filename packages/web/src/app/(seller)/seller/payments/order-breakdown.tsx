@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import { sellerOrderRows } from "~/lib/seller-payments-view";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { SellerPaymentOrderRow } from "~/types/payments";
@@ -12,6 +13,7 @@ export function OrderBreakdown({
 }: {
 	orders: readonly SellerPaymentOrderRow[];
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
 	const locale = useLocaleKey();
 	const rows = sellerOrderRows(orders);
@@ -50,19 +52,19 @@ export function OrderBreakdown({
 									{row.orderNumber}
 								</td>
 								<td className="px-4 py-3 text-[#334155]">
-									{formatXaf(row.goods, locale)}
+									{formatOrderMoney(row.goods, locale)}
 								</td>
 								<td className="px-4 py-3 text-[#334155]">
-									{formatXaf(row.delivery, locale)}
+									{formatOrderMoney(row.delivery, locale)}
 								</td>
 								<td className="px-4 py-3 text-[#334155]">
-									{formatXaf(row.commissionHt, locale)}
+									{formatOrderMoney(row.commissionHt, locale)}
 								</td>
 								<td className="px-4 py-3 text-[#334155]">
-									{formatXaf(row.vat, locale)}
+									{formatOrderMoney(row.vat, locale)}
 								</td>
 								<td className="px-4 py-3 font-semibold text-[#0F172A]">
-									{formatXaf(row.netToYou, locale)}
+									{formatOrderMoney(row.netToYou, locale)}
 								</td>
 								<td className="px-4 py-3">
 									<OrderStatusLabel status={row.status} />

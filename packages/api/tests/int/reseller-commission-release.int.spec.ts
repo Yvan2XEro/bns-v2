@@ -22,6 +22,7 @@ const baseData = (invoiceStatus: string, activeReturn = false) => ({
 	orders: [
 		{
 			id: "order-1",
+			amounts: { currency: "XAF" },
 			status: "completed",
 			completionHold: null,
 			timestamps: { deliveredAt: "2026-08-01T00:00:00.000Z" },

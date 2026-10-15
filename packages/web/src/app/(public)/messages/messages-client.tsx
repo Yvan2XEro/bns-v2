@@ -45,6 +45,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { useAuth } from "~/hooks/use-auth";
 import { useMyShops } from "~/hooks/use-my-shops";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useMarkConversationRead } from "~/hooks/use-shop-inbox";
 import { blockUser, deleteConversation, unblockUser } from "~/lib/actions";
 import {
@@ -122,6 +123,7 @@ export function MessagesClient({
 }: MessagesClientProps) {
 	const { token } = useAuth();
 	const t = useTranslations("Messages");
+	const formatOrderMoney = useOrderMoney();
 	const myShops = useMyShops();
 	const markRead = useMarkConversationRead();
 	const [conversations, setConversations] = useState(initialConversations);
@@ -810,7 +812,7 @@ export function MessagesClient({
 																<p
 																	className={`text-xs ${isOwn ? "text-white/80" : "text-[#1E40AF]"}`}
 																>
-																	{msgListing.price.toLocaleString()} XAF
+																	{formatOrderMoney(msgListing.price)}
 																</p>
 															)}
 														</div>
@@ -869,7 +871,7 @@ export function MessagesClient({
 												</p>
 												{attachedListing.price != null && (
 													<p className="text-[#1E40AF] text-xs">
-														{attachedListing.price.toLocaleString()} XAF
+														{formatOrderMoney(attachedListing.price)}
 													</p>
 												)}
 											</div>

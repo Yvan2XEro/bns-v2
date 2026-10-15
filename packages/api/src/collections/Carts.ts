@@ -1,4 +1,5 @@
 import type { CollectionConfig } from "payload";
+import { marketField } from "./fields/formatSnapshot";
 
 export const CART_STATUSES = ["active", "converted", "abandoned"] as const;
 
@@ -34,6 +35,7 @@ export const Carts: CollectionConfig = {
 			required: true,
 			index: true,
 		},
+		marketField,
 		{
 			name: "status",
 			type: "select",

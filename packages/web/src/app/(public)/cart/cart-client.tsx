@@ -12,6 +12,7 @@ import {
 	useRemoveCartItem,
 	useSetCartItemQuantity,
 } from "~/hooks/use-cart";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
 	type AddToCartRequest,
@@ -20,8 +21,9 @@ import {
 	type SingleShopConflict,
 	singleShopConflict,
 } from "~/lib/cart-lines";
-import { formatXaf } from "~/lib/order-money";
+import { isSplitCart } from "~/lib/checkout-group-flow";
 import type { CartView } from "~/types/order";
+import { CartGroups } from "./cart-groups";
 import { CartLine } from "./cart-line";
 import { SingleShopDialog } from "./single-shop-dialog";
 
@@ -132,7 +134,26 @@ export function CartClient({
 				</p>
 			) : null}
 
-			{view.lines.length === 0 ? (
+			{isSplitCart(view) ? (
+				view.groups.length === 0 ? (
+					emptyState
+				) : (
+					<CartGroups
+						cart={view}
+						locale={locale}
+						busy={busy}
+						onQuantity={(lineId, quantity) =>
+							run(() => setQuantity.mutateAsync({ lineId, quantity }))
+						}
+						onRemoveLine={(lineId) => run(() => remove.mutateAsync(lineId))}
+						onRemoveGroup={(lineIds) =>
+							run(async () => {
+								for (const lineId of lineIds) await remove.mutateAsync(lineId);
+							})
+						}
+					/>
+				)
+			) : view.lines.length === 0 ? (
 				emptyState
 			) : (
 				<>
@@ -185,6 +206,7 @@ function CartSummary({
 	cart: CartView;
 	locale: "fr" | "en";
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Cart");
 	const totals = cartTotals(cart.lines);
 	const ready = canCheckout(cart);
@@ -196,7 +218,7 @@ function CartSummary({
 					{t("subtotal")} · {t("itemCount", { count: totals.itemCount })}
 				</span>
 				<span className="font-bold text-[#0F172A] text-xl">
-					{formatXaf(totals.subtotal, locale)}
+					{formatOrderMoney(totals.subtotal, locale)}
 				</span>
 			</div>
 			{totals.priceChangedCount > 0 ? (

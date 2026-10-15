@@ -1,6 +1,12 @@
 import type { CaseBasis } from "../contracts/caseRules";
+import {
+	type LocalDay,
+	localDateAt,
+	localParts,
+	shiftDays,
+} from "./marketTime";
 import { vatOf } from "./orderMath";
-import { roundXaf } from "./paymentMath";
+import { roundMinor } from "./paymentMath";
 
 export {
 	type CaseBasis,
@@ -8,7 +14,6 @@ export {
 	type DeductionAllowedResult,
 	deductionAllowed,
 } from "../contracts/caseRules";
-export { roundXaf } from "./paymentMath";
 
 export interface CaseBreakdown {
 	goods: number;
@@ -149,29 +154,36 @@ export function commissionCredit({
 	commissionBase,
 	vatRateBps,
 }: CommissionCreditInput): CommissionCreditResult {
-	const creditHt = roundXaf((commissionHt * refundedGoods) / commissionBase);
+	const creditHt = roundMinor(
+		(commissionHt * refundedGoods) / commissionBase,
+		"half_up",
+	);
 	const creditVat = vatOf(creditHt, vatRateBps);
 	return { creditHt, creditVat, creditTtc: creditHt + creditVat };
 }
 
-// Same fixed UTC+1 offset as orderMath's Douala boundaries (no DST).
-const DOUALA_OFFSET_MS = 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /**
- * `days` business days (Monday-Friday, Africa/Douala) after `start`,
- * preserving the time of day. Weekends are skipped entirely, so a count
- * starting on or just before one rolls over to the following Monday.
+ * `days` business days (Monday-Friday on the order's market calendar) after
+ * `start`, preserving the local time of day. Weekends are skipped entirely,
+ * so a count starting on or just before one rolls over to the following Monday.
  */
-export function businessDaysAfter(start: Date, days: number): Date {
-	let local = start.getTime() + DOUALA_OFFSET_MS;
+export function businessDaysAfter(
+	start: Date,
+	days: number,
+	timezone: string,
+): Date {
+	if (days <= 0) return new Date(start);
+	const from = localParts(start, timezone);
+	let day: LocalDay = { year: from.year, month: from.month, day: from.day };
 	let remaining = days;
 	while (remaining > 0) {
-		local += DAY_MS;
-		const dayOfWeek = new Date(local).getUTCDay();
-		if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-			remaining--;
-		}
+		day = shiftDays(day, 1);
+		const weekday = localParts(
+			localDateAt(day, 12, 0, timezone),
+			timezone,
+		).weekday;
+		if (weekday !== "sat" && weekday !== "sun") remaining--;
 	}
-	return new Date(local - DOUALA_OFFSET_MS);
+	const sameMinute = localDateAt(day, from.hour, from.minute, timezone);
+	return new Date(sameMinute.getTime() + (start.getTime() % 60_000));
 }

@@ -23,7 +23,7 @@ import {
 	usePurchaseOrderAction,
 } from "@/src/hooks/usePurchaseOrders";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 
 type Side = "supplier" | "reseller";
 type SupplierCancelReason =
@@ -132,11 +132,11 @@ export default function ResalePurchaseOrderDetailScreen() {
 					</Text>
 					<Text style={[styles.amount, { color: c.text }]}>
 						{t("sellerResale.collectAmount")}:{" "}
-						{formatXaf(order.collectAmount, locale)}
+						{formatPrice(order.collectAmount, locale)}
 					</Text>
 					{order.supplierAmount !== null ? (
 						<Text style={[styles.body, { color: c.body }]}>
-							{formatXaf(order.supplierAmount, locale)}
+							{formatPrice(order.supplierAmount, locale)}
 						</Text>
 					) : null}
 				</Card>
@@ -328,10 +328,10 @@ export default function ResalePurchaseOrderDetailScreen() {
 							}
 							keyboardType="number-pad"
 							placeholder={t("sellerResale.failedDeliveryCost", {
-								max: formatXaf(order.deliveryFee, locale),
+								max: formatPrice(order.deliveryFee, locale),
 							})}
 							accessibilityLabel={t("sellerResale.failedDeliveryCost", {
-								max: formatXaf(order.deliveryFee, locale),
+								max: formatPrice(order.deliveryFee, locale),
 							})}
 							style={[styles.input, { color: c.text, borderColor: c.border }]}
 						/>

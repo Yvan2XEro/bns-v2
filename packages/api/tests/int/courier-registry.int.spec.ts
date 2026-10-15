@@ -53,6 +53,7 @@ const quote = {
 		district: "akwa",
 	},
 	parcel: { itemsCount: 1, weightGrams: 800, declaredValue: 10000 },
+	currency: "XAF",
 	readyAt: new Date("2026-10-04T09:00:00.000Z"),
 };
 

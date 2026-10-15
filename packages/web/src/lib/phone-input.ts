@@ -16,7 +16,7 @@ export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
  * this never writes back. Numbers already on file predate the control and
  * are not normalized by the server, so they arrive in whatever shape an
  * older screen produced (`+237 6 99 12 44 08`, `699124408`,
- * `00237699124408`, or already `+237699124408`). Parsed under the default
+ * `00237699124408`, or already in E.164). Parsed under the default
  * country, every one of those shapes resolves to the same number, so the
  * field shows one consistent thing regardless of which shape is on file —
  * and the outer form's held value is untouched until somebody edits it, so

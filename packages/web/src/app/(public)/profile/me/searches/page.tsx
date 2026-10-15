@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "~/components/ui/badge";
 import { deleteSavedSearch, toggleSearchAlert } from "~/lib/actions";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
+import { getMarket } from "~/lib/server-shop";
 import type { User } from "~/types";
 
 interface SavedSearch {
@@ -93,7 +94,10 @@ export default async function SavedSearchesPage() {
 	const user = (await getAuthUser()) as User | null;
 	if (!user) return redirect("/login");
 
-	const searches = await getSavedSearches();
+	const [searches, market] = await Promise.all([
+		getSavedSearches(),
+		getMarket(),
+	]);
 
 	return (
 		<div className="min-h-screen bg-[#F8FAFC]">
@@ -162,7 +166,8 @@ export default async function SavedSearchesPage() {
 													search.filters?.maxPrice) && (
 													<Badge variant="secondary" className="text-xs">
 														{search.filters.minPrice || "0"} -{" "}
-														{search.filters.maxPrice || "..."} XAF
+														{search.filters.maxPrice || "..."}{" "}
+														{market?.currency.code}
 													</Badge>
 												)}
 												<span className="text-[#94A3B8] text-xs">

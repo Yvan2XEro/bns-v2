@@ -8,7 +8,6 @@
  */
 
 import { z } from "zod";
-import { CHECKOUT_PHONE_PATTERN } from "./checkout-form";
 import {
 	PAYMENT_CHANNEL_LABELS,
 	type PaymentChannel,
@@ -165,12 +164,14 @@ export const PAYMENT_CHANNELS = Object.keys(
 	PAYMENT_CHANNEL_LABELS,
 ) as PaymentChannel[];
 
-export const payAttemptSchema = z.object({
-	channel: z.enum(PAYMENT_CHANNELS as [PaymentChannel, ...PaymentChannel[]]),
-	phone: z.string().regex(CHECKOUT_PHONE_PATTERN),
-});
+export function payAttemptSchema(phonePattern: RegExp) {
+	return z.object({
+		channel: z.enum(PAYMENT_CHANNELS as [PaymentChannel, ...PaymentChannel[]]),
+		phone: z.string().regex(phonePattern),
+	});
+}
 
-export type PayAttemptValues = z.infer<typeof payAttemptSchema>;
+export type PayAttemptValues = z.infer<ReturnType<typeof payAttemptSchema>>;
 
 // ─── The failed screen ────────────────────────────────────────────────────────
 

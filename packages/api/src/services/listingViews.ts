@@ -1,5 +1,7 @@
 import { createHmac } from "node:crypto";
 import type { Payload } from "payload";
+import { timezoneOfShop } from "../lib/markets";
+import { LEGACY_TIMEZONE, localDateString } from "../lib/marketTime";
 import {
 	type CounterStore,
 	getCounterStore,
@@ -27,19 +29,6 @@ function keyedHash(value: string): string {
 		throw new Error("A 32-character server secret is required for view keys.");
 	}
 	return createHmac("sha256", secret).update(value).digest("hex").slice(0, 32);
-}
-
-function doualaDate(date: Date): string {
-	const parts = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).formatToParts(date);
-	const values = Object.fromEntries(
-		parts.map(({ type, value }) => [type, value]),
-	);
-	return `${values.year}-${values.month}-${values.day}`;
 }
 
 async function isShopMember(
@@ -113,7 +102,20 @@ export async function countListingView(
 	const dedupeKey = `view:dedupe:${listing.id}:${viewerKey}`;
 	const reserved = await store.setIfAbsent(dedupeKey, "1", DEDUPE_TTL_SECONDS);
 	if (!reserved) return { counted: false };
-	const date = doualaDate(now);
+	const shop = shopId
+		? await payload
+				.findByID({
+					collection: "shops",
+					id: shopId,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null)
+		: null;
+	const date = localDateString(
+		now,
+		shop ? await timezoneOfShop(payload, shop) : LEGACY_TIMEZONE,
+	);
 	await store.incrementHash(
 		`stats:views:${date.replaceAll("-", "")}`,
 		String(listing.id),

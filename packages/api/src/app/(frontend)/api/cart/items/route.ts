@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
-import { addCartItem } from "@/services/cart";
+import { addCartItemResponse } from "@/services/cart";
 
 // Shape only: whether the quantity is in range stays `addCartItem`'s own
 // business rule (`cart.quantityInvalid`), not a zod bound here.
@@ -20,9 +20,12 @@ export async function POST(request: Request) {
 	if (!body.success) return errorResponse(ERROR_CODES.badRequest, 400);
 
 	try {
-		return Response.json(await addCartItem(ctx.payload, ctx.user, body.data), {
-			status: 201,
-		});
+		return Response.json(
+			await addCartItemResponse(ctx.payload, ctx.user, body.data),
+			{
+				status: 201,
+			},
+		);
 	} catch (error) {
 		return handleServiceError("cart:items:add", error);
 	}

@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
+import { formatOrderDate } from "@/src/lib/orderMoney";
 import {
 	type PurchaseStatusTone,
 	purchaseStatusKey,
@@ -94,7 +95,7 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 					{entry.orderNumber} · {formatOrderDate(entry.placedAt, lang)}
 				</Text>
 				<Text style={[styles.total, { color: c.text }]}>
-					{formatXaf(entry.total, lang)}
+					{formatPrice(entry.total, lang)}
 					<Text style={[styles.meta, { color: c.muted }]}>
 						{" · "}
 						{t("purchases.itemCount", { count: entry.itemCount })}

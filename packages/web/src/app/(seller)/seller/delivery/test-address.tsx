@@ -6,10 +6,10 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useTestAddress } from "~/hooks/use-delivery-settings";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { DISTRICTS } from "~/lib/checkout-form";
 import { unavailableHint } from "~/lib/delivery-zone-form";
-import { formatXaf } from "~/lib/order-money";
 import { useLocaleKey } from "~/lib/use-locale-key";
 
 const SELECT_CLASS =
@@ -17,6 +17,7 @@ const SELECT_CLASS =
 
 /** Asks the quote route what a buyer at this address would be offered; nothing is saved. */
 export function TestAddress({ shopId }: { shopId: string }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerDelivery");
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
@@ -113,7 +114,7 @@ export function TestAddress({ shopId }: { shopId: string }) {
 								{t(`method.${option.method}`)} ·{" "}
 								{option.fee === 0
 									? tRoot("Checkout.free")
-									: formatXaf(option.fee, locale)}{" "}
+									: formatOrderMoney(option.fee, locale)}{" "}
 								· {option.etaText}
 								{option.codAllowed
 									? ""
@@ -126,7 +127,9 @@ export function TestAddress({ shopId }: { shopId: string }) {
 						return (
 							<p key={`${option.method}-${index}`} className="text-[#B45309]">
 								{t(`method.${option.method}`)} —{" "}
-								{tRoot(`Checkout.${hint.key}`, { amount: hint.amount })}
+								{tRoot(`Checkout.${hint.key}`, {
+									amount: formatOrderMoney(hint.amount),
+								})}
 							</p>
 						);
 					})}

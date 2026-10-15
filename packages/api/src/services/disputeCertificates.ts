@@ -1,5 +1,6 @@
 import type { PayloadRequest } from "payload";
 import { disputeCertificateLines } from "../lib/disputeCertificateDocument";
+import { moneyOfOrder } from "../lib/markets";
 import { relationId } from "../lib/relationId";
 import { renderTextPdf } from "../lib/textPdf";
 import { withTransaction } from "../lib/transactions";
@@ -92,7 +93,13 @@ export async function renderDisputeCertificate(
 				})
 			: [];
 		const document = renderTextPdf(
-			disputeCertificateLines({ dispute, order, shop, proof }),
+			disputeCertificateLines({
+				dispute,
+				order,
+				shop,
+				proof,
+				money: await moneyOfOrder(tx.payload, order),
+			}),
 		);
 		const file = await tx.payload.create({
 			collection: "dispute-evidence",

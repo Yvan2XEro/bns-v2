@@ -60,27 +60,6 @@ export function priceRange(
 	return { min: Math.min(...prices), max: Math.max(...prices) };
 }
 
-function group(amount: number, lang?: string): string {
-	const separator = lang?.startsWith("en") ? "," : " ";
-	const sign = amount < 0 ? "−" : "";
-	const digits = Math.abs(Math.round(amount)).toString();
-	return sign + digits.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
-}
-
-/** Hermes' Intl output differs by platform; grouping by hand keeps it stable. */
-export function formatXaf(amount: number, lang?: string): string {
-	return `${group(amount, lang)} XAF`;
-}
-
-export function formatXafRange(
-	min: number,
-	max: number,
-	lang?: string,
-): string {
-	if (min === max) return formatXaf(min, lang);
-	return `${group(min, lang)} – ${group(max, lang)} XAF`;
-}
-
 export function formatPercent(value: number, lang?: string): string {
 	const text = value.toFixed(1);
 	return `${lang?.startsWith("en") ? text : text.replace(".", ",")} %`;

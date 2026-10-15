@@ -66,6 +66,14 @@ describe("the error contract is the same in all three packages", () => {
 		}
 	});
 
+	it("gives each P10 code a fallback of its own", () => {
+		for (const code of P10_CODES) {
+			expect(fallbackMessage(code)).not.toBe(
+				fallbackMessage(ERROR_CODES.unknown),
+			);
+		}
+	});
+
 	it("gives each P8 code a fallback of its own", () => {
 		for (const code of P8_CODES) {
 			expect(fallbackMessage(code)).not.toBe(
@@ -274,5 +282,29 @@ describe("P8 error codes", () => {
 		expect(mobileCodes.resalePrepaidUnavailable).toBe(
 			"resale.prepaidUnavailable",
 		);
+	});
+});
+
+/** P10's error contract (task 1 brief), transcribed. */
+const P10_CODES = [
+	"market.unknown",
+	"market.notLive",
+	"market.featureClosed",
+	"cart.marketMismatch",
+	"cart.shopLimitReached",
+	"checkout.stockChanged",
+	"checkout.groupUnavailable",
+	"order.mixedFulfilment",
+] as const;
+
+describe("P10 error codes", () => {
+	it("declares all eight, every one client-facing", () => {
+		const declared = new Set(Object.values(ERROR_CODES));
+		const missing = P10_CODES.filter((code) => !declared.has(code));
+		expect(missing).toEqual([]);
+		expect(P10_CODES.length).toBe(8);
+		expect(
+			P10_CODES.filter((code) => clientFacing.includes(code)),
+		).toHaveLength(8);
 	});
 });

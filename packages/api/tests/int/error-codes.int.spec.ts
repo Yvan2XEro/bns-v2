@@ -206,3 +206,45 @@ describe("P6 error codes", () => {
 		});
 	});
 });
+
+const P10_CODES = {
+	marketUnknown: "market.unknown",
+	marketNotLive: "market.notLive",
+	marketFeatureClosed: "market.featureClosed",
+	cartMarketMismatch: "cart.marketMismatch",
+	cartShopLimitReached: "cart.shopLimitReached",
+	checkoutStockChanged: "checkout.stockChanged",
+	checkoutGroupUnavailable: "checkout.groupUnavailable",
+	orderMixedFulfilment: "order.mixedFulfilment",
+} as const;
+
+describe("P10 error codes", () => {
+	it("declares all eight", () => {
+		expect(Object.keys(P10_CODES)).toHaveLength(8);
+	});
+
+	it.each(Object.entries(P10_CODES))("defines %s as %s", (key, code) => {
+		expect(ERROR_CODES[key as keyof typeof ERROR_CODES]).toBe(code);
+	});
+
+	it.each(Object.values(P10_CODES))("gives %s its own fallback", (code) => {
+		expect(fallbackMessage(code)).not.toBe(
+			fallbackMessage(ERROR_CODES.unknown),
+		);
+	});
+
+	it("never gives two P10 codes the same fallback", () => {
+		const messages = Object.values(P10_CODES).map(fallbackMessage);
+		expect(new Set(messages).size).toBe(8);
+	});
+
+	it("builds the shared response shape", async () => {
+		const response = errorResponse(ERROR_CODES.checkoutStockChanged, 409);
+		expect(response.status).toBe(409);
+		expect(await response.json()).toEqual({
+			code: "checkout.stockChanged",
+			message:
+				"An item in your cart just sold out. Review your cart and try again.",
+		});
+	});
+});

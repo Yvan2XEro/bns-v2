@@ -5,6 +5,7 @@ import { useReturnAction } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { REFUND_METHOD_LABELS } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
+import { currencyCode, formatPrice } from "@/src/lib/market";
 import {
 	RETURN_REFUND_METHODS,
 	type ReturnRefundProofFormInput,
@@ -16,7 +17,7 @@ import { useShopTheme } from "../shop/theme";
 import { ReturnEvidenceUpload } from "./ReturnEvidenceUpload";
 
 export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const c = useShopTheme();
 	const submit = useReturnAction(view.id);
 	const form = useForm<
@@ -35,7 +36,9 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 	const send = form.handleSubmit(async (body) => {
 		if (body.amount < view.refund.amount) {
 			form.setError("amount", {
-				message: t("returns.refundTooLow", { amount: view.refund.amount }),
+				message: t("returns.refundTooLow", {
+					amount: formatPrice(view.refund.amount, i18n.language),
+				}),
 			});
 			return;
 		}
@@ -89,8 +92,12 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 				name="amount"
 				render={({ field }) => (
 					<TextInput
-						accessibilityLabel={t("returns.refundAmountLabel")}
-						placeholder={t("returns.refundAmountLabel")}
+						accessibilityLabel={t("returns.refundAmountLabel", {
+							currency: currencyCode(),
+						})}
+						placeholder={t("returns.refundAmountLabel", {
+							currency: currencyCode(),
+						})}
 						placeholderTextColor={c.muted}
 						value={field.value}
 						onBlur={field.onBlur}

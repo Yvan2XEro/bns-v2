@@ -1,4 +1,6 @@
 import type { Payload } from "payload";
+import { getMarkets } from "../lib/markets";
+import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import { relationId } from "../lib/relationId";
 import { monthKeyFor } from "./sequences";
 
@@ -25,8 +27,8 @@ function csvCell(value: string | number): string {
 }
 
 /**
- * Every `vat_payable` movement of a calendar month (Africa/Douala, the
- * invoice series' clock), one row per posting with what caused it: a
+ * Every `vat_payable` movement of a calendar month (each account's market
+ * timezone, the invoice series' clock), one row per posting with what caused it: a
  * `charge` collects the fee's VAT, `commission_earned` the commission's, a
  * refund gives VAT back and a failed refund restores it. `month` is
  * `YYYY-MM`; `currency` narrows to one market's account.
@@ -55,9 +57,22 @@ export async function vatReportCsv(
 		overrideAccess: true,
 	});
 	const currencyOf = new Map(accounts.map((a) => [String(a.id), a.currency]));
+	const timezoneOf = new Map(
+		(await getMarkets(payload)).map((m) => [m.currency.code, m.timezone]),
+	);
+	const inReportMonth = (occurredAt: string, accountId: string): boolean => {
+		const currencyCode = currencyOf.get(accountId);
+		if (!currencyCode) return false;
+		return (
+			monthKeyFor(
+				new Date(occurredAt),
+				timezoneOf.get(currencyCode) ?? LEGACY_TIMEZONE,
+			) === key
+		);
+	};
 	if (currencyOf.size === 0) return `${VAT_REPORT_HEADER.join(",")}\n`;
 
-	// A day of slack either side, then the exact month by the Douala clock.
+	// A day of slack either side, then the exact month by each account's market clock.
 	const DAY = 86_400_000;
 	const { docs: postings } = await payload.find({
 		collection: "ledger-transactions",
@@ -85,8 +100,10 @@ export async function vatReportCsv(
 		depth: 0,
 		overrideAccess: true,
 	});
-	const inMonth = postings.filter(
-		(p) => monthKeyFor(new Date(p.occurredAt)) === key,
+	const inMonth = postings.filter((p) =>
+		p.entries.some((entry) =>
+			inReportMonth(p.occurredAt, relationId(entry.account) ?? ""),
+		),
 	);
 
 	const orderIds = [
@@ -113,7 +130,8 @@ export async function vatReportCsv(
 		posting.entries.flatMap((entry) => {
 			const accountId = relationId(entry.account) ?? "";
 			const rowCurrency = currencyOf.get(accountId);
-			if (!rowCurrency) return [];
+			if (!rowCurrency || !inReportMonth(posting.occurredAt, accountId))
+				return [];
 			return [
 				[
 					new Date(posting.occurredAt).toISOString(),

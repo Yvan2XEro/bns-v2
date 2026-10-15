@@ -43,7 +43,7 @@ export function useInviteMemberForm(
 		mode: "onChange",
 		defaultValues: {
 			channel: "phone",
-			phone: "+237",
+			phone: "",
 			email: "",
 			role: roles[0] ?? "staff",
 		},

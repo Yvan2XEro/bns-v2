@@ -1,11 +1,15 @@
 // @vitest-environment node
+
 import { describe, expect, it } from "vitest";
+import { formatMoney } from "../../src/contracts/money";
 import { disputeCertificateLines } from "../../src/lib/disputeCertificateDocument";
+import { amountText } from "../../src/lib/orderFormat";
 import { renderTextPdf } from "../../src/lib/textPdf";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Dispute, Order, Shop } from "../../src/payload-types";
 import { renderDisputeCertificate } from "../../src/services/disputeCertificates";
 import { fakePayload } from "./helpers/fakePayload";
+import { cmRow, served } from "./helpers/servedMarket";
 
 const certificateDispute: Pick<Dispute, "number" | "status" | "resolution"> = {
 	number: "DSP-2610-000001",
@@ -106,6 +110,7 @@ describe("dispute decision certificate", () => {
 				order: certificateOrder,
 				shop: certificateShop,
 				proof: [{ requirement: "handover_otp_verified", established: true }],
+				money: { currency: "XAF" },
 			}),
 		).toString("latin1");
 
@@ -116,6 +121,37 @@ describe("dispute decision certificate", () => {
 			"you may take the claim to a consumer association or the courts.",
 		);
 		expect(pdf).not.toContain("Owner Private Legal Identity");
+	});
+
+	it("prints the refund in the order's market format, else with its bare currency", () => {
+		const lines = (
+			money: Parameters<typeof disputeCertificateLines>[0]["money"],
+		) =>
+			disputeCertificateLines({
+				dispute: {
+					...certificateDispute,
+					resolution: { ...certificateDispute.resolution, refundAmount: 4_500 },
+				},
+				order: certificateOrder,
+				shop: certificateShop,
+				proof: [],
+				money,
+			}).map((line) => line.text);
+		const en = served(cmRow()).formats.find((f) => f.locale === "en");
+		if (!en) throw new Error("served CM row has no en format");
+		expect(lines({ currency: "XAF", formats: [en] })).toContain(
+			`Refund / Remboursement: ${formatMoney(4_500, en)}`,
+		);
+		expect(lines({ currency: "EUR" })).toContain(
+			"Refund / Remboursement: 4500 EUR",
+		);
+	});
+
+	it("a known market with no en row prints the M9 code-first form, in major units", () => {
+		const refund = (money: Parameters<typeof amountText>[1]) =>
+			amountText(123_456, money, "en");
+		expect(refund({ currency: "GBP", minorUnit: 2 })).toBe("GBP 1 234.56");
+		expect(refund({ currency: "XAF", minorUnit: 0 })).toBe("XAF 123 456");
 	});
 
 	it("omits missing registration fields and stores a single party-visible certificate", async () => {

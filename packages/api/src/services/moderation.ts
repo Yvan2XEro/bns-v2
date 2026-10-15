@@ -2292,10 +2292,7 @@ export async function decideRiskFlag(
 					linkedActions.push(...result.moderationLogIds);
 				} else if (input.action.type === "hold_payouts") {
 					if (!isPayoutHoldReason(input.action.reason)) {
-						throw new ModerationError(
-							ERROR_CODES.moderationReasonInvalid,
-							400,
-						);
+						throw new ModerationError(ERROR_CODES.moderationReasonInvalid, 400);
 					}
 					const hold = await holdPayouts(
 						payload,

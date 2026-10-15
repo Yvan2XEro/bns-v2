@@ -25,6 +25,7 @@ import {
 	RETURN_PAYER_LABELS,
 } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import type { ReturnAction } from "../../../api/src/contracts/returns";
 
 const shipSchema = z.object({ tracking: z.string().trim().max(200) });
@@ -109,7 +110,7 @@ export default function ReturnCaseScreen() {
 						</Text>
 						<Text style={[styles.amount, { color: colors.text }]}>
 							{t("returns.refundAmount", {
-								amount: query.data.refund.amount.toLocaleString(i18n.language),
+								amount: formatPrice(query.data.refund.amount, i18n.language),
 							})}
 						</Text>
 						{query.data.reasonText ? (
@@ -203,7 +204,8 @@ export default function ReturnCaseScreen() {
 							<Text style={[styles.body, { color: colors.muted }]}>
 								{t("returns.refundProofDetail", {
 									method: query.data.refund.sellerProof.method,
-									amount: query.data.refund.sellerProof.amount.toLocaleString(
+									amount: formatPrice(
+										query.data.refund.sellerProof.amount,
 										i18n.language,
 									),
 									transactionId:

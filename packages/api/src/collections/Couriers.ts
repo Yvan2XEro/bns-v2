@@ -1,9 +1,54 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionBeforeChangeHook, CollectionConfig } from "payload";
 import { staffOnly, staffOnlyField } from "../access/staff";
 import { COURIER_PROVIDER_IDS } from "../lib/delivery/types";
 import { LAUNCH_CITY_KEYS } from "../lib/launchCities";
 
 const COURIER_SCOPES = ["same_city", "intercity"] as const;
+
+const strings = (value: unknown): string[] =>
+	Array.isArray(value)
+		? value.filter((v): v is string => typeof v === "string")
+		: [];
+
+/** Every city a courier serves, prices or reaches must be one market's active rows. */
+const refuseCitiesOutsideOneMarket: CollectionBeforeChangeHook = async ({
+	data,
+	originalDoc,
+	req,
+}) => {
+	const merged: Record<string, unknown> = { ...originalDoc, ...data };
+	const tariffs = Array.isArray(merged.tariffs) ? merged.tariffs : [];
+	const keys = new Set([
+		...strings(merged.cities),
+		...strings(merged.destinationCities),
+		...tariffs.flatMap((t: { city?: unknown } | null) =>
+			typeof t?.city === "string" ? [t.city] : [],
+		),
+	]);
+	if (keys.size === 0) return data;
+	const { docs } = await req.payload.find({
+		collection: "market-cities",
+		where: {
+			and: [{ key: { in: [...keys] } }, { active: { equals: true } }],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const perMarket = new Map<string, Set<string>>();
+	for (const doc of docs) {
+		const market = String(
+			typeof doc.market === "object" && doc.market ? doc.market.id : doc.market,
+		);
+		perMarket.set(market, (perMarket.get(market) ?? new Set()).add(doc.key));
+	}
+	if (![...perMarket.values()].some((found) => found.size === keys.size))
+		throw new Error(
+			"A courier's cities must all belong to the active cities of one market.",
+		);
+	return data;
+};
 
 export const Couriers: CollectionConfig = {
 	slug: "couriers",
@@ -20,6 +65,7 @@ export const Couriers: CollectionConfig = {
 		update: staffOnly,
 		delete: staffOnly,
 	},
+	hooks: { beforeChange: [refuseCitiesOutsideOneMarket] },
 	fields: [
 		{
 			name: "key",

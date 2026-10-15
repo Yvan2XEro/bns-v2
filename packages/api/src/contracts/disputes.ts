@@ -6,6 +6,7 @@ export interface ProofChecklistRow {
 	source: string | null;
 }
 export type ProofChecklist = ProofChecklistRow[];
+
 import type { Dispute, ShopStrike } from "../payload-types";
 
 export interface DisputeOutcomeInput {

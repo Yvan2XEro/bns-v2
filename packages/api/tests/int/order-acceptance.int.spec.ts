@@ -226,6 +226,28 @@ describe("acceptOrder", () => {
 		expect(order.status).toBe("accepted");
 		expect((await freshOrder(payload)).status).toBe("accepted");
 	});
+
+	it.each([
+		"unpaid",
+		"awaiting_payment",
+	] as const)("refuses a confirmed mobile_money zombie (%s) with order.invalidTransition, before acceptBy", async (paymentStatus) => {
+		const payload = seed({
+			order: baseOrder({
+				paymentMethod: "mobile_money",
+				paymentStatus,
+				deadlines: { acceptBy: FUTURE() },
+			}),
+		});
+		await expect(
+			acceptOrder(payload, ownerUser, "order-1"),
+		).rejects.toMatchObject({ code: "order.invalidTransition", status: 409 });
+		const order = await freshOrder(payload);
+		expect([order.status, order.paymentStatus]).toEqual([
+			"confirmed",
+			paymentStatus,
+		]);
+		expect(events(payload)).toHaveLength(0);
+	});
 });
 
 describe("declineOrder", () => {
@@ -576,6 +598,36 @@ describe("confirmBySellerCall", () => {
 		await expect(
 			confirmBySellerCall(payload, ownerUser, "order-1"),
 		).rejects.toMatchObject({ code: "order.confirmationCodeExpired" });
+		expect((await freshOrder(payload)).status).toBe("placed");
+		expect(events(payload)).toHaveLength(0);
+	});
+});
+
+describe("payment-first orders take no confirmation path", () => {
+	const protectedOrder = () =>
+		seed({
+			order: baseOrder({
+				status: "placed",
+				paymentMethod: "mobile_money",
+				paymentStatus: "unpaid",
+				deadlines: { confirmBy: FUTURE() },
+			}),
+		});
+
+	it("refuses the seller call with order.invalidTransition and leaves the order placed", async () => {
+		const payload = protectedOrder();
+		await expect(
+			confirmBySellerCall(payload, ownerUser, "order-1"),
+		).rejects.toMatchObject({ code: "order.invalidTransition", status: 409 });
+		expect((await freshOrder(payload)).status).toBe("placed");
+		expect(events(payload)).toHaveLength(0);
+	});
+
+	it("refuses the buyer's code with order.invalidTransition and leaves the order placed", async () => {
+		const payload = protectedOrder();
+		await expect(
+			confirmByBuyerCode(payload, buyerUser, "order-1", "123456"),
+		).rejects.toMatchObject({ code: "order.invalidTransition", status: 409 });
 		expect((await freshOrder(payload)).status).toBe("placed");
 		expect(events(payload)).toHaveLength(0);
 	});

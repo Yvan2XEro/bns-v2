@@ -6,17 +6,17 @@ import {
 	CHANNEL_PHONE_PREFIXES,
 	commissionVatOf,
 	phoneMatchesChannel,
-	roundXaf,
+	roundMinor,
 	splitAmounts,
 } from "../../src/lib/paymentMath";
 
-describe("roundXaf", () => {
+describe("roundMinor half_up", () => {
 	it("rounds half up at the .5 boundary", () => {
-		expect(roundXaf(0.5)).toBe(1);
-		expect(roundXaf(1.5)).toBe(2);
-		expect(roundXaf(2.5)).toBe(3);
-		expect(roundXaf(1.4999)).toBe(1);
-		expect(roundXaf(0)).toBe(0);
+		expect(roundMinor(0.5, "half_up")).toBe(1);
+		expect(roundMinor(1.5, "half_up")).toBe(2);
+		expect(roundMinor(2.5, "half_up")).toBe(3);
+		expect(roundMinor(1.4999, "half_up")).toBe(1);
+		expect(roundMinor(0, "half_up")).toBe(0);
 	});
 });
 
@@ -40,7 +40,7 @@ describe("buyerProtectionFee", () => {
 
 describe("buyerProtectionFeeVat", () => {
 	it("extracts VAT from a TTC fee by exact value", () => {
-		// 1500 - roundXaf(1500 * 10000 / 11925) = 1500 - 1258 = 242.
+		// 1500 - roundMinor(1500 * 10000 / 11925) = 1500 - 1258 = 242.
 		expect(buyerProtectionFeeVat(1_500, 1_925)).toBe(242);
 	});
 });
@@ -82,7 +82,7 @@ describe("splitAmounts", () => {
 		for (let i = 0; i < 1_000; i++) {
 			const orderTotal = Math.floor(next() * 5_000_000) + 100;
 			const rateBps = Math.floor(next() * 2_000);
-			const commission = roundXaf((orderTotal * rateBps) / 10_000);
+			const commission = roundMinor((orderTotal * rateBps) / 10_000, "half_up");
 			const vatRateBps = 1_925;
 			const protection = { bps: 300, min: 100, max: 15_000 };
 

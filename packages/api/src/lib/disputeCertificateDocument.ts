@@ -1,4 +1,6 @@
 import type { Dispute, Order, Shop } from "../payload-types";
+import type { OrderMoney } from "./markets";
+import { amountText } from "./orderFormat";
 import type { PdfLine } from "./textPdf";
 
 export interface DisputeCertificateDocumentInput {
@@ -6,6 +8,7 @@ export interface DisputeCertificateDocumentInput {
 	order: Pick<Order, "orderNumber">;
 	shop: Pick<Shop, "name" | "handle" | "legal">;
 	proof: Array<{ requirement: string; established: boolean }>;
+	money: OrderMoney;
 }
 
 const RECOURSE_FR =
@@ -18,6 +21,7 @@ export function disputeCertificateLines({
 	order,
 	shop,
 	proof,
+	money,
 }: DisputeCertificateDocumentInput): PdfLine[] {
 	const statement = dispute.resolution?.publicStatement;
 	const establishedProof = proof.filter((row) => row.established);
@@ -33,7 +37,7 @@ export function disputeCertificateLines({
 			text: `Decision / Décision: ${dispute.resolution?.outcome ?? dispute.status}`,
 		},
 		{
-			text: `Refund / Remboursement: ${dispute.resolution?.refundAmount ?? 0} XAF`,
+			text: `Refund / Remboursement: ${amountText(dispute.resolution?.refundAmount ?? 0, money, "en")}`,
 		},
 		{ text: `Shop / Boutique: ${shop.name} (@${shop.handle})`, gap: 8 },
 	];

@@ -26,12 +26,9 @@ import { usePurchase } from "@/src/hooks/usePurchases";
 import { ApiError } from "@/src/lib/api";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
-import {
-	CHECKOUT_PHONE_PATTERN,
-	phoneFromTyping,
-} from "@/src/lib/checkoutForm";
+import { phoneFromTyping } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice, isMarketPhone, phoneExample } from "@/src/lib/market";
 import {
 	pendingReturnDeepLink,
 	withAppReturnSignal,
@@ -66,12 +63,10 @@ export default function CheckoutPayScreen() {
 
 	const data = order.data;
 	const canPay =
-		channel !== null &&
-		CHECKOUT_PHONE_PATTERN.test(phone) &&
-		!createIntent.isPending;
+		channel !== null && isMarketPhone(phone) && !createIntent.isPending;
 
 	const submit = async () => {
-		if (!channel || !CHECKOUT_PHONE_PATTERN.test(phone)) return;
+		if (!channel || !isMarketPhone(phone)) return;
 		setFormError(null);
 		try {
 			const result = await createIntent.mutateAsync({
@@ -168,7 +163,7 @@ export default function CheckoutPayScreen() {
 		);
 	}
 
-	const money = (amount: number) => formatXaf(amount, locale);
+	const money = (amount: number) => formatPrice(amount, locale);
 	const firstItem = data.items[0]?.title;
 
 	return (
@@ -257,7 +252,7 @@ export default function CheckoutPayScreen() {
 							onChangeText={(text) => setPhone(phoneFromTyping(text))}
 							keyboardType="phone-pad"
 							autoComplete="tel"
-							placeholder="+2376XXXXXXXX"
+							placeholder={phoneExample()}
 							placeholderTextColor={c.muted}
 							accessibilityLabel={t("payments.pay_phone")}
 							accessibilityHint={t("payments.pay_phoneHint")}

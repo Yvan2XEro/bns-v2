@@ -66,7 +66,7 @@ describe("every P4 screen is registered in the root stack", () => {
 	// checkout/[orderId]/pending.tsx and the three seller/payments/** files),
 	// taking the list from fifteen to twenty. The registrations task adds the
 	// reschedule screen and the eight P7 delivery/rider/courier screens.
-	test("the roots hold the thirty screens the plan lists", () => {
+	test("the roots hold the thirty-one screens the plan lists", () => {
 		expect(p4Screens).toEqual([
 			"cart.tsx",
 			"checkout/[orderId]/pay.tsx",
@@ -81,6 +81,7 @@ describe("every P4 screen is registered in the root stack", () => {
 			"purchases/[id]/problem.tsx",
 			"purchases/[id]/reschedule.tsx",
 			"purchases/[id]/withdrawal.tsx",
+			"purchases/group/[group].tsx",
 			"purchases/index.tsx",
 			"rider/index.tsx",
 			"rider/shipment/[id].tsx",
@@ -123,8 +124,8 @@ describe("every P4 screen is registered in the root stack", () => {
 		const names = [
 			...new Set(p4Screens.map((f) => rootRegistrationFor(f, layoutDirs))),
 		];
-		// The problem-report flow adds one nested purchase root; the reschedule screen and the eight P7 screens add nine more.
-		expect(names).toHaveLength(25);
+		// The problem-report flow adds one nested purchase root; the reschedule screen and the eight P7 screens add nine more, and the group screen one.
+		expect(names).toHaveLength(26);
 		for (const name of names) {
 			const entry = new RegExp(
 				`<Stack\\.Screen\\s+name="${name.replace(/[[\]]/g, "\\$&")}"[^>]*headerShown: false`,

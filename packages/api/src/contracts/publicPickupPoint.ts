@@ -1,7 +1,7 @@
-import type { LaunchCityKey } from "../lib/launchCities";
 import type { ShopLocation } from "../payload-types";
 
-export type PublicDeliveryCities = { deliveryCities: LaunchCityKey[] };
+/** Keys of the shop's market cities it delivers to, in the market's order. */
+export type PublicDeliveryCities = { deliveryCities: string[] };
 
 export function deliveryCitiesRequest(shopId: string) {
 	return {

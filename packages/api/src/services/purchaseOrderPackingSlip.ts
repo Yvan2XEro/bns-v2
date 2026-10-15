@@ -1,7 +1,9 @@
 import bwipjs from "bwip-js/node";
 import type { Payload } from "payload";
 import QRCode from "qrcode";
+import { formatMoney, formatMoneyFallback } from "../contracts/money";
 import { ERROR_CODES } from "../lib/errors";
+import { moneyOfOrder, type OrderMoney } from "../lib/markets";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { getPurchaseOrderView } from "./purchaseOrders";
@@ -23,11 +25,19 @@ function escapeHtml(value: string): string {
 	});
 }
 
-function formatXaf(amount: number): string {
+function formatAmount(
+	amount: number,
+	money: OrderMoney,
+	language: SlipLanguage,
+): string {
+	const row = money.formats?.find((format) => format.locale === language);
+	if (row) return formatMoney(amount, row);
+	if (money.currency && money.minorUnit !== undefined)
+		return formatMoneyFallback(amount, money.currency, money.minorUnit);
 	const formatted = new Intl.NumberFormat("fr-FR", {
 		maximumFractionDigits: 0,
 	}).format(amount);
-	return `${formatted.replace(/[\u00a0\u202f]/g, " ")} XAF`;
+	return `${formatted.replace(/[\u00a0\u202f]/g, " ")} ${money.currency ?? ""}`.trim();
 }
 
 function assetUrl(value: string | null | undefined): string | null {
@@ -161,9 +171,10 @@ export async function getPurchaseOrderPackingSlipHtml(
 	const gpsBlock = qrSvg
 		? `<div class="qr" data-gps="${point?.lat},${point?.lng}">${qrSvg}<span>${escapeHtml(text.landmark)}</span></div>`
 		: `<p class="muted">${escapeHtml(text.noGps)}</p>`;
+	const money = await moneyOfOrder(payload, relationId(purchaseOrder?.order));
 	const collect =
 		view.paymentMethod === "cod"
-			? `<strong>${formatXaf(view.collectAmount)}</strong>`
+			? `<strong>${formatAmount(view.collectAmount, money, language)}</strong>`
 			: `<strong>${escapeHtml(text.paid)}</strong>`;
 
 	return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${orderNumber} · ${escapeHtml(text.slip)}</title><style>

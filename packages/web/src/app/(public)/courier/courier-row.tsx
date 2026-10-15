@@ -7,13 +7,13 @@ import {
 	useAssignCourierRider,
 	useDeclareRemitted,
 } from "~/hooks/use-courier-space";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
 	courierRowActions,
 	riderOptions,
 	rowSummary,
 } from "~/lib/courier-space";
-import { formatXaf } from "~/lib/order-money";
 import { shipmentStatusLabel } from "~/lib/shipment-status";
 import type { CourierShipmentRow } from "../../../../../api/src/contracts/shipments";
 import type { CourierMember } from "../../../../../api/src/payload-types";
@@ -29,6 +29,7 @@ export function CourierRow({
 	members: readonly CourierMember[];
 	userId: string | null;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Courier");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
@@ -53,7 +54,7 @@ export function CourierRow({
 			<p className="text-[#334155]">{summary.where}</p>
 			{summary.expectedCod !== null && (
 				<p className="text-[#92400E]">
-					{t("cod", { amount: formatXaf(summary.expectedCod, locale) })}
+					{t("cod", { amount: formatOrderMoney(summary.expectedCod, locale) })}
 				</p>
 			)}
 			<p className="text-[#64748B]">

@@ -38,7 +38,7 @@ import {
 	resolveErrorMessage,
 } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type {
 	CreateResaleListingInput,
 	ResaleCatalogueProduct,
@@ -480,7 +480,7 @@ function VariantPrice({
 				{variant.minRetailPrice ? (
 					<Text style={[styles.hint, { color: c.muted }]}>
 						{t("sellerResale.minimumPrice", {
-							price: formatXaf(variant.minRetailPrice, locale),
+							price: formatPrice(variant.minRetailPrice, locale),
 						})}
 					</Text>
 				) : null}

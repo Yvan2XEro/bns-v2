@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
 	commissionForLine,
 	invoiceTotals,
+	marketWeekBounds,
 	netting,
 	roundHalfUp,
 	sumCommission,
 	vatOf,
-	weekBoundsDouala,
 } from "../../src/lib/orderMath";
 
 describe("roundHalfUp", () => {
@@ -120,20 +120,27 @@ describe("invoiceTotals", () => {
 	});
 });
 
-describe("weekBoundsDouala", () => {
+describe("marketWeekBounds", () => {
 	it("runs Monday 00:00 to Sunday 23:59:59.999 in Africa/Douala", () => {
 		// Monday 2026-10-05 06:00 Douala = 05:00Z. The week it closes is the
 		// previous one: Mon 2026-09-28 00:00 to Sun 2026-10-04 23:59:59.999 local.
-		const { periodStart, periodEnd } = weekBoundsDouala(
+		const { periodStart, periodEnd } = marketWeekBounds(
 			new Date("2026-10-05T05:00:00.000Z"),
+			"Africa/Douala",
 		);
 		expect(periodStart).toBe("2026-09-27T23:00:00.000Z");
 		expect(periodEnd).toBe("2026-10-04T22:59:59.999Z");
 	});
 
 	it("gives a Sunday caller the same week as the Saturday before it", () => {
-		const sat = weekBoundsDouala(new Date("2026-10-10T12:00:00.000Z"));
-		const sun = weekBoundsDouala(new Date("2026-10-11T12:00:00.000Z"));
+		const sat = marketWeekBounds(
+			new Date("2026-10-10T12:00:00.000Z"),
+			"Africa/Douala",
+		);
+		const sun = marketWeekBounds(
+			new Date("2026-10-11T12:00:00.000Z"),
+			"Africa/Douala",
+		);
 		expect(sun).toEqual(sat);
 	});
 });

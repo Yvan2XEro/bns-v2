@@ -29,6 +29,7 @@ import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
 import { parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const CHART_H = 72;
@@ -102,7 +103,7 @@ function BoostCard({
 	textColor,
 	mutedColor,
 }: any) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const STATUS_CONFIG = getStatusConfig(t);
 	const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
 	const imgUrl = resolveListingImageUrl(item.listing?.images?.[0]);
@@ -207,11 +208,9 @@ function BoostCard({
 				{/* Right: amount + status */}
 				<View style={styles.cardRight}>
 					<Text style={styles.cardAmount}>
-						{item.amount?.toLocaleString() ?? "—"}
-						{"\n"}
-						<Text style={[styles.cardAmountSuffix, { color: mutedColor }]}>
-							{t("currency.symbol")}
-						</Text>
+						{item.amount != null
+							? formatPrice(item.amount, i18n.language)
+							: "—"}
 					</Text>
 					<View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
 						<Ionicons name={cfg.icon as any} size={11} color={cfg.color} />
@@ -230,7 +229,7 @@ function BoostCard({
 export default function BoostHistoryScreen() {
 	const isDark = useColorScheme() === "dark";
 	const { user } = useAuth();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { width, contentMaxWidth, centeredContent } = useResponsive();
 	// Sparkline follows the real card width (list column is capped on tablets).
 	const CHART_W = Math.min(width, contentMaxWidth) - 64;
@@ -439,9 +438,7 @@ export default function BoostHistoryScreen() {
 											{ color: isDark ? "#fbbf24" : "#92400e" },
 										]}
 									>
-										{t("currency.format", {
-											amount: totalSpent.toLocaleString(),
-										} as any)}
+										{formatPrice(totalSpent, i18n.language)}
 									</Text>
 								</View>
 							</View>
@@ -735,7 +732,6 @@ const styles = StyleSheet.create({
 		textAlign: "right",
 		lineHeight: 18,
 	},
-	cardAmountSuffix: { fontSize: 10, fontFamily: Fonts.body },
 	statusBadge: {
 		flexDirection: "row",
 		alignItems: "center",

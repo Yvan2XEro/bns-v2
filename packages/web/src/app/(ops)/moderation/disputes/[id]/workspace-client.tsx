@@ -14,6 +14,7 @@ import {
 	useModerationDispute,
 	useModerationDisputeAction,
 } from "~/hooks/use-moderation-disputes";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
 	DISPUTE_REASON_LABELS,
@@ -22,6 +23,7 @@ import {
 
 export function WorkspaceClient({ id }: { id: string }) {
 	const t = useTranslations("ModerationDisputes");
+	const formatOrderMoney = useOrderMoney();
 	const tRoot = useTranslations();
 	const locale = useLocale();
 	const { user } = useAuth();
@@ -156,16 +158,16 @@ export function WorkspaceClient({ id }: { id: string }) {
 						<h2 className="font-semibold">{t("money")}</h2>
 						<p>
 							{tRoot("Disputes.amountAtStake", {
-								amount: dispute.amountAtStake.toLocaleString(locale),
+								amount: formatOrderMoney(dispute.amountAtStake),
 							})}
 						</p>
 						<p className="text-[#64748B]">
 							{t("previewBreakdown", {
-								goods: sheet.components.goods.toLocaleString(locale),
-								delivery:
-									sheet.components.outboundDelivery.toLocaleString(locale),
-								protection:
-									sheet.components.buyerProtectionFee.toLocaleString(locale),
+								goods: formatOrderMoney(sheet.components.goods),
+								delivery: formatOrderMoney(sheet.components.outboundDelivery),
+								protection: formatOrderMoney(
+									sheet.components.buyerProtectionFee,
+								),
 							})}
 						</p>
 						<p className="text-[#64748B]">

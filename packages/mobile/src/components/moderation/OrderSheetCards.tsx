@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
+import { formatOrderDate } from "@/src/lib/orderMoney";
 import {
 	BUYER_TIER_KEYS,
 	reasonKey,
@@ -64,7 +65,7 @@ export function OrderSummaryCard({ order, locale, c, t }: CardProps) {
 			/>
 			<Row
 				label={t("moderationOrder.total")}
-				value={formatXaf(order.amounts.total, locale)}
+				value={formatPrice(order.amounts.total, locale)}
 				c={c}
 			/>
 			<Text style={[styles.meta, { color: c.muted }]}>

@@ -16,6 +16,7 @@ import { useDeliveryZones } from "@/src/hooks/useDeliverySettings";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { districtLabel, groupZonesByCity } from "@/src/lib/deliveryZoneForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import type { DeliveryZone } from "../../../../api/src/payload-types";
 
 type Row =
@@ -24,7 +25,7 @@ type Row =
 
 function ZoneRow({ zone }: { zone: DeliveryZone }) {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const districts = (zone.districts ?? []).map(
 		(d) => districtLabel(d.key) ?? d.key,
 	);
@@ -48,7 +49,9 @@ function ZoneRow({ zone }: { zone: DeliveryZone }) {
 			</Text>
 			<Text style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 13 }}>
 				{[
-					t("deliverySettings.zoneFee", { fee: zone.fee }),
+					t("deliverySettings.zoneFee", {
+						fee: formatPrice(zone.fee, i18n.language),
+					}),
 					t("deliverySettings.zoneEta", {
 						min: zone.etaMinHours,
 						max: zone.etaMaxHours,

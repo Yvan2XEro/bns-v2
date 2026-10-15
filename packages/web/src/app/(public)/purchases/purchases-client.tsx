@@ -5,11 +5,13 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { EmptyState } from "~/components/empty-state";
 import { Button } from "~/components/ui/button";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { usePurchases } from "~/hooks/use-purchases";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatOrderDate, formatXaf } from "~/lib/order-money";
+import { formatOrderDate } from "~/lib/order-money";
 import type { OrderListEntry } from "~/types/order";
 import {
+	groupPurchases,
 	PURCHASE_TAB_LABEL_KEYS,
 	PURCHASE_TABS,
 	type PurchaseTab,
@@ -18,6 +20,7 @@ import {
 import { StatusLabel } from "./status-label";
 
 function PurchaseRow({ entry }: { entry: OrderListEntry }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Purchases");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	return (
@@ -50,7 +53,7 @@ function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 				</div>
 				<div className="shrink-0 space-y-1 text-right">
 					<p className="font-semibold text-[#0F172A]">
-						{formatXaf(entry.total, locale)}
+						{formatOrderMoney(entry.total, locale)}
 					</p>
 					<StatusLabel status={entry.status} />
 				</div>
@@ -122,9 +125,32 @@ export function PurchasesClient() {
 			)}
 
 			<ul className="space-y-3">
-				{entries.map((entry) => (
-					<PurchaseRow key={entry.id} entry={entry} />
-				))}
+				{groupPurchases(entries).map((item) =>
+					item.kind === "order" ? (
+						<PurchaseRow key={item.entry.id} entry={item.entry} />
+					) : (
+						<li key={item.checkoutGroup} className="space-y-3">
+							<div className="flex items-center justify-between gap-3 px-1">
+								<p className="font-semibold text-[#0F172A] text-sm">
+									{tRoot("CheckoutGroup.purchasesHeader", {
+										count: item.entries.length,
+									})}
+								</p>
+								<Link
+									href={`/checkout/group/${encodeURIComponent(item.checkoutGroup)}`}
+									className="min-h-11 content-center text-[#1E40AF] text-sm underline"
+								>
+									{tRoot("CheckoutGroup.purchasesGroupLink")}
+								</Link>
+							</div>
+							<ul className="space-y-3 border-[#DBEAFE] border-l-2 pl-3">
+								{item.entries.map((entry) => (
+									<PurchaseRow key={entry.id} entry={entry} />
+								))}
+							</ul>
+						</li>
+					),
+				)}
 			</ul>
 
 			{purchases.hasNextPage && (

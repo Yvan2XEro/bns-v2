@@ -1,9 +1,9 @@
 import type { Payload, PayloadRequest, Where } from "payload";
-import type { DisputeListRow } from "../contracts/disputes";
-import type { OpenDisputeInput } from "../contracts/disputes";
 import { requireOrderAudience } from "../access/orderAccess";
 import { isModerator } from "../access/roles";
 import { can, type ShopRole } from "../access/shopRoles";
+import type { DisputeListRow, OpenDisputeInput } from "../contracts/disputes";
+import { businessDaysAfter } from "../lib/caseMath";
 import { getDisputeSettings, isDisputesOpen } from "../lib/caseSettings";
 import {
 	type DisputeReason,
@@ -13,6 +13,8 @@ import {
 	reasonWindow,
 } from "../lib/disputeRules";
 import { ERROR_CODES } from "../lib/errors";
+import { marketOfOrder } from "../lib/markets";
+import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
@@ -30,7 +32,7 @@ import { notifyDisputeMessage, notifyDisputeOpened } from "./caseNotifications";
 import { applyReservedTransition } from "./orders/transitions";
 import { createHold } from "./payoutHolds";
 import { holdOrderReviews } from "./reviewRelease";
-import { nextNumber } from "./sequences";
+import { nextNumber, sequenceMarketOfOrder } from "./sequences";
 import { requireShopPermission } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 
@@ -494,7 +496,18 @@ export async function openDispute(
 	const settings = await getDisputeSettings(payload);
 	if (!isDisputesOpen(settings))
 		throw serviceError(ERROR_CODES.disputeDisabled, 403);
-	const number = await nextNumber(payload, "DSP", now);
+	const order = await payload.findByID({
+		collection: "orders",
+		id: orderId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const number = await nextNumber(
+		payload,
+		"DSP",
+		now,
+		await sequenceMarketOfOrder(payload, order),
+	);
 	return withTransaction(
 		payload,
 		async (req) => {
@@ -790,7 +803,12 @@ export async function openDeductionDispute(
 		overrideAccess: true,
 		req,
 	});
-	const number = await nextNumber(req.payload, "DSP", now);
+	const number = await nextNumber(
+		req.payload,
+		"DSP",
+		now,
+		await sequenceMarketOfOrder(req.payload, order),
+	);
 	return createDispute(
 		req,
 		order,
@@ -828,7 +846,12 @@ export async function openRefundContestDispute(
 		overrideAccess: true,
 		req,
 	});
-	const number = await nextNumber(req.payload, "DSP", now);
+	const number = await nextNumber(
+		req.payload,
+		"DSP",
+		now,
+		await sequenceMarketOfOrder(req.payload, order),
+	);
 	return createDispute(
 		req,
 		order,
@@ -849,4 +872,29 @@ export async function openRefundContestDispute(
 		now,
 		{ bypassWindow: true, initialStatus: "awaiting_seller" },
 	);
+}
+
+/** The review SLA runs on the disputed order's market calendar. */
+export async function reviewDueAt(
+	req: PayloadRequest,
+	dispute: Pick<Dispute, "order">,
+	now: Date,
+	businessDays: number,
+): Promise<string> {
+	const orderId = relationId(dispute.order);
+	const order = orderId
+		? await req.payload.findByID({
+				collection: "orders",
+				id: orderId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+		: null;
+	const market = order ? await marketOfOrder(req.payload, order) : null;
+	return businessDaysAfter(
+		now,
+		businessDays,
+		market?.timezone ?? LEGACY_TIMEZONE,
+	).toISOString();
 }

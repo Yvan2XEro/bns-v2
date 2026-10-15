@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { OrderView } from "~/types/order";
 import { ratePercent } from "../seller-orders";
 
@@ -11,9 +11,10 @@ import { ratePercent } from "../seller-orders";
  * component asks no permission question of its own.
  */
 export function OrderSummary({ order }: { order: OrderView }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerOrders");
 	const locale = useLocale() === "en" ? "en" : "fr";
-	const money = (amount: number) => formatXaf(amount, locale);
+	const money = (amount: number) => formatOrderMoney(amount, locale);
 
 	return (
 		<section

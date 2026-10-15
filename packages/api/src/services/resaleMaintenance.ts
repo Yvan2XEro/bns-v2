@@ -3,7 +3,11 @@ import { relationId } from "../lib/relationId";
 import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
 import type { ResaleLink } from "../payload-types";
-import { getCurrentResaleTerms, hasAcceptedCurrentResaleTerms, updateResaleListingHold } from "./resale";
+import {
+	getCurrentResaleTerms,
+	hasAcceptedCurrentResaleTerms,
+	updateResaleListingHold,
+} from "./resale";
 
 export async function enforceResaleTerms(
 	payload: Payload,
@@ -40,18 +44,19 @@ export async function enforceResaleTerms(
 					continue;
 				}
 				const shopId = String(shop.id);
-				if (await hasAcceptedCurrentResaleTerms(payload, shopId, role)) continue;
+				if (await hasAcceptedCurrentResaleTerms(payload, shopId, role))
+					continue;
 				const resaleListings = await payload.find({
 					collection: "listings",
 					where:
 						role === "supplier"
 							? { "resale.supplierShop": { equals: shopId } }
 							: {
-								and: [
-									{ shop: { equals: shopId } },
-									{ "resale.supplierShop": { exists: true } },
-								],
-							},
+									and: [
+										{ shop: { equals: shopId } },
+										{ "resale.supplierShop": { exists: true } },
+									],
+								},
 					limit: 1,
 					depth: 0,
 					overrideAccess: true,
@@ -118,7 +123,7 @@ export async function refreshResaleLinkStats(
 			collection: "resale-links",
 			limit: 200,
 			page,
-		sort: "id",
+			sort: "id",
 			depth: 0,
 			overrideAccess: true,
 		});
@@ -195,7 +200,9 @@ export async function refreshResaleLinkStats(
 				where: {
 					and: [
 						{ product: { equals: String(product.id) } },
-						{ "resale.supplierShop": { equals: relationId(product.shop) ?? "" } },
+						{
+							"resale.supplierShop": { equals: relationId(product.shop) ?? "" },
+						},
 					],
 				},
 				limit: 0,

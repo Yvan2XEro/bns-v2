@@ -7,6 +7,7 @@ import type {
 	CheckoutAddressValues,
 } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 
 /** One text field of the address form; the error is a translation key. */
 export function AddressTextField({
@@ -65,7 +66,7 @@ export function AddressTextField({
 			) : null}
 			{error ? (
 				<Text style={formStyles.error} accessibilityLiveRegion="polite">
-					{t(error)}
+					{t(error, { example: phoneExample() })}
 				</Text>
 			) : null}
 		</View>

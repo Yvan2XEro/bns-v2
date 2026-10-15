@@ -52,7 +52,7 @@ export function normalizePhoneNumber(input: string): string {
 
 	if (!/^\+[1-9]\d{7,14}$/.test(normalized)) {
 		throw new PhoneVerificationError(
-			"Phone number must use international format like +2376XXXXXXXX",
+			"Phone number must use international format like +CCXXXXXXXXX",
 			400,
 			ERROR_CODES.phoneInvalid,
 		);

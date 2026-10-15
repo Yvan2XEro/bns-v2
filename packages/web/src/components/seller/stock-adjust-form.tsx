@@ -8,6 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { useCurrencyCode } from "~/hooks/use-order-money";
 import { useRecordMovement } from "~/hooks/use-record-movement";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { parseAmount } from "~/lib/product-form";
@@ -36,6 +37,7 @@ export function StockAdjustForm({
 	onSaved: () => void;
 	onCancel: () => void;
 }) {
+	const currencyCode = useCurrencyCode();
 	const t = useTranslations("Stock");
 	const tRoot = useTranslations();
 	const recordMovement = useRecordMovement(shopId);
@@ -136,7 +138,7 @@ export function StockAdjustForm({
 					<Input
 						id="stock-cost"
 						inputMode="numeric"
-						placeholder="XAF"
+						placeholder={currencyCode}
 						{...register("unitCost")}
 					/>
 				</div>

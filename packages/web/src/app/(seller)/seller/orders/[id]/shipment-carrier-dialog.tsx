@@ -6,9 +6,9 @@ import { ActionDialog } from "~/components/action-dialog";
 import { Button } from "~/components/ui/button";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useAvailableCouriers } from "~/hooks/use-delivery-settings";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSwitchCarrier } from "~/hooks/use-shop-shipments";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { formatXaf } from "~/lib/order-money";
 import { eligibleCouriers, shipmentDestination } from "~/lib/shipment-panel";
 import { useLocaleKey } from "~/lib/use-locale-key";
 import type { ShopShipmentView } from "../../../../../../../api/src/contracts/shipments";
@@ -27,6 +27,7 @@ export function ShipmentCarrierDialog({
 	cod: boolean;
 	onClose: () => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerShipments");
 	const tRoot = useTranslations();
 	const locale = useLocaleKey();
@@ -88,7 +89,7 @@ export function ShipmentCarrierDialog({
 									<span className="block text-[#64748B] text-xs">
 										{tariff
 											? t("carrierTariff", {
-													amount: formatXaf(tariff.amount, locale),
+													amount: formatOrderMoney(tariff.amount, locale),
 													min: tariff.etaMinHours,
 													max: tariff.etaMaxHours,
 												})

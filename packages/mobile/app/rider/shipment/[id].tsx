@@ -11,13 +11,14 @@ import { useShipment } from "@/src/hooks/useShipmentActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { tryCurrentGps } from "@/src/lib/currentPosition";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { destinationMapsUrl, riderButtons } from "@/src/lib/riderShipment";
 import { shipmentStatusLabel } from "@/src/lib/shipmentStatus";
 import { telHref } from "@/src/lib/shipmentTracking";
 
 export default function RiderShipmentScreen() {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const query = useShipment(id);
 	const pickUp = usePickUp(id);
@@ -64,7 +65,9 @@ export default function RiderShipmentScreen() {
 					</Text>
 					{view.expectedCod != null ? (
 						<Text style={{ color: c.text }}>
-							{t("shipmentPanel.cashToCollect", { amount: view.expectedCod })}
+							{t("shipmentPanel.cashToCollect", {
+								amount: formatPrice(view.expectedCod, i18n.language),
+							})}
 						</Text>
 					) : null}
 					{view.destination.phone ? (

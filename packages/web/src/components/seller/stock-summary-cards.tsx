@@ -1,16 +1,21 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { formatXaf } from "~/lib/money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import type { StockSummary } from "~/types";
 
 export function StockSummaryCards({ summary }: { summary: StockSummary }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Stock");
 	const locale = useLocale();
 	const firstAlert = summary.lowStock[0] ?? summary.outOfStock[0] ?? null;
 
 	const cards = [
-		{ label: t("costValue"), value: formatXaf(summary.costValue), hint: null },
+		{
+			label: t("costValue"),
+			value: formatOrderMoney(summary.costValue),
+			hint: null,
+		},
 		{
 			label: t("unitsOnHand"),
 			value: summary.unitsOnHand.toLocaleString(locale),

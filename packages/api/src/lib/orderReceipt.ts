@@ -11,6 +11,8 @@ export interface ReceiptInput {
 	withdrawalUntil: string | null;
 	snapshot: ContractSnapshot;
 	snapshotHash: string;
+	/** The order's market zone: the calendar day the buyer reads dates on. */
+	timezone: string;
 }
 
 /** This is a printable document served to a browser: every interpolated
@@ -25,16 +27,16 @@ function escapeHtml(value: string): string {
 		.replace(/'/g, "&#39;");
 }
 
-function formatDate(iso: string, lang: "fr" | "en"): string {
+function formatDate(iso: string, lang: "fr" | "en", timezone: string): string {
 	const date = new Date(iso);
 	if (Number.isNaN(date.getTime())) return escapeHtml(iso);
-	// Africa/Douala, not the server's zone: this document states a statutory
+	// The market's zone, not the server's: this document states a statutory
 	// deadline, and a date rendered in UTC can name the wrong calendar day
-	// for the buyer reading it in Cameroon.
+	// for the buyer reading it.
 	return new Intl.DateTimeFormat(lang === "fr" ? "fr-FR" : "en-GB", {
 		dateStyle: "medium",
 		timeStyle: "short",
-		timeZone: "Africa/Douala",
+		timeZone: timezone,
 	}).format(date);
 }
 
@@ -93,7 +95,7 @@ export function renderReceiptHtml(
 	// The legal window runs from delivery, so no date exists before it: a
 	// date counted from the order would always be earlier than the real one.
 	const withdrawal = input.withdrawalUntil
-		? `${t.withdrawalUntil}: ${formatDate(input.withdrawalUntil, lang)}`
+		? `${t.withdrawalUntil}: ${formatDate(input.withdrawalUntil, lang, input.timezone)}`
 		: t.withdrawalRule(snapshot.withdrawal.days);
 
 	const rows = snapshot.items
@@ -125,8 +127,8 @@ export function renderReceiptHtml(
 <body>
 <h1>${t.title}</h1>
 <p>${t.order}: ${escapeHtml(input.orderNumber)}</p>
-<p>${t.orderedOn}: ${formatDate(input.orderDate, lang)}</p>
-<p>${t.printedOn}: ${formatDate(input.printedAt, lang)}</p>
+<p>${t.orderedOn}: ${formatDate(input.orderDate, lang, input.timezone)}</p>
+<p>${t.printedOn}: ${formatDate(input.printedAt, lang, input.timezone)}</p>
 <p>${t.seller}: ${escapeHtml(snapshot.seller.name)} (${escapeHtml(snapshot.seller.handle)})</p>
 <p>${t.platform}: ${escapeHtml(snapshot.platform.legalName)}</p>
 <table>

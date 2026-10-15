@@ -1,11 +1,9 @@
 import type { BuyerShipmentView } from "../../../api/src/contracts/shipments";
 import {
-	DELIVERY_TIMEZONE,
 	type DeliveryWindow,
-	localDateAt,
-	localParts,
 	windowBounds,
 } from "../../../api/src/lib/delivery/eta";
+import { localDateAt, localParts } from "../../../api/src/lib/marketTime";
 import type { OrderStatusName } from "./order-status";
 import {
 	FAILURE_REASON_LABELS,
@@ -14,7 +12,8 @@ import {
 	shipmentStatusLabel,
 } from "./shipment-status";
 
-export { DELIVERY_TIMEZONE };
+/** The web client has no market timezone yet; the server owns the real one per market. */
+export const DELIVERY_TIMEZONE = "Africa/Douala";
 
 export type StepKey =
 	| "prepared"
@@ -183,7 +182,7 @@ export interface RescheduleDay {
  * (`shipment.rescheduleDateInvalid`); the client does not know the zone.
  */
 export function rescheduleChoices(now: Date): RescheduleDay[] {
-	const today = localParts(now);
+	const today = localParts(now, DELIVERY_TIMEZONE);
 	const horizon = now.getTime() + 7 * DAY;
 	const days: RescheduleDay[] = [];
 	for (let offset = 1; offset <= 7; offset += 1) {
@@ -196,7 +195,12 @@ export function rescheduleChoices(now: Date): RescheduleDay[] {
 			day: base.getUTCDate(),
 		};
 		const windows = RESCHEDULE_WINDOWS.flatMap((window) => {
-			const start = localDateAt(parts, windowBounds(window).fromHour);
+			const start = localDateAt(
+				parts,
+				windowBounds(window).fromHour,
+				0,
+				DELIVERY_TIMEZONE,
+			);
 			return start.getTime() > now.getTime() && start.getTime() <= horizon
 				? [{ window, iso: start.toISOString() }]
 				: [];

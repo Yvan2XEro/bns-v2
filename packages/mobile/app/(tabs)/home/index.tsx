@@ -52,7 +52,8 @@ import {
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import {
 	resolveImageUrl,
 	resolveListingImageUrl,
@@ -824,7 +825,7 @@ export default function HomeScreen() {
 												</View>
 												<Text style={styles.featuredPrice}>
 													{listing.price
-														? `${listing.price.toLocaleString()} XAF`
+														? formatPrice(listing.price, i18n.language)
 														: "Sur demande"}
 												</Text>
 												<Text style={styles.featuredTitle} numberOfLines={1}>

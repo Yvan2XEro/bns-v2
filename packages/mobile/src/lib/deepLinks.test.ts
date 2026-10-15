@@ -5,6 +5,7 @@ import { isScreenFile, matchRoute, routeNameOf } from "./appRoutes";
 import {
 	CASE_DEEP_LINKS,
 	DELIVERY_DEEP_LINKS,
+	GROUP_DEEP_LINKS,
 	notificationUrl,
 	PAYMENT_DEEP_LINKS,
 	toAppPath,
@@ -73,6 +74,21 @@ describe("the delivery deep links land on their screens", () => {
 		DELIVERY_DEEP_LINKS.map(({ url, screen }) => [url, screen] as const),
 	)("%s -> %s", (url, screen) => {
 		expect(screenFor(url)).toBe(screen);
+	});
+});
+
+describe("the checkout-group deep links land on their screens", () => {
+	test.each(
+		GROUP_DEEP_LINKS.map(({ url, screen }) => [url, screen] as const),
+	)("%s -> %s", (url, screen) => {
+		expect(screenFor(notificationUrl({ url }) ?? "")).toBe(screen);
+		expect(screenFor(url)).toBe(screen);
+	});
+
+	test("a push naming the group opens the grouped purchases screen", () => {
+		expect(notificationUrl({ url: "/purchases/group/cg-1" })).toBe(
+			"/purchases/group/cg-1",
+		);
 	});
 });
 

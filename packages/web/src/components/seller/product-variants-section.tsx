@@ -11,6 +11,7 @@ import { useFieldArray, useWatch } from "react-hook-form";
 import { EditorSection } from "~/components/seller/editor-section";
 import { OptionEditor } from "~/components/seller/option-editor";
 import { VariantTable } from "~/components/seller/variant-table";
+import { useCurrencyCode } from "~/hooks/use-order-money";
 import {
 	type OptionRow,
 	type ProductFormState,
@@ -35,6 +36,7 @@ export function ProductVariantsSection({
 	priceInvalid,
 }: ProductVariantsSectionProps) {
 	const t = useTranslations("ProductEditor");
+	const currencyCode = useCurrencyCode();
 	const options = useWatch({ control, name: "options" }) ?? [];
 	// The rows are the registered inputs of the table, so the array itself is
 	// owned by react-hook-form rather than rebuilt around it.
@@ -78,7 +80,9 @@ export function ProductVariantsSection({
 					showCost={showCost}
 				/>
 				{priceInvalid && (
-					<p className="text-red-600 text-xs">{t("priceError")}</p>
+					<p className="text-red-600 text-xs">
+						{t("priceError", { currency: currencyCode })}
+					</p>
 				)}
 			</div>
 		</EditorSection>

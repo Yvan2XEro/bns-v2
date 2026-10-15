@@ -1,21 +1,30 @@
-/** U+202F, the narrow no-break space French typography uses between a
- * digit group and the currency symbol; a plain space is a different
- * character and would silently change the rendered amount. */
-const NARROW_NBSP = " ";
+import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
+import {
+	formatMoney,
+	formatMoneyFallback,
+} from "../../../api/src/contracts/money";
 
 /**
- * Display-only mirror of `formatXaf` in `packages/api/src/lib/orderFormat.ts`
- * — `"47 000 FCFA"` in French (narrow no-break space), `"XAF 47,000"` in
- * English. `packages/api/tests/int/order-format-parity.int.spec.ts` runs
- * this, mobile's copy and the API's original over a fixed table and asserts
- * all three agree string for string.
+ * The amount in the market's served format for `locale`. A locale with no
+ * served row falls back to the explicit code-first form (M9) built from the
+ * market's own currency; with no market block at all there is no currency to
+ * name, so only the grouped number is shown.
  */
-export function formatXaf(amount: number, locale: "fr" | "en"): string {
-	const grouped = Math.trunc(Math.abs(amount))
-		.toString()
-		.replace(/\B(?=(\d{3})+(?!\d))/g, locale === "fr" ? NARROW_NBSP : ",");
-	const sign = amount < 0 ? "-" : "";
-	return locale === "fr" ? `${sign}${grouped} FCFA` : `${sign}XAF ${grouped}`;
+export function renderOrderMoney(
+	market: Pick<MarketConfig, "formats" | "currency"> | undefined,
+	amount: number | null | undefined,
+	locale: string,
+): string {
+	if (typeof amount !== "number" || !Number.isFinite(amount)) return "—";
+	if (!market) return new Intl.NumberFormat(locale).format(Math.trunc(amount));
+	const format = market.formats.find((f) => f.locale === locale);
+	return format
+		? formatMoney(amount, format)
+		: formatMoneyFallback(
+				amount,
+				market.currency.code,
+				market.currency.minorUnit,
+			);
 }
 
 /**
@@ -34,4 +43,14 @@ export function formatOrderDate(
 		month: "short",
 		year: "numeric",
 	}).format(value);
+}
+
+export function formatOrderMoneyRange(
+	format: (amount: number | null | undefined) => string,
+	min: number | null | undefined,
+	max: number | null | undefined,
+): string {
+	if (typeof min !== "number") return format(max);
+	if (typeof max !== "number" || max === min) return format(min);
+	return `${format(min)} – ${format(max)}`;
 }

@@ -5,6 +5,8 @@ import type { Coordinates } from "../../lib/delivery/geo";
 import type { FailureReason } from "../../lib/delivery/types";
 import { getDeliverySettings } from "../../lib/deliverySettings";
 import { ERROR_CODES } from "../../lib/errors";
+import { marketOfOrder } from "../../lib/markets";
+import { LEGACY_TIMEZONE } from "../../lib/marketTime";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
 import type { Order, Shipment } from "../../payload-types";
@@ -252,10 +254,12 @@ export async function rescheduleShipment(
 		deliveryDays: zone.deliveryDays,
 		...(zone.cutoffTime ? { cutoffTime: zone.cutoffTime } : {}),
 	};
-	if (!rescheduleDateAllowed(date, calendar, now)) {
+	const order = await orderForShipment(req, shipment);
+	const timezone =
+		(await marketOfOrder(req.payload, order))?.timezone ?? LEGACY_TIMEZONE;
+	if (!rescheduleDateAllowed(date, calendar, now, timezone)) {
 		throw new ServiceError(ERROR_CODES.shipmentRescheduleDateInvalid, 400);
 	}
-	const order = await orderForShipment(req, shipment);
 	const previousDestination =
 		typeof shipment.destination === "object" &&
 		shipment.destination !== null &&

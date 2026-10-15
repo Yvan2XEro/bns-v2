@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { parseAmount, type VariantRow } from "@/src/lib/productForm";
 import {
 	formatPercent,
-	formatXaf,
 	marginPercent,
 	type ProductOption,
 	variantLabel,
@@ -132,7 +132,7 @@ export function VariantRowCard({
 			</View>
 			{row.price && parseAmount(row.price) !== null ? (
 				<Text style={[f.hint, { color: c.muted }]}>
-					{formatXaf(parseAmount(row.price) ?? 0, i18n.language)}
+					{formatPrice(parseAmount(row.price) ?? 0, i18n.language)}
 				</Text>
 			) : null}
 		</View>

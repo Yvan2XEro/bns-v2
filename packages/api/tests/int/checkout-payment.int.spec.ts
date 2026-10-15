@@ -32,9 +32,15 @@ vi.mock("payload", async (importOriginal) => ({
 	...(await importOriginal<typeof import("payload")>()),
 	getPayload: getPayloadMock,
 }));
-vi.mock("../../src/lib/payments/marketplaceRegistry", () => ({
-	getMarketplaceProvider: () => registry.provider,
-}));
+vi.mock(
+	"../../src/lib/payments/marketplaceRegistry",
+	async (importOriginal) => ({
+		...(await importOriginal<
+			typeof import("../../src/lib/payments/marketplaceRegistry")
+		>()),
+		getMarketplaceProvider: () => registry.provider,
+	}),
+);
 vi.mock("../../src/services/payments", async (importOriginal) => {
 	const actual =
 		await importOriginal<typeof import("../../src/services/payments")>();
@@ -204,6 +210,8 @@ function seed(s: Seed = {}): FakePayload {
 	const extra = s.extra ?? {};
 	return fakePayload(
 		{
+			// The P5 market rows come from the settings under test, not the registry.
+			markets: [],
 			users: [
 				userDoc(OWNER, verified(OWNER_PHONE)),
 				userDoc(MANAGER, verified(MANAGER_PHONE)),

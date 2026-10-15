@@ -157,7 +157,7 @@ describe("courier shipment assignment", () => {
 						phone: "+237600000031",
 						city: "douala",
 					},
-					amounts: { total: 9000 },
+					amounts: { total: 9000, currency: "XAF" },
 				},
 			],
 			"order-items": [
@@ -360,7 +360,7 @@ describe("courier shipment assignment", () => {
 					{
 						id: "order-courier-1",
 						paymentMethod: "cod",
-						amounts: { total: 24000 },
+						amounts: { total: 24000, currency: "XAF" },
 						shipments: [shipment.id],
 					},
 				],
@@ -451,7 +451,7 @@ describe("courier shipment assignment", () => {
 					{
 						id: "order-courier-1",
 						paymentMethod: "cod",
-						amounts: { total: 24000 },
+						amounts: { total: 24000, currency: "XAF" },
 						shipments: [selfShipment.id],
 					},
 				],

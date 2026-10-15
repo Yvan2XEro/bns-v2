@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useMemo, useState } from "react";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { publicVariantsQuery } from "~/hooks/use-variants";
-import { formatXaf } from "~/lib/money";
 import { cn } from "~/lib/utils";
 import {
 	isOptionValueUnavailable,
@@ -37,6 +37,7 @@ export function VariantSelector({
 	/** The buy box's controls, given the variant currently selected (null while none matches). */
 	children?: (variant: PublicVariantDoc | null) => ReactNode;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
 	const locale = useLocale();
 	const { data } = useQuery(publicVariantsQuery(productId));
@@ -150,7 +151,7 @@ export function VariantSelector({
 								: t("variantSoldOut")}
 					</span>
 					<span className="font-bold text-[#0F172A]">
-						{formatXaf(current.price, locale)}
+						{formatOrderMoney(current.price, locale)}
 					</span>
 				</div>
 			)}

@@ -29,7 +29,7 @@ import {
 } from "@/src/lib/caseStatus";
 import { requestedDisputeAmount } from "@/src/lib/disputeReport";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import {
 	BUYER_DISPUTE_OUTCOMES,
 	BUYER_DISPUTE_REASONS,
@@ -176,7 +176,7 @@ export default function ReportOrderProblemScreen() {
 							numberOfLines={1}
 						>
 							{order.data.shop.name} ·{" "}
-							{formatXaf(order.data.amounts.total, lang)}
+							{formatPrice(order.data.amounts.total, lang)}
 						</Text>
 					</View>
 					<PurchaseStatusPill status={order.data.status} />

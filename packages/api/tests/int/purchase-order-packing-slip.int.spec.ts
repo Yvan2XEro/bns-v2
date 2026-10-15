@@ -1,88 +1,97 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { getPurchaseOrderPackingSlipHtml } from "../../src/services/purchaseOrderPackingSlip";
-import { fakePayload } from "./helpers/fakePayload";
+import { cmMarketRow, fakePayload } from "./helpers/fakePayload";
+
+function world(
+	order: Record<string, unknown> = {},
+	markets: Record<string, unknown>[] = [],
+) {
+	return fakePayload({
+		markets,
+		shops: [
+			{
+				id: "supplier",
+				name: "Supplier <script>alert(1)</script>",
+				owner: "supplier-user",
+				status: "active",
+				level: 3,
+				location: { city: "Douala" },
+			},
+			{ id: "reseller", status: "active", level: 2 },
+		],
+		"shop-members": [
+			{
+				id: "supplier-membership",
+				shop: "supplier",
+				user: "supplier-user",
+				role: "owner",
+				status: "active",
+			},
+		],
+		orders: [
+			{
+				id: "order-1",
+				orderNumber: "BNS-1",
+				shop: "reseller",
+				buyer: "buyer",
+				status: "shipped",
+				paymentMethod: "cod",
+				paymentStatus: "cod_pending",
+				amounts: { total: 9_000, currency: "XAF" },
+				...order,
+				delivery: {
+					recipientName: "Buyer <b>One</b>",
+					phone: "+237600000000",
+					city: "Douala",
+					district: "Akwa",
+					landmark: "Rue < 4",
+					gps: { lat: 4.0511, lng: 9.7679 },
+				},
+			},
+		],
+		"purchase-orders": [
+			{
+				id: "po-1",
+				number: "PO-2609-0001",
+				order: "order-1",
+				supplierShop: "supplier",
+				resellerShop: "reseller",
+				link: "link-1",
+				status: "shipped",
+				paymentMethod: "cod",
+				items: [
+					{
+						orderItem: "item-1",
+						variant: "variant-1",
+						title: "Phone <img src=x onerror=alert(1)>",
+						sku: "SKU-42",
+						quantity: 2,
+						supplierUnitPrice: 4_000,
+						resellerUnitPrice: 7_000,
+					},
+				],
+				supplierAmount: 8_000,
+				deliveryFee: 2_000,
+				collectAmount: 16_000,
+				platformCommission: 1_120,
+				resellerCommission: 4_880,
+				branding: {
+					name: "Akwa Tech",
+					handle: "akwa-tech",
+					phone: "+237699000000",
+				},
+				sentAt: "2026-09-15T10:00:00.000Z",
+				acceptBy: "2026-09-16T10:00:00.000Z",
+				statusHistory: [],
+			},
+		],
+	});
+}
 
 describe("purchase order packing slip", () => {
 	it("renders bilingual print pages with delivery codes and no supplier cost", async () => {
-		const payload = fakePayload({
-			shops: [
-				{
-					id: "supplier",
-					name: "Supplier <script>alert(1)</script>",
-					owner: "supplier-user",
-					status: "active",
-					level: 3,
-					location: { city: "Douala" },
-				},
-				{ id: "reseller", status: "active", level: 2 },
-			],
-			"shop-members": [
-				{
-					id: "supplier-membership",
-					shop: "supplier",
-					user: "supplier-user",
-					role: "owner",
-					status: "active",
-				},
-			],
-			orders: [
-				{
-					id: "order-1",
-					orderNumber: "BNS-1",
-					shop: "reseller",
-					buyer: "buyer",
-					status: "shipped",
-					paymentMethod: "cod",
-					paymentStatus: "cod_pending",
-					amounts: { total: 9_000 },
-					delivery: {
-						recipientName: "Buyer <b>One</b>",
-						phone: "+237600000000",
-						city: "Douala",
-						district: "Akwa",
-						landmark: "Rue < 4",
-						gps: { lat: 4.0511, lng: 9.7679 },
-					},
-				},
-			],
-			"purchase-orders": [
-				{
-					id: "po-1",
-					number: "PO-2609-0001",
-					order: "order-1",
-					supplierShop: "supplier",
-					resellerShop: "reseller",
-					link: "link-1",
-					status: "shipped",
-					paymentMethod: "cod",
-					items: [
-						{
-							orderItem: "item-1",
-							variant: "variant-1",
-							title: "Phone <img src=x onerror=alert(1)>",
-							sku: "SKU-42",
-							quantity: 2,
-							supplierUnitPrice: 4_000,
-							resellerUnitPrice: 7_000,
-						},
-					],
-					supplierAmount: 8_000,
-					deliveryFee: 2_000,
-					collectAmount: 16_000,
-					platformCommission: 1_120,
-					resellerCommission: 4_880,
-					branding: {
-						name: "Akwa Tech",
-						handle: "akwa-tech",
-						phone: "+237699000000",
-					},
-					sentAt: "2026-09-15T10:00:00.000Z",
-					acceptBy: "2026-09-16T10:00:00.000Z",
-					statusHistory: [],
-				},
-			],
-		});
+		const payload = world();
 
 		const html = await getPurchaseOrderPackingSlipHtml(
 			payload,
@@ -104,5 +113,46 @@ describe("purchase order packing slip", () => {
 		expect(html).not.toContain("4 000");
 		expect(html).not.toContain("<script>alert(1)</script>");
 		expect(html).not.toContain("<img src=x onerror=alert(1)>");
+	});
+
+	it("prints the amount to collect in the order's market format", async () => {
+		const payload = world({ market: "m-cm" }, [cmMarketRow()]);
+		const html = await getPurchaseOrderPackingSlipHtml(
+			payload,
+			{ id: "supplier-user", role: "user" },
+			"po-1",
+			"fr",
+		);
+		expect(html).toContain("16\u202f000 FCFA");
+	});
+
+	it("a known two-decimal market with no row for the slip's language prints the M9 code-first form", async () => {
+		const gbp = {
+			...cmMarketRow(),
+			id: "m-gb",
+			countryCode: "GB",
+			currency: { code: "GBP", minorUnit: 2, rounding: "half_up" },
+			formatting: [
+				{
+					locale: "fr",
+					symbol: "£",
+					position: "before",
+					groupSeparator: " ",
+					decimalSeparator: ",",
+				},
+			],
+		};
+		const payload = world(
+			{ market: "m-gb", amounts: { total: 9_000, currency: "GBP" } },
+			[gbp],
+		);
+		const html = await getPurchaseOrderPackingSlipHtml(
+			payload,
+			{ id: "supplier-user", role: "user" },
+			"po-1",
+			"en",
+		);
+		expect(html).toContain("GBP 160.00");
+		expect(html).not.toContain("16 000 GBP");
 	});
 });

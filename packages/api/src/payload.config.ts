@@ -31,6 +31,8 @@ import { LedgerAccounts } from "./collections/LedgerAccounts";
 import { LedgerTransactions } from "./collections/LedgerTransactions";
 import { Listings } from "./collections/Listings";
 import { ListingViewFlushes } from "./collections/ListingViewFlushes";
+import { MarketCities } from "./collections/MarketCities";
+import { Markets } from "./collections/Markets";
 import { Media } from "./collections/Media";
 import { Messages } from "./collections/Messages";
 import { ModerationLog } from "./collections/ModerationLog";
@@ -132,6 +134,7 @@ import {
 	syncConnectedAccountTask,
 } from "./jobs";
 import { afterCollectionsReady } from "./lib/migrationsReady";
+import { registerConfiguredAdapters } from "./lib/payments/registerAdapters";
 import { registerResaleAdjuster } from "./lib/resale";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
@@ -149,6 +152,7 @@ const dirname = path.dirname(filename);
 // P3's reaction to a level change. Explicit rather than a module side effect,
 // so nothing depends on which file happened to be imported first.
 registerShopTeamLevelListener();
+registerConfiguredAdapters();
 registerShipmentOrderEvents();
 registerPurchaseOrderOrderEvents();
 registerResaleAdjuster({ adjustResellerCommission });
@@ -161,10 +165,11 @@ registerRefundSubmissionQueue((payload, { refundId, waitUntil }) =>
 	}),
 );
 
-// Payload's scheduler reads crons in the server's zone, which is UTC in the
-// api image; Africa/Douala is UTC+1 all year, so each daily time below is the
-// Douala hour minus one. The P5 jobs are scheduled here rather than in their
-// own files so the whole money calendar reads in one place.
+// Payload's scheduler reads crons in the server's zone, UTC in the api image.
+// The release and reconcile sweeps run hourly and gate on each market's own
+// local hour (markets.moneyCalendar); the daily rows below are fixed UTC times.
+// The P5 jobs are scheduled here rather than in their own files so the whole
+// money calendar reads in one place.
 const PAYMENTS = "payments";
 const paymentTasks = [
 	submitRefundTask,
@@ -174,7 +179,7 @@ const paymentTasks = [
 	},
 	{
 		...releaseEligibleFundsTask,
-		schedule: [{ cron: "0 9 * * *", queue: PAYMENTS }], // 10:00 Douala
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
 	},
 	{
 		...expirePayoutHoldsTask,
@@ -182,11 +187,11 @@ const paymentTasks = [
 	},
 	{
 		...reconcileLedgerTask,
-		schedule: [{ cron: "30 1 * * *", queue: PAYMENTS }], // 02:30 Douala
+		schedule: [{ cron: "0 * * * *", queue: PAYMENTS }],
 	},
 	{
 		...recoverSellerReceivablesTask,
-		schedule: [{ cron: "0 2 * * *", queue: PAYMENTS }], // 03:00 Douala
+		schedule: [{ cron: "0 2 * * *", queue: PAYMENTS }], // 03:00 WAT
 	},
 	{
 		...sweepBuyerFeeInvoicesTask,
@@ -217,15 +222,15 @@ const deliveryTasks = [
 	},
 	{
 		...remindReturnsTask,
-		schedule: [{ cron: "30 6 * * *", queue: "nightly" }], // 07:30 Douala
+		schedule: [{ cron: "30 6 * * *", queue: "nightly" }], // 07:30 WAT
 	},
 	{
 		...expireRiderLinksTask,
-		schedule: [{ cron: "45 2 * * *", queue: "nightly" }], // 03:45 Douala
+		schedule: [{ cron: "45 2 * * *", queue: "nightly" }], // 03:45 WAT
 	},
 	{
 		...purgeDeliveryProofsTask,
-		schedule: [{ cron: "15 2 * * *", queue: "nightly" }], // 03:15 Douala
+		schedule: [{ cron: "15 2 * * *", queue: "nightly" }], // 03:15 WAT
 	},
 ];
 
@@ -285,6 +290,8 @@ export default buildConfig({
 		WebhookEvents,
 		ContactReveals,
 		DeliveryZones,
+		Markets,
+		MarketCities,
 		ShopLocations,
 		Couriers,
 		CourierMembers,

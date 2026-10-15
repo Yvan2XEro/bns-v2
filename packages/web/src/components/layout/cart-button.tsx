@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useCart } from "~/hooks/use-cart";
 import { cartTotals } from "~/lib/cart-lines";
+import { cartLinesOf } from "~/lib/checkout-group-flow";
 
 /** The header's cart entry; absent, not broken, while ordering is off. */
 export function CartButton({ className }: { className?: string }) {
@@ -14,7 +15,7 @@ export function CartButton({ className }: { className?: string }) {
 	const cart = useCart(ordersEnabled);
 	if (!ordersEnabled) return null;
 
-	const count = cart.data ? cartTotals(cart.data.lines).itemCount : 0;
+	const count = cart.data ? cartTotals(cartLinesOf(cart.data)).itemCount : 0;
 
 	return (
 		<Link

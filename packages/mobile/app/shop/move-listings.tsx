@@ -24,8 +24,8 @@ import {
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-import { formatXaf } from "@/src/lib/variants";
 import type { ListingDoc } from "@/src/types/api";
 
 export default function MoveListingsScreen() {
@@ -187,8 +187,8 @@ export default function MoveListingsScreen() {
 										{item.title}
 									</Text>
 									<Text style={[styles.meta, { color: c.muted }]}>
-										{item.price ? formatXaf(item.price, i18n.language) : "—"} ·{" "}
-										{t(`catalogue.listingStatus_${item.status}`)}
+										{item.price ? formatPrice(item.price, i18n.language) : "—"}{" "}
+										· {t(`catalogue.listingStatus_${item.status}`)}
 									</Text>
 								</View>
 							</Pressable>

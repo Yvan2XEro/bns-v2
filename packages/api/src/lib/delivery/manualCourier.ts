@@ -41,7 +41,7 @@ export class ManualCourierProvider implements CourierProvider {
 		if (!tariff) throw new CourierUnavailableError(this.courier.key);
 		return {
 			amount: tariff.amount,
-			currency: "XAF",
+			currency: params.currency,
 			etaMinHours: tariff.etaMinHours,
 			etaMaxHours: tariff.etaMaxHours,
 		};

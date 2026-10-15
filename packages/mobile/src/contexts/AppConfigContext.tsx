@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useContext } from "react";
+import { createContext, Fragment, useContext } from "react";
 import { api } from "@/src/lib/api";
+import { setMarket } from "@/src/lib/market";
 import type { LaunchCityOption } from "@/src/types/order";
+import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
 
 /** `AppSettings.payments.buyerProtection`, mirrored from web's own `useAppConfig`. */
 export interface BuyerProtectionConfig {
@@ -38,6 +40,8 @@ export interface AppConfig {
 	resalePrepaidEnabled: boolean;
 	/** Rate, minimum and maximum for the buyer protection fee. */
 	buyerProtection: BuyerProtectionConfig;
+	/** Absent from an API that predates markets; money and phone then use the M9 fallbacks. */
+	market?: MarketConfig;
 }
 
 const DEFAULT: AppConfig = {
@@ -72,17 +76,20 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 		queryKey: ["app-config"],
 		// A released API that predates a config key keeps that feature off by
 		// merging over the default rather than leaving the key undefined.
-		queryFn: async () => ({
-			...DEFAULT,
-			...(await api.get<Partial<AppConfig>>("/api/public/config")),
-		}),
+		queryFn: async () => {
+			const raw = await api.get<Partial<AppConfig>>("/api/public/config");
+			setMarket(raw.market);
+			return { ...DEFAULT, ...raw };
+		},
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: 3,
 	});
 
+	// formatPrice call sites read a module store and never re-render on their
+	// own; remounting once when the market arrives replaces the M9 fallback.
 	return (
 		<AppConfigContext.Provider value={config}>
-			{children}
+			<Fragment key={config.market?.countryCode ?? "none"}>{children}</Fragment>
 		</AppConfigContext.Provider>
 	);
 }

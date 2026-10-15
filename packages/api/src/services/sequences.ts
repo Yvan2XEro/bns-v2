@@ -1,24 +1,54 @@
 import type { Payload, PayloadRequest } from "payload";
+import { type Market, marketOfOrder, marketOfShop } from "../lib/markets";
+import { LEGACY_TIMEZONE, localMonthKey } from "../lib/marketTime";
+import { relationId } from "../lib/relationId";
+import type { Order, Shop } from "../payload-types";
 
-const DOUALA = "Africa/Douala";
+/** The slice of a market a counter needs: whose series, on whose clock. */
+export type SequenceMarket = Pick<Market, "countryCode" | "timezone">;
 
-/** `YYMM` in Africa/Douala — a checkout at 00:10 local must not land in last month. */
-export function monthKeyFor(date: Date): string {
-	const parts = new Intl.DateTimeFormat("en-GB", {
-		timeZone: DOUALA,
-		year: "2-digit",
-		month: "2-digit",
-	}).formatToParts(date);
-	const year = parts.find((p) => p.type === "year")?.value ?? "00";
-	const month = parts.find((p) => p.type === "month")?.value ?? "01";
-	return `${year}${month}`;
+/** Callers that predate markets keep Cameroon's series until they pass theirs. */
+const LEGACY_MARKET: SequenceMarket = {
+	countryCode: "CM",
+	timezone: LEGACY_TIMEZONE,
+};
+
+/** `YYMM` on the market's wall clock — a checkout at 00:10 local must not land in last month. */
+export function monthKeyFor(
+	date: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): string {
+	return localMonthKey(date, timezone);
 }
 
 function yearKeyFor(date: Date): string {
 	return new Intl.DateTimeFormat("en-GB", {
-		timeZone: DOUALA,
+		timeZone: LEGACY_TIMEZONE,
 		year: "numeric",
 	}).format(date);
+}
+
+/** The series an order's documents number in; an order no market claims keeps the legacy series. */
+export async function sequenceMarketOfOrder(
+	payload: Payload,
+	order: Pick<Order, "market" | "amounts">,
+): Promise<SequenceMarket> {
+	const market = await marketOfOrder(payload, order);
+	if (market) return market;
+	// A stamp that resolves to nothing is a dangling relationship, not a pre-P10 order.
+	if (order.market) {
+		payload.logger.warn(
+			`[sequences] order market ${relationId(order.market)} not found, numbering in the legacy series`,
+		);
+	}
+	return LEGACY_MARKET;
+}
+
+export async function sequenceMarketOfShop(
+	payload: Payload,
+	shop: Pick<Shop, "location">,
+): Promise<SequenceMarket> {
+	return marketOfShop(payload, shop).catch(() => LEGACY_MARKET);
 }
 
 export function formatSequence(
@@ -71,17 +101,24 @@ export async function nextNumber(
 	payload: Payload,
 	prefix: string,
 	date: Date,
+	market: SequenceMarket = LEGACY_MARKET,
 	options: { width?: number } = {},
 ): Promise<string> {
 	const width = options.width ?? 6;
-	const monthKey = monthKeyFor(date);
-	const value = await bump(payload, `${prefix}:${monthKey}`);
+	const monthKey = monthKeyFor(date, market.timezone);
+	const value = await bump(
+		payload,
+		`${prefix}:${monthKey}:${market.countryCode}`,
+	);
 	return formatSequence(prefix, monthKey, value, width);
 }
 
 /**
  * Yearly invoice series, NO gaps — a tax authority reads these. It runs
  * INSIDE the caller's transaction, so an aborted invoice releases its number.
+ * The year boundary is deliberately one fixed zone: `BNS-{S}-{year}` is the
+ * Cameroonian legal entity's gapless fiscal series, so there is one year
+ * boundary per legal entity until a second entity exists.
  */
 export async function nextInvoiceNumber(
 	req: PayloadRequest,

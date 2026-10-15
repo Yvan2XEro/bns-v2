@@ -112,7 +112,7 @@ export function closeShopSchema(handle: string) {
 
 export type CloseShopValues = z.infer<ReturnType<typeof closeShopSchema>>;
 
-/** "+237677504218" → "+2376•• •• 04218", as in the mockups. */
+/** Keeps the first five and last five characters: dial code and first digit, then the tail. */
 export function maskPhone(phone: null | string): string {
 	if (!phone) return "";
 	return `${phone.slice(0, 5)}•• •• ${phone.slice(-5)}`;

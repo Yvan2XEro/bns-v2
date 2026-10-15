@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { cmMarket } from "../test/market-fixture";
+import { marketPhoneRule } from "./market-phone";
 import {
 	ATTEMPT_IN_PROGRESS_MS,
 	type AttemptFormState,
@@ -180,8 +182,10 @@ describe("attemptFormReducer", () => {
 });
 
 describe("payAttemptSchema", () => {
+	const schema = payAttemptSchema(marketPhoneRule(cmMarket()).pattern);
+
 	test("accepts a known channel and a Cameroonian mobile number", () => {
-		const result = payAttemptSchema.safeParse({
+		const result = schema.safeParse({
 			channel: "cm.mtn",
 			phone: "+237670000000",
 		});
@@ -189,7 +193,7 @@ describe("payAttemptSchema", () => {
 	});
 	test("refuses an unknown channel", () => {
 		expect(
-			payAttemptSchema.safeParse({
+			schema.safeParse({
 				channel: "cm.vodafone",
 				phone: "+237670000000",
 			}).success,
@@ -197,8 +201,7 @@ describe("payAttemptSchema", () => {
 	});
 	test("refuses a phone outside the Cameroonian mobile shape", () => {
 		expect(
-			payAttemptSchema.safeParse({ channel: "cm.mtn", phone: "0670000000" })
-				.success,
+			schema.safeParse({ channel: "cm.mtn", phone: "0670000000" }).success,
 		).toBe(false);
 	});
 });

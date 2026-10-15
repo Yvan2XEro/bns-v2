@@ -232,6 +232,8 @@ export interface OrderListEntryView {
 	firstItemImageUrl: string | null;
 	shopName: string;
 	deliveryFailureReason: string | null;
+	/** Buyer list only, and only on a split order: the key that groups siblings. */
+	checkoutGroup?: string;
 	/** Shop queue only: a buyer's own list has no use for the recipient, the accept clock or the tier. */
 	recipientName?: string;
 	acceptBy?: string | null;
@@ -353,6 +355,12 @@ function deliveryView(
 	};
 }
 
+function requiredCurrency(order: Order): string {
+	const currency = order.amounts?.currency;
+	if (!currency) throw new Error(`order ${order.id} carries no currency`);
+	return currency;
+}
+
 function amountsView(order: Order): OrderAmountsView {
 	return {
 		subtotal: order.amounts?.subtotal ?? 0,
@@ -360,7 +368,7 @@ function amountsView(order: Order): OrderAmountsView {
 		discount: order.amounts?.discount ?? 0,
 		buyerProtectionFee: order.amounts?.buyerProtectionFee ?? 0,
 		total: order.amounts?.total ?? 0,
-		currency: order.amounts?.currency ?? "XAF",
+		currency: requiredCurrency(order),
 	};
 }
 
@@ -707,6 +715,9 @@ export function serializeOrderListEntry(
 		shopName: sources.shopName,
 		deliveryFailureReason: order.deliveryFailure?.reason ?? null,
 	};
+	if (role === "buyer" && order.checkoutGroup) {
+		entry.checkoutGroup = order.checkoutGroup;
+	}
 	if (role === "shop") {
 		entry.recipientName = order.delivery.recipientName;
 		entry.acceptBy = order.deadlines?.acceptBy ?? null;

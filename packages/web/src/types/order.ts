@@ -64,6 +64,7 @@ export type {
 
 import type {
 	DeliveryMethod,
+	DeliveryOption,
 	PickupPointSnapshot,
 } from "../../../api/src/contracts/deliveryQuote";
 export type PaymentMethod = "cod" | "mobile_money";
@@ -104,12 +105,12 @@ export interface CartView {
 	lines: CartLineView[];
 	subtotal: number;
 	shopOrderable: boolean;
-	currency: "XAF";
+	currency: string;
 }
 
 export interface AddressInput {
 	recipientName: string;
-	/** E.164, `^\+2376\d{8}$`. */
+	/** E.164, validated against the market's served phone pattern. */
 	phone: string;
 	/** A launch city key. */
 	city: string;
@@ -133,7 +134,7 @@ export interface OrderAmounts {
 	discount: 0;
 	buyerProtectionFee: 0;
 	total: number;
-	currency: "XAF";
+	currency: string;
 }
 
 export interface ContractSnapshot {
@@ -199,6 +200,17 @@ export interface QuoteResponse {
 	confirmationRequired: ConfirmationRequired;
 	quoteHash: string;
 }
+
+// The split views are the server's own contracts now (the shipped slice), so
+// the mirror this file used to carry cannot drift.
+export type {
+	CartShopView as SplitShopView,
+	SplitCartGroup,
+	SplitCartView,
+	SplitPlaceResponse,
+	SplitQuoteGroup,
+	SplitQuoteView,
+} from "../../../api/src/contracts/checkoutGroup";
 
 export interface PlaceResponse {
 	orderId: string;
@@ -360,6 +372,8 @@ export interface OrderListEntry {
 	firstItemImageUrl: string | null;
 	/** Buyer role. */
 	shopName: string;
+	/** Buyer role: siblings of one split checkout share it. */
+	checkoutGroup?: string;
 	/** Shop role. */
 	recipientName?: string;
 	/** Shop role. */
@@ -391,7 +405,7 @@ export interface CommissionInvoiceView {
 	commissionTotal: number;
 	vatAmount: number;
 	totalDue: number;
-	currency: "XAF";
+	currency: string;
 	status: "issued" | "paid" | "overdue" | "waived" | "void";
 	issuedAt: string;
 	dueAt: string;

@@ -6,9 +6,7 @@ import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
-import type {
-	ProductVariant,
-} from "../payload-types";
+import type { ProductVariant } from "../payload-types";
 import {
 	hasAcceptedCurrentResaleTerms,
 	updateResaleListingHold,

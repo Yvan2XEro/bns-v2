@@ -40,8 +40,8 @@ import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
 import { conditionLabelKey } from "@/src/lib/listingCondition";
+import { formatPrice, formatPriceRange } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
-import { formatXafRange } from "@/src/lib/variants";
 import { publicShopBadge } from "@/src/lib/verification";
 import type {
 	Favorite,
@@ -239,7 +239,7 @@ export default function ListingDetail() {
 		Share.share({
 			title: listing?.title,
 			url,
-			message: `${listing?.title} — ${listing?.price?.toLocaleString()} XAF\n${url}`,
+			message: `${listing?.title} — ${formatPrice(listing?.price ?? 0, i18n.language)}\n${url}`,
 		});
 	};
 
@@ -472,22 +472,15 @@ export default function ListingDetail() {
 						<Text style={[styles.price, { color: primaryColor }]}>
 							{summary?.priceMin != null &&
 							summary.priceMax != null &&
-							summary.priceMax !== summary.priceMin ? (
-								formatXafRange(
-									summary.priceMin,
-									summary.priceMax,
-									i18n.language,
-								)
-							) : listing.price ? (
-								<>
-									{listing.price.toLocaleString()}{" "}
-									<Text style={[styles.priceSuffix, { color: mutedColor }]}>
-										XAF
-									</Text>
-								</>
-							) : (
-								t("listing.priceOnRequest")
-							)}
+							summary.priceMax !== summary.priceMin
+								? formatPriceRange(
+										summary.priceMin,
+										summary.priceMax,
+										i18n.language,
+									)
+								: listing.price
+									? formatPrice(listing.price, i18n.language)
+									: t("listing.priceOnRequest")}
 						</Text>
 						<Text style={[styles.title, { color: textColor }]}>
 							{listing.title}

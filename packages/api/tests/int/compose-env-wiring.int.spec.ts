@@ -16,6 +16,10 @@ import { describe, expect, it } from "vitest";
 
 const REPO = path.resolve(__dirname, "../../../..");
 const API_SRC = path.resolve(__dirname, "../../src");
+// Each container's own listen port: the same name on purpose, never a value
+// two services must agree on.
+const PER_CONTAINER = new Set(["PORT"]);
+
 const COMPOSE_FILES = [
 	"docker-compose.yml",
 	"docker-compose.atlas.yml",
@@ -80,7 +84,11 @@ describe("a variable the API reads is wired to the api container", () => {
 			for (const [name, env] of services) {
 				if (name === "api") continue;
 				for (const variable of env) {
-					if (apiReads.has(variable) && !api?.has(variable)) {
+					if (
+						apiReads.has(variable) &&
+						!PER_CONTAINER.has(variable) &&
+						!api?.has(variable)
+					) {
 						missing.add(`${variable} (given to ${name})`);
 					}
 				}

@@ -56,14 +56,26 @@ async function main() {
 	});
 	console.log("active members:", members.totalDocs);
 	for (const m of members.docs) {
-		const userId = String(typeof m.user === "object" && m.user ? m.user.id : m.user);
+		const userId = String(
+			typeof m.user === "object" && m.user ? m.user.id : m.user,
+		);
 		const user = await payload
-			.findByID({ collection: "users", id: userId, depth: 0, overrideAccess: true })
+			.findByID({
+				collection: "users",
+				id: userId,
+				depth: 0,
+				overrideAccess: true,
+			})
 			.catch(() => null);
 		if (!user) continue;
 		try {
 			const res = await getMyShop(payload, user as never);
-			console.log("OK", userId, "->", res.shop ? `${res.shop.handle} (${res.shop.status})` : "no shop");
+			console.log(
+				"OK",
+				userId,
+				"->",
+				res.shop ? `${res.shop.handle} (${res.shop.status})` : "no shop",
+			);
 		} catch (e) {
 			console.log("=== THREW for", userId, "===");
 			console.log((e as Error).stack);
@@ -74,6 +86,9 @@ async function main() {
 	process.exit(0);
 }
 main().catch((e) => {
-	console.error("BOOT FAIL", (e as Error).stack?.split("\n").slice(0, 8).join("\n"));
+	console.error(
+		"BOOT FAIL",
+		(e as Error).stack?.split("\n").slice(0, 8).join("\n"),
+	);
 	process.exit(1);
 });

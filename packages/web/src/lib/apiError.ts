@@ -253,6 +253,16 @@ export const ERROR_CODES = {
 	courierCityNotServed: "courier.cityNotServed",
 	courierProviderError: "courier.providerError",
 	courierCancelRefused: "courier.cancelRefused",
+
+	// Markets and split checkout (P10)
+	marketUnknown: "market.unknown",
+	marketNotLive: "market.notLive",
+	marketFeatureClosed: "market.featureClosed",
+	cartMarketMismatch: "cart.marketMismatch",
+	cartShopLimitReached: "cart.shopLimitReached",
+	checkoutStockChanged: "checkout.stockChanged",
+	checkoutGroupUnavailable: "checkout.groupUnavailable",
+	orderMixedFulfilment: "order.mixedFulfilment",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -606,6 +616,20 @@ const FALLBACKS: Record<string, string> = {
 		"The courier could not process this request. Please try again shortly.",
 	[ERROR_CODES.courierCancelRefused]:
 		"The courier refused the cancellation. The shipment remains active.",
+	[ERROR_CODES.marketUnknown]: "This market does not exist.",
+	[ERROR_CODES.marketNotLive]: "This market is not open yet.",
+	[ERROR_CODES.marketFeatureClosed]:
+		"This feature is not available in this market yet.",
+	[ERROR_CODES.cartMarketMismatch]:
+		"This shop sells in another country. Finish or empty your current cart first.",
+	[ERROR_CODES.cartShopLimitReached]:
+		"Your cart already holds the maximum number of shops. Check out or remove one before adding another.",
+	[ERROR_CODES.checkoutStockChanged]:
+		"An item in your cart just sold out. Review your cart and try again.",
+	[ERROR_CODES.checkoutGroupUnavailable]:
+		"One of the shops in your cart can no longer take your order. Review your cart and try again.",
+	[ERROR_CODES.orderMixedFulfilment]:
+		"Something went wrong assembling your order. Nothing was placed; please try again.",
 };
 
 export function fallbackFor(code: string): string {

@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
-import { removeCartItem, setCartItemQuantity } from "@/services/cart";
+import {
+	removeCartItemResponse,
+	setCartItemQuantityResponse,
+} from "@/services/cart";
 
 type Params = { params: Promise<{ lineId: string }> };
 
@@ -21,7 +24,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
 	try {
 		return Response.json(
-			await setCartItemQuantity(
+			await setCartItemQuantityResponse(
 				ctx.payload,
 				ctx.user,
 				parsedParams.data.lineId,
@@ -42,7 +45,11 @@ export async function DELETE(request: Request, { params }: Params) {
 
 	try {
 		return Response.json(
-			await removeCartItem(ctx.payload, ctx.user, parsedParams.data.lineId),
+			await removeCartItemResponse(
+				ctx.payload,
+				ctx.user,
+				parsedParams.data.lineId,
+			),
 		);
 	} catch (error) {
 		return handleServiceError("cart:items:remove", error);

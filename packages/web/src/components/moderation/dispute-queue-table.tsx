@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
@@ -19,6 +20,7 @@ export function DisputeQueueTable({
 }) {
 	const t = useTranslations("ModerationDisputes");
 	const tRoot = useTranslations();
+	const formatOrderMoney = useOrderMoney();
 	const locale = useLocale();
 	const date = new Intl.DateTimeFormat(locale, {
 		dateStyle: "medium",
@@ -63,7 +65,7 @@ export function DisputeQueueTable({
 									{row.paymentMethod ? t(`payment.${row.paymentMethod}`) : "—"}
 								</td>
 								<td className="px-3 py-2">
-									{row.amountAtStake.toLocaleString(locale)} XAF
+									{formatOrderMoney(row.amountAtStake)}
 								</td>
 								<td className="px-3 py-2">
 									{row.status

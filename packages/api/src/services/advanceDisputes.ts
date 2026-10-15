@@ -1,5 +1,4 @@
 import type { Payload, PayloadRequest } from "payload";
-import { businessDaysAfter } from "../lib/caseMath";
 import { getDisputeSettings } from "../lib/caseSettings";
 import { proofChecklist, silenceOutcome } from "../lib/disputeRules";
 import { relationId } from "../lib/relationId";
@@ -14,7 +13,7 @@ import {
 	notifyDisputeReviewOverdue,
 } from "./caseNotifications";
 import { applyOutcome } from "./disputeOutcome";
-import { moveDispute } from "./disputes";
+import { moveDispute, reviewDueAt } from "./disputes";
 import { applyReservedTransition } from "./orders/transitions";
 import { findActiveHold, releaseHold } from "./payoutHolds";
 
@@ -253,10 +252,12 @@ async function advanceOne(
 					proposal: { ...dispute.proposal, status: "lapsed" },
 					deadlines: {
 						...dispute.deadlines,
-						reviewDueAt: businessDaysAfter(
+						reviewDueAt: await reviewDueAt(
+							req,
+							dispute,
 							now,
 							settings.reviewBusinessDays,
-						).toISOString(),
+						),
 					},
 				},
 			});
@@ -281,10 +282,12 @@ async function advanceOne(
 					data: {
 						deadlines: {
 							...moved.deadlines,
-							reviewDueAt: businessDaysAfter(
+							reviewDueAt: await reviewDueAt(
+								req,
+								dispute,
 								now,
 								settings.reviewBusinessDays,
-							).toISOString(),
+							),
 						},
 					},
 				});
@@ -332,10 +335,12 @@ async function advanceOne(
 					data: {
 						deadlines: {
 							...dispute.deadlines,
-							reviewDueAt: businessDaysAfter(
+							reviewDueAt: await reviewDueAt(
+								req,
+								dispute,
 								now,
 								settings.reviewBusinessDays,
-							).toISOString(),
+							),
 						},
 					},
 				});

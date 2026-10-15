@@ -114,7 +114,7 @@
 		"clearAllFilters": "Effacer tous les filtres",
 		"category": "Catégorie",
 		"allCategories": "Toutes les catégories",
-		"price": "Prix (XAF)",
+		"price": "Prix ({currency})",
 		"minPrice": "Min",
 		"maxPrice": "Max",
 		"location": "Lieu",
@@ -215,7 +215,7 @@
 		"title": "Titre",
 		"whatAreYouSelling": "Que vendez-vous ?",
 		"whatAreYouOffering": "De quoi parle cette annonce ?",
-		"priceXaf": "Prix (XAF)",
+		"priceXaf": "Prix ({currency})",
 		"localisation": "Localisation",
 		"conditionLabel": "État",
 		"selectCondition": "Sélectionner l'état",
@@ -738,8 +738,8 @@
 		"card": "Carte bancaire",
 		"cardDesc": "Visa, Mastercard…",
 		"cardUnavailable": "Non disponible",
-		"payBtn": "Payer {amount} XAF",
-		"continueBtn": "Continuer — {amount} XAF",
+		"payBtn": "Payer {amount}",
+		"continueBtn": "Continuer — {amount}",
 		"confirmPayBtn": "Confirmer le paiement",
 		"back": "Retour",
 		"cancel": "Annuler",
@@ -975,8 +975,8 @@
 		"noOutOfStock": "Aucun produit en rupture ne reçoit de vues.",
 		"chartViews": "Vues",
 		"chartOrders": "Commandes",
-		"chartGmv": "Ventes livrées (XAF)",
-		"chartGmvAxis": "Ventes · échelle de droite (XAF)",
+		"chartGmv": "Ventes livrées",
+		"chartGmvAxis": "Ventes · échelle de droite ({currency})",
 		"chartDescription": "Les vues et commandes quotidiennes utilisent l’échelle de gauche ; les ventes livrées utilisent l’échelle de droite.",
 		"unavailableRate": "Activité insuffisante"
 	},
@@ -998,7 +998,7 @@
 		},
 		"searchPlaceholder": "Nom ou SKU",
 		"colProduct": "Produit",
-		"colPrice": "Prix (XAF)",
+		"colPrice": "Prix ({currency})",
 		"colStock": "Stock",
 		"colStatus": "Statut et annonce",
 		"variantsCount": "{count} variantes",
@@ -1070,7 +1070,7 @@
 		"initialStockNote": "{count, plural, one {# unité} other {# unités}} · la saisie crée une réception datée d'aujourd'hui",
 		"unitsInStock": "{count, plural, one {# unité} other {# unités}} en stock",
 		"costValue": "Valeur au coût : {value}",
-		"priceError": "Chaque variante doit avoir un prix en XAF entiers.",
+		"priceError": "Chaque variante doit avoir un prix en {currency} entiers.",
 		"saleAndDelivery": "Vente et livraison",
 		"cod": "Paiement à la livraison",
 		"codHint": "Espèces ou mobile money à la remise",
@@ -1203,7 +1203,7 @@
 		"colExpected": "Stock attendu",
 		"colCounted": "Compté",
 		"colGap": "Écart",
-		"colGapValue": "Écart au coût (XAF)",
+		"colGapValue": "Écart au coût ({currency})",
 		"defaultVariant": "Variante unique",
 		"errorTitle": "Impossible de charger les variantes",
 		"note": "Inventaire du {date}",
@@ -1643,7 +1643,9 @@
 			"outOfStock": "Le stock est insuffisant pour cette quantité.",
 			"quantityInvalid": "Choisissez une quantité entre 1 et 20.",
 			"singleShop": "Votre panier contient déjà des articles d'une autre boutique.",
-			"singleFulfilment": "Votre panier ne peut contenir que des articles expédiés par un même fournisseur."
+			"singleFulfilment": "Votre panier ne peut contenir que des articles expédiés par un même fournisseur.",
+			"marketMismatch": "Cette boutique vend dans un autre pays. Terminez ou videz d'abord votre panier actuel.",
+			"shopLimitReached": "Votre panier contient déjà le nombre maximum de boutiques. Passez commande ou retirez-en une avant d'en ajouter une autre."
 		},
 		"checkout": {
 			"disabled": "La commande n'est pas encore disponible.",
@@ -1653,7 +1655,9 @@
 			"methodUnavailable": "Ce mode de livraison ou de paiement n'est pas disponible.",
 			"quoteChanged": "Votre récapitulatif a changé. Veuillez le revérifier.",
 			"termsNotAccepted": "Veuillez accepter les conditions de vente pour continuer.",
-			"selfPurchase": "Vous ne pouvez pas commander dans votre propre boutique."
+			"selfPurchase": "Vous ne pouvez pas commander dans votre propre boutique.",
+			"stockChanged": "Un article de votre panier vient d'être épuisé. Vérifiez votre panier et réessayez.",
+			"groupUnavailable": "Une des boutiques de votre panier ne peut plus prendre votre commande. Vérifiez votre panier et réessayez."
 		},
 		"order": {
 			"notFound": "Cette commande n'existe pas.",
@@ -1671,7 +1675,8 @@
 			"handoverLocked": "Trop de codes de remise incorrects. Demandez un nouveau code à l'acheteur ou qu'il confirme dans l'application.",
 			"contestWindowClosed": "Le délai pour contester cette livraison est écoulé.",
 			"withdrawalWindowClosed": "Le délai de retour de 15 jours est écoulé.",
-			"withdrawalAlreadyRequested": "Un retour est déjà en cours pour cette commande."
+			"withdrawalAlreadyRequested": "Un retour est déjà en cours pour cette commande.",
+			"mixedFulfilment": "Un problème est survenu lors de la préparation de votre commande. Rien n'a été passé ; veuillez réessayer."
 		},
 		"commission": {
 			"invoiceNotFound": "Cette facture n'existe pas.",
@@ -1772,6 +1777,11 @@
 			"cityNotServed": "Ce coursier ne dessert pas la ville sélectionnée.",
 			"providerError": "Le coursier n'a pas pu traiter cette demande. Réessayez dans quelques instants.",
 			"cancelRefused": "Le coursier a refusé l'annulation. L'expédition reste active."
+		},
+		"market": {
+			"unknown": "Ce marché n'existe pas.",
+			"notLive": "Ce marché n'est pas encore ouvert.",
+			"featureClosed": "Cette fonctionnalité n'est pas encore disponible sur ce marché."
 		}
 	},
 	"Verification": {
@@ -2248,7 +2258,7 @@
 		"promisedBy": "Prévu au plus tard le {date}",
 		"freeDeliveryApplied": "Économie sur la livraison : {amount}",
 		"deliveryUnavailable": {
-			"below_minimum": "La livraison nécessite un sous-total d'au moins {amount} XAF.",
+			"below_minimum": "La livraison nécessite un sous-total d'au moins {amount}.",
 			"cod_not_allowed": "Le paiement à la livraison n'est pas disponible pour ce mode de livraison.",
 			"not_served": "Ce mode de livraison n'est pas disponible pour cette destination."
 		},
@@ -2281,7 +2291,7 @@
 		"salesTerms": "Conditions de vente",
 		"withdrawalInfo": "Droit de rétractation",
 		"languageToggle": "Lire en anglais",
-		"acceptTerms": "J'accepte les conditions de vente",
+		"acceptTerms": "J'ai vérifié les articles, frais et totaux de chaque commande ci-dessus et j'accepte les conditions de vente ; le contrat de chaque commande est émis avec elle une fois passée.",
 		"placeOrder": "Passer la commande",
 		"quoteChanged": "Le total de votre commande a changé",
 		"quoteChangedBody": "Les prix ou les frais ont changé depuis le début de votre commande. Vérifiez le nouveau total avant de confirmer.",
@@ -2311,7 +2321,7 @@
 		"openInGoogleMaps": "Ouvrir dans Google Maps",
 		"clearLocation": "Retirer la position",
 		"errorRecipientName": "Entre 2 et 60 caractères.",
-		"errorPhone": "Un numéro mobile camerounais : +237 6XX XX XX XX.",
+		"errorPhone": "Indiquez un numéro mobile valide, par exemple {example}",
 		"errorCity": "Choisissez une ville de livraison.",
 		"errorDistrict": "Choisissez un quartier de cette ville.",
 		"errorDistrictOther": "Indiquez votre quartier (2 à 60 caractères).",
@@ -2866,7 +2876,7 @@
 		"termsSection": "Conditions de vente",
 		"deliveryFeeHint": "Laissez vide pour appliquer le tarif par défaut de votre ville : {fee}.",
 		"deliveryFeeHintNoCity": "Laissez vide pour appliquer le tarif par défaut de votre ville.",
-		"deliveryFeeInvalid": "Un montant entier entre 0 et 20 000 FCFA.",
+		"deliveryFeeInvalid": "Un montant entier entre 0 et 20 000.",
 		"etaTextPlaceholder": "Ex. : sous 48 h à Douala",
 		"pickupLandmark": "Point de repère",
 		"pickupAddressRequired": "Indiquez l'adresse où vos clients retirent leurs commandes.",
@@ -2913,7 +2923,7 @@
 		"channel_cmOrange": "Orange Money",
 		"comingSoon": "Bientôt disponible",
 		"disclosure_holder": "Votre paiement est encaissé et détenu par NotchPay, un prestataire de paiement. BuyNSellem ne détient jamais votre argent.",
-		"disclosure_listingBadge": "Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {rate} % (min. {min} FCFA)",
+		"disclosure_listingBadge": "Paiement protégé disponible : votre argent n'est versé au vendeur qu'après la livraison. Frais : {rate} % (min. {min})",
 		"disclosure_sellerLegend": "Les fonds sont détenus par NotchPay. BuyNSellem ne détient jamais votre argent.",
 		"expired_body": "Votre commande a été annulée et ses articles remis en vente. Si un montant a été débité de votre compte, il vous sera remboursé automatiquement.",
 		"expired_title": "Le délai de paiement est dépassé",
@@ -3078,12 +3088,12 @@
 		"sellerActions": "Actions de la boutique",
 		"inspect": "Enregistrer l'inspection",
 		"inspectionOutcome": "État de l'article après retour",
-		"deductionAmount": "Montant de la retenue (XAF)",
+		"deductionAmount": "Montant de la retenue ({currency})",
 		"inspectionNote": "Note d'inspection",
 		"evidenceUpload": "Ajouter une photo justificative",
 		"evidenceUploaded": "Justificatif envoyé",
 		"refundMethod": "Mode de remboursement",
-		"refundAmountLabel": "Montant (XAF)",
+		"refundAmountLabel": "Montant ({currency})",
 		"transactionId": "Référence de transaction",
 		"inspection": {
 			"restock": "Remettre en stock",
@@ -3101,7 +3111,7 @@
 		"evidenceCount": "{count} justificatif(s) joint(s)",
 		"removeEvidence": "Retirer le justificatif {number}",
 		"refundProofInstructions": "Joignez une preuve du remboursement effectué. Un remboursement mobile money nécessite également sa référence de transaction.",
-		"refundTooLow": "Le remboursement doit être d'au moins {amount} XAF.",
+		"refundTooLow": "Le remboursement doit être d'au moins {amount}.",
 		"refundProofValidation": "Saisissez un montant positif, joignez un justificatif et indiquez la référence de transaction mobile money.",
 		"refundMethodOptions": {
 			"cash": "Espèces",
@@ -3163,7 +3173,7 @@
 		"overdue": "Échéance dépassée",
 		"viewCase": "Voir le dossier de retour",
 		"orderNumber": "Commande {number}",
-		"refundAmount": "Remboursement : {amount} XAF",
+		"refundAmount": "Remboursement : {amount}",
 		"basis": {
 			"withdrawal": "Rétractation",
 			"non_conformity": "Article non conforme",
@@ -3198,7 +3208,7 @@
 		"trackingLabel": "Numéro de suivi",
 		"trackingPlaceholder": "Numéro de suivi facultatif",
 		"refundProof": "Preuve de remboursement du vendeur",
-		"refundProofDetail": "{method} · {amount} XAF · référence {transactionId}",
+		"refundProofDetail": "{method} · {amount} · référence {transactionId}",
 		"timeline": "Historique du retour"
 	},
 	"Disputes": {
@@ -3215,7 +3225,7 @@
 		"deadline": "Prochaine échéance : {date}",
 		"orderNumber": "Commande {number}",
 		"case": "Litige {number}",
-		"amountAtStake": "Montant concerné : {amount} XAF",
+		"amountAtStake": "Montant concerné : {amount}",
 		"status": {
 			"open": "Brouillon",
 			"awaiting_seller": "En attente de la boutique",
@@ -3248,9 +3258,9 @@
 		"proposal_accept": "Accepter la proposition",
 		"proposal_reject": "Refuser la proposition",
 		"proposal": "Proposition d'accord",
-		"proposedAmount": "Remboursement proposé : {amount} XAF",
+		"proposedAmount": "Remboursement proposé : {amount}",
 		"resolution": "Décision",
-		"refundAmount": "Remboursement : {amount} XAF",
+		"refundAmount": "Remboursement : {amount}",
 		"actionError": "Cette action a échoué. Actualisez la page et réessayez.",
 		"messageRequired": "Saisissez un message.",
 		"back": "Retour aux litiges",
@@ -3281,7 +3291,7 @@
 		"reportReason": "Que s'est-il passé ?",
 		"reportDetails": "Décrivez le problème",
 		"reportOutcome": "Quelle solution demandez-vous ?",
-		"requestedAmountOptional": "Montant demandé en XAF (facultatif)",
+		"requestedAmountOptional": "Montant demandé (facultatif)",
 		"amountError": {
 			"required": "Saisissez le montant demandé.",
 			"invalid": "Saisissez un montant entier positif.",
@@ -3298,8 +3308,8 @@
 		"addEvidence": "Ajouter une photo",
 		"evidenceNeeded": "{count} fichier(s) supplémentaire(s) requis avant l'envoi.",
 		"order": "Commande {number}",
-		"amount": "Montant concerné : {amount} XAF",
-		"refund": "Remboursement : {amount} XAF",
+		"amount": "Montant concerné : {amount}",
+		"refund": "Remboursement : {amount}",
 		"action": {
 			"submit": "Soumettre le litige",
 			"withdraw": "Retirer le litige",
@@ -3353,8 +3363,8 @@
 			"afternoon": "Après-midi (12 h à 16 h)",
 			"evening": "Soirée (16 h à 20 h)"
 		},
-		"freeAboveHint": "Livraison offerte dès {amount} FCFA",
-		"minimumHint": "Livraison à partir de {amount} FCFA"
+		"freeAboveHint": "Livraison offerte dès {amount}",
+		"minimumHint": "Livraison à partir de {amount}"
 	},
 	"ModerationDisputes": {
 		"title": "File des litiges",
@@ -3379,7 +3389,7 @@
 		},
 		"resolveTitle": "Décision",
 		"outcome": "Issue",
-		"refundAmount": "Montant du remboursement (XAF)",
+		"refundAmount": "Montant du remboursement ({currency})",
 		"liableParty": "Partie responsable",
 		"reasonCodeLabel": "Motif de la décision",
 		"returnRequired": "Exiger le retour de l'article",
@@ -3388,8 +3398,8 @@
 		"statementEn": "Décision publique en anglais",
 		"internalNote": "Note interne de modération",
 		"preview": "Prévisualiser la répartition financière",
-		"previewRefund": "Remboursement total : {amount} XAF",
-		"previewBreakdown": "Articles {goods} · livraison {delivery} · protection {protection} XAF",
+		"previewRefund": "Remboursement total : {amount}",
+		"previewBreakdown": "Articles {goods} · livraison {delivery} · protection {protection}",
 		"confirmResolve": "Confirmer la résolution",
 		"liability": {
 			"seller": "Vendeur",
@@ -3522,13 +3532,13 @@
 		"infoMessage": "Que souhaitez-vous savoir ?",
 		"sendInfoRequest": "Envoyer la demande",
 		"resolveHelp": "Prévisualisez la répartition puis confirmez. Le serveur revérifie chaque règle.",
-		"refundBounds": "Autorisé : de {min} à {max} XAF",
-		"adminOnlyAdmin": "Ce remboursement dépasse la limite de modérateur de {limit} XAF. En tant qu'admin, vous pouvez le décider.",
+		"refundBounds": "Autorisé : de {min} à {max}",
+		"adminOnlyAdmin": "Ce remboursement dépasse la limite de modérateur de {limit}. En tant qu'admin, vous pouvez le décider.",
 		"overrideNotice": "Aucune preuve du vendeur n'est établie. Donner raison au vendeur exige le motif abus de l'acheteur, article conforme ou livraison prouvée, et une note interne d'au moins 50 caractères.",
 		"guard": {
 			"refund_invalid": "Saisissez un montant entier.",
 			"refund_out_of_bounds": "Ce montant est hors de la plage autorisée pour l'issue choisie.",
-			"admin_required": "Les remboursements au-delà de {limit} XAF ne peuvent être décidés que par un admin.",
+			"admin_required": "Les remboursements au-delà de {limit} ne peuvent être décidés que par un admin.",
 			"override_required": "Donner raison au vendeur sans preuve exige un motif éligible et une note d'au moins 50 caractères.",
 			"return_payer_required": "Choisissez qui paie le retour.",
 			"statement_required": "Les deux décisions publiques sont obligatoires.",
@@ -3565,9 +3575,9 @@
 		"codYes": "Paiement à la livraison accepté",
 		"codNo": "Pas de paiement à la livraison",
 		"columnDistricts": "Quartiers",
-		"columnFee": "Frais (FCFA)",
-		"columnFreeAbove": "Gratuit dès (FCFA)",
-		"columnMinimum": "Commande minimum (FCFA)",
+		"columnFee": "Frais",
+		"columnFreeAbove": "Gratuit dès",
+		"columnMinimum": "Commande minimum",
 		"columnEta": "Délai de livraison",
 		"columnCod": "Paiement à la livraison",
 		"method": {
@@ -3617,7 +3627,7 @@
 		"testTitle": "Tester une adresse",
 		"testBody": "Voyez ce qui serait proposé à un acheteur, sans rien enregistrer.",
 		"testDistrict": "Quartier",
-		"testSubtotal": "Sous-total du panier (FCFA)",
+		"testSubtotal": "Sous-total du panier",
 		"testRun": "Tester",
 		"couriersBody": "Choisissez un coursier pour une zone depuis l'onglet Zones. Voici les coursiers actifs et leurs tarifs.",
 		"couriersEmpty": "Aucun coursier n'est disponible pour l'instant.",
@@ -3638,7 +3648,7 @@
 		"hoursCloses": "{day} : fermeture",
 		"fieldHoursNote": "Note sur les horaires (facultatif)",
 		"fieldPickup": "Les acheteurs peuvent retirer leurs colis ici",
-		"fieldPickupFee": "Frais de retrait (FCFA)",
+		"fieldPickupFee": "Frais de retrait",
 		"fieldHoldDays": "Jours de conservation",
 		"fieldPreparation": "Préparation (heures)",
 		"fieldDispatchOrigin": "Les colis partent d'ici",
@@ -3654,7 +3664,7 @@
 			"hoursOrder": "Chaque jour ouvert doit fermer après son ouverture.",
 			"hoursRequired": "Le retrait demande au moins un jour ouvert.",
 			"defaultNeedsOrigin": "L'origine par défaut doit être une origine d'expédition active.",
-			"pickupFeeInvalid": "Saisissez des frais entre 0 et 5 000 FCFA.",
+			"pickupFeeInvalid": "Saisissez des frais entre 0 et 5 000.",
 			"holdDaysInvalid": "Conservez le colis de 1 à 14 jours.",
 			"preparationInvalid": "Saisissez de 0 à 72 heures."
 		}
@@ -3913,5 +3923,39 @@
 	"NotFoundBare": {
 		"title": "Ce lien n'est pas valide",
 		"body": "Vérifiez le lien qui vous a été envoyé. S'il devrait encore fonctionner, demandez-en un nouveau à l'expéditeur."
+	},
+	"CheckoutGroup": {
+		"cartGroupHeading": "Commande de {shop}",
+		"groupSubtotal": "Sous-total",
+		"groupDelivery": "Livraison",
+		"groupRemove": "Retirer ce groupe du panier",
+		"stepperPosition": "Commande {n} sur {total}",
+		"payThisOrder": "Payer la commande {orderNumber}",
+		"payNoCode": "Payez — aucun code nécessaire",
+		"summaryPaid": "{count, plural, =0 {Aucune commande payée} one {# commande payée} other {# commandes payées}}",
+		"summaryExpired": "{count, plural, =0 {Aucune commande expirée} one {# commande expirée} other {# commandes expirées}}",
+		"summaryPending": "{count, plural, =0 {Aucune commande en attente} one {# commande en attente} other {# commandes en attente}}",
+		"marketClosedNotice": "Cette fonctionnalité n'est pas encore ouverte sur votre marché.",
+		"marketClosedCheckout": "La commande n'est pas encore ouverte sur votre marché.",
+		"unavailable_not_served": "Cette boutique ne livre pas à votre adresse.",
+		"unavailable_below_minimum": "Le minimum de commande de cette boutique n'est pas atteint.",
+		"unavailable_cod_not_allowed": "Le paiement à la livraison n'est pas proposé par cette boutique.",
+		"unavailable_shop_inactive": "Cette boutique n'accepte plus de commandes pour le moment.",
+		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment.",
+		"groupTitle": "Vos commandes",
+		"retry": "Réessayer",
+		"deliveryAtCheckout": "Calculée à la commande",
+		"groupTotal": "Total",
+		"grandTotal": "Total à payer",
+		"acceptTerms": "J'ai lu et j'accepte le pré-contrat de chacune des commandes ci-dessus.",
+		"placeAll": "Passer les commandes",
+		"placeAllCod": "Passer les commandes (paiement à la livraison)",
+		"unavailableHeading": "Commandes impossibles à passer",
+		"statePaid": "Payée",
+		"stateExpired": "Expirée",
+		"statePending": "En attente de paiement",
+		"viewPurchases": "Voir mes achats",
+		"purchasesHeader": "{count, plural, one {# commande} other {# commandes}} d'un même paiement",
+		"purchasesGroupLink": "Suivi du paiement"
 	}
 }

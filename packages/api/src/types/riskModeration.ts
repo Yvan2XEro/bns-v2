@@ -33,7 +33,12 @@ export const RISK_SIGNALS = [
 ] as const;
 
 export const RISK_SEVERITIES = ["low", "medium", "high"] as const;
-export const RISK_STATUSES = ["open", "reviewed", "dismissed", "actioned"] as const;
+export const RISK_STATUSES = [
+	"open",
+	"reviewed",
+	"dismissed",
+	"actioned",
+] as const;
 export const RISK_RESOLUTIONS = [
 	"none",
 	"warned",
@@ -111,35 +116,35 @@ export type RiskFlagDecisionInput = {
 				targetId: string;
 				reason: string;
 				durationDays: number | null;
-			}
+		  }
 		| {
 				type: "suspend_shop";
 				targetId: string;
 				reason: string;
 				durationDays: number | null;
-			}
+		  }
 		| {
 				type: "hold_payouts";
 				targetId: string;
 				reason: string;
 				durationDays: number | null;
-			}
+		  }
 		| {
 				type: "release_holds";
 				targetId: string;
 				reason: string;
 				durationDays: number | null;
-			}
+		  }
 		| {
 				type: "suspend_resale_link";
 				targetId: string;
 				reason: string;
 				durationDays: number | null;
-			}
+		  }
 		| {
 				type: "cancel_order";
 				targetId: string;
 				reason: string;
 				durationDays: number | null;
-			};
+		  };
 };

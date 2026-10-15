@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Controller, useForm } from "react-hook-form";
+import { useCurrencyCode } from "~/hooks/use-order-money";
 import { useReturnAction } from "~/hooks/use-returns";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { INSPECTION_OUTCOME_LABELS } from "~/lib/case-status";
@@ -17,6 +18,7 @@ import { ReturnEvidenceUpload } from "./return-evidence-upload";
 
 export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 	const t = useTranslations("Returns");
+	const currencyCode = useCurrencyCode();
 	const tRoot = useTranslations();
 	const submit = useReturnAction();
 	const form = useForm<
@@ -83,7 +85,7 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 							</select>
 						</label>
 						<label className="block text-sm">
-							{t("deductionAmount")}
+							{t("deductionAmount", { currency: currencyCode })}
 							<input
 								{...form.register(`items.${index}.deductionAmount`)}
 								inputMode="numeric"

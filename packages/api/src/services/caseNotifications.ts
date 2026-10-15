@@ -1,6 +1,8 @@
 import type { PayloadRequest } from "payload";
 import { isSuspended } from "../access/roles";
 import { triggerNotificationEvent } from "../hooks/notificationEvents";
+import { moneyOfOrder } from "../lib/markets";
+import { amountText } from "../lib/orderFormat";
 import { relationId } from "../lib/relationId";
 import type { Dispute, ReturnCase, ShopStrike } from "../payload-types";
 import { isNotificationProviderConfigured } from "./notificationProvider";
@@ -134,11 +136,12 @@ export async function notifyReturnReceived(
 }
 
 export async function notifyReturnInspected(
-	_req: PayloadRequest,
+	req: PayloadRequest,
 	kase: ReturnCase,
 ): Promise<void> {
 	const buyerId = relationId(kase.buyer);
 	if (!buyerId) return;
+	const money = await moneyOfOrder(req.payload, relationId(kase.order));
 	const deduction = (kase.items ?? []).reduce(
 		(total, item) => total + Number(item.inspection?.deductionAmount ?? 0),
 		0,
@@ -149,7 +152,7 @@ export async function notifyReturnInspected(
 		String(kase.id),
 		kase.number,
 		caseTitle("Retour inspecté / Return inspected"),
-		`Déduction proposée : ${deduction} XAF. / Proposed deduction: ${deduction} XAF.`,
+		`Déduction proposée : ${amountText(deduction, money, "fr")}. / Proposed deduction: ${amountText(deduction, money, "en")}.`,
 		"buyer",
 		"returnId",
 	);

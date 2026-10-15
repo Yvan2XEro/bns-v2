@@ -11,7 +11,9 @@ export function hashDeliveryPhone(pepper: string, e164: string): string {
 	return createHmac("sha256", pepper).update(e164).digest("hex");
 }
 
-export function requirePhonePepper(env: { ORDER_PHONE_PEPPER?: string }): string {
+export function requirePhonePepper(env: {
+	ORDER_PHONE_PEPPER?: string;
+}): string {
 	const pepper = env.ORDER_PHONE_PEPPER;
 	if (!pepper) {
 		throw new Error(

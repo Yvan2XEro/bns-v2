@@ -15,6 +15,7 @@ import {
 	CartCheckoutBar,
 	CartSummary,
 } from "@/src/components/cart/CartSummary";
+import { SplitCart } from "@/src/components/cart/SplitCart";
 import { useAppLocale } from "@/src/components/checkout/CheckoutProvider";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -29,8 +30,9 @@ import {
 } from "@/src/hooks/useCart";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
+import { cartIsEmpty, isSplitCart } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
-import type { CartLineView, CartView } from "@/src/types/order";
+import type { CartLineView, CartView, SplitCartGroup } from "@/src/types/order";
 
 export default function CartScreen() {
 	const c = useShopTheme();
@@ -45,10 +47,24 @@ export default function CartScreen() {
 	const busy = setQuantity.isPending || remove.isPending;
 	const cityLabel = (key: string | null) =>
 		launchCities.find((city) => city.key === key)?.label ?? null;
-	const lines = cart.data?.lines ?? [];
+	const flatCart = cart.data && !isSplitCart(cart.data) ? cart.data : null;
+	const lines = cart.data
+		? isSplitCart(cart.data)
+			? cart.data.groups.flatMap((group) => group.items)
+			: cart.data.lines
+		: [];
 	const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 	const onError = (error: unknown) =>
 		showError(t("cart.errorTitle"), resolveErrorMessage(error, t));
+
+	// The API has no group delete; each line goes, one request at a time.
+	const removeGroup = async (group: SplitCartGroup) => {
+		try {
+			for (const line of group.items) await remove.mutateAsync(line.id);
+		} catch (error) {
+			onError(error);
+		}
+	};
 
 	const body = !ordersEnabled ? (
 		<EmptyState illustration="notFound" title={t("cart.ordersClosed")} />
@@ -68,12 +84,23 @@ export default function CartScreen() {
 			ctaLabel={t("common.retry")}
 			onCta={() => void cart.refetch()}
 		/>
-	) : cart.data.lines.length === 0 ? (
+	) : cartIsEmpty(cart.data) ? (
 		<EmptyState
 			illustration="empty"
 			title={t("cart.empty")}
 			ctaLabel={t("cart.emptyCta")}
 			onCta={() => router.replace("/(tabs)/home")}
+		/>
+	) : isSplitCart(cart.data) ? (
+		<SplitCart
+			cart={cart.data}
+			locale={locale}
+			busy={busy}
+			onQuantity={(lineId, quantity) =>
+				setQuantity.mutate({ lineId, quantity }, { onError })
+			}
+			onRemoveLine={(lineId) => remove.mutate(lineId, { onError })}
+			onRemoveGroup={(group) => void removeGroup(group)}
 		/>
 	) : (
 		<FlashList<CartLineView>
@@ -115,8 +142,8 @@ export default function CartScreen() {
 				}
 			/>
 			<View style={styles.body}>{body}</View>
-			{ordersEnabled && user && cart.data && lines.length > 0 ? (
-				<CartCheckoutBar cart={cart.data} locale={locale} />
+			{ordersEnabled && user && flatCart && lines.length > 0 ? (
+				<CartCheckoutBar cart={flatCart} locale={locale} />
 			) : null}
 		</SafeAreaView>
 	);

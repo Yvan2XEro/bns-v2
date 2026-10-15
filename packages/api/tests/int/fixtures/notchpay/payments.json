@@ -1,0 +1,87 @@
+[
+	{
+		"key": "payment-create",
+		"request": { "method": "POST", "path": "/payments" },
+		"response": {
+			"status": 201,
+			"body": {
+				"transaction": {
+					"id": "trx_{reference}",
+					"reference": "trx.{reference}"
+				},
+				"authorization_url": "https://pay.example/{reference}"
+			}
+		},
+		"binds": { "destAccount": "body.destination.account" },
+		"sets": "payment:{reference}=pending",
+		"assumed": ["A5"]
+	},
+	{
+		"key": "payment-process",
+		"request": { "method": "POST", "path": "/payments/{ref}" },
+		"response": {
+			"status": 202,
+			"body": {
+				"status": "Accepted",
+				"message": "Payment processing initiated",
+				"transaction": { "status": "processing" }
+			}
+		},
+		"assumed": ["A5", "A6"]
+	},
+	{
+		"key": "payment-pending",
+		"request": {
+			"method": "GET",
+			"path": "/payments/{ref}",
+			"when": "payment:{ref}=pending"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"transaction": {
+					"status": "pending",
+					"merchant_reference": "{ref}",
+					"amount": 10300,
+					"currency": "XAF",
+					"reference": "trx.{ref}",
+					"fee": 1492,
+					"destination": { "account": "{destAccount}" }
+				}
+			}
+		},
+		"assumed": ["A7", "A14"]
+	},
+	{
+		"key": "payment-succeeded",
+		"request": {
+			"method": "GET",
+			"path": "/payments/{ref}",
+			"when": "payment:{ref}=succeeded"
+		},
+		"response": {
+			"status": 200,
+			"body": {
+				"transaction": {
+					"status": "complete",
+					"merchant_reference": "{ref}",
+					"amount": 10300,
+					"currency": "XAF",
+					"reference": "trx.{ref}",
+					"fee": 1492,
+					"destination": { "account": "{destAccount}" }
+				}
+			}
+		},
+		"assumed": ["A7", "A14"]
+	},
+	{
+		"key": "payment-unknown",
+		"request": {
+			"method": "GET",
+			"path": "/payments/{ref}",
+			"when": "payment:{ref}=initial"
+		},
+		"response": { "status": 404, "body": { "message": "Payment not found" } }
+	}
+]

@@ -5,6 +5,7 @@ import {
 	CourierUnavailableError,
 } from "@/lib/delivery/registry";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
+import { relationId } from "@/lib/relationId";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
 import { withTransaction } from "@/lib/transactions";
 import {
@@ -12,7 +13,7 @@ import {
 	switchShipmentCarrier,
 } from "@/services/delivery/courierShipments";
 import { requireShopShipment } from "@/services/delivery/routeAccess";
-import { nextNumber } from "@/services/sequences";
+import { nextNumber, sequenceMarketOfOrder } from "@/services/sequences";
 
 const paramsSchema = z.object({ id: z.string().trim().min(1) });
 const bodySchema = z.discriminatedUnion("carrier", [
@@ -36,7 +37,24 @@ export async function POST(
 	const body = bodySchema.safeParse(await readBody(request));
 	if (!body.success) return errorResponse(ERROR_CODES.badRequest, 400);
 	try {
-		const shipmentNumber = await nextNumber(ctx.payload, "SHP", new Date());
+		const { shipment: current } = await requireShopShipment(
+			ctx.payload,
+			ctx.user,
+			parsedParams.data.id,
+			"orders.process",
+		);
+		const order = await ctx.payload.findByID({
+			collection: "orders",
+			id: relationId(current.order) ?? "",
+			depth: 0,
+			overrideAccess: true,
+		});
+		const shipmentNumber = await nextNumber(
+			ctx.payload,
+			"SHP",
+			new Date(),
+			await sequenceMarketOfOrder(ctx.payload, order),
+		);
 		const result = await withTransaction(
 			ctx.payload,
 			async (req) => {

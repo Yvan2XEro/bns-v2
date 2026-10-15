@@ -40,6 +40,7 @@ const baseSettings: OrderSettings = {
 	termsVersion: "2026-09",
 	pilotShopIds: [],
 	strikeEffectsEnabled: false,
+	multiShopCartEnabled: false,
 };
 
 /**

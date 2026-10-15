@@ -5,6 +5,7 @@ import {
 	districtKeysOf as apiDistrictKeysOf,
 	districtLabel as apiDistrictLabel,
 } from "../../../api/src/lib/launchCities";
+import { cmMarket } from "../test/market-fixture";
 import {
 	addressFieldOf,
 	type CheckoutAddressValues,
@@ -21,6 +22,9 @@ import {
 	resendSecondsLeft,
 	toAddressInput,
 } from "./checkout-form";
+import { marketPhoneRule } from "./market-phone";
+
+const CM_PHONE = marketPhoneRule(cmMarket()).pattern;
 
 const CITIES = ["douala", "yaounde"] as const;
 
@@ -38,7 +42,7 @@ function issues(
 	values: Partial<CheckoutAddressValues>,
 	method: "seller_delivery" | "pickup" = "seller_delivery",
 ) {
-	const result = checkoutAddressSchema(CITIES, method).safeParse({
+	const result = checkoutAddressSchema(CITIES, method, CM_PHONE).safeParse({
 		...valid,
 		...values,
 	});
@@ -69,6 +73,21 @@ describe("the address schema mirrors parseDeliveryAddress, both ways", () => {
 		expect(issues({ phone: "+33612345678" })).toEqual(["phone"]);
 	});
 
+	test("phone: the rule is the served pattern — change it and the schema follows", () => {
+		const other = marketPhoneRule(
+			cmMarket({
+				phone: { pattern: "^\\+33\\d{9}$", displayExample: "+33612345678" },
+			}),
+		).pattern;
+		const parse = (phone: string) =>
+			checkoutAddressSchema(CITIES, "seller_delivery", other).safeParse({
+				...valid,
+				phone,
+			}).success;
+		expect(parse("+33612345678")).toBe(true);
+		expect(parse("+237677000000")).toBe(false);
+	});
+
 	test("city: a launch city passes", () => {
 		expect(issues({ city: "yaounde", district: "yaounde.bastos" })).toEqual([]);
 	});
@@ -77,7 +96,11 @@ describe("the address schema mirrors parseDeliveryAddress, both ways", () => {
 			issues({ city: "bafoussam", district: "bafoussam.other" }),
 		).toContain("city");
 		// A launch city the settings switched off is not offered either.
-		const onlyDouala = checkoutAddressSchema(["douala"], "seller_delivery");
+		const onlyDouala = checkoutAddressSchema(
+			["douala"],
+			"seller_delivery",
+			CM_PHONE,
+		);
 		expect(
 			onlyDouala.safeParse({
 				...valid,

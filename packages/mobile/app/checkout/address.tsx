@@ -25,7 +25,9 @@ import {
 	phoneFromTyping,
 	toAddressInput,
 } from "@/src/lib/checkoutForm";
+import { isSplitCart } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import { phoneExample } from "@/src/lib/market";
 
 export default function CheckoutAddressScreen() {
 	const c = useShopTheme();
@@ -45,7 +47,10 @@ function AddressForm() {
 	const { launchCities } = useAppConfig();
 	const cart = useCart();
 	const { state, dispatch } = useCheckoutFlow();
-	const shopCity = cart.data?.shop?.city ?? null;
+	const shopCity =
+		cart.data && !isSplitCart(cart.data)
+			? (cart.data.shop?.city ?? null)
+			: null;
 	const servedCity = launchCities.some((city) => city.key === shopCity)
 		? shopCity
 		: null;
@@ -109,7 +114,7 @@ function AddressForm() {
 				name="phone"
 				label={t("checkout.phone")}
 				hint={t("checkout.phoneHint")}
-				placeholder="+2376XXXXXXXX"
+				placeholder={phoneExample()}
 				keyboardType="phone-pad"
 				autoComplete="tel"
 				transform={phoneFromTyping}

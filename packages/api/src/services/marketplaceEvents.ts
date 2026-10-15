@@ -11,8 +11,8 @@ import { applyAccountEvent } from "./connectedAccounts";
 import { settlePayment } from "./payments";
 import { applyFraudRules } from "./payoutHolds";
 import { applyTransferEvent } from "./payouts";
-import { applyResellerPayoutEvent } from "./resellerPayouts";
 import { applyDebitEvent, applyRefundEvent } from "./refunds";
+import { applyResellerPayoutEvent } from "./resellerPayouts";
 
 /** Transfers with this prefix are P8's reseller payouts (`services/resellerPayouts.ts`). */
 export const RESELLER_PAYOUT_REFERENCE_PREFIX = "RP-";

@@ -12,6 +12,7 @@ import { haversineMeters } from "../../lib/delivery/geo";
 import { getCourierProvider } from "../../lib/delivery/index";
 import type { DeliverySettings } from "../../lib/deliverySettings";
 import { isLaunchCityKey } from "../../lib/launchCities";
+import { timezoneOfShop } from "../../lib/markets";
 import { relationId } from "../../lib/relationId";
 import type { Courier, DeliveryZone } from "../../payload-types";
 import type { DeliveryQuoteInput } from "../deliveryQuote";
@@ -81,6 +82,7 @@ export async function zoneQuote(
 	const unavailable: UnavailableOption[] = [];
 	if (!isLaunchCityKey(input.destination.city)) return { options, unavailable };
 	const now = input.now ?? new Date();
+	const timezone = await timezoneOfShop(input.payload, input.shop);
 	const paymentMethod = input.paymentMethod ?? "cod";
 	const productCod = input.items.every((item) => item.codAllowed);
 	const origin = await defaultOrigin(input.payload, input.shop.id);
@@ -153,13 +155,14 @@ export async function zoneQuote(
 			deliveryDays: zone.deliveryDays,
 			cutoffTime: zone.cutoffTime ?? undefined,
 		};
-		const start = nextDeliveryStart(now, calendar);
+		const start = nextDeliveryStart(now, calendar, timezone);
 		if (start.getTime() > now.getTime() + 7 * 86_400_000) continue;
 		const promisedBy = promisedByFrom(
 			start,
 			preparationHours,
 			zone.etaMaxHours,
 			calendar,
+			timezone,
 		).toISOString();
 		const freeApplied =
 			zone.freeAboveSubtotal != null &&
@@ -225,6 +228,7 @@ export async function zoneQuote(
 				now,
 				location.preparationHours ?? 2,
 				openingHours,
+				timezone,
 			);
 			options.push({
 				optionId: `pickup:${location.id}`,

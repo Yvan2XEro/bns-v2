@@ -23,7 +23,7 @@ import {
 	isConfirmationRequired,
 } from "@/src/lib/checkoutFlow";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { cityLabel, districtLabel } from "@/src/lib/sellerOrders";
 
 /**
@@ -45,7 +45,7 @@ export default function CheckoutConfirmationScreen() {
 	const leave = () => router.replace("/(tabs)/home");
 	const heroColor = outcome === "confirmed" ? c.success : c.primary;
 	const heroSoft = outcome === "confirmed" ? c.successSoft : c.primarySoft;
-	const total = order ? formatXaf(order.amounts.total, locale) : "";
+	const total = order ? formatPrice(order.amounts.total, locale) : "";
 	const place = order
 		? [districtLabel(order.delivery), cityLabel(order.delivery.city)]
 				.filter(Boolean)

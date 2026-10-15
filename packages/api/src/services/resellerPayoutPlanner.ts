@@ -1,4 +1,4 @@
-import { roundXaf } from "../lib/paymentMath";
+import { type Rounding, roundMinor } from "../lib/paymentMath";
 
 interface CommissionCandidate {
 	id: string;
@@ -28,6 +28,7 @@ export function planResellerPayout(input: {
 	weeklyCap: number;
 	minimum: number;
 	capApplies: boolean;
+	rounding?: Rounding;
 }): ResellerPayoutPlan {
 	const cap = input.capApplies ? input.weeklyCap : Number.MAX_SAFE_INTEGER;
 	const sortedCommissions = [...input.commissions].sort(
@@ -59,7 +60,7 @@ export function planResellerPayout(input: {
 		grossAmount,
 		offsetAmount,
 		amount,
-		fee: roundXaf(amount / 100),
+		fee: roundMinor(amount / 100, input.rounding ?? "half_up"),
 		skipped:
 			grossAmount === 0
 				? "nothing_payable"

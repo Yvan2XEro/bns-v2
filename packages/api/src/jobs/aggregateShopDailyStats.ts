@@ -1,21 +1,16 @@
 import type { TaskConfig } from "payload";
+import { LEGACY_TIMEZONE, localDateString } from "../lib/marketTime";
 import { flushListingViewHash } from "../services/listingViewFlush";
 import {
 	aggregateShopDailyStatsForDay,
-	doualaDayWindow,
+	shopDayWindow,
 } from "../services/shopDailyAggregation";
 
-function doualaDate(now: Date): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(now);
-}
-
-export function lastThreeDoualaDates(now: Date): string[] {
-	const previous = new Date(`${doualaDate(now)}T12:00:00.000Z`);
+export function lastThreeShopDates(
+	now: Date,
+	timezone: string = LEGACY_TIMEZONE,
+): string[] {
+	const previous = new Date(`${localDateString(now, timezone)}T12:00:00.000Z`);
 	previous.setUTCDate(previous.getUTCDate() - 1);
 	return [0, 1, 2].map((daysAgo) => {
 		const day = new Date(previous);
@@ -33,11 +28,11 @@ export const aggregateShopDailyStatsTask: TaskConfig<"aggregateShopDailyStats"> 
 		handler: async ({ req }) => {
 			const startedAt = Date.now();
 			const now = new Date();
-			const dates = lastThreeDoualaDates(now);
+			const dates = lastThreeShopDates(now);
 			const currentDate = dates[0];
 			if (!currentDate)
-				throw new Error("No Douala date available for shop stats.");
-			const { start } = doualaDayWindow(currentDate);
+				throw new Error("No legacy-zone date available for shop stats.");
+			const { start } = shopDayWindow(currentDate);
 			const viewFlush = await flushListingViewHash(
 				req.payload,
 				currentDate.replaceAll("-", ""),

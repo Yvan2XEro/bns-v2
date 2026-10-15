@@ -16,7 +16,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useResellerFinance } from "@/src/hooks/useResale";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 
 type FinanceRow =
 	| { id: string; type: "heading"; label: string }
@@ -188,7 +188,7 @@ export default function ResellerFinanceScreen() {
 								{item.label}
 							</Text>
 							<Text style={[styles.amount, { color: c.text }]}>
-								{formatXaf(item.amount, locale)}
+								{formatPrice(item.amount, locale)}
 							</Text>
 						</View>
 					)
@@ -214,7 +214,7 @@ function Summary({
 		>
 			<Text style={[styles.cardTitle, { color: c.muted }]}>{title}</Text>
 			<Text style={[styles.cardValue, { color: c.text }]}>
-				{formatXaf(value, locale)}
+				{formatPrice(value, locale)}
 			</Text>
 		</View>
 	);

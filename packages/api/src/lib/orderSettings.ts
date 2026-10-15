@@ -33,6 +33,7 @@ export interface OrderSettings {
 	termsVersion: string;
 	pilotShopIds: string[];
 	strikeEffectsEnabled: boolean;
+	multiShopCartEnabled: boolean;
 }
 
 export const BUYER_CAPS: Record<BuyerTierKey, BuyerCapRow> = {
@@ -70,6 +71,7 @@ const DEFAULTS: Omit<OrderSettings, "enabled" | "launchCities"> = {
 	termsVersion: "2026-09",
 	pilotShopIds: [],
 	strikeEffectsEnabled: false,
+	multiShopCartEnabled: false,
 };
 
 const intOr = (value: unknown, fallback: number): number => {
@@ -206,6 +208,7 @@ export async function getOrderSettings(
 				? orders.pilotShopIds.map(String)
 				: [],
 			strikeEffectsEnabled,
+			multiShopCartEnabled: orders.multiShopCartEnabled === true,
 		};
 	} catch {
 		return { ...DEFAULTS, enabled: false, launchCities: citiesOf(undefined) };

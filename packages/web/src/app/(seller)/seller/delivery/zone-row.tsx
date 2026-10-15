@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { Button } from "~/components/ui/button";
 import { useDisableZone } from "~/hooks/use-delivery-settings";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { districtName } from "~/lib/delivery-zone-form";
-import { formatXaf } from "~/lib/order-money";
 import type { DeliveryZone } from "../../../../../../api/src/payload-types";
 
 export function ZoneRow({
@@ -19,6 +19,7 @@ export function ZoneRow({
 	locale: "fr" | "en";
 	onEdit: () => void;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("SellerDelivery");
 	const tRoot = useTranslations();
 	const disable = useDisableZone(shopId);
@@ -49,14 +50,14 @@ export function ZoneRow({
 				</div>
 				<div>
 					<dt className="inline text-[#64748B]">{t("columnFee")}: </dt>
-					<dd className="inline">{formatXaf(zone.fee, locale)}</dd>
+					<dd className="inline">{formatOrderMoney(zone.fee, locale)}</dd>
 				</div>
 				<div>
 					<dt className="inline text-[#64748B]">{t("columnFreeAbove")}: </dt>
 					<dd className="inline">
 						{zone.freeAboveSubtotal == null
 							? "—"
-							: formatXaf(zone.freeAboveSubtotal, locale)}
+							: formatOrderMoney(zone.freeAboveSubtotal, locale)}
 					</dd>
 				</div>
 				<div>
@@ -64,7 +65,7 @@ export function ZoneRow({
 					<dd className="inline">
 						{zone.minOrderSubtotal == null
 							? "—"
-							: formatXaf(zone.minOrderSubtotal, locale)}
+							: formatOrderMoney(zone.minOrderSubtotal, locale)}
 					</dd>
 				</div>
 				<div>

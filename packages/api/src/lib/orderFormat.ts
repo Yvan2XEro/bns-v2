@@ -1,3 +1,6 @@
+import { formatMoney, formatMoneyFallback } from "../contracts/money";
+import type { OrderMoney } from "./markets";
+
 /** U+202F, the narrow no-break space French typography uses between a
  * digit group and the currency symbol; a plain space is a different
  * character and would silently change the rendered amount. */
@@ -16,6 +19,23 @@ export function formatXaf(amount: number, locale: "fr" | "en"): string {
 		.replace(/\B(?=(\d{3})+(?!\d))/g, locale === "fr" ? NARROW_NBSP : ",");
 	const sign = amount < 0 ? "-" : "";
 	return locale === "fr" ? `${sign}${grouped} FCFA` : `${sign}XAF ${grouped}`;
+}
+
+/**
+ * An amount in the order's market format; with no row for the locale, the M9
+ * code-first form; the bare amount and its currency word only when the
+ * market is unreadable (no minor unit to place the decimal point).
+ */
+export function amountText(
+	amount: number,
+	{ currency, minorUnit, formats }: OrderMoney,
+	locale: "fr" | "en",
+): string {
+	const row = formats?.find((format) => format.locale === locale);
+	if (row) return formatMoney(amount, row);
+	if (currency && minorUnit !== undefined)
+		return formatMoneyFallback(amount, currency, minorUnit);
+	return `${amount} ${currency ?? ""}`.trim();
 }
 
 /** The eleven statuses, in the spec's order — the one list, re-exported by

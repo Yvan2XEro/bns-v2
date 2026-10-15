@@ -20,9 +20,12 @@ const { queueSearchEvent } = vi.hoisted(() => ({
 }));
 vi.mock("../../src/hooks/searchEvents", () => ({ queueSearchEvent }));
 
+import { launchCitySeedRows } from "../../src/lib/launchCities";
 import { FakeMarketplaceProvider } from "../../src/lib/payments/fakeMarketplace";
+import { hashDeliveryPhone } from "../../src/lib/phoneHash";
 import { MemoryCounterStore } from "../../src/lib/rateLimit";
 import type { Order } from "../../src/payload-types";
+import { getCartView } from "../../src/services/cart";
 import {
 	type CheckoutPlaceInput,
 	placeOrder,
@@ -32,7 +35,12 @@ import { createCheckoutIntent } from "../../src/services/checkoutPayment";
 import { registerOrderChatHandlers } from "../../src/services/orders/chat";
 import { __resetOrderEventHandlers } from "../../src/services/orders/events";
 import { registerOrderNotificationHandlers } from "../../src/services/orders/notifications";
-import { type FakePayload, fakePayload } from "./helpers/fakePayload";
+import {
+	cmMarketRow,
+	type FakePayload,
+	fakePayload,
+	rwMarketRow,
+} from "./helpers/fakePayload";
 
 const NOW = new Date("2026-10-02T10:00:00.000Z");
 const BUYER = { id: "u-buyer" };
@@ -85,6 +93,19 @@ type Overrides = {
 	payments?: Record<string, unknown> | null;
 	connectedAccounts?: Record<string, unknown>[];
 	payoutAccounts?: Record<string, unknown>[];
+	/** Adds the staging-only RW market and its one city beside CM. */
+	withRw?: boolean;
+};
+
+const kigali = {
+	id: "rw:kigali",
+	market: "market-rw",
+	key: "kigali",
+	label: "Kigali",
+	defaultDeliveryFee: 1200,
+	districts: [{ slug: "nyarugenge", label: "Nyarugenge" }],
+	active: true,
+	sortOrder: 0,
 };
 
 /** One shop (level 2, so protected payment is capability-eligible), one
@@ -200,23 +221,28 @@ function world(overrides: Overrides = {}) {
 			"stock-movements": [],
 			sequences: [],
 			"buyer-phone-scores": [],
-			"connected-accounts":
-				overrides.connectedAccounts ??
-				[
-					{
-						id: "ca-1",
-						shop: "s-1",
-						provider: "notchpay",
-						providerAccountId: "acct_seed",
-						status: "active",
-						chargesEnabled: true,
-						payoutsEnabled: true,
-					},
-				],
+			"connected-accounts": overrides.connectedAccounts ?? [
+				{
+					id: "ca-1",
+					shop: "s-1",
+					provider: "notchpay",
+					providerAccountId: "acct_seed",
+					status: "active",
+					chargesEnabled: true,
+					payoutsEnabled: true,
+				},
+			],
 			"payout-accounts": overrides.payoutAccounts ?? [
 				{ id: "pa-1", shop: "s-1", status: "active", method: "mtn_momo" },
 			],
 			"payout-holds": [],
+			markets: [cmMarketRow()],
+			...(overrides.withRw
+				? {
+						markets: [cmMarketRow(), rwMarketRow()],
+						"market-cities": [...launchCitySeedRows("market-cm"), kigali],
+					}
+				: {}),
 		},
 		{
 			uniques: {
@@ -366,10 +392,9 @@ describe("placeOrder: mobile money behind the flag", () => {
 		const input = await quotedInput(payload, BUYER);
 
 		const result = await place(payload, input);
-		// A new buyer (no phone score yet) gets `sms_code`, not `none`: the
-		// order stays `placed`, which is what the payable rule requires —
-		// `confirmed` is not in its allowed set.
-		expect(result.confirmationRequired).toBe("sms_code");
+		// Payment is the confirmation: a protected order is handed no code even
+		// to a new buyer, and stays `placed`, which the payable rule requires.
+		expect(result.confirmationRequired).toBe("none");
 
 		const order = orderAt(payload);
 		expect({
@@ -405,6 +430,49 @@ describe("placeOrder: mobile money behind the flag", () => {
 			id: order.id,
 		});
 		expect(settled.paymentStatus).toBe("awaiting_payment");
+	});
+});
+
+describe("placeOrder: a trusted buyer's mobile_money order stays payable", () => {
+	it("stays placed under the auto-confirm tier and pays end to end", async () => {
+		const payload = world();
+		await payload.create({
+			collection: "buyer-phone-scores",
+			data: {
+				phoneHash: hashDeliveryPhone(BUYER_PHONE, PEPPER),
+				ordersPlaced: 3,
+				ordersDelivered: 3,
+				cancelledAfterAccept: 0,
+				blockedOverride: "none",
+				refusals: [],
+			},
+		});
+		const input = await quotedInput(payload, BUYER);
+
+		const result = await place(payload, input);
+		expect(result.confirmationRequired).toBe("none");
+		expect(result.status).toBe("placed");
+		const order = orderAt(payload);
+		expect(order.status).toBe("placed");
+		expect(order.confirmation?.method ?? null).toBeNull();
+
+		const fake = new FakeMarketplaceProvider({ now: () => NOW });
+		fake.seedAccount({ accountId: "acct_seed" });
+		const intent = await createCheckoutIntent(
+			{ payload },
+			order,
+			{
+				id: "u-buyer",
+				role: "user",
+				name: "Buyer",
+				email: "u-buyer@test.cm",
+				suspendedAt: null,
+				suspendedUntil: null,
+			},
+			{ channel: "cm.mtn", phone: BUYER_PHONE, idempotencyKey: "intent-t" },
+			{ provider: fake, now: NOW, serverUrl: "https://api.test" },
+		);
+		expect(intent.status).toBe("pending");
 	});
 });
 
@@ -482,7 +550,7 @@ describe("quoteCheckout/placeOrder: the protected quote is priced server-side (B
 			total: 12_360,
 			currency: "XAF",
 		});
-		expect(order.confirmationRequired).toBe("sms_code");
+		expect(order.confirmationRequired).toBe("none");
 	});
 
 	it("binds the quote hash to the method: a cod quote can never place a mobile_money order", async () => {
@@ -506,5 +574,88 @@ describe("quoteCheckout/placeOrder: the protected quote is priced server-side (B
 			status: 409,
 		});
 		expect(payload.store.orders).toHaveLength(0);
+	});
+});
+
+describe("the order path copies its market's currency forward", () => {
+	it("keeps a CM order on XAF and market-cm", async () => {
+		const payload = world();
+		await place(payload, await quotedInput(payload, BUYER));
+		expect(orderAt(payload).amounts?.currency).toBe("XAF");
+		expect(orderAt(payload).market).toBe("market-cm");
+	});
+
+	it("reads a RW shop's cart in RWF and creates the intent from the order's currency", async () => {
+		const payload = world({
+			withRw: true,
+			shop: { location: { city: "kigali", countryCode: "RW" } },
+			payments: openPayments({
+				markets: [
+					{
+						countryCode: "RW",
+						currency: "RWF",
+						provider: "notchpay",
+						settlementMode: "provider_split",
+						channels: ["rw.mtn"],
+						vatRateBps: 1800,
+						enabled: true,
+					},
+				],
+			}),
+		});
+		// PAYMENT_CHANNELS knows only the cm.* rails, so the RW row borrows one.
+		for (const row of payload.store.markets)
+			if (row.countryCode === "RW")
+				Object.assign(row, {
+					payments: { ...(row.payments as object), channels: ["cm.mtn"] },
+				});
+		expect(
+			(await getCartView(payload, { id: "u-buyer", role: "user" })).currency,
+		).toBe("RWF");
+
+		// The RW quote is out of reach until shop orderability and delivery
+		// quoting read the market's cities; the intent hop is proven on an
+		// order document that already carries its RW currency.
+		payload.store.orders.push({
+			id: "o-rw-1",
+			orderNumber: "BNS-RW-1",
+			buyer: "u-buyer",
+			shop: "s-1",
+			market: "market-rw",
+			status: "placed",
+			paymentMethod: "mobile_money",
+			paymentStatus: "unpaid",
+			timestamps: { placedAt: NOW.toISOString() },
+			amounts: {
+				subtotal: 10_000,
+				deliveryFee: 1_200,
+				total: 11_200,
+				currency: "RWF",
+			},
+		});
+		const order = orderAt(payload);
+		const fake = new FakeMarketplaceProvider({ now: () => NOW });
+		fake.seedAccount({ accountId: "acct_seed" });
+		await createCheckoutIntent(
+			{ payload },
+			order,
+			{
+				id: "u-buyer",
+				role: "user",
+				name: "Buyer",
+				email: "u-buyer@test.rw",
+				suspendedAt: null,
+				suspendedUntil: null,
+			},
+			{
+				channel: "cm.mtn",
+				phone: "+237670000001",
+				idempotencyKey: "intent-rw",
+			},
+			{ provider: fake, now: NOW, serverUrl: "https://api.test" },
+		);
+		expect(payload.store["payment-intents"]?.[0]).toMatchObject({
+			currency: "RWF",
+		});
 	});
 });

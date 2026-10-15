@@ -1,18 +1,10 @@
 import type { Payload } from "payload";
+import { localDateString } from "../lib/marketTime";
 import { relationId } from "../lib/relationId";
 import { availableOf, isOutOfStock } from "../lib/variants";
 import type { ShopDailyStat } from "../payload-types";
 
 const DAY_MS = 86_400_000;
-
-function isoDay(date: Date): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(date);
-}
 
 function dayOffset(day: string, offset: number): string {
 	const date = new Date(`${day}T00:00:00.000Z`);
@@ -24,8 +16,9 @@ export async function getShopStockInsights(
 	payload: Payload,
 	shopId: string,
 	now: Date,
+	timezone: string,
 ) {
-	const today = isoDay(now);
+	const today = localDateString(now, timezone);
 	const [variants, stats] = await Promise.all([
 		payload.find({
 			collection: "product-variants",

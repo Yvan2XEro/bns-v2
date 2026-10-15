@@ -449,6 +449,7 @@ describe("seller-direct return refunds", () => {
 					status: "delivered",
 					paymentMethod: "cod",
 					paymentStatus: "cod_collected",
+					amounts: { currency: "XAF" },
 				},
 			],
 			"return-cases": [

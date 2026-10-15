@@ -18,6 +18,7 @@ import {
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import type { DisputeListRow } from "../../../api/src/contracts/disputes";
 
 export default function AccountDisputesScreen() {
@@ -124,7 +125,7 @@ function DisputeRow({
 			</Text>
 			<View style={styles.rowBottom}>
 				<Text style={[styles.description, { color: muted }]}>
-					{item.amountAtStake.toLocaleString(locale)} XAF
+					{formatPrice(item.amountAtStake, locale)}
 				</Text>
 				{item.overdue ? (
 					<Text style={styles.overdue}>{t("disputes.overdue")}</Text>

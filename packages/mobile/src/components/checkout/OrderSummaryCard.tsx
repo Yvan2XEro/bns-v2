@@ -4,7 +4,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { districtName } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { QuoteResponse } from "@/src/types/order";
 import { Changed, LinkButton, Row } from "./SummaryParts";
 
@@ -20,7 +20,7 @@ export function OrderSummaryCard({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const money = (amount: number) => formatXaf(amount, locale);
+	const money = (amount: number) => formatPrice(amount, locale);
 	const { lines, amounts, delivery, paymentMethod } = quote.summary;
 	const address = delivery.address;
 

@@ -5,13 +5,15 @@ import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
 import { commissionCredit } from "../lib/caseMath";
 import { filedCaseGates, getDisputeSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
+import { getMarkets, marketOfOrder, timezoneOfShop } from "../lib/markets";
+import { LEGACY_TIMEZONE } from "../lib/marketTime";
 import {
 	commissionForLine,
 	invoiceTotals,
+	marketWeekBounds,
 	netting,
 	sumCommission,
 	vatOf,
-	weekBoundsDouala,
 } from "../lib/orderMath";
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { getProvider } from "../lib/payments";
@@ -59,6 +61,25 @@ export const PLATFORM_ISSUER = {
 	supportPhone: process.env.SUPPORT_PHONE ?? null,
 };
 
+/** What an invoice freezes at issue: the order's currency, its market's rate and formats. */
+async function invoiceMoneyOf(
+	payload: Payload,
+	order: Order,
+	fallbackVatRateBps: number,
+) {
+	const currency = order.amounts?.currency;
+	if (!currency)
+		throw new Error(`[commission] order ${order.id} has no currency`);
+	const market = await marketOfOrder(payload, order);
+	return {
+		currency,
+		vatRateBps: market?.vatRateBps ?? fallbackVatRateBps,
+		...(market
+			? { formatSnapshot: market.formats.map((format) => ({ ...format })) }
+			: {}),
+	};
+}
+
 export interface InvoiceLineView {
 	orderNumber: string;
 	baseAmount: number;
@@ -75,7 +96,7 @@ export interface CommissionInvoiceView {
 	commissionTotal: number;
 	vatAmount: number;
 	totalDue: number;
-	currency: "XAF";
+	currency: string;
 	status: NonNullable<CommissionInvoice["status"]>;
 	issuedAt: string;
 	dueAt: string;
@@ -362,7 +383,7 @@ function sellerSnapshotOf(shop: Shop): Record<string, unknown> {
 
 /**
  * One pass over every shop with open commission lines accrued by
- * `periodEnd` (Monday–Sunday, `Africa/Douala`). Idempotent per
+ * `periodEnd` (Monday–Sunday, the shop's market timezone). Idempotent per
  * `(shop, periodStart)` two ways, same pairing as `accrueCommission`: a
  * pre-check that skips the common case, and the real unique index (Task 6)
  * whose violation is swallowed as "already issued".
@@ -371,15 +392,22 @@ export async function issueInvoicesForWeek(
 	payload: Payload,
 	now: Date,
 ): Promise<{ issued: string[]; rolledOver: string[]; netted: string[] }> {
-	const { periodStart, periodEnd } = weekBoundsDouala(now);
 	const settings = await getOrderSettings(payload);
+	// Each shop's week closes on its own market's clock; the query takes the
+	// latest close and the per-shop pass trims to the shop's own.
+	const markets = await getMarkets(payload);
+	const latestEnd =
+		[...markets.map((m) => m.timezone), LEGACY_TIMEZONE]
+			.map((zone) => marketWeekBounds(now, zone).periodEnd)
+			.sort()
+			.at(-1) ?? "";
 
 	const { docs: openLines } = await payload.find({
 		collection: "commission-lines",
 		where: {
 			and: [
 				{ status: { equals: "open" } },
-				{ accruedAt: { less_than_equal: periodEnd } },
+				{ accruedAt: { less_than_equal: latestEnd } },
 				// P5 collects a mobile-money order's commission at source, so
 				// such a line is never owed on an invoice. `not_equals` rather
 				// than `equals: "cod"` on purpose: `credit` and `carry_over`
@@ -406,7 +434,19 @@ export async function issueInvoicesForWeek(
 	const rolledOver: string[] = [];
 	const netted: string[] = [];
 
-	for (const [shopId, lines] of byShop) {
+	for (const [shopId, allLines] of byShop) {
+		const shop = await payload.findByID({
+			collection: "shops",
+			id: shopId,
+			depth: 0,
+			overrideAccess: true,
+		});
+		const timezone = await timezoneOfShop(payload, shop);
+		const { periodStart, periodEnd } = marketWeekBounds(now, timezone);
+		const lines = allLines.filter(
+			(line) => (line.accruedAt ?? "") <= periodEnd,
+		);
+		if (lines.length === 0) continue;
 		const already = await payload.find({
 			collection: "commission-invoices",
 			where: {
@@ -422,6 +462,20 @@ export async function issueInvoicesForWeek(
 		});
 		if (already.docs[0]) continue;
 
+		const firstOrderId = relationId(lines[0]?.order);
+		const money = firstOrderId
+			? await invoiceMoneyOf(
+					payload,
+					await payload.findByID({
+						collection: "orders",
+						id: firstOrderId,
+						depth: 0,
+						overrideAccess: true,
+					}),
+					settings.vatRateBps,
+				)
+			: null;
+		if (!money) continue;
 		const charges =
 			sumByKind(lines, "charge") + sumByKind(lines, "dispute_fee");
 		const credits = sumByKind(lines, "credit");
@@ -438,7 +492,7 @@ export async function issueInvoicesForWeek(
 			credits,
 			nonVatCredits,
 			carryOver: -carryIn,
-			vatRateBps: settings.vatRateBps,
+			vatRateBps: money.vatRateBps,
 		});
 		const decision = netting({
 			commissionTotal: totals.commissionTotal,
@@ -450,12 +504,6 @@ export async function issueInvoicesForWeek(
 			continue;
 		}
 
-		const shop = await payload.findByID({
-			collection: "shops",
-			id: shopId,
-			depth: 0,
-			overrideAccess: true,
-		});
 		const ordersCount = new Set(
 			lines.flatMap((line) => {
 				const orderId = relationId(line.order);
@@ -479,10 +527,13 @@ export async function issueInvoicesForWeek(
 						lines: lines.map((line) => String(line.id)),
 						ordersCount,
 						commissionTotal: totals.commissionTotal,
-						vatRateBps: settings.vatRateBps,
+						vatRateBps: money.vatRateBps,
 						vatAmount: totals.vatAmount,
 						totalDue: decision.action === "invoice" ? totals.totalDue : 0,
-						currency: "XAF",
+						currency: money.currency,
+						...(money.formatSnapshot
+							? { formatSnapshot: money.formatSnapshot }
+							: {}),
 						status: decision.action === "invoice" ? "issued" : "void",
 						issuedAt: now.toISOString(),
 						dueAt: new Date(
@@ -577,6 +628,7 @@ export async function issueApplicationFeeInvoice(
 		req,
 	});
 	const settings = await getOrderSettings(req.payload);
+	const money = await invoiceMoneyOf(req.payload, order, settings.vatRateBps);
 	const now = new Date();
 	const completedAt = order.timestamps?.completedAt ?? now.toISOString();
 	const total = earned.commission + earned.commissionVat;
@@ -595,10 +647,11 @@ export async function issueApplicationFeeInvoice(
 			lines: [String(line.id)],
 			ordersCount: 1,
 			commissionTotal: earned.commission,
-			vatRateBps: settings.vatRateBps,
+			vatRateBps: money.vatRateBps,
 			vatAmount: earned.commissionVat,
 			totalDue: total,
-			currency: order.amounts?.currency ?? "XAF",
+			currency: money.currency,
+			...(money.formatSnapshot ? { formatSnapshot: money.formatSnapshot } : {}),
 			status: "paid",
 			settlement: "application_fee",
 			issuedAt: now.toISOString(),
@@ -810,7 +863,7 @@ export async function payInvoice(
 	const idempotencyKey = `commission:${invoice.id}:${attempts.length + 1}`;
 
 	const totalDue = invoice.totalDue ?? 0;
-	const currency = invoice.currency ?? "XAF";
+	const currency = invoice.currency;
 	const intent = await withTransaction(payload, (req) =>
 		createPaymentIntent(
 			payload,
@@ -1106,8 +1159,8 @@ export async function resolveInvoiceLineViews(
 /**
  * The shop billing screen's one read: every invoice (newest first), the
  * still-accruing current week, and whether the shop is restricted. Current
- * week bounds are derived from `weekBoundsDouala`'s *last complete* week
- * rather than re-deriving the `Africa/Douala` boundary a second time.
+ * week bounds are derived from `marketWeekBounds`'s *last complete* week
+ * rather than re-deriving the boundary a second time.
  */
 export async function getBillingView(
 	payload: Payload,
@@ -1137,7 +1190,7 @@ export async function getBillingView(
 			commissionTotal: invoice.commissionTotal ?? 0,
 			vatAmount: invoice.vatAmount ?? 0,
 			totalDue: invoice.totalDue ?? 0,
-			currency: "XAF" as const,
+			currency: invoice.currency,
 			status: invoice.status ?? "issued",
 			issuedAt: invoice.issuedAt ?? "",
 			dueAt: invoice.dueAt ?? "",
@@ -1146,7 +1199,14 @@ export async function getBillingView(
 		})),
 	);
 
-	const lastWeek = weekBoundsDouala(now);
+	const shop = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const timezone = await timezoneOfShop(payload, shop);
+	const lastWeek = marketWeekBounds(now, timezone);
 	const currentStart = new Date(
 		new Date(lastWeek.periodEnd).getTime() + 1,
 	).toISOString();
@@ -1177,12 +1237,6 @@ export async function getBillingView(
 		}),
 	).size;
 
-	const shop = await payload.findByID({
-		collection: "shops",
-		id: shopId,
-		depth: 0,
-		overrideAccess: true,
-	});
 	const restricted = shop.ordersRestrictedAt
 		? {
 				since: shop.ordersRestrictedAt,
@@ -1227,6 +1281,17 @@ export async function renderCreditNoteDocument(
 				overrideAccess: true,
 			})
 		: null;
+	const shopId = relationId(note.shop);
+	const shop = shopId
+		? await payload
+				.findByID({
+					collection: "shops",
+					id: shopId,
+					depth: 0,
+					overrideAccess: true,
+				})
+				.catch(() => null)
+		: null;
 	const views = await resolveInvoiceLineViews(payload, note);
 	const orderNumbers = views.map((view) => view.orderNumber);
 	const sellerName =
@@ -1245,8 +1310,11 @@ export async function renderCreditNoteDocument(
 		amountHt: note.commissionTotal ?? 0,
 		vat: note.vatAmount ?? 0,
 		vatRateBps: note.vatRateBps ?? 0,
+		currency: note.currency,
+		formatSnapshot: note.formatSnapshot,
 		documentsLedgerReversal: note.settlement === "application_fee",
 		issuer: { legalName: PLATFORM_ISSUER.legalName },
+		timezone: shop ? await timezoneOfShop(payload, shop) : LEGACY_TIMEZONE,
 	};
 	return renderCreditNotePdf(document);
 }
@@ -1399,7 +1467,14 @@ async function createCreditNote(
 			vatRateBps,
 			vatAmount: vatOf(input.creditHt, vatRateBps),
 			totalDue: 0,
-			currency: "XAF",
+			currency: input.original.currency,
+			...(input.original.formatSnapshot
+				? {
+						formatSnapshot: input.original.formatSnapshot.map(
+							({ id: _id, ...format }) => format,
+						),
+					}
+				: {}),
 			status: "void",
 			...(input.documentation
 				? { settlement: "application_fee" as const }

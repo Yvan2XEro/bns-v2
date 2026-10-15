@@ -5,6 +5,7 @@ import { useReturnAction } from "@/src/hooks/useReturns";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { INSPECTION_OUTCOME_LABELS } from "@/src/lib/caseStatus";
 import { useTranslation } from "@/src/lib/i18n";
+import { currencyCode } from "@/src/lib/market";
 import {
 	createReturnInspectionFormSchema,
 	RETURN_INSPECTION_OUTCOMES,
@@ -103,8 +104,12 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 						name={`items.${index}.deductionAmount`}
 						render={({ field }) => (
 							<TextInput
-								accessibilityLabel={t("returns.deductionAmount")}
-								placeholder={t("returns.deductionAmount")}
+								accessibilityLabel={t("returns.deductionAmount", {
+									currency: currencyCode(),
+								})}
+								placeholder={t("returns.deductionAmount", {
+									currency: currencyCode(),
+								})}
 								placeholderTextColor={c.muted}
 								keyboardType="number-pad"
 								value={field.value}

@@ -1,12 +1,22 @@
 import { roundHalfUp, vatOf } from "./orderMath";
 import type { PaymentChannel } from "./paymentSettings";
 
+export type Rounding = "half_up" | "half_even" | "down";
+
 /**
- * `roundHalfUp` already rounds half-up for non-negative inputs, which is all
- * money ever is in XAF — re-exported under the name the payment spec uses,
- * not re-implemented.
+ * `half_up` is `roundHalfUp` (away from zero at .5), `half_even` is banker's,
+ * `down` truncates toward zero.
  */
-export const roundXaf = roundHalfUp;
+export function roundMinor(value: number, rounding: Rounding): number {
+	if (rounding === "down") return Math.trunc(value);
+	if (rounding === "half_up") return roundHalfUp(value);
+	const abs = Math.abs(value);
+	const floor = Math.floor(abs);
+	const diff = abs - floor;
+	const even =
+		diff === 0.5 ? (floor % 2 === 0 ? floor : floor + 1) : Math.round(abs);
+	return value < 0 ? -even : even;
+}
 
 /**
  * VAT on a commission amount is the same half-up extraction `orderMath`
@@ -28,7 +38,7 @@ export function buyerProtectionFee(
 	orderTotal: number,
 	{ bps, min, max }: BuyerProtectionFeeConfig,
 ): number {
-	const raw = roundXaf((orderTotal * bps) / 10_000);
+	const raw = roundMinor((orderTotal * bps) / 10_000, "half_up");
 	return Math.min(Math.max(raw, min), max);
 }
 
@@ -37,7 +47,7 @@ export function buyerProtectionFee(
  * computing the HT base at the given rate and taking the remainder.
  */
 export function buyerProtectionFeeVat(fee: number, vatRateBps: number): number {
-	const ht = roundXaf((fee * 10_000) / (10_000 + vatRateBps));
+	const ht = roundMinor((fee * 10_000) / (10_000 + vatRateBps), "half_up");
 	return fee - ht;
 }
 

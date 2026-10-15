@@ -113,7 +113,11 @@ export function useReturnAction() {
 
 export function useUploadReturnEvidence(caseId: string) {
 	const client = useQueryClient();
-	return useMutation<{ id: string }, ApiError, { file: File; kind: "photo" | "payment_proof" }>({
+	return useMutation<
+		{ id: string },
+		ApiError,
+		{ file: File; kind: "photo" | "payment_proof" }
+	>({
 		mutationFn: ({ file, kind }) => {
 			const form = new FormData();
 			form.append("file", file);

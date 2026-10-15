@@ -7,14 +7,27 @@ vi.mock("../../src/lib/payments", () => ({
 }));
 
 import { payResellerCharge } from "../../src/services/purchaseOrders";
-import { type Doc, type FakePayload, fakePayload } from "./helpers/fakePayload";
+import {
+	type Doc,
+	type FakePayload,
+	fakePayload,
+	rwMarketRow,
+} from "./helpers/fakePayload";
 
 const OWNER = { id: "u-owner", email: "owner@example.com", name: "Aicha" };
 
-function world(charge: Doc = {}, intents: Doc[] = []) {
+function world(charge: Doc = {}, intents: Doc[] = [], shop: Doc = {}) {
 	return fakePayload(
 		{
-			shops: [{ id: "shop-1", owner: "u-owner", status: "active" }],
+			shops: [
+				{
+					id: "shop-1",
+					owner: "u-owner",
+					status: "active",
+					location: { city: "douala" },
+					...shop,
+				},
+			],
 			"shop-members": [
 				{
 					id: "member-1",
@@ -72,6 +85,28 @@ describe("payResellerCharge", () => {
 		expect(payload.store["reseller-charges"][0].paymentIntents).toEqual([
 			intentsOf(payload)[0].id,
 		]);
+	});
+
+	it("charges in the currency of the reseller shop's market", async () => {
+		const payload = world({}, [], { location: { city: "kigali" } });
+		payload.store.markets.push(rwMarketRow());
+		payload.store["market-cities"].push({
+			id: "rw:kigali",
+			market: "market-rw",
+			key: "kigali",
+			label: "Kigali",
+			defaultDeliveryFee: 1200,
+			districts: [],
+			active: true,
+			sortOrder: 0,
+		});
+
+		await payResellerCharge(payload, OWNER, "charge-1");
+
+		expect(intentsOf(payload)[0]).toMatchObject({ currency: "RWF" });
+		expect(createPayment).toHaveBeenCalledWith(
+			expect.objectContaining({ currency: "RWF" }),
+		);
 	});
 
 	it("reuses a live pending checkout rather than charging twice", async () => {

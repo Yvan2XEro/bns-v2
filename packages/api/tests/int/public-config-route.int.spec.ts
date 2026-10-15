@@ -18,7 +18,14 @@ vi.mock("../../src/payload.config.ts", () => ({ default: {} }));
 // `lib/serviceError.ts`, which extends it at import time.
 vi.mock("payload", () => ({
 	APIError: class APIError extends Error {},
-	getPayload: vi.fn(async () => ({ findGlobal })),
+	// P10's hydration reads the markets collection first and fails CLOSED on a
+	// read error; an empty collection is the pre-migration state this spec
+	// seeds through the global, so `find` answers empty here on purpose.
+	getPayload: vi.fn(async () => ({
+		findGlobal,
+		find: vi.fn(async () => ({ docs: [], totalDocs: 0 })),
+		count: vi.fn(async () => ({ totalDocs: 0 })),
+	})),
 }));
 
 describe("GET /api/public/config", () => {

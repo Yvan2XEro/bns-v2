@@ -38,7 +38,14 @@ export const PaymentGateEvidence: CollectionConfig = {
 			}),
 		],
 	},
-	fields: [],
+	fields: [
+		{
+			name: "scope",
+			type: "select",
+			defaultValue: "gate",
+			options: ["gate", "market"].map((value) => ({ label: value, value })),
+		},
+	],
 	upload: {
 		staticDir: path.resolve(
 			process.cwd(),

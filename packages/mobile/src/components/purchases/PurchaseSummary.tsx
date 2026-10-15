@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { cityLabel, districtLabel } from "@/src/lib/sellerOrders";
 import type { OrderView } from "@/src/types/order";
 import { useShopTheme } from "../shop/theme";
@@ -14,7 +14,7 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
-	const money = (amount: number) => formatXaf(amount, lang);
+	const money = (amount: number) => formatPrice(amount, lang);
 	const { delivery } = order;
 
 	const row = (label: string, value: string, strong = false) => (

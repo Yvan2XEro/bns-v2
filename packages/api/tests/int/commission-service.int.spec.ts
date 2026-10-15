@@ -16,6 +16,7 @@ function order(overrides: Partial<Order> = {}): Order {
 		paymentMethod: "cod",
 		paymentStatus: "cod_pending",
 		delivery: { recipientName: "Aicha", phone: "+237600000000" },
+		amounts: { currency: "XAF" },
 		createdAt: "2026-09-15T00:00:00.000Z",
 		updatedAt: "2026-09-15T00:00:00.000Z",
 		...overrides,
@@ -102,7 +103,11 @@ describe("accrueCommission", () => {
 			accrueCommission(req, orderOf(payload), itemsOf(payload)),
 		);
 
-		expect(line).toMatchObject({ shop: "supplier-1", baseAmount: 7_000, amount: 560 });
+		expect(line).toMatchObject({
+			shop: "supplier-1",
+			baseAmount: 7_000,
+			amount: 560,
+		});
 		expect(linesOf(payload)).toHaveLength(1);
 	});
 

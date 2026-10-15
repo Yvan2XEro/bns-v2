@@ -29,6 +29,8 @@ COPY packages/api/src/types ./packages/api/src/types
 COPY packages/api/src/lib/errors.ts ./packages/api/src/lib/errors.ts
 COPY packages/api/src/lib/launchCities.ts ./packages/api/src/lib/launchCities.ts
 COPY packages/api/src/lib/delivery/eta.ts ./packages/api/src/lib/delivery/eta.ts
+COPY packages/api/src/lib/marketTime.ts ./packages/api/src/lib/marketTime.ts
+COPY packages/api/src/lib/localTime.ts ./packages/api/src/lib/localTime.ts
 COPY packages/api/src/lib/delivery/types.ts ./packages/api/src/lib/delivery/types.ts
 COPY packages/web ./packages/web
 

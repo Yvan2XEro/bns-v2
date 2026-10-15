@@ -3,6 +3,7 @@ import { isAdmin } from "../access/roles";
 import { can, shopScopedRead } from "../access/shopRoles";
 import { staffOnly } from "../access/staff";
 import { getOrderSettings } from "../lib/orderSettings";
+import { formatSnapshotField } from "./fields/formatSnapshot";
 
 /**
  * `mobile_money`: P4's weekly invoice, which the seller pays. `application_fee`:
@@ -109,7 +110,8 @@ export const CommissionInvoices: CollectionConfig = {
 		{ name: "vatRateBps", type: "number" },
 		{ name: "vatAmount", type: "number" },
 		{ name: "totalDue", type: "number" },
-		{ name: "currency", type: "text", defaultValue: "XAF" },
+		{ name: "currency", type: "text", required: true },
+		formatSnapshotField,
 		{
 			name: "status",
 			type: "select",

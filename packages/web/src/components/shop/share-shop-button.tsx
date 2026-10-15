@@ -1,11 +1,10 @@
 "use client";
 
-import { shopUrl } from "~/lib/shop-url";
 import { Check, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
-
+import { shopUrl } from "~/lib/shop-url";
 
 export function ShareShopButton({
 	handle,

@@ -44,10 +44,7 @@ function jaro(a: string, b: string): number {
 	const len2 = b.length;
 	if (len1 === 0 || len2 === 0) return 0;
 
-	const matchDistance = Math.max(
-		0,
-		Math.floor(Math.max(len1, len2) / 2) - 1,
-	);
+	const matchDistance = Math.max(0, Math.floor(Math.max(len1, len2) / 2) - 1);
 	const aMatches = new Array<boolean>(len1).fill(false);
 	const bMatches = new Array<boolean>(len2).fill(false);
 	let matches = 0;
@@ -76,8 +73,7 @@ function jaro(a: string, b: string): number {
 	transpositions = transpositions / 2;
 
 	return (
-		(matches / len1 + matches / len2 + (matches - transpositions) / matches) /
-		3
+		(matches / len1 + matches / len2 + (matches - transpositions) / matches) / 3
 	);
 }
 
@@ -116,7 +112,10 @@ function compare(a: string, b: string): NameMatchResult {
 	// The ≥2-token floor gates both routes: a single-token name can never
 	// reach "match", however high the Jaro-Winkler score on its own.
 	if (shorter.length >= 2) {
-		if (tokensContained(shorter, longer) || score >= JARO_WINKLER_MATCH_THRESHOLD) {
+		if (
+			tokensContained(shorter, longer) ||
+			score >= JARO_WINKLER_MATCH_THRESHOLD
+		) {
 			return { result: "match", score };
 		}
 	}

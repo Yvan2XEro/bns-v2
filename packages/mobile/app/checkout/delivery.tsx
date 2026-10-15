@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,10 +14,13 @@ import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPick
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useCart } from "@/src/hooks/useCart";
 import { useDeliveryOptions } from "@/src/hooks/useCheckout";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { landmarkMissingFor } from "@/src/lib/checkoutFlow";
+import { isSplitCart } from "@/src/lib/checkoutGroupFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import type { AddressInput } from "@/src/types/order";
 
 export default function CheckoutDeliveryScreen() {
@@ -27,15 +30,24 @@ export default function CheckoutDeliveryScreen() {
 		<SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: c.bg }}>
 			<CheckoutHeader current={2} />
 			<CheckoutGate needs="address">
-				{state.address ? <DeliveryChoice address={state.address} /> : null}
+				{state.address ? <DeliveryOrSplit address={state.address} /> : null}
 			</CheckoutGate>
 		</SafeAreaView>
 	);
 }
 
+// A split cart picks delivery per group inside the review.
+function DeliveryOrSplit({ address }: { address: AddressInput }) {
+	const cart = useCart();
+	if (cart.data && isSplitCart(cart.data)) {
+		return <Redirect href="/checkout/review" />;
+	}
+	return <DeliveryChoice address={address} />;
+}
+
 function DeliveryChoice({ address }: { address: AddressInput }) {
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const locale = useAppLocale();
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const { state, dispatch, requestQuote } = useCheckoutFlow();
@@ -124,7 +136,7 @@ function DeliveryChoice({ address }: { address: AddressInput }) {
 					style={[formStyles.hint, { color: c.warningText }]}
 				>
 					{t(`checkout.deliveryUnavailable.${option.reason}`, {
-						amount: option.minOrderSubtotal ?? 0,
+						amount: formatPrice(option.minOrderSubtotal ?? 0, i18n.language),
 					})}
 				</Text>
 			))}

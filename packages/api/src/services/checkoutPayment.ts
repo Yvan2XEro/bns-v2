@@ -12,6 +12,7 @@ import {
 	getPaymentSettings,
 	isProtectedPaymentFlagOpen,
 	type MarketRow,
+	PAYMENT_CHANNELS,
 	type PaymentChannel,
 	type PaymentEnv,
 	type PaymentSettings,
@@ -181,6 +182,21 @@ const checkoutWindowEnd = (order: Order, settings: PaymentSettings): number =>
 	toMs(order.timestamps?.placedAt ?? order.createdAt) +
 	settings.checkoutExpiryMinutes * 60_000;
 
+/** Shared with the group read: the same predicate decides "payable now" there. */
+export function isOrderPayable(
+	order: Order,
+	settings: PaymentSettings,
+	now: Date,
+): boolean {
+	return (
+		order.status === "placed" &&
+		order.paymentMethod === "mobile_money" &&
+		(order.paymentStatus === "unpaid" ||
+			order.paymentStatus === "awaiting_payment") &&
+		now.getTime() < checkoutWindowEnd(order, settings)
+	);
+}
+
 function assertPayable(
 	order: Order,
 	user: ServiceUser,
@@ -190,13 +206,9 @@ function assertPayable(
 	if (relationId(order.buyer) !== user.id) {
 		throw refuse(ERROR_CODES.paymentOrderNotPayable, 403);
 	}
-	const payable =
-		order.status === "placed" &&
-		order.paymentMethod === "mobile_money" &&
-		(order.paymentStatus === "unpaid" ||
-			order.paymentStatus === "awaiting_payment") &&
-		now.getTime() < checkoutWindowEnd(order, settings);
-	if (!payable) throw refuse(ERROR_CODES.paymentOrderNotPayable, 409);
+	if (!isOrderPayable(order, settings, now)) {
+		throw refuse(ERROR_CODES.paymentOrderNotPayable, 409);
+	}
 }
 
 // ─── Rule 2: the shop may take a protected payment for this order ────────────
@@ -245,6 +257,12 @@ async function amountsFor(
 		vatRateBps: market.vatRateBps,
 		protection: settings.buyerProtection,
 	});
+}
+
+function orderCurrency(order: Order): string {
+	const currency = order.amounts?.currency;
+	if (!currency) throw new Error(`order ${order.id} carries no currency`);
+	return currency;
 }
 
 interface Eligible {
@@ -403,9 +421,9 @@ async function assertNotSelfPurchase(
 		depth: 0,
 		overrideAccess: true,
 	});
-	const dialCodes = market.channels.map(
-		(channel) => CHANNEL_DIAL_CODES[channel],
-	);
+	const dialCodes = PAYMENT_CHANNELS.filter((c) =>
+		market.channels.includes(c),
+	).map((channel) => CHANNEL_DIAL_CODES[channel]);
 	if (
 		verified.some(
 			(member) =>
@@ -424,7 +442,10 @@ function assertChannel(
 	channel: string,
 	phone: string,
 ): { channel: PaymentChannel; payerPhone: string } {
-	const known = market.channels.find((c) => c === channel);
+	// A channel without phone rules in paymentMath cannot be charged yet.
+	const known = PAYMENT_CHANNELS.find(
+		(c) => c === channel && market.channels.includes(c),
+	);
 	if (!known) throw refuse(ERROR_CODES.paymentChannelUnsupported, 400);
 	const payerPhone = payerPhoneE164(phone, known);
 	if (!payerPhone) throw refuse(ERROR_CODES.phoneInvalid, 400);
@@ -609,7 +630,7 @@ export async function createCheckoutIntent(
 					targetId: String(order.id),
 					customerId: user.id,
 					amount: amounts.buyerTotal,
-					currency: market.currency,
+					currency: orderCurrency(order),
 					provider: market.provider,
 					idempotencyKey,
 					now,
@@ -701,7 +722,7 @@ export async function createCheckoutIntent(
 		charge = await provider.createDestinationCharge({
 			reference,
 			amount: amounts.buyerTotal,
-			currency: market.currency,
+			currency: orderCurrency(order),
 			applicationFee: amounts.applicationFee,
 			destination: {
 				accountId: account.providerAccountId,

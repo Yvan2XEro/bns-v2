@@ -7,7 +7,7 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { canCheckout, cartTotals } from "@/src/lib/cartLines";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { CartView } from "@/src/types/order";
 
 /** The server's subtotal is authoritative; the totals only count and warn. */
@@ -37,7 +37,7 @@ export function CartSummary({
 						{t("cart.itemCount", { count: totals.itemCount })}
 					</Text>
 					<Text style={[styles.amount, { color: c.text }]}>
-						{formatXaf(cart.subtotal, locale)}
+						{formatPrice(cart.subtotal, locale)}
 					</Text>
 				</View>
 				<Text style={[styles.meta, { color: c.muted }]}>
@@ -98,7 +98,7 @@ export function CartCheckoutBar({
 					{t("cart.subtotal")}
 				</Text>
 				<Text style={[styles.amount, { color: c.text }]}>
-					{formatXaf(cart.subtotal, locale)}
+					{formatPrice(cart.subtotal, locale)}
 				</Text>
 			</View>
 			<Pressable

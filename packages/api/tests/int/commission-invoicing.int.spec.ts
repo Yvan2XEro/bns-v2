@@ -1,7 +1,9 @@
 // @vitest-environment node
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { creditNoteDocumentLines } from "../../src/lib/commissionInvoiceDocument";
-import { weekBoundsDouala } from "../../src/lib/orderMath";
+import { LEGACY_TIMEZONE } from "../../src/lib/marketTime";
+import { marketWeekBounds } from "../../src/lib/orderMath";
 import { withTransaction } from "../../src/lib/transactions";
 import type { Dispute, Order, PaymentIntent } from "../../src/payload-types";
 import { issueApplicationFeeCommissionInvoice } from "../../src/services/buyerFeeInvoices";
@@ -38,7 +40,7 @@ function intent(overrides: Partial<PaymentIntent> = {}): PaymentIntent {
 }
 
 const NOW = new Date("2026-09-22T09:00:00.000Z"); // a Tuesday, Africa/Douala
-const { periodStart, periodEnd } = weekBoundsDouala(NOW);
+const { periodStart, periodEnd } = marketWeekBounds(NOW, "Africa/Douala");
 const DAY_MS = 86_400_000;
 
 function shop(overrides: Doc = {}): Doc {
@@ -71,7 +73,13 @@ function world(seed: Record<string, Doc[]> = {}) {
 	return fakePayload(
 		{
 			shops: [shop()],
-			orders: [{ id: "o-1", orderNumber: "BNS-2609-000001" }],
+			orders: [
+				{
+					id: "o-1",
+					orderNumber: "BNS-2609-000001",
+					amounts: { currency: "XAF" },
+				},
+			],
 			"commission-invoices": [],
 			sequences: [],
 			...seed,
@@ -144,6 +152,7 @@ describe("issueInvoicesForWeek", () => {
 				{
 					id: "cl-credit",
 					shop: "s-1",
+					order: "o-1",
 					kind: "credit",
 					amount: 1_200,
 					status: "open",
@@ -225,7 +234,11 @@ describe("a protected order's commission: out of the weekly run, invoiced paid a
 	function protectedWorld() {
 		return world({
 			orders: [
-				{ id: "o-1", orderNumber: "BNS-2609-000001" },
+				{
+					id: "o-1",
+					orderNumber: "BNS-2609-000001",
+					amounts: { currency: "XAF" },
+				},
 				{
 					id: "o-2",
 					orderNumber: "BNS-2609-000002",
@@ -594,6 +607,7 @@ describe("issueCommissionCredit", () => {
 		id,
 		orderNumber: `BNS-${id}`,
 		paymentMethod: "cod",
+		amounts: { currency: "XAF" },
 	});
 	const source = (refundedGoods: number, sourceId = "rc-1") => ({
 		sourceType: "return-case" as const,
@@ -889,6 +903,7 @@ describe("the post-release protected documentation case", () => {
 			vatRateBps: 1_925,
 			documentsLedgerReversal: true,
 			issuer: { legalName: "BuyNSellem SARL" },
+			timezone: LEGACY_TIMEZONE,
 		}).map((line) => line.text);
 		expect(lines[0]).toBe("Avoir — commission");
 		expect(lines).toContain("Numéro : BNS-A-2026-000001");
@@ -969,7 +984,9 @@ describe("sellerLossFeeLine", () => {
 		fakePayload(
 			{
 				shops: [shop()],
-				orders: [{ id: "o-1", orderNumber: "BNS-1" }],
+				orders: [
+					{ id: "o-1", orderNumber: "BNS-1", amounts: { currency: "XAF" } },
+				],
 				"commission-invoices": [],
 				"commission-lines": [],
 				sequences: [],

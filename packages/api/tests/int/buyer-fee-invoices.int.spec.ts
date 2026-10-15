@@ -1,8 +1,10 @@
 // @vitest-environment node
+
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LEGACY_TIMEZONE } from "../../src/lib/marketTime";
 
 const { getPayloadMock } = vi.hoisted(() => ({ getPayloadMock: vi.fn() }));
 vi.mock("@payload-config", () => ({ default: {} }));
@@ -192,6 +194,7 @@ describe("the series F template", () => {
 		vat: 228,
 		amountTtc: 1_410,
 		vatRateBps: 1_925,
+		timezone: LEGACY_TIMEZONE,
 		issuer: {
 			legalName: "BuyNSellem SARL",
 			supportEmail: "support@buynsellem.com",
@@ -270,6 +273,7 @@ describe("issueBuyerFeeInvoice", () => {
 			amountHt: 1_182,
 			vat: 228,
 			amountTtc: 1_410,
+			currency: "XAF",
 			vatRateBps: 1_925,
 			pdf: fileId,
 			issuedAt: NOW.toISOString(),

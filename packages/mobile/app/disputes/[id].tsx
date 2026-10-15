@@ -37,7 +37,8 @@ import {
 	messageAuthor,
 } from "@/src/lib/disputeThread";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatOrderDate, formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
+import { formatOrderDate } from "@/src/lib/orderMoney";
 
 const messageSchema = z.object({ body: z.string().trim().min(1).max(2000) });
 type MessageForm = z.infer<typeof messageSchema>;
@@ -247,7 +248,7 @@ export default function DisputeThreadScreen() {
 								{t("disputes.proposal")}
 							</Text>
 							<Text style={[styles.amount, { color: c.text }]}>
-								{formatXaf(dispute.proposal.amount, locale)}
+								{formatPrice(dispute.proposal.amount, locale)}
 							</Text>
 						</View>
 					) : null}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import type { CartView } from "../types/order";
+import type { CartView, SplitCartView } from "../types/order";
 
 /**
  * One active cart per buyer, so no parameter and no shop scope: the cart is
@@ -14,7 +14,7 @@ export function useCart() {
 	const { user } = useAuth();
 	return useQuery({
 		queryKey: cartKey,
-		queryFn: () => api.get<CartView>("/api/cart"),
+		queryFn: () => api.get<CartView | SplitCartView>("/api/cart"),
 		enabled: Boolean(user),
 	});
 }

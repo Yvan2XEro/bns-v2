@@ -1,6 +1,6 @@
 import { Bookmark, Calendar, MapPin, Settings, Star } from "lucide-react";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { MyShopEntry } from "~/components/shop/my-shop-entry";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -14,9 +14,10 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { formatListingPrice } from "~/lib/price";
+import { renderOrderMoney } from "~/lib/order-money";
+import { hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import { getMyShop, getShopsEnabled } from "~/lib/server-shop";
+import { getMarket, getMyShop, getShopsEnabled } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
 import { DisputesEntry } from "./disputes-entry";
 import { ProfileEditForm } from "./profile-edit-form";
@@ -51,6 +52,7 @@ async function getUserListings(userId: string): Promise<Listing[]> {
 
 export default async function MyProfilePage() {
 	const t = await getTranslations("Profile");
+	const [locale, market] = await Promise.all([getLocale(), getMarket()]);
 	const user = (await getAuthUser()) as User | null;
 	if (!user) return null;
 
@@ -194,7 +196,9 @@ export default async function MyProfilePage() {
 							{listings.length > 0 ? (
 								<div className="space-y-3">
 									{listings.map((listing) => {
-										const formattedPrice = formatListingPrice(listing.price);
+										const formattedPrice = hasListingPrice(listing.price)
+											? renderOrderMoney(market, listing.price, locale)
+											: null;
 										return (
 											<Link
 												key={listing.id}
@@ -206,7 +210,7 @@ export default async function MyProfilePage() {
 														{listing.title}
 													</p>
 													<p className="text-[#64748B] text-sm">
-														{formattedPrice ? `${formattedPrice} XAF • ` : ""}
+														{formattedPrice ? `${formattedPrice} • ` : ""}
 														{listing.location}
 													</p>
 												</div>

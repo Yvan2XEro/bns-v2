@@ -223,6 +223,7 @@ export type {
 	ProofChecklist,
 	ProofChecklistRow,
 } from "../contracts/disputes";
+
 import type { ProofChecklist } from "../contracts/disputes";
 
 const POD_MAX_DISTANCE_METERS = 200;

@@ -1,14 +1,17 @@
+"use client";
+
 import { Clock, MapPin, Store, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import {
 	listingPriceMax,
 	listingShopBadge,
 	listingShopName,
 } from "~/lib/listing-shop";
-import { formatListingPrice } from "~/lib/price";
+import { hasListingPrice } from "~/lib/price";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
 import { FavoriteButton } from "./favorite-button";
@@ -31,6 +34,7 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, isFavorite }: ListingCardProps) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
 	const firstImage =
 		listing.images && listing.images.length > 0
@@ -45,7 +49,9 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const imageCount = listing.images?.length || 0;
 	const _seller = listing.seller as User | null;
-	const formattedPrice = formatListingPrice(listing.price);
+	const formattedPrice = hasListingPrice(listing.price)
+		? formatOrderMoney(listing.price)
+		: null;
 	const shopName = listingShopName(listing);
 	const shopBadge = listingShopBadge(listing);
 	const priceMax = listingPriceMax(listing);
@@ -126,10 +132,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 								{t("fromPrice")}{" "}
 							</span>
 						)}
-						{formattedPrice ?? t("noPrice")}{" "}
-						{formattedPrice && (
-							<span className="font-medium text-[#64748B] text-xs">XAF</span>
-						)}
+						{formattedPrice ?? t("noPrice")}
 					</p>
 
 					{/* Title */}

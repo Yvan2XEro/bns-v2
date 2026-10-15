@@ -13,7 +13,7 @@ export const ORDER_ITEM_FULFILLMENT_STATUSES = [
 ] as const;
 
 /**
-	 * One line per order, including its supplier-side snapshot for resale.
+ * One line per order, including its supplier-side snapshot for resale.
  */
 export const OrderItems: CollectionConfig = {
 	slug: "order-items",

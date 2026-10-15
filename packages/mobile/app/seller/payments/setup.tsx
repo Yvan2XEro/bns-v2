@@ -315,10 +315,7 @@ function SetupContent({ shopId }: { shopId: string }) {
 							<View style={{ marginTop: 10 }}>
 								{view.payoutAccount ? (
 									<Text
-										style={[
-											s.meta,
-											{ color: c.warningText, marginBottom: 8 },
-										]}
+										style={[s.meta, { color: c.warningText, marginBottom: 8 }]}
 									>
 										{t("payments.setup_changeNotice", {
 											hours: view.payoutChangeHoldHours,

@@ -17,6 +17,7 @@ import {
 	initialCheckoutState,
 	placeOrderBody,
 } from "~/lib/checkout-form";
+import { cartLinesOf, isSplitCart } from "~/lib/checkout-group-flow";
 import type {
 	AddressInput,
 	DeliveryOption,
@@ -25,6 +26,7 @@ import type {
 } from "~/types/order";
 import { AddressStep } from "./address-step";
 import { DeliveryStep } from "./delivery-step";
+import { GroupCheckout } from "./group-checkout";
 import { PaymentMethodPicker } from "./payment-method-picker";
 import { ReviewStep } from "./review-step";
 
@@ -58,7 +60,7 @@ export function CheckoutClient() {
 			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-[#64748B]" />
 		);
 	}
-	if (!cart.data || cart.data.lines.length === 0) {
+	if (!cart.data || cartLinesOf(cart.data).length === 0) {
 		return (
 			<div className="space-y-4 text-center">
 				<p className="text-[#334155]">{t("emptyCart")}</p>
@@ -67,6 +69,10 @@ export function CheckoutClient() {
 				</Button>
 			</div>
 		);
+	}
+
+	if (isSplitCart(cart.data)) {
+		return <GroupCheckout launchCities={launchCities} />;
 	}
 
 	const requestQuote = (

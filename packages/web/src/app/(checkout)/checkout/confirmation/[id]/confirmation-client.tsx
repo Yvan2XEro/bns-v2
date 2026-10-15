@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "~/components/ui/button";
 import { availableActions, orderReceiptUrl } from "~/hooks/use-order-actions";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { usePurchase } from "~/hooks/use-purchases";
 import { resolveErrorMessage } from "~/lib/apiError";
 import { confirmationOutcome } from "~/lib/checkout-form";
-import { formatXaf } from "~/lib/order-money";
 import type { ConfirmationRequired } from "~/types/order";
 import { CodeEntry } from "./code-entry";
 
@@ -25,6 +25,7 @@ export function ConfirmationClient({
 	orderId: string;
 	placedHint: ConfirmationRequired | null;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Checkout");
 	const tRoot = useTranslations();
 	const locale = useLocale() === "en" ? "en" : "fr";
@@ -63,7 +64,7 @@ export function ConfirmationClient({
 				</h1>
 				<p className="text-[#334155] text-sm">{t("total")}</p>
 				<p className="font-semibold text-[#0F172A] text-xl">
-					{formatXaf(order.amounts.total, locale)}
+					{formatOrderMoney(order.amounts.total, locale)}
 				</p>
 			</header>
 

@@ -6,7 +6,7 @@ import { useAppConfig } from "../../contexts/AppConfigContext";
 import { usePickupPoints } from "../../hooks/usePickupPoints";
 import { googleMapsUrl } from "../../lib/checkoutForm";
 import { useTranslation } from "../../lib/i18n";
-import { formatXaf } from "../../lib/orderMoney";
+import { formatPrice } from "../../lib/market";
 import { SkeletonRow } from "../SkeletonCard";
 import { useShopTheme } from "./theme";
 
@@ -64,7 +64,7 @@ export function PickupPoints({ handle }: { handle: string }) {
 							fee:
 								point.pickupFee === 0
 									? t("shop.pickupFree")
-									: formatXaf(point.pickupFee, locale),
+									: formatPrice(point.pickupFee, locale),
 						})}
 					</Text>
 					<Text style={[styles.copy, { color: c.muted }]}>

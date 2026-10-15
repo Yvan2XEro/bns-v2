@@ -5,7 +5,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { cartLineState, quantityStepper } from "@/src/lib/cartLines";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import type { CartLineView } from "@/src/types/order";
 
@@ -67,7 +67,7 @@ export function CartLineRow({
 					</Text>
 				) : null}
 				<Text style={[styles.price, { color: c.text }]}>
-					{formatXaf(line.lineSubtotal, locale)}
+					{formatPrice(line.lineSubtotal, locale)}
 				</Text>
 				{state === "unavailable" ? (
 					<Text style={[styles.meta, { color: c.dangerText }]}>
@@ -78,7 +78,7 @@ export function CartLineRow({
 					<Text style={[styles.meta, { color: c.warningText }]}>
 						{t("cart.priceChanged")} ·{" "}
 						{t("cart.priceWas", {
-							price: formatXaf(line.priceAtAdd, locale),
+							price: formatPrice(line.priceAtAdd, locale),
 						})}
 					</Text>
 				) : null}

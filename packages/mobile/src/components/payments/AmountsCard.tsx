@@ -3,7 +3,7 @@ import { Fonts } from "@/constants/theme";
 import { useLocaleKey } from "@/src/components/billing/useLocaleKey";
 import { InkCard, inkText, ON_INK } from "@/src/components/ui/InkCard";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { SellerPaymentsAmounts } from "@/src/types/order";
 
 /**
@@ -14,7 +14,7 @@ import type { SellerPaymentsAmounts } from "@/src/types/order";
 export function AmountsCard({ amounts }: { amounts: SellerPaymentsAmounts }) {
 	const { t } = useTranslation();
 	const locale = useLocaleKey();
-	const money = (value: number) => formatXaf(value, locale);
+	const money = (value: number) => formatPrice(value, locale);
 
 	const cells: Array<{ label: string; value: number; color: string }> = [
 		{

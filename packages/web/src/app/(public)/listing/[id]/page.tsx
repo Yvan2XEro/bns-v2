@@ -36,10 +36,10 @@ import {
 	listingShop,
 	productSummaryOf,
 } from "~/lib/listing-shop";
-import { formatXafRange } from "~/lib/money";
-import { formatListingPrice, hasListingPrice } from "~/lib/price";
+import { formatOrderMoneyRange, renderOrderMoney } from "~/lib/order-money";
+import { hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import { getMyShop, getShopBadge } from "~/lib/server-shop";
+import { getMarket, getMyShop, getShopBadge } from "~/lib/server-shop";
 import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
 import { DeliveryEstimates } from "./delivery-estimates";
@@ -66,9 +66,9 @@ export async function generateMetadata({
 		};
 	}
 
-	const formattedPrice = formatListingPrice(listing.price, "fr-FR");
-	const title = formattedPrice
-		? `${listing.title} — ${formattedPrice} XAF`
+	const market = await getMarket();
+	const title = hasListingPrice(listing.price)
+		? `${listing.title} — ${renderOrderMoney(market, listing.price, await getLocale())}`
 		: listing.title;
 	const description = (listing.description ?? "")
 		.slice(0, 155)
@@ -170,15 +170,20 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		notFound();
 	}
 
-	const formattedPrice = formatListingPrice(listing.price);
 	const isBoosted =
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
 	const shop = listingShop(listing);
-	const [shopBadge, mine] = await Promise.all([
+	const [shopBadge, mine, market] = await Promise.all([
 		shop ? getShopBadge(shop.handle) : null,
 		shop && authUser ? getMyShop() : null,
+		getMarket(),
 	]);
+	const formatOrderMoney = (amount: number | null | undefined) =>
+		renderOrderMoney(market, amount, locale);
+	const formattedPrice = hasListingPrice(listing.price)
+		? formatOrderMoney(listing.price)
+		: null;
 	const productId = listingProductId(listing);
 	const product = listingProduct(listing);
 	const summary = productSummaryOf(listing);
@@ -188,7 +193,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		summary.priceMin !== null &&
 		summary.priceMax !== null &&
 		summary.priceMin !== summary.priceMax
-			? formatXafRange(summary.priceMin, summary.priceMax)
+			? formatOrderMoneyRange(
+					formatOrderMoney,
+					summary.priceMin,
+					summary.priceMax,
+				)
 			: null;
 	const isOwner = !!(
 		authUser &&
@@ -255,7 +264,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 			offers: {
 				"@type": "Offer",
 				price: listing.price,
-				priceCurrency: "XAF",
+				...(market && { priceCurrency: market.currency.code }),
 				availability: "https://schema.org/InStock",
 				url: canonical,
 				...(shop
@@ -374,16 +383,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										{listing.title}
 									</h1>
 									<p className="mt-1 font-bold text-2xl text-[#1E40AF]">
-										{priceRange ?? (
-											<>
-												{formattedPrice ?? t("noPrice")}{" "}
-												{formattedPrice && (
-													<span className="font-medium text-[#64748B] text-sm">
-														XAF
-													</span>
-												)}
-											</>
-										)}
+										{priceRange ?? formattedPrice ?? t("noPrice")}
 									</p>
 								</div>
 								<div className="flex gap-2">

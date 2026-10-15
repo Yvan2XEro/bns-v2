@@ -46,7 +46,7 @@ import {
 import { openDeductionDispute } from "./disputes";
 import { applyReservedTransition } from "./orders/transitions";
 import { createHold, findActiveHold, releaseHold } from "./payoutHolds";
-import { nextNumber } from "./sequences";
+import { nextNumber, sequenceMarketOfOrder } from "./sequences";
 import { findShop, requireShopPermission } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 import { applyMovement } from "./stock";
@@ -1194,7 +1194,18 @@ export async function openWithdrawal(
 	if (audience.kind !== "buyer") {
 		throw new ServiceError(ERROR_CODES.forbidden, 403);
 	}
-	const number = await nextNumber(payload, "RET", new Date());
+	const order = await payload.findByID({
+		collection: "orders",
+		id: orderId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const number = await nextNumber(
+		payload,
+		"RET",
+		new Date(),
+		await sequenceMarketOfOrder(payload, order),
+	);
 	return withTransaction(
 		payload,
 		async (req) => {

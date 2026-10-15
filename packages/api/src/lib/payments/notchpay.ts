@@ -28,10 +28,10 @@ export function mapNotchPayStatus(value: string): ProviderPaymentStatus {
 	return "pending";
 }
 
-const toText = (value: unknown): string =>
+export const toText = (value: unknown): string =>
 	typeof value === "string" ? value : "";
 
-const toAmount = (value: unknown): number | null => {
+export const toAmount = (value: unknown): number | null => {
 	if (typeof value === "number" && Number.isFinite(value)) return value;
 	if (
 		typeof value === "string" &&
@@ -42,7 +42,7 @@ const toAmount = (value: unknown): number | null => {
 	return null;
 };
 
-const toCurrency = (value: unknown): string | null =>
+export const toCurrency = (value: unknown): string | null =>
 	typeof value === "string" && value ? value.toUpperCase() : null;
 
 /**
@@ -65,6 +65,23 @@ export function parseNotchPayWebhookEvent(
 		currency: toCurrency(data.currency),
 		providerTransactionId: toText(data.reference) || null,
 	};
+}
+
+export function verifyNotchPaySignature(
+	rawBody: string,
+	headers: Record<string, string | undefined>,
+	hashKey: string,
+): void {
+	// A SHA-256 HMAC is exactly 64 hex characters, which also guarantees
+	// equal buffer lengths for timingSafeEqual.
+	const signature =
+		headers["x-notch-signature"] ?? headers["notchpay-signature"] ?? "";
+	if (!/^[0-9a-f]{64}$/i.test(signature)) throw new WebhookSignatureError();
+
+	const expected = createHmac("sha256", hashKey).update(rawBody).digest();
+	if (!timingSafeEqual(Buffer.from(signature, "hex"), expected)) {
+		throw new WebhookSignatureError();
+	}
 }
 
 export class NotchPayProvider implements PaymentProvider {
@@ -206,17 +223,7 @@ export class NotchPayProvider implements PaymentProvider {
 			throw new Error("NotchPay webhook: NOTCHPAY_HASH_KEY is not configured");
 		}
 
-		// A SHA-256 HMAC is exactly 64 hex characters, which also guarantees
-		// equal buffer lengths for timingSafeEqual.
-		const signature = headers["x-notch-signature"] ?? "";
-		if (!/^[0-9a-f]{64}$/i.test(signature)) throw new WebhookSignatureError();
-
-		const expected = createHmac("sha256", this.hashKey)
-			.update(rawBody)
-			.digest();
-		if (!timingSafeEqual(Buffer.from(signature, "hex"), expected)) {
-			throw new WebhookSignatureError();
-		}
+		verifyNotchPaySignature(rawBody, headers, this.hashKey);
 
 		let raw: unknown;
 		try {

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from "payload";
-import { DISPUTE_OUTCOMES, DISPUTE_REASONS } from "../contracts/disputes";
 import { casePartyRead, serviceOnly } from "../access/caseRoles";
+import { DISPUTE_OUTCOMES, DISPUTE_REASONS } from "../contracts/disputes";
 
 export const DISPUTE_SUBJECTS = ["goods", "refund"] as const;
 export const DISPUTE_STATUSES = [

@@ -8,14 +8,13 @@ import type { PublicDeliveryCities } from "../../contracts/publicPickupPoint";
 import { queueSearchEvent } from "../../hooks/searchEvents";
 import { getDeliverySettings } from "../../lib/deliverySettings";
 import { ERROR_CODES } from "../../lib/errors";
+import type { LaunchCityKey } from "../../lib/launchCities";
 import {
-	districtKeysOf,
-	isDistrictKey,
-	isLaunchCityKey,
-	LAUNCH_CITY_KEYS,
-	type LaunchCityKey,
-	launchCityKeyOf,
-} from "../../lib/launchCities";
+	getShopMarketCities,
+	isMarketCityKey,
+	isMarketDistrictKey,
+	marketCityKeyOf,
+} from "../../lib/marketCities";
 import { getOrderSettings } from "../../lib/orderSettings";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
@@ -28,10 +27,10 @@ import type { ServiceUser } from "../shops";
 const zoneInputSchema = z.object({
 	name: z.string().trim().min(2).max(40),
 	scope: z.enum(DELIVERY_SCOPES),
-	city: z.custom<LaunchCityKey>(isLaunchCityKey),
+	city: z.custom<LaunchCityKey>((v) => typeof v === "string"),
 	districts: z.array(z.string()).max(25).default([]),
 	destinationCities: z
-		.array(z.custom<LaunchCityKey>(isLaunchCityKey))
+		.array(z.custom<LaunchCityKey>((v) => typeof v === "string"))
 		.max(2)
 		.optional(),
 	method: z.enum(DELIVERY_METHODS),
@@ -74,7 +73,20 @@ async function assertZoneInput(
 	existingZoneId?: string,
 ): Promise<void> {
 	if (input.etaMinHours > input.etaMaxHours) throw invalidZone();
-	if (input.districts.some((district) => !isDistrictKey(input.city, district)))
+	const owner = await payload.findByID({
+		collection: "shops",
+		id: shopId,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const cities = await getShopMarketCities(payload, owner);
+	if (
+		!isMarketCityKey(cities, input.city) ||
+		input.districts.some(
+			(district) => !isMarketDistrictKey(cities, input.city, district),
+		) ||
+		(input.destinationCities ?? []).some((key) => !isMarketCityKey(cities, key))
+	)
 		throw invalidZone();
 	if (input.scope === "same_city") {
 		if (input.destinationCities?.length) throw invalidZone();
@@ -92,15 +104,9 @@ async function assertZoneInput(
 			depth: 0,
 			overrideAccess: true,
 		});
-		const shop = await payload.findByID({
-			collection: "shops",
-			id: shopId,
-			depth: 0,
-			overrideAccess: true,
-		});
 		if (
 			locations.totalDocs === 0 &&
-			launchCityKeyOf(shop.location?.city) !== input.city
+			marketCityKeyOf(cities, owner.location?.city) !== input.city
 		)
 			throw new ServiceError(ERROR_CODES.deliveryCityNotLaunched, 400);
 	} else {
@@ -439,8 +445,11 @@ export async function publicDeliveryCities(
 			reached.add(zone.city);
 		}
 	}
+	const cities = await getShopMarketCities(payload, shop);
 	return {
-		deliveryCities: LAUNCH_CITY_KEYS.filter((city) => reached.has(city)),
+		deliveryCities: cities
+			.map((city) => city.key)
+			.filter((key) => reached.has(key)),
 	};
 }
 
@@ -468,8 +477,4 @@ export async function testShopDelivery(
 		destination,
 		settings: await getOrderSettings(payload),
 	});
-}
-
-export function zoneDistrictOptions(city: LaunchCityKey): readonly string[] {
-	return districtKeysOf(city);
 }

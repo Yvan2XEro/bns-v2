@@ -3,7 +3,7 @@ import { Truck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useDeliveryEstimates } from "~/hooks/use-delivery-estimates";
-import { formatXaf } from "~/lib/order-money";
+import { useOrderMoney } from "~/hooks/use-order-money";
 
 export function DeliveryEstimates({
 	listingId,
@@ -12,6 +12,7 @@ export function DeliveryEstimates({
 	listingId: string;
 	eligible: boolean;
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("BuyBox");
 	const locale = useLocale() === "fr" ? "fr" : "en";
 	const { ordersEnabled, deliveryZonesEnabled } = useAppConfig();
@@ -46,7 +47,7 @@ export function DeliveryEstimates({
 							fee:
 								option.cheapestFee === 0
 									? t("estimateFree")
-									: formatXaf(option.cheapestFee, locale),
+									: formatOrderMoney(option.cheapestFee, locale),
 							min: option.etaMinHours,
 							max: option.etaMaxHours,
 						})}

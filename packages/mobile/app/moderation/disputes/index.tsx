@@ -16,7 +16,8 @@ import {
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
-import { useTranslation } from "@/src/lib/i18n";
+import i18n, { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 
 export default function ModerationDisputesQueueScreen() {
 	const c = useModerationTheme();
@@ -78,7 +79,7 @@ export default function ModerationDisputesQueueScreen() {
 							</Text>
 							<Text style={[styles.body, { color: c.muted }]}>
 								{t(DISPUTE_REASON_LABELS[item.reason])} ·{" "}
-								{item.amountAtStake.toLocaleString()} XAF
+								{formatPrice(item.amountAtStake, i18n.language)}
 							</Text>
 							{item.deadline ? (
 								<Text

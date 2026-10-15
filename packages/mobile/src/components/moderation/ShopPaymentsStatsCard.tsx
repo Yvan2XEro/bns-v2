@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { formatDate } from "@/src/lib/formatDate";
+import { formatPrice } from "@/src/lib/market";
 import { PAYOUT_ORIGIN_LABELS } from "@/src/lib/moderationPayments";
-import { formatXaf } from "@/src/lib/orderMoney";
 import { PAYOUT_STATUSES } from "@/src/lib/paymentStatus";
 import type { ShopPaymentsSheet } from "@/src/types/api";
 import type { ModerationPalette, Translate } from "./theme";
@@ -31,7 +31,7 @@ export function ShopPaymentsStatsCard({
 			<View style={styles.statsRow}>
 				<Stat
 					label={t("moderation.paymentsOpenExposureLabel")}
-					value={formatXaf(openExposure, locale)}
+					value={formatPrice(openExposure, locale)}
 					c={c}
 				/>
 				<Stat
@@ -58,7 +58,7 @@ export function ShopPaymentsStatsCard({
 					<View key={payout.id} style={[styles.row, { borderColor: c.border }]}>
 						<View style={{ flex: 1, gap: 2 }}>
 							<Text style={[styles.body, { color: c.text }]}>
-								{formatXaf(payout.amount, locale)} ·{" "}
+								{formatPrice(payout.amount, locale)} ·{" "}
 								{t(PAYOUT_STATUSES[payout.status])}
 							</Text>
 							<Text style={[styles.meta, { color: c.muted }]}>

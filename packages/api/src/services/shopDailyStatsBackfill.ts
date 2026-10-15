@@ -1,4 +1,5 @@
-import { previousDoualaDate } from "./shopDailyAggregation";
+import { LEGACY_TIMEZONE, localDateString } from "../lib/marketTime";
+import { previousShopDate } from "./shopDailyAggregation";
 
 function isCalendarDate(value: string): boolean {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -27,10 +28,10 @@ export function listShopStatsBackfillDates(
 ): string[] {
 	if (!isCalendarDate(from))
 		throw new Error("Backfill start must be a valid YYYY-MM-DD date.");
-	const through = previousDoualaDate(now);
+	const through = previousShopDate(now);
 	if (from > through)
 		throw new Error(
-			"Backfill start must be on or before the last completed Douala day.",
+			"Backfill start must be on or before the last completed legacy-zone day.",
 		);
 	const result: string[] = [];
 	const cursor = new Date(`${from}T12:00:00.000Z`);
@@ -42,15 +43,6 @@ export function listShopStatsBackfillDates(
 }
 
 const MAX_AUTOMATIC_BACKFILL_DAYS = 365;
-
-function doualaDate(at: Date): string {
-	return new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Africa/Douala",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).format(at);
-}
 
 /**
  * Where the deploy-time backfill starts: the day the first shop opened, never
@@ -65,8 +57,9 @@ export function automaticBackfillStart(
 	const floor = new Date(
 		now.getTime() - MAX_AUTOMATIC_BACKFILL_DAYS * 86_400_000,
 	);
-	const from = doualaDate(
+	const from = localDateString(
 		firstShopCreatedAt < floor ? floor : firstShopCreatedAt,
+		LEGACY_TIMEZONE,
 	);
-	return from > previousDoualaDate(now) ? null : from;
+	return from > previousShopDate(now) ? null : from;
 }

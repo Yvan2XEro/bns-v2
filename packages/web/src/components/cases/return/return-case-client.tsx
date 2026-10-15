@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useReturnAction, useReturnCase } from "~/hooks/use-returns";
 import {
 	RETURN_ACTION_LABELS,
@@ -35,6 +36,7 @@ export function ReturnCaseClient({
 	caseId: string;
 	surface?: "buyer" | "seller";
 }) {
+	const formatOrderMoney = useOrderMoney();
 	const locale = useLocale();
 	const t = useTranslations("Returns");
 	const query = useReturnCase(caseId);
@@ -156,7 +158,7 @@ export function ReturnCaseClient({
 							</span>
 							<span className="shrink-0 text-right text-[#0F172A]">
 								<span className="block font-medium">
-									{item.unitPrice.toLocaleString()} XAF
+									{formatOrderMoney(item.unitPrice)}
 								</span>
 								<span className="block text-[#64748B] text-xs">
 									{t("unitPrice")}
@@ -191,7 +193,7 @@ export function ReturnCaseClient({
 					/>
 					<div className="flex justify-between border-[#E2E8F0] border-t pt-3 font-semibold text-[#0F172A]">
 						<dt>{t("refundTotal")}</dt>
-						<dd>{view.refund.amount.toLocaleString()} XAF</dd>
+						<dd>{formatOrderMoney(view.refund.amount)}</dd>
 					</div>
 				</dl>
 			</section>
@@ -257,10 +259,11 @@ export function ReturnCaseClient({
 }
 
 function AmountLine({ label, amount }: { label: string; amount: number }) {
+	const formatOrderMoney = useOrderMoney();
 	return (
 		<div className="flex justify-between gap-4 text-[#475569]">
 			<dt>{label}</dt>
-			<dd className="shrink-0">{amount.toLocaleString()} XAF</dd>
+			<dd className="shrink-0">{formatOrderMoney(amount)}</dd>
 		</div>
 	);
 }

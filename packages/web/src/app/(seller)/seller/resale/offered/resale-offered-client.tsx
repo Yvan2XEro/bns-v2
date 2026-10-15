@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
+import { useOrderMoney } from "~/hooks/use-order-money";
 import { useSupplierResaleProducts } from "~/hooks/use-resale";
 import { resolveErrorMessage } from "~/lib/apiError";
 
 export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 	const t = useTranslations("SellerResaleOffered");
+	const formatOrderMoney = useOrderMoney();
 	const tRoot = useTranslations();
 	const query = useSupplierResaleProducts(shopId);
 	const error = query.error
@@ -123,17 +125,19 @@ export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 												{variant.sku || t("defaultVariant")}
 											</th>
 											<td className="py-3 pr-4">
-												{money(variant.supplierPrice)}
+												{formatOrderMoney(variant.supplierPrice)}
 											</td>
 											<td className="py-3 pr-4">
-												{money(variant.minRetailPrice)}
+												{formatOrderMoney(variant.minRetailPrice)}
 											</td>
 											<td className="py-3 pr-4">
-												{money(variant.suggestedRetailPrice)}
+												{formatOrderMoney(variant.suggestedRetailPrice)}
 											</td>
 											<td className="py-3">
 												{variant.resellerPrices.length
-													? variant.resellerPrices.map(money).join(" · ")
+													? variant.resellerPrices
+															.map((price) => formatOrderMoney(price))
+															.join(" · ")
 													: "—"}
 											</td>
 										</tr>
@@ -146,14 +150,4 @@ export function ResaleOfferedClient({ shopId }: { shopId: string }) {
 			</div>
 		</section>
 	);
-}
-
-function money(amount: number | null) {
-	return amount === null
-		? "—"
-		: new Intl.NumberFormat(undefined, {
-				style: "currency",
-				currency: "XAF",
-				maximumFractionDigits: 0,
-			}).format(amount);
 }

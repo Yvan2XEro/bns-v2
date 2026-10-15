@@ -21,7 +21,7 @@ import {
 	resolveErrorMessage,
 } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import { formatXaf } from "@/src/lib/orderMoney";
+import { formatPrice } from "@/src/lib/market";
 import type { SupplierResaleProduct } from "../../../../api/src/contracts/resale";
 
 export default function ResaleOfferedScreen() {
@@ -184,7 +184,7 @@ function PriceLine({ label, value }: { label: string; value: number | null }) {
 		<View style={styles.priceLine}>
 			<Text style={[styles.meta, { color: c.muted }]}>{label}</Text>
 			<Text style={[styles.price, { color: c.text }]}>
-				{value === null ? "—" : formatXaf(value, locale)}
+				{value === null ? "—" : formatPrice(value, locale)}
 			</Text>
 		</View>
 	);
