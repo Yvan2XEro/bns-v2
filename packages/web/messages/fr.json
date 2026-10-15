@@ -2422,7 +2422,8 @@
 		"printReceipt": "Imprimer le reçu",
 		"loadingOrder": "Chargement de la commande…",
 		"errorCode": "Le code compte 6 chiffres.",
-		"confirmedBody": "Le vendeur a 48 heures pour accepter votre commande."
+		"confirmedBody": "Le vendeur a 48 heures pour accepter votre commande.",
+		"asideDeliveryNext": "Frais de livraison calculés à l’étape suivante"
 	},
 	"Purchases": {
 		"title": "Mes commandes",

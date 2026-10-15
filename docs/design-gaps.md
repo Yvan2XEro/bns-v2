@@ -63,7 +63,13 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 
 ## Web
 
-Comparaison pas encore faite.
+| # | Écran | Maquette | App aujourd'hui | Type |
+|---|-------|----------|-----------------|------|
+| W1 | Commande | Une seule page : adresse, livraison et paiement en sections, adresses enregistrées, carte | Parcours en 3 étapes ; récapitulatif du panier à côté des deux premières | Décision |
+| W2 | Commandes vendeur | Boutons Accepter / Expédier sur chaque ligne, sélection multiple, export | Actions dans le détail de la commande (comme M11) | Fonction |
+| W3 | Tableau de bord vendeur | Messages sans réponse, statistiques 7 jours, incitation au niveau 3 | Commandes à accepter / à expédier, alertes de stock, commandes en attente | Fonction |
+| W4 | Page boutique | Onglets Annonces / Avis / À propos, catégories avec compteurs | Une seule page avec recherche | Fonction |
+| W5 | Fiche annonce | Puces de couleur sur les variantes, prix par stockage | Boutons texte | Décision |
 
 ## Écrans pas encore comparés
 

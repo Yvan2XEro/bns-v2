@@ -25,6 +25,7 @@ import type {
 	QuoteResponse,
 } from "~/types/order";
 import { AddressStep } from "./address-step";
+import { CartAside } from "./cart-aside";
 import { DeliveryStep } from "./delivery-step";
 import { GroupCheckout } from "./group-checkout";
 import { PaymentMethodPicker } from "./payment-method-picker";
@@ -149,83 +150,94 @@ export function CheckoutClient() {
 
 	const current = STEPS.findIndex((s) => s.step === state.step) + 1;
 
-	return (
-		<div className="space-y-6">
-			<header className="space-y-2">
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-				<p className="text-[#64748B] text-sm">{t("stepOf", { current })}</p>
-				<ol className="flex gap-2 text-sm">
-					{STEPS.map(({ step, label }, i) => (
-						<li
-							key={step}
-							aria-current={step === state.step ? "step" : undefined}
-							className={
-								i + 1 <= current
-									? "font-semibold text-[#1E40AF]"
-									: "text-[#94A3B8]"
-							}
-						>
-							{t(label)}
-						</li>
-					))}
-				</ol>
-			</header>
+	const withAside = state.step !== "review";
 
-			{state.step === "address" && (
-				<AddressStep
-					initial={state.address}
-					launchCities={launchCities}
-					shopCity={cart.data.shop?.city ?? null}
-					method={state.option?.method ?? "seller_delivery"}
-					rejectedField={state.addressError}
-					rejection={
-						quote.error?.code === ERROR_CODES.checkoutAddressInvalid
-							? quote.error
-							: null
-					}
-					onSubmit={(address) =>
-						dispatch({ type: "addressSubmitted", address })
-					}
-				/>
-			)}
-			{state.step === "delivery" && state.address && (
-				<div className="space-y-4">
-					{protectedPaymentEnabled ? (
-						<PaymentMethodPicker
-							method={state.paymentMethod}
-							fee={null}
-							onChoose={(method) =>
-								dispatch({ type: "paymentMethodChosen", method })
-							}
-						/>
-					) : null}
-					<DeliveryStep
-						paymentMethod={state.paymentMethod}
-						address={state.address}
-						selected={state.option}
-						onChoose={chooseOption}
-						onBack={() => dispatch({ type: "goTo", step: "address" })}
+	return (
+		<div
+			className={
+				withAside
+					? "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]"
+					: "mx-auto max-w-2xl"
+			}
+		>
+			<div className="space-y-6">
+				<header className="space-y-2">
+					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+					<p className="text-[#64748B] text-sm">{t("stepOf", { current })}</p>
+					<ol className="flex gap-2 text-sm">
+						{STEPS.map(({ step, label }, i) => (
+							<li
+								key={step}
+								aria-current={step === state.step ? "step" : undefined}
+								className={
+									i + 1 <= current
+										? "font-semibold text-[#1E40AF]"
+										: "text-[#94A3B8]"
+								}
+							>
+								{t(label)}
+							</li>
+						))}
+					</ol>
+				</header>
+
+				{state.step === "address" && (
+					<AddressStep
+						initial={state.address}
+						launchCities={launchCities}
+						shopCity={cart.data.shop?.city ?? null}
+						method={state.option?.method ?? "seller_delivery"}
+						rejectedField={state.addressError}
+						rejection={
+							quote.error?.code === ERROR_CODES.checkoutAddressInvalid
+								? quote.error
+								: null
+						}
+						onSubmit={(address) =>
+							dispatch({ type: "addressSubmitted", address })
+						}
 					/>
-				</div>
-			)}
-			{state.step === "review" && (
-				<ReviewStep
-					state={state}
-					dispatch={dispatch}
-					quoting={quote.isPending}
-					quoteError={quote.error}
-					onRetryQuote={() => state.option && chooseOption(state.option)}
-					placing={place.isPending}
-					placeError={
-						place.error?.code === ERROR_CODES.checkoutQuoteChanged
-							? null
-							: place.error
-					}
-					onPlace={placeOrder}
-					protectedPaymentEnabled={protectedPaymentEnabled}
-					onChoosePaymentMethod={choosePaymentMethod}
-				/>
-			)}
+				)}
+				{state.step === "delivery" && state.address && (
+					<div className="space-y-4">
+						{protectedPaymentEnabled ? (
+							<PaymentMethodPicker
+								method={state.paymentMethod}
+								fee={null}
+								onChoose={(method) =>
+									dispatch({ type: "paymentMethodChosen", method })
+								}
+							/>
+						) : null}
+						<DeliveryStep
+							paymentMethod={state.paymentMethod}
+							address={state.address}
+							selected={state.option}
+							onChoose={chooseOption}
+							onBack={() => dispatch({ type: "goTo", step: "address" })}
+						/>
+					</div>
+				)}
+				{state.step === "review" && (
+					<ReviewStep
+						state={state}
+						dispatch={dispatch}
+						quoting={quote.isPending}
+						quoteError={quote.error}
+						onRetryQuote={() => state.option && chooseOption(state.option)}
+						placing={place.isPending}
+						placeError={
+							place.error?.code === ERROR_CODES.checkoutQuoteChanged
+								? null
+								: place.error
+						}
+						onPlace={placeOrder}
+						protectedPaymentEnabled={protectedPaymentEnabled}
+						onChoosePaymentMethod={choosePaymentMethod}
+					/>
+				)}
+			</div>
+			{withAside && <CartAside cart={cart.data} />}
 		</div>
 	);
 }

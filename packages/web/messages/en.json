@@ -2421,7 +2421,8 @@
 		"printReceipt": "Print receipt",
 		"loadingOrder": "Loading the order…",
 		"errorCode": "The code has 6 digits.",
-		"confirmedBody": "The seller has 48 hours to accept your order."
+		"confirmedBody": "The seller has 48 hours to accept your order.",
+		"asideDeliveryNext": "Delivery fee worked out at the next step"
 	},
 	"Purchases": {
 		"title": "My orders",
