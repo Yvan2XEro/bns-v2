@@ -1228,7 +1228,8 @@
 		"stock": {
 			"negative": "Stock cannot go below zero.",
 			"insufficient": "Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
-			"countStale": "The stock changed while you were counting. Please count again."
+			"countStale": "The stock changed while you were counting. Please count again.",
+			"countInProgress": "Another stock count is starting for this shop. Please try again."
 		},
 		"moderation": {
 			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now.",

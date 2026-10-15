@@ -90,6 +90,7 @@ export const ERROR_CODES = {
 	stockNegative: "stock.negative",
 	stockInsufficient: "stock.insufficient",
 	stockCountStale: "stock.countStale",
+	stockCountInProgress: "stock.countInProgress",
 
 	verificationDisabled: "verification.disabled",
 	verificationNotOwner: "verification.notOwner",
@@ -354,6 +355,8 @@ const FALLBACKS: Record<string, string> = {
 		"Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
 	[ERROR_CODES.stockCountStale]:
 		"The stock changed while you were counting. Reload the page and count again.",
+	[ERROR_CODES.stockCountInProgress]:
+		"Another stock count is starting for this shop. Please try again.",
 
 	[ERROR_CODES.verificationDisabled]: "Verification is not available yet.",
 	[ERROR_CODES.verificationNotOwner]: "Only the shop owner can do this.",

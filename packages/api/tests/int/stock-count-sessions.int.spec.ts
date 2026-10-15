@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { recordStockCount } from "../../src/services/stock";
 import {
 	cancelStockCount,
@@ -62,6 +62,42 @@ describe("stock count sessions", () => {
 		const again = await startStockCount(payload, U1, "s-1", {});
 		expect(again.id).toBe(first.id);
 		expect(payload.store["stock-count-sessions"]).toHaveLength(1);
+	});
+
+	it("resumes the session a concurrent start just opened instead of opening a second", async () => {
+		const payload = seed();
+		const create = payload.create.bind(payload);
+		const duplicateKey = () =>
+			Object.assign(new Error("E11000 duplicate key"), { code: 11000 });
+		let raced = false;
+		vi.spyOn(payload, "create").mockImplementation((async (args: {
+			collection: string;
+			data: Record<string, unknown>;
+		}) => {
+			if (args.collection === "stock-count-sessions" && !raced) {
+				raced = true;
+				await create({ ...args, req: undefined });
+				throw duplicateKey();
+			}
+			return create(args);
+		}) as typeof payload.create);
+
+		const view = await startStockCount(payload, U1, "s-1", {});
+
+		const sessions = payload.store["stock-count-sessions"];
+		expect(sessions).toHaveLength(1);
+		expect(view.id).toBe(String(sessions[0]?.id));
+	});
+
+	it("answers 409 when a concurrent start keeps winning", async () => {
+		const payload = seed();
+		vi.spyOn(payload, "create").mockRejectedValue(
+			Object.assign(new Error("E11000 duplicate key"), { code: 11000 }),
+		);
+
+		await expect(startStockCount(payload, U1, "s-1", {})).rejects.toMatchObject(
+			{ code: "stock.countInProgress", status: 409 },
+		);
 	});
 
 	it("refuses another shop's location and a non-member", async () => {

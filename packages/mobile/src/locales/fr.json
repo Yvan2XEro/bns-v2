@@ -1231,7 +1231,8 @@
 		"stock": {
 			"negative": "Le stock ne peut pas passer sous zéro.",
 			"insufficient": "Stock insuffisant : certaines unités sont déjà réservées. Réduisez la quantité ou libérez d'abord une réservation.",
-			"countStale": "Le stock a changé pendant votre comptage. Veuillez recompter."
+			"countStale": "Le stock a changé pendant votre comptage. Veuillez recompter.",
+			"countInProgress": "Un autre comptage démarre pour cette boutique. Veuillez réessayer."
 		},
 		"moderation": {
 			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment.",

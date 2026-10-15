@@ -3,10 +3,10 @@ import { ERROR_CODES } from "../lib/errors";
 import { isRecord } from "../lib/payments/types";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
-import { withTransaction } from "../lib/transactions";
+import { RetryTransaction, withTransaction } from "../lib/transactions";
 import type { StockCountSession } from "../payload-types";
 import { requireShopMember, requireShopPermission } from "./shopGuards";
-import type { ServiceUser } from "./shops";
+import { isUniqueViolation, type ServiceUser } from "./shops";
 
 const MAX_LINES = 5000;
 const MAX_VALUE_LENGTH = 12;
@@ -187,7 +187,11 @@ async function assertLocation(
 	}
 }
 
-/** One open count per shop: starting again resumes the one in progress. */
+/**
+ * One open count per shop: starting again resumes the one in progress. The
+ * partial unique index on `(shop)` for open sessions refuses a racing second
+ * start, whose retry then resumes the winner's session.
+ */
 export async function startStockCount(
 	payload: Payload,
 	user: ServiceUser,
@@ -205,24 +209,33 @@ export async function startStockCount(
 			if (open) return toView(payload, open, req);
 			const locationId = input.locationId ?? null;
 			await assertLocation(payload, shopId, locationId, req);
-			const created = await req.payload.create({
-				collection: "stock-count-sessions",
-				data: {
-					shop: shopId,
-					status: "open",
-					location: locationId,
-					startedBy: user.id,
-					startedAt: new Date().toISOString(),
-					counts: {},
-				},
-				depth: 0,
-				overrideAccess: true,
-				req,
-			});
+			const created = await req.payload
+				.create({
+					collection: "stock-count-sessions",
+					data: {
+						shop: shopId,
+						status: "open",
+						location: locationId,
+						startedBy: user.id,
+						startedAt: new Date().toISOString(),
+						counts: {},
+					},
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch((error: unknown) => {
+					if (!isUniqueViolation(error)) throw error;
+					throw new RetryTransaction("another count opened for this shop");
+				});
 			return toView(payload, created, req);
 		},
 		{ user },
-	);
+	).catch((error: unknown) => {
+		if (error instanceof RetryTransaction)
+			throw new ServiceError(ERROR_CODES.stockCountInProgress, 409);
+		throw error;
+	});
 }
 
 async function requireOpenSession(

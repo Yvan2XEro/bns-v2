@@ -73,6 +73,7 @@ export const ERROR_CODES = {
 	stockNegative: "stock.negative",
 	stockInsufficient: "stock.insufficient",
 	stockCountStale: "stock.countStale",
+	stockCountInProgress: "stock.countInProgress",
 	accountSuspended: "moderation.accountSuspended",
 	moderationForbidden: "moderation.forbidden",
 	moderationRankTooLow: "moderation.rankTooLow",
@@ -330,6 +331,8 @@ const FALLBACKS: Record<string, string> = {
 		"Not enough stock available: some units are already reserved. Lower the quantity or release a reservation first.",
 	[ERROR_CODES.stockCountStale]:
 		"The stock changed while you were counting. Please count again.",
+	[ERROR_CODES.stockCountInProgress]:
+		"Another stock count is starting for this shop. Please try again.",
 	[ERROR_CODES.accountSuspended]:
 		"Your account is suspended. You cannot publish listings or send messages right now.",
 	[ERROR_CODES.moderationForbidden]:
