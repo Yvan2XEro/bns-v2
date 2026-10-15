@@ -18,7 +18,7 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 	const locale = useLocale();
 	const query = useSellerReturns(shopId);
 	return (
-		<main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+		<main className="space-y-6">
 			<header className="flex items-start gap-4">
 				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EFF6FF] text-[#1E40AF]">
 					<RotateCcw aria-hidden="true" className="h-5 w-5" />

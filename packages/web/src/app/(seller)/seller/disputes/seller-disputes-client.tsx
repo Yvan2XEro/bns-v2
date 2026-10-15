@@ -18,7 +18,7 @@ export function SellerDisputesClient({ shopId }: { shopId: string }) {
 	const locale = useLocale();
 	const query = useShopDisputes(shopId);
 	return (
-		<main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+		<main className="space-y-6">
 			<header className="flex items-start gap-4">
 				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F5F3FF] text-[#6D28D9]">
 					<Scale aria-hidden="true" className="h-5 w-5" />

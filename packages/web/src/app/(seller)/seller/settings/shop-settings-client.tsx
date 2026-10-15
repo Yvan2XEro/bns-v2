@@ -55,7 +55,11 @@ export function ShopSettingsClient({
 					{t("viewShop")}
 				</Link>
 			</div>
-			<Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
+			<Tabs
+				value={tab}
+				onValueChange={(value) => setTab(value as Tab)}
+				className="max-w-4xl"
+			>
 				<TabsList>
 					<TabsTrigger value="profile">{t("tabProfile")}</TabsTrigger>
 					{owner && (

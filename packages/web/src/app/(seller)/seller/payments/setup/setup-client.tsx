@@ -83,7 +83,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 	const cooldownActive = Boolean(view.changeCooldownUntil);
 
 	return (
-		<div className="space-y-6">
+		<div className="max-w-4xl space-y-6">
 			<h1 className="font-bold text-2xl text-[#0F172A]">{t("setup_title")}</h1>
 
 			{notMeId && <NotMeBanner shopId={shopId} accountId={notMeId} />}

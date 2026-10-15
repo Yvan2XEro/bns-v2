@@ -14,7 +14,7 @@ export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 	const data = query.data;
 
 	return (
-		<section className="mx-auto w-full max-w-5xl space-y-6">
+		<section className="space-y-6">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<h1 className="font-bold text-2xl text-[#0F172A]">

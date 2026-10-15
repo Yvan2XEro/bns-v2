@@ -41,9 +41,7 @@ export async function SellerShell({
 					<ShopSwitcher activeShopId={shop.id} />
 				</div>
 				<SuspensionBanner shop={shop} locale={locale} />
-				<div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-					{children}
-				</div>
+				<div className="px-4 py-6 sm:px-6 lg:px-8">{children}</div>
 			</div>
 		</div>
 	);
