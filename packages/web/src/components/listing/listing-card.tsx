@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { useOrderMoney } from "~/hooks/use-order-money";
+import { listingConditionValue } from "~/lib/listing-condition";
 import {
 	listingPriceMax,
 	listingShopBadge,
@@ -49,10 +50,11 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 		typeof listing.price === "number" &&
 		typeof priceMax === "number" &&
 		priceMax > listing.price;
+	const condition = listingConditionValue(listing.attributes);
 	const conditionLabel =
-		listing.condition === "new"
+		condition === "new"
 			? t("badgeNew")
-			: listing.condition === "like_new"
+			: condition === "like_new"
 				? t("badgeLikeNew")
 				: null;
 

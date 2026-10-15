@@ -38,14 +38,6 @@ export default function FiltersModal() {
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
 
-	const CONDITIONS = [
-		{ key: "new", label: t("filters.conditionNew") },
-		{ key: "like_new", label: t("filters.conditionLikeNew") },
-		{ key: "good", label: t("filters.conditionGood") },
-		{ key: "fair", label: t("filters.conditionFair") },
-		{ key: "poor", label: t("filters.conditionPoor") },
-	];
-
 	// On récupère tous les params sans typage pour accéder aux attr_*
 	const rawParams = useLocalSearchParams();
 	const returnTo = rawParams.returnTo as string | undefined;
@@ -59,9 +51,6 @@ export default function FiltersModal() {
 	);
 	const [maxPrice, setMaxPrice] = useState(
 		(rawParams.maxPrice as string) ?? "",
-	);
-	const [selectedConditions, setSelectedConditions] = useState<string[]>(
-		rawParams.conditions ? (rawParams.conditions as string).split(",") : [],
 	);
 	const [location, setLocation] = useState(
 		(rawParams.location as string) ?? "",
@@ -133,18 +122,11 @@ export default function FiltersModal() {
 	}, [selectedCategory, categories]);
 
 	// ── Handlers ────────────────────────────────────────────────
-	const toggleCondition = (key: string) =>
-		setSelectedConditions((prev) =>
-			prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key],
-		);
-
 	const handleApply = () => {
 		const filterParams: Record<string, string> = {};
 		if (selectedCategory) filterParams.category = selectedCategory;
 		if (minPrice) filterParams.minPrice = minPrice;
 		if (maxPrice) filterParams.maxPrice = maxPrice;
-		if (selectedConditions.length)
-			filterParams.conditions = selectedConditions.join(",");
 		if (selectedCategory && selectedTags.length)
 			filterParams.tags = selectedTags.join(",");
 		if (verifiedOnly) filterParams.verified = "1";
@@ -167,7 +149,6 @@ export default function FiltersModal() {
 		setSelectedCategory("");
 		setMinPrice("");
 		setMaxPrice("");
-		setSelectedConditions([]);
 		setSelectedTags([]);
 		setLocation("");
 		setRadius(10);
@@ -179,7 +160,6 @@ export default function FiltersModal() {
 		selectedCategory,
 		minPrice,
 		maxPrice,
-		selectedConditions.length > 0,
 		selectedTags.length > 0,
 		location,
 		verifiedOnly,
@@ -280,39 +260,6 @@ export default function FiltersModal() {
 						]}
 						keyboardType="numeric"
 					/>
-				</View>
-
-				{/* ── État ── */}
-				<Text style={[styles.sectionTitle, { color: mutedColor }]}>
-					{t("filters.condition")}
-				</Text>
-				<View style={styles.conditionGrid}>
-					{CONDITIONS.map((c) => {
-						const active = selectedConditions.includes(c.key);
-						return (
-							<Pressable
-								key={c.key}
-								onPress={() => toggleCondition(c.key)}
-								style={[
-									styles.pill,
-									{
-										backgroundColor: active ? primaryColor : cardBg,
-										borderColor: active ? primaryColor : borderColor,
-									},
-								]}
-							>
-								{active && <Ionicons name="checkmark" size={13} color="#fff" />}
-								<Text
-									style={[
-										styles.pillText,
-										{ color: active ? "#fff" : textColor },
-									]}
-								>
-									{c.label}
-								</Text>
-							</Pressable>
-						);
-					})}
 				</View>
 
 				{/* ── Vendeurs vérifiés ── */}
@@ -609,9 +556,6 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 	},
 	priceSep: { fontSize: 18, fontFamily: Fonts.body },
-
-	// Condition grid
-	conditionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 
 	// Verified-only toggle
 	verifiedRow: {

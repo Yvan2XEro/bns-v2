@@ -1,13 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { CONDITION_LABEL_KEYS } from "@/src/lib/listingCondition";
 import { formatPriceRange } from "@/src/lib/market";
 import { type ProductFormState, parseAmount } from "@/src/lib/productForm";
 import { priceRange } from "@/src/lib/variants";
 import { formStyles as f } from "./formStyles";
 
-/** Title/category/condition recap plus price range and stock, with an edit shortcut. */
+/** Title/category recap plus price range and stock, with an edit shortcut. */
 export function PublishSummaryCard({
 	form,
 	onEditInfo,
@@ -36,7 +35,6 @@ export function PublishSummaryCard({
 					<Text style={[f.hint, { color: c.muted }]}>
 						{[
 							form.category?.name,
-							form.condition ? t(CONDITION_LABEL_KEYS[form.condition]) : null,
 							t("product.variantsCount", { count: form.variants.length }),
 						]
 							.filter(Boolean)

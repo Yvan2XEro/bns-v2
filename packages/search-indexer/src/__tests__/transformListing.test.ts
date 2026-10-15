@@ -9,7 +9,6 @@ describe("transformListing", () => {
 		price: 450000,
 		location: "Douala",
 		status: "published",
-		condition: "new",
 		boostedUntil: null,
 		views: 42,
 		images: [{ image: { url: "/media/img1.jpg" } }],
@@ -38,7 +37,7 @@ describe("transformListing", () => {
 		expect(doc.categoryId).toBe("cat-1");
 		expect(doc.sellerId).toBe("user-1");
 		expect(doc.status).toBe("published");
-		expect(doc.condition).toBe("new");
+		expect(doc.condition).toBeUndefined();
 		expect(doc.views).toBe(42);
 		expect(doc.images).toEqual([
 			{
@@ -55,6 +54,20 @@ describe("transformListing", () => {
 			},
 		]);
 		expect(doc.createdAt).toBe("2026-01-15T10:00:00Z");
+	});
+
+	test("indexes condition as the filterable attribute it now is", () => {
+		const doc = transformListing({
+			...baseListing,
+			category: {
+				id: "cat-1",
+				name: "Électronique",
+				attributes: [{ slug: "condition", filterable: true }],
+			},
+			attributes: { condition: "like_new" },
+			seller: "user-1",
+		});
+		expect(doc.condition).toBe("like_new");
 	});
 
 	test("handles seller as a string ID (not populated)", () => {
@@ -154,7 +167,7 @@ describe("transformListing", () => {
 
 		const doc = transformListing(listing);
 
-		expect(doc.condition).toBeNull();
+		expect(doc.condition).toBeUndefined();
 		expect(doc.boostedUntil).toBeNull();
 		expect(doc.views).toBe(0);
 		expect(doc.images).toEqual([]);

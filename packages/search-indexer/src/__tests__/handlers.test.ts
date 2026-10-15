@@ -36,7 +36,6 @@ const sampleApiResponse = {
 	price: 85000,
 	location: "Douala",
 	status: "published",
-	condition: "good",
 	boostedUntil: null,
 	views: 10,
 	images: [],

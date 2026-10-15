@@ -78,16 +78,18 @@ describe("productFormIssues: the API's rules on the editor's paths", () => {
 		]);
 	});
 
-	test("condition required by the preset", () => {
-		const preset = {
-			...DEFAULT_FORM_PRESET,
-			fields: {
-				...DEFAULT_FORM_PRESET.fields,
-				condition: { enabled: true, required: true },
+	test("condition is a category attribute like any other", () => {
+		const attributes = [
+			{
+				name: "État",
+				slug: "condition",
+				type: "select" as const,
+				required: true,
+				options: [{ value: "new", label: "Neuf" }],
 			},
-		};
-		expect(paths(valid(), { ...context, preset })).toEqual([
-			["condition", "required"],
+		];
+		expect(paths(valid(), { ...context, attributes })).toEqual([
+			["attributeValues.condition", "required"],
 		]);
 	});
 

@@ -197,10 +197,6 @@ export interface Category {
 				/** Category-supplied wording, e.g. "Loyer mensuel". */
 				label?: string;
 			};
-			condition: {
-				enabled: boolean;
-				required: boolean;
-			};
 			photos: {
 				enabled: boolean;
 				required: boolean;
@@ -228,9 +224,6 @@ export type ListingStatus =
 	| "sold"
 	| "expired"
 	| "deleted";
-
-/** "new" maps to backend value "new", NOT "likeNew" */
-export type ListingCondition = "new" | "like_new" | "good" | "fair" | "poor";
 
 /**
  * A listing image item (from the images array field).
@@ -261,7 +254,6 @@ export interface ListingHit {
 	location: string;
 	images?: ListingImageItem[];
 	status: ListingStatus;
-	condition?: ListingCondition;
 	/** ISO date — if set and > now, listing is actively boosted */
 	boostedUntil?: string | null;
 	attributes?: Record<string, string | number | boolean>;
@@ -349,7 +341,6 @@ export interface SearchQueryParams {
 	limit?: number;
 	offset?: number;
 	sort?: SearchSortKey;
-	condition?: ListingCondition;
 	/** Dynamic attribute filters — key format: attr_{slug} */
 	[key: string]: string | number | undefined;
 }
@@ -816,7 +807,6 @@ export interface ProductDoc {
 	title: string;
 	description?: string | null;
 	category: Category | string;
-	condition?: ListingCondition | null;
 	attributes?: Record<string, string | number | boolean> | null;
 	images?: { id?: string; image: Media | string }[];
 	status: ProductStatus;
@@ -837,7 +827,6 @@ export interface ProductInput {
 	title: string;
 	description?: string | null;
 	category: string;
-	condition?: ListingCondition | null;
 	attributes?: Record<string, unknown>;
 	images?: string[];
 	status: ProductStatus;

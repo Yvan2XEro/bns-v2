@@ -37,7 +37,6 @@ export type ListingDocument = {
 	categoryId: string;
 	sellerId: string;
 	status: string;
-	condition: string | null;
 	tags: string[];
 	boostedUntil: string | null;
 	views: number;
@@ -173,7 +172,6 @@ async function fetchFilterableAttributeSlugs(
 export const STATIC_FILTERABLE_ATTRIBUTES = [
 	"status",
 	"categoryId",
-	"condition",
 	"price",
 	"location",
 	"boostedUntil",

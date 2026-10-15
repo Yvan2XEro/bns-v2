@@ -1,7 +1,10 @@
-import type { ListingCondition } from "@/src/types/api";
+import {
+	CONDITION_SLUG,
+	type ConditionValue,
+} from "../../../api/src/contracts/conditionAttribute";
 
 /** i18n key for each stored condition value — the API stores `like_new`. */
-export const CONDITION_LABEL_KEYS: Record<ListingCondition, string> = {
+export const CONDITION_LABEL_KEYS: Record<ConditionValue, string> = {
 	new: "conditions.new",
 	like_new: "conditions.likeNew",
 	good: "conditions.good",
@@ -12,6 +15,13 @@ export const CONDITION_LABEL_KEYS: Record<ListingCondition, string> = {
 /** The label key for a stored condition, or null for an unknown value. */
 export function conditionLabelKey(value: unknown): string | null {
 	return typeof value === "string" && value in CONDITION_LABEL_KEYS
-		? CONDITION_LABEL_KEYS[value as ListingCondition]
+		? CONDITION_LABEL_KEYS[value as ConditionValue]
 		: null;
+}
+
+/** The condition attribute a listing carries, if any. */
+export function listingConditionValue(attributes: unknown): string | null {
+	if (!attributes || typeof attributes !== "object") return null;
+	const value = (attributes as Record<string, unknown>)[CONDITION_SLUG];
+	return typeof value === "string" && value.trim() ? value : null;
 }

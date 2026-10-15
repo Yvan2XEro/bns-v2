@@ -5,7 +5,7 @@ import { listingInputIssues } from "../../../api/src/contracts/listingValidation
  * Category-driven shape of the listing form.
  *
  * A category is data an admin edits, so the form is data too: the API decorates
- * every category with a `formPreset` (which of price/condition to show, and
+ * every category with a `formPreset` (which of price/photos to show, and
  * whether they are required) and an ordered `attributes` array (the extra fields
  * that category asks for). Nothing about "an item being sold" may be hardcoded
  * in the screens — everything they show is derived here.
@@ -35,7 +35,6 @@ export interface ListingFormPreset {
 	categoryType: ListingCategoryType;
 	fields: {
 		price: ListingFormFieldConfig;
-		condition: ListingFormFieldConfig;
 		/**
 		 * Whether the wizard shows a photos step at all, and whether it insists
 		 * on one. A job offer has nothing to photograph.
@@ -58,9 +57,9 @@ const CATEGORY_TYPES = new Set<string>([
  * screen), or a server that has not shipped `formPreset` yet.
  *
  * Deliberately *not* the product preset. "Unknown" is not "a product for sale":
- * assuming product made the edit screen demand a price on a job ad and show
- * "like new" chips on a holiday rental, and it made the form block submission on
- * a field the server does not even want. So the fallback shows both fields —
+ * assuming product made the edit screen demand a price on a job ad, and it
+ * made the form block submission on a field the server does not even want.
+ * So the fallback shows the fields —
  * hiding them on the edit screen would visually drop values the listing already
  * holds — but requires neither. The server re-checks the real preset on write
  * (Listings.beforeChange), so being permissive here can never let bad data in.
@@ -69,8 +68,7 @@ export const DEFAULT_LISTING_FORM_PRESET: ListingFormPreset = {
 	categoryType: "generic",
 	fields: {
 		price: { enabled: true, required: false },
-		condition: { enabled: true, required: false },
-		// Same reasoning as the other two: show it, never insist, let the server
+		// Same reasoning as the price: show it, never insist, let the server
 		// have the last word.
 		photos: { enabled: true, required: false },
 	},
@@ -149,10 +147,6 @@ export function getListingFormPreset(category?: unknown): ListingFormPreset {
 			price: coerceField(
 				fields.price,
 				DEFAULT_LISTING_FORM_PRESET.fields.price,
-			),
-			condition: coerceField(
-				fields.condition,
-				DEFAULT_LISTING_FORM_PRESET.fields.condition,
 			),
 			photos: coerceField(
 				fields.photos,
@@ -595,7 +589,6 @@ export interface ListingDraft {
 	title: string;
 	description: string;
 	price: string;
-	condition: string | null;
 	location: string;
 	category: unknown;
 	attributes: Record<string, unknown>;
@@ -640,7 +633,6 @@ export function listingDraftIssues(
 			preset.fields.price.enabled && draft.price.trim()
 				? Number(draft.price)
 				: undefined,
-		condition: preset.fields.condition.enabled ? draft.condition || null : null,
 		images: draft.images,
 		attributes: serializeAttributeValues(attributes, draft.attributes),
 		tags: draft.tags ?? [],

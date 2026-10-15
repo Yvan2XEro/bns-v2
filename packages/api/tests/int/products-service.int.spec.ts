@@ -67,8 +67,7 @@ const input = (overrides: Record<string, unknown> = {}) => ({
 	title: "Samsung Galaxy S24 256 Go",
 	description: "Neuf, scellé.",
 	category: "cat-1",
-	condition: "new",
-	attributes: { brand: "Samsung" },
+	attributes: { brand: "Samsung", condition: "new" },
 	images: ["m-1", "m-2"],
 	status: "active",
 	options: [

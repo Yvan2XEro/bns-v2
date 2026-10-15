@@ -1,4 +1,8 @@
 import type { Category, ProductInput } from "~/types";
+import {
+	type ConditionValue,
+	conditionAttributeOf,
+} from "../../../api/src/contracts/conditionAttribute";
 import { parseAmount } from "./product-form";
 
 export const IMPORT_MAX_ROWS = 200;
@@ -16,7 +20,7 @@ const COLUMNS = {
 } as const;
 type Column = keyof typeof COLUMNS;
 
-const CONDITIONS: Record<string, NonNullable<ProductInput["condition"]>> = {
+const CONDITIONS: Record<string, ConditionValue> = {
 	new: "new",
 	neuf: "new",
 	like_new: "like_new",
@@ -162,6 +166,11 @@ export function parseProductImport(
 		const conditionText = fold(cell("condition"));
 		const condition = conditionText ? CONDITIONS[conditionText] : undefined;
 		if (conditionText && !condition) errors.push("condition");
+		// The condition is the category's condition attribute; a category that
+		// does not ask for one gets none.
+		const conditionSlug = conditionAttributeOf(
+			categories.find((c) => c.id === category)?.attributes,
+		)?.slug;
 
 		const sku = cell("sku");
 		if (sku.length > 60) errors.push("sku");
@@ -180,7 +189,9 @@ export function parseProductImport(
 						title,
 						category,
 						description: description || null,
-						...(condition ? { condition } : {}),
+						...(condition && conditionSlug
+							? { attributes: { [conditionSlug]: condition } }
+							: {}),
 						status: "draft",
 						options: [],
 						variants: [

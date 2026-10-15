@@ -94,7 +94,6 @@ interface FormData {
 	title: string;
 	description: string;
 	price: string;
-	condition: string;
 	duration: number;
 	location: string;
 	coordinates: { lat: number; lng: number } | null;
@@ -116,7 +115,6 @@ function createEmptyForm(): FormData {
 		title: "",
 		description: "",
 		price: "",
-		condition: "new",
 		duration: 30,
 		location: "",
 		coordinates: null,
@@ -220,7 +218,7 @@ export default function CreateScreen() {
 	const steps = useMemo<StepId[]>(() => {
 		// Characteristics follow the category directly: they are the questions
 		// that category asks, and answering them right after choosing it keeps
-		// one train of thought. Price, condition and duration are about selling
+		// one train of thought. Price and duration are about selling
 		// rather than about the thing, so they come after.
 		const list: StepId[] = ["describe"];
 		if (hasAttributes) list.push("attributes");
@@ -310,8 +308,8 @@ export default function CreateScreen() {
 	/**
 	 * Moves the form to a category, dropping whatever belonged to the previous
 	 * one. Attributes are keyed by slugs that belong to a single category, and a
-	 * price or condition the new category hides can neither be seen nor removed
-	 * by the seller — keeping either would submit answers to questions this
+	 * price the new category hides can neither be seen nor removed by the
+	 * seller — keeping either would submit answers to questions this
 	 * category never asked.
 	 */
 	const applyCategory = useCallback((next: any, guessed: boolean) => {
@@ -323,9 +321,6 @@ export default function CreateScreen() {
 				...f,
 				category: next,
 				price: nextPreset.fields.price.enabled ? f.price : "",
-				condition: nextPreset.fields.condition.enabled
-					? f.condition || "new"
-					: "",
 				attributes: {},
 				// The photo step disappears with the category, so keeping the files
 				// would attach pictures the seller can no longer see or remove.
@@ -878,19 +873,10 @@ function DetailsStep({
 	const isProductCategory = isProductListingCategory(form.category);
 	const showsPrice = categoryPreset.fields.price.enabled;
 	const requiresPrice = categoryPreset.fields.price.required;
-	const showsCondition = categoryPreset.fields.condition.enabled;
 	// A rental says "Loyer mensuel", a job "Salaire" — the category owns the
 	// wording, and only when it says nothing do we use the translated default.
 	const priceLabel =
 		categoryPreset.fields.price.label ?? t("create.priceFieldLabel");
-
-	const CONDITIONS: { key: string; label: string; icon: string }[] = [
-		{ key: "new", label: t("conditions.new"), icon: "sparkles-outline" },
-		{ key: "like_new", label: t("conditions.likeNew"), icon: "star-outline" },
-		{ key: "good", label: t("conditions.good"), icon: "thumbs-up-outline" },
-		{ key: "fair", label: t("conditions.fair"), icon: "remove-circle-outline" },
-		{ key: "poor", label: t("conditions.poor"), icon: "construct-outline" },
-	];
 
 	const update = (key: string, val: any) =>
 		setForm((f: any) => ({ ...f, [key]: val }));
@@ -982,53 +968,6 @@ function DetailsStep({
 								{t("common.currency", { defaultValue: "XAF" })}
 							</Text>
 						</View>
-					</View>
-				</View>
-			)}
-
-			{showsCondition && (
-				<View
-					style={[
-						styles.fieldCard,
-						{ backgroundColor: cardBg, borderColor: border },
-					]}
-				>
-					<FieldHeader
-						icon="shield-checkmark-outline"
-						label={t("create.conditionFieldLabel")}
-						colors={colors}
-					/>
-					<View style={styles.conditionWrap}>
-						{CONDITIONS.map((c) => {
-							const active = form.condition === c.key;
-							return (
-								<Pressable
-									key={c.key}
-									onPress={() => update("condition", c.key)}
-									style={[
-										styles.conditionPill,
-										{
-											backgroundColor: active ? primary : inputBg,
-											borderColor: active ? primary : border,
-										},
-									]}
-								>
-									<Ionicons
-										name={c.icon as any}
-										size={13}
-										color={active ? "#fff" : mutedColor}
-									/>
-									<Text
-										style={[
-											styles.conditionText,
-											{ color: active ? "#fff" : mutedColor },
-										]}
-									>
-										{c.label}
-									</Text>
-								</Pressable>
-							);
-						})}
 					</View>
 				</View>
 			)}
@@ -1645,16 +1584,7 @@ function ReviewStep({
 	const [publishInShop, setPublishInShop] = useState(true);
 	const categoryPreset = getListingFormPreset(form.category);
 	const showsPrice = categoryPreset.fields.price.enabled;
-	const showsCondition = categoryPreset.fields.condition.enabled;
 	const categoryAttributes: ListingAttribute[] = attributes ?? [];
-
-	const CONDITION_LABELS: Record<string, string> = {
-		new: t("conditions.new"),
-		like_new: t("conditions.likeNew"),
-		good: t("conditions.good"),
-		fair: t("conditions.fair"),
-		poor: t("conditions.poor"),
-	};
 
 	const serializedAttributes = serializeAttributeValues(
 		categoryAttributes,
@@ -1676,9 +1606,6 @@ function ReviewStep({
 				seller: user?.id,
 				...(activeShop && publishInShop ? { shop: activeShop.id } : {}),
 				...(showsPrice && form.price ? { price: Number(form.price) } : {}),
-				...(showsCondition && form.condition
-					? { condition: form.condition }
-					: {}),
 				...(form.tags.length > 0 ? { tags: form.tags } : {}),
 				images: form.images.map((img: UploadedImage) => ({ image: img.id })),
 				// The API validates attribute types strictly (a number sent as a
@@ -1767,17 +1694,6 @@ function ReviewStep({
 							categoryPreset.fields.price.label ?? t("create.priceRowLabel"),
 						icon: "cash-outline",
 						value: formatPrice(form.price, t),
-						step: "details",
-					},
-				]
-			: []),
-		...(showsCondition
-			? [
-					{
-						id: "condition",
-						label: t("create.conditionRowLabel"),
-						icon: "shield-checkmark-outline",
-						value: CONDITION_LABELS[form.condition] || form.condition || "—",
 						step: "details",
 					},
 				]
@@ -2194,7 +2110,7 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.displayBold,
 	},
 
-	/* ── Condition ── */
+	/* ── Option pills ── */
 	conditionWrap: {
 		flexDirection: "row",
 		flexWrap: "wrap",

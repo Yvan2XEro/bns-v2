@@ -1,4 +1,9 @@
 import type { File } from "payload";
+import {
+	CONDITION_LABELS_FR,
+	CONDITION_SLUG,
+	CONDITION_VALUES,
+} from "../contracts/conditionAttribute";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
 
 /**
@@ -6,19 +11,18 @@ import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
  *
  * Two things are configured here, side by side:
  *
- *   - `listingForm` — how the two built-in fields (price, condition) behave.
+ *   - `listingForm` — how the built-in fields (price, photos) behave.
  *     Settings are inherited down the tree, so a category only carries one when
- *     it genuinely differs from its parent. A flat is never "like new"; a
- *     holiday let is priced per night, not sold; a job offer has a salary, not
- *     a price.
+ *     it genuinely differs from its parent. A holiday let is priced per night,
+ *     not sold; a job offer has a salary, not a price.
  *   - `attributes` — the questions specific to this category. These are **not**
  *     inherited: a category shows its own array and nothing else, so every
  *     category a seller can pick carries a complete list. Parents keep a short
  *     generic set for the seller who stops at "Vehicles" without going deeper.
  *
- * `condition` is deliberately absent from every attribute list: it is a
- * built-in listing field driven by `listingForm.condition`, and a category
- * attribute of the same name would render a second, competing dropdown.
+ * The item's condition (« État ») is an attribute like any other, prepended
+ * by `withCondition` to every category whose ads are goods — a flat is never
+ * "like new", so rentals, services and jobs do not get it.
  *
  * Attribute slugs are the join key for search: `filterable` attributes are
  * pushed to Meilisearch under their slug (see `hooks/meilisearch.ts`), so they
@@ -31,7 +35,7 @@ export interface CategoryAttributeSeed {
 	type: "text" | "number" | "select" | "boolean" | "date";
 	required: boolean;
 	filterable: boolean;
-	options?: { value: string }[];
+	options?: { value: string; label?: string }[];
 	/** Suffix rendered after the value, e.g. "km", "m²". Numbers mostly. */
 	unit?: string;
 	/** Section heading; attributes sharing one are shown together. */
@@ -760,7 +764,7 @@ const categoryDefinitions: CategoryData[] = [
 		imageUrl:
 			"https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop",
 		// Property always carries a price — sale price or rent — but asking
-		// whether a flat is "like new" is nonsense, so condition is hidden.
+		// whether a flat is "like new" is nonsense, so it gets no condition.
 		// No priceLabel: the tree mixes sales and lets, and one word cannot
 		// serve both. Children may say more.
 		listingForm: { type: "rental" },
@@ -3030,7 +3034,7 @@ const categoryDefinitions: CategoryData[] = [
 		imageUrl:
 			"https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=600&fit=crop",
 		parent: "jobs-services",
-		// A job is not sold: the "job" preset hides price and condition. The
+		// A job is not sold: the "job" preset hides the price. The
 		// price field is re-enabled as an optional salary, which is how job
 		// boards actually work — advertise it or write "negotiable".
 		listingForm: {
@@ -3845,7 +3849,6 @@ const categoryDefinitions: CategoryData[] = [
 		listingForm: {
 			type: "product",
 			price: "optional",
-			condition: "optional",
 			photos: "optional",
 		},
 		attributes: [
@@ -3883,6 +3886,43 @@ const categoryDefinitions: CategoryData[] = [
 	},
 ];
 
+const CONDITION_ATTRIBUTE: CategoryAttributeSeed = {
+	name: "État",
+	slug: CONDITION_SLUG,
+	type: "select",
+	required: false,
+	filterable: true,
+	options: CONDITION_VALUES.map((value) => ({
+		value,
+		label: CONDITION_LABELS_FR[value],
+	})),
+};
+
+/** Goods ask for their condition; the kind is inherited like the form. */
+function withCondition(definitions: CategoryData[]): CategoryData[] {
+	const bySlug = new Map(
+		definitions.map((category) => [category.slug, category]),
+	);
+	const kindOf = (category: CategoryData | undefined): string | undefined => {
+		for (let node = category, depth = 0; node && depth < 32; depth++) {
+			const type = node.listingForm?.type;
+			if (type && type !== "auto") return type;
+			node = node.parent ? bySlug.get(node.parent) : undefined;
+		}
+		return undefined;
+	};
+	return definitions.map((category) =>
+		kindOf(category) === "product"
+			? {
+					...category,
+					attributes: [CONDITION_ATTRIBUTE, ...category.attributes],
+				}
+			: category,
+	);
+}
+
+const seededDefinitions = withCondition(categoryDefinitions);
+
 /**
  * The `listingForm` settings above, keyed by slug — only the categories that
  * carry one. Exported so `scripts/seedListingForms.ts` can apply the very same
@@ -3891,7 +3931,7 @@ const categoryDefinitions: CategoryData[] = [
  */
 export const categoryListingForms: Record<string, CategoryListingFormConfig> =
 	Object.fromEntries(
-		categoryDefinitions
+		seededDefinitions
 			.filter((category) => category.listingForm !== undefined)
 			.map((category) => [
 				category.slug,
@@ -3906,7 +3946,7 @@ export const categoryListingForms: Record<string, CategoryListingFormConfig> =
  */
 export const categorySeedAttributes: Record<string, CategoryAttributeSeed[]> =
 	Object.fromEntries(
-		categoryDefinitions.map((category) => [category.slug, category.attributes]),
+		seededDefinitions.map((category) => [category.slug, category.attributes]),
 	);
 
 async function fetchFileByURL(url: string): Promise<File> {
@@ -3943,7 +3983,7 @@ export const seedCategories = async (payload: unknown) => {
 		logger?: { info: (msg: string) => void; error: (msg: string) => void };
 	};
 
-	for (const catDef of categoryDefinitions) {
+	for (const catDef of seededDefinitions) {
 		const parentId = catDef.parent ? slugToId[catDef.parent] : undefined;
 
 		// Download and create media for the category image

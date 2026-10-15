@@ -28,7 +28,6 @@ function filled() {
 	const form = emptyProductForm();
 	form.title = "  Samsung Galaxy S24 256 Go ";
 	form.category = { id: "cat-phones", name: "Téléphones" } as never;
-	form.condition = "new";
 	form.attributes = { brand: "Samsung", warranty: "12" };
 	form.images = [
 		{ id: "m1", uri: "a" },
@@ -444,7 +443,6 @@ describe("fromProductDetail", () => {
 				title: "iPhone 13 Pro",
 				description: "Neuf",
 				category: { id: "c1", name: "Téléphones" } as never,
-				condition: "like_new",
 				attributes: { brand: "Apple" },
 				images: [{ image: { id: "m1", url: "https://x/y.jpg" } as never }],
 				status: "active",

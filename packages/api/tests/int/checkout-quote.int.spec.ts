@@ -129,7 +129,7 @@ function world(overrides: Overrides = {}) {
 					status: "published",
 					shop: "s-1",
 					product: "p-1",
-					condition: "new",
+					attributes: { condition: "new" },
 					...overrides.listing,
 				},
 			],

@@ -22,13 +22,6 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
@@ -54,7 +47,7 @@ import {
 import { listingShopId } from "~/lib/listing-shop";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
-import type { Category, Listing, ListingCondition, Media } from "~/types";
+import type { Category, Listing, Media } from "~/types";
 import { placeCoords } from "../../../../../../../api/src/contracts/places";
 
 /** Maximum number of images a listing can carry (enforced server-side too). */
@@ -75,7 +68,6 @@ export function EditListingForm({
 	const currencyCode = useCurrencyCode();
 	const t = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
-	const tCond = useTranslations("Condition");
 	const tShop = useTranslations("Shop");
 	const tIssues = useTranslations("FormIssues");
 	const router = useRouter();
@@ -94,14 +86,6 @@ export function EditListingForm({
 	const originalShopId = listingShopId(listing);
 	const wasInShop = originalShopId !== null;
 	const [publishInShop, setPublishInShop] = useState(wasInShop);
-
-	const CONDITIONS: { value: ListingCondition; label: string }[] = [
-		{ value: "new", label: tCond("new") },
-		{ value: "like_new", label: tCond("like_new") },
-		{ value: "good", label: tCond("good") },
-		{ value: "fair", label: tCond("fair") },
-		{ value: "poor", label: tCond("poor") },
-	];
 
 	type UserStatus = "draft" | "pending";
 
@@ -186,7 +170,6 @@ export function EditListingForm({
 		description: listing.description,
 		price: listing.price != null ? String(listing.price) : "",
 		location: listing.location,
-		condition: (listing.condition || "") as ListingCondition | "",
 	});
 
 	// An ad that was published before its category asked for a picture must stay
@@ -197,7 +180,6 @@ export function EditListingForm({
 	);
 	const isProduct = isProductCategory(selectedCategory);
 	const priceField = categoryPreset.fields.price;
-	const conditionField = categoryPreset.fields.condition;
 	const photosField = categoryPreset.fields.photos;
 	const photoCount = keptImages.length + newImages.length;
 	// A category may rename the price, e.g. "Loyer mensuel" for a rental.
@@ -211,7 +193,6 @@ export function EditListingForm({
 	);
 	const missingCoreFields = collectCoreFieldIssues(categoryPreset, {
 		price: formData.price,
-		condition: formData.condition,
 		photoCount,
 	});
 
@@ -226,7 +207,6 @@ export function EditListingForm({
 		category: selectedCategory?.id ?? null,
 		price:
 			priceField.enabled && formData.price ? Number(formData.price) : undefined,
-		condition: conditionField.enabled ? formData.condition || null : null,
 		images: [...keptImages, ...newImages],
 		attributes: pruneAttributeValues(attributes, attributeValues),
 		tags: selectedTagIds,
@@ -275,7 +255,6 @@ export function EditListingForm({
 			...prev,
 			// Drop values for fields this category does not show.
 			price: nextPreset.fields.price.enabled ? prev.price : "",
-			condition: nextPreset.fields.condition.enabled ? prev.condition : "",
 		}));
 		// Pictures are deliberately kept when the new category hides them: hiding a
 		// field must not delete what the seller already uploaded. They are saved
@@ -362,9 +341,6 @@ export function EditListingForm({
 			};
 			if (priceField.enabled && formData.price) {
 				updateData.price = Number(formData.price);
-			}
-			if (conditionField.enabled && formData.condition) {
-				updateData.condition = formData.condition;
 			}
 
 			if (coordinates) {
@@ -521,46 +497,6 @@ export function EditListingForm({
 							/>
 						</div>
 					</div>
-
-					{conditionField.enabled && (
-						<div className="space-y-2">
-							<Label>
-								{t("conditionLabel")}
-								{conditionField.required && (
-									<span className="text-destructive"> *</span>
-								)}
-							</Label>
-							<Select
-								value={formData.condition}
-								onValueChange={(v) =>
-									setFormData((p) => ({
-										...p,
-										condition: v as ListingCondition,
-									}))
-								}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder={t("selectCondition")} />
-								</SelectTrigger>
-								<SelectContent>
-									{CONDITIONS.map((c) => (
-										<SelectItem key={c.value} value={c.value}>
-											{c.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							{showErrors && missingCoreFields.includes("condition") && (
-								<p className="text-destructive text-xs">
-									{translateOr(
-										t,
-										"attributeRequired",
-										"Ce champ est obligatoire.",
-									)}
-								</p>
-							)}
-						</div>
-					)}
 
 					<div className="space-y-2">
 						<Label>{translateOr(t, "tags", "Tags")}</Label>

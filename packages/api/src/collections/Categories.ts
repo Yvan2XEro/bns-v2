@@ -22,7 +22,7 @@ export interface CategoryAttribute {
 	type: "text" | "number" | "select" | "boolean" | "date";
 	required: boolean;
 	filterable: boolean;
-	options?: string[];
+	options?: { value: string; label?: string | null }[];
 	/** Suffix rendered after the value, e.g. "km", "m²", "ch". */
 	unit?: string | null;
 	/** Section heading used to group attributes in the form and on the listing. */
@@ -168,7 +168,7 @@ export const Categories: CollectionConfig = {
 			label: "Listing form",
 			admin: {
 				description:
-					"Decides which of the three built-in fields — price, condition and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one.",
+					"Decides which of the two built-in fields — price and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one. An item's condition is an ordinary attribute below (« État », slug “condition”).",
 			},
 			fields: [
 				{
@@ -180,62 +180,42 @@ export const Categories: CollectionConfig = {
 					options: [
 						{ label: "Inherit from parent category", value: "auto" },
 						{
-							label:
-								"Product — price required, condition shown, photo required",
+							label: "Product — price required, photo required",
 							value: "product",
 						},
 						{
-							label: "Service — price optional, no condition, photo optional",
+							label: "Service — price optional, photo optional",
 							value: "service",
 						},
 						{
-							label: "Job offer — no price, no condition, no photos",
+							label: "Job offer — no price, no photos",
 							value: "job",
 						},
 						{
-							label: "Rental — price required, no condition, photo required",
+							label: "Rental — price required, photo required",
 							value: "rental",
 						},
 						{
-							label: "Generic — no price, no condition, photo optional",
+							label: "Generic — no price, photo optional",
 							value: "generic",
 						},
 					],
 					admin: {
 						description:
-							"Pick the closest match and the three fields below follow automatically. Set this on a top-level category and every category underneath inherits it.",
+							"Pick the closest match and the fields below follow automatically. Set this on a top-level category and every category underneath inherits it.",
 					},
 				},
 				{
-					type: "row",
-					fields: [
-						{
-							name: "price",
-							type: "select",
-							required: false,
-							defaultValue: "auto",
-							label: "Price field",
-							options: LISTING_FORM_FIELD_MODES,
-							admin: {
-								width: "50%",
-								description:
-									"Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.",
-							},
-						},
-						{
-							name: "condition",
-							type: "select",
-							required: false,
-							defaultValue: "auto",
-							label: "Condition field",
-							options: LISTING_FORM_FIELD_MODES,
-							admin: {
-								width: "50%",
-								description:
-									"Whether the seller is asked how worn the item is (new, like new, good…). Hide it wherever the question makes no sense, such as a holiday rental or a plot of land.",
-							},
-						},
-					],
+					name: "price",
+					type: "select",
+					required: false,
+					defaultValue: "auto",
+					label: "Price field",
+					options: LISTING_FORM_FIELD_MODES,
+					admin: {
+						description:
+							"Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.",
+					},
 				},
 				{
 					name: "photos",
@@ -322,9 +302,29 @@ export const Categories: CollectionConfig = {
 					type: "array",
 					fields: [
 						{
-							name: "value",
-							type: "text",
-							required: true,
+							type: "row",
+							fields: [
+								{
+									name: "value",
+									type: "text",
+									required: true,
+									admin: {
+										width: "50%",
+										description:
+											"Stored on the ad and matched by the search filter. Do not change it once ads use it.",
+									},
+								},
+								{
+									name: "label",
+									type: "text",
+									required: false,
+									admin: {
+										width: "50%",
+										description:
+											"Shown to people instead of the value, e.g. “Comme neuf” for like_new. Leave empty to show the value.",
+									},
+								},
+							],
 						},
 					],
 					admin: {

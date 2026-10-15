@@ -118,7 +118,6 @@ export function transformListing(
 				? (seller.id as string)
 				: (seller as string),
 		status: listing.status as string,
-		condition: (listing.condition as string) || null,
 		tags,
 		boostedUntil: (listing.boostedUntil as string) || null,
 		views: (listing.views as number) || 0,

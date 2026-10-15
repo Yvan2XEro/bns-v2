@@ -12,17 +12,16 @@ function leafPaths(node: Json, prefix = ""): string[] {
 }
 
 /**
- * Pre-existing drift, measured before this task touched a single key: 0 keys
- * exist only in English, 1 only in French (`Search.conditionCorrect`). It
- * predates P3, so this gate does not demand it be cleared — it pins today's
- * count as a ceiling that must not rise, the same way mobile's locale backlog
+ * Pre-existing drift: 0 keys exist only in English and, since the static
+ * condition filter (and its French-only `Search.conditionCorrect`) went, 0
+ * only in French. The constants pin that as a ceiling that must not rise, the same way mobile's locale backlog
  * and the type-error counts in `AGENTS.md` are ceilings: a real fix lowers
  * the number and the constant below drops with it; a new screen that forgets
  * a translation raises the count and fails here instead of shipping with a
  * raw key visible to half its users.
  */
 const PRE_EXISTING_ONLY_EN_CEILING = 0;
-const PRE_EXISTING_ONLY_FR_CEILING = 1;
+const PRE_EXISTING_ONLY_FR_CEILING = 0;
 
 /**
  * Web's twin of `packages/mobile/src/locales/parity.test.ts`. `Team`,

@@ -11,7 +11,6 @@ import {
 } from "../../../api/src/contracts/productValidation";
 import type {
 	Category,
-	ListingCondition,
 	ProductDetailResponse,
 	ProductInput,
 	ProductStatus,
@@ -20,7 +19,6 @@ import {
 	deserializeAttributeValues,
 	getAttributeIssues,
 	getCategoryAttributes,
-	getListingFormPreset,
 	type ListingAttribute,
 	serializeAttributeValues,
 } from "./listingForm";
@@ -49,7 +47,6 @@ export interface ProductFormState {
 	title: string;
 	description: string;
 	category: Category | null;
-	condition: ListingCondition | null;
 	attributes: Record<string, string>;
 	images: ProductImage[];
 	hasVariants: boolean;
@@ -134,7 +131,6 @@ export function emptyProductForm(): ProductFormState {
 		title: "",
 		description: "",
 		category: null,
-		condition: null,
 		attributes: {},
 		images: [],
 		hasVariants: false,
@@ -227,7 +223,6 @@ export function toProductInput(
 		title: state.title.trim(),
 		description: state.description.trim() || null,
 		category: String(state.category?.id ?? ""),
-		condition: state.condition,
 		attributes: serialized,
 		images: state.images.map((image) => image.id),
 		status: state.status,
@@ -265,7 +260,6 @@ export function fromProductDetail(
 		title: product.title,
 		description: product.description ?? "",
 		category,
-		condition: product.condition ?? null,
 		attributes: deserializeAttributeValues(
 			getCategoryAttributes(category),
 			product.attributes ?? {},
@@ -314,8 +308,7 @@ export function fromProductDetail(
  * receives. The rules are the server's own (`productInputIssues`), run on what
  * `toProductInput` would send — except that an amount the seller left blank
  * or typed wrong stays missing here instead of becoming 0. The form adds the
- * category's own demands on top: its attributes as typed, and a condition when
- * the category marks it required.
+ * category's own demands on top: its attributes as typed.
  */
 export function productFormIssues(
 	state: ProductFormState,
@@ -346,10 +339,6 @@ export function productFormIssues(
 	}
 	if (state.hasVariants && cleanOptions(state.options).length === 0) {
 		add({ path: "options", rule: "required" });
-	}
-	const preset = getListingFormPreset(state.category);
-	if (preset.fields.condition.required && !state.condition) {
-		add({ path: "condition", rule: "required" });
 	}
 	for (const issue of productInputIssues(body, { attributes })) add(issue);
 	return issues;

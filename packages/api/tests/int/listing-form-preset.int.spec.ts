@@ -16,7 +16,6 @@ describe("listing form preset", () => {
 			categoryType: "product",
 			fields: {
 				price: { enabled: true, required: true },
-				condition: { enabled: true, required: false },
 			},
 		});
 	});
@@ -31,12 +30,11 @@ describe("listing form preset", () => {
 			categoryType: "job",
 			fields: {
 				price: { enabled: false, required: false },
-				condition: { enabled: false, required: false },
 			},
 		});
 	});
 
-	it("keeps price optional and hides condition for services", () => {
+	it("keeps price optional for services", () => {
 		expect(
 			getListingFormPreset({
 				slug: "services",
@@ -46,9 +44,16 @@ describe("listing form preset", () => {
 			categoryType: "service",
 			fields: {
 				price: { enabled: true, required: false },
-				condition: { enabled: false, required: false },
 			},
 		});
+	});
+
+	it("no longer resolves a built-in condition field", () => {
+		const preset = getListingFormPreset({
+			slug: "phones",
+			listingForm: { type: "product" },
+		});
+		expect(Object.keys(preset.fields)).toEqual(["price", "photos"]);
 	});
 
 	it("decorates categories with the resolved preset", () => {

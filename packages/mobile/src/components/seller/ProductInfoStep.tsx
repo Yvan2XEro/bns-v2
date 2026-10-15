@@ -1,31 +1,20 @@
 import type { Dispatch, SetStateAction } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 import { CategoryField } from "@/src/components/CategorySheet";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useCategories } from "@/src/hooks/useListings";
 import { type FieldIssue, issueAt } from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
-import { CONDITION_LABEL_KEYS } from "@/src/lib/listingCondition";
 import {
 	getCategoryAttributes,
-	getListingFormPreset,
 	groupListingAttributes,
 	type ListingAttribute,
 } from "@/src/lib/listingForm";
 import type { ProductFormState } from "@/src/lib/productForm";
-import type { ListingCondition } from "@/src/types/api";
 import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 import { ProductAttributeInput } from "./ProductAttributeInput";
 import { ProductPhotosCard } from "./ProductPhotosCard";
-
-const CONDITIONS: ListingCondition[] = [
-	"new",
-	"like_new",
-	"good",
-	"fair",
-	"poor",
-];
 
 export function ProductInfoStep({
 	form,
@@ -40,7 +29,6 @@ export function ProductInfoStep({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const categories = useCategories();
-	const preset = getListingFormPreset(form.category);
 	const attributes: ListingAttribute[] = getCategoryAttributes(form.category);
 	const inputStyle = [
 		f.input,
@@ -102,53 +90,6 @@ export function ProductInfoStep({
 					}}
 				/>
 				<FieldIssueText issue={issueAt(issues, "category")} />
-
-				{preset.fields.condition.enabled ? (
-					<>
-						<Text style={[f.label, { color: c.body }]}>
-							{t("product.conditionLabel")}
-							{preset.fields.condition.required ? " *" : ""}
-						</Text>
-						<View style={f.chips}>
-							{CONDITIONS.map((value) => {
-								const active = form.condition === value;
-								return (
-									<Pressable
-										key={value}
-										onPress={() =>
-											setForm((s) => ({
-												...s,
-												condition: active ? null : value,
-											}))
-										}
-										style={[
-											f.chip,
-											{
-												borderColor: active ? c.primary : c.border,
-												backgroundColor: active ? c.primarySoft : c.card,
-											},
-										]}
-										accessibilityRole="button"
-										accessibilityLabel={t(CONDITION_LABEL_KEYS[value])}
-										accessibilityState={{ selected: active }}
-									>
-										<Text
-											style={[
-												f.chipText,
-												{ color: active ? c.primary : c.body },
-											]}
-										>
-											{t(CONDITION_LABEL_KEYS[value])}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</View>
-						<FieldIssueText issue={issueAt(issues, "condition")} />
-					</>
-				) : (
-					<FieldIssueText issue={issueAt(issues, "condition")} />
-				)}
 
 				{groupListingAttributes(attributes).map((section) => (
 					<View key={section.key} style={{ gap: 10 }}>

@@ -24,15 +24,7 @@ import {
 	type ProductFormState,
 	TITLE_MAX,
 } from "~/lib/product-form";
-import type { Category, ListingCondition } from "~/types";
-
-const CONDITIONS: ListingCondition[] = [
-	"new",
-	"like_new",
-	"good",
-	"fair",
-	"poor",
-];
+import type { Category } from "~/types";
 
 interface ProductInformationSectionProps {
 	control: Control<ProductFormState>;
@@ -52,11 +44,9 @@ export function ProductInformationSection({
 	issueAt,
 }: ProductInformationSectionProps) {
 	const t = useTranslations("ProductEditor");
-	const tCondition = useTranslations("Condition");
 	const title = useWatch({ control, name: "title" });
 	const description = useWatch({ control, name: "description" });
-	const condition = useWatch({ control, name: "condition" });
-	const { attributes, category, preset } = categoryContext;
+	const { attributes, category } = categoryContext;
 	const issueMessage = useProductIssueMessage();
 	const titleIssue = issueAt("title");
 	const attributeIssues: Record<string, string> = {};
@@ -69,7 +59,6 @@ export function ProductInformationSection({
 	// category would be sent as attributes this one never declared.
 	const resetCategoryFields = () => {
 		setValue("attributeValues", {}, { shouldDirty: true });
-		setValue("condition", "", { shouldDirty: true });
 	};
 
 	return (
@@ -122,37 +111,6 @@ export function ProductInformationSection({
 					/>
 					<ProductIssueText issue={issueAt("categoryId")} />
 				</div>
-
-				{preset.fields.condition.enabled && (
-					<fieldset className="space-y-1.5">
-						<legend className="font-medium text-[#334155] text-sm">
-							{t("condition")}
-						</legend>
-						<div className="flex flex-wrap gap-2">
-							{CONDITIONS.map((value) => (
-								<button
-									key={value}
-									type="button"
-									aria-pressed={condition === value}
-									onClick={() =>
-										setValue("condition", value, {
-											shouldDirty: true,
-											shouldValidate: true,
-										})
-									}
-									className={
-										condition === value
-											? "rounded-full border border-[#1E40AF] bg-[#EFF6FF] px-3 py-1.5 font-medium text-[#1E40AF] text-sm"
-											: "rounded-full border border-[#E2E8F0] px-3 py-1.5 text-[#334155] text-sm"
-									}
-								>
-									{tCondition(value)}
-								</button>
-							))}
-						</div>
-						<ProductIssueText issue={issueAt("condition")} />
-					</fieldset>
-				)}
 
 				<Controller
 					control={control}

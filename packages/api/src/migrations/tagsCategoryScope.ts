@@ -19,6 +19,8 @@ export const raw = (payload: Payload, slug: string): RawCollection =>
 	(payload.db as unknown as RawAdapter).collections[slug].collection;
 
 export interface CategoryRow {
+	/** As stored, for writing the row back. */
+	_id: unknown;
 	id: string;
 	slug: string | null;
 	parent: string | null;
@@ -43,6 +45,7 @@ export async function loadCategoryRows(
 		const id = idText(doc._id ?? doc.id);
 		if (!id) continue;
 		rows.set(id, {
+			_id: doc._id ?? doc.id,
 			id,
 			slug: typeof doc.slug === "string" ? doc.slug : null,
 			parent: idText(doc.parent),

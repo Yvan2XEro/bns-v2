@@ -217,7 +217,6 @@ export default function HomeScreen() {
 				category: undefined,
 				minPrice: undefined,
 				maxPrice: undefined,
-				conditions: undefined,
 				location: undefined,
 				radius: undefined,
 			};
@@ -284,7 +283,6 @@ export default function HomeScreen() {
 					category: filterParams.category,
 					minPrice: filterParams.minPrice,
 					maxPrice: filterParams.maxPrice,
-					conditions: filterParams.conditions,
 					location: filterParams.location,
 					sort,
 					...attrParams,
@@ -394,7 +392,6 @@ export default function HomeScreen() {
 		filterParams.category,
 		filterParams.minPrice,
 		filterParams.maxPrice,
-		filterParams.conditions,
 		filterParams.location,
 		...Object.values(attrParams),
 	].filter(Boolean).length;
@@ -410,7 +407,6 @@ export default function HomeScreen() {
 				category: (filterParams.category as string) ?? "",
 				minPrice: (filterParams.minPrice as string) ?? "",
 				maxPrice: (filterParams.maxPrice as string) ?? "",
-				conditions: (filterParams.conditions as string) ?? "",
 				location: (filterParams.location as string) ?? "",
 				radius: (filterParams.radius as string) ?? "",
 				...attrParams,
@@ -428,9 +424,6 @@ export default function HomeScreen() {
 			: {}),
 		...(filterParams.maxPrice
 			? { maxPrice: filterParams.maxPrice as string }
-			: {}),
-		...(filterParams.conditions
-			? { condition: filterParams.conditions as string }
 			: {}),
 		...(filterParams.location
 			? { location: filterParams.location as string }

@@ -51,6 +51,17 @@ interface SearchClientProps {
 	favoriteIds?: string[];
 }
 
+function initialAttributeFilters(
+	params: Record<string, string>,
+): Record<string, string> {
+	const filters: Record<string, string> = {};
+	if (params.condition) filters.condition = params.condition;
+	for (const [key, value] of Object.entries(params)) {
+		if (key.startsWith("attr_") && value) filters[key.slice(5)] = value;
+	}
+	return filters;
+}
+
 export function SearchClient({
 	categories,
 	initialListings,
@@ -60,7 +71,6 @@ export function SearchClient({
 }: SearchClientProps) {
 	const t = useTranslations("Search");
 	const currencyCode = useCurrencyCode();
-	const tCond = useTranslations("Condition");
 	const router = useRouter();
 
 	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -84,7 +94,6 @@ export function SearchClient({
 		maxPrice: initialParams.maxPrice || "",
 		location: initialParams.location || "",
 		sort: initialParams.sort || "newest",
-		condition: initialParams.condition || "",
 		tags: initialParams.tags || "",
 		verified: initialParams.verified === "1" ? "1" : "",
 	});
@@ -116,9 +125,11 @@ export function SearchClient({
 		});
 	}, [categoryTags]);
 
+	// `attr_<slug>` params seed the attribute filters; an old `condition=`
+	// link is the condition attribute's filter now.
 	const [attributeFilters, setAttributeFilters] = useState<
 		Record<string, string>
-	>({});
+	>(() => initialAttributeFilters(initialParams));
 
 	const LIMIT = 20;
 
@@ -134,7 +145,6 @@ export function SearchClient({
 			maxPrice: filters.maxPrice || undefined,
 			location: filters.location || undefined,
 			sort: filters.sort || undefined,
-			condition: filters.condition || undefined,
 			tags: (filters.category && filters.tags) || undefined,
 			// The API applies this floor twice — once against the index, once
 			// against live shop data after hydration — so it is never
@@ -181,7 +191,6 @@ export function SearchClient({
 		if (filters.location) params.set("location", filters.location);
 		if (filters.sort && filters.sort !== "newest")
 			params.set("sort", filters.sort);
-		if (filters.condition) params.set("condition", filters.condition);
 		if (filters.category && filters.tags) params.set("tags", filters.tags);
 		if (filters.verified) params.set("verified", filters.verified);
 		for (const [key, value] of Object.entries(attributeFilters)) {
@@ -284,7 +293,6 @@ export function SearchClient({
 			maxPrice: "",
 			location: "",
 			sort: "newest",
-			condition: "",
 			tags: "",
 			verified: "",
 		});
@@ -299,7 +307,6 @@ export function SearchClient({
 			filters.minPrice ||
 			filters.maxPrice ||
 			filters.location ||
-			filters.condition ||
 			filters.tags ||
 			filters.verified ||
 			nearMe ||
@@ -326,34 +333,11 @@ export function SearchClient({
 		filters.minPrice,
 		filters.maxPrice,
 		filters.location,
-		filters.condition,
 		filters.tags,
 		filters.verified,
 		nearMe ? "nearMe" : "",
 		...Object.values(attributeFilters),
 	].filter(Boolean).length;
-
-	const CONDITION_OPTIONS = [
-		{ value: "new", label: tCond("new") },
-		{ value: "like_new", label: tCond("like_new") },
-		{ value: "good", label: tCond("good") },
-		{ value: "fair", label: tCond("fair") },
-		{ value: "poor", label: tCond("poor") },
-	] as const;
-
-	const selectedConditions = filters.condition
-		? filters.condition.split(",").filter(Boolean)
-		: [];
-
-	function toggleCondition(value: string) {
-		const current = new Set(selectedConditions);
-		if (current.has(value)) {
-			current.delete(value);
-		} else {
-			current.add(value);
-		}
-		updateFilter("condition", Array.from(current).join(","));
-	}
 
 	// Sidebar filter panel (reused for desktop sidebar + mobile drawer)
 	const filterPanel = (
@@ -422,29 +406,6 @@ export function SearchClient({
 				)}
 			</div>
 
-			{/* Condition */}
-			<div className="space-y-2">
-				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
-					{t("condition")}
-				</Label>
-				<div className="space-y-1.5">
-					{CONDITION_OPTIONS.map((opt) => (
-						<label
-							key={opt.value}
-							className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-[#F8FAFC]"
-						>
-							<input
-								type="checkbox"
-								checked={selectedConditions.includes(opt.value)}
-								onChange={() => toggleCondition(opt.value)}
-								className="h-4 w-4 rounded border-[#D1D5DB] text-[#1E40AF] focus:ring-[#3B82F6]/20"
-							/>
-							<span className="text-[#334155]">{opt.label}</span>
-						</label>
-					))}
-				</div>
-			</div>
-
 			{/* Verified shops only */}
 			<div className="space-y-2">
 				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-[#F8FAFC]">
@@ -509,10 +470,10 @@ export function SearchClient({
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="any">Any</SelectItem>
+										<SelectItem value="any">{t("any")}</SelectItem>
 										{attr.options.map((opt) => (
 											<SelectItem key={opt.value} value={opt.value}>
-												{opt.value}
+												{opt.label || opt.value}
 											</SelectItem>
 										))}
 									</SelectContent>

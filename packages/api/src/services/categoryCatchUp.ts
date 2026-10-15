@@ -1,4 +1,5 @@
 import type { Payload } from "payload";
+import { isConditionLikeAttribute } from "../contracts/conditionAttribute";
 import { fingerprintOf } from "../lib/deployTasks";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
 import {
@@ -63,7 +64,6 @@ function planListingForm(
 
 	take("type");
 	take("price");
-	take("condition");
 	take("photos");
 	take("priceLabel");
 
@@ -91,7 +91,12 @@ function planAttributes(
 			.filter((slug): slug is string => typeof slug === "string"),
 	);
 
-	const missing = proposed.filter((attribute) => !known.has(attribute.slug));
+	// Where condition is asked is the condition migration's call, and an
+	// admin who removed it from a category must not see it come back.
+	const missing = proposed.filter(
+		(attribute) =>
+			!known.has(attribute.slug) && !isConditionLikeAttribute(attribute),
+	);
 	if (missing.length === 0) return null;
 
 	return {

@@ -1,6 +1,7 @@
 import type { Payload, PayloadRequest } from "payload";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
 import type { QuoteSummaryLine } from "../contracts/checkoutGroup";
+import { conditionLabelOf } from "../contracts/conditionAttribute";
 import type {
 	DeliveryMethod,
 	UnavailableOption,
@@ -596,7 +597,14 @@ async function buildSummaryItems(
 				variantId: line.variantId,
 				title: listing?.title ?? line.title,
 				variantLabel: variantLabelOf(variant),
-				condition: listing?.condition ?? null,
+				// The snapshot keeps what the buyer saw: the condition attribute's
+				// label, read off the category the depth-1 read populated.
+				condition: conditionLabelOf(
+					typeof listing?.category === "object"
+						? listing.category?.attributes
+						: null,
+					listing?.attributes,
+				),
 				imageUrl: mediaUrlOf(firstImage),
 				unitPrice,
 				quantity: line.quantity,

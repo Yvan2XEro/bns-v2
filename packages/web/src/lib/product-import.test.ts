@@ -3,7 +3,12 @@ import type { Category } from "~/types";
 import { parseCsv, parseProductImport } from "./product-import";
 
 const categories = [
-	{ id: "c-1", name: "Téléphones", slug: "telephones" },
+	{
+		id: "c-1",
+		name: "Téléphones",
+		slug: "telephones",
+		attributes: [{ name: "État", slug: "condition", type: "select" }],
+	},
 	{ id: "c-2", name: "Accessoires", slug: "accessoires" },
 ] as unknown as Category[];
 
@@ -33,7 +38,7 @@ describe("parseProductImport", () => {
 			title: "Galaxy A55",
 			category: "c-1",
 			description: null,
-			condition: "new",
+			attributes: { condition: "new" },
 			status: "draft",
 			options: [],
 			variants: [
@@ -47,6 +52,16 @@ describe("parseProductImport", () => {
 				},
 			],
 		});
+	});
+
+	test("drops the condition of a category that does not ask for one", () => {
+		const { rows } = parseProductImport(
+			"titre;categorie;prix;etat\nChargeur 20 W;accessoires;9000;neuf\n",
+			categories,
+			{ includeCost: false },
+		);
+		expect(rows[0].errors).toEqual([]);
+		expect(rows[0].input).not.toHaveProperty("attributes");
 	});
 
 	test("never sends a cost for a member who may not see costs", () => {

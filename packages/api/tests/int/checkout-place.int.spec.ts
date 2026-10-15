@@ -197,7 +197,7 @@ function world(overrides: Overrides = {}) {
 					status: "published",
 					shop: "s-1",
 					product: "p-1",
-					condition: "new",
+					attributes: { condition: "new" },
 					category: "cat-1",
 					...overrides.listing,
 				},
@@ -798,6 +798,41 @@ describe("placeOrder: the contract snapshot", () => {
 		}
 		expect(snapshot.amounts.total).toBe(quote.preContract.amounts.total);
 		expect(order.contract?.snapshotHash).toMatch(/^[0-9a-f]{64}$/);
+	});
+});
+
+describe("placeOrder: the item's condition", () => {
+	const placed = async (listing: Record<string, unknown>) => {
+		const payload = world({ listing });
+		await placeOrder(payload, BUYER, await quotedInput(payload, BUYER), {
+			now: NOW,
+			store: new MemoryCounterStore(),
+		});
+		return orderItemAt(payload).snapshot?.condition;
+	};
+
+	it("snapshots the condition attribute as a person reads it", async () => {
+		expect(await placed({})).toBe("Neuf");
+		expect(
+			await placed({
+				category: {
+					id: "cat-1",
+					attributes: [
+						{
+							slug: "etat",
+							name: "État",
+							type: "select",
+							options: [{ value: "A", label: "Impeccable" }],
+						},
+					],
+				},
+				attributes: { etat: "A" },
+			}),
+		).toBe("Impeccable");
+	});
+
+	it("snapshots no condition when the item has none", async () => {
+		expect(await placed({ attributes: {} })).toBeNull();
 	});
 });
 

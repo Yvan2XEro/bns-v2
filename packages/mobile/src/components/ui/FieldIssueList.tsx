@@ -10,7 +10,6 @@ const LABEL_KEYS: Record<string, string> = {
 	description: "create.descriptionFieldLabel",
 	category: "create.categoryFieldLabel",
 	price: "create.priceFieldLabel",
-	condition: "create.conditionRowLabel",
 	location: "create.locationRowLabel",
 	images: "create.photosRowLabel",
 	tags: "create.tagsFieldLabel",

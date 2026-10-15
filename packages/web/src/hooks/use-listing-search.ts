@@ -11,7 +11,6 @@ export interface ListingSearchParams {
 	maxPrice?: string;
 	location?: string;
 	sort?: string;
-	condition?: string;
 	tags?: string;
 	/**
 	 * `2` for "verified shops only". The API re-applies this floor after
@@ -54,7 +53,6 @@ function searchPath(params: ListingSearchParams, offset: number): string {
 		maxPrice: params.maxPrice,
 		location: params.location,
 		sort: params.sort,
-		condition: params.condition,
 		tags: params.tags,
 		minShopLevel: params.minShopLevel,
 		lat: params.lat,

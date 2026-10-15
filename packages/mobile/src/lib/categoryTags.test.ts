@@ -47,7 +47,6 @@ describe("listing draft tags", () => {
 		title: "Vélo",
 		description: "Bon vélo",
 		price: "1000",
-		condition: null,
 		location: "Douala",
 		category: { id: "c1" },
 		attributes: {},

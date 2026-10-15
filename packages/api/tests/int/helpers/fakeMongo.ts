@@ -47,7 +47,7 @@ function hit(doc: Doc, filter: Doc): boolean {
 		const value = at(doc, path === "_id" ? "id" : path);
 		if (cond === null) return value == null;
 		if (cond && typeof cond === "object" && "$exists" in cond)
-			return (value !== undefined && value !== null) === cond.$exists;
+			return (value !== undefined) === cond.$exists;
 		return String(plain(value)) === String(plain(cond));
 	});
 }

@@ -39,7 +39,6 @@ import { isOwnShop } from "@/src/lib/buyBox";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
-import { conditionLabelKey } from "@/src/lib/listingCondition";
 import { formatPrice, formatPriceRange } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { publicShopBadge } from "@/src/lib/verification";
@@ -325,7 +324,6 @@ export default function ListingDetail() {
 		listing.category && typeof listing.category === "object"
 			? listing.category.name
 			: null;
-	const conditionKey = conditionLabelKey(listing.condition);
 
 	const listingTags = Array.isArray(listing.tags)
 		? listing.tags.filter(isListingTag)
@@ -509,7 +507,7 @@ export default function ListingDetail() {
 								</View>
 							)}
 						</View>
-						{(categoryName || conditionKey || listing.isBoosted) && (
+						{(categoryName || listing.isBoosted) && (
 							<View style={styles.chips}>
 								{categoryName && (
 									<View
@@ -520,15 +518,6 @@ export default function ListingDetail() {
 									>
 										<Text style={[styles.chipText, { color: textColor }]}>
 											{categoryName}
-										</Text>
-									</View>
-								)}
-								{conditionKey && (
-									<View
-										style={[styles.chip, styles.chipOutline, { borderColor }]}
-									>
-										<Text style={[styles.chipText, { color: textColor }]}>
-											{t(conditionKey)}
 										</Text>
 									</View>
 								)}
@@ -1026,7 +1015,6 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		paddingVertical: 4,
 	},
-	chipOutline: { borderWidth: 1 },
 	chipFeatured: { backgroundColor: "#fef3c7" },
 	chipText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 	price: { fontSize: 28, fontFamily: Fonts.displayExtrabold },

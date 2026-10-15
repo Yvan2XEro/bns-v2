@@ -7,8 +7,6 @@ import {
 	type VariantLike,
 } from "./variants";
 
-export type ListingCondition = NonNullable<Listing["condition"]>;
-
 /** What `deriveListingData` reads; `Product` and `Shop` both satisfy it. */
 export interface ProductLike {
 	id: string;
@@ -16,7 +14,6 @@ export interface ProductLike {
 	description?: string | null;
 	category?: unknown;
 	attributes?: unknown;
-	condition?: ListingCondition | null;
 	images?: readonly { image?: unknown }[] | null;
 }
 
@@ -32,7 +29,6 @@ export interface ListingDerivedData {
 	price: number | null;
 	category: string | null;
 	attributes: Record<string, unknown>;
-	condition: ListingCondition | null;
 	location: string;
 	shop: string;
 	product: string;
@@ -84,7 +80,6 @@ export function deriveListingData(
 		price: summary.priceMin,
 		category: relationId(product.category),
 		attributes: toAttributes(product.attributes),
-		condition: product.condition ?? null,
 		location: shop.location?.city || shop.location?.country || DEFAULT_LOCATION,
 		shop: shop.id,
 		product: product.id,

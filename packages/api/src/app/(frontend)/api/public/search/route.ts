@@ -339,7 +339,7 @@ async function runPayloadListingSearch(
 			.map((c) => c.trim())
 			.filter(Boolean);
 		if (conditions.length > 0) {
-			where.condition = { in: conditions };
+			where["attributes.condition"] = { in: conditions };
 		}
 	}
 
@@ -409,7 +409,10 @@ export async function GET(request: Request) {
 	const sortParam = searchParams.get("sort") || "newest";
 	const boostedOnly = isTruthyQueryParam(searchParams.get("boosted"));
 	const orderableOnly = isTruthyQueryParam(searchParams.get("orderable"));
-	const conditionParam = searchParams.get("condition");
+	// Condition is the `condition` category attribute now; an old
+	// `condition=` link is read as the `attr_condition=` filter it became.
+	const conditionParam =
+		searchParams.get("attr_condition") ?? searchParams.get("condition");
 	const tagsParam = searchParams.get("tags");
 	const shopParam = searchParams.get("shop");
 	// Per-category counts only make sense scoped to one shop; an unscoped
@@ -453,6 +456,10 @@ export async function GET(request: Request) {
 		if (!/^[a-z0-9][a-z0-9-]*$/.test(attrSlug)) continue;
 
 		const built = buildAttributeFilter(attrSlug, value);
+		if (built) dynamicFilters.push(built);
+	}
+	if (!searchParams.has("attr_condition") && conditionParam) {
+		const built = buildAttributeFilter("condition", conditionParam);
 		if (built) dynamicFilters.push(built);
 	}
 
@@ -505,17 +512,6 @@ export async function GET(request: Request) {
 
 	if (location) {
 		filters.push(`location = ${quoteFilterValue(location)}`);
-	}
-
-	if (conditionParam) {
-		const conditions = conditionParam
-			.split(",")
-			.map((c) => c.trim())
-			.filter(Boolean);
-		if (conditions.length > 0) {
-			const conditionList = conditions.map(quoteFilterValue).join(", ");
-			filters.push(`condition IN [${conditionList}]`);
-		}
 	}
 
 	if (tagsParam) {

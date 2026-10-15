@@ -48,7 +48,6 @@ export interface ResolvedFormPreset {
 	categoryType: ListingCategoryType;
 	fields: {
 		price: CoreFieldPreset;
-		condition: CoreFieldPreset;
 		/** Whether the form asks for pictures, and whether one is mandatory. */
 		photos: CoreFieldPreset;
 	};
@@ -82,7 +81,6 @@ export const DEFAULT_FORM_PRESET: ResolvedFormPreset = {
 	categoryType: "product",
 	fields: {
 		price: { enabled: true, required: true },
-		condition: { enabled: true, required: false },
 		photos: { enabled: true, required: true },
 	},
 };
@@ -148,10 +146,6 @@ export function resolveFormPreset(
 			: "generic",
 		fields: {
 			price: resolveCoreField(fields?.price, DEFAULT_FORM_PRESET.fields.price),
-			condition: resolveCoreField(
-				fields?.condition,
-				DEFAULT_FORM_PRESET.fields.condition,
-			),
 			photos: resolveCoreField(
 				fields?.photos,
 				DEFAULT_FORM_PRESET.fields.photos,
@@ -427,25 +421,22 @@ export function formatAttributeValue(
 	return attribute.unit ? `${raw} ${attribute.unit}` : raw;
 }
 
-export type CoreFieldName = "price" | "condition" | "photos";
+export type CoreFieldName = "price" | "photos";
 
 /**
- * Core (price / condition / photos) fields the preset requires but that are
+ * Core (price / photos) fields the preset requires but that are
  * unset. `photoCount` counts every picture the listing would be saved with,
  * existing ones included.
  */
 export function collectCoreFieldIssues(
 	preset: ResolvedFormPreset,
-	values: { price: string; condition: string; photoCount: number },
+	values: { price: string; photoCount: number },
 ): CoreFieldName[] {
 	const missing: CoreFieldName[] = [];
-	const { price, condition, photos } = preset.fields;
+	const { price, photos } = preset.fields;
 	// `enabled === false` already forces `required === false` in resolveFormPreset,
 	// so a hidden field can never land here.
 	if (price.required && values.price.trim() === "") missing.push("price");
-	if (condition.required && values.condition.trim() === "") {
-		missing.push("condition");
-	}
 	if (photos.required && values.photoCount <= 0) missing.push("photos");
 	return missing;
 }

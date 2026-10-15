@@ -71,9 +71,7 @@ async function report(payload: Awaited<ReturnType<typeof getPayload>>) {
 	});
 
 	console.log("=== Resolved listing form, per category ===\n");
-	console.log(
-		"slug                     type      price      condition  photos     attrs",
-	);
+	console.log("slug                     type      price      photos     attrs");
 
 	const rows = [...all.docs].sort((a, b) =>
 		String(a.slug).localeCompare(String(b.slug)),
@@ -91,9 +89,9 @@ async function report(payload: Awaited<ReturnType<typeof getPayload>>) {
 		console.log(
 			`${String(category.slug).padEnd(24)} ${preset.categoryType.padEnd(9)} ${describe(
 				preset.fields.price,
-			).padEnd(10)} ${describe(preset.fields.condition).padEnd(10)} ${describe(
-				preset.fields.photos,
-			).padEnd(10)} ${attributeCount}`,
+			).padEnd(10)} ${describe(preset.fields.photos).padEnd(
+				10,
+			)} ${attributeCount}`,
 		);
 	}
 

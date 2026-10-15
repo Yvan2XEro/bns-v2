@@ -4,18 +4,13 @@ import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import type { FieldIssue } from "../contracts/formIssues";
 import {
-	PRODUCT_CONDITION_VALUES,
 	PRODUCT_STATUS_VALUES,
 	productInputIssues,
 } from "../contracts/productValidation";
 import { validateListingAttributes } from "../hooks/validation";
 import { ERROR_CODES } from "../lib/errors";
 import { isRecord } from "../lib/payments/types";
-import {
-	deriveListingData,
-	type ListingCondition,
-	listingStatusFor,
-} from "../lib/productListing";
+import { deriveListingData, listingStatusFor } from "../lib/productListing";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { RetryTransaction, withTransaction } from "../lib/transactions";
@@ -33,9 +28,6 @@ import { applyMovement, findVariant } from "./stock";
 export const PRODUCT_STATUSES = PRODUCT_STATUS_VALUES;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 
-const CONDITIONS =
-	PRODUCT_CONDITION_VALUES satisfies readonly ListingCondition[];
-
 export interface ParsedVariant {
 	id: string | null;
 	optionValues: Record<string, string>;
@@ -51,7 +43,6 @@ export interface ParsedProduct {
 	title: string;
 	description: string | null;
 	category: string;
-	condition: ListingCondition | null;
 	attributes: Record<string, unknown>;
 	images: string[];
 	status: ProductStatus;
@@ -213,13 +204,6 @@ export function parseProductInput(raw: Record<string, unknown>): ParsedProduct {
 			? raw.category
 			: fail("A category is required.");
 
-	const condition =
-		raw.condition === undefined ||
-		raw.condition === null ||
-		raw.condition === ""
-			? null
-			: pick(CONDITIONS, raw.condition, "Unknown condition.");
-
 	const images = Array.isArray(raw.images)
 		? [
 				...new Set(
@@ -238,7 +222,6 @@ export function parseProductInput(raw: Record<string, unknown>): ParsedProduct {
 		title,
 		description: text(raw.description, 5000),
 		category,
-		condition,
 		attributes:
 			isRecord(raw.attributes) && !Array.isArray(raw.attributes)
 				? raw.attributes
@@ -356,7 +339,6 @@ function productData(input: ParsedProduct) {
 		title: input.title,
 		description: input.description,
 		category: input.category,
-		condition: input.condition,
 		attributes: input.attributes,
 		images: input.images.map((image) => ({ image })),
 		status: input.status,

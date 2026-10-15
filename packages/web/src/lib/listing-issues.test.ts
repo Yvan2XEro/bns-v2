@@ -10,7 +10,6 @@ import {
 
 const preset = {
 	price: { enabled: true, required: true },
-	condition: { enabled: true, required: false },
 	photos: { enabled: true, required: true },
 };
 const body = {

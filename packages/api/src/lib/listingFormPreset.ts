@@ -1,17 +1,18 @@
 /**
- * Resolves which core fields (price, condition, photos) a listing form should
- * show for a given category.
+ * Resolves which core fields (price, photos) a listing form should show for a
+ * given category. An item's condition is not one of them: it is an ordinary
+ * category attribute.
  *
  * The category tree is data an admin edits, so the shape of its form is data
  * too: a category can carry a `listingForm` group that either names a preset
- * (`type`) or overrides a single field (`price`, `condition`, `photos`).
+ * (`type`) or overrides a single field (`price`, `photos`).
  * Anything left on `"auto"` (or absent) is inherited from the nearest ancestor
  * that says something, and only when nobody in the chain does we fall back to
  * the legacy slug whitelist. Categories with no `listingForm` therefore behave
  * exactly as they did before this file grew the group — that is what makes it
  * safe to deploy without a data migration.
  *
- * `photos` is resolved exactly like the other two, and for the same reason: a
+ * `photos` is resolved exactly like the price, and for the same reason: a
  * job offer or a service has nothing to photograph, so "every ad needs a
  * picture" is a per-category rule rather than a platform one.
  */
@@ -30,13 +31,12 @@ export type ListingCategoryType =
 export interface CategoryListingFormConfig {
 	type?: ListingCategoryType | "auto" | null;
 	price?: ListingFormFieldMode | null;
-	condition?: ListingFormFieldMode | null;
 	photos?: ListingFormFieldMode | null;
 	priceLabel?: string | null;
 }
 
 /** The core fields a category can configure, as stored on `listingForm`. */
-type CoreFieldName = "price" | "condition" | "photos";
+type CoreFieldName = "price" | "photos";
 
 type ParentRef =
 	| {
@@ -56,10 +56,6 @@ export interface ListingFormPreset {
 			required: boolean;
 			label?: string;
 		};
-		condition: {
-			enabled: boolean;
-			required: boolean;
-		};
 		photos: {
 			enabled: boolean;
 			required: boolean;
@@ -78,31 +74,26 @@ type PresetFields = ListingFormPreset["fields"];
 const PRESETS: Record<ListingCategoryType, PresetFields> = {
 	product: {
 		price: { enabled: true, required: true },
-		condition: { enabled: true, required: false },
 		// A second-hand item is bought on its photo, so a product ad without one
 		// is not worth publishing.
 		photos: { enabled: true, required: true },
 	},
 	service: {
 		price: { enabled: true, required: false },
-		condition: { enabled: false, required: false },
 		// A plumber may well have nothing to show; offer the field, do not insist.
 		photos: { enabled: true, required: false },
 	},
 	job: {
 		price: { enabled: false, required: false },
-		condition: { enabled: false, required: false },
 		// There is nothing to photograph in a job offer.
 		photos: { enabled: false, required: false },
 	},
 	rental: {
 		price: { enabled: true, required: true },
-		condition: { enabled: false, required: false },
 		photos: { enabled: true, required: true },
 	},
 	generic: {
 		price: { enabled: false, required: false },
-		condition: { enabled: false, required: false },
 		photos: { enabled: true, required: false },
 	},
 };
@@ -275,7 +266,6 @@ export function getListingFormPreset(
 	const base = PRESETS[categoryType];
 
 	const priceMode = resolveFieldMode(chain, "price");
-	const conditionMode = resolveFieldMode(chain, "condition");
 	const photosMode = resolveFieldMode(chain, "photos");
 
 	const price: ListingFormPreset["fields"]["price"] = priceMode
@@ -294,9 +284,6 @@ export function getListingFormPreset(
 		categoryType,
 		fields: {
 			price,
-			condition: conditionMode
-				? modeToField(conditionMode)
-				: { ...base.condition },
 			photos: photosMode ? modeToField(photosMode) : { ...base.photos },
 		},
 	};

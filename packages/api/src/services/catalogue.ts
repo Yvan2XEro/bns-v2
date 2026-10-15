@@ -323,7 +323,6 @@ export interface ProductDetailView {
 	title: string;
 	description: string | null;
 	category: string | null;
-	condition: Product["condition"] | null;
 	attributes: Product["attributes"] | null;
 	images: MediaRef[];
 	status: Product["status"];
@@ -356,7 +355,6 @@ function toProductDetailView(
 		title: product.title,
 		description: product.description ?? null,
 		category: relationId(product.category),
-		condition: product.condition ?? null,
 		attributes: product.attributes ?? null,
 		images,
 		status: product.status,

@@ -7,22 +7,15 @@ import { listingTagIssues } from "./listingTags";
 
 /**
  * The rules a classified listing (`POST`/`PATCH /api/listings`) is held to.
- * The Listings hook runs the price and condition checks below; the clients
- * run `listingInputIssues` on what they are about to send. Two rules are the
- * form's alone and marked so: the server deliberately does not enforce a
- * category's "photos: required" or "condition: required" on write (see the
- * `images` field in `collections/Listings.ts`), but a form that shows the
- * asterisk must not let the seller past it either.
+ * The Listings hook runs the price check below; the clients run
+ * `listingInputIssues` on what they are about to send. One rule is the
+ * form's alone: the server deliberately does not enforce a category's
+ * "photos: required" on write (see the `images` field in
+ * `collections/Listings.ts`), but a form that shows the asterisk must not
+ * let the seller past it either. The item's condition is a category
+ * attribute, checked with the others.
  */
 export const LISTING_LIMITS = { imagesMax: 3 } as const;
-
-export const LISTING_CONDITION_VALUES = [
-	"new",
-	"like_new",
-	"good",
-	"fair",
-	"poor",
-] as const;
 
 export interface ListingFieldPreset {
 	enabled: boolean;
@@ -31,7 +24,6 @@ export interface ListingFieldPreset {
 
 export interface ListingPresetFields {
 	price: ListingFieldPreset;
-	condition: ListingFieldPreset;
 	photos?: ListingFieldPreset;
 }
 
@@ -85,16 +77,6 @@ export function listingPriceIssue(
 	return null;
 }
 
-export function listingConditionIssue(
-	field: ListingFieldPreset,
-	value: unknown,
-): FieldIssue | null {
-	if (!field.enabled || isEmpty(value)) return null;
-	return LISTING_CONDITION_VALUES.some((condition) => condition === value)
-		? null
-		: { path: "condition", rule: "option" };
-}
-
 export interface ListingValidationContext {
 	preset?: ListingPresetFields | null;
 	attributes?: readonly AttributeRuleDef[] | null;
@@ -131,15 +113,6 @@ export function listingInputIssues(
 	if (preset) {
 		const price = listingPriceIssue(preset.price, body.price);
 		if (price) issues.push(price);
-		const condition = listingConditionIssue(preset.condition, body.condition);
-		if (condition) issues.push(condition);
-		if (
-			preset.condition.enabled &&
-			preset.condition.required &&
-			isEmpty(body.condition)
-		) {
-			issues.push({ path: "condition", rule: "required" });
-		}
 	}
 
 	const images = Array.isArray(body.images) ? body.images.length : 0;

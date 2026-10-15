@@ -18,17 +18,18 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { parseDate } from "@/src/lib/formatDate";
 import i18n from "@/src/lib/i18n";
+import {
+	conditionLabelKey,
+	listingConditionValue,
+} from "@/src/lib/listingCondition";
 import { listingShopName } from "@/src/lib/listingShop";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const PRESS_SPRING = { damping: 18, stiffness: 300, mass: 0.6 };
 
-/** Labels for condition values that get a badge (only "new" and "like_new") */
-const CONDITION_LABELS: Record<string, string> = {
-	new: "Neuf",
-	like_new: "Très bon état",
-};
+/** Only the conditions worth a badge on a thumbnail. */
+const BADGE_CONDITIONS = new Set(["new", "like_new"]);
 
 interface Listing {
 	id: string;
@@ -38,7 +39,7 @@ interface Listing {
 	createdAt?: string;
 	images?: Array<any>;
 	isBoosted?: boolean;
-	condition?: string;
+	attributes?: Record<string, unknown> | null;
 	status?: string;
 }
 
@@ -103,9 +104,12 @@ export function ListingCard({
 	// and rewrites localhost origins to the configured API host
 	const imageUrl = resolveListingImageUrl(listing.images?.[0]);
 	const photoCount = listing.images?.length ?? 0;
-	const conditionLabel = listing.condition
-		? (CONDITION_LABELS[listing.condition] ?? null)
-		: null;
+	const conditionValue = listingConditionValue(listing.attributes);
+	const conditionKey =
+		conditionValue && BADGE_CONDITIONS.has(conditionValue)
+			? conditionLabelKey(conditionValue)
+			: null;
+	const conditionLabel = conditionKey ? i18n.t(conditionKey) : null;
 	const age = timeAgo(listing.createdAt);
 	const shopName = listingShopName(listing);
 

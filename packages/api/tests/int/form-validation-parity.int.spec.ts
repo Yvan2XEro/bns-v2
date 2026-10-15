@@ -60,7 +60,6 @@ const CASES: Array<{ name: string; body: Record<string, unknown> }> = [
 	{ name: "a 121-character title", body: { ...valid, title: "x".repeat(121) } },
 	{ name: "a numeric title", body: { ...valid, title: 42 } },
 	{ name: "no category", body: { ...valid, category: "" } },
-	{ name: "an unknown condition", body: { ...valid, condition: "mint" } },
 	{
 		name: "11 photos",
 		body: { ...valid, images: Array.from({ length: 11 }, (_, i) => `m${i}`) },
@@ -280,6 +279,24 @@ describe("attribute rules", () => {
 		]);
 	});
 
+	it("checks the condition like any other select attribute", () => {
+		const condition = {
+			slug: "condition",
+			name: "État",
+			type: "select",
+			options: [{ value: "new", label: "Neuf" }, { value: "good" }],
+		};
+		expect(attributeValueIssues([condition], { condition: "good" })).toEqual(
+			[],
+		);
+		expect(
+			attributeValueIssues([condition], { condition: "Neuf" }).map((issue) => [
+				issue.path,
+				issue.rule,
+			]),
+		).toEqual([["attributes.condition", "option"]]);
+	});
+
 	it("enforces bounds only once they are set", () => {
 		expect(attributeValueIssues(defs, { brand: "x", km: 600000 })).toEqual([
 			expect.objectContaining({ path: "attributes.km", rule: "max" }),
@@ -293,7 +310,6 @@ describe("attribute rules", () => {
 describe("classified listing rules", () => {
 	const product = {
 		price: { enabled: true, required: true },
-		condition: { enabled: true, required: false },
 		photos: { enabled: true, required: true },
 	};
 	const body = {
@@ -391,10 +407,10 @@ describe("the listings hook answers with the field it refuses", () => {
 		});
 	});
 
-	it("an unknown condition is a ValidationError on `condition`", async () => {
+	it("a condition is an attribute: the retired field is not checked", async () => {
 		await expect(
 			create({ price: 10, condition: "mint" }),
-		).rejects.toMatchObject({ data: { errors: [{ path: "condition" }] } });
+		).resolves.toBeTruthy();
 	});
 
 	it("attribute refusals are ValidationErrors on `attributes.<slug>`", async () => {

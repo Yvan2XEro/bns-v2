@@ -457,7 +457,16 @@ describe("public search route", () => {
 			const filter = await filterFor(
 				`condition=${encodeURIComponent('new" OR 1=1 --')}`,
 			);
-			expect(filter).toContain('condition IN ["new\\" OR 1=1 --"]');
+			expect(filter).toContain('condition = "new\\" OR 1=1 --"');
+		});
+
+		it("reads an old condition= link as the condition attribute filter", async () => {
+			expect(await filterFor("condition=new,good")).toContain(
+				'condition IN ["new", "good"]',
+			);
+			const both = await filterFor("condition=poor&attr_condition=new");
+			expect(both).toContain('condition = "new"');
+			expect(both).not.toContain("poor");
 		});
 
 		it("quotes each tag instead of splicing it into the filter", async () => {

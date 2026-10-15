@@ -17,7 +17,6 @@ import {
 } from "../contracts/listingTags";
 import {
 	LISTING_LIMITS,
-	listingConditionIssue,
 	listingPriceIssue,
 	normalizeListingPrice,
 } from "../contracts/listingValidation";
@@ -71,7 +70,6 @@ export const PRODUCT_DERIVED_FIELDS = [
 	"price",
 	"category",
 	"attributes",
-	"condition",
 	"location",
 	"status",
 	"expiresAt",
@@ -80,9 +78,6 @@ export const PRODUCT_DERIVED_FIELDS = [
 	"productSummary",
 	"moderationHold",
 ] as const;
-
-const isEmptyValue = (value: unknown): boolean =>
-	value === undefined || value === null || value === "";
 
 const toAttributesRecord = (
 	value: unknown,
@@ -113,12 +108,6 @@ const shouldValidateListingForm = ({
 	const nextPrice = toNormalizedPrice(data.price);
 	const previousPrice = toNormalizedPrice(originalDoc.price);
 	if (nextPrice !== previousPrice) return true;
-
-	const nextCondition = isEmptyValue(data.condition) ? null : data.condition;
-	const previousCondition = isEmptyValue(originalDoc.condition)
-		? null
-		: originalDoc.condition;
-	if (nextCondition !== previousCondition) return true;
 
 	const nextAttributes = toAttributesRecord(data.attributes) ?? {};
 	const previousAttributes = toAttributesRecord(originalDoc.attributes) ?? {};
@@ -474,19 +463,6 @@ export const Listings: CollectionConfig = {
 						data.price = toNormalizedPrice(data.price);
 					}
 
-					if (!formPreset.fields.condition.enabled) {
-						data.condition = null;
-					} else if (isEmptyValue(data.condition)) {
-						data.condition = null;
-					} else if (
-						listingConditionIssue(formPreset.fields.condition, data.condition)
-					) {
-						throw fieldError(
-							"condition",
-							"Condition is invalid for this listing",
-						);
-					}
-
 					const attributeErrors = await validateListingAttributes({
 						attributes: toAttributesRecord(data.attributes),
 						categoryId,
@@ -775,9 +751,9 @@ export const Listings: CollectionConfig = {
 			//
 			// For the same reason there is no *minimum* either, and beforeChange
 			// deliberately does not enforce the category's `photos` rule the way it
-			// enforces `price` and `condition`:
+			// enforces `price`:
 			//   • "photos: required" would strand every listing that predates the
-			//     rule. Price and condition can be typed into the form that is
+			//     rule. A price can be typed into the form that is
 			//     failing; a missing photo on a listing whose category was
 			//     re-typed later blocks writes that never touched the images.
 			//   • "photos: hidden" would mean clearing `data.images` the way a
@@ -895,17 +871,6 @@ export const Listings: CollectionConfig = {
 			admin: {
 				description: "Reason for rejection (visible to seller)",
 			},
-		},
-		{
-			name: "condition",
-			type: "select",
-			options: [
-				{ label: "New", value: "new" },
-				{ label: "Like New", value: "like_new" },
-				{ label: "Good", value: "good" },
-				{ label: "Fair", value: "fair" },
-				{ label: "Poor", value: "poor" },
-			],
 		},
 		{
 			name: "tags",

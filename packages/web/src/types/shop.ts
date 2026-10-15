@@ -269,7 +269,6 @@ export interface ProductInput {
 	title: string;
 	description?: string | null;
 	category: string;
-	condition?: "new" | "like_new" | "good" | "fair" | "poor" | null;
 	attributes?: Record<string, unknown>;
 	images?: string[];
 	status: ProductStatus;

@@ -11,8 +11,7 @@ const product: ProductLike = {
 	title: "iPhone 13 Pro",
 	description: "",
 	category: { id: "cat-1" },
-	attributes: { brand: "Apple" },
-	condition: "like_new",
+	attributes: { brand: "Apple", condition: "like_new" },
 	images: [{ image: { id: "m-1" } }, { image: "m-2" }],
 };
 const shop = { id: "s-1", location: { city: "Douala" } };
@@ -38,8 +37,7 @@ describe("deriveListingData", () => {
 			images: [{ image: "m-1" }, { image: "m-2" }],
 			price: 285000,
 			category: "cat-1",
-			attributes: { brand: "Apple" },
-			condition: "like_new",
+			attributes: { brand: "Apple", condition: "like_new" },
 			location: "Douala",
 			shop: "s-1",
 			product: "p-1",

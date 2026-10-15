@@ -720,21 +720,17 @@ export interface Category {
    */
   withdrawalExcluded?: boolean | null;
   /**
-   * Decides which of the three built-in fields — price, condition and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one.
+   * Decides which of the two built-in fields — price and photos — the ad form shows for this category. Leave everything on “Inherit” to keep the current behaviour: the setting is then taken from the closest parent category that defines one. An item's condition is an ordinary attribute below (« État », slug “condition”).
    */
   listingForm?: {
     /**
-     * Pick the closest match and the three fields below follow automatically. Set this on a top-level category and every category underneath inherits it.
+     * Pick the closest match and the fields below follow automatically. Set this on a top-level category and every category underneath inherits it.
      */
     type?: ('auto' | 'product' | 'service' | 'job' | 'rental' | 'generic') | null;
     /**
      * Overrides the price rule that “Kind of ad” would give. Use it for the odd category that does not fit its preset.
      */
     price?: ('auto' | 'hidden' | 'optional' | 'required') | null;
-    /**
-     * Whether the seller is asked how worn the item is (new, like new, good…). Hide it wherever the question makes no sense, such as a holiday rental or a plot of land.
-     */
-    condition?: ('auto' | 'hidden' | 'optional' | 'required') | null;
     /**
      * Whether the seller is asked for pictures. Hide it where there is nothing to photograph, such as a job offer, and choose “Optional” where a picture is welcome but not expected, such as a service. Changing this only changes what the form asks for — pictures already added to existing ads are kept.
      */
@@ -756,7 +752,14 @@ export interface Category {
         filterable?: boolean | null;
         options?:
           | {
+              /**
+               * Stored on the ad and matched by the search filter. Do not change it once ads use it.
+               */
               value: string;
+              /**
+               * Shown to people instead of the value, e.g. “Comme neuf” for like_new. Leave empty to show the value.
+               */
+              label?: string | null;
               id?: string | null;
             }[]
           | null;
@@ -855,7 +858,6 @@ export interface Listing {
    * Reason for rejection (visible to seller)
    */
   rejectionReason?: string | null;
-  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   tags?: (string | Tag)[] | null;
   shop?: (string | null) | Shop;
   product?: (string | null) | Product;
@@ -938,7 +940,6 @@ export interface Product {
   title: string;
   description?: string | null;
   category: string | Category;
-  condition?: ('new' | 'like_new' | 'good' | 'fair' | 'poor') | null;
   attributes?:
     | {
         [k: string]: unknown;
@@ -4423,7 +4424,6 @@ export interface ListingsSelect<T extends boolean = true> {
         lng?: T;
       };
   rejectionReason?: T;
-  condition?: T;
   tags?: T;
   shop?: T;
   product?: T;
@@ -4487,7 +4487,6 @@ export interface CategoriesSelect<T extends boolean = true> {
     | {
         type?: T;
         price?: T;
-        condition?: T;
         photos?: T;
         priceLabel?: T;
       };
@@ -4503,6 +4502,7 @@ export interface CategoriesSelect<T extends boolean = true> {
           | T
           | {
               value?: T;
+              label?: T;
               id?: T;
             };
         unit?: T;
@@ -5407,7 +5407,6 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   description?: T;
   category?: T;
-  condition?: T;
   attributes?: T;
   images?:
     | T

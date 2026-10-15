@@ -135,7 +135,6 @@ export function ProductEditor({
 			values,
 			values.existingImages.map((image) => image.id),
 			pruneAttributeValues(categoryContext.attributes, values.attributeValues),
-			categoryContext.preset.fields.condition.enabled,
 			showCost,
 		);
 		try {

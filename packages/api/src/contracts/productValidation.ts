@@ -30,13 +30,6 @@ export const PRODUCT_LIMITS = {
 } as const;
 
 export const PRODUCT_STATUS_VALUES = ["draft", "active", "archived"] as const;
-export const PRODUCT_CONDITION_VALUES = [
-	"new",
-	"like_new",
-	"good",
-	"fair",
-	"poor",
-] as const;
 
 export type ProductStep = "info" | "variants" | "publish";
 export const PRODUCT_STEPS: readonly ProductStep[] = [
@@ -254,14 +247,6 @@ export function productInputIssues(
 
 	if (typeof body.category !== "string" || !body.category) {
 		issues.push({ path: "category", rule: "required" });
-	}
-
-	if (
-		!isBlank(body.condition) &&
-		body.condition !== "" &&
-		!PRODUCT_CONDITION_VALUES.some((value) => value === body.condition)
-	) {
-		issues.push({ path: "condition", rule: "option" });
 	}
 
 	if (Array.isArray(body.images)) {

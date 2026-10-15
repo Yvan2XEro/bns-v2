@@ -145,7 +145,6 @@ async function getSimilarListings(listingId: string): Promise<Listing[]> {
 
 export default async function ListingPage({ params, searchParams }: PageProps) {
 	const t = await getTranslations("Listing");
-	const tCond = await getTranslations("Condition");
 	const locale = await getLocale();
 	const { id } = await params;
 	const { boostStatus } = await searchParams;
@@ -230,14 +229,6 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		listing.images
 			?.map((img) => (img.image as { url?: string })?.url)
 			.filter((url): url is string => Boolean(url)) || [];
-
-	const conditionMap: Record<string, string> = {
-		new: tCond("new"),
-		like_new: tCond("like_new"),
-		good: tCond("good"),
-		fair: tCond("fair"),
-		poor: tCond("poor"),
-	};
 
 	const rawTags = (
 		listing as Listing & {
@@ -453,11 +444,6 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							{/* Badges */}
 							<div className="mt-4 flex flex-wrap gap-2">
 								{category && <Badge variant="secondary">{category.name}</Badge>}
-								{listing.condition && conditionMap[listing.condition] && (
-									<Badge variant="outline">
-										{conditionMap[listing.condition]}
-									</Badge>
-								)}
 								{warrantyMonths > 0 && (
 									<Badge className="border-transparent bg-[#FEF3C7] text-[#92400E] hover:bg-[#FEF3C7]">
 										{t("shopWarranty", { months: warrantyMonths })}

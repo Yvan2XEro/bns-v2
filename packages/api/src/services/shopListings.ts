@@ -74,7 +74,6 @@ async function attachOne(
 				title: listing.title.slice(0, 120),
 				description: listing.description ?? null,
 				category: relationId(listing.category) ?? "",
-				condition: listing.condition ?? null,
 				attributes: listing.attributes ?? {},
 				images: (listing.images ?? [])
 					.map((entry) => relationId(entry.image))

@@ -87,29 +87,11 @@ export const Products: CollectionConfig = {
 		},
 		{ name: "description", type: "textarea", maxLength: 5000 },
 		{
-			type: "row",
-			fields: [
-				{
-					name: "category",
-					type: "relationship",
-					relationTo: "categories",
-					required: true,
-					index: true,
-					admin: { width: "50%" },
-				},
-				{
-					name: "condition",
-					type: "select",
-					options: [
-						{ label: "New", value: "new" },
-						{ label: "Like New", value: "like_new" },
-						{ label: "Good", value: "good" },
-						{ label: "Fair", value: "fair" },
-						{ label: "Poor", value: "poor" },
-					],
-					admin: { width: "50%" },
-				},
-			],
+			name: "category",
+			type: "relationship",
+			relationTo: "categories",
+			required: true,
+			index: true,
 		},
 		{ name: "attributes", type: "json" },
 		{

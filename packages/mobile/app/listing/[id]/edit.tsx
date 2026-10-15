@@ -315,34 +315,6 @@ export default function EditListingScreen() {
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 	const inputBg = isDark ? "#0b1120" : "#f8fafc";
 
-	const CONDITIONS = [
-		{
-			key: "new",
-			label: t("conditions.new"),
-			icon: "sparkles-outline" as const,
-		},
-		{
-			key: "like_new",
-			label: t("conditions.likeNew"),
-			icon: "star-outline" as const,
-		},
-		{
-			key: "good",
-			label: t("conditions.good"),
-			icon: "thumbs-up-outline" as const,
-		},
-		{
-			key: "fair",
-			label: t("conditions.fair"),
-			icon: "remove-circle-outline" as const,
-		},
-		{
-			key: "poor",
-			label: t("conditions.poor"),
-			icon: "construct-outline" as const,
-		},
-	];
-
 	const { data, isLoading } = useQuery({
 		queryKey: ["listing", id],
 		queryFn: () => api.get<any>(`/api/listings/${id}?depth=2`),
@@ -377,14 +349,12 @@ export default function EditListingScreen() {
 	const isProductCategory = isProductListingCategory(category);
 	const showsPrice = categoryPreset.fields.price.enabled;
 	const requiresPrice = categoryPreset.fields.price.required;
-	const showsCondition = categoryPreset.fields.condition.enabled;
 	const priceLabel = categoryPreset.fields.price.label ?? t("edit.priceLabel");
 
 	// ── Form state ─────────────────────────────────────────────────
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [price, setPrice] = useState("");
-	const [condition, setCondition] = useState("new");
 	const [location, setLocation] = useState("");
 	const [coordinates, setCoordinates] = useState<{
 		lat: number;
@@ -423,7 +393,6 @@ export default function EditListingScreen() {
 		setInShop(Boolean(listing.shop));
 		setDescription(listing.description ?? "");
 		setPrice(listing.price != null ? String(listing.price) : "");
-		setCondition(listing.condition ?? "new");
 		setLocation(listing.location ?? "");
 		if (listing.coordinates?.lat && listing.coordinates?.lng) {
 			setCoordinates({
@@ -493,7 +462,6 @@ export default function EditListingScreen() {
 		title,
 		description,
 		price: showsPrice ? price : "",
-		condition: showsCondition ? condition : null,
 		location,
 		category: category ?? (categoryId ? { id: categoryId } : null),
 		attributes,
@@ -622,7 +590,6 @@ export default function EditListingScreen() {
 				duration,
 				images: images.map((img) => ({ image: img.id })),
 				...(showsPrice && price ? { price: Number(price) } : {}),
-				...(showsCondition && condition ? { condition } : {}),
 				// Typed per the category definition: the API rejects a number
 				// attribute sent as a string and a boolean sent as "true". Omitted
 				// entirely when the category is unknown, so a failed category lookup
@@ -937,47 +904,6 @@ export default function EditListingScreen() {
 									style={[styles.priceInput, { color: textColor }]}
 									keyboardType="number-pad"
 								/>
-							</View>
-						</View>
-					)}
-
-					{showsCondition && (
-						<View style={styles.fieldGroup}>
-							<FieldLabel
-								label={t("edit.conditionLabel")}
-								mutedColor={mutedColor}
-							/>
-							<View style={styles.pillRow}>
-								{CONDITIONS.map((c) => {
-									const active = condition === c.key;
-									return (
-										<Pressable
-											key={c.key}
-											onPress={() => setCondition(c.key)}
-											style={[
-												styles.pill,
-												{
-													backgroundColor: active ? primaryColor : inputBg,
-													borderColor: active ? primaryColor : borderColor,
-												},
-											]}
-										>
-											<Ionicons
-												name={c.icon}
-												size={12}
-												color={active ? "#fff" : mutedColor}
-											/>
-											<Text
-												style={[
-													styles.pillText,
-													{ color: active ? "#fff" : mutedColor },
-												]}
-											>
-												{c.label}
-											</Text>
-										</Pressable>
-									);
-								})}
 							</View>
 						</View>
 					)}

@@ -57,7 +57,7 @@ import {
 } from "~/lib/listing-issues";
 import { hasListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
-import type { Category, ListingCondition } from "~/types";
+import type { Category } from "~/types";
 import {
 	type Place,
 	placeCoords,
@@ -82,19 +82,11 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const t = useTranslations("CreateListing");
 	const tListing = asFallbackTranslator(useTranslations("Listing"));
 	const tCommon = useTranslations("Common");
-	const tCond = useTranslations("Condition");
 	const tShop = useTranslations("Shop");
 	const tIssues = useTranslations("FormIssues");
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 
-	const CONDITIONS: { value: ListingCondition; label: string }[] = [
-		{ value: "new", label: tCond("new") },
-		{ value: "like_new", label: tCond("like_new") },
-		{ value: "good", label: tCond("good") },
-		{ value: "fair", label: tCond("fair") },
-		{ value: "poor", label: tCond("poor") },
-	];
 	const [isLoading, setIsLoading] = useState(false);
 
 	const {
@@ -138,7 +130,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		description: "",
 		price: "",
 		location: "",
-		condition: "" as ListingCondition | "",
 	});
 
 	const choosePlace = (next: Place | null) => {
@@ -186,7 +177,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		[t, isProduct],
 	);
 	const priceField = categoryPreset.fields.price;
-	const conditionField = categoryPreset.fields.condition;
 	const photosField = categoryPreset.fields.photos;
 	// A category may rename the price, e.g. "Loyer mensuel" for a rental. The
 	// currency stays attached either way.
@@ -200,7 +190,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	);
 	const missingCoreFields = collectCoreFieldIssues(categoryPreset, {
 		price: formData.price,
-		condition: formData.condition,
 		photoCount: images.length,
 	});
 
@@ -212,7 +201,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		category: selectedCategory?.id ?? null,
 		price:
 			priceField.enabled && formData.price ? Number(formData.price) : undefined,
-		condition: conditionField.enabled ? formData.condition || null : null,
 		images,
 		attributes: pruneAttributeValues(attributes, attributeValues),
 		tags: selectedTags,
@@ -378,7 +366,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			// Drop values for fields this category does not show, so a hidden
 			// field can never be submitted or block submission.
 			price: nextPreset.fields.price.enabled ? prev.price : "",
-			condition: nextPreset.fields.condition.enabled ? prev.condition : "",
 		}));
 		// Same rule for pictures: the step disappears with the category, so keeping
 		// the files would attach images the seller can no longer see or remove.
@@ -515,9 +502,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			};
 			if (priceField.enabled && formData.price) {
 				listingData.price = Number(formData.price);
-			}
-			if (conditionField.enabled && formData.condition) {
-				listingData.condition = formData.condition;
 			}
 
 			const coordinates = placeCoords(place);
@@ -705,46 +689,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								</div>
 							</div>
 
-							{conditionField.enabled && (
-								<div className="space-y-2">
-									<Label>
-										{tListing("conditionLabel")}
-										{conditionField.required && (
-											<span className="text-destructive"> *</span>
-										)}
-									</Label>
-									<Select
-										value={formData.condition}
-										onValueChange={(v) =>
-											setFormData((p) => ({
-												...p,
-												condition: v as ListingCondition,
-											}))
-										}
-									>
-										<SelectTrigger>
-											<SelectValue placeholder={tListing("selectCondition")} />
-										</SelectTrigger>
-										<SelectContent>
-											{CONDITIONS.map((c) => (
-												<SelectItem key={c.value} value={c.value}>
-													{c.label}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-									{showErrors && missingCoreFields.includes("condition") && (
-										<p className="text-destructive text-xs">
-											{translateOr(
-												tListing,
-												"attributeRequired",
-												"Ce champ est obligatoire.",
-											)}
-										</p>
-									)}
-								</div>
-							)}
-
 							<div className="space-y-2">
 								<Label>{translateOr(tListing, "tags", "Tags")}</Label>
 								<TagPicker
@@ -856,12 +800,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								</div>
 								<div className="flex flex-wrap gap-2">
 									<Badge variant="secondary">{selectedCategory?.name}</Badge>
-									{conditionField.enabled && formData.condition && (
-										<Badge variant="outline">
-											{CONDITIONS.find((c) => c.value === formData.condition)
-												?.label || formData.condition}
-										</Badge>
-									)}
 									<Badge variant="outline">{formData.location}</Badge>
 									<Badge variant="outline">{`${duration} ${tCommon("days")}`}</Badge>
 								</div>

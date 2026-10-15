@@ -63,7 +63,6 @@ const LABEL_KEYS: Record<string, string> = {
 	description: "fieldDescription",
 	category: "fieldCategory",
 	price: "fieldPrice",
-	condition: "fieldCondition",
 	location: "fieldLocation",
 	images: "fieldImages",
 	tags: "fieldTags",

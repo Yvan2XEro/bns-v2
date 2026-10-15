@@ -84,7 +84,6 @@ const productFormShape = z.object({
 	title: z.string(),
 	description: z.string(),
 	categoryId: z.string().nullable(),
-	condition: z.string(),
 	attributeValues: z.record(z.string()),
 	existingImages: z.array(existingImageSchema),
 	newImages: z.array(imageDraftSchema),
@@ -179,7 +178,6 @@ export function emptyState(): ProductFormState {
 		title: "",
 		description: "",
 		categoryId: null,
-		condition: "",
 		attributeValues: {},
 		existingImages: [],
 		newImages: [],
@@ -353,7 +351,6 @@ function stateFromProduct(
 		title: String(product.title ?? ""),
 		description: String(product.description ?? ""),
 		categoryId: asId(product.category),
-		condition: String(product.condition ?? ""),
 		attributeValues: stringifyAttributes(product.attributes),
 		existingImages: readImages(product),
 		newImages: [],
@@ -433,7 +430,6 @@ export function toProductInput(
 	state: ProductFormState,
 	imageIds: string[],
 	attributes: Record<string, unknown>,
-	includeCondition: boolean,
 	includeCost: boolean,
 ): ProductInput {
 	const options = usableOptions(state);
@@ -441,10 +437,6 @@ export function toProductInput(
 		title: state.title.trim(),
 		description: state.description.trim() || null,
 		category: state.categoryId ?? "",
-		condition:
-			includeCondition && state.condition
-				? (state.condition as ProductInput["condition"])
-				: null,
 		attributes,
 		images: imageIds,
 		status: state.status,
@@ -494,7 +486,6 @@ function sentOptionRows(state: ProductFormState): number[] {
 const FORM_FIELDS = new Set([
 	"title",
 	"description",
-	"condition",
 	"status",
 	"returnPolicy",
 	"warrantyMonths",
@@ -531,7 +522,7 @@ export function productFormPath(path: string, optionRows: number[]): string {
  * API's own rules (`productInputIssues`), on the editor's field paths. Also
  * catches what the body cannot carry: an amount that is not a number (it
  * would be sent as nothing), a blank price (sent as 0), a typed attribute
- * that cannot be converted, a condition the preset requires, and an option
+ * that cannot be converted, and an option
  * row switched on but left without a name or values.
  */
 export function productFormIssues(
@@ -553,9 +544,6 @@ export function productFormIssues(
 				rule: issue.kind,
 				params: { [issue.kind]: issue.limit },
 			});
-	}
-	if (context.preset.fields.condition.required && !state.condition) {
-		issues.push({ path: "condition", rule: "required" });
 	}
 	state.options.forEach((option, index) => {
 		if (!option.name.trim())
@@ -591,7 +579,6 @@ export function productFormIssues(
 			...state.newImages.map((_, index) => `new:${index}`),
 		],
 		pruneAttributeValues(context.attributes, state.attributeValues),
-		context.preset.fields.condition.enabled,
 		context.includeCost,
 	);
 	const optionRows = sentOptionRows(state);
