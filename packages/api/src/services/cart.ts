@@ -20,7 +20,7 @@ import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
 import { type TxReq, withTransaction } from "../lib/transactions";
-import { availableOf, variantLabel } from "../lib/variants";
+import { availableOf, PUBLIC_STOCK_CAP, variantLabel } from "../lib/variants";
 import type { Cart, Listing, ProductVariant, Shop } from "../payload-types";
 import { cartRetailPrice, resolveCartOffer } from "./cartOffer";
 import { isUniqueViolation, type ServiceUser } from "./shops";
@@ -386,7 +386,10 @@ async function revalidateCart(
 			lineSubtotal: unitPrice * item.quantity,
 			available,
 			maxQuantity,
-			stockLeft: maxQuantity,
+			stockLeft:
+				maxQuantity !== null && maxQuantity <= PUBLIC_STOCK_CAP
+					? maxQuantity
+					: null,
 			unavailableCode,
 			fulfillingShopId:
 				relationId(listing?.resale?.supplierShop) ?? shopId ?? "",

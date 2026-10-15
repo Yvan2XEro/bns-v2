@@ -60,7 +60,7 @@ export interface CartLineView {
 	available: boolean;
 	/** The cap the stepper may raise this line to; null when the variant is untracked. */
 	maxQuantity: number | null;
-	/** Units still on sale for this variant, for the "n left" hint; null when untracked. */
+	/** Units still on sale, for the "n left" hint: exact only up to `PUBLIC_STOCK_CAP`, otherwise (or untracked) null. */
 	stockLeft?: number | null;
 }
 

@@ -485,6 +485,16 @@ describe("reading a cart: the shop header and the stock hint", () => {
 		expect(view.lines[0].stockLeft).toBe(5);
 	});
 
+	it("hides the exact stock left above the public cap but keeps the stepper's cap", async () => {
+		const payload = world();
+		await addCartItem(payload, BUYER, addInput());
+		mustFind(variantsOf(payload), "v-1").stockOnHand = 40;
+
+		const view = await getCartView(payload, BUYER);
+		expect(view.lines[0].stockLeft).toBeNull();
+		expect(view.lines[0].maxQuantity).toBe(40);
+	});
+
 	it("leaves the logo null and the stock untracked when there is neither", async () => {
 		const payload = world({ variant: { trackInventory: false } });
 		await addCartItem(payload, BUYER, addInput());
