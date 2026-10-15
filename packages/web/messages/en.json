@@ -106,7 +106,9 @@
 		"registrationFailed": "Registration failed",
 		"resetSuccess": "Password reset successfully. You can now sign in with your new password.",
 		"newPassword": "New password",
-		"confirmNewPassword": "Confirm new password"
+		"confirmNewPassword": "Confirm new password",
+		"orContinueWith": "Or continue with",
+		"continueWith": "Continue with {provider}"
 	},
 	"Search": {
 		"search": "Search...",
@@ -287,7 +289,18 @@
 		"variantAvailable": "Available",
 		"variantSoldOut": "Sold out",
 		"codAvailable": "Cash on delivery",
-		"pickupAvailable": "Pickup possible"
+		"pickupAvailable": "Pickup possible",
+		"viewFullSize": "View full size",
+		"closeLightbox": "Close lightbox",
+		"zoomIn": "Zoom in",
+		"zoomOut": "Zoom out",
+		"reviewTitle": "Leave a review",
+		"reviewSelectRating": "Please select a rating",
+		"reviewFailed": "Failed to submit review",
+		"reviewSubmitted": "Review submitted. Thank you!",
+		"reviewPlaceholder": "Share your experience (optional)",
+		"reviewSubmit": "Submit review",
+		"reviewStars": "{count} out of 5"
 	},
 	"CreateListing": {
 		"category": "Category",

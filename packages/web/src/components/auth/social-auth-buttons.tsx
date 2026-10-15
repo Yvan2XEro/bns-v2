@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -71,6 +72,7 @@ export function SocialAuthButtons({
 }: {
 	redirectTo?: string;
 }) {
+	const t = useTranslations("Auth");
 	const { loginWithProvider } = useAuth();
 	const [enabledProviders, setEnabledProviders] = useState<
 		SocialAuthProvider[]
@@ -96,7 +98,7 @@ export function SocialAuthButtons({
 			<div className="flex items-center gap-3">
 				<div className="h-px flex-1 bg-[#E2E8F0]" />
 				<span className="text-[#64748B] text-xs uppercase tracking-[0.18em]">
-					Or continue with
+					{t("orContinueWith")}
 				</span>
 				<div className="h-px flex-1 bg-[#E2E8F0]" />
 			</div>
@@ -111,7 +113,7 @@ export function SocialAuthButtons({
 						variant="outline"
 					>
 						<Icon />
-						Continue with {label}
+						{t("continueWith", { provider: label })}
 					</Button>
 				))}
 			</div>

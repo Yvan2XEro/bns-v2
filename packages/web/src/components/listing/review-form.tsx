@@ -15,6 +15,7 @@ interface ReviewFormProps {
 
 export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 	const tRoot = useTranslations();
+	const t = useTranslations("Listing");
 	const router = useRouter();
 	const [rating, setRating] = useState(0);
 	const [hoveredRating, setHoveredRating] = useState(0);
@@ -26,7 +27,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		if (rating === 0) {
-			setError("Please select a rating");
+			setError(t("reviewSelectRating"));
 			return;
 		}
 		setError("");
@@ -55,7 +56,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 			router.refresh();
 			onSuccess?.();
 		} catch (err) {
-			setError(resolveErrorMessage(err, tRoot, "Failed to submit review"));
+			setError(resolveErrorMessage(err, tRoot, t("reviewFailed")));
 		} finally {
 			setIsLoading(false);
 		}
@@ -64,7 +65,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 	if (success) {
 		return (
 			<div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center text-emerald-700 text-sm">
-				Review submitted successfully! Thank you.
+				{t("reviewSubmitted")}
 			</div>
 		);
 	}
@@ -74,7 +75,9 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 			onSubmit={handleSubmit}
 			className="rounded-xl border border-[#E2E8F0] bg-white p-4"
 		>
-			<h3 className="mb-3 font-bold text-[#0F172A] text-sm">Leave a review</h3>
+			<h3 className="mb-3 font-bold text-[#0F172A] text-sm">
+				{t("reviewTitle")}
+			</h3>
 			{error && (
 				<div className="mb-3 rounded-lg bg-red-50 p-2 text-red-600 text-xs">
 					{error}
@@ -89,6 +92,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 						onMouseEnter={() => setHoveredRating(star)}
 						onMouseLeave={() => setHoveredRating(0)}
 						className="p-0.5"
+						aria-label={t("reviewStars", { count: star })}
 					>
 						<Star
 							className={`h-6 w-6 transition-colors ${
@@ -104,7 +108,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 				)}
 			</div>
 			<Textarea
-				placeholder="Share your experience (optional)"
+				placeholder={t("reviewPlaceholder")}
 				value={comment}
 				onChange={(e) => setComment(e.target.value)}
 				rows={3}
@@ -117,7 +121,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 				className="rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
 			>
 				{isLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-				Submit Review
+				{t("reviewSubmit")}
 			</Button>
 		</form>
 	);

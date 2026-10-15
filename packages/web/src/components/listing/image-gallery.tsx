@@ -9,6 +9,7 @@ import {
 	ZoomOut,
 } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 interface ImageGalleryProps {
@@ -18,6 +19,8 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
+	const t = useTranslations("Listing");
+	const tCommon = useTranslations("Common");
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [lightboxOpen, setLightboxOpen] = useState(false);
 	const [lightboxIdx, setLightboxIdx] = useState(0);
@@ -71,7 +74,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 						type="button"
 						className="block h-full w-full cursor-zoom-in"
 						onClick={() => openLightbox(currentIndex)}
-						aria-label="View full size"
+						aria-label={t("viewFullSize")}
 					>
 						<Image
 							src={images[currentIndex]}
@@ -146,7 +149,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 					{/* Backdrop close button */}
 					<button
 						type="button"
-						aria-label="Close lightbox"
+						aria-label={t("closeLightbox")}
 						className="absolute inset-0 w-full cursor-default"
 						onClick={() => {
 							setLightboxOpen(false);
@@ -160,7 +163,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 							type="button"
 							onClick={() => setZoomed((z) => !z)}
 							className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-							aria-label={zoomed ? "Zoom out" : "Zoom in"}
+							aria-label={zoomed ? t("zoomOut") : t("zoomIn")}
 						>
 							{zoomed ? (
 								<ZoomOut className="h-5 w-5" />
@@ -175,7 +178,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 								setZoomed(false);
 							}}
 							className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-							aria-label="Close"
+							aria-label={tCommon("close")}
 						>
 							<X className="h-5 w-5" />
 						</button>
@@ -186,7 +189,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 						<button
 							type="button"
 							onClick={() => setZoomed((z) => !z)}
-							aria-label={zoomed ? "Zoom out" : "Zoom in"}
+							aria-label={zoomed ? t("zoomOut") : t("zoomIn")}
 							className="rounded focus:outline-none"
 						>
 							<img

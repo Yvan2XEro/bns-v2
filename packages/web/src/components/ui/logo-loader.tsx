@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 interface LogoLoaderProps {
 	size?: "sm" | "md" | "lg";
@@ -8,6 +9,7 @@ interface LogoLoaderProps {
 }
 
 export function LogoLoader({ size = "md", text }: LogoLoaderProps) {
+	const t = useTranslations("Common");
 	const sizes = {
 		sm: { logo: 32, ring: 48, text: "text-xs" },
 		md: { logo: 48, ring: 72, text: "text-sm" },
@@ -65,7 +67,7 @@ export function LogoLoader({ size = "md", text }: LogoLoaderProps) {
 				<div className="logo-loader-pulse absolute inset-0 flex items-center justify-center">
 					<Image
 						src="/logo.png"
-						alt="Loading"
+						alt={t("loading")}
 						width={s.logo}
 						height={s.logo}
 						className="object-contain"

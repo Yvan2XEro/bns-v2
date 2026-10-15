@@ -106,7 +106,9 @@
 		"registrationFailed": "Échec de l'inscription",
 		"resetSuccess": "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
 		"newPassword": "Nouveau mot de passe",
-		"confirmNewPassword": "Confirmer le nouveau mot de passe"
+		"confirmNewPassword": "Confirmer le nouveau mot de passe",
+		"orContinueWith": "Ou continuer avec",
+		"continueWith": "Continuer avec {provider}"
 	},
 	"Search": {
 		"search": "Rechercher...",
@@ -288,7 +290,18 @@
 		"variantAvailable": "Disponible",
 		"variantSoldOut": "Épuisé",
 		"codAvailable": "Paiement à la livraison",
-		"pickupAvailable": "Retrait possible"
+		"pickupAvailable": "Retrait possible",
+		"viewFullSize": "Voir en grand",
+		"closeLightbox": "Fermer la visionneuse",
+		"zoomIn": "Zoomer",
+		"zoomOut": "Dézoomer",
+		"reviewTitle": "Laisser un avis",
+		"reviewSelectRating": "Choisissez une note",
+		"reviewFailed": "L'avis n'a pas pu être envoyé",
+		"reviewSubmitted": "Avis publié. Merci !",
+		"reviewPlaceholder": "Racontez votre expérience (facultatif)",
+		"reviewSubmit": "Publier l'avis",
+		"reviewStars": "{count} sur 5"
 	},
 	"CreateListing": {
 		"category": "Catégorie",

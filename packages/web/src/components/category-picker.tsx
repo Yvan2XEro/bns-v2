@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ChevronDown, Search, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CategoryIcon } from "~/components/category-icon";
 import {
@@ -120,9 +121,12 @@ export function CategoryDropdown({
 	categories,
 	value,
 	onChange,
-	placeholder = "Select a category",
+	placeholder,
 	showAll = false,
 }: CategoryDropdownProps) {
+	const t = useTranslations("CreateListing");
+	const tSearch = useTranslations("Search");
+	const tListing = useTranslations("Listing");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const ref = useRef<HTMLDivElement>(null);
@@ -162,7 +166,9 @@ export function CategoryDropdown({
 				className="flex h-9 w-full items-center justify-between rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm transition-colors hover:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
 			>
 				<span className={selectedCat ? "text-[#0F172A]" : "text-[#94A3B8]"}>
-					{selectedCat ? selectedCat.name : placeholder}
+					{selectedCat
+						? selectedCat.name
+						: (placeholder ?? tListing("selectACategory"))}
 				</span>
 				<ChevronDown className="h-4 w-4 text-[#94A3B8]" />
 			</button>
@@ -176,7 +182,7 @@ export function CategoryDropdown({
 							<input
 								ref={inputRef}
 								type="text"
-								placeholder="Search categories..."
+								placeholder={t("searchCategories")}
 								className="h-8 w-full rounded-md bg-[#F8FAFC] pr-8 pl-8 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:outline-none"
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
@@ -209,7 +215,7 @@ export function CategoryDropdown({
 										: "text-[#475569]"
 								}`}
 							>
-								All categories
+								{tSearch("allCategories")}
 							</button>
 						)}
 						{filtered.map((cat) => {
@@ -240,7 +246,7 @@ export function CategoryDropdown({
 						})}
 						{filtered.length === 0 && (
 							<p className="px-3 py-4 text-center text-[#94A3B8] text-sm">
-								No categories found
+								{t("noCategoriesFound")}
 							</p>
 						)}
 					</div>
