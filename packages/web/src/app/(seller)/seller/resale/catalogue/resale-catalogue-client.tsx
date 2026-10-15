@@ -26,7 +26,12 @@ import {
 	useResaleCatalogue,
 } from "~/hooks/use-resale";
 import { resolveErrorMessage } from "~/lib/apiError";
-import { resaleGain, resaleHref, variantOptionLabel } from "~/lib/resale-hub";
+import {
+	resaleGain,
+	resaleHref,
+	supplierStockState,
+	variantOptionLabel,
+} from "~/lib/resale-hub";
 import { cn } from "~/lib/utils";
 import type { ResaleCatalogueProduct } from "../../../../../../../api/src/contracts/resale";
 
@@ -275,10 +280,9 @@ function ProductCard({
 	const minimums = product.variants
 		.map((variant) => variant.minRetailPrice)
 		.filter((value): value is number => typeof value === "number");
-	const stocks = product.variants.map((variant) => variant.supplierStock);
-	const stock = stocks.some((value) => typeof value !== "number")
-		? null
-		: stocks.reduce<number>((total, value) => total + (value ?? 0), 0);
+	const stock = supplierStockState(
+		product.variants.map((variant) => variant.supplierStock),
+	);
 
 	return (
 		<article
@@ -323,7 +327,13 @@ function ProductCard({
 					/>
 					<Stat
 						label={t("supplierStock")}
-						value={stock === null ? t("stockUntracked") : String(stock)}
+						value={
+							stock.kind === "count"
+								? String(stock.count)
+								: stock.kind === "in_stock"
+									? t("stockInStock")
+									: t("hiddenUntilApproved")
+						}
 					/>
 					<Stat
 						label={t("resoldBy")}

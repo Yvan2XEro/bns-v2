@@ -11,7 +11,7 @@ import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { withTransaction } from "../lib/transactions";
-import { availableOf, variantLabel } from "../lib/variants";
+import { cappedStockCount, variantLabel } from "../lib/variants";
 import type { Listing, ProductVariant } from "../payload-types";
 import { requireShopPermission } from "./shopGuards";
 import type { ServiceUser } from "./shops";
@@ -133,7 +133,7 @@ export async function listResoldListings(
 						supplierPrice: variant.resale?.supplierPrice ?? null,
 						minRetailPrice: variant.resale?.minRetailPrice ?? null,
 						suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
-						supplierStock: variant.trackInventory ? availableOf(variant) : null,
+						supplierStock: cappedStockCount(variant),
 					},
 				];
 			});

@@ -3105,6 +3105,7 @@
 		"minimumPrice": "Minimum price",
 		"supplierStock": "Supplier stock",
 		"stockUntracked": "Not tracked",
+		"stockInStock": "In stock",
 		"resoldBy": "Resold by",
 		"shopCount": "{count, plural, =0 {no shop} one {# shop} other {# shops}}",
 		"levelBadge": "Level {level}",

@@ -3106,6 +3106,7 @@
 		"minimumPrice": "Prix minimum",
 		"supplierStock": "Stock fournisseur",
 		"stockUntracked": "Non suivi",
+		"stockInStock": "En stock",
 		"resoldBy": "Revendu par",
 		"shopCount": "{count, plural, =0 {aucune boutique} one {# boutique} other {# boutiques}}",
 		"levelBadge": "Niveau {level}",

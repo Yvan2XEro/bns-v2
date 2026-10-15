@@ -176,3 +176,27 @@ export function variantOptionLabel(
 	}
 	return sku ?? fallback;
 }
+
+/** Mirrors the API's `PUBLIC_STOCK_CAP`: above it a stock reads as "in stock". */
+export const SUPPLIER_STOCK_CAP = 10;
+
+export type SupplierStockState =
+	| { kind: "hidden" }
+	| { kind: "in_stock" }
+	| { kind: "count"; count: number };
+
+/**
+ * A product's supplier stock across its variants, as the API caps it: absent
+ * while the supplier price is hidden, null for "in stock" (large or untracked).
+ */
+export function supplierStockState(
+	stocks: ReadonlyArray<number | null | undefined>,
+): SupplierStockState {
+	if (stocks.length === 0 || stocks.some((value) => value === undefined))
+		return { kind: "hidden" };
+	if (stocks.some((value) => value === null)) return { kind: "in_stock" };
+	const total = stocks.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+	return total > SUPPLIER_STOCK_CAP
+		? { kind: "in_stock" }
+		: { kind: "count", count: total };
+}

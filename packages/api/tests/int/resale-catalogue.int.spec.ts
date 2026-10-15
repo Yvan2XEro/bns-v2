@@ -161,6 +161,22 @@ describe("reseller resale catalogue", () => {
 		expect(result.commissionRateBps).toBeGreaterThan(0);
 	});
 
+	it("caps the supplier stock it shows and hides it with the supplier price", async () => {
+		const payload = catalogueWorld();
+		const [publicVariant, privateVariant] = payload.store["product-variants"];
+		Object.assign(publicVariant, { trackInventory: true, stockOnHand: 50 });
+		Object.assign(privateVariant, { trackInventory: true, stockOnHand: 3 });
+		const reseller = { id: "reseller-user", role: "user" as const };
+
+		let result = await listResaleCatalogue(payload, reseller, "reseller-shop");
+		expect(result.products[0]?.variants[0]?.supplierStock).toBeNull();
+		expect(result.products[1]?.variants[0]).not.toHaveProperty("supplierStock");
+
+		Object.assign(publicVariant, { stockOnHand: 4, stockReserved: 1 });
+		result = await listResaleCatalogue(payload, reseller, "reseller-shop");
+		expect(result.products[0]?.variants[0]?.supplierStock).toBe(3);
+	});
+
 	it("refuses catalogue access until the global feature and terms are enabled", async () => {
 		const payload = catalogueWorld();
 		payload.globals["app-settings"].resale = { enabled: false };

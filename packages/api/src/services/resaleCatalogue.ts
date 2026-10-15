@@ -9,7 +9,7 @@ import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
-import { availableOf } from "../lib/variants";
+import { cappedStockCount } from "../lib/variants";
 import type { Shop } from "../payload-types";
 import { hasAcceptedCurrentResaleTerms } from "./resale";
 import { requireShopPermission } from "./shopGuards";
@@ -172,7 +172,9 @@ export async function listResaleCatalogue(
 			optionValues: variant.optionValues,
 			minRetailPrice: variant.resale?.minRetailPrice ?? null,
 			suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
-			supplierStock: variant.trackInventory ? availableOf(variant) : null,
+			...(canSeeSupplierPrice
+				? { supplierStock: cappedStockCount(variant) }
+				: {}),
 			...(canSeeSupplierPrice &&
 			typeof variant.resale?.supplierPrice === "number"
 				? { supplierPrice: variant.resale.supplierPrice }

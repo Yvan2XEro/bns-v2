@@ -11,7 +11,7 @@ import { type MediaRef, toMediaRef } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
-	availableOf,
+	cappedStockCount,
 	isLowStock,
 	isOutOfStock,
 	redactManagerOnlyFields,
@@ -501,12 +501,9 @@ export interface PublicVariantView {
 	availableCount: number | null;
 }
 
-export const PUBLIC_STOCK_CAP = 10;
-
 function publicAvailableCount(variant: ProductVariant): number | null {
-	if (variant.trackInventory !== true) return null;
-	const count = availableOf(variant);
-	return count > 0 && count <= PUBLIC_STOCK_CAP ? count : null;
+	const count = cappedStockCount(variant);
+	return count === 0 ? null : count;
 }
 
 function toPublicVariantView(variant: ProductVariant): PublicVariantView {

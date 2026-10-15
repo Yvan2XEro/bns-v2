@@ -296,7 +296,7 @@ export function ResoldTab({ shopId }: { shopId: string }) {
 													)}
 												>
 													{variant.supplierStock === null
-														? t("stockUntracked")
+														? t("stockInStock")
 														: variant.supplierStock}
 												</td>
 												<td className="px-3.5 py-2.5">

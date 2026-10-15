@@ -61,6 +61,18 @@ export function availableOf(variant: VariantLike): number {
 	);
 }
 
+export const PUBLIC_STOCK_CAP = 10;
+
+/**
+ * Units left as another party may see them: exact only from 0 to
+ * `PUBLIC_STOCK_CAP`, otherwise null, read as "in stock" (untracked included).
+ */
+export function cappedStockCount(variant: VariantLike): number | null {
+	if (variant.trackInventory !== true) return null;
+	const count = availableOf(variant);
+	return count <= PUBLIC_STOCK_CAP ? count : null;
+}
+
 export function isOutOfStock(variant: VariantLike): boolean {
 	return variant.trackInventory === true && availableOf(variant) <= 0;
 }

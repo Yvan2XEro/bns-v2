@@ -183,6 +183,16 @@ describe("listResoldListings", () => {
 		expect(page.listings[0]?.status).toBe("out_of_stock");
 	});
 
+	it("shows a large supplier stock only as in stock", async () => {
+		const page = await listResoldListings(
+			world({ price: 3200, stockOnHand: 200 }),
+			reseller,
+			"reseller-shop",
+		);
+		expect(page.listings[0]?.variants[0]?.supplierStock).toBeNull();
+		expect(page.listings[0]?.status).toBe("on_sale");
+	});
+
 	it("refuses a shop the caller is not a member of", async () => {
 		await expect(
 			listResoldListings(world(), supplier, "reseller-shop"),

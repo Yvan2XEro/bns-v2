@@ -5,7 +5,10 @@ export interface ResaleCatalogueVariant {
 	minRetailPrice: number | null;
 	suggestedRetailPrice: number | null;
 	supplierPrice?: number;
-	/** Units the supplier can ship now; null when the variant tracks no stock. */
+	/**
+	 * Units the supplier can ship now, exact only up to `PUBLIC_STOCK_CAP`;
+	 * null means in stock. Absent when the supplier price is hidden.
+	 */
 	supplierStock?: number | null;
 }
 
@@ -161,6 +164,7 @@ export interface ResoldListing {
 		supplierPrice: number | null;
 		minRetailPrice: number | null;
 		suggestedRetailPrice: number | null;
+		/** Exact only up to `PUBLIC_STOCK_CAP`; null means in stock. */
 		supplierStock: number | null;
 	}>;
 }

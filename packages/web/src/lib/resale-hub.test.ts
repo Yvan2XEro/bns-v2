@@ -12,6 +12,7 @@ import {
 	resaleRules,
 	resoldCounts,
 	resolveResaleTab,
+	supplierStockState,
 } from "./resale-hub";
 
 function listing(
@@ -206,5 +207,22 @@ describe("resaleRules", () => {
 			approval: null,
 			cod: null,
 		});
+	});
+});
+
+describe("supplierStockState", () => {
+	it("hides the stock wherever the API withheld it", () => {
+		expect(supplierStockState([undefined])).toEqual({ kind: "hidden" });
+		expect(supplierStockState([])).toEqual({ kind: "hidden" });
+	});
+
+	it("reads a large or untracked variant as in stock", () => {
+		expect(supplierStockState([3, null])).toEqual({ kind: "in_stock" });
+	});
+
+	it("shows a small total exactly and caps a large one", () => {
+		expect(supplierStockState([3, 4])).toEqual({ kind: "count", count: 7 });
+		expect(supplierStockState([0])).toEqual({ kind: "count", count: 0 });
+		expect(supplierStockState([6, 7])).toEqual({ kind: "in_stock" });
 	});
 });
