@@ -2405,7 +2405,8 @@
 			"save": "Save business details",
 			"noRequest": "There is no open business verification request. Start one from the verification hub.",
 			"backToHub": "Back to the verification hub",
-			"loadError": "We could not load your verification status."
+			"loadError": "We could not load your verification status.",
+			"tab": "Business"
 		},
 		"documents": {
 			"title": "Required documents",

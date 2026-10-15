@@ -13,6 +13,7 @@ import {
 	badgeForLevel,
 	badgeLabelKey,
 	buildTimeline,
+	businessRequestAction,
 	CHECKLIST_ITEMS,
 	type ChecklistItem,
 	canOpenRequest,
@@ -100,6 +101,43 @@ describe("badgeLabelKey", () => {
 		expect(badgeLabelKey("identity")).toBe("levelIdentity");
 		expect(badgeLabelKey("business")).toBe("levelBusiness");
 		expect(badgeLabelKey(null)).toBeNull();
+	});
+});
+
+describe("businessRequestAction", () => {
+	const level2 = baseCapabilities({ effectiveLevel: 2 });
+	test("resumes a request still in flight", () => {
+		const view = baseView({
+			capabilities: level2,
+			requests: {
+				level2: null,
+				level3: baseRequest({ requestedLevel: 3, status: "draft" }),
+			},
+		});
+		expect(businessRequestAction(view)).toBe("resume");
+	});
+	test("opens one when the shop may, including after a rejection", () => {
+		expect(businessRequestAction(baseView({ capabilities: level2 }))).toBe(
+			"open",
+		);
+		const rejected = baseView({
+			capabilities: level2,
+			requests: {
+				level2: null,
+				level3: baseRequest({ requestedLevel: 3, status: "rejected" }),
+			},
+		});
+		expect(businessRequestAction(rejected)).toBe("open");
+	});
+	test("is blocked below level 2 or with the flag off", () => {
+		expect(
+			businessRequestAction(
+				baseView({ capabilities: baseCapabilities({ effectiveLevel: 1 }) }),
+			),
+		).toBe("blocked");
+		expect(
+			businessRequestAction(baseView({ capabilities: level2, enabled: false })),
+		).toBe("blocked");
 	});
 });
 

@@ -2408,7 +2408,8 @@
 			"save": "Enregistrer les informations",
 			"noRequest": "Aucune demande de vérification d'entreprise en cours. Démarrez-en une depuis le centre de vérification.",
 			"backToHub": "Retour au centre de vérification",
-			"loadError": "Nous n'avons pas pu charger votre statut de vérification."
+			"loadError": "Nous n'avons pas pu charger votre statut de vérification.",
+			"tab": "Entreprise"
 		},
 		"documents": {
 			"title": "Documents requis",

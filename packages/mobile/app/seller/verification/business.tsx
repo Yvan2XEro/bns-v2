@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -13,17 +13,20 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
 import { BusinessForm } from "@/src/components/verification/BusinessForm";
 import { DocumentSlots } from "@/src/components/verification/DocumentSlots";
 import { useMyShop } from "@/src/hooks/useShops";
 import {
 	useDeleteVerificationDocument,
+	useOpenVerificationRequest,
 	useShopVerification,
 	useSubmitVerification,
 	useUploadVerificationDocument,
 } from "@/src/hooks/useVerification";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { businessRequestAction } from "@/src/lib/verification";
 import type { PickedFile } from "@/src/lib/verificationBusiness";
 import {
 	canSubmit,
@@ -49,13 +52,27 @@ const initialState: State = {
 	actionError: null,
 };
 
+const EMPTY_BUSINESS = {
+	businessType: null,
+	legalName: null,
+	tradeName: null,
+	rccmNumber: null,
+	entreprenantDeclarationNumber: null,
+	niu: null,
+	registeredAddress: null,
+	city: null,
+	legalRepresentativeName: null,
+	legalRepresentativeIsOwner: true,
+} as const;
+
 function reducer(state: State, patch: Partial<State>): State {
 	return { ...state, ...patch };
 }
 
 /** `/seller/verification/business` — the level-3 request's business details
- * and required documents. Reached from the verification hub, which already
- * opens the request; this screen only ever edits an existing one. */
+ * and required documents. The hub's Start only navigates here; this screen
+ * opens the request itself (or resumes the one on file), like the identity
+ * flow does for level 2. */
 export default function BusinessVerificationScreen() {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -67,11 +84,30 @@ export default function BusinessVerificationScreen() {
 	const remove = useDeleteVerificationDocument(shop?.id, request?.id);
 	const submit = useSubmitVerification(shop?.id, request?.id);
 	const [state, patch] = useReducer(reducer, initialState);
+	const openRequest = useOpenVerificationRequest(shop?.id);
+	const action = query.data ? businessRequestAction(query.data) : null;
 
-	const isLoading = myShop.isPending || (Boolean(shop?.id) && query.isPending);
+	const openedRef = useRef(false);
+	useEffect(() => {
+		if (openedRef.current || action !== "open") return;
+		openedRef.current = true;
+		openRequest.mutate(3, {
+			onError: () => {
+				openedRef.current = false;
+			},
+		});
+	}, [action, openRequest]);
+
+	const isLoading =
+		myShop.isPending ||
+		(Boolean(shop?.id) && query.isPending) ||
+		(action === "open" && !openRequest.isError);
 	const isError = myShop.isError || (Boolean(shop?.id) && query.isError);
 	const business = request?.business ?? null;
-	const businessValues = business ? toBusinessValues(business) : null;
+	// A fresh request has no business details yet: the form starts empty.
+	const businessValues = request
+		? toBusinessValues(business ?? EMPTY_BUSINESS)
+		: null;
 	const documents = request?.documents ?? [];
 	const kinds = businessValues
 		? requiredKinds(
@@ -142,10 +178,14 @@ export default function BusinessVerificationScreen() {
 				/>
 			) : null}
 
-			{!isLoading && !isError && shop && (!request || !business) ? (
+			{!isLoading && !isError && shop && !request ? (
 				<EmptyState
 					illustration="notFound"
-					title={t("verification.business.noRequest")}
+					title={
+						openRequest.isError
+							? resolveErrorMessage(openRequest.error, t)
+							: t("verification.business.noRequest")
+					}
 					ctaLabel={t("verification.business.backToHub")}
 					onCta={() =>
 						router.canGoBack()
@@ -155,45 +195,17 @@ export default function BusinessVerificationScreen() {
 				/>
 			) : null}
 
-			{!isLoading &&
-			!isError &&
-			shop &&
-			request &&
-			business &&
-			businessValues ? (
+			{!isLoading && !isError && shop && request && businessValues ? (
 				<>
-					<View style={[styles.tabs, { borderBottomColor: c.border }]}>
-						{(["form", "documents"] as const).map((step) => {
-							const active = state.step === step;
-							const label = t(
-								step === "form"
-									? "verification.business.title"
-									: "verification.documents.title",
-							);
-							return (
-								<Pressable
-									key={step}
-									onPress={() => patch({ step })}
-									style={[
-										styles.tab,
-										active && { borderBottomColor: c.primary },
-									]}
-									accessibilityRole="tab"
-									accessibilityState={{ selected: active }}
-									accessibilityLabel={label}
-								>
-									<Text
-										style={[
-											styles.tabText,
-											{ color: active ? c.primary : c.muted },
-										]}
-									>
-										{label}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
+					<SegmentedControl
+						segments={[
+							{ key: "form", label: t("verification.business.tab") },
+							{ key: "documents", label: t("verification.documents.title") },
+						]}
+						value={state.step}
+						onChange={(step) => patch({ step })}
+						style={styles.tabs}
+					/>
 
 					{state.step === "form" ? (
 						<BusinessForm
@@ -265,16 +277,7 @@ export default function BusinessVerificationScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
-	tabs: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
-	tab: {
-		flex: 1,
-		minHeight: 44,
-		alignItems: "center",
-		justifyContent: "center",
-		borderBottomWidth: 2,
-		borderBottomColor: "transparent",
-	},
-	tabText: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	tabs: { marginHorizontal: 16, marginTop: 12 },
 	scroll: { padding: 16, gap: 16, paddingBottom: 40 },
 	footer: { gap: 10, marginTop: 4 },
 	missing: { fontSize: 13, fontFamily: Fonts.body },

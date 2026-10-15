@@ -154,6 +154,20 @@ export function canOpenRequest(
 	return { ok: true };
 }
 
+/**
+ * What the level-3 screen does on arrival: show the request already on file
+ * (draft, needs info, or in review), open a fresh one when the hub's rules
+ * allow it, or say why it cannot. The identity flow opens its own request the
+ * same way; the hub's Start only navigates.
+ */
+export function businessRequestAction(
+	view: ShopVerificationResponse,
+): "resume" | "open" | "blocked" {
+	const current = view.requests.level3;
+	if (current && OPEN_STATUSES.includes(current.status)) return "resume";
+	return canOpenRequest(view, 3).ok ? "open" : "blocked";
+}
+
 // ─── Status tone ──────────────────────────────────────────────────────────────
 
 export type StatusTone = "positive" | "negative" | "warning" | "neutral";

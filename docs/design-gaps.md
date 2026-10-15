@@ -65,7 +65,7 @@ Comparaison pas encore faite.
 
 ## Écrans pas encore comparés
 
-- Achat : paiement en attente, paiement protégé, étapes
+- Achat : paiement en attente (demande de paiement réelle requise), étapes
   paiement et récapitulatif du tunnel.
 - Vendeur : fiche produit en revente (la revente est désactivée et aucune boutique de niveau 3 n'existe dans les données de démo).
 - Ops / vérification : parcours de vérification (début, document, selfie,
