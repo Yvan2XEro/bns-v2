@@ -185,7 +185,17 @@ describe("product listing derived fields", () => {
 				data: { ...base, images },
 				req: req(payloadWith(), { id: "u-1" }),
 			}),
-		).rejects.toThrow(/at most 3 images/);
+		).rejects.toMatchObject({
+			status: 400,
+			data: {
+				errors: [
+					{
+						path: "images",
+						message: expect.stringMatching(/at most 3 images/),
+					},
+				],
+			},
+		});
 	});
 });
 

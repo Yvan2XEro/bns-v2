@@ -72,6 +72,7 @@ import { ShopLocations } from "./collections/ShopLocations";
 import { ShopMembers } from "./collections/ShopMembers";
 import { ShopStrikes } from "./collections/ShopStrikes";
 import { Shops } from "./collections/Shops";
+import { StockCountSessions } from "./collections/StockCountSessions";
 import { StockMovements } from "./collections/StockMovements";
 import { Tags } from "./collections/Tags";
 import { Users } from "./collections/Users";
@@ -313,6 +314,7 @@ export default buildConfig({
 		ResellerPayouts,
 		ProductVariants,
 		StockMovements,
+		StockCountSessions,
 		VerificationRequests,
 		VerificationDocuments,
 		VerificationDocumentViews,

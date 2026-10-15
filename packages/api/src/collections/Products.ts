@@ -294,6 +294,13 @@ export const Products: CollectionConfig = {
 		},
 		{ name: "returnPolicy", type: "textarea", maxLength: 2000 },
 		{
+			name: "warrantyMonths",
+			type: "number",
+			min: 0,
+			max: 60,
+			admin: { description: "Shop warranty shown to buyers, in months." },
+		},
+		{
 			name: "listing",
 			type: "relationship",
 			relationTo: "listings",

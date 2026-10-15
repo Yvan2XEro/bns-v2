@@ -5,6 +5,11 @@ import {
 } from "../../access/orderAccess";
 import { can, type ShopRole } from "../../access/shopRoles";
 import {
+	districtLabel,
+	isLaunchCityKey,
+	LAUNCH_CITIES,
+} from "../../lib/launchCities";
+import {
 	CONFIRMATION_MAX_ATTEMPTS,
 	CONFIRMATION_MAX_RESENDS,
 	HANDOVER_MAX_ATTEMPTS,
@@ -234,10 +239,49 @@ export interface OrderListEntryView {
 	deliveryFailureReason: string | null;
 	/** Buyer list only, and only on a split order: the key that groups siblings. */
 	checkoutGroup?: string;
+	/** Buyer list only: exactly the fields the clients' `availableActions` reads, so a card offers what the order page would. */
+	actionSubject?: OrderListActionSubject;
+	/** Buyer list only: the delivery promise (never the address), for the card's arrival line. */
+	arrival?: {
+		method: OrderDeliveryView["method"];
+		etaText: string;
+		promisedBy: string | null;
+	};
 	/** Shop queue only: a buyer's own list has no use for the recipient, the accept clock or the tier. */
 	recipientName?: string;
 	acceptBy?: string | null;
 	phoneTier?: BuyerTier;
+	/** Shop queue only: the row's payment and status pills. */
+	paymentMethod?: Order["paymentMethod"];
+	paymentStatus?: Order["paymentStatus"];
+	/** Shop queue only: the neighbourhood and city under the customer's name. */
+	area?: { district: string | null; city: string | null };
+	/** Shop queue only: set when a line is resold from a supplier. */
+	resale?: OrderListResaleView | null;
+	/** Shop queue only: a shipment exists, so shipping happens on the order page. */
+	hasShipment?: boolean;
+}
+
+export interface OrderListResaleView {
+	/** Null until the purchase order is sent, i.e. before acceptance. */
+	purchaseOrderNumber: string | null;
+	supplierName: string | null;
+}
+
+export interface OrderListActionSubject {
+	confirmation: OrderConfirmationView;
+	handover: OrderHandoverView;
+	deadlines: OrderDeadlinesView;
+	deliveryFailure: OrderDeliveryFailureView | null;
+	completionHold: CompletionHold;
+	returnCaseNumber: string | null;
+	reviewable: boolean;
+}
+
+/** What a buyer's row needs beyond the order itself, batch-loaded per page. */
+export interface BuyerListRowSources {
+	returnCaseNumber: string | null;
+	buyerHasReviewedShop: boolean;
 }
 
 /** What a list row needs from outside its own `orders` document. */
@@ -246,6 +290,8 @@ export interface OrderListRowSources {
 	itemCount: number;
 	firstItemTitle: string;
 	firstItemImageUrl: string | null;
+	/** Shop queue only. */
+	resale?: OrderListResaleView | null;
 }
 
 /** `Orders.status` values whose `timestamps` field marks the moment they became terminal. P4 only ever writes these three; `returned`/`disputed` are reserved for later phases and have no timestamp field yet. */
@@ -698,10 +744,25 @@ export function serializeOrderForStaff(
  * fields a shop queue needs (`recipientName`, `acceptBy`, `phoneTier`) are
  * keyed off `role` and are absent — not nulled — from a buyer's own list.
  */
+function listAreaView(delivery: Order["delivery"]): {
+	district: string | null;
+	city: string | null;
+} {
+	const key = delivery.district ?? "";
+	const district =
+		delivery.districtOther?.trim() ||
+		(key.endsWith(".other") ? null : districtLabel(key));
+	const city = isLaunchCityKey(delivery.city)
+		? LAUNCH_CITIES[delivery.city].label
+		: null;
+	return { district: district || null, city };
+}
+
 export function serializeOrderListEntry(
 	order: Order,
 	sources: OrderListRowSources,
 	role: "buyer" | "shop",
+	buyerSources?: BuyerListRowSources,
 ): OrderListEntryView {
 	const entry: OrderListEntryView = {
 		id: order.id,
@@ -718,10 +779,33 @@ export function serializeOrderListEntry(
 	if (role === "buyer" && order.checkoutGroup) {
 		entry.checkoutGroup = order.checkoutGroup;
 	}
+	if (role === "buyer" && buyerSources) {
+		entry.actionSubject = {
+			confirmation: confirmationView(order),
+			handover: handoverView(order),
+			deadlines: deadlinesView(order),
+			deliveryFailure: deliveryFailureView(order),
+			completionHold: order.completionHold ?? "none",
+			returnCaseNumber: buyerSources.returnCaseNumber,
+			reviewable:
+				REVIEWABLE_STATUSES.has(order.status) &&
+				!buyerSources.buyerHasReviewedShop,
+		};
+		entry.arrival = {
+			method: order.delivery.method ?? "seller_delivery",
+			etaText: order.delivery.etaText ?? "",
+			promisedBy: order.delivery.promisedBy ?? null,
+		};
+	}
 	if (role === "shop") {
 		entry.recipientName = order.delivery.recipientName;
 		entry.acceptBy = order.deadlines?.acceptBy ?? null;
 		entry.phoneTier = order.risk?.phoneTier ?? "new";
+		entry.paymentMethod = order.paymentMethod;
+		entry.paymentStatus = order.paymentStatus;
+		entry.area = listAreaView(order.delivery);
+		entry.resale = sources.resale ?? null;
+		entry.hasShipment = (order.shipments?.length ?? 0) > 0;
 	}
 	return entry;
 }

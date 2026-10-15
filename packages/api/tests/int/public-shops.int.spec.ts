@@ -198,6 +198,7 @@ describe("toShopSearchHit", () => {
 			ownerRating: 4.8,
 			ownerReviews: 12,
 			createdAt: "x",
+			bannerUrl: null,
 		});
 	});
 

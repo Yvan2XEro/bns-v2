@@ -540,6 +540,7 @@ export async function listResaleLinks(
 					id: String(partner.id),
 					name: partner.name,
 					handle: partner.handle ?? null,
+					level: shopCapabilities(partner).effectiveLevel,
 				},
 				message: link.message ?? null,
 				requestedAt: link.createdAt ?? null,

@@ -34,6 +34,11 @@ export interface CartShopView {
 	name: string;
 	handle: string;
 	city: string | null;
+	/** Cart views only (the shop header): absent from quote and placement answers. */
+	logoUrl?: string | null;
+	badge?: "phone" | "identity" | "business" | null;
+	rating?: number;
+	totalReviews?: number;
 }
 
 export interface CartLineView {
@@ -55,6 +60,8 @@ export interface CartLineView {
 	available: boolean;
 	/** The cap the stepper may raise this line to; null when the variant is untracked. */
 	maxQuantity: number | null;
+	/** Units still on sale for this variant, for the "n left" hint; null when untracked. */
+	stockLeft?: number | null;
 }
 
 /** One line of the quote, as the checkout screen renders it: what it is, how many, what it costs. The ids `placeOrder` needs stay on `QuoteSummaryItem`, off the wire. */

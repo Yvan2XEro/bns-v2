@@ -10,6 +10,7 @@ const paramsSchema = z.object({ id: z.string().trim().min(1) });
 const bodySchema = z.object({
 	counts: z.array(z.object({ variantId: z.string(), counted: z.number() })),
 	note: z.string().nullable().optional(),
+	sessionId: z.string().trim().min(1).nullable().optional(),
 });
 
 export async function POST(
@@ -31,6 +32,7 @@ export async function POST(
 			await recordStockCount(ctx.payload, ctx.user, parsedParams.data.id, {
 				counts: body.counts,
 				note: body.note,
+				sessionId: parsedBody.data.sessionId ?? null,
 			}),
 		);
 	} catch (error) {

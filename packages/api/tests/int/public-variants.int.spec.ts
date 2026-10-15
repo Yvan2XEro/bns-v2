@@ -80,6 +80,7 @@ describe("listPublicVariants", () => {
 			price: 10000,
 			trackInventory: true,
 			available: true,
+			availableCount: 2,
 		});
 		expect(v1).not.toHaveProperty("cost");
 		expect(v1).not.toHaveProperty("stockOnHand");
@@ -115,6 +116,7 @@ describe("listPublicVariants", () => {
 				price: 7000,
 				trackInventory: true,
 				available: false,
+				availableCount: null,
 			},
 		]);
 	});
@@ -122,5 +124,36 @@ describe("listPublicVariants", () => {
 	it("is untracked-inventory means always available", async () => {
 		const { docs } = await listPublicVariants(seed(), "p-1");
 		expect(docs.find((d) => d.id === "v-3")?.available).toBe(true);
+	});
+
+	it("shows the units left only when tracked and at most ten", async () => {
+		const payload = seed();
+		payload.store.products.push({
+			id: "p-4",
+			shop: "s-1",
+			title: "Stock",
+			status: "active",
+		});
+		const variant = (id: string, stockOnHand: number) => ({
+			id,
+			product: { id: "p-4", status: "active" },
+			shop: "s-1",
+			optionValues: { Taille: id },
+			price: 1000,
+			trackInventory: true,
+			stockOnHand,
+			stockReserved: 0,
+		});
+		payload.store["product-variants"].push(
+			variant("ten", 10),
+			variant("eleven", 11),
+		);
+		const { docs } = await listPublicVariants(payload, "p-4");
+		expect(docs.map((d) => [d.id, d.availableCount])).toEqual([
+			["ten", 10],
+			["eleven", null],
+		]);
+		const { docs: untracked } = await listPublicVariants(seed(), "p-1");
+		expect(untracked.find((d) => d.id === "v-3")?.availableCount).toBeNull();
 	});
 });

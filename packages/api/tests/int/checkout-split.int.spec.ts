@@ -183,7 +183,16 @@ describe("flag off: today's cart, byte for byte", () => {
 		const view = await getCartView(payload, buyer);
 		expect(view).toEqual({
 			id: expect.any(String),
-			shop: { id: "a", name: "Shop a", handle: "shop-a", city: "douala" },
+			shop: {
+				id: "a",
+				name: "Shop a",
+				handle: "shop-a",
+				city: "douala",
+				logoUrl: null,
+				badge: "identity",
+				rating: 0,
+				totalReviews: 0,
+			},
 			lines: [
 				{
 					id: expect.any(String),
@@ -201,6 +210,7 @@ describe("flag off: today's cart, byte for byte", () => {
 					lineSubtotal: 50_000,
 					available: true,
 					maxQuantity: null,
+					stockLeft: null,
 				},
 			],
 			subtotal: 50_000,

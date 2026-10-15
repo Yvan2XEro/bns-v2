@@ -20,6 +20,7 @@ export interface PurchaseOrderListRow {
 	items: Array<{ title: string; quantity: number }>;
 	collectAmount: number;
 	supplierAmount: number | null;
+	deliveryArea?: { district: string | null; city: string | null };
 }
 
 export interface PurchaseOrderPage {
@@ -77,6 +78,7 @@ export interface PurchaseOrderView {
 		note?: string | null;
 		at?: string | null;
 	};
+	statusHistory?: Array<{ status: string; at: string }> | null;
 	return?: {
 		reason?: string | null;
 		liability?: "supplier" | "reseller" | "buyer" | null;

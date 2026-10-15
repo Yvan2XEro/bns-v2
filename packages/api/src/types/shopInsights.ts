@@ -45,6 +45,23 @@ export interface ShopInsightsView {
 		codRefusal: number | null;
 		deliveryCompletion: number | null;
 	};
+	/** The counts behind `rates`, and the levels at which an action is raised. */
+	rateCounts?: {
+		sellerCancellations: number;
+		ordersPlaced: number;
+		codRefused: number;
+		codShipped: number;
+	};
+	thresholds?: { sellerCancellation: number; codRefusal: number };
+	/** Placed (or confirmed) to accepted, over orders accepted in the period. */
+	acceptance?: { medianMinutes: number | null; sample: number };
+	/** Eight rolling 7-day windows ending today, oldest first. */
+	weekly?: {
+		from: string;
+		to: string;
+		gmvDelivered: number;
+		ordersDelivered: number;
+	}[];
 	responseTime: {
 		medianBucket: ResponseBucket | null;
 		answeredWithinOneHour: number | null;
@@ -65,6 +82,8 @@ export interface ShopInsightsView {
 		ordersPlaced: number;
 		unitsDelivered: number;
 		gmvDelivered: number;
+		/** Sum over the product's tracked variants; null when none is tracked. */
+		available?: number | null;
 	}[];
 	stock: {
 		turnover: number | null;
@@ -82,6 +101,14 @@ export interface ShopInsightsView {
 			productTitle: string;
 			views: number;
 		}[];
+		/** In stock, no unit delivered in the last 30 days; costliest first. */
+		dormant?: {
+			productId: string;
+			productTitle: string;
+			available: number;
+			costValue: number;
+		}[];
+		dormantValue?: number;
 	};
 	actions: ShopInsightAction[];
 }

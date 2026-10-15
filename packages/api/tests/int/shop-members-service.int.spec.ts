@@ -175,6 +175,47 @@ describe("getShopTeam", () => {
 		).toBeUndefined();
 	});
 
+	it("gives a manager each member's latest logged action, and staff none", async () => {
+		const payload = seed();
+		payload.store["shop-activity-log"].push(
+			{
+				id: "a-1",
+				shop: "s-1",
+				actor: "u-staff",
+				actorRole: "staff",
+				action: "stock.moved",
+				targetType: "variant",
+				targetId: "v-1",
+				createdAt: "2026-09-01T10:00:00.000Z",
+			},
+			{
+				id: "a-2",
+				shop: "s-1",
+				actor: "u-staff",
+				actorRole: "staff",
+				action: "product.updated",
+				targetType: "product",
+				targetId: "p-1",
+				createdAt: "2026-09-02T10:00:00.000Z",
+			},
+		);
+		const team = await getShopTeam(payload, actor("u-mgr"), "s-1");
+		expect(
+			team.members.find((m) => m.userId === "u-staff")?.lastActivity,
+		).toEqual({
+			at: "2026-09-02T10:00:00.000Z",
+			action: "product.updated",
+		});
+		expect(
+			team.members.find((m) => m.userId === "u-owner")?.lastActivity,
+		).toBeNull();
+
+		const asStaff = await getShopTeam(payload, actor("u-staff"), "s-1");
+		expect(asStaff.members.every((m) => m.lastActivity === undefined)).toBe(
+			true,
+		);
+	});
+
 	it("shows a manager everyone's inbox preference", async () => {
 		const payload = seed();
 		const team = await getShopTeam(payload, actor("u-mgr"), "s-1");

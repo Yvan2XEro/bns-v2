@@ -288,7 +288,12 @@ describe("listResaleLinks", () => {
 			{
 				id: "supplier-link",
 				status: "requested",
-				partnerShop: { id: "reseller", name: "Reseller Store", handle: null },
+				partnerShop: {
+					id: "reseller",
+					name: "Reseller Store",
+					handle: null,
+					level: 2,
+				},
 				message: null,
 				requestedAt: expect.any(String),
 				updatedAt: expect.any(String),

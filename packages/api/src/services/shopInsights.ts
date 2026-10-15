@@ -139,6 +139,59 @@ function aggregateTopProducts(rows: ShopDailyStat[]) {
 		.slice(0, 5);
 }
 
+const WEEKLY_WEEKS = 8;
+const SELLER_CANCELLATION_THRESHOLD = 0.1;
+const COD_REFUSAL_THRESHOLD = 0.2;
+const ACCEPTANCE_SAMPLE_LIMIT = 500;
+
+/**
+ * Read live off the orders rather than the nightly rows, which do not carry
+ * it. `since` is a day before the period's local start so no timezone offset
+ * drops an order; the extra day is noise next to a median.
+ */
+async function acceptanceTimes(
+	payload: Payload,
+	shopId: string,
+	since: number,
+): Promise<{ medianMinutes: number | null; sample: number }> {
+	const { docs } = await payload.find({
+		collection: "orders",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{
+					"timestamps.acceptedAt": {
+						greater_than_equal: new Date(since).toISOString(),
+					},
+				},
+			],
+		},
+		sort: "-createdAt",
+		limit: ACCEPTANCE_SAMPLE_LIMIT,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const minutes = docs
+		.flatMap((order) => {
+			const accepted = order.timestamps?.acceptedAt;
+			const started =
+				order.timestamps?.confirmedAt ??
+				order.timestamps?.placedAt ??
+				order.createdAt;
+			if (!accepted || !started) return [];
+			const value = (Date.parse(accepted) - Date.parse(started)) / 60_000;
+			return Number.isFinite(value) && value >= 0 ? [value] : [];
+		})
+		.sort((a, b) => a - b);
+	if (minutes.length === 0) return { medianMinutes: null, sample: 0 };
+	const middle = Math.floor(minutes.length / 2);
+	const median =
+		minutes.length % 2
+			? minutes[middle]
+			: ((minutes[middle - 1] ?? 0) + (minutes[middle] ?? 0)) / 2;
+	return { medianMinutes: Math.round(median ?? 0), sample: minutes.length };
+}
+
 export async function getShopInsights(
 	payload: Payload,
 	user: ServiceUser,
@@ -171,12 +224,18 @@ export async function getShopInsights(
 	const end = localDateString(options.now ?? new Date(), timezone);
 	const currentStart = addDays(end, 1 - days);
 	const previousStart = addDays(currentStart, -days);
+	const weeklyStart = addDays(end, 1 - WEEKLY_WEEKS * 7);
 	const stats = await payload.find({
 		collection: "shop-daily-stats",
 		where: {
 			and: [
 				{ shop: { equals: shopId } },
-				{ date: { greater_than_equal: previousStart } },
+				{
+					date: {
+						greater_than_equal:
+							weeklyStart < previousStart ? weeklyStart : previousStart,
+					},
+				},
 				{ date: { less_than_equal: end } },
 			],
 		},
@@ -186,7 +245,9 @@ export async function getShopInsights(
 		overrideAccess: true,
 	});
 	const rows = stats.docs;
-	const previousRows = rows.filter((row) => row.date < currentStart);
+	const previousRows = rows.filter(
+		(row) => row.date >= previousStart && row.date < currentStart,
+	);
 	const currentRows = rows.filter((row) => row.date >= currentStart);
 	const current = sumRows(currentRows);
 	const previous = sumRows(previousRows);
@@ -259,16 +320,17 @@ export async function getShopInsights(
 	const productTitles = new Map(
 		products.docs.map((product) => [product.id, product.title]),
 	);
-	const topProducts = currentTopProducts.map((product) => ({
-		...product,
-		productTitle: productTitles.get(product.productId) ?? product.productId,
-	}));
-	const stockInsights = await getShopStockInsights(
+	const { availableByProduct, ...stockInsights } = await getShopStockInsights(
 		payload,
 		shopId,
 		options.now ?? new Date(),
 		timezone,
 	);
+	const topProducts = currentTopProducts.map((product) => ({
+		...product,
+		productTitle: productTitles.get(product.productId) ?? product.productId,
+		available: availableByProduct[product.productId] ?? null,
+	}));
 	const totalResponseBuckets = responseBucketTotals;
 	const answeredWithinOneHour =
 		totalResponseBuckets > 0 ? quickResponses / totalResponseBuckets : null;
@@ -306,7 +368,7 @@ export async function getShopInsights(
 			productId: stockInsights.restock[0]?.productId,
 		});
 	}
-	if (codShipped >= 5 && codRefused / codShipped >= 0.2) {
+	if (codShipped >= 5 && codRefused / codShipped >= COD_REFUSAL_THRESHOLD) {
 		actions.push({
 			type: "cod_refusal_rate",
 			href: "/seller/orders?status=shipped",
@@ -314,7 +376,7 @@ export async function getShopInsights(
 	}
 	if (
 		current.ordersPlaced >= 5 &&
-		sellerCancellations / current.ordersPlaced >= 0.1
+		sellerCancellations / current.ordersPlaced >= SELLER_CANCELLATION_THRESHOLD
 	) {
 		actions.push({
 			type: "seller_cancellation_rate",
@@ -363,6 +425,28 @@ export async function getShopInsights(
 			inventorySnapshots.length
 		: 0;
 	const actionsLimited = actions.slice(0, 4);
+	const weekly = Array.from({ length: WEEKLY_WEEKS }, (_, index) => {
+		const from = addDays(weeklyStart, index * 7);
+		const to = addDays(from, 6);
+		const week = rows.filter((row) => row.date >= from && row.date <= to);
+		return {
+			from,
+			to,
+			gmvDelivered: week.reduce(
+				(sum, row) => sum + Number(row.gmvDelivered ?? 0),
+				0,
+			),
+			ordersDelivered: week.reduce(
+				(sum, row) => sum + Number(row.ordersDelivered ?? 0),
+				0,
+			),
+		};
+	});
+	const acceptance = await acceptanceTimes(
+		payload,
+		shopId,
+		new Date(`${currentStart}T00:00:00.000Z`).getTime() - DAY_MS,
+	);
 	return {
 		period,
 		from: currentStart,
@@ -385,6 +469,18 @@ export async function getShopInsights(
 			ordersDelivered: current.ordersDelivered,
 			conversion: rate(current.ordersPlaced, current.views),
 		},
+		rateCounts: {
+			sellerCancellations,
+			ordersPlaced: current.ordersPlaced,
+			codRefused,
+			codShipped,
+		},
+		thresholds: {
+			sellerCancellation: SELLER_CANCELLATION_THRESHOLD,
+			codRefusal: COD_REFUSAL_THRESHOLD,
+		},
+		acceptance,
+		weekly,
 		rates: {
 			sellerCancellation: rate(sellerCancellations, current.ordersPlaced),
 			codRefusal: rate(codRefused, codShipped),

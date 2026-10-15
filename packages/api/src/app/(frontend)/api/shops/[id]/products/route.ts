@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CATALOGUE_PROVENANCES, CATALOGUE_SORTS } from "@/contracts/catalogue";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
 import { listCatalogue } from "@/services/catalogue";
@@ -14,6 +15,9 @@ const catalogueQuerySchema = z.object({
 	q: z.string().trim().max(120).optional(),
 	page: z.coerce.number().int().min(1).optional(),
 	limit: z.coerce.number().int().min(1).max(100).optional(),
+	category: z.string().trim().min(1).max(64).optional(),
+	sort: z.enum(CATALOGUE_SORTS).optional(),
+	provenance: z.enum(CATALOGUE_PROVENANCES).optional(),
 });
 
 export async function GET(request: Request, { params }: Params) {
@@ -30,6 +34,9 @@ export async function GET(request: Request, { params }: Params) {
 		q: search.get("q") ?? undefined,
 		page: search.get("page") ?? undefined,
 		limit: search.get("limit") ?? undefined,
+		category: search.get("category") ?? undefined,
+		sort: search.get("sort") ?? undefined,
+		provenance: search.get("provenance") ?? undefined,
 	});
 	if (!parsedQuery.success) return errorResponse(ERROR_CODES.badRequest, 400);
 

@@ -234,9 +234,9 @@ const WEB_ONLY = [
 ];
 const MOBILE_ONLY = [
 	"grandSubtotal",
-	"summaryPaid_plural",
-	"summaryExpired_plural",
-	"summaryPending_plural",
+	"summaryPaid_one",
+	"summaryExpired_one",
+	"summaryPending_one",
 	"groupScreenTitle",
 	"groupLoadFailed",
 	"viewOrder",
@@ -246,7 +246,7 @@ const MOBILE_ONLY = [
 	"unavailableTitle",
 ];
 // Same key, deliberately different copy: web's ICU plurals vs i18next's
-// `_plural` pairs, and two headings each platform words for its own layout.
+// `_one` pairs, and two headings each platform words for its own layout.
 const DIFFERENT_COPY = [
 	"summaryPaid",
 	"summaryExpired",

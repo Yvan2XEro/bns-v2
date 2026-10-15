@@ -467,6 +467,34 @@ describe("reading a cart: price is a quote, not a promise", () => {
 	});
 });
 
+describe("reading a cart: the shop header and the stock hint", () => {
+	it("resolves the shop's logo, badge and rating, and each line's stock left", async () => {
+		const payload = world({
+			shop: { logo: "media-logo", rating: 4.8, totalReviews: 126 },
+		});
+		payload.store.media = [{ id: "media-logo", url: "https://cdn/logo.png" }];
+		await addCartItem(payload, BUYER, addInput({ quantity: 2 }));
+
+		const view = await getCartView(payload, BUYER);
+		expect(view.shop).toMatchObject({
+			logoUrl: "https://cdn/logo.png",
+			badge: "identity",
+			rating: 4.8,
+			totalReviews: 126,
+		});
+		expect(view.lines[0].stockLeft).toBe(5);
+	});
+
+	it("leaves the logo null and the stock untracked when there is neither", async () => {
+		const payload = world({ variant: { trackInventory: false } });
+		await addCartItem(payload, BUYER, addInput());
+
+		const view = await getCartView(payload, BUYER);
+		expect(view.shop?.logoUrl).toBeNull();
+		expect(view.lines[0].stockLeft).toBeNull();
+	});
+});
+
 describe("revalidateCartLines", () => {
 	it("returns an empty array for a null cart", async () => {
 		const payload = world();

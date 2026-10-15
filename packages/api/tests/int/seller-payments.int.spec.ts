@@ -382,6 +382,14 @@ async function payoutDetail(payoutId: string, userId = OWNER, shop = SHOP) {
 	);
 }
 
+/** A one-order payout: its gross is the order's total. */
+const payoutCommission = (amounts: Amounts) => ({
+	orderCount: 1,
+	commissionHt: amounts.commission,
+	vat: amounts.commissionVat,
+	gross: amounts.orderTotal,
+});
+
 const row = (
 	id: string,
 	amounts: Amounts,
@@ -462,6 +470,7 @@ describe("GET /api/shops/{id}/payments", () => {
 					fee: 0,
 					destinationMasked: MASKED,
 					status: "pending",
+					...payoutCommission(SMALL),
 				},
 				{
 					id: second.id,
@@ -470,6 +479,7 @@ describe("GET /api/shops/{id}/payments", () => {
 					fee: 0,
 					destinationMasked: MASKED,
 					status: "complete",
+					...payoutCommission(MID),
 				},
 				{
 					id: first.id,
@@ -478,6 +488,7 @@ describe("GET /api/shops/{id}/payments", () => {
 					fee: 0,
 					destinationMasked: MASKED,
 					status: "complete",
+					...payoutCommission(WORKED),
 				},
 			],
 			orders: [
@@ -623,6 +634,7 @@ describe("GET /api/shops/{id}/payments/payouts/{payoutId}", () => {
 			fee: 0,
 			destinationMasked: MASKED,
 			status: "complete",
+			...payoutCommission(MID),
 			currency: "XAF",
 			orders: [
 				{ orderId: "o-2", orderNumber: "BNS-2610-000002", amount: 22_999 },

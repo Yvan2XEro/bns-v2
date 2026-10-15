@@ -72,10 +72,34 @@ export interface BuyerOrderListQuery {
 	cursor?: string;
 }
 
+/** `all` is the list's "every status" view; it has no count of its own. */
+export type ShopOrderListTab = ShopOrderTab | "all";
+
 export interface ShopOrderListQuery {
-	tab: ShopOrderTab;
+	tab: ShopOrderListTab;
 	q?: string;
 	cursor?: string;
+	/** A `delivery.district` key, e.g. `douala.makepe`. */
+	district?: string;
+	/** ISO datetime: only orders created at or after it. */
+	since?: string;
+}
+
+/**
+ * The structured filters, which the tab counts follow; the free-text `q`
+ * narrows the rows only, so the counts keep answering "how much work is
+ * waiting" while the seller searches.
+ */
+function shopOrderFilters(
+	shopId: string,
+	query: Pick<ShopOrderListQuery, "district" | "since">,
+): Where[] {
+	const and: Where[] = [{ shop: { equals: shopId } }];
+	if (query.district) {
+		and.push({ "delivery.district": { equals: query.district } });
+	}
+	if (query.since) and.push({ createdAt: { greater_than_equal: query.since } });
+	return and;
 }
 
 async function loadOrderItems(
@@ -335,6 +359,58 @@ async function loadShopNames(
 	return names;
 }
 
+/** Each row's return case number, in one query for the page. */
+async function loadReturnCaseNumbers(
+	payload: Payload,
+	rows: readonly Order[],
+): Promise<Map<string, string>> {
+	const numbers = new Map<string, string>();
+	const ids = [
+		...new Set(
+			rows
+				.map((row) => relationId(row.returnCase))
+				.filter((id): id is string => id !== null),
+		),
+	];
+	if (ids.length === 0) return numbers;
+	const result = await payload.find({
+		collection: "return-cases",
+		where: { id: { in: ids } },
+		depth: 0,
+		limit: ids.length,
+		overrideAccess: true,
+	});
+	for (const returnCase of result.docs) {
+		if (returnCase.number)
+			numbers.set(String(returnCase.id), returnCase.number);
+	}
+	return numbers;
+}
+
+/** `hasReviewedShop` for a whole page: the shops this buyer has already reviewed. */
+async function loadReviewedShops(
+	payload: Payload,
+	buyerId: string,
+	shopIds: readonly string[],
+): Promise<Set<string>> {
+	const unique = [...new Set(shopIds)].filter((id) => id.length > 0);
+	if (unique.length === 0) return new Set();
+	const result = await payload.find({
+		collection: "reviews",
+		where: {
+			and: [{ reviewer: { equals: buyerId } }, { shop: { in: unique } }],
+		},
+		depth: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	return new Set(
+		result.docs
+			.map((review) => relationId(review.shop))
+			.filter((id): id is string => id !== null),
+	);
+}
+
 /**
  * The buyer's own purchase list — keyset-paginated on `createdAt`, the same
  * "older than the last row I saw" scheme as `listShopActivity`, so a page
@@ -360,28 +436,37 @@ export async function listBuyerOrders(
 	});
 
 	const rows = result.docs as Order[];
-	const [itemsByOrder, shopNames] = await Promise.all([
-		loadItemsByOrder(
-			payload,
-			rows.map((row) => row.id),
-		),
-		loadShopNames(
-			payload,
-			rows.map((row) => relationId(row.shop) ?? ""),
-		),
-	]);
+	const shopIds = rows.map((row) => relationId(row.shop) ?? "");
+	const [itemsByOrder, shopNames, returnCaseNumbers, reviewedShops] =
+		await Promise.all([
+			loadItemsByOrder(
+				payload,
+				rows.map((row) => row.id),
+			),
+			loadShopNames(payload, shopIds),
+			loadReturnCaseNumbers(payload, rows),
+			loadReviewedShops(payload, user.id, shopIds),
+		]);
 
 	return {
-		docs: rows.map((row) =>
-			serializeOrderListEntry(
+		docs: rows.map((row) => {
+			const shopId = relationId(row.shop) ?? "";
+			const caseId = relationId(row.returnCase);
+			return serializeOrderListEntry(
 				row,
 				listRowSources(
-					shopNames.get(relationId(row.shop) ?? "") ?? "",
+					shopNames.get(shopId) ?? "",
 					itemsByOrder.get(row.id) ?? [],
 				),
 				"buyer",
-			),
-		),
+				{
+					returnCaseNumber: caseId
+						? (returnCaseNumbers.get(caseId) ?? null)
+						: null,
+					buyerHasReviewedShop: reviewedShops.has(shopId),
+				},
+			);
+		}),
 		nextCursor:
 			rows.length === ORDER_LIST_PAGE_SIZE
 				? rows[rows.length - 1].createdAt
@@ -476,36 +561,21 @@ export async function getOrderReceiptHtml(
 }
 
 /**
- * `q` narrows the counts exactly as it narrows the rows. Without it the tab
- * bar said 12 while the open tab showed 3 — the brief asks for counts that
- * "agree with the rows", and a search is the one case where they would not.
+ * Each tab's count under the structured filters (district, period) the rows
+ * share. The free-text search is deliberately not among them: the counts
+ * say how much work is waiting, which a search for one order does not change.
  */
 async function tabCounts(
 	payload: Payload,
-	shopId: string,
-	q?: string,
+	filters: Where[],
 	req?: PayloadRequest,
 ): Promise<Record<ShopOrderTab, number>> {
-	const search: Where[] = q
-		? [
-				{
-					or: [
-						{ orderNumber: { like: q } },
-						{ "delivery.recipientName": { like: q } },
-					],
-				},
-			]
-		: [];
 	const counts = {} as Record<ShopOrderTab, number>;
 	for (const tab of SHOP_ORDER_TABS) {
 		const result = await payload.count({
 			collection: "orders",
 			where: {
-				and: [
-					{ shop: { equals: shopId } },
-					{ status: { in: TAB_STATUSES[tab] } },
-					...search,
-				],
+				and: [...filters, { status: { in: TAB_STATUSES[tab] } }],
 			},
 			overrideAccess: true,
 			req,
@@ -513,6 +583,64 @@ async function tabCounts(
 		counts[tab] = result.totalDocs;
 	}
 	return counts;
+}
+
+/**
+ * The first resold line of each row, with its purchase order's number once
+ * one was sent. The supplier is the line's `fulfillingShop` whenever that is
+ * not the storefront itself.
+ */
+async function loadResaleByOrder(
+	payload: Payload,
+	itemsByOrder: Map<string, OrderItem[]>,
+	storefrontId: string,
+	req?: PayloadRequest,
+): Promise<{
+	byOrder: Map<
+		string,
+		{ purchaseOrderNumber: string | null; supplierId: string | null }
+	>;
+	supplierIds: string[];
+}> {
+	const firstResale = new Map<string, OrderItem>();
+	for (const [orderId, items] of itemsByOrder) {
+		const line = [...items]
+			.sort((a, b) => (a.lineNumber ?? 0) - (b.lineNumber ?? 0))
+			.find((item) => item.sourcing === "resale");
+		if (line) firstResale.set(orderId, line);
+	}
+	const poIds = [...firstResale.values()]
+		.map((item) => relationId(item.purchaseOrder))
+		.filter((id): id is string => id !== null);
+	const poNumbers = new Map<string, string>();
+	if (poIds.length > 0) {
+		const result = await payload.find({
+			collection: "purchase-orders",
+			where: { id: { in: [...new Set(poIds)] } },
+			depth: 0,
+			limit: poIds.length,
+			overrideAccess: true,
+			req,
+		});
+		for (const po of result.docs) poNumbers.set(String(po.id), po.number);
+	}
+	const byOrder = new Map<
+		string,
+		{ purchaseOrderNumber: string | null; supplierId: string | null }
+	>();
+	const supplierIds = new Set<string>();
+	for (const [orderId, item] of firstResale) {
+		const fulfilling = relationId(item.fulfillingShop);
+		const supplierId =
+			fulfilling && fulfilling !== storefrontId ? fulfilling : null;
+		if (supplierId) supplierIds.add(supplierId);
+		const poId = relationId(item.purchaseOrder);
+		byOrder.set(orderId, {
+			purchaseOrderNumber: poId ? (poNumbers.get(poId) ?? null) : null,
+			supplierId,
+		});
+	}
+	return { byOrder, supplierIds: [...supplierIds] };
 }
 
 /**
@@ -536,10 +664,11 @@ export async function listShopOrders(
 ): Promise<ShopOrderPage> {
 	await requireShopPermission(payload, user, shopId, "orders.view", { req });
 
-	const and: Where[] = [
-		{ shop: { equals: shopId } },
-		{ status: { in: TAB_STATUSES[query.tab] } },
-	];
+	const filters = shopOrderFilters(shopId, query);
+	const and: Where[] = [...filters];
+	if (query.tab !== "all") {
+		and.push({ status: { in: TAB_STATUSES[query.tab] } });
+	}
 	if (query.q) {
 		and.push({
 			or: [
@@ -561,25 +690,46 @@ export async function listShopOrders(
 	});
 
 	const rows = result.docs as Order[];
-	const [counts, itemsByOrder, shopNames] = await Promise.all([
-		tabCounts(payload, shopId, query.q, req),
+	const [counts, itemsByOrder] = await Promise.all([
+		tabCounts(payload, filters, req),
 		loadItemsByOrder(
 			payload,
 			rows.map((row) => row.id),
 			req,
 		),
-		loadShopNames(payload, [shopId], req),
 	]);
+	const resaleByOrder = await loadResaleByOrder(
+		payload,
+		itemsByOrder,
+		shopId,
+		req,
+	);
+	const shopNames = await loadShopNames(
+		payload,
+		[shopId, ...resaleByOrder.supplierIds],
+		req,
+	);
 	const shopName = shopNames.get(shopId) ?? "";
 
 	return {
-		docs: rows.map((row) =>
-			serializeOrderListEntry(
+		docs: rows.map((row) => {
+			const resale = resaleByOrder.byOrder.get(row.id);
+			return serializeOrderListEntry(
 				row,
-				listRowSources(shopName, itemsByOrder.get(row.id) ?? []),
+				{
+					...listRowSources(shopName, itemsByOrder.get(row.id) ?? []),
+					resale: resale
+						? {
+								purchaseOrderNumber: resale.purchaseOrderNumber,
+								supplierName: resale.supplierId
+									? (shopNames.get(resale.supplierId) ?? null)
+									: null,
+							}
+						: null,
+				},
 				"shop",
-			),
-		),
+			);
+		}),
 		nextCursor:
 			rows.length === ORDER_LIST_PAGE_SIZE
 				? rows[rows.length - 1].createdAt

@@ -134,5 +134,43 @@ export async function getShopStockInsights(
 				]
 			: [];
 	});
-	return { restock, outOfStockWithViews };
+	const availableByProduct: Record<string, number> = {};
+	const dormantByProduct = new Map<
+		string,
+		{
+			productId: string;
+			productTitle: string;
+			available: number;
+			costValue: number;
+		}
+	>();
+	for (const variant of variants.docs) {
+		const productId = relationId(variant.product);
+		const product = productId ? productById.get(productId) : undefined;
+		if (!productId || !product) continue;
+		const available = availableOf(variant);
+		availableByProduct[productId] =
+			(availableByProduct[productId] ?? 0) + available;
+		if (available <= 0 || (soldByProduct.get(productId) ?? 0) > 0) continue;
+		const entry = dormantByProduct.get(productId) ?? {
+			productId,
+			productTitle: product.title,
+			available: 0,
+			costValue: 0,
+		};
+		entry.available += available;
+		entry.costValue += available * Number(variant.cost ?? 0);
+		dormantByProduct.set(productId, entry);
+	}
+	const dormantAll = [...dormantByProduct.values()].sort(
+		(left, right) =>
+			right.costValue - left.costValue || right.available - left.available,
+	);
+	return {
+		restock,
+		outOfStockWithViews,
+		dormant: dormantAll.slice(0, 5),
+		dormantValue: dormantAll.reduce((sum, entry) => sum + entry.costValue, 0),
+		availableByProduct,
+	};
 }

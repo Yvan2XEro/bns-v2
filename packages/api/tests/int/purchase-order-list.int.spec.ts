@@ -75,6 +75,7 @@ describe("purchase order inbox", () => {
 			collectAmount: 3500,
 			supplierAmount: null,
 			items: [{ title: "Phone", quantity: 2 }],
+			deliveryArea: { district: null, city: null },
 		});
 		expect(JSON.stringify(result)).not.toContain("supplierUnitPrice");
 	});

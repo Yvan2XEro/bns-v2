@@ -169,6 +169,15 @@ export interface ShopSearchHit {
 	ownerRating: number;
 	ownerReviews: number;
 	createdAt: string;
+	bannerUrl: string | null;
+	/** Only when the caller asks for them (`previews=N`): the shop's newest published listings. */
+	previews?: ShopPreview[];
+}
+
+export interface ShopPreview {
+	id: string;
+	title: string;
+	imageUrl: string | null;
 }
 
 /**
@@ -186,6 +195,8 @@ export function toShopSearchHit(input: unknown): ShopSearchHit {
 			: null;
 	const logo =
 		doc.logo && typeof doc.logo === "object" ? (doc.logo as Doc) : null;
+	const banner =
+		doc.banner && typeof doc.banner === "object" ? (doc.banner as Doc) : null;
 	const level = typeof doc.level === "number" ? doc.level : 1;
 	// The index only ever carries an active shop's document, and the payload
 	// fallback path filters to `status: active` before mapping — so a hit with
@@ -210,5 +221,6 @@ export function toShopSearchHit(input: unknown): ShopSearchHit {
 		ownerRating: Number(doc.ownerRating ?? owner?.rating ?? 0),
 		ownerReviews: Number(doc.ownerReviews ?? owner?.totalReviews ?? 0),
 		createdAt: String(doc.createdAt ?? ""),
+		bannerUrl: str(doc.bannerUrl) ?? str(banner?.url),
 	};
 }

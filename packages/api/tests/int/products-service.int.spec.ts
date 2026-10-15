@@ -100,7 +100,12 @@ const input = (overrides: Record<string, unknown> = {}) => ({
 
 /** Feeds the variants a create returned back into an update, unchanged. */
 const asInput = (
-	variants: Array<Record<string, unknown>>,
+	variants: ReadonlyArray<{
+		id: unknown;
+		optionValues?: unknown;
+		sku?: unknown;
+		price?: unknown;
+	}>,
 	overrides: Record<string, unknown> = {},
 ) =>
 	variants.map((v) => ({
@@ -295,6 +300,38 @@ describe("updateProduct", () => {
 			price: 400000,
 			productSummary: { priceMin: 400000, priceMax: 400000 },
 		});
+	});
+
+	it("keeps the shop warranty when a client does not send it, and clears it on null", async () => {
+		const payload = seed();
+		const { product, variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({ warrantyMonths: 3 }),
+		);
+		expect(payload.store.products[0].warrantyMonths).toBe(3);
+
+		const again = { variants: asInput(variants, { cost: 382000 }) };
+		await updateProduct(payload, U1, product.id, input(again));
+		expect(payload.store.products[0].warrantyMonths).toBe(3);
+
+		await updateProduct(
+			payload,
+			U1,
+			product.id,
+			input({ ...again, warrantyMonths: null }),
+		);
+		expect(payload.store.products[0].warrantyMonths).toBeNull();
+
+		await expect(
+			updateProduct(
+				payload,
+				U1,
+				product.id,
+				input({ ...again, warrantyMonths: 61 }),
+			),
+		).rejects.toThrow();
 	});
 
 	it("unpublishes the listing when the product is archived", async () => {

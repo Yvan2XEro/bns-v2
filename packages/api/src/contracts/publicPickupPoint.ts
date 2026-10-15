@@ -1,7 +1,14 @@
 import type { ShopLocation } from "../payload-types";
 
-/** Keys of the shop's market cities it delivers to, in the market's order. */
-export type PublicDeliveryCities = { deliveryCities: string[] };
+/**
+ * Keys of the shop's market cities it delivers to, in the market's order.
+ * `deliveryFees` carries the cheapest and dearest base fee of the active zones
+ * reaching each of those cities (before any free-above threshold).
+ */
+export type PublicDeliveryCities = {
+	deliveryCities: string[];
+	deliveryFees: { city: string; minFee: number; maxFee: number }[];
+};
 
 export function deliveryCitiesRequest(shopId: string) {
 	return {

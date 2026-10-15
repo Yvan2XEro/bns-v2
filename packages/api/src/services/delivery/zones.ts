@@ -437,19 +437,35 @@ export async function publicDeliveryCities(
 		depth: 0,
 		overrideAccess: true,
 	});
-	const reached = new Set<string>();
+	const reached = new Map<string, { minFee: number; maxFee: number } | null>();
+	const reach = (city: string, fee: unknown) => {
+		const current = reached.get(city) ?? null;
+		if (typeof fee !== "number") {
+			if (!reached.has(city)) reached.set(city, null);
+			return;
+		}
+		reached.set(city, {
+			minFee: Math.min(current?.minFee ?? fee, fee),
+			maxFee: Math.max(current?.maxFee ?? fee, fee),
+		});
+	};
 	for (const zone of zones.docs) {
 		if (zone.scope === "intercity") {
-			for (const city of zone.destinationCities ?? []) reached.add(city);
+			for (const city of zone.destinationCities ?? []) reach(city, zone.fee);
 		} else {
-			reached.add(zone.city);
+			reach(zone.city, zone.fee);
 		}
 	}
 	const cities = await getShopMarketCities(payload, shop);
+	const deliveryCities = cities
+		.map((city) => city.key)
+		.filter((key) => reached.has(key));
 	return {
-		deliveryCities: cities
-			.map((city) => city.key)
-			.filter((key) => reached.has(key)),
+		deliveryCities,
+		deliveryFees: deliveryCities.flatMap((city) => {
+			const fees = reached.get(city);
+			return fees ? [{ city, ...fees }] : [];
+		}),
 	};
 }
 

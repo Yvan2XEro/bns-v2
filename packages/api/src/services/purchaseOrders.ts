@@ -1505,12 +1505,25 @@ export async function listShopPurchaseOrders(
 			if (!otherShopId) {
 				throw new ServiceError(ERROR_CODES.purchaseOrderNotFound, 404);
 			}
-			const otherShop = await payload.findByID({
-				collection: "shops",
-				id: otherShopId,
-				depth: 0,
-				overrideAccess: true,
-			});
+			const orderId = relationId(purchaseOrder.order);
+			const [otherShop, order] = await Promise.all([
+				payload.findByID({
+					collection: "shops",
+					id: otherShopId,
+					depth: 0,
+					overrideAccess: true,
+				}),
+				orderId
+					? payload
+							.findByID({
+								collection: "orders",
+								id: orderId,
+								depth: 0,
+								overrideAccess: true,
+							})
+							.catch(() => null)
+					: null,
+			]);
 			return {
 				id: String(purchaseOrder.id),
 				number: purchaseOrder.number,
@@ -1531,6 +1544,10 @@ export async function listShopPurchaseOrders(
 				supplierAmount: can(role, "payments.view")
 					? purchaseOrder.supplierAmount
 					: null,
+				deliveryArea: {
+					district: order?.delivery?.district ?? null,
+					city: order?.delivery?.city ?? null,
+				},
 			};
 		}),
 	);

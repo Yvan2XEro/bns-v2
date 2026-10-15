@@ -995,7 +995,7 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 		});
 	});
 
-	it("adds the three triage fields, and only those, for a shop queue", () => {
+	it("adds the triage fields, and only those, for a shop queue", () => {
 		expect(serializeOrderListEntry(makeOrder(), listRow(), "shop")).toEqual({
 			id: "o-1",
 			orderNumber: "ORD-2026-01-0001",
@@ -1010,6 +1010,51 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 			recipientName: "Alice Mbarga",
 			acceptBy: ACCEPT_BY,
 			phoneTier: "regular",
+			paymentMethod: "cod",
+			paymentStatus: "cod_pending",
+			area: { district: "Akwa", city: "Douala" },
+			resale: null,
+			hasShipment: false,
+		});
+	});
+
+	it("names the supplier and the purchase order of a resold line", () => {
+		const row = serializeOrderListEntry(
+			makeOrder(),
+			listRow({
+				resale: { purchaseOrderNumber: "PO-2609-0404", supplierName: "Mboppi" },
+			}),
+			"shop",
+		);
+		expect(row.resale).toEqual({
+			purchaseOrderNumber: "PO-2609-0404",
+			supplierName: "Mboppi",
+		});
+	});
+
+	it('prefers the free-text district, and drops the bare "other" key', () => {
+		const base = makeOrder();
+		const other = makeOrder({
+			delivery: {
+				...base.delivery,
+				district: "douala.other",
+				districtOther: "Ndogbong",
+			},
+		});
+		expect(serializeOrderListEntry(other, listRow(), "shop").area).toEqual({
+			district: "Ndogbong",
+			city: "Douala",
+		});
+		const blank = makeOrder({
+			delivery: {
+				...base.delivery,
+				district: "douala.other",
+				districtOther: null,
+			},
+		});
+		expect(serializeOrderListEntry(blank, listRow(), "shop").area).toEqual({
+			district: null,
+			city: "Douala",
 		});
 	});
 
@@ -1018,6 +1063,9 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 		expect("recipientName" in row).toBe(false);
 		expect("acceptBy" in row).toBe(false);
 		expect("phoneTier" in row).toBe(false);
+		expect("paymentMethod" in row).toBe(false);
+		expect("area" in row).toBe(false);
+		expect("resale" in row).toBe(false);
 		expect(row.shopName).toBe("Boutique Wax");
 	});
 
@@ -1049,5 +1097,53 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 			"buyer",
 		);
 		expect(row.placedAt).toBe(UPDATED_AT);
+	});
+
+	it("gives a buyer's row the order page's own action fields and the delivery promise, never the address", () => {
+		const order = makeOrder({
+			delivery: {
+				...makeOrder().delivery,
+				promisedBy: "2026-01-12T17:00:00.000Z",
+			},
+		});
+		const row = serializeOrderListEntry(order, listRow(), "buyer", {
+			returnCaseNumber: "RET-2026-01-0007",
+			buyerHasReviewedShop: false,
+		});
+		const page = serializeOrderForBuyer(order, sources());
+		expect(row.actionSubject).toEqual({
+			confirmation: page.confirmation,
+			handover: page.handover,
+			deadlines: page.deadlines,
+			deliveryFailure: page.deliveryFailure,
+			completionHold: page.completionHold,
+			returnCaseNumber: page.returnCaseNumber,
+			reviewable: page.reviewable,
+		});
+		expect(row.arrival).toEqual({
+			method: "pickup",
+			etaText: "24-48h",
+			promisedBy: "2026-01-12T17:00:00.000Z",
+		});
+		expect(findHashLeak(row)).toBeNull();
+		expect(JSON.stringify(row).includes("+237600000012")).toBe(false);
+		expect(JSON.stringify(row).includes("Blue gate")).toBe(false);
+	});
+
+	it("reads an already-reviewed shop as not reviewable on a buyer's row", () => {
+		const row = serializeOrderListEntry(makeOrder(), listRow(), "buyer", {
+			returnCaseNumber: null,
+			buyerHasReviewedShop: true,
+		});
+		expect(row.actionSubject?.reviewable).toBe(false);
+	});
+
+	it("never adds the buyer's action fields to a shop queue row", () => {
+		const row = serializeOrderListEntry(makeOrder(), listRow(), "shop", {
+			returnCaseNumber: null,
+			buyerHasReviewedShop: false,
+		});
+		expect("actionSubject" in row).toBe(false);
+		expect("arrival" in row).toBe(false);
 	});
 });

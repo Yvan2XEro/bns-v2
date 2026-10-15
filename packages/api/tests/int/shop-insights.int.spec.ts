@@ -265,4 +265,124 @@ describe("getShopInsights", () => {
 			),
 		).rejects.toMatchObject({ status: 403 });
 	});
+	it("adds eight weekly windows, acceptance time, dormant stock and the action thresholds", async () => {
+		const payload = fakePayload(
+			{
+				shops: [{ id: "shop-1", owner: "owner-1", status: "active", level: 2 }],
+				"shop-members": [
+					{
+						id: "member-1",
+						shop: "shop-1",
+						user: "owner-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [
+					{ id: "p-sold", shop: "shop-1", title: "Sold", status: "active" },
+					{ id: "p-idle", shop: "shop-1", title: "Idle", status: "active" },
+				],
+				"product-variants": [
+					{
+						id: "v-sold",
+						shop: "shop-1",
+						product: "p-sold",
+						trackInventory: true,
+						stockOnHand: 4,
+						stockReserved: 0,
+						cost: 1000,
+					},
+					{
+						id: "v-idle",
+						shop: "shop-1",
+						product: "p-idle",
+						trackInventory: true,
+						stockOnHand: 3,
+						stockReserved: 0,
+						cost: 5000,
+					},
+				],
+				orders: [
+					{
+						id: "o-1",
+						shop: "shop-1",
+						createdAt: "2026-10-02T08:00:00.000Z",
+						timestamps: {
+							placedAt: "2026-10-02T08:00:00.000Z",
+							acceptedAt: "2026-10-02T08:30:00.000Z",
+						},
+					},
+					{
+						id: "o-2",
+						shop: "shop-1",
+						createdAt: "2026-10-03T08:00:00.000Z",
+						timestamps: {
+							placedAt: "2026-10-03T08:00:00.000Z",
+							acceptedAt: "2026-10-03T09:30:00.000Z",
+						},
+					},
+				],
+				"shop-daily-stats": [
+					{
+						id: "today",
+						shop: "shop-1",
+						date: "2026-10-04",
+						gmvDelivered: 2000,
+						ordersDelivered: 1,
+						topProducts: [{ product: "p-sold", unitsDelivered: 1 }],
+					},
+					{
+						id: "seven-weeks-ago",
+						shop: "shop-1",
+						date: "2026-08-16",
+						gmvDelivered: 7000,
+						ordersDelivered: 2,
+					},
+					{
+						id: "too-old",
+						shop: "shop-1",
+						date: "2026-08-01",
+						gmvDelivered: 99000,
+						ordersDelivered: 9,
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: true } } } },
+		);
+
+		const result = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+
+		expect(result.weekly).toHaveLength(8);
+		expect(result.weekly?.[0]).toEqual({
+			from: "2026-08-10",
+			to: "2026-08-16",
+			gmvDelivered: 7000,
+			ordersDelivered: 2,
+		});
+		expect(result.weekly?.[7]).toMatchObject({
+			to: "2026-10-04",
+			gmvDelivered: 2000,
+		});
+		expect(result.totals.previous.gmvDelivered).toBe(0);
+		expect(result.acceptance).toEqual({ medianMinutes: 60, sample: 2 });
+		expect(result.thresholds).toEqual({
+			sellerCancellation: 0.1,
+			codRefusal: 0.2,
+		});
+		expect(result.stock.dormant).toEqual([
+			{
+				productId: "p-idle",
+				productTitle: "Idle",
+				available: 3,
+				costValue: 15000,
+			},
+		]);
+		expect(result.stock.dormantValue).toBe(15000);
+	});
 });

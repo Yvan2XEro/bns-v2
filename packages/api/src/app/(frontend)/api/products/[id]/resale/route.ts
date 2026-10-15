@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
-import { updateSupplierResaleSettings } from "@/services/resaleSupplier";
+import {
+	getSupplierResaleSettings,
+	updateSupplierResaleSettings,
+} from "@/services/resaleSupplier";
 
 const bodySchema = z.object({
 	enabled: z.boolean(),
@@ -21,6 +24,27 @@ const bodySchema = z.object({
 		)
 		.min(1),
 });
+
+export async function GET(
+	request: Request,
+	{ params }: { params: Promise<{ id: string }> },
+) {
+	const required = await requireUser(request);
+	if (required instanceof Response) return required;
+	const { id } = await params;
+	try {
+		const view = await getSupplierResaleSettings(
+			required.payload,
+			required.user,
+			id,
+		);
+		return Response.json(view, {
+			headers: { "Cache-Control": "private, no-store" },
+		});
+	} catch (error) {
+		return handleServiceError("resale:get-supplier-settings", error);
+	}
+}
 
 export async function PATCH(
 	request: Request,

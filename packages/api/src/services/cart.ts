@@ -18,6 +18,7 @@ import {
 import { getOrderSettings, type OrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
+import { shopCapabilities } from "../lib/shopCapabilities";
 import { type TxReq, withTransaction } from "../lib/transactions";
 import { availableOf, variantLabel } from "../lib/variants";
 import type { Cart, Listing, ProductVariant, Shop } from "../payload-types";
@@ -385,6 +386,7 @@ async function revalidateCart(
 			lineSubtotal: unitPrice * item.quantity,
 			available,
 			maxQuantity,
+			stockLeft: maxQuantity,
 			unavailableCode,
 			fulfillingShopId:
 				relationId(listing?.resale?.supplierShop) ?? shopId ?? "",
@@ -412,6 +414,43 @@ function toLineView(line: CartLineState): CartLineView {
 		lineSubtotal: line.lineSubtotal,
 		available: line.available,
 		maxQuantity: line.maxQuantity,
+		stockLeft: line.stockLeft ?? null,
+	};
+}
+
+/**
+ * What the cart's shop header shows beyond the name: logo, verification badge
+ * and rating. `loadShop` reads at depth 0, so a logo still stored as an id is
+ * resolved here rather than deepening every orderability read.
+ */
+async function shopHeaderOf(
+	payload: Payload,
+	shop: Shop | null,
+	req?: TxReq,
+): Promise<
+	Pick<CartShopView, "logoUrl" | "badge" | "rating" | "totalReviews">
+> {
+	if (!shop) return { logoUrl: null, badge: null, rating: 0, totalReviews: 0 };
+	let logoUrl: string | null = null;
+	if (shop.logo && typeof shop.logo === "object") {
+		logoUrl = shop.logo.url ?? null;
+	} else if (typeof shop.logo === "string") {
+		const media = await payload
+			.findByID({
+				collection: "media",
+				id: shop.logo,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+			.catch(() => null);
+		logoUrl = media?.url ?? null;
+	}
+	return {
+		logoUrl,
+		badge: shopCapabilities(shop).badge,
+		rating: shop.rating ?? 0,
+		totalReviews: shop.totalReviews ?? 0,
 	};
 }
 
@@ -436,6 +475,7 @@ async function toCartView(
 					handle: shop.handle,
 					city:
 						launchCityKeyOf(shop.location?.city) ?? shop.location?.city ?? null,
+					...(await shopHeaderOf(payload, shop, req)),
 				}
 			: null,
 		lines: lines.map(toLineView),
@@ -484,13 +524,14 @@ async function toSplitCartView(
 					line.fulfillingShopId,
 					await loadShop(payload, line.fulfillingShopId, req),
 				);
+			const fulfilling = shops.get(line.fulfillingShopId) ?? null;
 			group = {
 				groupKey: key,
 				storefrontShop: summaryOf(shops.get(line.shopId) ?? null, line.shopId),
-				fulfillingShop: summaryOf(
-					shops.get(line.fulfillingShopId) ?? null,
-					line.fulfillingShopId,
-				),
+				fulfillingShop: {
+					...summaryOf(fulfilling, line.fulfillingShopId),
+					...(await shopHeaderOf(payload, fulfilling, req)),
+				},
 				resale,
 				items: [],
 				subtotal: 0,

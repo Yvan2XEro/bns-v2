@@ -52,6 +52,12 @@ export interface SellerPayoutRow {
 	fee: number;
 	destinationMasked: string;
 	status: string;
+	/** Summed off the orders the payout carries (`order.amounts`). */
+	orderCount: number;
+	commissionHt: number;
+	vat: number;
+	/** `amount` plus the commission and VAT taken before it was sent. */
+	gross: number;
 }
 
 /** `GET /api/shops/{id}/payments/payouts/{payoutId}`. */
@@ -128,10 +134,50 @@ async function maskedDestinations(
 	);
 }
 
+type CommissionByOrder = Map<string, { commission: number; vat: number }>;
+
+async function commissionByOrder(
+	req: PayloadRequest,
+	payouts: readonly Payout[],
+): Promise<CommissionByOrder> {
+	const ids = [
+		...new Set(
+			payouts.flatMap((p) => (p.orders ?? []).map((line) => idOf(line.order))),
+		),
+	].filter(Boolean);
+	if (ids.length === 0) return new Map();
+	const { docs } = await req.payload.find({
+		collection: "orders",
+		where: { id: { in: ids } },
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	return new Map(
+		docs.map((order) => [
+			String(order.id),
+			{
+				commission: order.amounts?.commission ?? 0,
+				vat: order.amounts?.commissionVat ?? 0,
+			},
+		]),
+	);
+}
+
 function payoutRow(
 	payout: Payout,
 	destinations: Map<string, string>,
+	commissions: CommissionByOrder,
 ): SellerPayoutRow {
+	const lines = payout.orders ?? [];
+	let commissionHt = 0;
+	let vat = 0;
+	for (const line of lines) {
+		const entry = commissions.get(idOf(line.order));
+		commissionHt += entry?.commission ?? 0;
+		vat += entry?.vat ?? 0;
+	}
 	return {
 		id: String(payout.id),
 		date: payout.createdAt,
@@ -139,6 +185,10 @@ function payoutRow(
 		fee: payout.fee ?? 0,
 		destinationMasked: destinations.get(idOf(payout.payoutAccount)) ?? "",
 		status: payout.status,
+		orderCount: lines.length,
+		commissionHt,
+		vat,
+		gross: payout.amount + commissionHt + vat,
 	};
 }
 
@@ -253,6 +303,7 @@ export async function sellerPaymentsView(
 
 		const listed = payouts.slice(0, SELLER_PAYMENTS_LIST_LIMIT);
 		const destinations = await maskedDestinations(req, listed);
+		const commissions = await commissionByOrder(req, listed);
 		const recentBalances = await balancesByOrder(
 			req,
 			recent.map((o) => String(o.id)),
@@ -267,7 +318,7 @@ export async function sellerPaymentsView(
 				paidThisMonth,
 				currency,
 			},
-			payouts: listed.map((p) => payoutRow(p, destinations)),
+			payouts: listed.map((p) => payoutRow(p, destinations, commissions)),
 			orders: recent.map((order) => ({
 				orderId: String(order.id),
 				orderNumber: order.orderNumber,
@@ -330,7 +381,11 @@ export async function sellerPayoutDetail(
 		const numbers = new Map(orders.map((o) => [String(o.id), o.orderNumber]));
 
 		return {
-			...payoutRow(payout, await maskedDestinations(req, [payout])),
+			...payoutRow(
+				payout,
+				await maskedDestinations(req, [payout]),
+				await commissionByOrder(req, [payout]),
+			),
 			currency: payout.currency,
 			orders: lines.map((line) => ({
 				orderId: idOf(line.order),

@@ -141,6 +141,7 @@ describe("P7 delivery zones", () => {
 					shop: shop.id,
 					scope: "same_city",
 					city: "douala",
+					fee: 2000,
 					active: true,
 				},
 				{
@@ -149,6 +150,16 @@ describe("P7 delivery zones", () => {
 					scope: "intercity",
 					city: "douala",
 					destinationCities: ["yaounde"],
+					fee: 3500,
+					active: true,
+				},
+				{
+					id: "z2b",
+					shop: shop.id,
+					scope: "intercity",
+					city: "douala",
+					destinationCities: ["yaounde"],
+					fee: 4000,
 					active: true,
 				},
 				{
@@ -162,6 +173,10 @@ describe("P7 delivery zones", () => {
 		});
 		await expect(publicDeliveryCities(payload, shop.id)).resolves.toEqual({
 			deliveryCities: ["douala", "yaounde"],
+			deliveryFees: [
+				{ city: "douala", minFee: 2000, maxFee: 2000 },
+				{ city: "yaounde", minFee: 3500, maxFee: 4000 },
+			],
 		});
 		await expect(
 			publicDeliveryCities(payload, "shop-closed"),
@@ -186,6 +201,7 @@ describe("P7 delivery zones", () => {
 		});
 		await expect(publicDeliveryCities(payload, shop.id)).resolves.toEqual({
 			deliveryCities: [],
+			deliveryFees: [],
 		});
 	});
 });

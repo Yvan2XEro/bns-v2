@@ -1,11 +1,16 @@
 import type { Payload } from "payload";
-import type { SupplierResaleProduct } from "../contracts/resale";
+import type {
+	SupplierResaleProduct,
+	SupplierResaleSettingsView,
+} from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
+import { getOrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
+import { availableOf, variantLabel } from "../lib/variants";
 import type { ProductVariant } from "../payload-types";
 import {
 	hasAcceptedCurrentResaleTerms,
@@ -150,9 +155,13 @@ export async function listSupplierResaleProducts(
 			resellerCount: product.resale?.resellerCount ?? 0,
 			unitsDelivered30d,
 			pendingEffectiveAt: product.resale?.pendingChange?.effectiveAt ?? null,
+			approvalRequired: product.resale?.approvalRequired === true,
+			handlingHours: product.resale?.handlingHours ?? null,
+			codAccepted: product.resale?.codAccepted === true,
 			variants: variantsForProduct.map((variant) => ({
 				id: String(variant.id),
 				sku: variant.sku ?? null,
+				stock: variant.trackInventory ? availableOf(variant) : null,
 				supplierPrice: variant.resale?.supplierPrice ?? null,
 				minRetailPrice: variant.resale?.minRetailPrice ?? null,
 				suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
@@ -160,6 +169,116 @@ export async function listSupplierResaleProducts(
 			})),
 		};
 	});
+}
+
+/** What the product resale editor reads; open to a shop that cannot supply yet so the page can say why. */
+export async function getSupplierResaleSettings(
+	payload: Payload,
+	user: ServiceUser,
+	productId: string,
+	now = new Date(),
+): Promise<SupplierResaleSettingsView> {
+	const settings = await getResaleSettings(payload);
+	if (!settings.enabled)
+		throw new ServiceError(ERROR_CODES.resaleDisabled, 404);
+	const product = await payload
+		.findByID({
+			collection: "products",
+			id: productId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	const shopId = relationId(product?.shop);
+	if (!product || !shopId) throw new ServiceError(ERROR_CODES.notFound, 404);
+	const { shop } = await requireShopPermission(
+		payload,
+		user,
+		shopId,
+		"resale.manage",
+	);
+	const [variants, listings, requests, termsAccepted, orderSettings] =
+		await Promise.all([
+			payload.find({
+				collection: "product-variants",
+				where: {
+					and: [
+						{ product: { equals: productId } },
+						{ archivedAt: { exists: false } },
+					],
+				},
+				limit: 0,
+				pagination: false,
+				depth: 0,
+				overrideAccess: true,
+			}),
+			payload.find({
+				collection: "listings",
+				where: {
+					and: [
+						{ product: { equals: productId } },
+						{ "resale.supplierShop": { equals: shopId } },
+					],
+				},
+				limit: 0,
+				pagination: false,
+				depth: 0,
+				overrideAccess: true,
+			}),
+			payload.find({
+				collection: "resale-links",
+				where: {
+					and: [
+						{ supplierShop: { equals: shopId } },
+						{ status: { equals: "requested" } },
+					],
+				},
+				limit: 0,
+				pagination: false,
+				depth: 0,
+				overrideAccess: true,
+			}),
+			hasAcceptedCurrentResaleTerms(payload, shopId, "supplier"),
+			getOrderSettings(payload),
+		]);
+	const resellerPrices = listings.docs.flatMap((listing) =>
+		(listing.resale?.prices ?? []).map((row) => row.price),
+	);
+	const resale = product.resale ?? {};
+	return {
+		productId: String(product.id),
+		title: product.title,
+		eligible: shopCapabilities(shop, now).supplier,
+		termsAccepted,
+		enabled: resale.enabled === true,
+		approvalRequired: resale.approvalRequired === true,
+		handlingHours: resale.handlingHours ?? 24,
+		codAccepted: resale.codAccepted === true,
+		resellerNotes: resale.resellerNotes ?? "",
+		enabledAt: resale.enabledAt ?? null,
+		resellerCount: resale.resellerCount ?? 0,
+		pendingEffectiveAt: resale.pendingChange?.effectiveAt ?? null,
+		pendingRequests: requests.docs.length,
+		commissionRateBps: orderSettings.defaultCommissionRateBps,
+		resellerPriceRange:
+			resellerPrices.length > 0
+				? {
+						min: Math.min(...resellerPrices),
+						max: Math.max(...resellerPrices),
+					}
+				: null,
+		variants: variants.docs.map((variant) => ({
+			id: String(variant.id),
+			label: variantLabel(variant.optionValues) || null,
+			sku: variant.sku ?? null,
+			price: variant.price,
+			stock: variant.trackInventory ? availableOf(variant) : null,
+			enabled: variant.resale?.enabled === true,
+			supplierPrice: variant.resale?.supplierPrice ?? null,
+			minRetailPrice: variant.resale?.minRetailPrice ?? null,
+			suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
+		})),
+	};
 }
 
 export async function updateSupplierResaleSettings(
@@ -245,9 +364,13 @@ export async function updateSupplierResaleSettings(
 					scheduled?.supplierPrice ?? currentResale.supplierPrice ?? 0;
 				const baselineMinimum =
 					scheduled?.minRetailPrice ?? currentResale.minRetailPrice ?? 0;
+				// A first price has no reseller to warn, so only a raise waits out the notice.
+				const firstPricing =
+					!scheduled && typeof currentResale.supplierPrice !== "number";
 				const deferred =
-					change.supplierPrice > baselineSupplier ||
-					change.minRetailPrice > baselineMinimum;
+					!firstPricing &&
+					(change.supplierPrice > baselineSupplier ||
+						change.minRetailPrice > baselineMinimum);
 				if (deferred) {
 					nextPending.set(change.id, {
 						variant: change.id,

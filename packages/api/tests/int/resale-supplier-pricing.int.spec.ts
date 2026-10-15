@@ -123,6 +123,47 @@ describe("supplier resale pricing", () => {
 		});
 	});
 
+	it("applies a variant's first resale prices immediately", async () => {
+		const payload = world();
+		const variant = payload.store["product-variants"]?.[0] as {
+			resale?: Record<string, unknown>;
+		};
+		variant.resale = { enabled: false };
+		await updateSupplierResaleSettings(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"product-1",
+			{
+				enabled: true,
+				approvalRequired: false,
+				handlingHours: 24,
+				codAccepted: true,
+				resellerNotes: "",
+				variants: [
+					{
+						id: "variant-1",
+						enabled: true,
+						supplierPrice: 120,
+						minRetailPrice: 220,
+						suggestedRetailPrice: 350,
+					},
+				],
+			},
+			NOW,
+		);
+
+		expect(payload.store["product-variants"]?.[0]?.resale).toMatchObject({
+			enabled: true,
+			supplierPrice: 120,
+			minRetailPrice: 220,
+			suggestedRetailPrice: 350,
+		});
+		expect(
+			(await payload.findByID({ collection: "products", id: "product-1" }))
+				.resale?.pendingChange,
+		).toMatchObject({ effectiveAt: null, variants: [] });
+	});
+
 	it("applies due increases once and holds reseller prices below the new minimum", async () => {
 		const payload = world();
 		await updateSupplierResaleSettings(

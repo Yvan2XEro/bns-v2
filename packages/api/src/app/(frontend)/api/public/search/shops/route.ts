@@ -1,16 +1,40 @@
 import config from "@payload-config";
 import { MeiliSearch } from "meilisearch";
 import { getPayload, type Where } from "payload";
-import { activeShopIds } from "@/lib/activeShopIds";
+import { categoryWithDescendants } from "@/lib/categoryDescendants";
 import { quoteFilterValue } from "@/lib/meiliFilter";
-import { toShopSearchHit } from "@/lib/publicShop";
+import { type ShopSearchHit, toShopSearchHit } from "@/lib/publicShop";
+import { shopCapabilities } from "@/lib/shopCapabilities";
+import {
+	liveShopHits,
+	MAX_SHOP_PREVIEWS,
+	withShopPreviews,
+} from "@/lib/shopSearchCards";
+
+type ShopSort = "relevance" | "products" | "newest";
 
 interface ShopSearchParams {
 	q: string;
 	city: string | null;
-	category: string | null;
+	/** The category and its descendants. */
+	categoryIds: string[] | null;
+	minShopLevel: number | null;
+	sort: ShopSort;
+	previews: number;
 	limit: number;
 	offset: number;
+}
+
+function parseSort(value: string | null): ShopSort {
+	return value === "products" || value === "newest" ? value : "relevance";
+}
+
+async function finishHits(
+	hits: ShopSearchHit[],
+	previews: number,
+): Promise<ShopSearchHit[]> {
+	if (previews === 0 || hits.length === 0) return hits;
+	return withShopPreviews(await getPayload({ config }), hits, previews);
 }
 
 /**
@@ -22,7 +46,8 @@ interface ShopSearchParams {
 async function runPayloadShopSearch(
 	params: ShopSearchParams,
 ): Promise<Response> {
-	const { q, city, category, limit, offset } = params;
+	const { q, city, categoryIds, minShopLevel, sort, previews, limit, offset } =
+		params;
 	const payload = await getPayload({ config });
 	const and: Where[] = [{ status: { equals: "active" } }];
 	if (q) {
@@ -35,17 +60,27 @@ async function runPayloadShopSearch(
 		});
 	}
 	if (city) and.push({ "location.city": { equals: city } });
-	if (category) and.push({ categories: { in: [category] } });
+	if (categoryIds) and.push({ categories: { in: categoryIds } });
+	if (minShopLevel) and.push({ level: { greater_than_equal: minShopLevel } });
 	const result = await payload.find({
 		collection: "shops",
 		where: { and },
 		depth: 1,
 		limit,
 		page: Math.floor(offset / limit) + 1,
-		sort: "-publishedListingCount",
+		sort: sort === "newest" ? "-createdAt" : "-publishedListingCount",
 	});
+	// The stored level can outlive its expiry; the badge floor is the effective one.
+	const docs = minShopLevel
+		? result.docs.filter(
+				(doc) => shopCapabilities(doc).effectiveLevel >= minShopLevel,
+			)
+		: result.docs;
 	return Response.json({
-		hits: result.docs.map((doc) => toShopSearchHit(doc)),
+		hits: await finishHits(
+			docs.map((doc) => toShopSearchHit(doc)),
+			previews,
+		),
 		total: result.totalDocs,
 		limit,
 		offset,
@@ -71,7 +106,24 @@ export async function GET(request: Request) {
 	);
 	const minShopLevel =
 		minShopLevelParam >= 1 && minShopLevelParam <= 3 ? minShopLevelParam : null;
-	const params: ShopSearchParams = { q, city, category, limit, offset };
+	const sort = parseSort(search.get("sort"));
+	const previews = Math.min(
+		MAX_SHOP_PREVIEWS,
+		Math.max(0, Number.parseInt(search.get("previews") ?? "0", 10) || 0),
+	);
+	const categoryIds = category
+		? await categoryWithDescendants(await getPayload({ config }), category)
+		: null;
+	const params: ShopSearchParams = {
+		q,
+		city,
+		categoryIds,
+		minShopLevel,
+		sort,
+		previews,
+		limit,
+		offset,
+	};
 
 	const host = process.env.MEILI_HOST;
 	if (!host) {
@@ -80,7 +132,13 @@ export async function GET(request: Request) {
 
 	const filters: string[] = [];
 	if (city) filters.push(`city = ${quoteFilterValue(city)}`);
-	if (category) filters.push(`categoryIds = ${quoteFilterValue(category)}`);
+	if (categoryIds) {
+		filters.push(
+			categoryIds.length > 1
+				? `categoryIds IN [${categoryIds.map(quoteFilterValue).join(", ")}]`
+				: `categoryIds = ${quoteFilterValue(categoryIds[0])}`,
+		);
+	}
 	if (minShopLevel) filters.push(`level >= ${minShopLevel}`);
 
 	try {
@@ -90,7 +148,12 @@ export async function GET(request: Request) {
 		}).index("shops");
 		const result = await index.search(q, {
 			filter: filters.length ? filters.join(" AND ") : undefined,
-			sort: q ? undefined : ["publishedListingCount:desc"],
+			sort:
+				sort === "newest"
+					? ["createdAt:desc"]
+					: sort === "products" || !q
+						? ["publishedListingCount:desc"]
+						: undefined,
 			limit,
 			offset,
 		});
@@ -100,23 +163,15 @@ export async function GET(request: Request) {
 		// retries a dropped publish, and the bulk reindex runs on no schedule),
 		// so a page of hits gets one live status check before it goes out —
 		// dropped here rather than blanked, since the hit *is* the shop record.
-		const ids = result.hits
-			.map((hit) => (hit as { id?: unknown }).id)
-			.filter((id): id is string => typeof id === "string");
-		const active =
-			ids.length > 0
-				? await activeShopIds(await getPayload({ config }), ids)
-				: null;
-		const hits = (
-			active
-				? result.hits.filter((hit) =>
-						active.has(String((hit as { id?: unknown }).id)),
-					)
-				: result.hits
-		).map((hit) => toShopSearchHit(hit));
+		// The same read re-applies `minShopLevel` against the live level.
+		const hits = await liveShopHits(
+			await getPayload({ config }),
+			result.hits.map((hit) => toShopSearchHit(hit)),
+			minShopLevel,
+		);
 
 		return Response.json({
-			hits,
+			hits: await finishHits(hits, previews),
 			total: result.estimatedTotalHits ?? result.hits.length,
 			limit,
 			offset,

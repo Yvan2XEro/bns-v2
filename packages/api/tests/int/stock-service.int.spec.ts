@@ -359,6 +359,7 @@ describe("reads", () => {
 			unitsOnHand: 1,
 			unitsReserved: 0,
 			trackedVariants: 1,
+			trackedProducts: 1,
 		});
 		expect(summary.lowStock).toEqual([
 			{

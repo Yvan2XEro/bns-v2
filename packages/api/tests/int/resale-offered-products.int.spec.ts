@@ -108,10 +108,14 @@ describe("supplier offered resale products", () => {
 				resellerCount: 4,
 				unitsDelivered30d: 3,
 				pendingEffectiveAt: "2026-10-06T00:00:00.000Z",
+				approvalRequired: false,
+				handlingHours: null,
+				codAccepted: false,
 				variants: [
 					{
 						id: "variant",
 						sku: "L-1",
+						stock: null,
 						supplierPrice: 100,
 						minRetailPrice: 150,
 						suggestedRetailPrice: 200,

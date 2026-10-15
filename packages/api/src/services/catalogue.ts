@@ -1,11 +1,17 @@
 import type { Payload } from "payload";
 import { can } from "../access/shopRoles";
 import { NOT_ARCHIVED, PUBLIC_VARIANTS } from "../collections/ProductVariants";
+import type {
+	CatalogueProvenance,
+	CatalogueSort,
+} from "../contracts/catalogue";
+import { categoryWithDescendants } from "../lib/categoryDescendants";
 import { ERROR_CODES } from "../lib/errors";
 import { type MediaRef, toMediaRef } from "../lib/publicShop";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
 import {
+	availableOf,
 	isLowStock,
 	isOutOfStock,
 	redactManagerOnlyFields,
@@ -33,6 +39,18 @@ export interface CatalogueRow {
 	listingId: string | null;
 	listingStatus: string | null;
 	updatedAt: string;
+	/** "own": the shop's product and stock; "resale": a resale listing of a supplier's product. */
+	provenance: "own" | "resale";
+	supplier: { id: string; name: string } | null;
+	/**
+	 * Resale rows only: whether the supplier can still ship it. Never a unit
+	 * count — the supplier's stock level is the supplier's data.
+	 */
+	supplierAvailable: boolean | null;
+	skus: string[];
+	categoryId: string | null;
+	/** The variant a one-click stock adjustment targets, when there is exactly one. */
+	singleVariantId: string | null;
 }
 
 function toRow(
@@ -59,7 +77,115 @@ function toRow(
 		listingId: relationId(product.listing),
 		listingStatus,
 		updatedAt: String(product.updatedAt ?? ""),
+		provenance: "own",
+		supplier: null,
+		supplierAvailable: null,
+		skus: variants
+			.map((v) => v.sku)
+			.filter((sku): sku is string => Boolean(sku)),
+		categoryId: relationId(product.category),
+		singleVariantId: variants.length === 1 ? String(variants[0].id) : null,
 	};
+}
+
+/**
+ * A resale listing sits in the reseller's catalogue without a product of its
+ * own: its status, prices and availability come from the listing the resale
+ * service maintains.
+ */
+function toResaleRow(
+	listing: Listing,
+	supplierName: string | null,
+): CatalogueRow {
+	const prices = (listing.resale?.prices ?? [])
+		.map((entry) => Number(entry.price))
+		.filter((price) => Number.isFinite(price));
+	const supplierId = relationId(listing.resale?.supplierShop) ?? "";
+	const supplierAvailable = listing.productSummary?.available === true;
+	return {
+		id: String(listing.id),
+		title: String(listing.title),
+		status: listing.status === "published" ? "active" : "draft",
+		image: toMediaRef(listing.images?.[0]?.image),
+		variantCount: Number(listing.productSummary?.variantCount ?? prices.length),
+		priceMin: prices.length ? Math.min(...prices) : null,
+		priceMax: prices.length ? Math.max(...prices) : null,
+		stockOnHand: 0,
+		available: 0,
+		trackInventory: false,
+		lowStock: false,
+		outOfStock: !supplierAvailable,
+		sku: null,
+		listingId: String(listing.id),
+		listingStatus: String(listing.status),
+		updatedAt: String(listing.updatedAt ?? ""),
+		provenance: "resale",
+		supplier: { id: supplierId, name: supplierName ?? "" },
+		supplierAvailable,
+		skus: [],
+		categoryId: relationId(listing.category),
+		singleVariantId: null,
+	};
+}
+
+function compareRows(sort: CatalogueSort) {
+	return (a: CatalogueRow, b: CatalogueRow): number => {
+		if (sort === "title") return a.title.localeCompare(b.title);
+		if (sort === "price")
+			return (
+				(a.priceMin ?? Number.MAX_SAFE_INTEGER) -
+				(b.priceMin ?? Number.MAX_SAFE_INTEGER)
+			);
+		if (sort === "stock") return a.available - b.available;
+		return (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0);
+	};
+}
+
+async function resaleRows(
+	payload: Payload,
+	shopId: string,
+): Promise<CatalogueRow[]> {
+	const listings = (
+		await payload.find({
+			collection: "listings",
+			where: {
+				and: [
+					{ shop: { equals: shopId } },
+					{ status: { not_in: ["deleted"] } },
+				],
+			},
+			depth: 1,
+			limit: 0,
+			pagination: false,
+			overrideAccess: true,
+		})
+	).docs.filter((listing) => relationId(listing.resale?.supplierShop));
+	const supplierIds = [
+		...new Set(
+			listings
+				.map((listing) => relationId(listing.resale?.supplierShop))
+				.filter((id): id is string => Boolean(id)),
+		),
+	];
+	const suppliers = supplierIds.length
+		? (
+				await payload.find({
+					collection: "shops",
+					where: { id: { in: supplierIds } },
+					depth: 0,
+					limit: 0,
+					pagination: false,
+					overrideAccess: true,
+				})
+			).docs
+		: [];
+	const names = new Map(suppliers.map((s) => [String(s.id), String(s.name)]));
+	return listings.map((listing) =>
+		toResaleRow(
+			listing,
+			names.get(relationId(listing.resale?.supplierShop) ?? "") ?? null,
+		),
+	);
 }
 
 export async function listCatalogue(
@@ -72,9 +198,14 @@ export async function listCatalogue(
 		q?: string | null;
 		page?: number;
 		limit?: number;
+		category?: string | null;
+		sort?: CatalogueSort | null;
+		/** Defaults to "own": the catalogue read before resale rows existed. */
+		provenance?: CatalogueProvenance | null;
 	},
 ) {
-	await requireShopMember(payload, user, shopId);
+	const { role } = await requireShopMember(payload, user, shopId);
+	const provenance = query.provenance ?? "own";
 
 	const [products, variants] = await Promise.all([
 		payload.find({
@@ -120,13 +251,25 @@ export async function listCatalogue(
 		listings.docs.map((l) => [String(l.id), String(l.status)]),
 	);
 
-	const rows = products.docs.map((p) =>
+	const ownRows = products.docs.map((p) =>
 		toRow(
 			p,
 			byProduct.get(String(p.id)) ?? [],
 			listingStatus.get(relationId(p.listing) ?? "") ?? null,
 		),
 	);
+	// Supplier names and resale prices are resale-manager data, like the
+	// product's own resale settings.
+	const resale =
+		provenance !== "own" && can(role, "resale.manage")
+			? await resaleRows(payload, shopId)
+			: [];
+	const rows =
+		provenance === "resale"
+			? resale
+			: provenance === "any"
+				? [...ownRows, ...resale]
+				: ownRows;
 	const counts = {
 		all: rows.length,
 		active: rows.filter((r) => r.status === "active").length,
@@ -134,10 +277,15 @@ export async function listCatalogue(
 		archived: rows.filter((r) => r.status === "archived").length,
 		low: rows.filter((r) => r.lowStock).length,
 		out: rows.filter((r) => r.outOfStock).length,
+		resale: resale.length,
 	};
 
+	const categories = query.category
+		? new Set(await categoryWithDescendants(payload, query.category))
+		: null;
 	const q = query.q?.trim().toLowerCase() ?? "";
 	const filtered = rows.filter((row) => {
+		if (categories && !categories.has(row.categoryId ?? "")) return false;
 		if (query.status && row.status !== query.status) return false;
 		if (query.stock === "low" && !row.lowStock) return false;
 		if (query.stock === "out" && !row.outOfStock) return false;
@@ -147,12 +295,14 @@ export async function listCatalogue(
 			);
 			if (
 				!row.title.toLowerCase().includes(q) &&
-				!skus.some((sku) => sku.includes(q))
+				!skus.some((sku) => sku.includes(q)) &&
+				!row.supplier?.name.toLowerCase().includes(q)
 			)
 				return false;
 		}
 		return true;
 	});
+	filtered.sort(compareRows(query.sort ?? "updated"));
 
 	const limit = Math.min(100, Math.max(1, Math.floor(query.limit ?? 20)));
 	const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
@@ -185,6 +335,7 @@ export interface ProductDetailView {
 		pickupAllowed: boolean;
 	};
 	returnPolicy: string | null;
+	warrantyMonths: number | null;
 	updatedAt: string;
 	createdAt: string;
 }
@@ -220,6 +371,7 @@ function toProductDetailView(
 			pickupAllowed: product.delivery?.pickupAllowed === true,
 		},
 		returnPolicy: product.returnPolicy ?? null,
+		warrantyMonths: product.warrantyMonths ?? null,
 		updatedAt: product.updatedAt,
 		createdAt: product.createdAt,
 	};
@@ -341,6 +493,20 @@ export interface PublicVariantView {
 	price: number;
 	trackInventory: boolean;
 	available: boolean;
+	/**
+	 * The units left, only when inventory is tracked and the figure is small
+	 * (1 to `PUBLIC_STOCK_CAP`). Above that, or untracked, it is null and the
+	 * buyer reads a plain "in stock": a shop's full stock level is its own data.
+	 */
+	availableCount: number | null;
+}
+
+export const PUBLIC_STOCK_CAP = 10;
+
+function publicAvailableCount(variant: ProductVariant): number | null {
+	if (variant.trackInventory !== true) return null;
+	const count = availableOf(variant);
+	return count > 0 && count <= PUBLIC_STOCK_CAP ? count : null;
 }
 
 function toPublicVariantView(variant: ProductVariant): PublicVariantView {
@@ -354,6 +520,7 @@ function toPublicVariantView(variant: ProductVariant): PublicVariantView {
 		price: variant.price,
 		trackInventory: variant.trackInventory === true,
 		available: !isOutOfStock(variant),
+		availableCount: publicAvailableCount(variant),
 	};
 }
 

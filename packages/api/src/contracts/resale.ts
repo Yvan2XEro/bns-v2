@@ -5,6 +5,8 @@ export interface ResaleCatalogueVariant {
 	minRetailPrice: number | null;
 	suggestedRetailPrice: number | null;
 	supplierPrice?: number;
+	/** Units the supplier can ship now; null when the variant tracks no stock. */
+	supplierStock?: number | null;
 }
 
 export interface ResaleCatalogueProduct {
@@ -22,10 +24,16 @@ export interface ResaleCatalogueProduct {
 	linkStatus: "requested" | "approved" | "suspended" | "revoked" | null;
 	approvalRequired: boolean;
 	variants: ResaleCatalogueVariant[];
+	resellerCount?: number;
+	handlingHours?: number | null;
+	codAccepted?: boolean;
+	/** True when the asking shop already resells this product. */
+	inMyShop?: boolean;
 }
 
 export interface ResaleCataloguePage {
 	products: ResaleCatalogueProduct[];
+	commissionRateBps?: number;
 }
 
 export interface SupplierResaleProduct {
@@ -35,9 +43,13 @@ export interface SupplierResaleProduct {
 	resellerCount: number;
 	unitsDelivered30d: number;
 	pendingEffectiveAt: string | null;
+	approvalRequired?: boolean;
+	handlingHours?: number | null;
+	codAccepted?: boolean;
 	variants: Array<{
 		id: string;
 		sku: string | null;
+		stock?: number | null;
 		supplierPrice: number | null;
 		minRetailPrice: number | null;
 		suggestedRetailPrice: number | null;
@@ -62,7 +74,12 @@ export interface CreateResaleListingInput {
 export interface ResaleLinkListItem {
 	id: string;
 	status: "requested" | "approved" | "suspended" | "revoked";
-	partnerShop: { id: string; name: string; handle: string | null };
+	partnerShop: {
+		id: string;
+		name: string;
+		handle: string | null;
+		level?: 0 | 1 | 2 | 3;
+	};
 	message: string | null;
 	requestedAt: string | null;
 	updatedAt: string | null;
@@ -120,4 +137,68 @@ export interface ResellerFinanceView {
 		createdAt: string;
 	}>;
 	accountRequired: boolean;
+}
+
+export type ResoldListingStatus =
+	| "on_sale"
+	| "below_minimum"
+	| "out_of_stock"
+	| "unavailable"
+	| "held"
+	| "draft";
+
+export interface ResoldListing {
+	listingId: string;
+	productId: string;
+	title: string;
+	supplier: { id: string; name: string };
+	status: ResoldListingStatus;
+	variants: Array<{
+		id: string;
+		label: string | null;
+		sku: string | null;
+		price: number;
+		supplierPrice: number | null;
+		minRetailPrice: number | null;
+		suggestedRetailPrice: number | null;
+		supplierStock: number | null;
+	}>;
+}
+
+export interface ResoldListingPage {
+	listings: ResoldListing[];
+	commissionRateBps: number;
+}
+
+export interface UpdateResaleListingPricesInput {
+	prices: Array<{ variantId: string; price: number }>;
+}
+
+export interface SupplierResaleSettingsView {
+	productId: string;
+	title: string;
+	eligible: boolean;
+	termsAccepted: boolean;
+	enabled: boolean;
+	approvalRequired: boolean;
+	handlingHours: number;
+	codAccepted: boolean;
+	resellerNotes: string;
+	enabledAt: string | null;
+	resellerCount: number;
+	pendingEffectiveAt: string | null;
+	pendingRequests: number;
+	commissionRateBps: number;
+	resellerPriceRange: { min: number; max: number } | null;
+	variants: Array<{
+		id: string;
+		label: string | null;
+		sku: string | null;
+		price: number;
+		stock: number | null;
+		enabled: boolean;
+		supplierPrice: number | null;
+		minRetailPrice: number | null;
+		suggestedRetailPrice: number | null;
+	}>;
 }

@@ -771,6 +771,7 @@ describe("public shops search route", () => {
 					ownerRating: 4,
 					ownerReviews: 2,
 					createdAt: "x",
+					bannerUrl: null,
 				},
 			],
 			total: 1,

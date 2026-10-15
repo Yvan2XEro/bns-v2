@@ -109,6 +109,7 @@ export interface Config {
     'reseller-payouts': ResellerPayout;
     'product-variants': ProductVariant;
     'stock-movements': StockMovement;
+    'stock-count-sessions': StockCountSession;
     'verification-requests': VerificationRequest;
     'verification-documents': VerificationDocument;
     'verification-document-views': VerificationDocumentView;
@@ -196,6 +197,7 @@ export interface Config {
     'reseller-payouts': ResellerPayoutsSelect<false> | ResellerPayoutsSelect<true>;
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
     'stock-movements': StockMovementsSelect<false> | StockMovementsSelect<true>;
+    'stock-count-sessions': StockCountSessionsSelect<false> | StockCountSessionsSelect<true>;
     'verification-requests': VerificationRequestsSelect<false> | VerificationRequestsSelect<true>;
     'verification-documents': VerificationDocumentsSelect<false> | VerificationDocumentsSelect<true>;
     'verification-document-views': VerificationDocumentViewsSelect<false> | VerificationDocumentViewsSelect<true>;
@@ -984,6 +986,10 @@ export interface Product {
     };
   };
   returnPolicy?: string | null;
+  /**
+   * Shop warranty shown to buyers, in months.
+   */
+  warrantyMonths?: number | null;
   /**
    * The published listing, written by the product service.
    */
@@ -3112,6 +3118,31 @@ export interface ResellerCharge {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-count-sessions".
+ */
+export interface StockCountSession {
+  id: string;
+  shop: string | Shop;
+  status: 'open' | 'completed' | 'cancelled';
+  location?: (string | null) | ShopLocation;
+  startedBy?: (string | null) | User;
+  startedAt: string;
+  counts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedBy?: (string | null) | User;
+  completedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "stock-movements".
  */
 export interface StockMovement {
@@ -4096,6 +4127,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'stock-movements';
         value: string | StockMovement;
+      } | null)
+    | ({
+        relationTo: 'stock-count-sessions';
+        value: string | StockCountSession;
       } | null)
     | ({
         relationTo: 'verification-requests';
@@ -5417,6 +5452,7 @@ export interface ProductsSelect<T extends boolean = true> {
             };
       };
   returnPolicy?: T;
+  warrantyMonths?: T;
   listing?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -5605,6 +5641,22 @@ export interface ProductVariantsSelect<T extends boolean = true> {
         minRetailPrice?: T;
         suggestedRetailPrice?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stock-count-sessions_select".
+ */
+export interface StockCountSessionsSelect<T extends boolean = true> {
+  shop?: T;
+  status?: T;
+  location?: T;
+  startedBy?: T;
+  startedAt?: T;
+  counts?: T;
+  completedBy?: T;
+  completedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

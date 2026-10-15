@@ -1,10 +1,21 @@
 import type { Payload, PayloadRequest } from "payload";
-import { APIError, type CollectionConfig, type Where } from "payload";
+import {
+	APIError,
+	type CollectionConfig,
+	ValidationError,
+	type Where,
+} from "payload";
 
 import { authenticated } from "../access/authenticated";
 import { isOwnerOrAdmin } from "../access/isOwnerOrAdmin";
 import { resolveShopRole, shopField } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
+import {
+	LISTING_LIMITS,
+	listingConditionIssue,
+	listingPriceIssue,
+	normalizeListingPrice,
+} from "../contracts/listingValidation";
 import { queueShopRecount } from "../hooks/shopListingCount";
 import {
 	assertNotSuspended,
@@ -26,10 +37,16 @@ import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 import { recordShopActivity } from "../services/shopActivity";
 
-const LISTING_CONDITIONS = new Set(["new", "like_new", "good", "fair", "poor"]);
-
 /** Maximum number of images a listing can carry. */
-const MAX_LISTING_IMAGES = 3;
+const MAX_LISTING_IMAGES = LISTING_LIMITS.imagesMax;
+
+/** A refusal Payload answers with `errors[0].data.errors[].path`, which both clients map onto their fields. */
+function fieldError(path: string, message: string): ValidationError {
+	return new ValidationError({
+		collection: "listings",
+		errors: [{ path, message }],
+	});
+}
 
 /**
  * Set by services/accountDeletion.ts on the deletes its cascade makes. It is
@@ -70,18 +87,7 @@ const toAttributesRecord = (
 	return undefined;
 };
 
-const toNormalizedPrice = (value: unknown): number | null => {
-	if (value === null || value === undefined || value === "") return null;
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : Number.NaN;
-	}
-	if (typeof value === "string") {
-		const trimmed = value.trim();
-		if (!trimmed) return null;
-		return Number(trimmed);
-	}
-	return Number.NaN;
-};
+const toNormalizedPrice = normalizeListingPrice;
 
 const shouldValidateListingForm = ({
 	data,
@@ -407,9 +413,9 @@ export const Listings: CollectionConfig = {
 						operation === "create" || data.images.length > previous;
 
 					if (data.images.length > MAX_LISTING_IMAGES && isGrowing) {
-						throw new APIError(
+						throw fieldError(
+							"images",
 							`A listing can carry at most ${MAX_LISTING_IMAGES} images.`,
-							400,
 						);
 					}
 				}
@@ -426,7 +432,7 @@ export const Listings: CollectionConfig = {
 				) {
 					const categoryId = relationId(data.category);
 					if (!categoryId) {
-						throw new Error("Category is required");
+						throw fieldError("category", "Category is required");
 					}
 
 					// `depth` decides how much of the parent chain comes back
@@ -447,17 +453,19 @@ export const Listings: CollectionConfig = {
 					if (!formPreset.fields.price.enabled) {
 						data.price = null;
 					} else {
-						const normalizedPrice = toNormalizedPrice(data.price);
-						if (
-							formPreset.fields.price.required &&
-							isEmptyValue(normalizedPrice)
-						) {
-							throw new Error("Price is required for this category");
+						const priceIssue = listingPriceIssue(
+							formPreset.fields.price,
+							data.price,
+						);
+						if (priceIssue) {
+							throw fieldError(
+								"price",
+								priceIssue.rule === "required"
+									? "Price is required for this category"
+									: "Price must be a valid number",
+							);
 						}
-						if (normalizedPrice !== null && !Number.isFinite(normalizedPrice)) {
-							throw new Error("Price must be a valid number");
-						}
-						data.price = normalizedPrice;
+						data.price = toNormalizedPrice(data.price);
 					}
 
 					if (!formPreset.fields.condition.enabled) {
@@ -465,10 +473,12 @@ export const Listings: CollectionConfig = {
 					} else if (isEmptyValue(data.condition)) {
 						data.condition = null;
 					} else if (
-						typeof data.condition !== "string" ||
-						!LISTING_CONDITIONS.has(data.condition)
+						listingConditionIssue(formPreset.fields.condition, data.condition)
 					) {
-						throw new Error("Condition is invalid for this listing");
+						throw fieldError(
+							"condition",
+							"Condition is invalid for this listing",
+						);
 					}
 
 					const attributeErrors = await validateListingAttributes({
@@ -477,9 +487,13 @@ export const Listings: CollectionConfig = {
 						payload: req.payload,
 					});
 					if (attributeErrors.length > 0) {
-						throw new Error(
-							attributeErrors.map((error) => error.message).join("; "),
-						);
+						throw new ValidationError({
+							collection: "listings",
+							errors: attributeErrors.map((error) => ({
+								path: error.field ? `attributes.${error.field}` : "attributes",
+								message: error.message,
+							})),
+						});
 					}
 				}
 

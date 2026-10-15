@@ -182,6 +182,9 @@ export interface TeamMemberView {
 	joinedAt: string | null;
 	suspended: boolean;
 	inboxNotifications?: "all" | "assigned" | "none";
+	/** Latest `shop-activity-log` entry by this member; present only for a
+	 * caller holding `activity.view`. There is no presence tracking. */
+	lastActivity?: { at: string; action: string } | null;
 }
 
 export interface PendingInvitationView {
@@ -251,6 +254,36 @@ function memberView(
 	};
 }
 
+/** One query per member: the roster is capped at the level's seat count. */
+async function lastActivityByUser(
+	payload: Payload,
+	shopId: string,
+	userIds: string[],
+): Promise<Map<string, { at: string; action: string }>> {
+	const entries = await Promise.all(
+		[...new Set(userIds.filter(Boolean))].map(async (userId) => {
+			const { docs } = await payload.find({
+				collection: "shop-activity-log",
+				where: {
+					and: [{ shop: { equals: shopId } }, { actor: { equals: userId } }],
+				},
+				sort: "-createdAt",
+				limit: 1,
+				depth: 0,
+				overrideAccess: true,
+			});
+			const row = docs[0];
+			return row
+				? ([
+						userId,
+						{ at: String(row.createdAt), action: String(row.action) },
+					] as const)
+				: null;
+		}),
+	);
+	return new Map(entries.filter((entry) => entry !== null));
+}
+
 export async function getShopTeam(
 	payload: Payload,
 	user: ServiceUser,
@@ -289,16 +322,29 @@ export async function getShopTeam(
 		payload,
 		invitationRows.map((row) => relationId(row.invitedBy) ?? ""),
 	);
+	const lastActivity = can(role, "activity.view")
+		? await lastActivityByUser(
+				payload,
+				shopId,
+				members.map((row) => relationId(row.user) ?? ""),
+			)
+		: null;
 
 	return {
-		members: members.map((row) =>
-			memberView(
+		members: members.map((row) => {
+			const view = memberView(
 				row,
 				profiles.get(relationId(row.user) ?? ""),
 				now,
 				seesAll || relationId(row.user) === user.id,
-			),
-		),
+			);
+			return lastActivity
+				? {
+						...view,
+						lastActivity: lastActivity.get(view.userId) ?? null,
+					}
+				: view;
+		}),
 		invitations: invitationRows.map((row) => ({
 			id: String(row.id),
 			role: row.role as "manager" | "staff",

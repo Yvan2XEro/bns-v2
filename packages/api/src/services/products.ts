@@ -2,6 +2,12 @@ import type { Payload, PayloadRequest } from "payload";
 import { can } from "../access/shopRoles";
 import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
+import type { FieldIssue } from "../contracts/formIssues";
+import {
+	PRODUCT_CONDITION_VALUES,
+	PRODUCT_STATUS_VALUES,
+	productInputIssues,
+} from "../contracts/productValidation";
 import { validateListingAttributes } from "../hooks/validation";
 import { ERROR_CODES } from "../lib/errors";
 import { isRecord } from "../lib/payments/types";
@@ -24,16 +30,11 @@ import { requireShopMember } from "./shopGuards";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 import { applyMovement, findVariant } from "./stock";
 
-export const PRODUCT_STATUSES = ["draft", "active", "archived"] as const;
+export const PRODUCT_STATUSES = PRODUCT_STATUS_VALUES;
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 
-const CONDITIONS = [
-	"new",
-	"like_new",
-	"good",
-	"fair",
-	"poor",
-] as const satisfies readonly ListingCondition[];
+const CONDITIONS =
+	PRODUCT_CONDITION_VALUES satisfies readonly ListingCondition[];
 
 export interface ParsedVariant {
 	id: string | null;
@@ -63,10 +64,22 @@ export interface ParsedProduct {
 		pickupAllowed: boolean;
 	};
 	returnPolicy: string | null;
+	/** Undefined when the client did not send it: a client that predates the field must not clear it. */
+	warrantyMonths: number | null | undefined;
 }
 
 function fail(message: string, status = 400): never {
 	throw new ServiceError(ERROR_CODES.validation, status, message);
+}
+
+/** A refusal the client can pin to its fields: `details.issues` carries the paths. */
+function failWith(issues: FieldIssue[], status = 400): never {
+	throw new ServiceError(
+		ERROR_CODES.validation,
+		status,
+		issues.map((issue) => `${issue.path}: ${issue.rule}`).join("; "),
+		{ issues },
+	);
 }
 
 function text(value: unknown, max: number): string | null {
@@ -187,6 +200,11 @@ function parseVariants(raw: unknown, options: OptionDef[]): ParsedVariant[] {
 }
 
 export function parseProductInput(raw: Record<string, unknown>): ParsedProduct {
+	// The shared rules run first so every refusal names its field; the checks
+	// below stay as the normaliser's own guard.
+	const issues = productInputIssues(raw);
+	if (issues.length > 0) failWith(issues);
+
 	const title = text(raw.title, 120);
 	if (!title || title.length < 3) fail("The title needs 3 to 120 characters.");
 
@@ -239,6 +257,10 @@ export function parseProductInput(raw: Record<string, unknown>): ParsedProduct {
 			pickupAllowed: delivery.pickupAllowed === true,
 		},
 		returnPolicy: text(raw.returnPolicy, 2000),
+		warrantyMonths:
+			raw.warrantyMonths === undefined
+				? undefined
+				: wholeNumber(raw.warrantyMonths, { nullable: true, max: 60 }) || null,
 	};
 }
 
@@ -254,14 +276,28 @@ async function validateCategory(
 			req,
 		});
 	} catch {
-		throw new ServiceError(ERROR_CODES.categoryNotFound, 400);
+		throw new ServiceError(ERROR_CODES.categoryNotFound, 400, undefined, {
+			issues: [{ path: "category", rule: "notFound" }],
+		});
 	}
 	const errors = await validateListingAttributes({
 		attributes: input.attributes,
 		categoryId: input.category,
 		payload: req.payload,
 	});
-	if (errors.length > 0) fail(errors.map((error) => error.message).join("; "));
+	if (errors.length > 0) {
+		throw new ServiceError(
+			ERROR_CODES.validation,
+			400,
+			errors.map((error) => error.message).join("; "),
+			{
+				issues: errors.map((error) => ({
+					path: error.field ? `attributes.${error.field}` : "attributes",
+					rule: "invalid",
+				})),
+			},
+		);
+	}
 }
 
 async function assertUniqueSkus(
@@ -272,8 +308,16 @@ async function assertUniqueSkus(
 	const skus = variants
 		.map((variant) => variant.sku)
 		.filter((sku): sku is string => Boolean(sku));
-	if (new Set(skus).size !== skus.length)
-		fail("Two variants share a SKU.", 409);
+	if (new Set(skus).size !== skus.length) {
+		failWith(
+			variants.flatMap((variant, index) =>
+				variant.sku && variants.findIndex((v) => v.sku === variant.sku) < index
+					? [{ path: `variants.${index}.sku`, rule: "duplicate" }]
+					: [],
+			),
+			409,
+		);
+	}
 	if (skus.length === 0) return;
 
 	const ownIds = variants
@@ -290,11 +334,21 @@ async function assertUniqueSkus(
 			],
 		},
 		depth: 0,
-		limit: 1,
+		limit: skus.length,
 		overrideAccess: true,
 		req,
 	});
-	if (clashes.totalDocs > 0) fail("This SKU is already used in the shop.", 409);
+	if (clashes.totalDocs > 0) {
+		const taken = clashes.docs.map((doc) => doc.sku);
+		failWith(
+			variants.flatMap((variant, index) =>
+				variant.sku && (taken.length === 0 || taken.includes(variant.sku))
+					? [{ path: `variants.${index}.sku`, rule: "taken" }]
+					: [],
+			),
+			409,
+		);
+	}
 }
 
 function productData(input: ParsedProduct) {
@@ -309,6 +363,9 @@ function productData(input: ParsedProduct) {
 		options: input.options,
 		delivery: input.delivery,
 		returnPolicy: input.returnPolicy,
+		...(input.warrantyMonths !== undefined && {
+			warrantyMonths: input.warrantyMonths,
+		}),
 	};
 }
 

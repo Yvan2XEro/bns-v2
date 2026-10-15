@@ -318,44 +318,106 @@ describe("GET /api/shops/{id}/orders — counts agree with the rows", () => {
 		}
 	});
 
-	// The case the test above cannot see: without `q` the counts and the rows
-	// are filtered identically, so they agree whatever the count query does.
-	// With a search they only agree if `q` narrows both — and it did not, so
-	// the tab bar read 12 while the open tab showed 3.
-	it("still agrees when a search narrows the list", async () => {
+	// The counts say how much work is waiting; a search for one order narrows
+	// the rows but must not make the tab bar read as if the queue emptied.
+	it("a search narrows the rows but leaves every count untouched", async () => {
 		const payload = seed();
 		asUser(payload, OWNER);
 		const { GET } = await import(
 			"../../src/app/(frontend)/api/shops/[id]/orders/route"
 		);
-		for (const tab of [
-			"to_accept",
-			"to_ship",
-			"shipped",
-			"delivered",
-			"cancelled",
-			"failed",
-		]) {
-			const response = await GET(get(`/x?tab=${tab}&q=BNS`), {
+		const plain = await (
+			await GET(get("/x?tab=to_accept"), {
 				params: Promise.resolve({ id: "s-1" }),
-			});
-			const body = await response.json();
-			expect(body.counts[tab]).toBe(body.docs.length);
-		}
+			})
+		).json();
+		const searched = await (
+			await GET(get("/x?tab=to_accept&q=zzz-no-such-order"), {
+				params: Promise.resolve({ id: "s-1" }),
+			})
+		).json();
+		expect(searched.docs).toHaveLength(0);
+		expect(searched.counts).toEqual(plain.counts);
+		expect(plain.counts.to_accept).toBeGreaterThan(0);
 	});
 
-	it("a search that matches nothing zeroes every count", async () => {
+	it("the district and period filters narrow the counts with the rows", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		await payload.create({
+			collection: "orders",
+			data: {
+				id: "o-makepe",
+				orderNumber: "ORD-MAKEPE",
+				buyer: BUYER_A,
+				shop: "s-1",
+				status: "confirmed",
+				paymentMethod: "cod",
+				paymentStatus: "cod_pending",
+				delivery: { ...delivery("Serge M."), district: "douala.makepe" },
+				amounts: amounts(),
+				timestamps: {},
+				createdAt: isoAt(70),
+				updatedAt: isoAt(70),
+			},
+		});
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		const byDistrict = await (
+			await GET(get("/x?tab=all&district=douala.makepe"), {
+				params: Promise.resolve({ id: "s-1" }),
+			})
+		).json();
+		expect(byDistrict.docs.map((d: { id: string }) => d.id)).toEqual([
+			"o-makepe",
+		]);
+		expect(byDistrict.counts.to_accept).toBe(1);
+		expect(byDistrict.counts.to_ship).toBe(0);
+
+		const since = encodeURIComponent(isoAt(55));
+		const recent = await (
+			await GET(get(`/x?tab=to_accept&since=${since}`), {
+				params: Promise.resolve({ id: "s-1" }),
+			})
+		).json();
+		expect(recent.docs.map((d: { id: string }) => d.id).sort()).toEqual([
+			"o-makepe",
+			"o-receipt",
+		]);
+		expect(recent.counts.to_accept).toBe(2);
+	});
+
+	it("a malformed district is a 400", async () => {
 		const payload = seed();
 		asUser(payload, OWNER);
 		const { GET } = await import(
 			"../../src/app/(frontend)/api/shops/[id]/orders/route"
 		);
-		const response = await GET(get("/x?tab=to_accept&q=zzz-no-such-order"), {
+		const response = await GET(get("/x?tab=all&district=Akwa%20%24ne"), {
 			params: Promise.resolve({ id: "s-1" }),
 		});
+		expect(response.status).toBe(400);
+	});
+});
+
+describe("GET /api/shops/{id}/orders — tab=all", () => {
+	it("lists every status, newest first", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		const response = await GET(get("/x?tab=all"), {
+			params: Promise.resolve({ id: "s-1" }),
+		});
+		expect(response.status).toBe(200);
 		const body = await response.json();
-		expect(body.docs).toHaveLength(0);
-		for (const count of Object.values(body.counts)) expect(count).toBe(0);
+		const ids = (body.docs as Array<{ id: string }>).map((d) => d.id);
+		for (const id of Object.values(STATUS_ORDER_IDS)) {
+			expect(ids).toContain(id);
+		}
+		expect(ids[0]).toBe("o-receipt");
 	});
 });
 
@@ -560,10 +622,37 @@ describe("the wire shape, through the real routes", () => {
 			firstItemImageUrl: null,
 			shopName: "Boutique Test",
 			deliveryFailureReason: null,
+			actionSubject: {
+				confirmation: {
+					method: null,
+					required: "none",
+					attemptsLeft: 5,
+					resendsLeft: 3,
+				},
+				handover: {
+					method: null,
+					locked: false,
+					attemptsLeft: 5,
+					regenerationsLeft: 3,
+				},
+				deadlines: {
+					confirmBy: null,
+					acceptBy: null,
+					staleAt: null,
+					completeAt: null,
+					withdrawalUntil: null,
+					contestBy: null,
+				},
+				deliveryFailure: null,
+				completionHold: "none",
+				returnCaseNumber: null,
+				reviewable: false,
+			},
+			arrival: { method: "seller_delivery", etaText: "", promisedBy: null },
 		});
 	});
 
-	it("a shop queue row adds the recipient, the accept clock and the tier, and nothing else", async () => {
+	it("a shop queue row adds the triage fields, and nothing else", async () => {
 		const payload = seed();
 		asUser(payload, OWNER);
 		const { GET } = await import(
@@ -591,7 +680,72 @@ describe("the wire shape, through the real routes", () => {
 			recipientName: "Recipient placed",
 			acceptBy: null,
 			phoneTier: "new",
+			paymentMethod: "cod",
+			paymentStatus: "cod_pending",
+			area: { district: null, city: "Douala" },
+			resale: null,
+			hasShipment: false,
 		});
+	});
+
+	it("a resold line names its supplier and, once sent, its purchase order", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		await payload.create({
+			collection: "shops",
+			data: {
+				id: "s-supplier",
+				status: "active",
+				name: "Mboppi",
+				handle: "mboppi",
+			},
+		});
+		await payload.create({
+			collection: "purchase-orders",
+			data: { id: "po-1", number: "PO-2609-0404", order: "o-shipped" },
+		});
+		for (const [id, order, purchaseOrder] of [
+			["oi-r-1", "o-confirmed", null],
+			["oi-r-2", "o-shipped", "po-1"],
+		] as const) {
+			await payload.create({
+				collection: "order-items",
+				data: {
+					id,
+					order,
+					product: "p-r",
+					variant: "v-r",
+					sourcing: "resale",
+					fulfillingShop: "s-supplier",
+					purchaseOrder,
+					snapshot: { title: "Écouteurs T20" },
+					unitPrice: 13_000,
+					quantity: 1,
+					fulfillmentStatus: "unfulfilled",
+				},
+			});
+		}
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		const body = await (
+			await GET(get("/x?tab=all"), { params: Promise.resolve({ id: "s-1" }) })
+		).json();
+		const byId = new Map(
+			(body.docs as Array<{ id: string; resale: unknown }>).map((d) => [
+				d.id,
+				d.resale,
+			]),
+		);
+		expect(byId.get("o-confirmed")).toEqual({
+			purchaseOrderNumber: null,
+			supplierName: "Mboppi",
+		});
+		expect(byId.get("o-shipped")).toEqual({
+			purchaseOrderNumber: "PO-2609-0404",
+			supplierName: "Mboppi",
+		});
+		expect(byId.get("o-placed")).toBeNull();
 	});
 
 	it("the order view carries the shop block the contract declares, and the buyer block only for the shop", async () => {
@@ -645,6 +799,26 @@ describe("GET /api/orders — the buyer's own purchase list", () => {
 		const body = await response.json();
 		const ids = body.docs.map((d: { id: string }) => d.id);
 		expect(ids).toContain("o-buyer-b");
+	});
+
+	it("gives each row the action fields, reading a review already left for the shop", async () => {
+		const read = async (payload: ReturnType<typeof seed>) => {
+			asUser(payload, BUYER_A);
+			const { GET } = await import("../../src/app/(frontend)/api/orders/route");
+			const body = await (await GET(get("/x?role=buyer"))).json();
+			return body.docs.find((d: { id: string }) => d.id === "o-delivered");
+		};
+		const fresh = await read(seed());
+		expect(fresh.actionSubject.reviewable).toBe(true);
+		expect(fresh.arrival).toEqual(
+			expect.objectContaining({ promisedBy: null }),
+		);
+
+		const reviewed = seed();
+		reviewed.store.reviews = [
+			{ id: "r-1", reviewer: BUYER_A, shop: "s-1", rating: 5 },
+		];
+		expect((await read(reviewed)).actionSubject.reviewable).toBe(false);
 	});
 });
 

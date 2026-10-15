@@ -152,6 +152,13 @@ describe("reseller resale catalogue", () => {
 			variants: [{ id: "variant-private", minRetailPrice: 4500 }],
 		});
 		expect(result.products[1]?.variants[0]).not.toHaveProperty("supplierPrice");
+		expect(result.products[0]).toMatchObject({
+			resellerCount: 0,
+			inMyShop: false,
+			codAccepted: false,
+			variants: [{ supplierStock: null }],
+		});
+		expect(result.commissionRateBps).toBeGreaterThan(0);
 	});
 
 	it("refuses catalogue access until the global feature and terms are enabled", async () => {

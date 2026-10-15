@@ -73,6 +73,8 @@ export interface PaymentSetupView {
 		accountNumberMasked: string;
 		status: PayoutAccount["status"];
 		activatedAt: string | null;
+		/** The verdict recorded when the account was submitted. */
+		nameMatch: "match" | "partial" | "mismatch" | null;
 	};
 	pendingAccount: null | {
 		method: string;
@@ -660,6 +662,7 @@ export async function paymentSetupView(
 					accountNumberMasked: active.accountNumberMasked ?? "",
 					status: active.status,
 					activatedAt: active.activatedAt ?? null,
+					nameMatch: active.nameMatch?.result ?? null,
 				}
 			: null,
 		pendingAccount: pending

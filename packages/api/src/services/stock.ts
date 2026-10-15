@@ -39,6 +39,7 @@ import { syncProductListing } from "./products";
 import { requireShopMember, requireShopPermission } from "./shopGuards";
 import { notifyStockLow } from "./shopNotifications";
 import type { ServiceUser } from "./shops";
+import { completeStockCountSession } from "./stockCountSessions";
 
 /** What a shopkeeper may write by hand; sales and reservations come from orders. */
 export const CLIENT_MOVEMENT_TYPES = [
@@ -820,10 +821,14 @@ export async function recordStockCount(
 	payload: Payload,
 	user: ServiceUser,
 	shopId: string,
-	input: { counts: unknown; note?: unknown },
+	input: { counts: unknown; note?: unknown; sessionId?: string | null },
 ): Promise<{ results: StockCountResult[] }> {
 	const counts = parseCounts(input.counts);
 	const note = trimmedNote(input.note);
+	const sessionId =
+		typeof input.sessionId === "string" && input.sessionId
+			? input.sessionId
+			: null;
 
 	return withTransaction(
 		payload,
@@ -865,6 +870,15 @@ export async function recordStockCount(
 			// a half-counted inventory. Refresh only, like a single movement.
 			for (const productId of touched) {
 				await syncProductListing(req, productId, { create: false });
+			}
+			if (sessionId) {
+				await completeStockCountSession(
+					req,
+					shopId,
+					sessionId,
+					user.id,
+					counts,
+				);
 			}
 
 			return { results };
@@ -980,6 +994,11 @@ export async function stockSummary(
 			0,
 		),
 		trackedVariants: tracked.length,
+		trackedProducts: new Set(
+			tracked
+				.map((variant) => relationId(variant.product))
+				.filter((id): id is string => Boolean(id)),
+		).size,
 		lowStock: tracked.filter(isLowStock).map(alert),
 		outOfStock: tracked.filter(isOutOfStock).map(alert),
 	};

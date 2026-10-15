@@ -1,10 +1,15 @@
 import type { Payload, Where } from "payload";
-import type { ResaleCatalogueProduct } from "../contracts/resale";
+import type {
+	ResaleCataloguePage,
+	ResaleCatalogueProduct,
+} from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
+import { getOrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
+import { availableOf } from "../lib/variants";
 import type { Shop } from "../payload-types";
 import { hasAcceptedCurrentResaleTerms } from "./resale";
 import { requireShopPermission } from "./shopGuards";
@@ -19,7 +24,7 @@ export async function listResaleCatalogue(
 		categoryId?: string;
 		supplierShopId?: string;
 	} = {},
-): Promise<{ products: ResaleCatalogueProduct[] }> {
+): Promise<Required<ResaleCataloguePage>> {
 	const settings = await getResaleSettings(payload);
 	if (!settings.enabled)
 		throw new ServiceError(ERROR_CODES.resaleDisabled, 404);
@@ -81,7 +86,8 @@ export async function listResaleCatalogue(
 				.filter((id): id is string => id !== null),
 		),
 	];
-	const [shops, links] = await Promise.all([
+	const productIds = result.docs.map((product) => String(product.id));
+	const [shops, links, ownListings, orderSettings] = await Promise.all([
 		Promise.all(
 			supplierIds.map((id) =>
 				payload
@@ -97,7 +103,26 @@ export async function listResaleCatalogue(
 			depth: 0,
 			overrideAccess: true,
 		}),
+		productIds.length > 0
+			? payload.find({
+					collection: "listings",
+					where: {
+						and: [
+							{ shop: { equals: resellerShopId } },
+							{ product: { in: productIds } },
+						],
+					},
+					limit: 0,
+					pagination: false,
+					depth: 0,
+					overrideAccess: true,
+				})
+			: Promise.resolve({ docs: [] }),
+		getOrderSettings(payload),
 	]);
+	const resoldProducts = new Set(
+		ownListings.docs.map((listing) => relationId(listing.product)),
+	);
 	const suppliers = new Map<string, Shop>();
 	for (const supplier of shops) {
 		if (
@@ -147,6 +172,7 @@ export async function listResaleCatalogue(
 			optionValues: variant.optionValues,
 			minRetailPrice: variant.resale?.minRetailPrice ?? null,
 			suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
+			supplierStock: variant.trackInventory ? availableOf(variant) : null,
 			...(canSeeSupplierPrice &&
 			typeof variant.resale?.supplierPrice === "number"
 				? { supplierPrice: variant.resale.supplierPrice }
@@ -167,7 +193,14 @@ export async function listResaleCatalogue(
 			linkStatus: link?.status ?? null,
 			approvalRequired,
 			variants: mappedVariants,
+			resellerCount: product.resale?.resellerCount ?? 0,
+			handlingHours: product.resale?.handlingHours ?? null,
+			codAccepted: product.resale?.codAccepted === true,
+			inMyShop: resoldProducts.has(String(product.id)),
 		});
 	}
-	return { products };
+	return {
+		products,
+		commissionRateBps: orderSettings.defaultCommissionRateBps,
+	};
 }

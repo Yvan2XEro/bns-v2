@@ -269,6 +269,7 @@ describe("listCatalogue", () => {
 			archived: 0,
 			low: 1,
 			out: 1,
+			resale: 0,
 		});
 		expect(page.docs[0]).toMatchObject({
 			id: "p-1",
@@ -283,7 +284,93 @@ describe("listCatalogue", () => {
 			listingId: "l-1",
 			listingStatus: "published",
 			image: { url: "/m1.jpg" },
+			provenance: "own",
+			supplier: null,
+			skus: ["AT-IP13P-GR", "AT-IP13P-OR"],
+			singleVariantId: null,
 		});
+		expect(page.docs.find((r) => r.id === "p-2")?.singleVariantId).toBe("v-3");
+	});
+
+	it("sorts by title, price or stock", async () => {
+		const payload = seed();
+		const ids = async (sort: "title" | "price" | "stock") =>
+			(await listCatalogue(payload, U1, "s-1", { sort })).docs.map((r) => r.id);
+		expect(await ids("title")).toEqual(["p-2", "p-3", "p-1"]);
+		expect(await ids("price")).toEqual(["p-2", "p-3", "p-1"]);
+		expect(await ids("stock")).toEqual(["p-3", "p-2", "p-1"]);
+	});
+
+	it("filters by category, subcategories included", async () => {
+		const payload = seed();
+		payload.store.categories = [
+			{ id: "c-tech", parent: null },
+			{ id: "c-phones", parent: "c-tech" },
+			{ id: "c-watches", parent: null },
+		];
+		payload.store.products[0].category = "c-phones";
+		payload.store.products[2].category = "c-watches";
+		expect(
+			(
+				await listCatalogue(payload, U1, "s-1", { category: "c-tech" })
+			).docs.map((r) => r.id),
+		).toEqual(["p-1"]);
+	});
+
+	it("adds the shop's resale listings only when asked, with the supplier but never its stock", async () => {
+		const payload = seed();
+		payload.store.shops.push({ id: "s-sup", name: "Mboppi Accessoires" });
+		payload.store.listings.push({
+			id: "l-r1",
+			title: "Chargeur USB-C 20 W",
+			status: "published",
+			shop: "s-1",
+			seller: "u-1",
+			product: "p-sup",
+			updatedAt: "2026-09-16T10:00:00.000Z",
+			productSummary: { available: true, variantCount: 1 },
+			resale: {
+				supplierShop: "s-sup",
+				prices: [{ variant: "v-sup", price: 9000 }],
+			},
+		});
+
+		const own = await listCatalogue(payload, U1, "s-1", {});
+		expect(own.docs.map((r) => r.id)).not.toContain("l-r1");
+
+		const any = await listCatalogue(payload, U1, "s-1", { provenance: "any" });
+		expect(any.counts).toMatchObject({ all: 4, active: 3, resale: 1 });
+		expect(any.docs[0]).toMatchObject({
+			id: "l-r1",
+			provenance: "resale",
+			supplier: { id: "s-sup", name: "Mboppi Accessoires" },
+			supplierAvailable: true,
+			stockOnHand: 0,
+			priceMin: 9000,
+			listingId: "l-r1",
+		});
+
+		const resale = await listCatalogue(payload, U1, "s-1", {
+			provenance: "resale",
+			q: "mboppi",
+		});
+		expect(resale.docs.map((r) => r.id)).toEqual(["l-r1"]);
+	});
+
+	it("keeps resale rows from a member who cannot manage resale", async () => {
+		const payload = seed();
+		payload.store.listings.push({
+			id: "l-r1",
+			title: "Chargeur",
+			status: "published",
+			shop: "s-1",
+			resale: { supplierShop: "s-sup", prices: [] },
+		});
+		const page = await listCatalogue(payload, { id: "u-3" }, "s-1", {
+			provenance: "any",
+		});
+		expect(page.counts.resale).toBe(0);
+		expect(page.docs.map((r) => r.id)).not.toContain("l-r1");
 	});
 
 	it("filters by stock state, status and text", async () => {
