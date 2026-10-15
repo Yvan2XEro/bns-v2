@@ -12,15 +12,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import { RoleCard } from "@/src/components/shop/team/RoleMatrix";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useInviteMemberForm } from "@/src/hooks/useInviteMemberForm";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useTranslation } from "@/src/lib/i18n";
-
-const ROLE_KEY: Record<"manager" | "staff", string> = {
-	manager: "team.roleManager",
-	staff: "team.roleStaff",
-};
 
 /**
  * `inviteSchema`'s own issues carry "required" or "invalid" as their
@@ -196,37 +192,17 @@ export default function InviteMemberScreen() {
 							<Text style={[styles.label, { color: c.body }]}>
 								{t("team.roleLabel")}
 							</Text>
-							<View style={styles.roleRow}>
-								{roles.map((option) => {
-									const active = form.watch("role") === option;
-									return (
-										<Pressable
-											key={option}
-											onPress={() =>
-												form.setValue("role", option, { shouldValidate: true })
-											}
-											accessibilityRole="button"
-											accessibilityState={{ selected: active }}
-											accessibilityLabel={t(ROLE_KEY[option])}
-											style={[
-												styles.roleChip,
-												{
-													borderColor: active ? c.primary : c.border,
-													backgroundColor: active ? c.primarySoft : c.card,
-												},
-											]}
-										>
-											<Text
-												style={[
-													styles.roleChipText,
-													{ color: active ? c.primary : c.body },
-												]}
-											>
-												{t(ROLE_KEY[option])}
-											</Text>
-										</Pressable>
-									);
-								})}
+							<View style={styles.roleList}>
+								{roles.map((option) => (
+									<RoleCard
+										key={option}
+										role={option}
+										selected={form.watch("role") === option}
+										onPress={() =>
+											form.setValue("role", option, { shouldValidate: true })
+										}
+									/>
+								))}
 							</View>
 						</View>
 
@@ -283,16 +259,7 @@ const styles = StyleSheet.create({
 		fontFamily: Fonts.body,
 	},
 	hint: { fontSize: 12, fontFamily: Fonts.body, marginTop: 4 },
-	roleRow: { flexDirection: "row", gap: 8 },
-	roleChip: {
-		minHeight: 40,
-		paddingHorizontal: 16,
-		borderRadius: 999,
-		borderWidth: 1,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	roleChipText: { fontSize: 13, fontFamily: Fonts.bodySemibold },
+	roleList: { gap: 10, marginTop: 6 },
 	submit: {
 		minHeight: 48,
 		borderRadius: 12,

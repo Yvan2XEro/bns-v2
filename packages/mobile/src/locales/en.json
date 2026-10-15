@@ -2485,7 +2485,12 @@
 			"team": "Team"
 		},
 		"matrixViewOnly": "View only",
-		"matrixNote": "Managers can see payments but cannot change the payout account."
+		"matrixNote": "Managers can see payments but cannot change the payout account.",
+		"roleDesc": {
+			"manager": "Runs catalogue, stock and orders, sees costs and can view payments.",
+			"staff": "Prepares orders and keeps the catalogue and stock up to date.",
+			"owner": "Every right, payments and closing the shop included."
+		}
 	},
 	"shopActivity": {
 		"title": "Activity",

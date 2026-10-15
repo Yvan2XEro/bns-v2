@@ -2488,7 +2488,12 @@
 			"team": "Équipe"
 		},
 		"matrixViewOnly": "Consultation seule",
-		"matrixNote": "Le manager consulte les paiements sans pouvoir changer le compte de versement."
+		"matrixNote": "Le manager consulte les paiements sans pouvoir changer le compte de versement.",
+		"roleDesc": {
+			"manager": "Gère le catalogue, le stock et les commandes, voit les coûts et consulte les paiements.",
+			"staff": "Prépare les commandes et met à jour le catalogue et le stock.",
+			"owner": "Tous les droits, dont les paiements et la fermeture de la boutique."
+		}
 	},
 	"shopActivity": {
 		"title": "Activité",
