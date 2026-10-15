@@ -2109,7 +2109,9 @@
 		"trackingNote": "Le suivi du stock n'est pas encore activé pour cette variante. Enregistrer ce mouvement l'active.",
 		"loadErrorTitle": "Cette variante n'a pas pu être chargée",
 		"loadErrorBody": "Elle a peut-être été supprimée, ou la connexion a échoué. Revenez en arrière et réessayez.",
-		"saveError": "Le stock n'a pas été mis à jour"
+		"saveError": "Le stock n'a pas été mis à jour",
+		"decrease": "Diminuer",
+		"increase": "Augmenter"
 	},
 	"catalogue": {
 		"title": "Catalogue",

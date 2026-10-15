@@ -2106,7 +2106,9 @@
 		"trackingNote": "This variant does not track stock yet. Recording this movement turns stock tracking on for it.",
 		"loadErrorTitle": "This variant could not be loaded",
 		"loadErrorBody": "It may have been removed, or the connection failed. Go back and try again.",
-		"saveError": "Stock was not updated"
+		"saveError": "Stock was not updated",
+		"decrease": "Decrease",
+		"increase": "Increase"
 	},
 	"catalogue": {
 		"title": "Catalogue",

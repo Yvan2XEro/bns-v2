@@ -14,6 +14,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { PurchaseRow } from "@/src/components/purchases/PurchaseRow";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
 import { usePurchases } from "@/src/hooks/usePurchases";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
@@ -47,55 +48,16 @@ export default function PurchasesScreen() {
 		>
 			<SellerHeader title={t("purchases.title")} />
 
-			<View
-				style={[styles.tabs, { backgroundColor: c.neutralSoft }]}
-				accessibilityRole="tablist"
-			>
-				{PURCHASE_TABS.map((key) => {
-					const selected = tab === key;
-					const count = countOf(key);
-					return (
-						<Pressable
-							key={key}
-							onPress={() => setTab(key)}
-							accessibilityRole="tab"
-							accessibilityState={{ selected }}
-							accessibilityLabel={`${t(PURCHASE_TAB_LABEL_KEYS[key])} ${count}`}
-							style={[
-								styles.tab,
-								selected && [styles.tabSelected, { backgroundColor: c.card }],
-							]}
-						>
-							<Text
-								style={[
-									styles.tabText,
-									{ color: selected ? c.primary : c.muted },
-								]}
-								numberOfLines={1}
-							>
-								{t(PURCHASE_TAB_LABEL_KEYS[key])}
-							</Text>
-							{count > 0 ? (
-								<View
-									style={[
-										styles.tabCount,
-										{ backgroundColor: selected ? c.primarySoft : c.card },
-									]}
-								>
-									<Text
-										style={[
-											styles.tabCountText,
-											{ color: selected ? c.primary : c.muted },
-										]}
-									>
-										{count}
-									</Text>
-								</View>
-							) : null}
-						</Pressable>
-					);
-				})}
-			</View>
+			<SegmentedControl
+				segments={PURCHASE_TABS.map((key) => ({
+					key,
+					label: t(PURCHASE_TAB_LABEL_KEYS[key]),
+					count: countOf(key),
+				}))}
+				value={tab}
+				onChange={setTab}
+				style={styles.tabs}
+			/>
 
 			{purchases.isPending ? (
 				<View style={styles.center}>
@@ -163,39 +125,7 @@ export default function PurchasesScreen() {
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
-	tabs: {
-		flexDirection: "row",
-		gap: 4,
-		marginHorizontal: 16,
-		marginTop: 12,
-		padding: 4,
-		borderRadius: 14,
-	},
-	tab: {
-		flex: 1,
-		flexDirection: "row",
-		minHeight: 40,
-		borderRadius: 11,
-		paddingHorizontal: 8,
-		gap: 6,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	tabSelected: {
-		shadowColor: "#0f172a",
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.08,
-		shadowRadius: 3,
-		elevation: 1,
-	},
-	tabText: { fontSize: 14, fontFamily: Fonts.bodySemibold, flexShrink: 1 },
-	tabCount: {
-		minWidth: 20,
-		paddingHorizontal: 6,
-		borderRadius: 999,
-		alignItems: "center",
-	},
-	tabCountText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	tabs: { marginHorizontal: 16, marginTop: 12 },
 	empty: {
 		fontSize: 14,
 		fontFamily: Fonts.body,

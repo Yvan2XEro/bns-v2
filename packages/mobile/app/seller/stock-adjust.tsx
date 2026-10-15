@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import {
@@ -37,10 +38,6 @@ export default function StockAdjustSheet() {
 		isPending,
 	} = useStockAdjustForm(variantId);
 
-	const inputStyle = [
-		styles.input,
-		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
-	];
 	const amountError = form.formState.errors.amount?.message;
 	const unitCostError = form.formState.errors.unitCost?.message;
 
@@ -81,83 +78,132 @@ export default function StockAdjustSheet() {
 
 					<MovementTypePicker value={type} onChange={changeType} />
 
-					<Text style={[styles.label, { color: c.body }]}>
-						{t(`stock.valueLabel_${type}`)}
-					</Text>
-					<Controller
-						control={form.control}
-						name="amount"
-						render={({ field }) => (
-							<TextInput
-								value={field.value}
-								onChangeText={field.onChange}
-								onBlur={field.onBlur}
-								keyboardType="number-pad"
-								accessibilityLabel={t(`stock.valueLabel_${type}`)}
-								style={inputStyle}
-							/>
-						)}
-					/>
+					<View style={styles.amountRow}>
+						<Text style={[styles.label, styles.flex, { color: c.body }]}>
+							{t(`stock.valueLabel_${type}`)}
+						</Text>
+						<Controller
+							control={form.control}
+							name="amount"
+							render={({ field }) => {
+								const value = Number.parseInt(field.value || "0", 10) || 0;
+								return (
+									<View style={styles.stepper}>
+										<Pressable
+											onPress={() =>
+												field.onChange(String(Math.max(0, value - 1)))
+											}
+											accessibilityRole="button"
+											accessibilityLabel={t("stock.decrease")}
+											style={[
+												styles.stepButton,
+												{ backgroundColor: c.card, borderColor: c.border },
+											]}
+										>
+											<Ionicons name="remove" size={22} color={c.text} />
+										</Pressable>
+										<TextInput
+											value={field.value}
+											onChangeText={field.onChange}
+											onBlur={field.onBlur}
+											keyboardType="number-pad"
+											placeholder="0"
+											placeholderTextColor={c.muted}
+											accessibilityLabel={t(`stock.valueLabel_${type}`)}
+											style={[styles.amountInput, { color: c.text }]}
+										/>
+										<Pressable
+											onPress={() => field.onChange(String(value + 1))}
+											accessibilityRole="button"
+											accessibilityLabel={t("stock.increase")}
+											style={[
+												styles.stepButton,
+												{ backgroundColor: c.primary, borderColor: c.primary },
+											]}
+										>
+											<Ionicons name="add" size={22} color="#fff" />
+										</Pressable>
+									</View>
+								);
+							}}
+						/>
+					</View>
 					{amountError ? (
 						<Text style={[styles.meta, { color: c.danger }]}>
 							{t(amountError)}
 						</Text>
 					) : null}
 
-					{type === "receipt" ? (
-						<>
-							<Text style={[styles.label, { color: c.body }]}>
-								{t("stock.unitCost")}
+					<View style={styles.boxes}>
+						{type === "receipt" ? (
+							<View
+								style={[
+									styles.box,
+									{
+										backgroundColor: c.card,
+										borderColor: unitCostError ? c.danger : c.border,
+									},
+								]}
+							>
+								<Text style={[styles.boxLabel, { color: c.muted }]}>
+									{t("stock.unitCost")}
+								</Text>
+								<Controller
+									control={form.control}
+									name="unitCost"
+									render={({ field }) => (
+										<TextInput
+											value={field.value}
+											onChangeText={field.onChange}
+											onBlur={field.onBlur}
+											keyboardType="number-pad"
+											placeholder="XAF"
+											placeholderTextColor={c.muted}
+											accessibilityLabel={t("stock.unitCost")}
+											style={[styles.boxInput, { color: c.text }]}
+										/>
+									)}
+								/>
+							</View>
+						) : null}
+						<View
+							style={[
+								styles.box,
+								{ backgroundColor: c.card, borderColor: c.border },
+							]}
+						>
+							<Text style={[styles.boxLabel, { color: c.muted }]}>
+								{t("stock.note")}
 							</Text>
 							<Controller
 								control={form.control}
-								name="unitCost"
+								name="note"
 								render={({ field }) => (
 									<TextInput
 										value={field.value}
 										onChangeText={field.onChange}
 										onBlur={field.onBlur}
-										keyboardType="number-pad"
-										placeholder="XAF"
+										maxLength={STOCK_NOTE_MAX}
+										placeholder={t("stock.notePlaceholder")}
 										placeholderTextColor={c.muted}
-										accessibilityLabel={t("stock.unitCost")}
-										style={inputStyle}
+										accessibilityLabel={t("stock.note")}
+										style={[styles.boxInput, { color: c.text }]}
 									/>
 								)}
 							/>
-							{unitCostError ? (
-								<Text style={[styles.meta, { color: c.danger }]}>
-									{t(unitCostError)}
-								</Text>
-							) : null}
-						</>
+						</View>
+					</View>
+					{unitCostError ? (
+						<Text style={[styles.meta, { color: c.danger }]}>
+							{t(unitCostError)}
+						</Text>
 					) : null}
 
-					<Text style={[styles.label, { color: c.body }]}>
-						{t("stock.note")}
-					</Text>
-					<Controller
-						control={form.control}
-						name="note"
-						render={({ field }) => (
-							<TextInput
-								value={field.value}
-								onChangeText={field.onChange}
-								onBlur={field.onBlur}
-								maxLength={STOCK_NOTE_MAX}
-								placeholder={t("stock.notePlaceholder")}
-								placeholderTextColor={c.muted}
-								accessibilityLabel={t("stock.note")}
-								style={inputStyle}
-							/>
-						)}
-					/>
-
-					<View style={[styles.after, { backgroundColor: c.neutralSoft }]}>
-						<Text style={[styles.meta, { color: c.body }]}>
+					<View style={[styles.after, { backgroundColor: c.primarySoft }]}>
+						<Text style={[styles.afterLabel, { color: c.body }]}>
 							{t("stock.after")}
 						</Text>
-						<Text style={[styles.afterValue, { color: c.text }]}>
+						<Text style={[styles.afterValue, { color: c.primary }]}>
 							{current} → {result ? result.stockAfter : "—"}
 						</Text>
 					</View>
@@ -191,14 +237,6 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	meta: { fontSize: 12, fontFamily: Fonts.body },
 	label: { fontSize: 13, fontFamily: Fonts.bodySemibold },
-	input: {
-		height: 48,
-		borderRadius: 12,
-		borderWidth: 1,
-		paddingHorizontal: 12,
-		fontSize: 16,
-		fontFamily: Fonts.body,
-	},
 	after: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -206,7 +244,41 @@ const styles = StyleSheet.create({
 		padding: 14,
 		borderRadius: 12,
 	},
-	afterValue: { fontSize: 18, fontFamily: Fonts.displayBold },
+	afterLabel: { fontSize: 14, fontFamily: Fonts.body },
+	afterValue: { fontSize: 22, fontFamily: Fonts.displayExtrabold },
+	flex: { flex: 1 },
+	amountRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+	stepper: { flexDirection: "row", alignItems: "center", gap: 8 },
+	stepButton: {
+		width: 48,
+		height: 48,
+		borderRadius: 14,
+		borderWidth: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	amountInput: {
+		width: 72,
+		textAlign: "center",
+		fontSize: 28,
+		fontFamily: Fonts.displayExtrabold,
+		paddingVertical: 4,
+	},
+	boxes: { flexDirection: "row", gap: 10 },
+	box: {
+		flex: 1,
+		borderRadius: 14,
+		borderWidth: 1,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		gap: 2,
+	},
+	boxLabel: { fontSize: 12, fontFamily: Fonts.body },
+	boxInput: {
+		fontSize: 15,
+		fontFamily: Fonts.bodySemibold,
+		paddingVertical: 2,
+	},
 	submit: {
 		height: 52,
 		borderRadius: 14,

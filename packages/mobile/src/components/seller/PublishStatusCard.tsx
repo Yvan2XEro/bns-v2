@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import type { Dispatch, SetStateAction } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { SegmentedControl } from "@/src/components/ui/SegmentedControl";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ProductFormState } from "@/src/lib/productForm";
 import type { ProductStatus } from "@/src/types/api";
@@ -27,40 +28,19 @@ export function PublishStatusCard({
 			<Text style={[f.sectionTitle, { color: c.text }]}>
 				{t("product.statusTitle")}
 			</Text>
-			{statuses.map((status) => {
-				const active = form.status === status;
-				return (
-					<Pressable
-						key={status}
-						disabled={readOnly}
-						onPress={() => setForm((s) => ({ ...s, status }))}
-						style={[
-							styles.radio,
-							{
-								borderColor: active ? c.primary : c.border,
-								backgroundColor: active ? c.primarySoft : c.card,
-							},
-						]}
-						accessibilityRole="radio"
-						accessibilityLabel={t(`product.status_${status}`)}
-						accessibilityState={{ selected: active }}
-					>
-						<Ionicons
-							name={active ? "radio-button-on" : "radio-button-off"}
-							size={20}
-							color={active ? c.primary : c.muted}
-						/>
-						<View style={{ flex: 1 }}>
-							<Text style={[f.label, { color: c.text }]}>
-								{t(`product.status_${status}`)}
-							</Text>
-							<Text style={[f.hint, { color: c.muted }]}>
-								{t(`product.status_${status}_hint`)}
-							</Text>
-						</View>
-					</Pressable>
-				);
-			})}
+			<SegmentedControl
+				role="radio"
+				disabled={readOnly}
+				segments={statuses.map((status) => ({
+					key: status,
+					label: t(`product.status_${status}`),
+				}))}
+				value={form.status}
+				onChange={(status) => setForm((s) => ({ ...s, status }))}
+			/>
+			<Text style={[f.hint, { color: c.muted }]}>
+				{t(`product.status_${form.status}_hint`)}
+			</Text>
 			<View style={[styles.info, { backgroundColor: c.neutralSoft }]}>
 				<Ionicons name="information-circle-outline" size={16} color={c.body} />
 				<Text style={[f.hint, { color: c.body, flex: 1 }]}>
@@ -72,14 +52,5 @@ export function PublishStatusCard({
 }
 
 const styles = StyleSheet.create({
-	radio: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		padding: 12,
-		minHeight: 44,
-		borderRadius: 12,
-		borderWidth: 1,
-	},
 	info: { flexDirection: "row", gap: 8, padding: 10, borderRadius: 10 },
 });
