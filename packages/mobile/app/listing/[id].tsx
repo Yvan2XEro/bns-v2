@@ -844,7 +844,9 @@ export default function ListingDetail() {
 								<Ionicons name="chatbubble-outline" size={18} color="#fff" />
 							)}
 							<Text style={styles.msgBtnText}>
-								{t("listing.contactSeller")}
+								{listingShop
+									? t("listing.messageShop")
+									: t("listing.contactSeller")}
 							</Text>
 						</Pressable>
 					)}

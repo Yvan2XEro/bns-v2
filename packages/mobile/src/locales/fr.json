@@ -258,7 +258,8 @@
 		"priceOnRequest": "Sur demande",
 		"yes": "Oui",
 		"no": "Non",
-		"distanceKm": "À {{km}} km"
+		"distanceKm": "À {{km}} km",
+		"messageShop": "Écrire à la boutique"
 	},
 	"create": {
 		"title": "Publier une annonce",

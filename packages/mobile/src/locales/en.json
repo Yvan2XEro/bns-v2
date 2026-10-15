@@ -255,7 +255,8 @@
 		"daysAgo_one": "{{count}} day ago",
 		"daysAgo": "{{count}} days ago",
 		"featured": "Featured",
-		"priceOnRequest": "On request"
+		"priceOnRequest": "On request",
+		"messageShop": "Message the shop"
 	},
 	"create": {
 		"title": "Post a Listing",
