@@ -263,4 +263,17 @@ describe("locale parity", () => {
 		walk(fr as Json, "fr:");
 		expect(dotted).toEqual([]);
 	});
+
+	test("placeholders use next-intl's single braces, never i18next's {{…}}", () => {
+		const doubled: string[] = [];
+		const walk = (node: Json, path: string) => {
+			for (const [key, value] of Object.entries(node)) {
+				if (typeof value === "object") walk(value, `${path}${key}.`);
+				else if (value.includes("{{")) doubled.push(`${path}${key}`);
+			}
+		};
+		walk(en as Json, "en:");
+		walk(fr as Json, "fr:");
+		expect(doubled).toEqual([]);
+	});
 });
