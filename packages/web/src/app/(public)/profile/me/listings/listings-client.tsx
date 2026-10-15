@@ -43,7 +43,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	const [isPending, startTransition] = useTransition();
 
 	async function handleMarkAsSold(id: string) {
-		if (!confirm("Mark this listing as sold?")) return;
+		if (!confirm(t("confirmMarkSold"))) return;
 
 		startTransition(async () => {
 			const result = await markListingAsSold(id);
@@ -55,8 +55,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	}
 
 	async function handleRenew(id: string) {
-		if (!confirm("Renew this listing? It will be resubmitted for review."))
-			return;
+		if (!confirm(t("confirmRenew"))) return;
 
 		startTransition(async () => {
 			const result = await renewListing(id);
@@ -68,7 +67,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 	}
 
 	async function handleDelete(id: string) {
-		if (!confirm("Are you sure you want to delete this listing?")) return;
+		if (!confirm(t("confirmDelete"))) return;
 
 		startTransition(async () => {
 			const result = await deleteListing(id);
@@ -140,14 +139,14 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							{listing.status === "sold" && (
 								<div className="absolute inset-0 flex items-center justify-center bg-black/50">
 									<span className="rounded-full bg-white px-3 py-1 font-bold text-[#0F172A] text-xs uppercase">
-										Sold
+										{t("statusSold")}
 									</span>
 								</div>
 							)}
 							{listing.status === "expired" && (
 								<div className="absolute inset-0 flex items-center justify-center bg-black/40">
 									<span className="rounded-full bg-orange-500 px-3 py-1 font-bold text-white text-xs uppercase">
-										Expired
+										{t("statusExpired")}
 									</span>
 								</div>
 							)}
@@ -212,10 +211,10 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 								<div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2.5">
 									<p className="flex items-center gap-1 font-semibold text-red-700 text-xs">
 										<AlertTriangle className="h-3 w-3" />
-										Rejected
+										{t("statusRejected")}
 									</p>
 									<p className="mt-1 text-red-600 text-xs">
-										{listing.rejectionReason || "No reason provided"}
+										{listing.rejectionReason || t("noReasonGiven")}
 									</p>
 									<Link
 										href={`/listing/${listing.id}/edit`}
@@ -231,7 +230,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							{listing.status === "expired" && (
 								<p className="mt-1.5 flex items-center gap-1 font-medium text-red-500 text-xs">
 									<AlertTriangle className="h-3 w-3" />
-									Expired
+									{t("statusExpired")}
 								</p>
 							)}
 							{isListingActive && expiresAt && daysUntilExpiry !== null && (
@@ -242,10 +241,10 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 								>
 									<Timer className="h-3 w-3" />
 									{daysUntilExpiry <= 0
-										? "Expires today"
+										? t("expiresToday")
 										: daysUntilExpiry === 1
-											? "Expires tomorrow"
-											: `Expires in ${daysUntilExpiry} days`}
+											? t("expiresTomorrow")
+											: t("expiresIn", { days: daysUntilExpiry })}
 								</p>
 							)}
 
@@ -257,7 +256,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 										className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white font-medium text-[#475569] text-xs transition-all hover:border-[#93C5FD] hover:text-[#1E40AF] active:scale-[0.97]"
 									>
 										<Edit className="h-3.5 w-3.5" />
-										Edit
+										{t("actionEdit")}
 									</button>
 								</Link>
 								{!isBoosted && listing.status === "published" && (
@@ -267,14 +266,14 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 											className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] text-xs shadow-sm transition-all hover:shadow-amber-500/15 hover:shadow-md active:scale-[0.97]"
 										>
 											<Sparkles className="h-3.5 w-3.5" />
-											Boost
+											{t("actionBoost")}
 										</button>
 									</BoostDialog>
 								)}
 								{isBoosted && (
 									<span className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg border border-[#F59E0B]/30 bg-amber-50 font-semibold text-[#92400E] text-xs">
 										<Sparkles className="h-3 w-3 text-[#F59E0B]" />
-										Boosted
+										{t("boostedBadge")}
 									</span>
 								)}
 								{listing.status === "expired" && (
@@ -285,7 +284,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 										disabled={isPending}
 									>
 										<RefreshCw className="h-3.5 w-3.5" />
-										Renew
+										{t("actionRenew")}
 									</button>
 								)}
 								<DropdownMenu>
@@ -309,7 +308,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 												className="text-sm"
 											>
 												<CheckCircle className="mr-2 h-4 w-4 text-emerald-500" />
-												Mark as sold
+												{t("markAsSold")}
 											</DropdownMenuItem>
 										)}
 										{listing.status === "expired" && (
@@ -318,7 +317,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 												className="text-sm"
 											>
 												<RefreshCw className="mr-2 h-4 w-4 text-blue-500" />
-												Renew listing
+												{t("renewListing")}
 											</DropdownMenuItem>
 										)}
 										<DropdownMenuItem
@@ -326,7 +325,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 											onClick={() => handleDelete(listing.id)}
 										>
 											<Trash2 className="mr-2 h-4 w-4" />
-											Delete
+											{t("actionDelete")}
 										</DropdownMenuItem>
 									</DropdownMenuContent>
 								</DropdownMenu>

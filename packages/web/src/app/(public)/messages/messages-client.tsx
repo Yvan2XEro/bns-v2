@@ -597,7 +597,7 @@ export function MessagesClient({
 												)}
 												{blocked && (
 													<span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 font-medium text-[10px] text-red-600">
-														Blocked
+														{t("blocked")}
 													</span>
 												)}
 											</div>
@@ -715,12 +715,12 @@ export function MessagesClient({
 													{blocked ? (
 														<>
 															<ShieldOff className="mr-2 h-4 w-4" />
-															{isBlocking ? "Unblocking..." : "Unblock user"}
+															{isBlocking ? t("unblocking") : t("unblockUser")}
 														</>
 													) : (
 														<>
 															<Ban className="mr-2 h-4 w-4" />
-															{isBlocking ? "Blocking..." : "Block user"}
+															{isBlocking ? t("blocking") : t("blockUser")}
 														</>
 													)}
 												</DropdownMenuItem>
@@ -731,7 +731,7 @@ export function MessagesClient({
 											onClick={() => setDeleteDialogOpen(true)}
 										>
 											<Trash2 className="mr-2 h-4 w-4" />
-											Delete conversation
+											{t("deleteConversation")}
 										</DropdownMenuItem>
 									</DropdownMenuContent>
 								</DropdownMenu>
@@ -850,7 +850,7 @@ export function MessagesClient({
 							{isOtherBlocked(selectedConversation) ? (
 								<div className="flex items-center justify-center gap-2 border-[#E2E8F0] border-t pt-4 text-[#94A3B8] text-sm">
 									<Ban className="h-4 w-4" />
-									You have blocked this user
+									{t("youBlocked")}
 								</div>
 							) : (
 								<div className="border-[#E2E8F0] border-t pt-3">
@@ -886,7 +886,7 @@ export function MessagesClient({
 									)}
 									<form onSubmit={sendMessage} className="flex gap-2">
 										<Input
-											placeholder="Type a message..."
+											placeholder={t("typeMessage")}
 											value={newMessage}
 											onChange={handleInputChange}
 											disabled={connectionState !== "connected"}
@@ -922,16 +922,13 @@ export function MessagesClient({
 			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Delete conversation</DialogTitle>
-						<DialogDescription>
-							Are you sure you want to delete this conversation? This action
-							cannot be undone and all messages will be lost.
-						</DialogDescription>
+						<DialogTitle>{t("deleteConversation")}</DialogTitle>
+						<DialogDescription>{t("deleteConfirm")}</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
 						<DialogClose asChild>
 							<Button variant="ghost" disabled={deleting}>
-								Cancel
+								{t("cancel")}
 							</Button>
 						</DialogClose>
 						<Button
@@ -939,7 +936,7 @@ export function MessagesClient({
 							disabled={deleting}
 							onClick={handleDeleteConversation}
 						>
-							{deleting ? "Deleting..." : "Delete"}
+							{deleting ? t("deleting") : t("delete")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

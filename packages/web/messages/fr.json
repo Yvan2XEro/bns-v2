@@ -301,7 +301,19 @@
 		"reviewSubmitted": "Avis publié. Merci !",
 		"reviewPlaceholder": "Racontez votre expérience (facultatif)",
 		"reviewSubmit": "Publier l'avis",
-		"reviewStars": "{count} sur 5"
+		"reviewStars": "{count} sur 5",
+		"expiresTomorrow": "Expire demain",
+		"confirmMarkSold": "Marquer cette annonce comme vendue ?",
+		"confirmRenew": "Renouveler cette annonce ? Elle sera de nouveau soumise à validation.",
+		"confirmDelete": "Supprimer définitivement cette annonce ?",
+		"noReasonGiven": "Aucun motif indiqué",
+		"actionEdit": "Modifier",
+		"actionBoost": "Booster",
+		"boostedBadge": "Boostée",
+		"actionRenew": "Renouveler",
+		"markAsSold": "Marquer comme vendue",
+		"renewListing": "Renouveler l'annonce",
+		"actionDelete": "Supprimer"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -389,7 +401,8 @@
 		"currentPasswordIncorrect": "Le mot de passe actuel est incorrect",
 		"failedToDeleteAccount": "Échec de la suppression du compte. Veuillez réessayer.",
 		"passwordsDoNotMatch": "Les deux mots de passe ne correspondent pas.",
-		"passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères."
+		"passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères.",
+		"passwordChangeFailed": "Le mot de passe n'a pas pu être changé. Réessayez."
 	},
 	"PhoneVerification": {
 		"dialogTitle": "Vérifiez votre numéro de téléphone",
@@ -2194,7 +2207,19 @@
 		"orderCardOpen": "Voir la commande",
 		"noConversations": "Aucune conversation pour le moment",
 		"selectConversation": "Sélectionnez une conversation",
-		"selectConversationHint": "Choisissez une conversation dans la liste pour commencer à échanger"
+		"selectConversationHint": "Choisissez une conversation dans la liste pour commencer à échanger",
+		"blocked": "Bloqué",
+		"unblocking": "Déblocage…",
+		"unblockUser": "Débloquer l'utilisateur",
+		"blocking": "Blocage…",
+		"blockUser": "Bloquer l'utilisateur",
+		"deleteConversation": "Supprimer la conversation",
+		"youBlocked": "Vous avez bloqué cet utilisateur",
+		"typeMessage": "Écrire un message…",
+		"deleteConfirm": "Supprimer cette conversation ? Cette action est définitive et tous les messages seront perdus.",
+		"cancel": "Annuler",
+		"deleting": "Suppression…",
+		"delete": "Supprimer"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Commande transmise",

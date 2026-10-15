@@ -18,11 +18,6 @@ import { Label } from "~/components/ui/label";
 import { useAuth } from "~/hooks/use-auth";
 import { safeReturnTo } from "~/lib/return-to";
 
-async function getErrorMessage(response: Response): Promise<string> {
-	const data = await response.json().catch(() => ({}));
-	return data.message || data.errors?.[0]?.message || "Request failed";
-}
-
 export default function SettingsPage() {
 	const t = useTranslations("Settings");
 	const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
@@ -90,10 +85,9 @@ export default function SettingsPage() {
 			});
 
 			if (!loginRes.ok) {
-				throw new Error(t("currentPasswordIncorrect"));
+				setPasswordError(t("currentPasswordIncorrect"));
+				return;
 			}
-
-			setPasswordSuccess(t("passwordChanged"));
 
 			const res = await fetch(`/api/users/${currentUser.id}`, {
 				method: "PATCH",
@@ -103,17 +97,16 @@ export default function SettingsPage() {
 			});
 
 			if (!res.ok) {
-				throw new Error(await getErrorMessage(res));
+				setPasswordError(t("passwordChangeFailed"));
+				return;
 			}
 
-			setPasswordSuccess("Password changed successfully");
+			setPasswordSuccess(t("passwordChanged"));
 			setCurrentPassword("");
 			setNewPassword("");
 			setConfirmPassword("");
-		} catch (err) {
-			setPasswordError(
-				err instanceof Error ? err.message : "Failed to change password",
-			);
+		} catch {
+			setPasswordError(t("passwordChangeFailed"));
 		} finally {
 			setIsChangingPassword(false);
 		}
