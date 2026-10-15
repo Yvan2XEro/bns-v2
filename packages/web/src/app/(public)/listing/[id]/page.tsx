@@ -40,6 +40,7 @@ import { formatOrderMoneyRange, renderOrderMoney } from "~/lib/order-money";
 import { hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import { getMarket, getMyShop, getShopBadge } from "~/lib/server-shop";
+import { timeAgo } from "~/lib/time-ago";
 import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
 import { DeliveryEstimates } from "./delivery-estimates";
@@ -139,18 +140,6 @@ async function getSimilarListings(listingId: string): Promise<Listing[]> {
 	} catch {
 		return [];
 	}
-}
-
-function timeAgo(date: string): string {
-	const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-	if (seconds < 60) return "just now";
-	const minutes = Math.floor(seconds / 60);
-	if (minutes < 60) return `${minutes}m ago`;
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return `${hours}h ago`;
-	const days = Math.floor(hours / 24);
-	if (days < 30) return `${days}d ago`;
-	return new Date(date).toLocaleDateString();
 }
 
 export default async function ListingPage({ params, searchParams }: PageProps) {
@@ -404,7 +393,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								</span>
 								<span className="flex items-center gap-1">
 									<Clock className="h-4 w-4" />
-									{timeAgo(listing.createdAt)}
+									{timeAgo(listing.createdAt, locale, { maxDays: 30 })}
 								</span>
 								{listing.views !== undefined && (
 									<span className="flex items-center gap-1">

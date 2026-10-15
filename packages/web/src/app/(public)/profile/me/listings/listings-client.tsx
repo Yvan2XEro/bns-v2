@@ -131,7 +131,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							) : (
 								<div className="flex h-full w-full flex-col items-center justify-center gap-1">
 									<ImageIcon className="h-8 w-8 text-[#CBD5E1]" />
-									<span className="text-[#94A3B8] text-xs">No photo</span>
+									<span className="text-[#94A3B8] text-xs">{t("noPhoto")}</span>
 								</div>
 							)}
 

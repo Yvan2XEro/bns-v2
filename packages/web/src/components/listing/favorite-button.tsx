@@ -2,6 +2,7 @@
 
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useAuth } from "~/hooks/use-auth";
 import { toggleFavorite } from "~/lib/actions";
@@ -20,6 +21,7 @@ export function FavoriteButton({
 	className,
 	showLabel = false,
 }: FavoriteButtonProps) {
+	const t = useTranslations("Favorites");
 	const { user } = useAuth();
 	const router = useRouter();
 	const [isFavorite, setIsFavorite] = useState(initialFavorite);
@@ -78,7 +80,7 @@ export function FavoriteButton({
 					isFavorite && "fill-current",
 				)}
 			/>
-			{showLabel && (isFavorite ? "Saved" : "Save")}
+			{showLabel && (isFavorite ? t("saved") : t("save"))}
 		</button>
 	);
 }

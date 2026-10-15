@@ -314,7 +314,11 @@
 		"actionRenew": "Renouveler",
 		"markAsSold": "Marquer comme vendue",
 		"renewListing": "Renouveler l'annonce",
-		"actionDelete": "Supprimer"
+		"actionDelete": "Supprimer",
+		"noPhoto": "Pas de photo",
+		"noImages": "Aucune photo",
+		"badgeNew": "Neuf",
+		"badgeLikeNew": "Comme neuf"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -427,7 +431,9 @@
 		"favorites": "Favoris",
 		"noFavoritesYet": "Aucun favori",
 		"clickHeartToSave": "Cliquez sur le cœur des annonces pour les sauvegarder ici",
-		"browseListings": "Parcourir les annonces"
+		"browseListings": "Parcourir les annonces",
+		"save": "Sauvegarder",
+		"saved": "Sauvegardé"
 	},
 	"Home": {
 		"heroTitle": "Acheter & Vendre Localement",

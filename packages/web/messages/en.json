@@ -313,7 +313,11 @@
 		"actionRenew": "Renew",
 		"markAsSold": "Mark as sold",
 		"renewListing": "Renew listing",
-		"actionDelete": "Delete"
+		"actionDelete": "Delete",
+		"noPhoto": "No photo",
+		"noImages": "No images",
+		"badgeNew": "New",
+		"badgeLikeNew": "Like new"
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -426,7 +430,9 @@
 		"favorites": "Favorites",
 		"noFavoritesYet": "No favorites yet",
 		"clickHeartToSave": "Click the heart icon on listings to save them here",
-		"browseListings": "Browse listings"
+		"browseListings": "Browse listings",
+		"save": "Save",
+		"saved": "Saved"
 	},
 	"Home": {
 		"heroTitle": "Buy & Sell Locally",

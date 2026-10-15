@@ -44,7 +44,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 	if (images.length === 0) {
 		return (
 			<div className="flex aspect-[4/3] items-center justify-center bg-[#F1F5F9]">
-				<span className="text-[#94A3B8]">No images</span>
+				<span className="text-[#94A3B8]">{t("noImages")}</span>
 			</div>
 		);
 	}

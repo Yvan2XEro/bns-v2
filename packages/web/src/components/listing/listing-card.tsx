@@ -3,7 +3,7 @@
 import { Clock, MapPin, Store, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import {
@@ -12,21 +12,10 @@ import {
 	listingShopName,
 } from "~/lib/listing-shop";
 import { hasListingPrice } from "~/lib/price";
+import { timeAgo } from "~/lib/time-ago";
 import { cn } from "~/lib/utils";
 import type { Listing, Media, User } from "~/types";
 import { FavoriteButton } from "./favorite-button";
-
-function timeAgo(date: string): string {
-	const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-	if (seconds < 60) return "just now";
-	const minutes = Math.floor(seconds / 60);
-	if (minutes < 60) return `${minutes}m ago`;
-	const hours = Math.floor(minutes / 60);
-	if (hours < 24) return `${hours}h ago`;
-	const days = Math.floor(hours / 24);
-	if (days < 7) return `${days}d ago`;
-	return new Date(date).toLocaleDateString();
-}
 
 interface ListingCardProps {
 	listing: Listing;
@@ -36,6 +25,7 @@ interface ListingCardProps {
 export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Listing");
+	const locale = useLocale();
 	const firstImage =
 		listing.images && listing.images.length > 0
 			? listing.images[0].image
@@ -61,9 +51,9 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 		priceMax > listing.price;
 	const conditionLabel =
 		listing.condition === "new"
-			? "New"
+			? t("badgeNew")
 			: listing.condition === "like_new"
-				? "Like new"
+				? t("badgeLikeNew")
 				: null;
 
 	return (
@@ -88,7 +78,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						/>
 					) : (
 						<div className="flex h-full w-full items-center justify-center">
-							<span className="text-[#94A3B8] text-xs">No photo</span>
+							<span className="text-[#94A3B8] text-xs">{t("noPhoto")}</span>
 						</div>
 					)}
 
@@ -148,7 +138,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						</span>
 						<span className="flex shrink-0 items-center gap-1">
 							<Clock className="h-3 w-3" />
-							{timeAgo(listing.createdAt)}
+							{timeAgo(listing.createdAt, locale)}
 						</span>
 					</div>
 					{shopName && (
