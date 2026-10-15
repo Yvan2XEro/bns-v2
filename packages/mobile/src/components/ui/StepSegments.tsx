@@ -15,7 +15,6 @@ export function StepSegments({
 		<View style={styles.track}>
 			{Array.from({ length: count }, (_, index) => (
 				<View
-					// biome-ignore lint/suspicious/noArrayIndexKey: steps are positional
 					key={index}
 					style={[
 						styles.segment,
