@@ -15,6 +15,11 @@ import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useSupplierResaleProducts } from "@/src/hooks/useResale";
+import {
+	ERROR_CODES,
+	hasErrorCode,
+	resolveErrorMessage,
+} from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatXaf } from "@/src/lib/orderMoney";
 import type { SupplierResaleProduct } from "../../../../api/src/contracts/resale";
@@ -73,12 +78,20 @@ export default function ResaleOfferedScreen() {
 				<ActivityIndicator style={styles.spinner} color={c.primary} />
 			) : null}
 			{offered.isError ? (
-				<EmptyState
-					illustration="notFound"
-					title={t("sellerResale.offeredLoadError")}
-					ctaLabel={t("common.retry")}
-					onCta={() => offered.refetch()}
-				/>
+				hasErrorCode(offered.error, ERROR_CODES.resaleDisabled) ? (
+					<EmptyState
+						illustration="empty"
+						title={resolveErrorMessage(offered.error, t)}
+					/>
+				) : (
+					<EmptyState
+						illustration="notFound"
+						title={t("sellerResale.offeredLoadError")}
+						subtitle={resolveErrorMessage(offered.error, t)}
+						ctaLabel={t("common.retry")}
+						onCta={() => offered.refetch()}
+					/>
+				)
 			) : null}
 			{offered.data && rows.length === 0 ? (
 				<EmptyState

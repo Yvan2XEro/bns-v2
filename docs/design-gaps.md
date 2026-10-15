@@ -65,7 +65,7 @@ Comparaison pas encore faite.
 
 - Achat : paiement en attente, paiement protégé, étapes
   paiement et récapitulatif du tunnel.
-- Vendeur : revente.
+- Vendeur : fiche produit en revente (la revente est désactivée et aucune boutique de niveau 3 n'existe dans les données de démo).
 - P1 : création de produit, réglages boutique, recherche de boutiques,
   passage par le téléphone, états vides/erreur, premier lancement boutique,
   déplacement d'annonces, fiche modération boutique, fiche produit acheteur,

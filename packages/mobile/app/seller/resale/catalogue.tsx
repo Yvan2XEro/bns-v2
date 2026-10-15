@@ -32,6 +32,11 @@ import {
 	useResaleCatalogue,
 } from "@/src/hooks/useResale";
 import { ApiError } from "@/src/lib/api";
+import {
+	ERROR_CODES,
+	hasErrorCode,
+	resolveErrorMessage,
+} from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatXaf } from "@/src/lib/orderMoney";
 import type {
@@ -181,12 +186,20 @@ export default function ResaleCatalogueScreen() {
 				<ActivityIndicator style={styles.spinner} color={c.primary} />
 			) : null}
 			{catalogue.isError && !needsTerms ? (
-				<EmptyState
-					illustration="notFound"
-					title={t("sellerResale.loadError")}
-					ctaLabel={t("common.retry")}
-					onCta={() => catalogue.refetch()}
-				/>
+				hasErrorCode(catalogue.error, ERROR_CODES.resaleDisabled) ? (
+					<EmptyState
+						illustration="empty"
+						title={resolveErrorMessage(catalogue.error, t)}
+					/>
+				) : (
+					<EmptyState
+						illustration="notFound"
+						title={t("sellerResale.loadError")}
+						subtitle={resolveErrorMessage(catalogue.error, t)}
+						ctaLabel={t("common.retry")}
+						onCta={() => catalogue.refetch()}
+					/>
+				)
 			) : null}
 			{catalogue.data && rows.length === 0 ? (
 				<EmptyState

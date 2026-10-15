@@ -550,6 +550,35 @@ function RootLayoutNav() {
 					options={{ headerShown: false, animation: "slide_from_right" }}
 				/>
 
+				{/* Screens that draw their own header (SellerHeader, ModerationScreen):
+				    the stack's default one would stack the raw route path on top.
+				    `src/lib/routeRegistry.test.ts` fails when a new screen is missed. */}
+				<Stack.Screen name="seller/insights" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="seller/resale/catalogue"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/resale/offered"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/resale/finance"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/resale/purchase-orders/index"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="seller/resale/purchase-orders/[id]"
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="moderation/risk/[id]"
+					options={{ headerShown: false }}
+				/>
+
 				{/* P4 orders. Checkout's own layout covers its four steps. */}
 				<Stack.Screen name="cart" options={{ headerShown: false }} />
 				<Stack.Screen name="checkout" options={{ headerShown: false }} />

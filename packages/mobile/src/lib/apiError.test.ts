@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { normalizeApiError } from "./apiError";
+import { hasErrorCode, normalizeApiError } from "./apiError";
 
 describe("normalizeApiError", () => {
 	test("reads the code a Payload APIError carries in data", () => {
@@ -62,5 +62,18 @@ describe("normalizeApiError", () => {
 		expect(
 			normalizeApiError(409, { code: "stock.negative", message: "x" }).code,
 		).toBe("stock.negative");
+	});
+});
+
+describe("hasErrorCode", () => {
+	test("matches only the code a failure carries", () => {
+		const error = {
+			code: "resale.disabled",
+			message: "Resale is not enabled yet.",
+		};
+		expect(hasErrorCode(error, "resale.disabled")).toBe(true);
+		expect(hasErrorCode(error, "resale.termsNotAccepted")).toBe(false);
+		expect(hasErrorCode(null, "resale.disabled")).toBe(false);
+		expect(hasErrorCode(new Error("network"), "resale.disabled")).toBe(false);
 	});
 });

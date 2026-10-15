@@ -720,6 +720,17 @@ type TFunction = (key: string) => string;
  * `t(code)` would render "auth.emailTaken". Comparing the result against
  * the key catches that and falls through to the English fallback.
  */
+/** Whether a failed request carries this API error code. */
+export function hasErrorCode(error: unknown, code: string): boolean {
+	return (
+		Boolean(error) &&
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		(error as { code: unknown }).code === code
+	);
+}
+
 export function resolveErrorMessage(
 	error: unknown,
 	t: TFunction,
