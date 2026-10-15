@@ -589,6 +589,78 @@ describe("public search route", () => {
 			});
 		});
 	});
+
+	describe("category facet", () => {
+		async function bodyFor(queryString: string) {
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request(`http://localhost:3000/api/public/search?${queryString}`),
+			);
+			return response.json();
+		}
+
+		it("asks Meilisearch for category counts and returns them for a shop", async () => {
+			searchMock.mockResolvedValueOnce({
+				hits: [],
+				estimatedTotalHits: 304,
+				facetDistribution: { categoryId: { "cat-phones": 180, "cat-pcs": 74 } },
+			});
+
+			const body = await bodyFor("shop=s-1&facets=category&limit=1");
+
+			expect(searchMock.mock.calls.at(-1)?.[1]?.facets).toEqual(["categoryId"]);
+			expect(body.categoryCounts).toEqual({ "cat-phones": 180, "cat-pcs": 74 });
+		});
+
+		it("never facets a search that is not scoped to a shop", async () => {
+			const body = await bodyFor("facets=category");
+
+			expect(searchMock.mock.calls.at(-1)?.[1]?.facets).toBeUndefined();
+			expect(body).not.toHaveProperty("categoryCounts");
+		});
+
+		it("counts the shop's published listings per category on the Payload path", async () => {
+			// biome-ignore lint/performance/noDelete: an assigned undefined stays truthy
+			delete process.env.MEILI_HOST;
+			findMock.mockImplementation(
+				async (args: { collection: string; select?: unknown }) => {
+					if (args.collection === "shops") {
+						return { docs: [{ id: "s-1", status: "active" }], totalDocs: 1 };
+					}
+					if (args.select) {
+						return {
+							docs: [
+								{ id: "l-1", category: "cat-phones" },
+								{ id: "l-2", category: "cat-phones" },
+								{ id: "l-3", category: { id: "cat-pcs" } },
+								{ id: "l-4", category: null },
+							],
+							totalDocs: 4,
+						};
+					}
+					return { docs: [], totalDocs: 4 };
+				},
+			);
+
+			const body = await bodyFor("shop=s-1&facets=category");
+
+			expect(findMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					collection: "listings",
+					select: { category: true },
+					where: {
+						and: [
+							{ status: { equals: "published" } },
+							{ shop: { equals: "s-1" } },
+						],
+					},
+				}),
+			);
+			expect(body.categoryCounts).toEqual({ "cat-phones": 2, "cat-pcs": 1 });
+		});
+	});
 });
 
 describe("public shops search route", () => {

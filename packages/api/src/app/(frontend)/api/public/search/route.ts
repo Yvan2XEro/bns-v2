@@ -199,6 +199,34 @@ interface FallbackParams {
 	limit: number;
 	offset: number;
 	nowIso: string;
+	categoryFacet: boolean;
+}
+
+/**
+ * A shop's published listings counted per category id, for the shop page's
+ * category list. Only ever asked with a shop filter, so the scan is bounded by
+ * one shop's catalogue, and it reads nothing but each listing's category.
+ */
+async function countShopListingsByCategory(
+	payload: Awaited<ReturnType<typeof getPayload>>,
+	shopId: string,
+): Promise<Record<string, number>> {
+	const result = await payload.find({
+		collection: "listings",
+		where: {
+			and: [{ status: { equals: "published" } }, { shop: { equals: shopId } }],
+		},
+		select: { category: true },
+		depth: 0,
+		limit: 0,
+		pagination: false,
+	});
+	const counts: Record<string, number> = {};
+	for (const doc of result.docs) {
+		const id = relationId((doc as { category?: unknown }).category);
+		if (id) counts[id] = (counts[id] ?? 0) + 1;
+	}
+	return counts;
 }
 
 /**
@@ -225,6 +253,7 @@ async function runPayloadListingSearch(
 		limit,
 		offset,
 		nowIso,
+		categoryFacet,
 	} = params;
 	const payload = await getPayload({ config });
 	const where: Where = {
@@ -250,7 +279,13 @@ async function runPayloadListingSearch(
 			limit: 1,
 		});
 		if (!shops.docs[0]) {
-			return Response.json({ hits: [], total: 0, limit, offset });
+			return Response.json({
+				hits: [],
+				total: 0,
+				limit,
+				offset,
+				...(categoryFacet && { categoryCounts: {} }),
+			});
 		}
 		where.shop = { equals: shopParam };
 	}
@@ -307,11 +342,17 @@ async function runPayloadListingSearch(
 		sort: payloadSort,
 	});
 
+	const categoryCounts =
+		categoryFacet && shopParam
+			? await countShopListingsByCategory(payload, shopParam)
+			: null;
+
 	return Response.json({
 		hits: result.docs.map((doc) => serializeListingHit(doc)),
 		total: result.totalDocs,
 		limit,
 		offset,
+		...(categoryCounts && { categoryCounts }),
 	});
 }
 
@@ -339,6 +380,10 @@ export async function GET(request: Request) {
 	const conditionParam = searchParams.get("condition");
 	const tagsParam = searchParams.get("tags");
 	const shopParam = searchParams.get("shop");
+	// Per-category counts only make sense scoped to one shop; an unscoped
+	// request would ask for a facet over the whole marketplace.
+	const categoryFacet =
+		!!shopParam && searchParams.get("facets") === "category";
 	const minShopLevelParam = Number.parseInt(
 		searchParams.get("minShopLevel") ?? "",
 		10,
@@ -363,6 +408,7 @@ export async function GET(request: Request) {
 		limit,
 		offset,
 		nowIso,
+		categoryFacet,
 	};
 
 	const dynamicFilters: string[] = [];
@@ -497,6 +543,7 @@ export async function GET(request: Request) {
 			sort: sort.length > 0 ? sort : undefined,
 			limit,
 			offset,
+			...(categoryFacet && { facets: ["categoryId"] }),
 		});
 	} catch (error) {
 		// Meilisearch rejects a filter on an attribute it was never told is
@@ -543,6 +590,9 @@ export async function GET(request: Request) {
 			total: result.estimatedTotalHits,
 			limit,
 			offset,
+			...(categoryFacet && {
+				categoryCounts: result.facetDistribution?.categoryId ?? {},
+			}),
 		});
 	} catch (error) {
 		// The live check hits the database, not Meilisearch — a search that
