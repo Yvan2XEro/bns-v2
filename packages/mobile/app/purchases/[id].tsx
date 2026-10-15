@@ -25,6 +25,7 @@ import { ContestSheet } from "@/src/components/purchases/ContestSheet";
 import { HandoverCard } from "@/src/components/purchases/HandoverCard";
 import { OrderProgress } from "@/src/components/purchases/OrderProgress";
 import { PaymentSection } from "@/src/components/purchases/PaymentSection";
+import { PurchaseStatusPill } from "@/src/components/purchases/PurchaseRow";
 import { PurchaseSummary } from "@/src/components/purchases/PurchaseSummary";
 import { ReviewPanel } from "@/src/components/purchases/ReviewPanel";
 import { Timeline } from "@/src/components/purchases/Timeline";
@@ -39,7 +40,6 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { availableActions, type OrderAction } from "@/src/lib/orderActions";
 import { formatOrderDate } from "@/src/lib/orderMoney";
-import { purchaseStatusKey } from "@/src/lib/purchaseActions";
 
 export default function PurchaseScreen() {
 	const c = useShopTheme();
@@ -79,7 +79,11 @@ export default function PurchaseScreen() {
 						: t("purchases.title")
 				}
 				subtitle={
-					order ? t("purchases.soldBy", { shop: order.shop.name }) : null
+					order
+						? `${t("purchases.placedOn", {
+								date: formatOrderDate(order.timestamps.placedAt, lang),
+							})} · ${order.shop.name}`
+						: null
 				}
 				onBack={() =>
 					router.canGoBack() ? router.back() : router.replace("/purchases")
@@ -112,16 +116,14 @@ export default function PurchaseScreen() {
 					}
 				>
 					<View style={styles.heading}>
-						<View style={[styles.pill, { backgroundColor: c.primarySoft }]}>
-							<Text style={[styles.pillText, { color: c.primary }]}>
-								{t(purchaseStatusKey(order.status))}
+						<PurchaseStatusPill status={order.status} />
+						<View style={[styles.pill, { backgroundColor: c.neutralSoft }]}>
+							<Text style={[styles.pillText, { color: c.neutralText }]}>
+								{order.paymentMethod === "cod"
+									? t("purchases.payPillCod")
+									: t("purchases.payPillMobileMoney")}
 							</Text>
 						</View>
-						<Text style={[styles.meta, { color: c.muted }]}>
-							{t("purchases.placedOn", {
-								date: formatOrderDate(order.timestamps.placedAt, lang),
-							})}
-						</Text>
 					</View>
 
 					<OrderProgress status={order.status} timestamps={order.timestamps} />
@@ -215,10 +217,9 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	content: { padding: 16, gap: 14, paddingBottom: 48 },
-	heading: { flexDirection: "row", alignItems: "center", gap: 10 },
-	pill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-	pillText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
-	meta: { fontSize: 13, fontFamily: Fonts.body },
+	heading: { flexDirection: "row", alignItems: "center", gap: 8 },
+	pill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+	pillText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
 	link: {
 		flexDirection: "row",
 		alignItems: "center",

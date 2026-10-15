@@ -1,5 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import {
+	ActivityIndicator,
+	Pressable,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useRegenerateHandoverCode } from "@/src/hooks/useOrderActions";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -8,7 +14,7 @@ import type { OrderAction } from "@/src/lib/orderActions";
 import { handoverCardState } from "@/src/lib/purchaseActions";
 import type { OrderView } from "@/src/types/order";
 import { useShopTheme } from "../shop/theme";
-import { Card, FieldError, PurchaseButton, purchaseText } from "./ui";
+import { FieldError, purchaseText } from "./ui";
 
 /**
  * The plaintext code exists only in the SMS sent at shipping and in the
@@ -29,28 +35,33 @@ export function HandoverCard({
 	const state = handoverCardState(order, actions, code);
 
 	return (
-		<Card title={t("purchases.handoverTitle")} accent={c.primary}>
-			{state.showCode ? (
-				<View accessibilityLiveRegion="polite">
-					<Text style={[purchaseText.muted, { color: c.body }]}>
-						{t("purchases.handoverYourCode")}
-					</Text>
-					<Text
-						style={[styles.code, { color: c.text }]}
-						accessibilityLabel={code?.split("").join(" ")}
-					>
-						{code}
-					</Text>
+		<View style={[styles.card, { borderColor: c.isDark ? c.border : INK }]}>
+			<View style={styles.head}>
+				<Ionicons name="key-outline" size={18} color={AMBER} />
+				<Text style={styles.title}>{t("purchases.handoverTitle")}</Text>
+				<Text style={styles.sms}>{t("purchases.handoverAlsoSms")}</Text>
+			</View>
+
+			{state.showCode && code ? (
+				<View
+					style={styles.digits}
+					accessibilityLiveRegion="polite"
+					accessibilityLabel={`${t("purchases.handoverYourCode")} ${code.split("").join(" ")}`}
+				>
+					{code.split("").map((digit, index) => (
+						<View key={index} style={styles.digit}>
+							<Text style={styles.digitText}>{digit}</Text>
+						</View>
+					))}
 				</View>
 			) : !state.locked ? (
-				<Text style={[purchaseText.body, { color: c.body }]}>
-					{t("purchases.handoverSentBySms")}
-				</Text>
+				<Text style={styles.body}>{t("purchases.handoverSentBySms")}</Text>
 			) : null}
 
-			<Text style={[styles.warning, { color: c.warningText }]}>
-				{t("purchases.handoverBody")}
-			</Text>
+			<View style={styles.warningRow}>
+				<Ionicons name="warning-outline" size={16} color={AMBER} />
+				<Text style={styles.warning}>{t("purchases.handoverBody")}</Text>
+			</View>
 
 			{state.locked ? (
 				<View style={[styles.locked, { backgroundColor: c.dangerSoft }]}>
@@ -73,37 +84,100 @@ export function HandoverCard({
 				</View>
 			) : null}
 
-			<Text style={[purchaseText.muted, { color: c.muted }]}>
+			{state.canRegenerate ? (
+				<Pressable
+					onPress={() => regenerate.mutate()}
+					disabled={regenerate.isPending}
+					accessibilityRole="button"
+					style={styles.regenerate}
+				>
+					{regenerate.isPending ? (
+						<ActivityIndicator color="#fff" />
+					) : (
+						<Text style={styles.regenerateText}>
+							{t("purchases.handoverRegenerate")}
+						</Text>
+					)}
+				</Pressable>
+			) : null}
+			<Text style={styles.muted}>
 				{t("purchases.handoverRegenerateLeft", {
 					count: state.regenerationsLeft,
 				})}
 			</Text>
-
-			{state.canRegenerate ? (
-				<PurchaseButton
-					label={t("purchases.handoverRegenerate")}
-					tone="outline"
-					pending={regenerate.isPending}
-					onPress={() => regenerate.mutate()}
-				/>
-			) : null}
 			<FieldError
 				message={
 					regenerate.isError ? resolveErrorMessage(regenerate.error, t) : null
 				}
 			/>
-		</Card>
+		</View>
 	);
 }
 
+/** The design system's ink: the card reads as the one thing to keep safe. */
+const INK = "#0f172a";
+const AMBER = "#fbbf24";
+
 const styles = StyleSheet.create({
-	code: {
-		fontSize: 48,
-		fontFamily: Fonts.displayExtrabold,
-		letterSpacing: 12,
-		marginTop: 4,
+	card: {
+		backgroundColor: INK,
+		borderRadius: 16,
+		borderWidth: 1,
+		padding: 16,
+		gap: 12,
 	},
-	warning: { fontSize: 14, fontFamily: Fonts.bodySemibold, lineHeight: 20 },
+	head: { flexDirection: "row", alignItems: "center", gap: 8 },
+	title: {
+		flex: 1,
+		color: "#fff",
+		fontSize: 16,
+		fontFamily: Fonts.displayBold,
+	},
+	sms: { color: "#94a3b8", fontSize: 12, fontFamily: Fonts.bodySemibold },
+	body: {
+		color: "#cbd5e1",
+		fontSize: 14,
+		fontFamily: Fonts.body,
+		lineHeight: 20,
+	},
+	digits: { flexDirection: "row", gap: 8 },
+	digit: {
+		flex: 1,
+		height: 64,
+		borderRadius: 12,
+		backgroundColor: "#1e293b",
+		borderWidth: 1,
+		borderColor: "#334155",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	digitText: {
+		color: "#fff",
+		fontSize: 30,
+		fontFamily: Fonts.displayExtrabold,
+	},
+	warningRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
+	warning: {
+		flex: 1,
+		color: AMBER,
+		fontSize: 14,
+		fontFamily: Fonts.bodySemibold,
+		lineHeight: 20,
+	},
+	regenerate: {
+		minHeight: 44,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: "#334155",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	regenerateText: {
+		color: "#fff",
+		fontSize: 15,
+		fontFamily: Fonts.bodySemibold,
+	},
+	muted: { color: "#94a3b8", fontSize: 12, fontFamily: Fonts.body },
 	locked: { borderRadius: 12, padding: 12, gap: 6 },
 	lockedTitle: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

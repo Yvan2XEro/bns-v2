@@ -2872,7 +2872,11 @@
 		},
 		"reviewPickRating": "Tap a star",
 		"reviewCounter": "{{count}} / {{max}}",
-		"reviewVerifiedNote": "Only buyers whose order was delivered can review a shop."
+		"reviewVerifiedNote": "Only buyers whose order was delivered can review a shop.",
+		"payPillCod": "Pay on delivery",
+		"payPillMobileMoney": "Mobile money",
+		"handoverAlsoSms": "Also sent by SMS",
+		"deliveryInstructions": "Delivery instructions"
 	},
 	"sellerOrders": {
 		"title": "Orders",

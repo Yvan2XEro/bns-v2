@@ -1,8 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import type { ComponentProps } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatXaf } from "@/src/lib/orderMoney";
+import { cityLabel, districtLabel } from "@/src/lib/sellerOrders";
 import type { OrderView } from "@/src/types/order";
 import { useShopTheme } from "../shop/theme";
 import { Card, purchaseText } from "./ui";
@@ -12,12 +14,8 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
-	const { launchCities } = useAppConfig();
 	const money = (amount: number) => formatXaf(amount, lang);
 	const { delivery } = order;
-	const city =
-		launchCities.find((option) => option.key === delivery.city)?.label ??
-		delivery.city;
 
 	const row = (label: string, value: string, strong = false) => (
 		<View style={styles.amount}>
@@ -46,8 +44,14 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 							/>
 						) : (
 							<View
-								style={[styles.thumb, { backgroundColor: c.neutralSoft }]}
-							/>
+								style={[
+									styles.thumb,
+									styles.thumbEmpty,
+									{ backgroundColor: c.primarySoft },
+								]}
+							>
+								<Ionicons name="cube-outline" size={22} color={c.primary} />
+							</View>
 						)}
 						<View style={styles.itemMain}>
 							<Text style={[purchaseText.strong, { color: c.text }]}>
@@ -84,46 +88,89 @@ export function PurchaseSummary({ order }: { order: OrderView }) {
 			</Card>
 
 			<Card title={t("purchases.deliveryDetails")}>
-				<Text style={[purchaseText.body, { color: c.text }]}>
-					{delivery.method === "pickup"
-						? t("purchases.deliveryPickup")
-						: t("purchases.deliverySeller")}
-				</Text>
-				{delivery.etaText ? (
-					<Text style={[purchaseText.muted, { color: c.muted }]}>
-						{t("purchases.deliveryEta", { eta: delivery.etaText })}
-					</Text>
-				) : null}
-				{row(
-					t("purchases.deliveryRecipient"),
-					`${delivery.recipientName}, ${delivery.phone}`,
+				<InfoLine
+					icon={
+						delivery.method === "pickup"
+							? "storefront-outline"
+							: "bicycle-outline"
+					}
+					title={
+						delivery.method === "pickup"
+							? t("purchases.deliveryPickup")
+							: t("purchases.deliverySeller")
+					}
+					body={
+						delivery.etaText
+							? t("purchases.deliveryEta", { eta: delivery.etaText })
+							: null
+					}
+				/>
+				{delivery.pickupPoint ? (
+					<InfoLine
+						icon="location-outline"
+						title={delivery.pickupPoint.address ?? t("purchases.pickupPoint")}
+						body={delivery.pickupPoint.landmark}
+					/>
+				) : (
+					<InfoLine
+						icon="location-outline"
+						title={[districtLabel(delivery), cityLabel(delivery.city)]
+							.filter(Boolean)
+							.join(", ")}
+						body={delivery.landmark}
+					/>
 				)}
-				{delivery.pickupPoint
-					? row(
-							t("purchases.pickupPoint"),
-							[delivery.pickupPoint.address, delivery.pickupPoint.landmark]
-								.filter(Boolean)
-								.join(", "),
-						)
-					: row(
-							t("purchases.deliveryAddress"),
-							[city, delivery.districtOther, delivery.landmark]
-								.filter(Boolean)
-								.join(", "),
-						)}
+				<InfoLine
+					icon="person-outline"
+					title={delivery.recipientName}
+					body={delivery.phone}
+				/>
 				{delivery.instructions ? (
-					<Text style={[purchaseText.muted, { color: c.muted }]}>
-						{delivery.instructions}
-					</Text>
+					<InfoLine
+						icon="chatbox-ellipses-outline"
+						title={t("purchases.deliveryInstructions")}
+						body={delivery.instructions}
+					/>
 				) : null}
 			</Card>
 		</>
 	);
 }
 
+function InfoLine({
+	icon,
+	title,
+	body,
+}: {
+	icon: ComponentProps<typeof Ionicons>["name"];
+	title: string;
+	body?: string | null;
+}) {
+	const c = useShopTheme();
+	return (
+		<View style={styles.infoLine}>
+			<Ionicons
+				name={icon}
+				size={18}
+				color={c.primary}
+				style={styles.infoIcon}
+			/>
+			<View style={styles.itemMain}>
+				<Text style={[purchaseText.strong, { color: c.text }]}>{title}</Text>
+				{body ? (
+					<Text style={[purchaseText.muted, { color: c.muted }]}>{body}</Text>
+				) : null}
+			</View>
+		</View>
+	);
+}
+
 const styles = StyleSheet.create({
+	infoLine: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+	infoIcon: { marginTop: 1 },
 	item: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-	thumb: { width: 52, height: 52, borderRadius: 10 },
+	thumb: { width: 52, height: 52, borderRadius: 12 },
+	thumbEmpty: { alignItems: "center", justifyContent: "center" },
 	itemMain: { flex: 1, minWidth: 0, gap: 2 },
 	amount: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
 });

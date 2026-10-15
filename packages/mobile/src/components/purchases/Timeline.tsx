@@ -18,23 +18,51 @@ export function Timeline({ entries }: { entries: OrderTimelineEntry[] }) {
 					{t("purchases.timelineEmpty")}
 				</Text>
 			) : (
-				<View style={[styles.list, { borderLeftColor: c.primarySoft }]}>
-					{entries.map((entry) => (
-						<View key={entry.id} style={styles.entry}>
-							<Text style={[purchaseText.label, { color: c.text }]}>
-								{t(timelineLabelKey(entry.type))}
-							</Text>
-							<Text style={[purchaseText.muted, { color: c.muted }]}>
-								{formatOrderDate(entry.at, lang)}
-								{entry.actorName ? ` · ${entry.actorName}` : ""}
-							</Text>
-							{entry.note ? (
-								<Text style={[purchaseText.body, { color: c.body }]}>
-									{entry.note}
-								</Text>
-							) : null}
-						</View>
-					))}
+				<View>
+					{entries.map((entry, index) => {
+						const latest = index === entries.length - 1;
+						return (
+							<View key={entry.id} style={styles.entry}>
+								<View style={styles.rail}>
+									<View
+										style={[
+											styles.dot,
+											latest
+												? {
+														backgroundColor: c.primary,
+														borderColor: c.primarySoft,
+													}
+												: { backgroundColor: c.card, borderColor: c.border },
+										]}
+									/>
+									{latest ? null : (
+										<View
+											style={[styles.line, { backgroundColor: c.border }]}
+										/>
+									)}
+								</View>
+								<View style={styles.text}>
+									<Text
+										style={[
+											purchaseText.label,
+											{ color: latest ? c.primary : c.text },
+										]}
+									>
+										{t(timelineLabelKey(entry.type))}
+									</Text>
+									<Text style={[purchaseText.muted, { color: c.muted }]}>
+										{formatOrderDate(entry.at, lang)}
+										{entry.actorName ? ` · ${entry.actorName}` : ""}
+									</Text>
+									{entry.note ? (
+										<Text style={[purchaseText.body, { color: c.body }]}>
+											{entry.note}
+										</Text>
+									) : null}
+								</View>
+							</View>
+						);
+					})}
 				</View>
 			)}
 		</Card>
@@ -42,6 +70,9 @@ export function Timeline({ entries }: { entries: OrderTimelineEntry[] }) {
 }
 
 const styles = StyleSheet.create({
-	list: { borderLeftWidth: 2, paddingLeft: 12, gap: 12 },
-	entry: { gap: 2 },
+	entry: { flexDirection: "row", gap: 12 },
+	rail: { width: 14, alignItems: "center" },
+	dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 3, marginTop: 3 },
+	line: { flex: 1, width: 2, marginVertical: 2 },
+	text: { flex: 1, gap: 2, paddingBottom: 14 },
 });

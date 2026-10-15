@@ -2875,7 +2875,11 @@
 		},
 		"reviewPickRating": "Touchez une étoile",
 		"reviewCounter": "{{count}} / {{max}}",
-		"reviewVerifiedNote": "Seuls les acheteurs d'une commande livrée peuvent noter une boutique."
+		"reviewVerifiedNote": "Seuls les acheteurs d'une commande livrée peuvent noter une boutique.",
+		"payPillCod": "Paiement à la livraison",
+		"payPillMobileMoney": "Mobile money",
+		"handoverAlsoSms": "Aussi envoyé par SMS",
+		"deliveryInstructions": "Instructions de livraison"
 	},
 	"sellerOrders": {
 		"title": "Commandes",
