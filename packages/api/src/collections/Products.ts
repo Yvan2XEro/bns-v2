@@ -48,7 +48,13 @@ export const Products: CollectionConfig = {
 				}
 
 				const shopId = relationId(data.shop) ?? relationId(originalDoc?.shop);
-				if (!shopId || relationId(listing.shop) !== shopId) {
+				const listingShop = relationId(listing.shop);
+				// `attachListings` turns a seller's own shopless ad into the shop's
+				// product, and joins the listing to the shop right after; only that
+				// trusted path may claim a listing that has no shop yet.
+				const joiningShop =
+					!listingShop && req.context?.productService === true;
+				if (!shopId || (listingShop !== shopId && !joiningShop)) {
 					throw new APIError(
 						"A product cannot claim a listing from another shop.",
 						400,

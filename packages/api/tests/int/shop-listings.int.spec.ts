@@ -5,6 +5,7 @@ vi.mock("../../src/hooks/validation", () => ({
 	validateListingAttributes: vi.fn(async () => []),
 }));
 
+import { Products } from "../../src/collections/Products";
 import {
 	attachListings,
 	closeOwnedShops,
@@ -165,6 +166,29 @@ describe("attachListings", () => {
 			status: "active",
 			listing: "l-1",
 		});
+	});
+
+	it("passes the products collection's own listing-claim check", async () => {
+		// The fake payload runs no collection hooks; production does, and the
+		// product's beforeChange refuses a listing that is not yet the shop's.
+		const payload = seed();
+		const create = payload.create.bind(payload);
+		const [claimCheck] = Products.hooks?.beforeChange ?? [];
+		payload.create = (async (args: Parameters<typeof create>[0]) => {
+			if (args.collection === "products" && claimCheck) {
+				await claimCheck({
+					data: args.data,
+					originalDoc: undefined,
+					req: { payload, context: args.context ?? {} },
+				} as unknown as Parameters<typeof claimCheck>[0]);
+			}
+			return create(args);
+		}) as typeof payload.create;
+
+		const result = await attachListings(payload, U1, "s-1", {
+			listingIds: ["l-1"],
+		});
+		expect(result.attached.map((a) => a.listingId)).toEqual(["l-1"]);
 	});
 
 	it("attaches everything the caller owns with all: true", async () => {
