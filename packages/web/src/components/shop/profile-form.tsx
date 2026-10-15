@@ -19,6 +19,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { useUpdateShop } from "~/hooks/use-shop-settings";
 import { resolveErrorMessage } from "~/lib/apiError";
 import {
+	brandColorOf,
 	placeOfShopLocation,
 	SHOP_CATEGORIES_MAX,
 	SHOP_DESCRIPTION_MAX,
@@ -28,6 +29,7 @@ import {
 	shopProfileSchema,
 } from "~/lib/shop-form";
 import type { Category, MyShop } from "~/types";
+import { BrandColorField } from "./brand-color-field";
 import { type FormBarState, useReportFormBar } from "./form-bar";
 import { ShopInitials } from "./shop-initials";
 
@@ -39,6 +41,8 @@ export interface ShopProfileDraft {
 	categoryIds: string[];
 	logoUrl: string | null;
 	bannerUrl: string | null;
+	/** Null for the platform colour, and while the typed hex is not valid yet. */
+	brandColor: string | null;
 }
 
 export function ProfileForm({
@@ -74,6 +78,7 @@ export function ProfileForm({
 					id: shop.banner?.id ?? null,
 					url: shop.banner?.url ?? null,
 				},
+				brandColor: shop.brandColor ?? "",
 			},
 		});
 
@@ -83,6 +88,7 @@ export function ProfileForm({
 	const city = useWatch({ control, name: "city" });
 	const logo = useWatch({ control, name: "logo" });
 	const banner = useWatch({ control, name: "banner" });
+	const brandColor = useWatch({ control, name: "brandColor" });
 
 	useEffect(() => {
 		onDraftChange?.({
@@ -92,6 +98,7 @@ export function ProfileForm({
 			categoryIds: selected,
 			logoUrl: logo.url,
 			bannerUrl: banner.url,
+			brandColor: brandColorOf(brandColor),
 		});
 	}, [
 		onDraftChange,
@@ -102,6 +109,7 @@ export function ProfileForm({
 		selected,
 		logo.url,
 		banner.url,
+		brandColor,
 	]);
 
 	useReportFormBar(
@@ -129,6 +137,7 @@ export function ProfileForm({
 				description: values.description.trim() || null,
 				logo: values.logo.id,
 				banner: values.banner.id,
+				brandColor: brandColorOf(values.brandColor),
 				location: shopLocationOf(values.city),
 				categories: values.categories,
 			});
@@ -175,6 +184,18 @@ export function ProfileForm({
 						}
 						onUploaded={(id, url) => field.onChange({ id, url })}
 						onRemove={() => field.onChange({ id: null, url: null })}
+					/>
+				)}
+			/>
+			<Controller
+				control={control}
+				name="brandColor"
+				render={({ field, fieldState }) => (
+					<BrandColorField
+						value={field.value}
+						onChange={field.onChange}
+						invalid={Boolean(fieldState.error)}
+						logoUrl={logo.url}
 					/>
 				)}
 			/>

@@ -42,6 +42,7 @@ import {
 	type Place,
 	placeCoords,
 } from "../../../../../api/src/contracts/places";
+import { ShopsSellingRow } from "./shops-selling-row";
 
 interface SearchClientProps {
 	categories: Category[];
@@ -49,6 +50,8 @@ interface SearchClientProps {
 	initialTotal: number;
 	initialParams: Record<string, string>;
 	favoriteIds?: string[];
+	/** The "shops that sell…" row; off when shops are disabled. */
+	showShopsRow?: boolean;
 }
 
 function initialAttributeFilters(
@@ -68,6 +71,7 @@ export function SearchClient({
 	initialTotal,
 	initialParams,
 	favoriteIds = [],
+	showShopsRow = false,
 }: SearchClientProps) {
 	const t = useTranslations("Search");
 	const currencyCode = useCurrencyCode();
@@ -657,6 +661,15 @@ export function SearchClient({
 							</DialogContent>
 						</Dialog>
 					</div>
+
+					{showShopsRow && (
+						<ShopsSellingRow
+							q={debouncedSearchParams.q ?? ""}
+							category={selectedCategory ? String(selectedCategory.id) : ""}
+							categoryName={selectedCategory?.name ?? null}
+							city={debouncedSearchParams.location ?? ""}
+						/>
+					)}
 
 					{isLoading ? (
 						<div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">

@@ -49,6 +49,8 @@ export interface PublicShop {
 	description: string | null;
 	logo: MediaRef | null;
 	banner: MediaRef | null;
+	/** "#RRGGBB", or null for the platform colour; see `~/lib/shop-theme`. */
+	brandColor?: string | null;
 	contact: {
 		phone: string | null;
 		whatsapp: string | null;
@@ -137,6 +139,9 @@ export interface ShopSearchHit {
 	logoUrl: string | null;
 	ownerRating: number;
 	ownerReviews: number;
+	/** The shop's own verified-purchase rating; `ownerRating` is the person's. */
+	rating?: number;
+	totalReviews?: number;
 	createdAt: string;
 	bannerUrl: string | null;
 	/** Only when asked for with `previews=N`. */
@@ -149,10 +154,18 @@ export interface ShopPreview {
 	imageUrl: string | null;
 }
 
-export type ShopSearchSort = "relevance" | "products" | "newest";
+/** "relevance" without a query is the server's organic ranking. */
+export type ShopSearchSort =
+	| "relevance"
+	| "ranking"
+	| "rating"
+	| "products"
+	| "newest";
 
 export interface ShopSearchResponse {
 	hits: ShopSearchHit[];
+	/** Paid slots, first page only, never repeated in `hits`; shown labelled "Sponsorisé". */
+	sponsored?: ShopSearchHit[];
 	total: number;
 	limit: number;
 	offset: number;

@@ -20,7 +20,7 @@ export function VerifiedShops({ shops }: { shops: ShopSearchHit[] }) {
 						{t("verifiedShops")}
 					</h2>
 					<Link
-						href="/search?tab=shops&verified=1"
+						href="/shops?level=2"
 						className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
 					>
 						{t("allShops")}

@@ -38,7 +38,7 @@ export function ShopTabs({
 					className={cn(
 						"shrink-0 border-b-2 py-3",
 						tab.id === active
-							? "border-[#1E40AF] text-[#1E40AF]"
+							? "border-[var(--shop-accent)] text-[var(--shop-accent-text)]"
 							: "border-transparent text-[#64748B] hover:text-[#0F172A]",
 					)}
 				>

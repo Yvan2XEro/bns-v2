@@ -3,9 +3,9 @@ import { getTranslations } from "next-intl/server";
 import { SearchTabs } from "~/components/search/search-tabs";
 import { serverFetch } from "~/lib/server-api";
 import { getShopsEnabled } from "~/lib/server-shop";
-import type { Category, Favorite, Listing, ShopSearchSort } from "~/types";
+import type { Category, Favorite, Listing } from "~/types";
 import { SearchClient } from "./search-client";
-import { ShopSearchClient } from "./shop-search-client";
+import { ShopSearchClient, type TabSort } from "./shop-search-client";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL ?? "https://buynsellem.com";
 
@@ -90,8 +90,10 @@ function shopLevelFrom(params: Record<string, string>): number {
 	return params.verified === "1" ? 2 : 0;
 }
 
-function shopSortFrom(value: string | undefined): ShopSearchSort {
-	return value === "products" || value === "newest" ? value : "relevance";
+function shopSortFrom(value: string | undefined): TabSort {
+	return value === "rating" || value === "products" || value === "newest"
+		? value
+		: "relevance";
 }
 
 async function getUserFavoriteIds(): Promise<string[]> {
@@ -176,6 +178,7 @@ export default async function SearchPage({
 				initialTotal={initialData.total}
 				initialParams={params}
 				favoriteIds={favoriteIds}
+				showShopsRow={shopsEnabled}
 			/>
 		</>
 	);

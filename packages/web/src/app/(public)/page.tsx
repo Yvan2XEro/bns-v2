@@ -53,7 +53,7 @@ async function getVerifiedShops(): Promise<ShopSearchHit[]> {
 	try {
 		if (!(await getShopsEnabled())) return [];
 		const res = await serverFetch(
-			`/api/public/search/shops?minShopLevel=2&limit=4&previews=${PREVIEW_TILES}`,
+			`/api/public/search/shops?minShopLevel=2&sort=ranking&limit=4&previews=${PREVIEW_TILES}`,
 		);
 		if (!res.ok) return [];
 		const data = await res.json();

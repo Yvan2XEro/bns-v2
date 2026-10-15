@@ -21,7 +21,7 @@ interface LocationFieldProps {
 	title?: string;
 	/** Hidden for a required field: there is nothing to go back to. */
 	clearable?: boolean;
-	variant?: "default" | "hero";
+	variant?: "default" | "hero" | "bar";
 	/**
 	 * Scopes browsing rather than filling a form: empty reads "All cities",
 	 * which the picker offers as its own choice.
@@ -79,7 +79,9 @@ export function LocationField({
 					"flex w-full items-center gap-2 text-left text-sm transition-colors focus-visible:outline-none",
 					isHero
 						? "h-14 rounded-[22px] bg-transparent px-4 text-[#0F172A] hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30 sm:h-[62px]"
-						: "h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 hover:border-[#94A3B8] focus-visible:border-[#1E40AF] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/20",
+						: variant === "bar"
+							? "h-full bg-transparent px-3 font-medium text-[#334155] hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30 focus-visible:ring-inset"
+							: "h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 hover:border-[#94A3B8] focus-visible:border-[#1E40AF] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/20",
 					invalid && !isHero && "border-[#DC2626]",
 				)}
 			>

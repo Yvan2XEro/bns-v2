@@ -13,7 +13,7 @@ import type { User } from "~/types";
 
 export type SocialAuthProvider = "apple" | "facebook" | "google";
 
-interface AuthContextType {
+export interface AuthContextType {
 	user: User | null;
 	token: string | null;
 	isLoading: boolean;
@@ -28,7 +28,10 @@ interface AuthContextType {
 	refreshToken: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+/** Exported for tests that render a signed-in tree without the network. */
+export const AuthContext = createContext<AuthContextType | undefined>(
+	undefined,
+);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);

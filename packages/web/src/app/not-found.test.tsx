@@ -18,7 +18,7 @@ function render(page: () => React.ReactElement): string {
 }
 
 describe("not-found pages", () => {
-	// /s/[handle] calls notFound() inside (public), so this is what a missing shop renders.
+	// (shop)/s/[handle]/not-found re-exports this, so it is also what a missing shop renders.
 	test("public renders the illustration and the way home", () => {
 		const html = render(() => <PublicNotFound />);
 		expect(html).toContain('<svg class="ill"');

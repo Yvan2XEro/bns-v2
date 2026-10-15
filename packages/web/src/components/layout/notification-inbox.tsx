@@ -6,10 +6,13 @@ import { useAuth } from "~/hooks/use-auth";
 
 interface NotificationInboxProps {
 	applicationIdentifier: string;
+	/** The bell's colour, for a header painted in a shop's colours. */
+	bellColor?: string;
 }
 
 export function NotificationInbox({
 	applicationIdentifier,
+	bellColor = "#64748B",
 }: NotificationInboxProps) {
 	const { user } = useAuth();
 	const [subscriberHash, setSubscriberHash] = useState<string | null>(null);
@@ -45,7 +48,7 @@ export function NotificationInbox({
 				},
 				elements: {
 					bellIcon: {
-						color: "#64748B",
+						color: bellColor,
 					},
 				},
 			}}

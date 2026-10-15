@@ -41,7 +41,7 @@ export function ShopAbout({
 							{shop.categories.map((category) => (
 								<span
 									key={category.id}
-									className="rounded-full bg-[#EFF6FF] px-3 py-1 font-medium text-[#1E40AF] text-xs"
+									className="rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs"
 								>
 									{category.name}
 								</span>
@@ -53,11 +53,11 @@ export function ShopAbout({
 			{full && (
 				<Link
 					href={`/profile/${shop.owner.id}`}
-					className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[#93C5FD]"
+					className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[var(--shop-accent-border,#93C5FD)]"
 				>
 					<Avatar className="h-11 w-11">
 						<AvatarImage src={shop.owner.avatar?.url ?? undefined} />
-						<AvatarFallback className="bg-[#1E40AF] text-white">
+						<AvatarFallback className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]">
 							{shop.owner.name.charAt(0)}
 						</AvatarFallback>
 					</Avatar>

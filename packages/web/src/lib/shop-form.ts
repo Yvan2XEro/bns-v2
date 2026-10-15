@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Place } from "../../../api/src/contracts/places";
 import { E164_PATTERN } from "./phone-input";
 import { HANDLE_MAX, HANDLE_MIN, isHandleFormatValid } from "./shop-handle";
+import { normalizeBrandInput } from "./shop-theme";
 
 export const SHOP_NAME_MIN = 2;
 export const SHOP_NAME_MAX = 60;
@@ -26,6 +27,21 @@ export const createShopSchema = z.object({
 
 export type CreateShopValues = z.infer<typeof createShopSchema>;
 
+/**
+ * The brand colour as typed: empty for the platform colour, else a hex the
+ * API's `isBrandColor` accepts once normalised ("1e40af" → "#1E40AF").
+ */
+export const brandColorInputSchema = z
+	.string()
+	.refine(
+		(value) => value.trim() === "" || normalizeBrandInput(value) !== null,
+	);
+
+/** What the profile save sends for the typed colour. */
+export function brandColorOf(input: string): string | null {
+	return input.trim() === "" ? null : normalizeBrandInput(input);
+}
+
 /** The profile tab: name, description, city, categories and the two media fields. */
 export const shopProfileSchema = z.object({
 	name: z.string().trim().min(SHOP_NAME_MIN).max(SHOP_NAME_MAX),
@@ -34,6 +50,7 @@ export const shopProfileSchema = z.object({
 	categories: z.array(z.string()).max(SHOP_CATEGORIES_MAX),
 	logo: z.object({ id: z.string().nullable(), url: z.string().nullable() }),
 	banner: z.object({ id: z.string().nullable(), url: z.string().nullable() }),
+	brandColor: brandColorInputSchema,
 });
 
 export type ShopProfileValues = z.infer<typeof shopProfileSchema>;

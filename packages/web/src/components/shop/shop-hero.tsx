@@ -2,6 +2,7 @@ import { Flag, MapPin, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import type { ShopRatingDisplay } from "~/lib/shop-rating";
+import { shopTheme } from "~/lib/shop-theme";
 import type { PublicShop } from "~/types";
 import { LevelBadge } from "./level-badge";
 import { ShareShopButton } from "./share-shop-button";
@@ -30,7 +31,7 @@ export function ShopHero({
 	// back into the banner.
 	return (
 		<section className="border-[#E2E8F0] border-b bg-white">
-			<div className="h-36 w-full bg-[#1E3A8A] bg-[length:18px_18px] bg-[radial-gradient(rgba(255,255,255,0.13)_1px,transparent_1px)] sm:h-48 lg:h-[220px]">
+			<div className="h-36 w-full bg-[length:18px_18px] bg-[radial-gradient(rgba(255,255,255,0.13)_1px,transparent_1px)] bg-[var(--shop-header-bg,#1E3A8A)] sm:h-48 lg:h-[220px]">
 				{shop.banner?.url && (
 					// biome-ignore lint/performance/noImgElement: banners come from arbitrary storage hosts
 					<img
@@ -40,6 +41,12 @@ export function ShopHero({
 					/>
 				)}
 			</div>
+			{shop.banner?.url && (
+				<div
+					aria-hidden="true"
+					className="h-1 bg-[var(--shop-accent,#1E40AF)]"
+				/>
+			)}
 			<div
 				className={`container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${tabs ? "" : "pb-6"}`}
 			>
@@ -47,7 +54,7 @@ export function ShopHero({
 					<ShopInitials
 						name={shop.name}
 						logoUrl={shop.logo?.url}
-						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-white bg-[#0F172A] text-3xl text-[#F59E0B] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
+						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-white bg-[var(--shop-header-bg,#0F172A)] text-3xl text-[var(--shop-header-fg,#F59E0B)] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
 					/>
 					<div className="flex min-w-0 flex-1 flex-col gap-4 sm:pt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
 						<div className="min-w-0">
@@ -86,7 +93,10 @@ export function ShopHero({
 							</div>
 						</div>
 						<div className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-1">
-							<ShopContactButtons contact={shop.contact} />
+							<ShopContactButtons
+								contact={shop.contact}
+								theme={shopTheme(shop.brandColor)}
+							/>
 							<ShareShopButton handle={shop.handle} name={shop.name} />
 							<ReportDialog targetType="shop" targetId={shop.id}>
 								<button

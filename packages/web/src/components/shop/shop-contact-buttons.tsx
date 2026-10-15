@@ -8,6 +8,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { type ShopTheme, shopThemeVars } from "~/lib/shop-theme";
 import type { PublicShop } from "~/types";
 
 function digits(phone: string): string {
@@ -21,8 +22,10 @@ function digits(phone: string): string {
  */
 export function ShopContactButtons({
 	contact,
+	theme,
 }: {
 	contact: PublicShop["contact"];
+	theme?: ShopTheme;
 }) {
 	const t = useTranslations("ShopPage");
 	if (!contact.whatsapp && !contact.phone) return null;
@@ -32,14 +35,19 @@ export function ShopContactButtons({
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-[18px] font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2"
 				>
 					<MessageSquare className="h-4 w-4" />
 					{t("contact")}
 					<ChevronDown className="h-4 w-4 opacity-80" />
 				</button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="min-w-52">
+			{/* Portalled out of the shop's scope, so it carries the colours itself. */}
+			<DropdownMenuContent
+				align="end"
+				className="min-w-52 [&_[role=menuitem]:focus]:bg-[var(--shop-accent-soft)] [&_[role=menuitem]:focus]:text-[var(--shop-accent-text)]"
+				style={theme ? shopThemeVars(theme) : undefined}
+			>
 				{contact.whatsapp && (
 					<DropdownMenuItem asChild>
 						<a

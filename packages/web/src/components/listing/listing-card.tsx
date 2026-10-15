@@ -65,7 +65,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 					"hover:-translate-y-1 overflow-hidden rounded-xl bg-white transition-all duration-300 hover:shadow-black/8 hover:shadow-lg",
 					isBoosted
 						? "ring-1 ring-[#F59E0B]/40"
-						: "border border-[#E2E8F0] hover:border-[#93C5FD]",
+						: "border border-[#E2E8F0] hover:border-[var(--shop-accent-border,#93C5FD)]",
 				)}
 			>
 				{/* Image */}
@@ -144,7 +144,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						</span>
 					</div>
 					{shopName && (
-						<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[#1E40AF] text-xs">
+						<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs">
 							<Store className="h-3 w-3 shrink-0" />
 							<span className="truncate">{shopName}</span>
 							{shopBadge && (

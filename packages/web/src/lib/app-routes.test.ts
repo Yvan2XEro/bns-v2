@@ -7,7 +7,14 @@ import path from "node:path";
  * most of this only at build or boot; this pins it in `bun test`. */
 const SRC = path.resolve(import.meta.dir, "..");
 const APP = path.join(SRC, "app");
-const SHELLS = ["(bare)", "(checkout)", "(ops)", "(public)", "(seller)"];
+const SHELLS = [
+	"(bare)",
+	"(checkout)",
+	"(ops)",
+	"(public)",
+	"(seller)",
+	"(shop)",
+];
 
 const isDir = (p: string) => statSync(p).isDirectory();
 const isGroup = (name: string) => name.startsWith("(") && name.endsWith(")");

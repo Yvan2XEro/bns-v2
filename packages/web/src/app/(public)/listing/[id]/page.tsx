@@ -576,6 +576,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<ShopSellerCard
 										shop={shop}
 										badge={shopBadge}
+										brandColor={publicShop?.brandColor ?? null}
 										ownerName={seller?.name ?? null}
 										stats={
 											publicShop && {

@@ -42,6 +42,7 @@ function draftOf(shop: MyShop): ShopProfileDraft {
 		categoryIds: shop.categories.map((category) => category.id),
 		logoUrl: shop.logo?.url ?? null,
 		bannerUrl: shop.banner?.url ?? null,
+		brandColor: shop.brandColor ?? null,
 	};
 }
 

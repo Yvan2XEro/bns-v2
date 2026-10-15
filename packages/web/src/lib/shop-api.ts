@@ -137,6 +137,7 @@ export interface ShopUpdateInput {
 	description?: string | null;
 	logo?: string | null;
 	banner?: string | null;
+	brandColor?: string | null;
 	contact?: {
 		phone?: string | null;
 		whatsapp?: string | null;

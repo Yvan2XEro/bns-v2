@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { cache } from "react";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { DeliveryCities } from "~/components/shop/delivery-cities";
 import { PickupPoints } from "~/components/shop/pickup-points";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
 import { serverFetch } from "~/lib/server-api";
+import { lookupShop } from "~/lib/server-shop";
 import { type CategoryNode, groupedCounts } from "~/lib/shop-category-groups";
 import {
 	parsePage,
@@ -22,27 +22,13 @@ import {
 } from "~/lib/shop-page-params";
 import { shopRating } from "~/lib/shop-rating";
 import { shopUrl } from "~/lib/shop-url";
-import type { Category, Listing, PublicShop } from "~/types";
+import type { Category, Listing } from "~/types";
 import { ShopCategories } from "./shop-categories";
 import { ShopReviews } from "./shop-reviews";
 import { ShopSortSelect } from "./shop-sort-select";
 import { ShopTabs } from "./shop-tabs";
 
 const PAGE_SIZE = 24;
-
-type Lookup = { shop: PublicShop } | { redirectTo: string } | null;
-
-const lookupShop = cache(async (handle: string): Promise<Lookup> => {
-	try {
-		const res = await serverFetch(
-			`/api/public/shops/${encodeURIComponent(handle.toLowerCase())}`,
-		);
-		if (!res.ok) return null;
-		return (await res.json()) as Lookup;
-	} catch {
-		return null;
-	}
-});
 
 async function getShopListings(
 	shopId: string,
@@ -327,7 +313,8 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 									name="q"
 									defaultValue={q}
 									placeholder={t("searchInShop")}
-									className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
+									aria-label={t("searchInShop")}
+									className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[var(--shop-accent)] focus:outline-none"
 								/>
 							</div>
 							<span className="ml-auto shrink-0 text-[#64748B] text-sm">
@@ -354,7 +341,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 								{page > 1 && (
 									<Link
 										href={pageHref(page - 1)}
-										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
+										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[var(--shop-accent-text)] hover:border-[var(--shop-accent-border)] hover:bg-[var(--shop-accent-soft)]"
 									>
 										{t("previous")}
 									</Link>
@@ -365,7 +352,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 								{page < totalPages && (
 									<Link
 										href={pageHref(page + 1)}
-										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
+										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[var(--shop-accent-text)] hover:border-[var(--shop-accent-border)] hover:bg-[var(--shop-accent-soft)]"
 									>
 										{t("next")}
 									</Link>

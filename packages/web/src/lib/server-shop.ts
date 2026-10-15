@@ -48,6 +48,19 @@ export const getPublicShop = cache(
 	},
 );
 
+export type ShopLookup = { shop: PublicShop } | { redirectTo: string } | null;
+
+/**
+ * The /s/[handle] read, shared by the shop layout (header, theme) and its
+ * page: one request per render. A renamed handle answers `redirectTo`.
+ */
+export const lookupShop = cache(
+	async (handle: string): Promise<ShopLookup> =>
+		serverGet<ShopLookup>(
+			`/api/public/shops/${encodeURIComponent(handle.toLowerCase())}`,
+		),
+);
+
 export const getShopBadge = cache(
 	async (handle: string): Promise<VerificationBadge | null> =>
 		(await getPublicShop(handle))?.badge ?? null,

@@ -43,12 +43,16 @@ export function ShopCategories({
 							className={cn(
 								"inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 font-medium text-sm",
 								active
-									? "border-[#BFDBFE] bg-[#EFF6FF] text-[#1E40AF]"
+									? "border-[var(--shop-accent-border)] bg-[var(--shop-accent-soft)] text-[var(--shop-accent-text)]"
 									: "border-[#E2E8F0] bg-white text-[#334155]",
 							)}
 						>
 							{item.name}
-							<span className={active ? "text-[#1E40AF]" : "text-[#94A3B8]"}>
+							<span
+								className={
+									active ? "text-[var(--shop-accent-text)]" : "text-[#94A3B8]"
+								}
+							>
 								{item.count}
 							</span>
 						</Link>
@@ -76,8 +80,8 @@ export function ShopCategories({
 						className={cn(
 							"flex justify-between gap-3 rounded-lg px-2.5 py-2 text-sm",
 							active
-								? "bg-[#EFF6FF] font-semibold text-[#1E40AF]"
-								: "text-[#334155] hover:bg-[#F8FAFC]",
+								? "bg-[var(--shop-accent-soft)] font-semibold text-[var(--shop-accent-text)]"
+								: "text-[#334155] hover:bg-[var(--shop-accent-soft)]",
 						)}
 					>
 						<span className="min-w-0 truncate">{item.name}</span>

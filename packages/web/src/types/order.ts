@@ -104,6 +104,7 @@ export interface CartView {
 		handle: string;
 		city: string | null;
 		logoUrl?: string | null;
+		brandColor?: string | null;
 		badge?: "phone" | "identity" | "business" | null;
 		rating?: number;
 		totalReviews?: number;

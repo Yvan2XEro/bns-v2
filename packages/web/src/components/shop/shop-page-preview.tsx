@@ -3,6 +3,7 @@
 import { MapPin, MessageCircle, Share2, Star } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { shopTheme, shopThemeVars } from "~/lib/shop-theme";
 import { shopUrl } from "~/lib/shop-url";
 import { cn } from "~/lib/utils";
 import type { MyShop } from "~/types";
@@ -13,7 +14,7 @@ import { ShopInitials } from "./shop-initials";
 type Device = "desktop" | "mobile";
 
 const BANNER_PATTERN =
-	"bg-[#1E3A8A] bg-[length:16px_16px] bg-[radial-gradient(rgba(255,255,255,0.14)_1px,transparent_1px)]";
+	"bg-[var(--shop-header-bg)] bg-[length:16px_16px] bg-[radial-gradient(rgba(255,255,255,0.14)_1px,transparent_1px)]";
 
 /**
  * The public page's header as the draft would render it, beside the settings
@@ -69,6 +70,8 @@ export function ShopPagePreview({
 			<div className="bg-[#F1F5F9] p-4">
 				<div
 					aria-hidden="true"
+					data-shop-theme={draft.brandColor ?? undefined}
+					style={shopThemeVars(shopTheme(draft.brandColor))}
 					className={cn(
 						"mx-auto overflow-hidden bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)]",
 						mobile
@@ -111,11 +114,11 @@ export function ShopPagePreview({
 							<ShopInitials
 								name={name}
 								logoUrl={draft.logoUrl}
-								className="h-[76px] w-[76px] rounded-[20px] border-4 border-white bg-[#0F172A] font-extrabold text-[#F59E0B] text-[26px] shadow-[0_4px_12px_rgba(15,23,42,0.18)]"
+								className="h-[76px] w-[76px] rounded-[20px] border-4 border-white bg-[var(--shop-header-bg)] font-extrabold text-[26px] text-[var(--shop-header-fg)] shadow-[0_4px_12px_rgba(15,23,42,0.18)]"
 							/>
 							{!mobile && (
 								<div className="ml-auto flex gap-2 pb-1">
-									<span className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#1E40AF] px-3 font-semibold text-white text-xs">
+									<span className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--shop-accent)] px-3 font-semibold text-[var(--shop-on-accent)] text-xs">
 										<MessageCircle className="h-3.5 w-3.5" />
 										{tPreview("contact")}
 									</span>
@@ -164,7 +167,7 @@ export function ShopPagePreview({
 								{categoryNames.map((category) => (
 									<span
 										key={category}
-										className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 font-medium text-[#334155] text-xs"
+										className="rounded-full bg-[var(--shop-accent-soft)] px-2.5 py-0.5 font-medium text-[var(--shop-accent-text)] text-xs"
 									>
 										{category}
 									</span>

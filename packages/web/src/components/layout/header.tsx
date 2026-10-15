@@ -1,374 +1,316 @@
 "use client";
 
-import {
-	Heart,
-	LogOut,
-	Menu,
-	MessageCircle,
-	PlusCircle,
-	Search,
-	Settings,
-	ShoppingBag,
-	Store,
-	User,
-	X,
-} from "lucide-react";
+import { Heart, MessageCircle, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { NotificationInbox } from "~/components/layout/notification-inbox";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import { Button } from "~/components/ui/button";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
+import { ShopInitials } from "~/components/shop/shop-initials";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useAuth } from "~/hooks/use-auth";
 import { useMyShop } from "~/hooks/use-my-shop";
+import { useNavCategories } from "~/hooks/use-nav-categories";
+import { usePlacePreferences } from "~/hooks/use-place-preferences";
 import { useUnreadMessages } from "~/hooks/use-unread-messages";
-import { showSellerHat } from "~/lib/seller-hat";
+import {
+	accountSections,
+	gatedHref,
+	loginHref,
+	type NavCategory,
+	navRubrics,
+	registerHref,
+	sellHref,
+	shopHeaderCss,
+	showShortcuts,
+} from "~/lib/nav";
 import { shopEntryFor } from "~/lib/shop-entry";
+import { cn } from "~/lib/utils";
+import type { ShopTheme } from "../../../../api/src/contracts/shopTheme";
+import { AccountMenu } from "./account-menu";
 import { CartButton } from "./cart-button";
-import { LocaleSwitcher } from "./locale-switcher";
+import { CategoriesMenu } from "./categories-menu";
+import { CategoryShortcuts } from "./category-shortcuts";
+import { HeaderSearch } from "./header-search";
+import { MobileTabBar } from "./mobile-nav";
+import { UtilityBar } from "./utility-bar";
+
+export interface HeaderShop {
+	name: string;
+	handle: string;
+	logoUrl: string | null;
+	theme: ShopTheme;
+}
 
 interface HeaderProps {
 	novuAppId?: string;
+	/** The category tree, when the layout already fetched it. */
+	categories?: NavCategory[];
+	/** On a shop's own pages: the main bar takes the shop's colours and identity. */
+	shop?: HeaderShop;
 }
 
-export function Header({ novuAppId }: HeaderProps) {
+const SHOP_HEAD = "bns-shop-head";
+
+export function Header({ novuAppId, categories, shop }: HeaderProps) {
 	const { user, logout } = useAuth();
 	const router = useRouter();
 	const pathname = usePathname();
-	const t = useTranslations("Header");
-	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [scrolled, setScrolled] = useState(false);
-	const unreadCount = useUnreadMessages(!!user);
+	const t = useTranslations("Nav");
+	const signedIn = Boolean(user);
+	const unreadCount = useUnreadMessages(signedIn);
 	const { shopsEnabled, ordersEnabled } = useAppConfig();
 	const { data: myShop, error: myShopError } = useMyShop();
 	const entry = shopEntryFor(myShop, shopsEnabled, myShopError);
-	const shopEntry = entry ? { href: entry.href, label: t(entry.key) } : null;
-	const sellerHat = showSellerHat(!!user, entry);
+	const { browsePlace } = usePlacePreferences();
 
-	useEffect(() => {
-		const handleScroll = () => setScrolled(window.scrollY > 10);
-		window.addEventListener("scroll", handleScroll);
-		return () => window.removeEventListener("scroll", handleScroll);
-	}, []);
+	const shortcuts = showShortcuts(pathname);
+	const [wantCategories, setWantCategories] = useState(false);
+	const wantTree = useCallback(() => setWantCategories(true), []);
+	const tree = useNavCategories(categories, wantCategories || shortcuts);
+	const rubrics = useMemo(() => navRubrics(tree), [tree]);
 
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault();
-		if (searchQuery.trim()) {
-			router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-		}
-	};
+	const sections = accountSections({
+		ordersEnabled,
+		shopEntry: entry
+			? {
+					href: entry.href,
+					...(myShop?.shop?.name ? { shopName: myShop.shop.name } : {}),
+				}
+			: null,
+	});
+	const here = pathname ?? "/";
 
 	const handleLogout = async () => {
 		await logout();
 		router.push("/");
 	};
 
-	const isHome = pathname === "/";
+	const themed = Boolean(shop);
+	const iconTone = themed
+		? "text-[var(--shop-head-muted)] hover:bg-white/10 hover:text-[var(--shop-head-fg)] focus-visible:ring-[var(--shop-head-fg)]"
+		: "text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:ring-[#93C5FD]";
 
 	return (
-		<header
-			className={`sticky top-0 z-50 w-full transition-all duration-200 ${
-				scrolled || !isHome
-					? "border-[#E2E8F0] border-b bg-white shadow-sm"
-					: "bg-white"
-			}`}
-		>
-			<div className="container mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-				{/* Logo */}
-				<Link
-					href="/"
-					className="flex shrink-0 items-center gap-2 transition-transform duration-200 hover:scale-105 active:scale-95"
-				>
-					<Image
-						src="/logo.png"
-						alt="Buy'N'Sellem"
-						width={32}
-						height={32}
-						className="h-8 w-8 object-contain"
-					/>
-					<span className="hidden font-bold text-[#0F172A] text-lg sm:inline">
-						Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
-					</span>
-				</Link>
+		<>
+			<UtilityBar
+				sellHref={sellHref({ signedIn, shopEntry: entry, shopsEnabled })}
+			/>
+			<header
+				data-shop-mode={themed ? "" : undefined}
+				className={cn(
+					"sticky top-0 z-50 w-full border-b",
+					themed
+						? `${SHOP_HEAD} border-transparent bg-[var(--shop-head-bg)] text-[var(--shop-head-fg)]`
+						: "border-[#E2E8F0] bg-white text-[#0F172A]",
+				)}
+			>
+				{shop && <style>{shopHeaderCss(`.${SHOP_HEAD}`, shop.theme)}</style>}
+				<div className="relative">
+					<div className="container mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6 md:h-16 md:gap-3 lg:px-8">
+						<Link
+							href="/"
+							aria-label={t("home")}
+							className="flex shrink-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+						>
+							<Image
+								src="/logo.png"
+								alt=""
+								width={32}
+								height={32}
+								className="h-8 w-8 object-contain"
+							/>
+							<span
+								className={cn(
+									"font-bold font-heading text-lg",
+									themed ? "hidden lg:inline" : "hidden sm:inline",
+								)}
+							>
+								Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
+							</span>
+						</Link>
 
-				{/* Search bar (Vinted/Leboncoin style: always visible, centered) */}
-				<form onSubmit={handleSearch} className="hidden flex-1 md:block">
-					<div className="relative mx-auto max-w-lg">
-						<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
-						<input
-							type="search"
-							placeholder={t("search")}
-							className="h-9 w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pr-3 pl-9 text-[#0F172A] text-sm transition-colors placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-						/>
-					</div>
-				</form>
-
-				{/* Right actions */}
-				<div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-					{user ? (
-						<>
-							{/* Sell button (prominent, like Vinted green CTA) */}
-							<Link href="/create" className="hidden sm:block">
-								<Button
-									size="sm"
-									className="h-9 rounded-lg bg-[#F59E0B] px-4 font-bold text-[#0F172A] text-xs hover:bg-[#D97706]"
-								>
-									<PlusCircle className="mr-1.5 h-4 w-4" />
-									{t("sellNow")}
-								</Button>
+						{shop && (
+							<Link
+								href={`/s/${shop.handle}`}
+								className="flex min-w-0 items-center gap-2 rounded-lg border-white/25 border-l pl-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--shop-head-fg)] md:max-w-[12rem]"
+							>
+								<span aria-hidden="true">
+									<ShopInitials
+										name={shop.name}
+										logoUrl={shop.logoUrl}
+										className="h-7 w-7 rounded-lg text-[11px]"
+									/>
+								</span>
+								<span className="truncate font-semibold text-sm">
+									{shop.name}
+								</span>
 							</Link>
-
-							{sellerHat && (
-								<Link href="/seller" className="hidden sm:block">
-									<Button
-										size="sm"
-										variant="outline"
-										className="h-9 rounded-lg border-[#1E40AF] px-3 font-semibold text-[#1E40AF] text-xs hover:bg-[#EFF6FF]"
-									>
-										<Store className="mr-1.5 h-4 w-4" />
-										{t("sellerSpace")}
-									</Button>
-								</Link>
-							)}
-
-							<Link href="/favorites" className="hidden sm:block">
-								<button
-									type="button"
-									className="flex h-9 w-9 items-center justify-center rounded-lg text-[#64748B] transition-all duration-200 hover:scale-110 hover:bg-[#F1F5F9] hover:text-[#0F172A] active:scale-95"
-								>
-									<Heart className="h-5 w-5" />
-								</button>
-							</Link>
-
-							<Link href="/messages" className="hidden sm:block">
-								<button
-									type="button"
-									className="relative flex h-9 w-9 items-center justify-center rounded-lg text-[#64748B] transition-all duration-200 hover:scale-110 hover:bg-[#F1F5F9] hover:text-[#0F172A] active:scale-95"
-								>
-									<MessageCircle className="h-5 w-5" />
-									{unreadCount > 0 && (
-										<span className="-top-0.5 -right-0.5 absolute flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-bold text-[10px] text-white">
-											{unreadCount > 99 ? "99+" : unreadCount}
-										</span>
-									)}
-								</button>
-							</Link>
-
-							<CartButton />
-
-							{novuAppId && (
-								<NotificationInbox applicationIdentifier={novuAppId} />
-							)}
-
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<button
-										type="button"
-										className="hidden h-9 w-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-[#DBEAFE] active:scale-95 sm:flex"
-									>
-										<Avatar className="h-8 w-8">
-											<AvatarImage
-												src={(user.avatar as { url?: string })?.url}
-												alt={user.name}
-											/>
-											<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
-												{user.name?.charAt(0)}
-											</AvatarFallback>
-										</Avatar>
-									</button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent
-									className="w-52 rounded-lg border-[#E2E8F0]"
-									align="end"
-								>
-									<DropdownMenuLabel className="font-normal">
-										<p className="font-semibold text-[#0F172A] text-sm">
-											{user.name}
-										</p>
-										<p className="text-[#64748B] text-xs">{user.email}</p>
-									</DropdownMenuLabel>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem asChild>
-										<Link href="/profile/me" className="cursor-pointer">
-											<User className="mr-2 h-4 w-4" />
-											{t("profile")}
-										</Link>
-									</DropdownMenuItem>
-									{shopEntry && !sellerHat && (
-										<DropdownMenuItem asChild>
-											<Link href={shopEntry.href} className="cursor-pointer">
-												<Store className="mr-2 h-4 w-4" />
-												{shopEntry.label}
-											</Link>
-										</DropdownMenuItem>
-									)}
-									{ordersEnabled && (
-										<DropdownMenuItem asChild>
-											<Link href="/purchases" className="cursor-pointer">
-												<ShoppingBag className="mr-2 h-4 w-4" />
-												{t("purchases")}
-											</Link>
-										</DropdownMenuItem>
-									)}
-									<DropdownMenuItem asChild>
-										<Link
-											href="/profile/me/listings"
-											className="cursor-pointer"
-										>
-											<PlusCircle className="mr-2 h-4 w-4" />
-											{t("myListings")}
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link href="/favorites" className="cursor-pointer">
-											<Heart className="mr-2 h-4 w-4" />
-											{t("favorites")}
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link href="/settings" className="cursor-pointer">
-											<Settings className="mr-2 h-4 w-4" />
-											{t("settings")}
-										</Link>
-									</DropdownMenuItem>
-									<DropdownMenuSeparator />
-									<DropdownMenuItem
-										onClick={handleLogout}
-										className="cursor-pointer text-red-600 focus:text-red-600"
-									>
-										<LogOut className="mr-2 h-4 w-4" />
-										{t("logOut")}
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</>
-					) : (
-						<>
-							<Link href="/auth/login">
-								<Button
-									variant="ghost"
-									size="sm"
-									className="h-9 rounded-lg text-[#475569] text-sm"
-								>
-									{t("logIn")}
-								</Button>
-							</Link>
-							<Link href="/auth/register">
-								<Button
-									size="sm"
-									className="h-9 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm hover:bg-[#1E3A8A]"
-								>
-									{t("signUp")}
-								</Button>
-							</Link>
-						</>
-					)}
-
-					{/* Language switcher (desktop) */}
-					<div className="hidden md:block">
-						<LocaleSwitcher />
-					</div>
-
-					{/* Mobile menu toggle */}
-					<button
-						type="button"
-						className="ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-[#475569] hover:bg-[#F1F5F9] md:hidden"
-						onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-					>
-						{mobileMenuOpen ? (
-							<X className="h-5 w-5" />
-						) : (
-							<Menu className="h-5 w-5" />
 						)}
-					</button>
-				</div>
-			</div>
 
-			{/* Mobile search + menu */}
-			{mobileMenuOpen && (
-				<div className="border-[#E2E8F0] border-t bg-white px-4 py-3 md:hidden">
-					<form onSubmit={handleSearch} className="mb-3">
-						<div className="relative">
-							<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
-							<input
-								type="search"
-								placeholder={t("search")}
-								className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
+						<div className="hidden md:block">
+							<CategoriesMenu
+								rubrics={rubrics}
+								city={browsePlace?.name ?? null}
+								shopsEnabled={shopsEnabled}
+								themed={themed}
+								onWanted={wantTree}
 							/>
 						</div>
-					</form>
-					<nav className="flex flex-col">
-						{[
-							{ label: t("browse"), href: "/search" },
-							...(user
-								? [
-										{ label: t("sellNow"), href: "/create" },
-										{ label: t("favorites"), href: "/favorites" },
-										{
-											label:
-												unreadCount > 0
-													? `${t("messages")} (${unreadCount > 99 ? "99+" : unreadCount})`
-													: t("messages"),
-											href: "/messages",
-										},
-										{ label: t("profile"), href: "/profile/me" },
-										...(ordersEnabled
-											? [
-													{ label: t("cart"), href: "/cart" },
-													{ label: t("purchases"), href: "/purchases" },
-												]
-											: []),
-										...(shopEntry ? [shopEntry] : []),
-									]
-								: [
-										{ label: t("logIn"), href: "/auth/login" },
-										{ label: t("signUp"), href: "/auth/register" },
-									]),
-						].map((item) => (
-							<Link
-								key={item.href}
-								href={item.href}
-								className={`rounded-lg px-3 py-2 font-medium text-sm ${
-									pathname === item.href
-										? "bg-[#EFF6FF] text-[#1E40AF]"
-										: "text-[#475569]"
-								}`}
-								onClick={() => setMobileMenuOpen(false)}
+
+						<div className="hidden min-w-0 flex-1 md:flex">
+							<HeaderSearch shop={shop} />
+						</div>
+						<div className="flex-1 md:hidden" />
+
+						<div className="flex shrink-0 items-center gap-0.5">
+							<NavIcon
+								href={gatedHref(signedIn, "/favorites")}
+								label={t("favorites")}
+								tone={iconTone}
+								className="hidden md:flex"
 							>
-								{item.label}
-							</Link>
-						))}
-						{user && (
-							<button
-								type="button"
-								onClick={handleLogout}
-								className="rounded-lg px-3 py-2 text-left font-medium text-red-600 text-sm"
-							>
-								{t("logOut")}
-							</button>
-						)}
-					</nav>
-					<div className="mt-3 border-[#E2E8F0] border-t pt-3">
-						<LocaleSwitcher />
+								<Heart aria-hidden="true" className="h-5 w-5" />
+							</NavIcon>
+							{signedIn && (
+								<NavIcon
+									href="/messages"
+									label={t("messages")}
+									ariaLabel={
+										unreadCount > 0
+											? `${t("messages")}, ${t("unread", { count: unreadCount })}`
+											: undefined
+									}
+									tone={iconTone}
+									className="hidden md:flex"
+								>
+									<span className="relative">
+										<MessageCircle aria-hidden="true" className="h-5 w-5" />
+										{unreadCount > 0 && (
+											<span className="-top-1.5 -right-2 absolute flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 font-bold text-[10px] text-white">
+												{unreadCount > 99 ? "99+" : unreadCount}
+											</span>
+										)}
+									</span>
+								</NavIcon>
+							)}
+							{signedIn && novuAppId && (
+								<div className="flex flex-col items-center">
+									<NotificationInbox
+										applicationIdentifier={novuAppId}
+										bellColor={themed ? "var(--shop-head-fg)" : "#475569"}
+									/>
+									<span
+										aria-hidden="true"
+										className="-mt-1 hidden text-[11px] xl:block"
+									>
+										{t("alerts")}
+									</span>
+								</div>
+							)}
+							{signedIn && (
+								<CartButton
+									className={
+										themed
+											? "text-[var(--shop-head-fg)]! hover:bg-white/10!"
+											: undefined
+									}
+								/>
+							)}
+							{user ? (
+								<div className="hidden md:block">
+									<AccountMenu
+										user={user}
+										sections={sections}
+										onLogout={handleLogout}
+										themed={themed}
+									/>
+								</div>
+							) : (
+								<div className="hidden items-center gap-1.5 pl-1 md:flex">
+									<Link
+										href={loginHref(here)}
+										className={cn(
+											"flex h-10 items-center whitespace-nowrap rounded-lg border px-3 font-semibold text-sm focus-visible:outline-none focus-visible:ring-2",
+											themed
+												? "border-white/30 text-[var(--shop-head-fg)] hover:bg-white/10 focus-visible:ring-[var(--shop-head-fg)]"
+												: "border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#94A3B8] focus-visible:ring-[#93C5FD]",
+										)}
+									>
+										{t("logIn")}
+									</Link>
+									<Link
+										href={registerHref(here)}
+										className="flex h-10 items-center whitespace-nowrap rounded-lg bg-[#1E40AF] px-3 font-semibold text-sm text-white hover:bg-[#1E3A8A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+									>
+										{t("signUp")}
+									</Link>
+								</div>
+							)}
+						</div>
+
+						<Link
+							href={gatedHref(signedIn, "/create")}
+							className="hidden h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#F59E0B] px-3 font-extrabold text-[#0F172A] text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 md:flex"
+						>
+							<Plus aria-hidden="true" className="h-4 w-4" />
+							<span className="sr-only lg:not-sr-only">{t("postAd")}</span>
+						</Link>
 					</div>
 				</div>
+
+				<div className="container mx-auto max-w-7xl px-4 pb-2 sm:px-6 md:hidden">
+					<HeaderSearch shop={shop} compact />
+				</div>
+			</header>
+
+			{shortcuts && (
+				<CategoryShortcuts rubrics={rubrics} shopsEnabled={shopsEnabled} />
 			)}
-		</header>
+
+			<MobileTabBar
+				pathname={pathname}
+				signedIn={signedIn}
+				unreadCount={unreadCount}
+				rubrics={rubrics}
+				shopsEnabled={shopsEnabled}
+				account={sections}
+				userLabel={user ? { name: user.name ?? "", email: user.email } : null}
+				onLogout={handleLogout}
+				onWantCategories={wantTree}
+			/>
+		</>
+	);
+}
+
+function NavIcon({
+	href,
+	label,
+	ariaLabel,
+	tone,
+	className,
+	children,
+}: {
+	href: string;
+	label: string;
+	ariaLabel?: string;
+	tone: string;
+	className?: string;
+	children: ReactNode;
+}) {
+	return (
+		<Link
+			href={href}
+			aria-label={ariaLabel}
+			className={cn(
+				"h-10 min-w-10 flex-col items-center justify-center rounded-lg px-1.5 text-[11px] focus-visible:outline-none focus-visible:ring-2",
+				tone,
+				className,
+			)}
+		>
+			{children}
+			<span className="sr-only xl:not-sr-only">{label}</span>
+		</Link>
 	);
 }

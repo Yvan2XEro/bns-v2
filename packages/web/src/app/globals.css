@@ -389,3 +389,19 @@ h6 {
 		animation: none;
 	}
 }
+
+/* Shop theme: values come from contracts/shopTheme.ts via lib/shop-theme.ts. */
+[data-shop-theme] {
+	--shop-accent-border: color-mix(in srgb, var(--shop-accent) 45%, white);
+}
+@media (prefers-color-scheme: dark) {
+	[data-shop-theme][data-shop-scheme="system"] {
+		--shop-accent: var(--shop-dark-accent);
+		--shop-on-accent: var(--shop-dark-on-accent);
+		--shop-accent-text: var(--shop-dark-accent-text);
+		--shop-accent-soft: var(--shop-dark-accent-soft);
+		--shop-header-bg: var(--shop-dark-header-bg);
+		--shop-header-fg: var(--shop-dark-header-fg);
+		--shop-header-muted: var(--shop-dark-header-muted);
+	}
+}

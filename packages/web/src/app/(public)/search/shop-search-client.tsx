@@ -16,7 +16,6 @@ import {
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { useShopSearch } from "~/hooks/use-shop-search";
 import { cn } from "~/lib/utils";
-import type { ShopSearchSort } from "~/types";
 import { ShopResultRow } from "./shop-result-row";
 
 export interface ShopSearchCategory {
@@ -25,14 +24,16 @@ export interface ShopSearchCategory {
 }
 
 const LEVELS = [1, 2, 3] as const;
-const SORTS: ShopSearchSort[] = ["relevance", "products", "newest"];
+const SORTS = ["relevance", "rating", "products", "newest"] as const;
+export type TabSort = (typeof SORTS)[number];
 const SORT_LABEL = {
 	relevance: "shopSortRelevance",
+	rating: "shopSortRating",
 	products: "shopSortProducts",
 	newest: "shopSortNewest",
 } as const;
 
-const chipClass = (active: boolean) =>
+export const chipClass = (active: boolean) =>
 	cn(
 		"inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30",
 		active
@@ -40,7 +41,7 @@ const chipClass = (active: boolean) =>
 			: "border-[#E2E8F0] bg-white font-medium text-[#334155] hover:border-[#94A3B8]",
 	);
 
-function ChipMenu({
+export function ChipMenu({
 	label,
 	active,
 	value,
@@ -81,7 +82,7 @@ export function ShopSearchClient({
 	/** 0 for every level; otherwise the `minShopLevel` floor. */
 	initialLevel: number;
 	initialCategory: string;
-	initialSort: ShopSearchSort;
+	initialSort: TabSort;
 	categories: ShopSearchCategory[];
 }) {
 	const t = useTranslations("Search");
@@ -90,7 +91,7 @@ export function ShopSearchClient({
 	const [city, setCity] = useState(initialCity);
 	const [level, setLevel] = useState(initialLevel);
 	const [category, setCategory] = useState(initialCategory);
-	const [sort, setSort] = useState<ShopSearchSort>(initialSort);
+	const [sort, setSort] = useState<TabSort>(initialSort);
 	const [cityOpen, setCityOpen] = useState(false);
 	const debouncedQ = useDebouncedValue(q, 300).trim();
 
@@ -236,7 +237,11 @@ export function ShopSearchClient({
 							<DropdownMenuContent align="end">
 								<DropdownMenuRadioGroup
 									value={sort}
-									onValueChange={(value) => setSort(value as ShopSearchSort)}
+									onValueChange={(value) =>
+										setSort(
+											SORTS.find((option) => option === value) ?? "relevance",
+										)
+									}
 								>
 									{SORTS.map((value) => (
 										<DropdownMenuRadioItem key={value} value={value}>
@@ -247,7 +252,19 @@ export function ShopSearchClient({
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
-					{data.hits.length === 0 ? (
+					{(data.sponsored?.length ?? 0) > 0 && (
+						<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+							{data.sponsored?.map((shop) => (
+								<ShopResultRow
+									key={shop.id}
+									shop={shop}
+									query={debouncedQ}
+									sponsored
+								/>
+							))}
+						</div>
+					)}
+					{data.hits.length === 0 && !data.sponsored?.length ? (
 						<div className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center">
 							<p className="font-semibold text-[#0F172A]">
 								{t("noShopsTitle")}
@@ -275,11 +292,13 @@ export function ShopSearchClient({
 							)}
 						</div>
 					) : (
-						<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
-							{data.hits.map((shop) => (
-								<ShopResultRow key={shop.id} shop={shop} query={debouncedQ} />
-							))}
-						</div>
+						data.hits.length > 0 && (
+							<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+								{data.hits.map((shop) => (
+									<ShopResultRow key={shop.id} shop={shop} query={debouncedQ} />
+								))}
+							</div>
+						)
 					)}
 				</>
 			)}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { useAppConfig } from "~/hooks/use-app-config";
+import { shopTheme } from "~/lib/shop-theme";
 import type { CartView } from "~/types/order";
 
 type HeaderShop = NonNullable<CartView["shop"]>;
@@ -29,11 +30,18 @@ export function CartShopHeader({
 	const city =
 		launchCities.find((c) => c.key === shop.city)?.label ?? shop.city ?? null;
 	const box = size === "sm" ? "h-10 w-10" : "h-12 w-12";
+	// The shop's colour marks only its identity here; the cart and checkout stay the platform's.
+	const brand = shop.brandColor ? shopTheme(shop.brandColor).light : null;
 
 	return (
 		<div className="flex items-center gap-3">
 			<div
 				className={`relative flex ${box} shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#0F172A] font-extrabold text-[#F59E0B] text-sm`}
+				style={
+					brand
+						? { backgroundColor: brand.headerBg, color: brand.headerFg }
+						: undefined
+				}
 			>
 				{shop.logoUrl ? (
 					<Image
