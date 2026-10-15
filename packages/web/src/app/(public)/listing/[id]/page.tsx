@@ -603,7 +603,8 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											</Button>
 										</Link>
 									)}
-									{listing.status === "published" && !isBoosted && (
+									{/* Boosting is the seller's business: a buyer never sees it. */}
+									{isOwner && listing.status === "published" && !isBoosted && (
 										<BoostDialog listingId={listing.id}>
 											<Button className="w-full rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] shadow-amber-500/20 shadow-md hover:shadow-lg">
 												<Zap className="mr-2 h-4 w-4" />
@@ -611,7 +612,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											</Button>
 										</BoostDialog>
 									)}
-									{isBoosted && (
+									{isOwner && isBoosted && (
 										<div className="flex items-center justify-center gap-1.5 rounded-lg border border-[#F59E0B]/30 bg-amber-50 px-3 py-2 font-semibold text-[#92400E] text-sm">
 											<Zap className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
 											{t("currentlyBoosted")}
