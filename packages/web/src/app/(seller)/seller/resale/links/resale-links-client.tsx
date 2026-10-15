@@ -67,10 +67,7 @@ export function ResaleLinksClient({
 		<section className="space-y-6">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<p className="font-semibold text-[#B45309] text-xs uppercase tracking-[0.18em]">
-						BuyNSellem · Resale
-					</p>
-					<h1 className="mt-2 font-bold text-2xl text-[#0F172A]">
+					<h1 className="font-bold text-2xl text-[#0F172A]">
 						{t(side === "supplier" ? "supplierTitle" : "resellerTitle")}
 					</h1>
 					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">

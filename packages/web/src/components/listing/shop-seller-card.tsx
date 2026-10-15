@@ -1,5 +1,6 @@
+import { Star } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { ShopInitials } from "~/components/shop/shop-initials";
 import { shopLogoUrl } from "~/lib/listing-shop";
@@ -10,6 +11,7 @@ export function ShopSellerCard({
 	shop,
 	badge,
 	ownerName,
+	stats,
 }: {
 	shop: Shop;
 	/** The server's computed, expiry-aware badge — see `getShopBadge` in
@@ -18,28 +20,62 @@ export function ShopSellerCard({
 	 * recomputes it, even once the level-3 approval has expired. */
 	badge: VerificationBadge | null;
 	ownerName: string | null;
+	stats?: {
+		rating: number;
+		totalReviews: number;
+		productCount: number;
+		createdAt: string;
+	} | null;
 }) {
 	const t = useTranslations("Shop");
+	const locale = useLocale();
 
 	return (
-		<Link href={`/s/${shop.handle}`} className="flex items-center gap-3">
-			<ShopInitials
-				name={shop.name}
-				logoUrl={shopLogoUrl(shop)}
-				className="h-12 w-12 rounded-xl text-sm"
-			/>
-			<div className="min-w-0">
-				<div className="flex flex-wrap items-center gap-2">
-					<p className="truncate font-semibold text-[#0F172A]">{shop.name}</p>
-					<LevelBadge badge={badge} size="sm" />
+		<div className="space-y-4">
+			<Link href={`/s/${shop.handle}`} className="flex items-center gap-3">
+				<ShopInitials
+					name={shop.name}
+					logoUrl={shopLogoUrl(shop)}
+					className="h-14 w-14 rounded-[14px] text-base"
+				/>
+				<div className="min-w-0 space-y-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<p className="truncate font-bold text-[#0F172A] text-[17px]">
+							{shop.name}
+						</p>
+						<LevelBadge badge={badge} size="sm" />
+					</div>
+					{stats && (
+						<p className="flex flex-wrap items-center gap-1 text-[#64748B] text-[13px]">
+							{stats.totalReviews > 0 && (
+								<>
+									<Star className="h-3 w-3 fill-[#F59E0B] text-[#F59E0B]" />
+									{stats.rating.toLocaleString(locale, {
+										maximumFractionDigits: 1,
+										minimumFractionDigits: 1,
+									})}{" "}
+									({t("reviews", { count: stats.totalReviews })}) ·{" "}
+								</>
+							)}
+							{t("products", { count: stats.productCount })} ·{" "}
+							{t("sinceYear", {
+								year: new Date(stats.createdAt).getFullYear(),
+							})}
+						</p>
+					)}
+					{ownerName && (
+						<p className="text-[#64748B] text-xs">
+							{t("runBy", { name: ownerName })}
+						</p>
+					)}
 				</div>
-				{ownerName && (
-					<p className="text-[#64748B] text-xs">
-						{t("runBy", { name: ownerName })}
-					</p>
-				)}
-				<p className="text-[#1E40AF] text-xs">{t("visitShop")}</p>
-			</div>
-		</Link>
+			</Link>
+			<Link
+				href={`/s/${shop.handle}`}
+				className="flex h-10 w-full items-center justify-center rounded-lg border border-[#E2E8F0] font-semibold text-[#0F172A] text-sm hover:border-[#1E40AF] hover:text-[#1E40AF]"
+			>
+				{t("visitShop")}
+			</Link>
+		</div>
 	);
 }

@@ -86,7 +86,7 @@ export function VariantSelector({
 	if (variants.length === 0) return null;
 
 	return (
-		<div className="mt-4 space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
+		<div className="mt-4 space-y-4">
 			{options.map((option) => (
 				<div key={option.name}>
 					<p className="text-[#64748B] text-sm">

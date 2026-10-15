@@ -5,13 +5,12 @@ import { useOrderMoney } from "~/hooks/use-order-money";
 import { usePickupPoints } from "~/hooks/use-pickup-points";
 import { googleMapsUrl } from "~/lib/checkout-form";
 import { pickupHours } from "../../../../api/src/contracts/publicPickupPoint";
-import { LAUNCH_CITIES } from "../../../../api/src/lib/launchCities";
 
 export function PickupPoints({ handle }: { handle: string }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Shop");
 	const locale = useLocale() === "fr" ? "fr" : "en";
-	const { ordersEnabled, deliveryZonesEnabled } = useAppConfig();
+	const { ordersEnabled, deliveryZonesEnabled, launchCities } = useAppConfig();
 	const query = usePickupPoints(handle);
 	if (!ordersEnabled || !deliveryZonesEnabled) return null;
 	if (query.isPending)
@@ -39,7 +38,9 @@ export function PickupPoints({ handle }: { handle: string }) {
 				>
 					<h3 className="font-medium text-slate-900">{point.name}</h3>
 					<p>
-						{LAUNCH_CITIES[point.city].label} · {point.district}
+						{launchCities.find((city) => city.key === point.city)?.label ??
+							point.city}{" "}
+						· {point.district}
 					</p>
 					{point.address && <p>{point.address}</p>}
 					<p>{point.landmark}</p>

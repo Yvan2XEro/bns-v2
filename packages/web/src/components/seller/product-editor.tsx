@@ -132,6 +132,7 @@ export function ProductEditor({
 			<ProductEditorHeader
 				heading={heading}
 				isEdit={Boolean(detail)}
+				savedStatus={detail?.response.product.status ?? null}
 				pending={pending}
 				onSubmitAs={submitAs}
 			/>

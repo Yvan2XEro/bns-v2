@@ -10,6 +10,8 @@ import { resolveErrorMessage } from "~/lib/apiError";
 interface MessageSellerButtonProps {
 	listingId: string;
 	signedIn: boolean;
+	/** The buy box's outlined "ask the shop" variant, under the order buttons. */
+	secondary?: boolean;
 }
 
 function goToSignIn() {
@@ -26,6 +28,7 @@ function goToSignIn() {
 export function MessageSellerButton({
 	listingId,
 	signedIn,
+	secondary = false,
 }: MessageSellerButtonProps) {
 	const t = useTranslations("Listing");
 	const tErrors = useTranslations();
@@ -50,7 +53,12 @@ export function MessageSellerButton({
 	return (
 		<div className="flex w-full flex-col gap-1">
 			<Button
-				className="w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				variant={secondary ? "outline" : "default"}
+				className={
+					secondary
+						? "min-h-11 w-full rounded-lg border-[#E2E8F0] font-semibold text-[#0F172A]"
+						: "w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				}
 				onClick={onClick}
 				disabled={start.isPending}
 			>
@@ -59,7 +67,7 @@ export function MessageSellerButton({
 				) : (
 					<MessageCircle className="mr-2 h-4 w-4" />
 				)}
-				{t("messageSeller")}
+				{secondary ? t("askShop") : t("messageSeller")}
 			</Button>
 			{start.isError && start.error.status !== 401 && (
 				<p className="text-center text-red-500 text-xs">

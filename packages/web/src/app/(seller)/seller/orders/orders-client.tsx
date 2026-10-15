@@ -64,7 +64,7 @@ export function OrdersClient({
 			<div
 				role="tablist"
 				aria-label={t("tabsLabel")}
-				className="flex gap-1 overflow-x-auto rounded-lg bg-[#F1F5F9] p-1"
+				className="flex gap-2 overflow-x-auto"
 			>
 				{SHOP_ORDER_TABS.map((tab) => (
 					<button
@@ -74,15 +74,20 @@ export function OrdersClient({
 						aria-selected={state.tab === tab}
 						onClick={() => patch({ tab })}
 						className={cn(
-							"inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 font-medium text-sm",
+							"inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 font-medium text-sm",
 							state.tab === tab
-								? "bg-white text-[#0F172A] shadow-sm"
-								: "text-[#64748B]",
+								? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
+								: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#93C5FD]",
 						)}
 					>
 						{tRoot(`OrderStatus.tab_${tab}`)}
 						{counts && (
-							<span className="rounded-full bg-[#E2E8F0] px-2 py-0.5 text-[#0F172A] text-xs">
+							<span
+								className={cn(
+									"font-bold text-[11px] tabular-nums",
+									state.tab === tab ? "text-[#CBD5E1]" : "text-[#64748B]",
+								)}
+							>
 								{counts[tab]}
 							</span>
 						)}

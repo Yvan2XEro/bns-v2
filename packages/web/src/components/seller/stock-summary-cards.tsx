@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useOrderMoney } from "~/hooks/use-order-money";
+import { cn } from "~/lib/utils";
 import type { StockSummary } from "~/types";
 
 export function StockSummaryCards({ summary }: { summary: StockSummary }) {
@@ -35,6 +36,7 @@ export function StockSummaryCards({ summary }: { summary: StockSummary }) {
 			hint: firstAlert
 				? `${firstAlert.productTitle} · ${firstAlert.label}`
 				: null,
+			warn: summary.lowStock.length + summary.outOfStock.length > 0,
 		},
 	];
 
@@ -43,12 +45,19 @@ export function StockSummaryCards({ summary }: { summary: StockSummary }) {
 			{cards.map((card) => (
 				<div
 					key={card.label}
-					className="rounded-xl border border-[#E2E8F0] bg-white p-5"
+					className="rounded-xl border border-[#E2E8F0] bg-white px-4 py-3.5"
 				>
 					<p className="text-[#64748B] text-sm">{card.label}</p>
-					<p className="mt-1 font-bold text-[#0F172A] text-xl">{card.value}</p>
+					<p
+						className={cn(
+							"mt-1 font-bold text-[22px] tabular-nums",
+							card.warn ? "text-[#B45309]" : "text-[#0F172A]",
+						)}
+					>
+						{card.value}
+					</p>
 					{card.hint && (
-						<p className="mt-1 truncate text-[#64748B] text-xs">{card.hint}</p>
+						<p className="mt-1 truncate text-[#94A3B8] text-xs">{card.hint}</p>
 					)}
 				</div>
 			))}

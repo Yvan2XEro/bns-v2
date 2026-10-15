@@ -166,6 +166,11 @@ export function CartClient({
 								>
 									{t("shopHeader", { shop: view.shop.name })}
 								</Link>
+								{view.shop.city ? (
+									<span className="ml-2 font-normal text-[#64748B] text-sm">
+										{view.shop.city}
+									</span>
+								) : null}
 							</h2>
 						) : null}
 						<ul className="space-y-3">
@@ -208,6 +213,7 @@ function CartSummary({
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Cart");
+	const { withdrawalDays } = useAppConfig();
 	const totals = cartTotals(cart.lines);
 	const ready = canCheckout(cart);
 
@@ -232,6 +238,9 @@ function CartSummary({
 			{cart.shopOrderable ? null : (
 				<p className="text-red-600 text-sm">{t("shopNotOrderable")}</p>
 			)}
+			<p className="text-[#64748B] text-sm">
+				{t("summaryNote", { days: withdrawalDays })}
+			</p>
 			{ready ? (
 				<Button asChild size="lg" className="min-h-11 w-full">
 					<Link href="/checkout">{t("checkout")}</Link>

@@ -106,6 +106,13 @@ export function InventoryClient({
 		cost: row.cost,
 	}));
 	const stats = countDeltas(lines);
+	const units = lines.reduce(
+		(sum, line) => ({
+			counted: sum.counted + (line.counted ?? 0),
+			expected: sum.expected + line.expected,
+		}),
+		{ counted: 0, expected: 0 },
+	);
 	const invalidRows = Array.isArray(formState.errors.rows)
 		? formState.errors.rows.filter(Boolean).length
 		: 0;
@@ -196,11 +203,22 @@ export function InventoryClient({
 				errorMessage={formState.errors.root?.message ?? null}
 			/>
 
-			<InventoryStats stats={stats} total={fields.length} showCost={showCost} />
+			<InventoryStats
+				stats={stats}
+				total={fields.length}
+				units={units}
+				showCost={showCost}
+			/>
 
 			<InventoryFilters
 				filter={state.filter}
 				onFilterChange={(filter) => patch({ filter })}
+				counts={{
+					all: fields.length,
+					todo: fields.length - stats.counted,
+					counted: stats.counted,
+					gap: stats.withGap,
+				}}
 				q={state.q}
 				onQueryChange={(q) => patch({ q })}
 			/>

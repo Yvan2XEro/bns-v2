@@ -23,9 +23,12 @@ export function ShopHero({
 		.filter(Boolean)
 		.join(", ");
 
+	// Only the logo is pulled up over the banner; the name, badges and meta
+	// stay in normal flow beneath it, so no name length or wrap can reach
+	// back into the banner.
 	return (
 		<section className="border-[#E2E8F0] border-b bg-white">
-			<div className="h-36 w-full bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] sm:h-52">
+			<div className="h-36 w-full bg-[#1E3A8A] bg-[length:18px_18px] bg-[radial-gradient(rgba(255,255,255,0.13)_1px,transparent_1px)] sm:h-48 lg:h-[220px]">
 				{shop.banner?.url && (
 					// biome-ignore lint/performance/noImgElement: banners come from arbitrary storage hosts
 					<img
@@ -36,27 +39,29 @@ export function ShopHero({
 				)}
 			</div>
 			<div className="container mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
-				<div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-					<div className="flex items-end gap-4">
-						<ShopInitials
-							name={shop.name}
-							logoUrl={shop.logo?.url}
-							className="h-20 w-20 text-2xl ring-4 ring-white sm:h-24 sm:w-24"
-						/>
-						<div className="pb-1">
-							<div className="flex flex-wrap items-center gap-2">
-								<h1 className="font-bold text-2xl text-[#0F172A] sm:text-3xl">
+				<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+					<ShopInitials
+						name={shop.name}
+						logoUrl={shop.logo?.url}
+						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-white bg-[#0F172A] text-3xl text-[#F59E0B] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
+					/>
+					<div className="flex min-w-0 flex-1 flex-col gap-4 sm:pt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+						<div className="min-w-0">
+							<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+								<h1 className="break-words font-extrabold text-2xl text-[#0F172A] tracking-tight sm:text-[32px] sm:leading-tight">
 									{shop.name}
 								</h1>
 								<LevelBadge badge={shop.badge} />
 							</div>
-							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[#64748B] text-sm">
+							<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[#64748B] text-sm">
 								{rating && (
 									<span className="flex items-center gap-1">
 										<Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-										{rating.rating.toLocaleString(locale, {
-											maximumFractionDigits: 1,
-										})}{" "}
+										<strong className="text-[#0F172A]">
+											{rating.rating.toLocaleString(locale, {
+												maximumFractionDigits: 1,
+											})}
+										</strong>{" "}
 										(
 										{rating.source === "shop"
 											? t("verifiedReviews", { count: rating.count })
@@ -76,19 +81,20 @@ export function ShopHero({
 								<span>{t("onPlatformSince", { year: since })}</span>
 							</div>
 						</div>
-					</div>
-					<div className="flex flex-wrap items-center gap-2">
-						<ShopContactButtons contact={shop.contact} />
-						<ShareShopButton handle={shop.handle} name={shop.name} />
-						<ReportDialog targetType="shop" targetId={shop.id}>
-							<button
-								type="button"
-								className="inline-flex h-10 items-center gap-1 px-2 text-[#94A3B8] text-xs hover:text-red-500"
-							>
-								<Flag className="h-3.5 w-3.5" />
-								{t("report")}
-							</button>
-						</ReportDialog>
+						<div className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-1">
+							<ShopContactButtons contact={shop.contact} />
+							<ShareShopButton handle={shop.handle} name={shop.name} />
+							<ReportDialog targetType="shop" targetId={shop.id}>
+								<button
+									type="button"
+									aria-label={t("report")}
+									title={t("report")}
+									className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#64748B] hover:border-red-200 hover:text-red-500"
+								>
+									<Flag className="h-4 w-4" />
+								</button>
+							</ReportDialog>
+						</div>
 					</div>
 				</div>
 			</div>

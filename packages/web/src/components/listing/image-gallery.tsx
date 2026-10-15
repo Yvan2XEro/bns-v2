@@ -118,16 +118,16 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 					)}
 				</div>
 				{images.length > 1 && (
-					<div className="flex gap-1 overflow-x-auto border-[#E2E8F0] border-t p-2">
+					<div className="grid grid-cols-6 gap-2 p-3">
 						{images.map((url, i) => (
 							<button
 								type="button"
 								key={i}
 								onClick={() => goTo(i)}
-								className={`relative h-16 w-20 shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
+								className={`relative h-12 overflow-hidden rounded-lg border-2 transition-colors sm:h-[72px] ${
 									i === currentIndex
 										? "border-[#1E40AF]"
-										: "border-[#E2E8F0] hover:border-[#94A3B8]"
+										: "border-transparent hover:border-[#94A3B8]"
 								}`}
 							>
 								<Image

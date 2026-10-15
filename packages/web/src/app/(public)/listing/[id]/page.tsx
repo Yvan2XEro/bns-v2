@@ -39,7 +39,7 @@ import {
 import { formatOrderMoneyRange, renderOrderMoney } from "~/lib/order-money";
 import { hasListingPrice } from "~/lib/price";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
-import { getMarket, getMyShop, getShopBadge } from "~/lib/server-shop";
+import { getMarket, getMyShop, getPublicShop } from "~/lib/server-shop";
 import { timeAgo } from "~/lib/time-ago";
 import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
@@ -61,8 +61,9 @@ export async function generateMetadata({
 	const listing = await getListing(id);
 
 	if (!listing) {
+		const tMeta = await getTranslations("Listing");
 		return {
-			title: "Annonce introuvable",
+			title: tMeta("metaNotFound"),
 			robots: { index: false },
 		};
 	}
@@ -163,11 +164,12 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 		listing.boostedUntil && new Date(listing.boostedUntil) > new Date();
 	const seller = listing.seller as User | undefined;
 	const shop = listingShop(listing);
-	const [shopBadge, mine, market] = await Promise.all([
-		shop ? getShopBadge(shop.handle) : null,
+	const [publicShop, mine, market] = await Promise.all([
+		shop ? getPublicShop(shop.handle) : null,
 		shop && authUser ? getMyShop() : null,
 		getMarket(),
 	]);
+	const shopBadge = publicShop?.badge ?? null;
 	const formatOrderMoney = (amount: number | null | undefined) =>
 		renderOrderMoney(market, amount, locale);
 	const formattedPrice = hasListingPrice(listing.price)
@@ -198,6 +200,12 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 	// a member viewing from another active shop.
 	const ownShop = isOwner || (shop !== null && mine?.shop?.id === shop.id);
 	const category = listing.category as { id: string; name: string } | undefined;
+	const parentCategory =
+		typeof listing.category === "object" &&
+		listing.category?.parent &&
+		typeof listing.category.parent === "object"
+			? listing.category.parent
+			: null;
 
 	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
 	// name, type, unit and section all live on the category, so join the two.
@@ -335,12 +343,23 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 						<ArrowLeft className="h-4 w-4" />
 						{t("backToResults")}
 					</Link>
+					{parentCategory && (
+						<>
+							<span>/</span>
+							<Link
+								href={`/search?category=${parentCategory.id}`}
+								className="hover:text-[#1E40AF]"
+							>
+								{parentCategory.name}
+							</Link>
+						</>
+					)}
 					{category && (
 						<>
 							<span>/</span>
 							<Link
 								href={`/search?category=${category.id}`}
-								className="hover:text-[#1E40AF]"
+								className="text-[#0F172A] hover:text-[#1E40AF]"
 							>
 								{category.name}
 							</Link>
@@ -371,9 +390,12 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<h1 className="font-bold text-2xl text-[#0F172A]">
 										{listing.title}
 									</h1>
-									<p className="mt-1 font-bold text-2xl text-[#1E40AF]">
-										{priceRange ?? formattedPrice ?? t("noPrice")}
-									</p>
+									{/* A shop product's price sits in the buy box, as in the design. */}
+									{!productId && (
+										<p className="mt-1 font-bold text-2xl text-[#1E40AF]">
+											{priceRange ?? formattedPrice ?? t("noPrice")}
+										</p>
+									)}
 								</div>
 								<div className="flex gap-2">
 									<FavoriteButton
@@ -386,7 +408,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							</div>
 
 							{/* Meta */}
-							<div className="mt-4 flex flex-wrap gap-3 text-[#64748B] text-sm">
+							<div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-[#64748B] text-sm">
 								<span className="flex items-center gap-1">
 									<MapPin className="h-4 w-4 text-[#F59E0B]" />
 									{listing.location}
@@ -454,10 +476,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 
 							{/* Description */}
 							<div className="mt-6 border-[#E2E8F0] border-t pt-5">
-								<h2 className="mb-2 font-bold text-[#64748B] text-sm uppercase tracking-wider">
+								<h2 className="mb-2 font-bold text-[#0F172A] text-[17px]">
 									{t("listingDescription")}
 								</h2>
-								<p className="whitespace-pre-wrap text-[#334155] text-sm leading-relaxed">
+								<p className="whitespace-pre-wrap text-[#334155] text-[15px] leading-6">
 									{listing.description}
 								</p>
 							</div>
@@ -465,7 +487,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							{/* Attributes */}
 							{attributeGroups.length > 0 && (
 								<div className="mt-6 border-[#E2E8F0] border-t pt-5">
-									<h2 className="mb-3 font-bold text-[#64748B] text-sm uppercase tracking-wider">
+									<h2 className="mb-2 font-bold text-[#0F172A] text-[17px]">
 										{t("details")}
 									</h2>
 									{attributeGroups.map((group) => (
@@ -475,16 +497,14 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 													{group.title}
 												</h3>
 											)}
-											<dl className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+											<dl className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
 												{group.items.map((attr) => (
 													<div
 														key={attr.slug}
-														className="border-[#F1F5F9] border-b py-1.5 last:border-b-0 sm:[&:nth-last-child(-n+1)]:border-b-0"
+														className="flex justify-between gap-4 border-[#F1F5F9] border-b py-2.5 text-sm"
 													>
-														<dt className="text-[#94A3B8] text-xs">
-															{attr.label}
-														</dt>
-														<dd className="font-medium text-[#0F172A] text-sm">
+														<dt className="text-[#64748B]">{attr.label}</dt>
+														<dd className="text-right font-semibold text-[#0F172A]">
 															{attr.value}
 														</dd>
 													</div>
@@ -502,41 +522,54 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 						<div className="sticky top-20 space-y-4">
 							{/* Buy box first, as in the design: price, variants and the
 							    order action sit at the top of the column, above the seller. */}
-							<DeliveryEstimates
-								listingId={String(listing.id)}
-								eligible={Boolean(
-									productId && shop && !shop.ordersRestrictedAt,
-								)}
-							/>
 							{productId && (
-								<BuyBox
-									listingId={String(listing.id)}
-									productId={productId}
-									shop={
-										shop
-											? {
-													id: shop.id,
-													restricted: Boolean(shop.ordersRestrictedAt),
-												}
-											: null
-									}
-									orderable={listing.orderable}
-									ownShop={ownShop}
-									productAvailable={summary?.available ?? null}
-									signedIn={Boolean(authUser)}
-									codAllowed={delivery.codAllowed === true}
-									pickupAllowed={delivery.pickupAllowed === true}
-									shopBadge={shopBadge}
-									delivery={{
-										city: shop?.location?.city ?? null,
-										sellerDeliveryEnabled:
-											shop?.orderSettings?.sellerDeliveryEnabled === true,
-										deliveryFee: shop?.orderSettings?.deliveryFee ?? null,
-										pickupEnabled: shop?.orderSettings?.pickupEnabled === true,
-										pickupAddress:
-											shop?.orderSettings?.pickupPoint?.address ?? null,
-									}}
-								/>
+								<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+									<p className="font-bold text-3xl text-[#1E40AF]">
+										{priceRange ?? formattedPrice ?? t("noPrice")}
+									</p>
+									<BuyBox
+										listingId={String(listing.id)}
+										productId={productId}
+										shop={
+											shop
+												? {
+														id: shop.id,
+														restricted: Boolean(shop.ordersRestrictedAt),
+													}
+												: null
+										}
+										orderable={listing.orderable}
+										ownShop={ownShop}
+										productAvailable={summary?.available ?? null}
+										signedIn={Boolean(authUser)}
+										codAllowed={delivery.codAllowed === true}
+										pickupAllowed={delivery.pickupAllowed === true}
+										shopBadge={shopBadge}
+										delivery={{
+											city: shop?.location?.city ?? null,
+											sellerDeliveryEnabled:
+												shop?.orderSettings?.sellerDeliveryEnabled === true,
+											deliveryFee: shop?.orderSettings?.deliveryFee ?? null,
+											pickupEnabled:
+												shop?.orderSettings?.pickupEnabled === true,
+											pickupAddress:
+												shop?.orderSettings?.pickupPoint?.address ?? null,
+										}}
+									/>
+									<DeliveryEstimates
+										listingId={String(listing.id)}
+										eligible={Boolean(shop && !shop.ordersRestrictedAt)}
+									/>
+									{!isOwner && (
+										<div className="mt-4">
+											<MessageSellerButton
+												listingId={String(listing.id)}
+												signedIn={Boolean(authUser)}
+												secondary
+											/>
+										</div>
+									)}
+								</div>
 							)}
 							{/* Seller card */}
 							<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
@@ -545,6 +578,14 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										shop={shop}
 										badge={shopBadge}
 										ownerName={seller?.name ?? null}
+										stats={
+											publicShop && {
+												rating: publicShop.rating,
+												totalReviews: publicShop.totalReviews,
+												productCount: publicShop.publishedListingCount,
+												createdAt: publicShop.createdAt,
+											}
+										}
 									/>
 								) : seller ? (
 									<Link
@@ -612,7 +653,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											{t("currentlyBoosted")}
 										</div>
 									)}
-									{!isOwner && (
+									{!isOwner && !productId && (
 										<MessageSellerButton
 											listingId={String(listing.id)}
 											signedIn={Boolean(authUser)}

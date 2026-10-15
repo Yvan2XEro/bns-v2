@@ -39,13 +39,18 @@ export const getUserShop = cache(
  * so the badge is the server's computed, expiry-aware one, never
  * `badgeForLevel` over a raw `level`.
  */
-export const getShopBadge = cache(
-	async (handle: string): Promise<VerificationBadge | null> => {
+export const getPublicShop = cache(
+	async (handle: string): Promise<PublicShop | null> => {
 		const result = await serverGet<{ shop: PublicShop }>(
 			`/api/public/shops/${encodeURIComponent(handle)}`,
 		);
-		return result?.shop.badge ?? null;
+		return result?.shop ?? null;
 	},
+);
+
+export const getShopBadge = cache(
+	async (handle: string): Promise<VerificationBadge | null> =>
+		(await getPublicShop(handle))?.badge ?? null,
 );
 
 /**

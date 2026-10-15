@@ -62,11 +62,6 @@
 		"googlePlay": "Google Play",
 		"allRightsReserved": "All rights reserved."
 	},
-	"CategoryBar": {
-		"categories": "Categories",
-		"all": "All {name}",
-		"seeAllIn": "See all in {name}"
-	},
 	"Auth": {
 		"welcomeBack": "Welcome back",
 		"signInToYourAccount": "Sign in to your Buy'N'Sellem account",
@@ -163,7 +158,13 @@
 		"noShopsBody": "Try another word or a wider city.",
 		"clearFilters": "Clear the filters",
 		"verifiedShopsOnly": "Verified shops only",
-		"closeFilters": "Close filters"
+		"closeFilters": "Close filters",
+		"metaTitle": "Search listings",
+		"metaDescription": "Browse thousands of local listings on Buy'N'Sellem. Find a good deal near you.",
+		"metaTitleQuery": "“{q}” — Search results",
+		"metaDescriptionQuery": "Find listings matching “{q}” on Buy'N'Sellem.",
+		"noShopsMatch": "{verified, select, yes {No verified shop} other {No shop}} sells “{q}”. Try another word.",
+		"noShopsMatchIn": "{verified, select, yes {No verified shop} other {No shop}} sells “{q}” in {city}. Widen the city{verified, select, yes { or the level} other {}}."
 	},
 	"LocationPicker": {
 		"title": "Choose a location",
@@ -317,7 +318,9 @@
 		"noPhoto": "No photo",
 		"noImages": "No images",
 		"badgeNew": "New",
-		"badgeLikeNew": "Like new"
+		"badgeLikeNew": "Like new",
+		"askShop": "Ask the shop a question",
+		"metaNotFound": "Listing not found"
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -436,7 +439,7 @@
 	},
 	"Home": {
 		"heroTitle": "Buy & Sell Locally",
-		"heroSubtitle": "The easiest way to buy and sell items in your area",
+		"heroSubtitle": "Classifieds and verified shops, from Cameroon to the French- and English-speaking world.",
 		"browseByCategory": "Browse by category",
 		"allCategories": "All categories",
 		"featured": "Featured",
@@ -447,9 +450,9 @@
 		"featuredPromoChipDeals": "Top deals",
 		"featuredPromoChipFast": "Quick listings",
 		"featuredPromoChipFlash": "Flash sales",
-		"freshListings": "Fresh listings",
+		"freshListings": "New in",
 		"new": "New",
-		"seeAll": "See all",
+		"seeAll": "See more",
 		"noListingsYet": "No listings yet",
 		"beFirst": "Be the first to post!",
 		"postListing": "Post a listing",
@@ -479,7 +482,11 @@
 		"trustCod": "Cash on delivery",
 		"trustCodDetail": "in your city",
 		"trustChat": "Built-in messaging",
-		"trustChatDetail": "before you commit"
+		"trustChatDetail": "before you commit",
+		"searchButton": "Search",
+		"verifiedShops": "Verified shops",
+		"allShops": "All shops",
+		"shopProducts": "{count, plural, =0 {No products} one {# product} other {# products}}"
 	},
 	"NotFound": {
 		"title": "Page not found",
@@ -817,6 +824,8 @@
 		"memberSince": "Member since {date}",
 		"searchInShop": "Search this shop",
 		"noResultsInShop": "Nothing matches \"{q}\" in this shop.",
+		"noResultsInCategory": "Nothing in this category yet.",
+		"allCategories": "All",
 		"emptyShop": "This shop has not published anything yet.",
 		"metaDescription": "{name} on Buy'N'Sellem: browse the shop and contact the seller.",
 		"previous": "Previous",
@@ -840,7 +849,8 @@
 		"businessTypeSoleTrader": "Sole trader",
 		"businessTypeCompany": "Company",
 		"businessTypeCooperative": "Cooperative",
-		"verifiedReviews": "{count, plural, one {# verified purchase review} other {# verified purchase reviews}}"
+		"verifiedReviews": "{count, plural, one {# verified purchase review} other {# verified purchase reviews}}",
+		"sinceYear": "since {year}"
 	},
 	"ShopCreate": {
 		"title": "Open my shop",
@@ -1156,6 +1166,7 @@
 		"startInventory": "Start a stock count",
 		"adjustTitle": "Adjust stock",
 		"adjustSubtitle": "Every movement is recorded with its reason.",
+		"movementsTitle": "Stock movements",
 		"costValue": "Stock value at cost",
 		"unitsOnHand": "Units in stock",
 		"trackedVariants": "across {count, plural, one {# tracked variant} other {# tracked variants}}",
@@ -1233,9 +1244,14 @@
 		"resumeLater": "Resume later",
 		"draftSaved": "Count saved on this device.",
 		"submit": "Save the gaps",
-		"progress": "Variants counted",
-		"gaps": "Variants with a gap · missing / extra",
+		"unitsCounted": "units counted",
+		"variantsProgress": "{counted, plural, one {# variant} other {# variants}} of {total}",
+		"gapVariants": "Variants with a gap",
+		"gapVariantsHint": "of {count} counted",
+		"units": "Units",
+		"unitsHint": "missing / extra",
 		"gapValue": "Gap value at cost",
+		"gapValueHint": "net, after correction",
 		"filter": {
 			"all": "All",
 			"todo": "To count",
@@ -1248,6 +1264,9 @@
 		"colCounted": "Counted",
 		"colGap": "Gap",
 		"colGapValue": "Gap at cost ({currency})",
+		"colStatus": "Status",
+		"statusCounted": "Counted",
+		"statusTodo": "To count",
 		"defaultVariant": "Single variant",
 		"errorTitle": "Could not load the variants",
 		"note": "Stock count of {date}",
@@ -2029,7 +2048,9 @@
 	},
 	"Team": {
 		"title": "Team",
-		"invite": "Invite",
+		"subtitle": "{shop} · {active, plural, one {# active member} other {# active members}}, {pending, plural, =0 {no pending invitation} one {# pending invitation} other {# pending invitations}}",
+		"fullLog": "Full log",
+		"invite": "Invite a member",
 		"inviteFull": "This shop has reached its team size limit. Free a seat before inviting someone new.",
 		"inviteTitle": "Invite a team member",
 		"deliveredFalse": "The invitation was created but could not be delivered. Try resending it from the roster.",
@@ -2325,7 +2346,7 @@
 		"remove": "Remove",
 		"quantity": "Quantity",
 		"subtotal": "Subtotal",
-		"checkout": "Checkout",
+		"checkout": "Place the order",
 		"singleShopTitle": "One shop per order",
 		"singleShopBody": "Your cart can only hold items from a single shop at a time.",
 		"singleShopReplace": "Replace cart",
@@ -2342,7 +2363,8 @@
 		"unavailableBlocking": "Remove the unavailable items to place your order.",
 		"shopNotOrderable": "This shop is not taking orders at the moment.",
 		"adding": "Adding the item to your cart…",
-		"retry": "Try again"
+		"retry": "Try again",
+		"summaryNote": "You choose delivery and payment at the next step. You have {days} days after receipt to withdraw."
 	},
 	"Checkout": {
 		"shell": {
@@ -2702,8 +2724,8 @@
 	"SellerResaleCatalogue": {
 		"navigation": "Resale navigation",
 		"suppliers": "My suppliers",
-		"title": "Supplier catalogue",
-		"description": "Choose supplier products, set your retail prices and publish them in your shop.",
+		"title": "Resale",
+		"description": "Sell without stock: a verified supplier ships in your name, you set your margin.",
 		"purchaseOrders": "Purchase orders",
 		"search": "Search supplier products",
 		"empty": "No eligible supplier products are available yet.",
@@ -2735,7 +2757,7 @@
 	"SellerResaleLinks": {
 		"navigation": "Resale navigation",
 		"offeredProducts": "Offered products",
-		"supplierTitle": "Reseller relationships",
+		"supplierTitle": "Resellers",
 		"supplierDescription": "Review access requests and manage the shops allowed to resell your products.",
 		"resellerTitle": "My suppliers",
 		"resellerDescription": "Track supplier access, approvals and the products available to your shop.",

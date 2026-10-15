@@ -69,6 +69,9 @@ export function InventoryTable({
 								{t("colGapValue", { currency: currencyCode })}
 							</th>
 						)}
+						<th className="px-4 py-3 font-semibold print:hidden">
+							{t("colStatus")}
+						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -129,6 +132,18 @@ export function InventoryTable({
 											: formatOrderMoney(delta * row.cost)}
 									</td>
 								)}
+								<td className="px-4 py-2 print:hidden">
+									<span
+										className={cn(
+											"inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 font-semibold text-xs",
+											counted === null
+												? "bg-[#F1F5F9] text-[#475569]"
+												: "bg-[#DCFCE7] text-[#166534]",
+										)}
+									>
+										{t(counted === null ? "statusTodo" : "statusCounted")}
+									</span>
+								</td>
 							</tr>
 						);
 					})}

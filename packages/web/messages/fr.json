@@ -62,11 +62,6 @@
 		"googlePlay": "Google Play",
 		"allRightsReserved": "Tous droits réservés."
 	},
-	"CategoryBar": {
-		"categories": "Catégories",
-		"all": "Tous les {name}",
-		"seeAllIn": "Voir tout dans {name}"
-	},
 	"Auth": {
 		"welcomeBack": "Bon retour",
 		"signInToYourAccount": "Connectez-vous à votre compte Buy'N'Sellem",
@@ -164,7 +159,13 @@
 		"noShopsBody": "Essayez un autre mot ou élargissez la ville.",
 		"clearFilters": "Effacer les filtres",
 		"verifiedShopsOnly": "Boutiques vérifiées uniquement",
-		"closeFilters": "Fermer les filtres"
+		"closeFilters": "Fermer les filtres",
+		"metaTitle": "Rechercher des annonces",
+		"metaDescription": "Parcourez des milliers d'annonces locales sur Buy'N'Sellem. Trouvez la bonne affaire près de chez vous.",
+		"metaTitleQuery": "« {q} » — Résultats de recherche",
+		"metaDescriptionQuery": "Trouvez des annonces correspondant à « {q} » sur Buy'N'Sellem.",
+		"noShopsMatch": "{verified, select, yes {Aucune boutique vérifiée} other {Aucune boutique}} ne vend « {q} ». Essayez un autre mot.",
+		"noShopsMatchIn": "{verified, select, yes {Aucune boutique vérifiée} other {Aucune boutique}} ne vend « {q} » à {city}. Élargissez la ville{verified, select, yes { ou le niveau} other {}}."
 	},
 	"LocationPicker": {
 		"title": "Choisir une localisation",
@@ -318,7 +319,9 @@
 		"noPhoto": "Pas de photo",
 		"noImages": "Aucune photo",
 		"badgeNew": "Neuf",
-		"badgeLikeNew": "Comme neuf"
+		"badgeLikeNew": "Comme neuf",
+		"askShop": "Poser une question à la boutique",
+		"metaNotFound": "Annonce introuvable"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -437,7 +440,7 @@
 	},
 	"Home": {
 		"heroTitle": "Acheter & Vendre Localement",
-		"heroSubtitle": "La façon la plus simple d'acheter et vendre près de chez vous",
+		"heroSubtitle": "Petites annonces et boutiques vérifiées, du Cameroun au monde francophone et anglophone.",
 		"browseByCategory": "Parcourir par catégorie",
 		"allCategories": "Toutes les catégories",
 		"featured": "À la une",
@@ -448,9 +451,9 @@
 		"featuredPromoChipDeals": "Bons plans",
 		"featuredPromoChipFast": "Annonces rapides",
 		"featuredPromoChipFlash": "Ventes flash",
-		"freshListings": "Nouvelles annonces",
+		"freshListings": "Nouveautés",
 		"new": "Nouveau",
-		"seeAll": "Voir tout",
+		"seeAll": "Voir plus",
 		"noListingsYet": "Aucune annonce",
 		"beFirst": "Soyez le premier à poster !",
 		"postListing": "Publier une annonce",
@@ -480,7 +483,11 @@
 		"trustCod": "Paiement à la livraison",
 		"trustCodDetail": "dans votre ville",
 		"trustChat": "Messagerie intégrée",
-		"trustChatDetail": "avant de vous engager"
+		"trustChatDetail": "avant de vous engager",
+		"searchButton": "Rechercher",
+		"verifiedShops": "Boutiques vérifiées",
+		"allShops": "Toutes les boutiques",
+		"shopProducts": "{count, plural, =0 {Aucun produit} one {# produit} other {# produits}}"
 	},
 	"NotFound": {
 		"title": "Page non trouvée",
@@ -818,6 +825,8 @@
 		"memberSince": "Membre depuis {date}",
 		"searchInShop": "Rechercher dans cette boutique",
 		"noResultsInShop": "Rien ne correspond à « {q} » dans cette boutique.",
+		"noResultsInCategory": "Aucune annonce dans cette catégorie pour le moment.",
+		"allCategories": "Tout",
 		"emptyShop": "Cette boutique n'a encore rien publié.",
 		"metaDescription": "{name} sur Buy'N'Sellem : parcourez la boutique et contactez le vendeur.",
 		"previous": "Précédent",
@@ -841,7 +850,8 @@
 		"businessTypeSoleTrader": "Entreprise individuelle",
 		"businessTypeCompany": "Société",
 		"businessTypeCooperative": "Coopérative",
-		"verifiedReviews": "{count, plural, one {# avis d'achat vérifié} other {# avis d'achats vérifiés}}"
+		"verifiedReviews": "{count, plural, one {# avis d'achat vérifié} other {# avis d'achats vérifiés}}",
+		"sinceYear": "depuis {year}"
 	},
 	"ShopCreate": {
 		"title": "Ouvrir ma boutique",
@@ -1157,6 +1167,7 @@
 		"startInventory": "Lancer un inventaire",
 		"adjustTitle": "Ajuster le stock",
 		"adjustSubtitle": "Chaque mouvement est enregistré avec son motif.",
+		"movementsTitle": "Mouvements de stock",
 		"costValue": "Valeur du stock au coût",
 		"unitsOnHand": "Unités en stock",
 		"trackedVariants": "sur {count, plural, one {# variante suivie} other {# variantes suivies}}",
@@ -1234,9 +1245,14 @@
 		"resumeLater": "Reprendre plus tard",
 		"draftSaved": "Comptage enregistré sur cet appareil.",
 		"submit": "Enregistrer les écarts",
-		"progress": "Variantes comptées",
-		"gaps": "Variantes avec écart · manquantes / en trop",
+		"unitsCounted": "unités comptées",
+		"variantsProgress": "{counted, plural, one {# variante} other {# variantes}} sur {total}",
+		"gapVariants": "Variantes avec écart",
+		"gapVariantsHint": "sur {count, plural, one {# comptée} other {# comptées}}",
+		"units": "Unités",
+		"unitsHint": "manquantes / en trop",
 		"gapValue": "Valeur des écarts au coût",
+		"gapValueHint": "net, après correction",
 		"filter": {
 			"all": "Toutes",
 			"todo": "À compter",
@@ -1249,6 +1265,9 @@
 		"colCounted": "Compté",
 		"colGap": "Écart",
 		"colGapValue": "Écart au coût ({currency})",
+		"colStatus": "Statut",
+		"statusCounted": "Compté",
+		"statusTodo": "À compter",
 		"defaultVariant": "Variante unique",
 		"errorTitle": "Impossible de charger les variantes",
 		"note": "Inventaire du {date}",
@@ -2030,7 +2049,9 @@
 	},
 	"Team": {
 		"title": "Équipe",
-		"invite": "Inviter",
+		"subtitle": "{shop} · {active, plural, one {# membre actif} other {# membres actifs}}, {pending, plural, =0 {aucune invitation en attente} one {# invitation en attente} other {# invitations en attente}}",
+		"fullLog": "Journal complet",
+		"invite": "Inviter un membre",
 		"inviteFull": "Cette boutique a atteint sa limite de membres. Libérez une place avant d'inviter quelqu'un.",
 		"inviteTitle": "Inviter un membre",
 		"deliveredFalse": "L'invitation a été créée mais n'a pas pu être envoyée. Essayez de la renvoyer depuis la liste.",
@@ -2326,7 +2347,7 @@
 		"remove": "Retirer",
 		"quantity": "Quantité",
 		"subtotal": "Sous-total",
-		"checkout": "Commander",
+		"checkout": "Passer la commande",
 		"singleShopTitle": "Une seule boutique par commande",
 		"singleShopBody": "Votre panier ne peut contenir que des articles d'une seule boutique à la fois.",
 		"singleShopReplace": "Remplacer le panier",
@@ -2343,7 +2364,8 @@
 		"unavailableBlocking": "Retirez les articles indisponibles pour passer la commande.",
 		"shopNotOrderable": "Cette boutique ne prend plus de commandes pour le moment.",
 		"adding": "Ajout de l'article à votre panier…",
-		"retry": "Réessayer"
+		"retry": "Réessayer",
+		"summaryNote": "Livraison et paiement se choisissent à l'étape suivante. Vous disposez de {days} jours après réception pour vous rétracter."
 	},
 	"Checkout": {
 		"shell": {
@@ -2703,8 +2725,8 @@
 	"SellerResaleCatalogue": {
 		"navigation": "Navigation de la revente",
 		"suppliers": "Mes fournisseurs",
-		"title": "Catalogue fournisseur",
-		"description": "Choisissez des produits fournisseurs, fixez vos prix de vente et publiez-les dans votre boutique.",
+		"title": "Revente",
+		"description": "Vendez sans stock : un fournisseur vérifié expédie en votre nom, vous fixez votre marge.",
 		"purchaseOrders": "Commandes fournisseurs",
 		"search": "Rechercher des produits fournisseurs",
 		"empty": "Aucun produit fournisseur éligible n'est disponible pour le moment.",
@@ -2736,7 +2758,7 @@
 	"SellerResaleLinks": {
 		"navigation": "Navigation de la revente",
 		"offeredProducts": "Produits proposés",
-		"supplierTitle": "Relations revendeurs",
+		"supplierTitle": "Revendeurs",
 		"supplierDescription": "Examinez les demandes d'accès et gérez les boutiques autorisées à revendre vos produits.",
 		"resellerTitle": "Mes fournisseurs",
 		"resellerDescription": "Suivez les accès fournisseurs, les approbations et les produits accessibles à votre boutique.",

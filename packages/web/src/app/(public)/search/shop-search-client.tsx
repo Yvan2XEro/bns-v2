@@ -93,7 +93,20 @@ export function ShopSearchClient({
 							<p className="font-semibold text-[#0F172A]">
 								{t("noShopsTitle")}
 							</p>
-							<p className="mt-1 text-[#64748B] text-sm">{t("noShopsBody")}</p>
+							<p className="mt-1 text-[#64748B] text-sm">
+								{!debouncedQ
+									? t("noShopsBody")
+									: debouncedCity
+										? t("noShopsMatchIn", {
+												q: debouncedQ,
+												city: debouncedCity,
+												verified: verifiedOnly ? "yes" : "no",
+											})
+										: t("noShopsMatch", {
+												q: debouncedQ,
+												verified: verifiedOnly ? "yes" : "no",
+											})}
+							</p>
 							{(q || city || verifiedOnly) && (
 								<button
 									type="button"

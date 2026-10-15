@@ -17,10 +17,7 @@ export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 		<section className="mx-auto w-full max-w-5xl space-y-6">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<p className="font-semibold text-[#B45309] text-xs uppercase tracking-[0.18em]">
-						BuyNSellem · Resale
-					</p>
-					<h1 className="mt-2 font-bold text-2xl text-[#0F172A]">
+					<h1 className="font-bold text-2xl text-[#0F172A]">
 						{t("finance.title")}
 					</h1>
 					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">

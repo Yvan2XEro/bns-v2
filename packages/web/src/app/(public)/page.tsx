@@ -14,11 +14,13 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CategoryIcon } from "~/components/category-icon";
 import { RotatingText } from "~/components/home/rotating-text";
+import { VerifiedShops } from "~/components/home/verified-shops";
 import { HomeSearchBar } from "~/components/home-search-bar";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { Button } from "~/components/ui/button";
 import { serverFetch } from "~/lib/server-api";
-import type { Category, Favorite, Listing } from "~/types";
+import { getShopsEnabled } from "~/lib/server-shop";
+import type { Category, Favorite, Listing, ShopSearchHit } from "~/types";
 
 async function getCategories(): Promise<Category[]> {
 	try {
@@ -55,6 +57,20 @@ async function getFeaturedListings(): Promise<Listing[]> {
 	}
 }
 
+async function getVerifiedShops(): Promise<ShopSearchHit[]> {
+	try {
+		if (!(await getShopsEnabled())) return [];
+		const res = await serverFetch(
+			"/api/public/search/shops?minShopLevel=2&limit=4",
+		);
+		if (!res.ok) return [];
+		const data = await res.json();
+		return data.hits || [];
+	} catch {
+		return [];
+	}
+}
+
 async function getUserFavoriteIds(): Promise<string[]> {
 	try {
 		const res = await serverFetch("/api/favorites?limit=200");
@@ -71,13 +87,19 @@ async function getUserFavoriteIds(): Promise<string[]> {
 
 export default async function HomePage() {
 	const t = await getTranslations("Home");
-	const [categories, recentListings, featuredListings, favoriteIds] =
-		await Promise.all([
-			getCategories(),
-			getRecentListings(),
-			getFeaturedListings(),
-			getUserFavoriteIds(),
-		]);
+	const [
+		categories,
+		recentListings,
+		featuredListings,
+		favoriteIds,
+		verifiedShops,
+	] = await Promise.all([
+		getCategories(),
+		getRecentListings(),
+		getFeaturedListings(),
+		getUserFavoriteIds(),
+		getVerifiedShops(),
+	]);
 
 	return (
 		<div className="flex flex-col">
@@ -177,6 +199,8 @@ export default async function HomePage() {
 					</div>
 				</section>
 			) : null}
+
+			<VerifiedShops shops={verifiedShops} />
 
 			{/* ── Featured / Boosted (Marketplace style: horizontal highlight) ── */}
 			{featuredListings.length > 0 && (

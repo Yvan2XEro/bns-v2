@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { SearchTabs } from "~/components/search/search-tabs";
 import { serverFetch } from "~/lib/server-api";
 import { getShopsEnabled } from "~/lib/server-shop";
@@ -15,12 +16,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const params = await searchParams;
 	const q = params.q;
+	const t = await getTranslations("Search");
 
 	if (q) {
-		const title = `"${q}" — Résultats de recherche`;
+		const title = t("metaTitleQuery", { q });
 		return {
 			title,
-			description: `Trouvez des annonces correspondant à "${q}" sur Buy'N'Sellem.`,
+			description: t("metaDescriptionQuery", { q }),
 			alternates: {
 				canonical: `${WEB_URL}/search?q=${encodeURIComponent(q)}`,
 			},
@@ -29,9 +31,8 @@ export async function generateMetadata({
 	}
 
 	return {
-		title: "Rechercher des annonces",
-		description:
-			"Parcourez des milliers d'annonces locales sur Buy'N'Sellem. Trouvez la bonne affaire près de chez vous.",
+		title: t("metaTitle"),
+		description: t("metaDescription"),
 		alternates: { canonical: `${WEB_URL}/search` },
 		robots: { index: true, follow: true },
 	};

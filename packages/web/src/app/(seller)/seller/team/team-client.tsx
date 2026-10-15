@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useReducer, useState } from "react";
 import { InviteDialog } from "~/components/seller/team/invite-dialog";
@@ -58,10 +59,14 @@ function TeamSkeleton() {
  */
 export function TeamClient({
 	shopId,
+	shopName,
 	role,
+	canViewActivity,
 }: {
 	shopId: string;
+	shopName: string;
 	role: ShopRole | null;
+	canViewActivity: boolean;
 }) {
 	const t = useTranslations("Team");
 	const tRoot = useTranslations();
@@ -150,22 +155,41 @@ export function TeamClient({
 	return (
 		<div className="space-y-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-				{canInvite && (
-					<div className="text-right">
-						<Button
-							onClick={() => patch({ inviteOpen: true })}
-							disabled={isFull}
+				<div>
+					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+					<p className="text-[#64748B] text-sm">
+						{t("subtitle", {
+							shop: shopName,
+							active: view.activeCount,
+							pending: view.invitations.length,
+						})}
+					</p>
+				</div>
+				<div className="flex flex-wrap items-start gap-2">
+					{canViewActivity && (
+						<Link
+							href="/seller/team/activity"
+							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
 						>
-							{t("invite")}
-						</Button>
-						{isFull && (
-							<p className="mt-1 max-w-xs text-[#92400E] text-xs">
-								{t("inviteFull")}
-							</p>
-						)}
-					</div>
-				)}
+							{t("fullLog")}
+						</Link>
+					)}
+					{canInvite && (
+						<div className="text-right">
+							<Button
+								onClick={() => patch({ inviteOpen: true })}
+								disabled={isFull}
+							>
+								{t("invite")}
+							</Button>
+							{isFull && (
+								<p className="mt-1 max-w-xs text-[#92400E] text-xs">
+									{t("inviteFull")}
+								</p>
+							)}
+						</div>
+					)}
+				</div>
 			</div>
 
 			{actionError && (

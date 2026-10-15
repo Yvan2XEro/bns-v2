@@ -7,9 +7,12 @@ import { LegalBlock } from "./legal-block";
 export function ShopAbout({
 	shop,
 	locale,
+	categoryNav,
 }: {
 	shop: PublicShop;
 	locale: string;
+	/** Replaces the declared category chips when the page could count listings per category. */
+	categoryNav?: React.ReactNode;
 }) {
 	const t = useTranslations("Shop");
 	const memberSince = new Date(shop.owner.memberSince).toLocaleDateString(
@@ -20,28 +23,29 @@ export function ShopAbout({
 	return (
 		<aside className="space-y-4">
 			{shop.description && (
-				<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
-					<h2 className="font-bold text-[#0F172A]">{t("about")}</h2>
-					<p className="mt-2 whitespace-pre-wrap text-[#334155] text-sm leading-relaxed">
+				<div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+					<h2 className="font-bold text-[#0F172A] text-[15px]">{t("about")}</h2>
+					<p className="mt-2.5 whitespace-pre-wrap break-words text-[#334155] text-sm leading-relaxed">
 						{shop.description}
 					</p>
 				</div>
 			)}
-			{shop.categories.length > 0 && (
-				<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
-					<h2 className="font-bold text-[#0F172A]">{t("categories")}</h2>
-					<div className="mt-3 flex flex-wrap gap-2">
-						{shop.categories.map((category) => (
-							<span
-								key={category.id}
-								className="rounded-full bg-[#EFF6FF] px-3 py-1 font-medium text-[#1E40AF] text-xs"
-							>
-								{category.name}
-							</span>
-						))}
+			{categoryNav ??
+				(shop.categories.length > 0 && (
+					<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+						<h2 className="font-bold text-[#0F172A]">{t("categories")}</h2>
+						<div className="mt-3 flex flex-wrap gap-2">
+							{shop.categories.map((category) => (
+								<span
+									key={category.id}
+									className="rounded-full bg-[#EFF6FF] px-3 py-1 font-medium text-[#1E40AF] text-xs"
+								>
+									{category.name}
+								</span>
+							))}
+						</div>
 					</div>
-				</div>
-			)}
+				))}
 			<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
 			<Link
 				href={`/profile/${shop.owner.id}`}

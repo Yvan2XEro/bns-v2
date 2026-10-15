@@ -92,23 +92,28 @@ export function StockClient({
 
 			{summary.data && <StockSummaryCards summary={summary.data} />}
 
-			<div className="flex flex-wrap gap-1 rounded-lg bg-[#F1F5F9] p-1">
-				{TYPE_FILTERS.map((value) => (
-					<button
-						key={value}
-						type="button"
-						aria-pressed={state.filter === value}
-						onClick={() => patch({ filter: value, page: 1 })}
-						className={cn(
-							"rounded-md px-3 py-1.5 font-medium text-sm",
-							state.filter === value
-								? "bg-white text-[#0F172A] shadow-sm"
-								: "text-[#64748B]",
-						)}
-					>
-						{t(`filter.${value}`)}
-					</button>
-				))}
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<h2 className="font-bold text-[#0F172A] text-lg">
+					{t("movementsTitle")}
+				</h2>
+				<div className="flex flex-wrap gap-2">
+					{TYPE_FILTERS.map((value) => (
+						<button
+							key={value}
+							type="button"
+							aria-pressed={state.filter === value}
+							onClick={() => patch({ filter: value, page: 1 })}
+							className={cn(
+								"inline-flex h-8 items-center rounded-full border px-3 font-medium text-sm",
+								state.filter === value
+									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
+									: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#93C5FD]",
+							)}
+						>
+							{t(`filter.${value}`)}
+						</button>
+					))}
+				</div>
 			</div>
 
 			{movements.isPending && <LoadingRows />}

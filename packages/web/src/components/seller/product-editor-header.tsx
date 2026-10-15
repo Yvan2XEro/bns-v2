@@ -3,6 +3,7 @@
 import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { StatusChip } from "~/components/shop/status-chip";
 import { Button } from "~/components/ui/button";
 import type { ProductStatus } from "~/types";
 
@@ -14,11 +15,14 @@ import type { ProductStatus } from "~/types";
 export function ProductEditorHeader({
 	heading,
 	isEdit,
+	savedStatus,
 	pending,
 	onSubmitAs,
 }: {
 	heading: string;
 	isEdit: boolean;
+	/** The status as last saved, not the publication card's pending choice. */
+	savedStatus: ProductStatus | null;
 	pending: boolean;
 	onSubmitAs: (status: ProductStatus) => void;
 }) {
@@ -39,7 +43,12 @@ export function ProductEditorHeader({
 						› {heading}
 					</p>
 				)}
-				<h1 className="font-bold text-2xl text-[#0F172A]">{heading}</h1>
+				<div className="flex flex-wrap items-center gap-2.5">
+					<h1 className="font-bold text-2xl text-[#0F172A]">{heading}</h1>
+					{isEdit && savedStatus && (
+						<StatusChip kind={savedStatus} className="px-2.5 text-xs" />
+					)}
+				</div>
 			</div>
 			<div className="flex gap-2">
 				{isEdit ? (
