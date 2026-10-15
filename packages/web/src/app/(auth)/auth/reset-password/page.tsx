@@ -6,8 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Suspense, useState } from "react";
 import {
+	PasswordTipsAside,
+	ResetStepsAside,
+} from "~/components/auth/auth-asides";
+import {
 	AUTH_SUBMIT,
 	AuthCard,
+	AuthCardSkeleton,
 	AuthStatusIcon,
 } from "~/components/auth/auth-card";
 import { AuthNotice, PasswordField } from "~/components/auth/auth-field";
@@ -20,7 +25,7 @@ const ORDER = ["password", "confirmPassword"] as const;
 
 export default function ResetPasswordPage() {
 	return (
-		<Suspense>
+		<Suspense fallback={<AuthCardSkeleton fields={2} footer={false} />}>
 			<ResetPasswordForm />
 		</Suspense>
 	);
@@ -46,6 +51,7 @@ function ResetPasswordForm() {
 	if (!token) {
 		return (
 			<AuthCard
+				aside={<ResetStepsAside />}
 				title={t("invalidLink")}
 				description={t("invalidLinkDesc")}
 				icon={
@@ -94,6 +100,7 @@ function ResetPasswordForm() {
 
 	return (
 		<AuthCard
+			aside={<PasswordTipsAside />}
 			title={t("resetPassword")}
 			description={t("enterNewPassword")}
 			icon={

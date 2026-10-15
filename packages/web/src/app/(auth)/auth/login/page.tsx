@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Suspense, useEffect, useState } from "react";
-import { AUTH_LINK, AUTH_SUBMIT, AuthCard } from "~/components/auth/auth-card";
+import { AccountBenefitsAside } from "~/components/auth/auth-asides";
+import {
+	AUTH_LINK,
+	AUTH_SUBMIT,
+	AuthCard,
+	AuthCardSkeleton,
+} from "~/components/auth/auth-card";
 import {
 	AuthField,
 	AuthNotice,
@@ -25,7 +31,7 @@ const ORDER = ["email", "password"] as const;
 
 export default function LoginPage() {
 	return (
-		<Suspense>
+		<Suspense fallback={<AuthCardSkeleton fields={2} social formExtra />}>
 			<LoginForm />
 		</Suspense>
 	);
@@ -81,6 +87,7 @@ function LoginForm() {
 
 	return (
 		<AuthCard
+			aside={<AccountBenefitsAside />}
 			title={t("welcomeBack")}
 			description={t("signInToYourAccount")}
 			social={

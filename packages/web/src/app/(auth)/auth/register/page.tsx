@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Suspense, useEffect, useState } from "react";
-import { AUTH_LINK, AUTH_SUBMIT, AuthCard } from "~/components/auth/auth-card";
+import { AccountBenefitsAside } from "~/components/auth/auth-asides";
+import {
+	AUTH_LINK,
+	AUTH_SUBMIT,
+	AuthCard,
+	AuthCardSkeleton,
+} from "~/components/auth/auth-card";
 import {
 	AuthField,
 	AuthNotice,
@@ -27,7 +33,7 @@ const ORDER = ["name", "email", "password", "confirmPassword"] as const;
 
 export default function RegisterPage() {
 	return (
-		<Suspense>
+		<Suspense fallback={<AuthCardSkeleton fields={4} social formExtra />}>
 			<RegisterForm />
 		</Suspense>
 	);
@@ -88,6 +94,7 @@ function RegisterForm() {
 
 	return (
 		<AuthCard
+			aside={<AccountBenefitsAside />}
 			title={t("createAccount")}
 			description={t("joinAndStartTrading")}
 			social={

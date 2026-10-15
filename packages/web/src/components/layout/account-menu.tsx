@@ -61,7 +61,7 @@ export function AccountMenu({
 				)}
 			>
 				<UserAvatar user={user} />
-				<span className="sr-only xl:not-sr-only">{t("account")}</span>
+				<span className="sr-only">{t("account")}</span>
 				<ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent

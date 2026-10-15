@@ -4,6 +4,7 @@ import { KeyRound, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { ResetStepsAside } from "~/components/auth/auth-asides";
 import {
 	AUTH_LINK,
 	AUTH_SUBMIT,
@@ -59,6 +60,7 @@ export default function ForgotPasswordPage() {
 	if (success) {
 		return (
 			<AuthCard
+				aside={<ResetStepsAside />}
 				title={t("checkYourEmail")}
 				description={t("checkYourEmailDesc")}
 				icon={
@@ -76,6 +78,7 @@ export default function ForgotPasswordPage() {
 
 	return (
 		<AuthCard
+			aside={<ResetStepsAside />}
 			title={t("forgotPasswordTitle")}
 			description={t("forgotPasswordDesc")}
 			icon={

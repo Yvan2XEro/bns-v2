@@ -88,15 +88,33 @@ const PROVIDERS: Record<
  * Providers the API has enabled, in display order. `null` while loading; a
  * failed lookup falls back to all three, as before.
  */
+const PROVIDERS_CACHE = "bns.auth.providers";
+
 export function useSocialProviders(): SocialAuthProvider[] | null {
 	const [providers, setProviders] = useState<SocialAuthProvider[] | null>(null);
 	useEffect(() => {
+		// The last answer is shown at once, so a return visit never reshapes the card.
+		try {
+			const cached = localStorage.getItem(PROVIDERS_CACHE);
+			const parsed: unknown = cached ? JSON.parse(cached) : null;
+			if (Array.isArray(parsed)) setProviders(orderedProviders(parsed));
+		} catch {
+			// No storage (private mode): the skeleton shows until the answer.
+		}
 		fetch("/api/public/auth/providers")
 			.then((r) => r.json())
-			.then((data: { providers: string[] }) =>
-				setProviders(orderedProviders(data.providers ?? [])),
-			)
-			.catch(() => setProviders([...SOCIAL_PROVIDER_ORDER]));
+			.then((data: { providers: string[] }) => {
+				const list = orderedProviders(data.providers ?? []);
+				setProviders(list);
+				try {
+					localStorage.setItem(PROVIDERS_CACHE, JSON.stringify(list));
+				} catch {
+					// Not cached; the next visit shows the skeleton again.
+				}
+			})
+			.catch(() =>
+				setProviders((current) => current ?? [...SOCIAL_PROVIDER_ORDER]),
+			);
 	}, []);
 	return providers;
 }
