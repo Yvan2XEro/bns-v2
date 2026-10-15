@@ -7,6 +7,7 @@ import {
 	Rocket,
 } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Button } from "~/components/ui/button";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import type { Listing, User } from "~/types";
@@ -73,6 +74,7 @@ interface PageProps {
 export default async function MyListingsPage({ searchParams }: PageProps) {
 	const user = (await getAuthUser()) as User | null;
 	if (!user) return null;
+	const t = await getTranslations("MyListings");
 
 	const { page: pageParam } = await searchParams;
 	const page = Math.max(1, Number(pageParam) || 1);
@@ -90,16 +92,14 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 						className="mb-4 inline-flex items-center gap-1 text-[#64748B] text-sm transition-colors hover:text-[#1E40AF]"
 					>
 						<ArrowLeft className="h-4 w-4" />
-						Back to profile
+						{t("backToProfile")}
 					</Link>
 					<div className="flex items-start justify-between">
 						<div>
 							<h1 className="font-extrabold text-2xl text-[#0F172A]">
-								My Listings
+								{t("title")}
 							</h1>
-							<p className="mt-1 text-[#64748B] text-sm">
-								Manage, edit and boost your listings
-							</p>
+							<p className="mt-1 text-[#64748B] text-sm">{t("subtitle")}</p>
 						</div>
 						<div className="flex items-center gap-2">
 							<Link href="/profile/me/boosts">
@@ -108,13 +108,13 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 									className="rounded-xl border-[#E2E8F0] font-bold text-[#64748B] hover:border-[#93C5FD] hover:text-[#1E40AF]"
 								>
 									<Rocket className="mr-2 h-4 w-4" />
-									Boost History
+									{t("boostHistory")}
 								</Button>
 							</Link>
 							<Link href="/create">
 								<Button className="rounded-xl bg-[#F59E0B] font-bold text-[#0F172A] shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
 									<PlusCircle className="mr-2 h-4 w-4" />
-									New listing
+									{t("newListing")}
 								</Button>
 							</Link>
 						</div>
@@ -124,32 +124,32 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 					<div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-6">
 						{[
 							{
-								label: "Total",
+								label: t("statTotal"),
 								value: total,
 								color: "bg-[#EFF6FF] text-[#1E40AF]",
 							},
 							{
-								label: "Active",
+								label: t("statActive"),
 								value: published,
 								color: "bg-emerald-50 text-emerald-700",
 							},
 							{
-								label: "Pending",
+								label: t("statPending"),
 								value: pending,
 								color: "bg-blue-50 text-blue-700",
 							},
 							{
-								label: "Sold",
+								label: t("statSold"),
 								value: sold,
 								color: "bg-[#F1F5F9] text-[#64748B]",
 							},
 							{
-								label: "Expired",
+								label: t("statExpired"),
 								value: expired,
 								color: "bg-orange-50 text-orange-700",
 							},
 							{
-								label: "Boosted",
+								label: t("statBoosted"),
 								value: boosted,
 								color: "bg-amber-50 text-amber-700",
 							},
@@ -264,16 +264,15 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								<Camera className="h-7 w-7 text-[#1E40AF]" />
 							</div>
 							<h3 className="font-bold text-[#0F172A] text-lg">
-								No listings yet
+								{t("emptyTitle")}
 							</h3>
 							<p className="mx-auto mt-1 max-w-xs text-[#64748B] text-sm">
-								Snap a photo, set a price, and start selling to thousands of
-								buyers near you.
+								{t("emptyBody")}
 							</p>
 							<Link href="/create">
 								<Button className="mt-5 rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] px-6 font-bold shadow-blue-500/20 shadow-lg">
 									<PlusCircle className="mr-2 h-4 w-4" />
-									Create your first listing
+									{t("emptyCta")}
 								</Button>
 							</Link>
 						</div>

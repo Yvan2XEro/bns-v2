@@ -3970,5 +3970,54 @@
 		"viewPurchases": "View my purchases",
 		"purchasesHeader": "{count, plural, one {# order} other {# orders}} from one checkout",
 		"purchasesGroupLink": "Checkout summary"
+	},
+	"MyListings": {
+		"backToProfile": "Back to profile",
+		"title": "My listings",
+		"subtitle": "Manage, edit and boost your listings",
+		"boostHistory": "Boost history",
+		"newListing": "New listing",
+		"statTotal": "Total",
+		"statActive": "Active",
+		"statPending": "Pending",
+		"statSold": "Sold",
+		"statExpired": "Expired",
+		"statBoosted": "Boosted",
+		"emptyTitle": "No listings yet",
+		"emptyBody": "Snap a photo, set a price, and start selling to buyers near you.",
+		"emptyCta": "Create your first listing"
+	},
+	"BoostHistory": {
+		"backToListings": "Back to listings",
+		"title": "Boost payment history",
+		"subtitle": "Track your boost payments and spending",
+		"statTotal": "Total",
+		"statCompleted": "Completed",
+		"statSpent": "Total spent",
+		"status": {
+			"pending": "Pending",
+			"completed": "Completed",
+			"failed": "Failed",
+			"refunded": "Refunded"
+		},
+		"durationBoost": "{days}-day boost",
+		"untitled": "Untitled listing",
+		"listing": "Listing",
+		"emptyTitle": "No boost payments yet",
+		"emptyBody": "Boost your listings to reach more buyers and sell faster.",
+		"emptyCta": "Go to listings"
+	},
+	"SavedSearches": {
+		"backToProfile": "Back to profile",
+		"title": "Saved searches",
+		"subtitle": "Quickly re-run your saved searches",
+		"statSaved": "Saved",
+		"category": "Category",
+		"alertsOn": "Disable notifications",
+		"alertsOff": "Enable notifications",
+		"delete": "Delete saved search",
+		"emptyTitle": "No saved searches yet",
+		"emptyBody": "When you find a search you want to track, click \"Save search\" to keep it here.",
+		"emptyCta": "Go to search"
 	}
 }

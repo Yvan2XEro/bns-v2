@@ -3971,5 +3971,54 @@
 		"viewPurchases": "Voir mes achats",
 		"purchasesHeader": "{count, plural, one {# commande} other {# commandes}} d'un même paiement",
 		"purchasesGroupLink": "Suivi du paiement"
+	},
+	"MyListings": {
+		"backToProfile": "Retour au profil",
+		"title": "Mes annonces",
+		"subtitle": "Gérez, modifiez et boostez vos annonces",
+		"boostHistory": "Historique des boosts",
+		"newListing": "Nouvelle annonce",
+		"statTotal": "Total",
+		"statActive": "En ligne",
+		"statPending": "En attente",
+		"statSold": "Vendues",
+		"statExpired": "Expirées",
+		"statBoosted": "Boostées",
+		"emptyTitle": "Aucune annonce pour l'instant",
+		"emptyBody": "Prenez une photo, fixez un prix et commencez à vendre près de chez vous.",
+		"emptyCta": "Créer votre première annonce"
+	},
+	"BoostHistory": {
+		"backToListings": "Retour aux annonces",
+		"title": "Historique des boosts",
+		"subtitle": "Suivez vos paiements de boost et vos dépenses",
+		"statTotal": "Total",
+		"statCompleted": "Réussis",
+		"statSpent": "Total dépensé",
+		"status": {
+			"pending": "En attente",
+			"completed": "Réussi",
+			"failed": "Échoué",
+			"refunded": "Remboursé"
+		},
+		"durationBoost": "Boost de {days} jours",
+		"untitled": "Annonce sans titre",
+		"listing": "Annonce",
+		"emptyTitle": "Aucun paiement de boost pour l'instant",
+		"emptyBody": "Boostez vos annonces pour toucher plus d’acheteurs et vendre plus vite.",
+		"emptyCta": "Voir mes annonces"
+	},
+	"SavedSearches": {
+		"backToProfile": "Retour au profil",
+		"title": "Recherches sauvegardées",
+		"subtitle": "Relancez vos recherches en un clic",
+		"statSaved": "Sauvegardées",
+		"category": "Catégorie",
+		"alertsOn": "Désactiver les alertes",
+		"alertsOff": "Activer les alertes",
+		"delete": "Supprimer la recherche",
+		"emptyTitle": "Aucune recherche sauvegardée pour l'instant",
+		"emptyBody": "Quand une recherche vous intéresse, touchez « Sauvegarder la recherche » pour la retrouver ici.",
+		"emptyCta": "Lancer une recherche"
 	}
 }

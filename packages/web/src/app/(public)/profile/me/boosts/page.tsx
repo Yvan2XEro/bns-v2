@@ -1,48 +1,21 @@
 import { ArrowLeft, ExternalLink, Rocket } from "lucide-react";
 import Link from "next/link";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { renderOrderMoney } from "~/lib/order-money";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import { getMarket } from "~/lib/server-shop";
 import type { BoostPayment, Listing } from "~/types";
 
-const STATUS_BADGES: Record<string, { label: string; className: string }> = {
-	pending: {
-		label: "Pending",
-		className: "bg-amber-50 text-amber-700 border-amber-200",
-	},
-	completed: {
-		label: "Completed",
-		className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-	},
-	failed: {
-		label: "Failed",
-		className: "bg-red-50 text-red-700 border-red-200",
-	},
-	refunded: {
-		label: "Refunded",
-		className: "bg-gray-50 text-gray-500 border-gray-200",
-	},
+const STATUS_CLASSES: Record<string, string> = {
+	pending: "bg-amber-50 text-amber-700 border-amber-200",
+	completed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+	failed: "bg-red-50 text-red-700 border-red-200",
+	refunded: "bg-gray-50 text-gray-500 border-gray-200",
 };
-
-const DURATION_LABELS: Record<string, string> = {
-	"7": "7 days",
-	"14": "14 days",
-	"30": "30 days",
-};
-
-function formatDate(dateStr: string): string {
-	return new Date(dateStr).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-	});
-}
-
-function getListingTitle(listing: string | Listing): string {
-	if (typeof listing === "string") return "Listing";
-	return listing.title || "Untitled listing";
-}
+const BOOST_STATUSES = ["pending", "completed", "failed", "refunded"] as const;
+type BoostStatus = (typeof BOOST_STATUSES)[number];
+const boostStatusOf = (status: string): BoostStatus =>
+	BOOST_STATUSES.find((value) => value === status) ?? "pending";
 
 function getListingId(listing: string | Listing): string {
 	if (typeof listing === "string") return listing;
@@ -52,7 +25,19 @@ function getListingId(listing: string | Listing): string {
 export default async function BoostPaymentHistoryPage() {
 	const user = (await getAuthUser()) as { id: string } | null;
 	if (!user) return null;
-	const [locale, market] = await Promise.all([getLocale(), getMarket()]);
+	const [locale, market, t] = await Promise.all([
+		getLocale(),
+		getMarket(),
+		getTranslations("BoostHistory"),
+	]);
+	const formatDate = (dateStr: string) =>
+		new Date(dateStr).toLocaleDateString(locale, {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+		});
+	const listingTitle = (listing: string | Listing) =>
+		typeof listing === "string" ? t("listing") : listing.title || t("untitled");
 
 	let payments: BoostPayment[] = [];
 	try {
@@ -85,16 +70,14 @@ export default async function BoostPaymentHistoryPage() {
 						className="mb-4 inline-flex items-center gap-1 text-[#64748B] text-sm transition-colors hover:text-[#1E40AF]"
 					>
 						<ArrowLeft className="h-4 w-4" />
-						Back to listings
+						{t("backToListings")}
 					</Link>
 					<div className="flex items-start justify-between">
 						<div>
 							<h1 className="font-extrabold text-2xl text-[#0F172A]">
-								Boost Payment History
+								{t("title")}
 							</h1>
-							<p className="mt-1 text-[#64748B] text-sm">
-								Track your boost payments and spending
-							</p>
+							<p className="mt-1 text-[#64748B] text-sm">{t("subtitle")}</p>
 						</div>
 					</div>
 
@@ -102,18 +85,22 @@ export default async function BoostPaymentHistoryPage() {
 					<div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
 						<div className="flex items-center gap-3 rounded-xl bg-[#EFF6FF] px-4 py-3 text-[#1E40AF]">
 							<span className="font-extrabold text-2xl">{payments.length}</span>
-							<span className="font-medium text-xs opacity-80">Total</span>
+							<span className="font-medium text-xs opacity-80">
+								{t("statTotal")}
+							</span>
 						</div>
 						<div className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-emerald-700">
 							<span className="font-extrabold text-2xl">{completedCount}</span>
-							<span className="font-medium text-xs opacity-80">Completed</span>
+							<span className="font-medium text-xs opacity-80">
+								{t("statCompleted")}
+							</span>
 						</div>
 						<div className="flex items-center gap-3 rounded-xl bg-amber-50 px-4 py-3 text-amber-700">
 							<span className="font-extrabold text-2xl">
 								{renderOrderMoney(market, totalSpent, locale)}
 							</span>
 							<span className="font-medium text-xs opacity-80">
-								Total Spent
+								{t("statSpent")}
 							</span>
 						</div>
 					</div>
@@ -125,8 +112,7 @@ export default async function BoostPaymentHistoryPage() {
 				{payments.length > 0 ? (
 					<div className="space-y-3">
 						{payments.map((payment) => {
-							const badge =
-								STATUS_BADGES[payment.status] || STATUS_BADGES.pending;
+							const status = boostStatusOf(payment.status);
 							const listingId = getListingId(payment.listing);
 
 							return (
@@ -140,19 +126,18 @@ export default async function BoostPaymentHistoryPage() {
 												href={`/listing/${listingId}`}
 												className="font-semibold text-[#0F172A] transition-colors hover:text-[#1E40AF]"
 											>
-												{getListingTitle(payment.listing)}
+												{listingTitle(payment.listing)}
 												<ExternalLink className="ml-1 inline h-3.5 w-3.5 text-[#94A3B8]" />
 											</Link>
 											<span
-												className={`inline-flex rounded-full border px-2 py-0.5 font-medium text-xs ${badge.className}`}
+												className={`inline-flex rounded-full border px-2 py-0.5 font-medium text-xs ${STATUS_CLASSES[status]}`}
 											>
-												{badge.label}
+												{t(`status.${status}`)}
 											</span>
 										</div>
 										<p className="text-[#64748B] text-sm">
-											{DURATION_LABELS[payment.duration] || payment.duration}{" "}
-											boost
-											{" \u00B7 "}
+											{t("durationBoost", { days: payment.duration })}
+											{" · "}
 											{formatDate(payment.createdAt)}
 										</p>
 									</div>
@@ -174,17 +159,17 @@ export default async function BoostPaymentHistoryPage() {
 								<Rocket className="h-7 w-7 text-[#1E40AF]" />
 							</div>
 							<h3 className="font-bold text-[#0F172A] text-lg">
-								No boost payments yet
+								{t("emptyTitle")}
 							</h3>
 							<p className="mx-auto mt-1 max-w-xs text-[#64748B] text-sm">
-								Boost your listings to reach more buyers and sell faster.
+								{t("emptyBody")}
 							</p>
 							<Link href="/profile/me/listings">
 								<button
 									type="button"
 									className="mt-5 rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] px-6 py-2.5 font-bold text-white shadow-blue-500/20 shadow-lg"
 								>
-									Go to listings
+									{t("emptyCta")}
 								</button>
 							</Link>
 						</div>
