@@ -67,50 +67,104 @@ export const DisputeEvidence: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "dispute",
-			type: "relationship",
-			relationTo: "disputes",
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "dispute",
+					type: "relationship",
+					relationTo: "disputes",
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "returnCase",
+					type: "relationship",
+					relationTo: "return-cases",
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "returnCase",
-			type: "relationship",
-			relationTo: "return-cases",
-			index: true,
-		},
-		{
-			name: "uploadedByType",
-			type: "select",
-			required: true,
-			options: ["buyer", "seller", "supplier", "moderator", "system"].map(
-				(value) => ({ label: value, value }),
-			),
-		},
-		{ name: "uploadedBy", type: "relationship", relationTo: "users" },
-		{
-			name: "kind",
-			type: "select",
-			required: true,
-			options: DISPUTE_EVIDENCE_KINDS.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "uploadedByType",
+					type: "select",
+					required: true,
+					options: ["buyer", "seller", "supplier", "moderator", "system"].map(
+						(value) => ({ label: value, value }),
+					),
+					admin: { width: "33%" },
+				},
+				{
+					name: "uploadedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "33%" },
+				},
+				{
+					name: "kind",
+					type: "select",
+					required: true,
+					options: DISPUTE_EVIDENCE_KINDS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{ name: "mimeType", type: "text", admin: { readOnly: true } },
-		{ name: "size", type: "number", admin: { readOnly: true } },
-		{ name: "sha256", type: "text", index: true, admin: { readOnly: true } },
-		{ name: "capturedAt", type: "date", admin: { readOnly: true } },
 		{
-			name: "exifStripped",
-			type: "checkbox",
-			defaultValue: false,
-			admin: { readOnly: true },
+			type: "row",
+			fields: [
+				{
+					name: "size",
+					type: "number",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "sha256",
+					type: "text",
+					index: true,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "capturedAt",
+					type: "date",
+					admin: { width: "34%", readOnly: true },
+				},
+			],
 		},
 		{
-			name: "visibility",
-			type: "select",
-			required: true,
-			defaultValue: "parties",
-			options: ["parties", "staff"].map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "exifStripped",
+					type: "checkbox",
+					defaultValue: false,
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "visibility",
+					type: "select",
+					required: true,
+					defaultValue: "parties",
+					options: ["parties", "staff"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "purgeAfter",
+					type: "date",
+					index: true,
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{ name: "purgeAfter", type: "date", index: true },
 	],
 	upload: {
 		staticDir: path.resolve(

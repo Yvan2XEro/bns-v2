@@ -35,22 +35,34 @@ export const DisputeMessages: CollectionConfig = {
 	},
 	fields: [
 		{
-			name: "dispute",
-			type: "relationship",
-			relationTo: "disputes",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "dispute",
+					type: "relationship",
+					relationTo: "disputes",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "authorType",
+					type: "select",
+					required: true,
+					options: DISPUTE_MESSAGE_AUTHORS.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "author",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{
-			name: "authorType",
-			type: "select",
-			required: true,
-			options: DISPUTE_MESSAGE_AUTHORS.map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{ name: "author", type: "relationship", relationTo: "users" },
 		{
 			name: "kind",
 			type: "select",
@@ -66,14 +78,28 @@ export const DisputeMessages: CollectionConfig = {
 			maxRows: 5,
 		},
 		{
-			name: "visibility",
-			type: "select",
-			required: true,
-			defaultValue: "parties",
-			options: ["parties", "staff"].map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "visibility",
+					type: "select",
+					required: true,
+					defaultValue: "parties",
+					options: ["parties", "staff"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{ name: "redactedAt", type: "date", admin: { width: "33%" } },
+				{
+					name: "redactedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{ name: "redactedAt", type: "date" },
-		{ name: "redactedBy", type: "relationship", relationTo: "users" },
 	],
 	timestamps: true,
 };

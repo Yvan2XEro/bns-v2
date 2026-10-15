@@ -1,4 +1,6 @@
 // @vitest-environment node
+
+import type { Field } from "payload";
 import { describe, expect, it } from "vitest";
 import { nobody } from "../../src/access/staff";
 import { CourierMembers } from "../../src/collections/CourierMembers";
@@ -14,6 +16,7 @@ import { ShopLocations } from "../../src/collections/ShopLocations";
 import { WebhookEvents } from "../../src/collections/WebhookEvents";
 import config from "../../src/payload.config";
 import { fakePayload } from "./helpers/fakePayload";
+import { fieldAt } from "./helpers/fields";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -23,13 +26,8 @@ function field(
 	fields: readonly unknown[],
 	name: string,
 ): Record<string, unknown> | undefined {
-	const [head, ...rest] = name.split(".");
-	const found = fields.find(
-		(item): item is Record<string, unknown> =>
-			isRecord(item) && item.name === head,
-	);
-	if (!found || rest.length === 0) return found;
-	return field(Array.isArray(found.fields) ? found.fields : [], rest.join("."));
+	const found = fieldAt(fields as Field[], name);
+	return isRecord(found) ? found : undefined;
 }
 
 function optionValues(value: unknown): string[] {

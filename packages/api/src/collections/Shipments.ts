@@ -43,117 +43,226 @@ export const Shipments: CollectionConfig = {
 	],
 	fields: [
 		{
-			name: "shipmentNumber",
-			type: "text",
-			required: true,
-			unique: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shipmentNumber",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			required: true,
-			index: true,
-		},
-		{
-			name: "storefrontShop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{
-			name: "fulfillingShop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "storefrontShop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "fulfillingShop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "items",
 			type: "array",
 			fields: [
 				{
-					name: "orderItem",
-					type: "relationship",
-					relationTo: "order-items",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "orderItem",
+							type: "relationship",
+							relationTo: "order-items",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "quantity",
+							type: "number",
+							required: true,
+							min: 1,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "quantity", type: "number", required: true, min: 1 },
 			],
 		},
 		{
-			name: "method",
-			type: "select",
-			required: true,
-			options: ["seller_delivery", "courier", "pickup"].map((value) => ({
-				label: value,
-				value,
-			})),
+			type: "row",
+			fields: [
+				{
+					name: "method",
+					type: "select",
+					required: true,
+					options: ["seller_delivery", "courier", "pickup"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "carrier",
+					type: "select",
+					required: true,
+					options: ["self", "courier"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "courier",
+					type: "relationship",
+					relationTo: "couriers",
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
-			name: "carrier",
-			type: "select",
-			required: true,
-			options: ["self", "courier"].map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "provider",
+					type: "select",
+					options: ["manual", "yango", "campost"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "50%" },
+				},
+				{ name: "providerShipmentId", type: "text", admin: { width: "50%" } },
+			],
 		},
-		{ name: "courier", type: "relationship", relationTo: "couriers" },
-		{
-			name: "provider",
-			type: "select",
-			options: ["manual", "yango", "campost"].map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{ name: "providerShipmentId", type: "text" },
 		{
 			name: "providerStatus",
 			type: "group",
 			fields: [
-				{ name: "providerStatus", type: "text" },
 				{
-					name: "status",
-					type: "select",
-					options: SHIPMENT_STATUSES.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{ name: "providerStatus", type: "text", admin: { width: "50%" } },
+						{
+							name: "status",
+							type: "select",
+							options: SHIPMENT_STATUSES.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "occurredAt", type: "date" },
-				{ name: "providerEventId", type: "text" },
+				{
+					type: "row",
+					fields: [
+						{ name: "occurredAt", type: "date", admin: { width: "50%" } },
+						{ name: "providerEventId", type: "text", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
-		{ name: "trackingCode", type: "text" },
-		{ name: "trackingUrl", type: "text" },
-		{ name: "zone", type: "relationship", relationTo: "delivery-zones" },
 		{
-			name: "pickupLocation",
-			type: "relationship",
-			relationTo: "shop-locations",
+			type: "row",
+			fields: [
+				{ name: "trackingCode", type: "text", admin: { width: "50%" } },
+				{ name: "trackingUrl", type: "text", admin: { width: "50%" } },
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{
+					name: "zone",
+					type: "relationship",
+					relationTo: "delivery-zones",
+					admin: { width: "50%" },
+				},
+				{
+					name: "pickupLocation",
+					type: "relationship",
+					relationTo: "shop-locations",
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{ name: "origin", type: "json", required: true },
 		{ name: "destination", type: "json", required: true },
-		{ name: "fee", type: "number", required: true, min: 0 },
 		{
-			name: "courierCost",
-			type: "number",
-			min: 0,
-			access: {
-				read: shopRoleFieldAccess(
-					(role) => can(role, "costs.view"),
-					"fulfillingShop",
-				),
-			},
+			type: "row",
+			fields: [
+				{
+					name: "fee",
+					type: "number",
+					required: true,
+					min: 0,
+					admin: { width: "50%" },
+				},
+				{
+					name: "courierCost",
+					type: "number",
+					min: 0,
+					access: {
+						read: shopRoleFieldAccess(
+							(role) => can(role, "costs.view"),
+							"fulfillingShop",
+						),
+					},
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "rider",
 			type: "group",
 			fields: [
-				{ name: "user", type: "relationship", relationTo: "users" },
-				{ name: "name", type: "text" },
-				{ name: "phone", type: "text" },
-				{ name: "vehicle", type: "text" },
-				{ name: "assignedAt", type: "date" },
-				{ name: "assignedBy", type: "relationship", relationTo: "users" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "user",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "33%" },
+						},
+						{ name: "name", type: "text", admin: { width: "33%" } },
+						{ name: "phone", type: "text", admin: { width: "34%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "vehicle", type: "text", admin: { width: "33%" } },
+						{ name: "assignedAt", type: "date", admin: { width: "33%" } },
+						{
+							name: "assignedBy",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "34%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -161,10 +270,20 @@ export const Shipments: CollectionConfig = {
 			type: "group",
 			fields: [
 				{ name: "tokenHash", type: "text", access: { read: () => false } },
-				{ name: "createdAt", type: "date" },
-				{ name: "expiresAt", type: "date" },
-				{ name: "revokedAt", type: "date" },
-				{ name: "lastUsedAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "createdAt", type: "date", admin: { width: "50%" } },
+						{ name: "expiresAt", type: "date", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "revokedAt", type: "date", admin: { width: "50%" } },
+						{ name: "lastUsedAt", type: "date", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{
@@ -179,41 +298,83 @@ export const Shipments: CollectionConfig = {
 			name: "attempts",
 			type: "array",
 			fields: [
-				{ name: "number", type: "number", required: true, min: 1 },
 				{
-					name: "outcome",
-					type: "select",
-					required: true,
-					options: ["delivered", "failed"].map((value) => ({
-						label: value,
-						value,
-					})),
-				},
-				{
-					name: "reason",
-					type: "select",
-					options: FAILURE_REASONS.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "number",
+							type: "number",
+							required: true,
+							min: 1,
+							admin: { width: "33%" },
+						},
+						{
+							name: "outcome",
+							type: "select",
+							required: true,
+							options: ["delivered", "failed"].map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "33%" },
+						},
+						{
+							name: "reason",
+							type: "select",
+							options: FAILURE_REASONS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "34%" },
+						},
+					],
 				},
 				{ name: "note", type: "text", maxLength: 300 },
 				{ name: "gps", type: "group", fields: coordinatesFields },
-				{ name: "photo", type: "relationship", relationTo: "delivery-proofs" },
 				{
-					name: "actorType",
-					type: "select",
-					required: true,
-					options: [
-						"seller",
-						"rider",
-						"rider_link",
-						"dispatcher",
-						"courier_webhook",
-						"courier_poll",
-						"staff",
-						"system",
-					].map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "photo",
+							type: "relationship",
+							relationTo: "delivery-proofs",
+							admin: { width: "50%" },
+						},
+						{
+							name: "actorType",
+							type: "select",
+							required: true,
+							options: [
+								"seller",
+								"rider",
+								"rider_link",
+								"dispatcher",
+								"courier_webhook",
+								"courier_poll",
+								"staff",
+								"system",
+							].map((value) => ({ label: value, value })),
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "actor", type: "relationship", relationTo: "users" },
-				{ name: "at", type: "date", required: true },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "actor",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "50%" },
+						},
+						{
+							name: "at",
+							type: "date",
+							required: true,
+							admin: { width: "50%" },
+						},
+					],
+				},
 			],
 		},
 		{
@@ -221,34 +382,64 @@ export const Shipments: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "reason",
-					type: "select",
-					options: FAILURE_REASONS.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "reason",
+							type: "select",
+							options: FAILURE_REASONS.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "33%" },
+						},
+						{ name: "at", type: "date", admin: { width: "33%" } },
+						{
+							name: "returnInitiatedAt",
+							type: "date",
+							admin: { width: "34%" },
+						},
+					],
 				},
-				{ name: "at", type: "date" },
-				{ name: "returnInitiatedAt", type: "date" },
 			],
 		},
 		{
 			name: "redelivery",
 			type: "group",
 			fields: [
-				{ name: "scheduledFor", type: "date" },
 				{
-					name: "window",
-					type: "select",
-					options: WINDOWS.map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{ name: "scheduledFor", type: "date", admin: { width: "33%" } },
+						{
+							name: "window",
+							type: "select",
+							options: WINDOWS.map((value) => ({ label: value, value })),
+							admin: { width: "33%" },
+						},
+						{
+							name: "requestedBy",
+							type: "select",
+							options: ["buyer", "seller"].map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "34%" },
+						},
+					],
 				},
 				{
-					name: "requestedBy",
-					type: "select",
-					options: ["buyer", "seller"].map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{ name: "rescheduleBy", type: "date", admin: { width: "50%" } },
+						{
+							name: "note",
+							type: "text",
+							maxLength: 300,
+							admin: { width: "50%" },
+						},
+					],
 				},
-				{ name: "rescheduleBy", type: "date" },
-				{ name: "note", type: "text", maxLength: 300 },
 			],
 		},
 		{
@@ -256,70 +447,138 @@ export const Shipments: CollectionConfig = {
 			type: "group",
 			fields: [
 				{
-					name: "handoverMethod",
-					type: "select",
-					options: [
-						"otp",
-						"buyer_confirmation",
-						"seller_declaration",
-						"carrier_pod",
-					].map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "handoverMethod",
+							type: "select",
+							options: [
+								"otp",
+								"buyer_confirmation",
+								"seller_declaration",
+								"carrier_pod",
+							].map((value) => ({ label: value, value })),
+							admin: { width: "50%" },
+						},
+						{ name: "otpVerifiedAt", type: "date", admin: { width: "50%" } },
+					],
 				},
-				{ name: "otpVerifiedAt", type: "date" },
 				{ name: "photo", type: "relationship", relationTo: "delivery-proofs" },
 				{ name: "gps", type: "group", fields: coordinatesFields },
-				{ name: "distanceFromDestinationMeters", type: "number", min: 0 },
-				{ name: "recipientName", type: "text" },
-				{ name: "providerPodUrl", type: "text" },
-				{ name: "capturedBy", type: "relationship", relationTo: "users" },
-				{ name: "capturedAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{
+							name: "distanceFromDestinationMeters",
+							type: "number",
+							min: 0,
+							admin: { width: "50%" },
+						},
+						{ name: "recipientName", type: "text", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "providerPodUrl", type: "text", admin: { width: "33%" } },
+						{
+							name: "capturedBy",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "33%" },
+						},
+						{ name: "capturedAt", type: "date", admin: { width: "34%" } },
+					],
+				},
 			],
 		},
 		{
 			name: "codCollection",
 			type: "group",
 			fields: [
-				{ name: "expectedAmount", type: "number", min: 0 },
 				{
-					name: "collectedBy",
-					type: "select",
-					options: ["seller", "rider", "courier"].map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "expectedAmount",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{
+							name: "collectedBy",
+							type: "select",
+							options: ["seller", "rider", "courier"].map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "33%" },
+						},
+						{
+							name: "collectedAmount",
+							type: "number",
+							min: 0,
+							admin: { width: "34%" },
+						},
+					],
 				},
-				{ name: "collectedAmount", type: "number", min: 0 },
 				{
-					name: "remittanceStatus",
-					type: "select",
-					options: [
-						"not_applicable",
-						"pending",
-						"declared_remitted",
-						"confirmed",
-						"disputed",
-					].map((value) => ({ label: value, value })),
+					type: "row",
+					fields: [
+						{
+							name: "remittanceStatus",
+							type: "select",
+							options: [
+								"not_applicable",
+								"pending",
+								"declared_remitted",
+								"confirmed",
+								"disputed",
+							].map((value) => ({ label: value, value })),
+							admin: { width: "33%" },
+						},
+						{
+							name: "declaredRemittedAt",
+							type: "date",
+							admin: { width: "33%" },
+						},
+						{ name: "confirmedAt", type: "date", admin: { width: "34%" } },
+					],
 				},
-				{ name: "declaredRemittedAt", type: "date" },
-				{ name: "confirmedAt", type: "date" },
 				{ name: "note", type: "text" },
 			],
 		},
 		{
-			name: "failureCostBearer",
-			type: "select",
-			options: ["shop", "reseller", "supplier", "buyer", "none"].map(
-				(value) => ({ label: value, value }),
-			),
+			type: "row",
+			fields: [
+				{
+					name: "failureCostBearer",
+					type: "select",
+					options: ["shop", "reseller", "supplier", "buyer", "none"].map(
+						(value) => ({ label: value, value }),
+					),
+					admin: { width: "33%" },
+				},
+				{ name: "readyForPickupAt", type: "date", admin: { width: "33%" } },
+				{ name: "pickupDeadline", type: "date", admin: { width: "34%" } },
+			],
 		},
-		{ name: "readyForPickupAt", type: "date" },
-		{ name: "pickupDeadline", type: "date" },
-		{ name: "pickedUpAt", type: "date" },
-		{ name: "inTransitAt", type: "date" },
-		{ name: "deliveredAt", type: "date" },
-		{ name: "failedAt", type: "date" },
-		{ name: "returnedAt", type: "date" },
-		{ name: "cancelledAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{ name: "pickedUpAt", type: "date", admin: { width: "33%" } },
+				{ name: "inTransitAt", type: "date", admin: { width: "33%" } },
+				{ name: "deliveredAt", type: "date", admin: { width: "34%" } },
+			],
+		},
+		{
+			type: "row",
+			fields: [
+				{ name: "failedAt", type: "date", admin: { width: "33%" } },
+				{ name: "returnedAt", type: "date", admin: { width: "33%" } },
+				{ name: "cancelledAt", type: "date", admin: { width: "34%" } },
+			],
+		},
 		{ name: "promisedBy", type: "date", index: true },
 		{
 			name: "flags",

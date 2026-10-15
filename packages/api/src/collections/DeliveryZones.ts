@@ -43,24 +43,44 @@ export const DeliveryZones: CollectionConfig = {
 	indexes: [{ fields: ["shop", "city", "active"] }],
 	fields: [
 		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "name",
+					type: "text",
+					required: true,
+					minLength: 2,
+					maxLength: 40,
+					admin: { width: "50%" },
+				},
+			],
 		},
-		{ name: "name", type: "text", required: true, minLength: 2, maxLength: 40 },
 		{
-			name: "scope",
-			type: "select",
-			required: true,
-			options: DELIVERY_SCOPES.map((value) => ({ label: value, value })),
-		},
-		{
-			name: "city",
-			type: "select",
-			required: true,
-			options: LAUNCH_CITY_KEYS.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "scope",
+					type: "select",
+					required: true,
+					options: DELIVERY_SCOPES.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+				{
+					name: "city",
+					type: "select",
+					required: true,
+					options: LAUNCH_CITY_KEYS.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
 			name: "districts",
@@ -78,44 +98,82 @@ export const DeliveryZones: CollectionConfig = {
 			},
 		},
 		{
-			name: "method",
-			type: "select",
-			required: true,
-			options: DELIVERY_METHODS.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "method",
+					type: "select",
+					required: true,
+					options: DELIVERY_METHODS.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+				{
+					name: "courier",
+					type: "relationship",
+					relationTo: "couriers",
+					admin: {
+						width: "50%",
+						condition: (_, siblingData) => siblingData.method === "courier",
+					},
+				},
+			],
 		},
 		{
-			name: "courier",
-			type: "relationship",
-			relationTo: "couriers",
-			admin: {
-				condition: (_, siblingData) => siblingData.method === "courier",
-			},
+			type: "row",
+			fields: [
+				{
+					name: "fee",
+					type: "number",
+					required: true,
+					min: 0,
+					max: 50_000,
+					admin: { width: "33%" },
+				},
+				{
+					name: "freeAboveSubtotal",
+					type: "number",
+					min: 0,
+					admin: { width: "33%" },
+				},
+				{
+					name: "minOrderSubtotal",
+					type: "number",
+					min: 0,
+					admin: { width: "34%" },
+				},
+			],
 		},
-		{ name: "fee", type: "number", required: true, min: 0, max: 50_000 },
-		{ name: "freeAboveSubtotal", type: "number", min: 0 },
-		{ name: "minOrderSubtotal", type: "number", min: 0 },
 		{
-			name: "etaMinHours",
-			type: "number",
-			required: true,
-			min: 1,
-			max: 720,
-		},
-		{
-			name: "etaMaxHours",
-			type: "number",
-			required: true,
-			min: 1,
-			max: 720,
-		},
-		{
-			name: "cutoffTime",
-			type: "text",
-			validate: (value: unknown) =>
-				value == null ||
-				(typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value))
-					? true
-					: "Use 24-hour HH:mm format.",
+			type: "row",
+			fields: [
+				{
+					name: "etaMinHours",
+					type: "number",
+					required: true,
+					min: 1,
+					max: 720,
+					admin: { width: "33%" },
+				},
+				{
+					name: "etaMaxHours",
+					type: "number",
+					required: true,
+					min: 1,
+					max: 720,
+					admin: { width: "33%" },
+				},
+				{
+					name: "cutoffTime",
+					type: "text",
+					validate: (value: unknown) =>
+						value == null ||
+						(typeof value === "string" &&
+							/^([01]\d|2[0-3]):[0-5]\d$/.test(value))
+							? true
+							: "Use 24-hour HH:mm format.",
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
 			name: "deliveryDays",
@@ -125,9 +183,30 @@ export const DeliveryZones: CollectionConfig = {
 			defaultValue: ["mon", "tue", "wed", "thu", "fri", "sat"],
 			options: DELIVERY_DAYS.map((value) => ({ label: value, value })),
 		},
-		{ name: "codAllowed", type: "checkbox", defaultValue: true },
-		{ name: "active", type: "checkbox", defaultValue: true, index: true },
-		{ name: "sortOrder", type: "number", defaultValue: 0 },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "codAllowed",
+					type: "checkbox",
+					defaultValue: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "active",
+					type: "checkbox",
+					defaultValue: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "sortOrder",
+					type: "number",
+					defaultValue: 0,
+					admin: { width: "34%" },
+				},
+			],
+		},
 		{ name: "metadata", type: "json" },
 	],
 	timestamps: true,

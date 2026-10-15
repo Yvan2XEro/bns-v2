@@ -58,75 +58,132 @@ export const ReturnCases: CollectionConfig = {
 		delete: () => false,
 	},
 	fields: [
-		{ name: "number", type: "text", required: true, unique: true, index: true },
 		{
-			name: "basis",
-			type: "select",
-			required: true,
-			options: RETURN_CASE_BASES.map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "number",
+					type: "text",
+					required: true,
+					unique: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "basis",
+					type: "select",
+					required: true,
+					options: RETURN_CASE_BASES.map((value) => ({ label: value, value })),
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "order",
-			type: "relationship",
-			relationTo: "orders",
-			required: true,
-			index: true,
-		},
-		{
-			name: "shop",
-			type: "relationship",
-			relationTo: "shops",
-			required: true,
-			index: true,
-		},
-		{
-			name: "buyer",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "order",
+					type: "relationship",
+					relationTo: "orders",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "shop",
+					type: "relationship",
+					relationTo: "shops",
+					required: true,
+					index: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "buyer",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{
 			name: "items",
 			type: "array",
 			fields: [
 				{
-					name: "orderItem",
-					type: "relationship",
-					relationTo: "order-items",
-					required: true,
+					type: "row",
+					fields: [
+						{
+							name: "orderItem",
+							type: "relationship",
+							relationTo: "order-items",
+							required: true,
+							admin: { width: "50%" },
+						},
+						{
+							name: "variant",
+							type: "relationship",
+							relationTo: "product-variants",
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "variant",
-					type: "relationship",
-					relationTo: "product-variants",
-				},
-				{ name: "quantity", type: "number", min: 1 },
-				{ name: "unitPrice", type: "number", min: 0 },
-				{
-					name: "buyerCondition",
-					type: "select",
-					options: ["unopened", "opened", "used", "damaged"].map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "quantity",
+							type: "number",
+							min: 1,
+							admin: { width: "33%" },
+						},
+						{
+							name: "unitPrice",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{
+							name: "buyerCondition",
+							type: "select",
+							options: ["unopened", "opened", "used", "damaged"].map(
+								(value) => ({
+									label: value,
+									value,
+								}),
+							),
+							admin: { width: "34%" },
+						},
+					],
 				},
 				{
 					name: "inspection",
 					type: "group",
 					fields: [
 						{
-							name: "outcome",
-							type: "select",
-							options: [
-								"restock",
-								"damaged_by_buyer",
-								"damaged_in_transit",
-								"not_matching",
-								"missing",
-							].map((value) => ({ label: value, value })),
+							type: "row",
+							fields: [
+								{
+									name: "outcome",
+									type: "select",
+									options: [
+										"restock",
+										"damaged_by_buyer",
+										"damaged_in_transit",
+										"not_matching",
+										"missing",
+									].map((value) => ({ label: value, value })),
+									admin: { width: "50%" },
+								},
+								{
+									name: "deductionAmount",
+									type: "number",
+									min: 0,
+									admin: { width: "50%" },
+								},
+							],
 						},
-						{ name: "deductionAmount", type: "number", min: 0 },
 						{ name: "note", type: "textarea", maxLength: 1000 },
 					],
 				},
@@ -134,42 +191,84 @@ export const ReturnCases: CollectionConfig = {
 		},
 		{ name: "reasonText", type: "textarea" },
 		{
-			name: "openedByType",
-			type: "select",
-			required: true,
-			options: ["buyer", "seller", "system"].map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{ name: "openedBy", type: "relationship", relationTo: "users" },
-		{
-			name: "dispute",
-			type: "relationship",
-			relationTo: "disputes",
-			index: true,
-		},
-		{ name: "returnRequired", type: "checkbox", defaultValue: true },
-		{
-			name: "returnMethod",
-			type: "select",
-			options: [
-				{ label: "Buyer drop-off", value: "buyer_drop_off" },
-				{ label: "Courier", value: "courier" },
-				{ label: "Seller pickup", value: "seller_pickup" },
+			type: "row",
+			fields: [
+				{
+					name: "openedByType",
+					type: "select",
+					required: true,
+					options: ["buyer", "seller", "system"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "openedBy",
+					type: "relationship",
+					relationTo: "users",
+					admin: { width: "33%" },
+				},
+				{
+					name: "dispute",
+					type: "relationship",
+					relationTo: "disputes",
+					index: true,
+					admin: { width: "34%" },
+				},
 			],
 		},
-		{ name: "returnTracking", type: "text" },
+		{
+			type: "row",
+			fields: [
+				{
+					name: "returnRequired",
+					type: "checkbox",
+					defaultValue: true,
+					admin: { width: "33%" },
+				},
+				{
+					name: "returnMethod",
+					type: "select",
+					options: [
+						{ label: "Buyer drop-off", value: "buyer_drop_off" },
+						{ label: "Courier", value: "courier" },
+						{ label: "Seller pickup", value: "seller_pickup" },
+					],
+					admin: { width: "33%" },
+				},
+				{ name: "returnTracking", type: "text", admin: { width: "34%" } },
+			],
+		},
 		{
 			name: "deadlines",
 			type: "group",
 			fields: [
-				{ name: "requestDeadline", type: "date" },
-				{ name: "shipBy", type: "date" },
-				{ name: "pickupBy", type: "date" },
-				{ name: "inspectBy", type: "date" },
-				{ name: "deductionRespondBy", type: "date" },
-				{ name: "refundBy", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "requestDeadline", type: "date", admin: { width: "50%" } },
+						{ name: "shipBy", type: "date", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{ name: "pickupBy", type: "date", admin: { width: "50%" } },
+						{ name: "inspectBy", type: "date", admin: { width: "50%" } },
+					],
+				},
+				{
+					type: "row",
+					fields: [
+						{
+							name: "deductionRespondBy",
+							type: "date",
+							admin: { width: "50%" },
+						},
+						{ name: "refundBy", type: "date", admin: { width: "50%" } },
+					],
+				},
 				{
 					name: "refundOverdueNotifiedAt",
 					type: "date",
@@ -182,10 +281,15 @@ export const ReturnCases: CollectionConfig = {
 				},
 			],
 		},
-		{ name: "shippedAt", type: "date" },
-		{ name: "receivedAt", type: "date" },
-		{ name: "inspectedAt", type: "date" },
-		{ name: "closedAt", type: "date" },
+		{
+			type: "row",
+			fields: [
+				{ name: "shippedAt", type: "date", admin: { width: "25%" } },
+				{ name: "receivedAt", type: "date", admin: { width: "25%" } },
+				{ name: "inspectedAt", type: "date", admin: { width: "25%" } },
+				{ name: "closedAt", type: "date", admin: { width: "25%" } },
+			],
+		},
 		{
 			name: "refund",
 			type: "group",
@@ -203,86 +307,149 @@ export const ReturnCases: CollectionConfig = {
 					],
 				},
 				{
-					name: "channel",
-					type: "select",
-					options: ["provider", "seller_direct"].map((value) => ({
-						label: value,
-						value,
-					})),
-				},
-				{
-					name: "providerRefund",
-					type: "relationship",
-					relationTo: "refunds",
+					type: "row",
+					fields: [
+						{
+							name: "channel",
+							type: "select",
+							options: ["provider", "seller_direct"].map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+						{
+							name: "providerRefund",
+							type: "relationship",
+							relationTo: "refunds",
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
 					name: "sellerProof",
 					type: "group",
 					fields: [
 						{
-							name: "method",
-							type: "select",
-							options: ["cash", "mtn_momo", "orange_money"].map((value) => ({
-								label: value,
-								value,
-							})),
+							type: "row",
+							fields: [
+								{
+									name: "method",
+									type: "select",
+									options: ["cash", "mtn_momo", "orange_money"].map(
+										(value) => ({
+											label: value,
+											value,
+										}),
+									),
+									admin: { width: "33%" },
+								},
+								{
+									name: "transactionId",
+									type: "text",
+									admin: { width: "33%" },
+								},
+								{
+									name: "amount",
+									type: "number",
+									min: 0,
+									admin: { width: "34%" },
+								},
+							],
 						},
-						{ name: "transactionId", type: "text" },
-						{ name: "amount", type: "number", min: 0 },
 						{
-							name: "evidence",
-							type: "relationship",
-							relationTo: "dispute-evidence",
+							type: "row",
+							fields: [
+								{
+									name: "evidence",
+									type: "relationship",
+									relationTo: "dispute-evidence",
+									admin: { width: "50%" },
+								},
+								{ name: "submittedAt", type: "date", admin: { width: "50%" } },
+							],
 						},
-						{ name: "submittedAt", type: "date" },
 					],
 				},
-				{ name: "buyerConfirmedAt", type: "date" },
-				{ name: "contestedAt", type: "date" },
+				{
+					type: "row",
+					fields: [
+						{ name: "buyerConfirmedAt", type: "date", admin: { width: "50%" } },
+						{ name: "contestedAt", type: "date", admin: { width: "50%" } },
+					],
+				},
 			],
 		},
 		{
-			name: "rejectionReason",
-			type: "text",
-			admin: { readOnly: true },
-		},
-		{
-			name: "creditNote",
-			type: "relationship",
-			relationTo: "commission-invoices",
-		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "requested",
-			index: true,
-			options: RETURN_CASE_STATUSES.map((value) => ({ label: value, value })),
-			admin: { readOnly: true },
+			type: "row",
+			fields: [
+				{
+					name: "rejectionReason",
+					type: "text",
+					admin: { width: "33%", readOnly: true },
+				},
+				{
+					name: "creditNote",
+					type: "relationship",
+					relationTo: "commission-invoices",
+					admin: { width: "33%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "requested",
+					index: true,
+					options: RETURN_CASE_STATUSES.map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "34%", readOnly: true },
+				},
+			],
 		},
 		{
 			name: "statusHistory",
 			type: "array",
 			fields: [
 				{
-					name: "status",
-					type: "select",
-					options: RETURN_CASE_STATUSES.map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "status",
+							type: "select",
+							options: RETURN_CASE_STATUSES.map((value) => ({
+								label: value,
+								value,
+							})),
+							admin: { width: "50%" },
+						},
+						{
+							name: "actorType",
+							type: "select",
+							options: ["buyer", "seller", "system", "moderator"].map(
+								(value) => ({
+									label: value,
+									value,
+								}),
+							),
+							admin: { width: "50%" },
+						},
+					],
 				},
 				{
-					name: "actorType",
-					type: "select",
-					options: ["buyer", "seller", "system", "moderator"].map((value) => ({
-						label: value,
-						value,
-					})),
+					type: "row",
+					fields: [
+						{
+							name: "actor",
+							type: "relationship",
+							relationTo: "users",
+							admin: { width: "33%" },
+						},
+						{ name: "at", type: "date", admin: { width: "33%" } },
+						{ name: "note", type: "text", admin: { width: "34%" } },
+					],
 				},
-				{ name: "actor", type: "relationship", relationTo: "users" },
-				{ name: "at", type: "date" },
-				{ name: "note", type: "text" },
 			],
 		},
 	],

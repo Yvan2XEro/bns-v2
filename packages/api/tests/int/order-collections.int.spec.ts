@@ -30,6 +30,7 @@ import { RiskSignalOutbox } from "../../src/collections/RiskSignalOutbox";
 import { ShopStrikes } from "../../src/collections/ShopStrikes";
 import config from "../../src/payload.config";
 import { fakePayload } from "./helpers/fakePayload";
+import { fieldAt } from "./helpers/fields";
 
 type FieldAccessFn = (args: unknown) => unknown;
 type AccessFn = (args: unknown) => unknown;
@@ -64,11 +65,7 @@ type Field = {
 };
 
 function field(fields: Field[], path: string): Field | undefined {
-	const [head, ...rest] = path.split(".");
-	const found = fields.find((f) => f.name === head);
-	if (!found) return undefined;
-	if (rest.length === 0) return found;
-	return field(found.fields ?? [], rest.join("."));
+	return fieldAt(fields, path);
 }
 
 const optionValues = (f: Field | undefined): string[] =>

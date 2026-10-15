@@ -75,43 +75,61 @@ export const CourierMembers: CollectionConfig = {
 	indexes: [{ fields: ["courier", "user"], unique: true }],
 	fields: [
 		{
-			name: "courier",
-			type: "relationship",
-			relationTo: "couriers",
-			required: true,
-			index: true,
+			type: "row",
+			fields: [
+				{
+					name: "courier",
+					type: "relationship",
+					relationTo: "couriers",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+				{
+					name: "user",
+					type: "relationship",
+					relationTo: "users",
+					required: true,
+					index: true,
+					admin: { width: "50%" },
+				},
+			],
 		},
 		{
-			name: "user",
-			type: "relationship",
-			relationTo: "users",
-			required: true,
-			index: true,
-		},
-		{
-			name: "role",
-			type: "select",
-			required: true,
-			options: ["dispatcher", "rider"].map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{
-			name: "vehicle",
-			type: "select",
-			options: ["moto", "car", "bicycle", "foot"].map((value) => ({
-				label: value,
-				value,
-			})),
-		},
-		{
-			name: "status",
-			type: "select",
-			required: true,
-			defaultValue: "active",
-			index: true,
-			options: ["active", "revoked"].map((value) => ({ label: value, value })),
+			type: "row",
+			fields: [
+				{
+					name: "role",
+					type: "select",
+					required: true,
+					options: ["dispatcher", "rider"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "vehicle",
+					type: "select",
+					options: ["moto", "car", "bicycle", "foot"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "33%" },
+				},
+				{
+					name: "status",
+					type: "select",
+					required: true,
+					defaultValue: "active",
+					index: true,
+					options: ["active", "revoked"].map((value) => ({
+						label: value,
+						value,
+					})),
+					admin: { width: "34%" },
+				},
+			],
 		},
 		{ name: "phoneSharingConsentAt", type: "date" },
 	],
