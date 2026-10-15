@@ -1,19 +1,16 @@
 # BNS — Docker Compose (pre-built images)
 #
-# Used by CI/CD and for manual deploys.
-# Images are pulled from the registry — NOT built locally.
+# The root docker-compose.yml with every `build:` replaced by the image CI
+# pushed to GHCR; compose-env-wiring.int.spec.ts holds the two to the same
+# services and environment. Dokploy redeploys it from the build workflow's
+# webhook, and `pull_policy: always` is what makes a redeploy fetch the new
+# `dev` image instead of reusing the one already on the host.
 #
-# Required env vars (set in .env or shell):
-#   IMAGE_REGISTRY   e.g. ghcr.io/your-org/bns-bns-repo
-#   IMAGE_TAG        e.g. v1.2.3 | dev | latest
-#
-# Quick start:
-#   cp .env.example .env && nano .env
-#   IMAGE_TAG=latest docker compose up -d
+#   IMAGE_REGISTRY   ghcr.io/yvan2xero/bns-v2 (lowercase)
+#   IMAGE_TAG        dev | v1.2.3 | latest
 
 services:
-  # ─── Infrastructure ─────────────────────────────────────────────────────────
-
+  # --- Infrastructure ---
   mongodb:
     image: ${MONGO_IMAGE:-mongo:7}
     restart: unless-stopped
@@ -49,7 +46,7 @@ services:
       - mongo_data:/data/db
       - mongo_keyfile:/data/keyfile
     networks:
-      - bns-network
+      - dokploy-network
     healthcheck:
       # Initiates the set when it has never been — its member is the name the
       # api dials, mongodb:27017 — then reports healthy only once this node is
@@ -70,7 +67,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - bns-network
+      - dokploy-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
@@ -89,7 +86,7 @@ services:
     volumes:
       - meili_data:/meili_data
     networks:
-      - bns-network
+      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:7700/health || exit 1"]
       interval: 5s
@@ -110,7 +107,7 @@ services:
       mongodb:
         condition: service_healthy
     networks:
-      - bns-network
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
@@ -120,10 +117,10 @@ services:
       - "traefik.http.routers.bns-mongo.service=bns-mongo"
       - "traefik.http.services.bns-mongo.loadbalancer.server.port=8081"
 
-  # ─── Application ────────────────────────────────────────────────────────────
-
+  # --- Application ---
   api:
-    image: ${IMAGE_REGISTRY}/api:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/api:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
     restart: unless-stopped
     environment:
       # replicaSet is what turns Payload transactions on; a DATABASE_URI
@@ -137,9 +134,8 @@ services:
       PAYLOAD_ALLOWED_ORIGINS: ${PAYLOAD_ALLOWED_ORIGINS:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       # Hops of X-Forwarded-For to trust for the client IP used by rate
-      # limiting: 1 for the ingress-nginx controller, the single reverse
-      # proxy in front of this pod (the cloud load balancer ahead of it is
-      # a plain L4 passthrough and does not add a hop).
+      # limiting: 1 for Traefik, the single reverse proxy in front of this
+      # container here.
       TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
       # Pino level for the Payload logger (trace/debug/info/warn/error/fatal).
       # Empty leaves Payload at its own default ("info").
@@ -147,12 +143,20 @@ services:
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       NOVU_SECRET_KEY: ${NOVU_SECRET_KEY:-}
+      # The API recognises chat-service by this address: it is the one caller
+      # allowed to name a message's sender. Unset here, every websocket message
+      # is refused as "not a participant" (fail-closed by design).
+      CHAT_SERVICE_EMAIL: ${CHAT_SERVICE_EMAIL}
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
       GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
       APPLE_OAUTH_CLIENT_ID: ${APPLE_OAUTH_CLIENT_ID}
       APPLE_OAUTH_TEAM_ID: ${APPLE_OAUTH_TEAM_ID}
       APPLE_OAUTH_KEY_ID: ${APPLE_OAUTH_KEY_ID}
       APPLE_OAUTH_PRIVATE_KEY: ${APPLE_OAUTH_PRIVATE_KEY}
+      # The iOS bundle identifier, for native Sign in with Apple. Distinct from
+      # APPLE_OAUTH_CLIENT_ID above, which is the Services ID used by the web
+      # flow — Apple binds the client secret to whichever one issued the token.
+      APPLE_NATIVE_CLIENT_ID: ${APPLE_NATIVE_CLIENT_ID:-}
       FACEBOOK_OAUTH_APP_ID: ${FACEBOOK_OAUTH_APP_ID}
       FACEBOOK_OAUTH_APP_SECRET: ${FACEBOOK_OAUTH_APP_SECRET}
       NOTCHPAY_PUBLIC_KEY: ${NOTCHPAY_PUBLIC_KEY}
@@ -164,6 +168,10 @@ services:
       # Staging only: "fake" serves protected payment from the in-memory fake
       # provider despite NODE_ENV=production. Leave empty in production.
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-}
+      COURIER_PROVIDER: ${COURIER_PROVIDER:-}
+      YANGO_DELIVERY_BASE_URL: ${YANGO_DELIVERY_BASE_URL:-}
+      YANGO_DELIVERY_API_KEY: ${YANGO_DELIVERY_API_KEY:-}
+      YANGO_DELIVERY_WEBHOOK_SECRET: ${YANGO_DELIVERY_WEBHOOK_SECRET:-}
       # Same staging/production gate as PAYMENTS_PROVIDER above: empty in
       # production, so the protected-payment flag stays refused by policy
       # (the AppSettings gate record), not by a missing variable.
@@ -212,14 +220,17 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - bns-network
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
+      # HTTPS
       - "traefik.http.routers.bns-api.rule=Host(`${API_DOMAIN:-api.buynsellem.com}`)"
       - "traefik.http.routers.bns-api.entrypoints=websecure"
       - "traefik.http.routers.bns-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.bns-api.service=bns-api"
+
+      # HTTP -> HTTPS redirect
       - "traefik.http.routers.bns-api-http.rule=Host(`${API_DOMAIN:-api.buynsellem.com}`)"
       - "traefik.http.routers.bns-api-http.entrypoints=web"
       - "traefik.http.routers.bns-api-http.middlewares=bns-redirect-https"
@@ -228,7 +239,8 @@ services:
       - "traefik.http.services.bns-api.loadbalancer.server.port=3000"
 
   web:
-    image: ${IMAGE_REGISTRY}/web:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/web:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://${API_DOMAIN:-api.buynsellem.com}}
@@ -238,29 +250,34 @@ services:
     depends_on:
       - api
     networks:
-      - bns-network
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
+      # HTTPS apex — serves the app
       - "traefik.http.routers.bns-web.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`)"
       - "traefik.http.routers.bns-web.entrypoints=websecure"
       - "traefik.http.routers.bns-web.tls.certresolver=letsencrypt"
       - "traefik.http.routers.bns-web.service=bns-web"
+      # HTTPS www — 301 redirect to apex
       - "traefik.http.routers.bns-web-www.rule=Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
       - "traefik.http.routers.bns-web-www.entrypoints=websecure"
       - "traefik.http.routers.bns-web-www.tls.certresolver=letsencrypt"
       - "traefik.http.routers.bns-web-www.middlewares=bns-www-to-apex"
       - "traefik.http.routers.bns-web-www.service=bns-web"
+      # Middleware: www -> apex permanent redirect (preserves path and query)
       - "traefik.http.middlewares.bns-www-to-apex.redirectregex.regex=^https://[^/]+(.*)"
       - "traefik.http.middlewares.bns-www-to-apex.redirectregex.replacement=https://${WEB_DOMAIN:-buynsellem.com}$${1}"
       - "traefik.http.middlewares.bns-www-to-apex.redirectregex.permanent=true"
+      # HTTP -> HTTPS redirect (both apex and www; www will then 301 to apex)
       - "traefik.http.routers.bns-web-http.rule=Host(`${WEB_DOMAIN:-buynsellem.com}`) || Host(`${WEB_WWW_DOMAIN:-www.buynsellem.com}`)"
       - "traefik.http.routers.bns-web-http.entrypoints=web"
       - "traefik.http.routers.bns-web-http.middlewares=bns-redirect-https"
       - "traefik.http.services.bns-web.loadbalancer.server.port=3001"
 
   chat-service:
-    image: ${IMAGE_REGISTRY}/chat-service:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/chat-service:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
     restart: unless-stopped
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
@@ -268,6 +285,7 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-https://${WEB_DOMAIN:-buynsellem.com},https://${WEB_WWW_DOMAIN:-www.buynsellem.com}}
       CHAT_SERVICE_EMAIL: ${CHAT_SERVICE_EMAIL}
       CHAT_SERVICE_PASSWORD: ${CHAT_SERVICE_PASSWORD}
+
       PORT: 4000
     depends_on:
       redis:
@@ -275,21 +293,24 @@ services:
       api:
         condition: service_started
     networks:
-      - bns-network
+      - dokploy-network
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"
+      # HTTPS
       - "traefik.http.routers.bns-chat.rule=Host(`${CHAT_DOMAIN:-chat.buynsellem.com}`)"
       - "traefik.http.routers.bns-chat.entrypoints=websecure"
       - "traefik.http.routers.bns-chat.tls.certresolver=letsencrypt"
       - "traefik.http.routers.bns-chat.service=bns-chat"
+      # HTTP -> HTTPS redirect
       - "traefik.http.routers.bns-chat-http.rule=Host(`${CHAT_DOMAIN:-chat.buynsellem.com}`)"
       - "traefik.http.routers.bns-chat-http.entrypoints=web"
       - "traefik.http.routers.bns-chat-http.middlewares=bns-redirect-https"
       - "traefik.http.services.bns-chat.loadbalancer.server.port=4000"
 
   search-indexer:
-    image: ${IMAGE_REGISTRY}/search-indexer:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-ghcr.io/yvan2xero/bns-v2}/search-indexer:${IMAGE_TAG:?Set IMAGE_TAG}
+    pull_policy: always
     restart: unless-stopped
     environment:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
@@ -304,7 +325,7 @@ services:
       api:
         condition: service_started
     networks:
-      - bns-network
+      - dokploy-network
 
 volumes:
   mongo_data:
@@ -315,6 +336,5 @@ volumes:
   api_private_uploads:
 
 networks:
-  bns-network:
+  dokploy-network:
     external: true
-    name: dokploy-network

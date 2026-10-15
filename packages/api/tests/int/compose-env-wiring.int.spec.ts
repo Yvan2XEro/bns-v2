@@ -24,6 +24,7 @@ const COMPOSE_FILES = [
 	"docker-compose.yml",
 	"docker-compose.atlas.yml",
 	"docker-compose.local.yml",
+	"deployments/docker-compose/docker-compose.yml",
 ];
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -96,6 +97,18 @@ describe("a variable the API reads is wired to the api container", () => {
 			expect([...missing].sort()).toEqual([]);
 		});
 	}
+
+	it("the pre-built-image compose hands every service what the root one does", () => {
+		const read = (file: string) =>
+			envByService(readFileSync(path.join(REPO, file), "utf8"));
+		const root = read("docker-compose.yml");
+		const images = read("deployments/docker-compose/docker-compose.yml");
+		const shape = (services: Map<string, Set<string>>) =>
+			Object.fromEntries(
+				[...services].map(([name, env]) => [name, [...env].sort()]),
+			);
+		expect(shape(images)).toEqual(shape(root));
+	});
 
 	it("the parser sees the seam this guard exists for", () => {
 		const services = envByService(
