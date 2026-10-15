@@ -16,6 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
+import { CategoryIcon } from "~/components/category-icon";
 import {
 	type AccountSection,
 	activeTab,
@@ -25,7 +26,6 @@ import {
 	loginHref,
 	type NavRubric,
 	type NavTab,
-	registerHref,
 	shopsDirectoryHref,
 	showTabBar,
 } from "~/lib/nav";
@@ -292,7 +292,16 @@ export function CategoriesSheetBody({
 								onClick={onNavigate}
 								className={row}
 							>
-								{child.name}
+								<span className="flex min-w-0 items-center gap-3">
+									<CategoryIcon
+										category={child}
+										imageUrl={child.imageUrl}
+										size={28}
+										decorative
+										className="shrink-0"
+									/>
+									<span className="truncate">{child.name}</span>
+								</span>
 								<ChevronRight
 									aria-hidden="true"
 									className="h-4 w-4 text-[#94A3B8]"
@@ -328,7 +337,16 @@ export function CategoriesSheetBody({
 								onClick={() => setOpenId(r.id)}
 								className={row}
 							>
-								{r.name}
+								<span className="flex min-w-0 items-center gap-3">
+									<CategoryIcon
+										category={r}
+										imageUrl={r.imageUrl}
+										size={32}
+										decorative
+										className="shrink-0"
+									/>
+									<span className="truncate">{r.name}</span>
+								</span>
 								<ChevronRight
 									aria-hidden="true"
 									className="h-4 w-4 text-[#94A3B8]"
@@ -340,7 +358,16 @@ export function CategoriesSheetBody({
 								onClick={onNavigate}
 								className={row}
 							>
-								{r.name}
+								<span className="flex min-w-0 items-center gap-3">
+									<CategoryIcon
+										category={r}
+										imageUrl={r.imageUrl}
+										size={32}
+										decorative
+										className="shrink-0"
+									/>
+									<span className="truncate">{r.name}</span>
+								</span>
 								<ChevronRight
 									aria-hidden="true"
 									className="h-4 w-4 text-[#94A3B8]"
@@ -402,22 +429,13 @@ export function AccountSheetBody({
 					<AccountLinksList sections={account} onNavigate={onNavigate} />
 				</>
 			) : (
-				<div className="grid grid-cols-2 gap-2">
-					<Link
-						href={loginHref(back)}
-						onClick={onNavigate}
-						className="flex h-11 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white font-semibold text-[#0F172A] text-sm"
-					>
-						{t("logIn")}
-					</Link>
-					<Link
-						href={registerHref(back)}
-						onClick={onNavigate}
-						className="flex h-11 items-center justify-center rounded-lg bg-[#1E40AF] font-semibold text-sm text-white"
-					>
-						{t("signUp")}
-					</Link>
-				</div>
+				<Link
+					href={loginHref(back)}
+					onClick={onNavigate}
+					className="flex h-11 items-center justify-center rounded-lg bg-[#1E40AF] font-semibold text-sm text-white"
+				>
+					{t("logIn")}
+				</Link>
 			)}
 			<section aria-label={t("help")}>
 				<h3 className="mb-1.5 px-1 font-bold text-[#94A3B8] text-[10px] uppercase tracking-widest">

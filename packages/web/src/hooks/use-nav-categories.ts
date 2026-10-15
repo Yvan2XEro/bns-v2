@@ -16,7 +16,7 @@ export function useNavCategories(
 	const query = useQuery<NavCategory[]>({
 		queryKey: navCategoriesKey,
 		queryFn: async () => {
-			const res = await fetch("/api/public/categories?depth=0");
+			const res = await fetch("/api/public/categories?depth=1");
 			if (!res.ok) throw new Error(`categories ${res.status}`);
 			const body = (await res.json()) as {
 				categories?: Parameters<typeof toNavCategories>[0];

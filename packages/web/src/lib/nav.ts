@@ -4,11 +4,15 @@ export interface NavCategory {
 	id: string;
 	name: string;
 	parent: string | null;
+	icon?: string | null;
+	imageUrl?: string | null;
 }
 
 export interface NavRubric {
 	id: string;
 	name: string;
+	icon?: string | null;
+	imageUrl?: string | null;
 	children: NavCategory[];
 }
 
@@ -16,9 +20,11 @@ type RawCategory = {
 	id: string;
 	name: string;
 	parent?: string | { id: string } | null;
+	icon?: string | null;
+	image?: string | { url?: string | null } | null;
 };
 
-/** Strips the API's categories to the three fields the menus need. */
+/** Strips the API's categories to the fields the menus draw. */
 export function toNavCategories(raw: RawCategory[]): NavCategory[] {
 	return raw.map((category) => ({
 		id: category.id,
@@ -27,6 +33,11 @@ export function toNavCategories(raw: RawCategory[]): NavCategory[] {
 			typeof category.parent === "string"
 				? category.parent
 				: (category.parent?.id ?? null),
+		icon: category.icon ?? null,
+		imageUrl:
+			category.image && typeof category.image === "object"
+				? (category.image.url ?? null)
+				: null,
 	}));
 }
 
@@ -38,6 +49,8 @@ export function navRubrics(categories: NavCategory[]): NavRubric[] {
 		.map((c) => ({
 			id: c.id,
 			name: c.name,
+			icon: c.icon ?? null,
+			imageUrl: c.imageUrl ?? null,
 			children: categories.filter((child) => child.parent === c.id),
 		}));
 }

@@ -7,7 +7,7 @@ import { serverFetch } from "~/lib/server-api";
 
 async function getNavCategories(): Promise<NavCategory[] | undefined> {
 	try {
-		const res = await serverFetch("/api/public/categories?depth=0");
+		const res = await serverFetch("/api/public/categories?depth=1");
 		if (!res.ok) return undefined;
 		const data = await res.json();
 		return toNavCategories(data.categories ?? []);

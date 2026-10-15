@@ -20,7 +20,6 @@ import {
 	loginHref,
 	type NavCategory,
 	navRubrics,
-	registerHref,
 	sellHref,
 	shopHeaderCss,
 	showShortcuts,
@@ -159,7 +158,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 							/>
 						</div>
 
-						<div className="hidden min-w-0 flex-1 md:flex">
+						<div className="hidden min-w-[22rem] flex-1 md:flex lg:min-w-[28rem]">
 							<HeaderSearch shop={shop} />
 						</div>
 						<div className="flex-1 md:hidden" />
@@ -240,22 +239,17 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 									>
 										{t("logIn")}
 									</Link>
-									<Link
-										href={registerHref(here)}
-										className="flex h-10 items-center whitespace-nowrap rounded-lg bg-[#1E40AF] px-3 font-semibold text-sm text-white hover:bg-[#1E3A8A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
-									>
-										{t("signUp")}
-									</Link>
 								</div>
 							)}
 						</div>
 
 						<Link
 							href={gatedHref(signedIn, "/create")}
-							className="hidden h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#F59E0B] px-3 font-extrabold text-[#0F172A] text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 md:flex"
+							aria-label={t("postAd")}
+							title={t("postAd")}
+							className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F59E0B] font-extrabold text-[#0F172A] text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 md:flex"
 						>
-							<Plus aria-hidden="true" className="h-4 w-4" />
-							<span className="sr-only lg:not-sr-only">{t("postAd")}</span>
+							<Plus aria-hidden="true" className="h-5 w-5" />
 						</Link>
 					</div>
 				</div>

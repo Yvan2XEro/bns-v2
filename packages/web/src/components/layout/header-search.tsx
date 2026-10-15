@@ -80,7 +80,7 @@ export function HeaderSearch({ shop, compact = false }: HeaderSearchProps) {
 				<div
 					className={cn(
 						"shrink-0 border-[#E2E8F0] border-l",
-						compact ? "w-28" : "w-40 lg:w-48",
+						compact ? "w-32" : "w-44",
 					)}
 				>
 					<LocationField
@@ -88,22 +88,21 @@ export function HeaderSearch({ shop, compact = false }: HeaderSearchProps) {
 						onChange={setBrowsePlace}
 						variant="bar"
 						browse
+						className="h-full"
 					/>
 				</div>
 			)}
 			<button
 				type="submit"
 				className={cn(
-					"flex shrink-0 items-center gap-1.5 px-3 font-semibold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset",
+					"flex w-11 shrink-0 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset",
 					shop
 						? "bg-[var(--shop-head-accent)] text-[var(--shop-head-on-accent)] focus-visible:ring-[var(--shop-head-on-accent)]"
 						: "bg-[#1E40AF] text-white hover:bg-[#1E3A8A] focus-visible:ring-white",
 				)}
 			>
 				<Search aria-hidden="true" className="h-4 w-4" />
-				<span className={compact ? "sr-only" : "sr-only xl:not-sr-only"}>
-					{t("searchButton")}
-				</span>
+				<span className="sr-only">{t("searchButton")}</span>
 			</button>
 		</form>
 	);

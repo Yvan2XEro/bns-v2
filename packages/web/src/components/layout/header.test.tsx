@@ -96,10 +96,10 @@ describe("Header, signed out", () => {
 		expect(html).toContain("Post an ad");
 	});
 
-	test("Log in and Create an account sit side by side, returning to this page", () => {
+	test("only Log in is offered, returning to this page", () => {
 		expect(html).toContain('href="/auth/login?redirect=%2Flisting%2F42"');
-		expect(html).toContain('href="/auth/register?redirect=%2Flisting%2F42"');
-		expect(html).toContain(">Create an account<");
+		// Only the way in; the login page links to registration.
+		expect(html).not.toContain("/auth/register");
 	});
 
 	test("no account menu, messages or cart", () => {
@@ -108,7 +108,7 @@ describe("Header, signed out", () => {
 	});
 
 	test("the utility bar carries the trust line, selling, help and language", () => {
-		expect(html).toContain("Delivery and cash on delivery across Cameroon");
+		expect(html).toContain("Classifieds and shops near you");
 		expect(html).toContain(">Sell on BuyNSellem<");
 		expect(html).toContain(">Help");
 		expect(html).toContain("<select");
@@ -268,7 +268,7 @@ describe("mobile sheets", () => {
 		expect(drilled).toContain("All of Electronics");
 	});
 
-	test("account, signed out: sign in or create an account, then help and language", () => {
+	test("account, signed out: sign in, then help and language", () => {
 		const html = render(
 			<AccountSheetBody
 				signedIn={false}
@@ -279,7 +279,7 @@ describe("mobile sheets", () => {
 			/>,
 		);
 		expect(html).toContain('href="/auth/login?redirect=%2Fsearch"');
-		expect(html).toContain('href="/auth/register?redirect=%2Fsearch"');
+		expect(html).not.toContain("/auth/register");
 		expect(html).toContain("Track an order");
 		expect(html).toContain("Language");
 	});

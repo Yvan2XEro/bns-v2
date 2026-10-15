@@ -13,6 +13,7 @@ import {
 	useReducer,
 	useRef,
 } from "react";
+import { CategoryIcon } from "~/components/category-icon";
 import { shopSearchKey } from "~/hooks/use-shop-search";
 import {
 	AIM_DELAY,
@@ -288,7 +289,16 @@ export function CategoriesMenu({
 												: "text-[#0F172A] hover:bg-[#F8FAFC]",
 										)}
 									>
-										{rubric.name}
+										<span className="flex min-w-0 items-center gap-2.5">
+											<CategoryIcon
+												category={rubric}
+												imageUrl={rubric.imageUrl}
+												size={28}
+												decorative
+												className="shrink-0"
+											/>
+											<span className="truncate">{rubric.name}</span>
+										</span>
 										<ChevronRight
 											aria-hidden="true"
 											className="h-4 w-4 text-[#94A3B8]"
@@ -329,8 +339,15 @@ export function CategoriesMenu({
 													<Link
 														href={categoryHref(child.id)}
 														onClick={() => close(false)}
-														className="block rounded px-1 py-1.5 text-[#334155] text-sm hover:text-[#1E40AF] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+														className="flex items-center gap-2 rounded px-1 py-1.5 text-[#334155] text-sm hover:text-[#1E40AF] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
 													>
+														<CategoryIcon
+															category={child}
+															imageUrl={child.imageUrl}
+															size={22}
+															decorative
+															className="shrink-0"
+														/>
 														{child.name}
 													</Link>
 												</li>

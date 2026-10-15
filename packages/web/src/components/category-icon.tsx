@@ -65,12 +65,18 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 };
 
 interface CategoryIconProps {
-	category: Category;
+	category: Pick<Category, "name" | "icon"> & { image?: Category["image"] };
+	/** An image URL already resolved by the caller; wins over `category.image`. */
+	imageUrl?: string | null;
+	/** Beside the category's written name: hidden from assistive tech. */
+	decorative?: boolean;
 	size?: number;
 	className?: string;
 }
 
-function getCategoryImage(category: Category): string | null {
+function getCategoryImage(
+	category: CategoryIconProps["category"],
+): string | null {
 	if (!category.image) return null;
 	if (typeof category.image === "string") return null;
 	return (category.image as Media).url ?? null;
@@ -78,10 +84,12 @@ function getCategoryImage(category: Category): string | null {
 
 export function CategoryIcon({
 	category,
+	imageUrl: resolved,
+	decorative = false,
 	size = 48,
 	className,
 }: CategoryIconProps) {
-	const imageUrl = getCategoryImage(category);
+	const imageUrl = resolved ?? getCategoryImage(category);
 
 	if (imageUrl) {
 		return (
@@ -92,7 +100,7 @@ export function CategoryIcon({
 				{/* biome-ignore lint/performance/noImgElement: simple category thumbnail */}
 				<img
 					src={imageUrl}
-					alt={category.name}
+					alt={decorative ? "" : category.name}
 					width={size}
 					height={size}
 					className="h-full w-full object-cover"
@@ -114,8 +122,9 @@ export function CategoryIcon({
 		<div
 			className={`flex items-center justify-center rounded-full bg-[#EFF6FF] text-[#1E40AF] ${className ?? ""}`}
 			style={{ width: size, height: size }}
-			role="img"
-			aria-label={category.name}
+			{...(decorative
+				? { "aria-hidden": true }
+				: { role: "img", "aria-label": category.name })}
 		>
 			{emoji ? (
 				<span style={{ fontSize: size * 0.5 }}>{emoji}</span>
