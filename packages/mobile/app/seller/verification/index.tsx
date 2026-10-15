@@ -14,6 +14,7 @@ import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { showsLevelSection } from "@/src/lib/verification";
 
 // `as never`: expo-router's generated route types lag behind these two
 // screens, which land from sibling tasks in this same wave (see the other
@@ -116,20 +117,24 @@ export default function VerificationHubScreen() {
 					<VerificationStatusCard view={query.data} />
 					<LevelLadder capabilities={query.data.capabilities} />
 
-					<LevelSection
-						view={query.data}
-						level={2}
-						isOwner={role === "owner"}
-						pendingLevel={state.pendingLevel}
-						onStart={onStart}
-					/>
-					<LevelSection
-						view={query.data}
-						level={3}
-						isOwner={role === "owner"}
-						pendingLevel={state.pendingLevel}
-						onStart={onStart}
-					/>
+					{showsLevelSection(query.data, 2) ? (
+						<LevelSection
+							view={query.data}
+							level={2}
+							isOwner={role === "owner"}
+							pendingLevel={state.pendingLevel}
+							onStart={onStart}
+						/>
+					) : null}
+					{showsLevelSection(query.data, 3) ? (
+						<LevelSection
+							view={query.data}
+							level={3}
+							isOwner={role === "owner"}
+							pendingLevel={state.pendingLevel}
+							onStart={onStart}
+						/>
+					) : null}
 				</ScrollView>
 			) : null}
 		</SafeAreaView>

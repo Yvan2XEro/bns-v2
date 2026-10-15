@@ -54,6 +54,7 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
 | M11 | Liste des commandes | Boutons Accepter / Refuser sur chaque carte | Actions seulement dans le détail de la commande | Fonction |
+| M19 | Vérification | Liste des documents demandés sous le niveau suivant, bouton fixe « Vérifier mon entreprise » | Documents listés dans le parcours de vérification | Décision |
 | M18 | Fiche produit | Vue d'ensemble (variantes avec stock et marge, menu « … », bouton Aperçu) | Éditeur complet du produit sur un seul écran | Décision |
 
 ## Web
@@ -64,7 +65,7 @@ Comparaison pas encore faite.
 
 - Achat : paiement en attente, paiement protégé, étapes
   paiement et récapitulatif du tunnel.
-- Vendeur : revente, vérification.
+- Vendeur : revente.
 - P1 : création de produit, réglages boutique, recherche de boutiques,
   passage par le téléphone, états vides/erreur, premier lancement boutique,
   déplacement d'annonces, fiche modération boutique, fiche produit acheteur,

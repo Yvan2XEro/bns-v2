@@ -89,6 +89,19 @@ export function levelLadder(capabilities: ShopCapabilities): LadderRung[] {
 	}));
 }
 
+/**
+ * Whether a level's request card has anything to say: a level above the
+ * shop's, or one with a request on file (its timeline, a renewal). A level
+ * already held with no request — set by staff, say — needs no "Start".
+ */
+export function showsLevelSection(
+	view: Pick<ShopVerificationResponse, "capabilities" | "requests">,
+	level: 2 | 3,
+): boolean {
+	const request = level === 2 ? view.requests.level2 : view.requests.level3;
+	return Boolean(request) || level > view.capabilities.effectiveLevel;
+}
+
 // ─── Opening a request ────────────────────────────────────────────────────────
 
 const OPEN_STATUSES: readonly VerificationStatus[] = [

@@ -2295,7 +2295,8 @@
 		},
 		"statusCard": {
 			"noLevel": "No level yet",
-			"expiresOn": "Valid until {{date}}"
+			"expiresOn": "Valid until {{date}}",
+			"current": "Current level"
 		},
 		"ladder": {
 			"title": "Verification levels",
@@ -2303,6 +2304,12 @@
 				"reached": "Reached",
 				"current": "Current level",
 				"locked": "Locked"
+			},
+			"levelTitle": "Level {{level}}",
+			"benefit": {
+				"1": "Online shop, cash-on-delivery orders",
+				"2": "Protected payment, badge, team members",
+				"3": "Supplier status for resale, faster payouts"
 			}
 		},
 		"requestCard": {

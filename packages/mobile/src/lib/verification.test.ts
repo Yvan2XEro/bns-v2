@@ -25,6 +25,7 @@ import {
 	publicShopBadge,
 	requiredKinds,
 	shouldKeepPolling,
+	showsLevelSection,
 	statusToneKey,
 } from "./verification";
 
@@ -99,6 +100,23 @@ describe("badgeLabelKey", () => {
 		expect(badgeLabelKey("identity")).toBe("levelIdentity");
 		expect(badgeLabelKey("business")).toBe("levelBusiness");
 		expect(badgeLabelKey(null)).toBeNull();
+	});
+});
+
+describe("showsLevelSection", () => {
+	test("hides a level already held with no request on file", () => {
+		const held = baseView({
+			capabilities: baseCapabilities({ effectiveLevel: 2 }),
+		});
+		expect(showsLevelSection(held, 2)).toBe(false);
+		expect(showsLevelSection(held, 3)).toBe(true);
+	});
+	test("keeps a held level whose request can be followed or renewed", () => {
+		const held = baseView({
+			capabilities: baseCapabilities({ effectiveLevel: 2 }),
+			requests: { level2: baseRequest({ status: "approved" }), level3: null },
+		});
+		expect(showsLevelSection(held, 2)).toBe(true);
 	});
 });
 

@@ -1,16 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
-import { LevelBadge } from "@/src/components/shop/LevelBadge";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
-import { badgeForLevel, levelLadder } from "@/src/lib/verification";
+import {
+	badgeForLevel,
+	badgeLabelKey,
+	levelLadder,
+} from "@/src/lib/verification";
 import type { ShopCapabilities } from "@/src/types/api";
 
 /**
- * The three-rung ladder every seller sees, whatever `enabled` says: this is
- * a read of the shop's own capabilities, never an action, so it renders the
- * same whether or not the flag allows starting something new.
+ * The three levels on a rail, each with what it unlocks; the next one to
+ * reach is framed. A read of the shop's own capabilities, never an action,
+ * so it renders the same whether or not the flag allows starting something.
  */
 export function LevelLadder({
 	capabilities,
@@ -20,76 +23,105 @@ export function LevelLadder({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const rungs = levelLadder(capabilities);
+	const next = capabilities.effectiveLevel + 1;
 
 	return (
-		<View
-			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
-		>
-			<Text style={[styles.title, { color: c.text }]}>
-				{t("verification.ladder.title")}
-			</Text>
-			<View style={styles.rungs}>
-				{rungs.map((rung) => {
-					const tone =
-						rung.state === "locked"
-							? { bg: c.neutralSoft, fg: c.muted }
-							: { bg: c.primarySoft, fg: c.primary };
-					return (
+		<View accessibilityRole="list">
+			{rungs.map((rung, index) => {
+				const held = rung.state !== "locked";
+				const isNext = rung.level === next;
+				const labelKey = badgeLabelKey(badgeForLevel(rung.level));
+				const title = [
+					t("verification.ladder.levelTitle", { level: rung.level }),
+					labelKey ? t(`shop.${labelKey}`) : null,
+				]
+					.filter(Boolean)
+					.join(" · ");
+				return (
+					<View key={rung.level} style={styles.rung}>
+						<View style={styles.rail}>
+							<View
+								style={[
+									styles.dot,
+									held
+										? { backgroundColor: c.primary, borderColor: c.primary }
+										: {
+												backgroundColor: c.card,
+												borderColor: isNext ? c.primary : c.border,
+											},
+								]}
+							>
+								{held ? (
+									<Ionicons name="checkmark" size={16} color="#fff" />
+								) : (
+									<Text
+										style={[
+											styles.dotText,
+											{ color: isNext ? c.primary : c.muted },
+										]}
+									>
+										{rung.level}
+									</Text>
+								)}
+							</View>
+							{index < rungs.length - 1 ? (
+								<View
+									style={[
+										styles.line,
+										{ backgroundColor: held ? c.primary : c.border },
+									]}
+								/>
+							) : null}
+						</View>
 						<View
-							key={rung.level}
 							style={[
-								styles.rung,
-								{
-									backgroundColor:
-										rung.state === "current" ? c.primarySoft : c.bg,
-									borderColor: rung.state === "current" ? c.primary : c.border,
-								},
+								styles.body,
+								isNext && [
+									styles.framed,
+									{ backgroundColor: c.card, borderColor: c.border },
+								],
 							]}
 						>
-							<View style={[styles.marker, { backgroundColor: tone.bg }]}>
-								<Ionicons
-									name={rung.state === "locked" ? "lock-closed" : "checkmark"}
-									size={13}
-									color={tone.fg}
-								/>
-							</View>
-							<View style={styles.rungBody}>
-								<LevelBadge badge={badgeForLevel(rung.level)} size="sm" />
-								<Text style={[styles.state, { color: c.muted }]}>
-									{t(`verification.ladder.state.${rung.state}`)}
-								</Text>
-							</View>
+							<Text
+								style={[
+									styles.title,
+									{ color: held || isNext ? c.text : c.muted },
+								]}
+							>
+								{title}
+							</Text>
+							<Text style={[styles.benefit, { color: c.muted }]}>
+								{t(`verification.ladder.benefit.${rung.level}`)}
+							</Text>
 						</View>
-					);
-				})}
-			</View>
+					</View>
+				);
+			})}
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	card: {
-		borderRadius: 16,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 16,
-	},
-	title: { fontSize: 16, fontFamily: Fonts.displayBold },
-	rungs: { marginTop: 12, gap: 10 },
-	rung: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		borderRadius: 12,
-		borderWidth: StyleSheet.hairlineWidth,
-		padding: 12,
-	},
-	marker: {
-		width: 26,
-		height: 26,
-		borderRadius: 13,
+	rung: { flexDirection: "row", gap: 12 },
+	rail: { width: 30, alignItems: "center" },
+	dot: {
+		width: 30,
+		height: 30,
+		borderRadius: 15,
+		borderWidth: 2,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	rungBody: { flex: 1, gap: 4 },
-	state: { fontSize: 12, fontFamily: Fonts.bodySemibold },
+	dotText: { fontSize: 14, fontFamily: Fonts.displayBold },
+	line: { flex: 1, width: 2, marginVertical: 2 },
+	body: { flex: 1, gap: 2, paddingTop: 4, paddingBottom: 18 },
+	framed: {
+		borderWidth: 1,
+		borderRadius: 14,
+		padding: 12,
+		marginBottom: 14,
+		marginTop: -2,
+	},
+	title: { fontSize: 15, fontFamily: Fonts.displayBold },
+	benefit: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 });
