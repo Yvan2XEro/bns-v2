@@ -159,9 +159,12 @@ export function PhoneGate({ onVerified }: { onVerified: () => void }) {
 				/>
 			) : null}
 
-			<Text style={[styles.note, { color: c.muted }]}>
-				{t("shop.gatePrivacy")}
-			</Text>
+			<View style={[styles.privacy, { backgroundColor: c.neutralSoft }]}>
+				<Ionicons name="lock-closed-outline" size={16} color={c.muted} />
+				<Text style={[styles.note, styles.privacyText, { color: c.body }]}>
+					{t("shop.gatePrivacy")}
+				</Text>
+			</View>
 
 			<Pressable
 				onPress={pending ? submitCode : submitPhone}
@@ -189,6 +192,14 @@ export function PhoneGate({ onVerified }: { onVerified: () => void }) {
 }
 
 const styles = StyleSheet.create({
+	privacy: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 10,
+		padding: 12,
+		borderRadius: 12,
+	},
+	privacyText: { flex: 1, marginTop: 0, lineHeight: 18 },
 	wrap: { padding: 20, gap: 10 },
 	icon: {
 		width: 52,
