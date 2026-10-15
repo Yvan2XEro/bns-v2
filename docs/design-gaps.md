@@ -46,6 +46,7 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 | M14 | Signaler un problème | Une seule page, preuves (photos, vidéo) jointes dès l'envoi | Parcours en 5 étapes ; les justificatifs s'ajoutent ensuite dans le dossier | Décision |
 | M15 | Suivi de livraison | Carte en direct, position du livreur, fiche coursier, « Appeler le livreur » | Bloc de suivi de l'envoi sans carte | Fonction |
 | M16 | Détail de commande | Barre fixe « Un problème ? » + « Écrire à la boutique » | Actions empilées en haut de l'écran | Décision |
+| M17 | Litige | Pièces jointes affichées en vignettes dans les messages, menu « … » | Justificatifs comptés, sans aperçu | Fonction |
 | M13 | Commande passée | Ligne « Reçu de commande » ouvrant le reçu | Reçu accessible depuis le détail de la commande | Fonction |
 
 ### Vendeur
@@ -60,7 +61,7 @@ Comparaison pas encore faite.
 
 ## Écrans pas encore comparés
 
-- Achat : échanges du litige, paiement en attente, paiement protégé, étapes
+- Achat : paiement en attente, paiement protégé, étapes
   paiement et récapitulatif du tunnel.
 - Vendeur : fiche produit, ajustement de stock, revente, vérification.
 - P1 : création de produit, réglages boutique, recherche de boutiques,

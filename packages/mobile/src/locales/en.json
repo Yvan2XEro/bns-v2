@@ -3240,7 +3240,11 @@
 		"nextTitle": "What happens next?",
 		"nextShop": "The shop is asked to respond",
 		"nextMediation": "Without an agreement, Buy'N'Sellem mediation decides",
-		"nextKeepItem": "Keep the item and its packaging until then"
+		"nextKeepItem": "Keep the item and its packaging until then",
+		"threadTitle": "Dispute · {{number}}",
+		"authorBuyer": "Buyer",
+		"authorStaff": "Buy'N'Sellem mediation",
+		"staffBadge": "Team"
 	},
 	"returns": {
 		"chooseInspection": "Choose an inspection result",

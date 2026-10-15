@@ -3243,7 +3243,11 @@
 		"nextTitle": "Et ensuite ?",
 		"nextShop": "La boutique est invitée à répondre",
 		"nextMediation": "Sans accord, la médiation Buy'N'Sellem décide",
-		"nextKeepItem": "Gardez l'article et son emballage d'ici là"
+		"nextKeepItem": "Gardez l'article et son emballage d'ici là",
+		"threadTitle": "Litige · {{number}}",
+		"authorBuyer": "Acheteur",
+		"authorStaff": "Médiation Buy'N'Sellem",
+		"staffBadge": "Équipe"
 	},
 	"returns": {
 		"chooseInspection": "Choisissez un résultat d'inspection",
