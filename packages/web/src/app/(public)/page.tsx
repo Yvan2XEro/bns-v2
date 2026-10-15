@@ -27,7 +27,11 @@ async function getCategories(): Promise<Category[]> {
 		const res = await serverFetch("/api/public/categories?depth=1");
 		if (!res.ok) return [];
 		const data = await res.json();
-		return data.categories || [];
+		// The section shows the top of the tree: a parent's search now includes
+		// its subcategories, and the search filter reaches every level.
+		return ((data.categories || []) as Category[]).filter(
+			(category) => !category.parent,
+		);
 	} catch {
 		return [];
 	}

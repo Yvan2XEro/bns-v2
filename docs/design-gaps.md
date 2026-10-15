@@ -67,14 +67,12 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
-| W21 | Catégories | Une catégorie parente regroupe ses sous-catégories | La recherche filtre sur la catégorie exacte : une catégorie racine ne montre que les annonces classées directement dedans. Bloque l'affichage des seules catégories racines sur l'accueil et le regroupement des compteurs en boutique | Fonction |
 | W7 | Accueil | Titre fixe « Achetez et vendez près de chez vous » | Titre animé (mots qui défilent) | Décision |
 | W8 | Accueil | Hero, catégories, boutiques vérifiées, nouveautés, rien d'autre | Sections en plus : « À la une » (annonces boostées), « Comment ça marche », bandeau « Vous avez quelque chose à vendre ? » | Décision |
 | W9 | Accueil | Cartes boutiques avec la bannière de la boutique et trois vignettes de produits | Bandeau générique : la recherche de boutiques ne renvoie ni bannière ni produits | Fonction |
 | W10 | Accueil | Nouveautés filtrées sur la ville choisie, pastille « Douala » | Annonces de toutes les villes, pastille « Nouveau » (la ville est une préférence du navigateur, inconnue du serveur) | Fonction |
 | W15 | Recherche | Compteurs sur les onglets Annonces / Boutiques | Onglets sans compteur (il faudrait une seconde requête) | Fonction |
 | W16 | Recherche boutiques | Filtres en puces (ville, niveau, catégorie), tri « Pertinence », extrait de description avec le mot recherché surligné | Champ ville et case « vérifiées uniquement », ni catégorie, ni tri, ni surlignage | Fonction |
-| W42 | Accueil web | Section « Parcourir par catégorie » (tuiles racines) | La section liste toutes les catégories actives à plat, sous-catégories comprises ; seul point d'entrée catégories sur mobile web depuis la suppression de la barre | Décision |
 
 ### Annonces et boutiques
 
@@ -89,7 +87,6 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 | W38 | Boutique web | Bouton principal unique « Contacter » | Boutons WhatsApp et Appeler, affichés seulement si la boutique les a renseignés (pas de messagerie boutique depuis le hero) | Décision |
 | W39 | Boutique web | Encadré « Livraison » : tarif par ville (Douala 2 000 XAF, Yaoundé 3 500 XAF, retrait gratuit) | Texte « Livraison ou retrait disponible à : … » sans tarif + bloc Points de retrait détaillé | Données |
 | W40 | Boutique web | Tri « Plus récentes » à côté de la recherche dans la boutique | Pas de tri dans la boutique (toujours les plus récentes) | Fonction |
-| W41 | Boutique web | Compteurs par catégorie (la maquette suggère des catégories racines : Téléphones, Ordinateurs…) | Compteurs par catégorie feuille de l'annonce, sans regroupement sous la catégorie parente (cohérent avec le filtre exact `categoryId`) | Décision |
 
 ### Achat
 

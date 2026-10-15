@@ -10,10 +10,11 @@ import { PickupPoints } from "~/components/shop/pickup-points";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
 import { serverFetch } from "~/lib/server-api";
+import { type CategoryNode, groupedCounts } from "~/lib/shop-category-groups";
 import { shopRating } from "~/lib/shop-rating";
 import { shopUrl } from "~/lib/shop-url";
 import type { Category, Listing, PublicShop } from "~/types";
-import { ShopCategories, type ShopCategoryCount } from "./shop-categories";
+import { ShopCategories } from "./shop-categories";
 
 const PAGE_SIZE = 24;
 
@@ -80,29 +81,25 @@ async function getShopCategoryCounts(
 	}
 }
 
-async function getCategoryNames(): Promise<Map<string, string>> {
+async function getCategoryTree(): Promise<Map<string, CategoryNode>> {
 	try {
 		const res = await serverFetch("/api/public/categories?depth=0");
 		if (!res.ok) return new Map();
 		const data = await res.json();
 		const categories: Category[] = data.categories ?? [];
-		return new Map(categories.map((c) => [String(c.id), c.name]));
+		return new Map(
+			categories.map((c) => [
+				String(c.id),
+				{
+					name: c.name,
+					parent:
+						typeof c.parent === "string" ? c.parent : (c.parent?.id ?? null),
+				},
+			]),
+		);
 	} catch {
 		return new Map();
 	}
-}
-
-/** Named, non-empty categories, largest first; an id with no active category behind it is left out. */
-function namedCounts(
-	counts: Record<string, number>,
-	names: Map<string, string>,
-): ShopCategoryCount[] {
-	return Object.entries(counts)
-		.flatMap(([id, count]) => {
-			const name = names.get(id);
-			return name && count > 0 ? [{ id, name, count }] : [];
-		})
-		.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
 interface PageProps {
@@ -161,16 +158,17 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 	const { shop } = result;
 	const page = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
 	const category = categoryParam.trim();
-	const [locale, t, listings, categoryCounts, categoryNames] =
-		await Promise.all([
+	const [locale, t, listings, categoryCounts, categoryTree] = await Promise.all(
+		[
 			getLocale(),
 			getTranslations("Shop"),
 			getShopListings(shop.id, q.trim(), category, page),
 			getShopCategoryCounts(shop.id),
-			getCategoryNames(),
-		]);
+			getCategoryTree(),
+		],
+	);
 	const named = categoryCounts
-		? namedCounts(categoryCounts.counts, categoryNames)
+		? groupedCounts(categoryCounts.counts, categoryTree)
 		: [];
 	const categoryList =
 		categoryCounts && named.length > 0

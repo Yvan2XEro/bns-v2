@@ -1,12 +1,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import type { ShopCategoryCount } from "~/lib/shop-category-groups";
 import { cn } from "~/lib/utils";
-
-export interface ShopCategoryCount {
-	id: string;
-	name: string;
-	count: number;
-}
 
 /**
  * The shop's own categories, counted over its published listings. A vertical
