@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -67,7 +68,12 @@ export function ProductFooter({
 				{pending ? (
 					<ActivityIndicator color="#fff" />
 				) : (
-					<Text style={styles.primaryText}>{label}</Text>
+					<>
+						<Text style={styles.primaryText}>{label}</Text>
+						{creating && step < 3 ? (
+							<Ionicons name="arrow-forward" size={18} color="#fff" />
+						) : null}
+					</>
 				)}
 			</Pressable>
 		</View>
@@ -92,6 +98,8 @@ const styles = StyleSheet.create({
 	},
 	primary: {
 		flex: 1,
+		flexDirection: "row",
+		gap: 8,
 		height: 52,
 		borderRadius: 14,
 		alignItems: "center",

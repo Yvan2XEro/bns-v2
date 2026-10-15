@@ -12,6 +12,7 @@ import { ProductFooter } from "@/src/components/seller/ProductFooter";
 import { ProductWizardContent } from "@/src/components/seller/ProductWizardContent";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useProductSubmit } from "@/src/hooks/useProductSubmit";
 import { useMyShop, useProductDetail } from "@/src/hooks/useShops";
@@ -158,6 +159,7 @@ export default function ProductScreen() {
 				subtitle={creating ? (step === 1 ? shop?.name : form.title) : null}
 				right={draftPill}
 			/>
+			{creating ? <StepSegments count={3} current={step - 1} /> : null}
 			{readOnly ? (
 				<View style={[styles.banner, { backgroundColor: c.dangerSoft }]}>
 					<Ionicons name="ban" size={16} color={c.danger} />
