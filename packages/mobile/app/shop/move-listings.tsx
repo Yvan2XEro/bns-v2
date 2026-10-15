@@ -103,9 +103,9 @@ export default function MoveListingsScreen() {
 				<FlatList
 					data={docs}
 					keyExtractor={(item) => item.id}
-					contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 200 }}
+					contentContainerStyle={{ padding: 16, paddingBottom: 280 }}
 					ListHeaderComponent={
-						<View style={{ gap: 12, marginBottom: 4 }}>
+						<View style={{ gap: 12 }}>
 							<Text style={[styles.body, { color: c.body }]}>
 								{t("shop.moveIntro", { shop: shop?.name ?? "" })}
 							</Text>
@@ -117,13 +117,12 @@ export default function MoveListingsScreen() {
 								}
 								accessibilityRole="button"
 								accessibilityLabel={t("shop.selectAll")}
-								style={styles.row}
+								style={[
+									styles.groupHead,
+									{ backgroundColor: c.neutralSoft, borderColor: c.border },
+								]}
 							>
-								<Ionicons
-									name={allSelected ? "checkbox" : "square-outline"}
-									size={20}
-									color={c.primary}
-								/>
+								<CheckBox checked={allSelected} />
 								<Text style={[styles.label, { color: c.text, flex: 1 }]}>
 									{t("shop.selectAll")}
 								</Text>
@@ -136,8 +135,15 @@ export default function MoveListingsScreen() {
 							</Pressable>
 						</View>
 					}
-					renderItem={({ item }: { item: ListingDoc }) => {
+					renderItem={({
+						item,
+						index,
+					}: {
+						item: ListingDoc;
+						index: number;
+					}) => {
 						const active = selected.has(item.id);
+						const last = index === docs.length - 1;
 						const uri = resolveListingImageUrl(item.images?.[0]);
 						return (
 							<Pressable
@@ -147,17 +153,11 @@ export default function MoveListingsScreen() {
 								accessibilityLabel={item.title}
 								style={[
 									styles.item,
-									{
-										backgroundColor: c.card,
-										borderColor: active ? c.primary : c.border,
-									},
+									last && styles.itemLast,
+									{ backgroundColor: c.card, borderColor: c.border },
 								]}
 							>
-								<Ionicons
-									name={active ? "checkbox" : "square-outline"}
-									size={20}
-									color={active ? c.primary : c.muted}
-								/>
+								<CheckBox checked={active} />
 								{uri ? (
 									<Image
 										source={{ uri }}
@@ -166,8 +166,18 @@ export default function MoveListingsScreen() {
 									/>
 								) : (
 									<View
-										style={[styles.thumb, { backgroundColor: c.neutralSoft }]}
-									/>
+										style={[
+											styles.thumb,
+											styles.thumbEmpty,
+											{ backgroundColor: c.primarySoft },
+										]}
+									>
+										<Ionicons
+											name="pricetag-outline"
+											size={20}
+											color={c.primary}
+										/>
+									</View>
 								)}
 								<View style={{ flex: 1 }}>
 									<Text
@@ -194,14 +204,22 @@ export default function MoveListingsScreen() {
 						{ backgroundColor: c.card, borderTopColor: c.border },
 					]}
 				>
-					{(["moveKeep", "moveLink", "moveStock"] as const).map((key) => (
-						<View key={key} style={styles.row}>
-							<Ionicons name="checkmark-circle" size={16} color={c.success} />
-							<Text style={[styles.meta, { color: c.body }]}>
-								{t(`shop.${key}`)}
-							</Text>
-						</View>
-					))}
+					<View style={[styles.promises, { backgroundColor: c.successSoft }]}>
+						{(
+							[
+								["moveKeep", "heart-outline", c.success],
+								["moveLink", "link-outline", c.success],
+								["moveStock", "layers-outline", c.sell],
+							] as const
+						).map(([key, icon, color]) => (
+							<View key={key} style={styles.promise}>
+								<Ionicons name={icon} size={16} color={color} />
+								<Text style={[styles.meta, { color: c.body, flex: 1 }]}>
+									{t(`shop.${key}`)}
+								</Text>
+							</View>
+						))}
+					</View>
 					<Pressable
 						onPress={submit}
 						disabled={selected.size === 0 || attach.isPending}
@@ -215,9 +233,12 @@ export default function MoveListingsScreen() {
 						{attach.isPending ? (
 							<ActivityIndicator color="#fff" />
 						) : (
-							<Text style={styles.submitText}>
-								{t("shop.moveSubmit", { count: selected.size })}
-							</Text>
+							<>
+								<Ionicons name="arrow-forward" size={18} color="#fff" />
+								<Text style={styles.submitText}>
+									{t("shop.moveSubmit", { count: selected.size })}
+								</Text>
+							</>
 						)}
 					</Pressable>
 					<Text style={[styles.meta, { color: c.muted, textAlign: "center" }]}>
@@ -229,22 +250,61 @@ export default function MoveListingsScreen() {
 	);
 }
 
+function CheckBox({ checked }: { checked: boolean }) {
+	const c = useShopTheme();
+	return (
+		<View
+			style={[
+				styles.checkbox,
+				checked
+					? { backgroundColor: c.primary, borderColor: c.primary }
+					: { backgroundColor: c.card, borderColor: c.border },
+			]}
+		>
+			{checked ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
+		</View>
+	);
+}
+
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	body: { fontSize: 14, fontFamily: Fonts.body, lineHeight: 20 },
 	row: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44 },
 	label: { fontSize: 14, fontFamily: Fonts.bodySemibold },
 	meta: { fontSize: 12, fontFamily: Fonts.body },
+	groupHead: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		minHeight: 52,
+		paddingHorizontal: 14,
+		borderWidth: 1,
+		borderTopLeftRadius: 16,
+		borderTopRightRadius: 16,
+	},
 	item: {
 		flexDirection: "row",
 		alignItems: "center",
-		gap: 10,
-		padding: 10,
-		borderRadius: 14,
+		gap: 12,
+		paddingHorizontal: 14,
+		paddingVertical: 10,
 		borderWidth: 1,
+		borderTopWidth: 0,
 		minHeight: 44,
 	},
-	thumb: { width: 52, height: 52, borderRadius: 10 },
+	itemLast: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+	thumb: { width: 52, height: 52, borderRadius: 12 },
+	thumbEmpty: { alignItems: "center", justifyContent: "center" },
+	checkbox: {
+		width: 24,
+		height: 24,
+		borderRadius: 7,
+		borderWidth: 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	promises: { borderRadius: 14, padding: 12, gap: 8 },
+	promise: { flexDirection: "row", alignItems: "center", gap: 10 },
 	footer: {
 		position: "absolute",
 		left: 0,
@@ -256,6 +316,8 @@ const styles = StyleSheet.create({
 		borderTopWidth: StyleSheet.hairlineWidth,
 	},
 	submit: {
+		flexDirection: "row",
+		gap: 8,
 		height: 52,
 		borderRadius: 14,
 		alignItems: "center",
