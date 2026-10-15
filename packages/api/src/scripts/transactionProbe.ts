@@ -17,6 +17,13 @@ import config from "../payload.config";
 const payload = await getPayload({ config });
 const marker = `tx-probe-${randomUUID()}`;
 
+// On a fresh database Mongoose creates these collections and builds their
+// indexes in the background; a transaction that writes while that catalog
+// change is in flight is refused, which on a slow CI runner it always was.
+await Promise.all(
+	["tags", "webhook-events"].map((slug) => payload.db.collections[slug].init()),
+);
+
 const transactionID = await payload.db.beginTransaction();
 if (!transactionID) {
 	payload.logger.error(
@@ -47,6 +54,12 @@ try {
 		overrideAccess: true,
 		req,
 	});
+} catch (error) {
+	const { codeName, message } = error as { codeName?: string; message: string };
+	payload.logger.error(
+		`Transaction probe could not write: ${codeName ?? "error"}: ${message}`,
+	);
+	process.exit(1);
 } finally {
 	await payload.db.rollbackTransaction(transactionID);
 }
