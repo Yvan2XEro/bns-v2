@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+	availableDelta,
 	emptyStockAdjustForm,
 	movementFromForm,
+	signedDelta,
 	stockAdjustSchema,
 } from "./stockAdjust";
 
@@ -125,5 +127,14 @@ describe("stockAdjustSchema resolver — errors on fields outside the active typ
 		const result = await resolver(values, undefined, options);
 		expect(result.errors.unitCost).toBeUndefined();
 		expect(result.errors.amount).toBeUndefined();
+	});
+});
+
+describe("availableDelta", () => {
+	test("a reservation takes a unit away from what buyers can order", () => {
+		expect(availableDelta({ type: "reservation", quantity: 1 })).toBe(-1);
+		expect(availableDelta({ type: "release", quantity: -1 })).toBe(1);
+		expect(availableDelta({ type: "receipt", quantity: 5 })).toBe(5);
+		expect(signedDelta(-2)).toBe("−2");
 	});
 });

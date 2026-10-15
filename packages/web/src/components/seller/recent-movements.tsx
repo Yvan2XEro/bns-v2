@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
+import { availableDelta, signedDelta } from "~/lib/stock";
 import { cn } from "~/lib/utils";
 import type { MovementRow } from "~/types";
 
@@ -30,12 +31,12 @@ export function RecentMovements({ movements }: { movements: MovementRow[] }) {
 							<span
 								className={cn(
 									"w-10 shrink-0 text-right font-bold text-sm",
-									movement.quantity > 0 ? "text-[#166534]" : "text-[#991b1b]",
+									availableDelta(movement) > 0
+										? "text-[#166534]"
+										: "text-[#991b1b]",
 								)}
 							>
-								{movement.quantity > 0
-									? `+${movement.quantity}`
-									: `−${Math.abs(movement.quantity)}`}
+								{signedDelta(availableDelta(movement))}
 							</span>
 							<div className="min-w-0 text-sm">
 								<p className="font-medium text-[#0F172A]">

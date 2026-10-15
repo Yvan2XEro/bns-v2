@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ManualMovementType } from "../types/api";
+import type { ManualMovementType, MovementRow } from "../types/api";
 
 export const MANUAL_MOVEMENT_TYPES: ManualMovementType[] = [
 	"receipt",
@@ -119,3 +119,21 @@ export const emptyStockAdjustForm: StockAdjustFormValues = {
 	unitCost: "",
 	note: "",
 };
+
+/**
+ * What a movement does to the units a buyer can still order. A reservation's
+ * signed `quantity` counts reserved units going up, so read as-is it shows
+ * "+1" for a unit that just became unavailable; a release is the reverse.
+ */
+export function availableDelta(
+	row: Pick<MovementRow, "type" | "quantity">,
+): number {
+	return row.type === "reservation" || row.type === "release"
+		? -row.quantity
+		: row.quantity;
+}
+
+/** "+3" or "−2" (true minus sign), as the history prints a delta. */
+export function signedDelta(value: number): string {
+	return value > 0 ? `+${value}` : `−${Math.abs(value)}`;
+}

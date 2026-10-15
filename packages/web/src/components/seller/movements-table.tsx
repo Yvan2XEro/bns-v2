@@ -1,8 +1,22 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import {
+	availableDelta,
+	MOVEMENT_TONES,
+	type MovementTone,
+	signedDelta,
+} from "~/lib/stock";
 import { cn } from "~/lib/utils";
 import type { MovementRow } from "~/types";
+
+const TONE_CLASSES: Record<MovementTone, string> = {
+	success: "bg-[#DCFCE7] text-[#166534]",
+	info: "bg-[#DBEAFE] text-[#1E40AF]",
+	warning: "bg-[#FEF3C7] text-[#92400E]",
+	danger: "bg-[#FEE2E2] text-[#991B1B]",
+	neutral: "bg-[#F1F5F9] text-[#475569]",
+};
 
 export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 	const t = useTranslations("Stock");
@@ -46,18 +60,23 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 								</p>
 								<p className="text-[#94A3B8] text-xs">{row.variant.label}</p>
 							</td>
-							<td className="px-4 py-3 text-[#334155]">
-								{tType(`type.${row.type}`)}
+							<td className="px-4 py-3">
+								<span
+									className={cn(
+										"inline-flex rounded-full px-2 py-0.5 font-semibold text-xs",
+										TONE_CLASSES[MOVEMENT_TONES[row.type]],
+									)}
+								>
+									{tType(`type.${row.type}`)}
+								</span>
 							</td>
 							<td
 								className={cn(
 									"px-4 py-3 text-right font-semibold",
-									row.quantity > 0 ? "text-[#166534]" : "text-[#991b1b]",
+									availableDelta(row) > 0 ? "text-[#166534]" : "text-[#991b1b]",
 								)}
 							>
-								{row.quantity > 0
-									? `+${row.quantity}`
-									: `−${Math.abs(row.quantity)}`}
+								{signedDelta(availableDelta(row))}
 							</td>
 							<td className="px-4 py-3 text-right text-[#0F172A]">
 								{row.stockAfter}

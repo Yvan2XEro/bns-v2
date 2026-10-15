@@ -3,6 +3,7 @@ import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
+import { availableDelta, signedDelta } from "@/src/lib/stockAdjust";
 import type { MovementRow } from "@/src/types/api";
 import { formStyles as f } from "./formStyles";
 
@@ -28,10 +29,12 @@ export function ProductMovementsCard({
 					<Text
 						style={[
 							styles.qty,
-							{ color: m.quantity > 0 ? c.successText : c.dangerText },
+							{
+								color: availableDelta(m) > 0 ? c.successText : c.dangerText,
+							},
 						]}
 					>
-						{m.quantity > 0 ? `+${m.quantity}` : `−${Math.abs(m.quantity)}`}
+						{signedDelta(availableDelta(m))}
 					</Text>
 					<View style={{ flex: 1 }}>
 						<Text style={[f.label, { color: c.text }]}>

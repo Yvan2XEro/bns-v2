@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ClientMovementType } from "~/types";
+import type { ClientMovementType, MovementType } from "~/types";
 import { parseAmount } from "./product-form";
 
 export const MOVEMENT_TYPES: ClientMovementType[] = [
@@ -97,4 +97,41 @@ export const emptyMovementForm: MovementFormState = {
 	amount: "",
 	unitCost: "",
 	note: "",
+};
+
+/**
+ * What a movement does to the units a buyer can still order. A reservation's
+ * signed `quantity` counts the reserved units going up, so read as-is it shows
+ * "+1" for a unit that just became unavailable; a release is the reverse.
+ */
+export function availableDelta(row: {
+	type: MovementType;
+	quantity: number;
+}): number {
+	return row.type === "reservation" || row.type === "release"
+		? -row.quantity
+		: row.quantity;
+}
+
+/** "+3" or "−2" (true minus sign), as the history prints a delta. */
+export function signedDelta(value: number): string {
+	return value > 0 ? `+${value}` : `−${Math.abs(value)}`;
+}
+
+export type MovementTone =
+	| "success"
+	| "info"
+	| "warning"
+	| "danger"
+	| "neutral";
+
+/** The pill colour of each movement type in the history. */
+export const MOVEMENT_TONES: Record<MovementType, MovementTone> = {
+	receipt: "success",
+	return: "info",
+	adjustment: "info",
+	loss: "danger",
+	sale: "neutral",
+	reservation: "warning",
+	release: "neutral",
 };
