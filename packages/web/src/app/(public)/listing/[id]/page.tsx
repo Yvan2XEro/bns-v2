@@ -495,45 +495,49 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								</div>
 							)}
 						</div>
-						<DeliveryEstimates
-							listingId={String(listing.id)}
-							eligible={Boolean(productId && shop && !shop.ordersRestrictedAt)}
-						/>
-						{productId && (
-							<BuyBox
-								listingId={String(listing.id)}
-								productId={productId}
-								shop={
-									shop
-										? {
-												id: shop.id,
-												restricted: Boolean(shop.ordersRestrictedAt),
-											}
-										: null
-								}
-								orderable={listing.orderable}
-								ownShop={ownShop}
-								productAvailable={summary?.available ?? null}
-								signedIn={Boolean(authUser)}
-								codAllowed={delivery.codAllowed === true}
-								pickupAllowed={delivery.pickupAllowed === true}
-								shopBadge={shopBadge}
-								delivery={{
-									city: shop?.location?.city ?? null,
-									sellerDeliveryEnabled:
-										shop?.orderSettings?.sellerDeliveryEnabled === true,
-									deliveryFee: shop?.orderSettings?.deliveryFee ?? null,
-									pickupEnabled: shop?.orderSettings?.pickupEnabled === true,
-									pickupAddress:
-										shop?.orderSettings?.pickupPoint?.address ?? null,
-								}}
-							/>
-						)}
 					</div>
 
-					{/* Right: seller card (2 cols) */}
+					{/* Right: buy box and seller card (2 cols) */}
 					<div className="lg:col-span-2">
 						<div className="sticky top-20 space-y-4">
+							{/* Buy box first, as in the design: price, variants and the
+							    order action sit at the top of the column, above the seller. */}
+							<DeliveryEstimates
+								listingId={String(listing.id)}
+								eligible={Boolean(
+									productId && shop && !shop.ordersRestrictedAt,
+								)}
+							/>
+							{productId && (
+								<BuyBox
+									listingId={String(listing.id)}
+									productId={productId}
+									shop={
+										shop
+											? {
+													id: shop.id,
+													restricted: Boolean(shop.ordersRestrictedAt),
+												}
+											: null
+									}
+									orderable={listing.orderable}
+									ownShop={ownShop}
+									productAvailable={summary?.available ?? null}
+									signedIn={Boolean(authUser)}
+									codAllowed={delivery.codAllowed === true}
+									pickupAllowed={delivery.pickupAllowed === true}
+									shopBadge={shopBadge}
+									delivery={{
+										city: shop?.location?.city ?? null,
+										sellerDeliveryEnabled:
+											shop?.orderSettings?.sellerDeliveryEnabled === true,
+										deliveryFee: shop?.orderSettings?.deliveryFee ?? null,
+										pickupEnabled: shop?.orderSettings?.pickupEnabled === true,
+										pickupAddress:
+											shop?.orderSettings?.pickupPoint?.address ?? null,
+									}}
+								/>
+							)}
 							{/* Seller card */}
 							<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
 								{shop ? (
@@ -561,8 +565,9 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											<p className="font-semibold text-[#0F172A]">
 												{seller.name}
 											</p>
-											{seller.rating !== undefined &&
-												seller.rating !== null && (
+											{/* No stars before the first review: "0.0 (0)" reads as a bad score. */}
+											{typeof seller.rating === "number" &&
+												(seller.totalReviews ?? 0) > 0 && (
 													<div className="flex items-center gap-1 text-[#64748B] text-sm">
 														<Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" />
 														{seller.rating.toFixed(1)}
