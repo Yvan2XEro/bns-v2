@@ -73,7 +73,7 @@ export function VariantTable({
 				</div>
 			)}
 			<div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
-				<table className="w-full min-w-[760px] text-sm">
+				<table className="w-full min-w-[620px] text-sm">
 					<thead className="bg-[#F8FAFC] text-left text-[#64748B] text-xs">
 						<tr>
 							<th className="px-3 py-2 font-semibold">{t("colVariant")}</th>
@@ -110,10 +110,10 @@ export function VariantTable({
 											{...register(`variants.${index}.sku`)}
 											placeholder={t("skuPlaceholder")}
 											aria-label={t("skuPlaceholder")}
-											className="mt-1 h-8 w-40 rounded-md border border-[#E2E8F0] px-2 text-xs uppercase outline-none focus:border-[#93C5FD]"
+											className="mt-1 h-8 w-24 rounded-md border border-[#E2E8F0] px-2 text-xs uppercase outline-none focus:border-[#93C5FD]"
 										/>
 									</td>
-									<td className="w-32 px-3 py-2">
+									<td className="w-32 px-2 py-2">
 										<input
 											{...register(`variants.${index}.price`)}
 											inputMode="numeric"
@@ -122,7 +122,7 @@ export function VariantTable({
 										/>
 									</td>
 									{showCost && (
-										<td className="w-32 px-3 py-2">
+										<td className="w-32 px-2 py-2">
 											<input
 												{...register(`variants.${index}.cost`)}
 												inputMode="numeric"
@@ -138,7 +138,7 @@ export function VariantTable({
 												: `${margin.toLocaleString(locale, { maximumFractionDigits: 1 })} %`}
 										</td>
 									)}
-									<td className="w-28 px-3 py-2">
+									<td className="w-32 px-2 py-2">
 										{row.id ? (
 											<div className="pt-2 text-right">
 												<p className="font-semibold text-[#0F172A]">
@@ -162,7 +162,7 @@ export function VariantTable({
 											/>
 										)}
 									</td>
-									<td className="w-24 px-3 py-2">
+									<td className="w-20 px-3 py-2">
 										<input
 											{...register(`variants.${index}.threshold`)}
 											inputMode="numeric"

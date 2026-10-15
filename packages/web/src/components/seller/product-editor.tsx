@@ -150,8 +150,8 @@ export function ProductEditor({
 				</p>
 			)}
 
-			<div className="grid gap-5 lg:grid-cols-3">
-				<div className="space-y-5 lg:col-span-2">
+			<div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+				<div className="min-w-0 space-y-5">
 					<ProductInformationSection
 						control={control}
 						register={register}

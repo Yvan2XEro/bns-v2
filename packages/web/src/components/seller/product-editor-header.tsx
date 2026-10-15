@@ -30,12 +30,15 @@ export function ProductEditorHeader({
 	return (
 		<div className="flex flex-wrap items-start justify-between gap-3">
 			<div>
-				<p className="text-[#64748B] text-sm">
-					<Link href="/seller/catalogue" className="hover:text-[#1E40AF]">
-						{t("breadcrumb")}
-					</Link>{" "}
-					› {heading}
-				</p>
+				{/* Editing, the workspace breadcrumb above already says this. */}
+				{!isEdit && (
+					<p className="text-[#64748B] text-sm">
+						<Link href="/seller/catalogue" className="hover:text-[#1E40AF]">
+							{t("breadcrumb")}
+						</Link>{" "}
+						› {heading}
+					</p>
+				)}
 				<h1 className="font-bold text-2xl text-[#0F172A]">{heading}</h1>
 			</div>
 			<div className="flex gap-2">
