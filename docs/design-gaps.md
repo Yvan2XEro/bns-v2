@@ -68,8 +68,6 @@ Comparaison pas encore faite.
 - Achat : paiement en attente, paiement protégé, étapes
   paiement et récapitulatif du tunnel.
 - Vendeur : fiche produit en revente (la revente est désactivée et aucune boutique de niveau 3 n'existe dans les données de démo).
-- P1 : création de produit, premier lancement boutique, fiche modération
-  boutique, fiche produit acheteur.
 - Ops / vérification : parcours de vérification (début, document, selfie,
   statut), versements, équipe et invitation, boîte de réception boutique,
   commission, livraison, réponse à un litige, revue de vérification, refus de

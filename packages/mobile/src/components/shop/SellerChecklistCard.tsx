@@ -72,9 +72,20 @@ export function SellerChecklistCard({
 				<Text style={[styles.section, { color: c.text }]}>
 					{t("seller.getStarted")}
 				</Text>
-				<Text style={[styles.meta, { color: c.muted }]}>
+				<Text style={[styles.counter, { color: c.primary }]}>
 					{doneCount} / {steps.length}
 				</Text>
+			</View>
+			<View style={[styles.track, { backgroundColor: c.border }]}>
+				<View
+					style={[
+						styles.fill,
+						{
+							backgroundColor: c.primary,
+							width: `${steps.length ? (doneCount / steps.length) * 100 : 0}%`,
+						},
+					]}
+				/>
 			</View>
 			{steps.map((step, index) => {
 				const meta = stepMeta[step.key];
@@ -107,7 +118,8 @@ export function SellerChecklistCard({
 							<Text style={[styles.meta, { color: c.muted }]}>{meta.body}</Text>
 						</View>
 						{meta.action ? (
-							<View style={[styles.stepAction, { backgroundColor: c.sell }]}>
+							<View style={[styles.stepAction, { backgroundColor: c.primary }]}>
+								<Ionicons name="add" size={16} color="#fff" />
 								<Text style={styles.stepActionText}>{meta.action}</Text>
 							</View>
 						) : (
@@ -156,7 +168,17 @@ const styles = StyleSheet.create({
 	},
 	stepNum: { fontSize: 12, fontFamily: Fonts.bodyBold },
 	stepTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
-	stepAction: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+	stepAction: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		borderRadius: 12,
+		paddingHorizontal: 12,
+		minHeight: 40,
+	},
+	counter: { fontSize: 14, fontFamily: Fonts.displayBold },
+	track: { height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 4 },
+	fill: { height: 6, borderRadius: 3 },
 	stepActionText: {
 		color: "#fff",
 		fontSize: 13,
