@@ -1,4 +1,5 @@
 import type { BusinessType } from "../collections/VerificationRequests";
+import { isBrandColor } from "../contracts/shopTheme";
 import type { Category, Media, Shop, User } from "../payload-types";
 import { relationId } from "./relationId";
 import { type ShopCapabilities, shopCapabilities } from "./shopCapabilities";
@@ -30,6 +31,8 @@ export interface PublicShop {
 	description: string | null;
 	logo: MediaRef | null;
 	banner: MediaRef | null;
+	/** "#RRGGBB", or null for the platform colour; turned into colours by `contracts/shopTheme`. */
+	brandColor: string | null;
 	contact: {
 		phone: string | null;
 		whatsapp: string | null;
@@ -116,6 +119,7 @@ export function serializePublicShop(
 		description: str(shop.description),
 		logo: toMediaRef(shop.logo),
 		banner: toMediaRef(shop.banner),
+		brandColor: isBrandColor(shop.brandColor) ? shop.brandColor : null,
 		contact: {
 			phone: str(shop.contact?.phone),
 			whatsapp: str(shop.contact?.whatsapp),
@@ -168,6 +172,9 @@ export interface ShopSearchHit {
 	logoUrl: string | null;
 	ownerRating: number;
 	ownerReviews: number;
+	/** The shop's own verified-purchase rating, what the "Note" sort orders by. */
+	rating: number;
+	totalReviews: number;
 	createdAt: string;
 	bannerUrl: string | null;
 	/** Only when the caller asks for them (`previews=N`): the shop's newest published listings. */
@@ -220,6 +227,8 @@ export function toShopSearchHit(input: unknown): ShopSearchHit {
 		logoUrl: str(doc.logoUrl) ?? str(logo?.url),
 		ownerRating: Number(doc.ownerRating ?? owner?.rating ?? 0),
 		ownerReviews: Number(doc.ownerReviews ?? owner?.totalReviews ?? 0),
+		rating: Number(doc.rating ?? 0),
+		totalReviews: Number(doc.totalReviews ?? 0),
 		createdAt: String(doc.createdAt ?? ""),
 		bannerUrl: str(doc.bannerUrl) ?? str(banner?.url),
 	};

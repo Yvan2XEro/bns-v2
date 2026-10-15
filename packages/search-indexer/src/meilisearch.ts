@@ -328,6 +328,11 @@ export type ShopDocument = {
 	logoUrl: string | null;
 	ownerRating: number;
 	ownerReviews: number;
+	/** The shop's own rating, for the "Note" sort. */
+	rating: number;
+	totalReviews: number;
+	/** The API's organic ranking (contracts/shopRanking.ts), carried through. */
+	rankingScore: number;
 	deliveryCities: string[];
 };
 
@@ -345,7 +350,13 @@ export async function configureShopsIndex(): Promise<void> {
 			"level",
 			"deliveryCities",
 		],
-		sortableAttributes: ["publishedListingCount", "createdAt"],
+		sortableAttributes: [
+			"publishedListingCount",
+			"createdAt",
+			"rankingScore",
+			"rating",
+			"totalReviews",
+		],
 	});
 	console.log(
 		`[search-indexer] meilisearch index "${SHOPS_INDEX_NAME}" configured`,

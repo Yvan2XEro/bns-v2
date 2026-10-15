@@ -802,10 +802,13 @@ describe("public shops search route", () => {
 					logoUrl: null,
 					ownerRating: 4,
 					ownerReviews: 2,
+					rating: 0,
+					totalReviews: 0,
 					createdAt: "x",
 					bannerUrl: null,
 				},
 			],
+			sponsored: [],
 			total: 1,
 			limit: 20,
 			offset: 0,
@@ -816,7 +819,10 @@ describe("public shops search route", () => {
 		// The shop was suspended or closed after it was indexed, and the
 		// `shop.updated`/`shop.deleted` event that should have corrected the
 		// index never arrived (the publish is fire-and-forget).
-		findMock.mockResolvedValueOnce({ docs: [], totalDocs: 0 });
+		// The first read is the sponsored slots, the second the live check.
+		findMock
+			.mockResolvedValueOnce({ docs: [], totalDocs: 0 })
+			.mockResolvedValueOnce({ docs: [], totalDocs: 0 });
 
 		const { GET } = await import(
 			"../../src/app/(frontend)/api/public/search/shops/route"

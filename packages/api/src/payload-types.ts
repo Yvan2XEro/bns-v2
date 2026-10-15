@@ -286,6 +286,7 @@ export interface Config {
       failStaleOrders: TaskFailStaleOrders;
       flushListingViews: TaskFlushListingViews;
       aggregateShopDailyStats: TaskAggregateShopDailyStats;
+      recomputeShopRankings: TaskRecomputeShopRankings;
       sendWeeklyInsights: TaskSendWeeklyInsights;
       completeOrders: TaskCompleteOrders;
       markOverdueResellerCharges: TaskMarkOverdueResellerCharges;
@@ -601,6 +602,7 @@ export interface Shop {
   description?: string | null;
   logo?: (string | null) | Media;
   banner?: (string | null) | Media;
+  brandColor?: string | null;
   contact?: {
     phone?: string | null;
     whatsapp?: string | null;
@@ -694,6 +696,24 @@ export interface Shop {
     ordersCancelledBySeller?: number | null;
     ordersAutoCancelled?: number | null;
     ordersDeliveryFailed?: number | null;
+  };
+  rankingScore?: number | null;
+  rankingSignals?: {
+    ordersPlaced?: number | null;
+    ordersAccepted?: number | null;
+    ordersDelivered?: number | null;
+    catalogueUpdatedAt?: string | null;
+  };
+  featured?: {
+    until?: string | null;
+    /**
+     * Empty: every city.
+     */
+    cities?: string[] | null;
+    /**
+     * Empty: every category.
+     */
+    categories?: (string | Category)[] | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -3834,6 +3854,7 @@ export interface PayloadJob {
           | 'failStaleOrders'
           | 'flushListingViews'
           | 'aggregateShopDailyStats'
+          | 'recomputeShopRankings'
           | 'sendWeeklyInsights'
           | 'completeOrders'
           | 'markOverdueResellerCharges'
@@ -3920,6 +3941,7 @@ export interface PayloadJob {
         | 'failStaleOrders'
         | 'flushListingViews'
         | 'aggregateShopDailyStats'
+        | 'recomputeShopRankings'
         | 'sendWeeklyInsights'
         | 'completeOrders'
         | 'markOverdueResellerCharges'
@@ -5256,6 +5278,7 @@ export interface ShopsSelect<T extends boolean = true> {
   description?: T;
   logo?: T;
   banner?: T;
+  brandColor?: T;
   contact?:
     | T
     | {
@@ -5339,6 +5362,22 @@ export interface ShopsSelect<T extends boolean = true> {
         ordersCancelledBySeller?: T;
         ordersAutoCancelled?: T;
         ordersDeliveryFailed?: T;
+      };
+  rankingScore?: T;
+  rankingSignals?:
+    | T
+    | {
+        ordersPlaced?: T;
+        ordersAccepted?: T;
+        ordersDelivered?: T;
+        catalogueUpdatedAt?: T;
+      };
+  featured?:
+    | T
+    | {
+        until?: T;
+        cities?: T;
+        categories?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -7896,6 +7935,14 @@ export interface TaskFlushListingViews {
  * via the `definition` "TaskAggregateShopDailyStats".
  */
 export interface TaskAggregateShopDailyStats {
+  input?: unknown;
+  output?: unknown;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskRecomputeShopRankings".
+ */
+export interface TaskRecomputeShopRankings {
   input?: unknown;
   output?: unknown;
 }

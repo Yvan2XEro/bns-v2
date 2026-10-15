@@ -8,10 +8,18 @@ import { shopCapabilities } from "@/lib/shopCapabilities";
 import {
 	liveShopHits,
 	MAX_SHOP_PREVIEWS,
+	sponsoredShopHits,
 	withShopPreviews,
 } from "@/lib/shopSearchCards";
 
-type ShopSort = "relevance" | "products" | "newest";
+type ShopSort = "relevance" | "ranking" | "rating" | "products" | "newest";
+const SORTS: readonly ShopSort[] = [
+	"relevance",
+	"ranking",
+	"rating",
+	"products",
+	"newest",
+];
 
 interface ShopSearchParams {
 	q: string;
@@ -19,14 +27,66 @@ interface ShopSearchParams {
 	/** The category and its descendants. */
 	categoryIds: string[] | null;
 	minShopLevel: number | null;
+	/** Never "relevance" without a query: that is the organic ranking. */
 	sort: ShopSort;
 	previews: number;
+	/** Shown apart, on the first page only; never repeated in `hits`. */
+	sponsored: ShopSearchHit[];
 	limit: number;
 	offset: number;
 }
 
-function parseSort(value: string | null): ShopSort {
-	return value === "products" || value === "newest" ? value : "relevance";
+function parseSort(value: string | null, q: string): ShopSort {
+	const sort = SORTS.find((option) => option === value) ?? "relevance";
+	return sort === "relevance" && !q ? "ranking" : sort;
+}
+
+const PAYLOAD_SORT: Record<ShopSort, string> = {
+	relevance: "-rankingScore",
+	ranking: "-rankingScore",
+	rating: "-rating",
+	products: "-publishedListingCount",
+	newest: "-createdAt",
+};
+
+const MEILI_SORT: Record<ShopSort, string[] | undefined> = {
+	relevance: undefined,
+	ranking: ["rankingScore:desc"],
+	rating: ["rating:desc", "totalReviews:desc"],
+	products: ["publishedListingCount:desc"],
+	newest: ["createdAt:desc"],
+};
+
+async function sponsoredFor(
+	params: Omit<ShopSearchParams, "sort" | "previews" | "limit" | "sponsored">,
+): Promise<ShopSearchHit[]> {
+	if (params.offset > 0) return [];
+	try {
+		return await sponsoredShopHits(await getPayload({ config }), params);
+	} catch (error) {
+		console.error("[search:shops] sponsored slots failed", error);
+		return [];
+	}
+}
+
+async function respond(
+	params: ShopSearchParams,
+	organic: ShopSearchHit[],
+	total: number,
+): Promise<Response> {
+	const sponsoredIds = new Set(params.sponsored.map((hit) => hit.id));
+	const hits = organic.filter((hit) => !sponsoredIds.has(hit.id));
+	const [finishedHits, sponsored] = await Promise.all([
+		finishHits(hits, params.previews),
+		finishHits(params.sponsored, params.previews),
+	]);
+	return Response.json({
+		hits: finishedHits,
+		sponsored,
+		total: Math.max(0, total - (organic.length - hits.length)),
+		limit: params.limit,
+		offset: params.offset,
+	});
 }
 
 async function finishHits(
@@ -46,8 +106,7 @@ async function finishHits(
 async function runPayloadShopSearch(
 	params: ShopSearchParams,
 ): Promise<Response> {
-	const { q, city, categoryIds, minShopLevel, sort, previews, limit, offset } =
-		params;
+	const { q, city, categoryIds, minShopLevel, sort, limit, offset } = params;
 	const payload = await getPayload({ config });
 	const and: Where[] = [{ status: { equals: "active" } }];
 	if (q) {
@@ -68,7 +127,7 @@ async function runPayloadShopSearch(
 		depth: 1,
 		limit,
 		page: Math.floor(offset / limit) + 1,
-		sort: sort === "newest" ? "-createdAt" : "-publishedListingCount",
+		sort: PAYLOAD_SORT[sort],
 	});
 	// The stored level can outlive its expiry; the badge floor is the effective one.
 	const docs = minShopLevel
@@ -76,15 +135,11 @@ async function runPayloadShopSearch(
 				(doc) => shopCapabilities(doc).effectiveLevel >= minShopLevel,
 			)
 		: result.docs;
-	return Response.json({
-		hits: await finishHits(
-			docs.map((doc) => toShopSearchHit(doc)),
-			previews,
-		),
-		total: result.totalDocs,
-		limit,
-		offset,
-	});
+	return respond(
+		params,
+		docs.map((doc) => toShopSearchHit(doc)),
+		result.totalDocs,
+	);
 }
 
 export async function GET(request: Request) {
@@ -106,7 +161,7 @@ export async function GET(request: Request) {
 	);
 	const minShopLevel =
 		minShopLevelParam >= 1 && minShopLevelParam <= 3 ? minShopLevelParam : null;
-	const sort = parseSort(search.get("sort"));
+	const sort = parseSort(search.get("sort"), q);
 	const previews = Math.min(
 		MAX_SHOP_PREVIEWS,
 		Math.max(0, Number.parseInt(search.get("previews") ?? "0", 10) || 0),
@@ -114,6 +169,13 @@ export async function GET(request: Request) {
 	const categoryIds = category
 		? await categoryWithDescendants(await getPayload({ config }), category)
 		: null;
+	const sponsored = await sponsoredFor({
+		q,
+		city,
+		categoryIds,
+		minShopLevel,
+		offset,
+	});
 	const params: ShopSearchParams = {
 		q,
 		city,
@@ -123,6 +185,7 @@ export async function GET(request: Request) {
 		previews,
 		limit,
 		offset,
+		sponsored,
 	};
 
 	const host = process.env.MEILI_HOST;
@@ -148,12 +211,7 @@ export async function GET(request: Request) {
 		}).index("shops");
 		const result = await index.search(q, {
 			filter: filters.length ? filters.join(" AND ") : undefined,
-			sort:
-				sort === "newest"
-					? ["createdAt:desc"]
-					: sort === "products" || !q
-						? ["publishedListingCount:desc"]
-						: undefined,
+			sort: MEILI_SORT[sort],
 			limit,
 			offset,
 		});
@@ -170,12 +228,11 @@ export async function GET(request: Request) {
 			minShopLevel,
 		);
 
-		return Response.json({
-			hits: await finishHits(hits, previews),
-			total: result.estimatedTotalHits ?? result.hits.length,
-			limit,
-			offset,
-		});
+		return respond(
+			params,
+			hits,
+			result.estimatedTotalHits ?? result.hits.length,
+		);
 	} catch (error) {
 		// The `shops` index can be missing (a deploy that has not run the
 		// indexer's reindex yet) or reject the query outright. Fail safe to the

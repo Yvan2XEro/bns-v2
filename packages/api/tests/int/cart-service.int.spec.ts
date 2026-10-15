@@ -485,6 +485,18 @@ describe("reading a cart: the shop header and the stock hint", () => {
 		expect(view.lines[0].stockLeft).toBe(5);
 	});
 
+	it("carries the shop's brand colour for the shop header, null when unset or malformed", async () => {
+		const branded = world({ shop: { brandColor: "#0F766E" } });
+		await addCartItem(branded, BUYER, addInput());
+		expect((await getCartView(branded, BUYER)).shop?.brandColor).toBe(
+			"#0F766E",
+		);
+
+		const garbled = world({ shop: { brandColor: "red;x" } });
+		await addCartItem(garbled, BUYER, addInput());
+		expect((await getCartView(garbled, BUYER)).shop?.brandColor).toBeNull();
+	});
+
 	it("hides the exact stock left above the public cap but keeps the stepper's cap", async () => {
 		const payload = world();
 		await addCartItem(payload, BUYER, addInput());

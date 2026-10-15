@@ -2,6 +2,7 @@ import type { CollectionConfig, Where } from "payload";
 import { isAdmin, isModerator } from "../access/roles";
 import { can, memberShopIds, shopRoleFieldAccess } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
+import { isBrandColor } from "../contracts/shopTheme";
 import { createShopEndpoint } from "../endpoints/shops";
 import {
 	assertNotSuspended,
@@ -10,7 +11,11 @@ import {
 import { ERROR_CODES } from "../lib/errors";
 import { CodedAPIError } from "../lib/serviceError";
 import { shopCapabilities } from "../lib/shopCapabilities";
+import { applyShopRankingScore } from "../lib/shopRanking";
 import { BUSINESS_TYPES } from "./VerificationRequests";
+
+const adminOnlyField = ({ req }: { req: { user?: unknown } }) =>
+	isAdmin(req.user as { role?: string } | undefined);
 
 export const SHOP_SERVICE_CONTEXT = { shopService: true } as const;
 
@@ -40,6 +45,8 @@ export const SHOP_SERVICE_FIELDS = [
 	"rating",
 	"totalReviews",
 	"stats",
+	"rankingScore",
+	"rankingSignals",
 ] as const;
 
 /** A change to any of these makes the shop's listing documents stale in search. */
@@ -179,6 +186,7 @@ export const Shops: CollectionConfig = {
 				}
 				return data;
 			},
+			applyShopRankingScore,
 		],
 		afterChange: [
 			async ({ doc, previousDoc, operation, req }) => {
@@ -235,6 +243,24 @@ export const Shops: CollectionConfig = {
 		{ name: "description", type: "textarea", maxLength: 1000 },
 		{ name: "logo", type: "upload", relationTo: "media" },
 		{ name: "banner", type: "upload", relationTo: "media" },
+		{
+			// Edited with the rest of the profile (`settings.edit`); unset means
+			// the platform colour. Drawn only on the shop's own surfaces.
+			name: "brandColor",
+			type: "text",
+			validate: (value: unknown) =>
+				value == null || value === "" || isBrandColor(value)
+					? true
+					: "Use a #RRGGBB colour.",
+			hooks: {
+				beforeChange: [
+					({ value }) =>
+						typeof value === "string" && value !== ""
+							? value.toUpperCase()
+							: null,
+				],
+			},
+		},
 		{
 			name: "contact",
 			type: "group",
@@ -665,6 +691,68 @@ export const Shops: CollectionConfig = {
 							admin: { width: "25%" },
 						},
 					],
+				},
+			],
+		},
+		{
+			// contracts/shopRanking.ts. Derived on every write by
+			// `applyShopRankingScore`; the signals are refreshed nightly.
+			name: "rankingScore",
+			type: "number",
+			defaultValue: 0,
+			index: true,
+			admin: { readOnly: true, position: "sidebar" },
+		},
+		{
+			name: "rankingSignals",
+			type: "group",
+			access: { read: staffOnlyField },
+			admin: { readOnly: true },
+			fields: [
+				{
+					type: "row",
+					fields: [
+						{ name: "ordersPlaced", type: "number", admin: { width: "25%" } },
+						{
+							name: "ordersAccepted",
+							type: "number",
+							admin: { width: "25%" },
+						},
+						{
+							name: "ordersDelivered",
+							type: "number",
+							admin: { width: "25%" },
+						},
+						{
+							name: "catalogueUpdatedAt",
+							type: "date",
+							admin: { width: "25%" },
+						},
+					],
+				},
+			],
+		},
+		{
+			// A paid featured-shop slot, set by staff for now. Shown apart
+			// from the organic ranking, labelled, and only while the shop meets
+			// the quality floor in contracts/shopRanking.ts.
+			name: "featured",
+			type: "group",
+			access: { create: adminOnlyField, update: adminOnlyField },
+			fields: [
+				{ name: "until", type: "date", index: true },
+				{
+					name: "cities",
+					type: "text",
+					hasMany: true,
+					admin: { description: "Empty: every city." },
+				},
+				{
+					name: "categories",
+					type: "relationship",
+					relationTo: "categories",
+					hasMany: true,
+					admin: { description: "Empty: every category." },
 				},
 			],
 		},

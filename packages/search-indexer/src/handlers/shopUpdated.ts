@@ -51,6 +51,9 @@ export function transformShop(
 		logoUrl: typeof logo?.url === "string" ? logo.url : null,
 		ownerRating: Number(owner?.rating ?? 0),
 		ownerReviews: Number(owner?.totalReviews ?? 0),
+		rating: Number(shop.rating ?? 0),
+		totalReviews: Number(shop.totalReviews ?? 0),
+		rankingScore: Number(shop.rankingScore ?? 0),
 		deliveryCities,
 	};
 }

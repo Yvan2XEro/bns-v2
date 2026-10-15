@@ -35,6 +35,7 @@ export { purgeDeliveryProofsTask } from "./purgeDeliveryProofs";
 export { purgeRiskDataTask } from "./purgeRiskData";
 export { purgeShopActivityTask } from "./purgeShopActivity";
 export { purgeVerificationDataTask } from "./purgeVerificationData";
+export { recomputeShopRankingsTask } from "./recomputeShopRankings";
 export { reconcileLedgerTask } from "./reconcileLedger";
 export { reconcilePendingPaymentsTask } from "./reconcilePendingPayments";
 export { reconcileStockCachesTask } from "./reconcileStockCaches";

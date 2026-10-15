@@ -36,6 +36,7 @@ export interface CartShopView {
 	city: string | null;
 	/** Cart views only (the shop header): absent from quote and placement answers. */
 	logoUrl?: string | null;
+	brandColor?: string | null;
 	badge?: "phone" | "identity" | "business" | null;
 	rating?: number;
 	totalReviews?: number;

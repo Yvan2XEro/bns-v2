@@ -189,6 +189,7 @@ describe("flag off: today's cart, byte for byte", () => {
 				handle: "shop-a",
 				city: "douala",
 				logoUrl: null,
+				brandColor: null,
 				badge: "identity",
 				rating: 0,
 				totalReviews: 0,

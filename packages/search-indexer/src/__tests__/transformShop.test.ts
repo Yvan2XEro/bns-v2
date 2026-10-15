@@ -18,6 +18,9 @@ describe("transformShop", () => {
 					createdAt: "2026-09-15T00:00:00.000Z",
 					logo: { url: "/media/logo.png" },
 					owner: { id: "u-1", rating: 4.8, totalReviews: 126 },
+					rating: 4.6,
+					totalReviews: 41,
+					rankingScore: 72.5,
 				},
 				["douala"],
 			),
@@ -37,6 +40,9 @@ describe("transformShop", () => {
 			logoUrl: "/media/logo.png",
 			ownerRating: 4.8,
 			ownerReviews: 126,
+			rating: 4.6,
+			totalReviews: 41,
+			rankingScore: 72.5,
 			deliveryCities: ["douala"],
 		});
 	});

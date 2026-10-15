@@ -7,6 +7,7 @@ import type {
 	SplitCartGroup,
 	SplitCartView,
 } from "../contracts/checkoutGroup";
+import { isBrandColor } from "../contracts/shopTheme";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { launchCityKeyOf } from "../lib/launchCities";
 import {
@@ -431,9 +432,19 @@ async function shopHeaderOf(
 	shop: Shop | null,
 	req?: TxReq,
 ): Promise<
-	Pick<CartShopView, "logoUrl" | "badge" | "rating" | "totalReviews">
+	Pick<
+		CartShopView,
+		"logoUrl" | "brandColor" | "badge" | "rating" | "totalReviews"
+	>
 > {
-	if (!shop) return { logoUrl: null, badge: null, rating: 0, totalReviews: 0 };
+	if (!shop)
+		return {
+			logoUrl: null,
+			brandColor: null,
+			badge: null,
+			rating: 0,
+			totalReviews: 0,
+		};
 	let logoUrl: string | null = null;
 	if (shop.logo && typeof shop.logo === "object") {
 		logoUrl = shop.logo.url ?? null;
@@ -451,6 +462,7 @@ async function shopHeaderOf(
 	}
 	return {
 		logoUrl,
+		brandColor: isBrandColor(shop.brandColor) ? shop.brandColor : null,
 		badge: shopCapabilities(shop).badge,
 		rating: shop.rating ?? 0,
 		totalReviews: shop.totalReviews ?? 0,

@@ -1,6 +1,18 @@
-import type { Payload } from "payload";
-import { type ShopPreview, type ShopSearchHit, toMediaRef } from "./publicShop";
+import type { Payload, Where } from "payload";
+import {
+	isSponsorEligible,
+	SPONSORED_MIN_LEVEL,
+	SPONSORED_MIN_RATING,
+	SPONSORED_SLOTS,
+} from "../contracts/shopRanking";
+import {
+	type ShopPreview,
+	type ShopSearchHit,
+	toMediaRef,
+	toShopSearchHit,
+} from "./publicShop";
 import { shopCapabilities } from "./shopCapabilities";
+import { type Doc, sponsorCandidateOf } from "./shopRanking";
 
 export const MAX_SHOP_PREVIEWS = 3;
 
@@ -42,6 +54,11 @@ export async function liveShopHits(
 			level,
 			badge: capabilities.badge,
 			bannerUrl: banner?.url ?? hit.bannerUrl,
+			rating: typeof doc.rating === "number" ? doc.rating : hit.rating,
+			totalReviews:
+				typeof doc.totalReviews === "number"
+					? doc.totalReviews
+					: hit.totalReviews,
 		});
 	}
 	return kept;
@@ -88,4 +105,62 @@ export async function withShopPreviews(
 			}
 		}),
 	);
+}
+
+/**
+ * The sponsored shops heading a first result page, kept apart from the
+ * organic hits. Read from Payload, not the index: a slot that has just
+ * expired, or a shop just suspended, must drop out at once.
+ */
+export async function sponsoredShopHits(
+	payload: Payload,
+	params: {
+		q: string;
+		city: string | null;
+		categoryIds: string[] | null;
+		minShopLevel: number | null;
+		now?: Date;
+	},
+): Promise<ShopSearchHit[]> {
+	const now = params.now ?? new Date();
+	const and: Where[] = [
+		{ status: { equals: "active" } },
+		{ "featured.until": { greater_than: now.toISOString() } },
+		{ level: { greater_than_equal: SPONSORED_MIN_LEVEL } },
+		{ rating: { greater_than_equal: SPONSORED_MIN_RATING } },
+	];
+	if (params.q) {
+		and.push({
+			or: [
+				{ name: { contains: params.q } },
+				{ handle: { contains: params.q.toLowerCase() } },
+				{ description: { contains: params.q } },
+			],
+		});
+	}
+	const result = await payload.find({
+		collection: "shops",
+		where: { and },
+		depth: 1,
+		limit: 50,
+		sort: "-rankingScore",
+		overrideAccess: true,
+	});
+	const context = {
+		now,
+		city: params.city,
+		categoryIds: params.categoryIds,
+	};
+	return result.docs
+		.map((doc) => ({
+			doc,
+			candidate: sponsorCandidateOf(doc as unknown as Doc, now),
+		}))
+		.filter(
+			({ candidate }) =>
+				isSponsorEligible(candidate, context) &&
+				candidate.effectiveLevel >= (params.minShopLevel ?? 0),
+		)
+		.slice(0, SPONSORED_SLOTS)
+		.map(({ doc }) => toShopSearchHit(doc));
 }
