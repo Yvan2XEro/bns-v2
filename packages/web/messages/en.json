@@ -943,7 +943,18 @@
 			"shopSuspended": "Seller tools are unavailable while this shop is suspended."
 		},
 		"ordersRestricted": "New orders paused",
-		"ordersRestrictedLink": "See why in billing"
+		"ordersRestrictedLink": "See why in billing",
+		"today": {
+			"title": "To handle",
+			"toAccept": "{count, plural, one {order to accept} other {orders to accept}}",
+			"toShip": "to ship",
+			"lowStock": "{count, plural, one {product low on stock} other {products low on stock}}",
+			"process": "Process",
+			"prepare": "Prepare",
+			"restock": "Restock",
+			"waitingTitle": "Orders to accept",
+			"allOrders": "All orders"
+		}
 	},
 	"SellerInsights": {
 		"title": "Shop insights",

@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, Package, Plus } from "lucide-react";
+import { FileText, Package, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -8,7 +8,9 @@ import { SectionTabs } from "~/components/seller/section-tabs";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
 import { serverGet } from "~/lib/server-api";
 import { getMyShop } from "~/lib/server-shop";
+import { can } from "~/lib/shop-roles";
 import { SellerInsightsPreview } from "./insights/seller-insights-preview";
+import { SellerTodayCards } from "./today-cards";
 
 export default async function SellerDashboardPage() {
 	const [mine, config, t] = await Promise.all([
@@ -37,22 +39,13 @@ export default async function SellerDashboardPage() {
 			icon: Package,
 			label: t("tiles.active"),
 			value: counts.activeProducts,
-			hint: null,
 			href: "/seller/catalogue?status=active",
 		},
 		{
 			icon: FileText,
 			label: t("tiles.drafts"),
 			value: counts.draftProducts,
-			hint: null,
 			href: "/seller/catalogue?status=draft",
-		},
-		{
-			icon: AlertTriangle,
-			label: t("tiles.lowStock"),
-			value: counts.lowStockVariants,
-			hint: counts.lowStockSample,
-			href: "/seller/catalogue?stock=low",
 		},
 	];
 
@@ -95,6 +88,10 @@ export default async function SellerDashboardPage() {
 				)}
 			</div>
 
+			{!suspended && can(mine.role, "orders.view") && (
+				<SellerTodayCards shopId={shop.id} lowStock={counts.lowStockVariants} />
+			)}
+
 			{!suspended && (
 				<FirstRunChecklist
 					hasLogo={Boolean(shop.logo)}
@@ -104,8 +101,8 @@ export default async function SellerDashboardPage() {
 				/>
 			)}
 
-			<div className="grid gap-4 sm:grid-cols-3">
-				{tiles.map(({ icon: Icon, label, value, hint, href }) => (
+			<div className="grid gap-4 sm:grid-cols-2">
+				{tiles.map(({ icon: Icon, label, value, href }) => (
 					<Link
 						key={label}
 						href={href}
@@ -114,9 +111,6 @@ export default async function SellerDashboardPage() {
 						<Icon aria-hidden="true" className="h-5 w-5 text-[#1E40AF]" />
 						<p className="mt-3 font-bold text-2xl text-[#0F172A]">{value}</p>
 						<p className="text-[#64748B] text-sm">{label}</p>
-						{hint && (
-							<p className="mt-1 truncate text-[#92400e] text-xs">{hint}</p>
-						)}
 					</Link>
 				))}
 			</div>

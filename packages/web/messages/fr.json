@@ -944,7 +944,18 @@
 			"shopSuspended": "Les outils vendeur sont indisponibles tant que cette boutique est suspendue."
 		},
 		"ordersRestricted": "Nouvelles commandes suspendues",
-		"ordersRestrictedLink": "Voir pourquoi dans la facturation"
+		"ordersRestrictedLink": "Voir pourquoi dans la facturation",
+		"today": {
+			"title": "À traiter",
+			"toAccept": "{count, plural, one {commande à accepter} other {commandes à accepter}}",
+			"toShip": "à expédier",
+			"lowStock": "{count, plural, one {produit en stock faible} other {produits en stock faible}}",
+			"process": "Traiter",
+			"prepare": "Préparer",
+			"restock": "Réapprovisionner",
+			"waitingTitle": "Commandes à accepter",
+			"allOrders": "Toutes les commandes"
+		}
 	},
 	"SellerInsights": {
 		"title": "Statistiques de la boutique",

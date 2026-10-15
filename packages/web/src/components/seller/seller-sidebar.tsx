@@ -109,7 +109,7 @@ export function SellerSidebar({
 			: null;
 
 	return (
-		<aside className="border-[#E2E8F0] border-b bg-white lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
+		<aside className="border-[#1E293B] border-b bg-[#0F172A] lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 lg:border-r lg:border-b-0">
 			<div className="flex items-center gap-3 p-4">
 				<ShopInitials
 					name={name}
@@ -117,15 +117,15 @@ export function SellerSidebar({
 					className="h-10 w-10 rounded-xl text-sm"
 				/>
 				<div className="min-w-0">
-					<p className="truncate font-bold text-[#0F172A] text-sm">{name}</p>
-					<p className="text-[#64748B] text-xs">{t("space")}</p>
+					<p className="truncate font-bold text-sm text-white">{name}</p>
+					<p className="text-[#94A3B8] text-xs">{t("space")}</p>
 				</div>
 			</div>
 			<div className="px-4 pb-2">
 				<LevelBadge badge={badge} size="sm" />
 			</div>
 			{lockedNotice && (
-				<div className="mx-2 mb-2 flex items-start gap-2 rounded-lg bg-[#F1F5F9] px-3 py-2 text-[#475569] text-xs">
+				<div className="mx-2 mb-2 flex items-start gap-2 rounded-lg bg-white/5 px-3 py-2 text-[#CBD5E1] text-xs">
 					<Lock aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 					<span>{lockedNotice}</span>
 				</div>
@@ -147,19 +147,19 @@ export function SellerSidebar({
 							className={cn(
 								"flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 font-medium text-sm",
 								active
-									? "bg-[#EFF6FF] text-[#1E40AF]"
-									: "text-[#334155] hover:bg-[#F8FAFC]",
+									? "bg-white/10 font-semibold text-white"
+									: "text-[#CBD5E1] hover:bg-white/5 hover:text-white",
 							)}
 						>
 							<Icon aria-hidden="true" className="h-4 w-4" />
 							<span className="flex-1">{t(`nav.${key}`)}</span>
 							{key === "stock" && lowStock > 0 && (
-								<span className="rounded-full bg-[#fef3c7] px-1.5 font-semibold text-[#92400e] text-[11px]">
+								<span className="rounded-full bg-[#B91C1C] px-1.5 font-semibold text-[11px] text-white">
 									{lowStock}
 								</span>
 							)}
 							{key === "inbox" && inboxUnread > 0 && (
-								<span className="rounded-full bg-[#1E40AF] px-1.5 font-semibold text-[11px] text-white">
+								<span className="rounded-full bg-[#334155] px-1.5 font-semibold text-[11px] text-white">
 									{inboxUnread}
 								</span>
 							)}
@@ -167,17 +167,17 @@ export function SellerSidebar({
 					);
 				})}
 			</nav>
-			<div className="hidden space-y-1 border-[#E2E8F0] border-t p-2 lg:block">
+			<div className="hidden space-y-1 border-white/10 border-t p-2 lg:block">
 				<Link
 					href={`/s/${handle}`}
-					className="flex items-center gap-3 rounded-lg px-3 py-2 text-[#334155] text-sm hover:bg-[#F8FAFC]"
+					className="flex items-center gap-3 rounded-lg px-3 py-2 text-[#CBD5E1] text-sm hover:bg-white/5 hover:text-white"
 				>
 					<ExternalLink aria-hidden="true" className="h-4 w-4" />
 					{t("viewShop")}
 				</Link>
 				<Link
 					href="/"
-					className="flex items-center gap-3 rounded-lg px-3 py-2 text-[#334155] text-sm hover:bg-[#F8FAFC]"
+					className="flex items-center gap-3 rounded-lg px-3 py-2 font-semibold text-[#F59E0B] text-sm hover:bg-white/5"
 				>
 					<ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
 					{t("buyerMode")}
