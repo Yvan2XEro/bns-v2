@@ -207,8 +207,9 @@ const NAMESPACES = [
 		mobileTree: { en: mobileEn.disputes, fr: mobileFr.disputes },
 		// 94: the 65 web leaves plus the 30 mobile-only ones (report flow,
 		// evidence, the disabled gate, the six action buttons) mirrored into
-		// web, less `awaitingCount` (EXEMPT).
-		count: 94,
+		// web, less `awaitingCount` (EXEMPT). 102: +8 for the mobile thread and
+		// report redesign (thread title, author labels, "what happens next").
+		count: 102,
 	},
 ] as const;
 

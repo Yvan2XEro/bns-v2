@@ -3226,7 +3226,7 @@
 		"backToOrder": "Back to order",
 		"sellerTitle": "Shop disputes",
 		"sellerSubtitle": "Review reports involving orders from your shop and respond before the deadline.",
-		"reportTitle": "Report an order problem",
+		"reportTitle": "Report a problem",
 		"reviewTerms": "Your report will be reviewed by the seller first and may be escalated for platform review. This decision does not limit your right to seek help from a consumer association or court.",
 		"selectItems": "Choose affected items and quantities",
 		"purchased": "purchased",
@@ -3276,7 +3276,15 @@
 			"respond_accept": "Accept resolution",
 			"proposal_accept": "Accept proposal",
 			"proposal_reject": "Reject proposal"
-		}
+		},
+		"authorBuyer": "Buyer",
+		"authorStaff": "Buy'N'Sellem mediation",
+		"nextKeepItem": "Keep the item and its packaging until then",
+		"nextMediation": "Without an agreement, Buy'N'Sellem mediation decides",
+		"nextShop": "The shop is asked to respond",
+		"nextTitle": "What happens next?",
+		"staffBadge": "Team",
+		"threadTitle": "Dispute · {number}"
 	},
 	"Delivery": {
 		"statusBuyer": {

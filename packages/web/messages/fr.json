@@ -3227,7 +3227,7 @@
 		"backToOrder": "Retour à la commande",
 		"sellerTitle": "Litiges de la boutique",
 		"sellerSubtitle": "Consultez les signalements liés aux commandes de votre boutique et répondez avant l'échéance.",
-		"reportTitle": "Signaler un problème de commande",
+		"reportTitle": "Signaler un problème",
 		"reviewTerms": "Votre signalement sera d'abord examiné par la boutique et pourra être transmis à la plateforme. Cette décision ne limite pas votre droit de saisir une association de consommateurs ou un tribunal.",
 		"selectItems": "Sélectionnez les articles et quantités concernés",
 		"purchased": "achetés",
@@ -3277,7 +3277,15 @@
 			"respond_accept": "Accepter la résolution",
 			"proposal_accept": "Accepter la proposition",
 			"proposal_reject": "Refuser la proposition"
-		}
+		},
+		"authorBuyer": "Acheteur",
+		"authorStaff": "Médiation Buy'N'Sellem",
+		"nextKeepItem": "Gardez l'article et son emballage d'ici là",
+		"nextMediation": "Sans accord, la médiation Buy'N'Sellem décide",
+		"nextShop": "La boutique est invitée à répondre",
+		"nextTitle": "Et ensuite ?",
+		"staffBadge": "Équipe",
+		"threadTitle": "Litige · {number}"
 	},
 	"Delivery": {
 		"statusBuyer": {
