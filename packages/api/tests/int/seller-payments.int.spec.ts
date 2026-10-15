@@ -647,6 +647,44 @@ describe("GET /api/shops/{id}/payments/payouts/{payoutId}", () => {
 		});
 	});
 
+	it("gives each payout line only its own share of the order's commission", async () => {
+		await paidOrder("o-1", WORKED, at(-20 * DAY));
+		await paidOrder("o-2", WORKED, at(-19 * DAY));
+		const payoutOf = (id: string, order: string, amount: number) => ({
+			id,
+			shop: SHOP,
+			amount,
+			currency: CURRENCY,
+			origin: "platform_release",
+			status: "complete",
+			payoutAccount: "pa-1",
+			orders: [{ order, amount }],
+			createdAt: at(0),
+		});
+		// o-1 paid across two payouts; o-2 reduced by a 10 000 refund.
+		payload.store.payouts.push(
+			payoutOf("po-a", "o-1", 30_000),
+			payoutOf("po-b", "o-1", 13_240),
+			payoutOf("po-c", "o-2", 33_240),
+		);
+
+		const figures = async (id: string) => {
+			const body = await (await payoutDetail(id)).json();
+			return [body.commissionHt, body.vat, body.gross];
+		};
+		const [a, b, c] = [
+			await figures("po-a"),
+			await figures("po-b"),
+			await figures("po-c"),
+		];
+
+		expect(a).toEqual([2_188, 421, 32_609]);
+		expect(b).toEqual([965, 186, 14_391]);
+		expect(a[0] + b[0]).toBe(WORKED.commission);
+		expect(a[1] + b[1]).toBe(WORKED.commissionVat);
+		expect(c).toEqual([2_424, 467, 36_131]);
+	});
+
 	it("answers another shop's payout exactly like a missing one", async () => {
 		payload.store.payouts.push({
 			id: "po-other",

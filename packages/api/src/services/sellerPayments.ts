@@ -134,7 +134,10 @@ async function maskedDestinations(
 	);
 }
 
-type CommissionByOrder = Map<string, { commission: number; vat: number }>;
+type CommissionByOrder = Map<
+	string,
+	{ commission: number; vat: number; payable: number }
+>;
 
 async function commissionByOrder(
 	req: PayloadRequest,
@@ -160,6 +163,7 @@ async function commissionByOrder(
 			{
 				commission: order.amounts?.commission ?? 0,
 				vat: order.amounts?.commissionVat ?? 0,
+				payable: order.amounts?.destinationAmount ?? 0,
 			},
 		]),
 	);
@@ -173,10 +177,14 @@ function payoutRow(
 	const lines = payout.orders ?? [];
 	let commissionHt = 0;
 	let vat = 0;
+	// The ledger keeps commission per order, not per payout line: a line paying
+	// part of an order (split payout, refund, netted debt) carries its share.
 	for (const line of lines) {
 		const entry = commissions.get(idOf(line.order));
-		commissionHt += entry?.commission ?? 0;
-		vat += entry?.vat ?? 0;
+		if (!entry || entry.payable <= 0) continue;
+		const share = Math.min(1, line.amount / entry.payable);
+		commissionHt += Math.round(entry.commission * share);
+		vat += Math.round(entry.vat * share);
 	}
 	return {
 		id: String(payout.id),
