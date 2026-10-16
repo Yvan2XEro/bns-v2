@@ -53,7 +53,7 @@ async function lastDeliveredSaleAt(
  * The product's listing when the viewer could boost it now: the boost route
  * only takes a published listing whose seller is the caller.
  */
-async function boostableListing(
+export async function boostableListing(
 	payload: Payload,
 	listingRef: unknown,
 	viewerId: string | undefined,
