@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, ExternalLink, Settings, ShieldCheck } from "lucide-react";
+import { Download, Settings, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
@@ -104,15 +104,6 @@ export function PaymentsClient({ shopId }: { shopId: string }) {
 					<p className="text-[#64748B] text-sm">{tPage("subtitle")}</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<button
-						type="button"
-						disabled
-						title={tPage("statementUnavailable")}
-						className={HEADER_BUTTON}
-					>
-						<ExternalLink aria-hidden="true" className="h-4 w-4" />
-						{tPage("providerStatement")}
-					</button>
 					<button type="button" onClick={exportCsv} className={HEADER_BUTTON}>
 						<Download aria-hidden="true" className="h-4 w-4" />
 						{tPage("exportAccounting")}

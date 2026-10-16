@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
+import type { Locale } from "~/i18n/locales";
 import { ACTIVE_SHOP_COOKIE, myShopPath } from "~/lib/active-shop";
 import type { VerificationBadge } from "~/lib/verification";
 import type { Category, MyShopResponse, PublicShop } from "~/types";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
 import { DEFAULT_PHONE_COUNTRY } from "./phone-input";
-import { serverGet } from "./server-api";
+import { serverFetch, serverGet } from "./server-api";
 
 /** The shop the seller space works on: the switcher's cookie when the caller still belongs to it. */
 export const getMyShop = cache(async (): Promise<MyShopResponse | null> => {
@@ -97,6 +98,27 @@ export const getAllCategories = cache(async (): Promise<Category[]> => {
 	);
 	return data?.categories ?? [];
 });
+
+/**
+ * Every category's name in one language, by id — the CSV import also matches
+ * the language the reader is not using.
+ */
+export const getCategoryNamesIn = cache(
+	async (locale: Locale): Promise<Record<string, string>> => {
+		try {
+			const res = await serverFetch("/api/public/categories", {
+				headers: { "Accept-Language": locale },
+			});
+			if (!res.ok) return {};
+			const data = (await res.json()) as { categories?: Category[] };
+			return Object.fromEntries(
+				(data.categories ?? []).map((c) => [c.id, c.name]),
+			);
+		} catch {
+			return {};
+		}
+	},
+);
 
 /** The launch market's served block; undefined when the config is unreachable or pre-migration. */
 export const getMarket = cache(async (): Promise<MarketConfig | undefined> => {

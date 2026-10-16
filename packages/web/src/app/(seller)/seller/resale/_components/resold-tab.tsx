@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, ArrowRight, ImageIcon, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -17,11 +18,13 @@ import { formatOrderDate } from "~/lib/order-money";
 import {
 	pricesAtMinimum,
 	type ResoldFilter,
+	resaleDuration,
 	resaleEarnings,
 	resaleGain,
 	resaleHref,
 	resoldCounts,
 	resoldFilterOf,
+	shortDayMonth,
 } from "~/lib/resale-hub";
 import { cn } from "~/lib/utils";
 import type {
@@ -44,6 +47,7 @@ const STATUS_TONE: Record<ResoldListingStatus, string> = {
 export function ResoldTab({ shopId }: { shopId: string }) {
 	const t = useTranslations("SellerResaleHub");
 	const tRoot = useTranslations();
+	const locale = useLocale().startsWith("fr") ? "fr" : "en";
 	const formatOrderMoney = useOrderMoney();
 	const query = useResoldListings(shopId);
 	const update = useUpdateResaleListingPrices(shopId);
@@ -222,11 +226,21 @@ export function ResoldTab({ shopId }: { shopId: string }) {
 											>
 												<td className="px-3.5 py-2.5">
 													<div className="flex items-center gap-2.5">
-														<span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-[#475569]">
-															<ImageIcon
-																aria-hidden="true"
-																className="h-5 w-5"
-															/>
+														<span className="relative flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#F1F5F9] text-[#475569]">
+															{listing.imageUrl ? (
+																<Image
+																	src={listing.imageUrl}
+																	alt=""
+																	fill
+																	sizes="38px"
+																	className="object-cover"
+																/>
+															) : (
+																<ImageIcon
+																	aria-hidden="true"
+																	className="h-5 w-5"
+																/>
+															)}
 														</span>
 														<span className="flex min-w-0 flex-col">
 															<span className="font-semibold text-[#0F172A]">
@@ -236,11 +250,21 @@ export function ResoldTab({ shopId }: { shopId: string }) {
 																	: ""}
 															</span>
 															<span className="text-[#64748B] text-xs">
-																{t("minShort", {
-																	amount: formatOrderMoney(
-																		variant.minRetailPrice,
-																	),
-																})}
+																{variant.minRetailPriceChangedAt
+																	? t("minShortSince", {
+																			amount: formatOrderMoney(
+																				variant.minRetailPrice,
+																			),
+																			date: shortDayMonth(
+																				variant.minRetailPriceChangedAt,
+																				locale,
+																			),
+																		})
+																	: t("minShort", {
+																			amount: formatOrderMoney(
+																				variant.minRetailPrice,
+																			),
+																		})}
 															</span>
 														</span>
 													</div>
@@ -473,6 +497,15 @@ function SuppliersCard({ shopId }: { shopId: string }) {
 									label={t("resoldProducts")}
 									value={String(link.stats.publishedListings)}
 								/>
+								{link.partnerShop.resaleStats?.medianShipHours != null ? (
+									<KeyValue
+										label={t("medianShipping")}
+										value={durationText(
+											t,
+											link.partnerShop.resaleStats.medianShipHours,
+										)}
+									/>
+								) : null}
 								<KeyValue
 									label={t("delivered30d")}
 									value={String(link.stats.deliveredOrders30d)}
@@ -480,6 +513,17 @@ function SuppliersCard({ shopId }: { shopId: string }) {
 							</>
 						)}
 					</dl>
+					{link.status === "requested" &&
+					link.partnerShop.resaleStats?.medianResponseHours != null ? (
+						<p className="text-[#64748B] text-xs">
+							{t("usualResponseWithin", {
+								duration: durationText(
+									t,
+									link.partnerShop.resaleStats.medianResponseHours,
+								),
+							})}
+						</p>
+					) : null}
 					{link.status === "approved" ? (
 						<Link
 							href={resaleHref("reseller", "find", {
@@ -534,6 +578,16 @@ function EarningsCard({ shopId }: { shopId: string }) {
 			</div>
 		</section>
 	);
+}
+
+function durationText(
+	t: ReturnType<typeof useTranslations<"SellerResaleHub">>,
+	hours: number,
+): string {
+	const duration = resaleDuration(hours);
+	return duration.kind === "hours"
+		? t("durationHours", { hours: duration.hours })
+		: t("durationDays", { days: duration.days });
 }
 
 function KeyValue({ label, value }: { label: string; value: string }) {

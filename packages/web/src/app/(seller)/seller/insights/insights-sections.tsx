@@ -14,6 +14,7 @@ import {
 	meterTone,
 	RESPONSE_BUCKET_MINUTES,
 	ratio,
+	slowestResponseDay,
 	weeklyChange,
 } from "~/lib/insights-view";
 import { cn } from "~/lib/utils";
@@ -179,6 +180,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 	const tPage = useTranslations("InsightsPage");
 	const tInsights = useTranslations("SellerInsights");
 	const locale = useLocale();
+	const formatOrderMoney = useOrderMoney();
 	const number = new Intl.NumberFormat(locale);
 	const { funnel } = view;
 	const lowConversion = view.actions.find(
@@ -189,6 +191,10 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 				(product) => product.productId === lowConversion.productId,
 			)
 		: undefined;
+	const comparison =
+		funnel.priceComparison?.productId === lowProduct?.productId
+			? funnel.priceComparison
+			: null;
 	const steps = [
 		{
 			key: "views",
@@ -272,6 +278,14 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 								views: number.format(lowProduct.views),
 								orders: number.format(lowProduct.ordersPlaced),
 							})}
+							{comparison && (
+								<span className="mt-1 block">
+									{tPage("priceComparison", {
+										median: formatOrderMoney(comparison.medianPrice),
+										yours: formatOrderMoney(comparison.yourPrice),
+									})}
+								</span>
+							)}
 						</span>
 					</Link>
 				)}
@@ -299,6 +313,7 @@ function Meter({
 	verdict,
 	detail,
 	action,
+	children,
 }: {
 	label: string;
 	value: string;
@@ -307,6 +322,7 @@ function Meter({
 	verdict: string;
 	detail: string;
 	action?: { href: string; label: string } | null;
+	children?: ReactNode;
 }) {
 	return (
 		<article className="flex flex-col gap-2 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-3.5">
@@ -342,6 +358,7 @@ function Meter({
 				/>
 			</div>
 			<p className="text-[#475569] text-xs leading-[17px]">{detail}</p>
+			{children}
 			{action && (
 				<Link
 					href={action.href}
@@ -352,6 +369,58 @@ function Meter({
 				</Link>
 			)}
 		</article>
+	);
+}
+
+/** One bar per day, the median reply time, so a slow day stands out. */
+function ResponseByDay({
+	days,
+	dayText,
+	summary,
+	title,
+}: {
+	days: NonNullable<ShopInsightsView["responseTime"]["daily"]>;
+	dayText: (date: string, minutes: number | null) => string;
+	summary: string;
+	title: string;
+}) {
+	const max = Math.max(...days.map((day) => day.medianMinutes ?? 0), 1);
+	return (
+		<div className="space-y-1.5">
+			<p className="text-[#475569] text-xs leading-[17px]">{summary}</p>
+			<ul aria-label={title} className="flex h-10 items-end gap-0.5">
+				{days.map((day) => {
+					const text = dayText(day.date, day.medianMinutes);
+					return (
+						<li
+							key={day.date}
+							title={text}
+							className="flex h-full flex-1 items-end"
+						>
+							<span className="sr-only">{text}</span>
+							<span
+								aria-hidden="true"
+								className={cn(
+									"block w-full rounded-sm",
+									day.medianMinutes === null
+										? "h-0.5 bg-[#E2E8F0]"
+										: day.medianMinutes > RESPONSE_TARGET
+											? "bg-[#F59E0B]"
+											: "bg-[#22C55E]",
+								)}
+								style={
+									day.medianMinutes === null
+										? undefined
+										: {
+												height: `${Math.max(8, (day.medianMinutes / max) * 100)}%`,
+											}
+								}
+							/>
+						</li>
+					);
+				})}
+			</ul>
+		</div>
 	);
 }
 
@@ -393,6 +462,14 @@ export function ThresholdMeters({ view }: { view: ShopInsightsView }) {
 				? "ok"
 				: meterTone(acceptance, ACCEPTANCE_TARGET * 2);
 	const awaiting = view.responseTime.awaitingReply;
+	const responseDaily = view.responseTime.daily ?? [];
+	const slowest = slowestResponseDay(responseDaily);
+	const dayName = (date: string, weekday: "long" | "short") =>
+		new Date(`${date}T12:00:00.000Z`).toLocaleDateString(locale, {
+			weekday,
+			day: "numeric",
+			timeZone: "UTC",
+		});
 
 	return (
 		<section
@@ -493,7 +570,27 @@ export function ThresholdMeters({ view }: { view: ShopInsightsView }) {
 						? { href: "/seller/messages", label: tPage("responseAction") }
 						: null
 				}
-			/>
+			>
+				{slowest && (
+					<ResponseByDay
+						days={responseDaily}
+						dayText={(date, minutes) =>
+							tPage("responseDay", {
+								day: dayName(date, "short"),
+								value:
+									minutes === null
+										? tPage("responseNoReply")
+										: formatMinutes(minutes),
+							})
+						}
+						summary={tPage("responseSlowest", {
+							day: dayName(slowest.date, "long"),
+							value: formatMinutes(slowest.medianMinutes),
+						})}
+						title={tPage("responseByDay", { count: responseDaily.length })}
+					/>
+				)}
+			</Meter>
 			<Meter
 				label={tPage("acceptanceLabel")}
 				value={acceptance === null ? "—" : formatMinutes(acceptance)}

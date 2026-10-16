@@ -230,36 +230,10 @@ export const STATUS_PILL_TONES: Record<StatusPill, string> = {
 	disputed: "bg-[#FEE2E2] text-[#B91C1C]",
 };
 
-export type PaymentPill =
-	| "cod"
-	| "codCollected"
-	| "codRefused"
-	| "paid"
-	| "awaiting"
-	| "refunded"
-	| "failed";
-
-export function paymentPill(
-	row: Pick<OrderListEntry, "paymentMethod" | "paymentStatus">,
-): PaymentPill | null {
-	if (!row.paymentMethod) return null;
-	if (row.paymentMethod === "cod") {
-		if (row.paymentStatus === "cod_collected") return "codCollected";
-		if (row.paymentStatus === "cod_refused") return "codRefused";
-		return "cod";
-	}
-	switch (row.paymentStatus) {
-		case "paid":
-			return "paid";
-		case "refunded":
-		case "partially_refunded":
-			return "refunded";
-		case "failed":
-			return "failed";
-		default:
-			return "awaiting";
-	}
-}
+export {
+	type PaymentPill,
+	paymentPill,
+} from "../../../../../../api/src/contracts/orderPayment";
 
 /** "Makepe, Douala"; whichever half is known, or null. */
 export function areaLabel(area: OrderListEntry["area"]): string | null {

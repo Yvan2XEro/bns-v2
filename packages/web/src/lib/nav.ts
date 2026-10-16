@@ -55,6 +55,14 @@ export function navRubrics(categories: NavCategory[]): NavRubric[] {
 		}));
 }
 
+/**
+ * The member's own conversation in the personal inbox. The seller tree opens
+ * it in a new tab so the shop workspace stays where it was.
+ */
+export function personalConversationHref(conversationId: string): string {
+	return `/messages?conversation=${encodeURIComponent(conversationId)}`;
+}
+
 export function categoryHref(id: string): string {
 	return `/search?category=${encodeURIComponent(id)}`;
 }

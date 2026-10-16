@@ -4,6 +4,7 @@ import {
 	formatMinutes,
 	meterFill,
 	meterTone,
+	slowestResponseDay,
 	weeklyChange,
 } from "./insights-view";
 
@@ -69,5 +70,27 @@ describe("dormant last sale (W35)", () => {
 			kind: "never",
 		});
 		expect(dormantLastSale(item)).toBeNull();
+	});
+});
+
+describe("slowestResponseDay", () => {
+	test("names the day with the longest median reply", () => {
+		expect(
+			slowestResponseDay([
+				{ date: "2026-10-03", medianMinutes: 40, answered: 1 },
+				{ date: "2026-10-04", medianMinutes: 160, answered: 2 },
+				{ date: "2026-10-05", medianMinutes: null, answered: 0 },
+			]),
+		).toEqual({ date: "2026-10-04", medianMinutes: 160, answered: 2 });
+	});
+
+	test("says nothing with fewer than two measured days", () => {
+		expect(
+			slowestResponseDay([
+				{ date: "2026-10-04", medianMinutes: 160, answered: 2 },
+				{ date: "2026-10-05", medianMinutes: null, answered: 0 },
+			]),
+		).toBeNull();
+		expect(slowestResponseDay(undefined)).toBeNull();
 	});
 });

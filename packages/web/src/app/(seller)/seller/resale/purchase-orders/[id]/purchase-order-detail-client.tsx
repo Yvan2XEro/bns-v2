@@ -1,6 +1,12 @@
 "use client";
 
-import { MapPin, PackageCheck, Printer } from "lucide-react";
+import {
+	Clock,
+	MapPin,
+	MessageSquare,
+	PackageCheck,
+	Printer,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useReducer } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
@@ -11,7 +17,9 @@ import {
 	usePurchaseOrder,
 	usePurchaseOrderAction,
 } from "~/hooks/use-purchase-orders";
+import { useStartShopConversation } from "~/hooks/use-shop-inbox";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { personalConversationHref } from "~/lib/nav";
 import { formatOrderDate } from "~/lib/order-money";
 import { resaleHref } from "~/lib/resale-hub";
 import type { PurchaseOrderView } from "../../../../../../../../api/src/contracts/purchaseOrders";
@@ -75,6 +83,7 @@ export function PurchaseOrderDetailClient({
 	});
 	const query = usePurchaseOrder(shopId, purchaseOrderId);
 	const action = usePurchaseOrderAction(shopId);
+	const startConversation = useStartShopConversation();
 	const order = query.data;
 	const statusLabels: Record<PurchaseOrderView["status"], string> = {
 		sent: t("status.sent"),
@@ -84,9 +93,14 @@ export function PurchaseOrderDetailClient({
 		cancelled: t("status.cancelled"),
 		returned: t("status.returned"),
 	};
-	const actionError = action.error
-		? resolveErrorMessage(action.error, tRoot, t("actionFailed"))
-		: null;
+	const actionError =
+		action.error || startConversation.error
+			? resolveErrorMessage(
+					action.error ?? startConversation.error,
+					tRoot,
+					t("actionFailed"),
+				)
+			: null;
 
 	if (query.isPending) return <LoadingRows />;
 	if (query.isError || !order) {
@@ -329,6 +343,68 @@ export function PurchaseOrderDetailClient({
 				</div>
 
 				<aside className="space-y-4">
+					{side === "supplier" && order.reseller ? (
+						<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+							<h2 className="font-bold text-[#0F172A]">
+								{tHub("resellerCard")}
+							</h2>
+							<div className="flex flex-col gap-0.5">
+								<p className="font-semibold text-[#0F172A]">
+									{order.reseller.name}
+								</p>
+								{order.reseller.level > 0 ? (
+									<span className="w-fit rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+										{tHub("levelBadge", { level: order.reseller.level })}
+									</span>
+								) : null}
+							</div>
+							{order.reseller.orderNumber ? (
+								<p className="text-[#475569] text-sm">
+									{order.reseller.orderedAt
+										? tHub("customerOrder", {
+												number: order.reseller.orderNumber,
+												date: formatOrderDate(order.reseller.orderedAt, locale),
+											})
+										: tHub("customerOrderNumber", {
+												number: order.reseller.orderNumber,
+											})}
+								</p>
+							) : null}
+							{order.reseller.phone ? (
+								<p className="text-[#475569] text-sm">
+									{tHub("resellerContact", { phone: order.reseller.phone })}
+								</p>
+							) : null}
+							{order.reseller.reachable ? (
+								<p className="flex items-center gap-1.5 text-[#475569] text-sm">
+									<Clock aria-hidden="true" className="h-4 w-4" />
+									{tHub("reachableFromTo", order.reseller.reachable)}
+								</p>
+							) : null}
+							<button
+								type="button"
+								disabled={startConversation.isPending}
+								onClick={() => {
+									const resellerShopId = order.reseller?.shopId;
+									if (!resellerShopId) return;
+									// Opened before the request so the browser does not block it.
+									const tab = window.open("", "_blank");
+									startConversation.mutate(resellerShopId, {
+										onSuccess: ({ conversationId }) => {
+											const href = personalConversationHref(conversationId);
+											if (tab) tab.location.href = href;
+											else window.location.assign(href);
+										},
+										onError: () => tab?.close(),
+									});
+								}}
+								className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+							>
+								<MessageSquare aria-hidden="true" className="h-4 w-4" />
+								{tHub("writeToReseller")}
+							</button>
+						</section>
+					) : null}
 					<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
 						<h2 className="font-bold text-[#0F172A]">{t("recipient")}</h2>
 						<p className="font-medium text-[#334155]">

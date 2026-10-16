@@ -34,6 +34,7 @@ import type {
 } from "~/types";
 import { myShopPath, readActiveShopCookie } from "./active-shop";
 import { ApiError, apiErrorFrom, ERROR_CODES, fallbackFor } from "./apiError";
+import { browserContentLocale, withContentLocale } from "./content-locale";
 import type { BusinessType } from "./verification";
 
 /**
@@ -247,7 +248,10 @@ export const shopApi = {
 	/** A seller's own listings that a shop can still take in. */
 	personalListings: (userId: string) =>
 		request<{ docs: Listing[] }>(
-			`/api/listings?where[seller][equals]=${userId}&where[shop][exists]=false&where[status][in]=draft,pending,published&depth=1&limit=100&sort=-createdAt`,
+			withContentLocale(
+				`/api/listings?where[seller][equals]=${userId}&where[shop][exists]=false&where[status][in]=draft,pending,published&depth=1&limit=100&sort=-createdAt`,
+				browserContentLocale(),
+			),
 		),
 
 	searchShops: (params: {

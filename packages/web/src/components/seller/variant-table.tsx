@@ -126,6 +126,20 @@ export function VariantTable({
 											className={`mt-1 h-8 w-24 rounded-md border px-2 text-xs uppercase outline-none ${at("sku") ? invalidCell : "border-[#E2E8F0] focus:border-[#93C5FD]"}`}
 										/>
 										<ProductIssueText issue={at("sku")} />
+										<input
+											{...register(`variants.${index}.barcode`)}
+											inputMode="numeric"
+											autoComplete="off"
+											placeholder={t("barcodePlaceholder")}
+											aria-label={t("barcodePlaceholder")}
+											aria-invalid={Boolean(at("barcode"))}
+											// A USB scanner ends its burst with Enter: keep it from saving the product.
+											onKeyDown={(event) => {
+												if (event.key === "Enter") event.preventDefault();
+											}}
+											className={`mt-1 block h-8 w-32 rounded-md border px-2 text-xs tabular-nums outline-none ${at("barcode") ? invalidCell : "border-[#E2E8F0] focus:border-[#93C5FD]"}`}
+										/>
+										<ProductIssueText issue={at("barcode")} />
 									</td>
 									<td className="w-32 px-2 py-2">
 										<input

@@ -34,12 +34,14 @@ const TEMPLATE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${IM
 export function CatalogueImportDialog({
 	shopId,
 	categories,
+	otherCategoryNames,
 	includeCost,
 	open,
 	onOpenChange,
 }: {
 	shopId: string;
 	categories: Category[];
+	otherCategoryNames?: Record<string, string>;
 	includeCost: boolean;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -58,6 +60,7 @@ export function CatalogueImportDialog({
 				<ImportBody
 					shopId={shopId}
 					categories={categories}
+					otherCategoryNames={otherCategoryNames}
 					includeCost={includeCost}
 					onClose={() => onOpenChange(false)}
 				/>
@@ -69,11 +72,13 @@ export function CatalogueImportDialog({
 function ImportBody({
 	shopId,
 	categories,
+	otherCategoryNames,
 	includeCost,
 	onClose,
 }: {
 	shopId: string;
 	categories: Category[];
+	otherCategoryNames?: Record<string, string>;
 	includeCost: boolean;
 	onClose: () => void;
 }) {
@@ -94,7 +99,10 @@ function ImportBody({
 		if (!file) return;
 		setFileName(file.name);
 		setParsed(
-			parseProductImport(await file.text(), categories, { includeCost }),
+			parseProductImport(await file.text(), categories, {
+				includeCost,
+				otherCategoryNames,
+			}),
 		);
 	}
 

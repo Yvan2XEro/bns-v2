@@ -9,7 +9,12 @@ import {
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Button } from "~/components/ui/button";
-import { getAuthUser, serverFetch } from "~/lib/server-api";
+import { withContentLocale } from "~/lib/content-locale";
+import {
+	getAuthUser,
+	serverContentLocale,
+	serverFetch,
+} from "~/lib/server-api";
 import type { Listing, User } from "~/types";
 import { MyListingsClient } from "./listings-client";
 
@@ -29,7 +34,10 @@ async function getUserListings(
 }> {
 	try {
 		const res = await serverFetch(
-			`/api/listings?where[seller][equals]=${userId}&limit=${PER_PAGE}&page=${page}&sort=-createdAt&depth=1`,
+			withContentLocale(
+				`/api/listings?where[seller][equals]=${userId}&limit=${PER_PAGE}&page=${page}&sort=-createdAt&depth=1`,
+				await serverContentLocale(),
+			),
 		);
 		if (!res.ok)
 			return {

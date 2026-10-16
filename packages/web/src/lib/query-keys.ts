@@ -131,7 +131,12 @@ export const purchaseOrdersRootKey = (shopId: string) =>
 
 export const purchaseOrdersKey = (
 	shopId: string,
-	filters: { side: "supplier" | "reseller"; status?: string; q?: string },
+	filters: {
+		side: "supplier" | "reseller";
+		status?: string;
+		q?: string;
+		due?: string;
+	},
 ) => [...purchaseOrdersRootKey(shopId), filters] as const;
 
 export const purchaseOrderKey = (shopId: string, purchaseOrderId: string) =>

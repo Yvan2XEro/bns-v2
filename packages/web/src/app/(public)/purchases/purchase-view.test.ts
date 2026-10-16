@@ -10,9 +10,11 @@ import {
 	confirmCodeSchema,
 	groupPurchases,
 	handoverCardState,
+	PURCHASE_PAYMENT_KEYS,
 	PURCHASE_TABS,
 	purchaseArrival,
 	purchaseCardActions,
+	purchasePaymentKey,
 	purchaseTab,
 	receiptBody,
 	reviewSchema,
@@ -425,5 +427,52 @@ describe("purchaseArrival", () => {
 		expect(
 			purchaseArrival(delivered, [{ kind: "return", href: "/x" }]),
 		).toEqual({ kind: "returnUntil", at: "2026-09-25T10:00:00.000Z" });
+	});
+});
+
+describe("purchasePaymentKey: the card's payment state (W20)", () => {
+	it("reads the shared payment pill in the buyer's words", () => {
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "cod",
+				paymentStatus: "cod_pending",
+			}),
+		).toBe("cardPaymentCod");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "cod",
+				paymentStatus: "cod_collected",
+			}),
+		).toBe("cardPaymentCodCollected");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "mobile_money",
+				paymentStatus: "paid",
+			}),
+		).toBe("cardPaymentPaid");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "mobile_money",
+				paymentStatus: "partially_refunded",
+			}),
+		).toBe("cardPaymentRefunded");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "mobile_money",
+				paymentStatus: "awaiting_payment",
+			}),
+		).toBe("cardPaymentAwaiting");
+	});
+
+	it("shows nothing for a row that carries no payment method", () => {
+		expect(purchasePaymentKey({})).toBeNull();
+	});
+
+	it("resolves every pill's label in both locales", () => {
+		for (const key of Object.values(PURCHASE_PAYMENT_KEYS)) {
+			expect(purchases(en)[key]).toBeString();
+			expect(purchases(fr)[key]).toBeString();
+		}
+		expect(purchases(fr).cardPaymentCod).toBe("Paiement à la livraison");
 	});
 });

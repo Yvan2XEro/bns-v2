@@ -14,6 +14,7 @@ export function InventoryFilters({
 	counts,
 	q,
 	onQueryChange,
+	onQuerySubmit,
 	categoryOptions,
 	category,
 	onCategoryChange,
@@ -26,6 +27,8 @@ export function InventoryFilters({
 	counts: Record<Filter, number>;
 	q: string;
 	onQueryChange: (value: string) => void;
+	/** Enter in the search box: a USB scanner types the code then presses Enter. */
+	onQuerySubmit: () => void;
 	categoryOptions: { id: string; label: string }[];
 	category: string;
 	onCategoryChange: (value: string) => void;
@@ -43,6 +46,12 @@ export function InventoryFilters({
 				type="search"
 				value={q}
 				onChange={(event) => onQueryChange(event.target.value)}
+				onKeyDown={(event) => {
+					// The search sits inside the count form: Enter must not save it.
+					if (event.key !== "Enter") return;
+					event.preventDefault();
+					onQuerySubmit();
+				}}
 				placeholder={t("searchPlaceholder")}
 				className="h-10 min-w-[200px] flex-1 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm outline-none focus:border-[#93C5FD] sm:max-w-[230px]"
 			/>

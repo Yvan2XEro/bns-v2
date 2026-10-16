@@ -41,6 +41,25 @@ describe("productFormIssues: the API's rules on the editor's paths", () => {
 		expect(productFormIssues(valid(), context)).toEqual([]);
 	});
 
+	test("a barcode is checked by the shared rule, spaces aside", () => {
+		expect(
+			paths(
+				valid({
+					variants: [
+						{ ...emptyVariant(), price: "1", barcode: "4006381 333931" },
+					],
+				}),
+			),
+		).toEqual([]);
+		const wrong = valid({
+			variants: [{ ...emptyVariant(), price: "1", barcode: "4006381333932" }],
+		});
+		expect(paths(wrong)).toEqual([["variants.0.barcode", "barcode"]]);
+		expect(
+			productIssueKey({ path: "variants.0.barcode", rule: "barcode" }),
+		).toBe("barcode");
+	});
+
 	test("required and typed category attributes", () => {
 		const ctx: ProductIssueContext = {
 			...context,

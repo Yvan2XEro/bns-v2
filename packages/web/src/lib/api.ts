@@ -12,6 +12,7 @@ import type {
 	SearchResult,
 	User,
 } from "~/types";
+import { browserContentLocale, contentLocaleHeaders } from "./content-locale";
 
 class ApiClient {
 	private baseUrl: string;
@@ -49,6 +50,7 @@ class ApiClient {
 			...options,
 			headers: {
 				"Content-Type": "application/json",
+				...contentLocaleHeaders(browserContentLocale()),
 				...options.headers,
 			},
 			credentials: "include",
@@ -63,6 +65,7 @@ class ApiClient {
 						...options,
 						headers: {
 							"Content-Type": "application/json",
+							...contentLocaleHeaders(browserContentLocale()),
 							...options.headers,
 						},
 						credentials: "include",

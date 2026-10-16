@@ -14,9 +14,14 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { withContentLocale } from "~/lib/content-locale";
 import { renderOrderMoney } from "~/lib/order-money";
 import { hasListingPrice } from "~/lib/price";
-import { getAuthUser, serverFetch } from "~/lib/server-api";
+import {
+	getAuthUser,
+	serverContentLocale,
+	serverFetch,
+} from "~/lib/server-api";
 import { getMarket, getMyShop, getShopsEnabled } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
 import { DisputesEntry } from "./disputes-entry";
@@ -40,7 +45,10 @@ async function getUserReviews(userId: string): Promise<Review[]> {
 async function getUserListings(userId: string): Promise<Listing[]> {
 	try {
 		const res = await serverFetch(
-			`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=5&sort=-createdAt&depth=1`,
+			withContentLocale(
+				`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=5&sort=-createdAt&depth=1`,
+				await serverContentLocale(),
+			),
 		);
 		if (!res.ok) return [];
 		const data = await res.json();

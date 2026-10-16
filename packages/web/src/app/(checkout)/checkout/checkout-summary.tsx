@@ -5,6 +5,7 @@ import {
 	ImageOff,
 	LoaderCircle,
 	Lock,
+	MapPin,
 	Phone,
 	RotateCcw,
 	Star,
@@ -35,13 +36,17 @@ function Changed({ on, children }: { on: boolean; children: ReactNode }) {
 function SellerCard({
 	shop,
 	phone,
+	seller,
 }: {
 	shop: NonNullable<CartView["shop"]>;
 	phone: string | null;
+	seller: QuoteResponse["seller"];
 }) {
 	const t = useTranslations("Checkout");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const reviews = shop.totalReviews ?? 0;
+	const address = seller?.address ?? shop.address ?? null;
+	const sinceYear = seller?.sinceYear ?? shop.sinceYear ?? null;
 
 	return (
 		<div className="space-y-2">
@@ -50,6 +55,17 @@ function SellerCard({
 			</p>
 			<div className="space-y-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5">
 				<CartShopHeader shop={shop} size="sm" />
+				{sinceYear ? (
+					<p className="text-[#64748B] text-xs">
+						{t("sellerSince", { year: String(sinceYear) })}
+					</p>
+				) : null}
+				{address ? (
+					<p className="flex items-start gap-1.5 text-[#334155] text-[13px]">
+						<MapPin aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+						{address}
+					</p>
+				) : null}
 				{reviews > 0 || phone ? (
 					<div className="flex flex-wrap gap-x-4 gap-y-1 text-[#334155] text-[13px]">
 						{reviews > 0 ? (
@@ -161,6 +177,7 @@ export function CheckoutSummary({
 				<SellerCard
 					shop={cart.shop}
 					phone={quote?.preContract.seller.phone ?? null}
+					seller={quote?.seller}
 				/>
 			) : null}
 

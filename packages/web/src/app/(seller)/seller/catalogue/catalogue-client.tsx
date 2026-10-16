@@ -45,11 +45,14 @@ export function CatalogueClient({
 	shopId,
 	initialFilter,
 	categories,
+	otherCategoryNames,
 	permissions,
 }: {
 	shopId: string;
 	initialFilter: CatalogueFilter;
 	categories: Category[];
+	/** Each category's name in the other language, by id, for the CSV import. */
+	otherCategoryNames?: Record<string, string>;
 	/** Display only; the API decides every one of these again. */
 	permissions: { resale: boolean; archive: boolean; costs: boolean };
 }) {
@@ -289,6 +292,7 @@ export function CatalogueClient({
 			<CatalogueImportDialog
 				shopId={shopId}
 				categories={categories}
+				otherCategoryNames={otherCategoryNames}
 				includeCost={permissions.costs}
 				open={importOpen}
 				onOpenChange={setImportOpen}

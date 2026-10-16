@@ -6,7 +6,9 @@ import type {
 } from "../../../api/src/contracts/resale";
 import {
 	canCancelResaleRequest,
+	cityLabel,
 	pricesAtMinimum,
+	resaleDuration,
 	resaleEarnings,
 	resaleGain,
 	resaleHref,
@@ -14,6 +16,7 @@ import {
 	resaleRules,
 	resoldCounts,
 	resolveResaleTab,
+	shortDayMonth,
 	supplierStockState,
 } from "./resale-hub";
 
@@ -240,5 +243,23 @@ describe("cancelling a resale request (W36)", () => {
 		expect(resaleLinkCancelPath("s 1", "l/1")).toBe(
 			"/api/shops/s%201/resale-links/l%2F1/cancel",
 		);
+	});
+});
+
+describe("supplier track record display", () => {
+	it("shows hours up to two days, then whole days", () => {
+		expect(resaleDuration(19)).toEqual({ kind: "hours", hours: 19 });
+		expect(resaleDuration(0)).toEqual({ kind: "hours", hours: 1 });
+		expect(resaleDuration(48)).toEqual({ kind: "days", days: 2 });
+		expect(resaleDuration(70)).toEqual({ kind: "days", days: 3 });
+	});
+
+	it("pins the minimum's change to a short day/month", () => {
+		expect(shortDayMonth("2026-09-14T08:00:00.000Z", "fr")).toBe("14/09");
+	});
+
+	it("capitalises a city key", () => {
+		expect(cityLabel("douala")).toBe("Douala");
+		expect(cityLabel("Yaoundé")).toBe("Yaoundé");
 	});
 });

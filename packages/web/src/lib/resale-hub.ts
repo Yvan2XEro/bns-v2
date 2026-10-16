@@ -214,3 +214,26 @@ export function canCancelResaleRequest(
 export function resaleLinkCancelPath(shopId: string, linkId: string): string {
 	return `/api/shops/${encodeURIComponent(shopId)}/resale-links/${encodeURIComponent(linkId)}/cancel`;
 }
+
+/** A supplier median for display: hours up to two days, whole days beyond. */
+export function resaleDuration(
+	hours: number,
+): { kind: "hours"; hours: number } | { kind: "days"; days: number } {
+	return hours < 48
+		? { kind: "hours", hours: Math.max(1, Math.round(hours)) }
+		: { kind: "days", days: Math.round(hours / 24) };
+}
+
+/** `14/09`: the short day/month the resold table pins to a minimum's change. */
+export function shortDayMonth(iso: string, locale: "fr" | "en"): string {
+	return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-GB", {
+		day: "2-digit",
+		month: "2-digit",
+	}).format(new Date(iso));
+}
+
+/** Shop cities are filed as keys (« douala ») or labels; show them capitalised. */
+export function cityLabel(city: string): string {
+	const trimmed = city.trim();
+	return trimmed ? trimmed[0].toLocaleUpperCase() + trimmed.slice(1) : trimmed;
+}

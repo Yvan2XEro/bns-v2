@@ -23,7 +23,18 @@ export const resaleCatalogueKey = (
 	shopId: string,
 	query: string,
 	supplier = "",
-) => ["shops", shopId, "resale-catalogue", query, supplier] as const;
+	category = "",
+	city = "",
+) =>
+	[
+		"shops",
+		shopId,
+		"resale-catalogue",
+		query,
+		supplier,
+		category,
+		city,
+	] as const;
 export const resoldListingsKey = (shopId: string) =>
 	["shops", shopId, "resale-catalogue", "resold"] as const;
 export const supplierResaleSettingsKey = (productId: string) =>
@@ -124,13 +135,18 @@ export function useResaleCatalogue(
 	shopId: string | null,
 	search: string,
 	supplier = "",
+	filters: { category?: string; city?: string } = {},
 ) {
 	const query = search.trim();
+	const category = filters.category ?? "";
+	const city = filters.city ?? "";
 	const params = new URLSearchParams({ shop: shopId ?? "" });
 	if (query) params.set("q", query);
 	if (supplier) params.set("supplier", supplier);
+	if (category) params.set("category", category);
+	if (city) params.set("city", city);
 	return useQuery<ResaleCataloguePage, ApiError>({
-		queryKey: resaleCatalogueKey(shopId ?? "", query, supplier),
+		queryKey: resaleCatalogueKey(shopId ?? "", query, supplier, category, city),
 		queryFn: () =>
 			apiGet<ResaleCataloguePage>(`/api/resale/catalogue?${params.toString()}`),
 		enabled: Boolean(shopId),

@@ -40,6 +40,24 @@ export function formatMinutes(minutes: number): string {
 		: `${hours} h ${String(rest).padStart(2, "0")}`;
 }
 
+type ResponseDay = NonNullable<
+	ShopInsightsView["responseTime"]["daily"]
+>[number];
+
+/** The day with the longest median reply, when at least two days have one. */
+export function slowestResponseDay(
+	daily: readonly ResponseDay[] | undefined,
+): (ResponseDay & { medianMinutes: number }) | null {
+	const measured = (daily ?? []).filter(
+		(day): day is ResponseDay & { medianMinutes: number } =>
+			day.medianMinutes !== null,
+	);
+	if (measured.length < 2) return null;
+	return measured.reduce((slowest, day) =>
+		day.medianMinutes > slowest.medianMinutes ? day : slowest,
+	);
+}
+
 /** Change of the last week over the one before, or null with no base. */
 export function weeklyChange(
 	weekly: NonNullable<ShopInsightsView["weekly"]>,

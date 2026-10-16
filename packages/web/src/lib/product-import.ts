@@ -98,15 +98,27 @@ export function parseCsv(text: string): string[][] {
 	return rows.filter((cells) => cells.some((value) => value.trim() !== ""));
 }
 
-function resolveCategory(value: string, categories: Category[]): string | null {
+/**
+ * Id, then slug, then the name in either language — the seller's file may be
+ * written in the language they are not reading the app in.
+ */
+function resolveCategory(
+	value: string,
+	categories: Category[],
+	otherNames: Record<string, string>,
+): string | null {
 	const wanted = fold(value);
 	if (!wanted) return null;
 	const leafName = fold(value.split(/[›>/]/).pop() ?? value);
+	const named = (name: string) =>
+		categories.find(
+			(c) => fold(c.name) === name || fold(otherNames[c.id] ?? "") === name,
+		);
 	const match =
 		categories.find((c) => c.id === value.trim()) ??
 		categories.find((c) => fold(c.slug ?? "") === wanted) ??
-		categories.find((c) => fold(c.name) === wanted) ??
-		categories.find((c) => fold(c.name) === leafName);
+		named(wanted) ??
+		named(leafName);
 	return match ? match.id : null;
 }
 
@@ -119,7 +131,11 @@ function resolveCategory(value: string, categories: Category[]): string | null {
 export function parseProductImport(
 	text: string,
 	categories: Category[],
-	options: { includeCost: boolean },
+	options: {
+		includeCost: boolean;
+		/** Each category's name in the other language, by id. */
+		otherCategoryNames?: Record<string, string>;
+	},
 ): ImportParse {
 	const [header, ...lines] = parseCsv(text);
 	if (!header) return { rows: [], fileErrors: ["empty"] };
@@ -149,7 +165,11 @@ export function parseProductImport(
 		if (title.length < 3 || title.length > 120) errors.push("title");
 
 		const categoryValue = cell("category");
-		const category = resolveCategory(categoryValue, categories);
+		const category = resolveCategory(
+			categoryValue,
+			categories,
+			options.otherCategoryNames ?? {},
+		);
 		if (!category) errors.push("category");
 
 		const price = parseAmount(cell("price"));

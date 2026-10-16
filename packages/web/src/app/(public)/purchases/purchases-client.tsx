@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { EmptyState } from "~/components/empty-state";
+import { LevelBadge } from "~/components/shop/level-badge";
 import { Button } from "~/components/ui/button";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { usePurchases } from "~/hooks/use-purchases";
@@ -20,6 +21,7 @@ import {
 	type PurchaseTab,
 	purchaseArrival,
 	purchaseCardActions,
+	purchasePaymentKey,
 	purchaseTab,
 } from "./purchase-view";
 import { StatusLabel } from "./status-label";
@@ -66,6 +68,7 @@ function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const actions = purchaseCardActions(entry, now);
 	const arrival = purchaseArrival(entry, actions);
+	const paymentKey = purchasePaymentKey(entry);
 	return (
 		<li className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition hover:border-[#93C5FD]">
 			<Link
@@ -86,9 +89,22 @@ function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 					<p className="truncate font-semibold text-[#0F172A]">
 						{entry.firstItemTitle}
 					</p>
-					<p className="text-[#64748B] text-sm">
-						{t("orderNumber", { number: entry.orderNumber })} · {entry.shopName}
-					</p>
+					<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[#64748B] text-sm">
+						<span>{t("orderNumber", { number: entry.orderNumber })}</span>
+						<span aria-hidden>·</span>
+						<span className="inline-flex min-w-0 items-center gap-1.5">
+							{entry.shopLogoUrl ? (
+								// biome-ignore lint/performance/noImgElement: remote shop logo URL, not a static asset
+								<img
+									src={entry.shopLogoUrl}
+									alt=""
+									className="h-5 w-5 shrink-0 rounded-md object-cover"
+								/>
+							) : null}
+							<span className="truncate">{entry.shopName}</span>
+						</span>
+						<LevelBadge badge={entry.shopBadge ?? null} size="sm" />
+					</div>
 					<p className="text-[#64748B] text-xs">
 						{t("placedOn", { date: formatOrderDate(entry.placedAt, locale) })} ·{" "}
 						{t("itemCount", { count: entry.itemCount })}
@@ -99,6 +115,9 @@ function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 						{formatOrderMoney(entry.total, locale)}
 					</p>
 					<StatusLabel status={entry.status} />
+					{paymentKey ? (
+						<p className="text-[#64748B] text-xs">{t(paymentKey)}</p>
+					) : null}
 				</div>
 			</Link>
 			{arrival || actions.length > 0 ? (

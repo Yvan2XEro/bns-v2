@@ -217,6 +217,34 @@ Features shipped behind `AppSettings` switches (shops, verification, protected
 payment, delivery, resale…) still start off: turning one on is a product
 decision made in the admin panel, not a deploy step.
 
+### Releases with a one-time deploy constraint
+
+**Localised category labels (migration `20261016_000300_category_locales`).**
+This migration turns every category label (name, description, price label,
+attribute names, groups, units, option labels) from a plain string into a
+`{ fr, en }` pair. The previous build cannot read or save that shape: it
+renders the pair as an object and every category update fails validation.
+Old and new pods must therefore never serve at the same time.
+
+- **Snapshot the database before deploying** (`mongodump`, or a volume/cloud
+  snapshot), so the pre-release labels can be restored as they were.
+- **Kubernetes:** deploy this release with the `Recreate` strategy, or scale
+  the `api` Deployment to 1 replica first and back to 2 once the new pod is
+  ready. The default `RollingUpdate` (2 replicas, maxSurge 1) keeps old pods
+  serving while the new pod migrates, and any category an old pod writes in
+  that window goes back to a plain string. Leave the default strategy as it is
+  for later releases.
+- **Docker Compose:** nothing to do — the single `api` container is recreated.
+- **Rollback:** run the migration's `down` **before** rolling the image back:
+  `payload migrate:down` from the new image reverts the last batch (the other
+  two `20261016_*` migrations in it have no-op `down`s, and all three are
+  safe to run again on the next upgrade). It turns every label back into
+  the string the previous build showed — the English, or the French where
+  there is no English and for the labels the seed wrote in French (« État »
+  and its options). An admin's French wording that also has an English
+  version is lost in that direction; restore the snapshot instead if it
+  matters.
+
 ### Required GitHub Actions secrets
 
 Configure in **Settings → Secrets and variables → Actions**:
@@ -282,6 +310,10 @@ make infra-tag v=1.2.3 STACK=aws-prod
 ```
 
 Pulumi only recalculates resources affected by the tag change (Deployments). The cluster and stateful infrastructure are not touched.
+
+Check [Releases with a one-time deploy constraint](#releases-with-a-one-time-deploy-constraint)
+first: a release listed there may need the `api` Deployment scaled to one
+replica (or switched to `Recreate`) for its rollout.
 
 ### What Pulumi provisions
 

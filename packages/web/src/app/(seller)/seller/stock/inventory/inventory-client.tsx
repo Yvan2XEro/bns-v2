@@ -319,6 +319,11 @@ export function InventoryClient({
 				}}
 				q={state.q}
 				onQueryChange={(q) => patch({ q, page: 1 })}
+				onQuerySubmit={() => {
+					const first = visible[0];
+					if (first === undefined) return;
+					document.getElementById(`count-${rows[first]?.variantId}`)?.focus();
+				}}
 				categoryOptions={categoryOptions}
 				category={state.category}
 				onCategoryChange={(category) => patch({ category, page: 1 })}

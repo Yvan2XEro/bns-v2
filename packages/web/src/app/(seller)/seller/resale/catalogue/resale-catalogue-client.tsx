@@ -17,6 +17,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import { useNavCategories } from "~/hooks/use-nav-categories";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
 import {
 	useAcceptResaleTerms,
@@ -26,7 +27,9 @@ import {
 	useResaleCatalogue,
 } from "~/hooks/use-resale";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { navRubrics } from "~/lib/nav";
 import {
+	cityLabel,
 	resaleGain,
 	resaleHref,
 	supplierStockState,
@@ -50,11 +53,18 @@ export function ResaleCatalogueClient({
 	const locale = useLocale().startsWith("fr") ? "fr" : "en";
 	const [search, setSearch] = useState("");
 	const [codOnly, setCodOnly] = useState(false);
+	const [category, setCategory] = useState("");
+	const [city, setCity] = useState("");
+	const rubrics = navRubrics(useNavCategories(undefined));
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [addedTitle, setAddedTitle] = useState<string | null>(null);
 	const panelRef = useRef<HTMLDivElement>(null);
 	const debouncedSearch = useDebouncedValue(search, 250);
-	const catalogue = useResaleCatalogue(shopId, debouncedSearch, supplier);
+	const catalogue = useResaleCatalogue(shopId, debouncedSearch, supplier, {
+		category,
+		city,
+	});
+	const cities = catalogue.data?.shipsFromCities ?? [];
 	const termsError = catalogue.error?.code === "resale.termsNotAccepted";
 	const terms = useCurrentResaleTerms("reseller");
 	const acceptTerms = useAcceptResaleTerms(shopId);
@@ -150,6 +160,53 @@ export function ResaleCatalogueClient({
 								className="h-9 w-full rounded-full border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#DBEAFE]"
 							/>
 						</label>
+						{rubrics.length > 0 ? (
+							<label
+								className={cn(
+									"inline-flex h-8 items-center rounded-full border px-3 text-[13px]",
+									category
+										? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
+										: "border-[#E2E8F0] bg-white font-medium text-[#334155]",
+								)}
+							>
+								<span className="sr-only">{t("filterCategory")}</span>
+								<select
+									value={category}
+									onChange={(event) => setCategory(event.target.value)}
+									className="max-w-44 cursor-pointer bg-transparent outline-none"
+								>
+									<option value="">{t("allCategories")}</option>
+									{rubrics.map((rubric) => (
+										<optgroup key={rubric.id} label={rubric.name}>
+											<option value={rubric.id}>{rubric.name}</option>
+											{rubric.children.map((child) => (
+												<option key={child.id} value={child.id}>
+													{child.name}
+												</option>
+											))}
+										</optgroup>
+									))}
+								</select>
+							</label>
+						) : null}
+						{cities.map((option) => (
+							<button
+								key={option}
+								type="button"
+								aria-pressed={city === option}
+								onClick={() =>
+									setCity((current) => (current === option ? "" : option))
+								}
+								className={cn(
+									"inline-flex h-8 items-center rounded-full border px-3 font-medium text-[13px]",
+									city === option
+										? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
+										: "border-[#E2E8F0] bg-white text-[#334155]",
+								)}
+							>
+								{t("shipsFrom", { city: cityLabel(option) })}
+							</button>
+						))}
 						<button
 							type="button"
 							aria-pressed={codOnly}
@@ -184,7 +241,7 @@ export function ResaleCatalogueClient({
 					) : null}
 					{catalogue.data && products.length === 0 ? (
 						<p className="rounded-xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center font-medium text-[#475569]">
-							{search.trim() || codOnly
+							{search.trim() || codOnly || category || city
 								? tCatalogue("emptySearch")
 								: tCatalogue("empty")}
 						</p>
@@ -269,7 +326,7 @@ function ProductCard({
 	onRequest: () => void;
 }) {
 	const formatOrderMoney = useOrderMoney();
-	const imageUrl = firstImageUrl(product);
+	const imageUrl = product.imageUrl ?? null;
 	const approved = product.linkStatus === "approved";
 	const blocked =
 		product.linkStatus === "suspended" || product.linkStatus === "revoked";
@@ -531,8 +588,18 @@ function ResellPanel({
 				}}
 			>
 				<div className="flex items-center gap-3">
-					<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[#E2E8F0] text-[#334155]">
-						<ImageIcon aria-hidden="true" className="h-6 w-6" />
+					<div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#E2E8F0] text-[#334155]">
+						{product.imageUrl ? (
+							<Image
+								src={product.imageUrl}
+								alt=""
+								fill
+								sizes="48px"
+								className="object-cover"
+							/>
+						) : (
+							<ImageIcon aria-hidden="true" className="h-6 w-6" />
+						)}
 					</div>
 					<div className="flex min-w-0 flex-col gap-0.5">
 						<span className="font-semibold">{product.title}</span>
@@ -727,12 +794,6 @@ export function initials(name: string): string {
 			.map((part) => part[0]?.toUpperCase() ?? "")
 			.join("") || "?"
 	);
-}
-
-function firstImageUrl(product: ResaleCatalogueProduct): string | null {
-	const image = product.images?.[0]?.image;
-	if (typeof image === "string") return null;
-	return image?.thumbnailURL ?? image?.url ?? null;
 }
 
 export function richText(value: unknown): string {

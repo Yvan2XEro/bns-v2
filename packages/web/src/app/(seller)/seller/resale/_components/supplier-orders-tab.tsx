@@ -1,6 +1,7 @@
 "use client";
 
 import { Info, Package, Printer } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
@@ -90,6 +91,8 @@ export function SupplierOrdersTab({ shopId }: { shopId: string }) {
 										const detailHref = `/seller/resale/purchase-orders/${encodeURIComponent(row.id)}?side=supplier`;
 										const toShip =
 											row.status === "sent" || row.status === "accepted";
+										const thumbnail =
+											row.items.find((item) => item.imageUrl)?.imageUrl ?? null;
 										const area = [
 											row.deliveryArea?.district,
 											row.deliveryArea?.city,
@@ -123,11 +126,21 @@ export function SupplierOrdersTab({ shopId }: { shopId: string }) {
 												</td>
 												<td className="px-3.5 py-2.5">
 													<span className="flex items-center gap-2.5">
-														<span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-[#475569]">
-															<Package
-																aria-hidden="true"
-																className="h-[18px] w-[18px]"
-															/>
+														<span className="relative flex h-[34px] w-[34px] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#F1F5F9] text-[#475569]">
+															{thumbnail ? (
+																<Image
+																	src={thumbnail}
+																	alt=""
+																	fill
+																	sizes="34px"
+																	className="object-cover"
+																/>
+															) : (
+																<Package
+																	aria-hidden="true"
+																	className="h-[18px] w-[18px]"
+																/>
+															)}
 														</span>
 														<span>
 															{row.items

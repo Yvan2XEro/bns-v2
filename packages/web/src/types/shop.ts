@@ -221,6 +221,8 @@ export interface VariantDoc {
 	shop: string;
 	optionValues: Record<string, string>;
 	sku: string | null;
+	/** EAN/UPC digits; optional, unique in the shop. */
+	barcode?: string | null;
 	price: number;
 	cost?: number | null;
 	trackInventory: boolean;
@@ -273,6 +275,7 @@ export interface ProductVariantInput {
 	id?: string;
 	optionValues: Record<string, string>;
 	sku?: string | null;
+	barcode?: string | null;
 	price: number;
 	cost?: number | null;
 	trackInventory?: boolean;

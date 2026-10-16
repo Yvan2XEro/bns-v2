@@ -131,6 +131,22 @@ describe("visibleRowIndexes", () => {
 			}),
 		).toEqual([1]);
 	});
+
+	test("puts the row a scanned barcode names first", () => {
+		const scanned = [
+			{ ...baseRow, productTitle: "Coque 4006381333931", counted: "" },
+			{ ...baseRow, variantId: "v2", barcode: "4006381333931", counted: "" },
+			{ ...baseRow, variantId: "v3", barcode: "96385074", counted: "" },
+		];
+		expect(
+			visibleRowIndexes(scanned, {
+				filter: "all",
+				query: "4006381333931",
+				categoryIds: null,
+				parse,
+			}),
+		).toEqual([1, 0]);
+	});
 });
 
 describe("categoryFamily", () => {

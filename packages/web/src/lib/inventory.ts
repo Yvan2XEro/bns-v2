@@ -89,6 +89,7 @@ export const countFormSchema = z.object({
 			productTitle: z.string(),
 			label: z.string(),
 			sku: z.string().nullable(),
+			barcode: z.string().nullable().optional(),
 			expected: z.number(),
 			cost: z.number().nullable(),
 			image: z.string().nullable().optional(),
@@ -118,6 +119,7 @@ export function rowsFromVariants(
 				productTitle: product?.title ?? "",
 				label: variantLabel(variant.optionValues, defaultLabel),
 				sku: variant.sku,
+				barcode: variant.barcode ?? null,
 				expected: variant.stockOnHand,
 				cost: variant.cost ?? null,
 				image:
@@ -167,14 +169,31 @@ function matchesFilter(
 	return true;
 }
 
+/** A scanned or typed code naming the row outright: its barcode or its SKU. */
+function isExactMatch(
+	row: Pick<CountRow, "sku" | "barcode">,
+	q: string,
+): boolean {
+	if (!q) return false;
+	const code = q.replace(/\s/g, "");
+	return (row.barcode ?? "") === code || (row.sku ?? "").toLowerCase() === q;
+}
+
 /**
  * The form keeps every row (so nothing typed is lost to a filter); this picks
- * the indexes the table shows, in order, before pagination.
+ * the indexes the table shows, in order, before pagination. A row whose
+ * barcode or SKU is exactly the query leads, so a scan lands on its row.
  */
 export function visibleRowIndexes(
 	rows: Pick<
 		CountRow,
-		"productTitle" | "label" | "sku" | "expected" | "counted" | "categoryId"
+		| "productTitle"
+		| "label"
+		| "sku"
+		| "barcode"
+		| "expected"
+		| "counted"
+		| "categoryId"
 	>[],
 	options: {
 		filter: CountFilter;
@@ -185,21 +204,23 @@ export function visibleRowIndexes(
 	},
 ): number[] {
 	const q = options.query.trim().toLowerCase();
+	const exact: number[] = [];
 	const indexes: number[] = [];
 	rows.forEach((row, index) => {
 		if (options.categoryIds && !options.categoryIds.has(row.categoryId ?? "")) {
 			return;
 		}
+		const exactMatch = isExactMatch(row, q);
 		const haystack =
-			`${row.productTitle} ${row.label} ${row.sku ?? ""}`.toLowerCase();
-		if (q && !haystack.includes(q)) return;
+			`${row.productTitle} ${row.label} ${row.sku ?? ""} ${row.barcode ?? ""}`.toLowerCase();
+		if (q && !exactMatch && !haystack.includes(q)) return;
 		if (
 			!matchesFilter(options.filter, row.expected, options.parse(row.counted))
 		)
 			return;
-		indexes.push(index);
+		(exactMatch ? exact : indexes).push(index);
 	});
-	return indexes;
+	return [...exact, ...indexes];
 }
 
 /** A category id and every id below it, from the flat category list. */

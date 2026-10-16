@@ -12,8 +12,13 @@ import { LevelBadge } from "~/components/shop/level-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { getBlockedUsers } from "~/lib/actions";
+import { withContentLocale } from "~/lib/content-locale";
 import { populatedReviewPhotos } from "~/lib/review-photos";
-import { getAuthUser, serverFetch } from "~/lib/server-api";
+import {
+	getAuthUser,
+	serverContentLocale,
+	serverFetch,
+} from "~/lib/server-api";
 import { getUserShop } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
 
@@ -78,7 +83,10 @@ async function getUser(userId: string): Promise<User | null> {
 async function getUserListings(userId: string): Promise<Listing[]> {
 	try {
 		const res = await serverFetch(
-			`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=20&sort=-createdAt&depth=1`,
+			withContentLocale(
+				`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=20&sort=-createdAt&depth=1`,
+				await serverContentLocale(),
+			),
 		);
 		if (!res.ok) return [];
 		const data = await res.json();

@@ -1,8 +1,18 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "~/i18n/locales";
+import { contentLocaleHeaders } from "./content-locale";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+const localeOf = (chosen: string | undefined): Locale =>
+	chosen && isLocale(chosen) ? chosen : DEFAULT_LOCALE;
+
+/** The reader's language, for the `?locale=` Payload's REST routes read. */
+export async function serverContentLocale(): Promise<Locale> {
+	return localeOf((await cookies()).get("NEXT_LOCALE")?.value);
+}
 
 export async function serverFetch(
 	endpoint: string,
@@ -10,11 +20,13 @@ export async function serverFetch(
 ): Promise<Response> {
 	const cookieStore = await cookies();
 	const token = cookieStore.get("payload-token");
+	const locale = localeOf(cookieStore.get("NEXT_LOCALE")?.value);
 
 	return fetch(`${API_URL}${endpoint}`, {
 		...options,
 		headers: {
 			"Content-Type": "application/json",
+			...contentLocaleHeaders(locale),
 			...(token ? { Cookie: `payload-token=${token.value}` } : {}),
 			...options?.headers,
 		},

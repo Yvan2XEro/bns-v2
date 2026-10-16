@@ -87,6 +87,18 @@ describe("parseProductImport", () => {
 		expect(rows[1].errors).toEqual(["duplicateSku"]);
 	});
 
+	test("matches a category by its name in the other language, slug first", () => {
+		const { rows } = parseProductImport(
+			"titre;categorie;prix\nCâble USB;Phones › Accessories;1500\nCoque;telephones;2000\n",
+			categories,
+			{
+				includeCost: false,
+				otherCategoryNames: { "c-1": "Phones", "c-2": "Accessories" },
+			},
+		);
+		expect(rows.map((row) => row.input?.category)).toEqual(["c-2", "c-1"]);
+	});
+
 	test("refuses a file without the required columns", () => {
 		expect(
 			parseProductImport("nom;prix\nX;1\n", categories, { includeCost: false })

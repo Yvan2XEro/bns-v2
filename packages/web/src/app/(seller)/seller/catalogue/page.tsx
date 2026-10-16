@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { type CatalogueFilter, isCatalogueFilter } from "~/lib/catalogue";
-import { getAllCategories, getMyShop } from "~/lib/server-shop";
+import {
+	getAllCategories,
+	getCategoryNamesIn,
+	getMyShop,
+} from "~/lib/server-shop";
 import { can } from "~/lib/shop-roles";
 import { CatalogueClient } from "./catalogue-client";
 
@@ -16,11 +20,15 @@ export default async function CataloguePage({
 }: {
 	searchParams: Promise<{ status?: string; stock?: string }>;
 }) {
-	const [mine, params, categories] = await Promise.all([
+	const [mine, params, categories, locale] = await Promise.all([
 		getMyShop(),
 		searchParams,
 		getAllCategories(),
+		getLocale(),
 	]);
+	const otherCategoryNames = await getCategoryNamesIn(
+		locale === "en" ? "fr" : "en",
+	);
 	if (!mine?.shop) redirect("/shop/new");
 
 	const requested = params.stock ?? params.status ?? "all";
@@ -33,6 +41,7 @@ export default async function CataloguePage({
 			shopId={mine.shop.id}
 			initialFilter={initialFilter}
 			categories={categories}
+			otherCategoryNames={otherCategoryNames}
 			permissions={{
 				resale: can(mine.role, "resale.manage"),
 				archive: can(mine.role, "catalogue.archive"),

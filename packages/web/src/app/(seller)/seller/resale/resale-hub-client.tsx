@@ -99,7 +99,7 @@ function SupplierHub({ shopId, tab }: { shopId: string; tab: ResaleTab }) {
 	const orders = useShopPurchaseOrders(shopId, { side: "supplier" });
 	const toShip = useShopPurchaseOrders(shopId, {
 		side: "supplier",
-		status: "accepted",
+		due: "today",
 	});
 	const resellers = useResaleLinks(shopId, "supplier", "approved");
 	const offered = useSupplierResaleProducts(shopId);

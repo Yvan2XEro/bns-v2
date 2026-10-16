@@ -108,6 +108,9 @@ export interface CartView {
 		badge?: "phone" | "identity" | "business" | null;
 		rating?: number;
 		totalReviews?: number;
+		/** The shop's first public pickup point, for the checkout seller card. */
+		address?: string | null;
+		sinceYear?: number | null;
 	} | null;
 	lines: CartLineView[];
 	subtotal: number;
@@ -206,6 +209,7 @@ export interface QuoteResponse {
 	preContract: ContractSnapshot;
 	confirmationRequired: ConfirmationRequired;
 	quoteHash: string;
+	seller?: { address: string | null; sinceYear: number | null };
 }
 
 // The split views are the server's own contracts now (the shipped slice), so
@@ -395,9 +399,11 @@ export interface OrderListEntry {
 	acceptBy?: string | null;
 	/** Shop role. */
 	phoneTier?: BuyerTier;
-	/** Shop role. */
+	/** Buyer role: the card's shop logo and verification badge. */
+	shopLogoUrl?: string | null;
+	shopBadge?: "phone" | "identity" | "business" | null;
+	/** Both roles: the row's payment pill. */
 	paymentMethod?: PaymentMethod;
-	/** Shop role. */
 	paymentStatus?: PaymentStatus;
 	/** Shop role: neighbourhood and city labels, either may be null. */
 	area?: { district: string | null; city: string | null };

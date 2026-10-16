@@ -31,6 +31,8 @@ export interface PurchaseOrderFilters {
 	status?: PurchaseOrderView["status"];
 	q?: string;
 	from?: string;
+	/** Accepted purchase orders whose handling deadline ends today, overdue included. */
+	due?: "today";
 }
 
 function purchaseOrderQuery(
@@ -42,6 +44,7 @@ function purchaseOrderQuery(
 		status: filters.status,
 		q: filters.q,
 		from: filters.from,
+		due: filters.due,
 		page: String(page),
 	});
 }

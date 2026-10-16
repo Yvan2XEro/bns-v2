@@ -6,6 +6,10 @@ import {
 } from "~/lib/order-actions";
 import type { OrderStatusName } from "~/lib/order-status";
 import type { OrderListEntry, OrderTimelineEntry } from "~/types/order";
+import {
+	type PaymentPill,
+	paymentPill,
+} from "../../../../../api/src/contracts/orderPayment";
 
 export const PURCHASE_TABS = ["open", "delivered", "cancelled"] as const;
 export type PurchaseTab = (typeof PURCHASE_TABS)[number];
@@ -15,6 +19,24 @@ export const PURCHASE_TAB_LABEL_KEYS: Record<PurchaseTab, string> = {
 	delivered: "tabDelivered",
 	cancelled: "tabCancelled",
 };
+
+/** The buyer's words for each payment pill: « Paiement à la livraison », « Payé », « Remboursé »… */
+export const PURCHASE_PAYMENT_KEYS: Record<PaymentPill, string> = {
+	cod: "cardPaymentCod",
+	codCollected: "cardPaymentCodCollected",
+	codRefused: "cardPaymentCodRefused",
+	paid: "cardPaymentPaid",
+	awaiting: "cardPaymentAwaiting",
+	refunded: "cardPaymentRefunded",
+	failed: "cardPaymentFailed",
+};
+
+export function purchasePaymentKey(
+	entry: Pick<OrderListEntry, "paymentMethod" | "paymentStatus">,
+): string | null {
+	const pill = paymentPill(entry);
+	return pill ? PURCHASE_PAYMENT_KEYS[pill] : null;
+}
 
 /**
  * `GET /api/orders` filters on one status at a time, and each tab spans

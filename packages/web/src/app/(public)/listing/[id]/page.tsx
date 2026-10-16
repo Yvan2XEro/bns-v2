@@ -29,6 +29,8 @@ import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { DEFAULT_LOCALE, isLocale } from "~/i18n/locales";
+import { withContentLocale } from "~/lib/content-locale";
 import { buildListingAttributeGroups } from "~/lib/listing-attributes";
 import {
 	listingProduct,
@@ -109,7 +111,14 @@ async function getListing(id: string): Promise<Listing | null> {
 	try {
 		// depth=2 is Payload's default, but the attribute labels below depend on
 		// `category` coming back populated, so say so rather than inherit it.
-		const res = await serverFetch(`/api/listings/${id}?depth=2`);
+		// Payload's REST route takes the language from `?locale=` only.
+		const locale = await getLocale();
+		const res = await serverFetch(
+			withContentLocale(
+				`/api/listings/${id}?depth=2`,
+				isLocale(locale) ? locale : DEFAULT_LOCALE,
+			),
+		);
 		if (!res.ok) return null;
 		return res.json();
 	} catch {
