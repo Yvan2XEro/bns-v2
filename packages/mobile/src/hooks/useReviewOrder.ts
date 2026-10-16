@@ -5,6 +5,8 @@ import { purchaseKey } from "./usePurchases";
 export interface OrderReviewInput {
 	rating: number;
 	comment?: string;
+	/** Media ids, uploaded first; the API keeps at most five images. */
+	photos?: string[];
 }
 
 /**

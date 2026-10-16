@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Linking,
@@ -21,16 +21,31 @@ import { DeliveryCities } from "@/src/components/shop/DeliveryCities";
 import { LegalBlock } from "@/src/components/shop/LegalBlock";
 import { PickupPoints } from "@/src/components/shop/PickupPoints";
 import { ShopHeader } from "@/src/components/shop/ShopHeader";
+import { ShopReviewCard } from "@/src/components/shop/ShopReviewCard";
+import { type ShopTab, ShopTabs } from "@/src/components/shop/ShopTabs";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { useMyShops } from "@/src/hooks/useMyShops";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
+import { useContactShop, useShopReviews } from "@/src/hooks/useShopReviews";
 import { usePublicShop, useShopListings } from "@/src/hooks/useShops";
 import { ApiError } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
+import { useAuth } from "@/src/lib/auth";
+import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { isOwnShop } from "@/src/lib/buyBox";
 import { useTranslation } from "@/src/lib/i18n";
 import { telLink, whatsappLink } from "@/src/lib/shopContact";
 import { shopUrl } from "@/src/lib/shopHandle";
 import type { ListingHit, PublicShop } from "@/src/types/api";
+import type { PublicShopReview } from "../../../api/src/contracts/publicShopReviews";
+
+type Item =
+	| { kind: "row"; listings: ListingHit[] }
+	| { kind: "review"; review: PublicShopReview }
+	| { kind: "about" };
 
 export default function ShopScreen() {
 	const { handle } = useLocalSearchParams<{ handle: string }>();
@@ -56,9 +71,53 @@ export default function ShopScreen() {
 			});
 	}, [redirectTo]);
 
+	const [tab, setTab] = useState<ShopTab>("listings");
 	const listings = useShopListings(shop?.id);
 	const hits: ListingHit[] = listings.data?.pages.flatMap((p) => p.hits) ?? [];
 	const rows = chunkIntoRows(hits, columns);
+	// Fetched on every tab: the first page's `total` is the "Avis" count.
+	const reviews = useShopReviews(shop?.id);
+	const reviewList = reviews.data?.pages.flatMap((p) => p.reviews) ?? [];
+	const reviewTotal = reviews.data?.pages[0]?.total ?? 0;
+
+	const { user } = useAuth();
+	const pathname = usePathname();
+	const { showError } = useAlert();
+	const { data: myShops } = useMyShops();
+	const contactShop = useContactShop();
+	const ownShop = shop
+		? isOwnShop({
+				viewerId: user?.id ?? null,
+				sellerId: shop.owner.id,
+				shopId: shop.id,
+				memberOf: (myShops ?? []).map((entry) => entry.shopId),
+			})
+		: false;
+
+	const contact = () => {
+		if (!shop) return;
+		if (!user) {
+			router.push({
+				pathname: "/auth/login",
+				params: getAuthModalParams(pathname),
+			});
+			return;
+		}
+		contactShop.mutate(shop.id, {
+			onSuccess: ({ conversationId }) =>
+				router.push(`/messages/${conversationId}`),
+			onError: (error) =>
+				showError(t("common.error"), resolveErrorMessage(error, t)),
+		});
+	};
+
+	const items: Item[] =
+		tab === "listings"
+			? rows.map((listingsRow) => ({ kind: "row", listings: listingsRow }))
+			: tab === "reviews"
+				? reviewList.map((review) => ({ kind: "review", review }))
+				: [{ kind: "about" }];
+	const active = tab === "reviews" ? reviews : listings;
 
 	const share = async () => {
 		if (!shop) return;
@@ -130,132 +189,204 @@ export default function ShopScreen() {
 					<Ionicons name="share-outline" size={20} color="#fff" />
 				</Pressable>
 
-				<FlashList
-					data={rows}
-					keyExtractor={(_, index) => String(index)}
+				<FlashList<Item>
+					data={items}
+					keyExtractor={(item, index) =>
+						item.kind === "review" ? item.review.id : `${item.kind}-${index}`
+					}
+					getItemType={(item) => item.kind}
 					contentContainerStyle={{
 						padding: 16,
-						paddingBottom: insets.bottom + 110,
+						paddingBottom: insets.bottom + 24,
 					}}
 					onEndReached={() =>
-						listings.hasNextPage &&
-						!listings.isFetchingNextPage &&
-						listings.fetchNextPage()
+						tab !== "about" &&
+						active.hasNextPage &&
+						!active.isFetchingNextPage &&
+						active.fetchNextPage()
 					}
 					onEndReachedThreshold={0.5}
 					ListHeaderComponent={
-						<View style={{ gap: 16, marginBottom: 4 }}>
+						<View style={{ gap: 16, marginBottom: 12 }}>
 							<ShopHeader shop={shop} onShare={share} />
-							<LegalBlock legal={shop.legal} verified={shop.legalVerified} />
-							<PickupPoints handle={shop.handle} />
-							<DeliveryCities shopId={shop.id} />
-							<Text style={[styles.section, { color: c.text }]}>
-								{t("shop.listingsTitle", { count: shop.publishedListingCount })}
-							</Text>
+							{!ownShop || phone || whatsapp ? (
+								<View style={styles.contactRow}>
+									{!ownShop ? (
+										<Pressable
+											onPress={contact}
+											disabled={contactShop.isPending}
+											style={[
+												styles.primaryBtn,
+												{
+													backgroundColor: brand.accent,
+													opacity: contactShop.isPending ? 0.7 : 1,
+												},
+											]}
+											accessibilityRole="button"
+											accessibilityLabel={t("shop.contactShop")}
+										>
+											{contactShop.isPending ? (
+												<ActivityIndicator color={brand.onAccent} />
+											) : (
+												<>
+													<Ionicons
+														name="chatbox-outline"
+														size={18}
+														color={brand.onAccent}
+													/>
+													<Text
+														style={[
+															styles.primaryText,
+															{ color: brand.onAccent },
+														]}
+													>
+														{t("shop.contactShop")}
+													</Text>
+												</>
+											)}
+										</Pressable>
+									) : null}
+									{phone ? (
+										<Pressable
+											onPress={() => Linking.openURL(phone)}
+											style={[styles.iconBtn, { borderColor: c.border }]}
+											accessibilityRole="button"
+											accessibilityLabel={t("shop.call")}
+										>
+											<Ionicons name="call-outline" size={19} color={c.text} />
+										</Pressable>
+									) : null}
+									{whatsapp ? (
+										<Pressable
+											onPress={() => Linking.openURL(whatsapp)}
+											style={[styles.iconBtn, { borderColor: c.border }]}
+											accessibilityRole="button"
+											accessibilityLabel={t("shop.whatsapp")}
+										>
+											<Ionicons
+												name="logo-whatsapp"
+												size={19}
+												color="#16a34a"
+											/>
+										</Pressable>
+									) : null}
+								</View>
+							) : null}
+							<ShopTabs
+								active={tab}
+								onChange={setTab}
+								reviewCount={reviewTotal}
+							/>
+							{tab === "listings" ? (
+								<Text style={[styles.section, { color: c.text }]}>
+									{t("shop.listingsTitle", {
+										count: shop.publishedListingCount,
+									})}
+								</Text>
+							) : null}
+							{tab === "reviews" ? (
+								<View style={{ gap: 4 }}>
+									<Text style={[styles.section, { color: c.text }]}>
+										{t("shop.reviewsTitle")}
+									</Text>
+									<Text style={[styles.hint, { color: c.muted }]}>
+										{t("shop.reviewsHint")}
+									</Text>
+								</View>
+							) : null}
 						</View>
 					}
-					renderItem={({ item }) => (
-						<View style={[styles.row, { gap: gutter }]}>
-							{item.map((listing) => (
-								<ListingCard
-									key={listing.id}
-									listing={{
-										...listing,
-										price: listing.price ?? undefined,
-										isBoosted: Boolean(
-											listing.boostedUntil &&
-												new Date(listing.boostedUntil) > new Date(),
-										),
-									}}
-									width={cardWidth}
-									isFavorite={favoriteIds.has(listing.id)}
-									onToggleFavorite={() => toggleFavorite({ ...listing })}
-									onPress={(id) => router.push(`/listing/${id}`)}
-								/>
-							))}
-						</View>
-					)}
+					renderItem={({ item }) => {
+						if (item.kind === "review") {
+							return <ShopReviewCard review={item.review} />;
+						}
+						if (item.kind === "about") {
+							return (
+								<View style={{ gap: 16 }}>
+									{shop.description ? (
+										<View style={{ gap: 4 }}>
+											<Text style={[styles.section, { color: c.text }]}>
+												{t("shop.aboutDescription")}
+											</Text>
+											<Text style={[styles.body, { color: c.body }]}>
+												{shop.description}
+											</Text>
+										</View>
+									) : null}
+									<LegalBlock
+										legal={shop.legal}
+										verified={shop.legalVerified}
+									/>
+									<PickupPoints handle={shop.handle} />
+									<DeliveryCities shopId={shop.id} />
+								</View>
+							);
+						}
+						return (
+							<View style={[styles.row, { gap: gutter }]}>
+								{item.listings.map((listing) => (
+									<ListingCard
+										key={listing.id}
+										listing={{
+											...listing,
+											price: listing.price ?? undefined,
+											isBoosted: Boolean(
+												listing.boostedUntil &&
+													new Date(listing.boostedUntil) > new Date(),
+											),
+										}}
+										width={cardWidth}
+										isFavorite={favoriteIds.has(listing.id)}
+										onToggleFavorite={() => toggleFavorite({ ...listing })}
+										onPress={(id) => router.push(`/listing/${id}`)}
+									/>
+								))}
+							</View>
+						);
+					}}
 					ListEmptyComponent={
-						listings.isLoading ? (
+						active.isLoading ? (
 							<ActivityIndicator
 								color={brand.accentText}
 								style={{ margin: 24 }}
 							/>
 						) : (
 							<Text style={[styles.empty, { color: c.muted }]}>
-								{t("shop.noListings")}
+								{tab === "reviews"
+									? reviews.isError
+										? t("shop.reviewsUnavailable")
+										: t("shop.noReviews")
+									: t("shop.noListings")}
 							</Text>
 						)
 					}
 					ListFooterComponent={
-						<Pressable
-							onPress={() =>
-								router.push({
-									pathname: "/report",
-									params: { targetType: "shop", targetId: shop.id },
-								})
-							}
-							style={styles.report}
-							accessibilityRole="button"
-							accessibilityLabel={t("shop.report")}
-						>
-							<Ionicons name="flag-outline" size={14} color={c.muted} />
-							<Text style={[styles.reportText, { color: c.muted }]}>
-								{t("shop.report")}
-							</Text>
-						</Pressable>
+						<View>
+							{active.isFetchingNextPage ? (
+								<ActivityIndicator
+									color={brand.accentText}
+									style={{ margin: 16 }}
+								/>
+							) : null}
+							<Pressable
+								onPress={() =>
+									router.push({
+										pathname: "/report",
+										params: { targetType: "shop", targetId: shop.id },
+									})
+								}
+								style={styles.report}
+								accessibilityRole="button"
+								accessibilityLabel={t("shop.report")}
+							>
+								<Ionicons name="flag-outline" size={14} color={c.muted} />
+								<Text style={[styles.reportText, { color: c.muted }]}>
+									{t("shop.report")}
+								</Text>
+							</Pressable>
+						</View>
 					}
 				/>
-
-				{whatsapp || phone ? (
-					<View
-						style={[
-							styles.actionBar,
-							{
-								backgroundColor: c.card,
-								borderTopColor: c.border,
-								paddingBottom: insets.bottom + 12,
-							},
-						]}
-					>
-						{phone ? (
-							<Pressable
-								onPress={() => Linking.openURL(phone)}
-								style={[styles.secondaryBtn, { borderColor: brand.accentText }]}
-								accessibilityRole="button"
-								accessibilityLabel={t("shop.call")}
-							>
-								<Ionicons
-									name="call-outline"
-									size={18}
-									color={brand.accentText}
-								/>
-								<Text
-									style={[styles.secondaryText, { color: brand.accentText }]}
-								>
-									{t("shop.call")}
-								</Text>
-							</Pressable>
-						) : null}
-						{whatsapp ? (
-							<Pressable
-								onPress={() => Linking.openURL(whatsapp)}
-								style={[styles.primaryBtn, { backgroundColor: brand.accent }]}
-								accessibilityRole="button"
-								accessibilityLabel={t("shop.whatsapp")}
-							>
-								<Ionicons
-									name="logo-whatsapp"
-									size={18}
-									color={brand.onAccent}
-								/>
-								<Text style={[styles.primaryText, { color: brand.onAccent }]}>
-									{t("shop.whatsapp")}
-								</Text>
-							</Pressable>
-						) : null}
-					</View>
-				) : null}
 			</View>
 		</ShopBrandProvider>
 	);
@@ -301,36 +432,25 @@ const styles = StyleSheet.create({
 		paddingVertical: 20,
 	},
 	reportText: { fontSize: 13, fontFamily: Fonts.body },
-	actionBar: {
-		position: "absolute",
-		left: 0,
-		right: 0,
-		bottom: 0,
-		flexDirection: "row",
-		gap: 10,
-		paddingHorizontal: 16,
-		paddingTop: 12,
-		borderTopWidth: StyleSheet.hairlineWidth,
-	},
+	hint: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
+	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
+	contactRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16 },
 	primaryBtn: {
 		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
 		gap: 8,
-		height: 48,
+		height: 46,
 		borderRadius: 14,
 	},
 	primaryText: { color: "#fff", fontSize: 15, fontFamily: Fonts.displayBold },
-	secondaryBtn: {
-		flex: 1,
-		flexDirection: "row",
+	iconBtn: {
+		width: 46,
+		height: 46,
+		borderRadius: 14,
+		borderWidth: 1.5,
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 8,
-		height: 48,
-		borderRadius: 14,
-		borderWidth: 1,
 	},
-	secondaryText: { fontSize: 15, fontFamily: Fonts.displayBold },
 });

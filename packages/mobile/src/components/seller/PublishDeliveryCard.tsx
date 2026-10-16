@@ -7,7 +7,7 @@ import type { ProductFormState } from "@/src/lib/productForm";
 import { FieldIssueText, ISSUE_BORDER } from "./FieldIssueText";
 import { formStyles as f } from "./formStyles";
 
-/** Cash-on-delivery, pickup, preparation time and return policy. */
+/** Cash-on-delivery, pickup, preparation time, return policy and warranty. */
 export function PublishDeliveryCard({
 	form,
 	setForm,
@@ -77,6 +77,27 @@ export function PublishDeliveryCard({
 				accessibilityLabel={t("product.returnPolicy")}
 			/>
 			<FieldIssueText issue={issueAt(issues, "returnPolicy")} />
+			<Text style={[f.label, { color: c.body }]}>
+				{t("product.warrantyMonths")}
+			</Text>
+			<TextInput
+				value={form.warrantyMonths}
+				editable={!readOnly}
+				onChangeText={(v) =>
+					setForm((s) => ({ ...s, warrantyMonths: v.replace(/\D/g, "") }))
+				}
+				keyboardType="number-pad"
+				maxLength={3}
+				placeholder="3"
+				placeholderTextColor={c.muted}
+				style={[...inputStyle, flagged("warrantyMonths")]}
+				accessibilityLabel={t("product.warrantyMonths")}
+				accessibilityHint={t("product.warrantyMonthsHint")}
+			/>
+			<Text style={[f.hint, { color: c.muted }]}>
+				{t("product.warrantyMonthsHint")}
+			</Text>
+			<FieldIssueText issue={issueAt(issues, "warrantyMonths")} />
 		</View>
 	);
 }

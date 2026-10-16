@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
 	ActivityIndicator,
@@ -16,20 +17,33 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 import { Fonts } from "@/constants/theme";
+import {
+	EvidenceStrip,
+	EvidenceViewer,
+	useOpenEvidenceFile,
+} from "@/src/components/disputes/Evidence";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { ShopAvatar } from "@/src/components/shop/ShopAvatar";
 import { type ShopPalette, useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	useDispute,
 	useDisputeAction,
 	useUploadDisputeEvidence,
 } from "@/src/hooks/useDisputes";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import {
 	DISPUTE_ACTION_LABELS,
 	DISPUTE_REASON_LABELS,
 	DISPUTE_STATUS_LABELS,
 } from "@/src/lib/caseStatus";
-import { disputeEvidenceStatus } from "@/src/lib/disputeEvidence";
+import {
+	disputeEvidenceStatus,
+	type EvidenceAttachment,
+	looseEvidence,
+	messageAttachments,
+	stageEvidence,
+} from "@/src/lib/disputeEvidence";
 import {
 	type DisputeTone,
 	disputeDeadline,
@@ -62,6 +76,10 @@ export default function DisputeThreadScreen() {
 		resolver: zodResolver(messageSchema),
 		defaultValues: { body: "" },
 	});
+	const { showAlert, showError } = useAlert();
+	const [viewing, setViewing] = useState<EvidenceAttachment | null>(null);
+	const [staged, setStaged] = useState<string[]>([]);
+	const openFile = useOpenEvidenceFile(id ?? "");
 
 	if (view.isPending)
 		return (
@@ -99,6 +117,9 @@ export default function DisputeThreadScreen() {
 			hour: "2-digit",
 			minute: "2-digit",
 		}).format(new Date(at));
+	const visibleButtons = buttons.filter((name) =>
+		dispute.allowedActions.includes(name),
+	);
 	const perform = async (name: (typeof buttons)[number]) => {
 		const body =
 			name === "respond_accept"
@@ -108,7 +129,16 @@ export default function DisputeThreadScreen() {
 					: undefined;
 		await action.mutateAsync({ action: name, body });
 	};
-	const addEvidence = async () => {
+	const openEvidence = (attachment: EvidenceAttachment) => {
+		if (attachment.kind === "image") return setViewing(attachment);
+		openFile(attachment).catch((error: unknown) =>
+			showError(
+				t("disputes.evidenceUnavailable"),
+				resolveErrorMessage(error, t),
+			),
+		);
+	};
+	const addEvidence = async (stage = false) => {
 		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 		if (permission.status !== "granted") return;
 		const result = await ImagePicker.launchImageLibraryAsync({
@@ -117,20 +147,51 @@ export default function DisputeThreadScreen() {
 		});
 		const asset = result.canceled ? null : result.assets[0];
 		if (!asset) return;
-		await upload.mutateAsync({
+		const uploaded = await upload.mutateAsync({
 			uri: asset.uri,
 			fileName: asset.fileName ?? null,
 			mimeType: asset.mimeType ?? null,
 		});
+		if (stage) setStaged((current) => stageEvidence(current, uploaded.id));
 	};
 	const send = form.handleSubmit(async (values) => {
-		await action.mutateAsync({ action: "message", body: values });
+		await action.mutateAsync({
+			action: "message",
+			body: staged.length ? { ...values, evidenceIds: staged } : values,
+		});
 		form.reset();
+		setStaged([]);
 	});
-	const visibleButtons = buttons.filter((name) =>
-		dispute.allowedActions.includes(name),
+	const toAttachment = (ids: readonly string[]) =>
+		messageAttachments(ids, dispute.evidence);
+	const loose = toAttachment(
+		looseEvidence(dispute.evidence, dispute.messages)
+			.map((item) => item.id)
+			.filter((evidenceId) => !staged.includes(evidenceId)),
 	);
-
+	const openMenu = () =>
+		showAlert(t("disputes.menu"), "", [
+			...(canUpload
+				? [
+						{
+							text: t("disputes.addEvidence"),
+							onPress: () => void addEvidence().catch(() => undefined),
+						},
+					]
+				: []),
+			...visibleButtons
+				.filter((name) => name !== "submit" || evidenceStatus.canSubmit)
+				.map((name) => ({
+					text: t(DISPUTE_ACTION_LABELS[name]),
+					style:
+						name === "withdraw" || name === "proposal_reject"
+							? ("destructive" as const)
+							: ("default" as const),
+					onPress: () => void perform(name).catch(() => undefined),
+				})),
+			{ text: t("disputes.refresh"), onPress: () => void view.refetch() },
+			{ text: t("common.cancel"), style: "cancel" as const },
+		]);
 	return (
 		<SafeAreaView
 			edges={["top", "bottom"]}
@@ -140,6 +201,17 @@ export default function DisputeThreadScreen() {
 				title={t("disputes.threadTitle", { number: dispute.number })}
 				subtitle={`${t(DISPUTE_REASON_LABELS[dispute.reason])} · ${t("disputes.order", { number: dispute.orderNumber })}`}
 				onBack={() => router.back()}
+				right={
+					<Pressable
+						onPress={openMenu}
+						accessibilityRole="button"
+						accessibilityLabel={t("disputes.menu")}
+						hitSlop={8}
+						style={styles.menuButton}
+					>
+						<Ionicons name="ellipsis-horizontal" size={22} color={c.text} />
+					</Pressable>
+				}
 			/>
 			<KeyboardAvoidingView behavior="padding" style={styles.safe}>
 				<ScrollView
@@ -181,7 +253,7 @@ export default function DisputeThreadScreen() {
 								<Pressable
 									accessibilityRole="button"
 									disabled={upload.isPending || dispute.evidence.length >= 10}
-									onPress={() => void addEvidence()}
+									onPress={() => void addEvidence().catch(() => undefined)}
 									style={[
 										styles.chipButton,
 										{ backgroundColor: c.card, borderColor: c.border },
@@ -211,6 +283,18 @@ export default function DisputeThreadScreen() {
 												})}
 									</Text>
 								) : null}
+							</View>
+						) : null}
+						{loose.length ? (
+							<View style={styles.evidence}>
+								<Text style={[styles.evidenceText, { color: tone.text }]}>
+									{t("disputes.evidenceTitle")}
+								</Text>
+								<EvidenceStrip
+									disputeId={dispute.id}
+									attachments={loose}
+									onOpen={openEvidence}
+								/>
 							</View>
 						) : null}
 					</View>
@@ -275,6 +359,11 @@ export default function DisputeThreadScreen() {
 											<Text style={[styles.body, { color: "#fff" }]}>
 												{text}
 											</Text>
+											<EvidenceStrip
+												disputeId={dispute.id}
+												attachments={toAttachment(message.evidenceIds)}
+												onOpen={openEvidence}
+											/>
 										</View>
 										<Text style={[styles.time, { color: c.muted }]}>
 											{time(message.at)}
@@ -337,6 +426,11 @@ export default function DisputeThreadScreen() {
 											<Text style={[styles.body, { color: c.text }]}>
 												{text}
 											</Text>
+											<EvidenceStrip
+												disputeId={dispute.id}
+												attachments={toAttachment(message.evidenceIds)}
+												onOpen={openEvidence}
+											/>
 										</View>
 										<Text style={[styles.time, { color: c.muted }]}>
 											{time(message.at)}
@@ -401,6 +495,23 @@ export default function DisputeThreadScreen() {
 					) : null}
 				</ScrollView>
 
+				{canMessage && staged.length ? (
+					<View
+						style={[
+							styles.staged,
+							{ backgroundColor: c.card, borderColor: c.border },
+						]}
+					>
+						<Text style={[styles.evidenceText, { color: c.muted }]}>
+							{t("disputes.stagedEvidence")}
+						</Text>
+						<EvidenceStrip
+							disputeId={dispute.id}
+							attachments={toAttachment(staged)}
+							onOpen={openEvidence}
+						/>
+					</View>
+				) : null}
 				{canMessage ? (
 					<View
 						style={[
@@ -412,7 +523,8 @@ export default function DisputeThreadScreen() {
 							<Pressable
 								accessibilityRole="button"
 								accessibilityLabel={t("disputes.addEvidence")}
-								onPress={() => void addEvidence()}
+								disabled={upload.isPending}
+								onPress={() => void addEvidence(true).catch(() => undefined)}
 								style={[styles.roundButton, { backgroundColor: c.neutralSoft }]}
 							>
 								<Ionicons name="attach" size={20} color={c.text} />
@@ -453,6 +565,11 @@ export default function DisputeThreadScreen() {
 					</View>
 				) : null}
 			</KeyboardAvoidingView>
+			<EvidenceViewer
+				disputeId={dispute.id}
+				attachment={viewing}
+				onClose={() => setViewing(null)}
+			/>
 		</SafeAreaView>
 	);
 }
@@ -560,6 +677,18 @@ const styles = StyleSheet.create({
 	},
 	actionText: { fontFamily: Fonts.bodySemibold, fontSize: 15 },
 	disabled: { opacity: 0.5 },
+	menuButton: {
+		width: 44,
+		height: 44,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	staged: {
+		gap: 6,
+		paddingHorizontal: 12,
+		paddingTop: 8,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
 	composer: {
 		flexDirection: "row",
 		alignItems: "flex-end",

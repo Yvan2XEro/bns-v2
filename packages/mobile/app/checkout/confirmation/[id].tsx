@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { ComponentProps } from "react";
 import {
 	ActivityIndicator,
+	Pressable,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -16,7 +17,9 @@ import { CodeEntry } from "@/src/components/checkout/CodeEntry";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import { usePurchase } from "@/src/hooks/usePurchases";
+import { useShareReceipt } from "@/src/hooks/useShareReceipt";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import {
 	confirmationOutcome,
@@ -124,11 +127,9 @@ export default function CheckoutConfirmationScreen() {
 								/>
 							) : null}
 							<View style={[styles.divider, { backgroundColor: c.border }]} />
-							<InfoRow
-								icon="receipt-outline"
-								tone="neutral"
-								title={t("checkout.total")}
-								body={
+							<ReceiptRow
+								order={order}
+								total={
 									order.paymentMethod === "cod"
 										? t("checkout.payOnDelivery", { amount: total })
 										: total
@@ -199,6 +200,55 @@ export default function CheckoutConfirmationScreen() {
 				</>
 			)}
 		</SafeAreaView>
+	);
+}
+
+/** The same receipt the order detail shares, opened from the placed screen. */
+function ReceiptRow({
+	order,
+	total,
+}: {
+	order: { id: string; orderNumber: string };
+	total: string;
+}) {
+	const c = useShopTheme();
+	const { t, i18n } = useTranslation();
+	const { showError } = useAlert();
+	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
+	const receipt = useShareReceipt(order, lang);
+	const open = () => {
+		receipt
+			.share()
+			.catch((error: unknown) =>
+				showError(
+					t("purchases.receiptUnavailable"),
+					resolveErrorMessage(error, t),
+				),
+			);
+	};
+	return (
+		<Pressable
+			onPress={open}
+			disabled={receipt.pending}
+			accessibilityRole="button"
+			accessibilityLabel={t("checkout.receiptRowLabel")}
+			accessibilityState={{ busy: receipt.pending }}
+			style={styles.receiptRow}
+		>
+			<View style={{ flex: 1 }}>
+				<InfoRow
+					icon="document-text-outline"
+					tone="neutral"
+					title={t("checkout.receiptRow")}
+					body={t("checkout.receiptRowBody", { total })}
+				/>
+			</View>
+			{receipt.pending ? (
+				<ActivityIndicator color={c.primary} />
+			) : (
+				<Ionicons name="chevron-forward" size={18} color={c.muted} />
+			)}
+		</Pressable>
 	);
 }
 
@@ -318,6 +368,12 @@ const styles = StyleSheet.create({
 		gap: 12,
 	},
 	divider: { height: StyleSheet.hairlineWidth },
+	receiptRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		minHeight: 44,
+	},
 	infoRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
 	infoTile: {
 		width: 40,

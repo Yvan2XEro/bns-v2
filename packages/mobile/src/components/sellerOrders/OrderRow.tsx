@@ -7,17 +7,31 @@ import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
 import { statusLabelKey } from "@/src/lib/orderStatus";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
-import { rowAcceptBy } from "@/src/lib/sellerOrders";
+import { type RowQuickAction, rowAcceptBy } from "@/src/lib/sellerOrders";
 import type { OrderListEntry } from "@/src/types/order";
 import { AcceptCountdown } from "./AcceptCountdown";
+import { SheetButton } from "./FormBits";
 import { TierBadge } from "./TierBadge";
 
 export function OrderRow({
 	order,
 	onPress,
+	actions = [],
+	onAccept,
+	onDecline,
+	accepting,
+	busy,
+	error,
 }: {
 	order: OrderListEntry;
 	onPress: () => void;
+	/** `rowQuickActions` for this row; empty renders the plain card. */
+	actions?: readonly RowQuickAction[];
+	onAccept?: () => void;
+	onDecline?: () => void;
+	accepting?: boolean;
+	busy?: boolean;
+	error?: string | null;
 }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
@@ -27,64 +41,101 @@ export function OrderRow({
 	const status = t(`orderStatus.${statusLabelKey(order.status, "seller")}`);
 
 	return (
-		<Pressable
-			onPress={onPress}
-			accessibilityRole="button"
-			accessibilityLabel={`${t("sellerOrders.orderTitle", {
-				number: order.orderNumber,
-			})}, ${status}`}
+		<View
 			style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
 		>
-			{image ? (
-				<Image
-					source={{ uri: image }}
-					style={styles.thumb}
-					contentFit="cover"
-				/>
-			) : (
-				<View style={[styles.thumb, { backgroundColor: c.neutralSoft }]} />
-			)}
-			<View style={styles.body}>
-				<View style={styles.line}>
-					<Text style={[styles.number, { color: c.text }]} numberOfLines={1}>
-						{order.orderNumber}
+			<Pressable
+				onPress={onPress}
+				accessibilityRole="button"
+				accessibilityLabel={`${t("sellerOrders.orderTitle", {
+					number: order.orderNumber,
+				})}, ${status}`}
+				style={styles.main}
+			>
+				{image ? (
+					<Image
+						source={{ uri: image }}
+						style={styles.thumb}
+						contentFit="cover"
+					/>
+				) : (
+					<View style={[styles.thumb, { backgroundColor: c.neutralSoft }]} />
+				)}
+				<View style={styles.body}>
+					<View style={styles.line}>
+						<Text style={[styles.number, { color: c.text }]} numberOfLines={1}>
+							{order.orderNumber}
+						</Text>
+						<Text style={[styles.total, { color: c.text }]}>
+							{formatPrice(order.total, lang)}
+						</Text>
+					</View>
+					<Text style={[styles.meta, { color: c.body }]} numberOfLines={1}>
+						{t("sellerOrders.itemsSummary", {
+							title: order.firstItemTitle,
+							count: order.itemCount,
+						})}
 					</Text>
-					<Text style={[styles.total, { color: c.text }]}>
-						{formatPrice(order.total, lang)}
+					<Text style={[styles.meta, { color: c.muted }]} numberOfLines={1}>
+						{[order.recipientName, formatOrderDate(order.placedAt, lang)]
+							.filter(Boolean)
+							.join(" · ")}
 					</Text>
+					<View style={styles.line}>
+						<Text
+							style={[styles.status, { color: c.primary }]}
+							numberOfLines={1}
+						>
+							{status}
+						</Text>
+						{order.phoneTier ? <TierBadge tier={order.phoneTier} /> : null}
+					</View>
+					{acceptBy ? <AcceptCountdown acceptBy={acceptBy} /> : null}
 				</View>
-				<Text style={[styles.meta, { color: c.body }]} numberOfLines={1}>
-					{t("sellerOrders.itemsSummary", {
-						title: order.firstItemTitle,
-						count: order.itemCount,
-					})}
-				</Text>
-				<Text style={[styles.meta, { color: c.muted }]} numberOfLines={1}>
-					{[order.recipientName, formatOrderDate(order.placedAt, lang)]
-						.filter(Boolean)
-						.join(" · ")}
-				</Text>
-				<View style={styles.line}>
-					<Text style={[styles.status, { color: c.primary }]} numberOfLines={1}>
-						{status}
-					</Text>
-					{order.phoneTier ? <TierBadge tier={order.phoneTier} /> : null}
+			</Pressable>
+			{actions.length > 0 ? (
+				<View style={styles.actions}>
+					{actions.includes("decline") ? (
+						<View style={styles.action}>
+							<SheetButton
+								label={t("sellerOrders.decline")}
+								tone="danger"
+								outline
+								disabled={busy}
+								onPress={() => onDecline?.()}
+							/>
+						</View>
+					) : null}
+					{actions.includes("accept") ? (
+						<View style={styles.action}>
+							<SheetButton
+								label={t("sellerOrders.accept")}
+								pending={accepting}
+								disabled={busy}
+								onPress={() => onAccept?.()}
+							/>
+						</View>
+					) : null}
 				</View>
-				{acceptBy ? <AcceptCountdown acceptBy={acceptBy} /> : null}
-			</View>
-		</Pressable>
+			) : null}
+			{error ? (
+				<Text
+					accessibilityRole="alert"
+					style={[styles.error, { color: c.danger }]}
+				>
+					{error}
+				</Text>
+			) : null}
+		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	card: {
-		flexDirection: "row",
-		gap: 12,
-		padding: 12,
-		borderRadius: 14,
-		borderWidth: 1,
-		minHeight: 44,
-	},
+	card: { gap: 10, padding: 12, borderRadius: 14, borderWidth: 1 },
+	main: { flexDirection: "row", gap: 12, minHeight: 44 },
+	actions: { flexDirection: "row", gap: 10 },
+	action: { flex: 1 },
+	error: { fontSize: 13, fontFamily: Fonts.body },
 	thumb: { width: 56, height: 56, borderRadius: 10 },
 	body: { flex: 1, gap: 3 },
 	line: {

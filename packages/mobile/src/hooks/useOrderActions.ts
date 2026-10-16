@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { type ShopOrderPages, withRowAccepted } from "../lib/sellerOrders";
 import type {
 	BuyerCancelReason,
 	DeliveryFailureReason,
@@ -32,6 +33,10 @@ function useInvalidateOrder(shopId?: string) {
 	};
 }
 
+function orderActionPath(orderId: string | undefined, segment: string) {
+	return `/api/orders/${orderId}/${segment}`;
+}
+
 /** Shared wiring: one POST, one invalidation set, one typed body. */
 function useOrderPost<TBody, TResult = OrderView>(
 	orderId: string | undefined,
@@ -41,7 +46,7 @@ function useOrderPost<TBody, TResult = OrderView>(
 	const invalidate = useInvalidateOrder(shopId);
 	return useMutation({
 		mutationFn: (body: TBody) =>
-			api.post<TResult>(`/api/orders/${orderId}/${segment}`, body ?? {}),
+			api.post<TResult>(orderActionPath(orderId, segment), body ?? {}),
 		onSuccess: invalidate,
 	});
 }
@@ -99,6 +104,36 @@ export function useRequestWithdrawal(orderId: string | undefined) {
 
 export function useAcceptOrder(orderId: string | undefined, shopId?: string) {
 	return useOrderPost<void>(orderId, "accept", shopId);
+}
+
+/**
+ * The list's accept: the same route as `useAcceptOrder`, with the order id
+ * given per call so one hook serves every row. The row flips to `accepted`
+ * and the tab counts move before the answer; a refusal restores the cache.
+ */
+export function useAcceptOrderFromList(shopId: string | undefined) {
+	const queryClient = useQueryClient();
+	const invalidate = useInvalidateOrder(shopId);
+	return useMutation({
+		mutationFn: (orderId: string) =>
+			api.post<OrderView>(orderActionPath(orderId, "accept"), {}),
+		onMutate: async (orderId: string) => {
+			if (!shopId) return { snapshot: [] };
+			const filter = { queryKey: [...shopOrdersRootKey(shopId), "list"] };
+			await queryClient.cancelQueries(filter);
+			const snapshot = queryClient.getQueriesData<ShopOrderPages>(filter);
+			queryClient.setQueriesData<ShopOrderPages>(filter, (data) =>
+				data ? withRowAccepted(data, orderId) : data,
+			);
+			return { snapshot };
+		},
+		onError: (_error, _orderId, context) => {
+			for (const [key, data] of context?.snapshot ?? []) {
+				queryClient.setQueryData(key, data);
+			}
+		},
+		onSettled: invalidate,
+	});
 }
 
 export function useDeclineOrder(orderId: string | undefined, shopId?: string) {

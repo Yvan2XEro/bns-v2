@@ -21,12 +21,14 @@ import {
 	lockedHandoverNotice,
 	mapsUrl,
 	rowAcceptBy,
+	rowQuickActions,
 	SELLER_END_REASON_KEYS,
 	SELLER_END_REASONS,
 	sellerEndBody,
 	sellerEndSchema,
 	TIER_LABEL_KEYS,
 	tierTone,
+	withRowAccepted,
 } from "./sellerOrders";
 
 const NOW = new Date("2026-10-02T12:00:00.000Z");
@@ -431,5 +433,96 @@ describe("cityLabel", () => {
 
 	test("leaves any other city as stored", () => {
 		expect(cityLabel("Bafoussam")).toBe("Bafoussam");
+	});
+});
+
+describe("rowQuickActions", () => {
+	const PAST = "2026-10-01T12:00:00.000Z";
+
+	test("offers accept and decline exactly where the detail bar does", () => {
+		for (const status of ["placed", "confirmed", "paid"] as const) {
+			const bar = actionBarItems(
+				orderAt(status, {
+					deadlines: { ...orderAt(status).deadlines, acceptBy: FUTURE },
+				}),
+				"owner",
+				NOW,
+			)
+				.map((item) => item.action)
+				.filter((action) => action === "accept" || action === "decline");
+			expect(
+				rowQuickActions({ status, acceptBy: FUTURE }, "owner", NOW).sort(),
+			).toEqual(bar.sort());
+		}
+	});
+
+	test("a confirmed order gets both, a placed one only decline", () => {
+		expect(
+			rowQuickActions({ status: "confirmed", acceptBy: FUTURE }, "owner", NOW),
+		).toEqual(["accept", "decline"]);
+		expect(
+			rowQuickActions({ status: "placed", acceptBy: FUTURE }, "owner", NOW),
+		).toEqual(["decline"]);
+	});
+
+	test("a passed accept deadline drops accept", () => {
+		expect(
+			rowQuickActions({ status: "paid", acceptBy: PAST }, "owner", NOW),
+		).toEqual(["decline"]);
+	});
+
+	test("nothing past to_accept, and nothing without orders.process", () => {
+		expect(
+			rowQuickActions({ status: "accepted", acceptBy: null }, "owner", NOW),
+		).toEqual([]);
+		expect(
+			rowQuickActions({ status: "confirmed", acceptBy: FUTURE }, null, NOW),
+		).toEqual([]);
+	});
+});
+
+describe("withRowAccepted", () => {
+	const entry = (id: string, status: OrderStatusName) => ({
+		id,
+		orderNumber: id,
+		status,
+		placedAt: FUTURE,
+		total: 1000,
+		itemCount: 1,
+		firstItemTitle: "x",
+		firstItemImageUrl: null,
+		shopName: "s",
+		acceptBy: FUTURE,
+	});
+	const counts = {
+		to_accept: 2,
+		to_ship: 0,
+		shipped: 0,
+		delivered: 0,
+		cancelled: 0,
+		failed: 0,
+	};
+	const data = {
+		pages: [
+			{ docs: [entry("a", "confirmed")], nextCursor: "c", counts },
+			{ docs: [entry("b", "paid")], nextCursor: null, counts },
+		],
+		pageParams: [undefined, "c"],
+	};
+
+	test("flips the row and moves one count from to_accept to to_ship", () => {
+		const next = withRowAccepted(data, "b");
+		expect(next.pages[1]?.docs[0]?.status).toBe("accepted");
+		expect(next.pages[1]?.docs[0]?.acceptBy).toBeNull();
+		expect(next.pages[0]?.docs[0]?.status).toBe("confirmed");
+		expect(next.pages[0]?.counts.to_accept).toBe(1);
+		expect(next.pages[0]?.counts.to_ship).toBe(1);
+		expect(data.pages[1]?.docs[0]?.status).toBe("paid");
+	});
+
+	test("leaves the cache alone for an unknown or already accepted row", () => {
+		expect(withRowAccepted(data, "zz")).toBe(data);
+		const accepted = withRowAccepted(data, "a");
+		expect(withRowAccepted(accepted, "a")).toBe(accepted);
 	});
 });

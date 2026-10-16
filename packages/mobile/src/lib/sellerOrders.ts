@@ -11,6 +11,7 @@ import type {
 	OrderListEntry,
 	OrderView,
 	SellerEndReason,
+	ShopOrderPage,
 } from "../types/order";
 import {
 	type AvailableActionsOptions,
@@ -394,4 +395,92 @@ export function mapsUrl(delivery: OrderDeliveryView): string | null {
 		.filter(Boolean)
 		.join(", ");
 	return `${base}${encodeURIComponent(place)}`;
+}
+
+// --- Quick actions on a list row -----------------------------------------
+
+export type RowQuickAction = Extract<ShopBarAction, "accept" | "decline">;
+
+const ROW_QUICK_ACTIONS: readonly RowQuickAction[] = ["accept", "decline"];
+
+/**
+ * A list row only carries `status` and `acceptBy`, which is all `accept` and
+ * `decline` read in `availableActions`; the rest of the subject is neutral
+ * and never consulted for these two actions.
+ */
+export function rowQuickActions(
+	entry: Pick<OrderListEntry, "status" | "acceptBy">,
+	role: ShopRole | null | undefined,
+	now?: Date,
+): RowQuickAction[] {
+	const subject: OrderActionSubject = {
+		status: entry.status,
+		confirmation: {
+			method: null,
+			required: "none",
+			attemptsLeft: 0,
+			resendsLeft: 0,
+		},
+		handover: {
+			method: null,
+			locked: false,
+			attemptsLeft: 0,
+			regenerationsLeft: 0,
+		},
+		completionHold: "none",
+		deadlines: {
+			confirmBy: null,
+			acceptBy: entry.acceptBy ?? null,
+			staleAt: null,
+			completeAt: null,
+			withdrawalUntil: null,
+			contestBy: null,
+		},
+		deliveryFailure: null,
+		returnCaseNumber: null,
+		reviewable: false,
+	};
+	const options: AvailableActionsOptions = now ? { now } : {};
+	const offered = availableActions(subject, "shop", role, options);
+	return ROW_QUICK_ACTIONS.filter((action) => offered.includes(action));
+}
+
+export interface ShopOrderPages {
+	pages: ShopOrderPage[];
+	pageParams: unknown[];
+}
+
+/**
+ * The optimistic answer to an accept from the list: the row reads `accepted`
+ * and moves from the `to_accept` count to the `to_ship` one. Anything that
+ * does not hold the row, or holds it already out of `to_accept`, is returned
+ * unchanged.
+ */
+export function withRowAccepted<T extends ShopOrderPages>(
+	data: T,
+	orderId: string,
+): T {
+	const row = data.pages
+		.flatMap((page) => page.docs)
+		.find((entry) => entry.id === orderId);
+	if (!row || !TAB_STATUSES.to_accept.includes(row.status)) return data;
+	return {
+		...data,
+		pages: data.pages.map((page, index) => ({
+			...page,
+			docs: page.docs.map((entry) =>
+				entry.id === orderId
+					? { ...entry, status: "accepted" as const, acceptBy: null }
+					: entry,
+			),
+			counts:
+				index === 0
+					? {
+							...page.counts,
+							to_accept: Math.max(0, page.counts.to_accept - 1),
+							to_ship: page.counts.to_ship + 1,
+						}
+					: page.counts,
+		})),
+	};
 }

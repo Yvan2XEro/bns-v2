@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { router, useLocalSearchParams } from "expo-router";
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 import {
 	ActivityIndicator,
 	RefreshControl,
@@ -14,14 +14,17 @@ import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { OrderRow } from "@/src/components/sellerOrders/OrderRow";
 import { OrderTabs } from "@/src/components/sellerOrders/OrderTabs";
+import { SellerEndSheet } from "@/src/components/sellerOrders/SellerEndSheet";
 import { useDebouncedValue } from "@/src/components/sellerOrders/useClock";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useAcceptOrderFromList } from "@/src/hooks/useOrderActions";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import type { ShopOrderTab } from "@/src/lib/orderStatus";
-import { initialShopOrderTab } from "@/src/lib/sellerOrders";
+import { initialShopOrderTab, rowQuickActions } from "@/src/lib/sellerOrders";
 
 interface State {
 	tab: ShopOrderTab;
@@ -50,6 +53,30 @@ export default function SellerOrdersScreen() {
 	});
 	const counts = orders.data?.pages[0]?.counts;
 	const rows = orders.data?.pages.flatMap((page) => page.docs) ?? [];
+	const acceptFromList = useAcceptOrderFromList(shop?.shopId);
+	const [declining, setDeclining] = useState<string | null>(null);
+	const [rowError, setRowError] = useState<{
+		id: string;
+		message: string;
+	} | null>(null);
+	const acceptingId = acceptFromList.isPending
+		? acceptFromList.variables
+		: undefined;
+
+	const accept = (id: string) => {
+		setRowError(null);
+		acceptFromList.mutate(id, {
+			onError: (error) =>
+				setRowError({
+					id,
+					message: resolveErrorMessage(
+						error,
+						t,
+						t("sellerOrders.actionFailed"),
+					),
+				}),
+		});
+	};
 
 	if (shopLoading) {
 		return (
@@ -135,10 +162,20 @@ export default function SellerOrdersScreen() {
 					keyExtractor={(row) => row.id}
 					contentContainerStyle={styles.list}
 					ItemSeparatorComponent={() => <View style={styles.separator} />}
+					extraData={{ acceptingId, rowError }}
 					renderItem={({ item }) => (
 						<OrderRow
 							order={item}
 							onPress={() => router.push(`/seller/orders/${item.id}`)}
+							actions={rowQuickActions(item, shop.role)}
+							accepting={acceptingId === item.id}
+							busy={acceptingId === item.id}
+							error={rowError?.id === item.id ? rowError.message : null}
+							onAccept={() => accept(item.id)}
+							onDecline={() => {
+								setRowError(null);
+								setDeclining(item.id);
+							}}
 						/>
 					)}
 					refreshControl={
@@ -161,6 +198,13 @@ export default function SellerOrdersScreen() {
 					}
 				/>
 			)}
+			<SellerEndSheet
+				mode="decline"
+				visible={declining !== null}
+				orderId={declining ?? ""}
+				shopId={shop.shopId}
+				onClose={() => setDeclining(null)}
+			/>
 		</SafeAreaView>
 	);
 }

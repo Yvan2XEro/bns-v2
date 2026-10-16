@@ -5,8 +5,9 @@ import type {
 	DisputeView,
 	OpenDisputeInput,
 } from "../../../api/src/contracts/disputes";
-import { api } from "../lib/api";
+import { API_BASE_URL, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { signedEvidenceUrl } from "../lib/disputeEvidence";
 
 const rootKey = ["cases", "disputes"] as const;
 export const buyerDisputesKey = [...rootKey, "buyer"] as const;
@@ -116,4 +117,40 @@ export function useOpenDispute(orderId: string) {
 			]);
 		},
 	});
+}
+
+export const disputeEvidenceUrlKey = (id: string, evidenceId: string) =>
+	[...rootKey, "detail", id, "evidence-url", evidenceId] as const;
+
+/**
+ * `POST …/evidence/{evidenceId}/url` checks the caller's access, records the
+ * view and signs a five-minute URL. The answer is reused for four minutes so a
+ * re-render neither logs another view nor serves an expired link.
+ */
+export function evidenceUrlQuery(id: string, evidenceId: string) {
+	return {
+		queryKey: disputeEvidenceUrlKey(id, evidenceId),
+		queryFn: async () => {
+			const signed = await api.post<{
+				url: string;
+				expiresAt: string;
+				mimeType: string;
+			}>(
+				`/api/disputes/${encodeURIComponent(id)}/evidence/${encodeURIComponent(evidenceId)}/url`,
+				{},
+			);
+			return { ...signed, url: signedEvidenceUrl(signed.url, API_BASE_URL) };
+		},
+		staleTime: 4 * 60_000,
+		gcTime: 4 * 60_000,
+		retry: false,
+	};
+}
+
+export function useDisputeEvidenceUrl(
+	id: string,
+	evidenceId: string,
+	enabled = true,
+) {
+	return useQuery({ ...evidenceUrlQuery(id, evidenceId), enabled });
 }

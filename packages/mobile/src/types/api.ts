@@ -825,6 +825,7 @@ export interface ProductDoc {
 		pickupAllowed?: boolean | null;
 	} | null;
 	returnPolicy?: string | null;
+	warrantyMonths?: number | null;
 	listing?: string | { id: string } | null;
 	updatedAt: string;
 	createdAt: string;
@@ -855,6 +856,7 @@ export interface ProductInput {
 		pickupAllowed?: boolean;
 	};
 	returnPolicy?: string | null;
+	warrantyMonths?: number | null;
 }
 
 export interface MovementRow {

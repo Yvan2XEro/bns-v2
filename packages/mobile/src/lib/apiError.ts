@@ -91,6 +91,7 @@ export const ERROR_CODES = {
 	reviewSelf: "review.self",
 	reviewDuplicate: "review.duplicate",
 	reviewNoInteraction: "review.noInteraction",
+	reviewTooManyPhotos: "review.tooManyPhotos",
 
 	verificationDisabled: "verification.disabled",
 	verificationNotOwner: "verification.notOwner",
@@ -357,6 +358,7 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.reviewDuplicate]: "You have already reviewed this user.",
 	[ERROR_CODES.reviewNoInteraction]:
 		"You can review a user only after contacting them.",
+	[ERROR_CODES.reviewTooManyPhotos]: "A review can carry at most 5 photos.",
 
 	[ERROR_CODES.verificationDisabled]: "Verification is not available yet.",
 	[ERROR_CODES.verificationNotOwner]: "Only the shop owner can do this.",

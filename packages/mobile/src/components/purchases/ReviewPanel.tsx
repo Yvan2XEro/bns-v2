@@ -1,12 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useReviewOrder } from "@/src/hooks/useReviewOrder";
+import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { type ReviewValues, reviewSchema } from "@/src/lib/purchaseForms";
+import {
+	addPendingPhotos,
+	type PendingReviewPhoto,
+	pendingPhotoFromAsset,
+	REVIEW_PHOTO_ISSUE_KEYS,
+	REVIEW_PHOTO_ISSUE_PARAMS,
+	REVIEW_PHOTOS_MAX,
+} from "@/src/lib/reviewPhotos";
 import { useShopTheme } from "../shop/theme";
 import { Card, FieldError, PurchaseButton, purchaseText } from "./ui";
 
@@ -28,6 +41,58 @@ export function ReviewPanel({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const review = useReviewOrder(orderId);
+	const [photos, setPhotos] = useState<PendingReviewPhoto[]>([]);
+	const [photoIssue, setPhotoIssue] = useState<string | null>(null);
+	const [uploading, setUploading] = useState(false);
+
+	const pickPhotos = async () => {
+		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+		if (permission.status !== "granted") return;
+		const result = await ImagePicker.launchImageLibraryAsync({
+			mediaTypes: ["images"],
+			allowsMultipleSelection: true,
+			selectionLimit: REVIEW_PHOTOS_MAX - photos.length,
+			quality: 0.85,
+		});
+		if (result.canceled || !result.assets?.length) return;
+		const { photos: next, issue } = addPendingPhotos(
+			photos,
+			result.assets.map(pendingPhotoFromAsset),
+		);
+		setPhotos(next);
+		setPhotoIssue(
+			issue
+				? t(REVIEW_PHOTO_ISSUE_KEYS[issue], REVIEW_PHOTO_ISSUE_PARAMS)
+				: null,
+		);
+	};
+
+	const removePhoto = (uri: string) => {
+		setPhotos((current) => current.filter((photo) => photo.uri !== uri));
+		setPhotoIssue(null);
+	};
+
+	const uploadPhotos = async (): Promise<string[]> => {
+		setUploading(true);
+		try {
+			return await Promise.all(
+				photos.map(async (photo, index) => {
+					const data = await createMediaUploadFormData(photo, {
+						defaultBaseName: `review_${Date.now()}_${index}`,
+						alt: shopName,
+					});
+					const uploaded = await api.upload<{ doc: { id: string } }>(
+						"/api/media",
+						data,
+					);
+					if (!uploaded?.doc?.id) throw new Error("upload_failed");
+					return uploaded.doc.id;
+				}),
+			);
+		} finally {
+			setUploading(false);
+		}
+	};
 	const { control, formState, handleSubmit, setError, watch } =
 		useForm<ReviewValues>({
 			resolver: zodResolver(reviewSchema),
@@ -36,7 +101,12 @@ export function ReviewPanel({
 
 	const onSubmit = handleSubmit(async ({ rating, comment }) => {
 		try {
-			await review.mutateAsync({ rating, ...(comment ? { comment } : {}) });
+			const photoIds = await uploadPhotos();
+			await review.mutateAsync({
+				rating,
+				...(comment ? { comment } : {}),
+				...(photoIds.length > 0 ? { photos: photoIds } : {}),
+			});
 		} catch (error) {
 			setError("root", { message: resolveErrorMessage(error, t) });
 		}
@@ -133,6 +203,50 @@ export function ReviewPanel({
 					max: COMMENT_MAX,
 				})}
 			</Text>
+			<View style={styles.photosHead}>
+				<Text style={[styles.photosTitle, { color: c.text }]}>
+					{t("purchases.reviewPhotos")}
+				</Text>
+				<Text style={[purchaseText.muted, { color: c.muted }]}>
+					{t("purchases.reviewPhotosHint", { max: REVIEW_PHOTOS_MAX })}
+				</Text>
+			</View>
+			<View style={styles.photos}>
+				{photos.map((photo, index) => (
+					<View key={photo.uri} style={styles.photo}>
+						<Image
+							source={{ uri: photo.uri }}
+							style={[styles.photoImage, { backgroundColor: c.input }]}
+							contentFit="cover"
+						/>
+						<Pressable
+							onPress={() => removePhoto(photo.uri)}
+							hitSlop={8}
+							accessibilityRole="button"
+							accessibilityLabel={t("purchases.reviewPhotoRemove", {
+								index: index + 1,
+							})}
+							style={[styles.photoRemove, { backgroundColor: c.text }]}
+						>
+							<Ionicons name="close" size={14} color={c.bg} />
+						</Pressable>
+					</View>
+				))}
+				{photos.length < REVIEW_PHOTOS_MAX ? (
+					<Pressable
+						onPress={pickPhotos}
+						accessibilityRole="button"
+						accessibilityLabel={t("purchases.reviewPhotoAdd")}
+						style={[styles.photoAdd, { borderColor: c.muted }]}
+					>
+						<Ionicons name="camera-outline" size={20} color={c.muted} />
+						<Text style={[styles.photoAddText, { color: c.muted }]}>
+							{t("purchases.reviewPhotoAdd")}
+						</Text>
+					</Pressable>
+				) : null}
+			</View>
+			<FieldError message={photoIssue} />
 			<View style={[styles.note, { backgroundColor: c.successSoft }]}>
 				<Ionicons
 					name="shield-checkmark-outline"
@@ -151,7 +265,7 @@ export function ReviewPanel({
 			) : null}
 			<PurchaseButton
 				label={t("purchases.reviewSubmit")}
-				pending={review.isPending}
+				pending={review.isPending || uploading}
 				onPress={onSubmit}
 			/>
 		</Card>
@@ -192,6 +306,36 @@ const styles = StyleSheet.create({
 	},
 	noteText: { flex: 1, fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	stars: { flexDirection: "row", gap: 4 },
+	photosHead: {
+		flexDirection: "row",
+		alignItems: "baseline",
+		justifyContent: "space-between",
+	},
+	photosTitle: { fontSize: 14, fontFamily: Fonts.bodySemibold },
+	photos: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+	photo: { width: 68, height: 68 },
+	photoImage: { width: 68, height: 68, borderRadius: 10 },
+	photoRemove: {
+		position: "absolute",
+		top: -6,
+		right: -6,
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	photoAdd: {
+		width: 68,
+		height: 68,
+		borderRadius: 10,
+		borderWidth: 1.5,
+		borderStyle: "dashed",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 2,
+	},
+	photoAddText: { fontSize: 10, fontFamily: Fonts.bodySemibold },
 	star: {
 		width: 44,
 		height: 44,

@@ -449,6 +449,7 @@ describe("fromProductDetail", () => {
 				options: [{ name: "Couleur", values: ["Or"] }],
 				delivery: { codAllowed: true, pickupAllowed: true, handlingHours: 24 },
 				returnPolicy: "15 jours",
+				warrantyMonths: 3,
 				updatedAt: "",
 				createdAt: "",
 			},
@@ -470,6 +471,7 @@ describe("fromProductDetail", () => {
 			],
 		});
 
+		expect(form.warrantyMonths).toBe("3");
 		expect(form.hasVariants).toBe(true);
 		expect(form.images).toEqual([{ id: "m1", uri: "https://x/y.jpg" }]);
 		expect(form.variants[0]).toMatchObject({
@@ -480,5 +482,34 @@ describe("fromProductDetail", () => {
 			lowStockThreshold: "2",
 		});
 		expect(form.handlingHours).toBe("24");
+	});
+});
+
+describe("warrantyMonths", () => {
+	test("blank and zero send no warranty, a number sends whole months", () => {
+		const form = filled();
+		expect(toProductInput(form, ATTRS).warrantyMonths).toBeNull();
+		form.warrantyMonths = "0";
+		expect(toProductInput(form, ATTRS).warrantyMonths).toBeNull();
+		form.warrantyMonths = "12";
+		expect(toProductInput(form, ATTRS).warrantyMonths).toBe(12);
+	});
+
+	test("over the shared limit is an issue on the publish step", () => {
+		const form = filled();
+		form.variants[0].price = "1000";
+		form.warrantyMonths = "61";
+		const issues = productFormIssues(form, ATTRS);
+		expect(issues).toContainEqual(
+			expect.objectContaining({ path: "warrantyMonths", rule: "max" }),
+		);
+		expect(productStepIssues(issues, "publish").map((i) => i.path)).toContain(
+			"warrantyMonths",
+		);
+		expect(canLeaveStep(issues, 3)).toBe(false);
+		form.warrantyMonths = "60";
+		expect(
+			productFormIssues(form, ATTRS).some((i) => i.path === "warrantyMonths"),
+		).toBe(false);
 	});
 });

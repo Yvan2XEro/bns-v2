@@ -58,6 +58,8 @@ export interface ProductFormState {
 	pickupAllowed: boolean;
 	handlingHours: string;
 	returnPolicy: string;
+	/** Whole months of shop warranty; blank means none. */
+	warrantyMonths: string;
 }
 
 export const MAX_PRODUCT_IMAGES = PRODUCT_LIMITS.imagesMax;
@@ -142,6 +144,7 @@ export function emptyProductForm(): ProductFormState {
 		pickupAllowed: false,
 		handlingHours: "",
 		returnPolicy: "",
+		warrantyMonths: "",
 	};
 }
 
@@ -246,6 +249,8 @@ export function toProductInput(
 			handlingHours: parseAmount(state.handlingHours),
 		},
 		returnPolicy: state.returnPolicy.trim() || null,
+		// Zero is no warranty, as on the web editor.
+		warrantyMonths: parseAmount(state.warrantyMonths) || null,
 	};
 }
 
@@ -300,6 +305,10 @@ export function fromProductDetail(
 				? ""
 				: String(product.delivery.handlingHours),
 		returnPolicy: product.returnPolicy ?? "",
+		warrantyMonths:
+			typeof product.warrantyMonths === "number" && product.warrantyMonths > 0
+				? String(product.warrantyMonths)
+				: "",
 	};
 }
 

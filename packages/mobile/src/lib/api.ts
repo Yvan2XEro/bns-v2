@@ -376,6 +376,12 @@ export const shopApi = {
 			{ listingId },
 		),
 
+	startShopConversation: (shopId: string) =>
+		api.post<{ conversationId: string; created: boolean }>(
+			"/api/conversations/start",
+			{ shopId },
+		),
+
 	assignConversation: (conversationId: string, userId: string | null) =>
 		api.post<InboxConversationView>(
 			`/api/conversations/${conversationId}/assign`,
