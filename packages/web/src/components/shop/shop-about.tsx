@@ -1,3 +1,4 @@
+import { RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -49,6 +50,21 @@ export function ShopAbout({
 						</div>
 					</div>
 				))}
+			{full && shop.returnPolicy && (
+				<div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+					<h2 className="flex items-center gap-2 font-bold text-[#0F172A] text-[15px]">
+						<RotateCcw
+							aria-hidden="true"
+							className="h-4 w-4 text-[var(--shop-accent,#1E40AF)]"
+						/>
+						{t("returnPolicyTitle")}
+					</h2>
+					<p className="mt-2.5 whitespace-pre-wrap break-words text-[#334155] text-sm leading-relaxed">
+						{shop.returnPolicy}
+					</p>
+					<p className="mt-2 text-[#94A3B8] text-xs">{t("returnPolicyNote")}</p>
+				</div>
+			)}
 			{full && <LegalBlock legal={shop.legal} verified={shop.legalVerified} />}
 			{full && (
 				<Link

@@ -35,11 +35,15 @@ export function ShopContactButtons({
 	shopId,
 	contact,
 	theme,
+	variant = "inline",
 }: {
 	shopId: string;
 	contact: PublicShop["contact"];
 	theme?: ShopTheme;
+	/** `bar`: the full-width trigger of the sticky bottom bar on a phone. */
+	variant?: "inline" | "bar";
 }) {
+	const bar = variant === "bar";
 	const t = useTranslations("ShopPage");
 	const tErrors = useTranslations();
 	const router = useRouter();
@@ -62,12 +66,16 @@ export function ShopContactButtons({
 	}
 
 	return (
-		<div className="inline-flex flex-col gap-1">
+		<div
+			className={
+				bar ? "flex w-full flex-col gap-1" : "inline-flex flex-col gap-1"
+			}
+		>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<button
 						type="button"
-						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2"
+						className={`${bar ? "h-11 w-full justify-center" : "h-10"} inline-flex items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2`}
 					>
 						<MessageSquare className="h-4 w-4" />
 						{t("contact")}
@@ -76,7 +84,8 @@ export function ShopContactButtons({
 				</DropdownMenuTrigger>
 				{/* Portalled out of the shop's scope, so it carries the colours itself. */}
 				<DropdownMenuContent
-					align="end"
+					align={bar ? "center" : "end"}
+					side={bar ? "top" : undefined}
 					className="min-w-52 [&_[role=menuitem]:focus]:bg-[var(--shop-accent-soft)] [&_[role=menuitem]:focus]:text-[var(--shop-accent-text)]"
 					style={theme ? shopThemeVars(theme) : undefined}
 				>
@@ -129,7 +138,10 @@ export function ShopContactButtons({
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{start.isError && start.error.status !== 401 && (
-				<p role="alert" className="max-w-52 text-red-500 text-xs">
+				<p
+					role="alert"
+					className={`${bar ? "" : "max-w-52"}text-red-500 text-xs`}
+				>
 					{resolveErrorMessage(start.error, tErrors)}
 				</p>
 			)}

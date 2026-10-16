@@ -1,4 +1,4 @@
-import { Flag, MapPin, Star } from "lucide-react";
+import { Flag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import type { ShopRatingDisplay } from "~/lib/shop-rating";
@@ -8,6 +8,7 @@ import { LevelBadge } from "./level-badge";
 import { ShareShopButton } from "./share-shop-button";
 import { ShopContactButtons } from "./shop-contact-buttons";
 import { ShopInitials } from "./shop-initials";
+import { ShopTrustStrip } from "./shop-trust-strip";
 
 export function ShopHero({
 	shop,
@@ -21,10 +22,6 @@ export function ShopHero({
 	tabs?: React.ReactNode;
 }) {
 	const t = useTranslations("Shop");
-	const since = new Date(shop.owner.memberSince).getFullYear();
-	const place = [shop.location.city, shop.location.region]
-		.filter(Boolean)
-		.join(", ");
 
 	// Only the logo is pulled up over the banner; the name, badges and meta
 	// stay in normal flow beneath it, so no name length or wrap can reach
@@ -67,35 +64,12 @@ export function ShopHero({
 								</h1>
 								<LevelBadge badge={shop.badge} />
 							</div>
-							<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[#64748B] text-sm">
-								{rating && (
-									<span className="flex items-center gap-1">
-										<Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-										<strong className="text-[#0F172A]">
-											{rating.rating.toLocaleString(locale, {
-												maximumFractionDigits: 1,
-											})}
-										</strong>{" "}
-										(
-										{rating.source === "shop"
-											? t("verifiedReviews", { count: rating.count })
-											: t("reviews", { count: rating.count })}
-										)
-									</span>
-								)}
-								<span>
-									{t("products", { count: shop.publishedListingCount })}
-								</span>
-								{place && (
-									<span className="flex items-center gap-1">
-										<MapPin className="h-4 w-4 text-[#F59E0B]" />
-										{place}
-									</span>
-								)}
-								<span>{t("onPlatformSince", { year: since })}</span>
-							</div>
+							<ShopTrustStrip shop={shop} rating={rating} locale={locale} />
 						</div>
-						<div className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-1">
+						<div
+							data-shop-contact=""
+							className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-1"
+						>
 							<ShopContactButtons
 								shopId={shop.id}
 								contact={shop.contact}

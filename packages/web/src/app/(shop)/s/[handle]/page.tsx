@@ -8,6 +8,7 @@ import { DeliveryCities } from "~/components/shop/delivery-cities";
 import { PickupPoints } from "~/components/shop/pickup-points";
 import { ShopAbout } from "~/components/shop/shop-about";
 import { ShopHero } from "~/components/shop/shop-hero";
+import { ShopStickyContact } from "~/components/shop/shop-sticky-contact";
 import { serverFetch } from "~/lib/server-api";
 import { lookupShop } from "~/lib/server-shop";
 import { type CategoryNode, groupedCounts } from "~/lib/shop-category-groups";
@@ -292,7 +293,8 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 						</div>
 					</div>
 					<div className="min-w-0 lg:col-span-3">
-						{categoryList && (
+						{/* One category: the chip row would only repeat « Tout ». */}
+						{categoryList && categoryList.categories.length > 1 && (
 							<ShopCategories
 								layout="chips"
 								{...categoryList}
@@ -363,6 +365,13 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 					</div>
 				</div>
 			)}
+			<ShopStickyContact
+				shop={{
+					id: shop.id,
+					contact: shop.contact,
+					brandColor: shop.brandColor,
+				}}
+			/>
 		</div>
 	);
 }

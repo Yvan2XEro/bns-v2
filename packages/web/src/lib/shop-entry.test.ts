@@ -20,6 +20,13 @@ const baseShop: MyShop = {
 	rating: 0,
 	totalReviews: 0,
 	createdAt: "2024-01-01T00:00:00.000Z",
+	trust: {
+		responseTime: null,
+		activeListings: 0,
+		memberSince: "2024-01-01T00:00:00.000Z",
+		isNew: false,
+	},
+	returnPolicy: null,
 	owner: {
 		id: "user-1",
 		name: "Owner",

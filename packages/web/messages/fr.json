@@ -1150,7 +1150,28 @@
 		"businessTypeCompany": "Société",
 		"businessTypeCooperative": "Coopérative",
 		"verifiedReviews": "{count, plural, one {# avis d'achat vérifié} other {# avis d'achats vérifiés}}",
-		"sinceYear": "depuis {year}"
+		"sinceYear": "depuis {year}",
+		"returnPolicyTitle": "Politique de retour",
+		"returnPolicyNote": "Règle par défaut de la boutique. Celle affichée sur une annonce prévaut."
+	},
+	"ShopTrust": {
+		"label": "Repères de confiance",
+		"ratingHint": "Moyenne des avis laissés par des acheteurs ayant reçu une commande de cette boutique.",
+		"ownerRatingHint": "Note du vendeur, en attendant les premiers avis d'achats vérifiés de la boutique.",
+		"responseTime": {
+			"under_1h": "Répond en moins d'1 h",
+			"under_3h": "Répond en moins de 3 h",
+			"same_day": "Répond dans la journée",
+			"few_days": "Répond en quelques jours"
+		},
+		"responseTimeHint": "Délai médian de la première réponse aux messages des acheteurs, sur les 30 derniers jours.",
+		"cityHint": "Ville où la boutique est installée.",
+		"memberSince": "Depuis {year}",
+		"memberSinceHint": "Boutique ouverte sur Buy'N'Sellem en {year}.",
+		"newShop": "Nouvelle boutique",
+		"newShopHint": "Ouverte récemment : elle n'a pas encore d'historique sur Buy'N'Sellem.",
+		"activeListings": "{count, plural, one {# annonce} other {# annonces}}",
+		"activeListingsHint": "Annonces actuellement en ligne dans cette boutique."
 	},
 	"ShopPage": {
 		"tabsLabel": "Sections de la boutique",

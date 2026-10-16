@@ -1,3 +1,4 @@
+import type { ShopTrust } from "../../../api/src/contracts/shopTrust";
 import type { Category, Product } from "../../../api/src/payload-types";
 import type {
 	BusinessType,
@@ -77,6 +78,10 @@ export interface PublicShop {
 	rating: number;
 	totalReviews: number;
 	createdAt: string;
+	/** The strip under the name; `shopTrustItems` in the API contracts picks what shows. */
+	trust: ShopTrust;
+	/** The shop-level default return policy, shown in « À propos ». */
+	returnPolicy: string | null;
 	owner: {
 		id: string;
 		name: string;
@@ -91,8 +96,6 @@ export type MyShop = PublicShop & {
 	status: ShopStatus;
 	handleChangedAt: string | null;
 	nextHandleChangeAt: string | null;
-	/** The default a new product's return policy starts from. */
-	returnPolicy?: string | null;
 	suspension: {
 		active: boolean;
 		indefinite: boolean;

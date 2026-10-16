@@ -1150,7 +1150,28 @@
 		"businessTypeCompany": "Company",
 		"businessTypeCooperative": "Cooperative",
 		"verifiedReviews": "{count, plural, one {# verified purchase review} other {# verified purchase reviews}}",
-		"sinceYear": "since {year}"
+		"sinceYear": "since {year}",
+		"returnPolicyTitle": "Return policy",
+		"returnPolicyNote": "The shop's default rule. The one shown on a listing takes precedence."
+	},
+	"ShopTrust": {
+		"label": "Trust signals",
+		"ratingHint": "Average of the reviews left by buyers who received an order from this shop.",
+		"ownerRatingHint": "The seller's rating, until the shop's first verified purchase reviews.",
+		"responseTime": {
+			"under_1h": "Replies within 1 h",
+			"under_3h": "Replies within 3 h",
+			"same_day": "Replies within a day",
+			"few_days": "Replies within a few days"
+		},
+		"responseTimeHint": "Median time to the first reply to buyers' messages over the last 30 days.",
+		"cityHint": "City where the shop is based.",
+		"memberSince": "Since {year}",
+		"memberSinceHint": "Shop opened on Buy'N'Sellem in {year}.",
+		"newShop": "New shop",
+		"newShopHint": "Opened recently: it has no track record on Buy'N'Sellem yet.",
+		"activeListings": "{count, plural, one {# listing} other {# listings}}",
+		"activeListingsHint": "Listings currently live in this shop."
 	},
 	"ShopPage": {
 		"tabsLabel": "Shop sections",
