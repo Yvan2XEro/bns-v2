@@ -1,4 +1,4 @@
-import type { Payload, PayloadRequest } from "payload";
+import type { Payload, PayloadRequest, Where } from "payload";
 import { z } from "zod";
 import type { PublicPickupPoint } from "../../contracts/publicPickupPoint";
 import { queueSearchEvent } from "../../hooks/searchEvents";
@@ -6,8 +6,13 @@ import { ERROR_CODES } from "../../lib/errors";
 import { isLaunchCityKey, type LaunchCityKey } from "../../lib/launchCities";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
-import { RetryTransaction, withTransaction } from "../../lib/transactions";
-import type { ShopLocation } from "../../payload-types";
+import { publicAddressLine, sinceYearOf } from "../../lib/shopSellerCard";
+import {
+	RetryTransaction,
+	type TxReq,
+	withTransaction,
+} from "../../lib/transactions";
+import type { Shop, ShopLocation } from "../../payload-types";
 import { requireShopPermission } from "../shopGuards";
 import type { ServiceUser } from "../shops";
 
@@ -346,6 +351,45 @@ export async function defaultOrigin(
 	return result.docs[0] ?? null;
 }
 
+const publicPickupWhere = (shopId: string): Where => ({
+	and: [
+		{ shop: { equals: shopId } },
+		{ active: { equals: true } },
+		{ pickupEnabled: { equals: true } },
+	],
+});
+
+/**
+ * The seller card's street address and opening year. The address is the
+ * first pickup point `publicPickupPoints` lists — public already on the shop
+ * page — never the owner's or the legal group's.
+ */
+export async function shopSellerDetails(
+	payload: Payload,
+	shop: Pick<Shop, "id" | "status" | "createdAt"> | null,
+	req?: TxReq,
+): Promise<{ address: string | null; sinceYear: number | null }> {
+	if (!shop) return { address: null, sinceYear: null };
+	const sinceYear = sinceYearOf(shop.createdAt);
+	if (shop.status !== "active") return { address: null, sinceYear };
+	const result = await payload
+		.find({
+			collection: "shop-locations",
+			where: publicPickupWhere(String(shop.id)),
+			limit: 1,
+			sort: "name",
+			depth: 0,
+			overrideAccess: true,
+			req,
+		})
+		.catch(() => null);
+	const first = result?.docs[0];
+	return {
+		address: first ? publicAddressLine(first) || null : null,
+		sinceYear,
+	};
+}
+
 export async function publicPickupPoints(
 	payload: Payload,
 	handle: string,
@@ -363,13 +407,7 @@ export async function publicPickupPoints(
 	if (!shop) throw new ServiceError(ERROR_CODES.shopNotFound, 404);
 	const result = await payload.find({
 		collection: "shop-locations",
-		where: {
-			and: [
-				{ shop: { equals: String(shop.id) } },
-				{ active: { equals: true } },
-				{ pickupEnabled: { equals: true } },
-			],
-		},
+		where: publicPickupWhere(String(shop.id)),
 		limit: 100,
 		sort: "name",
 		depth: 0,

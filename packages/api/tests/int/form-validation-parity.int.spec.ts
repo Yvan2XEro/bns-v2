@@ -24,6 +24,8 @@ import {
 	listingIssueStep,
 } from "../../src/contracts/listingValidation";
 import {
+	barcodeIssue,
+	isValidBarcode,
 	productInputIssues,
 	productIssueStep,
 } from "../../src/contracts/productValidation";
@@ -124,6 +126,44 @@ const CASES: Array<{ name: string; body: Record<string, unknown> }> = [
 		},
 	},
 	{
+		name: "a valid EAN-13 barcode, spaces included",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: "4006381 333931" }],
+		},
+	},
+	{
+		name: "a barcode with a wrong check digit",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: "4006381333932" }],
+		},
+	},
+	{
+		name: "a barcode with letters",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: "ABC123456789" }],
+		},
+	},
+	{
+		name: "a numeric barcode",
+		body: {
+			...valid,
+			variants: [{ optionValues: {}, price: 1, barcode: 4006381333931 }],
+		},
+	},
+	{
+		name: "two variants sharing a barcode",
+		body: {
+			...withColour,
+			variants: withColour.variants.map((v) => ({
+				...v,
+				barcode: "96385074",
+			})),
+		},
+	},
+	{
 		name: "a variant using a value its option does not have",
 		body: {
 			...withColour,
@@ -188,6 +228,37 @@ describe("product rules: the service refuses exactly what the shared rules repor
 	});
 });
 
+describe("barcode rule", () => {
+	it("accepts EAN-8, UPC-A, EAN-13 and GTIN-14 with a valid check digit", () => {
+		for (const code of [
+			"96385074",
+			"036000291452",
+			"4006381333931",
+			"10012345678902",
+		]) {
+			expect(isValidBarcode(code)).toBe(true);
+		}
+	});
+
+	it("refuses other lengths, letters and a wrong check digit", () => {
+		for (const code of [
+			"1234567",
+			"123456789",
+			"4006381333932",
+			"40063813339A1",
+		]) {
+			expect(isValidBarcode(code)).toBe(false);
+		}
+	});
+
+	it("leaves a blank barcode alone", () => {
+		expect(barcodeIssue("")).toBeNull();
+		expect(barcodeIssue("  ")).toBeNull();
+		expect(barcodeIssue(null)).toBeNull();
+		expect(barcodeIssue(42)).toBe("text");
+	});
+});
+
 describe("product rules: the mobile wizard runs the same rules", () => {
 	it("flags what the server would refuse, on the server's paths", () => {
 		const form = emptyProductForm();
@@ -203,6 +274,18 @@ describe("product rules: the mobile wizard runs the same rules", () => {
 		form.handlingHours = "900";
 		const paths = productFormIssues(form, []).map((issue) => issue.path);
 		expect(paths).toEqual(["variants.1.sku", "delivery.handlingHours"]);
+	});
+
+	it("flags a barcode the server would refuse", () => {
+		const form = emptyProductForm();
+		form.title = "Samsung";
+		form.category = { id: "cat-1", name: "Phones", slug: "phones" };
+		form.variants = [
+			{ ...form.variants[0], price: "1000", barcode: "4006381333932" },
+		];
+		expect(productFormIssues(form, [])).toEqual([
+			{ path: "variants.0.barcode", rule: "barcode" },
+		]);
 	});
 });
 

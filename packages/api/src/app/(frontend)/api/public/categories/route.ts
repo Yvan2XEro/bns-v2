@@ -1,5 +1,6 @@
 import config from "@payload-config";
 import { getPayload } from "payload";
+import { DEFAULT_CONTENT_LOCALE, requestLocale } from "@/lib/requestLocale";
 
 type CategoryResponseShape = {
 	id: string;
@@ -32,12 +33,15 @@ export async function GET(request: Request) {
 		const id = searchParams.get("id");
 		const slug = searchParams.get("slug");
 		const depth = parseDepth(searchParams.get("depth"));
+		const locale = requestLocale(request);
+		const localized = { locale, fallbackLocale: DEFAULT_CONTENT_LOCALE };
 
 		if (id) {
 			const category = (await payload.findByID({
 				collection: "categories",
 				id,
 				depth,
+				...localized,
 			})) as CategoryResponseShape | null;
 
 			if (!category) {
@@ -68,6 +72,7 @@ export async function GET(request: Request) {
 					active: { equals: true },
 				},
 				depth,
+				...localized,
 				limit: 1,
 			});
 
@@ -98,6 +103,7 @@ export async function GET(request: Request) {
 				active: { equals: true },
 			},
 			depth,
+			...localized,
 			limit: 0,
 			pagination: false,
 		});

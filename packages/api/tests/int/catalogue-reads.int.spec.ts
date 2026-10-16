@@ -406,6 +406,30 @@ describe("listCatalogue", () => {
 		).toEqual(["p-2"]);
 	});
 
+	it("finds a product by its exact barcode, and lists exact matches first", async () => {
+		const payload = seed();
+		await payload.update({
+			collection: "product-variants",
+			id: "v-3",
+			data: { barcode: "4006381333931" },
+		});
+		expect(
+			(
+				await listCatalogue(payload, U1, "s-1", { q: "4006381333931" })
+			).docs.map((r) => r.id),
+		).toEqual(["p-2"]);
+		await payload.update({
+			collection: "products",
+			id: "p-1",
+			data: { title: "Coque 4006381333931" },
+		});
+		expect(
+			(
+				await listCatalogue(payload, U1, "s-1", { q: "4006381333931" })
+			).docs.map((r) => r.id),
+		).toEqual(["p-2", "p-1"]);
+	});
+
 	it("refuses non-members", async () => {
 		await expect(
 			listCatalogue(seed(), { id: "u-2" }, "s-1", {}),

@@ -241,6 +241,113 @@ describe("createProduct", () => {
 		).rejects.toMatchObject({ code: "generic.validation", status: 409 });
 	});
 
+	it("stores a variant's barcode without the spaces typed in it", async () => {
+		const payload = seed();
+		const { variants } = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				variants: [
+					{ ...input().variants[0], barcode: "4006381 333931" },
+					input().variants[1],
+				],
+			}),
+		);
+		expect(variants.map((v) => v.barcode ?? null)).toEqual([
+			"4006381333931",
+			null,
+		]);
+	});
+
+	it("refuses a barcode another product of the shop carries, on its path", async () => {
+		const payload = seed();
+		await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				variants: [
+					{ ...input().variants[0], barcode: "4006381333931" },
+					input().variants[1],
+				],
+			}),
+		);
+		await expect(
+			createProduct(
+				payload,
+				U1,
+				"s-1",
+				input({
+					title: "Autre produit",
+					options: [],
+					variants: [
+						{ optionValues: {}, price: 1000, barcode: "4006381333931" },
+					],
+				}),
+			),
+		).rejects.toMatchObject({
+			code: "generic.validation",
+			status: 409,
+			details: { issues: [{ path: "variants.0.barcode", rule: "taken" }] },
+		});
+	});
+
+	it("lets a variant keep its own barcode on update", async () => {
+		const payload = seed();
+		const created = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				options: [],
+				variants: [{ optionValues: {}, price: 1000, barcode: "96385074" }],
+			}),
+		);
+		const updated = await updateProduct(
+			payload,
+			U1,
+			created.product.id,
+			input({
+				options: [],
+				variants: [
+					{
+						id: created.variants[0].id,
+						optionValues: {},
+						price: 1200,
+						barcode: "96385074",
+					},
+				],
+			}),
+		);
+		expect(updated.variants[0].barcode).toBe("96385074");
+	});
+
+	it("keeps a barcode when a client that predates the field saves the product", async () => {
+		const payload = seed();
+		const created = await createProduct(
+			payload,
+			U1,
+			"s-1",
+			input({
+				options: [],
+				variants: [{ optionValues: {}, price: 1000, barcode: "96385074" }],
+			}),
+		);
+		const updated = await updateProduct(
+			payload,
+			U1,
+			created.product.id,
+			input({
+				options: [],
+				variants: [
+					{ id: created.variants[0].id, optionValues: {}, price: 1200 },
+				],
+			}),
+		);
+		expect(updated.variants[0].barcode).toBe("96385074");
+	});
+
 	it("refuses attribute errors from the category", async () => {
 		validateListingAttributes.mockResolvedValueOnce([
 			{ message: "brand is required" },

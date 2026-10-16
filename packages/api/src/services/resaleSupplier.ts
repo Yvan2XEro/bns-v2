@@ -2,6 +2,7 @@ import type { Payload } from "payload";
 import {
 	isMinResellerLevel,
 	minResellerLevelOf,
+	minRetailPriceChangedAt,
 	type ResaleMinResellerLevel,
 	type SupplierResaleProduct,
 	type SupplierResaleSettingsView,
@@ -411,6 +412,11 @@ export async function updateSupplierResaleSettings(
 								: {
 										supplierPrice: change.supplierPrice,
 										minRetailPrice: change.minRetailPrice,
+										minRetailPriceChangedAt: minRetailPriceChangedAt(
+											currentResale,
+											change.minRetailPrice,
+											now,
+										),
 									}),
 							suggestedRetailPrice: immediateSuggested,
 						},
@@ -540,7 +546,14 @@ export async function applyResalePriceChanges(
 								? { supplierPrice: row.supplierPrice }
 								: {}),
 							...(typeof row.minRetailPrice === "number"
-								? { minRetailPrice: row.minRetailPrice }
+								? {
+										minRetailPrice: row.minRetailPrice,
+										minRetailPriceChangedAt: minRetailPriceChangedAt(
+											variant.resale ?? {},
+											row.minRetailPrice,
+											new Date(pending.effectiveAt),
+										),
+									}
 								: {}),
 							...(typeof row.suggestedRetailPrice === "number"
 								? { suggestedRetailPrice: row.suggestedRetailPrice }

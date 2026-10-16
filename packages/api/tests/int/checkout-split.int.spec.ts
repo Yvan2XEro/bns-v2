@@ -193,6 +193,8 @@ describe("flag off: today's cart, byte for byte", () => {
 				badge: "identity",
 				rating: 0,
 				totalReviews: 0,
+				address: null,
+				sinceYear: null,
 			},
 			lines: [
 				{

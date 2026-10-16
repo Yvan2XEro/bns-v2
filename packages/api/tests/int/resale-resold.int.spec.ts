@@ -156,6 +156,7 @@ describe("listResoldListings", () => {
 				listingId: "resold",
 				productId: "product",
 				title: "Câble USB-C",
+				imageUrl: null,
 				supplier: { id: "supplier-shop", name: "Mboppi Accessoires" },
 				status: "below_minimum",
 				variants: [
@@ -166,6 +167,7 @@ describe("listResoldListings", () => {
 						price: 2800,
 						supplierPrice: 1500,
 						minRetailPrice: 3000,
+						minRetailPriceChangedAt: null,
 						suggestedRetailPrice: 3500,
 						supplierStock: 10,
 					},

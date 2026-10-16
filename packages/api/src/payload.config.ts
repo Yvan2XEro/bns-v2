@@ -351,6 +351,16 @@ export default buildConfig({
 		ReconciliationMismatches,
 	],
 	globals: [AppSettings],
+	// Only the category labels are localised. French is the default: a read
+	// with no locale, and an English label nobody has written, get the French.
+	localization: {
+		locales: [
+			{ code: "fr", label: "Français" },
+			{ code: "en", label: "English" },
+		],
+		defaultLocale: "fr",
+		fallback: true,
+	},
 	editor: lexicalEditor(),
 	// One knob for every `logger.debug`/`info`/`warn` call in the app, rather
 	// than a feature-specific env var per thing that wants to be visible in

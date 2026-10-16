@@ -2,6 +2,12 @@ import type { Payload } from "payload";
 import { isConditionLikeAttribute } from "../contracts/conditionAttribute";
 import { fingerprintOf } from "../lib/deployTasks";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
+import { localizeCategoryLabels } from "../migrations/categoryLocales";
+import {
+	frenchSeedAttribute,
+	seedFrenchOfEnglish,
+	seedLabelFr,
+} from "../seed/categoryTranslations";
 import {
 	type CategoryAttributeSeed,
 	categoryListingForms,
@@ -25,6 +31,9 @@ import {
 export function categoryCatchUpFingerprint(): string {
 	return fingerprintOf({ categoryListingForms, categorySeedAttributes });
 }
+
+const hasUnnamedRow = (rows: StoredAttribute[] | null | undefined) =>
+	(rows ?? []).some((row) => typeof row?.name !== "string" || !row.name.trim());
 
 /** A stored value counts as unset when it is absent, null, empty or "auto". */
 const isUnset = (value: unknown): boolean =>
@@ -105,6 +114,38 @@ function planAttributes(
 	};
 }
 
+/**
+ * The stored rows as written back in the default locale: a row whose French
+ * label is missing — one created in the en admin locale — gets the seed's
+ * French for an English seed word, its English otherwise, so the required
+ * French name never fails the update and the boot task never loops on it.
+ */
+export function withFrenchLabels(
+	rows: StoredAttribute[],
+	english: Map<string, StoredAttribute>,
+): StoredAttribute[] {
+	return rows.map((row) => {
+		const en = row?.id ? english.get(row.id) : undefined;
+		if (!en) return row;
+		const fill = (
+			field: "name" | "group" | "unit",
+			kind: "attribute" | "group" | "unit",
+		) => {
+			const current = row[field];
+			const fallback = en[field];
+			if (typeof current === "string" && current.trim()) return {};
+			if (typeof fallback !== "string" || !fallback.trim()) return {};
+			return { [field]: seedFrenchOfEnglish(kind, fallback) ?? fallback };
+		};
+		return {
+			...row,
+			...fill("name", "attribute"),
+			...fill("group", "group"),
+			...fill("unit", "unit"),
+		};
+	});
+}
+
 export async function catchUpCategories(
 	payload: Payload,
 	options: {
@@ -139,7 +180,28 @@ export async function catchUpCategories(
 			overrideAccess: true,
 		});
 
-		const category = found.docs[0] as StoredCategory | undefined;
+		let category = found.docs[0] as StoredCategory | undefined;
+		if (category && !formsOnly && hasUnnamedRow(category.attributes)) {
+			const inEnglish = (await payload.findByID({
+				collection: "categories",
+				id: category.id,
+				depth: 0,
+				locale: "en",
+				fallbackLocale: false,
+				overrideAccess: true,
+			})) as StoredCategory;
+			category = {
+				...category,
+				attributes: withFrenchLabels(
+					category.attributes ?? [],
+					new Map(
+						(inEnglish.attributes ?? [])
+							.filter((row) => row?.id)
+							.map((row) => [row.id as string, row]),
+					),
+				),
+			};
+		}
 
 		if (!category) {
 			missing += 1;
@@ -147,14 +209,21 @@ export async function catchUpCategories(
 			continue;
 		}
 
-		const proposedForm = categoryListingForms[slug];
+		const seedForm = categoryListingForms[slug];
+		// Written in the default locale, so in French; the English follows below.
+		const proposedForm = seedForm?.priceLabel
+			? {
+					...seedForm,
+					priceLabel: seedLabelFr("priceLabel", seedForm.priceLabel),
+				}
+			: seedForm;
 		const formPlan = proposedForm
 			? planListingForm(category.listingForm, proposedForm)
 			: null;
 
 		const proposedAttributes = formsOnly
 			? []
-			: (categorySeedAttributes[slug] ?? []);
+			: (categorySeedAttributes[slug] ?? []).map(frenchSeedAttribute);
 		const attributePlan = planAttributes(
 			category.attributes,
 			proposedAttributes,
@@ -193,6 +262,8 @@ export async function catchUpCategories(
 		written += 1;
 		log(`+  ${slug} — set ${changes.join(" | ")}`);
 	}
+
+	if (!dryRun && written > 0) await localizeCategoryLabels(payload);
 
 	log(
 		`\n${dryRun ? "Would update" : "Updated"} ${written}, left ${skipped} untouched, ${missing} not found.\n`,

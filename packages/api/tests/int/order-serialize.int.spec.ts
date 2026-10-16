@@ -1156,6 +1156,30 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 		expect(row.actionSubject?.reviewable).toBe(false);
 	});
 
+	it("gives a buyer's card the shop's logo and badge and the order's payment state (W20)", () => {
+		const row = serializeOrderListEntry(makeOrder(), listRow(), "buyer", {
+			returnCaseNumber: null,
+			buyerHasReviewedShop: false,
+			shopLogoUrl: "https://cdn.example/logo.png",
+			shopBadge: "identity",
+		});
+		expect(row.shopLogoUrl).toBe("https://cdn.example/logo.png");
+		expect(row.shopBadge).toBe("identity");
+		expect(row.paymentMethod).toBe("cod");
+		expect(row.paymentStatus).toBe("cod_pending");
+		expect("area" in row).toBe(false);
+		expect("recipientName" in row).toBe(false);
+	});
+
+	it("nulls a buyer card's logo and badge when the shop could not be read", () => {
+		const row = serializeOrderListEntry(makeOrder(), listRow(), "buyer", {
+			returnCaseNumber: null,
+			buyerHasReviewedShop: false,
+		});
+		expect(row.shopLogoUrl).toBeNull();
+		expect(row.shopBadge).toBeNull();
+	});
+
 	it("never adds the buyer's action fields to a shop queue row", () => {
 		const row = serializeOrderListEntry(makeOrder(), listRow(), "shop", {
 			returnCaseNumber: null,
@@ -1163,5 +1187,7 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 		});
 		expect("actionSubject" in row).toBe(false);
 		expect("arrival" in row).toBe(false);
+		expect("shopLogoUrl" in row).toBe(false);
+		expect("shopBadge" in row).toBe(false);
 	});
 });

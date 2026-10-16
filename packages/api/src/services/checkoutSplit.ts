@@ -41,6 +41,7 @@ import {
 	type QuoteSummaryLine,
 	quoteLines,
 } from "./checkout";
+import { shopSellerDetails } from "./delivery/locations";
 import { recordPlacement, scoreCheckout } from "./orders/risk";
 import { nextNumber } from "./sequences";
 import { isUniqueViolation, type ServiceUser } from "./shops";
@@ -202,7 +203,10 @@ export async function planSplit(
 			const groupView: SplitQuoteGroup = {
 				groupKey: group.groupKey,
 				storefrontShop: summaryOf(shop, String(shop.id)),
-				fulfillingShop: summaryOf(fulfilling, fulfillingId),
+				fulfillingShop: {
+					...summaryOf(fulfilling, fulfillingId),
+					...(await shopSellerDetails(payload, fulfilling)),
+				},
 				resale: fulfillingId !== group.storefrontId,
 				items: quoted.response.summary.lines,
 				subtotal: amounts.subtotal,

@@ -39,6 +39,16 @@ export interface ShopInsightsView {
 		ordersPlaced: number;
 		ordersDelivered: number;
 		conversion: number | null;
+		/**
+		 * The low-conversion product's price against other sellers' published
+		 * listings in its category and city; null under five listings.
+		 */
+		priceComparison?: {
+			productId: string;
+			medianPrice: number;
+			yourPrice: number;
+			sample: number;
+		} | null;
 	};
 	rates: {
 		sellerCancellation: number | null;
@@ -67,6 +77,8 @@ export interface ShopInsightsView {
 		answeredWithinOneHour: number | null;
 		awaitingReply: number;
 		buckets: Record<ResponseBucket, number>;
+		/** Median minutes to the first reply per day, last 7 days (14 for longer periods). */
+		daily?: { date: string; medianMinutes: number | null; answered: number }[];
 	};
 	daily: {
 		date: string;

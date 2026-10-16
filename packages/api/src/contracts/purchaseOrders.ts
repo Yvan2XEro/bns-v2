@@ -17,7 +17,7 @@ export interface PurchaseOrderListRow {
 	acceptBy: string;
 	shipBy: string | null;
 	counterparty: { id: string; name: string; handle: string | null };
-	items: Array<{ title: string; quantity: number }>;
+	items: Array<{ title: string; quantity: number; imageUrl?: string | null }>;
 	collectAmount: number;
 	supplierAmount: number | null;
 	deliveryArea?: { district: string | null; city: string | null };
@@ -28,6 +28,38 @@ export interface PurchaseOrderPage {
 	page: number;
 	totalDocs: number;
 	totalPages: number;
+}
+
+/**
+ * « À expédier aujourd'hui »: an accepted purchase order whose handling
+ * deadline (`shipBy`, set on acceptance from the products' handling hours)
+ * falls before the end of the supplier's local day — overdue ones included.
+ * A purchase order not yet accepted has no deadline and is not counted.
+ */
+export function isDueToday(
+	row: { status: string; shipBy?: string | null },
+	endOfToday: Date,
+): boolean {
+	if (row.status !== "accepted" || !row.shipBy) return false;
+	const shipBy = Date.parse(row.shipBy);
+	return Number.isFinite(shipBy) && shipBy < endOfToday.getTime();
+}
+
+/**
+ * What the supplier may know of the reseller behind a purchase order: the
+ * reseller shop's public identity and the customer order number printed on the
+ * delivery note. Never the end customer's details.
+ */
+export interface PurchaseOrderResellerCard {
+	shopId: string;
+	name: string;
+	handle: string;
+	phone: string | null;
+	level: number;
+	orderNumber: string | null;
+	orderedAt: string | null;
+	/** From the reseller's location opening hours; null when none are filed. */
+	reachable: { from: string; to: string } | null;
 }
 
 /** Party-safe JSON projection returned by GET /api/purchase-orders/{id}. */
@@ -96,6 +128,7 @@ export interface PurchaseOrderView {
 		instructions: string | null;
 		gps: { lat: number; lng: number } | null;
 	};
+	reseller?: PurchaseOrderResellerCard;
 }
 
 export type PurchaseOrderAction =

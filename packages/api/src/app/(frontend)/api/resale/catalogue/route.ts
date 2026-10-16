@@ -8,6 +8,7 @@ const querySchema = z.object({
 	q: z.string().trim().max(120).optional(),
 	category: z.string().trim().min(1).optional(),
 	supplier: z.string().trim().min(1).optional(),
+	city: z.string().trim().min(1).max(80).optional(),
 });
 
 export async function GET(request: Request) {
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
 				query: params.data.q,
 				categoryId: params.data.category,
 				supplierShopId: params.data.supplier,
+				shipsFromCity: params.data.city,
 			},
 		);
 		return Response.json(result, {

@@ -132,6 +132,14 @@ export const ProductVariants: CollectionConfig = {
 			],
 		},
 		{
+			name: "barcode",
+			type: "text",
+			index: true,
+			maxLength: 14,
+			// Read like the SKU: shop data, never on the buyer-facing view.
+			access: { read: shopRoleFieldAccess((role) => role !== null) },
+		},
+		{
 			type: "row",
 			fields: [
 				{
@@ -228,6 +236,15 @@ export const ProductVariants: CollectionConfig = {
 							admin: { width: "25%" },
 						},
 					],
+				},
+				{
+					name: "minRetailPriceChangedAt",
+					type: "date",
+					admin: {
+						readOnly: true,
+						description:
+							"Set by the resale service whenever the minimum retail price changes; empty for minimums set before it was recorded.",
+					},
 				},
 			],
 		},

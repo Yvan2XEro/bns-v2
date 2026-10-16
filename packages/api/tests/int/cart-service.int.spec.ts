@@ -485,6 +485,34 @@ describe("reading a cart: the shop header and the stock hint", () => {
 		expect(view.lines[0].stockLeft).toBe(5);
 	});
 
+	it("carries the seller card's public street address and opening year (W19)", async () => {
+		const payload = world({ shop: { createdAt: "2024-05-02T10:00:00.000Z" } });
+		payload.store["shop-locations"] = [
+			{
+				id: "loc-1",
+				shop: "s-1",
+				name: "Akwa",
+				city: "douala",
+				district: "Akwa",
+				address: "Rue Joffre",
+				landmark: "Face à la pharmacie",
+				active: true,
+				pickupEnabled: true,
+			},
+		];
+		await addCartItem(payload, BUYER, addInput());
+
+		const view = await getCartView(payload, BUYER);
+		expect(view.shop?.address).toBe("Rue Joffre, Akwa, Douala");
+		expect(view.shop?.sinceYear).toBe(2024);
+	});
+
+	it("leaves the address null when the shop lists no public pickup point", async () => {
+		const payload = world();
+		await addCartItem(payload, BUYER, addInput());
+		expect((await getCartView(payload, BUYER)).shop?.address).toBeNull();
+	});
+
 	it("carries the shop's brand colour for the shop header, null when unset or malformed", async () => {
 		const branded = world({ shop: { brandColor: "#0F766E" } });
 		await addCartItem(branded, BUYER, addInput());

@@ -20,6 +20,7 @@ import {
 	hasAcceptedCurrentResaleTerms,
 	updateResaleListingHold,
 } from "./resale";
+import { supplierResaleStatsOf } from "./resaleMaintenance";
 import {
 	notifyResaleLinkDecided,
 	notifyResaleLinkRequested,
@@ -353,6 +354,7 @@ export async function decideResaleLink(
 						status: "approved",
 						decidedBy: user.id,
 						decidedAt: now,
+						respondedAt: now,
 						suspendedBy: null,
 						suspendedReason: null,
 						note: input.note,
@@ -366,6 +368,7 @@ export async function decideResaleLink(
 						status: "revoked",
 						decidedBy: user.id,
 						decidedAt: now,
+						respondedAt: now,
 						revokedAt: now,
 						revokedBy: moderator ? "moderator" : "supplier",
 						note: input.note,
@@ -646,6 +649,9 @@ export async function listResaleLinks(
 					name: partner.name,
 					handle: partner.handle ?? null,
 					level: shopCapabilities(partner).effectiveLevel,
+					...(input.side === "reseller"
+						? { resaleStats: supplierResaleStatsOf(partner) }
+						: {}),
 				},
 				message: link.message ?? null,
 				requestedAt: link.createdAt ?? null,

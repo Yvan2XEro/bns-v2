@@ -240,7 +240,7 @@ export interface Config {
   db: {
     defaultIDType: string;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('fr' | 'en') | ('fr' | 'en')[];
   globals: {
     'app-settings': AppSetting;
     'payload-jobs-stats': PayloadJobsStat;
@@ -249,7 +249,7 @@ export interface Config {
     'app-settings': AppSettingsSelect<false> | AppSettingsSelect<true>;
     'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
-  locale: null;
+  locale: 'fr' | 'en';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -698,6 +698,11 @@ export interface Shop {
     ordersAutoCancelled?: number | null;
     ordersDeliveryFailed?: number | null;
   };
+  resaleStats?: {
+    medianShipHours?: number | null;
+    medianResponseHours?: number | null;
+    computedAt?: string | null;
+  };
   rankingScore?: number | null;
   rankingSignals?: {
     ordersPlaced?: number | null;
@@ -1045,6 +1050,7 @@ export interface ProductVariant {
   sku?: string | null;
   price: number;
   cost?: number | null;
+  barcode?: string | null;
   trackInventory?: boolean | null;
   stockOnHand?: number | null;
   stockReserved?: number | null;
@@ -1062,6 +1068,10 @@ export interface ProductVariant {
     supplierPrice?: number | null;
     minRetailPrice?: number | null;
     suggestedRetailPrice?: number | null;
+    /**
+     * Set by the resale service whenever the minimum retail price changes; empty for minimums set before it was recorded.
+     */
+    minRetailPriceChangedAt?: string | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -1081,6 +1091,10 @@ export interface ResaleLink {
   resellerTermsAcceptedAt?: string | null;
   decidedBy?: (string | null) | User;
   decidedAt?: string | null;
+  /**
+   * When the supplier approved or declined the latest request; feeds the supplier's usual response time.
+   */
+  respondedAt?: string | null;
   suspendedBy?: ('supplier' | 'moderator' | 'system') | null;
   suspendedReason?: ('quality' | 'pricing' | 'fraud_review' | 'terms' | 'other') | null;
   note?: string | null;
@@ -4652,6 +4666,7 @@ export interface ResaleLinksSelect<T extends boolean = true> {
   resellerTermsAcceptedAt?: T;
   decidedBy?: T;
   decidedAt?: T;
+  respondedAt?: T;
   suspendedBy?: T;
   suspendedReason?: T;
   note?: T;
@@ -5371,6 +5386,13 @@ export interface ShopsSelect<T extends boolean = true> {
         ordersAutoCancelled?: T;
         ordersDeliveryFailed?: T;
       };
+  resaleStats?:
+    | T
+    | {
+        medianShipHours?: T;
+        medianResponseHours?: T;
+        computedAt?: T;
+      };
   rankingScore?: T;
   rankingSignals?:
     | T
@@ -5679,6 +5701,7 @@ export interface ProductVariantsSelect<T extends boolean = true> {
   sku?: T;
   price?: T;
   cost?: T;
+  barcode?: T;
   trackInventory?: T;
   stockOnHand?: T;
   stockReserved?: T;
@@ -5692,6 +5715,7 @@ export interface ProductVariantsSelect<T extends boolean = true> {
         supplierPrice?: T;
         minRetailPrice?: T;
         suggestedRetailPrice?: T;
+        minRetailPriceChangedAt?: T;
       };
   updatedAt?: T;
   createdAt?: T;

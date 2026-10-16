@@ -24,6 +24,7 @@ export const PRODUCT_LIMITS = {
 	optionValuesMax: 20,
 	variantsMax: 100,
 	skuMax: 60,
+	barcodeMax: 14,
 	handlingHoursMax: 720,
 	returnPolicyMax: 2000,
 	warrantyMonthsMax: 60,
@@ -54,6 +55,40 @@ export function productIssueStep(path: string): ProductStep {
 }
 
 type Issues = FieldIssue[];
+
+/** EAN-8, UPC-A, EAN-13 and GTIN-14: the lengths a retail scanner reads. */
+export const BARCODE_LENGTHS: readonly number[] = [8, 12, 13, 14];
+
+/** Spaces a seller types between digit groups are not part of the code. */
+export function normalizeBarcode(value: string): string {
+	return value.replace(/\s/g, "");
+}
+
+/**
+ * Digits only, a GTIN length, and the GS1 check digit: a scan that lost a
+ * digit or a typo is refused rather than stored as a code nothing will match.
+ */
+export function isValidBarcode(raw: string): boolean {
+	const code = normalizeBarcode(raw);
+	if (!/^\d+$/.test(code) || !BARCODE_LENGTHS.includes(code.length)) {
+		return false;
+	}
+	const digits = [...code].map(Number);
+	const check = digits.pop() ?? 0;
+	let sum = 0;
+	digits.reverse().forEach((digit, index) => {
+		sum += digit * (index % 2 === 0 ? 3 : 1);
+	});
+	return (10 - (sum % 10)) % 10 === check;
+}
+
+/** The rule a variant's barcode breaks, or null when it is blank or valid. */
+export function barcodeIssue(value: unknown): "text" | "barcode" | null {
+	if (value === undefined || value === null) return null;
+	if (typeof value !== "string") return "text";
+	if (normalizeBarcode(value) === "") return null;
+	return isValidBarcode(value) ? null : "barcode";
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -179,6 +214,7 @@ function checkVariants(
 
 	const combos = new Set<string>();
 	const skus = new Map<string, number>();
+	const barcodes = new Set<string>();
 	rows.forEach((row, index) => {
 		const entry = isObject(row) ? row : {};
 		const at = (field: string) => `variants.${index}.${field}`;
@@ -209,6 +245,17 @@ function checkVariants(
 		if (sku) {
 			if (skus.has(sku)) issues.push({ path: at("sku"), rule: "duplicate" });
 			else skus.set(sku, index);
+		}
+		const barcodeRule = barcodeIssue(entry.barcode);
+		if (barcodeRule) {
+			issues.push({ path: at("barcode"), rule: barcodeRule });
+		} else if (typeof entry.barcode === "string") {
+			const code = normalizeBarcode(entry.barcode);
+			if (code) {
+				if (barcodes.has(code)) {
+					issues.push({ path: at("barcode"), rule: "duplicate" });
+				} else barcodes.add(code);
+			}
 		}
 		checkWhole(issues, at("price"), entry.price, { required: true });
 		checkWhole(issues, at("cost"), entry.cost, { required: false });

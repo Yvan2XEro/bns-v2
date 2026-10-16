@@ -24,6 +24,7 @@ import { type TxReq, withTransaction } from "../lib/transactions";
 import { availableOf, PUBLIC_STOCK_CAP, variantLabel } from "../lib/variants";
 import type { Cart, Listing, ProductVariant, Shop } from "../payload-types";
 import { cartRetailPrice, resolveCartOffer } from "./cartOffer";
+import { shopSellerDetails } from "./delivery/locations";
 import { isUniqueViolation, type ServiceUser } from "./shops";
 
 export class CartError extends ServiceError {
@@ -491,6 +492,7 @@ async function toCartView(
 					city:
 						launchCityKeyOf(shop.location?.city) ?? shop.location?.city ?? null,
 					...(await shopHeaderOf(payload, shop, req)),
+					...(await shopSellerDetails(payload, shop, req)),
 				}
 			: null,
 		lines: lines.map(toLineView),
@@ -546,6 +548,7 @@ async function toSplitCartView(
 				fulfillingShop: {
 					...summaryOf(fulfilling, line.fulfillingShopId),
 					...(await shopHeaderOf(payload, fulfilling, req)),
+					...(await shopSellerDetails(payload, fulfilling, req)),
 				},
 				resale,
 				items: [],

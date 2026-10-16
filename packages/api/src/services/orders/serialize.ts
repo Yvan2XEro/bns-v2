@@ -16,6 +16,7 @@ import {
 	HANDOVER_MAX_REGENERATIONS,
 } from "../../lib/orderCodes";
 import { relationId } from "../../lib/relationId";
+import type { ShopCapabilities } from "../../lib/shopCapabilities";
 import type { Order, OrderEvent, OrderItem } from "../../payload-types";
 
 export interface SerializeOptions {
@@ -251,7 +252,10 @@ export interface OrderListEntryView {
 	recipientName?: string;
 	acceptBy?: string | null;
 	phoneTier?: BuyerTier;
-	/** Shop queue only: the row's payment and status pills. */
+	/** Buyer list only: the card's shop logo and verification badge. */
+	shopLogoUrl?: string | null;
+	shopBadge?: ShopCapabilities["badge"];
+	/** Both lists: the row's payment pill. */
 	paymentMethod?: Order["paymentMethod"];
 	paymentStatus?: Order["paymentStatus"];
 	/** Shop queue only: the neighbourhood and city under the customer's name. */
@@ -291,6 +295,8 @@ export interface OrderListActionSubject {
 export interface BuyerListRowSources {
 	returnCaseNumber: string | null;
 	buyerHasReviewedShop: boolean;
+	shopLogoUrl?: string | null;
+	shopBadge?: ShopCapabilities["badge"];
 }
 
 /** What a list row needs from outside its own `orders` document. */
@@ -807,6 +813,10 @@ export function serializeOrderListEntry(
 			etaText: order.delivery.etaText ?? "",
 			promisedBy: order.delivery.promisedBy ?? null,
 		};
+		entry.shopLogoUrl = buyerSources.shopLogoUrl ?? null;
+		entry.shopBadge = buyerSources.shopBadge ?? null;
+		entry.paymentMethod = order.paymentMethod;
+		entry.paymentStatus = order.paymentStatus;
 	}
 	if (role === "shop") {
 		entry.recipientName = order.delivery.recipientName;

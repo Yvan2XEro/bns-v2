@@ -7,18 +7,23 @@ import { isModerator } from "../access/roles";
 import { can, resolveShopRole } from "../access/shopRoles";
 import type {
 	PurchaseOrderListRow,
+	PurchaseOrderResellerCard,
 	PurchaseOrderView,
 } from "../contracts/purchaseOrders";
+import { reachableWindow } from "../contracts/resale";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
-import { liveMarketOfShop } from "../lib/markets";
+import { liveMarketOfShop, timezoneOfShop } from "../lib/markets";
+import { localDateAt, localParts, shiftDays } from "../lib/marketTime";
 import { getProvider } from "../lib/payments";
+import { firstImageUrls } from "../lib/productThumbnails";
 import { getCounterStore } from "../lib/rateLimit";
 import { relationId } from "../lib/relationId";
 import type { ResaleAdjustMeta } from "../lib/resale";
 import { getResaleAdjuster } from "../lib/resale";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
+import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
 import type {
 	Order,
@@ -1459,14 +1464,17 @@ export async function listShopPurchaseOrders(
 		q?: string;
 		page?: number;
 		limit?: number;
+		/** Only accepted purchase orders whose `shipBy` falls before the end of today. */
+		dueToday?: boolean;
 	},
+	now = new Date(),
 ): Promise<{
 	docs: PurchaseOrderListRow[];
 	page: number;
 	totalDocs: number;
 	totalPages: number;
 }> {
-	const { role } = await requireShopPermission(
+	const { role, shop } = await requireShopPermission(
 		payload,
 		user,
 		shopId,
@@ -1485,6 +1493,13 @@ export async function listShopPurchaseOrders(
 	if (options.from)
 		conditions.push({ sentAt: { greater_than_equal: options.from } });
 	if (options.q) conditions.push({ number: { like: options.q } });
+	if (options.dueToday) {
+		const endOfToday = await endOfShopDay(payload, shop, now);
+		conditions.push(
+			{ status: { equals: "accepted" } },
+			{ shipBy: { less_than: endOfToday.toISOString() } },
+		);
+	}
 	const result = await payload.find({
 		collection: "purchase-orders",
 		where: { and: conditions },
@@ -1495,6 +1510,12 @@ export async function listShopPurchaseOrders(
 		depth: 0,
 		overrideAccess: true,
 	});
+	const imageByVariant = await variantImageUrls(
+		payload,
+		result.docs.flatMap((purchaseOrder) =>
+			purchaseOrder.items.map((item) => relationId(item.variant)),
+		),
+	);
 	const docs = await Promise.all(
 		result.docs.map(async (purchaseOrder) => {
 			const otherShopId = relationId(
@@ -1536,9 +1557,10 @@ export async function listShopPurchaseOrders(
 					name: otherShop.name,
 					handle: otherShop.handle ?? null,
 				},
-				items: purchaseOrder.items.map(({ title, quantity }) => ({
+				items: purchaseOrder.items.map(({ title, quantity, variant }) => ({
 					title,
 					quantity,
+					imageUrl: imageByVariant.get(relationId(variant) ?? "") ?? null,
 				})),
 				collectAmount: purchaseOrder.collectAmount,
 				supplierAmount: can(role, "payments.view")
@@ -1557,6 +1579,60 @@ export async function listShopPurchaseOrders(
 		totalDocs: result.totalDocs,
 		totalPages: result.totalPages,
 	};
+}
+
+/** The instant the shop's local day ends, in its market's timezone. */
+export async function endOfShopDay(
+	payload: Payload,
+	shop: Pick<Shop, "location">,
+	now: Date,
+): Promise<Date> {
+	const timezone = await timezoneOfShop(payload, shop);
+	return localDateAt(shiftDays(localParts(now, timezone), 1), 0, 0, timezone);
+}
+
+/** First product image per variant, for the purchase orders' Articles column. */
+async function variantImageUrls(
+	payload: Payload,
+	variantIds: Array<string | null>,
+): Promise<Map<string, string>> {
+	const ids = [...new Set(variantIds.filter((id): id is string => !!id))];
+	const result = new Map<string, string>();
+	if (ids.length === 0) return result;
+	const variants = await payload.find({
+		collection: "product-variants",
+		where: { id: { in: ids } },
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const productByVariant = new Map(
+		variants.docs.map((variant) => [
+			String(variant.id),
+			relationId(variant.product),
+		]),
+	);
+	const productIds = [
+		...new Set(
+			[...productByVariant.values()].filter((id): id is string => !!id),
+		),
+	];
+	if (productIds.length === 0) return result;
+	const products = await payload.find({
+		collection: "products",
+		where: { id: { in: productIds } },
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const urls = await firstImageUrls(payload, products.docs);
+	for (const [variantId, productId] of productByVariant) {
+		const url = productId ? urls.get(productId) : undefined;
+		if (url) result.set(variantId, url);
+	}
+	return result;
 }
 
 function terminalAt(purchaseOrder: PurchaseOrder): number | null {
@@ -1629,6 +1705,14 @@ export async function getPurchaseOrderView(
 	const phoneMasked =
 		terminal !== null &&
 		now.getTime() - terminal >= PHONE_MASK_AFTER_TERMINAL_DAYS * 86_400_000;
+	const reseller = resellerShopId
+		? await purchaseOrderResellerCard(
+				payload,
+				purchaseOrder,
+				resellerShopId,
+				order,
+			)
+		: undefined;
 	const rawGps = order.delivery.gps;
 	const gps =
 		typeof rawGps?.lat === "number" && typeof rawGps.lng === "number"
@@ -1651,6 +1735,51 @@ export async function getPurchaseOrderView(
 			instructions: order.delivery.instructions ?? null,
 			gps,
 		},
+		...(reseller ? { reseller } : {}),
+	};
+}
+
+async function purchaseOrderResellerCard(
+	payload: Payload,
+	purchaseOrder: PurchaseOrder,
+	resellerShopId: string,
+	order: Order,
+): Promise<PurchaseOrderResellerCard> {
+	const [shop, locations] = await Promise.all([
+		payload
+			.findByID({
+				collection: "shops",
+				id: resellerShopId,
+				depth: 0,
+				overrideAccess: true,
+			})
+			.catch(() => null),
+		payload
+			.find({
+				collection: "shop-locations",
+				where: {
+					and: [
+						{ shop: { equals: resellerShopId } },
+						{ active: { equals: true } },
+					],
+				},
+				limit: 20,
+				depth: 0,
+				overrideAccess: true,
+			})
+			.catch(() => ({ docs: [] })),
+	]);
+	return {
+		shopId: resellerShopId,
+		name: purchaseOrder.branding.name,
+		handle: purchaseOrder.branding.handle,
+		phone: purchaseOrder.branding.phone ?? null,
+		level: shop ? shopCapabilities(shop).effectiveLevel : 0,
+		orderNumber: order.orderNumber ?? null,
+		orderedAt: order.createdAt ?? null,
+		reachable: reachableWindow(
+			locations.docs.flatMap((location) => location.openingHours ?? []),
+		),
 	};
 }
 

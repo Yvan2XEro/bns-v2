@@ -17,6 +17,7 @@ import { renderReceiptHtml } from "../../lib/orderReceipt";
 import { toMediaRef } from "../../lib/publicShop";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
+import { shopCapabilities } from "../../lib/shopCapabilities";
 import type { Order, OrderEvent, OrderItem, Shop } from "../../payload-types";
 import { requireShopPermission } from "../shopGuards";
 import type { ServiceUser } from "../shops";
@@ -371,6 +372,7 @@ async function loadShops(
 	payload: Payload,
 	shopIds: readonly string[],
 	req?: PayloadRequest,
+	depth = 0,
 ): Promise<Map<string, Shop>> {
 	const shops = new Map<string, Shop>();
 	const unique = [...new Set(shopIds)].filter((id) => id.length > 0);
@@ -378,22 +380,13 @@ async function loadShops(
 	const result = await payload.find({
 		collection: "shops",
 		where: { id: { in: unique } },
-		depth: 0,
+		depth,
 		limit: unique.length,
 		overrideAccess: true,
 		req,
 	});
 	for (const shop of result.docs) shops.set(String(shop.id), shop);
 	return shops;
-}
-
-async function loadShopNames(
-	payload: Payload,
-	shopIds: readonly string[],
-	req?: PayloadRequest,
-): Promise<Map<string, string>> {
-	const shops = await loadShops(payload, shopIds, req);
-	return new Map([...shops].map(([id, shop]) => [id, shop.name]));
 }
 
 /** Each row's return case number, in one query for the page. */
@@ -474,13 +467,14 @@ export async function listBuyerOrders(
 
 	const rows = result.docs as Order[];
 	const shopIds = rows.map((row) => relationId(row.shop) ?? "");
-	const [itemsByOrder, shopNames, returnCaseNumbers, reviewedShops] =
+	// Depth 1 resolves each card's logo with the page's one shop read.
+	const [itemsByOrder, shops, returnCaseNumbers, reviewedShops] =
 		await Promise.all([
 			loadItemsByOrder(
 				payload,
 				rows.map((row) => row.id),
 			),
-			loadShopNames(payload, shopIds),
+			loadShops(payload, shopIds, undefined, 1),
 			loadReturnCaseNumbers(payload, rows),
 			loadReviewedShops(payload, user.id, shopIds),
 		]);
@@ -489,18 +483,18 @@ export async function listBuyerOrders(
 		docs: rows.map((row) => {
 			const shopId = relationId(row.shop) ?? "";
 			const caseId = relationId(row.returnCase);
+			const shop = shops.get(shopId);
 			return serializeOrderListEntry(
 				row,
-				listRowSources(
-					shopNames.get(shopId) ?? "",
-					itemsByOrder.get(row.id) ?? [],
-				),
+				listRowSources(shop?.name ?? "", itemsByOrder.get(row.id) ?? []),
 				"buyer",
 				{
 					returnCaseNumber: caseId
 						? (returnCaseNumbers.get(caseId) ?? null)
 						: null,
 					buyerHasReviewedShop: reviewedShops.has(shopId),
+					shopLogoUrl: toMediaRef(shop?.logo)?.url ?? null,
+					shopBadge: shop ? shopCapabilities(shop).badge : null,
 				},
 			);
 		}),

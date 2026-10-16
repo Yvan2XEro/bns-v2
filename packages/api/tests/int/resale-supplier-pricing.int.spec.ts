@@ -218,4 +218,66 @@ describe("supplier resale pricing", () => {
 			resale: { holds: ["price_below_minimum"] },
 		});
 	});
+
+	it("dates the minimum when it changes, and only then", async () => {
+		const payload = world();
+		const input = (minRetailPrice: number) => ({
+			enabled: true,
+			approvalRequired: false,
+			handlingHours: 24,
+			codAccepted: true,
+			resellerNotes: "",
+			variants: [
+				{
+					id: "variant-1",
+					enabled: true,
+					supplierPrice: 100,
+					minRetailPrice,
+					suggestedRetailPrice: 300,
+				},
+			],
+		});
+		const owner = { id: "owner-1", role: "user" as const };
+		const minimumDate = () =>
+			(
+				payload.store["product-variants"]?.[0] as
+					| { resale?: { minRetailPriceChangedAt?: string } }
+					| undefined
+			)?.resale?.minRetailPriceChangedAt;
+		// A drop applies at once and is dated now.
+		await updateSupplierResaleSettings(
+			payload,
+			owner,
+			"product-1",
+			input(180),
+			NOW,
+		);
+		expect(minimumDate()).toBe(NOW.toISOString());
+		// Saving the same minimum later keeps the earlier date.
+		await updateSupplierResaleSettings(
+			payload,
+			owner,
+			"product-1",
+			input(180),
+			new Date("2026-10-05T12:00:00.000Z"),
+		);
+		expect(minimumDate()).toBe(NOW.toISOString());
+		// A raise waits out the notice and is dated when it takes effect.
+		await updateSupplierResaleSettings(
+			payload,
+			owner,
+			"product-1",
+			input(250),
+			NOW,
+		);
+		expect(minimumDate()).toBe(NOW.toISOString());
+		await applyResalePriceChanges(
+			payload,
+			new Date("2026-10-07T00:00:00.000Z"),
+		);
+		expect(payload.store["product-variants"]?.[0]?.resale).toMatchObject({
+			minRetailPrice: 250,
+			minRetailPriceChangedAt: "2026-10-06T12:00:00.000Z",
+		});
+	});
 });

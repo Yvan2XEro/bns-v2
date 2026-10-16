@@ -49,6 +49,7 @@ export const SHOP_SERVICE_FIELDS = [
 	"rating",
 	"totalReviews",
 	"stats",
+	"resaleStats",
 	"rankingScore",
 	"rankingSignals",
 ] as const;
@@ -707,6 +708,33 @@ export const Shops: CollectionConfig = {
 							defaultValue: 0,
 							admin: { width: "25%" },
 						},
+					],
+				},
+			],
+		},
+		{
+			// Supplier track record shown to resellers; refreshed by the nightly
+			// refreshResaleLinkStats job. A null median means too few observations.
+			name: "resaleStats",
+			type: "group",
+			admin: { readOnly: true },
+			fields: [
+				{
+					type: "row",
+					fields: [
+						{
+							name: "medianShipHours",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{
+							name: "medianResponseHours",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "computedAt", type: "date", admin: { width: "34%" } },
 					],
 				},
 			],

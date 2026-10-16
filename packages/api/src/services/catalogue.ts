@@ -5,6 +5,7 @@ import type {
 	CatalogueProvenance,
 	CatalogueSort,
 } from "../contracts/catalogue";
+import { normalizeBarcode } from "../contracts/productValidation";
 import { categoryWithDescendants } from "../lib/categoryDescendants";
 import { ERROR_CODES } from "../lib/errors";
 import { type MediaRef, toMediaRef } from "../lib/publicShop";
@@ -284,6 +285,21 @@ export async function listCatalogue(
 		? new Set(await categoryWithDescendants(payload, query.category))
 		: null;
 	const q = query.q?.trim().toLowerCase() ?? "";
+	// A scanner types the whole code: the rows carrying it exactly lead.
+	const scanned = q ? normalizeBarcode(q) : "";
+	const exact = new Set(
+		scanned
+			? rows
+					.filter((row) =>
+						(byProduct.get(row.id) ?? []).some(
+							(v) =>
+								v.barcode === scanned ||
+								String(v.sku ?? "").toLowerCase() === q,
+						),
+					)
+					.map((row) => row.id)
+			: [],
+	);
 	const filtered = rows.filter((row) => {
 		if (categories && !categories.has(row.categoryId ?? "")) return false;
 		if (query.status && row.status !== query.status) return false;
@@ -294,6 +310,7 @@ export async function listCatalogue(
 				String(v.sku ?? "").toLowerCase(),
 			);
 			if (
+				!exact.has(row.id) &&
 				!row.title.toLowerCase().includes(q) &&
 				!skus.some((sku) => sku.includes(q)) &&
 				!row.supplier?.name.toLowerCase().includes(q)
@@ -302,7 +319,11 @@ export async function listCatalogue(
 		}
 		return true;
 	});
-	filtered.sort(compareRows(query.sort ?? "updated"));
+	const byQuery = compareRows(query.sort ?? "updated");
+	filtered.sort(
+		(a, b) =>
+			Number(exact.has(b.id)) - Number(exact.has(a.id)) || byQuery(a, b),
+	);
 
 	const limit = Math.min(100, Math.max(1, Math.floor(query.limit ?? 20)));
 	const totalPages = Math.max(1, Math.ceil(filtered.length / limit));

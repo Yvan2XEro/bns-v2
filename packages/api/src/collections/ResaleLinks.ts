@@ -96,6 +96,15 @@ export const ResaleLinks: CollectionConfig = {
 			],
 		},
 		{
+			name: "respondedAt",
+			type: "date",
+			admin: {
+				readOnly: true,
+				description:
+					"When the supplier approved or declined the latest request; feeds the supplier's usual response time.",
+			},
+		},
+		{
 			type: "row",
 			fields: [
 				{

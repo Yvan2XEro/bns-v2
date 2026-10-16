@@ -10,6 +10,7 @@ const querySchema = z.object({
 		.optional(),
 	from: z.string().datetime({ offset: true }).optional(),
 	q: z.string().trim().max(100).optional(),
+	due: z.enum(["today"]).optional(),
 	page: z.coerce.number().int().min(1).default(1),
 	limit: z.coerce.number().int().min(1).max(50).default(20),
 });
@@ -25,11 +26,12 @@ export async function GET(
 	if (context instanceof Response) return context;
 	const { id } = await params;
 	try {
+		const { due, ...options } = parsed.data;
 		const result = await listShopPurchaseOrders(
 			context.payload,
 			context.user,
 			id,
-			parsed.data,
+			{ ...options, dueToday: due === "today" },
 		);
 		return Response.json(result, {
 			headers: { "Cache-Control": "private, no-store" },

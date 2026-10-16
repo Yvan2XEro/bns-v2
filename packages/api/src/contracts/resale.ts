@@ -36,6 +36,8 @@ export interface ResaleCatalogueVariant {
 	sku: string | null;
 	optionValues: unknown;
 	minRetailPrice: number | null;
+	/** When the supplier last changed the minimum; null before that was recorded. */
+	minRetailPriceChangedAt?: string | null;
 	suggestedRetailPrice: number | null;
 	supplierPrice?: number;
 	/**
@@ -50,13 +52,22 @@ export interface ResaleCatalogueProduct {
 	title: string;
 	description: string | null;
 	categoryId: string | null;
+	/** The first product image, small size; the only one the catalogue loads. */
+	imageUrl?: string | null;
+	/** The supplier shop's city, as the shop filed it. */
+	shipsFromCity?: string | null;
 	images?: Array<{
 		id?: string | null;
 		image:
 			| string
 			| { id: string; url?: string | null; thumbnailURL?: string | null };
 	}> | null;
-	supplier: { id: string; name: string; level: number };
+	supplier: {
+		id: string;
+		name: string;
+		level: number;
+		resaleStats?: SupplierResaleStats;
+	};
 	linkStatus: "requested" | "approved" | "suspended" | "revoked" | null;
 	approvalRequired: boolean;
 	variants: ResaleCatalogueVariant[];
@@ -77,6 +88,46 @@ export interface ResaleCatalogueProduct {
 export interface ResaleCataloguePage {
 	products: ResaleCatalogueProduct[];
 	commissionRateBps?: number;
+	/** Supplier cities among the results before the city filter, for the « Expédié depuis » chips. */
+	shipsFromCities?: string[];
+}
+
+/**
+ * Supplier track record computed nightly over `RESALE_STATS_WINDOW_DAYS`.
+ * A median stays null below `RESALE_STATS_MIN_SAMPLE` observations.
+ */
+export interface SupplierResaleStats {
+	medianShipHours: number | null;
+	medianResponseHours: number | null;
+}
+
+export const RESALE_STATS_WINDOW_DAYS = 90;
+export const RESALE_STATS_MIN_SAMPLE = 3;
+
+/** Median of the durations in whole hours, or null below the minimum sample. */
+export function medianHours(
+	durationsMs: readonly number[],
+	minSample = RESALE_STATS_MIN_SAMPLE,
+): number | null {
+	const values = durationsMs
+		.filter((value) => Number.isFinite(value) && value >= 0)
+		.sort((a, b) => a - b);
+	if (values.length === 0 || values.length < minSample) return null;
+	const middle = Math.floor(values.length / 2);
+	const median =
+		values.length % 2 === 1
+			? values[middle]
+			: (values[middle - 1] + values[middle]) / 2;
+	return Math.round(median / 3_600_000);
+}
+
+/** Case- and accent-insensitive city key, so « Douala », « douala » and « DOUALA » match. */
+export function cityKey(value: string | null | undefined): string {
+	return (value ?? "")
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.trim()
+		.toLowerCase();
 }
 
 export interface SupplierResaleProduct {
@@ -123,6 +174,8 @@ export interface ResaleLinkListItem {
 		name: string;
 		handle: string | null;
 		level?: 0 | 1 | 2 | 3;
+		/** Present on the reseller side, where the partner is a supplier. */
+		resaleStats?: SupplierResaleStats;
 	};
 	message: string | null;
 	requestedAt: string | null;
@@ -195,6 +248,7 @@ export interface ResoldListing {
 	listingId: string;
 	productId: string;
 	title: string;
+	imageUrl?: string | null;
 	supplier: { id: string; name: string };
 	status: ResoldListingStatus;
 	variants: Array<{
@@ -204,6 +258,7 @@ export interface ResoldListing {
 		price: number;
 		supplierPrice: number | null;
 		minRetailPrice: number | null;
+		minRetailPriceChangedAt?: string | null;
 		suggestedRetailPrice: number | null;
 		/** Exact only up to `PUBLIC_STOCK_CAP`; null means in stock. */
 		supplierStock: number | null;
@@ -247,4 +302,47 @@ export interface SupplierResaleSettingsView {
 		minRetailPrice: number | null;
 		suggestedRetailPrice: number | null;
 	}>;
+}
+
+/**
+ * The stamp to store with a variant's minimum retail price: moves to `now`
+ * only when the minimum actually changes, so re-saving the same bounds keeps
+ * the date resellers were told about.
+ */
+export function minRetailPriceChangedAt(
+	previous: {
+		minRetailPrice?: number | null;
+		minRetailPriceChangedAt?: string | null;
+	},
+	nextMinimum: number,
+	now: Date,
+): string | null {
+	if (previous.minRetailPrice === nextMinimum)
+		return previous.minRetailPriceChangedAt ?? null;
+	return now.toISOString();
+}
+
+/**
+ * "Reachable from … to …" for a shop: the earliest opening and latest closing
+ * across its opening-hours rows, or null when it filed none.
+ */
+export function reachableWindow(
+	rows: ReadonlyArray<{ opens?: string | null; closes?: string | null }>,
+): { from: string; to: string } | null {
+	const pattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+	let from: string | null = null;
+	let to: string | null = null;
+	for (const row of rows) {
+		if (
+			typeof row.opens !== "string" ||
+			typeof row.closes !== "string" ||
+			!pattern.test(row.opens) ||
+			!pattern.test(row.closes) ||
+			row.opens >= row.closes
+		)
+			continue;
+		if (from === null || row.opens < from) from = row.opens;
+		if (to === null || row.closes > to) to = row.closes;
+	}
+	return from !== null && to !== null ? { from, to } : null;
 }

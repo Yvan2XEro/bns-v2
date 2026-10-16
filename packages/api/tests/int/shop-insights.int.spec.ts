@@ -389,6 +389,159 @@ describe("getShopInsights", () => {
 		expect(result.stock.dormantValue).toBe(15000);
 	});
 
+	it("compares the low-converting product's price with other sellers' listings in its city, and splits reply time by day (W35)", async () => {
+		const owner = {
+			id: "member-1",
+			shop: "shop-1",
+			user: "owner-1",
+			role: "owner",
+			status: "active",
+		};
+		const similar = (id: string, price: number, extra = {}) => ({
+			id,
+			status: "published",
+			category: "phones-android",
+			location: "Douala",
+			shop: "shop-2",
+			price,
+			...extra,
+		});
+		const seed = (prices: number[]) =>
+			fakePayload(
+				{
+					shops: [
+						{
+							id: "shop-1",
+							owner: "owner-1",
+							status: "active",
+							level: 2,
+							location: { city: "Douala" },
+						},
+					],
+					"shop-members": [owner],
+					categories: [
+						{ id: "phones", name: "Téléphones" },
+						{ id: "phones-android", name: "Android", parent: "phones" },
+					],
+					products: [
+						{ id: "p-1", shop: "shop-1", title: "iPad", status: "active" },
+					],
+					listings: [
+						{
+							id: "l-own",
+							status: "published",
+							category: "phones",
+							location: "Douala",
+							shop: "shop-1",
+							price: 106000,
+						},
+						{
+							id: "l-own-2",
+							status: "published",
+							category: "phones",
+							location: "Douala",
+							shop: "shop-1",
+							price: 1,
+						},
+						similar("l-yaounde", 1, { location: "Yaoundé" }),
+						similar("l-draft", 1, { status: "draft" }),
+						...prices.map((price, index) => similar(`l-${index}`, price)),
+					],
+					"shop-daily-stats": [
+						{
+							id: "today",
+							shop: "shop-1",
+							date: "2026-10-04",
+							views: 400,
+							topProducts: [
+								{
+									product: "p-1",
+									listing: "l-own",
+									views: 400,
+									ordersPlaced: 1,
+								},
+							],
+						},
+					],
+					conversations: [
+						{
+							id: "c-1",
+							shop: "shop-1",
+							lastMessageAt: "2026-10-04T10:00:00.000Z",
+						},
+						{
+							id: "c-other",
+							shop: "shop-2",
+							lastMessageAt: "2026-10-04T10:00:00.000Z",
+						},
+					],
+					messages: [
+						{
+							id: "m-1",
+							conversation: "c-1",
+							senderSide: "buyer",
+							createdAt: "2026-10-03T08:00:00.000Z",
+						},
+						{
+							id: "m-2",
+							conversation: "c-1",
+							senderSide: "shop",
+							createdAt: "2026-10-03T08:40:00.000Z",
+						},
+						{
+							id: "m-3",
+							conversation: "c-1",
+							senderSide: "buyer",
+							createdAt: "2026-10-04T08:00:00.000Z",
+						},
+						{
+							id: "m-4",
+							conversation: "c-1",
+							senderSide: "shop",
+							createdAt: "2026-10-04T10:00:00.000Z",
+						},
+						{
+							id: "m-other",
+							conversation: "c-other",
+							senderSide: "shop",
+							createdAt: "2026-10-04T08:01:00.000Z",
+						},
+					],
+				},
+				{ globals: { "app-settings": { insights: { enabled: true } } } },
+			);
+		const run = (prices: number[]) =>
+			getShopInsights(
+				seed(prices),
+				{ id: "owner-1", role: "user" },
+				"shop-1",
+				"7d",
+				{ now: new Date("2026-10-04T12:00:00.000Z") },
+			);
+
+		const result = await run([90000, 95000, 100000, 110000, 120000]);
+		expect(result.funnel.priceComparison).toEqual({
+			productId: "p-1",
+			medianPrice: 100000,
+			yourPrice: 106000,
+			sample: 5,
+		});
+		expect(result.responseTime.daily).toHaveLength(7);
+		expect(result.responseTime.daily?.slice(-2)).toEqual([
+			{ date: "2026-10-03", medianMinutes: 40, answered: 1 },
+			{ date: "2026-10-04", medianMinutes: 120, answered: 1 },
+		]);
+		expect(result.responseTime.daily?.[0]).toEqual({
+			date: "2026-09-28",
+			medianMinutes: null,
+			answered: 0,
+		});
+
+		expect(
+			(await run([90000, 95000, 100000, 110000])).funnel.priceComparison,
+		).toBeNull();
+	});
+
 	it("dates a dormant product's last delivered sale (W35)", async () => {
 		const payload = fakePayload(
 			{

@@ -40,6 +40,10 @@ export interface CartShopView {
 	badge?: "phone" | "identity" | "business" | null;
 	rating?: number;
 	totalReviews?: number;
+	/** Cart and quote seller card: the shop's first public pickup point ("Rue Joffre, Akwa, Douala"), null when it lists none. */
+	address?: string | null;
+	/** Cart and quote seller card: the year the shop opened, for « Boutique depuis 2024 ». */
+	sinceYear?: number | null;
 }
 
 export interface CartLineView {

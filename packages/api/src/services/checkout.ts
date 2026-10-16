@@ -80,6 +80,7 @@ import {
 	type SplitQuoteView,
 } from "./checkoutSplit";
 import { marketOf, shopMarketCountry } from "./connectedAccounts";
+import { shopSellerDetails } from "./delivery/locations";
 import {
 	type DeliveryOption,
 	type DeliveryQuote,
@@ -480,6 +481,8 @@ export interface QuoteResponse {
 	preContract: ContractSnapshot;
 	confirmationRequired: "none" | "sms_code" | "seller_call";
 	quoteHash: string;
+	/** `POST /api/checkout/quote` only: the seller card's street address and opening year; outside the hash. */
+	seller?: { address: string | null; sinceYear: number | null };
 }
 
 /**
@@ -1212,7 +1215,21 @@ export async function quoteCheckout(
 	input: CheckoutQuoteInput,
 	options: { store?: CounterStore; now?: Date; ip?: string } = {},
 ): Promise<QuoteResponse> {
-	return (await buildQuote(payload, user, input, options)).response;
+	const { response, internals } = await buildQuote(
+		payload,
+		user,
+		input,
+		options,
+	);
+	const shop = await payload
+		.findByID({
+			collection: "shops",
+			id: internals.shopId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	return { ...response, seller: await shopSellerDetails(payload, shop) };
 }
 
 /** What `POST /api/checkout/quote` answers: the flat quote, or one per group behind `multiShopCartEnabled`. */

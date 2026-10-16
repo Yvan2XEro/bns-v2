@@ -101,6 +101,7 @@ export const Categories: CollectionConfig = {
 					name: "name",
 					type: "text",
 					required: true,
+					localized: true,
 					admin: { width: "50%" },
 				},
 				{
@@ -115,6 +116,7 @@ export const Categories: CollectionConfig = {
 		{
 			name: "description",
 			type: "textarea",
+			localized: true,
 		},
 		{
 			name: "searchAliases",
@@ -233,6 +235,7 @@ export const Categories: CollectionConfig = {
 					name: "priceLabel",
 					type: "text",
 					required: false,
+					localized: true,
 					label: "Price label",
 					admin: {
 						description:
@@ -257,6 +260,7 @@ export const Categories: CollectionConfig = {
 							name: "name",
 							type: "text",
 							required: true,
+							localized: true,
 							admin: { width: "50%" },
 						},
 						{
@@ -318,6 +322,7 @@ export const Categories: CollectionConfig = {
 									name: "label",
 									type: "text",
 									required: false,
+									localized: true,
 									admin: {
 										width: "50%",
 										description:
@@ -335,6 +340,7 @@ export const Categories: CollectionConfig = {
 					name: "unit",
 					type: "text",
 					required: false,
+					localized: true,
 					label: "Unit",
 					admin: {
 						description:
@@ -345,6 +351,7 @@ export const Categories: CollectionConfig = {
 					name: "group",
 					type: "text",
 					required: false,
+					localized: true,
 					label: "Section",
 					admin: {
 						description:

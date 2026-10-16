@@ -32,15 +32,28 @@ export interface ConditionAttributeDef {
 	options?: unknown;
 }
 
+/**
+ * A label's text: the string itself, or the French of a `{ fr, en }` label
+ * read straight from the database (the default locale), the English when no
+ * French is stored.
+ */
+export function labelText(value: unknown): string {
+	if (typeof value === "string") return value;
+	if (value && typeof value === "object" && !Array.isArray(value)) {
+		const { fr, en } = value as { fr?: unknown; en?: unknown };
+		if (typeof fr === "string" && fr.trim()) return fr;
+		if (typeof en === "string") return en;
+	}
+	return "";
+}
+
 export const normalizeWord = (value: unknown): string =>
-	typeof value === "string"
-		? value
-				.normalize("NFD")
-				.replace(/[̀-ͯ]/g, "")
-				.toLowerCase()
-				.replace(/[\s_-]+/g, " ")
-				.trim()
-		: "";
+	labelText(value)
+		.normalize("NFD")
+		.replace(/[̀-ͯ]/g, "")
+		.toLowerCase()
+		.replace(/[\s_-]+/g, " ")
+		.trim();
 
 const CONDITION_NAMES = new Set([
 	"condition",
@@ -53,12 +66,16 @@ const CONDITION_NAMES = new Set([
 	"etat de l'article",
 ]);
 
+const englishOf = (value: unknown): unknown =>
+	value && typeof value === "object" ? (value as { en?: unknown }).en : null;
+
 /** A select or text attribute that asks how worn the item is. */
 export function isConditionLikeAttribute(def: ConditionAttributeDef): boolean {
 	if (def.type !== "select" && def.type !== "text") return false;
 	return (
 		CONDITION_NAMES.has(normalizeWord(def.slug)) ||
-		CONDITION_NAMES.has(normalizeWord(def.name))
+		CONDITION_NAMES.has(normalizeWord(def.name)) ||
+		CONDITION_NAMES.has(normalizeWord(englishOf(def.name)))
 	);
 }
 
@@ -75,9 +92,8 @@ function optionLabel(options: unknown, value: string): string | null {
 		if (option && typeof option === "object") {
 			const row = option as { value?: unknown; label?: unknown };
 			if (row.value !== value) continue;
-			return typeof row.label === "string" && row.label.trim()
-				? row.label
-				: value;
+			const label = labelText(row.label);
+			return label.trim() ? label : value;
 		}
 	}
 	return null;

@@ -8,6 +8,7 @@ import {
 } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { getOrderSettings } from "../lib/orderSettings";
+import { firstImageUrls } from "../lib/productThumbnails";
 import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
@@ -87,7 +88,7 @@ export async function listResoldListings(
 				.filter((id): id is string => id !== null),
 		),
 	];
-	const [variants, suppliers, orderSettings] = await Promise.all([
+	const [variants, suppliers, orderSettings, imageUrls] = await Promise.all([
 		productIds.length > 0
 			? payload.find({
 					collection: "product-variants",
@@ -109,6 +110,7 @@ export async function listResoldListings(
 				})
 			: Promise.resolve({ docs: [] }),
 		getOrderSettings(payload),
+		firstImageUrls(payload, listings),
 	]);
 	const variantById = new Map(
 		variants.docs.map((variant) => [String(variant.id), variant]),
@@ -134,6 +136,8 @@ export async function listResoldListings(
 						price: row.price,
 						supplierPrice: variant.resale?.supplierPrice ?? null,
 						minRetailPrice: variant.resale?.minRetailPrice ?? null,
+						minRetailPriceChangedAt:
+							variant.resale?.minRetailPriceChangedAt ?? null,
 						suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
 						supplierStock: cappedStockCount(variant),
 					},
@@ -144,6 +148,7 @@ export async function listResoldListings(
 					listingId: String(listing.id),
 					productId,
 					title: listing.title,
+					imageUrl: imageUrls.get(String(listing.id)) ?? null,
 					supplier: {
 						id: supplierId,
 						name: supplierName.get(supplierId) ?? "",

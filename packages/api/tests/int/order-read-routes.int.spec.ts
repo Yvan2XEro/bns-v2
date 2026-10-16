@@ -649,6 +649,10 @@ describe("the wire shape, through the real routes", () => {
 				reviewable: false,
 			},
 			arrival: { method: "seller_delivery", etaText: "", promisedBy: null },
+			shopLogoUrl: null,
+			shopBadge: "identity",
+			paymentMethod: "cod",
+			paymentStatus: "cod_pending",
 		});
 	});
 

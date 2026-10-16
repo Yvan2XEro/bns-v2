@@ -1,8 +1,14 @@
 import type { Payload } from "payload";
+import { SHOP_SERVICE_CONTEXT } from "../collections/Shops";
+import {
+	medianHours,
+	RESALE_STATS_WINDOW_DAYS,
+	type SupplierResaleStats,
+} from "../contracts/resale";
 import { relationId } from "../lib/relationId";
 import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
-import type { ResaleLink } from "../payload-types";
+import type { PurchaseOrder, ResaleLink, Shop } from "../payload-types";
 import {
 	getCurrentResaleTerms,
 	hasAcceptedCurrentResaleTerms,
@@ -261,4 +267,166 @@ export async function enforceResellerLevelMinimums(
 		page += 1;
 	}
 	return changed;
+}
+
+export function supplierResaleStatsOf(
+	shop: Pick<Shop, "resaleStats">,
+): SupplierResaleStats {
+	return {
+		medianShipHours: shop.resaleStats?.medianShipHours ?? null,
+		medianResponseHours: shop.resaleStats?.medianResponseHours ?? null,
+	};
+}
+
+/** From the purchase order's creation to its first `shipped` status entry. */
+export function shipDurationMs(
+	purchaseOrder: Pick<PurchaseOrder, "createdAt" | "statusHistory">,
+): number | null {
+	const shipped = (purchaseOrder.statusHistory ?? []).find(
+		(entry) => entry?.status === "shipped",
+	);
+	const start = Date.parse(purchaseOrder.createdAt);
+	const end = shipped ? Date.parse(shipped.at) : Number.NaN;
+	return Number.isFinite(start) && Number.isFinite(end) && end >= start
+		? end - start
+		: null;
+}
+
+/** From the reseller's latest request to the supplier's approval or refusal. */
+export function responseDurationMs(
+	link: Pick<
+		ResaleLink,
+		"createdAt" | "resellerTermsAcceptedAt" | "respondedAt"
+	>,
+): number | null {
+	const start = Date.parse(link.resellerTermsAcceptedAt ?? link.createdAt);
+	const end = link.respondedAt ? Date.parse(link.respondedAt) : Number.NaN;
+	return Number.isFinite(start) && Number.isFinite(end) && end >= start
+		? end - start
+		: null;
+}
+
+async function eachPage<T>(
+	load: (page: number) => Promise<{ docs: T[]; hasNextPage?: boolean }>,
+	visit: (doc: T) => void,
+): Promise<void> {
+	for (let page = 1; ; page += 1) {
+		const result = await load(page);
+		for (const doc of result.docs) visit(doc);
+		if (!result.hasNextPage || result.docs.length === 0) return;
+	}
+}
+
+/**
+ * Nightly: each supplier's median shipping time (purchase order created to
+ * shipped) and usual response time to access requests, over the last
+ * `RESALE_STATS_WINDOW_DAYS`. Stored on the supplier shop; shops whose
+ * window emptied are reset to null.
+ */
+export async function refreshSupplierResaleStats(
+	payload: Payload,
+	now = new Date(),
+): Promise<number> {
+	const since = new Date(
+		now.getTime() - RESALE_STATS_WINDOW_DAYS * 86_400_000,
+	).toISOString();
+	const ship = new Map<string, number[]>();
+	const response = new Map<string, number[]>();
+	const push = (map: Map<string, number[]>, key: string, value: number) =>
+		map.set(key, [...(map.get(key) ?? []), value]);
+	await eachPage(
+		(page) =>
+			payload.find({
+				collection: "purchase-orders",
+				where: {
+					and: [
+						{ createdAt: { greater_than_equal: since } },
+						{ "statusHistory.status": { equals: "shipped" } },
+					],
+				},
+				limit: 500,
+				page,
+				sort: "id",
+				depth: 0,
+				overrideAccess: true,
+			}),
+		(purchaseOrder) => {
+			const supplierId = relationId(purchaseOrder.supplierShop);
+			const duration = shipDurationMs(purchaseOrder);
+			if (supplierId && duration !== null) push(ship, supplierId, duration);
+		},
+	);
+	await eachPage(
+		(page) =>
+			payload.find({
+				collection: "resale-links",
+				where: { respondedAt: { greater_than_equal: since } },
+				limit: 500,
+				page,
+				sort: "id",
+				depth: 0,
+				overrideAccess: true,
+			}),
+		(link) => {
+			const supplierId = relationId(link.supplierShop);
+			const duration = responseDurationMs(link);
+			if (supplierId && duration !== null) push(response, supplierId, duration);
+		},
+	);
+	const shopIds = new Set([...ship.keys(), ...response.keys()]);
+	await eachPage(
+		(page) =>
+			payload.find({
+				collection: "shops",
+				where: { "resaleStats.computedAt": { exists: true } },
+				limit: 500,
+				page,
+				sort: "id",
+				depth: 0,
+				overrideAccess: true,
+			}),
+		(shop) => {
+			shopIds.add(String(shop.id));
+		},
+	);
+	let updated = 0;
+	for (const shopId of shopIds) {
+		const shop = await payload
+			.findByID({
+				collection: "shops",
+				id: shopId,
+				depth: 0,
+				overrideAccess: true,
+			})
+			.catch(() => null);
+		if (!shop) continue;
+		const next: SupplierResaleStats = {
+			medianShipHours: medianHours(ship.get(shopId) ?? []),
+			medianResponseHours: medianHours(response.get(shopId) ?? []),
+		};
+		const current = supplierResaleStatsOf(shop);
+		const hadStats = Boolean(shop.resaleStats?.computedAt);
+		if (
+			hadStats &&
+			current.medianShipHours === next.medianShipHours &&
+			current.medianResponseHours === next.medianResponseHours
+		)
+			continue;
+		if (
+			!hadStats &&
+			next.medianShipHours === null &&
+			next.medianResponseHours === null
+		)
+			continue;
+		await payload.update({
+			collection: "shops",
+			id: shopId,
+			data: { resaleStats: { ...next, computedAt: now.toISOString() } },
+			depth: 0,
+			overrideAccess: true,
+			context: SHOP_SERVICE_CONTEXT,
+		});
+		updated += 1;
+	}
+	return updated;
 }

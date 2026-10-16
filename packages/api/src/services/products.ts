@@ -4,6 +4,7 @@ import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import type { FieldIssue } from "../contracts/formIssues";
 import {
+	normalizeBarcode,
 	PRODUCT_STATUS_VALUES,
 	productInputIssues,
 } from "../contracts/productValidation";
@@ -32,6 +33,8 @@ export interface ParsedVariant {
 	id: string | null;
 	optionValues: Record<string, string>;
 	sku: string | null;
+	/** Undefined when the client did not send it: a client that predates the field must not clear it. */
+	barcode: string | null | undefined;
 	price: number;
 	cost: number | null;
 	trackInventory: boolean;
@@ -179,6 +182,12 @@ function parseVariants(raw: unknown, options: OptionDef[]): ParsedVariant[] {
 			id: typeof entry.id === "string" && entry.id ? entry.id : null,
 			optionValues,
 			sku: text(entry.sku, 60),
+			barcode:
+				entry.barcode === undefined
+					? undefined
+					: typeof entry.barcode === "string"
+						? normalizeBarcode(entry.barcode) || null
+						: null,
 			price: wholeNumber(entry.price, { nullable: false }),
 			cost: wholeNumber(entry.cost, { nullable: true }),
 			trackInventory: entry.trackInventory !== false,
@@ -334,6 +343,48 @@ async function assertUniqueSkus(
 	}
 }
 
+/** A barcode names one variant in the shop, so a scan finds exactly one row. */
+async function assertUniqueBarcodes(
+	req: PayloadRequest,
+	shopId: string,
+	variants: ParsedVariant[],
+): Promise<void> {
+	const barcodes = variants
+		.map((variant) => variant.barcode)
+		.filter((code): code is string => Boolean(code));
+	if (barcodes.length === 0) return;
+
+	const ownIds = variants
+		.map((variant) => variant.id)
+		.filter((id): id is string => Boolean(id));
+	const clashes = await req.payload.find({
+		collection: "product-variants",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ barcode: { in: barcodes } },
+				NOT_ARCHIVED,
+				...(ownIds.length ? [{ id: { not_in: ownIds } }] : []),
+			],
+		},
+		depth: 0,
+		limit: barcodes.length,
+		overrideAccess: true,
+		req,
+	});
+	if (clashes.totalDocs > 0) {
+		const taken = clashes.docs.map((doc) => doc.barcode);
+		failWith(
+			variants.flatMap((variant, index) =>
+				variant.barcode && taken.includes(variant.barcode)
+					? [{ path: `variants.${index}.barcode`, rule: "taken" }]
+					: [],
+			),
+			409,
+		);
+	}
+}
+
 function productData(input: ParsedProduct) {
 	return {
 		title: input.title,
@@ -385,6 +436,7 @@ async function createVariant(
 			shop: shopId,
 			optionValues: variant.optionValues,
 			sku: variant.sku,
+			barcode: variant.barcode ?? null,
 			price: variant.price,
 			cost: costAllowed ? variant.cost : null,
 			trackInventory: variant.trackInventory,
@@ -613,6 +665,7 @@ export async function createProduct(
 			});
 			await validateCategory(req, input);
 			await assertUniqueSkus(req, shopId, input.variants);
+			await assertUniqueBarcodes(req, shopId, input.variants);
 
 			const product = await req.payload.create({
 				collection: "products",
@@ -692,6 +745,7 @@ export async function updateProduct(
 			const costAllowed = can(role, "costs.view");
 			await validateCategory(req, input);
 			await assertUniqueSkus(req, shopId, input.variants);
+			await assertUniqueBarcodes(req, shopId, input.variants);
 
 			await req.payload.update({
 				collection: "products",
@@ -730,6 +784,9 @@ export async function updateProduct(
 					data: {
 						optionValues: variant.optionValues,
 						sku: variant.sku,
+						...(variant.barcode !== undefined && {
+							barcode: variant.barcode,
+						}),
 						price: variant.price,
 						cost: costAllowed ? variant.cost : existing.cost,
 						// Sticky on purpose, and only ever upward: `applyMovement`

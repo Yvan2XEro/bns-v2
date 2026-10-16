@@ -1,12 +1,15 @@
 import type { Payload, Where } from "payload";
 import {
+	cityKey,
 	meetsMinResellerLevel,
 	minResellerLevelOf,
 	type ResaleCataloguePage,
 	type ResaleCatalogueProduct,
 } from "../contracts/resale";
+import { categoryWithDescendants } from "../lib/categoryDescendants";
 import { ERROR_CODES } from "../lib/errors";
 import { getOrderSettings } from "../lib/orderSettings";
+import { firstImageUrls } from "../lib/productThumbnails";
 import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
@@ -14,6 +17,7 @@ import { shopCapabilities } from "../lib/shopCapabilities";
 import { cappedStockCount } from "../lib/variants";
 import type { Shop } from "../payload-types";
 import { hasAcceptedCurrentResaleTerms } from "./resale";
+import { supplierResaleStatsOf } from "./resaleMaintenance";
 import { requireShopPermission } from "./shopGuards";
 import type { ServiceUser } from "./shops";
 
@@ -25,6 +29,7 @@ export async function listResaleCatalogue(
 		query?: string;
 		categoryId?: string;
 		supplierShopId?: string;
+		shipsFromCity?: string;
 	} = {},
 ): Promise<Required<ResaleCataloguePage>> {
 	const settings = await getResaleSettings(payload);
@@ -67,7 +72,11 @@ export async function listResaleCatalogue(
 		{ shop: { not_equals: resellerShopId } },
 	];
 	if (filters.categoryId) {
-		productConditions.push({ category: { equals: filters.categoryId } });
+		productConditions.push({
+			category: {
+				in: await categoryWithDescendants(payload, filters.categoryId),
+			},
+		});
 	}
 	if (filters.supplierShopId) {
 		productConditions.push({ shop: { equals: filters.supplierShopId } });
@@ -90,39 +99,46 @@ export async function listResaleCatalogue(
 		),
 	];
 	const productIds = result.docs.map((product) => String(product.id));
-	const [shops, links, ownListings, orderSettings] = await Promise.all([
-		Promise.all(
-			supplierIds.map((id) =>
-				payload
-					.findByID({ collection: "shops", id, depth: 0, overrideAccess: true })
-					.catch(() => null),
+	const [shops, links, ownListings, orderSettings, imageUrls] =
+		await Promise.all([
+			Promise.all(
+				supplierIds.map((id) =>
+					payload
+						.findByID({
+							collection: "shops",
+							id,
+							depth: 0,
+							overrideAccess: true,
+						})
+						.catch(() => null),
+				),
 			),
-		),
-		payload.find({
-			collection: "resale-links",
-			where: { resellerShop: { equals: resellerShopId } },
-			limit: 0,
-			pagination: false,
-			depth: 0,
-			overrideAccess: true,
-		}),
-		productIds.length > 0
-			? payload.find({
-					collection: "listings",
-					where: {
-						and: [
-							{ shop: { equals: resellerShopId } },
-							{ product: { in: productIds } },
-						],
-					},
-					limit: 0,
-					pagination: false,
-					depth: 0,
-					overrideAccess: true,
-				})
-			: Promise.resolve({ docs: [] }),
-		getOrderSettings(payload),
-	]);
+			payload.find({
+				collection: "resale-links",
+				where: { resellerShop: { equals: resellerShopId } },
+				limit: 0,
+				pagination: false,
+				depth: 0,
+				overrideAccess: true,
+			}),
+			productIds.length > 0
+				? payload.find({
+						collection: "listings",
+						where: {
+							and: [
+								{ shop: { equals: resellerShopId } },
+								{ product: { in: productIds } },
+							],
+						},
+						limit: 0,
+						pagination: false,
+						depth: 0,
+						overrideAccess: true,
+					})
+				: Promise.resolve({ docs: [] }),
+			getOrderSettings(payload),
+			firstImageUrls(payload, result.docs),
+		]);
 	const resoldProducts = new Set(
 		ownListings.docs.map((listing) => relationId(listing.product)),
 	);
@@ -140,6 +156,8 @@ export async function listResaleCatalogue(
 		links.docs.map((link) => [relationId(link.supplierShop), link] as const),
 	);
 	const resellerOwnerId = relationId(resellerShop.owner);
+	const cityFilter = cityKey(filters.shipsFromCity);
+	const cities = new Map<string, string>();
 	const products: ResaleCatalogueProduct[] = [];
 	for (const product of result.docs) {
 		const supplierId = relationId(product.shop);
@@ -151,6 +169,11 @@ export async function listResaleCatalogue(
 		) {
 			continue;
 		}
+		const shipsFromCity = supplier.location?.city?.trim() || null;
+		const supplierCityKey = cityKey(shipsFromCity);
+		if (shipsFromCity && !cities.has(supplierCityKey))
+			cities.set(supplierCityKey, shipsFromCity);
+		if (cityFilter && supplierCityKey !== cityFilter) continue;
 		const link = linkBySupplier.get(supplierId) ?? null;
 		const approvalRequired = product.resale?.approvalRequired === true;
 		const minResellerLevel = minResellerLevelOf(
@@ -181,6 +204,7 @@ export async function listResaleCatalogue(
 			sku: variant.sku ?? null,
 			optionValues: variant.optionValues,
 			minRetailPrice: variant.resale?.minRetailPrice ?? null,
+			minRetailPriceChangedAt: variant.resale?.minRetailPriceChangedAt ?? null,
 			suggestedRetailPrice: variant.resale?.suggestedRetailPrice ?? null,
 			...(canSeeSupplierPrice
 				? { supplierStock: cappedStockCount(variant) }
@@ -196,11 +220,14 @@ export async function listResaleCatalogue(
 			title: product.title,
 			description: product.description ?? null,
 			categoryId: relationId(product.category),
+			imageUrl: imageUrls.get(String(product.id)) ?? null,
+			shipsFromCity,
 			images: product.images,
 			supplier: {
 				id: supplierId,
 				name: supplier.name,
 				level: shopCapabilities(supplier).effectiveLevel,
+				resaleStats: supplierResaleStatsOf(supplier),
 			},
 			linkStatus: link?.status ?? null,
 			approvalRequired,
@@ -216,5 +243,6 @@ export async function listResaleCatalogue(
 	return {
 		products,
 		commissionRateBps: orderSettings.defaultCommissionRateBps,
+		shipsFromCities: [...cities.values()].sort((a, b) => a.localeCompare(b)),
 	};
 }

@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { conditionLabelOf } from "../../src/contracts/conditionAttribute";
+import {
+	conditionAttributeOf,
+	conditionLabelOf,
+} from "../../src/contracts/conditionAttribute";
 import { migrateConditionToAttribute } from "../../src/migrations/conditionToAttribute";
 import { withRawMongo } from "./helpers/fakeMongo";
 import { type Doc, fakePayload } from "./helpers/fakePayload";
@@ -192,5 +195,50 @@ describe("condition to attribute migration", () => {
 			productsCopied: 0,
 			categoriesCleared: 0,
 		});
+	});
+
+	it("recognises an already localised « État » and adds no second one", async () => {
+		const payload = withRawMongo(
+			fakePayload({
+				categories: [
+					{
+						id: "fash",
+						slug: "fashion",
+						listingForm: { type: "product", condition: "auto" },
+						attributes: [
+							{
+								name: { fr: "État", en: "Condition" },
+								slug: "etat",
+								type: "select",
+								options: [
+									{ value: "new", label: { fr: "Neuf", en: "New" } },
+									{
+										value: "used",
+										label: { fr: "Bon état", en: "Good condition" },
+									},
+								],
+							},
+						],
+					},
+				],
+				listings: [{ id: "l-good", category: "fash", condition: "good" }],
+			}),
+		);
+		const report = await migrateConditionToAttribute(payload);
+		const fashion = byId(payload.store.categories, "fash");
+
+		expect(attributeSlugs(fashion)).toEqual(["etat"]);
+		expect(report).toMatchObject({ attributesAdded: 0, optionsAppended: 0 });
+		expect(byId(payload.store.listings, "l-good").attributes).toEqual({
+			etat: "used",
+		});
+		expect(conditionLabelOf(fashion.attributes as Doc[], { etat: "new" })).toBe(
+			"Neuf",
+		);
+		expect(
+			conditionAttributeOf([
+				{ name: { en: "Condition" }, slug: "wear", type: "text" },
+			]),
+		).not.toBeNull();
 	});
 });

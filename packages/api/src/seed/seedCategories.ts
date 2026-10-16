@@ -1,10 +1,12 @@
-import type { File } from "payload";
+import type { File, Payload } from "payload";
 import {
 	CONDITION_LABELS_FR,
 	CONDITION_SLUG,
 	CONDITION_VALUES,
 } from "../contracts/conditionAttribute";
 import type { CategoryListingFormConfig } from "../lib/listingFormPreset";
+import { localizeCategoryLabels } from "../migrations/categoryLocales";
+import { frenchSeedAttribute, seedLabelFr } from "./categoryTranslations";
 
 /**
  * The category tree, with the shape of the ad form each category asks for.
@@ -3921,7 +3923,7 @@ function withCondition(definitions: CategoryData[]): CategoryData[] {
 	);
 }
 
-const seededDefinitions = withCondition(categoryDefinitions);
+export const seededDefinitions = withCondition(categoryDefinitions);
 
 /**
  * The `listingForm` settings above, keyed by slug — only the categories that
@@ -4009,9 +4011,10 @@ export const seedCategories = async (payload: unknown) => {
 		const result = await typedPayload.create({
 			collection: "categories",
 			data: {
-				name: catDef.name,
+				// French into the default locale; the English is filled in below.
+				name: seedLabelFr("name", catDef.name),
 				slug: catDef.slug,
-				description: catDef.description,
+				description: seedLabelFr("description", catDef.description),
 				searchAliases: catDef.searchAliases,
 				icon: catDef.icon,
 				active: true,
@@ -4020,14 +4023,24 @@ export const seedCategories = async (payload: unknown) => {
 				// Left undefined where the category inherits: Payload then stores
 				// the field's "auto" defaults, which is exactly what inheriting
 				// means to the resolver.
-				listingForm: catDef.listingForm,
-				attributes: catDef.attributes,
+				listingForm: catDef.listingForm?.priceLabel
+					? {
+							...catDef.listingForm,
+							priceLabel: seedLabelFr(
+								"priceLabel",
+								catDef.listingForm.priceLabel,
+							),
+						}
+					: catDef.listingForm,
+				attributes: catDef.attributes.map(frenchSeedAttribute),
 			},
 		});
 
 		slugToId[catDef.slug] = result.id;
 		createdCategories.push(result);
 	}
+
+	await localizeCategoryLabels(payload as Payload);
 
 	return createdCategories;
 };

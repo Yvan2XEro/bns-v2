@@ -3,6 +3,7 @@ import {
 	SELLER_CANCELLATION_THRESHOLD,
 	sellerCancellationAlert,
 } from "../contracts/sellerCancellation";
+import { categoryWithDescendants } from "../lib/categoryDescendants";
 import { ERROR_CODES } from "../lib/errors";
 import { timezoneOfShop } from "../lib/markets";
 import { localDateString } from "../lib/marketTime";
@@ -16,6 +17,10 @@ import type {
 } from "../types/shopInsights";
 import { requireShopPermission } from "./shopGuards";
 import { getShopStockInsights } from "./shopInsightsStock";
+import {
+	dailyResponseMedians,
+	type ResponseBurstMessage,
+} from "./shopResponseBursts";
 import type { ServiceUser } from "./shops";
 
 type MetricTotals = {
@@ -193,6 +198,130 @@ async function acceptanceTimes(
 			? minutes[middle]
 			: ((minutes[middle - 1] ?? 0) + (minutes[middle] ?? 0)) / 2;
 	return { medianMinutes: Math.round(median ?? 0), sample: minutes.length };
+}
+
+const RESPONSE_CONVERSATION_LIMIT = 500;
+const RESPONSE_MESSAGE_LIMIT = 5000;
+const SILENCE_MS = 12 * 60 * 60_000;
+
+/**
+ * Raw reply times are not stored — the nightly rows keep only buckets — so
+ * the per-day medians are recomputed from the messages themselves, with the
+ * same burst rule, over the conversations active in the window. Both reads
+ * are capped; a shop past the caps gets medians over its latest traffic.
+ */
+async function responseDaily(
+	payload: Payload,
+	shopId: string,
+	dates: readonly string[],
+	timezone: string,
+) {
+	const first = dates[0];
+	if (!first) return [];
+	// A day either side of UTC covers every market offset; out-of-window
+	// bursts are dropped by date, and the silence before the first one counts.
+	const since = new Date(
+		Date.parse(`${first}T00:00:00.000Z`) - DAY_MS - SILENCE_MS,
+	).toISOString();
+	const conversations = await payload.find({
+		collection: "conversations",
+		where: {
+			and: [
+				{ shop: { equals: shopId } },
+				{ lastMessageAt: { greater_than_equal: since } },
+			],
+		},
+		sort: "-lastMessageAt",
+		limit: RESPONSE_CONVERSATION_LIMIT,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const ids = conversations.docs.map((doc) => String(doc.id));
+	if (ids.length === 0) return dailyResponseMedians([], dates, timezone);
+	const messages = await payload.find({
+		collection: "messages",
+		where: {
+			and: [
+				{ conversation: { in: ids } },
+				{ senderSide: { in: ["buyer", "shop"] } },
+				{ createdAt: { greater_than_equal: since } },
+			],
+		},
+		sort: "-createdAt",
+		limit: RESPONSE_MESSAGE_LIMIT,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const rows = messages.docs.flatMap((doc): ResponseBurstMessage[] => {
+		const conversationId = relationId(doc.conversation);
+		const side = doc.senderSide;
+		if (!conversationId || (side !== "buyer" && side !== "shop")) return [];
+		return [
+			{ conversationId, senderSide: side, createdAt: String(doc.createdAt) },
+		];
+	});
+	return dailyResponseMedians(rows, dates, timezone);
+}
+
+const PRICE_SAMPLE_FLOOR = 5;
+const PRICE_SAMPLE_LIMIT = 500;
+
+/**
+ * The median price of other sellers' published listings in the product's
+ * category (subcategories included) and the shop's city. Null under the
+ * sample floor: a median of three listings says nothing.
+ */
+async function priceComparison(
+	payload: Payload,
+	shopId: string,
+	city: string | null,
+	product: { productId: string; listingId: string | null },
+) {
+	if (!city || !product.listingId) return null;
+	const listing = await payload
+		.findByID({
+			collection: "listings",
+			id: product.listingId,
+			depth: 0,
+			overrideAccess: true,
+		})
+		.catch(() => null);
+	const yourPrice = listing?.price ?? listing?.productSummary?.priceMin ?? null;
+	const categoryId = relationId(listing?.category);
+	if (!listing || yourPrice === null || !categoryId) return null;
+	const categories = await categoryWithDescendants(payload, categoryId);
+	const similar = await payload.find({
+		collection: "listings",
+		where: {
+			and: [
+				{ status: { equals: "published" } },
+				{ category: { in: categories } },
+				{ location: { like: city } },
+				{ shop: { not_equals: shopId } },
+				{ price: { greater_than: 0 } },
+			],
+		},
+		sort: "-createdAt",
+		limit: PRICE_SAMPLE_LIMIT,
+		depth: 0,
+		overrideAccess: true,
+	});
+	const prices = similar.docs
+		.map((doc) => Number(doc.price))
+		.filter((price) => Number.isFinite(price) && price > 0)
+		.sort((a, b) => a - b);
+	if (prices.length < PRICE_SAMPLE_FLOOR) return null;
+	const middle = Math.floor(prices.length / 2);
+	const median =
+		prices.length % 2
+			? (prices[middle] ?? 0)
+			: ((prices[middle - 1] ?? 0) + (prices[middle] ?? 0)) / 2;
+	return {
+		productId: product.productId,
+		medianPrice: Math.round(median),
+		yourPrice,
+		sample: prices.length,
+	};
 }
 
 export async function getShopInsights(
@@ -443,6 +572,23 @@ export async function getShopInsights(
 			),
 		};
 	});
+	const responseDays = period === "7d" ? 7 : 14;
+	const responseByDay = await responseDaily(
+		payload,
+		shopId,
+		Array.from({ length: responseDays }, (_, index) =>
+			addDays(end, index + 1 - responseDays),
+		),
+		timezone,
+	);
+	const comparison = lowConversion
+		? await priceComparison(
+				payload,
+				shopId,
+				shop.location?.city ?? null,
+				lowConversion,
+			)
+		: null;
 	const acceptance = await acceptanceTimes(
 		payload,
 		shopId,
@@ -469,6 +615,7 @@ export async function getShopInsights(
 			ordersPlaced: current.ordersPlaced,
 			ordersDelivered: current.ordersDelivered,
 			conversion: rate(current.ordersPlaced, current.views),
+			priceComparison: comparison,
 		},
 		rateCounts: {
 			sellerCancellations,
@@ -498,6 +645,7 @@ export async function getShopInsights(
 			answeredWithinOneHour,
 			awaitingReply: awaitingReply.totalDocs,
 			buckets,
+			daily: responseByDay,
 		},
 		daily,
 		topProducts,
