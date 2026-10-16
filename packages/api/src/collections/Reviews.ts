@@ -1,5 +1,6 @@
 import type { CollectionConfig } from "payload";
 import { authenticated } from "../access/authenticated";
+import { REVIEW_PHOTOS_MAX } from "../contracts/reviewPhotos";
 import {
 	enforceReviewRules,
 	translateReviewWriteConflicts,
@@ -194,6 +195,15 @@ export const Reviews: CollectionConfig = {
 		{
 			name: "comment",
 			type: "textarea",
+		},
+		{
+			// Attached by the reviewer at creation only; afterwards the list can
+			// only shrink (enforceReviewRules), which is how a moderator removes one.
+			name: "photos",
+			type: "relationship",
+			relationTo: "media",
+			hasMany: true,
+			maxRows: REVIEW_PHOTOS_MAX,
 		},
 		{
 			name: "createdAt",

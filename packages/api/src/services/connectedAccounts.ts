@@ -75,6 +75,8 @@ export interface PaymentSetupView {
 		activatedAt: string | null;
 		/** The verdict recorded when the account was submitted. */
 		nameMatch: "match" | "partial" | "mismatch" | null;
+		/** The verified identity's name that verdict compared against; same audience as the account. */
+		identityName: string | null;
 	};
 	pendingAccount: null | {
 		method: string;
@@ -663,6 +665,7 @@ export async function paymentSetupView(
 					status: active.status,
 					activatedAt: active.activatedAt ?? null,
 					nameMatch: active.nameMatch?.result ?? null,
+					identityName: active.nameMatch?.identityName?.trim() || null,
 				}
 			: null,
 		pendingAccount: pending

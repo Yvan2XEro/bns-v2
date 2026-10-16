@@ -200,10 +200,12 @@ export async function requestResaleLink(
 				const revokedAt = link.revokedAt
 					? Date.parse(link.revokedAt)
 					: Number.NaN;
+				// A reseller who withdrew their own request may ask again at once.
 				const canReRequest =
-					link.revokedBy === "supplier" &&
-					Number.isFinite(revokedAt) &&
-					now.getTime() - revokedAt >= 30 * 24 * 60 * 60 * 1000;
+					link.revokedBy === "reseller" ||
+					(link.revokedBy === "supplier" &&
+						Number.isFinite(revokedAt) &&
+						now.getTime() - revokedAt >= 30 * 24 * 60 * 60 * 1000);
 				if (!canReRequest) {
 					throw new ServiceError(ERROR_CODES.resaleLinkInactive, 409);
 				}
@@ -416,6 +418,58 @@ export async function decideResaleLink(
 	);
 }
 
+/**
+ * The reseller withdraws a request the supplier has not answered yet. The row
+ * stays (the pair is unique and may carry history) as `revoked` by the
+ * reseller, which the lists leave out and a new request reopens at once.
+ * Another shop's link answers exactly like a missing one.
+ */
+export async function cancelResaleLinkRequest(
+	payload: Payload,
+	user: ServiceUser,
+	resellerShopId: string,
+	linkId: string,
+	options: { now?: Date } = {},
+): Promise<ResaleLink> {
+	return withTransaction(
+		payload,
+		async (req) => {
+			await requireShopPermission(
+				payload,
+				user,
+				resellerShopId,
+				"resale.manage",
+				{ writable: true, req },
+			);
+			const link = await payload
+				.findByID({
+					collection: "resale-links",
+					id: linkId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null);
+			if (!link || relationId(link.resellerShop) !== resellerShopId) {
+				throw new ServiceError(ERROR_CODES.resaleLinkInactive, 404);
+			}
+			if (link.status !== "requested") {
+				throw new ServiceError(ERROR_CODES.resaleLinkInactive, 409);
+			}
+			const now = (options.now ?? new Date()).toISOString();
+			return payload.update({
+				collection: "resale-links",
+				id: link.id,
+				data: { status: "revoked", revokedAt: now, revokedBy: "reseller" },
+				depth: 0,
+				overrideAccess: true,
+				req,
+			});
+		},
+		{ user, context: { resaleService: true } },
+	);
+}
+
 export async function listResaleLinks(
 	payload: Payload,
 	user: ServiceUser,
@@ -429,6 +483,7 @@ export async function listResaleLinks(
 		where: {
 			and: [
 				{ [sideField]: { equals: shopId } },
+				{ revokedBy: { not_equals: "reseller" } },
 				...(input.status ? [{ status: { equals: input.status } }] : []),
 			],
 		},

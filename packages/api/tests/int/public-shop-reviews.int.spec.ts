@@ -55,6 +55,7 @@ describe("public shop reviews", () => {
 					comment: null,
 					createdAt: "2026-10-03T10:00:00.000Z",
 					reviewerFirstName: "Paul",
+					photos: [],
 				},
 				{
 					id: "r1",
@@ -62,6 +63,7 @@ describe("public shop reviews", () => {
 					comment: "Très bien",
 					createdAt: "2026-10-01T10:00:00.000Z",
 					reviewerFirstName: "Aïcha",
+					photos: [],
 				},
 			],
 			page: 1,

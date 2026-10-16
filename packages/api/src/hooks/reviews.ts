@@ -6,6 +6,10 @@ import type {
 import { relationId } from "../lib/relationId";
 import { CodedAPIError } from "../lib/serviceError";
 import {
+	assertReviewPhotos,
+	keepExistingPhotos,
+} from "../services/reviewPhotos";
+import {
 	assertOrderReviewAllowed,
 	assertReviewAllowed,
 	findOrderReviewTarget,
@@ -33,12 +37,24 @@ export const enforceReviewRules: CollectionBeforeChangeHook = async ({
 		if (originalDoc && "order" in data) {
 			data.order = originalDoc.order;
 		}
+		if ("photos" in data) {
+			data.photos = keepExistingPhotos(data.photos, originalDoc?.photos);
+		}
 		return data;
 	}
 
 	if (operation !== "create" || !req.user) return data;
 
 	data.reviewer = req.user.id;
+
+	try {
+		data.photos = await assertReviewPhotos(req.payload, data.photos, req);
+	} catch (error) {
+		if (error instanceof ReviewRuleError) {
+			throw new CodedAPIError(error.code, error.status);
+		}
+		throw error;
+	}
 
 	const orderId = relationId(data.order);
 	if (orderId) {

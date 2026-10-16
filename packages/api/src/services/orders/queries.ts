@@ -55,6 +55,8 @@ const ORDER_EVENTS_LIMIT = 500;
  * pathological order cannot starve the other nineteen rows of their items.
  */
 const ORDER_LIST_ITEMS_PER_ORDER = 20;
+/** The shop queue's Articles column names this many lines, then "+N". */
+const ORDER_LIST_LINES_SHOWN = 3;
 
 export type OrderView = BuyerOrderView | ShopOrderView | StaffOrderView;
 
@@ -298,14 +300,20 @@ function listRowSources(
 	shopName: string,
 	items: readonly OrderItem[],
 ): OrderListRowSources {
-	const first = [...items].sort(
+	const sorted = [...items].sort(
 		(a, b) => (a.lineNumber ?? 0) - (b.lineNumber ?? 0),
-	)[0];
+	);
+	const first = sorted[0];
 	return {
 		shopName,
 		itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
 		firstItemTitle: first?.snapshot?.title ?? "",
 		firstItemImageUrl: first?.snapshot?.imageUrl ?? null,
+		lineCount: items.length,
+		lines: sorted.slice(0, ORDER_LIST_LINES_SHOWN).map((item) => ({
+			title: item.snapshot?.title ?? "",
+			quantity: item.quantity,
+		})),
 	};
 }
 

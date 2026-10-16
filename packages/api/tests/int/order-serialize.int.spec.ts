@@ -1015,7 +1015,25 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 			area: { district: "Akwa", city: "Douala" },
 			resale: null,
 			hasShipment: false,
+			lineCount: 0,
+			lines: [],
 		});
+	});
+
+	it("carries the loaded lines on a shop queue row only (W24)", () => {
+		const sources = listRow({
+			lineCount: 2,
+			lines: [
+				{ title: "Robe wax", quantity: 2 },
+				{ title: "Foulard", quantity: 1 },
+			],
+		});
+		const shop = serializeOrderListEntry(makeOrder(), sources, "shop");
+		expect(shop.lineCount).toBe(2);
+		expect(shop.lines).toEqual(sources.lines);
+		const buyer = serializeOrderListEntry(makeOrder(), sources, "buyer");
+		expect(buyer).not.toHaveProperty("lines");
+		expect(buyer).not.toHaveProperty("lineCount");
 	});
 
 	it("names the supplier and the purchase order of a resold line", () => {

@@ -4,7 +4,7 @@ import type { Where } from "payload";
 import { getPayload } from "payload";
 import { activeShopIds } from "@/lib/activeShopIds";
 import { tagsForCategory } from "@/lib/categoryTags";
-import { quoteFilterValue } from "@/lib/meiliFilter";
+import { locationFilter, quoteFilterValue } from "@/lib/meiliFilter";
 import { relationId } from "@/lib/relationId";
 import { shopCapabilities } from "@/lib/shopCapabilities";
 
@@ -201,6 +201,8 @@ interface FallbackParams {
 	offset: number;
 	nowIso: string;
 	categoryFacet: boolean;
+	/** `limit=0`: only the total, for the search tabs' counts. */
+	countOnly: boolean;
 }
 
 /**
@@ -285,6 +287,7 @@ async function runPayloadListingSearch(
 		offset,
 		nowIso,
 		categoryFacet,
+		countOnly,
 	} = params;
 	const payload = await getPayload({ config });
 	const where: Where = {
@@ -347,6 +350,14 @@ async function runPayloadListingSearch(
 		where.boostedUntil = { greater_than: nowIso };
 	}
 
+	if (countOnly) {
+		const { totalDocs } = await payload.count({
+			collection: "listings",
+			where,
+		});
+		return Response.json({ hits: [], total: totalDocs, limit: 0, offset: 0 });
+	}
+
 	let payloadSort: string;
 	switch (sortParam) {
 		case "oldest":
@@ -401,6 +412,7 @@ export async function GET(request: Request) {
 	const radius = Number.parseInt(searchParams.get("radius") || "50", 10);
 	// Clamped like the shops route: an unbounded limit reaches Meilisearch
 	// directly, and now also sizes the live shop-status check's `in` filter.
+	const countOnly = searchParams.get("limit") === "0";
 	const limit = Math.min(
 		50,
 		Math.max(1, Number.parseInt(searchParams.get("limit") || "20", 10) || 20),
@@ -444,6 +456,7 @@ export async function GET(request: Request) {
 		offset,
 		nowIso,
 		categoryFacet,
+		countOnly,
 	};
 
 	const dynamicFilters: string[] = [];
@@ -510,9 +523,9 @@ export async function GET(request: Request) {
 		filters.push(`price <= ${Number.parseInt(maxPrice, 10)}`);
 	}
 
-	if (location) {
-		filters.push(`location = ${quoteFilterValue(location)}`);
-	}
+	const locationIndex = location
+		? filters.push(locationFilter(location)) - 1
+		: -1;
 
 	if (tagsParam) {
 		let tagSlugs = tagsParam
@@ -580,17 +593,35 @@ export async function GET(request: Request) {
 			break;
 	}
 
-	const filter = filters.join(" AND ");
+	let filter = filters.join(" AND ");
+	const runSearch = () =>
+		index.search(
+			query,
+			countOnly
+				? // Exhaustive and hit-free: a tab count, not a page.
+					{ filter, hitsPerPage: 0, page: 1 }
+				: {
+						filter,
+						sort: sort.length > 0 ? sort : undefined,
+						limit,
+						offset,
+						...(categoryFacet && { facets: ["categoryId"] }),
+					},
+		);
 
 	let result: Awaited<ReturnType<typeof index.search>>;
 	try {
-		result = await index.search(query, {
-			filter,
-			sort: sort.length > 0 ? sort : undefined,
-			limit,
-			offset,
-			...(categoryFacet && { facets: ["categoryId"] }),
-		});
+		try {
+			result = await runSearch();
+		} catch (error) {
+			if (locationIndex < 0 || !location) throw error;
+			// An index the indexer has not reconfigured yet refuses
+			// `locationKeys`; the exact city match still answers.
+			console.warn("[search] Tolerant city filter refused, exact match", error);
+			filters[locationIndex] = `location = ${quoteFilterValue(location)}`;
+			filter = filters.join(" AND ");
+			result = await runSearch();
+		}
 	} catch (error) {
 		// Meilisearch rejects a filter on an attribute it was never told is
 		// filterable, and the index settings are only as fresh as the last run of
@@ -611,6 +642,15 @@ export async function GET(request: Request) {
 			{ error: "Search is unavailable", code: "search.unavailable" },
 			{ status: 503 },
 		);
+	}
+
+	if (countOnly) {
+		return Response.json({
+			hits: [],
+			total: result.totalHits ?? result.estimatedTotalHits ?? 0,
+			limit: 0,
+			offset: 0,
+		});
 	}
 
 	console.log(

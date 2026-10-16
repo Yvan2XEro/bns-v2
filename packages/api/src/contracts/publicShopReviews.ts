@@ -5,12 +5,19 @@ export interface PublicShopReview {
 	comment: string | null;
 	createdAt: string;
 	reviewerFirstName: string | null;
+	photos: PublicShopReviewPhoto[];
+}
+
+export interface PublicShopReviewPhoto {
+	id: string;
+	url: string;
 }
 
 export interface PublicShopReviewPage {
 	reviews: PublicShopReview[];
 	page: number;
 	totalPages: number;
+	/** Every review the list can page through: the shop page's "Avis" count. */
 	total: number;
 }
 

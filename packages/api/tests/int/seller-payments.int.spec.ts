@@ -503,6 +503,7 @@ describe("GET /api/shops/{id}/payments", () => {
 			holds: [
 				{ scope: "order", reasonCategory: "security", until: at(3 * DAY) },
 			],
+			rates: { commissionBps: 800, vatBps: MARKET.vatRateBps },
 		};
 		expect(await res.json()).toEqual(expected);
 		expect([third, second, first].map((p) => p.createdAt.slice(0, 16))).toEqual(
@@ -602,6 +603,7 @@ describe("GET /api/shops/{id}/payments", () => {
 			payouts: [],
 			orders: [],
 			holds: [],
+			rates: { commissionBps: 800, vatBps: MARKET.vatRateBps },
 		});
 	});
 

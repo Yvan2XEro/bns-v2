@@ -294,6 +294,74 @@ describe("public search route", () => {
 		expect(searchMock.mock.calls.at(-1)?.[1]?.limit).toBe(50);
 	});
 
+	describe("the city filter", () => {
+		it("also matches the folded location keys, keeping the exact match", async () => {
+			const filter = await filterFor(
+				`location=${encodeURIComponent("YAOUNDÉ")}`,
+			);
+			expect(filter).toContain(
+				'(locationKeys = "yaounde" OR location = "YAOUNDÉ")',
+			);
+		});
+
+		it("falls back to the exact match when the index refuses the keys", async () => {
+			searchMock.mockRejectedValueOnce(
+				new Error("Attribute `locationKeys` is not filterable"),
+			);
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request("http://localhost:3000/api/public/search?location=Douala"),
+			);
+			expect(response.status).toBe(200);
+			const filter = searchMock.mock.calls.at(-1)?.[1]?.filter ?? "";
+			expect(filter).toContain('location = "Douala"');
+			expect(filter).not.toContain("locationKeys");
+		});
+	});
+
+	describe("limit=0 counts", () => {
+		it("asks Meilisearch for an exhaustive, hit-free total with every filter", async () => {
+			searchMock.mockResolvedValueOnce({ hits: [], totalHits: 42 });
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request(
+					"http://localhost:3000/api/public/search?limit=0&q=tel&location=Douala&minShopLevel=2",
+				),
+			);
+			const body = await response.json();
+			const options = searchMock.mock.calls.at(-1)?.[1];
+			expect(searchMock.mock.calls.at(-1)?.[0]).toBe("tel");
+			expect(options).toMatchObject({ hitsPerPage: 0, page: 1 });
+			expect(options.filter).toContain("locationKeys");
+			expect(options.filter).toContain("shopLevel >= 2");
+			expect(body).toEqual({ hits: [], total: 42, limit: 0, offset: 0 });
+			// No page of hits, so no live shop check.
+			expect(findMock).not.toHaveBeenCalled();
+		});
+
+		it("counts on the Payload path instead of reading every listing", async () => {
+			const countMock = vi.fn().mockResolvedValue({ totalDocs: 7 });
+			getPayloadMock.mockResolvedValue({ find: findMock, count: countMock });
+			const { GET } = await import(
+				"../../src/app/(frontend)/api/public/search/route"
+			);
+			const response = await GET(
+				new Request(
+					"http://localhost:3000/api/public/search?limit=0&boosted=true",
+				),
+			);
+			expect((await response.json()).total).toBe(7);
+			expect(countMock).toHaveBeenCalledWith(
+				expect.objectContaining({ collection: "listings" }),
+			);
+			expect(findMock).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("the orderable filter", () => {
 		it("filters on orderable=true", async () => {
 			expect(await filterFor("orderable=true")).toContain("orderable = true");
@@ -899,5 +967,25 @@ describe("public shops search route", () => {
 		expect(body.hits).toEqual([
 			expect.objectContaining({ id: "s-1", handle: "akwatech" }),
 		]);
+	});
+
+	it("answers a limit=0 count with the same filters and no sponsored read", async () => {
+		searchMock.mockResolvedValueOnce({ hits: [], totalHits: 5 });
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/search/shops/route"
+		);
+		const res = await GET(
+			new Request(
+				"http://x/api/public/search/shops?limit=0&q=tel&city=Douala&minShopLevel=2",
+			),
+		);
+		const body = await res.json();
+		expect(searchMock.mock.calls.at(-1)?.[1]).toEqual({
+			filter: 'city = "Douala" AND level >= 2',
+			hitsPerPage: 0,
+			page: 1,
+		});
+		expect(body).toMatchObject({ hits: [], total: 5 });
+		expect(findMock).not.toHaveBeenCalled();
 	});
 });

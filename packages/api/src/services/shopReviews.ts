@@ -2,11 +2,13 @@ import type { Payload } from "payload";
 import {
 	type PublicShopReview,
 	type PublicShopReviewPage,
+	type PublicShopReviewPhoto,
 	SHOP_REVIEWS_PAGE_SIZE,
 } from "../contracts/publicShopReviews";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
+import { photoIds, publicReviewPhotos } from "./reviewPhotos";
 
 function firstName(name: unknown): string | null {
 	if (typeof name !== "string") return null;
@@ -73,6 +75,15 @@ export async function publicShopReviews(
 		}
 	}
 
+	// Only ever the photos of the published reviews read above: a held or
+	// removed review's photos never leave this function.
+	const photos = await publicReviewPhotos(
+		payload,
+		Array.from(
+			new Set(result.docs.flatMap((review) => photoIds(review.photos))),
+		),
+	);
+
 	const reviews: PublicShopReview[] = result.docs.map((review) => ({
 		id: String(review.id),
 		rating: review.rating,
@@ -82,6 +93,9 @@ export async function publicShopReviews(
 				: null,
 		createdAt: review.createdAt,
 		reviewerFirstName: names.get(relationId(review.reviewer) ?? "") ?? null,
+		photos: photoIds(review.photos)
+			.map((id) => photos.get(id))
+			.filter((photo): photo is PublicShopReviewPhoto => Boolean(photo)),
 	}));
 
 	return {

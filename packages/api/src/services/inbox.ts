@@ -719,6 +719,36 @@ export async function startConversation(
 		return { conversationId: String(created.id), created: true };
 	}
 
+	return openShopConversation(payload, user, shopId, listingId);
+}
+
+/**
+ * A buyer writing to a shop from its page, with no listing in hand. Same
+ * thread as the listing path: one per (shop, buyer).
+ */
+export async function startShopConversation(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+): Promise<{ conversationId: string; created: boolean }> {
+	if (isSuspended(user)) {
+		throw new ServiceError(ERROR_CODES.accountSuspended, 403);
+	}
+	return openShopConversation(payload, user, shopId, null, {
+		fromShopPage: true,
+	});
+}
+
+async function openShopConversation(
+	payload: Payload,
+	user: ServiceUser,
+	shopId: string,
+	listingId: string | null,
+	// From the shop page the id comes straight from the client, and a block is
+	// refused up front rather than leaving an empty thread whose first message
+	// `Messages.beforeChange` would then refuse.
+	options: { fromShopPage?: boolean } = {},
+): Promise<{ conversationId: string; created: boolean }> {
 	// A member cannot open a buyer conversation with their own shop, and a
 	// dormant shop refuses one too — checked before the dedupe lookup below, so
 	// neither rule is silently bypassed by an existing thread from before the
@@ -731,10 +761,42 @@ export async function startConversation(
 			overrideAccess: true,
 		})
 		.catch(() => null);
+	if (!shop && options.fromShopPage) {
+		throw new ServiceError(ERROR_CODES.shopNotFound, 404);
+	}
 	const role = await resolveShopRole(payload, user.id, shopId);
 	if (role) throw new ServiceError(ERROR_CODES.messagesNotParticipant, 403);
 	if (!shop || shop.status !== "active") {
 		throw new ServiceError(ERROR_CODES.shopInactive, 409);
+	}
+
+	const ownerId = relationId(shop.owner);
+	if (options.fromShopPage && ownerId) {
+		const blocks = await payload.find({
+			collection: "blocked-users",
+			depth: 0,
+			limit: 1,
+			overrideAccess: true,
+			where: {
+				or: [
+					{
+						and: [
+							{ blocker: { equals: user.id } },
+							{ blocked: { equals: ownerId } },
+						],
+					},
+					{
+						and: [
+							{ blocker: { equals: ownerId } },
+							{ blocked: { equals: user.id } },
+						],
+					},
+				],
+			},
+		});
+		if (blocks.docs.length > 0) {
+			throw new ServiceError(ERROR_CODES.messageBlocked, 403);
+		}
 	}
 
 	// One thread per (shop, buyer), whatever the listing. A buyer asking about
@@ -753,7 +815,6 @@ export async function startConversation(
 		return { conversationId: String(existing.docs[0].id), created: false };
 	}
 
-	const ownerId = relationId(shop.owner);
 	// The hook re-asserts `shop`, `buyer` and `participants` from the listing
 	// on every write path that is not this service, so setting them here and
 	// letting the hook idempotently confirm them keeps the rule in one place
@@ -767,7 +828,7 @@ export async function startConversation(
 				overrideAccess: true,
 				data: {
 					participants: ownerId ? [user.id, ownerId] : [user.id],
-					listing: listingId,
+					...(listingId ? { listing: listingId } : {}),
 					shop: shopId,
 					buyer: user.id,
 					inboxStatus: "open",

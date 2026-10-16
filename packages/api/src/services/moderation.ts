@@ -113,7 +113,8 @@ export interface ModerationLogInput {
 		| "order"
 		| "dispute"
 		| "resale-link"
-		| "risk-flag";
+		| "risk-flag"
+		| "review";
 	targetId: string;
 	reason?: string | null;
 	note?: string | null;

@@ -49,4 +49,8 @@ describe("STATIC_FILTERABLE_ATTRIBUTES", () => {
 	test("includes orderable", () => {
 		expect(STATIC_FILTERABLE_ATTRIBUTES).toContain("orderable");
 	});
+
+	test("includes the folded location keys the city filter reads", () => {
+		expect(STATIC_FILTERABLE_ATTRIBUTES).toContain("locationKeys");
+	});
 });

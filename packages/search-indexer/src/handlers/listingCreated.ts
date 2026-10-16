@@ -1,3 +1,4 @@
+import { locationKeys } from "../locationKeys.ts";
 import {
 	deleteDocument,
 	indexDocument,
@@ -109,6 +110,7 @@ export function transformListing(
 		description: listing.description as string,
 		price: listing.price as number,
 		location: listing.location as string,
+		locationKeys: locationKeys(listing.location),
 		category: category ? (category.name as string) : null,
 		categoryId: category
 			? (category.id as string)

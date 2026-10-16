@@ -35,6 +35,7 @@ export const MODERATION_ACTIONS = [
 	"risk_flag.review",
 	"risk_flag.dismiss",
 	"risk_flag.action",
+	"review.photo_remove",
 ] as const;
 
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
@@ -121,6 +122,7 @@ export const ModerationLog: CollectionConfig = {
 						{ label: "Dispute", value: "dispute" },
 						{ label: "Resale link", value: "resale-link" },
 						{ label: "Risk flag", value: "risk-flag" },
+						{ label: "Review", value: "review" },
 					],
 					admin: { width: "33%", readOnly: true },
 				},

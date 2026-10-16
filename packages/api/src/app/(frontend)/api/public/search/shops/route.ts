@@ -34,6 +34,8 @@ interface ShopSearchParams {
 	sponsored: ShopSearchHit[];
 	limit: number;
 	offset: number;
+	/** `limit=0`: only the total, for the search tabs' counts. */
+	countOnly: boolean;
 }
 
 function parseSort(value: string | null, q: string): ShopSort {
@@ -58,7 +60,10 @@ const MEILI_SORT: Record<ShopSort, string[] | undefined> = {
 };
 
 async function sponsoredFor(
-	params: Omit<ShopSearchParams, "sort" | "previews" | "limit" | "sponsored">,
+	params: Omit<
+		ShopSearchParams,
+		"sort" | "previews" | "limit" | "sponsored" | "countOnly"
+	>,
 ): Promise<ShopSearchHit[]> {
 	if (params.offset > 0) return [];
 	try {
@@ -121,6 +126,19 @@ async function runPayloadShopSearch(
 	if (city) and.push({ "location.city": { equals: city } });
 	if (categoryIds) and.push({ categories: { in: categoryIds } });
 	if (minShopLevel) and.push({ level: { greater_than_equal: minShopLevel } });
+	if (params.countOnly) {
+		const { totalDocs } = await payload.count({
+			collection: "shops",
+			where: { and },
+		});
+		return Response.json({
+			hits: [],
+			sponsored: [],
+			total: totalDocs,
+			limit: 0,
+			offset: 0,
+		});
+	}
 	const result = await payload.find({
 		collection: "shops",
 		where: { and },
@@ -147,6 +165,7 @@ export async function GET(request: Request) {
 	const q = search.get("q")?.trim() ?? "";
 	const city = search.get("city")?.trim() || null;
 	const category = search.get("category")?.trim() || null;
+	const countOnly = search.get("limit") === "0";
 	const limit = Math.min(
 		50,
 		Math.max(1, Number.parseInt(search.get("limit") ?? "20", 10) || 20),
@@ -169,13 +188,15 @@ export async function GET(request: Request) {
 	const categoryIds = category
 		? await categoryWithDescendants(await getPayload({ config }), category)
 		: null;
-	const sponsored = await sponsoredFor({
-		q,
-		city,
-		categoryIds,
-		minShopLevel,
-		offset,
-	});
+	const sponsored = countOnly
+		? []
+		: await sponsoredFor({
+				q,
+				city,
+				categoryIds,
+				minShopLevel,
+				offset,
+			});
 	const params: ShopSearchParams = {
 		q,
 		city,
@@ -186,6 +207,7 @@ export async function GET(request: Request) {
 		limit,
 		offset,
 		sponsored,
+		countOnly,
 	};
 
 	const host = process.env.MEILI_HOST;
@@ -209,8 +231,23 @@ export async function GET(request: Request) {
 			host,
 			apiKey: process.env.MEILI_MASTER_KEY,
 		}).index("shops");
+		const filter = filters.length ? filters.join(" AND ") : undefined;
+		if (countOnly) {
+			const counted = await index.search(q, {
+				filter,
+				hitsPerPage: 0,
+				page: 1,
+			});
+			return Response.json({
+				hits: [],
+				sponsored: [],
+				total: counted.totalHits ?? 0,
+				limit: 0,
+				offset: 0,
+			});
+		}
 		const result = await index.search(q, {
-			filter: filters.length ? filters.join(" AND ") : undefined,
+			filter,
 			sort: MEILI_SORT[sort],
 			limit,
 			offset,

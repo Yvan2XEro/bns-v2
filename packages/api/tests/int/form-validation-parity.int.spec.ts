@@ -246,6 +246,21 @@ describe("one rule module, every caller", () => {
 			"../../../web/src/lib/product-form.ts",
 			"productValidation",
 		],
+		[
+			"the review photo service",
+			"../../src/services/reviewPhotos.ts",
+			"reviewPhotos",
+		],
+		[
+			"the web review form",
+			"../../../web/src/lib/review-photos.ts",
+			"reviewPhotos",
+		],
+		[
+			"the mobile review form",
+			"../../../mobile/src/lib/reviewPhotos.ts",
+			"reviewPhotos",
+		],
 	])("%s imports contracts/%s", (_, file, module) => {
 		expect(read(file)).toMatch(new RegExp(`contracts/${module}"`));
 	});

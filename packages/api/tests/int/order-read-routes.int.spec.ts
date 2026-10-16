@@ -685,7 +685,49 @@ describe("the wire shape, through the real routes", () => {
 			area: { district: null, city: "Douala" },
 			resale: null,
 			hasShipment: false,
+			lineCount: 1,
+			lines: [{ title: "Item", quantity: 1 }],
 		});
+	});
+
+	it("a shop queue row tells lines from units, in line order (W24)", async () => {
+		const payload = seed();
+		asUser(payload, OWNER);
+		for (const [id, lineNumber, title, quantity] of [
+			["oi-placed-3", 3, "Third", 1],
+			["oi-placed-2", 2, "Second", 2],
+			["oi-placed-4", 4, "Fourth", 5],
+		] as const) {
+			await payload.create({
+				collection: "order-items",
+				data: {
+					id,
+					order: "o-placed",
+					lineNumber,
+					snapshot: { title },
+					unitPrice: 1_000,
+					quantity,
+					lineSubtotal: 1_000 * quantity,
+				},
+			});
+		}
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/shops/[id]/orders/route"
+		);
+		const response = await GET(get("/x?tab=to_accept"), {
+			params: Promise.resolve({ id: "s-1" }),
+		});
+		const body = await response.json();
+		const row = (body.docs as Array<Record<string, unknown>>).find(
+			(d) => d.id === "o-placed",
+		);
+		expect(row?.itemCount).toBe(9);
+		expect(row?.lineCount).toBe(4);
+		expect(row?.lines).toEqual([
+			{ title: "Item", quantity: 1 },
+			{ title: "Second", quantity: 2 },
+			{ title: "Third", quantity: 1 },
+		]);
 	});
 
 	it("a resold line names its supplier and, once sent, its purchase order", async () => {

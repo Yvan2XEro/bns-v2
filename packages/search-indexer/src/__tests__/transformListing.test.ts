@@ -269,6 +269,16 @@ describe("transformListing", () => {
 		expect(doc.orderable).toBe(false);
 	});
 
+	test("indexes the folded location keys a city filter matches", () => {
+		const doc = transformListing({
+			...baseListing,
+			location: "Akwa, DOUALA",
+			category: { id: "cat-1", name: "X", attributes: [] },
+			seller: "user-1",
+		});
+		expect(doc.locationKeys).toEqual(["akwa, douala", "akwa", "douala"]);
+	});
+
 	test("skips filterable attributes that are not present in listing data", () => {
 		const listing = {
 			...baseListing,

@@ -209,7 +209,8 @@ const NAMESPACES = [
 		// evidence, the disabled gate, the six action buttons) mirrored into
 		// web, less `awaitingCount` (EXEMPT). 102: +8 for the mobile thread and
 		// report redesign (thread title, author labels, "what happens next").
-		count: 102,
+		// 109: +7 for evidence thumbnails in the mobile thread (viewer, menu).
+		count: 109,
 	},
 ] as const;
 

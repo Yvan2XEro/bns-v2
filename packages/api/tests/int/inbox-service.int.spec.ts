@@ -6,6 +6,7 @@ import {
 	markConversationRead,
 	setConversationStatus,
 	startConversation,
+	startShopConversation,
 } from "../../src/services/inbox";
 import { fakePayload } from "./helpers/fakePayload";
 
@@ -690,5 +691,93 @@ describe("startConversation", () => {
 		await expect(
 			startConversation(payload, actor("u-buyer"), "l-nope"),
 		).rejects.toMatchObject({ code: "listing.notFound", status: 404 });
+	});
+});
+
+describe("startShopConversation", () => {
+	it("creates a listingless thread routed to the shop inbox", async () => {
+		const payload = seed();
+		payload.store.conversations = payload.store.conversations.filter(
+			(c) => c.buyer !== "u-buyer2",
+		);
+		const result = await startShopConversation(
+			payload,
+			actor("u-buyer2"),
+			"s-1",
+		);
+		expect(result.created).toBe(true);
+		const created = payload.store.conversations.find(
+			(c) => c.id === result.conversationId,
+		);
+		expect(created).toMatchObject({
+			shop: "s-1",
+			buyer: "u-buyer2",
+			participants: ["u-buyer2", "u-owner"],
+			inboxStatus: "open",
+		});
+		expect(created?.listing ?? null).toBeNull();
+	});
+
+	it("reuses the buyer's existing thread with the shop", async () => {
+		const payload = seed();
+		const result = await startShopConversation(
+			payload,
+			actor("u-buyer"),
+			"s-1",
+		);
+		expect(result).toEqual({ conversationId: "c-open", created: false });
+		const again = await startShopConversation(payload, actor("u-buyer"), "s-1");
+		expect(again).toEqual(result);
+	});
+
+	it("refuses a member writing to their own shop", async () => {
+		const payload = seed();
+		await expect(
+			startShopConversation(payload, actor("u-staff"), "s-1"),
+		).rejects.toMatchObject({ code: "messages.notParticipant", status: 403 });
+	});
+
+	it("refuses a suspended or closed shop, even with an existing thread", async () => {
+		for (const status of ["suspended", "closed"]) {
+			const payload = seed();
+			payload.store.shops[0].status = status;
+			await expect(
+				startShopConversation(payload, actor("u-buyer"), "s-1"),
+			).rejects.toMatchObject({ code: "shop.inactive", status: 409 });
+		}
+	});
+
+	it("answers shop.notFound for an unknown shop", async () => {
+		const payload = seed();
+		await expect(
+			startShopConversation(payload, actor("u-buyer"), "s-nope"),
+		).rejects.toMatchObject({ code: "shop.notFound", status: 404 });
+	});
+
+	it("refuses when the buyer and the shop owner have blocked each other", async () => {
+		for (const [blocker, blocked] of [
+			["u-owner", "u-buyer2"],
+			["u-buyer2", "u-owner"],
+		]) {
+			const payload = seed();
+			payload.store["blocked-users"] = [{ id: "b-1", blocker, blocked }];
+			await expect(
+				startShopConversation(payload, actor("u-buyer2"), "s-1"),
+			).rejects.toMatchObject({ code: "messages.blocked", status: 403 });
+		}
+	});
+
+	it("refuses a suspended buyer", async () => {
+		const payload = seed();
+		await expect(
+			startShopConversation(
+				payload,
+				{ ...actor("u-buyer2"), suspendedAt: "2026-01-01T00:00:00.000Z" },
+				"s-1",
+			),
+		).rejects.toMatchObject({
+			code: "moderation.accountSuspended",
+			status: 403,
+		});
 	});
 });

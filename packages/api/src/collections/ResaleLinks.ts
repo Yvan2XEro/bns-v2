@@ -126,7 +126,7 @@ export const ResaleLinks: CollectionConfig = {
 				{
 					name: "revokedBy",
 					type: "select",
-					options: options(["supplier", "moderator"]),
+					options: options(["supplier", "moderator", "reseller"]),
 					admin: { width: "33%" },
 				},
 				{

@@ -1,8 +1,9 @@
 import type { Payload, PayloadRequest } from "payload";
 import type { LedgerCategory } from "../collections/LedgerAccounts";
 import { ERROR_CODES } from "../lib/errors";
-import { timezoneOfShop } from "../lib/markets";
+import { marketOfShop, timezoneOfShop } from "../lib/markets";
 import { marketMonthBounds } from "../lib/orderMath";
+import { getOrderSettings } from "../lib/orderSettings";
 import { getPaymentSettings } from "../lib/paymentSettings";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -43,6 +44,13 @@ export interface SellerPaymentsView {
 		releaseDate: string | null;
 	}>;
 	holds: PaymentSetupView["holds"];
+	/** For the column headers; null when no single rate holds for the rows shown. */
+	rates: SellerPaymentRates;
+}
+
+export interface SellerPaymentRates {
+	commissionBps: number | null;
+	vatBps: number | null;
 }
 
 export interface SellerPayoutRow {
@@ -225,6 +233,46 @@ async function shopOrders(
 }
 
 /**
+ * The rates the screen's rows were charged at. The commission is the one the
+ * orders recorded when it accrued; before any accrual it is the platform
+ * default, unless a category carries its own rate, in which case no single
+ * rate can be promised. VAT follows the commission invoice's own source: the
+ * shop's market, else the order settings' rate.
+ */
+export async function appliedRates(
+	payload: Payload,
+	shop: Shop,
+	orders: readonly Pick<Order, "commission">[],
+	req?: PayloadRequest,
+): Promise<SellerPaymentRates> {
+	const orderSettings = await getOrderSettings(payload);
+	const market = await marketOfShop(payload, shop).catch(() => null);
+	const vatBps = market?.vatRateBps ?? orderSettings.vatRateBps ?? null;
+
+	const recorded = orders
+		.map((order) => order.commission?.rateBps)
+		.filter((rate): rate is number => typeof rate === "number");
+	if (recorded.length > 0) {
+		const [first] = recorded;
+		return {
+			commissionBps: recorded.every((rate) => rate === first) ? first : null,
+			vatBps,
+		};
+	}
+	const overridden = await payload.count({
+		collection: "categories",
+		where: { commissionRateBps: { greater_than_equal: 0 } },
+		overrideAccess: true,
+		req,
+	});
+	return {
+		commissionBps:
+			overridden.totalDocs > 0 ? null : orderSettings.defaultCommissionRateBps,
+		vatBps,
+	};
+}
+
+/**
  * Read in one transaction so the amounts are one snapshot of the ledger.
  * Every amount comes from the ledger. `seller_pending` is split in two: the
  * share of delivered orders still inside their withdrawal window, and the
@@ -316,6 +364,7 @@ export async function sellerPaymentsView(
 			req,
 			recent.map((o) => String(o.id)),
 		);
+		const rates = await appliedRates(payload, shop, recent, req);
 
 		return {
 			amounts: {
@@ -343,6 +392,7 @@ export async function sellerPaymentsView(
 						: null),
 			})),
 			holds: holdsView(holds),
+			rates,
 		};
 	});
 }

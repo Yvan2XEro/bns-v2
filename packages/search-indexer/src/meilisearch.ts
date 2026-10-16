@@ -33,6 +33,8 @@ export type ListingDocument = {
 	description: string;
 	price: number;
 	location: string;
+	/** Folded `location` forms the API's city filter matches on. */
+	locationKeys: string[];
 	category: string | null;
 	categoryId: string;
 	sellerId: string;
@@ -174,6 +176,7 @@ export const STATIC_FILTERABLE_ATTRIBUTES = [
 	"categoryId",
 	"price",
 	"location",
+	"locationKeys",
 	"boostedUntil",
 	"sellerId",
 	"tags",

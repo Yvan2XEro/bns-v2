@@ -325,6 +325,7 @@ export async function getShopInsights(
 		shopId,
 		options.now ?? new Date(),
 		timezone,
+		String(user.id),
 	);
 	const topProducts = currentTopProducts.map((product) => ({
 		...product,

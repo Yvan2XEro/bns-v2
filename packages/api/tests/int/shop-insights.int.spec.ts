@@ -381,8 +381,138 @@ describe("getShopInsights", () => {
 				productTitle: "Idle",
 				available: 3,
 				costValue: 15000,
+				lastSaleAt: null,
+				daysSinceLastSale: null,
+				boostListingId: null,
 			},
 		]);
 		expect(result.stock.dormantValue).toBe(15000);
+	});
+
+	it("dates a dormant product's last delivered sale (W35)", async () => {
+		const payload = fakePayload(
+			{
+				shops: [{ id: "shop-1", owner: "owner-1", status: "active", level: 2 }],
+				"shop-members": [
+					{
+						id: "member-1",
+						shop: "shop-1",
+						user: "owner-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [
+					{
+						id: "p-idle",
+						shop: "shop-1",
+						title: "Idle",
+						status: "active",
+						listing: "l-idle",
+					},
+				],
+				listings: [
+					{
+						id: "l-idle",
+						shop: "shop-1",
+						seller: "owner-1",
+						status: "published",
+					},
+				],
+				"product-variants": [
+					{
+						id: "v-idle",
+						shop: "shop-1",
+						product: "p-idle",
+						trackInventory: true,
+						stockOnHand: 3,
+						stockReserved: 0,
+						cost: 5000,
+					},
+				],
+				orders: [
+					{
+						id: "o-old",
+						shop: "shop-1",
+						createdAt: "2026-07-01T08:00:00.000Z",
+						timestamps: { deliveredAt: "2026-07-03T08:00:00.000Z" },
+					},
+					{
+						id: "o-cancelled",
+						shop: "shop-1",
+						createdAt: "2026-09-30T08:00:00.000Z",
+						timestamps: {},
+					},
+				],
+				"order-items": [
+					{
+						id: "oi-old",
+						order: "o-old",
+						product: "p-idle",
+						quantity: 1,
+						fulfillmentStatus: "delivered",
+						updatedAt: "2026-07-03T08:05:00.000Z",
+					},
+					{
+						id: "oi-cancelled",
+						order: "o-cancelled",
+						product: "p-idle",
+						quantity: 1,
+						fulfillmentStatus: "cancelled",
+						updatedAt: "2026-09-30T09:00:00.000Z",
+					},
+				],
+			},
+			{ globals: { "app-settings": { insights: { enabled: true } } } },
+		);
+
+		const result = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+
+		expect(result.stock.dormant?.[0]).toMatchObject({
+			productId: "p-idle",
+			lastSaleAt: "2026-07-03T08:00:00.000Z",
+			daysSinceLastSale: 93,
+			boostListingId: "l-idle",
+		});
+
+		// A manager is not the listing's seller: the boost route would refuse them.
+		await payload.create({
+			collection: "shop-members",
+			data: {
+				id: "member-2",
+				shop: "shop-1",
+				user: "manager-1",
+				role: "manager",
+				status: "active",
+			},
+		});
+		const asManager = await getShopInsights(
+			payload,
+			{ id: "manager-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+		expect(asManager.stock.dormant?.[0]?.boostListingId).toBeNull();
+
+		await payload.update({
+			collection: "listings",
+			id: "l-idle",
+			data: { boostedUntil: "2026-10-10T00:00:00.000Z" },
+		});
+		const boosted = await getShopInsights(
+			payload,
+			{ id: "owner-1", role: "user" },
+			"shop-1",
+			"7d",
+			{ now: new Date("2026-10-04T12:00:00.000Z") },
+		);
+		expect(boosted.stock.dormant?.[0]?.boostListingId).toBeNull();
 	});
 });

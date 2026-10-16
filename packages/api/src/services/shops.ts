@@ -583,6 +583,7 @@ export async function getMyShop(
 	payload: Payload,
 	user: ServiceUser,
 	now: Date = new Date(),
+	preferredShopId?: string | null,
 ): Promise<MyShopResponse> {
 	const memberships = await step("memberships", () =>
 		payload.find({
@@ -599,7 +600,19 @@ export async function getMyShop(
 	let shop: Shop | null = null;
 	let role: ShopRole | null = null;
 	let roleReason: MyShopRoleReason | null = null;
-	for (const membership of memberships.docs) {
+	// The seller space's shop switcher names a preferred shop; it only reorders
+	// the caller's own memberships, so it can never reach a shop they are not in.
+	const ordered = preferredShopId
+		? [
+				...memberships.docs.filter(
+					(row) => relationId(row.shop) === preferredShopId,
+				),
+				...memberships.docs.filter(
+					(row) => relationId(row.shop) !== preferredShopId,
+				),
+			]
+		: memberships.docs;
+	for (const membership of ordered) {
 		const candidate = await payload
 			.findByID({
 				collection: "shops",

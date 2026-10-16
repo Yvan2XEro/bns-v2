@@ -260,6 +260,15 @@ export interface OrderListEntryView {
 	resale?: OrderListResaleView | null;
 	/** Shop queue only: a shipment exists, so shipping happens on the order page. */
 	hasShipment?: boolean;
+	/** Shop queue only: order lines, as opposed to `itemCount`'s units. */
+	lineCount?: number;
+	/** Shop queue only: the first lines in line order, "title ×quantity". */
+	lines?: OrderListLineView[];
+}
+
+export interface OrderListLineView {
+	title: string;
+	quantity: number;
 }
 
 export interface OrderListResaleView {
@@ -292,6 +301,8 @@ export interface OrderListRowSources {
 	firstItemImageUrl: string | null;
 	/** Shop queue only. */
 	resale?: OrderListResaleView | null;
+	lineCount?: number;
+	lines?: OrderListLineView[];
 }
 
 /** `Orders.status` values whose `timestamps` field marks the moment they became terminal. P4 only ever writes these three; `returned`/`disputed` are reserved for later phases and have no timestamp field yet. */
@@ -806,6 +817,8 @@ export function serializeOrderListEntry(
 		entry.area = listAreaView(order.delivery);
 		entry.resale = sources.resale ?? null;
 		entry.hasShipment = (order.shipments?.length ?? 0) > 0;
+		entry.lineCount = sources.lineCount ?? 0;
+		entry.lines = sources.lines ?? [];
 	}
 	return entry;
 }

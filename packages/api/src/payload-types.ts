@@ -1082,7 +1082,7 @@ export interface ResaleLink {
   suspendedReason?: ('quality' | 'pricing' | 'fraud_review' | 'terms' | 'other') | null;
   note?: string | null;
   revokedAt?: string | null;
-  revokedBy?: ('supplier' | 'moderator') | null;
+  revokedBy?: ('supplier' | 'moderator' | 'reseller') | null;
   riskHold?: boolean | null;
   stats?: {
     publishedListings?: number | null;
@@ -2571,6 +2571,7 @@ export interface Review {
   verifiedPurchase?: boolean | null;
   rating: number;
   comment?: string | null;
+  photos?: (string | Media)[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -2909,7 +2910,8 @@ export interface ModerationLog {
     | 'resale_link.unsuspend'
     | 'risk_flag.review'
     | 'risk_flag.dismiss'
-    | 'risk_flag.action';
+    | 'risk_flag.action'
+    | 'review.photo_remove';
   targetType:
     | 'listing'
     | 'user'
@@ -2920,7 +2922,8 @@ export interface ModerationLog {
     | 'commission-invoice'
     | 'dispute'
     | 'resale-link'
-    | 'risk-flag';
+    | 'risk-flag'
+    | 'review';
   targetId: string;
   reason?: string | null;
   /**
@@ -4612,6 +4615,7 @@ export interface ReviewsSelect<T extends boolean = true> {
   verifiedPurchase?: T;
   rating?: T;
   comment?: T;
+  photos?: T;
   createdAt?: T;
   updatedAt?: T;
 }

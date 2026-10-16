@@ -107,6 +107,11 @@ export interface ShopInsightsView {
 			productTitle: string;
 			available: number;
 			costValue: number;
+			/** Latest delivered sale of the product; null when it never sold. */
+			lastSaleAt?: string | null;
+			daysSinceLastSale?: number | null;
+			/** The listing the viewer may boost now; null otherwise. */
+			boostListingId?: string | null;
 		}[];
 		dormantValue?: number;
 	};

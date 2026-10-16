@@ -38,6 +38,10 @@ const inbox = {
 		conversationId: "c-1",
 		created: false,
 	})),
+	startShopConversation: vi.fn(async () => ({
+		conversationId: "c-2",
+		created: true,
+	})),
 };
 vi.mock("../../src/services/inbox", () => inbox);
 
@@ -198,11 +202,72 @@ describe("POST /api/conversations/start", () => {
 		});
 	});
 
-	it("refuses a body with no listingId", async () => {
+	it("refuses a body with neither a listingId nor a shopId", async () => {
 		const { POST } = await import(
 			"../../src/app/(frontend)/api/conversations/start/route"
 		);
 		expect((await POST(post({}))).status).toBe(400);
+		expect((await POST(post({ shopId: "  " }))).status).toBe(400);
+	});
+
+	it("takes a shopId alone and opens the buyer-shop thread", async () => {
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/conversations/start/route"
+		);
+		const response = await POST(post({ shopId: "s-1" }));
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({
+			conversationId: "c-2",
+			created: true,
+		});
+		expect(inbox.startShopConversation).toHaveBeenCalledWith(
+			ctx.payload,
+			currentUser,
+			"s-1",
+		);
+		expect(inbox.startConversation).not.toHaveBeenCalled();
+	});
+
+	it("passes the service's refusal through with its code", async () => {
+		const { ServiceError } = await import("../../src/lib/serviceError");
+		inbox.startShopConversation.mockRejectedValueOnce(
+			new ServiceError("shop.inactive", 409),
+		);
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/conversations/start/route"
+		);
+		const response = await POST(post({ shopId: "s-1" }));
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ code: "shop.inactive" });
+	});
+
+	it("answers 401 to a signed-out caller", async () => {
+		const shopRoute = await import("../../src/lib/shopRoute");
+		vi.mocked(shopRoute.requireUser).mockResolvedValueOnce(
+			Response.json({ code: "generic.unauthorized" }, { status: 401 }),
+		);
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/conversations/start/route"
+		);
+		expect((await POST(post({ shopId: "s-1" }))).status).toBe(401);
+		expect(inbox.startShopConversation).not.toHaveBeenCalled();
+	});
+
+	it("rate-limits one caller's starts", async () => {
+		currentUser = { ...currentUser, id: "u-flood" };
+		// Pinned mid-window so the 21 calls share one minute bucket.
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-16T10:00:30.000Z"));
+		const { POST } = await import(
+			"../../src/app/(frontend)/api/conversations/start/route"
+		);
+		const statuses: number[] = [];
+		for (let i = 0; i < 21; i++) {
+			statuses.push((await POST(post({ shopId: `s-${i}` }))).status);
+		}
+		expect(statuses.slice(0, 20).every((s) => s === 200)).toBe(true);
+		expect(statuses[20]).toBe(429);
+		vi.useRealTimers();
 	});
 });
 
