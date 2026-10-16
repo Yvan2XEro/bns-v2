@@ -2237,6 +2237,7 @@
 		"defaultVariant": "Variante unique",
 		"margin": "Marge {{value}}",
 		"skuPlaceholder": "SKU (facultatif)",
+		"barcodePlaceholder": "Code-barres (facultatif)",
 		"price": "Prix",
 		"cost": "Coût",
 		"stock": "Stock",
@@ -2733,6 +2734,8 @@
 		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter."
 	},
 	"checkout": {
+		"sellerLabel": "Vendeur",
+		"sellerSince": "Boutique depuis {{year}}",
 		"receiptRow": "Reçu de commande",
 		"receiptRowLabel": "Voir le reçu de commande",
 		"receiptRowBody": "{{total}} · FR / EN",
@@ -2856,6 +2859,13 @@
 		"payOnDelivery": "{{amount}} à payer à la livraison"
 	},
 	"purchases": {
+		"cardPaymentCod": "Paiement à la livraison",
+		"cardPaymentCodCollected": "Payé à la livraison",
+		"cardPaymentCodRefused": "Refusé à la livraison",
+		"cardPaymentPaid": "Payé",
+		"cardPaymentAwaiting": "Paiement en attente",
+		"cardPaymentRefunded": "Remboursé",
+		"cardPaymentFailed": "Paiement échoué",
 		"handoverResendSms": "Renvoyer le code par SMS",
 		"handoverResent": "Un nouveau code vous a été envoyé par SMS.",
 		"handoverReveal": "Afficher le code",
@@ -3611,6 +3621,11 @@
 		}
 	},
 	"sellerResale": {
+		"resellerCard": "Revendeur",
+		"customerOrder": "Commande client {{number}}",
+		"resellerContact": "Contact : {{phone}}",
+		"writeToReseller": "Écrire au revendeur",
+		"reachableFromTo": "Joignable de {{from}} à {{to}}",
 		"levelReserved": "Réservé aux boutiques de niveau {{level}}",
 		"title": "Commandes de revente",
 		"offeredTitle": "Produits proposés",
@@ -4179,6 +4194,7 @@
 		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment."
 	},
 	"formIssues": {
+		"barcode": "Code-barres invalide : 8, 12, 13 ou 14 chiffres (EAN ou UPC), dernier chiffre de contrôle compris.",
 		"invalid": "Cette valeur a été refusée. Vérifiez-la.",
 		"required": "Ce champ est obligatoire.",
 		"length": "Entre {{min}} et {{max}} caractères.",

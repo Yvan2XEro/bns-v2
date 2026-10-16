@@ -21,6 +21,7 @@ import { useAlert } from "@/src/contexts/AlertContext";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/auth";
+import { withContentLocale } from "@/src/lib/contentLocale";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
@@ -128,7 +129,9 @@ export default function MyListingsScreen() {
 		queryKey: ["my-listings"],
 		queryFn: () =>
 			api.get<{ docs: any[]; totalDocs: number }>(
-				`/api/listings?where[seller][equals]=${user?.id}&limit=50&sort=-createdAt&depth=1&draft=true`,
+				withContentLocale(
+					`/api/listings?where[seller][equals]=${user?.id}&limit=50&sort=-createdAt&depth=1&draft=true`,
+				),
 			),
 		enabled: !!user,
 	});

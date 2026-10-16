@@ -33,6 +33,7 @@ import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
+import { withContentLocale } from "@/src/lib/contentLocale";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 
@@ -120,7 +121,9 @@ export default function PublicProfileScreen() {
 		queryKey: ["profile-listings", userId],
 		queryFn: () =>
 			api.get<{ docs: any[] }>(
-				`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=20`,
+				withContentLocale(
+					`/api/listings?where[seller][equals]=${userId}&where[status][equals]=published&limit=20`,
+				),
 			),
 		enabled: !!userId,
 	});

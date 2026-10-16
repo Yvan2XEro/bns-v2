@@ -7,6 +7,7 @@ import {
 import { useAppConfig } from "../contexts/AppConfigContext";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { withContentLocale } from "../lib/contentLocale";
 import type {
 	AttachResponse,
 	BusinessType,
@@ -314,7 +315,9 @@ export function usePersonalListings(userId: string | undefined) {
 		queryKey: personalListingsKey,
 		queryFn: () =>
 			api.get<PayloadPage<ListingDoc>>(
-				`/api/listings?where[seller][equals]=${userId}&where[shop][exists]=false&where[status][in]=draft,pending,published&depth=1&limit=100&sort=-createdAt`,
+				withContentLocale(
+					`/api/listings?where[seller][equals]=${userId}&where[shop][exists]=false&where[status][in]=draft,pending,published&depth=1&limit=100&sort=-createdAt`,
+				),
 			),
 		enabled: Boolean(userId),
 	});

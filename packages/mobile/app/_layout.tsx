@@ -54,6 +54,7 @@ import {
 } from "@/src/contexts/OnboardingContext";
 import { api } from "@/src/lib/api";
 import { AuthProvider, useAuth } from "@/src/lib/auth";
+import { setContentLocale } from "@/src/lib/contentLocale";
 import { notificationUrl, toAppPath } from "@/src/lib/deepLinks";
 import {
 	registerForPushNotificationsAsync,
@@ -131,6 +132,12 @@ const queryClient = new QueryClient({
 			retry: 2,
 		},
 	},
+});
+
+// Category labels come back in the app's language, so answers cached in the
+// previous one are refetched.
+i18n.on("languageChanged", (language) => {
+	if (setContentLocale(language)) queryClient.invalidateQueries();
 });
 
 export const unstable_settings = { anchor: "(tabs)" };

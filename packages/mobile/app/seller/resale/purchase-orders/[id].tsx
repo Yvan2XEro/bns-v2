@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useMutation } from "@tanstack/react-query";
+import { router, useLocalSearchParams } from "expo-router";
 import { useReducer } from "react";
 import {
 	ActivityIndicator,
@@ -22,6 +23,8 @@ import {
 	usePurchaseOrder,
 	usePurchaseOrderAction,
 } from "@/src/hooks/usePurchaseOrders";
+import { shopApi } from "@/src/lib/api";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 
@@ -62,6 +65,17 @@ export default function ResalePurchaseOrderDetailScreen() {
 	const side: Side = params.side === "reseller" ? "reseller" : "supplier";
 	const query = usePurchaseOrder(shop?.shopId, params.id);
 	const action = usePurchaseOrderAction(shop?.shopId ?? "");
+	const writeToReseller = useMutation({
+		mutationFn: (resellerShopId: string) =>
+			shopApi.startShopConversation(resellerShopId),
+		onSuccess: ({ conversationId }) =>
+			router.push(`/messages/${conversationId}`),
+		onError: (error) =>
+			Alert.alert(
+				t("sellerResale.actionFailed"),
+				resolveErrorMessage(error, t),
+			),
+	});
 	const [form, patch] = useReducer(reducer, {
 		carrier: "own_courier",
 		trackingNumber: "",
@@ -140,6 +154,46 @@ export default function ResalePurchaseOrderDetailScreen() {
 						</Text>
 					) : null}
 				</Card>
+				{side === "supplier" && order.reseller ? (
+					<Card title={t("sellerResale.resellerCard")} c={c}>
+						<Text style={[styles.body, { color: c.text }]}>
+							{order.reseller.name}
+						</Text>
+						{order.reseller.orderNumber ? (
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("sellerResale.customerOrder", {
+									number: order.reseller.orderNumber,
+								})}
+							</Text>
+						) : null}
+						{order.reseller.phone ? (
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("sellerResale.resellerContact", {
+									phone: order.reseller.phone,
+								})}
+							</Text>
+						) : null}
+						{order.reseller.reachable ? (
+							<Text style={[styles.body, { color: c.body }]}>
+								{t("sellerResale.reachableFromTo", order.reseller.reachable)}
+							</Text>
+						) : null}
+						<Pressable
+							accessibilityRole="button"
+							disabled={writeToReseller.isPending}
+							onPress={() => {
+								const resellerShopId = order.reseller?.shopId;
+								if (resellerShopId) writeToReseller.mutate(resellerShopId);
+							}}
+							style={[styles.writeButton, { borderColor: c.border }]}
+						>
+							<Ionicons name="chatbubble-outline" size={18} color={c.text} />
+							<Text style={[styles.writeText, { color: c.text }]}>
+								{t("sellerResale.writeToReseller")}
+							</Text>
+						</Pressable>
+					</Card>
+				) : null}
 				<Card title={t("sellerResale.items")} c={c}>
 					{order.items.map((item) => (
 						<Text key={item.id} style={[styles.body, { color: c.text }]}>
@@ -555,6 +609,17 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
+	writeButton: {
+		alignItems: "center",
+		borderRadius: 12,
+		borderWidth: 1,
+		flexDirection: "row",
+		gap: 8,
+		justifyContent: "center",
+		minHeight: 44,
+		paddingHorizontal: 14,
+	},
+	writeText: { fontFamily: Fonts.bodySemibold, fontSize: 14 },
 	safe: { flex: 1 },
 	spinner: { marginTop: 40 },
 	content: { padding: 16, gap: 12, paddingBottom: 36 },

@@ -69,6 +69,7 @@ describe("toProductInput", () => {
 			{
 				optionValues: {},
 				sku: null,
+				barcode: null,
 				price: 435000,
 				cost: 382000,
 				trackInventory: true,

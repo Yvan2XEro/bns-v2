@@ -39,6 +39,7 @@ import {
 } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import type {
 	CreateResaleListingInput,
 	ResaleCatalogueProduct,
@@ -69,9 +70,7 @@ function plainText(value: unknown): string {
 }
 
 function productImage(product: ResaleCatalogueProduct): string | null {
-	const image = product.images?.[0]?.image;
-	if (typeof image === "string") return image;
-	return image?.thumbnailURL ?? image?.url ?? null;
+	return resolveImageUrl(product.imageUrl);
 }
 
 export default function ResaleCatalogueScreen() {

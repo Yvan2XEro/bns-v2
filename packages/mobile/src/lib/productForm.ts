@@ -34,6 +34,8 @@ export interface VariantRow {
 	id?: string;
 	optionValues: Record<string, string>;
 	sku: string;
+	/** EAN/UPC digits; blank when the variant has none. */
+	barcode?: string;
 	price: string;
 	cost: string;
 	initialStock: string;
@@ -119,6 +121,7 @@ export function emptyVariantRow(
 		key: rowIdentity(optionValues),
 		optionValues,
 		sku: "",
+		barcode: "",
 		price: "",
 		cost: "",
 		initialStock: "",
@@ -236,6 +239,7 @@ export function toProductInput(
 				...(row.id ? { id: row.id } : {}),
 				optionValues: row.optionValues,
 				sku: row.sku.trim() || null,
+				barcode: (row.barcode ?? "").replace(/\s/g, "") || null,
 				price: parseAmount(row.price) ?? 0,
 				cost: parseAmount(row.cost),
 				trackInventory: row.trackInventory,
@@ -287,6 +291,7 @@ export function fromProductDetail(
 				id: v.id,
 				optionValues: v.optionValues ?? {},
 				sku: v.sku ?? "",
+				barcode: v.barcode ?? "",
 				price: String(v.price ?? ""),
 				cost: v.cost === null || v.cost === undefined ? "" : String(v.cost),
 				initialStock: "",

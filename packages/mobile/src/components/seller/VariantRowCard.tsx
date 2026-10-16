@@ -75,6 +75,19 @@ export function VariantRowCard({
 				accessibilityLabel={t("product.skuPlaceholder")}
 			/>
 			<FieldIssueText issue={issueOf("sku")} />
+			<TextInput
+				value={row.barcode ?? ""}
+				editable={!readOnly}
+				onChangeText={(barcode) =>
+					onChange({ barcode: barcode.replace(/[^\d\s]/g, "") })
+				}
+				keyboardType="number-pad"
+				placeholder={t("product.barcodePlaceholder")}
+				placeholderTextColor={c.muted}
+				style={[...inputStyle, flagged("barcode")]}
+				accessibilityLabel={t("product.barcodePlaceholder")}
+			/>
+			<FieldIssueText issue={issueOf("barcode")} />
 			<View style={styles.grid}>
 				<Cell label={t("product.price")}>
 					<TextInput

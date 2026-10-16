@@ -16,6 +16,7 @@ import type {
 	TeamView,
 } from "../types/api";
 import { ERROR_CODES, fallbackFor, normalizeApiError } from "./apiError";
+import { contentLocale } from "./contentLocale";
 
 export const API_BASE_URL =
 	process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -146,6 +147,7 @@ async function request<T>(
 
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
+		"Accept-Language": contentLocale(),
 		...(options.headers as Record<string, string>),
 	};
 

@@ -27,6 +27,7 @@ import type {
 	PayoutMethod,
 	PayoutStatus,
 } from "../lib/paymentStatus";
+import type { BadgeLevel } from "./api";
 
 export type { OrderStatusName, ShopOrderTab } from "../lib/orderStatus";
 
@@ -130,6 +131,11 @@ export interface CartView {
 		name: string;
 		handle: string;
 		city: string | null;
+		logoUrl?: string | null;
+		badge?: BadgeLevel | null;
+		/** The shop's first public pickup point, for the review's seller card. */
+		address?: string | null;
+		sinceYear?: number | null;
 	} | null;
 	lines: CartLineView[];
 	subtotal: number;
@@ -261,6 +267,7 @@ export interface QuoteResponse {
 	preContract: ContractSnapshot;
 	confirmationRequired: ConfirmationRequired;
 	quoteHash: string;
+	seller?: { address: string | null; sinceYear: number | null };
 }
 
 export interface QuoteInput {
@@ -480,6 +487,12 @@ export interface OrderListEntry {
 	firstItemTitle: string;
 	firstItemImageUrl: string | null;
 	shopName: string;
+	/** Buyer role: the card's shop logo and verification badge. */
+	shopLogoUrl?: string | null;
+	shopBadge?: BadgeLevel | null;
+	/** The card's payment pill. */
+	paymentMethod?: PaymentMethod;
+	paymentStatus?: PaymentStatus;
 	deliveryFailureReason?: string | null;
 	/** Shop role. */
 	recipientName?: string;

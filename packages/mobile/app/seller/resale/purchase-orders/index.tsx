@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { useReducer } from "react";
 import {
 	ActivityIndicator,
+	Image,
 	Pressable,
 	RefreshControl,
 	StyleSheet,
@@ -21,6 +22,7 @@ import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useShopPurchaseOrders } from "@/src/hooks/usePurchaseOrders";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
+import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import type { PurchaseOrderListRow } from "../../../../../api/src/contracts/purchaseOrders";
 
 type Side = "supplier" | "reseller";
@@ -211,6 +213,9 @@ function PurchaseOrderRow({
 	const status = t(`sellerResale.status_${row.status}`);
 	const counterparty =
 		side === "supplier" ? row.counterparty.name : row.counterparty.name;
+	const thumbnail = resolveImageUrl(
+		row.items.find((item) => item.imageUrl)?.imageUrl,
+	);
 	return (
 		<Pressable
 			onPress={onPress}
@@ -224,10 +229,20 @@ function PurchaseOrderRow({
 					{formatPrice(row.collectAmount, locale)}
 				</Text>
 			</View>
-			<Text style={[styles.meta, { color: c.body }]} numberOfLines={1}>
-				{counterparty} ·{" "}
-				{row.items.map((item) => `${item.quantity} × ${item.title}`).join(", ")}
-			</Text>
+			<View style={styles.itemsLine}>
+				{thumbnail ? (
+					<Image source={{ uri: thumbnail }} style={styles.thumbnail} />
+				) : null}
+				<Text
+					style={[styles.meta, styles.itemsText, { color: c.body }]}
+					numberOfLines={1}
+				>
+					{counterparty} ·{" "}
+					{row.items
+						.map((item) => `${item.quantity} × ${item.title}`)
+						.join(", ")}
+				</Text>
+			</View>
 			<View style={styles.line}>
 				<Text style={[styles.meta, { color: c.primary }]}>{status}</Text>
 				<Ionicons name="chevron-forward" size={18} color={c.muted} />
@@ -295,4 +310,7 @@ const styles = StyleSheet.create({
 	number: { flex: 1, fontSize: 15, fontFamily: Fonts.displayBold },
 	amount: { fontSize: 14, fontFamily: Fonts.bodyBold },
 	meta: { fontSize: 13, fontFamily: Fonts.body },
+	itemsLine: { flexDirection: "row", alignItems: "center", gap: 10 },
+	itemsText: { flex: 1 },
+	thumbnail: { width: 34, height: 34, borderRadius: 8 },
 });

@@ -9,10 +9,12 @@ import { formatPrice } from "@/src/lib/market";
 import { formatOrderDate } from "@/src/lib/orderMoney";
 import {
 	type PurchaseStatusTone,
+	purchasePaymentKey,
 	purchaseStatusKey,
 	purchaseStatusTone,
 } from "@/src/lib/purchaseActions";
 import type { OrderListEntry, OrderStatusName } from "@/src/types/order";
+import { LevelBadge } from "../shop/LevelBadge";
 import { ShopAvatar } from "../shop/ShopAvatar";
 import { useShopTheme } from "../shop/theme";
 
@@ -46,6 +48,7 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 	const { t, i18n } = useTranslation();
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const number = t("purchases.orderNumber", { number: entry.orderNumber });
+	const paymentKey = purchasePaymentKey(entry);
 
 	return (
 		<Pressable
@@ -78,13 +81,19 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 			<View style={styles.main}>
 				<View style={styles.topRow}>
 					<View style={styles.shop}>
-						<ShopAvatar name={entry.shopName} size={20} radius={6} />
+						<ShopAvatar
+							name={entry.shopName}
+							logo={entry.shopLogoUrl}
+							size={20}
+							radius={6}
+						/>
 						<Text
 							style={[styles.shopName, { color: c.text }]}
 							numberOfLines={1}
 						>
 							{entry.shopName}
 						</Text>
+						<LevelBadge badge={entry.shopBadge} size="sm" />
 					</View>
 					<PurchaseStatusPill status={entry.status} />
 				</View>
@@ -99,6 +108,7 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 					<Text style={[styles.meta, { color: c.muted }]}>
 						{" · "}
 						{t("purchases.itemCount", { count: entry.itemCount })}
+						{paymentKey ? ` · ${t(paymentKey)}` : ""}
 					</Text>
 				</Text>
 			</View>

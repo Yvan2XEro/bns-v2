@@ -11,6 +11,7 @@ import type {
 } from "../../../api/src/types/riskModeration";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { withContentLocale } from "../lib/contentLocale";
 import { isModerator } from "../lib/moderation";
 import type { PayoutHoldReason } from "../lib/paymentStatus";
 import type {
@@ -78,7 +79,9 @@ export function usePendingListings() {
 		initialPageParam: 1,
 		queryFn: ({ pageParam }) =>
 			api.get<PayloadPage<ListingDoc>>(
-				`/api/listings?where[status][equals]=pending&sort=createdAt&depth=1&limit=${PAGE_SIZE}&page=${pageParam}`,
+				withContentLocale(
+					`/api/listings?where[status][equals]=pending&sort=createdAt&depth=1&limit=${PAGE_SIZE}&page=${pageParam}`,
+				),
 			),
 		getNextPageParam: (last) =>
 			last.hasNextPage ? (last.nextPage ?? undefined) : undefined,

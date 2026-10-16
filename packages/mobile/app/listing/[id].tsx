@@ -36,6 +36,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { isOwnShop } from "@/src/lib/buyBox";
+import { withContentLocale } from "@/src/lib/contentLocale";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
 import { buildListingAttributeGroups } from "@/src/lib/listingAttributes";
@@ -129,7 +130,10 @@ export default function ListingDetail() {
 
 	const { data: listingData, isLoading } = useQuery({
 		queryKey: ["listing", id],
-		queryFn: () => api.get<ListingResponse>(`/api/listings/${id}?depth=2`),
+		queryFn: () =>
+			api.get<ListingResponse>(
+				withContentLocale(`/api/listings/${id}?depth=2`),
+			),
 		enabled: !!id,
 	});
 

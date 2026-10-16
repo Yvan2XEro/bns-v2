@@ -8,8 +8,10 @@ import {
 	barActions,
 	HANDOVER_FALLBACK_KEYS,
 	handoverCardState,
+	PURCHASE_PAYMENT_KEYS,
 	PURCHASE_TAB_LABEL_KEYS,
 	PURCHASE_TABS,
+	purchasePaymentKey,
 	purchaseStatusKey,
 	purchaseTab,
 	receiptFileName,
@@ -383,5 +385,42 @@ describe("the purchases namespace", () => {
 				String((en.purchases as Json)[key]).includes("{{"),
 			).length,
 		).toBeGreaterThanOrEqual(5);
+	});
+});
+
+describe("purchasePaymentKey: the card's payment state (W20)", () => {
+	test("reads the shared payment pill in the buyer's words", () => {
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "cod",
+				paymentStatus: "cod_pending",
+			}),
+		).toBe("purchases.cardPaymentCod");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "cod",
+				paymentStatus: "cod_refused",
+			}),
+		).toBe("purchases.cardPaymentCodRefused");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "mobile_money",
+				paymentStatus: "paid",
+			}),
+		).toBe("purchases.cardPaymentPaid");
+		expect(
+			purchasePaymentKey({
+				paymentMethod: "mobile_money",
+				paymentStatus: "refunded",
+			}),
+		).toBe("purchases.cardPaymentRefunded");
+		expect(purchasePaymentKey({})).toBeNull();
+	});
+
+	test("resolves every pill's label in both locales", () => {
+		for (const key of Object.values(PURCHASE_PAYMENT_KEYS)) {
+			expect(typeof lookup(en as Json, key)).toBe("string");
+			expect(typeof lookup(fr as Json, key)).toBe("string");
+		}
 	});
 });

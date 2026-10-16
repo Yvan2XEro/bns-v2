@@ -2234,6 +2234,7 @@
 		"defaultVariant": "Single variant",
 		"margin": "Margin {{value}}",
 		"skuPlaceholder": "SKU (optional)",
+		"barcodePlaceholder": "Barcode (optional)",
 		"price": "Price",
 		"cost": "Cost",
 		"stock": "Stock",
@@ -2730,6 +2731,8 @@
 		"codNote": "You pay on delivery, in cash or by mobile money. You have {{days}} days after delivery to withdraw."
 	},
 	"checkout": {
+		"sellerLabel": "Seller",
+		"sellerSince": "Shop since {{year}}",
 		"receiptRow": "Order receipt",
 		"receiptRowLabel": "View the order receipt",
 		"receiptRowBody": "{{total}} · FR / EN",
@@ -2853,6 +2856,13 @@
 		"payOnDelivery": "{{amount}} to pay on delivery"
 	},
 	"purchases": {
+		"cardPaymentCod": "Pay on delivery",
+		"cardPaymentCodCollected": "Paid on delivery",
+		"cardPaymentCodRefused": "Refused on delivery",
+		"cardPaymentPaid": "Paid",
+		"cardPaymentAwaiting": "Awaiting payment",
+		"cardPaymentRefunded": "Refunded",
+		"cardPaymentFailed": "Payment failed",
 		"handoverResendSms": "Resend the code by SMS",
 		"handoverResent": "A new code has been sent to you by SMS.",
 		"handoverReveal": "Show the code",
@@ -3608,6 +3618,11 @@
 		}
 	},
 	"sellerResale": {
+		"resellerCard": "Reseller",
+		"customerOrder": "Customer order {{number}}",
+		"resellerContact": "Contact: {{phone}}",
+		"writeToReseller": "Message the reseller",
+		"reachableFromTo": "Reachable from {{from}} to {{to}}",
 		"levelReserved": "Reserved for level {{level}} shops",
 		"title": "Resale orders",
 		"offeredTitle": "Offered products",
@@ -4176,6 +4191,7 @@
 		"unavailable_other": "This group cannot be ordered right now."
 	},
 	"formIssues": {
+		"barcode": "Invalid barcode: 8, 12, 13 or 14 digits (EAN or UPC), check digit included.",
 		"invalid": "This value was refused. Please check it.",
 		"required": "This field is required.",
 		"length": "Between {{min}} and {{max}} characters.",

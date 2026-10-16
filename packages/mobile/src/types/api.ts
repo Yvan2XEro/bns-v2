@@ -787,6 +787,7 @@ export interface VariantDoc {
 	shop: string;
 	optionValues: Record<string, string>;
 	sku: string | null;
+	barcode?: string | null;
 	price: number;
 	/** Absent for a role that cannot manage the shop — the API redacts the key, not just the value. */
 	cost?: number | null;
@@ -846,6 +847,7 @@ export interface ProductInput {
 		id?: string;
 		optionValues: Record<string, string>;
 		sku?: string | null;
+		barcode?: string | null;
 		price: number;
 		cost?: number | null;
 		trackInventory?: boolean;

@@ -20,6 +20,7 @@ import {
 import { OrderSummaryCard } from "@/src/components/checkout/OrderSummaryCard";
 import { PaymentMethodPicker } from "@/src/components/checkout/PaymentMethodPicker";
 import { PreContractPanel } from "@/src/components/checkout/PreContractPanel";
+import { SellerCard } from "@/src/components/checkout/SellerCard";
 import { SplitReview } from "@/src/components/checkout/SplitReview";
 import { formStyles } from "@/src/components/seller/formStyles";
 import { useShopTheme } from "@/src/components/shop/theme";
@@ -67,6 +68,7 @@ function Review() {
 	const locale = useAppLocale();
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const { state, dispatch, quote, place, requestQuote } = useCheckoutFlow();
+	const cart = useCart();
 	const backToAddress = () => router.dismissTo("/checkout/address");
 
 	const retryQuote = () => {
@@ -214,6 +216,13 @@ function Review() {
 						</Text>
 					</View>
 				</View>
+			) : null}
+			{cart.data && !isSplitCart(cart.data) && cart.data.shop ? (
+				<SellerCard
+					shop={cart.data.shop}
+					seller={state.quote.seller}
+					phone={state.quote.preContract.seller.phone}
+				/>
 			) : null}
 			<OrderSummaryCard
 				quote={state.quote}
