@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { LocationField } from "~/components/location/location-field";
+import { useSearchSuggestions } from "~/components/search/search-suggestions";
 import { usePlacePreferences } from "~/hooks/use-place-preferences";
 
 export function HomeSearchBar() {
@@ -14,12 +15,20 @@ export function HomeSearchBar() {
 	// The city scope is a remembered preference: "All cities" until chosen.
 	const { browsePlace, setBrowsePlace } = usePlacePreferences();
 
+	const suggestions = useSearchSuggestions({
+		query,
+		city: browsePlace?.name ?? null,
+		onSearch: (q) => {
+			const params = new URLSearchParams();
+			if (q.trim()) params.set("q", q.trim());
+			if (browsePlace) params.set("location", browsePlace.name);
+			router.push(`/search?${params.toString()}`);
+		},
+	});
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		const params = new URLSearchParams();
-		if (query.trim()) params.set("q", query.trim());
-		if (browsePlace) params.set("location", browsePlace.name);
-		router.push(`/search?${params.toString()}`);
+		suggestions.submit();
 	};
 
 	return (
@@ -32,9 +41,11 @@ export function HomeSearchBar() {
 							type="search"
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
+							{...suggestions.inputProps}
 							placeholder={t("whatLookingFor")}
 							className="h-14 w-full border-0 bg-transparent pr-4 pl-14 text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none sm:h-[62px]"
 						/>
+						{suggestions.panel}
 					</div>
 					<div className="hidden items-center py-2 sm:flex">
 						<div className="h-9 w-px bg-[#E2E8F0]" />

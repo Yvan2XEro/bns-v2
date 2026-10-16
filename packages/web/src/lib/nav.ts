@@ -6,6 +6,8 @@ export interface NavCategory {
 	parent: string | null;
 	icon?: string | null;
 	imageUrl?: string | null;
+	/** Seller vocabulary ("bagnole", brands): matched by search suggestions, never shown. */
+	searchAliases?: string | null;
 }
 
 export interface NavRubric {
@@ -22,6 +24,7 @@ type RawCategory = {
 	parent?: string | { id: string } | null;
 	icon?: string | null;
 	image?: string | { url?: string | null } | null;
+	searchAliases?: string | null;
 };
 
 /** Strips the API's categories to the fields the menus draw. */
@@ -38,6 +41,7 @@ export function toNavCategories(raw: RawCategory[]): NavCategory[] {
 			category.image && typeof category.image === "object"
 				? (category.image.url ?? null)
 				: null,
+		searchAliases: category.searchAliases ?? null,
 	}));
 }
 

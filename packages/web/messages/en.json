@@ -5391,5 +5391,21 @@
 				"action": "See verification"
 			}
 		}
+	},
+	"SearchSuggest": {
+		"recent": "Recent searches",
+		"clearRecent": "Clear",
+		"removeRecent": "Remove “{query}” from history",
+		"searchFor": "Search for “{query}”",
+		"category": "Category",
+		"shop": "Shop",
+		"shopIn": "Shop · {city}"
+	},
+	"AppBanner": {
+		"title": "Buy'N'Sellem",
+		"subtitle": "Free · faster in the app",
+		"open": "Get",
+		"close": "Close",
+		"installOnComputer": "Install on this computer"
 	}
 }

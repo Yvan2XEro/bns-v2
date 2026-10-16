@@ -5391,5 +5391,21 @@
 				"action": "Voir la vérification"
 			}
 		}
+	},
+	"SearchSuggest": {
+		"recent": "Recherches récentes",
+		"clearRecent": "Effacer",
+		"removeRecent": "Retirer « {query} » de l'historique",
+		"searchFor": "Rechercher « {query} »",
+		"category": "Catégorie",
+		"shop": "Boutique",
+		"shopIn": "Boutique · {city}"
+	},
+	"AppBanner": {
+		"title": "Buy'N'Sellem",
+		"subtitle": "Gratuit · plus rapide dans l'app",
+		"open": "Obtenir",
+		"close": "Fermer",
+		"installOnComputer": "Installer sur cet ordinateur"
 	}
 }
