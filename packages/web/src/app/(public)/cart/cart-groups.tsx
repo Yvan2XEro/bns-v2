@@ -6,6 +6,7 @@ import { LevelBadge } from "~/components/shop/level-badge";
 import { Button } from "~/components/ui/button";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import type { CartLineView, SplitCartView } from "~/types/order";
+import { CartDeliveryHint } from "./cart-delivery-hint";
 import { CartLine } from "./cart-line";
 
 const hasAvailable = (items: readonly CartLineView[]) =>
@@ -99,6 +100,10 @@ export function CartGroups({
 									{tRoot("CheckoutGroup.deliveryAtCheckout")}
 								</dd>
 							</div>
+							<CartDeliveryHint
+								shopId={group.fulfillingShop.id}
+								handle={group.fulfillingShop.handle}
+							/>
 						</dl>
 					</section>
 				);

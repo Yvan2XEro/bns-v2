@@ -4,7 +4,15 @@ import { getMyShop, getTopCategories } from "~/lib/server-shop";
 import { isShopOwner } from "~/lib/shop-roles";
 import { ShopSettingsClient } from "./shop-settings-client";
 
-const TABS = ["profile", "address", "contacts", "listings", "close"] as const;
+const TABS = [
+	"profile",
+	"address",
+	"contacts",
+	"returns",
+	"legal",
+	"listings",
+	"close",
+] as const;
 type Tab = (typeof TABS)[number];
 
 /** Owner-only tabs: the address change and the close form both refuse a non-owner. */

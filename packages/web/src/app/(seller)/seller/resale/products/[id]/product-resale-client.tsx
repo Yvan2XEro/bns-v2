@@ -20,7 +20,11 @@ import {
 	type SupplierResaleSettingsInput,
 } from "~/lib/resale-hub";
 import { cn } from "~/lib/utils";
-import type { SupplierResaleSettingsView } from "../../../../../../../../api/src/contracts/resale";
+import {
+	isMinResellerLevel,
+	RESALE_MIN_RESELLER_LEVELS,
+	type SupplierResaleSettingsView,
+} from "../../../../../../../../api/src/contracts/resale";
 import {
 	initials,
 	richText,
@@ -38,6 +42,7 @@ function draftOf(
 		handlingHours: view.handlingHours,
 		codAccepted: view.codAccepted,
 		resellerNotes: view.resellerNotes,
+		minResellerLevel: view.minResellerLevel,
 		variants: view.variants.map((variant) => ({
 			id: variant.id,
 			enabled: variant.enabled,
@@ -118,6 +123,7 @@ function Editor({
 		Number.isSafeInteger(draft.handlingHours) &&
 		draft.handlingHours >= 4 &&
 		draft.handlingHours <= 120;
+	const levelValid = isMinResellerLevel(draft.minResellerLevel ?? null);
 	const stock = view.variants.reduce<number | null>(
 		(total, variant) =>
 			total === null || variant.stock === null ? null : total + variant.stock,
@@ -141,6 +147,7 @@ function Editor({
 	const submit = (next: SupplierResaleSettingsInput) => {
 		setSubmitted(true);
 		setSaved(false);
+		if (!levelValid) return;
 		if (next.enabled && (invalidIds.size > 0 || noVariant || !handlingValid))
 			return;
 		save.mutate(
@@ -530,6 +537,37 @@ function Editor({
 									</span>
 								</span>
 							</div>
+							<label className="flex flex-col gap-1.5 sm:col-span-2">
+								<span className="font-semibold text-[#334155] text-[13px]">
+									{t("minResellerLevel")}
+								</span>
+								<select
+									value={String(draft.minResellerLevel ?? "")}
+									disabled={blocked}
+									aria-invalid={submitted && !levelValid}
+									onChange={(event) => {
+										const value = Number(event.target.value);
+										setDraft({
+											...draft,
+											minResellerLevel:
+												event.target.value === "" || !isMinResellerLevel(value)
+													? null
+													: value,
+										});
+									}}
+									className="h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm sm:max-w-sm"
+								>
+									<option value="">{t("minResellerLevelAny")}</option>
+									{RESALE_MIN_RESELLER_LEVELS.map((level) => (
+										<option key={level} value={level}>
+											{t(`minResellerLevel${level}`)}
+										</option>
+									))}
+								</select>
+								<span className="text-[#64748B] text-xs">
+									{t("minResellerLevelHint")}
+								</span>
+							</label>
 							<label className="flex flex-col gap-1.5 sm:col-span-2">
 								<span className="font-semibold text-[#334155] text-[13px]">
 									{t("resellerNotes")}

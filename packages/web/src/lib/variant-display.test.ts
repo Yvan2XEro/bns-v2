@@ -19,16 +19,30 @@ describe("colour swatches", () => {
 		expect(colourSwatch("Doré")).toBe("#fde68a");
 		expect(colourSwatch("Bleu nuit")).toBe("#2563eb");
 		expect(colourSwatch("#ff0000")).toBe("#ff0000");
+		expect(colourSwatch(" #ABC ")).toBe("#ABC");
+	});
+
+	it("knows phone marketing names in French and English", () => {
+		expect(colourSwatch("Sierra")).toBe("#9bb5ce");
+		expect(colourSwatch("Sierra Blue")).toBe("#9bb5ce");
+		expect(colourSwatch("Minuit")).toBe(colourSwatch("Midnight"));
+		expect(colourSwatch("Lumière stellaire")).toBe(colourSwatch("Starlight"));
+		expect(colourSwatch("Titane noir")).toBe("#3f3f46");
+		expect(colourSwatch("Black Titanium")).toBe("#3f3f46");
+		expect(colourSwatch("Titane")).toBe("#a8a29e");
+		expect(colourSwatch("Space  Gray")).toBe("#4b5563");
 	});
 
 	it("falls back to text for an unknown name", () => {
-		expect(colourSwatch("Sierra")).toBeNull();
+		expect(colourSwatch("Aurore boréale")).toBeNull();
+		expect(colourSwatch("#12")).toBeNull();
 	});
 
 	it("outlines only pale swatches", () => {
 		expect(isPaleSwatch("#ffffff")).toBe(true);
 		expect(isPaleSwatch("#e2e8f0")).toBe(true);
 		expect(isPaleSwatch("#475569")).toBe(false);
+		expect(isPaleSwatch("#ffffff80")).toBe(true);
 	});
 });
 

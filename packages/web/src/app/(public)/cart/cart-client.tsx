@@ -24,6 +24,7 @@ import {
 } from "~/lib/cart-lines";
 import { isSplitCart } from "~/lib/checkout-group-flow";
 import type { CartView } from "~/types/order";
+import { CartDeliveryHint } from "./cart-delivery-hint";
 import { CartGroups } from "./cart-groups";
 import { CartLine } from "./cart-line";
 import { SingleShopDialog } from "./single-shop-dialog";
@@ -224,6 +225,9 @@ function CartSummary({
 				<span className="text-[#64748B]">{t("deliveryRow")}</span>
 				<span className="text-[#64748B]">{t("deliveryNextStep")}</span>
 			</div>
+			{cart.shop ? (
+				<CartDeliveryHint shopId={cart.shop.id} handle={cart.shop.handle} />
+			) : null}
 			{totals.priceChangedCount > 0 ? (
 				<p className="text-amber-700 text-sm">
 					{t("priceChangedNotice", { count: totals.priceChangedCount })}

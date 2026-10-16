@@ -211,6 +211,7 @@ export function ResaleCatalogueClient({
 										requestLink.mutate({
 											supplierShop: product.supplier.id,
 											acceptTermsVersion: version,
+											productId: product.productId,
 										});
 								}}
 							/>
@@ -274,6 +275,7 @@ function ProductCard({
 		product.linkStatus === "suspended" || product.linkStatus === "revoked";
 	const mustRequest = product.approvalRequired && !approved && !blocked;
 	const requestPending = product.linkStatus === "requested";
+	const levelLocked = product.levelLocked === true;
 	const supplierPrices = product.variants
 		.map((variant) => variant.supplierPrice)
 		.filter((value): value is number => typeof value === "number");
@@ -314,7 +316,9 @@ function ProductCard({
 						value={
 							supplierPrices.length
 								? formatOrderMoney(Math.min(...supplierPrices))
-								: t("hiddenUntilApproved")
+								: levelLocked
+									? "—"
+									: t("hiddenUntilApproved")
 						}
 						strong={supplierPrices.length > 0}
 					/>
@@ -332,7 +336,9 @@ function ProductCard({
 								? String(stock.count)
 								: stock.kind === "in_stock"
 									? t("stockInStock")
-									: t("hiddenUntilApproved")
+									: levelLocked
+										? "—"
+										: t("hiddenUntilApproved")
 						}
 					/>
 					<Stat
@@ -360,19 +366,26 @@ function ProductCard({
 						approved ? "text-[#15803D]" : "text-[#64748B]",
 					)}
 				>
-					{approved
-						? t("accessApproved")
-						: blocked
-							? t(`access_${product.linkStatus}`)
-							: product.approvalRequired
-								? t("accessOnApproval")
-								: t("accessOpen")}
+					{levelLocked
+						? t("levelReserved", { level: product.minResellerLevel ?? 3 })
+						: approved
+							? t("accessApproved")
+							: blocked
+								? t(`access_${product.linkStatus}`)
+								: product.approvalRequired
+									? t("accessOnApproval")
+									: t("accessOpen")}
 				</span>
 				<div className="mt-auto">
 					{product.inMyShop ? (
 						<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#DCFCE7] font-semibold text-[#166534] text-[13px]">
 							<Check aria-hidden="true" className="h-4 w-4" />
 							{t("inMyShop")}
+						</span>
+					) : levelLocked ? (
+						<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#F1F5F9] px-2 text-center font-semibold text-[#475569] text-[12px]">
+							<Lock aria-hidden="true" className="h-4 w-4 shrink-0" />
+							{t("levelReserved", { level: product.minResellerLevel ?? 3 })}
 						</span>
 					) : blocked ? null : mustRequest ? (
 						<button

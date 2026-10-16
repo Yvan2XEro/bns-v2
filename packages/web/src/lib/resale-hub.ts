@@ -1,4 +1,5 @@
 import type {
+	ResaleMinResellerLevel,
 	ResellerFinanceView,
 	ResoldListing,
 	SupplierResaleProduct,
@@ -18,6 +19,7 @@ export interface SupplierResaleSettingsInput {
 	handlingHours: number;
 	codAccepted: boolean;
 	resellerNotes: string;
+	minResellerLevel?: ResaleMinResellerLevel | null;
 	variants: Array<{
 		id: string;
 		enabled: boolean;

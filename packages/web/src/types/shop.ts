@@ -91,6 +91,8 @@ export type MyShop = PublicShop & {
 	status: ShopStatus;
 	handleChangedAt: string | null;
 	nextHandleChangeAt: string | null;
+	/** The default a new product's return policy starts from. */
+	returnPolicy?: string | null;
 	suspension: {
 		active: boolean;
 		indefinite: boolean;

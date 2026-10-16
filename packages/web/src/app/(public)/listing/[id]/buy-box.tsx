@@ -116,6 +116,8 @@ export function BuyBox(props: BuyBoxProps) {
 			{ask}
 			<div className="mt-4">
 				<ListingPerks
+					listingId={props.listingId}
+					estimatesEligible={Boolean(props.shop && !props.shop.restricted)}
 					delivery={props.delivery}
 					handlingHours={props.handlingHours}
 					codAllowed={props.codAllowed}

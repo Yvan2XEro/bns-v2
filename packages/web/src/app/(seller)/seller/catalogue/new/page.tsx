@@ -21,6 +21,7 @@ export default async function NewProductPage() {
 			shopId={mine.shop.id}
 			categories={categories}
 			role={mine.role}
+			defaultReturnPolicy={mine.shop.returnPolicy ?? null}
 		/>
 	);
 }

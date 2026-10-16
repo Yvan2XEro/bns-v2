@@ -263,3 +263,13 @@ describe("submit is blocked before the server sees the value", () => {
 		).toBe("taken");
 	});
 });
+
+describe("a new product's return policy", () => {
+	test("starts from the shop's default, else blank", () => {
+		expect(emptyState().returnPolicy).toBe("");
+		expect(emptyState({ returnPolicy: null }).returnPolicy).toBe("");
+		expect(
+			emptyState({ returnPolicy: "Retour sous 7 jours" }).returnPolicy,
+		).toBe("Retour sous 7 jours");
+	});
+});

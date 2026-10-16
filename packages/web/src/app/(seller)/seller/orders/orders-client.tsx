@@ -9,7 +9,6 @@ import { EmptyState } from "~/components/empty-state";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
-import { useOrderSettings } from "~/hooks/use-order-settings";
 import {
 	type SellerOrderFilters,
 	useSellerOrders,
@@ -113,9 +112,9 @@ export function OrdersClient({
 		since,
 	};
 	const query = useSellerOrders(shopId, filters);
-	const settings = useOrderSettings(can(role, "payments.view") ? shopId : null);
 
 	const counts = query.data?.pages[0]?.counts;
+	const mentions = query.data?.pages[0]?.mentions;
 	const rows = useMemo(
 		() => (query.data?.pages ?? []).flatMap((page) => page.docs),
 		[query.data],
@@ -268,8 +267,8 @@ export function OrdersClient({
 	const toProcess = counts ? counts.to_accept + counts.to_ship : null;
 	const subtitle = [
 		toProcess === null ? null : tList("toProcess", { count: toProcess }),
-		settings.data?.codEnabled ? tList("subtitleCod") : null,
-		settings.data?.sellerDeliveryEnabled && shopCity
+		mentions?.codEnabled ? tList("subtitleCod") : null,
+		mentions?.sellerDeliveryEnabled && shopCity
 			? tList("subtitleDelivery", { city: shopCity })
 			: null,
 	].filter(Boolean);

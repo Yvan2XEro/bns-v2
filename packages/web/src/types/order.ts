@@ -438,6 +438,8 @@ export interface OrderPage {
  */
 export interface ShopOrderPage extends OrderPage {
 	counts: Record<ShopOrderTab, number>;
+	/** Shown to every member who can view orders, unlike the order settings. */
+	mentions?: { codEnabled: boolean; sellerDeliveryEnabled: boolean };
 }
 
 export interface CommissionInvoiceView {

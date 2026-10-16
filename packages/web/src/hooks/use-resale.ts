@@ -250,7 +250,7 @@ export function useRequestResaleLink(shopId: string) {
 	return useMutation<
 		unknown,
 		ApiError,
-		{ supplierShop: string; acceptTermsVersion: string }
+		{ supplierShop: string; acceptTermsVersion: string; productId?: string }
 	>({
 		mutationFn: (input) =>
 			apiPost(`/api/shops/${encodeURIComponent(shopId)}/resale-links`, input),

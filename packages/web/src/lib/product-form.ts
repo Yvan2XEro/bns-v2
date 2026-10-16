@@ -173,7 +173,10 @@ export function emptyVariant(
 	};
 }
 
-export function emptyState(): ProductFormState {
+/** `returnPolicy` defaults to the shop's own policy when it has one. */
+export function emptyState(
+	defaults: { returnPolicy?: string | null } = {},
+): ProductFormState {
 	return {
 		title: "",
 		description: "",
@@ -186,7 +189,7 @@ export function emptyState(): ProductFormState {
 		codAllowed: true,
 		pickupAllowed: false,
 		handlingHours: "24",
-		returnPolicy: "",
+		returnPolicy: defaults.returnPolicy ?? "",
 		warrantyMonths: "",
 		status: "active",
 	};

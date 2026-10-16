@@ -14,19 +14,28 @@ import {
 	ProfileForm,
 	type ShopProfileDraft,
 } from "~/components/shop/profile-form";
+import { ReturnPolicyForm } from "~/components/shop/return-policy-form";
 import { ShopPagePreview } from "~/components/shop/shop-page-preview";
 import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { placeOfShopLocation } from "~/lib/shop-form";
-import { isShopOwner } from "~/lib/shop-roles";
+import { can, isShopOwner } from "~/lib/shop-roles";
 import type { Category, MyShop, ShopRole } from "~/types";
 
-type Tab = "profile" | "address" | "contacts" | "legal" | "listings" | "close";
+type Tab =
+	| "profile"
+	| "address"
+	| "contacts"
+	| "returns"
+	| "legal"
+	| "listings"
+	| "close";
 
 /** The tabs whose form saves through the header's Cancel / Save pair. */
 const FORM_IDS: Partial<Record<Tab, string>> = {
 	profile: "shop-settings-profile",
 	contacts: "shop-settings-contacts",
+	returns: "shop-settings-returns",
 	legal: "shop-settings-legal",
 };
 
@@ -164,6 +173,9 @@ export function ShopSettingsClient({
 					<TabsTrigger value="contacts" className={TRIGGER}>
 						{tManage("tabContacts")}
 					</TabsTrigger>
+					<TabsTrigger value="returns" className={TRIGGER}>
+						{tManage("tabReturns")}
+					</TabsTrigger>
 					<TabsTrigger value="legal" className={TRIGGER}>
 						{tManage("tabLegal")}
 					</TabsTrigger>
@@ -211,6 +223,17 @@ export function ShopSettingsClient({
 						<ContactsForm
 							shop={shop}
 							formId={FORM_IDS.contacts}
+							onStateChange={onStateChange}
+						/>,
+					)}
+				</TabsContent>
+				<TabsContent value="returns" className="mt-[18px] max-w-4xl">
+					{card(
+						tManage("tabReturns"),
+						<ReturnPolicyForm
+							shop={shop}
+							formId={FORM_IDS.returns}
+							readOnly={!can(role, "settings.edit")}
 							onStateChange={onStateChange}
 						/>,
 					)}

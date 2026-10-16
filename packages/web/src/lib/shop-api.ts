@@ -136,6 +136,7 @@ export interface CreateShopInput {
 export interface ShopUpdateInput {
 	name?: string;
 	description?: string | null;
+	returnPolicy?: string | null;
 	logo?: string | null;
 	banner?: string | null;
 	brandColor?: string | null;

@@ -58,6 +58,8 @@ export interface ProductEditorProps {
 	/** The caller's role in this shop; it decides whether cost is shown at all. */
 	role: ShopRole | null;
 	detail?: { productId: string; response: ProductDetailResponse };
+	/** The shop's default, which a new product's return policy starts from. */
+	defaultReturnPolicy?: string | null;
 }
 
 export function ProductEditor({
@@ -65,6 +67,7 @@ export function ProductEditor({
 	categories,
 	role,
 	detail,
+	defaultReturnPolicy,
 }: ProductEditorProps) {
 	const t = useTranslations("ProductEditor");
 	const tRoot = useTranslations();
@@ -72,7 +75,9 @@ export function ProductEditor({
 	const saveProduct = useSaveProduct(shopId, detail?.productId);
 
 	const [defaultValues] = useState<ProductFormState>(() =>
-		detail ? stateFromDetail(detail.response) : emptyState(),
+		detail
+			? stateFromDetail(detail.response)
+			: emptyState({ returnPolicy: defaultReturnPolicy }),
 	);
 	// The rules depend on the chosen category, read at validation time.
 	const issueContext = useRef<ProductIssueContext>({
