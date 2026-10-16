@@ -176,7 +176,7 @@ export default async function HomePage() {
 								<Link
 									key={category.id || category.slug}
 									href={`/search?category=${category.id || category.slug}`}
-									className="group hover:-translate-y-1 flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 hover:bg-[#F0F4FF] active:scale-95"
+									className="group hover:-translate-y-1 flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 hover:bg-brand-soft active:scale-95"
 								>
 									<div className="transition-all duration-200 group-hover:scale-110 group-hover:shadow-blue-500/10 group-hover:shadow-md">
 										<CategoryIcon category={category} size={48} />

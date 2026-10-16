@@ -12,7 +12,7 @@ export function DisputesEntry() {
 	return (
 		<Link
 			href="/account/disputes"
-			className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-[#C4B5FD] hover:bg-[#FAF9FF]"
+			className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-[#C4B5FD] hover:bg-canvas"
 		>
 			<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F5F3FF]">
 				<Scale aria-hidden="true" className="h-5 w-5 text-[#6D28D9]" />

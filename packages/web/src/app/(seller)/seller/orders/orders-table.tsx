@@ -206,7 +206,7 @@ export function OrdersTable({
 								key={row.id}
 								className={cn(
 									"border-subtle border-b text-ink-soft last:border-b-0",
-									isSelected ? "bg-[#F8FBFF]" : "hover:bg-canvas",
+									isSelected ? "bg-canvas" : "hover:bg-canvas",
 								)}
 							>
 								<td className="w-9 px-4 py-3">

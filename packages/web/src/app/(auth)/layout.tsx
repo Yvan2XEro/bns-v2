@@ -22,7 +22,7 @@ export default function AuthLayout({
 	];
 
 	return (
-		<div className="relative isolate min-h-screen overflow-hidden bg-[#F5F7FD]">
+		<div className="relative isolate min-h-screen overflow-hidden bg-canvas">
 			<div
 				aria-hidden="true"
 				className="-z-10 pointer-events-none absolute inset-0"
@@ -33,7 +33,7 @@ export default function AuthLayout({
 					style={{ animationDelay: "-7s" }}
 				/>
 				<div
-					className="auth-blob -bottom-48 absolute left-1/3 h-[28rem] w-[28rem] rounded-full bg-[#E0E7FF] opacity-60 blur-3xl"
+					className="auth-blob -bottom-48 absolute left-1/3 h-[28rem] w-[28rem] rounded-full bg-brand-tint opacity-60 blur-3xl"
 					style={{ animationDelay: "-14s" }}
 				/>
 			</div>
@@ -57,7 +57,7 @@ export default function AuthLayout({
 							Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
 						</span>
 					</Link>
-					<LocaleSwitcher className="bg-white/70 ring-1 ring-line backdrop-blur" />
+					<LocaleSwitcher className="bg-surface/70 ring-1 ring-line backdrop-blur" />
 				</div>
 
 				<main className="flex flex-1 items-start justify-center gap-10 py-4 sm:items-center sm:py-10 xl:gap-16">

@@ -133,10 +133,7 @@ export function SocialAuthButtons({
 		return (
 			<div className="grid gap-3" aria-hidden="true">
 				{SOCIAL_PROVIDER_ORDER.map((p) => (
-					<div
-						key={p}
-						className="h-12 animate-pulse rounded-2xl bg-[#EEF2FF]"
-					/>
+					<div key={p} className="h-12 animate-pulse rounded-2xl bg-subtle" />
 				))}
 			</div>
 		);

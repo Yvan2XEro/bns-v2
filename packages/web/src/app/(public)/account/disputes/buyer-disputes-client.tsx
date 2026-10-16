@@ -56,7 +56,7 @@ export function BuyerDisputesClient() {
 							<li key={row.id}>
 								<Link
 									href={`/disputes/${encodeURIComponent(row.id)}`}
-									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-4 hover:border-[#C4B5FD] hover:bg-[#FAF9FF]"
+									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-4 hover:border-[#C4B5FD] hover:bg-canvas"
 								>
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">

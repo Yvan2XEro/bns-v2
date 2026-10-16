@@ -154,7 +154,7 @@ export function AuthCardSkeleton({
 							// biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
 							<div key={i} className="space-y-1.5">
 								<div className={cn(BONE, "h-5 w-28")} />
-								<div className={cn(BONE, "h-12 rounded-2xl bg-[#F1F5FB]")} />
+								<div className={cn(BONE, "h-12 rounded-2xl bg-subtle")} />
 							</div>
 						))}
 						{formExtra && <div className={cn(BONE, "ml-auto h-5 w-36")} />}
@@ -170,7 +170,7 @@ export function AuthCardSkeleton({
 								{[0, 1, 2].map((i) => (
 									<div
 										key={i}
-										className={cn(BONE, "h-12 rounded-2xl bg-[#EEF2FF]")}
+										className={cn(BONE, "h-12 rounded-2xl bg-subtle")}
 									/>
 								))}
 							</div>

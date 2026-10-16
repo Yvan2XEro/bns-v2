@@ -244,7 +244,7 @@ export function MemberTable({
 								? timeAgo(invitation.lastSentAt, locale, { maxDays: 30 })
 								: null;
 							return (
-								<tr key={invitation.id} className="bg-[#FFFDF5]">
+								<tr key={invitation.id} className="bg-warn-faint">
 									<td className="px-[18px] py-3">
 										<div className="flex items-center gap-3">
 											<Avatar className="h-[38px] w-[38px]">

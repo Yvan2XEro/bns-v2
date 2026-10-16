@@ -87,7 +87,7 @@ function ProblemReportForm({
 				<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 				{t("backToOrder")}
 			</Link>
-			<header className="flex items-start gap-3 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-surface p-5">
+			<header className="flex items-start gap-3 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-canvas to-surface p-5">
 				<Scale aria-hidden="true" className="mt-1 h-5 w-5 text-[#6D28D9]" />
 				<div>
 					<p className="text-ink-muted text-sm">

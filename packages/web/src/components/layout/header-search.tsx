@@ -57,7 +57,7 @@ export function HeaderSearch({ shop, compact = false }: HeaderSearchProps) {
 					"flex h-11 min-w-0 items-stretch overflow-hidden rounded-full p-1 transition-[background-color,box-shadow]",
 					shop
 						? "bg-surface/95 shadow-[0_1px_3px_rgba(15,23,42,0.18)] focus-within:bg-surface focus-within:ring-2 focus-within:ring-white/70"
-						: "bg-subtle focus-within:bg-surface focus-within:shadow-[0_1px_3px_rgba(15,23,42,0.08)] focus-within:ring-2 focus-within:ring-brand/25 hover:bg-[#EAF0F7]",
+						: "bg-subtle focus-within:bg-surface focus-within:shadow-[0_1px_3px_rgba(15,23,42,0.08)] focus-within:ring-2 focus-within:ring-brand/25 hover:bg-subtle",
 				)}
 			>
 				<label htmlFor={inputId} className="sr-only">

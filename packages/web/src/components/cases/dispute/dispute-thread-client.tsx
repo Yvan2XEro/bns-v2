@@ -117,7 +117,7 @@ export function DisputeThreadClient({
 					</Link>
 				</p>
 			) : null}
-			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-surface p-5">
+			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-canvas to-surface p-5">
 				<div className="flex items-start gap-3">
 					<Scale aria-hidden="true" className="mt-1 h-5 w-5 text-[#6D28D9]" />
 					<div>
