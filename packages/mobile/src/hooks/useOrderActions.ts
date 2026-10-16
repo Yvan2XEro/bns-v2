@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { hapticOutcome } from "../lib/haptics";
 import { type ShopOrderPages, withRowAccepted } from "../lib/sellerOrders";
 import type {
 	BuyerCancelReason,
@@ -47,7 +48,11 @@ function useOrderPost<TBody, TResult = OrderView>(
 	return useMutation({
 		mutationFn: (body: TBody) =>
 			api.post<TResult>(orderActionPath(orderId, segment), body ?? {}),
-		onSuccess: invalidate,
+		onSuccess: () => {
+			hapticOutcome("success");
+			invalidate();
+		},
+		onError: () => hapticOutcome("error"),
 	});
 }
 
@@ -127,7 +132,9 @@ export function useAcceptOrderFromList(shopId: string | undefined) {
 			);
 			return { snapshot };
 		},
+		onSuccess: () => hapticOutcome("success"),
 		onError: (_error, _orderId, context) => {
+			hapticOutcome("error");
 			for (const [key, data] of context?.snapshot ?? []) {
 				queryClient.setQueryData(key, data);
 			}

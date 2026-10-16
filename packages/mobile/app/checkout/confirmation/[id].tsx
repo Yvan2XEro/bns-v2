@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import type { ComponentProps } from "react";
+import { type ComponentProps, useEffect } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -25,6 +25,7 @@ import {
 	confirmationOutcome,
 	isConfirmationRequired,
 } from "@/src/lib/checkoutFlow";
+import { hapticOutcome } from "@/src/lib/haptics";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
 import { cityLabel, districtLabel } from "@/src/lib/sellerOrders";
@@ -46,6 +47,10 @@ export default function CheckoutConfirmationScreen() {
 			(isConfirmationRequired(hint) ? hint : null),
 	);
 	const leave = () => router.replace("/(tabs)/home");
+	// The order went through: the one moment of the purchase worth feeling.
+	useEffect(() => {
+		hapticOutcome("success");
+	}, []);
 	const heroColor = outcome === "confirmed" ? c.success : c.primary;
 	const heroSoft = outcome === "confirmed" ? c.successSoft : c.primarySoft;
 	const total = order ? formatPrice(order.amounts.total, locale) : "";

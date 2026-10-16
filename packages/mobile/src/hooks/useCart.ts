@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { hapticOutcome } from "../lib/haptics";
 import type { CartView, SplitCartView } from "../types/order";
 
 /**
@@ -46,7 +47,11 @@ export function useAddCartItem() {
 	return useMutation({
 		mutationFn: (input: AddCartItemInput) =>
 			api.post<CartView>("/api/cart/items", input),
-		onSuccess: invalidate,
+		onSuccess: () => {
+			hapticOutcome("success");
+			invalidate();
+		},
+		onError: () => hapticOutcome("error"),
 	});
 }
 
