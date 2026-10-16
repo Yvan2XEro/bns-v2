@@ -67,7 +67,8 @@ function Review() {
 	const { t } = useTranslation();
 	const locale = useAppLocale();
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
-	const { state, dispatch, quote, place, requestQuote } = useCheckoutFlow();
+	const { state, dispatch, quote, place, requestQuote, addressChoice } =
+		useCheckoutFlow();
 	const cart = useCart();
 	const backToAddress = () => router.dismissTo("/checkout/address");
 
@@ -100,8 +101,14 @@ function Review() {
 	// `checkout.quoteChanged` is answered with a new quote, never a retry: the
 	// buyer must see, and tick for, the summary that will actually be placed.
 	const placeOrder = () => {
-		const body = placeOrderBody(state, locale);
-		if (!body) return;
+		const placement = placeOrderBody(state, locale);
+		if (!placement) return;
+		const body = addressChoice.save
+			? {
+					...placement,
+					saveAddress: { label: addressChoice.save.label.trim() },
+				}
+			: placement;
 		place.mutate(body, {
 			onSuccess: (placed) => {
 				router.dismissAll();

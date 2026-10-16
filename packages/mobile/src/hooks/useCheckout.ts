@@ -13,6 +13,7 @@ import type {
 	QuoteInput,
 	QuoteResponse,
 } from "../types/order";
+import { savedAddressesKey } from "./useAddresses";
 import { cartKey } from "./useCart";
 import { purchasesRootKey } from "./usePurchases";
 
@@ -73,9 +74,11 @@ export function usePlaceOrder() {
 				...input,
 				source: Platform.OS === "ios" ? "ios" : "android",
 			}),
-		onSuccess: () => {
+		onSuccess: (_placed, input) => {
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
+			if (input.saveAddress)
+				queryClient.invalidateQueries({ queryKey: savedAddressesKey });
 		},
 	});
 }

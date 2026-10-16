@@ -11,9 +11,11 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
+import { switchAppMode } from "@/src/components/shop/SwitchModeButton";
 import { useAlert } from "@/src/contexts/AlertContext";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useHasShopMembership, useStoredAppMode } from "@/src/hooks/useAppMode";
 import {
 	useIsModerator,
 	useModerationSummary,
@@ -123,6 +125,10 @@ export default function AccountScreen() {
 	const courierSpace = courierSpaceTarget(useCourierMembership().data ?? []);
 	const { data: myShop } = useMyShop();
 	const ownShop = myShop?.shop ?? null;
+	// Staff of someone else's shop get seller mode too, not only owners.
+	const isShopMember = useHasShopMembership().shopCount > 0;
+	// Opened from the seller Boutique tab, the row offers the way back instead.
+	const inSellerMode = useStoredAppMode().mode === "seller";
 	const { showConfirm } = useAlert();
 	const { t } = useTranslation();
 	const pathname = usePathname();
@@ -318,7 +324,7 @@ export default function AccountScreen() {
 						</View>
 					)}
 
-					{(shopsEnabled || ownShop) && (
+					{(shopsEnabled || ownShop || isShopMember) && (
 						<View style={styles.section}>
 							<Text style={[styles.sectionLabel, { color: mutedColor }]}>
 								{t("account.sectionShop")}
@@ -350,7 +356,7 @@ export default function AccountScreen() {
 										isDark={isDark}
 										borderColor={borderColor}
 									/>
-								) : (
+								) : shopsEnabled ? (
 									<MenuItem
 										icon="storefront-outline"
 										label={t("account.openShop")}
@@ -361,7 +367,29 @@ export default function AccountScreen() {
 										isDark={isDark}
 										borderColor={borderColor}
 									/>
-								)}
+								) : null}
+								{isShopMember ? (
+									<MenuItem
+										icon="swap-horizontal"
+										label={
+											inSellerMode
+												? t("sellerMode.switchToBuyer")
+												: t("sellerMode.switchToSeller")
+										}
+										sublabel={
+											inSellerMode
+												? t("sellerMode.switchToBuyerSub")
+												: t("sellerMode.switchToSellerSub")
+										}
+										iconBg={isDark ? "#172554" : "#dbeafe"}
+										iconColor={primaryColor}
+										onPress={() =>
+											switchAppMode(inSellerMode ? "buyer" : "seller")
+										}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+								) : null}
 							</View>
 						</View>
 					)}
@@ -403,6 +431,14 @@ export default function AccountScreen() {
 										label={t("returns.title")}
 										sublabel={t("returns.subtitle")}
 										onPress={() => router.push("/account/returns")}
+										isDark={isDark}
+										borderColor={borderColor}
+									/>
+									<MenuItem
+										icon="location-outline"
+										label={t("addresses.title")}
+										sublabel={t("addresses.menuSublabel")}
+										onPress={() => router.push("/account/addresses")}
 										isDark={isDark}
 										borderColor={borderColor}
 									/>

@@ -25,8 +25,13 @@ import {
 	SellerManageCard,
 } from "@/src/components/shop/SellerManageCard";
 import { ShopSwitcher } from "@/src/components/shop/ShopSwitcher";
+import {
+	MyAccountButton,
+	SwitchModeButton,
+} from "@/src/components/shop/SwitchModeButton";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
+import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { useSellerPayments } from "@/src/hooks/useSellerPayments";
@@ -170,6 +175,7 @@ function SellerHubContent({
 		deliveryZonesEnabled,
 	} = useAppConfig();
 	const verification = useShopVerification(shop.id);
+	const tabRoot = useIsSellerTabRoot();
 	const { shops } = useActiveShop();
 	const inboxUnread =
 		shops.find((entry) => entry.shopId === shop.id)?.inboxUnread ?? 0;
@@ -462,6 +468,13 @@ function SellerHubContent({
 								role={role}
 								shopId={shop.id}
 							/>
+						</>
+					) : null}
+
+					{tabRoot ? (
+						<>
+							<MyAccountButton />
+							<SwitchModeButton target="buyer" />
 						</>
 					) : null}
 				</View>

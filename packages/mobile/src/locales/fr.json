@@ -7,6 +7,33 @@
 		"account": "Compte",
 		"favorites": "Favoris"
 	},
+	"sellerMode": {
+		"switchToSeller": "Passer en mode vendeur",
+		"switchToSellerSub": "Tableau de bord, commandes et messages de la boutique",
+		"switchToBuyer": "Passer en mode acheteur",
+		"switchToBuyerSub": "Retrouver l'accueil, vos favoris et vos achats",
+		"myAccount": "Mon compte",
+		"myAccountSub": "Profil, paramètres, langue et déconnexion",
+		"tabs": {
+			"dashboard": "Tableau de bord",
+			"orders": "Commandes",
+			"catalogue": "Catalogue",
+			"messages": "Messages",
+			"shop": "Boutique"
+		},
+		"greeting": "Bonjour {{name}}",
+		"actionsWaiting_one": "{{count}} action vous attend",
+		"actionsWaiting": "{{count}} actions vous attendent",
+		"noActions": "Rien à traiter pour le moment",
+		"taskToAccept_one": "{{count}} commande à accepter",
+		"taskToAccept": "{{count}} commandes à accepter",
+		"taskToShip_one": "{{count}} commande à expédier",
+		"taskToShip": "{{count}} commandes à expédier",
+		"taskUnread_one": "{{count}} message non lu",
+		"taskUnread": "{{count}} messages non lus",
+		"taskPaymentsHold_one": "{{count}} paiement en suspens",
+		"taskPaymentsHold": "{{count}} paiements en suspens"
+	},
 	"common": {
 		"offlineBanner": "Hors ligne",
 		"continue": "Continuer",
@@ -1421,6 +1448,10 @@
 			"locationLimitReached": "Cette boutique a atteint sa limite de lieux de retrait.",
 			"noActiveOption": "Aucune option de livraison ou de retrait n'est disponible pour cette adresse."
 		},
+		"address": {
+			"notFound": "Cette adresse est introuvable.",
+			"limitReached": "Vous avez atteint le nombre maximal d'adresses enregistrées. Supprimez-en une avant d'en ajouter une autre."
+		},
 		"shipment": {
 			"notFound": "Cette expédition est introuvable.",
 			"invalidTransition": "L'état de cette expédition ne permet pas cette action.",
@@ -2466,6 +2497,19 @@
 			"submit": "Soumettre pour vérification",
 			"submitting": "Envoi en cours…"
 		},
+		"capture": {
+			"sourceScan": "Scanner le document",
+			"scanHint": "Scannez avec l'appareil photo, ou ajoutez une photo ou un PDF",
+			"hintPages": "Placez chaque page dans le cadre : les bords sont détectés et recadrés automatiquement. Ajoutez toutes les pages du document.",
+			"hintTwoSides": "Scannez le recto, puis le verso de la pièce d'identité : les bords sont détectés et recadrés automatiquement.",
+			"pageOf": "Page {{index}} sur {{total}}",
+			"retake": "Reprendre",
+			"remove": "Retirer",
+			"addPage": "Ajouter une page",
+			"addPages": "Ajouter des pages",
+			"send_one": "Envoyer {{count}} page",
+			"send": "Envoyer {{count}} pages"
+		},
 		"documentKind": {
 			"rccm_extract": "Extrait RCCM",
 			"entreprenant_declaration": "Déclaration d'entreprenant",
@@ -2733,6 +2777,43 @@
 		"deliveryNext": "Mode et frais de livraison à l'étape suivante.",
 		"codNote": "Vous payez à la livraison, en espèces ou par mobile money. Vous disposez de {{days}} jours après réception pour vous rétracter."
 	},
+	"addresses": {
+		"title": "Mes adresses",
+		"menuSublabel": "Maison, bureau… à choisir à la commande",
+		"subtitle": "Les adresses de livraison à choisir au moment de commander. L'adresse par défaut est présélectionnée.",
+		"add": "Ajouter une adresse",
+		"newTitle": "Nouvelle adresse",
+		"editTitle": "Modifier l'adresse",
+		"save": "Enregistrer",
+		"cancel": "Annuler",
+		"edit": "Modifier",
+		"delete": "Supprimer",
+		"deleteTitle": "Supprimer cette adresse ?",
+		"deleteConfirm": "Elle ne sera plus proposée à la commande.",
+		"setDefault": "Définir par défaut",
+		"default": "Par défaut",
+		"count": "{{count}} adresse(s) sur {{limit}}",
+		"limitReached": "Vous avez atteint le nombre maximal d'adresses. Supprimez-en une pour en ajouter une autre.",
+		"loadError": "Impossible de charger vos adresses.",
+		"emptyTitle": "Aucune adresse enregistrée",
+		"emptyBody": "Enregistrez votre domicile ou votre bureau pour commander plus vite.",
+		"label": "Nom de l'adresse",
+		"labelHint": "Maison, Bureau…",
+		"makeDefault": "Utiliser comme adresse par défaut",
+		"saveThisAddress": "Enregistrer cette adresse",
+		"saveAndUse": "Enregistrer et utiliser",
+		"savedTab": "Adresse enregistrée",
+		"newTab": "Nouvelle adresse",
+		"useThisAddress": "Utiliser cette adresse",
+		"otherCity": "Hors de la ville de livraison de cette boutique",
+		"incomplete": "À compléter avant utilisation",
+		"searchPlace": "Rechercher votre quartier",
+		"searchPlaceHint": "ex. Bonapriso, Carrefour Ndokoti",
+		"searching": "Recherche…",
+		"noPlace": "Aucun lieu trouvé. Choisissez dans les listes ci-dessous.",
+		"placeOutside": "Ce lieu est hors des villes où vous pouvez être livré ici.",
+		"coordinates": "Position : {{coordinates}}"
+	},
 	"checkout": {
 		"sellerLabel": "Vendeur",
 		"sellerSince": "Boutique depuis {{year}}",
@@ -2859,6 +2940,7 @@
 		"payOnDelivery": "{{amount}} à payer à la livraison"
 	},
 	"purchases": {
+		"arrivalLive": "Arrivée vers {{time}}",
 		"cardPaymentCod": "Paiement à la livraison",
 		"cardPaymentCodCollected": "Payé à la livraison",
 		"cardPaymentCodRefused": "Refusé à la livraison",
@@ -4079,6 +4161,11 @@
 		"promisedBy": "Promise pour le {{date}}",
 		"rider": "Votre livreur : {{name}}",
 		"callRider": "Appeler le livreur",
+		"riderKindCourier": "Coursier partenaire",
+		"riderKindShop": "Livreur de la boutique",
+		"eta": "Arrivée vers {{time}}",
+		"shopDelivers": "La boutique livre elle-même cette commande. Écrivez-lui depuis la conversation de la commande.",
+		"liveTrackingHint": "Suivez le livreur en direct avec le lien du transporteur.",
 		"attempts": "{{count}} tentatives de livraison",
 		"attempts_one": "{{count}} tentative de livraison",
 		"redelivery": "Nouvelle livraison : {{date}}, {{window}}",

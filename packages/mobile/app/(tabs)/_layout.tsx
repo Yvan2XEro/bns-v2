@@ -3,7 +3,13 @@ import { useCounts } from "@novu/react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs } from "expo-router";
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import {
+	Animated,
+	type ColorValue,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HapticTab } from "@/components/haptic-tab";
 import { Fonts } from "@/constants/theme";
@@ -38,7 +44,7 @@ function AccountTabIcon({
 	color,
 	focused,
 }: {
-	color: string;
+	color: ColorValue;
 	focused: boolean;
 }) {
 	const notificationReady = useNotificationReady();
@@ -67,7 +73,7 @@ function AnimatedTabIcon({
 }: {
 	name: IoniconsName;
 	focusedName: IoniconsName;
-	color: string;
+	color: ColorValue;
 	focused: boolean;
 	size?: number;
 }) {
@@ -140,7 +146,9 @@ export default function TabLayout() {
 			queryClient.invalidateQueries({ queryKey: ["unread-messages"] });
 		};
 		chatClient.on("message:new", onNewMessage);
-		return () => chatClient.off("message:new", onNewMessage);
+		return () => {
+			chatClient.off("message:new", onNewMessage);
+		};
 	}, [chatClient, queryClient]);
 
 	const unreadCount = unreadData?.count ?? 0;

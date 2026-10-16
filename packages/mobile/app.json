@@ -14,7 +14,10 @@
 			"config": {
 				"usesNonExemptEncryption": false
 			},
-			"usesAppleSignIn": true
+			"usesAppleSignIn": true,
+			"infoPlist": {
+				"CFBundleAllowMixedLocalizations": true
+			}
 		},
 		"android": {
 			"icon": "./assets/images/android-icon.png",
@@ -48,7 +51,7 @@
 				"expo-image-picker",
 				{
 					"photosPermission": "Allow BuyNSellem to access your photos so you can upload listing and profile images.",
-					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings.",
+					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents.",
 					"microphonePermission": false
 				}
 			],
@@ -80,8 +83,28 @@
 			"expo-sharing",
 			"expo-web-browser",
 			"expo-status-bar",
-			"expo-apple-authentication"
+			"expo-apple-authentication",
+			[
+				"react-native-document-scanner-plugin",
+				{
+					"cameraPermission": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents."
+				}
+			]
 		],
+		"locales": {
+			"en": {
+				"ios": {
+					"NSCameraUsageDescription": "Allow BuyNSellem to access your camera so you can take photos for your listings and scan your verification documents.",
+					"NSPhotoLibraryUsageDescription": "Allow BuyNSellem to access your photos so you can upload listing and profile images."
+				}
+			},
+			"fr": {
+				"ios": {
+					"NSCameraUsageDescription": "Autorisez BuyNSellem à utiliser votre appareil photo pour photographier vos annonces et scanner vos documents de vérification.",
+					"NSPhotoLibraryUsageDescription": "Autorisez BuyNSellem à accéder à vos photos pour ajouter des images à vos annonces et à votre profil."
+				}
+			}
+		},
 		"experiments": {
 			"typedRoutes": true,
 			"reactCompiler": false

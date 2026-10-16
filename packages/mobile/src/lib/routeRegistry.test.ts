@@ -6,7 +6,7 @@ import { Glob } from "bun";
 const APP = join(import.meta.dir, "../../app");
 
 /** Groups with their own `_layout.tsx` set their screens' options there. */
-const OWN_LAYOUT = ["(tabs)/", "checkout/"];
+const OWN_LAYOUT = ["(tabs)/", "(seller-tabs)/", "checkout/"];
 /** Expo's template modal, never navigated to. */
 const UNUSED = new Set(["modal"]);
 

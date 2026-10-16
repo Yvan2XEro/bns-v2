@@ -30,7 +30,7 @@ import type {
 	SplitQuoteView,
 } from "@/src/types/order";
 import { CheckoutButton } from "./CheckoutButton";
-import { useAppLocale } from "./CheckoutProvider";
+import { useAppLocale, useCheckoutFlow } from "./CheckoutProvider";
 import { DeliveryOptionCard } from "./DeliveryOptionCard";
 import { PaymentMethodPicker } from "./PaymentMethodPicker";
 
@@ -46,6 +46,7 @@ export function SplitReview({ address }: { address: AddressInput }) {
 	const { protectedPaymentEnabled, buyerProtection } = useAppConfig();
 	const quote = useSplitQuote();
 	const place = useSplitPlace();
+	const { addressChoice } = useCheckoutFlow();
 	const [method, setMethod] = useState<PaymentMethod>("cod");
 	const [picks, setPicks] = useState<Record<string, string>>({});
 	const [accepted, setAccepted] = useState(false);
@@ -91,7 +92,10 @@ export function SplitReview({ address }: { address: AddressInput }) {
 			locale,
 		});
 		if (!body) return;
-		place.mutate(body, {
+		const withSave = addressChoice.save
+			? { ...body, saveAddress: { label: addressChoice.save.label.trim() } }
+			: body;
+		place.mutate(withSave, {
 			onSuccess: (placed) => {
 				router.dismissAll();
 				router.replace({

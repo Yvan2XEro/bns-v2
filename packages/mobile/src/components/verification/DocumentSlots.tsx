@@ -16,7 +16,7 @@ export interface DocumentSlotsProps {
 	uploadingKind: VerificationDocumentKind | null;
 	deletingId: string | null;
 	uploadError: { kind: VerificationDocumentKind; message: string } | null;
-	onUpload: (kind: VerificationDocumentKind, file: PickedFile) => void;
+	onUpload: (kind: VerificationDocumentKind, files: PickedFile[]) => void;
 	onDelete: (kind: VerificationDocumentKind, documentId: string) => void;
 }
 
@@ -32,25 +32,21 @@ export function DocumentSlots({
 }: DocumentSlotsProps) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
-	const documentFor = (kind: VerificationDocumentKind) =>
-		documents.find((document) => document.kind === kind) ?? null;
-
-	const renderSlot = (kind: VerificationDocumentKind, required: boolean) => {
-		const document = documentFor(kind);
-		return (
-			<DocumentSlot
-				key={kind}
-				label={t(`verification.documentKind.${kind}`)}
-				required={required}
-				document={document}
-				uploading={uploadingKind === kind}
-				deleting={Boolean(document && deletingId === document.id)}
-				error={uploadError?.kind === kind ? uploadError.message : null}
-				onUpload={(file) => onUpload(kind, file)}
-				onDelete={() => document && onDelete(kind, document.id)}
-			/>
-		);
-	};
+	const renderSlot = (kind: VerificationDocumentKind, required: boolean) => (
+		<DocumentSlot
+			key={kind}
+			kind={kind}
+			label={t(`verification.documentKind.${kind}`)}
+			required={required}
+			documents={documents.filter((document) => document.kind === kind)}
+			documentsOnRequest={documents.length}
+			uploading={uploadingKind === kind}
+			deletingId={deletingId}
+			error={uploadError?.kind === kind ? uploadError.message : null}
+			onUpload={(files) => onUpload(kind, files)}
+			onDelete={(documentId) => onDelete(kind, documentId)}
+		/>
+	);
 
 	return (
 		<View style={{ gap: 20 }}>

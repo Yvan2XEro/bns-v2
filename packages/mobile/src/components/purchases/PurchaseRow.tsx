@@ -13,6 +13,7 @@ import {
 	purchaseStatusKey,
 	purchaseStatusTone,
 } from "@/src/lib/purchaseActions";
+import { purchaseLiveArrival } from "@/src/lib/shipmentTracking";
 import type { OrderListEntry, OrderStatusName } from "@/src/types/order";
 import { LevelBadge } from "../shop/LevelBadge";
 import { ShopAvatar } from "../shop/ShopAvatar";
@@ -49,6 +50,7 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 	const lang = i18n.language?.startsWith("en") ? "en" : "fr";
 	const number = t("purchases.orderNumber", { number: entry.orderNumber });
 	const paymentKey = purchasePaymentKey(entry);
+	const liveArrival = purchaseLiveArrival(entry);
 
 	return (
 		<Pressable
@@ -111,6 +113,14 @@ export function PurchaseRow({ entry }: { entry: OrderListEntry }) {
 						{paymentKey ? ` · ${t(paymentKey)}` : ""}
 					</Text>
 				</Text>
+				{liveArrival ? (
+					<View style={styles.arrival}>
+						<Ionicons name="time-outline" size={14} color={c.primary} />
+						<Text style={[styles.arrivalText, { color: c.primary }]}>
+							{t("purchases.arrivalLive", { time: liveArrival })}
+						</Text>
+					</View>
+				) : null}
 			</View>
 		</Pressable>
 	);
@@ -150,4 +160,6 @@ const styles = StyleSheet.create({
 	title: { fontSize: 15, fontFamily: Fonts.displayBold, lineHeight: 20 },
 	meta: { fontSize: 12, fontFamily: Fonts.body },
 	total: { fontSize: 14, fontFamily: Fonts.bodyBold },
+	arrival: { flexDirection: "row", alignItems: "center", gap: 4 },
+	arrivalText: { fontSize: 12, fontFamily: Fonts.bodySemibold },
 });

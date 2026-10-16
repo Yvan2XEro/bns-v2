@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { shopUrlLabel } from "@/src/lib/shopHandle";
 import type { MyShop } from "@/src/types/api";
@@ -21,23 +22,26 @@ const ON_DARK_MUTED = "#94a3b8";
  */
 export function SellerHubBar({ shop }: { shop: MyShop }) {
 	const { t } = useTranslation();
+	const tabRoot = useIsSellerTabRoot();
 
 	return (
 		<View style={[styles.bar, { backgroundColor: HUB_HEADER_BG }]}>
 			<View style={styles.topRow}>
-				<Pressable
-					onPress={() =>
-						router.canGoBack()
-							? router.back()
-							: router.replace("/(tabs)/account")
-					}
-					style={styles.iconHit}
-					hitSlop={8}
-					accessibilityRole="button"
-					accessibilityLabel={t("common.back")}
-				>
-					<Ionicons name="arrow-back" size={22} color={ON_DARK} />
-				</Pressable>
+				{tabRoot ? null : (
+					<Pressable
+						onPress={() =>
+							router.canGoBack()
+								? router.back()
+								: router.replace("/(tabs)/account")
+						}
+						style={styles.iconHit}
+						hitSlop={8}
+						accessibilityRole="button"
+						accessibilityLabel={t("common.back")}
+					>
+						<Ionicons name="arrow-back" size={22} color={ON_DARK} />
+					</Pressable>
+				)}
 				<ShopAvatar
 					name={shop.name}
 					logo={shop.logo?.url}

@@ -394,6 +394,7 @@ function RootLayoutNav() {
 			<Stack>
 				<Stack.Screen name="onboarding" options={{ headerShown: false }} />
 				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+				<Stack.Screen name="(seller-tabs)" options={{ headerShown: false }} />
 				<Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="listing/[id]/edit"
@@ -412,6 +413,10 @@ function RootLayoutNav() {
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen name="account/boosts" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="account/overview"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen
 					name="account/searches"
 					options={{ headerShown: false }}
@@ -602,6 +607,10 @@ function RootLayoutNav() {
 					options={{ headerShown: false }}
 				/>
 				<Stack.Screen name="account/returns" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="account/addresses"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen name="returns/[id]" options={{ headerShown: false }} />
 				<Stack.Screen name="purchases/[id]" options={{ headerShown: false }} />
 				<Stack.Screen

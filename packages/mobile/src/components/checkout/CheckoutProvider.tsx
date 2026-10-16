@@ -4,6 +4,7 @@ import {
 	type ReactNode,
 	useContext,
 	useReducer,
+	useState,
 } from "react";
 import { useCheckoutQuote, usePlaceOrder } from "@/src/hooks/useCheckout";
 import { ApiError } from "@/src/lib/api";
@@ -25,8 +26,16 @@ import type {
 	QuoteResponse,
 } from "@/src/types/order";
 
+/** Which saved address the buyer used, or the new one to save at placement. */
+export interface AddressChoice {
+	savedId: string | null;
+	save: { label: string } | null;
+}
+
 interface CheckoutContextValue {
 	state: CheckoutState;
+	addressChoice: AddressChoice;
+	setAddressChoice: (choice: AddressChoice) => void;
 	dispatch: Dispatch<CheckoutAction>;
 	quote: ReturnType<typeof useCheckoutQuote>;
 	place: ReturnType<typeof usePlaceOrder>;
@@ -55,6 +64,10 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 	const [state, dispatch] = useReducer(checkoutReducer, null, () =>
 		initialCheckoutState(newIdempotencyKey()),
 	);
+	const [addressChoice, setAddressChoice] = useState<AddressChoice>({
+		savedId: null,
+		save: null,
+	});
 	const quote = useCheckoutQuote();
 	const place = usePlaceOrder();
 	const locale = useAppLocale();
@@ -98,7 +111,15 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 
 	return (
 		<CheckoutContext.Provider
-			value={{ state, dispatch, quote, place, requestQuote }}
+			value={{
+				state,
+				dispatch,
+				addressChoice,
+				setAddressChoice,
+				quote,
+				place,
+				requestQuote,
+			}}
 		>
 			{children}
 		</CheckoutContext.Provider>

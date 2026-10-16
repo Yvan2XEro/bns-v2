@@ -18,6 +18,7 @@ import {
 	gpsFromCoords,
 } from "@/src/lib/checkoutForm";
 import { useTranslation } from "@/src/lib/i18n";
+import { coordinatesText } from "@/src/lib/savedAddresses";
 
 type Status = "idle" | "locating" | "denied" | "unavailable";
 
@@ -81,6 +82,12 @@ export function LocationField({
 				<View style={{ gap: 4 }}>
 					<Text style={[formStyles.hint, { color: c.successText }]}>
 						{t("checkout.locationCaptured")}
+					</Text>
+					{/* No map on mobile yet (native module, next native build): the coordinates stand in. */}
+					<Text style={[formStyles.hint, { color: c.muted }]}>
+						{t("addresses.coordinates", {
+							coordinates: coordinatesText(value),
+						})}
 					</Text>
 					{value.accuracyMeters !== undefined ? (
 						<Text style={[formStyles.hint, { color: c.muted }]}>

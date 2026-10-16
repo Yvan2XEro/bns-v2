@@ -1,4 +1,7 @@
-import type { BuyerShipmentView } from "../../../api/src/contracts/shipments";
+import {
+	arrivalClock,
+	type BuyerShipmentView,
+} from "../../../api/src/contracts/shipments";
 import { shipmentStatusLabel } from "./shipmentStatus";
 
 export type StepState = "done" | "current" | "upcoming";
@@ -77,6 +80,16 @@ export function showRiderCard(view: BuyerShipmentView): boolean {
 			view.status === "in_transit" ||
 			view.status === "failed")
 	);
+}
+
+/** "15:40" for a purchase card while the order is shipped and the courier gave an ETA. */
+export function purchaseLiveArrival(entry: {
+	status: string;
+	arrival?: { liveEta?: string | null };
+}): string | null {
+	return entry.status === "shipped"
+		? arrivalClock(entry.arrival?.liveEta)
+		: null;
 }
 
 export function telHref(phone: string): string {

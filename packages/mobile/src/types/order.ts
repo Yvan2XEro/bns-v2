@@ -315,6 +315,8 @@ export interface SplitPlaceInput extends SplitQuoteInput {
 	idempotencyKey: string;
 	/** Absent places every available group. */
 	groupKeys?: string[];
+	/** « Enregistrer cette adresse »: saved after placement, best effort. */
+	saveAddress?: { label?: string };
 }
 
 export interface PlaceInput extends QuoteInput {
@@ -326,6 +328,8 @@ export interface PlaceInput extends QuoteInput {
 	 * first shipped without it and every placement would have been refused.
 	 */
 	idempotencyKey: string;
+	/** « Enregistrer cette adresse »: saved after placement, best effort. */
+	saveAddress?: { label?: string };
 }
 
 export interface PlaceResponse {
@@ -494,6 +498,13 @@ export interface OrderListEntry {
 	paymentMethod?: PaymentMethod;
 	paymentStatus?: PaymentStatus;
 	deliveryFailureReason?: string | null;
+	/** Buyer role: the delivery promise and, while out for delivery, the courier's live ETA. */
+	arrival?: {
+		method: string;
+		etaText: string;
+		promisedBy: string | null;
+		liveEta?: string | null;
+	};
 	/** Shop role. */
 	recipientName?: string;
 	/** Shop role. */

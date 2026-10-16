@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { BuyerShipmentView } from "../../../api/src/contracts/shipments";
+import {
+	type BuyerShipmentView,
+	isOutForDelivery,
+} from "../../../api/src/contracts/shipments";
 import { useAppConfig } from "../contexts/AppConfigContext";
 import { api } from "../lib/api";
 import { purchasesRootKey } from "./usePurchases";
@@ -17,6 +20,27 @@ export function useOrderShipments(orderId: string | undefined) {
 				`/api/orders/${encodeURIComponent(orderId ?? "")}/shipments`,
 			),
 		enabled: Boolean(orderId) && deliveryZonesEnabled,
+		// Keeps the rider card and the courier's ETA current while a parcel is on the road.
+		refetchInterval: (query) =>
+			query.state.data?.some((view) => isOutForDelivery(view.status))
+				? 60_000
+				: false,
+	});
+}
+
+/**
+ * The rider's phone for the order's buyer. A mutation, like the listing phone
+ * reveal: the API logs every reveal and rate-limits it, so it runs only on a tap.
+ */
+export function useRevealRiderPhone(shipmentId: string) {
+	return useMutation({
+		mutationKey: ["shipments", shipmentId, "rider-phone"],
+		mutationFn: () =>
+			api.post<{ phone: string }>(
+				`/api/shipments/${encodeURIComponent(shipmentId)}/rider-phone`,
+				{},
+			),
+		retry: false,
 	});
 }
 

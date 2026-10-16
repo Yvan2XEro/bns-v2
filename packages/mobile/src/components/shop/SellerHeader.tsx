@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
+import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { useShopTheme } from "./theme";
 
@@ -28,6 +29,7 @@ export function SellerHeader({
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	const tabRoot = useIsSellerTabRoot();
 	const handleBack =
 		onBack ??
 		(() =>
@@ -35,17 +37,21 @@ export function SellerHeader({
 
 	return (
 		<View style={[styles.header, { borderBottomColor: c.border }]}>
-			<Pressable
-				onPress={handleBack}
-				style={styles.back}
-				hitSlop={8}
-				accessibilityRole="button"
-				accessibilityLabel={
-					icon === "close" ? t("common.close") : t("common.back")
-				}
-			>
-				<Ionicons name={icon} size={22} color={c.text} />
-			</Pressable>
+			{tabRoot ? (
+				<View style={styles.edge} />
+			) : (
+				<Pressable
+					onPress={handleBack}
+					style={styles.back}
+					hitSlop={8}
+					accessibilityRole="button"
+					accessibilityLabel={
+						icon === "close" ? t("common.close") : t("common.back")
+					}
+				>
+					<Ionicons name={icon} size={22} color={c.text} />
+				</Pressable>
+			)}
 			<View style={{ flex: 1 }}>
 				<Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
 					{title}
@@ -76,6 +82,7 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 	},
+	edge: { width: 4 },
 	title: { fontSize: 17, fontFamily: Fonts.displayBold },
 	subtitle: { fontSize: 12, fontFamily: Fonts.body, marginTop: 1 },
 });

@@ -118,18 +118,23 @@ export default function BusinessVerificationScreen() {
 	const missing = businessValues ? missingKinds(businessValues, documents) : [];
 	const ready = businessValues ? canSubmit(businessValues, documents) : false;
 
-	const handleUpload = (kind: VerificationDocumentKind, file: PickedFile) => {
+	/** Pages go up one at a time, in the order the seller reviewed them. */
+	const handleUpload = async (
+		kind: VerificationDocumentKind,
+		files: PickedFile[],
+	) => {
 		patch({ uploadingKind: kind, actionError: null });
-		upload.mutate(
-			{ kind, file },
-			{
-				onSettled: () => patch({ uploadingKind: null }),
-				onError: (error) =>
-					patch({
-						actionError: { kind, message: resolveErrorMessage(error, t) },
-					}),
-			},
-		);
+		try {
+			for (const file of files) {
+				await upload.mutateAsync({ kind, file });
+			}
+		} catch (error) {
+			patch({
+				actionError: { kind, message: resolveErrorMessage(error, t) },
+			});
+		} finally {
+			patch({ uploadingKind: null });
+		}
 	};
 
 	const handleDelete = (kind: VerificationDocumentKind, documentId: string) => {
@@ -222,7 +227,7 @@ export default function BusinessVerificationScreen() {
 								uploadingKind={state.uploadingKind}
 								deletingId={state.deletingId}
 								uploadError={state.actionError}
-								onUpload={handleUpload}
+								onUpload={(kind, files) => void handleUpload(kind, files)}
 								onDelete={handleDelete}
 							/>
 

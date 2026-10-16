@@ -7,6 +7,33 @@
 		"account": "Account",
 		"favorites": "Favorites"
 	},
+	"sellerMode": {
+		"switchToSeller": "Switch to seller mode",
+		"switchToSellerSub": "Your shop's dashboard, orders and messages",
+		"switchToBuyer": "Switch to buyer mode",
+		"switchToBuyerSub": "Back to home, your favourites and purchases",
+		"myAccount": "My account",
+		"myAccountSub": "Profile, settings, language and sign out",
+		"tabs": {
+			"dashboard": "Dashboard",
+			"orders": "Orders",
+			"catalogue": "Catalogue",
+			"messages": "Messages",
+			"shop": "Shop"
+		},
+		"greeting": "Hello {{name}}",
+		"actionsWaiting_one": "{{count}} action is waiting for you",
+		"actionsWaiting": "{{count}} actions are waiting for you",
+		"noActions": "Nothing to handle right now",
+		"taskToAccept_one": "{{count}} order to accept",
+		"taskToAccept": "{{count}} orders to accept",
+		"taskToShip_one": "{{count}} order to ship",
+		"taskToShip": "{{count}} orders to ship",
+		"taskUnread_one": "{{count}} unread message",
+		"taskUnread": "{{count}} unread messages",
+		"taskPaymentsHold_one": "{{count}} payment on hold",
+		"taskPaymentsHold": "{{count}} payments on hold"
+	},
 	"common": {
 		"offlineBanner": "Offline",
 		"continue": "Continue",
@@ -1418,6 +1445,10 @@
 			"locationLimitReached": "This shop has reached its pickup location limit.",
 			"noActiveOption": "No delivery or pickup option is currently available for this address."
 		},
+		"address": {
+			"notFound": "This address could not be found.",
+			"limitReached": "You have reached the saved address limit. Delete one before adding another."
+		},
 		"shipment": {
 			"notFound": "This shipment could not be found.",
 			"invalidTransition": "This shipment is not in a state that allows that action.",
@@ -2463,6 +2494,19 @@
 			"submit": "Submit for review",
 			"submitting": "Submitting…"
 		},
+		"capture": {
+			"sourceScan": "Scan the document",
+			"scanHint": "Scan with your camera, or add a photo or a PDF",
+			"hintPages": "Frame each page inside the guide: edges are detected and cropped automatically. Add every page of the document.",
+			"hintTwoSides": "Scan the front, then the back of the ID: edges are detected and cropped automatically.",
+			"pageOf": "Page {{index}} of {{total}}",
+			"retake": "Retake",
+			"remove": "Remove",
+			"addPage": "Add a page",
+			"addPages": "Add pages",
+			"send_one": "Send {{count}} page",
+			"send": "Send {{count}} pages"
+		},
 		"documentKind": {
 			"rccm_extract": "RCCM extract",
 			"entreprenant_declaration": "Entreprenant declaration",
@@ -2730,6 +2774,43 @@
 		"deliveryNext": "Delivery method and fee on the next step.",
 		"codNote": "You pay on delivery, in cash or by mobile money. You have {{days}} days after delivery to withdraw."
 	},
+	"addresses": {
+		"title": "My addresses",
+		"menuSublabel": "Home, office… pick them at checkout",
+		"subtitle": "Delivery addresses you can pick at checkout. The default one is preselected.",
+		"add": "Add an address",
+		"newTitle": "New address",
+		"editTitle": "Edit address",
+		"save": "Save",
+		"cancel": "Cancel",
+		"edit": "Edit",
+		"delete": "Delete",
+		"deleteTitle": "Delete this address?",
+		"deleteConfirm": "It will no longer be offered at checkout.",
+		"setDefault": "Make default",
+		"default": "Default",
+		"count": "{{count}} of {{limit}} addresses",
+		"limitReached": "You have reached the limit of saved addresses. Delete one to add another.",
+		"loadError": "We could not load your addresses.",
+		"emptyTitle": "No saved address yet",
+		"emptyBody": "Save your home or office to check out faster.",
+		"label": "Name of this address",
+		"labelHint": "Home, Office…",
+		"makeDefault": "Use as my default address",
+		"saveThisAddress": "Save this address",
+		"saveAndUse": "Save and use",
+		"savedTab": "Saved address",
+		"newTab": "New address",
+		"useThisAddress": "Use this address",
+		"otherCity": "Outside this shop's delivery city",
+		"incomplete": "To complete before use",
+		"searchPlace": "Search your district",
+		"searchPlaceHint": "e.g. Bonapriso, Carrefour Ndokoti",
+		"searching": "Searching…",
+		"noPlace": "No place found. Choose from the lists below.",
+		"placeOutside": "This place is outside the cities you can be delivered to here.",
+		"coordinates": "Position: {{coordinates}}"
+	},
 	"checkout": {
 		"sellerLabel": "Seller",
 		"sellerSince": "Shop since {{year}}",
@@ -2856,6 +2937,7 @@
 		"payOnDelivery": "{{amount}} to pay on delivery"
 	},
 	"purchases": {
+		"arrivalLive": "Arriving around {{time}}",
 		"cardPaymentCod": "Pay on delivery",
 		"cardPaymentCodCollected": "Paid on delivery",
 		"cardPaymentCodRefused": "Refused on delivery",
@@ -4076,6 +4158,11 @@
 		"promisedBy": "Promised by {{date}}",
 		"rider": "Your rider: {{name}}",
 		"callRider": "Call the rider",
+		"riderKindCourier": "Partner courier",
+		"riderKindShop": "Shop's delivery person",
+		"eta": "Arriving around {{time}}",
+		"shopDelivers": "The shop delivers this order itself. Write to it from the order's conversation.",
+		"liveTrackingHint": "Follow the rider live with the carrier's link.",
 		"attempts": "{{count}} delivery attempts",
 		"attempts_one": "{{count}} delivery attempt",
 		"redelivery": "New delivery: {{date}}, {{window}}",

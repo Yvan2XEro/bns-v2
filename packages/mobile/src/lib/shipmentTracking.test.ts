@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { BuyerShipmentView } from "../../../api/src/contracts/shipments";
 import {
 	pickupCountdown,
+	purchaseLiveArrival,
 	rescheduleAllowed,
 	rescheduleDays,
 	showRiderCard,
@@ -22,6 +23,7 @@ const base: BuyerShipmentView = {
 		terminalAt: null,
 	},
 	rider: null,
+	eta: null,
 	attempts: [],
 	redelivery: null,
 	pickup: null,
@@ -161,13 +163,30 @@ describe("rescheduleAllowed", () => {
 });
 
 describe("showRiderCard", () => {
-	const rider = { firstName: "Paul", phone: "+237600000000" };
+	const rider = {
+		firstName: "Paul",
+		vehicle: "Moto",
+		kind: "courier" as const,
+		canCall: true,
+	};
 	test("shows while the parcel is out and hides on a delivered view", () => {
 		expect(showRiderCard(view({ status: "in_transit", rider }))).toBe(true);
 		expect(showRiderCard(view({ status: "delivered", rider }))).toBe(false);
 		expect(showRiderCard(view({ status: "in_transit", rider: null }))).toBe(
 			false,
 		);
+	});
+});
+
+describe("purchaseLiveArrival", () => {
+	test("shows the courier's ETA as a Douala clock only while shipped", () => {
+		const arrival = { liveEta: "2026-10-16T14:40:00.000Z" };
+		expect(purchaseLiveArrival({ status: "shipped", arrival })).toBe("15:40");
+		expect(purchaseLiveArrival({ status: "delivered", arrival })).toBeNull();
+		expect(
+			purchaseLiveArrival({ status: "shipped", arrival: { liveEta: null } }),
+		).toBeNull();
+		expect(purchaseLiveArrival({ status: "shipped" })).toBeNull();
 	});
 });
 

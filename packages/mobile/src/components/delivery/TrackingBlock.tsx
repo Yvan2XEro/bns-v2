@@ -3,6 +3,9 @@ import * as Linking from "expo-linking";
 import { StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
+import { useRevealRiderPhone } from "@/src/hooks/useShipments";
+import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import {
@@ -18,7 +21,11 @@ import {
 	telHref,
 	trackingSteps,
 } from "@/src/lib/shipmentTracking";
-import type { BuyerShipmentView } from "../../../../api/src/contracts/shipments";
+import {
+	arrivalClock,
+	type BuyerShipmentView,
+	isOutForDelivery,
+} from "../../../../api/src/contracts/shipments";
 import { Card, PurchaseButton } from "../purchases/ui";
 
 const when = (iso: string | null, lang: "fr" | "en") =>
@@ -38,6 +45,73 @@ const reasonLabel = (reason: string) =>
 		? FAILURE_REASON_LABELS[reason as FailureReason]
 		: FAILURE_REASON_LABELS.other;
 
+/**
+ * Who carries the parcel, the provider's ETA and « Appeler le livreur ». The
+ * number is never in the view: the call goes through the logged, rate-limited
+ * reveal, and a second tap dials the number already in hand.
+ */
+function RiderCard({
+	shipmentId,
+	rider,
+	eta,
+}: {
+	shipmentId: string;
+	rider: NonNullable<BuyerShipmentView["rider"]>;
+	eta: string | null;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const { showError } = useAlert();
+	const reveal = useRevealRiderPhone(shipmentId);
+	const clock = arrivalClock(eta);
+	const dial = (phone: string) => {
+		Linking.openURL(telHref(phone)).catch(() =>
+			showError(t("tracking.callRider"), phone),
+		);
+	};
+	const onCall = () => {
+		if (reveal.data?.phone) return dial(reveal.data.phone);
+		reveal.mutate(undefined, {
+			onSuccess: ({ phone }) => dial(phone),
+			onError: (error) =>
+				showError(t("tracking.callRider"), resolveErrorMessage(error, t)),
+		});
+	};
+	const subtitle = [
+		rider.vehicle,
+		t(
+			rider.kind === "courier"
+				? "tracking.riderKindCourier"
+				: "tracking.riderKindShop",
+		),
+	]
+		.filter(Boolean)
+		.join(" · ");
+	return (
+		<View style={[styles.rider, { backgroundColor: c.primarySoft }]}>
+			<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
+				{t("tracking.rider", { name: rider.firstName })}
+			</Text>
+			<Text style={{ color: c.muted, fontFamily: Fonts.body, fontSize: 12 }}>
+				{subtitle}
+			</Text>
+			{clock ? (
+				<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
+					{t("tracking.eta", { time: clock })}
+				</Text>
+			) : null}
+			{rider.canCall ? (
+				<PurchaseButton
+					tone="outline"
+					label={t("tracking.callRider")}
+					pending={reveal.isPending}
+					onPress={onCall}
+				/>
+			) : null}
+		</View>
+	);
+}
+
 /** One shipment of a purchase: stepper, rider, attempts, pickup deadline, proof. */
 export function TrackingBlock({
 	view,
@@ -55,6 +129,7 @@ export function TrackingBlock({
 	const c = useShopTheme();
 	const { t } = useTranslation();
 	const steps = trackingSteps(view);
+	const etaClock = arrivalClock(view.eta);
 	const countdown = pickupCountdown(view.pickup?.pickupDeadline ?? null, now);
 	const outcome =
 		view.status === "failed" ||
@@ -107,18 +182,18 @@ export function TrackingBlock({
 			</View>
 
 			{showRiderCard(view) && view.rider ? (
-				<View style={styles.block}>
-					<Text style={{ color: c.text, fontFamily: Fonts.bodySemibold }}>
-						{t("tracking.rider", { name: view.rider.firstName })}
-					</Text>
-					<PurchaseButton
-						tone="outline"
-						label={t("tracking.callRider")}
-						onPress={() =>
-							void Linking.openURL(telHref(view.rider?.phone ?? ""))
-						}
-					/>
-				</View>
+				<RiderCard shipmentId={view.id} rider={view.rider} eta={view.eta} />
+			) : etaClock ? (
+				<Text style={{ color: c.primary, fontFamily: Fonts.bodySemibold }}>
+					{t("tracking.eta", { time: etaClock })}
+				</Text>
+			) : null}
+			{view.method === "seller_delivery" &&
+			!view.rider &&
+			isOutForDelivery(view.status) ? (
+				<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+					{t("tracking.shopDelivers")}
+				</Text>
 			) : null}
 
 			{view.attempts.length > 0 ? (
@@ -178,11 +253,18 @@ export function TrackingBlock({
 			) : null}
 
 			{view.trackingUrl ? (
-				<PurchaseButton
-					tone="outline"
-					label={t("tracking.openTracking")}
-					onPress={() => void Linking.openURL(view.trackingUrl ?? "")}
-				/>
+				<>
+					{isOutForDelivery(view.status) ? (
+						<Text style={{ color: c.body, fontFamily: Fonts.body }}>
+							{t("tracking.liveTrackingHint")}
+						</Text>
+					) : null}
+					<PurchaseButton
+						tone="outline"
+						label={t("tracking.openTracking")}
+						onPress={() => void Linking.openURL(view.trackingUrl ?? "")}
+					/>
+				</>
 			) : null}
 
 			{view.proof ? (
@@ -226,4 +308,5 @@ const styles = StyleSheet.create({
 	dot: { width: 12, height: 12, borderRadius: 6 },
 	block: { gap: 6, marginTop: 6 },
 	photo: { width: 120, height: 120, borderRadius: 10 },
+	rider: { gap: 4, marginTop: 6, padding: 12, borderRadius: 12 },
 });

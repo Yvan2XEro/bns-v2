@@ -9,6 +9,7 @@ import type {
 	SplitQuoteInput,
 	SplitQuoteView,
 } from "../types/order";
+import { savedAddressesKey } from "./useAddresses";
 import { cartKey } from "./useCart";
 import { purchasesRootKey } from "./usePurchases";
 
@@ -62,9 +63,11 @@ export function useSplitPlace() {
 				...input,
 				source: Platform.OS === "ios" ? "ios" : "android",
 			}),
-		onSuccess: () => {
+		onSuccess: (_placed, input) => {
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
+			if (input.saveAddress)
+				queryClient.invalidateQueries({ queryKey: savedAddressesKey });
 		},
 	});
 }
