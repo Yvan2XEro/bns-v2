@@ -8,6 +8,12 @@ import { useAppConfig } from "../contexts/AppConfigContext";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { withContentLocale } from "../lib/contentLocale";
+import {
+	SHOP_PAGE_SIZE,
+	type ShopSort,
+	shopFacetQuery,
+	shopSearchQuery,
+} from "../lib/shopStorefront";
 import type {
 	AttachResponse,
 	BusinessType,
@@ -149,18 +155,43 @@ export function useUserShop(userId: string | undefined) {
 	});
 }
 
-export function useShopListings(shopId: string | undefined) {
+export interface ShopListingsFilter {
+	q: string;
+	category: string | null;
+	sort: ShopSort;
+}
+
+export function useShopListings(
+	shopId: string | undefined,
+	filter: ShopListingsFilter,
+) {
 	return useInfiniteQuery({
-		queryKey: shopKeys.listings(shopId ?? ""),
+		queryKey: [...shopKeys.listings(shopId ?? ""), filter] as const,
 		enabled: Boolean(shopId),
 		initialPageParam: 0,
 		queryFn: ({ pageParam }) =>
 			api.get<SearchResponse>(
-				`/api/public/search?shop=${shopId}&limit=20&offset=${pageParam}`,
+				`/api/public/search?${shopSearchQuery({ shopId: shopId ?? "", ...filter, offset: pageParam })}`,
 			),
 		getNextPageParam: (last, pages) => {
-			const offset = pages.length * 20;
+			const offset = pages.length * SHOP_PAGE_SIZE;
 			return offset < (last?.total ?? 0) ? offset : undefined;
+		},
+	});
+}
+
+/** Listings per category over the whole shop, for the chips; `null` when unreadable. */
+export function useShopCategoryCounts(shopId: string | undefined) {
+	return useQuery({
+		queryKey: [...shopKeys.listings(shopId ?? ""), "category-counts"] as const,
+		enabled: Boolean(shopId),
+		queryFn: async () => {
+			const res = await api.get<SearchResponse>(
+				`/api/public/search?${shopFacetQuery(shopId ?? "")}`,
+			);
+			return res.categoryCounts && typeof res.categoryCounts === "object"
+				? res.categoryCounts
+				: null;
 		},
 	});
 }

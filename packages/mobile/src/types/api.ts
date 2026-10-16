@@ -7,6 +7,7 @@
  *  • /api/public/*   → custom Next.js routes, own response shapes (see below)
  *  • /api/{collection}/* → Payload REST — standard PayloadPage<T> shape
  */
+import type { ShopTrust } from "../../../api/src/contracts/shopTrust";
 import type { VerificationRequirement } from "../../../api/src/contracts/verificationRequirements";
 import type {
 	ConnectedAccountStatus,
@@ -287,6 +288,8 @@ export interface SearchResponse {
 	total: number;
 	limit: number;
 	offset: number;
+	/** Only with `shop=…&facets=category`: published listings per category id. */
+	categoryCounts?: Record<string, number>;
 }
 
 /** Response from GET /api/public/similar?id=...&limit=... */
@@ -659,6 +662,12 @@ export interface PublicShop {
 	publishedListingCount: number;
 	/** "#RRGGBB" picked by the shop; null keeps the platform colours. */
 	brandColor?: string | null;
+	/** The shop's own verified-purchase rating, distinct from `owner.rating`. */
+	rating?: number;
+	totalReviews?: number;
+	/** Optional until every API serving the app sends it; `shopTrustStrip` falls back without it. */
+	trust?: ShopTrust | null;
+	returnPolicy?: string | null;
 	createdAt: string;
 	owner: {
 		id: string;

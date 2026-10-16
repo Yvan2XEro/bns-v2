@@ -1,12 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { shopUrlLabel } from "@/src/lib/shopHandle";
+import { shopTrustStrip, trustItemText } from "@/src/lib/shopStorefront";
 import type { PublicShop } from "@/src/types/api";
+import type { ShopTrustItem } from "../../../../api/src/contracts/shopTrust";
 import { useShopBrand } from "./brand";
 import { LevelBadge } from "./LevelBadge";
 import { ShopAvatar } from "./ShopAvatar";
@@ -15,18 +18,26 @@ import { useShopTheme } from "./theme";
 export function ShopHeader({
 	shop,
 	onShare,
+	onNameBottom,
 }: {
 	shop: PublicShop;
 	onShare: () => void;
+	/** The name's bottom edge within the header, what the compact bar's swap is keyed on. */
+	onNameBottom?: (y: number) => void;
 }) {
 	const c = useShopTheme();
 	const brand = useShopBrand();
 	const { t } = useTranslation();
 	const { webUrl } = useAppConfig();
 	const banner = resolveImageUrl(shop.banner?.url ?? null);
-	const place = [shop.location.city, shop.location.region]
-		.filter(Boolean)
-		.join(", ");
+	const bodyY = useRef(0);
+	const nameBox = useRef<{ y: number; height: number } | null>(null);
+	const report = () => {
+		if (nameBox.current)
+			onNameBottom?.(
+				bodyY.current + nameBox.current.y + nameBox.current.height,
+			);
+	};
 
 	return (
 		<View>
@@ -39,7 +50,13 @@ export function ShopHeader({
 					/>
 				) : null}
 			</View>
-			<View style={styles.body}>
+			<View
+				style={styles.body}
+				onLayout={(e) => {
+					bodyY.current = e.nativeEvent.layout.y;
+					report();
+				}}
+			>
 				<View style={[styles.logoRing, { borderColor: c.bg }]}>
 					<ShopAvatar
 						name={shop.name}
@@ -48,7 +65,15 @@ export function ShopHeader({
 						radius={18}
 					/>
 				</View>
-				<Text style={[styles.name, { color: c.text }]}>{shop.name}</Text>
+				<Text
+					style={[styles.name, { color: c.text }]}
+					onLayout={(e) => {
+						nameBox.current = e.nativeEvent.layout;
+						report();
+					}}
+				>
+					{shop.name}
+				</Text>
 				<View style={styles.row}>
 					<LevelBadge badge={shop.badge} />
 					<Pressable
@@ -62,68 +87,16 @@ export function ShopHeader({
 						</Text>
 					</Pressable>
 				</View>
+				<TrustStrip shop={shop} />
 				{shop.description ? (
-					<Text style={[styles.description, { color: c.body }]}>
+					<Text
+						style={[styles.description, { color: c.body }]}
+						numberOfLines={3}
+					>
 						{shop.description}
 					</Text>
 				) : null}
-				<View
-					style={[
-						styles.stats,
-						{ borderColor: c.border, backgroundColor: c.card },
-					]}
-				>
-					<Stat
-						icon="star"
-						iconColor="#f59e0b"
-						value={
-							shop.owner.totalReviews > 0
-								? shop.owner.rating.toFixed(1).replace(".", ",")
-								: "—"
-						}
-						label={t("shop.reviewsCount", { count: shop.owner.totalReviews })}
-					/>
-					<Stat
-						icon="cube-outline"
-						iconColor={c.muted}
-						value={String(shop.publishedListingCount)}
-						label={t("shop.productsLabel")}
-					/>
-					{place ? (
-						<Stat
-							icon="location-outline"
-							iconColor={c.muted}
-							value={shop.location.city ?? ""}
-							label={shop.location.region ?? ""}
-						/>
-					) : null}
-				</View>
 			</View>
-		</View>
-	);
-}
-
-function Stat({
-	icon,
-	iconColor,
-	value,
-	label,
-}: {
-	icon: keyof typeof Ionicons.glyphMap;
-	iconColor: string;
-	value: string;
-	label: string;
-}) {
-	const c = useShopTheme();
-	return (
-		<View style={[styles.stat, { borderLeftColor: c.border }]}>
-			<View style={styles.statTop}>
-				<Ionicons name={icon} size={14} color={iconColor} />
-				<Text style={[styles.statValue, { color: c.text }]}>{value}</Text>
-			</View>
-			<Text style={[styles.statLabel, { color: c.muted }]} numberOfLines={1}>
-				{label}
-			</Text>
 		</View>
 	);
 }
@@ -141,23 +114,63 @@ const styles = StyleSheet.create({
 	},
 	link: { fontSize: 13, fontFamily: Fonts.bodySemibold, paddingVertical: 4 },
 	description: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
-	stats: {
+	trust: {
 		flexDirection: "row",
-		marginTop: 6,
-		borderWidth: 1,
-		borderRadius: 16,
-		paddingVertical: 10,
-		overflow: "hidden",
-	},
-	// Hairline separators between the cells; the first one's sits under the card's edge.
-	stat: {
-		flex: 1,
+		flexWrap: "wrap",
 		alignItems: "center",
-		borderLeftWidth: StyleSheet.hairlineWidth,
-		marginLeft: -StyleSheet.hairlineWidth,
-		paddingHorizontal: 6,
+		columnGap: 12,
+		rowGap: 4,
 	},
-	statTop: { flexDirection: "row", alignItems: "center", gap: 4 },
-	statValue: { fontSize: 16, fontFamily: Fonts.displayBold },
-	statLabel: { fontSize: 12, fontFamily: Fonts.body },
+	trustItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+	trustText: { fontSize: 13, fontFamily: Fonts.body },
+	trustStrong: { fontSize: 13, fontFamily: Fonts.bodySemibold },
 });
+
+const TRUST_ICONS: Record<
+	ShopTrustItem["kind"],
+	keyof typeof Ionicons.glyphMap
+> = {
+	rating: "star",
+	responseTime: "chatbubble-ellipses-outline",
+	city: "location-outline",
+	memberSince: "calendar-outline",
+	newShop: "sparkles-outline",
+	activeListings: "pricetags-outline",
+};
+
+/** Platform colours on purpose: trust signals are never painted in the shop's brand. */
+function TrustStrip({ shop }: { shop: PublicShop }) {
+	const c = useShopTheme();
+	const { t, i18n } = useTranslation();
+	const items = shopTrustStrip(shop);
+	if (items.length === 0) return null;
+	return (
+		<View
+			style={styles.trust}
+			accessible
+			accessibilityLabel={`${t("shop.trustLabel")} : ${items
+				.map((item) => trustItemText(item, t, i18n.language))
+				.join(", ")}`}
+		>
+			{items.map((item) => (
+				<View key={item.kind} style={styles.trustItem}>
+					<Ionicons
+						name={TRUST_ICONS[item.kind]}
+						size={13}
+						color={item.kind === "rating" ? "#f59e0b" : c.muted}
+					/>
+					<Text
+						style={[
+							item.kind === "rating" || item.kind === "newShop"
+								? styles.trustStrong
+								: styles.trustText,
+							{ color: item.kind === "rating" ? c.text : c.muted },
+						]}
+					>
+						{trustItemText(item, t, i18n.language)}
+					</Text>
+				</View>
+			))}
+		</View>
+	);
+}
