@@ -10,6 +10,7 @@ import {
 	type PaymentPill,
 	paymentPill,
 } from "../../../../../api/src/contracts/orderPayment";
+import { arrivalClock } from "../../../../../api/src/contracts/shipments";
 
 export const PURCHASE_TABS = ["open", "delivered", "cancelled"] as const;
 export type PurchaseTab = (typeof PURCHASE_TABS)[number];
@@ -294,12 +295,14 @@ export function purchaseCardActions(
 }
 
 export type PurchaseArrival =
+	| { kind: "live"; clock: string }
 	| { kind: "promised"; at: string }
 	| { kind: "eta"; text: string }
 	| { kind: "returnUntil"; at: string };
 
 /**
- * The card's time line: the promised arrival while the order travels (the
+ * The card's time line: the courier's live estimate while the parcel is out
+ * for delivery, else the promised arrival while the order travels (the
  * shop's own estimate when no date was promised), and the return deadline
  * once a return can still be asked for.
  */
@@ -308,6 +311,9 @@ export function purchaseArrival(
 	actions: readonly PurchaseCardAction[],
 ): PurchaseArrival | null {
 	if (TRACKABLE.has(entry.status) && entry.arrival) {
+		const clock =
+			entry.status === "shipped" ? arrivalClock(entry.arrival.liveEta) : null;
+		if (clock) return { kind: "live", clock };
 		if (entry.arrival.promisedBy)
 			return { kind: "promised", at: entry.arrival.promisedBy };
 		if (entry.arrival.etaText)

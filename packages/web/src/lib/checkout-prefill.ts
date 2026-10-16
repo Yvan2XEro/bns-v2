@@ -6,8 +6,8 @@ import {
 import type { AddressInput, OrderView } from "~/types/order";
 
 /**
- * The API stores no address book, so the checkout starts from the address of
- * the buyer's latest order. Only the buyer's own view is read here, and the
+ * Without a saved address, the checkout starts from the address of the
+ * buyer's latest order. Only the buyer's own view is read here, and the
  * buyer's phone is never masked to them; a masked one is dropped anyway.
  */
 export function addressValuesFromOrder(

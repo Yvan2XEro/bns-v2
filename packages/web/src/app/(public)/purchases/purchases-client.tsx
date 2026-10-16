@@ -44,16 +44,18 @@ function ArrivalLine({
 }) {
 	const t = useTranslations("Purchases");
 	const text =
-		arrival.kind === "eta"
-			? t("arrivalEta", { eta: arrival.text })
-			: arrival.kind === "promised"
-				? t("arrivalPromised", {
-						date: new Date(arrival.at).toLocaleString(locale, {
-							dateStyle: "medium",
-							timeStyle: "short",
-						}),
-					})
-				: t("returnUntil", { date: formatOrderDate(arrival.at, locale) });
+		arrival.kind === "live"
+			? t("arrivalLive", { time: arrival.clock })
+			: arrival.kind === "eta"
+				? t("arrivalEta", { eta: arrival.text })
+				: arrival.kind === "promised"
+					? t("arrivalPromised", {
+							date: new Date(arrival.at).toLocaleString(locale, {
+								dateStyle: "medium",
+								timeStyle: "short",
+							}),
+						})
+					: t("returnUntil", { date: formatOrderDate(arrival.at, locale) });
 	return (
 		<p className="flex items-center gap-1.5 text-[#334155] text-sm">
 			<Clock aria-hidden className="h-4 w-4 shrink-0 text-[#1E40AF]" />

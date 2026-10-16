@@ -24,6 +24,7 @@ import {
 } from "~/lib/server-api";
 import { getMarket, getMyShop, getShopsEnabled } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
+import { AddressesEntry } from "./addresses-entry";
 import { DisputesEntry } from "./disputes-entry";
 import { ProfileEditForm } from "./profile-edit-form";
 import { PurchasesEntry } from "./purchases-entry";
@@ -168,6 +169,7 @@ export default async function MyProfilePage() {
 
 							<PurchasesEntry />
 							<ReturnsEntry />
+							<AddressesEntry />
 							<DisputesEntry />
 
 							<MyShopEntry mine={mine} shopsEnabled={shopsEnabled} />

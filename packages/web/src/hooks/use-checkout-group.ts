@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { savedAddressesKey } from "~/hooks/use-addresses";
 import type { ApiError } from "~/lib/apiError";
 import { cartKey, checkoutGroupKey, purchasesRootKey } from "~/lib/query-keys";
 import { apiGet, apiPost } from "~/lib/shop-api";
@@ -27,6 +28,7 @@ export interface SplitPlaceInput extends SplitQuoteInput {
 	termsAccepted: boolean;
 	idempotencyKey: string;
 	groupKeys: string[];
+	saveAddress?: { label?: string };
 }
 
 export function useSplitQuote() {
@@ -48,9 +50,11 @@ export function useSplitPlace() {
 				source: "web",
 			}),
 		retry: false,
-		onSuccess: () => {
+		onSuccess: (_placed, input) => {
 			void queryClient.invalidateQueries({ queryKey: cartKey() });
 			void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
+			if (input.saveAddress)
+				void queryClient.invalidateQueries({ queryKey: savedAddressesKey() });
 		},
 	});
 }

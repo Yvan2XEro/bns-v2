@@ -24,7 +24,7 @@ import type {
 	SplitQuoteGroup,
 	SplitQuoteView,
 } from "~/types/order";
-import { AddressStep } from "./address-step";
+import { type AddressChoice, CheckoutAddressPanel } from "./address-panel";
 import { PaymentMethodPicker } from "./payment-method-picker";
 
 function GroupReview({
@@ -134,7 +134,7 @@ function GroupReview({
 export function GroupCheckout({
 	launchCities,
 }: {
-	launchCities: Parameters<typeof AddressStep>[0]["launchCities"];
+	launchCities: Parameters<typeof CheckoutAddressPanel>[0]["launchCities"];
 }) {
 	const tRoot = useTranslations();
 	const formatOrderMoney = useOrderMoney();
@@ -146,6 +146,10 @@ export function GroupCheckout({
 	const place = useSplitPlace();
 
 	const [address, setAddress] = useState<AddressInput | null>(null);
+	const [choice, setChoice] = useState<AddressChoice>({
+		savedId: null,
+		save: null,
+	});
 	const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
 	const [picks, setPicks] = useState<Record<string, string>>({});
 	const [quote, setQuote] = useState<SplitQuoteView | null>(null);
@@ -189,8 +193,9 @@ export function GroupCheckout({
 			},
 		);
 
-	const onAddress = (next: AddressInput) => {
+	const onAddress = (next: AddressInput, nextChoice: AddressChoice) => {
 		setAddress(next);
+		setChoice(nextChoice);
 		setAddressError(null);
 		setRejected(false);
 		requestQuote(next, paymentMethod, picks, false);
@@ -217,6 +222,9 @@ export function GroupCheckout({
 				termsAccepted: true,
 				idempotencyKey,
 				groupKeys: quote.groups.map((group) => group.groupKey),
+				...(choice.save
+					? { saveAddress: { label: choice.save.label.trim() } }
+					: {}),
 			},
 			{
 				onSuccess: (placed) =>
@@ -238,8 +246,9 @@ export function GroupCheckout({
 				<h1 className="font-bold text-2xl text-[#0F172A]">
 					{tRoot("Checkout.title")}
 				</h1>
-				<AddressStep
+				<CheckoutAddressPanel
 					initial={address}
+					selectedSavedId={choice.savedId}
 					launchCities={launchCities}
 					shopCity={null}
 					method="seller_delivery"

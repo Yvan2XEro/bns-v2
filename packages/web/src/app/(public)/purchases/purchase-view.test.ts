@@ -411,6 +411,25 @@ describe("purchaseArrival", () => {
 		).toEqual({ kind: "eta", text: "sous 24 h" });
 	});
 
+	it("puts the courier's live ETA first while the order is shipped", () => {
+		const arrival = {
+			method: "courier" as const,
+			etaText: "sous 24 h",
+			promisedBy: "2026-09-20T17:00:00.000Z",
+			liveEta: "2026-09-20T14:40:00.000Z",
+		};
+		expect(purchaseArrival({ ...base, arrival }, [])).toEqual({
+			kind: "live",
+			clock: "15:40",
+		});
+		expect(
+			purchaseArrival({ ...base, status: "accepted", arrival }, []),
+		).toEqual({ kind: "promised", at: "2026-09-20T17:00:00.000Z" });
+		expect(
+			purchaseArrival({ ...base, arrival: { ...arrival, liveEta: null } }, []),
+		).toEqual({ kind: "promised", at: "2026-09-20T17:00:00.000Z" });
+	});
+
 	it("shows the return deadline only alongside the return shortcut", () => {
 		const delivered = {
 			...base,

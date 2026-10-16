@@ -2163,6 +2163,10 @@
 			"locationLimitReached": "This shop has reached its pickup location limit.",
 			"noActiveOption": "No delivery or pickup option is currently available for this address."
 		},
+		"address": {
+			"notFound": "This address could not be found.",
+			"limitReached": "You have reached the saved address limit. Delete one before adding another."
+		},
 		"shipment": {
 			"notFound": "This shipment could not be found.",
 			"invalidTransition": "This shipment is not in a state that allows that action.",
@@ -2359,6 +2363,7 @@
 			"saving": "Saving…"
 		},
 		"documents": {
+			"pageOf": "{label} · page {page}/{total}",
 			"title": "Required documents",
 			"extrasTitle": "Additional document (optional)",
 			"delete": "Delete",
@@ -2718,6 +2723,42 @@
 		"estimateNote": "an estimate; method and exact fee at the next step",
 		"stockLeft": "{count, plural, =0 {Out of stock} one {# left} other {# left}}"
 	},
+	"Addresses": {
+		"title": "My addresses",
+		"subtitle": "Delivery addresses you can pick at checkout. The default one is preselected.",
+		"entrySubtitle": "Home, office… pick them at checkout",
+		"add": "Add an address",
+		"newTitle": "New address",
+		"editTitle": "Edit address",
+		"save": "Save",
+		"cancel": "Cancel",
+		"edit": "Edit",
+		"delete": "Delete",
+		"deleteConfirm": "Delete this address?",
+		"setDefault": "Make default",
+		"default": "Default",
+		"count": "{count} of {limit} addresses",
+		"limitReached": "You have reached the limit of saved addresses. Delete one to add another.",
+		"loadError": "We could not load your addresses.",
+		"emptyTitle": "No saved address yet",
+		"emptyBody": "Save your home or office to check out faster.",
+		"label": "Name of this address",
+		"labelHint": "Home, Office…",
+		"makeDefault": "Use as my default address",
+		"saveThisAddress": "Save this address",
+		"saveAndUse": "Save and use",
+		"savedAddresses": "Saved addresses",
+		"newAddress": "New address",
+		"useThisAddress": "Use this address",
+		"otherCity": "Outside this shop's delivery city",
+		"incomplete": "To complete before use",
+		"searchPlace": "Search your district",
+		"searchPlaceHint": "e.g. Bonapriso, Carrefour Ndokoti",
+		"searching": "Searching…",
+		"noPlace": "No place found. Choose from the lists below.",
+		"placeOutside": "This place is outside the cities you can be delivered to here.",
+		"mapPreview": "Map of the delivery position"
+	},
 	"Checkout": {
 		"shell": {
 			"backToCart": "Back to cart",
@@ -3021,6 +3062,7 @@
 		"cardPaymentFailed": "Payment failed",
 		"arrivalPromised": "Expected by {date}",
 		"arrivalEta": "Estimated delivery: {eta}",
+		"arrivalLive": "Arriving around {time}",
 		"returnUntil": "Returnable until {date}"
 	},
 	"SellerResale": {
@@ -4537,6 +4579,12 @@
 		},
 		"riderName": "Your rider: {name}",
 		"riderCall": "Call",
+		"riderCallCta": "Call the rider",
+		"riderKindCourier": "Partner courier",
+		"riderKindShop": "Shop's delivery person",
+		"eta": "Arriving around {time}",
+		"shopDelivers": "The shop delivers this order itself. Write to it from the order's conversation.",
+		"contactShop": "Contact the shop",
 		"attemptsTitle": "Delivery attempts",
 		"attemptRow": "Attempt {number}, {date}: {reason}",
 		"redeliveryScheduled": "New delivery planned on {date}, {window}.",

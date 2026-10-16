@@ -2,8 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { PlaceSuggestField } from "~/components/address/place-suggest-field";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { PhoneInput } from "~/components/ui/phone-input";
@@ -21,6 +22,11 @@ import {
 	otherDistrictOf,
 	toAddressInput,
 } from "~/lib/checkout-form";
+import {
+	addressPatchFromPlace,
+	SAVED_ADDRESS_LABEL_MAX,
+	suggestionCities,
+} from "~/lib/saved-addresses";
 import type {
 	AddressInput,
 	DeliveryMethod,
@@ -29,6 +35,19 @@ import type {
 import { Field, SELECT_CLASS } from "./form-field";
 import { LocationField } from "./location-field";
 
+export interface AddressMeta {
+	label: string;
+	/** Checkout's « Enregistrer cette adresse ». */
+	save: boolean;
+	isDefault: boolean;
+}
+
+/**
+ * The address form. `extra` adds the address-book fields: `"book"` a label
+ * and the default toggle (account page, editing a saved address), `"save"`
+ * the « Enregistrer cette adresse » toggle with its label (a new address at
+ * checkout).
+ */
 export function AddressStep({
 	initial,
 	launchCities,
@@ -37,6 +56,12 @@ export function AddressStep({
 	rejectedField,
 	rejection,
 	onSubmit,
+	extra,
+	initialLabel = "",
+	initialDefault = false,
+	submitLabel,
+	pending = false,
+	onCancel,
 }: {
 	initial: AddressInput | null;
 	launchCities: LaunchCityOption[];
@@ -44,9 +69,20 @@ export function AddressStep({
 	method: DeliveryMethod;
 	rejectedField: AddressField | null;
 	rejection: ApiError | null;
-	onSubmit: (address: AddressInput) => void;
+	onSubmit: (address: AddressInput, meta: AddressMeta) => void;
+	extra?: "book" | "save";
+	initialLabel?: string;
+	initialDefault?: boolean;
+	submitLabel?: string;
+	pending?: boolean;
+	onCancel?: () => void;
 }) {
 	const t = useTranslations("Checkout");
+	const tAddr = useTranslations("Addresses");
+	const [label, setLabel] = useState(initialLabel);
+	const [save, setSave] = useState(false);
+	const [isDefault, setIsDefault] = useState(initialDefault);
+	const [placeOutside, setPlaceOutside] = useState(false);
 	const tRoot = useTranslations();
 	const { user } = useAuth();
 	const verifiedPhone = user?.phoneVerifiedAt ? (user.phone ?? "") : "";
@@ -108,8 +144,21 @@ export function AddressStep({
 		<form
 			noValidate
 			className="space-y-4"
-			onSubmit={handleSubmit((values) => onSubmit(toAddressInput(values)))}
+			onSubmit={handleSubmit((values) =>
+				onSubmit(toAddressInput(values), { label, save, isDefault }),
+			)}
 		>
+			{extra === "book" ? (
+				<Field id="addressLabel" label={`${tAddr("label")} (${t("optional")})`}>
+					<Input
+						id="addressLabel"
+						maxLength={SAVED_ADDRESS_LABEL_MAX}
+						placeholder={tAddr("labelHint")}
+						value={label}
+						onChange={(event) => setLabel(event.target.value)}
+					/>
+				</Field>
+			) : null}
 			<Field
 				id="recipientName"
 				label={t("recipientName")}
@@ -137,6 +186,26 @@ export function AddressStep({
 					)}
 				/>
 			</Field>
+			<PlaceSuggestField
+				onPick={(place) => {
+					const patch = addressPatchFromPlace(
+						place,
+						suggestionCities(launchCities),
+					);
+					const outside =
+						!patch || (servedCity !== null && patch.city !== servedCity);
+					setPlaceOutside(outside);
+					if (!patch || outside) return;
+					const cityChanged = patch.city !== city;
+					setValue("city", patch.city);
+					if (!patch.district && !cityChanged) return;
+					setValue("district", patch.district);
+					setValue("districtOther", patch.districtOther);
+				}}
+			/>
+			{placeOutside ? (
+				<p className="text-[#B45309] text-sm">{tAddr("placeOutside")}</p>
+			) : null}
 			<Field
 				id="city"
 				label={t("city")}
@@ -207,17 +276,69 @@ export function AddressStep({
 			>
 				<Textarea id="instructions" rows={3} {...register("instructions")} />
 			</Field>
+			{extra === "book" ? (
+				<label className="flex min-h-11 items-center gap-2 text-[#334155] text-sm">
+					<input
+						type="checkbox"
+						className="h-4 w-4"
+						checked={isDefault}
+						disabled={initialDefault}
+						onChange={(event) => setIsDefault(event.target.checked)}
+					/>
+					{tAddr("makeDefault")}
+				</label>
+			) : null}
+			{extra === "save" ? (
+				<div className="space-y-2 rounded-xl border border-[#E2E8F0] p-3">
+					<label className="flex min-h-11 items-center gap-2 font-semibold text-[#0F172A] text-sm">
+						<input
+							type="checkbox"
+							className="h-4 w-4"
+							checked={save}
+							onChange={(event) => setSave(event.target.checked)}
+						/>
+						{tAddr("saveThisAddress")}
+					</label>
+					{save ? (
+						<Field
+							id="addressLabel"
+							label={`${tAddr("label")} (${t("optional")})`}
+						>
+							<Input
+								id="addressLabel"
+								maxLength={SAVED_ADDRESS_LABEL_MAX}
+								placeholder={tAddr("labelHint")}
+								value={label}
+								onChange={(event) => setLabel(event.target.value)}
+							/>
+						</Field>
+					) : null}
+				</div>
+			) : null}
 			{formState.errors.root?.message && (
 				<p role="alert" className="text-red-700 text-sm">
 					{formState.errors.root.message}
 				</p>
 			)}
-			<Button
-				type="submit"
-				className="min-h-11 w-full bg-[#1E40AF] hover:bg-[#1E3A8A]"
-			>
-				{t("continue")}
-			</Button>
+			<div className="flex gap-3">
+				{onCancel ? (
+					<Button
+						type="button"
+						variant="outline"
+						className="min-h-11 flex-1"
+						onClick={onCancel}
+					>
+						{tAddr("cancel")}
+					</Button>
+				) : null}
+				<Button
+					type="submit"
+					disabled={pending}
+					className="min-h-11 flex-1 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				>
+					{submitLabel ?? t("continue")}
+				</Button>
+			</div>
 		</form>
 	);
 }

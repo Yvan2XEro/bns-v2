@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useReducer, useRef, useState } from "react";
+import { AddressMapPreview } from "~/components/address/address-map-preview";
 import { Button } from "~/components/ui/button";
+import { useSavedAddresses } from "~/hooks/use-addresses";
 import { useAppConfig } from "~/hooks/use-app-config";
 import { useCart } from "~/hooks/use-cart";
 import { useCheckoutQuote, usePlaceOrder } from "~/hooks/use-checkout";
@@ -22,6 +24,12 @@ import {
 } from "~/lib/checkout-form";
 import { cartLinesOf, isSplitCart } from "~/lib/checkout-group-flow";
 import { reusableAddress } from "~/lib/checkout-prefill";
+import {
+	preselectedAddress,
+	type SavedAddress,
+	savedAddressToInput,
+	savedAddressUsable,
+} from "~/lib/saved-addresses";
 import type {
 	AddressInput,
 	DeliveryOption,
@@ -29,7 +37,7 @@ import type {
 	PaymentMethod,
 	QuoteResponse,
 } from "~/types/order";
-import { AddressStep } from "./address-step";
+import { type AddressChoice, CheckoutAddressPanel } from "./address-panel";
 import { CheckoutSection } from "./checkout-section";
 import { CheckoutSummary } from "./checkout-summary";
 import { DeliveryOptions } from "./delivery-step";
@@ -54,12 +62,15 @@ function AddressCard({
 	address,
 	launchCities,
 	fromLastOrder,
+	saved,
 }: {
 	address: AddressInput;
 	launchCities: LaunchCityOption[];
 	fromLastOrder: boolean;
+	saved: SavedAddress | null;
 }) {
 	const t = useTranslations("Checkout");
+	const tAddr = useTranslations("Addresses");
 	const city =
 		launchCities.find((c) => c.key === address.city)?.label ?? address.city;
 	const district =
@@ -68,23 +79,45 @@ function AddressCard({
 		address.district;
 
 	return (
-		<div className="flex items-start gap-3 rounded-xl border-2 border-[#1E40AF] bg-[#EFF6FF] p-4">
-			<MapPin aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[#1E40AF]" />
-			<div className="min-w-0 space-y-0.5">
-				<div className="flex flex-wrap items-center gap-2">
-					<p className="font-bold text-[#0F172A]">{address.recipientName}</p>
-					{fromLastOrder ? (
-						<span className="rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
-							{t("lastUsedAddress")}
-						</span>
-					) : null}
+		<div className="space-y-3 rounded-xl border-2 border-[#1E40AF] bg-[#EFF6FF] p-4">
+			<div className="flex items-start gap-3">
+				<MapPin
+					aria-hidden
+					className="mt-0.5 h-5 w-5 shrink-0 text-[#1E40AF]"
+				/>
+				<div className="min-w-0 space-y-0.5">
+					<div className="flex flex-wrap items-center gap-2">
+						<p className="font-bold text-[#0F172A]">
+							{saved?.label ?? address.recipientName}
+						</p>
+						{saved?.isDefault ? (
+							<span className="rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+								{tAddr("default")}
+							</span>
+						) : null}
+						{fromLastOrder ? (
+							<span className="rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+								{t("lastUsedAddress")}
+							</span>
+						) : null}
+					</div>
+					<p className="text-[#0F172A] text-sm">
+						{district}, {city}
+						{address.landmark ? ` — ${address.landmark}` : ""}
+					</p>
+					<p className="text-[#64748B] text-sm">
+						{saved?.label ? `${address.recipientName} · ` : ""}
+						{address.phone}
+					</p>
 				</div>
-				<p className="text-[#0F172A] text-sm">
-					{district}, {city}
-					{address.landmark ? ` — ${address.landmark}` : ""}
-				</p>
-				<p className="text-[#64748B] text-sm">{address.phone}</p>
 			</div>
+			{address.gps ? (
+				<AddressMapPreview
+					lat={address.gps.lat}
+					lng={address.gps.lng}
+					accuracyMeters={address.gps.accuracyMeters}
+				/>
+			) : null}
 		</div>
 	);
 }
@@ -125,10 +158,15 @@ export function CheckoutClient() {
 	const place = usePlaceOrder();
 	const phoneRule = useMarketPhone();
 	const lastAddress = useLastAddress();
+	const savedAddresses = useSavedAddresses();
 	const [state, dispatch] = useReducer(checkoutReducer, null, () =>
 		initialCheckoutState(crypto.randomUUID()),
 	);
 	const [fromLastOrder, setFromLastOrder] = useState(false);
+	const [choice, setChoice] = useState<AddressChoice>({
+		savedId: null,
+		save: null,
+	});
 	// Only the latest quote request may land: a slower answer for an option
 	// the buyer has already moved away from must not replace the newer one.
 	const quoteSeq = useRef(0);
@@ -141,15 +179,37 @@ export function CheckoutClient() {
 	})();
 
 	const prefillApplied = useRef(false);
+	const savedSettled = !savedAddresses.isPending;
 	useEffect(() => {
-		if (prefillApplied.current || !lastAddress.settled || !singleCart) return;
+		if (
+			prefillApplied.current ||
+			!lastAddress.settled ||
+			!savedSettled ||
+			!singleCart
+		)
+			return;
 		prefillApplied.current = true;
-		if (!lastAddress.values || state.address) return;
-		const ready = reusableAddress(lastAddress.values, {
+		if (state.address) return;
+		const rules = {
 			cityKeys: launchCities.map((c) => c.key),
 			servedCity,
 			phonePattern: phoneRule.pattern,
-		});
+		};
+		// The default saved address first; the last order's only without a book.
+		const book = savedAddresses.data?.addresses ?? [];
+		const preferred = preselectedAddress(
+			book.filter((address) => savedAddressUsable(address, rules)),
+		);
+		if (preferred) {
+			dispatch({
+				type: "addressSubmitted",
+				address: savedAddressToInput(preferred),
+			});
+			setChoice({ savedId: preferred.id, save: null });
+			return;
+		}
+		if (book.length > 0 || !lastAddress.values) return;
+		const ready = reusableAddress(lastAddress.values, rules);
 		if (ready) {
 			dispatch({ type: "addressSubmitted", address: ready });
 			setFromLastOrder(true);
@@ -157,6 +217,8 @@ export function CheckoutClient() {
 	}, [
 		lastAddress.settled,
 		lastAddress.values,
+		savedSettled,
+		savedAddresses.data,
 		singleCart,
 		state.address,
 		launchCities,
@@ -232,7 +294,11 @@ export function CheckoutClient() {
 		);
 	};
 
-	const submitAddress = (address: AddressInput) => {
+	const submitAddress = (
+		address: AddressInput,
+		nextChoice: AddressChoice = { savedId: null, save: null },
+	) => {
+		setChoice(nextChoice);
 		// Same rule as the reducer: an option survives only within the same city.
 		const kept =
 			state.option && state.address?.city === address.city
@@ -262,8 +328,11 @@ export function CheckoutClient() {
 	// `checkout.quoteChanged` is answered with a new quote, never a retry: the
 	// buyer must see, and tick for, the summary that will actually be placed.
 	const placeOrder = () => {
-		const body = placeOrderBody(state, locale);
-		if (!body) return;
+		const placement = placeOrderBody(state, locale);
+		if (!placement) return;
+		const body = choice.save
+			? { ...placement, saveAddress: { label: choice.save.label.trim() } }
+			: placement;
 		place.mutate(body, {
 			onSuccess: (placed) =>
 				router.push(
@@ -323,9 +392,15 @@ export function CheckoutClient() {
 								address={state.address}
 								launchCities={launchCities}
 								fromLastOrder={fromLastOrder}
+								saved={
+									savedAddresses.data?.addresses.find(
+										(a) => a.id === choice.savedId,
+									) ?? null
+								}
 							/>
 						) : lastAddress.settled ? (
-							<AddressStep
+							<CheckoutAddressPanel
+								selectedSavedId={choice.savedId}
 								initial={state.address ?? lastAddress.values}
 								launchCities={launchCities}
 								shopCity={cartView.shop?.city ?? null}

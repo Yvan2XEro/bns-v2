@@ -17,7 +17,6 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
-| M2 | Mode vendeur | Barre d'onglets dédiée au vendeur | Hub vendeur dans le compte, pas de mode séparé | Fonction |
 
 ### Accueil et recherche
 
@@ -33,14 +32,13 @@ Légende : **Fonction** = code à écrire · **Décision** = arbitrage produit/s
 
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
-| M9 | Tunnel, étape adresse | Adresses enregistrées + carte | Grille de puces de quartiers | Fonction |
-| M15 | Suivi de livraison | Carte en direct, position du livreur, fiche coursier, « Appeler le livreur » | Bloc de suivi de l'envoi sans carte | Fonction |
+| M9 | Tunnel, étape adresse | Carte avec la position de l'adresse | Adresses enregistrées livrées ; la carte attend le prochain build natif (module de carte), les coordonnées s'affichent en attendant | Fonction |
+| M15 | Suivi de livraison | Carte en direct et position du livreur, plaque, note du coursier | Fiche coursier, « Appeler le livreur » protégé, heure d'arrivée et lien de suivi prêts ; l'adaptateur Yango est une ébauche et aucun fournisseur n'envoie de position ni d'heure d'arrivée | Données |
 
 ### Vendeur
 
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
-| M22 | Vérification entreprise | Prise de vue du document dans l'app (cadre, détection des bords, plusieurs pages) | Choix d'une photo dans la galerie | Fonction |
 
 ## Web
 
@@ -62,8 +60,7 @@ les restes précis.
 
 | # | Écran | Maquette | App aujourd'hui | Type |
 |---|-------|----------|-----------------|------|
-| W1 | Commande | Une seule page : adresse, livraison et paiement en sections, adresses enregistrées, carte | Page unique en sections avec récapitulatif ; l'API ne garde pas d'adresses : la dernière adresse de commande est reprise ; position GPS sans aperçu de carte ; la carte « paiement protégé — bientôt disponible » n'apparaît pas tant que le serveur ne l'active pas | Données |
-| W20 | Mes achats | Heure d'arrivée du livreur en direct (« Arrivée vers 15:40 ») | Logo, badge et mode de paiement affichés ; pas d'heure d'arrivée en direct (lot suivi de livraison) | Fonction |
+| W20 | Mes achats | « Arrivée vers 15:40 » sur la carte | Affiché dès qu'un transporteur envoie une heure d'arrivée ; l'intégration Yango réelle ne l'envoie pas encore | Données |
 
 ### Vendeur
 
@@ -103,6 +100,16 @@ L'app garde son comportement sur ces points ; ne pas les rouvrir sans
 - Web : écrans réservés à l'équipe BuyNSellem.
 
 ## Points ouverts relevés en route
+
+- Mode vendeur mobile : un lien profond ouvert app fermée revient aux onglets
+  acheteur au retour arrière, même en mode vendeur (la pile de navigation se
+  construit avant la lecture du mode mémorisé).
+- Carte des adresses sur le web : tuiles du serveur public OpenStreetMap,
+  acceptables pour un aperçu léger ; passer à un fournisseur de tuiles avant
+  un trafic important (`address-map-preview.tsx`).
+- Prochain build natif (EAS) requis : `@react-native-community/netinfo`
+  (bandeau hors ligne) et `react-native-document-scanner-plugin` (prise de vue
+  des documents). Ne pas publier de `eas update` vers une app sans ces modules.
 
 - Avis avec photos : les fichiers envoyés ne gardent pas leur auteur, donc
   l'API vérifie qu'une photo jointe existe et est une image, mais pas qu'elle

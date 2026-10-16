@@ -25,6 +25,7 @@ const view = (over: Partial<BuyerShipmentView> = {}): BuyerShipmentView => ({
 		terminalAt: null,
 	},
 	rider: null,
+	eta: null,
 	attempts: [],
 	redelivery: null,
 	pickup: null,
@@ -207,7 +208,12 @@ describe("headline", () => {
 });
 
 describe("riderCardVisible", () => {
-	const rider = { firstName: "Paul", phone: "+237670000000" };
+	const rider = {
+		firstName: "Paul",
+		vehicle: null,
+		kind: "courier" as const,
+		canCall: true,
+	};
 
 	test("shows while the rider carries or retries the parcel", () => {
 		for (const status of ["picked_up", "in_transit", "failed"] as const) {

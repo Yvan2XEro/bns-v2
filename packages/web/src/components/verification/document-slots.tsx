@@ -29,24 +29,51 @@ export function DocumentSlots({
 	onDelete,
 }: DocumentSlotsProps) {
 	const t = useTranslations("Verification");
-	const documentFor = (kind: DocumentKind) =>
-		documents.find((document) => document.kind === kind) ?? null;
+	// The mobile scanner sends one document per page, so a kind can hold
+	// several; each is listed with its own delete, the upload slot stays for
+	// a kind that has none yet.
+	const documentsOf = (kind: DocumentKind) =>
+		documents.filter((document) => document.kind === kind);
 
 	const renderSlot = (kind: DocumentKind, required: boolean) => {
-		const document = documentFor(kind);
-		return (
+		const pages = documentsOf(kind);
+		const label = t(`documentKind.${kind}`);
+		if (pages.length === 0) {
+			return (
+				<DocumentSlot
+					key={kind}
+					label={label}
+					required={required}
+					document={null}
+					uploading={uploadingKind === kind}
+					deleting={false}
+					error={uploadError?.kind === kind ? uploadError.message : null}
+					onUpload={(file) => onUpload(kind, file)}
+					onDelete={() => undefined}
+				/>
+			);
+		}
+		return pages.map((document, index) => (
 			<DocumentSlot
-				key={kind}
-				label={t(`documentKind.${kind}`)}
+				key={document.id}
+				label={
+					pages.length > 1
+						? t("documents.pageOf", {
+								label,
+								page: index + 1,
+								total: pages.length,
+							})
+						: label
+				}
 				required={required}
 				document={document}
 				uploading={uploadingKind === kind}
-				deleting={Boolean(document && deletingId === document.id)}
+				deleting={deletingId === document.id}
 				error={uploadError?.kind === kind ? uploadError.message : null}
 				onUpload={(file) => onUpload(kind, file)}
-				onDelete={() => document && onDelete(kind, document.id)}
+				onDelete={() => onDelete(kind, document.id)}
 			/>
-		);
+		));
 	};
 
 	return (

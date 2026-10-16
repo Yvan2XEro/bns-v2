@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
+import { savedAddressesKey } from "~/hooks/use-addresses";
 import type { ApiError } from "~/lib/apiError";
 import { isTerminalStatus, pollIntervalMs } from "~/lib/payment-flow";
 import { cartKey, paymentStatusKey, purchasesRootKey } from "~/lib/query-keys";
@@ -40,6 +41,8 @@ export interface CheckoutPlaceInput extends CheckoutQuoteInput {
 	 * route landed — so every placement would have been refused.
 	 */
 	idempotencyKey: string;
+	/** « Enregistrer cette adresse »: the API saves it after placement, best effort. */
+	saveAddress?: { label?: string };
 }
 
 export const checkoutQuoteKey = ["checkout", "quote"] as const;
@@ -105,9 +108,11 @@ export function usePlaceOrder() {
 				source: "web",
 			}),
 		retry: false,
-		onSuccess: () => {
+		onSuccess: (_placed, input) => {
 			void queryClient.invalidateQueries({ queryKey: cartKey() });
 			void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
+			if (input.saveAddress)
+				void queryClient.invalidateQueries({ queryKey: savedAddressesKey() });
 		},
 	});
 }

@@ -2163,6 +2163,10 @@
 			"locationLimitReached": "Cette boutique a atteint sa limite de lieux de retrait.",
 			"noActiveOption": "Aucune option de livraison ou de retrait n'est disponible pour cette adresse."
 		},
+		"address": {
+			"notFound": "Cette adresse est introuvable.",
+			"limitReached": "Vous avez atteint le nombre maximal d'adresses enregistrées. Supprimez-en une avant d'en ajouter une autre."
+		},
 		"shipment": {
 			"notFound": "Cette expédition est introuvable.",
 			"invalidTransition": "L'état de cette expédition ne permet pas cette action.",
@@ -2359,6 +2363,7 @@
 			"saving": "Enregistrement…"
 		},
 		"documents": {
+			"pageOf": "{label} · page {page}/{total}",
 			"title": "Documents requis",
 			"extrasTitle": "Document supplémentaire (optionnel)",
 			"delete": "Supprimer",
@@ -2718,6 +2723,42 @@
 		"estimateNote": "estimation, choix et frais exacts à l'étape suivante",
 		"stockLeft": "{count, plural, =0 {Plus en stock} one {# disponible} other {# disponibles}}"
 	},
+	"Addresses": {
+		"title": "Mes adresses",
+		"subtitle": "Les adresses de livraison à choisir au moment de commander. L'adresse par défaut est présélectionnée.",
+		"entrySubtitle": "Maison, bureau… à choisir à la commande",
+		"add": "Ajouter une adresse",
+		"newTitle": "Nouvelle adresse",
+		"editTitle": "Modifier l'adresse",
+		"save": "Enregistrer",
+		"cancel": "Annuler",
+		"edit": "Modifier",
+		"delete": "Supprimer",
+		"deleteConfirm": "Supprimer cette adresse ?",
+		"setDefault": "Définir par défaut",
+		"default": "Par défaut",
+		"count": "{count} adresse(s) sur {limit}",
+		"limitReached": "Vous avez atteint le nombre maximal d'adresses. Supprimez-en une pour en ajouter une autre.",
+		"loadError": "Impossible de charger vos adresses.",
+		"emptyTitle": "Aucune adresse enregistrée",
+		"emptyBody": "Enregistrez votre domicile ou votre bureau pour commander plus vite.",
+		"label": "Nom de l'adresse",
+		"labelHint": "Maison, Bureau…",
+		"makeDefault": "Utiliser comme adresse par défaut",
+		"saveThisAddress": "Enregistrer cette adresse",
+		"saveAndUse": "Enregistrer et utiliser",
+		"savedAddresses": "Adresses enregistrées",
+		"newAddress": "Nouvelle adresse",
+		"useThisAddress": "Utiliser cette adresse",
+		"otherCity": "Hors de la ville de livraison de cette boutique",
+		"incomplete": "À compléter avant utilisation",
+		"searchPlace": "Rechercher votre quartier",
+		"searchPlaceHint": "ex. Bonapriso, Carrefour Ndokoti",
+		"searching": "Recherche…",
+		"noPlace": "Aucun lieu trouvé. Choisissez dans les listes ci-dessous.",
+		"placeOutside": "Ce lieu est hors des villes où vous pouvez être livré ici.",
+		"mapPreview": "Carte de la position de livraison"
+	},
 	"Checkout": {
 		"shell": {
 			"backToCart": "Retour au panier",
@@ -3021,6 +3062,7 @@
 		"cardPaymentFailed": "Paiement échoué",
 		"arrivalPromised": "Livraison prévue au plus tard le {date}",
 		"arrivalEta": "Livraison estimée : {eta}",
+		"arrivalLive": "Arrivée vers {time}",
 		"returnUntil": "Retour possible jusqu'au {date}"
 	},
 	"SellerResale": {
@@ -4537,6 +4579,12 @@
 		},
 		"riderName": "Votre livreur : {name}",
 		"riderCall": "Appeler",
+		"riderCallCta": "Appeler le livreur",
+		"riderKindCourier": "Coursier partenaire",
+		"riderKindShop": "Livreur de la boutique",
+		"eta": "Arrivée vers {time}",
+		"shopDelivers": "La boutique livre elle-même cette commande. Écrivez-lui depuis la conversation de la commande.",
+		"contactShop": "Contacter la boutique",
 		"attemptsTitle": "Tentatives de livraison",
 		"attemptRow": "Tentative {number}, {date} : {reason}",
 		"redeliveryScheduled": "Nouvelle livraison prévue le {date}, {window}.",

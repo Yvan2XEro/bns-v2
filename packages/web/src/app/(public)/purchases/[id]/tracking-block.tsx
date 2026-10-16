@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, MessageCircle } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -16,7 +17,11 @@ import {
 	trackingSteps,
 } from "~/lib/shipment-tracking";
 import type { OrderView } from "~/types/order";
-import type { BuyerShipmentView } from "../../../../../../api/src/contracts/shipments";
+import {
+	arrivalClock,
+	type BuyerShipmentView,
+	isOutForDelivery,
+} from "../../../../../../api/src/contracts/shipments";
 import { RescheduleDialog } from "./reschedule-dialog";
 import {
 	AttemptList,
@@ -30,12 +35,14 @@ const ENDED = new Set(["delivered", "returned", "cancelled"]);
 
 function ShipmentCard({
 	orderId,
+	conversationId,
 	shipment,
 	actions,
 	now,
 	onContest,
 }: {
 	orderId: string;
+	conversationId: string | null;
 	shipment: BuyerShipmentView;
 	actions: readonly OrderAction[];
 	now: Date;
@@ -46,6 +53,7 @@ function ShipmentCard({
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const [rescheduling, setRescheduling] = useState(false);
 	const proof = proofCard(shipment, actions.includes("contest_delivery"));
+	const etaClock = arrivalClock(shipment.eta);
 	const redelivery = shipment.redelivery;
 
 	return (
@@ -66,9 +74,34 @@ function ShipmentCard({
 				)}
 			</header>
 			<TrackingStepper steps={trackingSteps(shipment)} />
-			{riderCardVisible(shipment) && shipment.rider && (
-				<RiderCard rider={shipment.rider} />
+			{riderCardVisible(shipment) && shipment.rider ? (
+				<RiderCard
+					shipmentId={shipment.id}
+					rider={shipment.rider}
+					eta={shipment.eta}
+				/>
+			) : (
+				etaClock && (
+					<p className="font-semibold text-[#1E40AF] text-sm">
+						{t("eta", { time: etaClock })}
+					</p>
+				)
 			)}
+			{shipment.method === "seller_delivery" &&
+				!shipment.rider &&
+				isOutForDelivery(shipment.status) &&
+				conversationId && (
+					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F8FAFC] p-3">
+						<p className="text-[#334155] text-sm">{t("shopDelivers")}</p>
+						<Link
+							href={`/messages?conversation=${encodeURIComponent(conversationId)}`}
+							className="inline-flex min-h-11 items-center gap-2 font-medium text-[#1E40AF] text-sm"
+						>
+							<MessageCircle aria-hidden className="h-4 w-4" />
+							{t("contactShop")}
+						</Link>
+					</div>
+				)}
 			{redelivery && (
 				<p className="rounded-xl bg-[#EFF6FF] p-3 text-[#1E40AF] text-sm">
 					{t("redeliveryScheduled", {
@@ -142,6 +175,7 @@ export function TrackingBlock({
 				<ShipmentCard
 					key={shipment.id}
 					orderId={order.id}
+					conversationId={order.conversationId ?? null}
 					shipment={shipment}
 					actions={actions}
 					now={now}

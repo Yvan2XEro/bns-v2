@@ -3,6 +3,7 @@
 import { LocateFixed } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { AddressMapPreview } from "~/components/address/address-map-preview";
 import { Button } from "~/components/ui/button";
 import { googleMapsUrl } from "~/lib/checkout-form";
 
@@ -63,6 +64,11 @@ export function LocationField({
 			</Button>
 			{value && (
 				<div className="space-y-1 text-sm">
+					<AddressMapPreview
+						lat={value.lat}
+						lng={value.lng}
+						accuracyMeters={value.accuracyMeters}
+					/>
 					<p className="text-[#166534]">{t("locationCaptured")}</p>
 					{value.accuracyMeters !== undefined && (
 						<p className="text-[#64748B]">

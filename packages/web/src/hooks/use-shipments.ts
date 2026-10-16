@@ -7,7 +7,10 @@ import { purchaseKey, purchaseShipmentsKey } from "~/lib/query-keys";
 import type { RescheduleInput } from "~/lib/reschedule-form";
 import { shipmentsExist } from "~/lib/shipment-tracking";
 import { apiGet, apiPost } from "~/lib/shop-api";
-import type { BuyerShipmentView } from "../../../api/src/contracts/shipments";
+import {
+	type BuyerShipmentView,
+	isOutForDelivery,
+} from "../../../api/src/contracts/shipments";
 
 /**
  * The buyer's shipments of one purchase, nested under `purchaseKey` so every
@@ -22,6 +25,11 @@ export function usePurchaseShipments(orderId: string, status: OrderStatusName) {
 			),
 		enabled: shipmentsExist(status),
 		retry: false,
+		// Keeps the rider card and the courier's ETA current while a parcel is on the road.
+		refetchInterval: (query) =>
+			query.state.data?.some((shipment) => isOutForDelivery(shipment.status))
+				? 60_000
+				: false,
 	});
 }
 

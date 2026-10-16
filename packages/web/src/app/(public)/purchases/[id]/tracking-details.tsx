@@ -1,32 +1,89 @@
 "use client";
 
-import { ExternalLink, Phone } from "lucide-react";
+import { ExternalLink, Loader2, Phone } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useRevealRiderPhone } from "~/hooks/use-rider-phone";
+import { resolveErrorMessage } from "~/lib/apiError";
 import {
 	type AttemptRow,
 	countdownParts,
 	formatDeliveryDate,
 	type ProofCard,
 } from "~/lib/shipment-tracking";
-import type { BuyerShipmentView } from "../../../../../../api/src/contracts/shipments";
+import {
+	arrivalClock,
+	type BuyerShipmentView,
+} from "../../../../../../api/src/contracts/shipments";
 
+/**
+ * Who carries the parcel, the provider's ETA and « Appeler le livreur ». The
+ * number is never in the view: the call goes through the logged, rate-limited
+ * reveal, and a second tap dials the number already in hand.
+ */
 export function RiderCard({
+	shipmentId,
 	rider,
+	eta,
 }: {
+	shipmentId: string;
 	rider: NonNullable<BuyerShipmentView["rider"]>;
+	eta: string | null;
 }) {
 	const t = useTranslations("Tracking");
+	const tRoot = useTranslations();
+	const reveal = useRevealRiderPhone(shipmentId);
+	const clock = arrivalClock(eta);
+	const dial = (phone: string) => {
+		window.location.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
+	};
+	const onCall = () => {
+		if (reveal.data?.phone) return dial(reveal.data.phone);
+		reveal.mutate(undefined, { onSuccess: ({ phone }) => dial(phone) });
+	};
 	return (
-		<div className="flex items-center justify-between gap-3 rounded-xl bg-[#EFF6FF] p-3">
-			<p className="font-medium text-[#0F172A] text-sm">
-				{t("riderName", { name: rider.firstName })}
-			</p>
-			<a
-				href={`tel:${rider.phone}`}
-				className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white"
-			>
-				<Phone aria-hidden className="h-4 w-4" /> {t("riderCall")}
-			</a>
+		<div className="space-y-2 rounded-xl bg-[#EFF6FF] p-3">
+			<div className="flex flex-wrap items-center justify-between gap-3">
+				<div className="min-w-0">
+					<p className="font-medium text-[#0F172A] text-sm">
+						{t("riderName", { name: rider.firstName })}
+					</p>
+					<p className="text-[#64748B] text-xs">
+						{[
+							rider.vehicle,
+							t(
+								rider.kind === "courier" ? "riderKindCourier" : "riderKindShop",
+							),
+						]
+							.filter(Boolean)
+							.join(" · ")}
+					</p>
+				</div>
+				{rider.canCall && (
+					<button
+						type="button"
+						onClick={onCall}
+						disabled={reveal.isPending}
+						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white disabled:opacity-70"
+					>
+						{reveal.isPending ? (
+							<Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+						) : (
+							<Phone aria-hidden className="h-4 w-4" />
+						)}
+						{t("riderCallCta")}
+					</button>
+				)}
+			</div>
+			{clock && (
+				<p className="font-semibold text-[#1E40AF] text-sm">
+					{t("eta", { time: clock })}
+				</p>
+			)}
+			{reveal.error && (
+				<p role="alert" className="text-red-700 text-xs">
+					{resolveErrorMessage(reveal.error, tRoot)}
+				</p>
+			)}
 		</div>
 	);
 }

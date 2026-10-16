@@ -5,8 +5,8 @@ import type { CheckoutAddressValues } from "~/lib/checkout-form";
 import { addressValuesFromOrder } from "~/lib/checkout-prefill";
 
 /**
- * The address of the buyer's latest order, the closest thing to a saved
- * address the API keeps. `settled` once there is an answer either way, so the
+ * The address of the buyer's latest order: the prefill when the buyer has
+ * no saved address. `settled` once there is an answer either way, so the
  * address form mounts once, with its final defaults.
  */
 export function useLastAddress(): {

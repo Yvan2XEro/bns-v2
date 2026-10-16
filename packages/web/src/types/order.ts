@@ -392,6 +392,7 @@ export interface OrderListEntry {
 		method: DeliveryMethod;
 		etaText: string;
 		promisedBy: string | null;
+		liveEta?: string | null;
 	};
 	/** Shop role. */
 	recipientName?: string;
