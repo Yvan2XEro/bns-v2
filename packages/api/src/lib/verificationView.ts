@@ -6,6 +6,10 @@ import {
 	type VerificationStatus,
 } from "../collections/VerificationRequests";
 import {
+	type VerificationRequirement,
+	verificationRequirements,
+} from "../contracts/verificationRequirements";
+import {
 	assertNotSuspended,
 	type SuspensionCheckable,
 } from "../hooks/suspensionGuard";
@@ -105,6 +109,8 @@ export interface ShopVerificationResponse {
 		level: 2 | 3;
 		unlocks: Array<keyof ShopCapabilities>;
 		eligible: boolean;
+		/** What this level asks for, each with how far the request on file has got. */
+		requirements: VerificationRequirement[];
 	} | null;
 	cooldownUntil: string | null;
 }
@@ -325,7 +331,10 @@ async function approvedActiveRequest(
 
 function nextLevelFor(
 	capabilities: ShopCapabilities,
-): ShopVerificationResponse["nextLevel"] {
+): Omit<
+	NonNullable<ShopVerificationResponse["nextLevel"]>,
+	"requirements"
+> | null {
 	if (capabilities.effectiveLevel >= 3) return null;
 	const level: 2 | 3 = capabilities.effectiveLevel >= 2 ? 3 : 2;
 	const eligible =
@@ -377,7 +386,22 @@ export async function getShopVerificationView(
 			: null,
 	};
 
-	const nextLevel = nextLevelFor(capabilities);
+	const nextLevelBase = nextLevelFor(capabilities);
+	const ownerLevel2 = level2Request
+		? toOwnerRequest(level2Request, level2Documents)
+		: null;
+	const ownerLevel3 = level3Request
+		? toOwnerRequest(level3Request, level3Documents)
+		: null;
+	const nextLevel = nextLevelBase
+		? {
+				...nextLevelBase,
+				requirements: verificationRequirements(
+					nextLevelBase.level,
+					nextLevelBase.level === 2 ? ownerLevel2 : ownerLevel3,
+				),
+			}
+		: null;
 	const nextLevelCurrent = nextLevel
 		? nextLevel.level === 2
 			? level2Request
@@ -397,14 +421,7 @@ export async function getShopVerificationView(
 		capabilities,
 		levelExpiresAt: shop.levelExpiresAt ?? null,
 		consentVersion: settings.consentVersion,
-		requests: {
-			level2: level2Request
-				? toOwnerRequest(level2Request, level2Documents)
-				: null,
-			level3: level3Request
-				? toOwnerRequest(level3Request, level3Documents)
-				: null,
-		},
+		requests: { level2: ownerLevel2, level3: ownerLevel3 },
 		renewableFrom,
 		nextLevel,
 		cooldownUntil:

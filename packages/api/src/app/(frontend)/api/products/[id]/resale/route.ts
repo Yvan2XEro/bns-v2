@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+	isMinResellerLevel,
+	type ResaleMinResellerLevel,
+} from "@/contracts/resale";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
 import {
@@ -12,6 +16,9 @@ const bodySchema = z.object({
 	handlingHours: z.number().int().min(4).max(120),
 	codAccepted: z.boolean(),
 	resellerNotes: z.string().max(1000),
+	minResellerLevel: z
+		.custom<ResaleMinResellerLevel | null>(isMinResellerLevel)
+		.optional(),
 	variants: z
 		.array(
 			z.object({

@@ -64,6 +64,48 @@ export const DISPUTE_EVIDENCE_REQUIREMENTS = {
 	cod_refused_abuse: 1,
 } as const satisfies Record<(typeof DISPUTE_REASONS)[number], number>;
 
+/** `POST /api/orders/{id}/disputes` trims the description and checks these. */
+export const DISPUTE_DESCRIPTION_MIN = 20;
+export const DISPUTE_DESCRIPTION_MAX = 2000;
+
+export const DISPUTE_EVIDENCE_MIME_TYPES = [
+	"image/jpeg",
+	"image/png",
+	"image/webp",
+	"image/heic",
+	"video/mp4",
+	"video/quicktime",
+	"application/pdf",
+] as const;
+
+export const DISPUTE_EVIDENCE_MAX_BYTES = {
+	image: 10 * 1024 * 1024,
+	video: 50 * 1024 * 1024,
+	document: 10 * 1024 * 1024,
+} as const;
+
+export type DisputeEvidenceFileIssue = "type" | "size";
+
+/**
+ * The evidence upload's own refusal, before any byte leaves the phone:
+ * `uploadInvalidType` → "type", `uploadTooLarge` → "size". A size the picker
+ * could not read is left to the server.
+ */
+export function disputeEvidenceFileIssue(
+	mimeType: string,
+	size: number | null | undefined,
+): DisputeEvidenceFileIssue | null {
+	if (!(DISPUTE_EVIDENCE_MIME_TYPES as readonly string[]).includes(mimeType)) {
+		return "type";
+	}
+	const max = mimeType.startsWith("image/")
+		? DISPUTE_EVIDENCE_MAX_BYTES.image
+		: mimeType.startsWith("video/")
+			? DISPUTE_EVIDENCE_MAX_BYTES.video
+			: DISPUTE_EVIDENCE_MAX_BYTES.document;
+	return typeof size === "number" && size > max ? "size" : null;
+}
+
 export interface OpenDisputeInput {
 	reason: (typeof DISPUTE_REASONS)[number];
 	subject?: "goods" | "refund";

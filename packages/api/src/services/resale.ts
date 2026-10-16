@@ -1,4 +1,5 @@
 import type { Payload, PayloadRequest, Where } from "payload";
+import { meetsMinResellerLevel } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
 import { ServiceError } from "../lib/serviceError";
@@ -131,6 +132,79 @@ export async function syncSupplierProductAvailability(
 		undefined,
 		productId,
 	);
+}
+
+/**
+ * Puts on hold, or releases, every reseller listing of a supplier product
+ * against the product's minimum reseller level. Listings are never deleted:
+ * a reseller who reaches the level, or a supplier who lowers it, gets them back.
+ */
+export async function syncResellerLevelHolds(
+	req: PayloadRequest,
+	product: { id: string | number; shop?: unknown; resale?: unknown },
+	now = new Date(),
+): Promise<number> {
+	const productId = String(product.id);
+	const supplierShopId = relationId(product.shop);
+	if (!supplierShopId) return 0;
+	const minimum =
+		typeof product.resale === "object" && product.resale !== null
+			? (product.resale as { minResellerLevel?: unknown }).minResellerLevel
+			: undefined;
+	const listings = await req.payload.find({
+		collection: "listings",
+		where: {
+			and: [
+				{ product: { equals: productId } },
+				{ "resale.supplierShop": { equals: supplierShopId } },
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	let changed = 0;
+	const resellerIds = new Set(
+		listings.docs
+			.map((listing) => relationId(listing.shop))
+			.filter((id): id is string => id !== null),
+	);
+	for (const resellerShopId of resellerIds) {
+		const reseller = await req.payload
+			.findByID({
+				collection: "shops",
+				id: resellerShopId,
+				depth: 0,
+				overrideAccess: true,
+				req,
+			})
+			.catch(() => null);
+		const allowed =
+			reseller !== null &&
+			meetsMinResellerLevel(
+				shopCapabilities(reseller, now).effectiveLevel,
+				minimum,
+			);
+		const held = listings.docs.some(
+			(listing) =>
+				relationId(listing.shop) === resellerShopId &&
+				(listing.resale?.holds ?? []).includes("reseller_level_too_low"),
+		);
+		if (allowed !== held) continue;
+		await updateResaleListingHold(
+			req,
+			resellerShopId,
+			"reseller",
+			"reseller_level_too_low",
+			allowed ? "remove" : "add",
+			supplierShopId,
+			productId,
+		);
+		changed += 1;
+	}
+	return changed;
 }
 
 async function clearTermsHold(

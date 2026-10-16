@@ -1,15 +1,17 @@
 import type { Payload } from "payload";
-import type {
-	ResoldListing,
-	ResoldListingPage,
-	ResoldListingStatus,
-	UpdateResaleListingPricesInput,
+import {
+	meetsMinResellerLevel,
+	type ResoldListing,
+	type ResoldListingPage,
+	type ResoldListingStatus,
+	type UpdateResaleListingPricesInput,
 } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { getOrderSettings } from "../lib/orderSettings";
 import { relationId } from "../lib/relationId";
 import { getResaleSettings } from "../lib/resaleSettings";
 import { ServiceError } from "../lib/serviceError";
+import { shopCapabilities } from "../lib/shopCapabilities";
 import { withTransaction } from "../lib/transactions";
 import { cappedStockCount, variantLabel } from "../lib/variants";
 import type { Listing, ProductVariant } from "../payload-types";
@@ -172,10 +174,13 @@ export async function updateResaleListingPrices(
 			const settings = await getResaleSettings(payload);
 			if (!settings.enabled)
 				throw new ServiceError(ERROR_CODES.resaleDisabled, 404);
-			await requireShopPermission(payload, user, shopId, "resale.manage", {
-				writable: true,
-				req,
-			});
+			const { shop } = await requireShopPermission(
+				payload,
+				user,
+				shopId,
+				"resale.manage",
+				{ writable: true, req },
+			);
 			const listing = await payload
 				.findByID({
 					collection: "listings",
@@ -194,6 +199,23 @@ export async function updateResaleListingPrices(
 				!supplierShopId
 			) {
 				throw new ServiceError(ERROR_CODES.notFound, 404);
+			}
+			const product = await payload
+				.findByID({
+					collection: "products",
+					id: productId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null);
+			if (
+				!meetsMinResellerLevel(
+					shopCapabilities(shop).effectiveLevel,
+					product?.resale?.minResellerLevel,
+				)
+			) {
+				throw new ServiceError(ERROR_CODES.resaleResellerLevelTooLow, 403);
 			}
 			const variantResult = await payload.find({
 				collection: "product-variants",
@@ -243,8 +265,10 @@ export async function updateResaleListingPrices(
 			const amounts = prices.map((row) => row.price);
 			const minimumPrice = Math.min(...amounts);
 			const maximumPrice = Math.max(...amounts);
+			// The level was checked above, so a level hold left from before an upgrade goes too.
 			const holds = (listing.resale?.holds ?? []).filter(
-				(hold) => hold !== "price_below_minimum",
+				(hold) =>
+					hold !== "price_below_minimum" && hold !== "reseller_level_too_low",
 			);
 			const supplierListing = await payload.find({
 				collection: "listings",

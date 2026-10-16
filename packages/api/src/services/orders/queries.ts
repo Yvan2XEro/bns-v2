@@ -17,7 +17,7 @@ import { renderReceiptHtml } from "../../lib/orderReceipt";
 import { toMediaRef } from "../../lib/publicShop";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
-import type { Order, OrderEvent, OrderItem } from "../../payload-types";
+import type { Order, OrderEvent, OrderItem, Shop } from "../../payload-types";
 import { requireShopPermission } from "../shopGuards";
 import type { ServiceUser } from "../shops";
 import {
@@ -67,6 +67,26 @@ export interface OrderPage {
 
 export interface ShopOrderPage extends OrderPage {
 	counts: Record<ShopOrderTab, number>;
+	/** The list header's "paiement à la livraison · livraison dans …". */
+	mentions: ShopOrderMentions;
+}
+
+export interface ShopOrderMentions {
+	codEnabled: boolean;
+	sellerDeliveryEnabled: boolean;
+}
+
+/**
+ * Switches, not amounts: every member who can view orders reads them, unlike
+ * the `payments.view`-gated order settings (fees, COD caps).
+ */
+export function shopOrderMentions(
+	shop: Pick<Shop, "orderSettings"> | null | undefined,
+): ShopOrderMentions {
+	return {
+		codEnabled: shop?.orderSettings?.codEnabled === true,
+		sellerDeliveryEnabled: shop?.orderSettings?.sellerDeliveryEnabled === true,
+	};
 }
 
 export interface BuyerOrderListQuery {
@@ -347,14 +367,14 @@ async function loadItemsByOrder(
 }
 
 /** Shop names for a buyer's page of orders, which may span as many shops as it has rows. */
-async function loadShopNames(
+async function loadShops(
 	payload: Payload,
 	shopIds: readonly string[],
 	req?: PayloadRequest,
-): Promise<Map<string, string>> {
-	const names = new Map<string, string>();
+): Promise<Map<string, Shop>> {
+	const shops = new Map<string, Shop>();
 	const unique = [...new Set(shopIds)].filter((id) => id.length > 0);
-	if (unique.length === 0) return names;
+	if (unique.length === 0) return shops;
 	const result = await payload.find({
 		collection: "shops",
 		where: { id: { in: unique } },
@@ -363,8 +383,17 @@ async function loadShopNames(
 		overrideAccess: true,
 		req,
 	});
-	for (const shop of result.docs) names.set(String(shop.id), shop.name);
-	return names;
+	for (const shop of result.docs) shops.set(String(shop.id), shop);
+	return shops;
+}
+
+async function loadShopNames(
+	payload: Payload,
+	shopIds: readonly string[],
+	req?: PayloadRequest,
+): Promise<Map<string, string>> {
+	const shops = await loadShops(payload, shopIds, req);
+	return new Map([...shops].map(([id, shop]) => [id, shop.name]));
 }
 
 /** Each row's return case number, in one query for the page. */
@@ -712,10 +741,13 @@ export async function listShopOrders(
 		shopId,
 		req,
 	);
-	const shopNames = await loadShopNames(
+	const shops = await loadShops(
 		payload,
 		[shopId, ...resaleByOrder.supplierIds],
 		req,
+	);
+	const shopNames = new Map(
+		[...shops].map(([id, shop]) => [id, shop.name] as const),
 	);
 	const shopName = shopNames.get(shopId) ?? "";
 
@@ -743,6 +775,7 @@ export async function listShopOrders(
 				? rows[rows.length - 1].createdAt
 				: null,
 		counts,
+		mentions: shopOrderMentions(shops.get(shopId)),
 	};
 }
 

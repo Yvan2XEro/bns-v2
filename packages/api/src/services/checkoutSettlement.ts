@@ -1,4 +1,5 @@
 import type { Payload, PayloadRequest } from "payload";
+import { cancellationRefundsBuyer } from "../contracts/sellerCancellation";
 import { getOrderSettings } from "../lib/orderSettings";
 import { getPaymentSettings } from "../lib/paymentSettings";
 import { relationId } from "../lib/relationId";
@@ -454,13 +455,7 @@ export async function refundOnOrderCancelled(
 	order: Order,
 	_event: OrderEvent,
 ): Promise<void> {
-	if (order.paymentMethod !== "mobile_money") return;
-	if (
-		order.paymentStatus !== "paid" &&
-		order.paymentStatus !== "partially_refunded"
-	) {
-		return;
-	}
+	if (!cancellationRefundsBuyer(order)) return;
 	await withTransaction(payload, (req) =>
 		requestRefund(req, {
 			order: String(order.id),

@@ -11,7 +11,7 @@ import {
 	type DocumentKind,
 	MAX_DOCUMENTS_PER_REQUEST,
 } from "../collections/VerificationDocuments";
-import type { BusinessType } from "../collections/VerificationRequests";
+import { requiredDocumentKinds } from "../contracts/verificationRequirements";
 import { assertNotSuspended } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { sha256 } from "../lib/hash";
@@ -46,24 +46,10 @@ export interface DocumentActor {
 	suspendedUntil?: string | Date | null;
 }
 
-export const REQUIRED_DOCUMENTS = {
-	entreprenant: ["entreprenant_declaration", "niu_certificate"],
-	sole_trader: ["rccm_extract", "niu_certificate"],
-	company: ["rccm_extract", "niu_certificate"],
-	cooperative: ["rccm_extract", "niu_certificate"],
-} as const satisfies Record<BusinessType, readonly DocumentKind[]>;
-
-export function requiredDocumentKinds(business: {
-	businessType: BusinessType | null | undefined;
-	legalRepresentativeIsOwner?: boolean | null;
-}): DocumentKind[] {
-	if (!business.businessType) return [];
-	const base: DocumentKind[] = [...REQUIRED_DOCUMENTS[business.businessType]];
-	if (business.legalRepresentativeIsOwner === false) {
-		base.push("legal_representative_id", "mandate");
-	}
-	return base;
-}
+export {
+	REQUIRED_DOCUMENTS,
+	requiredDocumentKinds,
+} from "../contracts/verificationRequirements";
 
 export function missingDocumentKinds(
 	business: Parameters<typeof requiredDocumentKinds>[0],

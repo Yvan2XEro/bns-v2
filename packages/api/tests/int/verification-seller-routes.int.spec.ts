@@ -216,6 +216,11 @@ describe("GET /api/shops/{id}/verification", () => {
 			level: 3,
 			unlocks: CAPABILITY_UNLOCKS[3],
 			eligible: true,
+			requirements: [
+				{ key: "business_details", status: "missing" },
+				{ key: "rccm_extract", status: "missing" },
+				{ key: "niu_certificate", status: "missing" },
+			],
 		});
 		expect(body.requests.level2.id).toBe("vr-2");
 		expect(body.requests.level3.id).toBe("vr-3");

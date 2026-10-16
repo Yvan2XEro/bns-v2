@@ -532,6 +532,8 @@ export interface MyShopResponse {
 				status: string;
 				handleChangedAt: string | null;
 				nextHandleChangeAt: string | null;
+				/** The default a new product's return policy starts from. */
+				returnPolicy: string | null;
 				suspension: {
 					active: boolean;
 					indefinite: boolean;
@@ -699,6 +701,7 @@ export async function getMyShop(
 			handleChangedAt: shop.handleChangedAt ?? null,
 			nextHandleChangeAt:
 				nextHandleChangeAt(shop.handleChangedAt, now)?.toISOString() ?? null,
+			returnPolicy: shop.returnPolicy ?? null,
 			suspension:
 				shop.status === "suspended"
 					? {

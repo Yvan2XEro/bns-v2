@@ -9,6 +9,7 @@ import {
 	DISPUTE_EVIDENCE_KINDS,
 	DISPUTE_EVIDENCE_MIME_TYPES,
 } from "../collections/DisputeEvidence";
+import { DISPUTE_EVIDENCE_MAX_BYTES } from "../contracts/disputes";
 import { getDisputeSettings } from "../lib/caseSettings";
 import { ERROR_CODES } from "../lib/errors";
 import { exifDateOriginal } from "../lib/exifDate";
@@ -22,9 +23,9 @@ import type { DisputeEvidence } from "../payload-types";
 import { recordRiskSignal } from "./riskSignals";
 import type { ServiceUser } from "./shops";
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
-const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_BYTES = DISPUTE_EVIDENCE_MAX_BYTES.image;
+const MAX_VIDEO_BYTES = DISPUTE_EVIDENCE_MAX_BYTES.video;
+const MAX_DOCUMENT_BYTES = DISPUTE_EVIDENCE_MAX_BYTES.document;
 const UPLOADS_PER_HOUR = 20;
 
 type EvidenceKind = (typeof DISPUTE_EVIDENCE_KINDS)[number];

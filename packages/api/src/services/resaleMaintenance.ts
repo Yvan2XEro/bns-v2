@@ -6,6 +6,7 @@ import type { ResaleLink } from "../payload-types";
 import {
 	getCurrentResaleTerms,
 	hasAcceptedCurrentResaleTerms,
+	syncResellerLevelHolds,
 	updateResaleListingHold,
 } from "./resale";
 
@@ -228,4 +229,36 @@ export async function refreshResaleLinkStats(
 		page += 1;
 	}
 	return { linksUpdated, productsRepaired };
+}
+
+/**
+ * A reseller's level can drop (expiry) or rise after it listed a product with
+ * a minimum level; the supplier's edit only re-checks at the moment it saves.
+ */
+export async function enforceResellerLevelMinimums(
+	payload: Payload,
+	now = new Date(),
+): Promise<number> {
+	let changed = 0;
+	let page = 1;
+	while (true) {
+		const products = await payload.find({
+			collection: "products",
+			where: { "resale.minResellerLevel": { exists: true } },
+			limit: 200,
+			page,
+			sort: "id",
+			depth: 0,
+			overrideAccess: true,
+		});
+		if (products.docs.length === 0) break;
+		for (const product of products.docs) {
+			changed += await withTransaction(payload, (req) =>
+				syncResellerLevelHolds(req, product, now),
+			);
+		}
+		if (products.docs.length < 200) break;
+		page += 1;
+	}
+	return changed;
 }

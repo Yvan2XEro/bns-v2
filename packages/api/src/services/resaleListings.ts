@@ -1,5 +1,8 @@
 import type { Payload } from "payload";
-import type { CreateResaleListingInput } from "../contracts/resale";
+import {
+	type CreateResaleListingInput,
+	meetsMinResellerLevel,
+} from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { deriveListingData } from "../lib/productListing";
 import { relationId } from "../lib/relationId";
@@ -79,6 +82,14 @@ export async function createResaleListing(
 				!supplierShopId
 			) {
 				throw new ServiceError(ERROR_CODES.notFound, 404);
+			}
+			if (
+				!meetsMinResellerLevel(
+					shopCapabilities(reseller).effectiveLevel,
+					product.resale.minResellerLevel,
+				)
+			) {
+				throw new ServiceError(ERROR_CODES.resaleResellerLevelTooLow, 403);
 			}
 			const supplier = await payload
 				.findByID({

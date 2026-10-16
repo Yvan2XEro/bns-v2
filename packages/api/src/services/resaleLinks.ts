@@ -1,8 +1,9 @@
 import type { Payload, PayloadRequest } from "payload";
 import { isModerator } from "../access/roles";
-import type {
-	ResaleLinkListItem,
-	ResaleLinkListPage,
+import {
+	meetsMinResellerLevel,
+	type ResaleLinkListItem,
+	type ResaleLinkListPage,
 } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { relationId } from "../lib/relationId";
@@ -31,6 +32,8 @@ export interface RequestResaleLinkInput {
 	supplierShop: string;
 	message?: string;
 	acceptTermsVersion: string;
+	/** The product the reseller asked from, checked against its minimum level. */
+	productId?: string;
 }
 
 export interface DecideResaleLinkInput {
@@ -104,6 +107,47 @@ export async function sharesActiveResaleIdentity(
 	);
 }
 
+/**
+ * With a product, the reseller must meet that product's minimum level. Without
+ * one, a link is refused only when every product the supplier offers is
+ * reserved above the reseller's level: there would be nothing to resell.
+ */
+async function requireResellerLevelForSupplier(
+	req: PayloadRequest,
+	supplierShopId: string,
+	resellerLevel: number,
+	productId: string | undefined,
+): Promise<void> {
+	const offered = await req.payload.find({
+		collection: "products",
+		where: {
+			and: [
+				{ shop: { equals: supplierShopId } },
+				{ status: { equals: "active" } },
+				{ "resale.enabled": { equals: true } },
+				...(productId ? [{ id: { equals: productId } }] : []),
+			],
+		},
+		limit: 0,
+		pagination: false,
+		depth: 0,
+		overrideAccess: true,
+		req,
+	});
+	if (productId && offered.docs.length === 0) {
+		throw new ServiceError(ERROR_CODES.notFound, 404);
+	}
+	if (
+		offered.docs.length > 0 &&
+		offered.docs.every(
+			(product) =>
+				!meetsMinResellerLevel(resellerLevel, product.resale?.minResellerLevel),
+		)
+	) {
+		throw new ServiceError(ERROR_CODES.resaleResellerLevelTooLow, 403);
+	}
+}
+
 export async function requestResaleLink(
 	payload: Payload,
 	user: ServiceUser,
@@ -156,6 +200,12 @@ export async function requestResaleLink(
 			) {
 				throw new ServiceError(ERROR_CODES.resaleTermsNotAccepted, 409);
 			}
+			await requireResellerLevelForSupplier(
+				req,
+				String(supplierShop.id),
+				shopCapabilities(resellerShop, now).effectiveLevel,
+				input.productId,
+			);
 			const currentTerms = await payload.find({
 				collection: "resale-terms",
 				where: {

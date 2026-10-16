@@ -111,6 +111,7 @@ describe("supplier offered resale products", () => {
 				approvalRequired: false,
 				handlingHours: null,
 				codAccepted: false,
+				minResellerLevel: null,
 				variants: [
 					{
 						id: "variant",

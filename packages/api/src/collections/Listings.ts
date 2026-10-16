@@ -992,6 +992,7 @@ export const Listings: CollectionConfig = {
 						"product_unavailable",
 						"supplier_unavailable",
 						"reseller_ineligible",
+						"reseller_level_too_low",
 						"terms_not_accepted",
 						"moderation",
 					].map((value) => ({ label: value, value })),

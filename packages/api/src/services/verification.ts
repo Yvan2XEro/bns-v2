@@ -6,6 +6,7 @@ import {
 	REJECT_REASONS,
 	REVOKE_REASONS,
 } from "../collections/VerificationRequests";
+import { businessDetailsComplete } from "../contracts/verificationRequirements";
 import { assertNotSuspended } from "../hooks/suspensionGuard";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { getKycProvider } from "../lib/kyc";
@@ -553,23 +554,7 @@ async function writeShopLegal(
  * past its first submission is not re-litigated on field completeness alone.
  */
 function assertBusinessValid(request: VerificationRequest): void {
-	const business = request.business;
-	if (!business?.businessType) {
-		throw error(ERROR_CODES.verificationFieldsInvalid, 400);
-	}
-	const registrationNumber =
-		business.businessType === "entreprenant"
-			? business.entreprenantDeclarationNumber
-			: business.rccmNumber;
-	const required = [
-		business.legalName,
-		business.registeredAddress,
-		business.city,
-		business.legalRepresentativeName,
-		business.niu,
-		registrationNumber,
-	];
-	if (required.some((value) => !cleanText(value))) {
+	if (!businessDetailsComplete(request.business)) {
 		throw error(ERROR_CODES.verificationFieldsInvalid, 400);
 	}
 }

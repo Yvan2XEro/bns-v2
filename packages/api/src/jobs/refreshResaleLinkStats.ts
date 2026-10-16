@@ -1,5 +1,8 @@
 import type { TaskConfig } from "payload";
-import { refreshResaleLinkStats } from "../services/resaleMaintenance";
+import {
+	enforceResellerLevelMinimums,
+	refreshResaleLinkStats,
+} from "../services/resaleMaintenance";
 
 export const refreshResaleLinkStatsTask: TaskConfig<{
 	input: object;
@@ -13,7 +16,8 @@ export const refreshResaleLinkStatsTask: TaskConfig<{
 		{ name: "linksUpdated", type: "number" },
 		{ name: "productsRepaired", type: "number" },
 	],
-	handler: async ({ req }) => ({
-		output: await refreshResaleLinkStats(req.payload),
-	}),
+	handler: async ({ req }) => {
+		await enforceResellerLevelMinimums(req.payload);
+		return { output: await refreshResaleLinkStats(req.payload) };
+	},
 };

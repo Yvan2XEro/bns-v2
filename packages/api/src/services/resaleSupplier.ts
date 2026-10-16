@@ -1,7 +1,10 @@
 import type { Payload } from "payload";
-import type {
-	SupplierResaleProduct,
-	SupplierResaleSettingsView,
+import {
+	isMinResellerLevel,
+	minResellerLevelOf,
+	type ResaleMinResellerLevel,
+	type SupplierResaleProduct,
+	type SupplierResaleSettingsView,
 } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { getOrderSettings } from "../lib/orderSettings";
@@ -14,6 +17,7 @@ import { availableOf, variantLabel } from "../lib/variants";
 import type { ProductVariant } from "../payload-types";
 import {
 	hasAcceptedCurrentResaleTerms,
+	syncResellerLevelHolds,
 	updateResaleListingHold,
 } from "./resale";
 import { requireShopPermission } from "./shopGuards";
@@ -25,6 +29,8 @@ export interface SupplierResaleSettingsInput {
 	handlingHours: number;
 	codAccepted: boolean;
 	resellerNotes: string;
+	/** Omitted keeps the stored minimum; null clears it. */
+	minResellerLevel?: ResaleMinResellerLevel | null;
 	variants: Array<{
 		id: string;
 		enabled: boolean;
@@ -158,6 +164,7 @@ export async function listSupplierResaleProducts(
 			approvalRequired: product.resale?.approvalRequired === true,
 			handlingHours: product.resale?.handlingHours ?? null,
 			codAccepted: product.resale?.codAccepted === true,
+			minResellerLevel: minResellerLevelOf(product.resale?.minResellerLevel),
 			variants: variantsForProduct.map((variant) => ({
 				id: String(variant.id),
 				sku: variant.sku ?? null,
@@ -255,6 +262,7 @@ export async function getSupplierResaleSettings(
 		handlingHours: resale.handlingHours ?? 24,
 		codAccepted: resale.codAccepted === true,
 		resellerNotes: resale.resellerNotes ?? "",
+		minResellerLevel: minResellerLevelOf(resale.minResellerLevel),
 		enabledAt: resale.enabledAt ?? null,
 		resellerCount: resale.resellerCount ?? 0,
 		pendingEffectiveAt: resale.pendingChange?.effectiveAt ?? null,
@@ -291,6 +299,12 @@ export async function updateSupplierResaleSettings(
 	const settings = await getResaleSettings(payload);
 	if (!settings.enabled)
 		throw new ServiceError(ERROR_CODES.resaleDisabled, 403);
+	if (
+		input.minResellerLevel !== undefined &&
+		!isMinResellerLevel(input.minResellerLevel)
+	) {
+		throw new ServiceError(ERROR_CODES.validation, 400);
+	}
 	await withTransaction(
 		payload,
 		async (req) => {
@@ -408,6 +422,13 @@ export async function updateSupplierResaleSettings(
 				});
 			}
 			const previousEnabled = product.resale?.enabled === true;
+			const previousMinimum = minResellerLevelOf(
+				product.resale?.minResellerLevel,
+			);
+			const minResellerLevel =
+				input.minResellerLevel === undefined
+					? previousMinimum
+					: input.minResellerLevel;
 			if (nextPending.size === 0) effectiveAt = null;
 			await req.payload.update({
 				collection: "products",
@@ -420,6 +441,7 @@ export async function updateSupplierResaleSettings(
 						handlingHours: input.handlingHours,
 						codAccepted: input.codAccepted,
 						resellerNotes: input.resellerNotes,
+						minResellerLevel,
 						enabledAt:
 							input.enabled && !previousEnabled
 								? now.toISOString()
@@ -444,6 +466,17 @@ export async function updateSupplierResaleSettings(
 					input.enabled ? "remove" : "add",
 					undefined,
 					productId,
+				);
+			}
+			if (previousMinimum !== minResellerLevel) {
+				await syncResellerLevelHolds(
+					req,
+					{
+						id: productId,
+						shop: shopId,
+						resale: { minResellerLevel },
+					},
+					now,
 				);
 			}
 		},

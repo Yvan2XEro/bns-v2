@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { CollectionConfig, Where } from "payload";
 import { casePartyRead, serviceOnly } from "../access/caseRoles";
+import { DISPUTE_EVIDENCE_MIME_TYPES } from "../contracts/disputes";
 import { enforceUploadLimits } from "../hooks/mediaLimits";
 
 export const DISPUTE_EVIDENCE_KINDS = [
@@ -10,15 +11,7 @@ export const DISPUTE_EVIDENCE_KINDS = [
 	"payment_proof",
 	"shipping_proof",
 ] as const;
-export const DISPUTE_EVIDENCE_MIME_TYPES = [
-	"image/jpeg",
-	"image/png",
-	"image/webp",
-	"image/heic",
-	"video/mp4",
-	"video/quicktime",
-	"application/pdf",
-] as const;
+export { DISPUTE_EVIDENCE_MIME_TYPES };
 
 const fileLimits = enforceUploadLimits({
 	mimeTypes: DISPUTE_EVIDENCE_MIME_TYPES,

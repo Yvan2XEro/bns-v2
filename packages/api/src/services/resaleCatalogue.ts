@@ -1,7 +1,9 @@
 import type { Payload, Where } from "payload";
-import type {
-	ResaleCataloguePage,
-	ResaleCatalogueProduct,
+import {
+	meetsMinResellerLevel,
+	minResellerLevelOf,
+	type ResaleCataloguePage,
+	type ResaleCatalogueProduct,
 } from "../contracts/resale";
 import { ERROR_CODES } from "../lib/errors";
 import { getOrderSettings } from "../lib/orderSettings";
@@ -34,7 +36,8 @@ export async function listResaleCatalogue(
 		resellerShopId,
 		"resale.manage",
 	);
-	if (!shopCapabilities(resellerShop).resell) {
+	const resellerCapabilities = shopCapabilities(resellerShop);
+	if (!resellerCapabilities.resell) {
 		throw new ServiceError(ERROR_CODES.resaleResellerNotEligible, 403);
 	}
 	if (
@@ -150,8 +153,15 @@ export async function listResaleCatalogue(
 		}
 		const link = linkBySupplier.get(supplierId) ?? null;
 		const approvalRequired = product.resale?.approvalRequired === true;
+		const minResellerLevel = minResellerLevelOf(
+			product.resale?.minResellerLevel,
+		);
+		const levelLocked = !meetsMinResellerLevel(
+			resellerCapabilities.effectiveLevel,
+			minResellerLevel,
+		);
 		const canSeeSupplierPrice =
-			!approvalRequired || link?.status === "approved";
+			!levelLocked && (!approvalRequired || link?.status === "approved");
 		const variants = await payload.find({
 			collection: "product-variants",
 			where: {
@@ -199,6 +209,8 @@ export async function listResaleCatalogue(
 			handlingHours: product.resale?.handlingHours ?? null,
 			codAccepted: product.resale?.codAccepted === true,
 			inMyShop: resoldProducts.has(String(product.id)),
+			minResellerLevel,
+			levelLocked,
 		});
 	}
 	return {

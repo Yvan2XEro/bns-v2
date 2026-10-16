@@ -600,6 +600,7 @@ export interface Shop {
   handleChangedAt?: string | null;
   name: string;
   description?: string | null;
+  returnPolicy?: string | null;
   logo?: (string | null) | Media;
   banner?: (string | null) | Media;
   brandColor?: string | null;
@@ -912,6 +913,7 @@ export interface Listing {
           | 'product_unavailable'
           | 'supplier_unavailable'
           | 'reseller_ineligible'
+          | 'reseller_level_too_low'
           | 'terms_not_accepted'
           | 'moderation'
         )[]
@@ -994,6 +996,7 @@ export interface Product {
     approvalRequired?: boolean | null;
     handlingHours?: number | null;
     codAccepted?: boolean | null;
+    minResellerLevel?: number | null;
     resellerNotes?: string | null;
     enabledAt?: string | null;
     resellerCount?: number | null;
@@ -5280,6 +5283,7 @@ export interface ShopsSelect<T extends boolean = true> {
   handleChangedAt?: T;
   name?: T;
   description?: T;
+  returnPolicy?: T;
   logo?: T;
   banner?: T;
   brandColor?: T;
@@ -5480,6 +5484,7 @@ export interface ProductsSelect<T extends boolean = true> {
         approvalRequired?: T;
         handlingHours?: T;
         codAccepted?: T;
+        minResellerLevel?: T;
         resellerNotes?: T;
         enabledAt?: T;
         resellerCount?: T;

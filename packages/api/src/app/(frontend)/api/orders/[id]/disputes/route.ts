@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { DISPUTE_OUTCOMES, DISPUTE_REASONS } from "@/collections/Disputes";
+import {
+	DISPUTE_DESCRIPTION_MAX,
+	DISPUTE_DESCRIPTION_MIN,
+} from "@/contracts/disputes";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, requireUser } from "@/lib/shopRoute";
 import { openDispute } from "@/services/disputes";
@@ -8,7 +12,11 @@ const paramsSchema = z.object({ id: z.string().trim().min(1) });
 const bodySchema = z.object({
 	reason: z.enum(DISPUTE_REASONS),
 	subject: z.enum(["goods", "refund"]).optional(),
-	description: z.string().trim().min(20).max(2000),
+	description: z
+		.string()
+		.trim()
+		.min(DISPUTE_DESCRIPTION_MIN)
+		.max(DISPUTE_DESCRIPTION_MAX),
 	requestedOutcome: z.enum(DISPUTE_OUTCOMES),
 	requestedAmount: z.number().int().nonnegative().optional(),
 	items: z

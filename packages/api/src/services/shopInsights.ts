@@ -1,4 +1,8 @@
 import type { Payload } from "payload";
+import {
+	SELLER_CANCELLATION_THRESHOLD,
+	sellerCancellationAlert,
+} from "../contracts/sellerCancellation";
 import { ERROR_CODES } from "../lib/errors";
 import { timezoneOfShop } from "../lib/markets";
 import { localDateString } from "../lib/marketTime";
@@ -140,7 +144,6 @@ function aggregateTopProducts(rows: ShopDailyStat[]) {
 }
 
 const WEEKLY_WEEKS = 8;
-const SELLER_CANCELLATION_THRESHOLD = 0.1;
 const COD_REFUSAL_THRESHOLD = 0.2;
 const ACCEPTANCE_SAMPLE_LIMIT = 500;
 
@@ -375,10 +378,7 @@ export async function getShopInsights(
 			href: "/seller/orders?status=shipped",
 		});
 	}
-	if (
-		current.ordersPlaced >= 5 &&
-		sellerCancellations / current.ordersPlaced >= SELLER_CANCELLATION_THRESHOLD
-	) {
+	if (sellerCancellationAlert(sellerCancellations, current.ordersPlaced)) {
 		actions.push({
 			type: "seller_cancellation_rate",
 			href: "/seller/catalogue",

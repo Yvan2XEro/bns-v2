@@ -1,3 +1,36 @@
+/**
+ * A supplier may reserve a product for resellers of a given level. Reselling
+ * itself already needs level 2, so the only meaningful minimums are 2 and 3;
+ * null means no minimum beyond that.
+ */
+export const RESALE_MIN_RESELLER_LEVELS = [2, 3] as const;
+export type ResaleMinResellerLevel =
+	(typeof RESALE_MIN_RESELLER_LEVELS)[number];
+
+export function isMinResellerLevel(
+	value: unknown,
+): value is ResaleMinResellerLevel | null {
+	return (
+		value === null ||
+		RESALE_MIN_RESELLER_LEVELS.includes(value as ResaleMinResellerLevel)
+	);
+}
+
+/** Stored values outside the rule read as no minimum rather than locking everyone out. */
+export function minResellerLevelOf(
+	value: unknown,
+): ResaleMinResellerLevel | null {
+	return typeof value === "number" && isMinResellerLevel(value) ? value : null;
+}
+
+export function meetsMinResellerLevel(
+	resellerLevel: number,
+	minimum: unknown,
+): boolean {
+	const required = minResellerLevelOf(minimum);
+	return required === null || resellerLevel >= required;
+}
+
 export interface ResaleCatalogueVariant {
 	id: string;
 	sku: string | null;
@@ -32,6 +65,13 @@ export interface ResaleCatalogueProduct {
 	codAccepted?: boolean;
 	/** True when the asking shop already resells this product. */
 	inMyShop?: boolean;
+	minResellerLevel?: ResaleMinResellerLevel | null;
+	/**
+	 * The asking shop is below `minResellerLevel`: the product is shown so the
+	 * reseller knows it exists, without supplier price or stock, and every
+	 * action on it is refused with `resale.resellerLevelTooLow`.
+	 */
+	levelLocked?: boolean;
 }
 
 export interface ResaleCataloguePage {
@@ -49,6 +89,7 @@ export interface SupplierResaleProduct {
 	approvalRequired?: boolean;
 	handlingHours?: number | null;
 	codAccepted?: boolean;
+	minResellerLevel?: ResaleMinResellerLevel | null;
 	variants: Array<{
 		id: string;
 		sku: string | null;
@@ -188,6 +229,7 @@ export interface SupplierResaleSettingsView {
 	handlingHours: number;
 	codAccepted: boolean;
 	resellerNotes: string;
+	minResellerLevel: ResaleMinResellerLevel | null;
 	enabledAt: string | null;
 	resellerCount: number;
 	pendingEffectiveAt: string | null;

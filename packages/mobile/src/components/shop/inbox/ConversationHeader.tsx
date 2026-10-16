@@ -7,6 +7,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import type { InboxConversationView } from "@/src/types/api";
@@ -41,6 +42,9 @@ export function ConversationHeader({
 }: ConversationHeaderProps) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
+	// ConversationScreen leaves the top edge to a custom header, and the
+	// route draws no stack header: this one clears the status bar itself.
+	const insets = useSafeAreaInsets();
 	const assigneeLabel = assignee
 		? assignee.suspended
 			? t("inbox.assignedSuspended", {
@@ -53,7 +57,11 @@ export function ConversationHeader({
 		<View
 			style={[
 				styles.wrap,
-				{ backgroundColor: c.card, borderBottomColor: c.border },
+				{
+					backgroundColor: c.card,
+					borderBottomColor: c.border,
+					paddingTop: insets.top,
+				},
 			]}
 		>
 			<View style={styles.topRow}>

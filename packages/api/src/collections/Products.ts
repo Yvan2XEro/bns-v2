@@ -6,6 +6,7 @@ import {
 	shopRoleFieldAccess,
 	shopScopedRead,
 } from "../access/shopRoles";
+import { isMinResellerLevel } from "../contracts/resale";
 import { updateProductEndpoint } from "../endpoints/products";
 import { relationId } from "../lib/relationId";
 
@@ -206,6 +207,18 @@ export const Products: CollectionConfig = {
 							admin: { width: "50%" },
 						},
 					],
+				},
+				{
+					name: "minResellerLevel",
+					type: "number",
+					admin: {
+						description:
+							"Lowest shop level allowed to resell this product; empty means any reseller.",
+					},
+					validate: (value: unknown) =>
+						value === undefined ||
+						isMinResellerLevel(value) ||
+						"Must be empty, 2 or 3.",
 				},
 				{
 					name: "resellerNotes",

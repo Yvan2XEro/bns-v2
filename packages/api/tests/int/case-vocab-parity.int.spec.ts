@@ -210,7 +210,8 @@ const NAMESPACES = [
 		// web, less `awaitingCount` (EXEMPT). 102: +8 for the mobile thread and
 		// report redesign (thread title, author labels, "what happens next").
 		// 109: +7 for evidence thumbnails in the mobile thread (viewer, menu).
-		count: 109,
+		// 122: +13 for the one-page report with evidence attached on send.
+		count: 122,
 	},
 ] as const;
 

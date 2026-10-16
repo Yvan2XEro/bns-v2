@@ -8,6 +8,7 @@ const bodySchema = z.object({
 	supplierShop: z.string().trim().min(1),
 	message: z.string().max(500).optional(),
 	acceptTermsVersion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+	productId: z.string().trim().min(1).optional(),
 });
 const querySchema = z.object({
 	side: z.enum(["supplier", "reseller"]),

@@ -186,6 +186,15 @@ describe("getMyShop", () => {
 		});
 	});
 
+	it("hands the members their shop's default return policy", async () => {
+		const payload = seed();
+		expect((await getMyShop(payload, U1, NOW)).shop?.returnPolicy).toBeNull();
+		payload.store.shops[0].returnPolicy = "Retour sous 7 jours";
+		expect((await getMyShop(payload, U1, NOW)).shop?.returnPolicy).toBe(
+			"Retour sous 7 jours",
+		);
+	});
+
 	it("ignores a closed shop", async () => {
 		const payload = seed();
 		payload.store.shops[0].status = "closed";

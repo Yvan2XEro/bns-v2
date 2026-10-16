@@ -2,6 +2,10 @@ import type { CollectionConfig, Where } from "payload";
 import { isAdmin, isModerator } from "../access/roles";
 import { can, memberShopIds, shopRoleFieldAccess } from "../access/shopRoles";
 import { staffOnlyField } from "../access/staff";
+import {
+	normaliseShopReturnPolicy,
+	SHOP_RETURN_POLICY_MAX,
+} from "../contracts/shopReturnPolicy";
 import { isBrandColor } from "../contracts/shopTheme";
 import { createShopEndpoint } from "../endpoints/shops";
 import {
@@ -241,6 +245,19 @@ export const Shops: CollectionConfig = {
 		{ name: "handleChangedAt", type: "date", admin: { readOnly: true } },
 		{ name: "name", type: "text", required: true, minLength: 2, maxLength: 60 },
 		{ name: "description", type: "textarea", maxLength: 1000 },
+		{
+			// The default a new product's `returnPolicy` starts from in the
+			// product editors; `settings.edit` like the rest of the profile.
+			name: "returnPolicy",
+			type: "textarea",
+			maxLength: SHOP_RETURN_POLICY_MAX,
+			hooks: {
+				beforeValidate: [
+					({ value }) =>
+						value === undefined ? value : normaliseShopReturnPolicy(value),
+				],
+			},
+		},
 		{ name: "logo", type: "upload", relationTo: "media" },
 		{ name: "banner", type: "upload", relationTo: "media" },
 		{
