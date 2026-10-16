@@ -15,7 +15,10 @@ function TargetCell({ entry }: { entry: ShopActivityView }) {
 	// that page's own not-found handling is what shows, not a dead link here.
 	if (!href) return <span className="text-[#475569]">{label}</span>;
 	return (
-		<Link href={href} className="text-[#1E40AF] underline hover:no-underline">
+		<Link
+			href={href}
+			className="text-[var(--shop-accent-text,#1E40AF)] underline hover:no-underline"
+		>
 			{label}
 		</Link>
 	);
@@ -99,7 +102,7 @@ export function ActivityTable({
 								<button
 									type="button"
 									onClick={() => onOpenEntry(entry)}
-									className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 font-medium text-[#1E40AF] text-xs hover:bg-[#F1F5F9]"
+									className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs hover:bg-[#F1F5F9]"
 								>
 									{tActivity("details")}
 								</button>
@@ -114,7 +117,7 @@ export function ActivityTable({
 						type="button"
 						onClick={onLoadMore}
 						disabled={isFetchingNextPage}
-						className="h-9 rounded-lg border border-[#E2E8F0] px-4 font-medium text-[#1E40AF] text-sm hover:bg-[#F1F5F9] disabled:opacity-50"
+						className="h-9 rounded-lg border border-[#E2E8F0] px-4 font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm hover:bg-[#F1F5F9] disabled:opacity-50"
 					>
 						{tActivity("loadMore")}
 					</button>

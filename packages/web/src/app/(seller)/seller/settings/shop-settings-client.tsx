@@ -40,7 +40,7 @@ const FORM_IDS: Partial<Record<Tab, string>> = {
 };
 
 const TRIGGER =
-	"rounded-none border-transparent border-b-2 bg-transparent px-0 py-2.5 font-semibold text-[#64748B] text-[15px] data-[state=active]:border-[#1E40AF] data-[state=active]:bg-transparent data-[state=active]:text-[#1E40AF] data-[state=active]:shadow-none";
+	"rounded-none border-transparent border-b-2 bg-transparent px-0 py-2.5 font-semibold text-[#64748B] text-[15px] data-[state=active]:border-[var(--shop-accent,#1E40AF)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--shop-accent-text,#1E40AF)] data-[state=active]:shadow-none";
 
 function draftOf(shop: MyShop): ShopProfileDraft {
 	const place = placeOfShopLocation(shop.location);
@@ -149,7 +149,7 @@ export function ShopSettingsClient({
 								type="submit"
 								form={formId}
 								disabled={!formBar?.canSave || formBar.pending}
-								className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A] disabled:opacity-50"
+								className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
 							>
 								{formBar?.pending && (
 									<LoaderCircle className="h-4 w-4 animate-spin" />
@@ -258,7 +258,7 @@ export function ShopSettingsClient({
 							<Button
 								onClick={() => setMoveOpen(true)}
 								disabled={suspended}
-								className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+								className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 							>
 								{tManage("moveTitle")}
 							</Button>

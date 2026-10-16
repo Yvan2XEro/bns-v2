@@ -23,7 +23,10 @@ export function InventoryHeader({
 		<div className="flex flex-wrap items-start justify-between gap-3">
 			<div>
 				<p className="text-[#64748B] text-sm">
-					<Link href="/seller/stock" className="hover:text-[#1E40AF]">
+					<Link
+						href="/seller/stock"
+						className="hover:text-[var(--shop-accent-text,#1E40AF)]"
+					>
 						{t("breadcrumb")}
 					</Link>{" "}
 					› {t("title")}
@@ -53,7 +56,7 @@ export function InventoryHeader({
 				<button
 					type="submit"
 					disabled={submitDisabled}
-					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white disabled:opacity-50"
+					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm disabled:opacity-50"
 				>
 					{submitting && (
 						<LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />

@@ -23,6 +23,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
+import { usePhotoLimit } from "~/hooks/use-app-config";
 import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useCurrencyCode } from "~/hooks/use-order-money";
@@ -50,9 +51,6 @@ import { cn } from "~/lib/utils";
 import type { Category, Listing, Media } from "~/types";
 import { placeCoords } from "../../../../../../../api/src/contracts/places";
 
-/** Maximum number of images a listing can carry (enforced server-side too). */
-const MAX_LISTING_IMAGES = 3;
-
 interface ExistingImage {
 	id: string;
 	url: string;
@@ -70,6 +68,7 @@ export function EditListingForm({
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
 	const tIssues = useTranslations("FormIssues");
+	const photoLimit = usePhotoLimit();
 	const router = useRouter();
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -215,6 +214,7 @@ export function EditListingForm({
 		preset: categoryPreset.fields,
 		attributes,
 		previousImageCount: existingImages.length,
+		photoLimit,
 		tags: applicableTagIds,
 	});
 	const draftKey = JSON.stringify({ ...draftBody, images: photoCount });
@@ -581,7 +581,8 @@ export function EditListingForm({
 								previews={newPreviews}
 								onAdd={handleAddNewImages}
 								onRemove={handleRemoveNewImage}
-								max={Math.max(0, MAX_LISTING_IMAGES - keptImages.length)}
+								limit={photoLimit}
+								existingCount={keptImages.length}
 							/>
 						</div>
 

@@ -41,12 +41,17 @@ export function ZoneRow({
 	const active = zone.active ?? true;
 
 	return (
-		<tr className={cn(selected && "bg-[#EFF6FF]", !active && "opacity-70")}>
+		<tr
+			className={cn(
+				selected && "bg-[var(--shop-accent-soft,#EFF6FF)]",
+				!active && "opacity-70",
+			)}
+		>
 			<td className="whitespace-nowrap px-[18px] py-3 align-top">
 				<button
 					type="button"
 					onClick={onEdit}
-					className="text-left font-semibold text-[#0F172A] hover:text-[#1E40AF] hover:underline"
+					className="text-left font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 				>
 					{zone.name}
 				</button>

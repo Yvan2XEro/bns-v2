@@ -27,7 +27,7 @@ export function ProductDeliverySection({
 				<label className="flex items-start gap-3">
 					<input
 						type="checkbox"
-						className="mt-1 h-4 w-4 accent-[#1E40AF]"
+						className="mt-1 h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
 						{...register("codAllowed")}
 					/>
 					<span>
@@ -40,7 +40,7 @@ export function ProductDeliverySection({
 				<label className="flex items-start gap-3">
 					<input
 						type="checkbox"
-						className="mt-1 h-4 w-4 accent-[#1E40AF]"
+						className="mt-1 h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
 						{...register("pickupAllowed")}
 					/>
 					<span>

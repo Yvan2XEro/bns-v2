@@ -32,7 +32,7 @@ export function OrderClient({
 	const back = (
 		<Link
 			href="/seller/orders"
-			className="inline-flex min-h-11 items-center gap-2 font-medium text-[#1E40AF] text-sm hover:underline"
+			className="inline-flex min-h-11 items-center gap-2 font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 		>
 			<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 			{t("back")}
@@ -79,7 +79,7 @@ export function OrderClient({
 						})}
 					</p>
 				</div>
-				<span className="rounded-full bg-[#EFF6FF] px-3 py-1 font-semibold text-[#1E40AF] text-sm">
+				<span className="rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm">
 					{tRoot(`OrderStatus.${statusLabelKey(order.status, "seller")}`)}
 				</span>
 			</div>

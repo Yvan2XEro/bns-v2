@@ -58,7 +58,7 @@ export function ShipmentRiderDialog({
 						aria-label={t("riderMember")}
 						value={userId}
 						onChange={(e) => setUserId(e.target.value)}
-						className="flex h-10 w-full rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3 text-sm"
+						className="flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-sm"
 					>
 						<option value="">{t("riderChoose")}</option>
 						{members.map((member) => (

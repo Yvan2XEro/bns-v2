@@ -41,7 +41,7 @@ function ListingNote({ row }: { row: CatalogueRow }) {
 		return (
 			<Link
 				href={`/listing/${row.listingId}`}
-				className="inline-flex items-center gap-1 text-[#1E40AF] text-xs hover:underline"
+				className="inline-flex items-center gap-1 text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
 			>
 				<ExternalLink aria-hidden="true" className="h-3 w-3" />
 				{t("viewListing")}
@@ -188,7 +188,7 @@ export function CatalogueTable({
 								checked={allSelected}
 								disabled={selectable.length === 0}
 								onChange={() => onToggleAll(selectable, !allSelected)}
-								className="h-4 w-4 rounded border-[#CBD5E1] accent-[#1E40AF]"
+								className="h-4 w-4 rounded border-[#CBD5E1] accent-[var(--shop-accent,#1E40AF)]"
 							/>
 						</th>
 						<th scope="col" className="px-4 py-3 font-semibold">
@@ -233,7 +233,7 @@ export function CatalogueTable({
 											aria-label={tc("select", { title: row.title })}
 											checked={selected.has(row.id)}
 											onChange={() => onToggle(row.id)}
-											className="h-4 w-4 rounded border-[#CBD5E1] accent-[#1E40AF]"
+											className="h-4 w-4 rounded border-[#CBD5E1] accent-[var(--shop-accent,#1E40AF)]"
 										/>
 									)}
 								</td>

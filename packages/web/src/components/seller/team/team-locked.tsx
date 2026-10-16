@@ -19,7 +19,7 @@ export function TeamLocked() {
 			<p className="mt-4 max-w-sm text-[#475569] text-sm">{t("locked")}</p>
 			<Link
 				href="/seller/verification"
-				className="mt-4 h-10 rounded-lg bg-[#1E40AF] px-4 py-2 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 			>
 				{t("lockedCta")}
 			</Link>

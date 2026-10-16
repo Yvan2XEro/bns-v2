@@ -39,7 +39,7 @@ export function OrdersRestrictedNotice({
 				<span className="block font-semibold text-[#7F1D1D]">
 					{t("ordersRestricted")}
 				</span>
-				<span className="text-[#1E40AF] underline">
+				<span className="text-[var(--shop-accent-text,#1E40AF)] underline">
 					{t("ordersRestrictedLink")}
 				</span>
 			</span>

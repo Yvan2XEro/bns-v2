@@ -46,7 +46,8 @@
 		"variantsSingle": "Un produit sans option n’a qu’une seule variante.",
 		"optionsMax": "{max} options au maximum.",
 		"valuesCount": "Chaque option compte de 1 à {max} valeurs.",
-		"imagesMax": "{max} photos au maximum."
+		"imagesMax": "{max} photos au maximum.",
+		"photoLimit": "{max} photos au maximum pour le moment."
 	},
 	"FormIssues": {
 		"fixStep": "Certains champs sont à corriger avant de continuer.",
@@ -62,6 +63,7 @@
 		"rule_invalid": "Cette valeur a été refusée. Vérifiez-la.",
 		"rule_required": "Ce champ est obligatoire.",
 		"rule_maxItems": "{max} au maximum.",
+		"rule_photoLimit": "{max} photos au maximum pour le moment.",
 		"rule_number": "Saisissez un nombre.",
 		"rule_option": "Choisissez l’une des valeurs proposées.",
 		"rule_min": "Au moins {min}.",
@@ -547,6 +549,8 @@
 		"fromPrice": "Dès",
 		"photos": "Photos",
 		"imagesTotal": "{count} image(s) au total",
+		"photosOfLimit": "{count} / {max} photos",
+		"morePhotosSoon": "Photos supplémentaires bientôt disponibles en option",
 		"maximumImagesAllowed": "Maximum {max} images autorisées",
 		"currentImages": "Images actuelles",
 		"addNewImages": "Ajouter de nouvelles images",
@@ -1446,7 +1450,7 @@
 		"categoryError": "Choisissez une catégorie",
 		"description": "Description",
 		"photos": "Photos · {count} sur 10, la première sert de couverture",
-		"photosHint": "JPG ou PNG, 10 au plus.",
+		"photosHint": "JPG ou PNG.",
 		"cover": "Couverture",
 		"removeImage": "Retirer cette photo",
 		"variantsTitle": "Variantes, prix et stock",
@@ -1964,6 +1968,9 @@
 		"upload": {
 			"tooLarge": "Ce fichier est trop volumineux.",
 			"invalidType": "Ce type de fichier n'est pas pris en charge."
+		},
+		"media": {
+			"photoLimit": "Vous avez atteint le nombre de photos incluses."
 		},
 		"contact": {
 			"incomplete": "Veuillez remplir tous les champs.",

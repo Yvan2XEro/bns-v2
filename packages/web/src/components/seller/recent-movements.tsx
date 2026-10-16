@@ -17,7 +17,7 @@ export function RecentMovements({ movements }: { movements: MovementRow[] }) {
 				<h2 className="font-bold text-[#0F172A]">{t("latestMovements")}</h2>
 				<Link
 					href="/seller/stock"
-					className="text-[#1E40AF] text-sm hover:underline"
+					className="text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 				>
 					{t("fullHistory")}
 				</Link>

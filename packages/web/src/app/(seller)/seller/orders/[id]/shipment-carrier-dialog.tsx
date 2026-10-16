@@ -66,7 +66,7 @@ export function ShipmentCarrierDialog({
 							value="self"
 							checked={choice === "self"}
 							onChange={() => setChoice("self")}
-							className="h-5 w-5 accent-[#1E40AF]"
+							className="h-5 w-5 accent-[var(--shop-accent,#1E40AF)]"
 						/>
 						{t("carrierSelf")}
 					</label>
@@ -82,7 +82,7 @@ export function ShipmentCarrierDialog({
 									value={courier.id}
 									checked={choice === courier.id}
 									onChange={() => setChoice(courier.id)}
-									className="mt-0.5 h-5 w-5 accent-[#1E40AF]"
+									className="mt-0.5 h-5 w-5 accent-[var(--shop-accent,#1E40AF)]"
 								/>
 								<span>
 									<span className="block font-medium">{courier.name}</span>

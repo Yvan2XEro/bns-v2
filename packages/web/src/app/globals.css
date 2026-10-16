@@ -394,6 +394,12 @@ h6 {
 /* Shop theme: values come from contracts/shopTheme.ts via lib/shop-theme.ts. */
 [data-shop-theme] {
 	--shop-accent-border: color-mix(in srgb, var(--shop-accent) 45%, white);
+	--shop-accent-hover: color-mix(in srgb, var(--shop-accent) 82%, black);
+}
+/* The seller dashboard's dark sidebar, in the shop's header colour. */
+[data-seller-theme] {
+	--shop-sidebar-bg: color-mix(in srgb, var(--shop-header-bg) 70%, black);
+	--shop-sidebar-raised: color-mix(in srgb, var(--shop-header-bg) 85%, white);
 }
 @media (prefers-color-scheme: dark) {
 	[data-shop-theme][data-shop-scheme="system"] {

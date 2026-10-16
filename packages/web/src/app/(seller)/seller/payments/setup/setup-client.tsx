@@ -96,7 +96,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 				{!step1Done && (
 					<Link
 						href="/seller/verification/identity"
-						className="inline-flex min-h-10 items-center rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						className="inline-flex min-h-10 items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 					>
 						{t("setup_step1Action")}
 					</Link>
@@ -136,7 +136,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 								},
 							});
 						}}
-						className="h-10 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A] disabled:opacity-50"
+						className="h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
 					>
 						{t("setup_step2Action")}
 					</button>

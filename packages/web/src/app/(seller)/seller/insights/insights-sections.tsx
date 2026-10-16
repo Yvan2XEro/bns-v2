@@ -137,7 +137,7 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 									className={cn(
 										"text-[11px] tabular-nums sm:text-xs",
 										isLast
-											? "font-bold text-[#1E40AF]"
+											? "font-bold text-[var(--shop-accent-text,#1E40AF)]"
 											: "font-medium text-[#64748B]",
 									)}
 								>
@@ -146,7 +146,9 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 								<div
 									className={cn(
 										"w-full max-w-[54px] rounded-t-md",
-										isLast ? "bg-[#1E40AF]" : "bg-[#BFDBFE]",
+										isLast
+											? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
+											: "bg-[var(--shop-accent-border,#BFDBFE)]",
 									)}
 									style={{
 										height: `${max > 0 ? Math.max(2, (week.gmvDelivered / max) * 150) : 2}px`,
@@ -201,7 +203,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 			label: tPage("funnelViews"),
 			value: funnel.views,
 			note: null,
-			color: "bg-[#BFDBFE]",
+			color: "bg-[var(--shop-accent-border,#BFDBFE)]",
 		},
 		{
 			key: "engaged",
@@ -210,7 +212,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 			note: tPage("ofViews", {
 				value: percent(ratio(funnel.engaged, funnel.views), locale),
 			}),
-			color: "bg-[#93C5FD]",
+			color: "bg-[var(--shop-accent-border,#93C5FD)]",
 		},
 		{
 			key: "placed",
@@ -232,7 +234,8 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 					0,
 				),
 			}),
-			color: "bg-[#1E40AF]",
+			color:
+				"bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]",
 		},
 	];
 
@@ -362,7 +365,7 @@ function Meter({
 			{action && (
 				<Link
 					href={action.href}
-					className="mt-0.5 inline-flex items-center gap-1 font-semibold text-[#1E40AF] text-[13px] hover:underline"
+					className="mt-0.5 inline-flex items-center gap-1 font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 				>
 					{action.label}
 					<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
@@ -655,7 +658,7 @@ export function TopProductsCard({ view }: { view: ShopInsightsView }) {
 									<td className="px-[18px] py-3">
 										<Link
 											href={`/seller/catalogue/${encodeURIComponent(product.productId)}`}
-											className="font-semibold text-[#0F172A] hover:text-[#1E40AF] hover:underline"
+											className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 										>
 											{product.productTitle}
 										</Link>
@@ -768,13 +771,13 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 								)}
 								<Link
 									href={`/seller/catalogue/${encodeURIComponent(item.productId)}`}
-									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[#93C5FD]"
+									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[var(--shop-accent-border,#93C5FD)]"
 								>
 									{tPage("dormantPrice")}
 								</Link>
 								<Link
 									href="/seller/stock"
-									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[#93C5FD]"
+									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[var(--shop-accent-border,#93C5FD)]"
 								>
 									{tPage("dormantStock")}
 								</Link>

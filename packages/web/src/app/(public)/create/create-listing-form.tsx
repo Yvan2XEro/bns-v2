@@ -30,6 +30,7 @@ import {
 } from "~/components/ui/select";
 import { Separator } from "~/components/ui/separator";
 import { Textarea } from "~/components/ui/textarea";
+import { usePhotoLimit } from "~/hooks/use-app-config";
 import { useCategoryTags } from "~/hooks/use-category-tags";
 import { useMyShop } from "~/hooks/use-my-shop";
 import { useCurrencyCode, useOrderMoney } from "~/hooks/use-order-money";
@@ -63,9 +64,6 @@ import {
 	placeCoords,
 } from "../../../../../api/src/contracts/places";
 
-/** Maximum number of images a listing can carry (enforced server-side too). */
-const MAX_LISTING_IMAGES = 3;
-
 const DURATIONS = ["30", "60", "90"] as const;
 
 /**
@@ -84,6 +82,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const tCommon = useTranslations("Common");
 	const tShop = useTranslations("Shop");
 	const tIssues = useTranslations("FormIssues");
+	const photoLimit = usePhotoLimit();
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 
@@ -209,6 +208,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		preset: categoryPreset.fields,
 		attributes,
 		tags: applicableTagIds,
+		photoLimit,
 	});
 	// A refusal stays on screen until the form changes.
 	const draftKey = JSON.stringify({ ...draftBody, images: images.length });
@@ -748,7 +748,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 								previews={imagePreviews}
 								onAdd={handleAddImages}
 								onRemove={handleRemoveImage}
-								max={MAX_LISTING_IMAGES}
+								limit={photoLimit}
 							/>
 							{photosField.required && (
 								<p

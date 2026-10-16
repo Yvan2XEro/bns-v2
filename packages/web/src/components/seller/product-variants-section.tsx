@@ -63,7 +63,7 @@ export function ProductVariantsSection({
 				<label className="flex items-center gap-2 text-[#334155] text-sm">
 					<input
 						type="checkbox"
-						className="h-4 w-4 accent-[#1E40AF]"
+						className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
 						checked={options.length > 0}
 						onChange={(event) =>
 							applyOptions(

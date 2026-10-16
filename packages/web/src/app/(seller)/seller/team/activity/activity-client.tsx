@@ -61,7 +61,7 @@ function ActivityError({
 			<button
 				type="button"
 				onClick={onRetry}
-				className="mt-4 h-10 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 			>
 				{t("retry")}
 			</button>

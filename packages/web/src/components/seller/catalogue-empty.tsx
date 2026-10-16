@@ -15,13 +15,13 @@ export function CatalogueEmpty() {
 					<>
 						<Link
 							href="/seller/catalogue/new"
-							className="inline-flex h-10 items-center rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+							className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 						>
 							{t("add")}
 						</Link>
 						<Link
 							href="/seller/settings?move=1"
-							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
+							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 						>
 							{t("moveListings")}
 						</Link>

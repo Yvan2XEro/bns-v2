@@ -48,7 +48,7 @@ export function toPicked(
 }
 
 const rowClass =
-	"flex w-full items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-3 py-2 text-left text-sm hover:border-[#93C5FD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]";
+	"flex w-full items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-3 py-2 text-left text-sm hover:border-[var(--shop-accent-border,#93C5FD)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--shop-accent,#1E40AF)]";
 
 export function VariantPicker({
 	shopId,
@@ -88,7 +88,7 @@ export function VariantPicker({
 				<button
 					type="button"
 					onClick={() => setOpenProduct(null)}
-					className="inline-flex items-center gap-1.5 text-[#1E40AF] text-sm hover:underline"
+					className="inline-flex items-center gap-1.5 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 				>
 					<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 					{openProduct.title}
@@ -126,7 +126,7 @@ export function VariantPicker({
 					onChange={(event) => setQuery(event.target.value)}
 					aria-label={t("pickPlaceholder")}
 					placeholder={t("pickPlaceholder")}
-					className="h-10 w-full rounded-lg border border-[#E2E8F0] pr-3 pl-9 text-sm outline-none focus:border-[#93C5FD]"
+					className="h-10 w-full rounded-lg border border-[#E2E8F0] pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]"
 				/>
 			</div>
 			{!isPending && data?.docs.length === 0 && (

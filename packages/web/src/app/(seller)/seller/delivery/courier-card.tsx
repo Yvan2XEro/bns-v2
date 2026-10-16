@@ -83,7 +83,7 @@ export function CourierCard({
 				)}
 				<Link
 					href="/seller/delivery/couriers"
-					className="inline-flex font-semibold text-[#1E40AF] text-[13px] hover:underline"
+					className="inline-flex font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 				>
 					{tPage("courierRegistry")}
 				</Link>

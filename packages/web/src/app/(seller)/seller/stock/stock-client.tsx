@@ -149,7 +149,7 @@ export function StockClient({
 				<div className="flex flex-wrap gap-2">
 					<Link
 						href="/seller/stock/inventory"
-						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 					>
 						<ClipboardList aria-hidden="true" className="h-4 w-4" />
 						{t("startInventory")}
@@ -157,7 +157,7 @@ export function StockClient({
 					<button
 						type="button"
 						onClick={() => openAdjust(receiptPreset)}
-						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 					>
 						<PackagePlus aria-hidden="true" className="h-4 w-4" />
 						{ts("recordReceipt")}
@@ -184,7 +184,7 @@ export function StockClient({
 										"inline-flex h-8 items-center rounded-full border px-3 font-medium text-sm",
 										state.filter === value
 											? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-											: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#93C5FD]",
+											: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[var(--shop-accent-border,#93C5FD)]",
 									)}
 								>
 									{value === "reservation"
@@ -195,7 +195,7 @@ export function StockClient({
 							<button
 								type="button"
 								onClick={() => openAdjust(undefined)}
-								className="inline-flex h-8 items-center rounded-full border border-[#E2E8F0] bg-white px-3 font-medium text-[#1E40AF] text-sm hover:border-[#93C5FD] xl:hidden"
+								className="inline-flex h-8 items-center rounded-full border border-[#E2E8F0] bg-white px-3 font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm hover:border-[var(--shop-accent-border,#93C5FD)] xl:hidden"
 							>
 								{t("adjustTitle")}
 							</button>

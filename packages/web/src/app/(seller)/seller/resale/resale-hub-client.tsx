@@ -239,7 +239,7 @@ function Tabs({
 						className={cn(
 							"-mb-px flex shrink-0 items-center gap-1.5 border-b-2 py-2.5 font-semibold text-[15px]",
 							current
-								? "border-[#1E40AF] text-[#1E40AF]"
+								? "border-[var(--shop-accent,#1E40AF)] text-[var(--shop-accent-text,#1E40AF)]"
 								: "border-transparent text-[#64748B] hover:text-[#0F172A]",
 						)}
 					>
@@ -249,7 +249,7 @@ function Tabs({
 								className={cn(
 									"rounded-full px-1.5 py-px text-xs",
 									current
-										? "bg-[#DBEAFE] text-[#1E40AF]"
+										? "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]"
 										: "bg-[#F1F5F9] text-[#64748B]",
 								)}
 							>

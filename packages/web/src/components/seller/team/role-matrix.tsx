@@ -13,7 +13,8 @@ const ROLE_KEYS = {
 
 const CELL_STYLES: Record<MatrixCell, string> = {
 	full: "bg-[#DCFCE7] text-[#166534]",
-	limited: "bg-[#DBEAFE] text-[#1E40AF]",
+	limited:
+		"bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
 	none: "bg-[#F1F5F9] text-[#94A3B8]",
 };
 

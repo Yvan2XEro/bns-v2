@@ -43,7 +43,7 @@ export function ShipmentRescheduleDialog({
 					aria-label={t("rescheduleTitle")}
 					value={slot}
 					onChange={(e) => setSlot(e.target.value)}
-					className="flex h-10 w-full rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3 text-sm"
+					className="flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-sm"
 				>
 					<option value="">{t("rescheduleChoose")}</option>
 					{slots.map((entry) => (

@@ -66,7 +66,7 @@ export function LocationsClient({ shopId }: { shopId: string }) {
 							<p className="font-semibold text-[#0F172A]">
 								{location.name}
 								{location.isDefaultOrigin && (
-									<span className="ml-2 rounded-full bg-[#EFF6FF] px-2 py-0.5 font-medium text-[#1E40AF] text-xs">
+									<span className="ml-2 rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-2 py-0.5 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs">
 										{t("defaultOrigin")}
 									</span>
 								)}

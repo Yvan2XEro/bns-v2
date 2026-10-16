@@ -481,6 +481,10 @@ export interface ProductIssueContext {
 	attributes: CategoryAttributeSpec[];
 	preset: ResolvedFormPreset;
 	includeCost: boolean;
+	/** `photosIncluded` from the public config. */
+	photoLimit?: number;
+	/** The saved product's photo count on an edit; null for a new product. */
+	previousImageCount?: number | null;
 }
 
 /** State indexes of the option rows `toProductInput` sends, in body order. */
@@ -597,7 +601,11 @@ export function productFormIssues(
 				price: parseAmount(state.variants[index]?.price ?? ""),
 			})),
 		},
-		{ attributes: context.attributes },
+		{
+			attributes: context.attributes,
+			photoLimit: context.photoLimit,
+			previousImageCount: context.previousImageCount,
+		},
 	)) {
 		issues.push({ ...issue, path: productFormPath(issue.path, optionRows) });
 	}
@@ -687,6 +695,7 @@ const FIELD_RULE_KEYS: Record<string, string> = {
 	"options:maxItems": "optionsMax",
 	"values:count": "valuesCount",
 	"newImages:maxItems": "imagesMax",
+	"newImages:photoLimit": "photoLimit",
 };
 const RULE_KEYS = new Set([
 	"required",

@@ -72,7 +72,7 @@ export function BuyerBlock({ order }: { order: OrderView }) {
 				{tel && (
 					<a
 						href={tel}
-						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 					>
 						<Phone aria-hidden="true" className="h-4 w-4" />
 						{t("callBuyer")}
@@ -83,7 +83,7 @@ export function BuyerBlock({ order }: { order: OrderView }) {
 						href={maps}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
+						className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 					>
 						<MapPin aria-hidden="true" className="h-4 w-4" />
 						{t("openInMaps")}

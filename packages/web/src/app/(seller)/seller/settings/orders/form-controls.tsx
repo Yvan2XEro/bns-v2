@@ -15,7 +15,7 @@ export function Toggle({
 			<input
 				id={id}
 				type="checkbox"
-				className="h-5 w-5 rounded border-[#CBD5E1] accent-[#1E40AF]"
+				className="h-5 w-5 rounded border-[#CBD5E1] accent-[var(--shop-accent,#1E40AF)]"
 				{...input}
 			/>
 			{label}

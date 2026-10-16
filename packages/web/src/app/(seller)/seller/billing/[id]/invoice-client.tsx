@@ -34,7 +34,7 @@ export function InvoiceClient({
 	const back = (
 		<Link
 			href="/seller/billing"
-			className="inline-flex min-h-11 items-center gap-1.5 text-[#1E40AF] text-sm hover:underline"
+			className="inline-flex min-h-11 items-center gap-1.5 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 		>
 			<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 			{t("backToBilling")}
@@ -118,7 +118,7 @@ export function InvoiceClient({
 						href={documentUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex min-h-11 items-center gap-1.5 text-[#1E40AF] text-sm hover:underline"
+						className="inline-flex min-h-11 items-center gap-1.5 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 					>
 						{t("openDocument")}
 						<ExternalLink aria-hidden="true" className="h-4 w-4" />

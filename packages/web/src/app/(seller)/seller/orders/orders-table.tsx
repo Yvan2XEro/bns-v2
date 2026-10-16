@@ -68,7 +68,7 @@ function RowActionButton({
 			className={cn(
 				ACTION_BUTTON,
 				action === "accept"
-					? "bg-[#1E40AF] text-white hover:bg-[#1E3A8A]"
+					? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 					: "border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]",
 			)}
 		>
@@ -169,7 +169,7 @@ export function OrdersTable({
 								disabled={selectable.length === 0}
 								checked={allSelected}
 								onChange={() => onToggleAll(selectable, !allSelected)}
-								className="h-4 w-4 accent-[#1E40AF]"
+								className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
 							/>
 						</th>
 						<th scope="col" className="px-4 py-2.5 font-semibold">
@@ -216,7 +216,7 @@ export function OrdersTable({
 											aria-label={t("selectOrder", { number: row.orderNumber })}
 											checked={isSelected}
 											onChange={() => onToggle(row.id)}
-											className="h-4 w-4 accent-[#1E40AF]"
+											className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
 										/>
 									)}
 								</td>
@@ -224,7 +224,7 @@ export function OrdersTable({
 									<div className="flex flex-col">
 										<Link
 											href={href}
-											className="font-semibold text-[#0F172A] hover:text-[#1E40AF] hover:underline"
+											className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 										>
 											{row.orderNumber}
 										</Link>

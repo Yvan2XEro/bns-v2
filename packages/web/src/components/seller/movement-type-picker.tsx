@@ -27,7 +27,7 @@ export function MovementTypePicker({
 					className={cn(
 						"rounded-lg border p-3 text-left",
 						value === type
-							? "border-[#1E40AF] bg-[#EFF6FF]"
+							? "border-[var(--shop-accent,#1E40AF)] bg-[var(--shop-accent-soft,#EFF6FF)]"
 							: "border-[#E2E8F0]",
 					)}
 				>

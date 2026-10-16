@@ -93,7 +93,7 @@ export function SellerTodayCards(props: PendingProps) {
 					},
 					{
 						icon: Truck,
-						tone: "bg-[#DBEAFE] text-[#1E40AF]",
+						tone: "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
 						value: pending.toShip,
 						label: tDash("toShip", { count: pending.toShip }),
 						action: tDash("prepare"),
@@ -146,7 +146,7 @@ export function SellerTodayCards(props: PendingProps) {
 					</p>
 					<Link
 						href={href}
-						className="font-semibold text-[#1E40AF] text-sm hover:underline"
+						className="font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 					>
 						{action}
 					</Link>
@@ -175,7 +175,7 @@ export function RecentOrders({ shopId }: { shopId: string }) {
 				</h2>
 				<Link
 					href="/seller/orders"
-					className="font-medium text-[#1E40AF] text-sm hover:underline"
+					className="font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 				>
 					{tDash("allOrders")}
 				</Link>
@@ -230,7 +230,7 @@ export function RecentOrders({ shopId }: { shopId: string }) {
 										<td className="px-4 py-3">
 											<Link
 												href={`/seller/orders/${encodeURIComponent(row.id)}`}
-												className="font-semibold text-[#0F172A] hover:text-[#1E40AF] hover:underline"
+												className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 											>
 												{row.orderNumber}
 											</Link>

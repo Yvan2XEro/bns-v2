@@ -18,7 +18,7 @@ import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
 
 const cell =
-	"h-9 w-full rounded-md border border-[#E2E8F0] px-2 text-right text-sm outline-none focus:border-[#93C5FD]";
+	"h-9 w-full rounded-md border border-[#E2E8F0] px-2 text-right text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]";
 
 interface VariantTableProps {
 	control: Control<ProductFormState>;
@@ -74,7 +74,7 @@ export function VariantTable({
 					<button
 						type="button"
 						onClick={applyFirstPrice}
-						className="font-semibold text-[#1E40AF]"
+						className="font-semibold text-[var(--shop-accent-text,#1E40AF)]"
 					>
 						{t("samePrice")}
 					</button>
@@ -123,7 +123,7 @@ export function VariantTable({
 											placeholder={t("skuPlaceholder")}
 											aria-label={t("skuPlaceholder")}
 											aria-invalid={Boolean(at("sku"))}
-											className={`mt-1 h-8 w-24 rounded-md border px-2 text-xs uppercase outline-none ${at("sku") ? invalidCell : "border-[#E2E8F0] focus:border-[#93C5FD]"}`}
+											className={`mt-1 h-8 w-24 rounded-md border px-2 text-xs uppercase outline-none ${at("sku") ? invalidCell : "border-[#E2E8F0] focus:border-[var(--shop-accent-border,#93C5FD)]"}`}
 										/>
 										<ProductIssueText issue={at("sku")} />
 										<input
@@ -137,7 +137,7 @@ export function VariantTable({
 											onKeyDown={(event) => {
 												if (event.key === "Enter") event.preventDefault();
 											}}
-											className={`mt-1 block h-8 w-32 rounded-md border px-2 text-xs tabular-nums outline-none ${at("barcode") ? invalidCell : "border-[#E2E8F0] focus:border-[#93C5FD]"}`}
+											className={`mt-1 block h-8 w-32 rounded-md border px-2 text-xs tabular-nums outline-none ${at("barcode") ? invalidCell : "border-[#E2E8F0] focus:border-[var(--shop-accent-border,#93C5FD)]"}`}
 										/>
 										<ProductIssueText issue={at("barcode")} />
 									</td>
@@ -178,7 +178,7 @@ export function VariantTable({
 												</p>
 												<Link
 													href={`/seller/stock?adjust=${row.id}`}
-													className="text-[#1E40AF] text-xs hover:underline"
+													className="text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
 												>
 													{t("adjust")}
 												</Link>
@@ -223,7 +223,7 @@ export function VariantTable({
 												},
 											})}
 											type="checkbox"
-											className="h-4 w-4 accent-[#1E40AF]"
+											className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
 											aria-label={t("colTracked")}
 										/>
 									</td>

@@ -13,7 +13,7 @@ import { unavailableHint } from "~/lib/delivery-zone-form";
 import { useLocaleKey } from "~/lib/use-locale-key";
 
 const SELECT_CLASS =
-	"flex h-10 w-full rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
+	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
 
 /** Asks the quote route what a buyer at this address would be offered; nothing is saved. */
 export function TestAddress({ shopId }: { shopId: string }) {

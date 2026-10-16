@@ -10,7 +10,8 @@ import {
 	type IssueAt,
 	ProductIssueText,
 } from "~/components/seller/product-issue-text";
-import { MAX_IMAGES, type ProductFormState } from "~/lib/product-form";
+import { usePhotoLimit } from "~/hooks/use-app-config";
+import type { ProductFormState } from "~/lib/product-form";
 
 export function ProductPhotosSection({
 	control,
@@ -22,7 +23,7 @@ export function ProductPhotosSection({
 	const t = useTranslations("ProductEditor");
 	const existingImages = useWatch({ control, name: "existingImages" }) ?? [];
 	const newImages = useWatch({ control, name: "newImages" }) ?? [];
-	const room = MAX_IMAGES - existingImages.length;
+	const limit = usePhotoLimit();
 
 	return (
 		<EditorSection
@@ -41,32 +42,31 @@ export function ProductPhotosSection({
 						/>
 					)}
 				/>
-				{room > 0 && (
-					<Controller
-						control={control}
-						name="newImages"
-						render={({ field }) => (
-							<ImagePicker
-								previews={field.value.map((draft) => draft.preview)}
-								max={room}
-								onAdd={(files) =>
-									field.onChange([
-										...field.value,
-										...files.map((file) => ({
-											file,
-											preview: URL.createObjectURL(file),
-										})),
-									])
-								}
-								onRemove={(index) => {
-									const dropped = field.value[index];
-									if (dropped) URL.revokeObjectURL(dropped.preview);
-									field.onChange(field.value.filter((_, i) => i !== index));
-								}}
-							/>
-						)}
-					/>
-				)}
+				<Controller
+					control={control}
+					name="newImages"
+					render={({ field }) => (
+						<ImagePicker
+							previews={field.value.map((draft) => draft.preview)}
+							limit={limit}
+							existingCount={existingImages.length}
+							onAdd={(files) =>
+								field.onChange([
+									...field.value,
+									...files.map((file) => ({
+										file,
+										preview: URL.createObjectURL(file),
+									})),
+								])
+							}
+							onRemove={(index) => {
+								const dropped = field.value[index];
+								if (dropped) URL.revokeObjectURL(dropped.preview);
+								field.onChange(field.value.filter((_, i) => i !== index));
+							}}
+						/>
+					)}
+				/>
 				<p className="text-[#94A3B8] text-xs">{t("photosHint")}</p>
 				<ProductIssueText issue={issueAt("newImages")} />
 			</div>

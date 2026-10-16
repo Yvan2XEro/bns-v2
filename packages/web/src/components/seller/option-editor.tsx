@@ -30,7 +30,7 @@ function ValueAdder({ onAdd }: { onAdd: (value: string) => void }) {
 			onBlur={commit}
 			placeholder={t("addValue")}
 			aria-label={t("addValue")}
-			className="h-8 w-32 rounded-full border border-[#E2E8F0] border-dashed px-3 text-sm outline-none focus:border-[#93C5FD]"
+			className="h-8 w-32 rounded-full border border-[#E2E8F0] border-dashed px-3 text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]"
 		/>
 	);
 }
@@ -89,7 +89,7 @@ function NameField({
 				placeholder={t("optionName")}
 				aria-label={t("optionName")}
 				aria-invalid={duplicate || Boolean(issue)}
-				className="h-9 w-full rounded-md border border-[#E2E8F0] px-3 font-semibold text-sm outline-none focus:border-[#93C5FD]"
+				className="h-9 w-full rounded-md border border-[#E2E8F0] px-3 font-semibold text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]"
 			/>
 			{duplicate ? (
 				<p className="mt-1 text-red-600 text-xs">{t("optionNameDuplicate")}</p>
@@ -146,7 +146,7 @@ export function OptionEditor({
 						{option.values.map((value) => (
 							<span
 								key={value}
-								className="inline-flex items-center gap-1 rounded-full bg-[#EFF6FF] px-3 py-1 font-medium text-[#1E40AF] text-sm"
+								className="inline-flex items-center gap-1 rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm"
 							>
 								{value}
 								<button
@@ -181,7 +181,7 @@ export function OptionEditor({
 				<button
 					type="button"
 					onClick={() => onChange([...options, { name: "", values: [] }])}
-					className="inline-flex items-center gap-1 font-semibold text-[#1E40AF] text-sm"
+					className="inline-flex items-center gap-1 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm"
 				>
 					<Plus aria-hidden="true" className="h-4 w-4" />
 					{t("addOption")}

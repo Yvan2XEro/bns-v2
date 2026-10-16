@@ -52,7 +52,7 @@ export function FilterList({
 						className={cn(
 							"flex shrink-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left font-medium text-sm",
 							active
-								? "bg-[#EFF6FF] text-[#1E40AF]"
+								? "bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]"
 								: "text-[#334155] hover:bg-[#F8FAFC]",
 						)}
 					>
@@ -61,7 +61,7 @@ export function FilterList({
 							className={cn(
 								"rounded-full px-1.5 text-[11px]",
 								active
-									? "bg-[#DBEAFE] text-[#1E40AF]"
+									? "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]"
 									: "bg-[#F1F5F9] text-[#64748B]",
 							)}
 						>

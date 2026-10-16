@@ -17,7 +17,7 @@ import { cn } from "~/lib/utils";
 import type { CatalogueResponse, Category } from "~/types";
 
 const selectClass =
-	"h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[#334155] text-sm focus:border-[#93C5FD] focus:outline-none";
+	"h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[#334155] text-sm focus:border-[var(--shop-accent-border,#93C5FD)] focus:outline-none";
 
 /** Top-level categories, each followed by its direct subcategories. */
 function categoryOptions(categories: Category[]) {
@@ -92,7 +92,7 @@ export function CatalogueFilters({
 								"inline-flex h-8 items-center gap-2 rounded-full border px-3 font-medium text-sm",
 								active
 									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-									: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#93C5FD]",
+									: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[var(--shop-accent-border,#93C5FD)]",
 							)}
 						>
 							{value === "resale" ? tc("resaleTab") : t(`filter.${value}`)}
@@ -125,7 +125,7 @@ export function CatalogueFilters({
 						value={query}
 						onChange={(event) => onQueryChange(event.target.value)}
 						placeholder={tc("searchPlaceholder")}
-						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
+						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[var(--shop-accent-border,#93C5FD)] focus:outline-none"
 					/>
 				</div>
 				<select

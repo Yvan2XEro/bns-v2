@@ -23,12 +23,15 @@ const body = {
 
 describe("webListingIssues", () => {
 	test("a complete listing has nothing to refuse", () => {
-		expect(webListingIssues(body, { preset, attributes: [] })).toEqual([]);
+		expect(
+			webListingIssues(body, { preset, attributes: [], photoLimit: 3 }),
+		).toEqual([]);
 	});
 
 	test("a required attribute sent blank is refused on its own path", () => {
 		const issues = webListingIssues(body, {
 			preset,
+			photoLimit: 3,
 			attributes: [
 				{ slug: "brand", name: "Marque", type: "text", required: true },
 			],
@@ -39,13 +42,71 @@ describe("webListingIssues", () => {
 	test("the wizard is sent back to the first step that holds a problem", () => {
 		const issues = webListingIssues(
 			{ ...body, price: undefined, images: [] },
-			{ preset, attributes: [] },
+			{ preset, attributes: [], photoLimit: 3 },
 		);
 		const steps = ["describe", "details", "photos", "review"] as const;
 		expect(firstListingIssueStep(issues, steps)).toBe("details");
 		expect(issuesOnStep(issues, "photos")).toEqual([
 			{ path: "images", rule: "required" },
 		]);
+	});
+});
+
+describe("photo limit", () => {
+	const photos = (n: number) => Array.from({ length: n }, () => ({}));
+
+	test("follows the limit the public config serves", () => {
+		const ctx = { preset, attributes: [], photoLimit: 5 };
+		expect(webListingIssues({ ...body, images: photos(5) }, ctx)).toEqual([]);
+		expect(webListingIssues({ ...body, images: photos(6) }, ctx)).toEqual([
+			{ path: "images", rule: "photoLimit", params: { max: 5 } },
+		]);
+	});
+
+	test("an edit above the limit keeps its photos but cannot add one", () => {
+		const ctx = {
+			preset,
+			attributes: [],
+			photoLimit: 3,
+			previousImageCount: 6,
+		};
+		expect(webListingIssues({ ...body, images: photos(6) }, ctx)).toEqual([]);
+		expect(
+			issuesOnStep(
+				webListingIssues({ ...body, images: photos(7) }, ctx),
+				"photos",
+			),
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 3 } }]);
+	});
+
+	test("the server's refusal lands on the photos with its own wording", async () => {
+		const res = new Response(
+			JSON.stringify({
+				errors: [
+					{
+						data: {
+							code: "media.photoLimit",
+							limit: 3,
+							errors: [
+								{
+									path: "images",
+									message: "A listing can carry at most 3 photos.",
+									rule: "photoLimit",
+									params: { max: 3 },
+								},
+							],
+						},
+					},
+				],
+			}),
+			{ status: 400 },
+		);
+		const issues = await responseIssues(res);
+		expect(issues).toEqual([
+			{ path: "images", rule: "photoLimit", params: { max: 3 } },
+		]);
+		expect(issueRuleKey("photoLimit")).toBe("rule_photoLimit");
+		expect(issueLabelKey("images")).toBe("fieldImages");
 	});
 });
 

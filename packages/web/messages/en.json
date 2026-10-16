@@ -46,7 +46,8 @@
 		"variantsSingle": "A product without options has a single variant.",
 		"optionsMax": "At most {max} options.",
 		"valuesCount": "Each option needs 1 to {max} values.",
-		"imagesMax": "At most {max} photos."
+		"imagesMax": "At most {max} photos.",
+		"photoLimit": "At most {max} photos for now."
 	},
 	"FormIssues": {
 		"fixStep": "Some fields need your attention before you continue.",
@@ -62,6 +63,7 @@
 		"rule_invalid": "This value was refused. Please check it.",
 		"rule_required": "This field is required.",
 		"rule_maxItems": "At most {max}.",
+		"rule_photoLimit": "At most {max} photos for now.",
 		"rule_number": "Enter a number.",
 		"rule_option": "Choose one of the proposed values.",
 		"rule_min": "At least {min}.",
@@ -547,6 +549,8 @@
 		"fromPrice": "From",
 		"photos": "Photos",
 		"imagesTotal": "{count} image(s) total",
+		"photosOfLimit": "{count} / {max} photos",
+		"morePhotosSoon": "More photos coming soon as an option",
 		"maximumImagesAllowed": "Maximum {max} images allowed",
 		"currentImages": "Current images",
 		"addNewImages": "Add new images",
@@ -1446,7 +1450,7 @@
 		"categoryError": "Choose a category",
 		"description": "Description",
 		"photos": "Photos · {count} of 10, the first is the cover",
-		"photosHint": "JPG or PNG, 10 at most.",
+		"photosHint": "JPG or PNG.",
 		"cover": "Cover",
 		"removeImage": "Remove this photo",
 		"variantsTitle": "Variants, price and stock",
@@ -1964,6 +1968,9 @@
 		"upload": {
 			"tooLarge": "This file is too large.",
 			"invalidType": "This file type is not supported."
+		},
+		"media": {
+			"photoLimit": "You have reached the number of photos included."
 		},
 		"contact": {
 			"incomplete": "Please fill in every field.",

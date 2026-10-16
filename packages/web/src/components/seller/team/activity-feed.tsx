@@ -31,7 +31,7 @@ export function ActivityFeed({ shopId }: { shopId: string }) {
 				</h2>
 				<Link
 					href="/seller/team/activity"
-					className="font-semibold text-[#1E40AF] text-[13px] hover:underline"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 				>
 					{tPage("seeAll")}
 				</Link>

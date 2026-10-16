@@ -17,7 +17,7 @@ import { PayoutAccountCard } from "./payout-account-card";
 import { PayoutsTable } from "./payouts-table";
 
 const HEADER_BUTTON =
-	"inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD] disabled:cursor-not-allowed disabled:opacity-60";
+	"inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)] disabled:cursor-not-allowed disabled:opacity-60";
 
 const FLOW_STEPS = ["1", "2", "3", "4"] as const;
 
@@ -137,7 +137,7 @@ export function PaymentsClient({ shopId }: { shopId: string }) {
 					<MoneyFlow />
 					<Link
 						href="/seller/payments/setup"
-						className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-white px-[18px] py-3.5 font-semibold text-[#1E40AF] text-sm hover:border-[#93C5FD]"
+						className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-white px-[18px] py-3.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 					>
 						<Settings aria-hidden="true" className="h-4 w-4" />
 						{tPage("setupLink")}

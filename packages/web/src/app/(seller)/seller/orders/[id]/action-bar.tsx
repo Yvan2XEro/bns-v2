@@ -96,7 +96,7 @@ export function ActionBar({
 									href={orderReceiptUrl(order.id, locale)}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#DBEAFE] px-4 font-medium text-sm hover:bg-[#EFF6FF]"
+									className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] px-4 font-medium text-sm hover:bg-[var(--shop-accent-soft,#EFF6FF)]"
 								>
 									{t(labelKey)}
 								</a>

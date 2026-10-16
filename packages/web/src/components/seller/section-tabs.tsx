@@ -24,7 +24,7 @@ export function SectionTabs({
 						className={cn(
 							"px-3 py-2 font-medium text-sm",
 							active
-								? "-mb-px border-[#1E40AF] border-b-2 text-[#1E40AF]"
+								? "-mb-px border-[var(--shop-accent,#1E40AF)] border-b-2 text-[var(--shop-accent-text,#1E40AF)]"
 								: "text-[#64748B] hover:text-[#0F172A]",
 						)}
 					>

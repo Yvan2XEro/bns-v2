@@ -154,7 +154,7 @@ function ImportBody({
 			<div className="flex flex-wrap items-center gap-3">
 				<label
 					htmlFor={fileId}
-					className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
+					className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 				>
 					<Upload aria-hidden="true" className="h-4 w-4" />
 					{fileName ?? t("chooseFile")}
@@ -169,7 +169,7 @@ function ImportBody({
 				<a
 					href={TEMPLATE_HREF}
 					download="modele-catalogue.csv"
-					className="inline-flex items-center gap-1 text-[#1E40AF] text-sm hover:underline"
+					className="inline-flex items-center gap-1 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
 				>
 					<Download aria-hidden="true" className="h-4 w-4" />
 					{t("template")}
@@ -250,7 +250,7 @@ function ImportBody({
 					type="button"
 					disabled={valid.length === 0 || importProducts.isPending}
 					onClick={() => void onConfirm()}
-					className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 				>
 					{importProducts.isPending && (
 						<LoaderCircle

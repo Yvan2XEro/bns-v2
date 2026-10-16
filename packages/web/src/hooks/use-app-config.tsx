@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from "react";
 import { type AppConfig, EMPTY_APP_CONFIG } from "~/lib/app-config";
+import { normalizePhotoLimit } from "../../../api/src/contracts/photoLimit";
 
 export type { AppConfig, BoostPrice } from "~/lib/app-config";
 
@@ -25,3 +26,7 @@ export function AppConfigProvider({ initialConfig, children }: Props) {
 }
 
 export const useAppConfig = () => useContext(AppConfigContext);
+
+/** The admin's photo limit for listings and products, from the public config. */
+export const usePhotoLimit = () =>
+	normalizePhotoLimit(useContext(AppConfigContext).photosIncluded);

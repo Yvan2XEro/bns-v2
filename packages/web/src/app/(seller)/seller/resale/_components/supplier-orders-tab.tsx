@@ -20,7 +20,8 @@ import { initials } from "../catalogue/resale-catalogue-client";
 
 const STATUS_TONE: Record<PurchaseOrderStatus, string> = {
 	sent: "bg-[#FEF3C7] text-[#92400E]",
-	accepted: "bg-[#DBEAFE] text-[#1E40AF]",
+	accepted:
+		"bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
 	shipped: "bg-[#E0E7FF] text-[#3730A3]",
 	delivered: "bg-[#DCFCE7] text-[#166534]",
 	cancelled: "bg-[#F1F5F9] text-[#334155]",
@@ -251,7 +252,7 @@ function RequestsCard({ shopId }: { shopId: string }) {
 					className="flex flex-col gap-2 border-[#F1F5F9] border-b px-[18px] py-3 last:border-b-0"
 				>
 					<div className="flex items-center gap-2.5">
-						<span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-[#DBEAFE] font-extrabold text-[#1E40AF] text-xs">
+						<span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-[var(--shop-accent-soft,#DBEAFE)] font-extrabold text-[var(--shop-accent-text,#1E40AF)] text-xs">
 							{initials(link.partnerShop.name)}
 						</span>
 						<span className="flex flex-1 flex-col gap-0.5">
@@ -263,9 +264,9 @@ function RequestsCard({ shopId }: { shopId: string }) {
 									className={cn(
 										"w-fit rounded-full px-2 py-0.5 font-semibold text-[11px]",
 										link.partnerShop.level >= 3
-											? "bg-[#1E40AF] text-white"
+											? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
 											: link.partnerShop.level === 2
-												? "bg-[#DBEAFE] text-[#1E40AF]"
+												? "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]"
 												: "bg-[#F1F5F9] text-[#334155]",
 									)}
 								>
@@ -292,7 +293,7 @@ function RequestsCard({ shopId }: { shopId: string }) {
 							onClick={() =>
 								decide.mutate({ linkId: link.id, action: "approve" })
 							}
-							className="h-[34px] flex-1 rounded-lg bg-[#1E40AF] font-semibold text-[13px] text-white disabled:opacity-50"
+							className="h-[34px] flex-1 rounded-lg bg-[var(--shop-accent,#1E40AF)] font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
 						>
 							{t("approve")}
 						</button>
@@ -348,7 +349,7 @@ function RulesCard({ shopId }: { shopId: string }) {
 				<h2 className="font-bold text-base">{t("rulesTitle")}</h2>
 				<Link
 					href={resaleHref("supplier", "offered")}
-					className="font-semibold text-[#1E40AF] text-[13px]"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)]"
 				>
 					{t("edit")}
 				</Link>

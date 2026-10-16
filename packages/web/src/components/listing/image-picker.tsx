@@ -6,12 +6,19 @@ import { useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { ImageCropper } from "~/components/ui/image-cropper";
 import { Label } from "~/components/ui/label";
+import {
+	canAddPhoto,
+	photosRemaining,
+} from "../../../../api/src/contracts/photoLimit";
 
 interface ImagePickerProps {
 	previews: string[];
 	onAdd: (files: File[]) => void;
 	onRemove: (index: number) => void;
-	max?: number;
+	/** Photos the listing or product may carry in all: `usePhotoLimit()`. */
+	limit: number;
+	/** Photos already saved and shown elsewhere, which count against the limit. */
+	existingCount?: number;
 	cropAspect?: number;
 }
 
@@ -19,10 +26,14 @@ export function ImagePicker({
 	previews,
 	onAdd,
 	onRemove,
-	max = 10,
+	limit,
+	existingCount = 0,
 	cropAspect = 4 / 3,
 }: ImagePickerProps) {
 	const t = useTranslations("Listing");
+	const total = existingCount + previews.length;
+	const max = photosRemaining(existingCount, limit);
+	const full = !canAddPhoto(total, limit);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [cropQueue, setCropQueue] = useState<string[]>([]);
 	const [croppedFiles, setCroppedFiles] = useState<File[]>([]);
@@ -31,7 +42,7 @@ export function ImagePicker({
 	function handleSelect(e: React.ChangeEvent<HTMLInputElement>) {
 		const files = Array.from(e.target.files || []);
 		if (previews.length + files.length > max) {
-			alert(t("maximumImagesAllowed", { max }));
+			alert(t("maximumImagesAllowed", { max: limit }));
 			if (fileInputRef.current) fileInputRef.current.value = "";
 			return;
 		}
@@ -115,7 +126,7 @@ export function ImagePicker({
 				/>
 			)}
 			<div className="space-y-2">
-				<Label>Images (max {max})</Label>
+				<Label>{t("photosOfLimit", { count: total, max: limit })}</Label>
 				<div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
 					{previews.map((preview, index) => (
 						<div key={index} className="relative aspect-square">
@@ -136,16 +147,19 @@ export function ImagePicker({
 							</Button>
 						</div>
 					))}
-					{previews.length < max && (
-						<button
-							type="button"
-							className="flex aspect-square items-center justify-center rounded-md border-2 border-dashed transition-colors hover:border-primary/50"
-							onClick={() => fileInputRef.current?.click()}
-						>
-							<Upload className="h-6 w-6 text-muted-foreground" />
-						</button>
-					)}
+					<button
+						type="button"
+						disabled={full}
+						aria-label={t("addNewImages")}
+						className="flex aspect-square items-center justify-center rounded-md border-2 border-dashed transition-colors enabled:hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+						onClick={() => fileInputRef.current?.click()}
+					>
+						<Upload className="h-6 w-6 text-muted-foreground" />
+					</button>
 				</div>
+				{full && (
+					<p className="text-muted-foreground text-xs">{t("morePhotosSoon")}</p>
+				)}
 				<input
 					ref={fileInputRef}
 					type="file"

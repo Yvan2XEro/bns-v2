@@ -21,6 +21,7 @@ import { ProductPublicationCard } from "~/components/seller/product-publication-
 import { ProductVariantsSection } from "~/components/seller/product-variants-section";
 import { RecentMovements } from "~/components/seller/recent-movements";
 import { WorkspaceBreadcrumb } from "~/components/seller/workspace-breadcrumb";
+import { usePhotoLimit } from "~/hooks/use-app-config";
 import { useCatalogueStockT } from "~/hooks/use-catalogue-stock-t";
 import { useSaveProduct } from "~/hooks/use-save-product";
 import { resolveErrorMessage } from "~/lib/apiError";
@@ -73,6 +74,7 @@ export function ProductEditor({
 	const tRoot = useTranslations();
 	const router = useRouter();
 	const saveProduct = useSaveProduct(shopId, detail?.productId);
+	const photoLimit = usePhotoLimit();
 
 	const [defaultValues] = useState<ProductFormState>(() =>
 		detail
@@ -122,6 +124,10 @@ export function ProductEditor({
 		attributes: categoryContext.attributes,
 		preset: categoryContext.preset,
 		includeCost: showCost,
+		photoLimit,
+		previousImageCount: detail
+			? (formState.defaultValues?.existingImages?.length ?? 0)
+			: null,
 	};
 
 	const errors = formState.errors;
@@ -253,7 +259,7 @@ export function ProductEditor({
 				onCancel={detail ? undefined : cancel}
 			/>
 			{restored && (
-				<p className="rounded-lg bg-[#EFF6FF] px-3 py-2 text-[#1E3A8A] text-sm">
+				<p className="rounded-lg bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-2 text-[var(--shop-accent-text,#1E3A8A)] text-sm">
 					{te("restored")}
 				</p>
 			)}

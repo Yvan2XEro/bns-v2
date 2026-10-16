@@ -46,7 +46,10 @@ export function InventoryStats({
 					<span className="text-[#64748B] text-sm">{t("unitsCounted")}</span>
 				</p>
 				<div className="h-2 overflow-hidden rounded bg-[#E2E8F0]">
-					<div className="h-2 bg-[#1E40AF]" style={{ width: `${progress}%` }} />
+					<div
+						className="h-2 bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
+						style={{ width: `${progress}%` }}
+					/>
 				</div>
 				<p className="text-[#64748B] text-[13px]">
 					{t("variantsProgress", { counted: stats.counted, total })}

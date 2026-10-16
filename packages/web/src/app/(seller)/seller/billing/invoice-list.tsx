@@ -39,7 +39,7 @@ export function InvoiceList({
 						<div className="flex flex-wrap items-center gap-2">
 							<Link
 								href={`/seller/billing/${encodeURIComponent(invoice.id)}`}
-								className="inline-flex min-h-11 items-center font-semibold text-[#1E40AF] hover:underline"
+								className="inline-flex min-h-11 items-center font-semibold text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 							>
 								{t("invoiceNumber", { number: invoice.invoiceNumber })}
 							</Link>

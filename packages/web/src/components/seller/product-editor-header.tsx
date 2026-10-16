@@ -76,7 +76,10 @@ export function ProductEditorHeader({
 				{/* Editing, the workspace breadcrumb above already says this. */}
 				{!isEdit && (
 					<p className="text-[#64748B] text-sm">
-						<Link href="/seller/catalogue" className="hover:text-[#1E40AF]">
+						<Link
+							href="/seller/catalogue"
+							className="hover:text-[var(--shop-accent-text,#1E40AF)]"
+						>
 							{t("breadcrumb")}
 						</Link>{" "}
 						› {heading}
@@ -118,7 +121,7 @@ export function ProductEditorHeader({
 						<Button
 							type="submit"
 							disabled={pending}
-							className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+							className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 						>
 							{spinner}
 							{t("save")}
@@ -148,7 +151,7 @@ export function ProductEditorHeader({
 							type="button"
 							onClick={() => onSubmitAs("active")}
 							disabled={pending}
-							className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+							className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 						>
 							{spinner}
 							{t("publish")}

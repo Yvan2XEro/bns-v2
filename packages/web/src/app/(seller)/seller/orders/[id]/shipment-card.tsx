@@ -113,7 +113,7 @@ export function ShipmentCard({
 				<h3 className="font-semibold text-[#0F172A]">
 					{shipment.shipmentNumber}
 				</h3>
-				<span className="rounded-full bg-[#EFF6FF] px-3 py-1 font-semibold text-[#1E40AF] text-xs">
+				<span className="rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-xs">
 					{tRoot(
 						`Delivery.${shipmentStatusLabel("seller", shipment.status, Boolean(shipment.readyForPickupAt))}`,
 					)}
@@ -130,7 +130,7 @@ export function ShipmentCard({
 					{shipment.rider.phone && (
 						<a
 							href={`tel:${shipment.rider.phone}`}
-							className="inline-flex min-h-11 items-center gap-1 text-[#1E40AF]"
+							className="inline-flex min-h-11 items-center gap-1 text-[var(--shop-accent-text,#1E40AF)]"
 						>
 							<Phone aria-hidden className="h-4 w-4" /> {shipment.rider.phone}
 						</a>
@@ -184,7 +184,7 @@ export function ShipmentCard({
 										href={link}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="inline-flex items-center gap-1 text-[#1E40AF] text-xs"
+										className="inline-flex items-center gap-1 text-[var(--shop-accent-text,#1E40AF)] text-xs"
 									>
 										<ExternalLink aria-hidden className="h-3 w-3" />{" "}
 										{t("openPosition")}

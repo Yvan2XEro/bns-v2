@@ -157,7 +157,7 @@ export function ResaleCatalogueClient({
 								onChange={(event) => setSearch(event.target.value)}
 								maxLength={120}
 								placeholder={tCatalogue("search")}
-								className="h-9 w-full rounded-full border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#DBEAFE]"
+								className="h-9 w-full rounded-full border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,#1E40AF)] focus:ring-2 focus:ring-[var(--shop-accent-border,#DBEAFE)]"
 							/>
 						</label>
 						{rubrics.length > 0 ? (
@@ -347,7 +347,9 @@ function ProductCard({
 		<article
 			className={cn(
 				"flex flex-col overflow-hidden rounded-xl bg-white",
-				selected ? "border-2 border-[#1E40AF]" : "border border-[#E2E8F0]",
+				selected
+					? "border-2 border-[var(--shop-accent,#1E40AF)]"
+					: "border border-[#E2E8F0]",
 			)}
 		>
 			<div className="relative flex h-[110px] items-center justify-center bg-[#F1F5F9] text-[#475569]">
@@ -413,7 +415,7 @@ function ProductCard({
 					{product.supplier.level >= 3 ? (
 						<ShieldCheck
 							aria-label={t("levelBadge", { level: product.supplier.level })}
-							className="h-3.5 w-3.5 text-[#1E40AF]"
+							className="h-3.5 w-3.5 text-[var(--shop-accent-text,#1E40AF)]"
 						/>
 					) : null}
 				</div>
@@ -462,8 +464,8 @@ function ProductCard({
 							className={cn(
 								"flex h-9 w-full items-center justify-center gap-1.5 rounded-lg font-semibold text-[13px]",
 								selected
-									? "bg-[#1E40AF] text-white"
-									: "bg-[#EFF6FF] text-[#1E40AF] hover:bg-[#DBEAFE]",
+									? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
+									: "bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)] hover:bg-[var(--shop-accent-soft,#DBEAFE)]",
 							)}
 						>
 							<Repeat aria-hidden="true" className="h-4 w-4" />
@@ -609,8 +611,8 @@ function ResellPanel({
 								className={cn(
 									"inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-[11px]",
 									product.supplier.level >= 3
-										? "bg-[#1E40AF] text-white"
-										: "bg-[#DBEAFE] text-[#1E40AF]",
+										? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
+										: "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
 								)}
 							>
 								<ShieldCheck aria-hidden="true" className="h-3 w-3" />
@@ -653,7 +655,7 @@ function ResellPanel({
 					>
 						{t("yourPrice")}
 					</label>
-					<div className="flex h-[52px] items-center justify-between gap-2 rounded-[10px] border-2 border-[#1E40AF] px-3.5">
+					<div className="flex h-[52px] items-center justify-between gap-2 rounded-[10px] border-2 border-[var(--shop-accent,#1E40AF)] px-3.5">
 						<button
 							type="button"
 							onClick={() => setPrice(Math.max(1, price - 100))}
@@ -681,7 +683,7 @@ function ResellPanel({
 						<button
 							type="button"
 							onClick={() => setPrice(price + 100)}
-							className="rounded p-1 text-[#1E40AF]"
+							className="rounded p-1 text-[var(--shop-accent-text,#1E40AF)]"
 						>
 							<Plus aria-hidden="true" className="h-[18px] w-[18px]" />
 							<span className="sr-only">{t("increase")}</span>
@@ -749,7 +751,7 @@ function ResellPanel({
 				<button
 					type="submit"
 					disabled={isCreating}
-					className="h-11 rounded-lg bg-[#1E40AF] font-semibold text-[15px] text-white hover:bg-[#1E3A8A] disabled:opacity-60"
+					className="h-11 rounded-lg bg-[var(--shop-accent,#1E40AF)] font-semibold text-[15px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-60"
 				>
 					{isCreating ? t("adding") : t("addToShop")}
 				</button>

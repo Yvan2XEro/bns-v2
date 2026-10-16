@@ -40,7 +40,7 @@ export function OfferProductPicker({
 			<DialogTrigger asChild>
 				<button
 					type="button"
-					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 				>
 					{children}
 				</button>
@@ -60,7 +60,7 @@ export function OfferProductPicker({
 						maxLength={120}
 						onChange={(event) => setSearch(event.target.value)}
 						placeholder={t("searchProduct")}
-						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#DBEAFE]"
+						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,#1E40AF)] focus:ring-2 focus:ring-[var(--shop-accent-border,#DBEAFE)]"
 					/>
 				</label>
 				<ul className="max-h-80 divide-y divide-[#F1F5F9] overflow-y-auto">
@@ -74,7 +74,7 @@ export function OfferProductPicker({
 							<Link
 								href={`/seller/resale/products/${encodeURIComponent(row.id)}`}
 								onClick={() => setOpen(false)}
-								className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-[#1E40AF]"
+								className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-[var(--shop-accent-text,#1E40AF)]"
 							>
 								<span className="min-w-0 truncate font-medium">
 									{row.title}

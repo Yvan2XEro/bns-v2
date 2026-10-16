@@ -41,7 +41,7 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 				</h2>
 				<Link
 					href="/seller/billing"
-					className="font-semibold text-[#1E40AF] text-[13px] hover:underline"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 				>
 					{tPage("allInvoices")}
 				</Link>
@@ -74,7 +74,7 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 										<div className="min-w-0">
 											<Link
 												href={`/seller/billing/${encodeURIComponent(invoice.id)}`}
-												className="font-semibold text-[#0F172A] hover:text-[#1E40AF] hover:underline"
+												className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 											>
 												{tBilling("periodRange", {
 													start: formatOrderDate(invoice.periodStart, locale),

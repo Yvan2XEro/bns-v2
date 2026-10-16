@@ -58,7 +58,7 @@ export function ProductPublicationCard({
 					{listing.status === "published" && (
 						<Link
 							href={`/listing/${listing.id}`}
-							className="mt-1 inline-block text-[#1E40AF] hover:underline"
+							className="mt-1 inline-block text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 						>
 							{t("viewListing")}
 						</Link>

@@ -101,7 +101,7 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 									<p className="font-semibold text-[#0F172A]">
 										{location.name}
 										{location.isDefaultOrigin && (
-											<span className="ml-2 rounded-full bg-[#EFF6FF] px-2 py-0.5 font-medium text-[#1E40AF] text-xs">
+											<span className="ml-2 rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-2 py-0.5 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs">
 												{tDelivery("defaultOrigin")}
 											</span>
 										)}
@@ -123,7 +123,7 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 									<button
 										type="button"
 										onClick={() => setTarget({ location })}
-										className="font-semibold text-[#1E40AF] text-[13px] hover:underline"
+										className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 									>
 										{tDelivery("edit")}
 									</button>
@@ -150,13 +150,16 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 				)}
 				<div className="flex flex-wrap items-center gap-3">
 					<p className="flex flex-1 items-center gap-2 text-[#334155] text-[13px]">
-						<Lock aria-hidden="true" className="h-4 w-4 text-[#1E40AF]" />
+						<Lock
+							aria-hidden="true"
+							className="h-4 w-4 text-[var(--shop-accent-text,#1E40AF)]"
+						/>
 						{tPage("pickupCode")}
 					</p>
 					<button
 						type="button"
 						onClick={() => setTarget({ location: null })}
-						className="flex h-9 items-center justify-center gap-1.5 rounded-lg border-[#CBD5E1] border-[1.5px] border-dashed px-4 font-semibold text-[#475569] text-[13px] hover:border-[#93C5FD] sm:w-60"
+						className="flex h-9 items-center justify-center gap-1.5 rounded-lg border-[#CBD5E1] border-[1.5px] border-dashed px-4 font-semibold text-[#475569] text-[13px] hover:border-[var(--shop-accent-border,#93C5FD)] sm:w-60"
 					>
 						<Plus aria-hidden="true" className="h-4 w-4" />
 						{tDelivery("addLocation")}

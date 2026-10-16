@@ -20,7 +20,7 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 	return (
 		<main className="space-y-6">
 			<header className="flex items-start gap-4">
-				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EFF6FF] text-[#1E40AF]">
+				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]">
 					<RotateCcw aria-hidden="true" className="h-5 w-5" />
 				</div>
 				<div>
@@ -57,7 +57,7 @@ export function SellerReturnsClient({ shopId }: { shopId: string }) {
 								{/* Spec §1 (SPLIT): a seller row stays inside the workspace. */}
 								<Link
 									href={`/seller/returns/${encodeURIComponent(row.id)}`}
-									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 hover:border-[#93C5FD] hover:bg-[#F8FAFC]"
+									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 hover:border-[var(--shop-accent-border,#93C5FD)] hover:bg-[#F8FAFC]"
 								>
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">

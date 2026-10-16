@@ -127,12 +127,12 @@ export function SellerSidebar({
 			: null;
 
 	return (
-		<aside className="flex flex-col border-[#1E293B] border-b bg-[#0F172A] lg:sticky lg:top-0 lg:h-screen lg:w-[248px] lg:shrink-0 lg:border-r lg:border-b-0">
+		<aside className="flex flex-col border-[var(--shop-sidebar-raised,#1E293B)] border-b bg-[var(--shop-sidebar-bg,#0F172A)] lg:sticky lg:top-0 lg:h-screen lg:w-[248px] lg:shrink-0 lg:border-r lg:border-b-0">
 			<ShopSwitcher activeShopId={shopId}>
 				<ShopInitials
 					name={name}
 					logoUrl={logoUrl}
-					className="h-[38px] w-[38px] rounded-[10px] bg-[#1E293B] font-extrabold text-[#F59E0B] text-sm"
+					className="h-[38px] w-[38px] rounded-[10px] bg-[var(--shop-sidebar-raised,#1E293B)] font-extrabold text-[#F59E0B] text-sm"
 				/>
 				<span className="flex min-w-0 flex-1 flex-col">
 					<span className="truncate font-bold text-[15px] text-white">
@@ -164,7 +164,7 @@ export function SellerSidebar({
 							className={cn(
 								"flex h-10 shrink-0 items-center gap-2.5 rounded-lg px-3 font-medium text-sm",
 								active
-									? "bg-[#1E293B] font-semibold text-white"
+									? "bg-[var(--shop-sidebar-raised,#1E293B)] font-semibold text-white"
 									: "text-[#CBD5E1] hover:bg-white/5 hover:text-white",
 							)}
 						>
@@ -197,7 +197,7 @@ export function SellerSidebar({
 					);
 				})}
 			</nav>
-			<div className="mt-auto hidden flex-col gap-0.5 border-[#1E293B] border-t p-3 lg:flex">
+			<div className="mt-auto hidden flex-col gap-0.5 border-[var(--shop-sidebar-raised,#1E293B)] border-t p-3 lg:flex">
 				<Link
 					href={`/s/${handle}`}
 					className="flex h-10 items-center gap-2.5 rounded-lg px-3 font-medium text-[#CBD5E1] text-sm hover:bg-white/5 hover:text-white"

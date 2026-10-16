@@ -38,7 +38,7 @@ export function PayoutsTable({
 					<button
 						type="button"
 						onClick={onExport}
-						className="font-semibold text-[#1E40AF] text-[13px] hover:underline"
+						className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 					>
 						{tPage("export")}
 					</button>
@@ -85,7 +85,7 @@ export function PayoutsTable({
 									<td className="whitespace-nowrap px-[18px] py-3">
 										<Link
 											href={`/seller/payments/payouts/${encodeURIComponent(payout.id)}`}
-											className="font-semibold text-[#1E40AF] hover:underline"
+											className="font-semibold text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 										>
 											{formatOrderDate(payout.date, locale)}
 										</Link>

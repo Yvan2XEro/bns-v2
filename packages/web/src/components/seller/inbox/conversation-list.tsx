@@ -73,12 +73,14 @@ export function ConversationList({
 							onClick={() => onSelect(conversation.id)}
 							className={cn(
 								"flex w-full items-start gap-3 border-[#F1F5F9] border-b px-3 py-3 text-left",
-								active ? "bg-[#EFF6FF]" : "hover:bg-[#F8FAFC]",
+								active
+									? "bg-[var(--shop-accent-soft,#EFF6FF)]"
+									: "hover:bg-[#F8FAFC]",
 							)}
 						>
 							<Avatar className="h-9 w-9 shrink-0">
 								<AvatarImage src={conversation.buyer?.avatarUrl ?? undefined} />
-								<AvatarFallback className="bg-[#1E40AF] text-white text-xs">
+								<AvatarFallback className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 									{conversation.buyer?.name?.charAt(0) ?? "?"}
 								</AvatarFallback>
 							</Avatar>
@@ -106,7 +108,7 @@ export function ConversationList({
 							</div>
 							<div className="flex shrink-0 flex-col items-end gap-1">
 								{conversation.unreadCount > 0 && (
-									<span className="h-2 w-2 rounded-full bg-[#1E40AF]" />
+									<span className="h-2 w-2 rounded-full bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]" />
 								)}
 								{conversation.assignee ? (
 									<Avatar

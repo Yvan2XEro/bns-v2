@@ -36,7 +36,7 @@ export function PayoutAccountCard({ shopId }: { shopId: string }) {
 				</h2>
 				<Link
 					href="/seller/payments/setup"
-					className="font-semibold text-[#1E40AF] text-[13px] hover:underline"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
 				>
 					{account ? tPage("edit") : tPage("setUp")}
 				</Link>

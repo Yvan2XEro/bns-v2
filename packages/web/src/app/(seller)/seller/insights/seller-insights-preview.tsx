@@ -25,7 +25,7 @@ export function SellerInsightsPreview({
 	if (!allowed || !query.data) return null;
 	const view = query.data;
 	return (
-		<section className="rounded-2xl border border-[#BFDBFE] bg-gradient-to-br from-[#EFF6FF] to-white p-5">
+		<section className="rounded-2xl border border-[var(--shop-accent-border,#BFDBFE)] bg-gradient-to-br from-[var(--shop-accent-soft,#EFF6FF)] to-white p-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<p className="font-bold text-[#0F172A]">{t("title")}</p>
@@ -61,7 +61,7 @@ export function SellerInsightsPreview({
 					</div>
 				</div>
 				<Link
-					className="rounded-lg bg-[#1E40AF] px-4 py-2 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+					className="rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 					href="/seller/insights"
 				>
 					{t("open")}
@@ -72,7 +72,7 @@ export function SellerInsightsPreview({
 					{view.actions.slice(0, 2).map((action, index) => (
 						<li key={`${action.type}-${index}`}>
 							<Link
-								className="block rounded-lg border border-[#E2E8F0] bg-white/80 p-3 text-[#334155] text-sm hover:border-[#93C5FD]"
+								className="block rounded-lg border border-[#E2E8F0] bg-white/80 p-3 text-[#334155] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 								href={action.href}
 							>
 								<InsightActionText action={action} />

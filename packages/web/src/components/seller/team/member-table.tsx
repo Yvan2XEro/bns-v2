@@ -40,7 +40,7 @@ const ROLE_LABEL_KEY: Record<
 const RESEND_LIMIT = 3;
 
 const ACTION_BUTTON =
-	"rounded-lg p-1.5 hover:bg-[#F1F5F9] focus-visible:outline-2 focus-visible:outline-[#1E40AF]";
+	"rounded-lg p-1.5 hover:bg-[#F1F5F9] focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)]";
 
 function initials(name: string | null): string {
 	const parts = (name ?? "?").trim().split(/\s+/).filter(Boolean);

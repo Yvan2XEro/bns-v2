@@ -7,7 +7,8 @@ import type { CommissionInvoiceView } from "~/types/order";
 type InvoiceStatus = CommissionInvoiceView["status"];
 
 const TONE: Record<InvoiceStatus, string> = {
-	issued: "bg-[#EFF6FF] text-[#1E40AF]",
+	issued:
+		"bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]",
 	paid: "bg-[#F0FDF4] text-[#166534]",
 	overdue: "bg-[#FEF2F2] text-[#B91C1C]",
 	waived: "bg-[#F1F5F9] text-[#475569]",

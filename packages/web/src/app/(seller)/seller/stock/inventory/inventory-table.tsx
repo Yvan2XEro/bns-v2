@@ -107,7 +107,7 @@ export function InventoryTable({
 										aria-invalid={invalid}
 										{...register(`rows.${index}.counted`)}
 										className={cn(
-											"h-9 w-full rounded-md border px-2 text-right outline-none focus:border-[#93C5FD]",
+											"h-9 w-full rounded-md border px-2 text-right outline-none focus:border-[var(--shop-accent-border,#93C5FD)]",
 											invalid ? "border-red-400 bg-red-50" : "border-[#E2E8F0]",
 										)}
 									/>

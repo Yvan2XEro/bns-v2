@@ -19,7 +19,7 @@ import { useLocaleKey } from "~/lib/use-locale-key";
 import { FieldError, Toggle } from "../settings/orders/form-controls";
 
 const SELECT_CLASS =
-	"flex h-10 w-full rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
+	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
 
 function Field({
 	id,

@@ -221,6 +221,45 @@ describe("server refusals land on the field", () => {
 	});
 });
 
+describe("photo limit", () => {
+	const existing = (n: number) =>
+		Array.from({ length: n }, (_, i) => ({ id: `m-${i}`, url: "" }));
+	const drafts = (n: number) =>
+		Array.from({ length: n }, () => ({
+			file: new File([], "p.jpg"),
+			preview: "",
+		}));
+
+	test("a new product past the configured limit is refused on the photos", () => {
+		const ctx = { ...context, photoLimit: 3, previousImageCount: null };
+		expect(paths(valid({ newImages: drafts(3) }), ctx)).toEqual([]);
+		expect(
+			paths(valid({ existingImages: existing(2), newImages: drafts(2) }), ctx),
+		).toEqual([["newImages", "photoLimit"]]);
+	});
+
+	test("a saved product above the limit keeps its photos but cannot add one", () => {
+		const ctx = { ...context, photoLimit: 3, previousImageCount: 6 };
+		expect(paths(valid({ existingImages: existing(6) }), ctx)).toEqual([]);
+		expect(paths(valid({ existingImages: existing(5) }), ctx)).toEqual([]);
+		expect(
+			paths(valid({ existingImages: existing(6), newImages: drafts(1) }), ctx),
+		).toEqual([["newImages", "photoLimit"]]);
+	});
+
+	test("the server's media.photoLimit refusal lands on the photos", () => {
+		const error = new ApiError("x", 400, "media.photoLimit", {
+			limit: 3,
+			issues: [{ path: "images", rule: "photoLimit", params: { max: 3 } }],
+		});
+		const issues = serverProductIssues(error, valid());
+		expect(issues).toEqual([
+			{ path: "newImages", rule: "photoLimit", params: { max: 3 } },
+		]);
+		expect(productIssueKey(issues[0]!)).toBe("photoLimit");
+	});
+});
+
 function form(state: ProductFormState) {
 	return createFormControl<ProductFormState>({
 		defaultValues: state,

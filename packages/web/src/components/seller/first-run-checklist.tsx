@@ -75,7 +75,7 @@ export function FirstRunChecklist({
 									"flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-semibold text-xs",
 									step.done
 										? "bg-[#dcfce7] text-[#166534]"
-										: "bg-[#EFF6FF] text-[#1E40AF]",
+										: "bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]",
 								)}
 							>
 								{step.done ? (

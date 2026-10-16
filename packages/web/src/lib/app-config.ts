@@ -1,5 +1,6 @@
 import type { LaunchCityOption } from "~/types/order";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
+import { PHOTO_LIMIT } from "../../../api/src/contracts/photoLimit";
 
 export interface BoostPrice {
 	days: number;
@@ -45,6 +46,8 @@ export interface AppConfig {
 	insightsEnabled: boolean;
 	resaleEnabled: boolean;
 	resalePrepaidEnabled: boolean;
+	/** Photos a listing or a product may carry; read it through `usePhotoLimit`. */
+	photosIncluded: number;
 	/** Absent before the markets migration, or when the request named no live country. */
 	market?: MarketConfig;
 }
@@ -72,4 +75,5 @@ export const EMPTY_APP_CONFIG: AppConfig = {
 	insightsEnabled: false,
 	resaleEnabled: false,
 	resalePrepaidEnabled: false,
+	photosIncluded: PHOTO_LIMIT.default,
 };

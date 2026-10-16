@@ -124,7 +124,7 @@ export function ResoldTab({ shopId }: { shopId: string }) {
 								setPage(0);
 							}}
 							placeholder={t("searchProduct")}
-							className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#DBEAFE]"
+							className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,#1E40AF)] focus:ring-2 focus:ring-[var(--shop-accent-border,#DBEAFE)]"
 						/>
 					</label>
 				</div>
@@ -166,7 +166,7 @@ export function ResoldTab({ shopId }: { shopId: string }) {
 						{listings.length === 0 ? (
 							<Link
 								href={resaleHref("reseller", "find")}
-								className="mt-3 inline-flex items-center gap-1.5 font-semibold text-[#1E40AF] text-sm"
+								className="mt-3 inline-flex items-center gap-1.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm"
 							>
 								{t("tabFind")}
 								<ArrowRight aria-hidden="true" className="h-4 w-4" />
@@ -413,7 +413,7 @@ function BelowMinimumBanner({
 				type="button"
 				disabled={pending}
 				onClick={onFix}
-				className="inline-flex h-[34px] items-center whitespace-nowrap rounded-lg bg-[#1E40AF] px-3 font-semibold text-[13px] text-white disabled:opacity-60"
+				className="inline-flex h-[34px] items-center whitespace-nowrap rounded-lg bg-[var(--shop-accent,#1E40AF)] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-60"
 			>
 				{target !== null
 					? t("raiseTo", { amount: formatOrderMoney(target) })
@@ -459,7 +459,7 @@ function SuppliersCard({ shopId }: { shopId: string }) {
 								{link.partnerShop.name}
 							</span>
 							{link.partnerShop.level ? (
-								<span className="w-fit rounded-full bg-[#1E40AF] px-2 py-0.5 font-semibold text-[11px] text-white">
+								<span className="w-fit rounded-full bg-[var(--shop-accent,#1E40AF)] px-2 py-0.5 font-semibold text-[11px] text-[var(--shop-on-accent,#FFFFFF)]">
 									{t("levelBadge", { level: link.partnerShop.level })}
 								</span>
 							) : null}
@@ -529,7 +529,7 @@ function SuppliersCard({ shopId }: { shopId: string }) {
 							href={resaleHref("reseller", "find", {
 								supplier: link.partnerShop.id,
 							})}
-							className="inline-flex items-center gap-1 font-semibold text-[#1E40AF] text-[13px]"
+							className="inline-flex items-center gap-1 font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)]"
 						>
 							{t("seeCatalogue")}
 							<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
@@ -565,13 +565,13 @@ function EarningsCard({ shopId }: { shopId: string }) {
 			<div className="flex flex-wrap gap-x-4 gap-y-1">
 				<Link
 					href="/seller/resale/finance"
-					className="font-semibold text-[#1E40AF] text-[13px]"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)]"
 				>
 					{t("earningsDetails")}
 				</Link>
 				<Link
 					href="/seller/resale/purchase-orders?side=reseller"
-					className="font-semibold text-[#1E40AF] text-[13px]"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)]"
 				>
 					{t("myPurchaseOrders")}
 				</Link>

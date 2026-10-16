@@ -107,7 +107,7 @@ export function StockAdjustForm({
 					<button
 						type="button"
 						onClick={onChangeVariant}
-						className="mt-1 text-[#1E40AF] text-xs hover:underline"
+						className="mt-1 text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
 					>
 						{t("changeVariant")}
 					</button>
@@ -190,7 +190,7 @@ export function StockAdjustForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || recordMovement.isPending}
-					className="flex-1 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="flex-1 bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 				>
 					{recordMovement.isPending && (
 						<LoaderCircle

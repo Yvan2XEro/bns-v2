@@ -86,7 +86,7 @@ export function ZoneDrawer({
 			ref={panel}
 			tabIndex={-1}
 			aria-labelledby="zone-panel-title"
-			className="overflow-hidden rounded-2xl border border-[#BFDBFE] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.14)] outline-none"
+			className="overflow-hidden rounded-2xl border border-[var(--shop-accent-border,#BFDBFE)] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.14)] outline-none"
 		>
 			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
 				<h2

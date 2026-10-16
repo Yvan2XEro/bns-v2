@@ -320,7 +320,7 @@ export function OrdersClient({
 								"inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px]",
 								active
 									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-									: "border-[#E2E8F0] bg-white font-medium text-[#334155] hover:border-[#93C5FD]",
+									: "border-[#E2E8F0] bg-white font-medium text-[#334155] hover:border-[var(--shop-accent-border,#93C5FD)]",
 							)}
 						>
 							{tList(`tab.${tab}`)}
@@ -401,8 +401,8 @@ export function OrdersClient({
 			</div>
 
 			{canProcess && selectedIds.length > 0 && (
-				<div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[#BFDBFE] bg-[#EFF6FF] px-3.5 py-2">
-					<span className="font-semibold text-[#1E40AF] text-sm">
+				<div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] px-3.5 py-2">
+					<span className="font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm">
 						{tList("selectedCount", { count: selectedIds.length })}
 					</span>
 					<span className="flex-1" />
@@ -432,7 +432,7 @@ export function OrdersClient({
 									acceptableSelection(rows, selected, role, new Date()),
 								)
 							}
-							className="inline-flex h-[34px] items-center rounded-lg bg-[#1E40AF] px-3 font-semibold text-[13px] text-white hover:bg-[#1E3A8A] disabled:opacity-50"
+							className="inline-flex h-[34px] items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
 						>
 							{tList("acceptSelected", { count: acceptIds.length })}
 						</button>

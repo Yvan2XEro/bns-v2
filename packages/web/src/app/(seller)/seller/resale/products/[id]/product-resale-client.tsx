@@ -227,7 +227,7 @@ function Editor({
 						type="button"
 						disabled={save.isPending || blocked}
 						onClick={() => submit(draft)}
-						className="inline-flex h-10 items-center rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A] disabled:opacity-50"
+						className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
 					>
 						{save.isPending ? t("saving") : t("save")}
 					</button>
@@ -289,7 +289,7 @@ function Editor({
 							<p className="text-[#64748B] text-[13px]">{t("offerBody")}</p>
 						</div>
 						{view.eligible ? (
-							<span className="inline-flex items-center gap-1 rounded-full bg-[#1E40AF] px-2.5 py-1 font-semibold text-white text-xs">
+							<span className="inline-flex items-center gap-1 rounded-full bg-[var(--shop-accent,#1E40AF)] px-2.5 py-1 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 								<ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
 								{t("businessVerified")}
 							</span>
@@ -353,7 +353,7 @@ function Editor({
 																	enabled: event.target.checked,
 																})
 															}
-															className="h-[18px] w-[18px] accent-[#1E40AF]"
+															className="h-[18px] w-[18px] accent-[var(--shop-accent,#1E40AF)]"
 														/>
 														<span className="flex min-w-0 flex-col">
 															<span className="font-semibold text-[#0F172A]">
@@ -402,7 +402,7 @@ function Editor({
 															className={cn(
 																"h-[34px] w-24 rounded-lg border bg-white px-2.5 font-semibold text-[#0F172A] tabular-nums disabled:bg-[#F8FAFC] disabled:text-[#94A3B8]",
 																field === "minRetailPrice"
-																	? "border-[#93C5FD]"
+																	? "border-[var(--shop-accent-border,#93C5FD)]"
 																	: "border-[#E2E8F0]",
 															)}
 														/>
@@ -459,7 +459,7 @@ function Editor({
 									className={cn(
 										"flex cursor-pointer items-start gap-3 rounded-[10px] border px-3.5 py-3",
 										draft.approvalRequired === approval
-											? "border-[#1E40AF] bg-[#EFF6FF]"
+											? "border-[var(--shop-accent,#1E40AF)] bg-[var(--shop-accent-soft,#EFF6FF)]"
 											: "border-[#E2E8F0] bg-white",
 									)}
 								>
@@ -471,7 +471,7 @@ function Editor({
 										onChange={() =>
 											setDraft({ ...draft, approvalRequired: approval })
 										}
-										className="mt-0.5 h-[18px] w-[18px] accent-[#1E40AF]"
+										className="mt-0.5 h-[18px] w-[18px] accent-[var(--shop-accent,#1E40AF)]"
 									/>
 									<span className="flex flex-col gap-0.5">
 										<span className="font-semibold text-sm">
@@ -612,7 +612,7 @@ function Editor({
 							))}
 						</ul>
 						<details className="border-[#F1F5F9] border-t px-[18px] py-3 text-sm">
-							<summary className="cursor-pointer font-semibold text-[#1E40AF]">
+							<summary className="cursor-pointer font-semibold text-[var(--shop-accent-text,#1E40AF)]">
 								{t("readTerms")}
 							</summary>
 							<p className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-[#475569]">
@@ -660,7 +660,7 @@ function Editor({
 								</span>
 								<ShieldCheck
 									aria-hidden="true"
-									className="h-3.5 w-3.5 text-[#1E40AF]"
+									className="h-3.5 w-3.5 text-[var(--shop-accent-text,#1E40AF)]"
 								/>
 							</div>
 							<span className="font-semibold text-[#64748B] text-[11px]">
@@ -697,7 +697,7 @@ function Editor({
 					) : null}
 					<Link
 						href={resaleHref("supplier", "offered")}
-						className="block text-center font-semibold text-[#1E40AF] text-sm"
+						className="block text-center font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm"
 					>
 						{t("backToOffered")}
 					</Link>
@@ -810,7 +810,9 @@ function Toggle({
 			onClick={() => onChange(!checked)}
 			className={cn(
 				"relative inline-block h-6 w-10 shrink-0 rounded-full transition-colors disabled:opacity-50",
-				checked ? "bg-[#1E40AF]" : "bg-[#CBD5E1]",
+				checked
+					? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
+					: "bg-[#CBD5E1]",
 			)}
 		>
 			<span

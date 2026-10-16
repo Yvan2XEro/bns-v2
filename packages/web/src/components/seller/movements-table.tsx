@@ -12,7 +12,7 @@ import type { MovementRow } from "~/types";
 
 const TONE_CLASSES: Record<MovementTone, string> = {
 	success: "bg-[#DCFCE7] text-[#166534]",
-	info: "bg-[#DBEAFE] text-[#1E40AF]",
+	info: "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
 	warning: "bg-[#FEF3C7] text-[#92400E]",
 	danger: "bg-[#FEE2E2] text-[#991B1B]",
 	neutral: "bg-[#F1F5F9] text-[#475569]",

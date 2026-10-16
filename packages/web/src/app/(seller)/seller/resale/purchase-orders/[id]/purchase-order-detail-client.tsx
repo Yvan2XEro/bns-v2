@@ -145,7 +145,7 @@ export function PurchaseOrderDetailClient({
 						<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-tight">
 							{order.number}
 						</h1>
-						<span className="rounded-full bg-[#DBEAFE] px-2.5 py-0.5 font-semibold text-[#1E40AF] text-xs">
+						<span className="rounded-full bg-[var(--shop-accent-soft,#DBEAFE)] px-2.5 py-0.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-xs">
 							{statusLabels[order.status]}
 						</span>
 					</div>
@@ -353,7 +353,7 @@ export function PurchaseOrderDetailClient({
 									{order.reseller.name}
 								</p>
 								{order.reseller.level > 0 ? (
-									<span className="w-fit rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+									<span className="w-fit rounded-full bg-[var(--shop-accent-soft,#DBEAFE)] px-2 py-0.5 font-semibold text-[11px] text-[var(--shop-accent-text,#1E40AF)]">
 										{tHub("levelBadge", { level: order.reseller.level })}
 									</span>
 								) : null}
@@ -431,7 +431,7 @@ export function PurchaseOrderDetailClient({
 								href={mapsUrl}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="inline-flex min-h-11 items-center gap-2 font-semibold text-[#1D4ED8] text-sm"
+								className="inline-flex min-h-11 items-center gap-2 font-semibold text-[var(--shop-accent-text,#1D4ED8)] text-sm"
 							>
 								<MapPin aria-hidden="true" className="h-4 w-4" />
 								{t("address")}

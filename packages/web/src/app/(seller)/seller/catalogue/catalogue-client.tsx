@@ -138,14 +138,14 @@ export function CatalogueClient({
 					<button
 						type="button"
 						onClick={() => setImportOpen(true)}
-						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 					>
 						<Upload aria-hidden="true" className="h-4 w-4" />
 						{t("import")}
 					</button>
 					<Link
 						href="/seller/catalogue/new"
-						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
 					>
 						<Plus aria-hidden="true" className="h-4 w-4" />
 						{t("add")}
@@ -174,8 +174,8 @@ export function CatalogueClient({
 					/>
 
 					{selectedIds.length > 0 && (
-						<div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-2.5 text-sm">
-							<span className="font-semibold text-[#1E3A8A]">
+						<div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] px-4 py-2.5 text-sm">
+							<span className="font-semibold text-[var(--shop-accent-text,#1E3A8A)]">
 								{tc("selected", { count: selectedIds.length })}
 							</span>
 							<div className="flex flex-wrap gap-2 sm:ml-auto">

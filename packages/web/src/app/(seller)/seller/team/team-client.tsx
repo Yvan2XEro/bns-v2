@@ -168,7 +168,7 @@ export function TeamClient({
 					{canViewActivity && (
 						<Link
 							href="/seller/team/activity"
-							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[#93C5FD]"
+							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
 						>
 							{t("fullLog")}
 						</Link>

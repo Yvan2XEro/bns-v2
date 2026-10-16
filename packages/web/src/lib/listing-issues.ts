@@ -23,6 +23,8 @@ export function webListingIssues(
 		preset: ListingPresetFields;
 		attributes: readonly AttributeRuleDef[];
 		previousImageCount?: number;
+		/** `photosIncluded` from the public config. */
+		photoLimit: number;
 		/** Ids of the tags the category gets, once loaded. */
 		tags?: readonly string[] | null;
 	},
@@ -76,6 +78,7 @@ export function issueLabelKey(path: string): string | null {
 const RULE_KEYS = new Set([
 	"required",
 	"maxItems",
+	"photoLimit",
 	"number",
 	"option",
 	"min",
