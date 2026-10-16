@@ -180,7 +180,7 @@ export function ProfileForm({
 						previewUrl={field.value.url}
 						shape="banner"
 						placeholder={
-							<div className="pattern-dots-light h-full w-full bg-[#1E40AF]" />
+							<div className="pattern-dots-light h-full w-full bg-brand" />
 						}
 						onUploaded={(id, url) => field.onChange({ id, url })}
 						onRemove={() => field.onChange({ id: null, url: null })}
@@ -211,7 +211,7 @@ export function ProfileForm({
 					className={
 						formState.errors.name
 							? "text-red-600 text-xs"
-							: "text-[#94A3B8] text-xs"
+							: "text-ink-faint text-xs"
 					}
 				>
 					{t("nameHint")}
@@ -225,7 +225,7 @@ export function ProfileForm({
 					maxLength={SHOP_DESCRIPTION_MAX}
 					{...register("description")}
 				/>
-				<p className="text-[#94A3B8] text-xs">
+				<p className="text-ink-faint text-xs">
 					{description.length} / {SHOP_DESCRIPTION_MAX}
 				</p>
 			</div>
@@ -244,7 +244,7 @@ export function ProfileForm({
 				/>
 			</div>
 			<fieldset className="space-y-2">
-				<legend className="mb-1.5 font-medium text-[#0F172A] text-sm">
+				<legend className="mb-1.5 font-medium text-ink text-sm">
 					{t("categories", { count: selected.length })}
 				</legend>
 				<Controller
@@ -259,10 +259,10 @@ export function ProfileForm({
 						/>
 					)}
 				/>
-				<p className="text-[#94A3B8] text-xs">{t("categoriesHint")}</p>
+				<p className="text-ink-faint text-xs">{t("categoriesHint")}</p>
 			</fieldset>
 			{updateShop.isSuccess && (
-				<p className="text-[#166534] text-sm">{t("saved")}</p>
+				<p className="text-ok-ink text-sm">{t("saved")}</p>
 			)}
 			{formState.errors.root?.message && (
 				<p className="text-red-700 text-sm">{formState.errors.root.message}</p>
@@ -271,7 +271,7 @@ export function ProfileForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || updateShop.isPending}
-					className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="bg-brand hover:bg-brand-strong"
 				>
 					{updateShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

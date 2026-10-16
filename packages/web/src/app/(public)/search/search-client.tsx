@@ -348,7 +348,7 @@ export function SearchClient({
 		<div className="space-y-5">
 			{/* Category */}
 			<div className="space-y-2">
-				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+				<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
 					{t("category")}
 				</Label>
 				<CategoryDropdown
@@ -362,7 +362,7 @@ export function SearchClient({
 
 			{/* Price range */}
 			<div className="space-y-2">
-				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+				<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
 					{t("price", { currency: currencyCode })}
 				</Label>
 				<div className="flex gap-2">
@@ -373,7 +373,7 @@ export function SearchClient({
 						value={filters.minPrice}
 						onChange={(e) => updateFilter("minPrice", e.target.value)}
 					/>
-					<span className="flex items-center text-[#94A3B8]">—</span>
+					<span className="flex items-center text-ink-faint">—</span>
 					<Input
 						type="number"
 						placeholder={t("maxPrice")}
@@ -386,7 +386,7 @@ export function SearchClient({
 
 			{/* Location */}
 			<div className="space-y-2">
-				<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+				<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
 					{t("location")}
 				</Label>
 				<LocationField
@@ -412,23 +412,23 @@ export function SearchClient({
 
 			{/* Verified shops only */}
 			<div className="space-y-2">
-				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-[#F8FAFC]">
+				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-canvas">
 					<input
 						type="checkbox"
 						checked={filters.verified === "1"}
 						onChange={(e) =>
 							updateFilter("verified", e.target.checked ? "1" : "")
 						}
-						className="h-4 w-4 rounded border-[#D1D5DB] text-[#1E40AF] focus:ring-[#3B82F6]/20"
+						className="h-4 w-4 rounded border-[#D1D5DB] text-brand focus:ring-brand-bright/20"
 					/>
-					<span className="text-[#334155]">{t("verifiedShopsOnly")}</span>
+					<span className="text-ink-soft">{t("verifiedShopsOnly")}</span>
 				</label>
 			</div>
 
 			{/* Tags */}
 			{availableTags.length > 0 && (
 				<div className="space-y-2">
-					<Label className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+					<Label className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
 						{t("tags")}
 					</Label>
 					<div className="flex flex-wrap gap-1.5">
@@ -441,8 +441,8 @@ export function SearchClient({
 									onClick={() => toggleTag(tag.slug)}
 									className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition-colors ${
 										active
-											? "border-[#1E40AF] bg-[#1E40AF] text-white"
-											: "border-[#E2E8F0] bg-white text-[#475569] hover:border-[#1E40AF]/50"
+											? "border-brand bg-brand text-white"
+											: "border-line bg-surface text-ink-mid hover:border-brand/50"
 									}`}
 								>
 									{tag.emoji && <span>{tag.emoji}</span>}
@@ -456,13 +456,13 @@ export function SearchClient({
 
 			{/* Dynamic attributes */}
 			{attributes.length > 0 && (
-				<div className="space-y-3 border-[#E2E8F0] border-t pt-4">
-					<p className="font-semibold text-[#64748B] text-xs uppercase tracking-wider">
+				<div className="space-y-3 border-line border-t pt-4">
+					<p className="font-semibold text-ink-muted text-xs uppercase tracking-wider">
 						{selectedCategory?.name}
 					</p>
 					{attributes.map((attr) => (
 						<div key={attr.slug} className="space-y-1.5">
-							<Label className="text-[#334155] text-sm">{attr.name}</Label>
+							<Label className="text-ink-soft text-sm">{attr.name}</Label>
 							{attr.type === "select" && attr.options ? (
 								<Select
 									value={attributeFilters[attr.slug] || "any"}
@@ -532,11 +532,11 @@ export function SearchClient({
 			{/* Top bar: search + sort + mobile filter toggle */}
 			<div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
 				<div className="relative flex-1">
-					<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
+					<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint" />
 					<input
 						type="search"
 						placeholder={t("search")}
-						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
+						className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-ink text-sm placeholder:text-ink-faint focus:border-brand-line focus:outline-none focus:ring-2 focus:ring-brand-bright/20"
 						value={searchInput}
 						onChange={(e) => handleSearchInputChange(e.target.value)}
 					/>
@@ -558,13 +558,13 @@ export function SearchClient({
 					</Select>
 					<button
 						type="button"
-						className="flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[#475569] text-sm hover:bg-[#F8FAFC] lg:hidden"
+						className="flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-ink-mid text-sm hover:bg-canvas lg:hidden"
 						onClick={() => setShowMobileFilters(true)}
 					>
 						<SlidersHorizontal className="h-4 w-4" />
 						{t("filters")}
 						{activeFilterCount > 0 && (
-							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E40AF] font-bold text-[10px] text-white">
+							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand font-bold text-[10px] text-white">
 								{activeFilterCount}
 							</span>
 						)}
@@ -576,10 +576,8 @@ export function SearchClient({
 			<div className="flex gap-6">
 				{/* Desktop sidebar (Leboncoin style) */}
 				<aside className="hidden w-56 shrink-0 lg:block">
-					<div className="sticky top-20 rounded-xl border border-[#E2E8F0] bg-white p-4">
-						<h3 className="mb-4 font-bold text-[#0F172A] text-sm">
-							{t("filters")}
-						</h3>
+					<div className="sticky top-20 rounded-xl border border-line bg-surface p-4">
+						<h3 className="mb-4 font-bold text-ink text-sm">{t("filters")}</h3>
 						{filterPanel}
 					</div>
 				</aside>
@@ -587,12 +585,12 @@ export function SearchClient({
 				{/* Results */}
 				<div className="min-w-0 flex-1">
 					<div className="mb-4 flex items-center justify-between">
-						<p className="text-[#64748B] text-sm">
+						<p className="text-ink-muted text-sm">
 							{isFetching && !isFetchingNextPage ? (
 								t("loading")
 							) : (
 								<>
-									<span className="font-semibold text-[#0F172A]">{total}</span>{" "}
+									<span className="font-semibold text-ink">{total}</span>{" "}
 									{t("results")}
 								</>
 							)}
@@ -612,7 +610,7 @@ export function SearchClient({
 							<DialogTrigger asChild>
 								<button
 									type="button"
-									className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[#475569] text-sm transition-colors hover:bg-[#F8FAFC] hover:text-[#1E40AF]"
+									className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 font-medium text-ink-mid text-sm transition-colors hover:bg-canvas hover:text-brand"
 								>
 									<Bookmark className="h-4 w-4" />
 									{t("saveSearch")}
@@ -644,7 +642,7 @@ export function SearchClient({
 									<Button
 										onClick={handleSaveSearch}
 										disabled={saveStatus === "saving" || saveStatus === "saved"}
-										className="rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+										className="rounded-lg bg-brand hover:bg-brand-strong"
 									>
 										{saveStatus === "saving" ? (
 											t("saving")
@@ -676,7 +674,7 @@ export function SearchClient({
 							{[...Array(8)].map((_, i) => (
 								<div
 									key={i}
-									className="animate-pulse rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]"
+									className="animate-pulse rounded-xl border border-line bg-canvas"
 									style={{ aspectRatio: "3/4" }}
 								/>
 							))}
@@ -699,7 +697,7 @@ export function SearchClient({
 										type="button"
 										onClick={() => fetchNextPage()}
 										disabled={isFetchingNextPage}
-										className="rounded-xl border border-[#E2E8F0] bg-white px-8 py-2.5 font-medium text-[#1E40AF] text-sm transition-colors hover:bg-[#F8FAFC] disabled:opacity-60"
+										className="rounded-xl border border-line bg-surface px-8 py-2.5 font-medium text-brand text-sm transition-colors hover:bg-canvas disabled:opacity-60"
 									>
 										{isFetchingNextPage
 											? t("loading")
@@ -719,7 +717,7 @@ export function SearchClient({
 								<button
 									type="button"
 									onClick={clearFilters}
-									className="mt-3 font-medium text-[#1E40AF] text-sm hover:underline"
+									className="mt-3 font-medium text-brand text-sm hover:underline"
 								>
 									{t("clearAllFilters")}
 								</button>
@@ -738,17 +736,15 @@ export function SearchClient({
 						onClick={() => setShowMobileFilters(false)}
 						aria-label={t("closeFilters")}
 					/>
-					<div className="absolute right-0 bottom-0 left-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl">
+					<div className="absolute right-0 bottom-0 left-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl">
 						<div className="mb-4 flex items-center justify-between">
-							<h3 className="font-bold text-[#0F172A] text-lg">
-								{t("filters")}
-							</h3>
+							<h3 className="font-bold text-ink text-lg">{t("filters")}</h3>
 							<button
 								type="button"
 								onClick={() => setShowMobileFilters(false)}
-								className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#F1F5F9]"
+								className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-subtle"
 							>
-								<X className="h-5 w-5 text-[#475569]" />
+								<X className="h-5 w-5 text-ink-mid" />
 							</button>
 						</div>
 						{filterPanel}

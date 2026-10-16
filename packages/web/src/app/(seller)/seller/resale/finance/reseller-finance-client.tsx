@@ -17,16 +17,14 @@ export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 		<section className="space-y-6">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
-						{t("finance.title")}
-					</h1>
-					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
+					<h1 className="font-bold text-2xl text-ink">{t("finance.title")}</h1>
+					<p className="mt-1 max-w-2xl text-ink-muted text-sm">
 						{t("finance.description")}
 					</p>
 				</div>
 				<Link
 					href="/seller/resale/purchase-orders"
-					className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#334155] text-sm hover:border-[#F59E0B]"
+					className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink-soft text-sm hover:border-[#F59E0B]"
 				>
 					<ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
 					{t("purchaseOrders")}
@@ -83,7 +81,7 @@ export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 								/>
 							))
 						) : (
-							<p className="px-4 py-5 text-[#64748B] text-sm">
+							<p className="px-4 py-5 text-ink-muted text-sm">
 								{t("finance.empty")}
 							</p>
 						)}
@@ -99,7 +97,7 @@ export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 								/>
 							))
 						) : (
-							<p className="px-4 py-5 text-[#64748B] text-sm">
+							<p className="px-4 py-5 text-ink-muted text-sm">
 								{t("finance.empty")}
 							</p>
 						)}
@@ -115,7 +113,7 @@ export function ResellerFinanceClient({ shopId }: { shopId: string }) {
 								/>
 							))
 						) : (
-							<p className="px-4 py-5 text-[#64748B] text-sm">
+							<p className="px-4 py-5 text-ink-muted text-sm">
 								{t("finance.empty")}
 							</p>
 						)}
@@ -164,9 +162,9 @@ function SummaryCard({
 }) {
 	const formatOrderMoney = useOrderMoney();
 	return (
-		<div className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<p className="text-[#64748B] text-sm">{title}</p>
-			<p className="mt-2 font-bold text-2xl text-[#0F172A]">
+		<div className="rounded-2xl border border-line bg-surface p-5">
+			<p className="text-ink-muted text-sm">{title}</p>
+			<p className="mt-2 font-bold text-2xl text-ink">
 				{formatOrderMoney(amount, locale)}
 			</p>
 		</div>
@@ -181,11 +179,11 @@ function FinanceSection({
 	children: React.ReactNode;
 }) {
 	return (
-		<section className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white">
-			<h2 className="border-[#E2E8F0] border-b px-4 py-3 font-semibold text-[#0F172A]">
+		<section className="overflow-hidden rounded-2xl border border-line bg-surface">
+			<h2 className="border-line border-b px-4 py-3 font-semibold text-ink">
 				{title}
 			</h2>
-			<div className="divide-y divide-[#F1F5F9]">{children}</div>
+			<div className="divide-y divide-subtle">{children}</div>
 		</section>
 	);
 }
@@ -202,8 +200,8 @@ function FinanceRow({
 	const formatOrderMoney = useOrderMoney();
 	return (
 		<div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
-			<p className="min-w-0 truncate text-[#475569] text-sm">{label}</p>
-			<p className="shrink-0 font-semibold text-[#0F172A] text-sm">
+			<p className="min-w-0 truncate text-ink-mid text-sm">{label}</p>
+			<p className="shrink-0 font-semibold text-ink text-sm">
 				{formatOrderMoney(amount, locale)}
 			</p>
 		</div>

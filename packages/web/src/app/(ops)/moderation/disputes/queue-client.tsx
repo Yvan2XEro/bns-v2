@@ -27,7 +27,8 @@ function reducer(
 	return { ...state, ...patch };
 }
 
-const select = "h-9 rounded-lg border border-[#CBD5E1] bg-white px-2 text-sm";
+const select =
+	"h-9 rounded-lg border border-line-strong bg-surface px-2 text-sm";
 
 export function QueueClient() {
 	const t = useTranslations("ModerationDisputes");
@@ -39,8 +40,8 @@ export function QueueClient() {
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-				<p className="text-[#64748B] text-sm">{t("subtitle")}</p>
+				<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+				<p className="text-ink-muted text-sm">{t("subtitle")}</p>
 			</div>
 			<div className="flex flex-wrap items-center gap-3">
 				<select
@@ -118,26 +119,26 @@ export function QueueClient() {
 			{queue.isPending ? (
 				<output
 					aria-label={t("loading")}
-					className="block h-24 animate-pulse rounded-xl bg-[#F1F5F9]"
+					className="block h-24 animate-pulse rounded-xl bg-subtle"
 				/>
 			) : queue.isError ? (
 				<div
 					role="alert"
-					className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center"
+					className="rounded-xl border border-line bg-surface p-8 text-center"
 				>
-					<p className="font-semibold text-[#0F172A]">
+					<p className="font-semibold text-ink">
 						{resolveErrorMessage(queue.error, tRoot, t("loadError"))}
 					</p>
 					<button
 						type="button"
 						onClick={() => void queue.refetch()}
-						className="mt-4 h-10 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white"
+						className="mt-4 h-10 rounded-lg bg-brand px-4 font-semibold text-sm text-white"
 					>
 						{t("retry")}
 					</button>
 				</div>
 			) : queue.data.length === 0 ? (
-				<p className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm">
+				<p className="rounded-xl border border-line bg-surface p-8 text-center text-ink-muted text-sm">
 					{t("empty")}
 				</p>
 			) : (

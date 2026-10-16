@@ -97,21 +97,21 @@ export function VariantSelector({
 	return (
 		<div className="space-y-[18px]">
 			<div className="space-y-1.5">
-				<p className="font-bold text-3xl text-[#1E40AF]">
+				<p className="font-bold text-3xl text-brand">
 					{current ? formatOrderMoney(current.price, locale) : priceFallback}
 				</p>
 				{stock && (
 					<p
 						className={cn(
 							"flex items-center gap-1.5 font-semibold text-sm",
-							stock.kind === "inStock" ? "text-[#15803D]" : "text-[#991B1B]",
+							stock.kind === "inStock" ? "text-ok-ink-soft" : "text-bad-ink",
 						)}
 					>
 						<span
 							aria-hidden="true"
 							className={cn(
 								"h-2 w-2 rounded-full",
-								stock.kind === "inStock" ? "bg-[#16A34A]" : "bg-[#DC2626]",
+								stock.kind === "inStock" ? "bg-ok" : "bg-bad",
 							)}
 						/>
 						{stock.kind === "soldOut"
@@ -126,7 +126,7 @@ export function VariantSelector({
 				const colour = isColourOption(option.name);
 				return (
 					<div key={option.name}>
-						<p className="font-semibold text-[#334155] text-[13px]">
+						<p className="font-semibold text-[13px] text-ink-soft">
 							{option.name}
 							{selected[option.name] && ` : ${selected[option.name]}`}
 						</p>
@@ -170,10 +170,10 @@ export function VariantSelector({
 										className={cn(
 											"flex h-[38px] items-center gap-1.5 rounded-lg px-3.5 font-medium text-sm",
 											active
-												? "border-2 border-[#1E40AF] bg-[#EFF6FF] font-semibold text-[#1E40AF]"
-												: "border border-[#E2E8F0] bg-white text-[#334155]",
+												? "border-2 border-brand bg-brand-soft font-semibold text-brand"
+												: "border border-line bg-surface text-ink-soft",
 											unavailable &&
-												"cursor-not-allowed text-[#94A3B8] line-through opacity-60",
+												"cursor-not-allowed text-ink-faint line-through opacity-60",
 										)}
 									>
 										{swatch && (
@@ -181,14 +181,14 @@ export function VariantSelector({
 												aria-hidden="true"
 												className={cn(
 													"h-3.5 w-3.5 rounded-full",
-													isPaleSwatch(swatch) && "border border-[#CBD5E1]",
+													isPaleSwatch(swatch) && "border border-line-strong",
 												)}
 												style={{ background: swatch }}
 											/>
 										)}
 										{value}
 										{otherPrice !== null && (
-											<span className="font-normal text-[#64748B]">
+											<span className="font-normal text-ink-muted">
 												· {formatOrderMoney(otherPrice, locale)}
 											</span>
 										)}
@@ -200,7 +200,7 @@ export function VariantSelector({
 				);
 			})}
 			{(codAllowed || pickupAllowed) && (
-				<p className="text-[#64748B] text-xs">
+				<p className="text-ink-muted text-xs">
 					{[
 						codAllowed && t("codAvailable"),
 						pickupAllowed && t("pickupAvailable"),

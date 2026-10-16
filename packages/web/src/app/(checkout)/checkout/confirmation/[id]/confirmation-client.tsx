@@ -37,7 +37,7 @@ export function ConfirmationClient({
 
 	if (purchase.isPending) {
 		return (
-			<p className="flex items-center gap-2 text-[#64748B] text-sm">
+			<p className="flex items-center gap-2 text-ink-muted text-sm">
 				<LoaderCircle className="h-4 w-4 animate-spin" />
 				{t("loadingOrder")}
 			</p>
@@ -55,24 +55,24 @@ export function ConfirmationClient({
 		<div className="space-y-6">
 			<header className="space-y-2 text-center">
 				{outcome === "confirmed" ? (
-					<CheckCircle2 className="mx-auto h-12 w-12 text-[#16A34A]" />
+					<CheckCircle2 className="mx-auto h-12 w-12 text-ok" />
 				) : (
-					<Phone className="mx-auto h-12 w-12 text-[#1E40AF]" />
+					<Phone className="mx-auto h-12 w-12 text-brand" />
 				)}
-				<h1 className="font-bold text-2xl text-[#0F172A]">
+				<h1 className="font-bold text-2xl text-ink">
 					{t("orderReceived", { number: order.orderNumber })}
 				</h1>
-				<p className="text-[#334155] text-sm">{t("total")}</p>
-				<p className="font-semibold text-[#0F172A] text-xl">
+				<p className="text-ink-soft text-sm">{t("total")}</p>
+				<p className="font-semibold text-ink text-xl">
 					{formatOrderMoney(order.amounts.total, locale)}
 				</p>
 			</header>
 
-			<section className="rounded-2xl border border-[#E2E8F0] p-4">
+			<section className="rounded-2xl border border-line p-4">
 				{outcome === "confirmed" && (
 					<div className="space-y-1">
-						<p className="font-semibold text-[#166534]">{t("confirmed")}</p>
-						<p className="text-[#334155] text-sm">
+						<p className="font-semibold text-ok-ink">{t("confirmed")}</p>
+						<p className="text-ink-soft text-sm">
 							{order.confirmation.method === "verified_phone"
 								? t("autoConfirmedBody")
 								: t("confirmedBody")}
@@ -81,15 +81,15 @@ export function ConfirmationClient({
 				)}
 				{outcome === "seller_call" && (
 					<div className="space-y-1">
-						<p className="font-semibold text-[#0F172A]">
+						<p className="font-semibold text-ink">
 							{t("confirmationNeededCall")}
 						</p>
-						<p className="text-[#334155] text-sm">{t("sellerCallBody")}</p>
+						<p className="text-ink-soft text-sm">{t("sellerCallBody")}</p>
 					</div>
 				)}
 				{outcome === "code" && (
 					<div className="space-y-2">
-						<p className="font-semibold text-[#0F172A]">
+						<p className="font-semibold text-ink">
 							{t("confirmationNeededCode")}
 						</p>
 						<CodeEntry
@@ -103,7 +103,7 @@ export function ConfirmationClient({
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button
 					asChild
-					className="min-h-11 flex-1 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="min-h-11 flex-1 bg-brand hover:bg-brand-strong"
 				>
 					<Link href={`/purchases/${encodeURIComponent(order.id)}`}>
 						{t("viewOrder")}

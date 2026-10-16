@@ -31,7 +31,7 @@ export function InventoryStats({
 	return (
 		<div
 			className={cn(
-				"grid gap-5 rounded-xl border border-[#E2E8F0] bg-white px-5 py-4 sm:items-center",
+				"grid gap-5 rounded-xl border border-line bg-surface px-5 py-4 sm:items-center",
 				showCost
 					? "sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]"
 					: "sm:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]",
@@ -39,19 +39,19 @@ export function InventoryStats({
 		>
 			<div className="space-y-2">
 				<p className="flex flex-wrap items-baseline gap-2">
-					<span className="font-extrabold text-[#0F172A] text-[26px] tabular-nums">
+					<span className="font-extrabold text-[26px] text-ink tabular-nums">
 						{units.counted.toLocaleString(locale)} /{" "}
 						{units.expected.toLocaleString(locale)}
 					</span>
-					<span className="text-[#64748B] text-sm">{t("unitsCounted")}</span>
+					<span className="text-ink-muted text-sm">{t("unitsCounted")}</span>
 				</p>
-				<div className="h-2 overflow-hidden rounded bg-[#E2E8F0]">
+				<div className="h-2 overflow-hidden rounded bg-line">
 					<div
-						className="h-2 bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
+						className="h-2 bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
 						style={{ width: `${progress}%` }}
 					/>
 				</div>
-				<p className="text-[#64748B] text-[13px]">
+				<p className="text-[13px] text-ink-muted">
 					{t("variantsProgress", { counted: stats.counted, total })}
 					{startedBy && ` · ${startedBy}`}
 				</p>
@@ -91,17 +91,17 @@ function Figure({
 	danger?: boolean;
 }) {
 	return (
-		<div className="flex flex-col gap-0.5 sm:border-[#E2E8F0] sm:border-l sm:pl-5">
-			<span className="text-[#64748B] text-[13px]">{label}</span>
+		<div className="flex flex-col gap-0.5 sm:border-line sm:border-l sm:pl-5">
+			<span className="text-[13px] text-ink-muted">{label}</span>
 			<span
 				className={cn(
 					"font-bold text-xl tabular-nums",
-					danger ? "text-[#B91C1C]" : "text-[#0F172A]",
+					danger ? "text-bad-ink-soft" : "text-ink",
 				)}
 			>
 				{value}
 			</span>
-			<span className="text-[#94A3B8] text-xs">{hint}</span>
+			<span className="text-ink-faint text-xs">{hint}</span>
 		</div>
 	);
 }

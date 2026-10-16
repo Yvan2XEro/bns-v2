@@ -116,9 +116,9 @@ export function CatalogueClient({
 		<div className="space-y-5">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
 					{counts && (
-						<p className="text-[#64748B] text-sm">
+						<p className="text-ink-muted text-sm">
 							{permissions.resale && (counts.resale ?? 0) > 0
 								? tc("summaryWithResale", {
 										all: counts.all,
@@ -138,14 +138,14 @@ export function CatalogueClient({
 					<button
 						type="button"
 						onClick={() => setImportOpen(true)}
-						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 					>
 						<Upload aria-hidden="true" className="h-4 w-4" />
 						{t("import")}
 					</button>
 					<Link
 						href="/seller/catalogue/new"
-						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					>
 						<Plus aria-hidden="true" className="h-4 w-4" />
 						{t("add")}
@@ -174,8 +174,8 @@ export function CatalogueClient({
 					/>
 
 					{selectedIds.length > 0 && (
-						<div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] px-4 py-2.5 text-sm">
-							<span className="font-semibold text-[var(--shop-accent-text,#1E3A8A)]">
+						<div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-4 py-2.5 text-sm">
+							<span className="font-semibold text-[var(--shop-accent-text,var(--c-brand-strong))]">
 								{tc("selected", { count: selectedIds.length })}
 							</span>
 							<div className="flex flex-wrap gap-2 sm:ml-auto">
@@ -185,7 +185,7 @@ export function CatalogueClient({
 										type="button"
 										disabled={setStatus.isPending}
 										onClick={() => applyStatus(selectedIds, status)}
-										className="h-8 rounded-lg border border-[#E2E8F0] bg-white px-3 font-medium text-[#0F172A] disabled:opacity-50"
+										className="h-8 rounded-lg border border-line bg-surface px-3 font-medium text-ink disabled:opacity-50"
 									>
 										{tc(`bulk.${status}`)}
 									</button>
@@ -195,7 +195,7 @@ export function CatalogueClient({
 										type="button"
 										disabled={setStatus.isPending}
 										onClick={() => applyStatus(selectedIds, "archived")}
-										className="h-8 rounded-lg border border-[#FECACA] bg-white px-3 font-medium text-[#991b1b] disabled:opacity-50"
+										className="h-8 rounded-lg border border-bad-line bg-surface px-3 font-medium text-bad-ink disabled:opacity-50"
 									>
 										{tc("bulk.archived")}
 									</button>
@@ -204,7 +204,7 @@ export function CatalogueClient({
 									type="button"
 									aria-label={tc("clearSelection")}
 									onClick={() => patch({ selected: NONE })}
-									className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#64748B] hover:bg-white"
+									className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface"
 								>
 									<X aria-hidden="true" className="h-4 w-4" />
 								</button>
@@ -225,7 +225,7 @@ export function CatalogueClient({
 					{!isPending && !isError && data && (
 						<div aria-busy={isFetching} className="space-y-4">
 							{data.docs.length === 0 ? (
-								<p className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm">
+								<p className="rounded-xl border border-line bg-surface p-8 text-center text-ink-muted text-sm">
 									{t("noMatch")}
 								</p>
 							) : (
@@ -251,7 +251,7 @@ export function CatalogueClient({
 										onSetStatus={applyStatus}
 										showProvenance={permissions.resale}
 									/>
-									<div className="flex flex-wrap items-center justify-between gap-2 text-[#64748B] text-sm">
+									<div className="flex flex-wrap items-center justify-between gap-2 text-ink-muted text-sm">
 										<span>
 											{t("range", {
 												from: (data.page - 1) * PAGE_SIZE + 1,
@@ -266,7 +266,7 @@ export function CatalogueClient({
 												onClick={() =>
 													patch({ page: data.page - 1, selected: NONE })
 												}
-												className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 font-medium disabled:opacity-40"
+												className="h-9 rounded-lg border border-line bg-surface px-3 font-medium disabled:opacity-40"
 											>
 												{t("previous")}
 											</button>
@@ -276,7 +276,7 @@ export function CatalogueClient({
 												onClick={() =>
 													patch({ page: data.page + 1, selected: NONE })
 												}
-												className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 font-medium disabled:opacity-40"
+												className="h-9 rounded-lg border border-line bg-surface px-3 font-medium disabled:opacity-40"
 											>
 												{t("next")}
 											</button>

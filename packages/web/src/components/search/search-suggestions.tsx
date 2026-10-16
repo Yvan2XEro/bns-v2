@@ -218,17 +218,17 @@ export function useSearchSuggestions({
 	const optionId = (index: number) => `${listId}-${index}`;
 
 	const panel = open ? (
-		<div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white text-left shadow-[0_18px_40px_-18px_rgba(15,23,42,0.35)] sm:min-w-[22rem]">
+		<div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-line bg-surface text-left shadow-[0_18px_40px_-18px_rgba(15,23,42,0.35)] sm:min-w-[22rem]">
 			{!typing && (
 				<div className="flex items-center justify-between px-4 pt-3 pb-1">
-					<p className="font-semibold text-[#64748B] text-[11px] uppercase tracking-wide">
+					<p className="font-semibold text-[11px] text-ink-muted uppercase tracking-wide">
 						{t("recent")}
 					</p>
 					<button
 						type="button"
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={clear}
-						className="font-medium text-[#1E40AF] text-xs hover:underline"
+						className="font-medium text-brand text-xs hover:underline"
 					>
 						{t("clearRecent")}
 					</button>
@@ -252,8 +252,8 @@ export function useSearchSuggestions({
 						onClick={() => pick(item)}
 						onMouseEnter={() => setActive(index)}
 						className={cn(
-							"group flex cursor-pointer items-center gap-3 px-4 py-2 text-[#0F172A] text-sm",
-							index === active && "bg-[#F1F5F9]",
+							"group flex cursor-pointer items-center gap-3 px-4 py-2 text-ink text-sm",
+							index === active && "bg-subtle",
 						)}
 					>
 						<SuggestionIcon item={item} />
@@ -263,14 +263,14 @@ export function useSearchSuggestions({
 							) : item.kind === "category" ? (
 								<>
 									{item.label}
-									<span className="ml-2 text-[#64748B] text-xs">
+									<span className="ml-2 text-ink-muted text-xs">
 										{t("category")}
 									</span>
 								</>
 							) : item.kind === "shop" ? (
 								<>
 									{item.label}
-									<span className="ml-2 text-[#64748B] text-xs">
+									<span className="ml-2 text-ink-muted text-xs">
 										{item.city ? t("shopIn", { city: item.city }) : t("shop")}
 									</span>
 								</>
@@ -287,7 +287,7 @@ export function useSearchSuggestions({
 									event.stopPropagation();
 									remove(item.label);
 								}}
-								className="rounded-full p-1 text-[#94A3B8] opacity-0 transition-opacity hover:bg-[#E2E8F0] hover:text-[#334155] focus-visible:opacity-100 group-hover:opacity-100"
+								className="rounded-full p-1 text-ink-faint opacity-0 transition-opacity hover:bg-line hover:text-ink-soft focus-visible:opacity-100 group-hover:opacity-100"
 							>
 								<X aria-hidden="true" className="h-3.5 w-3.5" />
 							</button>
@@ -324,7 +324,7 @@ export function useSearchSuggestions({
 
 function SuggestionIcon({ item }: { item: Suggestion }) {
 	const box =
-		"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-[#64748B]";
+		"flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-subtle text-ink-muted";
 	switch (item.kind) {
 		case "recent":
 			return (
@@ -334,7 +334,7 @@ function SuggestionIcon({ item }: { item: Suggestion }) {
 			);
 		case "query":
 			return (
-				<span className={cn(box, "bg-[#EFF6FF] text-[#1E40AF]")}>
+				<span className={cn(box, "bg-brand-soft text-brand")}>
 					<Search aria-hidden="true" className="h-4 w-4" />
 				</span>
 			);

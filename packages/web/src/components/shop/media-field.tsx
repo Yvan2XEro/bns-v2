@@ -47,8 +47,8 @@ export function MediaField({
 			<div
 				className={
 					shape === "square"
-						? "h-20 w-20 overflow-hidden rounded-2xl bg-[#F1F5F9]"
-						: "h-20 w-48 overflow-hidden rounded-lg bg-[#F1F5F9]"
+						? "h-20 w-20 overflow-hidden rounded-2xl bg-subtle"
+						: "h-20 w-48 overflow-hidden rounded-lg bg-subtle"
 				}
 			>
 				{previewUrl ? (
@@ -59,13 +59,13 @@ export function MediaField({
 				)}
 			</div>
 			<div className="space-y-1">
-				<p className="font-semibold text-[#0F172A] text-sm">{label}</p>
-				<p className="text-[#64748B] text-xs">{hint}</p>
+				<p className="font-semibold text-ink text-sm">{label}</p>
+				<p className="text-ink-muted text-xs">{hint}</p>
 				<div className="flex gap-3 text-sm">
 					<button
 						type="button"
 						onClick={() => input.current?.click()}
-						className="font-semibold text-[#1E40AF]"
+						className="font-semibold text-brand"
 						disabled={uploadMedia.isPending}
 					>
 						{uploadMedia.isPending ? (
@@ -75,7 +75,7 @@ export function MediaField({
 						)}
 					</button>
 					{previewUrl && (
-						<button type="button" onClick={onRemove} className="text-[#64748B]">
+						<button type="button" onClick={onRemove} className="text-ink-muted">
 							{t("remove")}
 						</button>
 					)}

@@ -50,7 +50,7 @@ export function BusinessClient({ shopId }: { shopId: string }) {
 	const [state, patch] = useReducer(reducer, initialState);
 
 	if (query.isPending) {
-		return <p className="text-[#64748B] text-sm">{tRoot("Common.loading")}</p>;
+		return <p className="text-ink-muted text-sm">{tRoot("Common.loading")}</p>;
 	}
 	// An error is not "nothing to show": the request may well exist, we just
 	// failed to read it. Never quietly render an empty form over that.
@@ -71,7 +71,7 @@ export function BusinessClient({ shopId }: { shopId: string }) {
 	if (!request || !request.business) {
 		return (
 			<div className="space-y-2">
-				<p className="text-[#64748B] text-sm">{t("noRequest")}</p>
+				<p className="text-ink-muted text-sm">{t("noRequest")}</p>
 				<Button asChild variant="outline">
 					<a href="/seller/verification">{t("backToHub")}</a>
 				</Button>

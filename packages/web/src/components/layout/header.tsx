@@ -91,7 +91,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 	const condensed = useScrolledPast("[data-shop-title]", themed);
 	const iconTone = themed
 		? "text-[var(--shop-head-muted)] hover:bg-white/10 hover:text-[var(--shop-head-fg)] focus-visible:ring-[var(--shop-head-fg)]"
-		: "text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:ring-[#93C5FD]";
+		: "text-ink-mid hover:bg-subtle hover:text-ink focus-visible:ring-brand-line";
 
 	return (
 		<>
@@ -104,7 +104,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 					"sticky top-0 z-50 w-full border-b",
 					themed
 						? `${SHOP_HEAD} border-transparent bg-[var(--shop-head-bg)] text-[var(--shop-head-fg)]`
-						: "border-[#E2E8F0] bg-white text-[#0F172A]",
+						: "border-line bg-surface text-ink",
 				)}
 			>
 				{shop && <style>{shopHeaderCss(`.${SHOP_HEAD}`, shop.theme)}</style>}
@@ -119,7 +119,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 								aria-hidden={condensed || undefined}
 								tabIndex={condensed ? -1 : undefined}
 								className={cn(
-									"absolute inset-0 flex items-center gap-2 rounded-lg transition-[opacity,transform] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] motion-reduce:transition-none",
+									"absolute inset-0 flex items-center gap-2 rounded-lg transition-[opacity,transform] duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line motion-reduce:transition-none",
 									condensed && "-translate-y-2 pointer-events-none opacity-0",
 								)}
 							>
@@ -235,7 +235,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 											"flex h-10 items-center whitespace-nowrap rounded-lg border px-3 font-semibold text-sm focus-visible:outline-none focus-visible:ring-2",
 											themed
 												? "border-white/30 text-[var(--shop-head-fg)] hover:bg-white/10 focus-visible:ring-[var(--shop-head-fg)]"
-												: "border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#94A3B8] focus-visible:ring-[#93C5FD]",
+												: "border-line bg-surface text-ink hover:border-ink-faint focus-visible:ring-brand-line",
 										)}
 									>
 										{t("logIn")}
@@ -248,7 +248,7 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 							href={gatedHref(signedIn, "/create")}
 							aria-label={t("postAd")}
 							title={t("postAd")}
-							className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F59E0B] font-extrabold text-[#0F172A] text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 md:flex"
+							className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F59E0B] font-extrabold text-ink text-sm hover:bg-[#D97706] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 md:flex"
 						>
 							<Plus aria-hidden="true" className="h-5 w-5" />
 						</Link>

@@ -20,24 +20,24 @@ export function MoveListingRow({
 
 	return (
 		<li>
-			<label className="flex cursor-pointer items-center gap-3 rounded-lg border border-[#E2E8F0] p-2">
+			<label className="flex cursor-pointer items-center gap-3 rounded-lg border border-line p-2">
 				<input
 					type="checkbox"
-					className="h-4 w-4 accent-[#1E40AF]"
+					className="h-4 w-4 accent-brand"
 					checked={checked}
 					onChange={onToggle}
 				/>
-				<div className="h-11 w-11 shrink-0 overflow-hidden rounded bg-[#F1F5F9]">
+				<div className="h-11 w-11 shrink-0 overflow-hidden rounded bg-subtle">
 					{url && (
 						// biome-ignore lint/performance/noImgElement: thumbnails from arbitrary storage hosts
 						<img src={url} alt="" className="h-full w-full object-cover" />
 					)}
 				</div>
 				<div className="min-w-0">
-					<p className="truncate font-medium text-[#0F172A] text-sm">
+					<p className="truncate font-medium text-ink text-sm">
 						{listing.title}
 					</p>
-					<p className="text-[#64748B] text-xs">
+					<p className="text-ink-muted text-xs">
 						{formatOrderMoney(listing.price)}
 					</p>
 				</div>

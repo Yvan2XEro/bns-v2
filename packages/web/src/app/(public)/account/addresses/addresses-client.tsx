@@ -50,17 +50,17 @@ export function AddressesClient() {
 	return (
 		<main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
 			<header className="flex items-start gap-4">
-				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EFF6FF] text-[#1E40AF]">
+				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
 					<MapPin aria-hidden="true" className="h-5 w-5" />
 				</div>
 				<div className="flex-1">
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-					<p className="mt-1 text-[#64748B] text-sm">{t("subtitle")}</p>
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+					<p className="mt-1 text-ink-muted text-sm">{t("subtitle")}</p>
 				</div>
 				{list.data && !editing ? (
 					<Button
 						type="button"
-						className="min-h-11 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+						className="min-h-11 bg-brand hover:bg-brand-strong"
 						disabled={full}
 						onClick={() => {
 							save.reset();
@@ -79,8 +79,8 @@ export function AddressesClient() {
 			)}
 
 			{editing ? (
-				<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-					<h2 className="mb-4 font-bold text-[#0F172A] text-lg">
+				<section className="rounded-2xl border border-line bg-surface p-5">
+					<h2 className="mb-4 font-bold text-ink text-lg">
 						{editingAddress ? t("editTitle") : t("newTitle")}
 					</h2>
 					<AddressStep
@@ -116,7 +116,7 @@ export function AddressesClient() {
 			) : null}
 
 			{list.data && addresses.length === 0 && !editing ? (
-				<div className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white">
+				<div className="rounded-2xl border border-line-strong border-dashed bg-surface">
 					<EmptyState
 						illustration="empty"
 						title={t("emptyTitle")}
@@ -135,7 +135,7 @@ export function AddressesClient() {
 
 			{addresses.length > 0 && !editing ? (
 				<section aria-label={t("title")} className="space-y-3">
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("count", {
 							count: addresses.length,
 							limit: list.data?.limit ?? SAVED_ADDRESS_LIMIT,
@@ -154,7 +154,7 @@ export function AddressesClient() {
 													type="button"
 													variant="ghost"
 													size="sm"
-													className="min-h-11 text-[#1E40AF]"
+													className="min-h-11 text-brand"
 													disabled={makeDefault.isPending}
 													onClick={() => makeDefault.mutate(address.id)}
 												>
@@ -165,7 +165,7 @@ export function AddressesClient() {
 												type="button"
 												variant="ghost"
 												size="sm"
-												className="min-h-11 text-[#1E40AF]"
+												className="min-h-11 text-brand"
 												onClick={() => {
 													save.reset();
 													setEditing({ id: address.id });
@@ -177,7 +177,7 @@ export function AddressesClient() {
 												type="button"
 												variant="ghost"
 												size="sm"
-												className="min-h-11 text-[#B91C1C]"
+												className="min-h-11 text-bad-ink-soft"
 												disabled={remove.isPending}
 												onClick={() => {
 													if (window.confirm(t("deleteConfirm")))
@@ -200,7 +200,7 @@ export function AddressesClient() {
 						))}
 					</ul>
 					{full ? (
-						<p className="text-[#64748B] text-sm">{t("limitReached")}</p>
+						<p className="text-ink-muted text-sm">{t("limitReached")}</p>
 					) : null}
 				</section>
 			) : null}

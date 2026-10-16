@@ -50,22 +50,22 @@ export function ProductListingPreview({
 	const cover = existingImages[0]?.url || newImages[0]?.preview || "";
 
 	return (
-		<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+		<div className="rounded-xl border border-line bg-surface p-5">
 			<div className="flex items-baseline justify-between gap-2">
-				<h2 className="font-bold text-[#0F172A]">{t("previewTitle")}</h2>
-				<span className="text-[#64748B] text-xs">{t("previewCaption")}</span>
+				<h2 className="font-bold text-ink">{t("previewTitle")}</h2>
+				<span className="text-ink-muted text-xs">{t("previewCaption")}</span>
 			</div>
-			<div className="mt-3 overflow-hidden rounded-xl border border-[#E2E8F0]">
-				<div className="flex h-36 items-center justify-center bg-[#F1F5F9]">
+			<div className="mt-3 overflow-hidden rounded-xl border border-line">
+				<div className="flex h-36 items-center justify-center bg-subtle">
 					{cover ? (
 						// biome-ignore lint/performance/noImgElement: local object URL or media host
 						<img src={cover} alt="" className="h-full w-full object-cover" />
 					) : (
-						<ImageIcon aria-hidden="true" className="h-8 w-8 text-[#94A3B8]" />
+						<ImageIcon aria-hidden="true" className="h-8 w-8 text-ink-faint" />
 					)}
 				</div>
 				<div className="p-3">
-					<p className="font-bold text-[#0F172A] text-lg">
+					<p className="font-bold text-ink text-lg">
 						{prices.length > 0
 							? formatOrderMoneyRange(
 									formatOrderMoney,
@@ -74,12 +74,12 @@ export function ProductListingPreview({
 								)
 							: "—"}
 					</p>
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{title.trim() || t("untitled")}
 					</p>
 				</div>
 			</div>
-			<ul className="mt-3 space-y-1 text-[#334155] text-sm">
+			<ul className="mt-3 space-y-1 text-ink-soft text-sm">
 				<li>{t("unitsInStock", { count: units })}</li>
 				{codAllowed && <li>{t("cod")}</li>}
 				{pickupAllowed && <li>{t("pickup")}</li>}

@@ -232,7 +232,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 		});
 
 	return (
-		<div className="bg-[#F8FAFC]">
+		<div className="bg-canvas">
 			<script
 				type="application/ld+json"
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
@@ -310,23 +310,23 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 								<input type="hidden" name="category" value={category} />
 							)}
 							<div className="relative min-w-[200px] flex-1 sm:max-w-[340px]">
-								<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
+								<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint" />
 								<input
 									type="search"
 									name="q"
 									defaultValue={q}
 									placeholder={t("searchInShop")}
 									aria-label={t("searchInShop")}
-									className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[var(--shop-accent)] focus:outline-none"
+									className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm focus:border-[var(--shop-accent)] focus:outline-none"
 								/>
 							</div>
-							<span className="ml-auto shrink-0 text-[#64748B] text-sm">
+							<span className="ml-auto shrink-0 text-ink-muted text-sm">
 								{t("products", { count: listings.total })}
 							</span>
 							<ShopSortSelect value={sort} />
 						</form>
 						{listings.hits.length === 0 ? (
-							<div className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center text-[#64748B] text-sm">
+							<div className="rounded-xl border border-line border-dashed bg-surface p-10 text-center text-ink-muted text-sm">
 								{q
 									? t("noResultsInShop", { q })
 									: category
@@ -344,18 +344,18 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 								{page > 1 && (
 									<Link
 										href={pageHref(page - 1)}
-										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[var(--shop-accent-text)] hover:border-[var(--shop-accent-border)] hover:bg-[var(--shop-accent-soft)]"
+										className="rounded-lg border border-line bg-surface px-3 py-1.5 font-medium text-[var(--shop-accent-text)] hover:border-[var(--shop-accent-border)] hover:bg-[var(--shop-accent-soft)]"
 									>
 										{t("previous")}
 									</Link>
 								)}
-								<span className="text-[#64748B]">
+								<span className="text-ink-muted">
 									{page} / {totalPages}
 								</span>
 								{page < totalPages && (
 									<Link
 										href={pageHref(page + 1)}
-										className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 font-medium text-[var(--shop-accent-text)] hover:border-[var(--shop-accent-border)] hover:bg-[var(--shop-accent-soft)]"
+										className="rounded-lg border border-line bg-surface px-3 py-1.5 font-medium text-[var(--shop-accent-text)] hover:border-[var(--shop-accent-border)] hover:bg-[var(--shop-accent-soft)]"
 									>
 										{t("next")}
 									</Link>

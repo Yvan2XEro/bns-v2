@@ -71,9 +71,9 @@ export function ActionBar({
 	return (
 		<aside
 			aria-labelledby="action-bar-title"
-			className="h-fit space-y-3 rounded-xl border border-[#E2E8F0] bg-white p-5 lg:sticky lg:top-4"
+			className="h-fit space-y-3 rounded-xl border border-line bg-surface p-5 lg:sticky lg:top-4"
 		>
-			<h2 id="action-bar-title" className="font-semibold text-[#0F172A]">
+			<h2 id="action-bar-title" className="font-semibold text-ink">
 				{t("actions")}
 			</h2>
 
@@ -85,7 +85,7 @@ export function ActionBar({
 			)}
 
 			{roleLoading ? (
-				<span className="block h-11 animate-pulse rounded-lg bg-[#F1F5F9]" />
+				<span className="block h-11 animate-pulse rounded-lg bg-subtle" />
 			) : (
 				<div className="flex flex-col gap-2">
 					{items.map(({ action, tone, labelKey }) => {
@@ -96,7 +96,7 @@ export function ActionBar({
 									href={orderReceiptUrl(order.id, locale)}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] px-4 font-medium text-sm hover:bg-[var(--shop-accent-soft,#EFF6FF)]"
+									className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint))] px-4 font-medium text-sm hover:bg-[var(--shop-accent-soft,var(--c-brand-soft))]"
 								>
 									{t(labelKey)}
 								</a>
@@ -119,7 +119,7 @@ export function ActionBar({
 						);
 					})}
 					{items.length === 0 && (
-						<p className="text-[#64748B] text-sm">{t("noActions")}</p>
+						<p className="text-ink-muted text-sm">{t("noActions")}</p>
 					)}
 				</div>
 			)}

@@ -175,7 +175,7 @@ function Editor({
 		<div className="space-y-[18px]">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div className="flex flex-col gap-1">
-					<nav className="text-[#64748B] text-[13px]">
+					<nav className="text-[13px] text-ink-muted">
 						<Link href="/seller/catalogue" className="hover:underline">
 							{t("breadcrumbCatalogue")}
 						</Link>
@@ -189,10 +189,10 @@ function Editor({
 						<span className="mx-1.5">›</span>
 						<span>{t("breadcrumbResale")}</span>
 					</nav>
-					<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-tight">
+					<h1 className="font-extrabold text-[28px] text-ink tracking-tight">
 						{t("title", { title: view.title })}
 					</h1>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{[
 							view.enabled && view.enabledAt
 								? t("offeredSince", {
@@ -217,7 +217,7 @@ function Editor({
 								setDraft(next);
 								submit(next);
 							}}
-							className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm disabled:opacity-50"
+							className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm disabled:opacity-50"
 						>
 							<PauseCircle aria-hidden="true" className="h-4 w-4" />
 							{t("suspend")}
@@ -227,7 +227,7 @@ function Editor({
 						type="button"
 						disabled={save.isPending || blocked}
 						onClick={() => submit(draft)}
-						className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
+						className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 					>
 						{save.isPending ? t("saving") : t("save")}
 					</button>
@@ -235,7 +235,7 @@ function Editor({
 			</header>
 
 			{!view.eligible ? (
-				<p className="flex gap-2 rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-3.5 py-3 text-[#78350F] text-sm">
+				<p className="flex gap-2 rounded-[10px] border border-warn-line bg-warn-faint px-3.5 py-3 text-sm text-warn-ink-strong">
 					<Lock aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
 					<span>
 						{t("notEligible")}{" "}
@@ -269,7 +269,7 @@ function Editor({
 				</p>
 			) : null}
 			{saved && !save.isPending ? (
-				<output className="block rounded-lg bg-[#DCFCE7] p-3 text-[#166534] text-sm">
+				<output className="block rounded-lg bg-ok-soft p-3 text-ok-ink text-sm">
 					{t("saved")}
 				</output>
 			) : null}
@@ -283,13 +283,13 @@ function Editor({
 
 			<div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_340px]">
 				<div className="min-w-0 space-y-[18px]">
-					<section className="flex flex-wrap items-center gap-3.5 rounded-xl border border-[#E2E8F0] bg-white px-[18px] py-4">
+					<section className="flex flex-wrap items-center gap-3.5 rounded-xl border border-line bg-surface px-[18px] py-4">
 						<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 							<h2 className="font-bold text-[17px]">{t("offerTitle")}</h2>
-							<p className="text-[#64748B] text-[13px]">{t("offerBody")}</p>
+							<p className="text-[13px] text-ink-muted">{t("offerBody")}</p>
 						</div>
 						{view.eligible ? (
-							<span className="inline-flex items-center gap-1 rounded-full bg-[var(--shop-accent,#1E40AF)] px-2.5 py-1 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-xs">
+							<span className="inline-flex items-center gap-1 rounded-full bg-[var(--shop-accent,var(--c-brand))] px-2.5 py-1 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 								<ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
 								{t("businessVerified")}
 							</span>
@@ -302,10 +302,10 @@ function Editor({
 						/>
 					</section>
 
-					<section className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
-						<div className="flex flex-wrap items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-4">
+					<section className="overflow-hidden rounded-xl border border-line bg-surface">
+						<div className="flex flex-wrap items-center justify-between gap-2 border-subtle border-b px-[18px] py-4">
 							<h2 className="font-bold text-base">{t("variantsTitle")}</h2>
-							<span className="text-[#64748B] text-[13px]">
+							<span className="text-[13px] text-ink-muted">
 								{t("variantsOffered", {
 									offered: enabledVariants.length,
 									total: draft.variants.length,
@@ -315,7 +315,7 @@ function Editor({
 						<div className="overflow-x-auto">
 							<table className="w-full min-w-[640px] border-collapse text-left">
 								<thead>
-									<tr className="border-[#E2E8F0] border-b bg-[#F8FAFC] text-[#64748B] text-xs uppercase tracking-[0.4px]">
+									<tr className="border-line border-b bg-canvas text-ink-muted text-xs uppercase tracking-[0.4px]">
 										<th className="px-3.5 py-2.5 font-semibold">
 											{t("colVariant")}
 										</th>
@@ -338,8 +338,8 @@ function Editor({
 											<tr
 												key={variant.id}
 												className={cn(
-													"border-[#F1F5F9] border-b text-sm",
-													invalid && "bg-[#FEF2F2]",
+													"border-subtle border-b text-sm",
+													invalid && "bg-bad-faint",
 												)}
 											>
 												<td className="px-3.5 py-2.5">
@@ -353,13 +353,13 @@ function Editor({
 																	enabled: event.target.checked,
 																})
 															}
-															className="h-[18px] w-[18px] accent-[var(--shop-accent,#1E40AF)]"
+															className="h-[18px] w-[18px] accent-[var(--shop-accent,var(--c-brand))]"
 														/>
 														<span className="flex min-w-0 flex-col">
-															<span className="font-semibold text-[#0F172A]">
+															<span className="font-semibold text-ink">
 																{row?.label || row?.sku || t("defaultVariant")}
 															</span>
-															<span className="text-[#64748B] text-xs">
+															<span className="text-ink-muted text-xs">
 																{row?.stock === null || row?.stock === undefined
 																	? t("stockUntracked")
 																	: t("inStock", { count: row.stock })}
@@ -400,10 +400,10 @@ function Editor({
 																})
 															}
 															className={cn(
-																"h-[34px] w-24 rounded-lg border bg-white px-2.5 font-semibold text-[#0F172A] tabular-nums disabled:bg-[#F8FAFC] disabled:text-[#94A3B8]",
+																"h-[34px] w-24 rounded-lg border bg-surface px-2.5 font-semibold text-ink tabular-nums disabled:bg-canvas disabled:text-ink-faint",
 																field === "minRetailPrice"
-																	? "border-[var(--shop-accent-border,#93C5FD)]"
-																	: "border-[#E2E8F0]",
+																	? "border-[var(--shop-accent-border,var(--c-brand-line))]"
+																	: "border-line",
 															)}
 														/>
 													</td>
@@ -414,7 +414,7 @@ function Editor({
 								</tbody>
 							</table>
 						</div>
-						<div className="flex flex-wrap items-center gap-x-[18px] gap-y-1 bg-[#F8FAFC] px-[18px] py-3 text-[#475569] text-[13px]">
+						<div className="flex flex-wrap items-center gap-x-[18px] gap-y-1 bg-canvas px-[18px] py-3 text-[13px] text-ink-mid">
 							<span className="flex items-center gap-1.5">
 								<Info aria-hidden="true" className="h-4 w-4" />
 								{t("amountsNote", { currency: currencyCode })}
@@ -429,7 +429,7 @@ function Editor({
 											sample.suggestedRetailPrice - sample.supplierPrice,
 										),
 										strong: (chunks) => (
-											<strong className="text-[#0F172A] tabular-nums">
+											<strong className="text-ink tabular-nums">
 												{chunks}
 											</strong>
 										),
@@ -444,10 +444,10 @@ function Editor({
 						) : null}
 					</section>
 
-					<section className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
-						<div className="flex flex-wrap items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-4">
+					<section className="overflow-hidden rounded-xl border border-line bg-surface">
+						<div className="flex flex-wrap items-center justify-between gap-2 border-subtle border-b px-[18px] py-4">
 							<h2 className="font-bold text-base">{t("whoTitle")}</h2>
-							<span className="text-[#64748B] text-[13px]">
+							<span className="text-[13px] text-ink-muted">
 								{t("pendingRequests", { count: view.pendingRequests })}
 							</span>
 						</div>
@@ -459,8 +459,8 @@ function Editor({
 									className={cn(
 										"flex cursor-pointer items-start gap-3 rounded-[10px] border px-3.5 py-3",
 										draft.approvalRequired === approval
-											? "border-[var(--shop-accent,#1E40AF)] bg-[var(--shop-accent-soft,#EFF6FF)]"
-											: "border-[#E2E8F0] bg-white",
+											? "border-[var(--shop-accent,var(--c-brand))] bg-[var(--shop-accent-soft,var(--c-brand-soft))]"
+											: "border-line bg-surface",
 									)}
 								>
 									<input
@@ -471,22 +471,22 @@ function Editor({
 										onChange={() =>
 											setDraft({ ...draft, approvalRequired: approval })
 										}
-										className="mt-0.5 h-[18px] w-[18px] accent-[var(--shop-accent,#1E40AF)]"
+										className="mt-0.5 h-[18px] w-[18px] accent-[var(--shop-accent,var(--c-brand))]"
 									/>
 									<span className="flex flex-col gap-0.5">
 										<span className="font-semibold text-sm">
 											{t(approval ? "approvalOn" : "approvalOff")}
 										</span>
-										<span className="text-[#64748B] text-[13px]">
+										<span className="text-[13px] text-ink-muted">
 											{t(approval ? "approvalOnBody" : "approvalOffBody")}
 										</span>
 									</span>
 								</label>
 							))}
 						</fieldset>
-						<div className="grid gap-3 border-[#F1F5F9] border-t px-[18px] py-3.5 sm:grid-cols-2">
+						<div className="grid gap-3 border-subtle border-t px-[18px] py-3.5 sm:grid-cols-2">
 							<label className="flex flex-col gap-1.5">
-								<span className="font-semibold text-[#334155] text-[13px]">
+								<span className="font-semibold text-[13px] text-ink-soft">
 									{t("handlingHours")}
 								</span>
 								<span className="flex items-center gap-2">
@@ -509,9 +509,9 @@ function Editor({
 												handlingHours: event.target.valueAsNumber,
 											})
 										}
-										className="h-10 w-24 rounded-lg border border-[#E2E8F0] bg-white px-3 font-semibold tabular-nums"
+										className="h-10 w-24 rounded-lg border border-line bg-surface px-3 font-semibold tabular-nums"
 									/>
-									<span className="text-[#64748B] text-sm">{t("hours")}</span>
+									<span className="text-ink-muted text-sm">{t("hours")}</span>
 								</span>
 								{submitted && !handlingValid ? (
 									<span role="alert" className="text-red-700 text-xs">
@@ -520,7 +520,7 @@ function Editor({
 								) : null}
 							</label>
 							<div className="flex flex-col gap-1.5">
-								<span className="font-semibold text-[#334155] text-[13px]">
+								<span className="font-semibold text-[13px] text-ink-soft">
 									{t("cod")}
 								</span>
 								<span className="flex items-center gap-2">
@@ -538,7 +538,7 @@ function Editor({
 								</span>
 							</div>
 							<label className="flex flex-col gap-1.5 sm:col-span-2">
-								<span className="font-semibold text-[#334155] text-[13px]">
+								<span className="font-semibold text-[13px] text-ink-soft">
 									{t("minResellerLevel")}
 								</span>
 								<select
@@ -555,7 +555,7 @@ function Editor({
 													: value,
 										});
 									}}
-									className="h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm sm:max-w-sm"
+									className="h-10 rounded-lg border border-line bg-surface px-3 text-sm sm:max-w-sm"
 								>
 									<option value="">{t("minResellerLevelAny")}</option>
 									{RESALE_MIN_RESELLER_LEVELS.map((level) => (
@@ -564,12 +564,12 @@ function Editor({
 										</option>
 									))}
 								</select>
-								<span className="text-[#64748B] text-xs">
+								<span className="text-ink-muted text-xs">
 									{t("minResellerLevelHint")}
 								</span>
 							</label>
 							<label className="flex flex-col gap-1.5 sm:col-span-2">
-								<span className="font-semibold text-[#334155] text-[13px]">
+								<span className="font-semibold text-[13px] text-ink-soft">
 									{t("resellerNotes")}
 								</span>
 								<textarea
@@ -581,17 +581,17 @@ function Editor({
 										setDraft({ ...draft, resellerNotes: event.target.value })
 									}
 									placeholder={t("resellerNotesPlaceholder")}
-									className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm"
+									className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
 								/>
 							</label>
 						</div>
 					</section>
 
-					<section className="rounded-xl border border-[#E2E8F0] bg-white">
-						<div className="flex items-center justify-between border-[#F1F5F9] border-b px-[18px] py-4">
+					<section className="rounded-xl border border-line bg-surface">
+						<div className="flex items-center justify-between border-subtle border-b px-[18px] py-4">
 							<h2 className="font-bold text-base">{t("conditionsTitle")}</h2>
 						</div>
-						<ul className="flex flex-col gap-2 px-[18px] py-3.5 text-[#334155] text-sm">
+						<ul className="flex flex-col gap-2 px-[18px] py-3.5 text-ink-soft text-sm">
 							{(
 								[
 									"conditionShip",
@@ -605,17 +605,17 @@ function Editor({
 								<li key={key} className="flex gap-2">
 									<Check
 										aria-hidden="true"
-										className="mt-0.5 h-4 w-4 shrink-0 text-[#16A34A]"
+										className="mt-0.5 h-4 w-4 shrink-0 text-ok"
 									/>
 									{t(key)}
 								</li>
 							))}
 						</ul>
-						<details className="border-[#F1F5F9] border-t px-[18px] py-3 text-sm">
-							<summary className="cursor-pointer font-semibold text-[var(--shop-accent-text,#1E40AF)]">
+						<details className="border-subtle border-t px-[18px] py-3 text-sm">
+							<summary className="cursor-pointer font-semibold text-[var(--shop-accent-text,var(--c-brand))]">
 								{t("readTerms")}
 							</summary>
-							<p className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-[#475569]">
+							<p className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-ink-mid">
 								{richText(
 									locale === "fr" ? terms.data?.bodyFr : terms.data?.bodyEn,
 								) || tCatalogue("termsUnavailable")}
@@ -625,8 +625,8 @@ function Editor({
 				</div>
 
 				<aside className="space-y-[18px]">
-					<section className="rounded-xl border border-[#E2E8F0] bg-white">
-						<div className="border-[#F1F5F9] border-b px-[18px] py-4">
+					<section className="rounded-xl border border-line bg-surface">
+						<div className="border-subtle border-b px-[18px] py-4">
 							<h2 className="font-bold text-base">{t("previewTitle")}</h2>
 						</div>
 						<div className="flex flex-col gap-2 p-[18px]">
@@ -651,19 +651,19 @@ function Editor({
 									value={stock === null ? t("stockUntracked") : String(stock)}
 								/>
 							</dl>
-							<div className="flex items-center gap-1.5 border-[#F1F5F9] border-t pt-2">
+							<div className="flex items-center gap-1.5 border-subtle border-t pt-2">
 								<span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md bg-[#134E4A] font-extrabold text-[#99F6E4] text-[9px]">
 									{initials(shopName)}
 								</span>
-								<span className="min-w-0 flex-1 truncate font-semibold text-[#334155] text-xs">
+								<span className="min-w-0 flex-1 truncate font-semibold text-ink-soft text-xs">
 									{shopName}
 								</span>
 								<ShieldCheck
 									aria-hidden="true"
-									className="h-3.5 w-3.5 text-[var(--shop-accent-text,#1E40AF)]"
+									className="h-3.5 w-3.5 text-[var(--shop-accent-text,var(--c-brand))]"
 								/>
 							</div>
-							<span className="font-semibold text-[#64748B] text-[11px]">
+							<span className="font-semibold text-[11px] text-ink-muted">
 								{[
 									t(draft.approvalRequired ? "approvalOn" : "approvalOff"),
 									draft.codAccepted ? t("previewCod") : null,
@@ -671,7 +671,7 @@ function Editor({
 									.filter(Boolean)
 									.join(" · ")}
 							</span>
-							<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] font-semibold text-[13px]">
+							<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line font-semibold text-[13px]">
 								{draft.approvalRequired ? (
 									<>
 										<Lock aria-hidden="true" className="h-4 w-4" />
@@ -681,7 +681,7 @@ function Editor({
 									t("previewResell")
 								)}
 							</span>
-							<p className="text-[#64748B] text-xs">{t("previewPrivacy")}</p>
+							<p className="text-ink-muted text-xs">{t("previewPrivacy")}</p>
 						</div>
 					</section>
 
@@ -697,7 +697,7 @@ function Editor({
 					) : null}
 					<Link
 						href={resaleHref("supplier", "offered")}
-						className="block text-center font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm"
+						className="block text-center font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm"
 					>
 						{t("backToOffered")}
 					</Link>
@@ -727,8 +727,8 @@ function ExampleCard({
 	const margin = price - supplierPrice;
 	const commission = commissionOf(price, rateBps);
 	return (
-		<section className="rounded-xl border border-[#E2E8F0] bg-white">
-			<div className="border-[#F1F5F9] border-b px-[18px] py-4">
+		<section className="rounded-xl border border-line bg-surface">
+			<div className="border-subtle border-b px-[18px] py-4">
 				<h2 className="font-bold text-base">
 					{t("exampleTitle", { price: formatOrderMoney(price) })}
 				</h2>
@@ -748,7 +748,7 @@ function ExampleCard({
 					})}
 					value={`− ${formatOrderMoney(commission)}`}
 				/>
-				<div className="flex justify-between border-[#E2E8F0] border-t pt-2.5">
+				<div className="flex justify-between border-line border-t pt-2.5">
 					<dt className="font-semibold">{t("exampleGain")}</dt>
 					<dd className="font-bold tabular-nums">
 						{formatOrderMoney(margin - commission)}
@@ -756,7 +756,7 @@ function ExampleCard({
 				</div>
 			</dl>
 			{range ? (
-				<p className="border-[#F1F5F9] border-t px-[18px] py-3 text-[#475569] text-[13px]">
+				<p className="border-subtle border-t px-[18px] py-3 text-[13px] text-ink-mid">
 					{t("rangeLine", {
 						count: resellers,
 						min: formatOrderMoney(range.min),
@@ -772,7 +772,7 @@ function ExampleCard({
 function Line({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex justify-between gap-2">
-			<dt className="text-[#64748B]">{label}</dt>
+			<dt className="text-ink-muted">{label}</dt>
 			<dd className="font-semibold tabular-nums">{value}</dd>
 		</div>
 	);
@@ -781,10 +781,8 @@ function Line({ label, value }: { label: string; value: string }) {
 function PreviewStat({ label, value }: { label: string; value: string }) {
 	return (
 		<div className="flex flex-col">
-			<dt className="text-[#64748B]">{label}</dt>
-			<dd className="font-bold text-[#0F172A] text-[15px] tabular-nums">
-				{value}
-			</dd>
+			<dt className="text-ink-muted">{label}</dt>
+			<dd className="font-bold text-[15px] text-ink tabular-nums">{value}</dd>
 		</div>
 	);
 }
@@ -811,13 +809,13 @@ function Toggle({
 			className={cn(
 				"relative inline-block h-6 w-10 shrink-0 rounded-full transition-colors disabled:opacity-50",
 				checked
-					? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
-					: "bg-[#CBD5E1]",
+					? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+					: "bg-line-strong",
 			)}
 		>
 			<span
 				className={cn(
-					"absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-all",
+					"absolute top-[3px] h-[18px] w-[18px] rounded-full bg-surface shadow transition-all",
 					checked ? "right-[3px]" : "left-[3px]",
 				)}
 			/>

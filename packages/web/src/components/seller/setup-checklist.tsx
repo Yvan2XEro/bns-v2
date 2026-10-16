@@ -51,14 +51,14 @@ function StepRow({ step, index }: { step: SetupStep; index: number | null }) {
 			className={cn(
 				"flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-semibold text-xs",
 				step.done
-					? "bg-[#DCFCE7] text-[#166534]"
-					: "border-2 border-[#CBD5E1] border-dashed text-[#64748B]",
+					? "bg-ok-soft text-ok-ink"
+					: "border-2 border-line-strong border-dashed text-ink-muted",
 			)}
 		>
 			{step.done ? (
 				<Check aria-hidden="true" className="h-4 w-4" />
 			) : step.pending ? (
-				<Clock aria-hidden="true" className="h-3.5 w-3.5 text-[#B45309]" />
+				<Clock aria-hidden="true" className="h-3.5 w-3.5 text-warn-ink-soft" />
 			) : step.locked ? (
 				<Lock aria-hidden="true" className="h-3 w-3" />
 			) : index !== null ? (
@@ -73,13 +73,13 @@ function StepRow({ step, index }: { step: SetupStep; index: number | null }) {
 			<span
 				className={cn(
 					"block font-medium text-sm",
-					step.done ? "text-[#64748B] line-through" : "text-[#0F172A]",
+					step.done ? "text-ink-muted line-through" : "text-ink",
 				)}
 			>
 				{t(`step.${step.key}.title`)}
 				{step.done && <span className="sr-only"> ({t("doneLabel")})</span>}
 			</span>
-			<span className="block text-[#64748B] text-xs">{stepBody(t, step)}</span>
+			<span className="block text-ink-muted text-xs">{stepBody(t, step)}</span>
 		</span>
 	);
 
@@ -95,12 +95,12 @@ function StepRow({ step, index }: { step: SetupStep; index: number | null }) {
 		<li>
 			<Link
 				href={target.href}
-				className="flex min-h-12 items-center gap-3 rounded-lg p-2 hover:bg-[#F8FAFC] focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)]"
+				className="flex min-h-12 items-center gap-3 rounded-lg p-2 hover:bg-canvas focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))]"
 			>
 				{mark}
 				{text}
 				{inline && (
-					<span className="inline-flex h-9 items-center gap-1 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm">
+					<span className="inline-flex h-9 items-center gap-1 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm">
 						<Plus aria-hidden="true" className="h-4 w-4" />
 						{t("add")}
 					</span>
@@ -135,15 +135,15 @@ export function SetupChecklist({
 				type="button"
 				onClick={() => setExpanded(true)}
 				aria-expanded={false}
-				className="flex w-full items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-4 text-left hover:bg-[#F8FAFC]"
+				className="flex w-full items-center gap-3 rounded-xl border border-line bg-surface p-4 text-left hover:bg-canvas"
 			>
-				<span className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]">
+				<span className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]">
 					<ListChecks aria-hidden="true" className="h-[18px] w-[18px]" />
 				</span>
-				<span className="flex-1 font-semibold text-[#0F172A] text-sm">
+				<span className="flex-1 font-semibold text-ink text-sm">
 					{t("collapsed", { count: left })}
 				</span>
-				<ChevronDown aria-hidden="true" className="h-4 w-4 text-[#64748B]" />
+				<ChevronDown aria-hidden="true" className="h-4 w-4 text-ink-muted" />
 			</button>
 		);
 	}
@@ -155,21 +155,21 @@ export function SetupChecklist({
 	return (
 		<section
 			aria-labelledby="setup-checklist-title"
-			className="rounded-xl border border-[#E2E8F0] bg-white p-5"
+			className="rounded-xl border border-line bg-surface p-5"
 		>
 			<div className="flex items-center justify-between gap-3">
 				<h2
 					id="setup-checklist-title"
-					className="font-bold text-[#0F172A] text-[17px]"
+					className="font-bold text-[17px] text-ink"
 				>
 					{mode === "complete" ? t("readyTitle") : t("checklistTitle")}
 				</h2>
-				<span className="font-bold text-[var(--shop-accent-text,#1E40AF)] text-sm tabular-nums">
+				<span className="font-bold text-[var(--shop-accent-text,var(--c-brand))] text-sm tabular-nums">
 					{progress.done} / {progress.total}
 				</span>
 			</div>
 			{mode === "complete" && (
-				<p className="mt-1 text-[#334155] text-sm">{t("readyBody")}</p>
+				<p className="mt-1 text-ink-soft text-sm">{t("readyBody")}</p>
 			)}
 			<div
 				role="progressbar"
@@ -177,10 +177,10 @@ export function SetupChecklist({
 				aria-valuemin={0}
 				aria-valuemax={progress.total}
 				aria-valuenow={progress.done}
-				className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E2E8F0]"
+				className="mt-3 h-1.5 overflow-hidden rounded-full bg-line"
 			>
 				<div
-					className="h-1.5 rounded-full bg-[var(--shop-accent,#1E40AF)]"
+					className="h-1.5 rounded-full bg-[var(--shop-accent,var(--c-brand))]"
 					style={{ width: `${percent}%` }}
 				/>
 			</div>
@@ -193,7 +193,7 @@ export function SetupChecklist({
 			)}
 			{optional.length > 0 && (
 				<>
-					<h3 className="mt-4 font-semibold text-[#64748B] text-xs uppercase tracking-[0.4px]">
+					<h3 className="mt-4 font-semibold text-ink-muted text-xs uppercase tracking-[0.4px]">
 						{t("further")}
 					</h3>
 					<ul className="mt-1 space-y-1">
@@ -207,7 +207,7 @@ export function SetupChecklist({
 				<button
 					type="button"
 					onClick={onDismiss}
-					className="mt-3 h-10 rounded-lg border border-[#E2E8F0] px-4 font-semibold text-[#334155] text-sm hover:bg-[#F8FAFC]"
+					className="mt-3 h-10 rounded-lg border border-line px-4 font-semibold text-ink-soft text-sm hover:bg-canvas"
 				>
 					{t("hideChecklist")}
 				</button>

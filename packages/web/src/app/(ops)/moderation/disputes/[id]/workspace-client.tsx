@@ -35,7 +35,7 @@ export function WorkspaceClient({ id }: { id: string }) {
 		return (
 			<output
 				aria-label={t("loading")}
-				className="block h-40 animate-pulse rounded-xl bg-[#F1F5F9]"
+				className="block h-40 animate-pulse rounded-xl bg-subtle"
 			/>
 		);
 	}
@@ -43,7 +43,7 @@ export function WorkspaceClient({ id }: { id: string }) {
 		return (
 			<div
 				role="alert"
-				className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center"
+				className="rounded-xl border border-line bg-surface p-8 text-center"
 			>
 				<p className="font-semibold">
 					{resolveErrorMessage(query.error, tRoot, t("loadError"))}
@@ -51,7 +51,7 @@ export function WorkspaceClient({ id }: { id: string }) {
 				<button
 					type="button"
 					onClick={() => void query.refetch()}
-					className="mt-4 h-10 rounded-lg bg-[#1E40AF] px-4 text-sm text-white"
+					className="mt-4 h-10 rounded-lg bg-brand px-4 text-sm text-white"
 				>
 					{t("retry")}
 				</button>
@@ -73,16 +73,16 @@ export function WorkspaceClient({ id }: { id: string }) {
 		<div className="space-y-6">
 			<Link
 				href="/moderation/disputes"
-				className="text-[#1E40AF] text-sm hover:underline"
+				className="text-brand text-sm hover:underline"
 			>
 				{t("back")}
 			</Link>
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
+					<h1 className="font-bold text-2xl text-ink">
 						{tRoot("Disputes.case", { number: dispute.number })}
 					</h1>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{tRoot("Disputes.orderNumber", { number: dispute.orderNumber })} ·{" "}
 						{tRoot(`Disputes.${DISPUTE_REASON_LABELS[dispute.reason]}`)} ·{" "}
 						{tRoot(`Disputes.${DISPUTE_STATUS_LABELS[dispute.status]}`)}
@@ -115,16 +115,13 @@ export function WorkspaceClient({ id }: { id: string }) {
 			) : null}
 			<div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
 				<div className="space-y-6">
-					<section className="space-y-3 rounded-xl border border-[#E2E8F0] bg-white p-4">
+					<section className="space-y-3 rounded-xl border border-line bg-surface p-4">
 						<h2 className="font-semibold">{tRoot("Disputes.messages")}</h2>
 						{dispute.messages.length ? (
 							<ol className="space-y-2">
 								{dispute.messages.map((m) => (
-									<li
-										key={m.id}
-										className="rounded-lg bg-[#F8FAFC] p-3 text-sm"
-									>
-										<p className="font-medium text-[#475569] text-xs">
+									<li key={m.id} className="rounded-lg bg-canvas p-3 text-sm">
+										<p className="font-medium text-ink-mid text-xs">
 											{t(`author.${m.authorType}`)} · {when(m.at)}
 										</p>
 										<p className="mt-1 whitespace-pre-wrap">
@@ -140,7 +137,7 @@ export function WorkspaceClient({ id }: { id: string }) {
 								))}
 							</ol>
 						) : (
-							<p className="text-[#64748B] text-sm">
+							<p className="text-ink-muted text-sm">
 								{tRoot("Disputes.noMessages")}
 							</p>
 						)}
@@ -154,14 +151,14 @@ export function WorkspaceClient({ id }: { id: string }) {
 					</section>
 				</div>
 				<aside className="space-y-4">
-					<section className="space-y-1 rounded-xl border border-[#E2E8F0] bg-white p-4 text-sm">
+					<section className="space-y-1 rounded-xl border border-line bg-surface p-4 text-sm">
 						<h2 className="font-semibold">{t("money")}</h2>
 						<p>
 							{tRoot("Disputes.amountAtStake", {
 								amount: formatOrderMoney(dispute.amountAtStake),
 							})}
 						</p>
-						<p className="text-[#64748B]">
+						<p className="text-ink-muted">
 							{t("previewBreakdown", {
 								goods: formatOrderMoney(sheet.components.goods),
 								delivery: formatOrderMoney(sheet.components.outboundDelivery),
@@ -170,18 +167,18 @@ export function WorkspaceClient({ id }: { id: string }) {
 								),
 							})}
 						</p>
-						<p className="text-[#64748B]">
+						<p className="text-ink-muted">
 							{t(`payment.${dispute.paymentMethod}`)}
 						</p>
 						{dispute.deadlines.reviewDueAt ? (
-							<p className="text-[#64748B]">
+							<p className="text-ink-muted">
 								{tRoot("Disputes.deadline", {
 									date: when(dispute.deadlines.reviewDueAt),
 								})}
 							</p>
 						) : null}
 					</section>
-					<section className="space-y-1 rounded-xl border border-[#E2E8F0] bg-white p-4 text-sm">
+					<section className="space-y-1 rounded-xl border border-line bg-surface p-4 text-sm">
 						<h2 className="font-semibold">{t("parties")}</h2>
 						<p>{t("buyerDisputes", { count: history.buyerDisputes12m })}</p>
 						<p>{t("buyerRefusals", { count: history.buyerRefusalScore })}</p>
@@ -196,9 +193,9 @@ export function WorkspaceClient({ id }: { id: string }) {
 						<p>
 							{t("shopStrikes", { weight: history.shopStanding.activeWeight })}
 						</p>
-						<p className="text-[#64748B]">{dispute.shopName}</p>
+						<p className="text-ink-muted">{dispute.shopName}</p>
 						{sheet.resale ? (
-							<p className="text-[#64748B]">{t("resale")}</p>
+							<p className="text-ink-muted">{t("resale")}</p>
 						) : null}
 					</section>
 					<DisputeStrikes
@@ -206,14 +203,14 @@ export function WorkspaceClient({ id }: { id: string }) {
 						strikes={history.shopStanding.strikes}
 						viewerIsAdmin={user?.role === "admin"}
 					/>
-					<section className="space-y-1 rounded-xl border border-[#E2E8F0] bg-white p-4 text-sm">
+					<section className="space-y-1 rounded-xl border border-line bg-surface p-4 text-sm">
 						<h2 className="font-semibold">{t("proofChecklist")}</h2>
 						<ul className="space-y-1">
 							{sheet.proofChecklist.map((row) => (
 								<li
 									key={row.requirement}
 									className={
-										row.established ? "text-emerald-700" : "text-[#64748B]"
+										row.established ? "text-emerald-700" : "text-ink-muted"
 									}
 								>
 									{t(`proof.${row.requirement}`)}:{" "}

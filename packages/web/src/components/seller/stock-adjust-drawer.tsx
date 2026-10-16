@@ -84,7 +84,7 @@ export function StockAdjustBody({
 			: null);
 
 	if (initialVariantId && deepLinked.isPending) {
-		return <p className="text-[#64748B] text-sm">{t("loadingVariant")}</p>;
+		return <p className="text-ink-muted text-sm">{t("loadingVariant")}</p>;
 	}
 
 	if (!variant) {

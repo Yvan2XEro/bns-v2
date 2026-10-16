@@ -28,7 +28,7 @@ export default async function SafetyPage() {
 			icon: MapPin,
 			title: t("meetPublic"),
 			desc: t("meetPublicDesc"),
-			color: "bg-blue-50 text-[#1E40AF]",
+			color: "bg-blue-50 text-brand",
 		},
 		{
 			icon: Eye,
@@ -74,11 +74,11 @@ export default async function SafetyPage() {
 	];
 
 	return (
-		<div className="min-h-screen bg-[#F8FAFC]">
-			<section className="relative overflow-hidden bg-[#1E40AF] py-12">
+		<div className="min-h-screen bg-canvas">
+			<section className="relative overflow-hidden bg-brand py-12">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
-				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-[#3B82F6]/20 blur-3xl" />
+				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-brand-bright/20 blur-3xl" />
 				<div className="-right-20 absolute bottom-10 h-48 w-48 rounded-full bg-[#F59E0B]/15 blur-3xl" />
 				<div className="container relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
 					<Shield className="mx-auto mb-4 h-10 w-10 text-white/80" />
@@ -92,15 +92,15 @@ export default async function SafetyPage() {
 					{tips.map((tip) => (
 						<div
 							key={tip.title}
-							className="rounded-xl border border-[#E2E8F0] bg-white p-5"
+							className="rounded-xl border border-line bg-surface p-5"
 						>
 							<div
 								className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg ${tip.color}`}
 							>
 								<tip.icon className="h-5 w-5" />
 							</div>
-							<h3 className="font-semibold text-[#0F172A]">{tip.title}</h3>
-							<p className="mt-1 text-[#64748B] text-sm leading-relaxed">
+							<h3 className="font-semibold text-ink">{tip.title}</h3>
+							<p className="mt-1 text-ink-muted text-sm leading-relaxed">
 								{tip.desc}
 							</p>
 						</div>

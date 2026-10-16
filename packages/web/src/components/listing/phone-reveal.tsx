@@ -38,9 +38,9 @@ export function PhoneReveal({ listingId, signedIn }: PhoneRevealProps) {
 		return (
 			<a
 				href={`tel:${phone}`}
-				className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 py-2 font-medium text-[#0F172A] text-sm transition-colors hover:bg-[#F1F5F9]"
+				className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 font-medium text-ink text-sm transition-colors hover:bg-subtle"
 			>
-				<Phone className="h-4 w-4 text-[#16A34A]" />
+				<Phone className="h-4 w-4 text-ok" />
 				{phone}
 			</a>
 		);
@@ -57,7 +57,7 @@ export function PhoneReveal({ listingId, signedIn }: PhoneRevealProps) {
 				{reveal.isPending ? (
 					<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 				) : (
-					<Phone className="mr-2 h-4 w-4 text-[#16A34A]" />
+					<Phone className="mr-2 h-4 w-4 text-ok" />
 				)}
 				{t("showNumber")}
 			</Button>

@@ -9,8 +9,8 @@ type ReviewSignals = ReviewerRequestDetail["request"]["reviewSignals"];
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
 	return (
 		<div className="flex items-baseline justify-between gap-4 text-sm">
-			<span className="text-[#64748B]">{label}</span>
-			<span className="font-medium text-[#0F172A]">{value ?? "—"}</span>
+			<span className="text-ink-muted">{label}</span>
+			<span className="font-medium text-ink">{value ?? "—"}</span>
 		</div>
 	);
 }
@@ -57,11 +57,11 @@ export function BusinessSummary({
 					value={business.entreprenantDeclarationNumber}
 				/>
 				<div className="flex items-baseline justify-between gap-4 text-sm">
-					<span className="text-[#64748B]">{t("review.business.niu")}</span>
-					<span className="flex items-center gap-1.5 font-medium text-[#0F172A]">
+					<span className="text-ink-muted">{t("review.business.niu")}</span>
+					<span className="flex items-center gap-1.5 font-medium text-ink">
 						{business.niu ?? "—"}
 						{niuFlagged && (
-							<span className="inline-flex items-center gap-1 rounded-full bg-[#FEF3C7] px-2 py-0.5 text-[#92400E] text-xs">
+							<span className="inline-flex items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-warn-ink text-xs">
 								<AlertTriangle aria-hidden="true" className="h-3 w-3" />
 								{t("review.business.niuFormatWarning")}
 							</span>

@@ -16,13 +16,13 @@ export function ErrorView({
 	return (
 		<div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16">
 			<div className="text-center">
-				<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FEF3C7]">
+				<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warn-soft">
 					<AlertTriangle className="h-8 w-8 text-[#F59E0B]" />
 				</div>
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-				<p className="mt-2 max-w-md text-[#64748B]">{t("descriptionHome")}</p>
+				<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+				<p className="mt-2 max-w-md text-ink-muted">{t("descriptionHome")}</p>
 				{error.digest && (
-					<p className="mt-2 font-mono text-[#94A3B8] text-xs">
+					<p className="mt-2 font-mono text-ink-faint text-xs">
 						{t("errorId", { digest: error.digest })}
 					</p>
 				)}
@@ -30,14 +30,14 @@ export function ErrorView({
 					<button
 						type="button"
 						onClick={reset}
-						className="inline-flex items-center gap-2 rounded-xl bg-[#1E40AF] px-5 py-2.5 font-medium text-sm text-white transition-colors hover:bg-[#1E3A8A]"
+						className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 font-medium text-sm text-white transition-colors hover:bg-brand-strong"
 					>
 						<RefreshCw className="h-4 w-4" />
 						{t("tryAgain")}
 					</button>
 					<Link
 						href="/"
-						className="inline-flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-5 py-2.5 font-medium text-[#0F172A] text-sm transition-colors hover:bg-[#F8FAFC]"
+						className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-5 py-2.5 font-medium text-ink text-sm transition-colors hover:bg-canvas"
 					>
 						<Home className="h-4 w-4" />
 						{t("backHome")}

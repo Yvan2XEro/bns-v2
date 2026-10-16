@@ -57,14 +57,14 @@ export function AssigneePicker({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				disabled={assignConversation.isPending}
-				className="flex items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5 text-left text-sm disabled:opacity-60"
+				className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-left text-sm disabled:opacity-60"
 			>
 				{assignConversation.isPending && (
-					<Loader2 className="h-3.5 w-3.5 animate-spin text-[#64748B]" />
+					<Loader2 className="h-3.5 w-3.5 animate-spin text-ink-muted" />
 				)}
 				<span className="truncate">{label}</span>
 				{assignee?.suspended && (
-					<span className="rounded-full bg-[#FEF3C7] px-1.5 text-[#92400E] text-[10px]">
+					<span className="rounded-full bg-warn-soft px-1.5 text-[10px] text-warn-ink">
 						{t("suspendedAssignee")}
 					</span>
 				)}

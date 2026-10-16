@@ -41,7 +41,7 @@ interface EmptyStateProps {
 }
 
 const CTA =
-	"inline-flex items-center rounded-xl bg-[#1E40AF] px-7 py-3 font-semibold text-sm text-white transition-colors hover:bg-[#1E3A8A]";
+	"inline-flex items-center rounded-xl bg-brand px-7 py-3 font-semibold text-sm text-white transition-colors hover:bg-brand-strong";
 
 export function EmptyState({
 	illustration = "empty",
@@ -63,11 +63,11 @@ export function EmptyState({
 			<div className="mb-5">
 				<Illustration color="#1E40AF" size={size} />
 			</div>
-			<Title className="max-w-[420px] font-bold text-[#0F172A] text-lg">
+			<Title className="max-w-[420px] font-bold text-ink text-lg">
 				{title}
 			</Title>
 			{subtitle && (
-				<p className="mt-2 max-w-[420px] text-[#64748B] text-sm leading-5">
+				<p className="mt-2 max-w-[420px] text-ink-muted text-sm leading-5">
 					{subtitle}
 				</p>
 			)}

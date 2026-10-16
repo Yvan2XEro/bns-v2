@@ -30,7 +30,7 @@ export function ReceiptActions({
 		<div className="flex flex-wrap items-center gap-2 print:hidden">
 			<Link
 				href={`/purchases/${encodeURIComponent(orderId)}`}
-				className="mr-auto inline-flex min-h-11 items-center gap-2 text-[#1E40AF] text-sm"
+				className="mr-auto inline-flex min-h-11 items-center gap-2 text-brand text-sm"
 			>
 				<ArrowLeft className="h-4 w-4" aria-hidden /> {t("backToOrder")}
 			</Link>

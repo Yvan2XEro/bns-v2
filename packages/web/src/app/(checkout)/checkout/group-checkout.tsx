@@ -45,8 +45,8 @@ function GroupReview({
 	const selected = picks[group.groupKey] ?? group.selectedOptionId;
 
 	return (
-		<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-semibold text-[#0F172A]">
+		<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-semibold text-ink">
 				{tRoot("CheckoutGroup.cartGroupHeading", {
 					shop: group.fulfillingShop.name,
 				})}
@@ -57,17 +57,17 @@ function GroupReview({
 						key={`${item.title}-${item.variantLabel}`}
 						className="flex justify-between gap-3"
 					>
-						<span className="text-[#334155]">
+						<span className="text-ink-soft">
 							{item.title} × {item.quantity}
 						</span>
-						<span className="shrink-0 text-[#0F172A]">
+						<span className="shrink-0 text-ink">
 							{money(item.lineSubtotal)}
 						</span>
 					</li>
 				))}
 			</ul>
 			<fieldset className="space-y-2" disabled={disabled}>
-				<legend className="font-medium text-[#0F172A] text-sm">
+				<legend className="font-medium text-ink text-sm">
 					{tRoot("CheckoutGroup.groupDelivery")}
 				</legend>
 				{group.delivery.options.map((option) => (
@@ -75,8 +75,8 @@ function GroupReview({
 						key={option.optionId}
 						className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm ${
 							option.optionId === selected
-								? "border-[#1E40AF] bg-[#EFF6FF]"
-								: "border-[#E2E8F0]"
+								? "border-brand bg-brand-soft"
+								: "border-line"
 						}`}
 					>
 						<input
@@ -87,32 +87,32 @@ function GroupReview({
 							onChange={() => onPick(group.groupKey, option.optionId)}
 						/>
 						<span className="flex-1">
-							<span className="block font-medium text-[#0F172A]">
+							<span className="block font-medium text-ink">
 								{option.method === "pickup"
 									? tRoot("Checkout.pickupAtShop")
 									: option.method === "courier"
 										? tRoot("Checkout.courierDelivery")
 										: tRoot("Checkout.sellerDelivery")}
 							</span>
-							<span className="block text-[#64748B]">
+							<span className="block text-ink-muted">
 								{tRoot("Checkout.eta", { eta: option.etaText })}
 							</span>
 						</span>
-						<span className="shrink-0 text-[#0F172A]">
+						<span className="shrink-0 text-ink">
 							{option.fee === 0 ? tRoot("Checkout.free") : money(option.fee)}
 						</span>
 					</label>
 				))}
 			</fieldset>
-			<dl className="space-y-1 border-[#E2E8F0] border-t pt-3 text-sm">
+			<dl className="space-y-1 border-line border-t pt-3 text-sm">
 				<div className="flex justify-between">
-					<dt className="text-[#64748B]">
+					<dt className="text-ink-muted">
 						{tRoot("CheckoutGroup.groupSubtotal")}
 					</dt>
 					<dd>{money(group.subtotal)}</dd>
 				</div>
 				<div className="flex justify-between">
-					<dt className="text-[#64748B]">
+					<dt className="text-ink-muted">
 						{tRoot("CheckoutGroup.groupDelivery")}
 					</dt>
 					<dd>
@@ -121,7 +121,7 @@ function GroupReview({
 							: money(group.deliveryFee)}
 					</dd>
 				</div>
-				<div className="flex justify-between font-semibold text-[#0F172A]">
+				<div className="flex justify-between font-semibold text-ink">
 					<dt>{tRoot("CheckoutGroup.groupTotal")}</dt>
 					<dd>{money(group.total)}</dd>
 				</div>
@@ -243,7 +243,7 @@ export function GroupCheckout({
 	if (!address || rejected) {
 		return (
 			<div className="space-y-6">
-				<h1 className="font-bold text-2xl text-[#0F172A]">
+				<h1 className="font-bold text-2xl text-ink">
 					{tRoot("Checkout.title")}
 				</h1>
 				<CheckoutAddressPanel
@@ -276,7 +276,7 @@ export function GroupCheckout({
 		return (
 			<div className="space-y-6">
 				{methodPicker}
-				<p className="flex items-center gap-2 text-[#64748B] text-sm">
+				<p className="flex items-center gap-2 text-ink-muted text-sm">
 					<LoaderCircle className="h-4 w-4 animate-spin" />
 					{tRoot("Checkout.loadingQuote")}
 				</p>
@@ -319,21 +319,19 @@ export function GroupCheckout({
 
 	return (
 		<div className="space-y-6">
-			<h1 className="font-bold text-2xl text-[#0F172A]">
-				{tRoot("Checkout.title")}
-			</h1>
+			<h1 className="font-bold text-2xl text-ink">{tRoot("Checkout.title")}</h1>
 			{methodPicker}
 			{changed ? (
 				<div
 					role="alert"
-					className="flex gap-3 rounded-2xl border border-[#FCD34D] bg-[#FFFBEB] p-4"
+					className="flex gap-3 rounded-2xl border border-[#FCD34D] bg-warn-faint p-4"
 				>
-					<AlertTriangle className="h-5 w-5 shrink-0 text-[#B45309]" />
+					<AlertTriangle className="h-5 w-5 shrink-0 text-warn-ink-soft" />
 					<div>
-						<p className="font-semibold text-[#92400E]">
+						<p className="font-semibold text-warn-ink">
 							{tRoot("Checkout.quoteChanged")}
 						</p>
-						<p className="text-[#92400E] text-sm">
+						<p className="text-sm text-warn-ink">
 							{tRoot("Checkout.quoteChangedBody")}
 						</p>
 					</div>
@@ -365,11 +363,11 @@ export function GroupCheckout({
 			))}
 			{nothingToPlace ? null : (
 				<>
-					<div className="flex items-center justify-between rounded-2xl bg-[#F8FAFC] px-5 py-4">
-						<span className="font-semibold text-[#0F172A]">
+					<div className="flex items-center justify-between rounded-2xl bg-canvas px-5 py-4">
+						<span className="font-semibold text-ink">
 							{tRoot("CheckoutGroup.grandTotal")}
 						</span>
-						<span className="font-bold text-[#0F172A] text-xl">
+						<span className="font-bold text-ink text-xl">
 							{formatOrderMoney(quote.grandTotal, locale)}
 						</span>
 					</div>
@@ -406,7 +404,7 @@ export function GroupCheckout({
 				</Button>
 				<Button
 					type="button"
-					className="min-h-12 flex-1 bg-[#1E40AF] text-base hover:bg-[#1E3A8A]"
+					className="min-h-12 flex-1 bg-brand text-base hover:bg-brand-strong"
 					disabled={nothingToPlace || !accepted || busy}
 					onClick={onPlace}
 				>

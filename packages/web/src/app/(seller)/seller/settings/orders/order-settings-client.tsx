@@ -34,17 +34,15 @@ export function OrderSettingsClient({
 
 	return (
 		<div className="max-w-2xl space-y-5">
-			<h1 className="font-bold text-2xl text-[#0F172A]">
-				{t("orderSettingsTitle")}
-			</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("orderSettingsTitle")}</h1>
 			{caps && <CapsNotice caps={caps} />}
 			{view.cityDefaultFee === null && (
-				<p className="rounded-2xl bg-[#FFFBEB] p-4 text-[#92400E] text-sm">
+				<p className="rounded-2xl bg-warn-faint p-4 text-sm text-warn-ink">
 					{t("launchCityNotice")}
 				</p>
 			)}
 			{!canEdit && (
-				<p className="text-[#64748B] text-sm">{t("settingsReadOnly")}</p>
+				<p className="text-ink-muted text-sm">{t("settingsReadOnly")}</p>
 			)}
 			<OrderSettingsForm shopId={shopId} view={view} canEdit={canEdit} />
 		</div>

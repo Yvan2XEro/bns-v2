@@ -57,8 +57,8 @@ function ArrivalLine({
 						})
 					: t("returnUntil", { date: formatOrderDate(arrival.at, locale) });
 	return (
-		<p className="flex items-center gap-1.5 text-[#334155] text-sm">
-			<Clock aria-hidden className="h-4 w-4 shrink-0 text-[#1E40AF]" />
+		<p className="flex items-center gap-1.5 text-ink-soft text-sm">
+			<Clock aria-hidden className="h-4 w-4 shrink-0 text-brand" />
 			{text}
 		</p>
 	);
@@ -72,7 +72,7 @@ function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 	const arrival = purchaseArrival(entry, actions);
 	const paymentKey = purchasePaymentKey(entry);
 	return (
-		<li className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white transition hover:border-[#93C5FD]">
+		<li className="overflow-hidden rounded-2xl border border-line bg-surface transition hover:border-brand-line">
 			<Link
 				href={`/purchases/${encodeURIComponent(entry.id)}`}
 				className="flex min-h-11 items-center gap-4 p-4"
@@ -85,13 +85,13 @@ function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 						className="h-16 w-16 shrink-0 rounded-xl object-cover"
 					/>
 				) : (
-					<div className="h-16 w-16 shrink-0 rounded-xl bg-[#F1F5F9]" />
+					<div className="h-16 w-16 shrink-0 rounded-xl bg-subtle" />
 				)}
 				<div className="min-w-0 flex-1 space-y-1">
-					<p className="truncate font-semibold text-[#0F172A]">
+					<p className="truncate font-semibold text-ink">
 						{entry.firstItemTitle}
 					</p>
-					<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[#64748B] text-sm">
+					<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-ink-muted text-sm">
 						<span>{t("orderNumber", { number: entry.orderNumber })}</span>
 						<span aria-hidden>·</span>
 						<span className="inline-flex min-w-0 items-center gap-1.5">
@@ -107,23 +107,23 @@ function PurchaseRow({ entry, now }: { entry: OrderListEntry; now: Date }) {
 						</span>
 						<LevelBadge badge={entry.shopBadge ?? null} size="sm" />
 					</div>
-					<p className="text-[#64748B] text-xs">
+					<p className="text-ink-muted text-xs">
 						{t("placedOn", { date: formatOrderDate(entry.placedAt, locale) })} ·{" "}
 						{t("itemCount", { count: entry.itemCount })}
 					</p>
 				</div>
 				<div className="shrink-0 space-y-1 text-right">
-					<p className="font-semibold text-[#0F172A]">
+					<p className="font-semibold text-ink">
 						{formatOrderMoney(entry.total, locale)}
 					</p>
 					<StatusLabel status={entry.status} />
 					{paymentKey ? (
-						<p className="text-[#64748B] text-xs">{t(paymentKey)}</p>
+						<p className="text-ink-muted text-xs">{t(paymentKey)}</p>
 					) : null}
 				</div>
 			</Link>
 			{arrival || actions.length > 0 ? (
-				<div className="flex flex-wrap items-center justify-between gap-3 border-[#F1F5F9] border-t px-4 py-3">
+				<div className="flex flex-wrap items-center justify-between gap-3 border-subtle border-t px-4 py-3">
 					{arrival ? (
 						<ArrivalLine arrival={arrival} locale={locale} />
 					) : (
@@ -169,7 +169,7 @@ export function PurchasesClient() {
 
 	return (
 		<div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
 
 			<div role="tablist" className="flex gap-2">
 				{PURCHASE_TABS.map((key) => (
@@ -180,9 +180,7 @@ export function PurchasesClient() {
 						aria-selected={tab === key}
 						onClick={() => setTab(key)}
 						className={`min-h-11 rounded-xl px-4 font-medium text-sm ${
-							tab === key
-								? "bg-[#1E40AF] text-white"
-								: "bg-[#EFF6FF] text-[#1E40AF]"
+							tab === key ? "bg-brand text-white" : "bg-brand-soft text-brand"
 						}`}
 					>
 						{t(PURCHASE_TAB_LABEL_KEYS[key])}
@@ -195,7 +193,7 @@ export function PurchasesClient() {
 					{[0, 1, 2].map((row) => (
 						<div
 							key={row}
-							className="h-24 animate-pulse rounded-2xl bg-[#F1F5F9]"
+							className="h-24 animate-pulse rounded-2xl bg-subtle"
 						/>
 					))}
 				</div>
@@ -203,7 +201,7 @@ export function PurchasesClient() {
 
 			{purchases.isError && (
 				<div role="alert" className="space-y-3 text-center">
-					<p className="text-[#0F172A]">
+					<p className="text-ink">
 						{resolveErrorMessage(purchases.error, tRoot)}
 					</p>
 					<Button onClick={() => void purchases.refetch()}>{t("retry")}</Button>
@@ -212,7 +210,7 @@ export function PurchasesClient() {
 
 			{nothingYet && <EmptyState illustration="empty" title={t("empty")} />}
 			{purchases.isSuccess && !nothingYet && entries.length === 0 && (
-				<p className="text-[#64748B]">{t("tabEmpty")}</p>
+				<p className="text-ink-muted">{t("tabEmpty")}</p>
 			)}
 
 			<ul className="space-y-3">
@@ -222,19 +220,19 @@ export function PurchasesClient() {
 					) : (
 						<li key={item.checkoutGroup} className="space-y-3">
 							<div className="flex items-center justify-between gap-3 px-1">
-								<p className="font-semibold text-[#0F172A] text-sm">
+								<p className="font-semibold text-ink text-sm">
 									{tRoot("CheckoutGroup.purchasesHeader", {
 										count: item.entries.length,
 									})}
 								</p>
 								<Link
 									href={`/checkout/group/${encodeURIComponent(item.checkoutGroup)}`}
-									className="min-h-11 content-center text-[#1E40AF] text-sm underline"
+									className="min-h-11 content-center text-brand text-sm underline"
 								>
 									{tRoot("CheckoutGroup.purchasesGroupLink")}
 								</Link>
 							</div>
-							<ul className="space-y-3 border-[#DBEAFE] border-l-2 pl-3">
+							<ul className="space-y-3 border-brand-tint border-l-2 pl-3">
 								{item.entries.map((entry) => (
 									<PurchaseRow key={entry.id} entry={entry} now={now} />
 								))}

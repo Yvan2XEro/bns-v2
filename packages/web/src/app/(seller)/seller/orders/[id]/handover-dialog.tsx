@@ -103,7 +103,7 @@ export function HandoverDialog({
 
 				{locked ? (
 					<div className="space-y-4 text-sm">
-						<div className="space-y-2 rounded-lg bg-[#F8FAFC] p-3 text-[#0F172A]">
+						<div className="space-y-2 rounded-lg bg-canvas p-3 text-ink">
 							<HandoverFallbacks />
 						</div>
 						{canDeclare && (
@@ -113,7 +113,7 @@ export function HandoverDialog({
 				) : (
 					<form onSubmit={onSubmit} className="space-y-3" noValidate>
 						<label className="block space-y-1 text-sm">
-							<span className="font-medium text-[#0F172A]">
+							<span className="font-medium text-ink">
 								{t("handoverCodeLabel")}
 							</span>
 							<input
@@ -122,7 +122,7 @@ export function HandoverDialog({
 								autoComplete="one-time-code"
 								maxLength={4}
 								aria-invalid={Boolean(errors.code) || wrong}
-								className="h-12 w-full rounded-lg border border-[#E2E8F0] text-center font-mono text-2xl tracking-[0.5em]"
+								className="h-12 w-full rounded-lg border border-line text-center font-mono text-2xl tracking-[0.5em]"
 							/>
 						</label>
 						{errors.code && (
@@ -140,7 +140,7 @@ export function HandoverDialog({
 								{otherError}
 							</p>
 						)}
-						<p className="text-[#64748B] text-sm">
+						<p className="text-ink-muted text-sm">
 							{t("handoverAttemptsLeft", { count: handover.attemptsLeft })}
 						</p>
 						<DialogFooter>

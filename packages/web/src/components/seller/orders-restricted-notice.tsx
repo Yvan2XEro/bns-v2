@@ -29,17 +29,17 @@ export function OrdersRestrictedNotice({
 	return (
 		<Link
 			href="/seller/billing"
-			className="mx-2 mb-2 flex min-h-11 items-start gap-2 rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-xs"
+			className="mx-2 mb-2 flex min-h-11 items-start gap-2 rounded-lg border border-bad-line bg-bad-faint px-3 py-2 text-xs"
 		>
 			<ShieldAlert
 				aria-hidden="true"
-				className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#B91C1C]"
+				className="mt-0.5 h-3.5 w-3.5 shrink-0 text-bad-ink-soft"
 			/>
 			<span>
-				<span className="block font-semibold text-[#7F1D1D]">
+				<span className="block font-semibold text-bad-deep">
 					{t("ordersRestricted")}
 				</span>
-				<span className="text-[var(--shop-accent-text,#1E40AF)] underline">
+				<span className="text-[var(--shop-accent-text,var(--c-brand))] underline">
 					{t("ordersRestrictedLink")}
 				</span>
 			</span>

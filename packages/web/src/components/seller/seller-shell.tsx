@@ -23,7 +23,7 @@ export async function SellerShell({
 
 	return (
 		<SellerTheme theme={theme}>
-			<div className="min-h-screen bg-[#F8FAFC] lg:flex">
+			<div className="min-h-screen bg-canvas lg:flex">
 				<Toaster richColors position="top-center" />
 				<SellerSidebar
 					shopId={shop.id}
@@ -36,7 +36,7 @@ export async function SellerShell({
 					roleReason={roleReason}
 				/>
 				<div className="min-w-0 flex-1">
-					<div className="flex justify-end border-[#E2E8F0] border-b bg-white px-2 lg:hidden">
+					<div className="flex justify-end border-line border-b bg-surface px-2 lg:hidden">
 						<LocaleSwitcher />
 					</div>
 					<SuspensionBanner shop={shop} locale={locale} />

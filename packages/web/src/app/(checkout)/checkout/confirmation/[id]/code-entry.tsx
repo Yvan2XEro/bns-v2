@@ -74,8 +74,8 @@ export function CodeEntry({
 
 	return (
 		<div className="space-y-4">
-			<p className="text-[#334155] text-sm">{t("codeBody")}</p>
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-soft text-sm">{t("codeBody")}</p>
+			<p className="text-ink-muted text-sm">
 				{t("codeSent", { phone: order.delivery.phone })}
 			</p>
 			{actions.includes("confirm_code") ? (
@@ -96,13 +96,13 @@ export function CodeEntry({
 								{codeError === "errorCode" ? t("errorCode") : codeError}
 							</p>
 						)}
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-muted text-xs">
 							{t("attemptsLeft", { count: order.confirmation.attemptsLeft })}
 						</p>
 					</div>
 					<Button
 						type="submit"
-						className="min-h-11 w-full bg-[#1E40AF] hover:bg-[#1E3A8A]"
+						className="min-h-11 w-full bg-brand hover:bg-brand-strong"
 						disabled={confirm.isPending}
 					>
 						{confirm.isPending && (
@@ -112,7 +112,7 @@ export function CodeEntry({
 					</Button>
 				</form>
 			) : (
-				<p className="text-[#92400E] text-sm">{t("noMoreAttempts")}</p>
+				<p className="text-sm text-warn-ink">{t("noMoreAttempts")}</p>
 			)}
 			{actions.includes("resend_code") && (
 				<div className="space-y-1">
@@ -136,7 +136,7 @@ export function CodeEntry({
 							: t("resendCode")}
 					</Button>
 					{resend.isSuccess && (
-						<p className="text-[#166534] text-sm">{t("codeSentAgain")}</p>
+						<p className="text-ok-ink text-sm">{t("codeSentAgain")}</p>
 					)}
 					{resend.error && (
 						<p role="alert" className="text-red-600 text-sm">

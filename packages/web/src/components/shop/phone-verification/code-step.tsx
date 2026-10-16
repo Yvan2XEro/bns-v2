@@ -62,14 +62,12 @@ export function CodeStep({
 						/>
 					)}
 				/>
-				{errorMessage && (
-					<p className="text-[#991B1B] text-xs">{errorMessage}</p>
-				)}
+				{errorMessage && <p className="text-bad-ink text-xs">{errorMessage}</p>}
 				<button
 					type="button"
 					disabled={wait > 0 || resendDisabled}
 					onClick={onResend}
-					className="text-[#1E40AF] text-xs underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-[#94A3B8] disabled:no-underline"
+					className="text-brand text-xs underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-ink-faint disabled:no-underline"
 				>
 					{resendLabel}
 				</button>
@@ -77,7 +75,7 @@ export function CodeStep({
 			<Button
 				type="submit"
 				disabled={verifyDisabled}
-				className="h-11 w-full rounded-xl bg-[#0F172A] font-semibold hover:bg-[#1E293B]"
+				className="h-11 w-full rounded-xl bg-night font-semibold hover:bg-[#1E293B]"
 			>
 				{verifyPending && (
 					<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

@@ -23,7 +23,7 @@ export function HoursGrid({
 					<label className="flex min-h-11 w-28 items-center gap-2 text-sm">
 						<input
 							type="checkbox"
-							className="h-5 w-5 accent-[var(--shop-accent,#1E40AF)]"
+							className="h-5 w-5 accent-[var(--shop-accent,var(--c-brand))]"
 							{...register(`openingHours.${index}.open`)}
 						/>
 						{t(`day.${entry.day}`)}

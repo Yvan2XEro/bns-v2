@@ -18,27 +18,27 @@ export function CurrentPeriodCard({
 	return (
 		<section
 			aria-labelledby="current-period-title"
-			className="rounded-2xl border border-[#E2E8F0] bg-white p-5"
+			className="rounded-2xl border border-line bg-surface p-5"
 		>
 			<div className="flex flex-wrap items-baseline justify-between gap-2">
-				<h2 id="current-period-title" className="font-semibold text-[#0F172A]">
+				<h2 id="current-period-title" className="font-semibold text-ink">
 					{t("currentPeriod")}
 				</h2>
-				<p className="text-[#64748B] text-xs">
+				<p className="text-ink-muted text-xs">
 					{t("periodRange", {
 						start: formatOrderDate(period.periodStart, locale),
 						end: formatOrderDate(period.periodEnd, locale),
 					})}
 				</p>
 			</div>
-			<p className="mt-3 text-[#64748B] text-xs">{t("accruedSoFar")}</p>
-			<p className="font-bold text-2xl text-[#0F172A]">
+			<p className="mt-3 text-ink-muted text-xs">{t("accruedSoFar")}</p>
+			<p className="font-bold text-2xl text-ink">
 				{formatOrderMoney(period.accrued, locale)}
-				<span className="ml-3 font-normal text-[#334155] text-sm">
+				<span className="ml-3 font-normal text-ink-soft text-sm">
 					{t("ordersCount", { count: period.ordersCount })}
 				</span>
 			</p>
-			<p className="mt-2 text-[#64748B] text-xs">{t("currentPeriodHint")}</p>
+			<p className="mt-2 text-ink-muted text-xs">{t("currentPeriodHint")}</p>
 		</section>
 	);
 }

@@ -38,21 +38,19 @@ export function WithdrawalWindow({
 
 	if (order.returnCaseNumber) {
 		return (
-			<p className="rounded-xl bg-[#EFF6FF] p-3 text-[#1E40AF] text-sm">
+			<p className="rounded-xl bg-brand-soft p-3 text-brand text-sm">
 				{t("withdrawalCaseOpen", { number: order.returnCaseNumber })}
 			</p>
 		);
 	}
 	const left = windowCountdown(until, now);
 	if (!left) {
-		return <p className="text-[#64748B] text-sm">{t("returnWindowClosed")}</p>;
+		return <p className="text-ink-muted text-sm">{t("returnWindowClosed")}</p>;
 	}
 	return (
 		<div className="text-sm">
-			<p className="font-medium text-[#0F172A]">
-				{t("withdrawalCountdown", left)}
-			</p>
-			<p className="text-[#64748B]">
+			<p className="font-medium text-ink">{t("withdrawalCountdown", left)}</p>
+			<p className="text-ink-muted">
 				{t("returnWindow", { date: formatOrderDate(until, locale) })}
 			</p>
 		</div>
@@ -113,7 +111,7 @@ export function WithdrawalDialog({
 										{item.title}
 										{item.variantLabel ? ` — ${item.variantLabel}` : ""}
 									</span>
-									<span className="text-[#64748B] text-xs">
+									<span className="text-ink-muted text-xs">
 										{t("withdrawalQuantity", { max: field.max })}
 									</span>
 								</label>
@@ -137,7 +135,7 @@ export function WithdrawalDialog({
 
 				<div className="space-y-1">
 					<p className="font-medium text-sm">{t("withdrawalMethod")}</p>
-					<p className="text-[#64748B] text-sm">{t("withdrawalMethodBody")}</p>
+					<p className="text-ink-muted text-sm">{t("withdrawalMethodBody")}</p>
 				</div>
 
 				<div className="space-y-1.5">

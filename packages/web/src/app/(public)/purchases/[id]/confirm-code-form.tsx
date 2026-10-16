@@ -41,9 +41,9 @@ export function ConfirmCodeForm({
 	});
 
 	return (
-		<section className="space-y-3 rounded-2xl border-2 border-[#F59E0B] bg-[#FFFBEB] p-5">
-			<h2 className="font-semibold text-[#0F172A]">{t("confirmCodeTitle")}</h2>
-			<p className="text-[#334155] text-sm">{t("confirmCodeBody")}</p>
+		<section className="space-y-3 rounded-2xl border-2 border-[#F59E0B] bg-warn-faint p-5">
+			<h2 className="font-semibold text-ink">{t("confirmCodeTitle")}</h2>
+			<p className="text-ink-soft text-sm">{t("confirmCodeBody")}</p>
 			{canConfirm && (
 				<form
 					onSubmit={onSubmit}
@@ -59,7 +59,7 @@ export function ConfirmCodeForm({
 							inputMode="numeric"
 							autoComplete="one-time-code"
 							maxLength={6}
-							className="h-11 w-40 bg-white font-mono text-lg tracking-widest"
+							className="h-11 w-40 bg-surface font-mono text-lg tracking-widest"
 							{...register("code")}
 						/>
 					</div>

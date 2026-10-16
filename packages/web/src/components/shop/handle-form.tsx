@@ -52,7 +52,7 @@ export function HandleForm({
 	const locked = next !== null && next.getTime() > Date.now();
 
 	if (!isShopOwner(role)) {
-		return <p className="text-[#64748B] text-sm">{t("addressOwnerOnly")}</p>;
+		return <p className="text-ink-muted text-sm">{t("addressOwnerOnly")}</p>;
 	}
 
 	const onSubmit = handleSubmit(async (values) => {
@@ -73,7 +73,7 @@ export function HandleForm({
 
 	return (
 		<form onSubmit={onSubmit} className="space-y-4" noValidate>
-			<p className="text-[#334155] text-sm">
+			<p className="text-ink-soft text-sm">
 				{t("addressCurrent", {
 					url: shopUrl(shop.handle).replace(/^https?:\/\//, ""),
 				})}
@@ -96,7 +96,7 @@ export function HandleForm({
 				</p>
 			)}
 			{locked && next && (
-				<p className="text-[#92400e] text-sm">
+				<p className="text-sm text-warn-ink">
 					{t("addressLocked", {
 						date: next.toLocaleDateString(locale, {
 							day: "numeric",
@@ -105,7 +105,7 @@ export function HandleForm({
 					})}
 				</p>
 			)}
-			<p className="text-[#64748B] text-xs">{t("addressRedirect")}</p>
+			<p className="text-ink-muted text-xs">{t("addressRedirect")}</p>
 			{formState.errors.root?.message && (
 				<p className="text-red-700 text-sm">{formState.errors.root.message}</p>
 			)}
@@ -117,7 +117,7 @@ export function HandleForm({
 					!formState.isValid ||
 					status !== "available"
 				}
-				className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				className="bg-brand hover:bg-brand-strong"
 			>
 				{changeHandle.isPending && (
 					<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

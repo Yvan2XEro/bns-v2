@@ -161,27 +161,27 @@ export function CategoryDropdown({
 			<button
 				type="button"
 				onClick={() => setOpen(!open)}
-				className="flex h-9 w-full items-center justify-between rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm transition-colors hover:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
+				className="flex h-9 w-full items-center justify-between rounded-lg border border-line bg-surface px-3 text-sm transition-colors hover:border-brand-line focus:outline-none focus:ring-2 focus:ring-brand-bright/20"
 			>
-				<span className={selectedCat ? "text-[#0F172A]" : "text-[#94A3B8]"}>
+				<span className={selectedCat ? "text-ink" : "text-ink-faint"}>
 					{selectedCat
 						? selectedCat.name
 						: (placeholder ?? t("chooseCategory"))}
 				</span>
-				<ChevronDown className="h-4 w-4 text-[#94A3B8]" />
+				<ChevronDown className="h-4 w-4 text-ink-faint" />
 			</button>
 
 			{open && (
-				<div className="absolute top-full left-0 z-50 mt-1 w-full rounded-xl border border-[#E2E8F0] bg-white shadow-lg">
+				<div className="absolute top-full left-0 z-50 mt-1 w-full rounded-xl border border-line bg-surface shadow-lg">
 					{/* Search */}
-					<div className="border-[#E2E8F0] border-b p-2">
+					<div className="border-line border-b p-2">
 						<div className="relative">
-							<Search className="-translate-y-1/2 absolute top-1/2 left-2.5 h-4 w-4 text-[#94A3B8]" />
+							<Search className="-translate-y-1/2 absolute top-1/2 left-2.5 h-4 w-4 text-ink-faint" />
 							<input
 								ref={inputRef}
 								type="text"
 								placeholder={t("searchCategories")}
-								className="h-8 w-full rounded-md bg-[#F8FAFC] pr-8 pl-8 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:outline-none"
+								className="h-8 w-full rounded-md bg-canvas pr-8 pl-8 text-ink text-sm placeholder:text-ink-faint focus:outline-none"
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 							/>
@@ -189,7 +189,7 @@ export function CategoryDropdown({
 								<button
 									type="button"
 									onClick={() => setSearch("")}
-									className="-translate-y-1/2 absolute top-1/2 right-2 text-[#94A3B8] hover:text-[#0F172A]"
+									className="-translate-y-1/2 absolute top-1/2 right-2 text-ink-faint hover:text-ink"
 								>
 									<X className="h-3.5 w-3.5" />
 								</button>
@@ -207,10 +207,10 @@ export function CategoryDropdown({
 									setOpen(false);
 									setSearch("");
 								}}
-								className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[#F1F5F9] ${
+								className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-subtle ${
 									!value
-										? "bg-[#EFF6FF] font-medium text-[#1E40AF]"
-										: "text-[#475569]"
+										? "bg-brand-soft font-medium text-brand"
+										: "text-ink-mid"
 								}`}
 							>
 								{t("allCategories")}
@@ -227,23 +227,23 @@ export function CategoryDropdown({
 										setOpen(false);
 										setSearch("");
 									}}
-									className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[#F1F5F9] ${
+									className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-subtle ${
 										isSelected
-											? "bg-[#EFF6FF] font-medium text-[#1E40AF]"
-											: "text-[#0F172A]"
+											? "bg-brand-soft font-medium text-brand"
+											: "text-ink"
 									}`}
 									style={{ paddingLeft: `${cat.depth * 16 + 12}px` }}
 								>
 									<CategoryIcon category={cat} size={24} />
 									<span className="flex-1">{cat.name}</span>
 									{isSelected && (
-										<Check className="h-4 w-4 shrink-0 text-[#1E40AF]" />
+										<Check className="h-4 w-4 shrink-0 text-brand" />
 									)}
 								</button>
 							);
 						})}
 						{filtered.length === 0 && (
-							<p className="px-3 py-4 text-center text-[#94A3B8] text-sm">
+							<p className="px-3 py-4 text-center text-ink-faint text-sm">
 								{t("noCategoriesFound")}
 							</p>
 						)}
@@ -292,11 +292,11 @@ export function CategoryGrid({
 		<div className="flex min-h-0 flex-col gap-3">
 			{/* Search */}
 			<div className="relative shrink-0">
-				<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
+				<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint" />
 				<input
 					type="text"
 					placeholder={labels.search}
-					className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pr-9 pl-10 text-[#0F172A] text-sm placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
+					className="h-10 w-full rounded-lg border border-line bg-canvas pr-9 pl-10 text-ink text-sm placeholder:text-ink-faint focus:border-brand-line focus:outline-none focus:ring-2 focus:ring-brand-bright/20"
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 				/>
@@ -304,7 +304,7 @@ export function CategoryGrid({
 					<button
 						type="button"
 						onClick={() => setSearch("")}
-						className="-translate-y-1/2 absolute top-1/2 right-3 text-[#94A3B8] hover:text-[#0F172A]"
+						className="-translate-y-1/2 absolute top-1/2 right-3 text-ink-faint hover:text-ink"
 					>
 						<X className="h-4 w-4" />
 					</button>
@@ -323,18 +323,18 @@ export function CategoryGrid({
 								onClick={() => onChange(String(cat.id))}
 								className={`flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all hover:shadow-sm ${
 									value === String(cat.id)
-										? "border-[#1E40AF] bg-[#EFF6FF] shadow-sm"
-										: "border-[#E2E8F0] bg-white hover:border-[#93C5FD]"
+										? "border-brand bg-brand-soft shadow-sm"
+										: "border-line bg-surface hover:border-brand-line"
 								}`}
 							>
 								<CategoryIcon category={cat} size={32} />
 								<div className="min-w-0 flex-1">
-									<p className="truncate font-medium text-[#0F172A] text-sm">
+									<p className="truncate font-medium text-ink text-sm">
 										{cat.name}
 									</p>
 								</div>
 								{value === String(cat.id) && (
-									<Check className="h-4 w-4 shrink-0 text-[#1E40AF]" />
+									<Check className="h-4 w-4 shrink-0 text-brand" />
 								)}
 							</button>
 						))}
@@ -350,23 +350,23 @@ export function CategoryGrid({
 									onClick={() => onChange(String((parent as CategoryNode).id))}
 									className={`mb-2 flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-all hover:shadow-sm ${
 										value === String((parent as CategoryNode).id)
-											? "border-[#1E40AF] bg-[#EFF6FF] shadow-sm"
-											: "border-[#E2E8F0] bg-white hover:border-[#93C5FD]"
+											? "border-brand bg-brand-soft shadow-sm"
+											: "border-line bg-surface hover:border-brand-line"
 									}`}
 								>
 									<CategoryIcon category={parent as Category} size={36} />
 									<div className="min-w-0 flex-1">
-										<p className="font-semibold text-[#0F172A] text-sm">
+										<p className="font-semibold text-ink text-sm">
 											{(parent as CategoryNode).name}
 										</p>
 										{(parent as CategoryNode).children.length > 0 && (
-											<p className="truncate text-[#94A3B8] text-xs">
+											<p className="truncate text-ink-faint text-xs">
 												{childPreview((parent as CategoryNode).children)}
 											</p>
 										)}
 									</div>
 									{value === String((parent as CategoryNode).id) && (
-										<Check className="h-4 w-4 shrink-0 text-[#1E40AF]" />
+										<Check className="h-4 w-4 shrink-0 text-brand" />
 									)}
 								</button>
 
@@ -380,8 +380,8 @@ export function CategoryGrid({
 												onClick={() => onChange(String(child.id))}
 												className={`flex items-center gap-2 rounded-lg border p-2.5 text-left text-sm transition-all hover:shadow-sm ${
 													value === String(child.id)
-														? "border-[#1E40AF] bg-[#EFF6FF]"
-														: "border-[#E2E8F0] hover:border-[#93C5FD]"
+														? "border-brand bg-brand-soft"
+														: "border-line hover:border-brand-line"
 												}`}
 											>
 												<CategoryIcon category={child} size={24} />
@@ -389,7 +389,7 @@ export function CategoryGrid({
 													{child.name}
 												</span>
 												{value === String(child.id) && (
-													<Check className="h-3.5 w-3.5 shrink-0 text-[#1E40AF]" />
+													<Check className="h-3.5 w-3.5 shrink-0 text-brand" />
 												)}
 											</button>
 										))}
@@ -401,7 +401,7 @@ export function CategoryGrid({
 				)}
 
 				{displayed.length === 0 && (
-					<p className="py-6 text-center text-[#94A3B8] text-sm">
+					<p className="py-6 text-center text-ink-faint text-sm">
 						{labels.empty}
 					</p>
 				)}
@@ -459,8 +459,8 @@ export function CategoryDialogField({
 			<div
 				className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 transition-all ${
 					value
-						? "border-[#1E40AF] bg-[#EFF6FF]"
-						: "border-[#E2E8F0] bg-white hover:border-[#93C5FD]"
+						? "border-brand bg-brand-soft"
+						: "border-line bg-surface hover:border-brand-line"
 				}`}
 			>
 				<button
@@ -474,20 +474,20 @@ export function CategoryDialogField({
 					{value ? (
 						<CategoryIcon category={value} size={36} />
 					) : (
-						<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9]">
-							<ChevronDown className="h-4 w-4 text-[#94A3B8]" />
+						<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-subtle">
+							<ChevronDown className="h-4 w-4 text-ink-faint" />
 						</span>
 					)}
 					<span className="min-w-0 flex-1">
 						<span
 							className={`block truncate font-medium text-sm ${
-								value ? "text-[#0F172A]" : "text-[#94A3B8]"
+								value ? "text-ink" : "text-ink-faint"
 							}`}
 						>
 							{value ? value.name : labels.placeholder}
 						</span>
 						{hint && (
-							<span className="block truncate text-[#94A3B8] text-xs">
+							<span className="block truncate text-ink-faint text-xs">
 								{hint}
 							</span>
 						)}
@@ -500,7 +500,7 @@ export function CategoryDialogField({
 						// Named for screen readers only: sighted users get the cross they
 						// already know from every other clearable field.
 						aria-label={labels.clear}
-						className="shrink-0 rounded-md p-1 text-[#94A3B8] transition-colors hover:bg-white hover:text-[#0F172A]"
+						className="shrink-0 rounded-md p-1 text-ink-faint transition-colors hover:bg-surface hover:text-ink"
 					>
 						<X className="h-4 w-4" />
 					</button>

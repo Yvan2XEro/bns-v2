@@ -30,18 +30,18 @@ export function CourierCard({
 	return (
 		<section
 			aria-labelledby="courier-card-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
 			<h2
 				id="courier-card-title"
-				className="border-[#F1F5F9] border-b px-[18px] py-3.5 font-bold text-[#0F172A] text-base"
+				className="border-subtle border-b px-[18px] py-3.5 font-bold text-base text-ink"
 			>
 				{tPage("courierTitle")}
 			</h2>
 			<div className="space-y-3 px-[18px] py-3.5">
 				<div>
-					<p className="font-semibold text-[#0F172A]">{tPage("courierLead")}</p>
-					<p className="text-[#64748B] text-[13px]">
+					<p className="font-semibold text-ink">{tPage("courierLead")}</p>
+					<p className="text-[13px] text-ink-muted">
 						{courierZones.length > 0
 							? tPage("courierActiveFor", {
 									zones: courierZones.map((zone) => zone.name).join(", "),
@@ -49,29 +49,29 @@ export function CourierCard({
 							: tPage("courierNone")}
 					</p>
 				</div>
-				<p className="rounded-[10px] bg-[#F8FAFC] p-3 text-[#475569] text-xs leading-[17px]">
+				<p className="rounded-[10px] bg-canvas p-3 text-ink-mid text-xs leading-[17px]">
 					{tPage("courierNote")}
 				</p>
 				{stats.isSuccess && (
 					<dl className="space-y-2 text-sm">
 						{stats.data.averageCourierCost !== null && (
 							<div className="flex justify-between gap-3">
-								<dt className="text-[#64748B]">{tPage("courierAverage")}</dt>
-								<dd className="font-semibold text-[#0F172A] tabular-nums">
+								<dt className="text-ink-muted">{tPage("courierAverage")}</dt>
+								<dd className="font-semibold text-ink tabular-nums">
 									{formatOrderMoney(stats.data.averageCourierCost, locale)}
 								</dd>
 							</div>
 						)}
 						<div className="flex justify-between gap-3">
-							<dt className="text-[#64748B]">{tPage("courierRuns")}</dt>
-							<dd className="font-semibold text-[#0F172A] tabular-nums">
+							<dt className="text-ink-muted">{tPage("courierRuns")}</dt>
+							<dd className="font-semibold text-ink tabular-nums">
 								{stats.data.runs}
 							</dd>
 						</div>
 						<div className="flex justify-between gap-3">
-							<dt className="text-[#64748B]">{tPage("courierHandovers")}</dt>
+							<dt className="text-ink-muted">{tPage("courierHandovers")}</dt>
 							<dd
-								className={`font-semibold tabular-nums ${stats.data.finished > 0 && stats.data.delivered === stats.data.finished ? "text-[#15803D]" : "text-[#0F172A]"}`}
+								className={`font-semibold tabular-nums ${stats.data.finished > 0 && stats.data.delivered === stats.data.finished ? "text-ok-ink-soft" : "text-ink"}`}
 							>
 								{tPage("courierHandoversValue", {
 									delivered: stats.data.delivered,
@@ -83,7 +83,7 @@ export function CourierCard({
 				)}
 				<Link
 					href="/seller/delivery/couriers"
-					className="inline-flex font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+					className="inline-flex font-semibold text-[13px] text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 				>
 					{tPage("courierRegistry")}
 				</Link>

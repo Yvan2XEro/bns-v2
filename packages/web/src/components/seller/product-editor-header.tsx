@@ -75,10 +75,10 @@ export function ProductEditorHeader({
 			<div>
 				{/* Editing, the workspace breadcrumb above already says this. */}
 				{!isEdit && (
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						<Link
 							href="/seller/catalogue"
-							className="hover:text-[var(--shop-accent-text,#1E40AF)]"
+							className="hover:text-[var(--shop-accent-text,var(--c-brand))]"
 						>
 							{t("breadcrumb")}
 						</Link>{" "}
@@ -86,13 +86,13 @@ export function ProductEditorHeader({
 					</p>
 				)}
 				<div className="flex flex-wrap items-center gap-2.5">
-					<h1 className="font-bold text-2xl text-[#0F172A]">{heading}</h1>
+					<h1 className="font-bold text-2xl text-ink">{heading}</h1>
 					{isEdit && savedStatus && (
 						<StatusChip kind={savedStatus} className="px-2.5 text-xs" />
 					)}
 				</div>
 				{subtitle && (
-					<p aria-live="polite" className="mt-0.5 text-[#64748B] text-sm">
+					<p aria-live="polite" className="mt-0.5 text-ink-muted text-sm">
 						{subtitle}
 					</p>
 				)}
@@ -121,7 +121,7 @@ export function ProductEditorHeader({
 						<Button
 							type="submit"
 							disabled={pending}
-							className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+							className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							{spinner}
 							{t("save")}
@@ -151,7 +151,7 @@ export function ProductEditorHeader({
 							type="button"
 							onClick={() => onSubmitAs("active")}
 							disabled={pending}
-							className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+							className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							{spinner}
 							{t("publish")}

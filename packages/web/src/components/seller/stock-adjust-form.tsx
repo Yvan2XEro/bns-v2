@@ -92,9 +92,9 @@ export function StockAdjustForm({
 
 	return (
 		<form onSubmit={handleSubmit(onValid)} className="space-y-5" noValidate>
-			<div className="rounded-lg bg-[#F8FAFC] p-3">
-				<p className="font-semibold text-[#0F172A]">{variant.productTitle}</p>
-				<p className="text-[#64748B] text-sm">
+			<div className="rounded-lg bg-canvas p-3">
+				<p className="font-semibold text-ink">{variant.productTitle}</p>
+				<p className="text-ink-muted text-sm">
 					{variant.label} ·{" "}
 					{variant.lowStockThreshold == null
 						? t("currentStock", { count: variant.stockOnHand })
@@ -107,7 +107,7 @@ export function StockAdjustForm({
 					<button
 						type="button"
 						onClick={onChangeVariant}
-						className="mt-1 text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
+						className="mt-1 text-[var(--shop-accent-text,var(--c-brand))] text-xs hover:underline"
 					>
 						{t("changeVariant")}
 					</button>
@@ -131,7 +131,7 @@ export function StockAdjustForm({
 				<Label htmlFor="stock-amount">{t(`types.${type}.amountLabel`)}</Label>
 				<Input id="stock-amount" inputMode="numeric" {...register("amount")} />
 				{amountError && (
-					<p className="text-[#991b1b] text-xs">{t(amountError)}</p>
+					<p className="text-bad-ink text-xs">{t(amountError)}</p>
 				)}
 			</div>
 
@@ -157,12 +157,12 @@ export function StockAdjustForm({
 				/>
 			</div>
 
-			<div className="flex items-center justify-between rounded-lg border border-[#E2E8F0] p-3 text-sm">
-				<span className="text-[#64748B]">{t("stockAfter")}</span>
+			<div className="flex items-center justify-between rounded-lg border border-line p-3 text-sm">
+				<span className="text-ink-muted">{t("stockAfter")}</span>
 				<span
 					className={cn(
 						"font-bold",
-						after !== null && after < 0 ? "text-[#991b1b]" : "text-[#0F172A]",
+						after !== null && after < 0 ? "text-bad-ink" : "text-ink",
 					)}
 				>
 					{variant.stockOnHand} → {after ?? "—"}
@@ -190,7 +190,7 @@ export function StockAdjustForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || recordMovement.isPending}
-					className="flex-1 bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+					className="flex-1 bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{recordMovement.isPending && (
 						<LoaderCircle

@@ -32,7 +32,7 @@ export function DisputeEvidence({
 	const t = useTranslations("ModerationDisputes");
 	const tRoot = useTranslations();
 	if (!evidence.length) {
-		return <p className="text-[#64748B] text-sm">{t("noEvidence")}</p>;
+		return <p className="text-ink-muted text-sm">{t("noEvidence")}</p>;
 	}
 	return (
 		<ul aria-label={tRoot("Disputes.evidenceTitle")} className="space-y-3">
@@ -57,13 +57,13 @@ function EvidenceItem({
 	return (
 		<li
 			data-visibility={item.visibility}
-			className="rounded-xl border border-[#E2E8F0] bg-white p-3"
+			className="rounded-xl border border-line bg-surface p-3"
 		>
 			<div className="flex flex-wrap items-center gap-2 text-sm">
-				<span className="font-medium text-[#0F172A]">
+				<span className="font-medium text-ink">
 					{t(`evidenceKind.${item.kind}`)}
 				</span>
-				<span className="text-[#64748B]">
+				<span className="text-ink-muted">
 					{t("evidenceMeta", {
 						by: t(`uploader.${item.uploadedByType}`),
 						size: Math.max(1, Math.round(item.size / 1024)),
@@ -91,7 +91,7 @@ function EvidenceItem({
 					type="button"
 					disabled={signed.isPending}
 					onClick={() => signed.mutate(item.id)}
-					className="mt-3 min-h-9 rounded-lg border border-[#CBD5E1] px-3 text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+					className="mt-3 min-h-9 rounded-lg border border-line-strong px-3 text-sm hover:bg-canvas disabled:opacity-50"
 				>
 					{t("viewEvidence")}
 				</button>
@@ -113,7 +113,7 @@ export function EvidenceMetadata({ item }: { item: Evidence }) {
 		<dl
 			data-exif
 			aria-label={t("exifTitle")}
-			className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[#64748B] text-xs"
+			className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-ink-muted text-xs"
 		>
 			<dt>{t("exifCapturedAt")}</dt>
 			<dd data-field="capturedAt">
@@ -168,7 +168,7 @@ export function EvidenceMedia({
 					<DialogTrigger asChild>
 						<button
 							type="button"
-							className="min-h-9 rounded-lg border border-[#CBD5E1] px-3 text-sm hover:bg-[#F8FAFC]"
+							className="min-h-9 rounded-lg border border-line-strong px-3 text-sm hover:bg-canvas"
 						>
 							{t("zoom")}
 						</button>
@@ -188,7 +188,7 @@ export function EvidenceMedia({
 			href={signed.url}
 			target="_blank"
 			rel="noreferrer"
-			className="mt-3 inline-block text-[#1E40AF] text-sm underline"
+			className="mt-3 inline-block text-brand text-sm underline"
 		>
 			{t("openFile")}
 		</a>

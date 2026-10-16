@@ -204,7 +204,7 @@ export function AddressStep({
 				}}
 			/>
 			{placeOutside ? (
-				<p className="text-[#B45309] text-sm">{tAddr("placeOutside")}</p>
+				<p className="text-sm text-warn-ink-soft">{tAddr("placeOutside")}</p>
 			) : null}
 			<Field
 				id="city"
@@ -277,7 +277,7 @@ export function AddressStep({
 				<Textarea id="instructions" rows={3} {...register("instructions")} />
 			</Field>
 			{extra === "book" ? (
-				<label className="flex min-h-11 items-center gap-2 text-[#334155] text-sm">
+				<label className="flex min-h-11 items-center gap-2 text-ink-soft text-sm">
 					<input
 						type="checkbox"
 						className="h-4 w-4"
@@ -289,8 +289,8 @@ export function AddressStep({
 				</label>
 			) : null}
 			{extra === "save" ? (
-				<div className="space-y-2 rounded-xl border border-[#E2E8F0] p-3">
-					<label className="flex min-h-11 items-center gap-2 font-semibold text-[#0F172A] text-sm">
+				<div className="space-y-2 rounded-xl border border-line p-3">
+					<label className="flex min-h-11 items-center gap-2 font-semibold text-ink text-sm">
 						<input
 							type="checkbox"
 							className="h-4 w-4"
@@ -334,7 +334,7 @@ export function AddressStep({
 				<Button
 					type="submit"
 					disabled={pending}
-					className="min-h-11 flex-1 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="min-h-11 flex-1 bg-brand hover:bg-brand-strong"
 				>
 					{submitLabel ?? t("continue")}
 				</Button>

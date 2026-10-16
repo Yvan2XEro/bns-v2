@@ -175,7 +175,7 @@ function RegisterForm() {
 				<Button type="submit" className={AUTH_SUBMIT} disabled={isLoading}>
 					{isLoading ? t("creatingAccount") : t("createAccountBtn")}
 				</Button>
-				<p className="text-center text-[#64748B] text-xs leading-relaxed">
+				<p className="text-center text-ink-muted text-xs leading-relaxed">
 					{t.rich("acceptTerms", {
 						terms: (chunks) => (
 							<Link href="/terms" className={AUTH_LINK}>

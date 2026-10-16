@@ -85,7 +85,7 @@ export function RescheduleDialog({
 					</label>
 					<select
 						id="reschedule-day"
-						className="flex h-10 w-full rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3 text-sm"
+						className="flex h-10 w-full rounded-xl border border-brand-tint bg-canvas px-3 text-sm"
 						{...register("day")}
 					>
 						{choices.map((entry) => (
@@ -108,7 +108,7 @@ export function RescheduleDialog({
 							<input
 								type="radio"
 								value={window}
-								className="h-5 w-5 accent-[#1E40AF]"
+								className="h-5 w-5 accent-brand"
 								{...register("window")}
 							/>
 							{tRoot(`Delivery.window.${window}`)}
@@ -144,7 +144,7 @@ export function RescheduleDialog({
 						<LocateFixed aria-hidden /> {t("usePosition")}
 					</Button>
 					{watch("lat") && (
-						<p className="text-[#64748B] text-xs">{t("positionCaptured")}</p>
+						<p className="text-ink-muted text-xs">{t("positionCaptured")}</p>
 					)}
 					{err(errors.lat?.message) && (
 						<p className="text-red-600 text-xs">{err(errors.lat?.message)}</p>

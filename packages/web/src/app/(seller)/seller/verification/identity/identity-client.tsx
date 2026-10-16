@@ -46,7 +46,7 @@ export function IdentityClient({ shopId }: { shopId: string }) {
 	});
 
 	if (query.isPending) {
-		return <p className="text-[#64748B] text-sm">{tRoot("Common.loading")}</p>;
+		return <p className="text-ink-muted text-sm">{tRoot("Common.loading")}</p>;
 	}
 	if (query.isError) {
 		return (
@@ -71,7 +71,7 @@ export function IdentityClient({ shopId }: { shopId: string }) {
 	if (!canProceed) {
 		return (
 			<div className="space-y-2">
-				<p className="text-[#64748B] text-sm">{t("blocked.body")}</p>
+				<p className="text-ink-muted text-sm">{t("blocked.body")}</p>
 				<Button asChild variant="outline">
 					<Link href="/seller/verification">{t("blocked.backToHub")}</Link>
 				</Button>

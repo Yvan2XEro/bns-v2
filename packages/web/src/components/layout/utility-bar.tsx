@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { helpLinks } from "~/lib/nav";
 import { LocaleSwitcher } from "./locale-switcher";
+import { ThemeSwitcher } from "./theme-switcher";
 
 /** The thin navy band above the main bar: trust line, selling, help, language. */
 export function UtilityBar({ sellHref }: { sellHref: string }) {
@@ -29,6 +30,7 @@ export function UtilityBar({ sellHref }: { sellHref: string }) {
 					</Link>
 					<HelpMenu />
 					<LocaleSwitcher tone="dark" className="h-7" />
+					<ThemeSwitcher tone="dark" />
 				</div>
 			</div>
 		</div>
@@ -46,10 +48,10 @@ export function HelpMenu() {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
 				align="end"
-				className="w-64 rounded-xl border-[#E2E8F0] bg-white p-1.5 text-[#0F172A]"
+				className="w-64 rounded-xl border-line bg-surface p-1.5 text-ink"
 			>
 				<HelpItems links={links} />
-				<DropdownMenuSeparator className="bg-[#E2E8F0]" />
+				<DropdownMenuSeparator className="bg-line" />
 				<DropdownMenuItem asChild className="cursor-pointer rounded-lg">
 					<Link href="/help">{t("helpCenter")}</Link>
 				</DropdownMenuItem>

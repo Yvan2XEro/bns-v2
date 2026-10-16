@@ -49,20 +49,20 @@ export function DeliveryCities({
 	if (rows.length === 0) return null;
 
 	return (
-		<section className="rounded-xl border border-[#E2E8F0] bg-white p-4">
-			<h2 className="mb-2.5 font-bold text-[#0F172A] text-[15px]">
+		<section className="rounded-xl border border-line bg-surface p-4">
+			<h2 className="mb-2.5 font-bold text-[15px] text-ink">
 				{t("deliveryTitle")}
 			</h2>
 			<ul>
 				{rows.map((row) => (
 					<li
 						key={row.key}
-						className="flex justify-between gap-3 py-1.5 text-[#334155] text-sm"
+						className="flex justify-between gap-3 py-1.5 text-ink-soft text-sm"
 					>
 						<span className="min-w-0 break-words">{row.label}</span>
 						{row.fee && (
 							<span
-								className={`shrink-0 font-semibold ${row.free ? "text-[#15803D]" : "text-[#0F172A]"}`}
+								className={`shrink-0 font-semibold ${row.free ? "text-ok-ink-soft" : "text-ink"}`}
 							>
 								{row.fee}
 							</span>

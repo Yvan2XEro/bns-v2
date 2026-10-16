@@ -25,12 +25,12 @@ export function ProtectionBadge() {
 		formatOrderMoney,
 	);
 	return (
-		<div className="mt-4 flex items-start gap-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-3 text-sm">
+		<div className="mt-4 flex items-start gap-2 rounded-xl border border-ok-line bg-ok-faint p-3 text-sm">
 			<ShieldCheck
 				aria-hidden="true"
-				className="mt-0.5 h-4 w-4 shrink-0 text-[#166534]"
+				className="mt-0.5 h-4 w-4 shrink-0 text-ok-ink"
 			/>
-			<p className="text-[#166534]">
+			<p className="text-ok-ink">
 				{t("disclosure_listingBadge", { rate, min })}
 			</p>
 		</div>

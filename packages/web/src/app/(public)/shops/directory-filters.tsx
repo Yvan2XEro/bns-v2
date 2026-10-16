@@ -52,7 +52,7 @@ export function DirectoryFiltersBar({
 						type="button"
 						onClick={() => go({ q: "" })}
 						aria-label={tDir("clearQuery", { q: filters.q })}
-						className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[#BFDBFE]"
+						className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-brand-tint-strong"
 					>
 						<X className="h-3.5 w-3.5" />
 					</button>
@@ -73,7 +73,7 @@ export function DirectoryFiltersBar({
 						type="button"
 						onClick={() => go({ city: "" })}
 						aria-label={t("shopFilterClearCity", { city: filters.city })}
-						className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[#BFDBFE]"
+						className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-brand-tint-strong"
 					>
 						<X className="h-3.5 w-3.5" />
 					</button>
@@ -146,7 +146,7 @@ export function DirectoryFiltersBar({
 				<DropdownMenu>
 					<DropdownMenuTrigger
 						aria-label={tDir("sortLabel")}
-						className="flex h-10 items-center gap-1 font-semibold text-[#0F172A] text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30"
+						className="flex h-10 items-center gap-1 font-semibold text-[13px] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
 					>
 						{t(SORT_LABEL[filters.sort])}
 						<ChevronDown className="h-3.5 w-3.5" />

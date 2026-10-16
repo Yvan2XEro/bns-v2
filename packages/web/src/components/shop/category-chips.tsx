@@ -43,8 +43,8 @@ export function CategoryChips({
 						className={cn(
 							"inline-flex items-center gap-1 rounded-full border px-3 py-1.5 font-medium text-sm transition-colors",
 							active
-								? "border-[#BFDBFE] bg-[#DBEAFE] text-[#1E40AF]"
-								: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[#93C5FD]",
+								? "border-brand-tint-strong bg-brand-tint text-brand"
+								: "border-line bg-surface text-ink-soft hover:border-brand-line",
 							blocked && "cursor-not-allowed opacity-50",
 						)}
 					>

@@ -78,7 +78,7 @@ export function LogoLoader({ size = "md", text }: LogoLoaderProps) {
 
 			{/* Optional text */}
 			{text && (
-				<p className={`${s.text} logo-loader-text font-medium text-[#64748B]`}>
+				<p className={`${s.text} logo-loader-text font-medium text-ink-muted`}>
 					{text}
 				</p>
 			)}

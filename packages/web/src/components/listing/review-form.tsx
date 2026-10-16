@@ -73,11 +73,9 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="rounded-xl border border-[#E2E8F0] bg-white p-4"
+			className="rounded-xl border border-line bg-surface p-4"
 		>
-			<h3 className="mb-3 font-bold text-[#0F172A] text-sm">
-				{t("reviewTitle")}
-			</h3>
+			<h3 className="mb-3 font-bold text-ink text-sm">{t("reviewTitle")}</h3>
 			{error && (
 				<div className="mb-3 rounded-lg bg-red-50 p-2 text-red-600 text-xs">
 					{error}
@@ -98,13 +96,13 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 							className={`h-6 w-6 transition-colors ${
 								star <= (hoveredRating || rating)
 									? "fill-[#F59E0B] text-[#F59E0B]"
-									: "text-[#E2E8F0]"
+									: "text-line"
 							}`}
 						/>
 					</button>
 				))}
 				{rating > 0 && (
-					<span className="ml-2 text-[#64748B] text-sm">{rating}/5</span>
+					<span className="ml-2 text-ink-muted text-sm">{rating}/5</span>
 				)}
 			</div>
 			<Textarea
@@ -118,7 +116,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 				type="submit"
 				disabled={isLoading || rating === 0}
 				size="sm"
-				className="rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+				className="rounded-lg bg-brand hover:bg-brand-strong"
 			>
 				{isLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
 				{t("reviewSubmit")}

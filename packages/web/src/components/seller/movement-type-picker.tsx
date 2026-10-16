@@ -27,14 +27,14 @@ export function MovementTypePicker({
 					className={cn(
 						"rounded-lg border p-3 text-left",
 						value === type
-							? "border-[var(--shop-accent,#1E40AF)] bg-[var(--shop-accent-soft,#EFF6FF)]"
-							: "border-[#E2E8F0]",
+							? "border-[var(--shop-accent,var(--c-brand))] bg-[var(--shop-accent-soft,var(--c-brand-soft))]"
+							: "border-line",
 					)}
 				>
-					<span className="block font-semibold text-[#0F172A] text-sm">
+					<span className="block font-semibold text-ink text-sm">
 						{t(`types.${type}.title`)}
 					</span>
-					<span className="block text-[#64748B] text-xs">
+					<span className="block text-ink-muted text-xs">
 						{t(`types.${type}.hint`)}
 					</span>
 				</button>

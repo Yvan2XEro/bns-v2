@@ -32,7 +32,7 @@ export function OrderClient({
 	const back = (
 		<Link
 			href="/seller/orders"
-			className="inline-flex min-h-11 items-center gap-2 font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+			className="inline-flex min-h-11 items-center gap-2 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 		>
 			<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 			{t("back")}
@@ -70,16 +70,16 @@ export function OrderClient({
 			/>
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
+					<h1 className="font-bold text-2xl text-ink">
 						{t("orderTitle", { number: order.orderNumber })}
 					</h1>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("placedOn", {
 							date: formatOrderDate(order.timestamps.placedAt, locale),
 						})}
 					</p>
 				</div>
-				<span className="rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm">
+				<span className="rounded-full bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-3 py-1 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm">
 					{tRoot(`OrderStatus.${statusLabelKey(order.status, "seller")}`)}
 				</span>
 			</div>

@@ -43,14 +43,10 @@ export function PaymentMethodPicker({
 	return (
 		<fieldset
 			className={
-				embedded
-					? "space-y-3"
-					: "space-y-3 rounded-2xl border border-[#E2E8F0] p-4"
+				embedded ? "space-y-3" : "space-y-3 rounded-2xl border border-line p-4"
 			}
 		>
-			<legend
-				className={embedded ? "sr-only" : "px-1 font-semibold text-[#0F172A]"}
-			>
+			<legend className={embedded ? "sr-only" : "px-1 font-semibold text-ink"}>
 				{t("method_title")}
 			</legend>
 			<div className="grid gap-2 sm:grid-cols-2">
@@ -63,15 +59,13 @@ export function PaymentMethodPicker({
 							aria-pressed={active}
 							onClick={() => onChoose(option.value)}
 							className={`min-h-11 rounded-xl border p-3 text-left text-sm ${
-								active
-									? "border-[#1E40AF] bg-[#EFF6FF]"
-									: "border-[#E2E8F0] bg-white"
+								active ? "border-brand bg-brand-soft" : "border-line bg-surface"
 							}`}
 						>
-							<p className="font-medium text-[#0F172A]">{option.title}</p>
-							<p className="text-[#64748B] text-xs">{option.body}</p>
+							<p className="font-medium text-ink">{option.title}</p>
+							<p className="text-ink-muted text-xs">{option.body}</p>
 							{option.value === "mobile_money" && fee !== null && (
-								<p className="mt-1 font-medium text-[#1E40AF] text-xs">
+								<p className="mt-1 font-medium text-brand text-xs">
 									{t("method_protectedFee", {
 										fee: formatOrderMoney(fee, locale),
 									})}

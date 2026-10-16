@@ -30,11 +30,11 @@ export function ConsentNotice({
 	const t = useTranslations("Verification.identity.consent");
 
 	return (
-		<div className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-bold text-[#0F172A] text-base">{t("title")}</h2>
-			<p className="text-[#334155] text-sm leading-relaxed">{t("intro")}</p>
+		<div className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-bold text-base text-ink">{t("title")}</h2>
+			<p className="text-ink-soft text-sm leading-relaxed">{t("intro")}</p>
 			{NOTICE_KEYS.map((key) => (
-				<p key={key} className="text-[#334155] text-sm leading-relaxed">
+				<p key={key} className="text-ink-soft text-sm leading-relaxed">
 					{t(key)}
 				</p>
 			))}

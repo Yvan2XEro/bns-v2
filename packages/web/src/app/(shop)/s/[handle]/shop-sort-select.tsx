@@ -18,7 +18,7 @@ export function ShopSortSelect({ value }: { value: ShopSort }) {
 			defaultValue={value}
 			aria-label={t("sortLabel")}
 			onChange={(event) => event.currentTarget.form?.requestSubmit()}
-			className="h-10 shrink-0 rounded-lg border border-[#E2E8F0] bg-white px-3 font-medium text-[#0F172A] text-sm focus:border-[var(--shop-accent,#93C5FD)] focus:outline-none"
+			className="h-10 shrink-0 rounded-lg border border-line bg-surface px-3 font-medium text-ink text-sm focus:border-[var(--shop-accent,var(--c-brand-line))] focus:outline-none"
 		>
 			{OPTIONS.map((option) => (
 				<option key={option.value} value={option.value}>

@@ -79,7 +79,7 @@ export function DocumentSlots({
 	return (
 		<div className="space-y-4">
 			<div>
-				<h3 className="mb-2 font-bold text-[#0F172A] text-sm">
+				<h3 className="mb-2 font-bold text-ink text-sm">
 					{t("documents.title")}
 				</h3>
 				<div className="space-y-3">
@@ -87,7 +87,7 @@ export function DocumentSlots({
 				</div>
 			</div>
 			<div>
-				<h3 className="mb-2 font-bold text-[#0F172A] text-sm">
+				<h3 className="mb-2 font-bold text-ink text-sm">
 					{t("documents.extrasTitle")}
 				</h3>
 				{renderSlot(EXTRA_KIND, false)}

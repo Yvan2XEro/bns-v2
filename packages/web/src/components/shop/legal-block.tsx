@@ -24,14 +24,14 @@ export function LegalBlock({
 	if (lines.length === 0) return null;
 
 	return (
-		<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+		<div className="rounded-xl border border-line bg-surface p-5">
 			<div className="flex items-center gap-2">
 				{verified ? (
 					<BadgeCheck className="h-4 w-4 text-[#047857]" aria-hidden="true" />
 				) : (
-					<FileText className="h-4 w-4 text-[#64748B]" aria-hidden="true" />
+					<FileText className="h-4 w-4 text-ink-muted" aria-hidden="true" />
 				)}
-				<h2 className="font-bold text-[#0F172A]">
+				<h2 className="font-bold text-ink">
 					{verified ? t("legalVerifiedTitle") : t("legalDeclaredTitle")}
 				</h2>
 			</div>
@@ -41,8 +41,8 @@ export function LegalBlock({
 						key={line.label}
 						className="flex items-baseline justify-between gap-3"
 					>
-						<dt className="shrink-0 text-[#64748B]">{t(line.label)}</dt>
-						<dd className="truncate text-right font-medium text-[#0F172A]">
+						<dt className="shrink-0 text-ink-muted">{t(line.label)}</dt>
+						<dd className="truncate text-right font-medium text-ink">
 							{line.label === "businessType" && isBusinessType(line.value)
 								? t(businessTypeLabelKey(line.value))
 								: line.value}

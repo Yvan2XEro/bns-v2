@@ -64,7 +64,7 @@ export function ShopSwitcher({
 				{children}
 				<ChevronsUpDown
 					aria-hidden="true"
-					className="h-4 w-4 shrink-0 text-[#94A3B8]"
+					className="h-4 w-4 shrink-0 text-ink-faint"
 				/>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="start" className="w-56">

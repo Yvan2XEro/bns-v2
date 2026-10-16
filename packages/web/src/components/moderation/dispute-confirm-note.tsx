@@ -31,9 +31,9 @@ export function ConfirmNotePanel({
 				maxLength={2000}
 				value={note}
 				onChange={(e) => onNote(e.target.value)}
-				className="w-full rounded-lg border border-[#CBD5E1] bg-white p-2 text-sm"
+				className="w-full rounded-lg border border-line-strong bg-surface p-2 text-sm"
 			/>
-			<p className="text-[#64748B] text-xs">{t("noteHint")}</p>
+			<p className="text-ink-muted text-xs">{t("noteHint")}</p>
 			<div className="flex gap-2">
 				<Button
 					type="button"

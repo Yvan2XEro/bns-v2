@@ -66,11 +66,11 @@ export default async function SellerDashboardPage() {
 			)}
 			<div className="flex flex-wrap items-end justify-between gap-3">
 				<div className="space-y-1">
-					<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-[-0.4px]">
+					<h1 className="font-extrabold text-[28px] text-ink tracking-[-0.4px]">
 						{tSeller("dashboard")}
 					</h1>
 					{suspended ? (
-						<p className="text-[#64748B] text-sm">{shop.name}</p>
+						<p className="text-ink-muted text-sm">{shop.name}</p>
 					) : (
 						<DashboardSubtitle {...pending} />
 					)}
@@ -84,7 +84,7 @@ export default async function SellerDashboardPage() {
 						/>
 						<Link
 							href="/seller/catalogue/new"
-							className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+							className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							<Plus aria-hidden="true" className="h-4 w-4" />
 							{tSeller("addProduct")}
@@ -101,23 +101,23 @@ export default async function SellerDashboardPage() {
 					showOrders={showOrders}
 					aside={
 						nudgeLevel3 ? (
-							<section className="flex flex-col gap-2 rounded-xl border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] p-4">
-								<span className="inline-flex items-center gap-1 self-start rounded-full bg-[var(--shop-accent-soft,#DBEAFE)] py-[3px] pr-[9px] pl-1.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-xs">
+							<section className="flex flex-col gap-2 rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-[var(--shop-accent-soft,var(--c-brand-soft))] p-4">
+								<span className="inline-flex items-center gap-1 self-start rounded-full bg-[var(--shop-accent-soft,var(--c-brand-tint))] py-[3px] pr-[9px] pl-1.5 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-xs">
 									<BadgeCheck
 										aria-hidden="true"
 										className="h-[13px] w-[13px]"
 									/>
 									{tDash("level2Badge")}
 								</span>
-								<h2 className="font-bold text-[#0F172A] text-base">
+								<h2 className="font-bold text-base text-ink">
 									{tDash("level3Title")}
 								</h2>
-								<p className="text-[#334155] text-sm leading-5">
+								<p className="text-ink-soft text-sm leading-5">
 									{tDash("level3Body")}
 								</p>
 								<Link
 									href="/seller/verification/business"
-									className="font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+									className="font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 								>
 									{tDash("level3Action")}
 								</Link>

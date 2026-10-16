@@ -44,22 +44,20 @@ export function PendingState({
 
 	return (
 		<div className="space-y-5 text-center">
-			<LoaderCircle className="mx-auto h-10 w-10 animate-spin text-[#1E40AF]" />
-			<h1 className="font-bold text-2xl text-[#0F172A]">
-				{t("pending_title")}
-			</h1>
-			<p className="font-semibold text-[#0F172A] text-lg">
+			<LoaderCircle className="mx-auto h-10 w-10 animate-spin text-brand" />
+			<h1 className="font-bold text-2xl text-ink">{t("pending_title")}</h1>
+			<p className="font-semibold text-ink text-lg">
 				{t("pending_expiresIn", { time: formatCountdown(secondsLeft) })}
 			</p>
-			<div className="space-y-1 rounded-2xl border border-[#E2E8F0] p-4 text-left text-sm">
-				<p className="font-medium text-[#0F172A]">
+			<div className="space-y-1 rounded-2xl border border-line p-4 text-left text-sm">
+				<p className="font-medium text-ink">
 					{t(PAYMENT_CHANNEL_LABELS[channel])}
 				</p>
-				<p className="text-[#334155]">
+				<p className="text-ink-soft">
 					{providerInstructions ?? t(PAYMENT_CHANNEL_INSTRUCTIONS[channel])}
 				</p>
 			</div>
-			<p className="text-[#64748B] text-sm">{t("pending_checking")}</p>
+			<p className="text-ink-muted text-sm">{t("pending_checking")}</p>
 			<Button
 				type="button"
 				variant="outline"

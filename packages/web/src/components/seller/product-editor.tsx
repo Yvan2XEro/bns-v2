@@ -259,7 +259,7 @@ export function ProductEditor({
 				onCancel={detail ? undefined : cancel}
 			/>
 			{restored && (
-				<p className="rounded-lg bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-2 text-[var(--shop-accent-text,#1E3A8A)] text-sm">
+				<p className="rounded-lg bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-3 py-2 text-[var(--shop-accent-text,var(--c-brand-strong))] text-sm">
 					{te("restored")}
 				</p>
 			)}
@@ -273,7 +273,7 @@ export function ProductEditor({
 				</p>
 			)}
 			{saved && !formState.errors.root && (
-				<p className="rounded-lg bg-[#F0FDF4] px-3 py-2 text-[#166534] text-sm">
+				<p className="rounded-lg bg-ok-faint px-3 py-2 text-ok-ink text-sm">
 					{t("saved")}
 				</p>
 			)}

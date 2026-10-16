@@ -27,9 +27,9 @@ export function StatusPill({ status }: { status: OrderListEntry["status"] }) {
 export function PaymentPill({ row }: { row: OrderListEntry }) {
 	const t = useTranslations("SellerOrderList");
 	const pill = paymentPill(row);
-	if (!pill) return <span className="text-[#94A3B8]">—</span>;
+	if (!pill) return <span className="text-ink-faint">—</span>;
 	return (
-		<span className={cn(PILL, "bg-[#F1F5F9] text-[#334155]")}>
+		<span className={cn(PILL, "bg-subtle text-ink-soft")}>
 			{t(`payment.${pill}`)}
 		</span>
 	);

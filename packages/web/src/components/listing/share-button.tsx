@@ -39,7 +39,7 @@ export function ShareButton({
 			onClick={handleShare}
 			className={
 				className ||
-				"flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#64748B] hover:bg-[#F1F5F9]"
+				"flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink-muted hover:bg-subtle"
 			}
 		>
 			{copied ? (

@@ -71,10 +71,10 @@ export function BrandColorField({
 
 	return (
 		<fieldset className="space-y-3">
-			<legend className="mb-1.5 font-medium text-[#0F172A] text-sm">
+			<legend className="mb-1.5 font-medium text-ink text-sm">
 				{t("label")}
 			</legend>
-			<p className="text-[#64748B] text-xs">{t("hint")}</p>
+			<p className="text-ink-muted text-xs">{t("hint")}</p>
 			<fieldset className="flex flex-wrap gap-2">
 				<legend className="sr-only">{t("swatches")}</legend>
 				{BRAND_SWATCHES.map((swatch) => {
@@ -85,8 +85,8 @@ export function BrandColorField({
 							title={swatch}
 							style={{ backgroundColor: swatch }}
 							className={cn(
-								"flex h-8 w-8 cursor-pointer items-center justify-center rounded-full ring-offset-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#0F172A]",
-								selected && "ring-2 ring-[#0F172A]",
+								"flex h-8 w-8 cursor-pointer items-center justify-center rounded-full ring-offset-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink",
+								selected && "ring-2 ring-ink",
 							)}
 						>
 							<input
@@ -111,7 +111,7 @@ export function BrandColorField({
 				</label>
 				<span
 					aria-hidden="true"
-					className="h-9 w-9 shrink-0 rounded-lg border border-[#E2E8F0]"
+					className="h-9 w-9 shrink-0 rounded-lg border border-line"
 					style={{ backgroundColor: picked ?? PLATFORM_ACCENT }}
 				/>
 				<input
@@ -125,10 +125,10 @@ export function BrandColorField({
 					aria-invalid={invalid}
 					aria-describedby={hintId}
 					className={cn(
-						"h-9 w-32 rounded-lg border bg-white px-3 font-mono text-sm uppercase focus:outline-none",
+						"h-9 w-32 rounded-lg border bg-surface px-3 font-mono text-sm uppercase focus:outline-none",
 						invalid
 							? "border-red-400 focus:border-red-500"
-							: "border-[#E2E8F0] focus:border-[#93C5FD]",
+							: "border-line focus:border-brand-line",
 					)}
 				/>
 				{logoUrl && (
@@ -136,7 +136,7 @@ export function BrandColorField({
 						type="button"
 						onClick={suggest}
 						disabled={suggesting}
-						className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3 font-semibold text-[#0F172A] text-xs hover:bg-[#F8FAFC] disabled:opacity-60"
+						className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 font-semibold text-ink text-xs hover:bg-canvas disabled:opacity-60"
 					>
 						{suggesting ? (
 							<LoaderCircle
@@ -153,7 +153,7 @@ export function BrandColorField({
 					<button
 						type="button"
 						onClick={() => onChange("")}
-						className="h-9 px-1 font-semibold text-[#64748B] text-xs underline-offset-2 hover:underline"
+						className="h-9 px-1 font-semibold text-ink-muted text-xs underline-offset-2 hover:underline"
 					>
 						{t("reset")}
 					</button>
@@ -165,7 +165,7 @@ export function BrandColorField({
 				className={
 					invalid || suggestError
 						? "text-red-600 text-xs"
-						: "text-[#94A3B8] text-xs"
+						: "text-ink-faint text-xs"
 				}
 			>
 				{invalid ? t("invalid") : (suggestError ?? t("customHint"))}
@@ -173,8 +173,9 @@ export function BrandColorField({
 			<div
 				aria-label={t("preview")}
 				role="img"
+				data-shop-theme={theme.brandColor}
 				style={shopThemeVars(theme)}
-				className="overflow-hidden rounded-lg border border-[#E2E8F0] bg-white"
+				className="overflow-hidden rounded-lg border border-line bg-surface"
 			>
 				<div className="flex h-11 items-center bg-[var(--shop-header-bg)] px-3 font-bold text-[var(--shop-header-fg)] text-sm">
 					<span>{t("previewShop")}</span>

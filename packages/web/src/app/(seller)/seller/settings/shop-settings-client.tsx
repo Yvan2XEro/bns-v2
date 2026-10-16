@@ -40,7 +40,7 @@ const FORM_IDS: Partial<Record<Tab, string>> = {
 };
 
 const TRIGGER =
-	"rounded-none border-transparent border-b-2 bg-transparent px-0 py-2.5 font-semibold text-[#64748B] text-[15px] data-[state=active]:border-[var(--shop-accent,#1E40AF)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--shop-accent-text,#1E40AF)] data-[state=active]:shadow-none";
+	"rounded-none border-transparent border-b-2 bg-transparent px-0 py-2.5 font-semibold text-ink-muted text-[15px] data-[state=active]:border-[var(--shop-accent,var(--c-brand))] data-[state=active]:bg-transparent data-[state=active]:text-[var(--shop-accent-text,var(--c-brand))] data-[state=active]:shadow-none";
 
 function draftOf(shop: MyShop): ShopProfileDraft {
 	const place = placeOfShopLocation(shop.location);
@@ -102,11 +102,11 @@ export function ShopSettingsClient({
 	}
 
 	const card = (title: string, body: React.ReactNode) => (
-		<div className="rounded-xl border border-[#E2E8F0] bg-white">
-			<div className="flex items-center justify-between gap-3 border-[#E2E8F0] border-b px-[18px] py-3.5">
-				<h2 className="font-bold text-[#0F172A] text-base">{title}</h2>
+		<div className="rounded-xl border border-line bg-surface">
+			<div className="flex items-center justify-between gap-3 border-line border-b px-[18px] py-3.5">
+				<h2 className="font-bold text-base text-ink">{title}</h2>
 				{formBar?.dirty && (
-					<span className="flex items-center gap-1.5 font-semibold text-[#B45309] text-[13px]">
+					<span className="flex items-center gap-1.5 font-semibold text-[13px] text-warn-ink-soft">
 						<span className="h-2 w-2 rounded-full bg-[#F59E0B]" />
 						{tBar("unsaved")}
 					</span>
@@ -120,17 +120,17 @@ export function ShopSettingsClient({
 		<div className="space-y-[18px]">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div className="space-y-1">
-					<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-[-0.4px]">
+					<h1 className="font-extrabold text-[28px] text-ink tracking-[-0.4px]">
 						{tManage("title")}
 					</h1>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{tManage("subtitle", { handle: shop.handle })}
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2.5">
 					<Link
 						href={`/s/${shop.handle}`}
-						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC]"
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:bg-canvas"
 					>
 						<ExternalLink aria-hidden="true" className="h-4 w-4" />
 						{tManage("viewShop")}
@@ -141,7 +141,7 @@ export function ShopSettingsClient({
 								type="button"
 								disabled={!formBar?.dirty || formBar.pending}
 								onClick={() => formBar?.reset()}
-								className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+								className="inline-flex h-10 items-center rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:bg-canvas disabled:opacity-50"
 							>
 								{tBar("cancel")}
 							</button>
@@ -149,7 +149,7 @@ export function ShopSettingsClient({
 								type="submit"
 								form={formId}
 								disabled={!formBar?.canSave || formBar.pending}
-								className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
+								className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 							>
 								{formBar?.pending && (
 									<LoaderCircle className="h-4 w-4 animate-spin" />
@@ -161,7 +161,7 @@ export function ShopSettingsClient({
 				</div>
 			</div>
 			<Tabs value={tab} onValueChange={(value) => changeTab(value as Tab)}>
-				<TabsList className="h-auto w-full justify-start gap-7 overflow-x-auto rounded-none border-[#E2E8F0] border-b bg-transparent p-0">
+				<TabsList className="h-auto w-full justify-start gap-7 overflow-x-auto rounded-none border-line border-b bg-transparent p-0">
 					<TabsTrigger value="profile" className={TRIGGER}>
 						{tManage("tabProfile")}
 					</TabsTrigger>
@@ -252,18 +252,18 @@ export function ShopSettingsClient({
 					{card(
 						tManage("tabListings"),
 						<div className="space-y-3">
-							<p className="text-[#334155] text-sm">
+							<p className="text-ink-soft text-sm">
 								{tManage("listingsBody", { count: personalListings })}
 							</p>
 							<Button
 								onClick={() => setMoveOpen(true)}
 								disabled={suspended}
-								className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+								className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 							>
 								{tManage("moveTitle")}
 							</Button>
 							{suspended && (
-								<p className="text-[#991b1b] text-xs">
+								<p className="text-bad-ink text-xs">
 									{tManage("moveSuspended")}
 								</p>
 							)}

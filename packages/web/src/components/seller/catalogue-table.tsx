@@ -41,7 +41,7 @@ function ListingNote({ row }: { row: CatalogueRow }) {
 		return (
 			<Link
 				href={`/listing/${row.listingId}`}
-				className="inline-flex items-center gap-1 text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
+				className="inline-flex items-center gap-1 text-[var(--shop-accent-text,var(--c-brand))] text-xs hover:underline"
 			>
 				<ExternalLink aria-hidden="true" className="h-3 w-3" />
 				{t("viewListing")}
@@ -49,14 +49,10 @@ function ListingNote({ row }: { row: CatalogueRow }) {
 		);
 	}
 	if (row.listingStatus === "rejected") {
-		return (
-			<span className="text-[#991b1b] text-xs">{t("listingRejected")}</span>
-		);
+		return <span className="text-bad-ink text-xs">{t("listingRejected")}</span>;
 	}
 	if (row.listingStatus === "pending") {
-		return (
-			<span className="text-[#92400e] text-xs">{t("listingPending")}</span>
-		);
+		return <span className="text-warn-ink text-xs">{t("listingPending")}</span>;
 	}
 	return null;
 }
@@ -67,8 +63,8 @@ function ResaleStockCell({ row }: { row: CatalogueRow }) {
 		<span
 			className={
 				row.supplierAvailable
-					? "text-[#64748B] text-xs"
-					: "font-semibold text-[#991b1b] text-xs"
+					? "text-ink-muted text-xs"
+					: "font-semibold text-bad-ink text-xs"
 			}
 		>
 			{tc(row.supplierAvailable ? "atSupplier" : "supplierOut")}
@@ -91,7 +87,7 @@ function RowMenu({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				aria-label={tc("rowMenu", { title: row.title })}
-				className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[#64748B] hover:bg-[#F1F5F9]"
+				className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-subtle"
 			>
 				<MoreHorizontal aria-hidden="true" className="h-4 w-4" />
 			</DropdownMenuTrigger>
@@ -136,7 +132,7 @@ function RowMenu({
 						{canArchive && row.status !== "archived" && (
 							<DropdownMenuItem
 								onSelect={() => onSetStatus([row.id], "archived")}
-								className="text-[#991b1b]"
+								className="text-bad-ink"
 							>
 								{tc("bulk.archived")}
 							</DropdownMenuItem>
@@ -176,10 +172,10 @@ export function CatalogueTable({
 		selectable.length > 0 && selectable.every((id) => selected.has(id));
 
 	return (
-		<div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
+		<div className="overflow-x-auto rounded-xl border border-line bg-surface">
 			<table className="w-full min-w-[880px] text-sm">
 				<caption className="sr-only">{t("title")}</caption>
-				<thead className="border-[#E2E8F0] border-b bg-[#F8FAFC] text-left text-[#64748B] text-xs uppercase">
+				<thead className="border-line border-b bg-canvas text-left text-ink-muted text-xs uppercase">
 					<tr>
 						<th scope="col" className="w-9 py-3 pl-4">
 							<input
@@ -188,7 +184,7 @@ export function CatalogueTable({
 								checked={allSelected}
 								disabled={selectable.length === 0}
 								onChange={() => onToggleAll(selectable, !allSelected)}
-								className="h-4 w-4 rounded border-[#CBD5E1] accent-[var(--shop-accent,#1E40AF)]"
+								className="h-4 w-4 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
 							/>
 						</th>
 						<th scope="col" className="px-4 py-3 font-semibold">
@@ -224,7 +220,7 @@ export function CatalogueTable({
 						return (
 							<tr
 								key={row.id}
-								className="border-[#F1F5F9] border-b last:border-0 hover:bg-[#F8FAFC]"
+								className="border-subtle border-b last:border-0 hover:bg-canvas"
 							>
 								<td className="py-3 pl-4">
 									{!resale && (
@@ -233,13 +229,13 @@ export function CatalogueTable({
 											aria-label={tc("select", { title: row.title })}
 											checked={selected.has(row.id)}
 											onChange={() => onToggle(row.id)}
-											className="h-4 w-4 rounded border-[#CBD5E1] accent-[var(--shop-accent,#1E40AF)]"
+											className="h-4 w-4 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
 										/>
 									)}
 								</td>
 								<td className="px-4 py-3">
 									<Link href={href} className="flex items-center gap-3">
-										<div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#F1F5F9]">
+										<div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-subtle">
 											{row.image?.url && (
 												// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
 												<img
@@ -250,10 +246,10 @@ export function CatalogueTable({
 											)}
 										</div>
 										<div className="min-w-0">
-											<p className="truncate font-semibold text-[#0F172A]">
+											<p className="truncate font-semibold text-ink">
 												{row.title}
 											</p>
-											<p className="truncate text-[#94A3B8] text-xs">
+											<p className="truncate text-ink-faint text-xs">
 												<SubTitle row={row} />
 											</p>
 										</div>
@@ -266,13 +262,13 @@ export function CatalogueTable({
 												{tc("provenanceResale")}
 											</span>
 										) : (
-											<span className="whitespace-nowrap text-[#475569] text-[13px]">
+											<span className="whitespace-nowrap text-[13px] text-ink-mid">
 												{tc("provenanceOwn")}
 											</span>
 										)}
 									</td>
 								)}
-								<td className="whitespace-nowrap px-4 py-3 text-[#0F172A] tabular-nums">
+								<td className="whitespace-nowrap px-4 py-3 text-ink tabular-nums">
 									{formatOrderMoneyRange(
 										formatOrderMoney,
 										row.priceMin,

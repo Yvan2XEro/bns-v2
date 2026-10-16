@@ -30,8 +30,8 @@ describe("a shop's pages take its colours", () => {
 			</ShopThemeScope>,
 		);
 		expect(html).toContain('data-shop-theme="#0F766E"');
-		expect(html).toContain(`--shop-accent:${theme.light.accent}`);
-		expect(html).toContain(`--shop-header-bg:${theme.light.headerBg}`);
+		expect(html).toContain(`--shop-light-accent:${theme.light.accent}`);
+		expect(html).toContain(`--shop-light-header-bg:${theme.light.headerBg}`);
 		expect(html).toContain(`--shop-dark-accent:${theme.dark.accent}`);
 	});
 
@@ -74,8 +74,8 @@ describe("a shop's pages take its colours", () => {
 				ownerName={null}
 			/>,
 		);
-		expect(html).toContain(`--shop-accent:${theme.light.accent}`);
-		expect(html).toContain("text-[var(--shop-accent-text,#0F172A)]");
+		expect(html).toContain(`--shop-light-accent:${theme.light.accent}`);
+		expect(html).toContain("text-[var(--shop-accent-text,var(--c-ink))]");
 	});
 });
 

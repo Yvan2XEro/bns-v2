@@ -30,9 +30,7 @@ export function LocationsClient({ shopId }: { shopId: string }) {
 	return (
 		<div className="space-y-5">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<h1 className="font-bold text-2xl text-[#0F172A]">
-					{t("locationsTitle")}
-				</h1>
+				<h1 className="font-bold text-2xl text-ink">{t("locationsTitle")}</h1>
 				{deliveryZonesEnabled && (
 					<Button
 						className="min-h-11"
@@ -54,32 +52,32 @@ export function LocationsClient({ shopId }: { shopId: string }) {
 			{deliveryZonesEnabled && locations.isSuccess && (
 				<ul className="space-y-2">
 					{locations.data.length === 0 && (
-						<li className="rounded-2xl border border-[#E2E8F0] bg-white p-6 text-center text-[#64748B] text-sm">
+						<li className="rounded-2xl border border-line bg-surface p-6 text-center text-ink-muted text-sm">
 							{t("locationsEmpty")}
 						</li>
 					)}
 					{locations.data.map((location) => (
 						<li
 							key={location.id}
-							className="space-y-1 rounded-2xl border border-[#E2E8F0] bg-white p-4 text-sm"
+							className="space-y-1 rounded-2xl border border-line bg-surface p-4 text-sm"
 						>
-							<p className="font-semibold text-[#0F172A]">
+							<p className="font-semibold text-ink">
 								{location.name}
 								{location.isDefaultOrigin && (
-									<span className="ml-2 rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-2 py-0.5 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs">
+									<span className="ml-2 rounded-full bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-2 py-0.5 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs">
 										{t("defaultOrigin")}
 									</span>
 								)}
 								{!(location.active ?? true) && (
-									<span className="ml-2 text-[#64748B] text-xs">
+									<span className="ml-2 text-ink-muted text-xs">
 										{t("inactive")}
 									</span>
 								)}
 							</p>
-							<p className="text-[#334155]">
+							<p className="text-ink-soft">
 								{districtName(location.district)} · {location.landmark}
 							</p>
-							<p className="text-[#64748B]">
+							<p className="text-ink-muted">
 								{location.pickupEnabled ? t("pickupOn") : t("pickupOff")}
 								{location.isDispatchOrigin ? ` · ${t("dispatchOrigin")}` : ""}
 							</p>

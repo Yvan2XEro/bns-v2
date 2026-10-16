@@ -5,10 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatDeliveryDate, type TrackingStep } from "~/lib/shipment-tracking";
 
 const DOT: Record<TrackingStep["state"], string> = {
-	done: "bg-[#1E40AF] text-white",
-	current: "border-2 border-[#1E40AF] bg-white text-[#1E40AF]",
-	upcoming: "border border-[#CBD5E1] bg-white text-[#94A3B8]",
-	stopped: "bg-[#FEE2E2] text-[#B91C1C]",
+	done: "bg-brand text-white",
+	current: "border-2 border-brand bg-surface text-brand",
+	upcoming: "border border-line-strong bg-surface text-ink-faint",
+	stopped: "bg-bad-soft text-bad-ink-soft",
 };
 
 /** The state is spoken as well as drawn: a colour alone says nothing to a screen reader. */
@@ -27,12 +27,12 @@ export function TrackingStepper({ steps }: { steps: TrackingStep[] }) {
 						{step.state === "stopped" && <X className="h-4 w-4" />}
 					</span>
 					<span>
-						<span className="block font-medium text-[#0F172A] text-sm">
+						<span className="block font-medium text-ink text-sm">
 							{t(`step.${step.key}`)}
 							<span className="sr-only"> — {t(`state.${step.state}`)}</span>
 						</span>
 						{step.at && (
-							<time dateTime={step.at} className="block text-[#64748B] text-xs">
+							<time dateTime={step.at} className="block text-ink-muted text-xs">
 								{formatDeliveryDate(step.at, locale, true)}
 							</time>
 						)}

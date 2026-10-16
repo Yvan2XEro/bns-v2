@@ -51,7 +51,7 @@ export function LocationField({
 	};
 
 	return (
-		<div className="space-y-2 rounded-xl border border-[#DBEAFE] p-3">
+		<div className="space-y-2 rounded-xl border border-brand-tint p-3">
 			<Button
 				type="button"
 				variant="outline"
@@ -69,9 +69,9 @@ export function LocationField({
 						lng={value.lng}
 						accuracyMeters={value.accuracyMeters}
 					/>
-					<p className="text-[#166534]">{t("locationCaptured")}</p>
+					<p className="text-ok-ink">{t("locationCaptured")}</p>
 					{value.accuracyMeters !== undefined && (
-						<p className="text-[#64748B]">
+						<p className="text-ink-muted">
 							{t("locationAccuracy", { accuracy: value.accuracyMeters })}
 						</p>
 					)}
@@ -80,13 +80,13 @@ export function LocationField({
 							href={googleMapsUrl(value.lat, value.lng)}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex min-h-11 items-center text-[#1E40AF] underline"
+							className="inline-flex min-h-11 items-center text-brand underline"
 						>
 							{t("openInGoogleMaps")}
 						</a>
 						<button
 							type="button"
-							className="min-h-11 text-[#64748B] underline"
+							className="min-h-11 text-ink-muted underline"
 							onClick={() => onChange(undefined)}
 						>
 							{t("clearLocation")}
@@ -95,7 +95,7 @@ export function LocationField({
 				</div>
 			)}
 			{status === "unavailable" && !value && (
-				<p className="text-[#64748B] text-sm">{t("locationUnavailable")}</p>
+				<p className="text-ink-muted text-sm">{t("locationUnavailable")}</p>
 			)}
 		</div>
 	);

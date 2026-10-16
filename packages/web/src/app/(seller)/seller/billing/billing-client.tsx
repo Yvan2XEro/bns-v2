@@ -29,14 +29,14 @@ export function BillingClient({ shopId }: { shopId: string }) {
 
 	return (
 		<div className="space-y-5">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
 			{view.restricted && <RestrictionBanner restricted={view.restricted} />}
 			<CurrentPeriodCard period={view.currentPeriod} />
 			<section aria-labelledby="invoices-title" className="space-y-3">
-				<h2 id="invoices-title" className="font-semibold text-[#0F172A]">
+				<h2 id="invoices-title" className="font-semibold text-ink">
 					{t("invoicesTitle")}
 				</h2>
-				{hasPayable && <p className="text-[#64748B] text-xs">{t("payHint")}</p>}
+				{hasPayable && <p className="text-ink-muted text-xs">{t("payHint")}</p>}
 				<InvoiceList shopId={shopId} invoices={view.invoices} />
 			</section>
 		</div>

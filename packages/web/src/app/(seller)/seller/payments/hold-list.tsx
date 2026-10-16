@@ -19,28 +19,28 @@ export function HoldList({ holds }: { holds: readonly PaymentHoldView[] }) {
 
 	return (
 		<section aria-labelledby="holds-title" className="space-y-2">
-			<h2 id="holds-title" className="font-semibold text-[#0F172A]">
+			<h2 id="holds-title" className="font-semibold text-ink">
 				{t("seller_statusHolds")}
 			</h2>
 			{rows.length === 0 ? (
-				<p className="text-[#64748B] text-sm">{t("seller_noHolds")}</p>
+				<p className="text-ink-muted text-sm">{t("seller_noHolds")}</p>
 			) : (
 				<ul className="space-y-2">
 					{rows.map((row, index) => (
 						<li
 							key={`${row.scope}-${row.labelKey}-${index}`}
-							className="flex gap-3 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-3 text-sm"
+							className="flex gap-3 rounded-xl border border-warn-line bg-warn-faint p-3 text-sm"
 						>
 							<ShieldAlert
 								aria-hidden="true"
-								className="mt-0.5 h-4 w-4 shrink-0 text-[#B45309]"
+								className="mt-0.5 h-4 w-4 shrink-0 text-warn-ink-soft"
 							/>
 							<div className="space-y-0.5">
-								<p className="font-medium text-[#92400E]">{t(row.labelKey)}</p>
-								<p className="text-[#78350F] text-xs">
+								<p className="font-medium text-warn-ink">{t(row.labelKey)}</p>
+								<p className="text-warn-ink-strong text-xs">
 									{t(row.descriptionKey)}
 								</p>
-								<p className="text-[#92400E] text-xs">
+								<p className="text-warn-ink text-xs">
 									{row.until
 										? t("hold_until", {
 												date: formatOrderDate(row.until, locale),

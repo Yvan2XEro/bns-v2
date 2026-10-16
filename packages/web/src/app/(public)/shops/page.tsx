@@ -62,13 +62,13 @@ function Pager({
 	if (pages <= 1) return null;
 	const current = Math.min(filters.page, pages);
 	const linkClass =
-		"flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 font-semibold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30";
+		"flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 font-semibold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30";
 	return (
 		<nav aria-label={label} className="flex flex-wrap justify-center gap-2">
 			{current > 1 && (
 				<Link
 					href={directoryHref({ ...filters, page: current - 1 })}
-					className={cn(linkClass, "border-[#E2E8F0] bg-white text-[#0F172A]")}
+					className={cn(linkClass, "border-line bg-surface text-ink")}
 					aria-label={previous}
 				>
 					<ChevronLeft className="h-4 w-4" />
@@ -82,8 +82,8 @@ function Pager({
 					className={cn(
 						linkClass,
 						page === current
-							? "border-[#1E40AF] bg-[#1E40AF] text-white"
-							: "border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#94A3B8]",
+							? "border-brand bg-brand text-white"
+							: "border-line bg-surface text-ink hover:border-ink-faint",
 					)}
 				>
 					{page}
@@ -92,7 +92,7 @@ function Pager({
 			{current < pages && (
 				<Link
 					href={directoryHref({ ...filters, page: current + 1 })}
-					className={cn(linkClass, "border-[#E2E8F0] bg-white text-[#0F172A]")}
+					className={cn(linkClass, "border-line bg-surface text-ink")}
 					aria-label={next}
 				>
 					<ChevronRight className="h-4 w-4" />
@@ -126,16 +126,16 @@ export default async function ShopDirectoryPage({
 	return (
 		<div className="container mx-auto max-w-4xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
 			<header className="space-y-1">
-				<h1 className="font-bold font-heading text-2xl text-[#0F172A] sm:text-3xl">
+				<h1 className="font-bold font-heading text-2xl text-ink sm:text-3xl">
 					{t("title")}
 				</h1>
-				<p className="text-[#64748B] text-sm">{t("subtitle")}</p>
+				<p className="text-ink-muted text-sm">{t("subtitle")}</p>
 			</header>
 
 			<DirectoryFiltersBar filters={filters} categories={categories} />
 
 			{result === null ? (
-				<div className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] p-6 text-center text-[#991B1B] text-sm">
+				<div className="rounded-xl border border-bad-line bg-bad-faint p-6 text-center text-bad-ink text-sm">
 					{t("loadError")}
 				</div>
 			) : (
@@ -147,11 +147,11 @@ export default async function ShopDirectoryPage({
 						>
 							<h2
 								id="directory-sponsored"
-								className="font-semibold text-[#475569] text-xs"
+								className="font-semibold text-ink-mid text-xs"
 							>
 								{t("sponsoredHeading")}
 							</h2>
-							<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+							<div className="overflow-hidden rounded-xl border border-line bg-surface">
 								{sponsored.map((shop) => (
 									<ShopResultRow
 										key={shop.id}
@@ -164,7 +164,7 @@ export default async function ShopDirectoryPage({
 						</section>
 					)}
 
-					<p className="text-[#64748B] text-[13px]" aria-live="polite">
+					<p className="text-[13px] text-ink-muted" aria-live="polite">
 						{filters.city
 							? t("countIn", { count: total, city: filters.city })
 							: t("count", { count: total })}
@@ -172,17 +172,15 @@ export default async function ShopDirectoryPage({
 
 					{hits.length === 0 ? (
 						sponsored.length === 0 && (
-							<div className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center">
-								<p className="font-semibold text-[#0F172A]">
-									{t("emptyTitle")}
-								</p>
-								<p className="mt-1 text-[#64748B] text-sm">
+							<div className="rounded-xl border border-line border-dashed bg-surface p-10 text-center">
+								<p className="font-semibold text-ink">{t("emptyTitle")}</p>
+								<p className="mt-1 text-ink-muted text-sm">
 									{filtered ? t("emptyFiltered") : t("emptyBody")}
 								</p>
 								{filtered && (
 									<Link
 										href={SHOPS_DIRECTORY}
-										className="mt-4 inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] px-4 font-semibold text-sm"
+										className="mt-4 inline-flex h-10 items-center rounded-lg border border-line px-4 font-semibold text-sm"
 									>
 										{t("clearFilters")}
 									</Link>
@@ -190,7 +188,7 @@ export default async function ShopDirectoryPage({
 							</div>
 						)
 					) : (
-						<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+						<div className="overflow-hidden rounded-xl border border-line bg-surface">
 							{hits.map((shop) => (
 								<ShopResultRow key={shop.id} shop={shop} query={filters.q} />
 							))}

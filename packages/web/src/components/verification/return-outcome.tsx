@@ -29,10 +29,8 @@ export function ReturnOutcomeView({
 	if (outcome.kind === "polling") {
 		return (
 			<div className="space-y-2 text-center">
-				<h1 className="font-bold text-[#0F172A] text-lg">
-					{t("polling.title")}
-				</h1>
-				<p className="text-[#64748B] text-sm">{t("polling.body")}</p>
+				<h1 className="font-bold text-ink text-lg">{t("polling.title")}</h1>
+				<p className="text-ink-muted text-sm">{t("polling.body")}</p>
 			</div>
 		);
 	}
@@ -40,10 +38,10 @@ export function ReturnOutcomeView({
 	if (outcome.kind === "declinedRetry") {
 		return (
 			<div className="space-y-3 text-center">
-				<h1 className="font-bold text-[#0F172A] text-lg">
+				<h1 className="font-bold text-ink text-lg">
 					{t("outcome.declinedRetry.title")}
 				</h1>
-				<p className="text-[#64748B] text-sm">
+				<p className="text-ink-muted text-sm">
 					{t("outcome.declinedRetry.body")}
 				</p>
 				<Button onClick={onRetry}>{t("outcome.declinedRetry.cta")}</Button>
@@ -54,10 +52,10 @@ export function ReturnOutcomeView({
 	if (outcome.kind === "timeout") {
 		return (
 			<div className="space-y-3 text-center">
-				<h1 className="font-bold text-[#0F172A] text-lg">
+				<h1 className="font-bold text-ink text-lg">
 					{t("outcome.timeout.title")}
 				</h1>
-				<p className="text-[#64748B] text-sm">{t("outcome.timeout.body")}</p>
+				<p className="text-ink-muted text-sm">{t("outcome.timeout.body")}</p>
 				<Button onClick={onRefresh}>{t("outcome.timeout.cta")}</Button>
 			</div>
 		);
@@ -66,10 +64,10 @@ export function ReturnOutcomeView({
 	const key = answerKey(outcome.status);
 	return (
 		<div className="space-y-2 text-center">
-			<h1 className="font-bold text-[#0F172A] text-lg">
+			<h1 className="font-bold text-ink text-lg">
 				{t(`outcome.answer.${key}.title`)}
 			</h1>
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-muted text-sm">
 				{t(`outcome.answer.${key}.body`)}
 			</p>
 		</div>

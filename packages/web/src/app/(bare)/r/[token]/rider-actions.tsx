@@ -25,9 +25,9 @@ import { CodeSheet, FailureSheet, PhotoSheet } from "./rider-sheets";
 
 const ICONS = { picked_up: Check, attempt: X, handover: Hash, photo: Camera };
 const TONES = {
-	primary: "bg-[#1E40AF] text-white",
-	danger: "bg-[#B91C1C] text-white",
-	neutral: "border border-[#CBD5E1] bg-white text-[#0F172A]",
+	primary: "bg-brand text-white",
+	danger: "bg-bad-ink-soft text-white",
+	neutral: "border border-line-strong bg-surface text-ink",
 };
 
 const here = () =>
@@ -99,7 +99,7 @@ export function RiderActions({
 	return (
 		<div className="space-y-3">
 			{buttons.length === 0 && (
-				<p className="py-4 text-center text-[#64748B] text-sm">
+				<p className="py-4 text-center text-ink-muted text-sm">
 					{t("nothingToDo")}
 				</p>
 			)}
@@ -118,7 +118,7 @@ export function RiderActions({
 				);
 			})}
 			{photo && (
-				<p className="text-center text-[#166534] text-sm">{t("photoAdded")}</p>
+				<p className="text-center text-ok-ink text-sm">{t("photoAdded")}</p>
 			)}
 			{failure && (
 				<p role="alert" className="text-center text-red-700 text-sm">

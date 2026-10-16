@@ -28,7 +28,7 @@ export function ShopStickyContact({
 				inert={!visible}
 				aria-hidden={!visible}
 				className={cn(
-					"fixed inset-x-0 z-30 border-[#E2E8F0] border-t bg-white/95 px-4 pt-2 shadow-[0_-4px_12px_rgba(15,23,42,0.08)] backdrop-blur transition-[transform,opacity] duration-200 md:hidden",
+					"fixed inset-x-0 z-30 border-line border-t bg-surface/95 px-4 pt-2 shadow-[0_-4px_12px_rgba(15,23,42,0.08)] backdrop-blur transition-[transform,opacity] duration-200 md:hidden",
 					aboveTabBar
 						? "bottom-[calc(4rem+env(safe-area-inset-bottom))] pb-2"
 						: "bottom-0 pb-[calc(0.5rem+env(safe-area-inset-bottom))]",

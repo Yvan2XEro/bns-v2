@@ -27,9 +27,9 @@ export default function AuthLayout({
 				aria-hidden="true"
 				className="-z-10 pointer-events-none absolute inset-0"
 			>
-				<div className="auth-blob -top-40 -left-32 absolute h-[34rem] w-[34rem] rounded-full bg-[#DBEAFE] opacity-70 blur-3xl" />
+				<div className="auth-blob -top-40 -left-32 absolute h-[34rem] w-[34rem] rounded-full bg-brand-tint opacity-70 blur-3xl" />
 				<div
-					className="auth-blob -right-40 absolute top-1/3 h-[30rem] w-[30rem] rounded-full bg-[#FEF3C7] opacity-60 blur-3xl"
+					className="auth-blob -right-40 absolute top-1/3 h-[30rem] w-[30rem] rounded-full bg-warn-soft opacity-60 blur-3xl"
 					style={{ animationDelay: "-7s" }}
 				/>
 				<div
@@ -43,7 +43,7 @@ export default function AuthLayout({
 					<Link
 						href="/"
 						aria-label={t("backToSite")}
-						className="flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+						className="flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 					>
 						<Image
 							src="/logo.png"
@@ -53,29 +53,29 @@ export default function AuthLayout({
 							className="h-9 w-9 object-contain"
 							priority
 						/>
-						<span className="font-bold font-heading text-[#0F172A] text-lg">
+						<span className="font-bold font-heading text-ink text-lg">
 							Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
 						</span>
 					</Link>
-					<LocaleSwitcher className="bg-white/70 ring-1 ring-[#E2E8F0] backdrop-blur" />
+					<LocaleSwitcher className="bg-white/70 ring-1 ring-line backdrop-blur" />
 				</div>
 
 				<main className="flex flex-1 items-start justify-center gap-10 py-4 sm:items-center sm:py-10 xl:gap-16">
 					<aside className="hidden max-w-[26rem] flex-1 xl:block">
 						<MarketScene className="w-full max-w-[24rem]" />
-						<h2 className="mt-8 font-bold font-heading text-[#0F172A] text-[30px] leading-tight tracking-tight">
+						<h2 className="mt-8 font-bold font-heading text-[30px] text-ink leading-tight tracking-tight">
 							{t("panelTitle")}
 						</h2>
-						<p className="mt-3 text-[#475569] text-base leading-relaxed">
+						<p className="mt-3 text-base text-ink-mid leading-relaxed">
 							{t("panelBody")}
 						</p>
 						<ul className="mt-6 space-y-3">
 							{trust.map(({ Icon, text }) => (
 								<li
 									key={text}
-									className="flex items-center gap-3 text-[#334155] text-sm"
+									className="flex items-center gap-3 text-ink-soft text-sm"
 								>
-									<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#1E40AF] shadow-sm ring-1 ring-[#E2E8F0]">
+									<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-brand shadow-sm ring-1 ring-line">
 										<Icon aria-hidden="true" className="h-[18px] w-[18px]" />
 									</span>
 									{text}
@@ -88,15 +88,15 @@ export default function AuthLayout({
 
 				<nav
 					aria-label={t("legal")}
-					className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-6 text-[#64748B] text-xs"
+					className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-6 text-ink-muted text-xs"
 				>
-					<Link href="/help" className="hover:text-[#0F172A]">
+					<Link href="/help" className="hover:text-ink">
 						{t("help")}
 					</Link>
-					<Link href="/terms" className="hover:text-[#0F172A]">
+					<Link href="/terms" className="hover:text-ink">
 						{t("terms")}
 					</Link>
-					<Link href="/privacy" className="hover:text-[#0F172A]">
+					<Link href="/privacy" className="hover:text-ink">
 						{t("privacy")}
 					</Link>
 				</nav>

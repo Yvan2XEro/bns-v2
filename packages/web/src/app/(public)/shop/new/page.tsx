@@ -20,8 +20,8 @@ export default async function NewShopPage() {
 
 	return (
 		<div className="container mx-auto max-w-xl px-4 py-8">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-			<p className="mt-1 mb-6 text-[#64748B] text-sm">{t("subtitle")}</p>
+			<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+			<p className="mt-1 mb-6 text-ink-muted text-sm">{t("subtitle")}</p>
 			<CreateShopForm categories={categories} />
 		</div>
 	);

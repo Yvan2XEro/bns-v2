@@ -67,7 +67,7 @@ export function ReturnPolicyForm({
 
 	return (
 		<form id={formId} onSubmit={onSubmit} className="space-y-4" noValidate>
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-muted text-sm">
 				{readOnly ? t("returnPolicyReadOnly") : t("returnPolicyHint")}
 			</p>
 			<div className="space-y-1.5">
@@ -83,7 +83,7 @@ export function ReturnPolicyForm({
 				/>
 				<p
 					id="shop-return-policy-count"
-					className={`text-xs ${formState.errors.returnPolicy ? "text-red-700" : "text-[#64748B]"}`}
+					className={`text-xs ${formState.errors.returnPolicy ? "text-red-700" : "text-ink-muted"}`}
 				>
 					{formState.errors.returnPolicy
 						? t("returnPolicyTooLong", { max: SHOP_RETURN_POLICY_MAX })
@@ -94,7 +94,7 @@ export function ReturnPolicyForm({
 				</p>
 			</div>
 			{updateShop.isSuccess && (
-				<p className="text-[#166534] text-sm">{t("saved")}</p>
+				<p className="text-ok-ink text-sm">{t("saved")}</p>
 			)}
 			{formState.errors.root?.message && (
 				<p className="text-red-700 text-sm">{formState.errors.root.message}</p>
@@ -103,7 +103,7 @@ export function ReturnPolicyForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || updateShop.isPending}
-					className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="bg-brand hover:bg-brand-strong"
 				>
 					{updateShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

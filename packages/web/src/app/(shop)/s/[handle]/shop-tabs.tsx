@@ -39,7 +39,7 @@ export function ShopTabs({
 						"shrink-0 border-b-2 py-3",
 						tab.id === active
 							? "border-[var(--shop-accent)] text-[var(--shop-accent-text)]"
-							: "border-transparent text-[#64748B] hover:text-[#0F172A]",
+							: "border-transparent text-ink-muted hover:text-ink",
 					)}
 				>
 					{tab.label}

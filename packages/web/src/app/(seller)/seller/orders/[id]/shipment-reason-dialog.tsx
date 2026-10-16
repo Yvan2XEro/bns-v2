@@ -80,7 +80,7 @@ export function ShipmentReasonDialog({
 							<input
 								type="radio"
 								value={reason}
-								className="h-5 w-5 accent-[var(--shop-accent,#1E40AF)]"
+								className="h-5 w-5 accent-[var(--shop-accent,var(--c-brand))]"
 								{...register("reason")}
 							/>
 							{tRoot(`Delivery.${FAILURE_REASON_LABELS[reason]}`)}

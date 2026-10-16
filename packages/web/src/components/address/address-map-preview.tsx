@@ -164,7 +164,7 @@ export function AddressMapPreview({
 			ref={box}
 			role="img"
 			aria-label={t("mapPreview")}
-			className={`relative z-0 h-40 w-full overflow-hidden rounded-xl border border-[#E2E8F0] bg-[#F1F5F9] ${className ?? ""}`}
+			className={`relative z-0 h-40 w-full overflow-hidden rounded-xl border border-line bg-subtle ${className ?? ""}`}
 		/>
 	);
 }

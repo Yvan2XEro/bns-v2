@@ -59,7 +59,7 @@ function reducer(state: State, patch: Partial<State>): State {
 const EXPORT_MAX_PAGES = 50;
 
 const FILTER =
-	"h-[34px] rounded-lg border border-[#E2E8F0] bg-white pr-8 pl-8 font-semibold text-[#0F172A] text-[13px]";
+	"h-[34px] rounded-lg border border-line bg-surface pr-8 pl-8 font-semibold text-ink text-[13px]";
 
 function useMinuteClock(): Date {
 	const [now, setNow] = useState(() => new Date());
@@ -283,18 +283,18 @@ export function OrdersClient({
 		<div className="space-y-[18px]">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div className="space-y-1">
-					<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-[-0.4px]">
+					<h1 className="font-extrabold text-[28px] text-ink tracking-[-0.4px]">
 						{tList("title")}
 					</h1>
 					{subtitle.length > 0 && (
-						<p className="text-[#64748B] text-sm">{subtitle.join(" · ")}</p>
+						<p className="text-ink-muted text-sm">{subtitle.join(" · ")}</p>
 					)}
 				</div>
 				<button
 					type="button"
 					onClick={() => exportCsv.mutate()}
 					disabled={exportCsv.isPending || rows.length === 0}
-					className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+					className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:bg-canvas disabled:opacity-50"
 				>
 					<Download aria-hidden="true" className="h-4 w-4" />
 					{tList("export")}
@@ -319,8 +319,8 @@ export function OrdersClient({
 							className={cn(
 								"inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px]",
 								active
-									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-									: "border-[#E2E8F0] bg-white font-medium text-[#334155] hover:border-[var(--shop-accent-border,#93C5FD)]",
+									? "border-ink bg-night font-semibold text-white"
+									: "border-line bg-surface font-medium text-ink-soft hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
 							)}
 						>
 							{tList(`tab.${tab}`)}
@@ -328,7 +328,7 @@ export function OrdersClient({
 								<span
 									className={cn(
 										"font-bold text-[11px] tabular-nums",
-										active ? "text-[#CBD5E1]" : "text-[#64748B]",
+										active ? "text-ink-ghost" : "text-ink-muted",
 									)}
 								>
 									{count}
@@ -344,7 +344,7 @@ export function OrdersClient({
 					<span className="sr-only">{tList("search")}</span>
 					<Search
 						aria-hidden="true"
-						className="absolute top-3 left-3 h-4 w-4 text-[#94A3B8]"
+						className="absolute top-3 left-3 h-4 w-4 text-ink-faint"
 					/>
 					<input
 						type="search"
@@ -352,14 +352,14 @@ export function OrdersClient({
 						maxLength={120}
 						onChange={(event) => update({ search: event.target.value })}
 						placeholder={tList("search")}
-						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm"
+						className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm"
 					/>
 				</label>
 				<label className="relative">
 					<span className="sr-only">{tList("district")}</span>
 					<MapPin
 						aria-hidden="true"
-						className="pointer-events-none absolute top-[9px] left-2.5 h-4 w-4 text-[#64748B]"
+						className="pointer-events-none absolute top-[9px] left-2.5 h-4 w-4 text-ink-muted"
 					/>
 					<select
 						value={state.district}
@@ -382,7 +382,7 @@ export function OrdersClient({
 					<span className="sr-only">{tList("period")}</span>
 					<CalendarDays
 						aria-hidden="true"
-						className="pointer-events-none absolute top-[9px] left-2.5 h-4 w-4 text-[#64748B]"
+						className="pointer-events-none absolute top-[9px] left-2.5 h-4 w-4 text-ink-muted"
 					/>
 					<select
 						value={state.period}
@@ -401,15 +401,15 @@ export function OrdersClient({
 			</div>
 
 			{canProcess && selectedIds.length > 0 && (
-				<div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] px-3.5 py-2">
-					<span className="font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm">
+				<div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-3.5 py-2">
+					<span className="font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm">
 						{tList("selectedCount", { count: selectedIds.length })}
 					</span>
 					<span className="flex-1" />
 					<button
 						type="button"
 						onClick={() => setSelected(new Set())}
-						className="inline-flex h-[34px] items-center rounded-lg border border-[#E2E8F0] bg-white px-3 font-semibold text-[#0F172A] text-[13px]"
+						className="inline-flex h-[34px] items-center rounded-lg border border-line bg-surface px-3 font-semibold text-[13px] text-ink"
 					>
 						{tList("clearSelection")}
 					</button>
@@ -418,7 +418,7 @@ export function OrdersClient({
 							type="button"
 							disabled={bulkDecline.isPending || bulkAccept.isPending}
 							onClick={() => setDeclineOpen(true)}
-							className="inline-flex h-[34px] items-center rounded-lg border border-[#FECACA] bg-white px-3 font-semibold text-[#B91C1C] text-[13px] hover:bg-[#FEF2F2] disabled:opacity-50"
+							className="inline-flex h-[34px] items-center rounded-lg border border-bad-line bg-surface px-3 font-semibold text-[13px] text-bad-ink-soft hover:bg-bad-faint disabled:opacity-50"
 						>
 							{tList("declineSelected", { count: refuseIds.length })}
 						</button>
@@ -432,7 +432,7 @@ export function OrdersClient({
 									acceptableSelection(rows, selected, role, new Date()),
 								)
 							}
-							className="inline-flex h-[34px] items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
+							className="inline-flex h-[34px] items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 						>
 							{tList("acceptSelected", { count: acceptIds.length })}
 						</button>
@@ -462,7 +462,7 @@ export function OrdersClient({
 			{query.data && !query.isError && (
 				<div aria-busy={query.isFetching} className="space-y-4">
 					{rows.length === 0 ? (
-						<div className="rounded-xl border border-[#E2E8F0] bg-white">
+						<div className="rounded-xl border border-line bg-surface">
 							<EmptyState
 								illustration={q ? "searching" : "empty"}
 								size={160}
@@ -489,7 +489,7 @@ export function OrdersClient({
 								type="button"
 								disabled={query.isFetchingNextPage}
 								onClick={() => void query.fetchNextPage()}
-								className="h-11 rounded-lg border border-[#E2E8F0] bg-white px-4 font-medium text-sm disabled:opacity-40"
+								className="h-11 rounded-lg border border-line bg-surface px-4 font-medium text-sm disabled:opacity-40"
 							>
 								{tLegacy("loadMore")}
 							</button>

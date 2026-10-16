@@ -15,7 +15,7 @@ export default function RiderLayout({
 	return (
 		<div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-8">
 			<div className="flex items-center justify-between py-3">
-				<span className="font-bold text-[#0F172A]">
+				<span className="font-bold text-ink">
 					Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
 				</span>
 				<LocaleSwitcher />

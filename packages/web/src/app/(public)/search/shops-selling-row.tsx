@@ -29,22 +29,22 @@ function RowCard({
 	return (
 		<Link
 			href={`/s/${shop.handle}`}
-			className="flex w-[260px] shrink-0 items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-3 transition-colors hover:border-[#93C5FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30 sm:w-auto"
+			className="flex w-[260px] shrink-0 items-center gap-3 rounded-xl border border-line bg-surface p-3 transition-colors hover:border-brand-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 sm:w-auto"
 		>
 			<ShopInitials
 				name={shop.name}
 				logoUrl={shop.logoUrl}
-				className="h-11 w-11 rounded-xl bg-[#0F172A] text-[#F59E0B] text-sm"
+				className="h-11 w-11 rounded-xl bg-night text-[#F59E0B] text-sm"
 			/>
 			<div className="flex min-w-0 flex-1 flex-col gap-1">
-				<span className="truncate font-bold font-heading text-[#0F172A] text-sm">
+				<span className="truncate font-bold font-heading text-ink text-sm">
 					{shop.name}
 				</span>
 				<div className="flex flex-wrap items-center gap-1.5">
 					{sponsored && <SponsoredLabel />}
 					<LevelBadge badge={shop.badge} size="sm" />
 					{rating && (
-						<span className="flex items-center gap-0.5 font-semibold text-[#334155] text-xs">
+						<span className="flex items-center gap-0.5 font-semibold text-ink-soft text-xs">
 							<Star className="h-3 w-3 fill-[#F59E0B] text-[#F59E0B]" />
 							{rating.value.toLocaleString(locale, {
 								maximumFractionDigits: 1,
@@ -53,7 +53,7 @@ function RowCard({
 						</span>
 					)}
 				</div>
-				<span className="truncate text-[#64748B] text-xs">
+				<span className="truncate text-ink-muted text-xs">
 					{[shop.city, t("shopProducts", { count: shop.publishedListingCount })]
 						.filter(Boolean)
 						.join(" · ")}
@@ -98,7 +98,7 @@ export function ShopsSellingRow({
 			<div className="mb-2 flex items-center justify-between gap-3">
 				<h2
 					id="shops-selling-heading"
-					className="truncate font-bold font-heading text-[#0F172A] text-sm"
+					className="truncate font-bold font-heading text-ink text-sm"
 				>
 					{city
 						? t("shopsSellingIn", { what, city })
@@ -106,7 +106,7 @@ export function ShopsSellingRow({
 				</h2>
 				<Link
 					href={directoryHref({ q: q.trim(), category, city })}
-					className="flex shrink-0 items-center gap-0.5 font-semibold text-[#1E40AF] text-xs hover:underline"
+					className="flex shrink-0 items-center gap-0.5 font-semibold text-brand text-xs hover:underline"
 				>
 					{t("shopsSellingAll")}
 					<ChevronRight className="h-3.5 w-3.5" />

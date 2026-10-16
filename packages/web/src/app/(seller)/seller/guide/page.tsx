@@ -49,16 +49,16 @@ export default async function SellerGuidePage() {
 	return (
 		<div className="max-w-3xl space-y-5">
 			<div className="space-y-1">
-				<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-[-0.4px]">
+				<h1 className="font-extrabold text-[28px] text-ink tracking-[-0.4px]">
 					{t("title")}
 				</h1>
-				<p className="text-[#64748B] text-sm">{t("intro")}</p>
+				<p className="text-ink-muted text-sm">{t("intro")}</p>
 			</div>
 			{SELLER_GUIDE_SECTIONS.map((section) => {
 				const Icon = ICONS[section];
 				const target = GUIDE_TARGETS[section];
 				const linkClass =
-					"inline-flex items-center gap-1.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline";
+					"inline-flex items-center gap-1.5 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline";
 				const label = (
 					<>
 						{t(`sections.${section}.action`)}
@@ -69,20 +69,20 @@ export default async function SellerGuidePage() {
 					<section
 						key={section}
 						aria-labelledby={`guide-${section}`}
-						className="space-y-2 rounded-xl border border-[#E2E8F0] bg-white p-5"
+						className="space-y-2 rounded-xl border border-line bg-surface p-5"
 					>
 						<div className="flex items-center gap-3">
-							<span className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]">
+							<span className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]">
 								<Icon aria-hidden="true" className="h-[18px] w-[18px]" />
 							</span>
 							<h2
 								id={`guide-${section}`}
-								className="font-bold text-[#0F172A] text-[17px]"
+								className="font-bold text-[17px] text-ink"
 							>
 								{t(`sections.${section}.title`)}
 							</h2>
 						</div>
-						<p className="text-[#334155] text-sm leading-6">
+						<p className="text-ink-soft text-sm leading-6">
 							{t(`sections.${section}.body`)}
 						</p>
 						{target.kind === "route" ? (
@@ -104,7 +104,7 @@ export default async function SellerGuidePage() {
 			})}
 			<Link
 				href="/help"
-				className="inline-flex items-center gap-2 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+				className="inline-flex items-center gap-2 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 			>
 				<CircleHelp aria-hidden="true" className="h-4 w-4" />
 				{t("helpCenter")}

@@ -19,12 +19,12 @@ export function OrderSummary({ order }: { order: OrderView }) {
 	return (
 		<section
 			aria-labelledby="order-summary-title"
-			className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-5"
+			className="space-y-4 rounded-xl border border-line bg-surface p-5"
 		>
-			<h2 id="order-summary-title" className="font-semibold text-[#0F172A]">
+			<h2 id="order-summary-title" className="font-semibold text-ink">
 				{t("items")}
 			</h2>
-			<ul className="divide-y divide-[#E2E8F0]">
+			<ul className="divide-y divide-line">
 				{order.items.map((item) => (
 					<li key={item.id} className="flex gap-3 py-3 first:pt-0">
 						{item.imageUrl && (
@@ -36,46 +36,46 @@ export function OrderSummary({ order }: { order: OrderView }) {
 							/>
 						)}
 						<div className="min-w-0 flex-1 text-sm">
-							<p className="font-medium text-[#0F172A]">{item.title}</p>
+							<p className="font-medium text-ink">{item.title}</p>
 							{item.variantLabel && (
-								<p className="text-[#64748B]">{item.variantLabel}</p>
+								<p className="text-ink-muted">{item.variantLabel}</p>
 							)}
-							<p className="text-[#64748B]">
+							<p className="text-ink-muted">
 								{t("lineQuantity", {
 									quantity: item.quantity,
 									price: money(item.unitPrice),
 								})}
 							</p>
 							{item.commissionAmount !== undefined && (
-								<p className="text-[#64748B] text-xs">
+								<p className="text-ink-muted text-xs">
 									{t("lineCommission", {
 										amount: money(item.commissionAmount),
 									})}
 								</p>
 							)}
 						</div>
-						<p className="font-semibold text-[#0F172A] text-sm">
+						<p className="font-semibold text-ink text-sm">
 							{money(item.lineSubtotal)}
 						</p>
 					</li>
 				))}
 			</ul>
 
-			<dl className="space-y-1 border-[#E2E8F0] border-t pt-3 text-sm">
+			<dl className="space-y-1 border-line border-t pt-3 text-sm">
 				<div className="flex justify-between">
-					<dt className="text-[#64748B]">{t("subtotal")}</dt>
+					<dt className="text-ink-muted">{t("subtotal")}</dt>
 					<dd>{money(order.amounts.subtotal)}</dd>
 				</div>
 				<div className="flex justify-between">
-					<dt className="text-[#64748B]">{t("deliveryFee")}</dt>
+					<dt className="text-ink-muted">{t("deliveryFee")}</dt>
 					<dd>{money(order.amounts.deliveryFee)}</dd>
 				</div>
-				<div className="flex justify-between font-semibold text-[#0F172A]">
+				<div className="flex justify-between font-semibold text-ink">
 					<dt>{t("total")}</dt>
 					<dd>{money(order.amounts.total)}</dd>
 				</div>
 				{order.commission && (
-					<div className="flex justify-between text-[#64748B]">
+					<div className="flex justify-between text-ink-muted">
 						<dt>
 							{t("commissionRate", {
 								rate: ratePercent(order.commission.rateBps),

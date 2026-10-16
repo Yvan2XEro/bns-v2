@@ -41,7 +41,7 @@ export function ThreadComposer({ conversationId }: { conversationId: string }) {
 	return (
 		<form
 			onSubmit={onSubmit}
-			className="flex items-center gap-2 border-[#E2E8F0] border-t p-3"
+			className="flex items-center gap-2 border-line border-t p-3"
 		>
 			<Input
 				{...register("content", {

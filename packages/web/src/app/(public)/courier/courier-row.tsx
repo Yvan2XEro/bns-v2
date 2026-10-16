@@ -44,20 +44,20 @@ export function CourierRow({
 	const error = assign.error ?? remit.error;
 
 	return (
-		<li className="space-y-2 rounded-2xl border border-[#E2E8F0] bg-white p-4 text-sm">
+		<li className="space-y-2 rounded-2xl border border-line bg-surface p-4 text-sm">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<p className="font-semibold text-[#0F172A]">{summary.number}</p>
-				<span className="rounded-full bg-[#EFF6FF] px-3 py-1 font-semibold text-[#1E40AF] text-xs">
+				<p className="font-semibold text-ink">{summary.number}</p>
+				<span className="rounded-full bg-brand-soft px-3 py-1 font-semibold text-brand text-xs">
 					{tRoot(`Delivery.${shipmentStatusLabel("seller", row.status)}`)}
 				</span>
 			</div>
-			<p className="text-[#334155]">{summary.where}</p>
+			<p className="text-ink-soft">{summary.where}</p>
 			{summary.expectedCod !== null && (
-				<p className="text-[#92400E]">
+				<p className="text-warn-ink">
 					{t("cod", { amount: formatOrderMoney(summary.expectedCod, locale) })}
 				</p>
 			)}
-			<p className="text-[#64748B]">
+			<p className="text-ink-muted">
 				{summary.riderName
 					? t("rider", { name: summary.riderName })
 					: t("noRider")}
@@ -78,7 +78,7 @@ export function CourierRow({
 								aria-label={t("assign")}
 								value={rider}
 								onChange={(e) => setRider(e.target.value)}
-								className="h-11 rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] px-3"
+								className="h-11 rounded-xl border border-brand-tint bg-canvas px-3"
 							>
 								<option value="">{t("riderChoose")}</option>
 								{options.map((option) => (

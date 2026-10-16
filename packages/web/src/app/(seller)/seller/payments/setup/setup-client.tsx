@@ -66,7 +66,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 	// (global constraint), this screen just stops offering new onboarding.
 	if (!view.flagEnabled) {
 		return (
-			<div className="rounded-2xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm">
+			<div className="rounded-2xl border border-line bg-surface p-8 text-center text-ink-muted text-sm">
 				{t("setup_comingSoon")}
 			</div>
 		);
@@ -84,30 +84,30 @@ export function SetupClient({ shopId }: { shopId: string }) {
 
 	return (
 		<div className="max-w-4xl space-y-6">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("setup_title")}</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("setup_title")}</h1>
 
 			{notMeId && <NotMeBanner shopId={shopId} accountId={notMeId} />}
 
 			<HoldList holds={view.holds} />
 
-			<section className="space-y-2 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+			<section className="space-y-2 rounded-2xl border border-line bg-surface p-5">
 				<StepHeader done={step1Done} title={t("setup_step1Title")} />
-				<p className="text-[#64748B] text-sm">{t("setup_step1Body")}</p>
+				<p className="text-ink-muted text-sm">{t("setup_step1Body")}</p>
 				{!step1Done && (
 					<Link
 						href="/seller/verification/identity"
-						className="inline-flex min-h-10 items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+						className="inline-flex min-h-10 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					>
 						{t("setup_step1Action")}
 					</Link>
 				)}
 			</section>
 
-			<section className="space-y-2 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+			<section className="space-y-2 rounded-2xl border border-line bg-surface p-5">
 				<StepHeader done={step2Done} title={t("setup_step2Title")} />
-				<p className="text-[#64748B] text-sm">{t("setup_step2Body")}</p>
+				<p className="text-ink-muted text-sm">{t("setup_step2Body")}</p>
 				{account && (
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{isConnectedAccountStatus(account.status)
 							? t(CONNECTED_ACCOUNT_STATUSES[account.status])
 							: account.status}
@@ -115,10 +115,10 @@ export function SetupClient({ shopId }: { shopId: string }) {
 				)}
 				{account && account.requirementsDue.length > 0 && (
 					<div className="space-y-1">
-						<p className="text-[#92400E] text-xs">
+						<p className="text-warn-ink text-xs">
 							{t("setup_requirementsDue")}
 						</p>
-						<ul className="list-disc space-y-0.5 pl-4 text-[#92400E] text-xs">
+						<ul className="list-disc space-y-0.5 pl-4 text-warn-ink text-xs">
 							{account.requirementsDue.map((requirement) => (
 								<li key={requirement}>{requirement}</li>
 							))}
@@ -136,7 +136,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 								},
 							});
 						}}
-						className="h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-50"
+						className="h-10 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 					>
 						{t("setup_step2Action")}
 					</button>
@@ -148,13 +148,13 @@ export function SetupClient({ shopId }: { shopId: string }) {
 				)}
 			</section>
 
-			<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+			<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
 				<StepHeader
 					done={Boolean(view.payoutAccount)}
 					title={t("setup_step3Title")}
 				/>
 				{view.payoutAccount && (
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{isPayoutMethod(view.payoutAccount.method)
 							? t(PAYOUT_METHODS[view.payoutAccount.method])
 							: view.payoutAccount.method}{" "}
@@ -165,7 +165,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 					</p>
 				)}
 				{view.pendingAccount && (
-					<p className="text-[#92400E] text-xs">
+					<p className="text-warn-ink text-xs">
 						{view.pendingAccount.accountNumberMasked} —{" "}
 						{isPayoutAccountStatus(view.pendingAccount.status)
 							? t(PAYOUT_ACCOUNT_STATUSES[view.pendingAccount.status])
@@ -173,7 +173,7 @@ export function SetupClient({ shopId }: { shopId: string }) {
 					</p>
 				)}
 				{cooldownActive && view.changeCooldownUntil ? (
-					<p className="text-[#64748B] text-xs">
+					<p className="text-ink-muted text-xs">
 						{t("setup_cooldownUntil", {
 							date: formatOrderDate(view.changeCooldownUntil, locale),
 						})}

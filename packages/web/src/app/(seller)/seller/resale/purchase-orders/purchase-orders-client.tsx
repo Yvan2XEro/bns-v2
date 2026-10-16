@@ -56,15 +56,15 @@ export function PurchaseOrdersClient({
 		<section className="space-y-6">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+					<p className="mt-1 max-w-2xl text-ink-muted text-sm">
 						{t("description")}
 					</p>
 				</div>
 				<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
 					<Link
 						href="/seller/resale/finance"
-						className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#334155] text-sm hover:border-[#F59E0B]"
+						className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface px-4 font-semibold text-ink-soft text-sm hover:border-[#F59E0B]"
 					>
 						{t("finance.title")}
 					</Link>
@@ -72,7 +72,7 @@ export function PurchaseOrdersClient({
 						<span className="sr-only">{t("search")}</span>
 						<Search
 							aria-hidden="true"
-							className="absolute top-3 left-3 h-4 w-4 text-[#94A3B8]"
+							className="absolute top-3 left-3 h-4 w-4 text-ink-faint"
 						/>
 						<input
 							type="search"
@@ -80,7 +80,7 @@ export function PurchaseOrdersClient({
 							maxLength={120}
 							onChange={(event) => patch({ search: event.target.value })}
 							placeholder={t("search")}
-							className="h-11 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[#B45309] focus:ring-2 focus:ring-[#FDE68A]"
+							className="h-11 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm outline-none focus:border-warn-ink-soft focus:ring-2 focus:ring-warn-line"
 						/>
 					</label>
 				</div>
@@ -89,7 +89,7 @@ export function PurchaseOrdersClient({
 			<div
 				role="tablist"
 				aria-label={t("title")}
-				className="grid grid-cols-2 gap-2 rounded-xl bg-[#F1F5F9] p-1"
+				className="grid grid-cols-2 gap-2 rounded-xl bg-subtle p-1"
 			>
 				{(["supplier", "reseller"] as const).map((side) => (
 					<button
@@ -101,8 +101,8 @@ export function PurchaseOrdersClient({
 						className={cn(
 							"min-h-11 rounded-lg px-3 py-2 text-left font-semibold text-sm transition-colors",
 							state.side === side
-								? "bg-white text-[#0F172A] shadow-sm"
-								: "text-[#64748B] hover:text-[#0F172A]",
+								? "bg-surface text-ink shadow-sm"
+								: "text-ink-muted hover:text-ink",
 						)}
 					>
 						{side === "supplier" ? t("supplierSide") : t("resellerSide")}
@@ -120,8 +120,8 @@ export function PurchaseOrdersClient({
 			{query.data && !query.isError && (
 				<div aria-busy={query.isFetching} className="space-y-3">
 					{rows.length === 0 ? (
-						<div className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center">
-							<p className="font-semibold text-[#334155]">{t("empty")}</p>
+						<div className="rounded-2xl border border-line-strong border-dashed bg-surface px-6 py-14 text-center">
+							<p className="font-semibold text-ink-soft">{t("empty")}</p>
 						</div>
 					) : (
 						rows.map((row) => {
@@ -135,36 +135,34 @@ export function PurchaseOrdersClient({
 									key={row.id}
 									href={`/seller/resale/purchase-orders/${encodeURIComponent(row.id)}?side=${state.side}`}
 									aria-label={`${t("open")}: ${row.number}`}
-									className="group hover:-translate-y-0.5 grid gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition hover:border-[#F59E0B] hover:shadow-md sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5"
+									className="group hover:-translate-y-0.5 grid gap-4 rounded-2xl border border-line bg-surface p-4 transition hover:border-[#F59E0B] hover:shadow-md sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5"
 								>
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">
-											<span className="font-bold text-[#0F172A]">
-												{row.number}
-											</span>
-											<span className="rounded-full bg-[#FEF3C7] px-2.5 py-1 font-semibold text-[#92400E] text-xs">
+											<span className="font-bold text-ink">{row.number}</span>
+											<span className="rounded-full bg-warn-soft px-2.5 py-1 font-semibold text-warn-ink text-xs">
 												{statusLabels[row.status]}
 											</span>
 										</div>
-										<p className="mt-1 truncate text-[#475569] text-sm">
+										<p className="mt-1 truncate text-ink-mid text-sm">
 											{row.counterparty.name} ·{" "}
 											{row.items
 												.map((item) => `${item.quantity} × ${item.title}`)
 												.join(", ")}
 										</p>
-										<p className="mt-2 text-[#64748B] text-xs">
+										<p className="mt-2 text-ink-muted text-xs">
 											{t("date")}: {formatOrderDate(row.sentAt, locale)} ·{" "}
 											{t("deadline")}: {formatOrderDate(deadline, locale)}
 										</p>
 									</div>
 									<div className="flex items-center justify-between gap-4 sm:justify-end">
 										<div className="sm:text-right">
-											<p className="text-[#64748B] text-xs">
+											<p className="text-ink-muted text-xs">
 												{state.side === "supplier"
 													? t("amount")
 													: t("collectAmount")}
 											</p>
-											<p className="mt-1 font-bold text-[#0F172A] text-sm">
+											<p className="mt-1 font-bold text-ink text-sm">
 												{amount === null
 													? "—"
 													: formatOrderMoney(amount, locale)}
@@ -172,7 +170,7 @@ export function PurchaseOrdersClient({
 										</div>
 										<ArrowRight
 											aria-hidden="true"
-											className="h-5 w-5 shrink-0 text-[#94A3B8] transition group-hover:translate-x-1 group-hover:text-[#B45309]"
+											className="h-5 w-5 shrink-0 text-ink-faint transition group-hover:translate-x-1 group-hover:text-warn-ink-soft"
 										/>
 									</div>
 								</Link>
@@ -185,7 +183,7 @@ export function PurchaseOrdersClient({
 								type="button"
 								disabled={query.isFetchingNextPage}
 								onClick={() => void query.fetchNextPage()}
-								className="min-h-11 rounded-lg border border-[#E2E8F0] bg-white px-5 font-semibold text-sm disabled:opacity-50"
+								className="min-h-11 rounded-lg border border-line bg-surface px-5 font-semibold text-sm disabled:opacity-50"
 							>
 								{t("loadMore")}
 							</button>

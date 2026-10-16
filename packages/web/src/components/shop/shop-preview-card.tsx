@@ -8,13 +8,13 @@ export function ShopPreviewCard({ name }: { name: string }) {
 	const t = useTranslations("ShopCreate");
 
 	return (
-		<div className="flex items-center gap-4 rounded-xl border border-[#E2E8F0] bg-white p-4">
+		<div className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4">
 			<ShopInitials name={name || "?"} className="h-14 w-14 text-lg" />
 			<div className="min-w-0">
-				<p className="truncate font-bold text-[#0F172A] text-lg">
+				<p className="truncate font-bold text-ink text-lg">
 					{name || t("namePlaceholder")}
 				</p>
-				<p className="text-[#64748B] text-sm">{t("previewLabel")}</p>
+				<p className="text-ink-muted text-sm">{t("previewLabel")}</p>
 			</div>
 		</div>
 	);

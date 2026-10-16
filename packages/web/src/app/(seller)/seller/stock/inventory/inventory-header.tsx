@@ -22,25 +22,25 @@ export function InventoryHeader({
 	return (
 		<div className="flex flex-wrap items-start justify-between gap-3">
 			<div>
-				<p className="text-[#64748B] text-sm">
+				<p className="text-ink-muted text-sm">
 					<Link
 						href="/seller/stock"
-						className="hover:text-[var(--shop-accent-text,#1E40AF)]"
+						className="hover:text-[var(--shop-accent-text,var(--c-brand))]"
 					>
 						{t("breadcrumb")}
 					</Link>{" "}
 					› {t("title")}
 				</p>
-				<h1 className="font-bold text-2xl text-[#0F172A]">
+				<h1 className="font-bold text-2xl text-ink">
 					{t("heading", { date: startedLabel })}
 				</h1>
-				<p className="text-[#64748B] text-sm">{t("subtitle")}</p>
+				<p className="text-ink-muted text-sm">{t("subtitle")}</p>
 			</div>
 			<div className="flex flex-wrap gap-2 print:hidden">
 				<button
 					type="button"
 					onClick={() => window.print()}
-					className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 text-sm"
+					className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 text-sm"
 				>
 					<Printer aria-hidden="true" className="h-4 w-4" />
 					{t("print")}
@@ -49,14 +49,14 @@ export function InventoryHeader({
 					type="button"
 					onClick={onSaveDraft}
 					disabled={savingDraft}
-					className="h-10 rounded-lg border border-[#E2E8F0] bg-white px-4 text-sm disabled:opacity-50"
+					className="h-10 rounded-lg border border-line bg-surface px-4 text-sm disabled:opacity-50"
 				>
 					{t("resumeLater")}
 				</button>
 				<button
 					type="submit"
 					disabled={submitDisabled}
-					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm disabled:opacity-50"
+					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm disabled:opacity-50"
 				>
 					{submitting && (
 						<LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />

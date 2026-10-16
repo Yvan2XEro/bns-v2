@@ -17,20 +17,20 @@ export function SavedAddressSummary({
 	return (
 		<div className="min-w-0 space-y-0.5">
 			<div className="flex flex-wrap items-center gap-2">
-				<p className="font-bold text-[#0F172A]">
+				<p className="font-bold text-ink">
 					{address.label ?? address.recipientName}
 				</p>
 				{address.isDefault ? (
-					<span className="rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+					<span className="rounded-full bg-brand-tint px-2 py-0.5 font-semibold text-[11px] text-brand">
 						{t("default")}
 					</span>
 				) : null}
 			</div>
-			<p className="text-[#0F172A] text-sm">
+			<p className="text-ink text-sm">
 				{districtLabelOf(address)}, {cityLabel}
 				{address.landmark ? ` — ${address.landmark}` : ""}
 			</p>
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-muted text-sm">
 				{address.label ? `${address.recipientName} · ` : ""}
 				{address.phone}
 			</p>
@@ -55,8 +55,8 @@ export function SavedAddressCard({
 }) {
 	const disabled = Boolean(disabledReason);
 	const frame = selected
-		? "border-2 border-[#1E40AF] bg-[#EFF6FF]"
-		: "border border-[#E2E8F0] bg-white";
+		? "border-2 border-brand bg-brand-soft"
+		: "border border-line bg-surface";
 	return (
 		<div className={`flex items-start gap-3 rounded-xl p-4 ${frame}`}>
 			{onSelect ? (
@@ -70,10 +70,7 @@ export function SavedAddressCard({
 					onChange={onSelect}
 				/>
 			) : (
-				<MapPin
-					aria-hidden
-					className="mt-0.5 h-5 w-5 shrink-0 text-[#1E40AF]"
-				/>
+				<MapPin aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
 			)}
 			<button
 				type="button"
@@ -83,7 +80,7 @@ export function SavedAddressCard({
 			>
 				<SavedAddressSummary address={address} cityLabel={cityLabel} />
 				{disabledReason ? (
-					<p className="mt-1 text-[#B45309] text-xs">{disabledReason}</p>
+					<p className="mt-1 text-warn-ink-soft text-xs">{disabledReason}</p>
 				) : null}
 			</button>
 			{actions ? <div className="flex shrink-0 gap-1">{actions}</div> : null}

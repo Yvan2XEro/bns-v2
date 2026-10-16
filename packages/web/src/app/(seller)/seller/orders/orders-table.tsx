@@ -68,8 +68,8 @@ function RowActionButton({
 			className={cn(
 				ACTION_BUTTON,
 				action === "accept"
-					? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
-					: "border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]",
+					? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					: "border border-line bg-surface text-ink hover:bg-canvas",
 			)}
 		>
 			{action === "ship" && <Truck aria-hidden="true" className="h-4 w-4" />}
@@ -93,7 +93,7 @@ function PlacedLabel({ placedAt, now }: { placedAt: string; now: Date }) {
 						}).format(when.at),
 					})
 				: formatOrderDate(when.at, locale);
-	return <span className="text-[#94A3B8] text-xs">{text}</span>;
+	return <span className="text-ink-faint text-xs">{text}</span>;
 }
 
 function ItemLinesText({ row }: { row: OrderListEntry }) {
@@ -118,7 +118,7 @@ function ItemLinesText({ row }: { row: OrderListEntry }) {
 				</span>
 			))}
 			{summary.more > 0 && (
-				<span className="text-[#64748B] text-xs">
+				<span className="text-ink-muted text-xs">
 					{t("moreLines", { count: summary.more })}
 				</span>
 			)}
@@ -158,10 +158,10 @@ export function OrdersTable({
 		selectable.length > 0 && selectable.every((id) => selected.has(id));
 
 	return (
-		<div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
+		<div className="overflow-x-auto rounded-xl border border-line bg-surface">
 			<table className="w-full min-w-[900px] border-collapse text-left text-sm">
-				<thead className="bg-[#F8FAFC] text-[#64748B] text-xs uppercase tracking-[0.4px]">
-					<tr className="border-[#E2E8F0] border-b">
+				<thead className="bg-canvas text-ink-muted text-xs uppercase tracking-[0.4px]">
+					<tr className="border-line border-b">
 						<th scope="col" className="w-9 px-4 py-2.5">
 							<input
 								type="checkbox"
@@ -169,7 +169,7 @@ export function OrdersTable({
 								disabled={selectable.length === 0}
 								checked={allSelected}
 								onChange={() => onToggleAll(selectable, !allSelected)}
-								className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
+								className="h-4 w-4 accent-[var(--shop-accent,var(--c-brand))]"
 							/>
 						</th>
 						<th scope="col" className="px-4 py-2.5 font-semibold">
@@ -205,8 +205,8 @@ export function OrdersTable({
 							<tr
 								key={row.id}
 								className={cn(
-									"border-[#F1F5F9] border-b text-[#334155] last:border-b-0",
-									isSelected ? "bg-[#F8FBFF]" : "hover:bg-[#F8FAFC]",
+									"border-subtle border-b text-ink-soft last:border-b-0",
+									isSelected ? "bg-[#F8FBFF]" : "hover:bg-canvas",
 								)}
 							>
 								<td className="w-9 px-4 py-3">
@@ -216,7 +216,7 @@ export function OrdersTable({
 											aria-label={t("selectOrder", { number: row.orderNumber })}
 											checked={isSelected}
 											onChange={() => onToggle(row.id)}
-											className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
+											className="h-4 w-4 accent-[var(--shop-accent,var(--c-brand))]"
 										/>
 									)}
 								</td>
@@ -224,7 +224,7 @@ export function OrdersTable({
 									<div className="flex flex-col">
 										<Link
 											href={href}
-											className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+											className="font-semibold text-ink hover:text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 										>
 											{row.orderNumber}
 										</Link>
@@ -233,17 +233,17 @@ export function OrdersTable({
 								</td>
 								<td className="px-4 py-3">
 									<div className="flex flex-col">
-										<span className="font-medium text-[#0F172A]">
+										<span className="font-medium text-ink">
 											{row.recipientName ?? "—"}
 										</span>
 										{area && (
-											<span className="text-[#64748B] text-xs">{area}</span>
+											<span className="text-ink-muted text-xs">{area}</span>
 										)}
 									</div>
 								</td>
 								<td className="px-4 py-3">
 									<div className="flex items-center gap-2.5">
-										<span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#F1F5F9] text-[#475569]">
+										<span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-subtle text-ink-mid">
 											{row.firstItemImageUrl ? (
 												// biome-ignore lint/performance/noImgElement: order snapshots point at arbitrary storage hosts
 												<img
@@ -261,7 +261,7 @@ export function OrdersTable({
 										</div>
 									</div>
 								</td>
-								<td className="whitespace-nowrap px-4 py-3 font-bold text-[#0F172A] tabular-nums">
+								<td className="whitespace-nowrap px-4 py-3 font-bold text-ink tabular-nums">
 									{formatOrderMoney(row.total, locale)}
 								</td>
 								<td className="px-4 py-3">
@@ -289,7 +289,7 @@ export function OrdersTable({
 											href={href}
 											className={cn(
 												ACTION_BUTTON,
-												"border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]",
+												"border border-line bg-surface text-ink hover:bg-canvas",
 											)}
 										>
 											{t("track")}
@@ -299,7 +299,7 @@ export function OrdersTable({
 											href={href}
 											className={cn(
 												ACTION_BUTTON,
-												"border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]",
+												"border border-line bg-surface text-ink hover:bg-canvas",
 											)}
 										>
 											{t("open")}

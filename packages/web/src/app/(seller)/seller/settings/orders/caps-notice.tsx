@@ -19,20 +19,20 @@ export function CapsNotice({
 	return (
 		<section
 			aria-labelledby="caps-title"
-			className="flex gap-3 rounded-2xl border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] p-4 text-sm"
+			className="flex gap-3 rounded-2xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-[var(--shop-accent-soft,var(--c-brand-soft))] p-4 text-sm"
 		>
 			<Info
 				aria-hidden="true"
-				className="mt-0.5 h-5 w-5 shrink-0 text-[var(--shop-accent-text,#1E40AF)]"
+				className="mt-0.5 h-5 w-5 shrink-0 text-[var(--shop-accent-text,var(--c-brand))]"
 			/>
 			<div className="space-y-1">
 				<h2
 					id="caps-title"
-					className="font-semibold text-[var(--shop-accent-text,#1E3A8A)]"
+					className="font-semibold text-[var(--shop-accent-text,var(--c-brand-strong))]"
 				>
 					{t("capsNotice")}
 				</h2>
-				<ul className="list-disc space-y-0.5 pl-4 text-[var(--shop-accent-text,#1E3A8A)]">
+				<ul className="list-disc space-y-0.5 pl-4 text-[var(--shop-accent-text,var(--c-brand-strong))]">
 					<li>
 						{t("capsMaxOrderTotal", {
 							amount: formatOrderMoney(caps.maxOrderTotal, locale),
@@ -41,7 +41,7 @@ export function CapsNotice({
 					<li>{t("capsMaxDailyOrders", { count: caps.maxDailyOrders })}</li>
 					<li>{t("capsMaxOpenOrders", { count: caps.maxOpenOrders })}</li>
 				</ul>
-				<p className="text-[#475569] text-xs">{t("capsHint")}</p>
+				<p className="text-ink-mid text-xs">{t("capsHint")}</p>
 			</div>
 		</section>
 	);

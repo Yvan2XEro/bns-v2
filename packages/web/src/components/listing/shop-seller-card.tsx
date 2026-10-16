@@ -44,17 +44,17 @@ export function ShopSellerCard({
 				<ShopInitials
 					name={shop.name}
 					logoUrl={shopLogoUrl(shop)}
-					className="h-14 w-14 rounded-[14px] bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] text-base"
+					className="h-14 w-14 rounded-[14px] bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] text-base"
 				/>
 				<div className="min-w-0 space-y-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<p className="truncate font-bold text-[#0F172A] text-[17px]">
+						<p className="truncate font-bold text-[17px] text-ink">
 							{shop.name}
 						</p>
 						<LevelBadge badge={badge} size="sm" />
 					</div>
 					{stats && (
-						<p className="flex flex-wrap items-center gap-1 text-[#64748B] text-[13px]">
+						<p className="flex flex-wrap items-center gap-1 text-[13px] text-ink-muted">
 							{stats.totalReviews > 0 && (
 								<>
 									<Star className="h-3 w-3 fill-[#F59E0B] text-[#F59E0B]" />
@@ -72,7 +72,7 @@ export function ShopSellerCard({
 						</p>
 					)}
 					{ownerName && (
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-muted text-xs">
 							{t("runBy", { name: ownerName })}
 						</p>
 					)}
@@ -80,7 +80,7 @@ export function ShopSellerCard({
 			</Link>
 			<Link
 				href={`/s/${shop.handle}`}
-				className="flex h-10 w-full items-center justify-center rounded-lg border border-[var(--shop-accent-border,#E2E8F0)] font-semibold text-[var(--shop-accent-text,#0F172A)] text-sm hover:border-[var(--shop-accent,#1E40AF)] hover:bg-[var(--shop-accent-soft,transparent)] hover:text-[var(--shop-accent-text,#1E40AF)]"
+				className="flex h-10 w-full items-center justify-center rounded-lg border border-[var(--shop-accent-border,var(--c-line))] font-semibold text-[var(--shop-accent-text,var(--c-ink))] text-sm hover:border-[var(--shop-accent,var(--c-brand))] hover:bg-[var(--shop-accent-soft,transparent)] hover:text-[var(--shop-accent-text,var(--c-brand))]"
 			>
 				{t("visitShop")}
 			</Link>

@@ -82,37 +82,37 @@ function ProblemReportForm({
 		<main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
 			<Link
 				href={`/purchases/${encodeURIComponent(order.id)}`}
-				className="inline-flex min-h-11 items-center gap-2 text-[#1E40AF] text-sm"
+				className="inline-flex min-h-11 items-center gap-2 text-brand text-sm"
 			>
 				<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 				{t("backToOrder")}
 			</Link>
-			<header className="flex items-start gap-3 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-white p-5">
+			<header className="flex items-start gap-3 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-surface p-5">
 				<Scale aria-hidden="true" className="mt-1 h-5 w-5 text-[#6D28D9]" />
 				<div>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("orderNumber", { number: order.orderNumber })}
 					</p>
-					<h1 className="mt-1 font-bold text-2xl text-[#0F172A]">
+					<h1 className="mt-1 font-bold text-2xl text-ink">
 						{t("reportTitle")}
 					</h1>
-					<p className="mt-1 text-[#64748B] text-sm">{t("reviewTerms")}</p>
+					<p className="mt-1 text-ink-muted text-sm">{t("reviewTerms")}</p>
 				</div>
 			</header>
 			<form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
-				<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-					<h2 className="font-semibold text-[#0F172A]">{t("selectItems")}</h2>
-					<div className="mt-3 divide-y divide-[#E2E8F0]">
+				<section className="rounded-2xl border border-line bg-surface p-5">
+					<h2 className="font-semibold text-ink">{t("selectItems")}</h2>
+					<div className="mt-3 divide-y divide-line">
 						{fields.fields.map((field, index) => (
 							<label
 								key={field.id}
 								className="flex min-h-16 items-center justify-between gap-4 py-3"
 							>
 								<span className="min-w-0">
-									<span className="block truncate font-medium text-[#0F172A]">
+									<span className="block truncate font-medium text-ink">
 										{order.items[index]?.title}
 									</span>
-									<span className="text-[#64748B] text-xs">
+									<span className="text-ink-muted text-xs">
 										{order.items[index]?.quantity} {t("purchased")}
 									</span>
 								</span>
@@ -126,7 +126,7 @@ function ProblemReportForm({
 									{...form.register(`items.${index}.quantity`, {
 										valueAsNumber: true,
 									})}
-									className="min-h-11 w-24 rounded-lg border border-[#CBD5E1] px-3 text-right"
+									className="min-h-11 w-24 rounded-lg border border-line-strong px-3 text-right"
 								/>
 							</label>
 						))}
@@ -138,14 +138,14 @@ function ProblemReportForm({
 						</p>
 					) : null}
 				</section>
-				<section className="grid gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 sm:grid-cols-2">
+				<section className="grid gap-4 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-2">
 					<label className="space-y-1.5 text-sm">
-						<span className="font-medium text-[#334155]">
+						<span className="font-medium text-ink-soft">
 							{t("reasonLabel")}
 						</span>
 						<select
 							{...form.register("reason")}
-							className="min-h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+							className="min-h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 						>
 							{(
 								[
@@ -165,12 +165,12 @@ function ProblemReportForm({
 						</select>
 					</label>
 					<label className="space-y-1.5 text-sm">
-						<span className="font-medium text-[#334155]">
+						<span className="font-medium text-ink-soft">
 							{t("outcomeLabel")}
 						</span>
 						<select
 							{...form.register("requestedOutcome")}
-							className="min-h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+							className="min-h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 						>
 							{(
 								[
@@ -187,14 +187,14 @@ function ProblemReportForm({
 						</select>
 					</label>
 					<label className="space-y-1.5 text-sm sm:col-span-2">
-						<span className="font-medium text-[#334155]">
+						<span className="font-medium text-ink-soft">
 							{t("descriptionLabel")}
 						</span>
 						<textarea
 							rows={5}
 							maxLength={2000}
 							{...form.register("description")}
-							className="w-full rounded-xl border border-[#CBD5E1] p-3"
+							className="w-full rounded-xl border border-line-strong p-3"
 						/>
 						{form.formState.errors.description ? (
 							<span role="alert" className="block text-red-700">
@@ -203,7 +203,7 @@ function ProblemReportForm({
 						) : null}
 					</label>
 				</section>
-				<p className="text-[#64748B] text-xs">{t("reviewTerms")}</p>
+				<p className="text-ink-muted text-xs">{t("reviewTerms")}</p>
 				{error ? (
 					<p role="alert" className="text-red-700 text-sm">
 						{t("actionError")}

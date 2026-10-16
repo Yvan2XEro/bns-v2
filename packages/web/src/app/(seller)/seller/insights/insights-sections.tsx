@@ -38,13 +38,13 @@ function Card({
 	return (
 		<section
 			aria-labelledby={id}
-			className="min-w-0 overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="min-w-0 overflow-hidden rounded-2xl border border-line bg-surface"
 		>
-			<div className="flex flex-wrap items-baseline justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
-				<h2 id={id} className="font-bold text-[#0F172A] text-base">
+			<div className="flex flex-wrap items-baseline justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
+				<h2 id={id} className="font-bold text-base text-ink">
 					{title}
 				</h2>
-				{aside && <span className="text-[#64748B] text-[13px]">{aside}</span>}
+				{aside && <span className="text-[13px] text-ink-muted">{aside}</span>}
 			</div>
 			{children}
 		</section>
@@ -87,14 +87,14 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 				{last && (
 					<>
 						<div className="flex flex-wrap items-baseline gap-2.5">
-							<span className="font-bold text-[#0F172A] text-[26px] tabular-nums">
+							<span className="font-bold text-[26px] text-ink tabular-nums">
 								{formatOrderMoney(last.gmvDelivered)}
 							</span>
 							{change !== null && (
 								<span
 									className={cn(
 										"flex items-center gap-1 font-semibold text-[13px]",
-										change >= 0 ? "text-[#15803D]" : "text-[#B45309]",
+										change >= 0 ? "text-ok-ink-soft" : "text-warn-ink-soft",
 									)}
 								>
 									{change >= 0 ? (
@@ -108,7 +108,7 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 								</span>
 							)}
 						</div>
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-muted text-xs">
 							{tPage("weeklyCaption", {
 								from: label(last.from),
 								to: label(last.to),
@@ -124,7 +124,7 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 								`${label(week.from)}: ${formatOrderMoney(week.gmvDelivered)}`,
 						)
 						.join(", ")}
-					className="flex h-[200px] items-end gap-2 border-[#E2E8F0] border-b pt-2 sm:gap-3.5"
+					className="flex h-[200px] items-end gap-2 border-line border-b pt-2 sm:gap-3.5"
 				>
 					{weekly.map((week, index) => {
 						const isLast = index === weekly.length - 1;
@@ -137,8 +137,8 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 									className={cn(
 										"text-[11px] tabular-nums sm:text-xs",
 										isLast
-											? "font-bold text-[var(--shop-accent-text,#1E40AF)]"
-											: "font-medium text-[#64748B]",
+											? "font-bold text-[var(--shop-accent-text,var(--c-brand))]"
+											: "font-medium text-ink-muted",
 									)}
 								>
 									{compact.format(week.gmvDelivered)}
@@ -147,8 +147,8 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 									className={cn(
 										"w-full max-w-[54px] rounded-t-md",
 										isLast
-											? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
-											: "bg-[var(--shop-accent-border,#BFDBFE)]",
+											? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+											: "bg-[var(--shop-accent-border,var(--c-brand-tint-strong))]",
 									)}
 									style={{
 										height: `${max > 0 ? Math.max(2, (week.gmvDelivered / max) * 150) : 2}px`,
@@ -165,8 +165,8 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 							className={cn(
 								"flex-1 text-center text-[11px] sm:text-xs",
 								index === weekly.length - 1
-									? "font-semibold text-[#0F172A]"
-									: "font-medium text-[#94A3B8]",
+									? "font-semibold text-ink"
+									: "font-medium text-ink-faint",
 							)}
 						>
 							{label(week.from)}
@@ -203,7 +203,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 			label: tPage("funnelViews"),
 			value: funnel.views,
 			note: null,
-			color: "bg-[var(--shop-accent-border,#BFDBFE)]",
+			color: "bg-[var(--shop-accent-border,var(--c-brand-tint-strong))]",
 		},
 		{
 			key: "engaged",
@@ -212,7 +212,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 			note: tPage("ofViews", {
 				value: percent(ratio(funnel.engaged, funnel.views), locale),
 			}),
-			color: "bg-[var(--shop-accent-border,#93C5FD)]",
+			color: "bg-[var(--shop-accent-border,var(--c-brand-line))]",
 		},
 		{
 			key: "placed",
@@ -221,7 +221,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 			note: tPage("ofViews", {
 				value: percent(ratio(funnel.ordersPlaced, funnel.views), locale, 2),
 			}),
-			color: "bg-[#3B82F6]",
+			color: "bg-brand-bright",
 		},
 		{
 			key: "delivered",
@@ -235,7 +235,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 				),
 			}),
 			color:
-				"bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]",
+				"bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]",
 		},
 	];
 
@@ -249,17 +249,17 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 				{steps.map((step) => (
 					<div key={step.key} className="space-y-1.5">
 						<div className="flex justify-between gap-2 text-[13px]">
-							<span className="text-[#334155]">{step.label}</span>
+							<span className="text-ink-soft">{step.label}</span>
 							<span>
 								<strong className="tabular-nums">
 									{number.format(step.value)}
 								</strong>{" "}
 								{step.note && (
-									<span className="text-[#64748B] text-xs">{step.note}</span>
+									<span className="text-ink-muted text-xs">{step.note}</span>
 								)}
 							</span>
 						</div>
-						<div className="h-2.5 rounded-full bg-[#F1F5F9]">
+						<div className="h-2.5 rounded-full bg-subtle">
 							<div
 								className={cn("h-2.5 rounded-full", step.color)}
 								style={{
@@ -272,7 +272,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 				{lowConversion && lowProduct && (
 					<Link
 						href={lowConversion.href}
-						className="flex gap-2 rounded-[10px] bg-[#FFFBEB] p-3 text-[#92400E] text-xs leading-[17px] hover:bg-[#FEF3C7]"
+						className="flex gap-2 rounded-[10px] bg-warn-faint p-3 text-warn-ink text-xs leading-[17px] hover:bg-warn-soft"
 					>
 						<Eye aria-hidden="true" className="mt-px h-4 w-4 shrink-0" />
 						<span>
@@ -298,9 +298,9 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 }
 
 const TONE_TEXT: Record<MeterTone, string> = {
-	ok: "text-[#15803D]",
-	warn: "text-[#B45309]",
-	ko: "text-[#DC2626]",
+	ok: "text-ok-ink-soft",
+	warn: "text-warn-ink-soft",
+	ko: "text-bad",
 };
 const TONE_FILL: Record<MeterTone, string> = {
 	ok: "bg-[#22C55E]",
@@ -328,13 +328,13 @@ function Meter({
 	children?: ReactNode;
 }) {
 	return (
-		<article className="flex flex-col gap-2 rounded-2xl border border-[#E2E8F0] bg-white px-4 py-3.5">
-			<p className="text-[#64748B] text-[13px]">{label}</p>
+		<article className="flex flex-col gap-2 rounded-2xl border border-line bg-surface px-4 py-3.5">
+			<p className="text-[13px] text-ink-muted">{label}</p>
 			<div className="flex items-baseline justify-between gap-2">
 				<span
 					className={cn(
 						"font-bold text-2xl tabular-nums",
-						tone ? TONE_TEXT[tone] : "text-[#94A3B8]",
+						tone ? TONE_TEXT[tone] : "text-ink-faint",
 					)}
 				>
 					{value}
@@ -342,13 +342,13 @@ function Meter({
 				<span
 					className={cn(
 						"text-right font-semibold text-xs",
-						tone ? TONE_TEXT[tone] : "text-[#64748B]",
+						tone ? TONE_TEXT[tone] : "text-ink-muted",
 					)}
 				>
 					{verdict}
 				</span>
 			</div>
-			<div className="relative h-2 rounded bg-[#F1F5F9]">
+			<div className="relative h-2 rounded bg-subtle">
 				{fill !== null && tone && (
 					<div
 						className={cn("h-2 rounded", TONE_FILL[tone])}
@@ -357,15 +357,15 @@ function Meter({
 				)}
 				<span
 					aria-hidden="true"
-					className="absolute top-[-4px] left-1/2 h-4 w-0.5 bg-[#0F172A]"
+					className="absolute top-[-4px] left-1/2 h-4 w-0.5 bg-night"
 				/>
 			</div>
-			<p className="text-[#475569] text-xs leading-[17px]">{detail}</p>
+			<p className="text-ink-mid text-xs leading-[17px]">{detail}</p>
 			{children}
 			{action && (
 				<Link
 					href={action.href}
-					className="mt-0.5 inline-flex items-center gap-1 font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+					className="mt-0.5 inline-flex items-center gap-1 font-semibold text-[13px] text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 				>
 					{action.label}
 					<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
@@ -390,7 +390,7 @@ function ResponseByDay({
 	const max = Math.max(...days.map((day) => day.medianMinutes ?? 0), 1);
 	return (
 		<div className="space-y-1.5">
-			<p className="text-[#475569] text-xs leading-[17px]">{summary}</p>
+			<p className="text-ink-mid text-xs leading-[17px]">{summary}</p>
 			<ul aria-label={title} className="flex h-10 items-end gap-0.5">
 				{days.map((day) => {
 					const text = dayText(day.date, day.medianMinutes);
@@ -406,7 +406,7 @@ function ResponseByDay({
 								className={cn(
 									"block w-full rounded-sm",
 									day.medianMinutes === null
-										? "h-0.5 bg-[#E2E8F0]"
+										? "h-0.5 bg-line"
 										: day.medianMinutes > RESPONSE_TARGET
 											? "bg-[#F59E0B]"
 											: "bg-[#22C55E]",
@@ -629,13 +629,13 @@ export function TopProductsCard({ view }: { view: ShopInsightsView }) {
 			aside={tInsights(`period.${view.period}`)}
 		>
 			{view.topProducts.length === 0 ? (
-				<p className="px-[18px] py-5 text-[#64748B] text-sm">
+				<p className="px-[18px] py-5 text-ink-muted text-sm">
 					{tInsights("noProducts")}
 				</p>
 			) : (
 				<div className="overflow-x-auto">
 					<table className="w-full min-w-[480px] text-left text-sm">
-						<thead className="bg-[#F8FAFC] text-[#64748B] text-xs">
+						<thead className="bg-canvas text-ink-muted text-xs">
 							<tr>
 								<th className="px-[18px] py-2.5 font-medium">
 									{tInsights("product")}
@@ -652,21 +652,21 @@ export function TopProductsCard({ view }: { view: ShopInsightsView }) {
 								</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-[#F1F5F9]">
+						<tbody className="divide-y divide-subtle">
 							{view.topProducts.map((product) => (
 								<tr key={product.productId}>
 									<td className="px-[18px] py-3">
 										<Link
 											href={`/seller/catalogue/${encodeURIComponent(product.productId)}`}
-											className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+											className="font-semibold text-ink hover:text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 										>
 											{product.productTitle}
 										</Link>
-										<p className="text-[#64748B] text-xs">
+										<p className="text-ink-muted text-xs">
 											{tPage("viewsCount", { count: product.views })}
 										</p>
 									</td>
-									<td className="px-3 py-3 font-bold text-[#0F172A] tabular-nums">
+									<td className="px-3 py-3 font-bold text-ink tabular-nums">
 										{number.format(product.unitsDelivered)}
 									</td>
 									<td className="whitespace-nowrap px-3 py-3 tabular-nums">
@@ -681,9 +681,9 @@ export function TopProductsCard({ view }: { view: ShopInsightsView }) {
 									<td className="px-[18px] py-3">
 										{product.available === null ||
 										product.available === undefined ? (
-											<span className="text-[#94A3B8]">—</span>
+											<span className="text-ink-faint">—</span>
 										) : lowStock.has(product.productId) ? (
-											<span className="rounded-full bg-[#FEF3C7] px-2 py-0.5 font-semibold text-[#92400E] text-xs">
+											<span className="rounded-full bg-warn-soft px-2 py-0.5 font-semibold text-warn-ink text-xs">
 												{tPage("lowStock", { count: product.available })}
 											</span>
 										) : (
@@ -711,7 +711,7 @@ function DormantLastSaleText({
 	const lastSale = dormantLastSale(item);
 	if (!lastSale) return null;
 	return (
-		<p className="text-[#94A3B8] text-xs">
+		<p className="text-ink-faint text-xs">
 			{lastSale.kind === "days"
 				? tPage("dormantLastSaleDays", { count: lastSale.days })
 				: lastSale.kind === "today"
@@ -733,7 +733,7 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 			aside={tPage("dormantAside")}
 		>
 			{dormant.length === 0 ? (
-				<p className="px-[18px] py-5 text-[#64748B] text-sm">
+				<p className="px-[18px] py-5 text-ink-muted text-sm">
 					{tPage("dormantEmpty")}
 				</p>
 			) : (
@@ -741,29 +741,27 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 					{dormant.map((item) => (
 						<li
 							key={item.productId}
-							className="flex flex-wrap items-center gap-3 border-[#F1F5F9] border-b px-[18px] py-3"
+							className="flex flex-wrap items-center gap-3 border-subtle border-b px-[18px] py-3"
 						>
 							<div className="min-w-0 flex-1">
-								<p className="font-semibold text-[#0F172A]">
-									{item.productTitle}
-								</p>
-								<p className="text-[#64748B] text-xs">
+								<p className="font-semibold text-ink">{item.productTitle}</p>
+								<p className="text-ink-muted text-xs">
 									{tPage("dormantLine", { count: item.available })}
 								</p>
 								<DormantLastSaleText item={item} />
 							</div>
 							<div className="text-right">
-								<p className="font-bold text-[#0F172A] tabular-nums">
+								<p className="font-bold text-ink tabular-nums">
 									{formatOrderMoney(item.costValue)}
 								</p>
-								<p className="text-[#94A3B8] text-[11px]">{tPage("atCost")}</p>
+								<p className="text-[11px] text-ink-faint">{tPage("atCost")}</p>
 							</div>
 							<div className="flex gap-2">
 								{item.boostListingId && (
 									<BoostDialog listingId={item.boostListingId}>
 										<button
 											type="button"
-											className="inline-flex h-8 items-center rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 font-semibold text-[#92400E] text-xs hover:border-[#F59E0B]"
+											className="inline-flex h-8 items-center rounded-lg border border-warn-line bg-warn-faint px-3 font-semibold text-warn-ink text-xs hover:border-[#F59E0B]"
 										>
 											{tPage("dormantBoost")}
 										</button>
@@ -771,13 +769,13 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 								)}
 								<Link
 									href={`/seller/catalogue/${encodeURIComponent(item.productId)}`}
-									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[var(--shop-accent-border,#93C5FD)]"
+									className="inline-flex h-8 items-center rounded-lg border border-line px-3 font-semibold text-ink text-xs hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 								>
 									{tPage("dormantPrice")}
 								</Link>
 								<Link
 									href="/seller/stock"
-									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[var(--shop-accent-border,#93C5FD)]"
+									className="inline-flex h-8 items-center rounded-lg border border-line px-3 font-semibold text-ink text-xs hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 								>
 									{tPage("dormantStock")}
 								</Link>
@@ -787,8 +785,8 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 				</ul>
 			)}
 			{view.stock.dormantValue !== undefined && view.stock.dormantValue > 0 && (
-				<div className="flex justify-between gap-3 bg-[#F8FAFC] px-[18px] py-3 text-sm">
-					<span className="text-[#64748B]">{tPage("dormantFooter")}</span>
+				<div className="flex justify-between gap-3 bg-canvas px-[18px] py-3 text-sm">
+					<span className="text-ink-muted">{tPage("dormantFooter")}</span>
 					<strong className="tabular-nums">
 						{tPage("dormantTotal", {
 							amount: formatOrderMoney(view.stock.dormantValue),

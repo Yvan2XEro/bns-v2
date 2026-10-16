@@ -327,7 +327,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 	};
 
 	return (
-		<div className="min-h-screen bg-[#F8FAFC]">
+		<div className="min-h-screen bg-canvas">
 			<script
 				type="application/ld+json"
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data
@@ -340,11 +340,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 			/>
 			<ViewTracker listingId={listing.id} />
 			{/* Breadcrumb */}
-			<div className="border-[#E2E8F0] border-b bg-white">
-				<div className="container mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 text-[#64748B] text-sm sm:px-6 lg:px-8">
+			<div className="border-line border-b bg-surface">
+				<div className="container mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 text-ink-muted text-sm sm:px-6 lg:px-8">
 					<Link
 						href="/search"
-						className="flex items-center gap-1 hover:text-[#1E40AF]"
+						className="flex items-center gap-1 hover:text-brand"
 					>
 						<ArrowLeft className="h-4 w-4" />
 						{t("backToResults")}
@@ -354,7 +354,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							<span>/</span>
 							<Link
 								href={`/search?category=${parentCategory.id}`}
-								className="hover:text-[#1E40AF]"
+								className="hover:text-brand"
 							>
 								{parentCategory.name}
 							</Link>
@@ -365,7 +365,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							<span>/</span>
 							<Link
 								href={`/search?category=${category.id}`}
-								className="text-[#0F172A] hover:text-[#1E40AF]"
+								className="text-ink hover:text-brand"
 							>
 								{category.name}
 							</Link>
@@ -380,7 +380,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 					{/* Left: images + details (3 cols) */}
 					<div className="lg:col-span-3">
 						{/* Image gallery */}
-						<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+						<div className="overflow-hidden rounded-xl border border-line bg-surface">
 							<ImageGallery
 								images={imageUrls}
 								title={listing.title}
@@ -389,16 +389,16 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 						</div>
 
 						{/* Details card */}
-						<div className="mt-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
+						<div className="mt-4 rounded-xl border border-line bg-surface p-5">
 							{/* Title + price */}
 							<div className="flex items-start justify-between gap-4">
 								<div>
-									<h1 className="font-bold text-2xl text-[#0F172A]">
+									<h1 className="font-bold text-2xl text-ink">
 										{listing.title}
 									</h1>
 									{/* A shop product's price sits in the buy box, as in the design. */}
 									{!productId && (
-										<p className="mt-1 font-bold text-2xl text-[#1E40AF]">
+										<p className="mt-1 font-bold text-2xl text-brand">
 											{priceRange ?? formattedPrice ?? t("noPrice")}
 										</p>
 									)}
@@ -407,14 +407,14 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<FavoriteButton
 										listingId={listing.id}
 										initialFavorite={isFavorited}
-										className="h-9 w-9 rounded-lg border border-[#E2E8F0]"
+										className="h-9 w-9 rounded-lg border border-line"
 									/>
 									<ShareButton title={listing.title} />
 								</div>
 							</div>
 
 							{/* Meta */}
-							<div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-[#64748B] text-sm">
+							<div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-ink-muted text-sm">
 								<span className="flex items-center gap-1">
 									<MapPin className="h-4 w-4 text-[#F59E0B]" />
 									{listing.location}
@@ -434,7 +434,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									!isExpired &&
 									daysUntilExpiry !== null && (
 										<span
-											className={`flex items-center gap-1 ${daysUntilExpiry <= 5 ? "text-amber-600" : "text-[#64748B]"}`}
+											className={`flex items-center gap-1 ${daysUntilExpiry <= 5 ? "text-amber-600" : "text-ink-muted"}`}
 										>
 											<Timer className="h-4 w-4" />
 											{daysUntilExpiry <= 1
@@ -454,7 +454,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							<div className="mt-4 flex flex-wrap gap-2">
 								{category && <Badge variant="secondary">{category.name}</Badge>}
 								{warrantyMonths > 0 && (
-									<Badge className="border-transparent bg-[#FEF3C7] text-[#92400E] hover:bg-[#FEF3C7]">
+									<Badge className="border-transparent bg-warn-soft text-warn-ink hover:bg-warn-soft">
 										{t("shopWarranty", { months: warrantyMonths })}
 									</Badge>
 								)}
@@ -484,25 +484,25 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							</div>
 
 							{/* Description */}
-							<div className="mt-6 border-[#E2E8F0] border-t pt-5">
-								<h2 className="mb-2 font-bold text-[#0F172A] text-[17px]">
+							<div className="mt-6 border-line border-t pt-5">
+								<h2 className="mb-2 font-bold text-[17px] text-ink">
 									{t("listingDescription")}
 								</h2>
-								<p className="whitespace-pre-wrap text-[#334155] text-[15px] leading-6">
+								<p className="whitespace-pre-wrap text-[15px] text-ink-soft leading-6">
 									{listing.description}
 								</p>
 							</div>
 
 							{/* Attributes */}
 							{attributeGroups.length > 0 && (
-								<div className="mt-6 border-[#E2E8F0] border-t pt-5">
-									<h2 className="mb-2 font-bold text-[#0F172A] text-[17px]">
+								<div className="mt-6 border-line border-t pt-5">
+									<h2 className="mb-2 font-bold text-[17px] text-ink">
 										{t("details")}
 									</h2>
 									{attributeGroups.map((group) => (
 										<div key={group.key} className="mb-4 last:mb-0">
 											{group.title && (
-												<h3 className="mb-2 font-semibold text-[#94A3B8] text-xs uppercase tracking-wider">
+												<h3 className="mb-2 font-semibold text-ink-faint text-xs uppercase tracking-wider">
 													{group.title}
 												</h3>
 											)}
@@ -510,10 +510,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 												{group.items.map((attr) => (
 													<div
 														key={attr.slug}
-														className="flex justify-between gap-4 border-[#F1F5F9] border-b py-2.5 text-sm"
+														className="flex justify-between gap-4 border-subtle border-b py-2.5 text-sm"
 													>
-														<dt className="text-[#64748B]">{attr.label}</dt>
-														<dd className="text-right font-semibold text-[#0F172A]">
+														<dt className="text-ink-muted">{attr.label}</dt>
+														<dd className="text-right font-semibold text-ink">
 															{attr.value}
 														</dd>
 													</div>
@@ -532,7 +532,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							{/* Buy box first, as in the design: price, variants and the
 							    order action sit at the top of the column, above the seller. */}
 							{productId && (
-								<div className="rounded-xl border border-[#E2E8F0] bg-white p-[22px]">
+								<div className="rounded-xl border border-line bg-surface p-[22px]">
 									<BuyBox
 										listingId={String(listing.id)}
 										productId={productId}
@@ -580,7 +580,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								</div>
 							)}
 							{/* Seller card */}
-							<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+							<div className="rounded-xl border border-line bg-surface p-5">
 								{shop ? (
 									<ShopSellerCard
 										shop={shop}
@@ -601,27 +601,25 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										href={`/profile/${seller.id}`}
 										className="flex items-center gap-3"
 									>
-										<Avatar className="h-12 w-12 ring-2 ring-[#E2E8F0]">
+										<Avatar className="h-12 w-12 ring-2 ring-line">
 											<AvatarImage
 												src={
 													(seller.avatar as { url?: string })?.url || undefined
 												}
 											/>
-											<AvatarFallback className="bg-[#1E40AF] font-semibold text-sm text-white">
+											<AvatarFallback className="bg-brand font-semibold text-sm text-white">
 												{seller.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>
 										<div>
-											<p className="font-semibold text-[#0F172A]">
-												{seller.name}
-											</p>
+											<p className="font-semibold text-ink">{seller.name}</p>
 											{/* No stars before the first review: "0.0 (0)" reads as a bad score. */}
 											{typeof seller.rating === "number" &&
 												(seller.totalReviews ?? 0) > 0 && (
-													<div className="flex items-center gap-1 text-[#64748B] text-sm">
+													<div className="flex items-center gap-1 text-ink-muted text-sm">
 														<Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" />
 														{seller.rating.toFixed(1)}
-														<span className="text-[#94A3B8]">
+														<span className="text-ink-faint">
 															({seller.totalReviews})
 														</span>
 													</div>
@@ -629,7 +627,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										</div>
 									</Link>
 								) : (
-									<p className="text-[#64748B] text-sm">{t("unknownSeller")}</p>
+									<p className="text-ink-muted text-sm">{t("unknownSeller")}</p>
 								)}
 
 								<div className="mt-5 flex flex-col gap-2">
@@ -640,7 +638,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										>
 											<Button
 												variant="outline"
-												className="w-full rounded-lg border-[#E2E8F0] hover:border-[#1E40AF] hover:text-[#1E40AF]"
+												className="w-full rounded-lg border-line hover:border-brand hover:text-brand"
 											>
 												<Pencil className="mr-2 h-4 w-4" />
 												{t("editThisListing")}
@@ -650,14 +648,14 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									{/* Boosting is the seller's business: a buyer never sees it. */}
 									{isOwner && listing.status === "published" && !isBoosted && (
 										<BoostDialog listingId={listing.id}>
-											<Button className="w-full rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] shadow-amber-500/20 shadow-md hover:shadow-lg">
+											<Button className="w-full rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-ink shadow-amber-500/20 shadow-md hover:shadow-lg">
 												<Zap className="mr-2 h-4 w-4" />
 												{t("boostThisListing")}
 											</Button>
 										</BoostDialog>
 									)}
 									{isOwner && isBoosted && (
-										<div className="flex items-center justify-center gap-1.5 rounded-lg border border-[#F59E0B]/30 bg-amber-50 px-3 py-2 font-semibold text-[#92400E] text-sm">
+										<div className="flex items-center justify-center gap-1.5 rounded-lg border border-[#F59E0B]/30 bg-amber-50 px-3 py-2 font-semibold text-sm text-warn-ink">
 											<Zap className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
 											{t("currentlyBoosted")}
 										</div>
@@ -684,12 +682,12 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							</div>
 
 							{/* Safety tips */}
-							<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-								<div className="flex items-center gap-2 font-semibold text-[#0F172A] text-sm">
-									<Shield className="h-4 w-4 text-[#1E40AF]" />
+							<div className="rounded-xl border border-line bg-canvas p-4">
+								<div className="flex items-center gap-2 font-semibold text-ink text-sm">
+									<Shield className="h-4 w-4 text-brand" />
 									{t("safetyTips")}
 								</div>
-								<ul className="mt-2 space-y-1 text-[#64748B] text-xs">
+								<ul className="mt-2 space-y-1 text-ink-muted text-xs">
 									<li>{t("safetyTip1")}</li>
 									<li>{t("safetyTip2")}</li>
 									<li>{t("safetyTip3")}</li>
@@ -704,7 +702,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 								>
 									<button
 										type="button"
-										className="inline-flex items-center gap-1 text-[#94A3B8] text-xs hover:text-red-500"
+										className="inline-flex items-center gap-1 text-ink-faint text-xs hover:text-red-500"
 									>
 										<Flag className="h-3 w-3" />
 										{t("reportThisListing")}
@@ -718,7 +716,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 				{/* Similar Listings */}
 				{similarListings.length > 0 && (
 					<div className="mt-8">
-						<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
+						<h2 className="mb-4 font-bold text-ink text-xl">
 							{t("similarListings")}
 						</h2>
 						<ListingGrid listings={similarListings} />

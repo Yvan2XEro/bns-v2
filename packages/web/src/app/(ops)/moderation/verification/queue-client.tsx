@@ -83,8 +83,8 @@ export function QueueClient() {
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-				<p className="text-[#64748B] text-sm">{t("subtitle")}</p>
+				<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+				<p className="text-ink-muted text-sm">{t("subtitle")}</p>
 			</div>
 
 			<QueueTabs
@@ -139,7 +139,7 @@ export function QueueClient() {
 					{Array.from({ length: 4 }, (_, index) => (
 						<span
 							key={`skeleton-${index}`}
-							className="block h-16 animate-pulse rounded-xl bg-[#F1F5F9]"
+							className="block h-16 animate-pulse rounded-xl bg-subtle"
 						/>
 					))}
 				</output>
@@ -148,15 +148,15 @@ export function QueueClient() {
 			{active.isError && (
 				<div
 					role="alert"
-					className="flex flex-col items-center rounded-xl border border-[#E2E8F0] bg-white px-6 py-12 text-center"
+					className="flex flex-col items-center rounded-xl border border-line bg-surface px-6 py-12 text-center"
 				>
-					<p className="font-semibold text-[#0F172A]">
+					<p className="font-semibold text-ink">
 						{resolveErrorMessage(active.error, tErrors, t("errorTitle"))}
 					</p>
 					<button
 						type="button"
 						onClick={retry}
-						className="mt-4 h-10 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						className="mt-4 h-10 rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 					>
 						{t("retry")}
 					</button>
@@ -166,7 +166,7 @@ export function QueueClient() {
 			{!active.isPending && !active.isError && active.data && (
 				<div aria-busy={active.isFetching}>
 					{active.data.items.length === 0 ? (
-						<p className="rounded-xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm">
+						<p className="rounded-xl border border-line bg-surface p-8 text-center text-ink-muted text-sm">
 							{t("empty")}
 						</p>
 					) : (

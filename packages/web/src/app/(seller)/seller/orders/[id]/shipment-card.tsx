@@ -47,14 +47,14 @@ function RemittanceCard({
 			...(note.trim() ? { note: note.trim() } : {}),
 		});
 	return (
-		<div className="space-y-2 rounded-xl bg-[#FFFBEB] p-3 text-sm">
-			<p className="font-medium text-[#92400E]">{t("remittanceDeclared")}</p>
+		<div className="space-y-2 rounded-xl bg-warn-faint p-3 text-sm">
+			<p className="font-medium text-warn-ink">{t("remittanceDeclared")}</p>
 			<input
 				aria-label={t("note")}
 				value={note}
 				onChange={(e) => setNote(e.target.value)}
 				maxLength={500}
-				className="h-10 w-full rounded-lg border border-[#CBD5E1] px-3"
+				className="h-10 w-full rounded-lg border border-line-strong px-3"
 			/>
 			<div className="flex flex-wrap gap-2">
 				<Button
@@ -108,18 +108,16 @@ export function ShipmentCard({
 	const cash = shipment.codCollection;
 
 	return (
-		<article className="space-y-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
+		<article className="space-y-4 rounded-xl border border-line bg-surface p-5">
 			<header className="flex flex-wrap items-center justify-between gap-2">
-				<h3 className="font-semibold text-[#0F172A]">
-					{shipment.shipmentNumber}
-				</h3>
-				<span className="rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-xs">
+				<h3 className="font-semibold text-ink">{shipment.shipmentNumber}</h3>
+				<span className="rounded-full bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-3 py-1 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-xs">
 					{tRoot(
 						`Delivery.${shipmentStatusLabel("seller", shipment.status, Boolean(shipment.readyForPickupAt))}`,
 					)}
 				</span>
 			</header>
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-muted text-sm">
 				{t(`carrier.${shipment.carrier}`)} · {t(`method.${shipment.method}`)}
 				{shipment.promisedBy &&
 					` · ${t("promisedBy", { date: formatDeliveryDate(shipment.promisedBy, locale) })}`}
@@ -130,7 +128,7 @@ export function ShipmentCard({
 					{shipment.rider.phone && (
 						<a
 							href={`tel:${shipment.rider.phone}`}
-							className="inline-flex min-h-11 items-center gap-1 text-[var(--shop-accent-text,#1E40AF)]"
+							className="inline-flex min-h-11 items-center gap-1 text-[var(--shop-accent-text,var(--c-brand))]"
 						>
 							<Phone aria-hidden className="h-4 w-4" /> {shipment.rider.phone}
 						</a>
@@ -142,7 +140,7 @@ export function ShipmentCard({
 					{shipment.flags.map((flag) => (
 						<li
 							key={flag}
-							className="rounded-full bg-[#FEF3C7] px-2.5 py-0.5 text-[#92400E] text-xs"
+							className="rounded-full bg-warn-soft px-2.5 py-0.5 text-warn-ink text-xs"
 						>
 							{t(`flag.${flag}`)}
 						</li>
@@ -150,7 +148,7 @@ export function ShipmentCard({
 				</ul>
 			)}
 			{cash?.expectedAmount != null && (
-				<p className="text-[#334155] text-sm">
+				<p className="text-ink-soft text-sm">
 					{t("cod", {
 						amount: formatOrderMoney(cash.expectedAmount, locale),
 						status: t(
@@ -160,7 +158,7 @@ export function ShipmentCard({
 				</p>
 			)}
 			{attempts.length > 0 && (
-				<ol className="space-y-1.5 border-[#E2E8F0] border-l pl-3 text-sm">
+				<ol className="space-y-1.5 border-line border-l pl-3 text-sm">
 					{attempts.map((attempt) => {
 						const link = gpsLink(attempt.gps);
 						return (
@@ -177,14 +175,14 @@ export function ShipmentCard({
 									})}
 								</p>
 								{attempt.note && (
-									<p className="text-[#64748B]">{attempt.note}</p>
+									<p className="text-ink-muted">{attempt.note}</p>
 								)}
 								{link && (
 									<a
 										href={link}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="inline-flex items-center gap-1 text-[var(--shop-accent-text,#1E40AF)] text-xs"
+										className="inline-flex items-center gap-1 text-[var(--shop-accent-text,var(--c-brand))] text-xs"
 									>
 										<ExternalLink aria-hidden className="h-3 w-3" />{" "}
 										{t("openPosition")}
@@ -197,7 +195,7 @@ export function ShipmentCard({
 			)}
 			{shipment.proof && (
 				<div className="space-y-1 text-sm">
-					<p className="text-[#334155]">
+					<p className="text-ink-soft">
 						{t("proof", {
 							method: t(`proofMethod.${shipment.proof.handoverMethod}`),
 							date: formatDeliveryDate(shipment.proof.capturedAt, locale, true),

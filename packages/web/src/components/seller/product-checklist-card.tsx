@@ -58,19 +58,19 @@ export function ProductChecklistCard({
 	];
 
 	return (
-		<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-bold text-[#0F172A]">{t("beforePublish")}</h2>
+		<div className="rounded-xl border border-line bg-surface p-5">
+			<h2 className="font-bold text-ink">{t("beforePublish")}</h2>
 			<ul className="mt-3 space-y-2 text-sm">
 				{items.map((item) => (
 					<li
 						key={item.label}
-						className={item.ok ? "text-[#166534]" : "text-[#64748B]"}
+						className={item.ok ? "text-ok-ink" : "text-ink-muted"}
 					>
 						{item.ok ? "✓" : "○"} {item.label}
 					</li>
 				))}
 			</ul>
-			<p className="mt-4 text-[#64748B] text-xs">{t("autoListingNote")}</p>
+			<p className="mt-4 text-ink-muted text-xs">{t("autoListingNote")}</p>
 		</div>
 	);
 }

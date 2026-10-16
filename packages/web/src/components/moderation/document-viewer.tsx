@@ -72,7 +72,7 @@ export function DocumentViewer({
 				</div>
 
 				{active?.purgedAt && (
-					<p className="rounded-lg bg-[#F1F5F9] px-3 py-2 text-[#64748B] text-sm">
+					<p className="rounded-lg bg-subtle px-3 py-2 text-ink-muted text-sm">
 						{t("review.documents.purged")}
 					</p>
 				)}
@@ -108,7 +108,7 @@ export function DocumentViewer({
 							<img
 								src={documentUrl.data.url}
 								alt={active.kind ? t(`review.documentKind.${active.kind}`) : ""}
-								className="max-h-[640px] w-full rounded-xl border border-[#E2E8F0] object-contain"
+								className="max-h-[640px] w-full rounded-xl border border-line object-contain"
 							/>
 						) : (
 							<iframe
@@ -118,7 +118,7 @@ export function DocumentViewer({
 										? t(`review.documentKind.${active.kind}`)
 										: t("review.documents.title")
 								}
-								className="h-[640px] w-full rounded-xl border border-[#E2E8F0]"
+								className="h-[640px] w-full rounded-xl border border-line"
 							/>
 						)}
 					</>

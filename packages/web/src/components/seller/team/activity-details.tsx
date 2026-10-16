@@ -56,13 +56,13 @@ export function ActivityDetails({
 						)}
 
 						{view.changes.length === 0 && view.other.length === 0 ? (
-							<p className="text-[#64748B] text-sm">{tActivity("noChanges")}</p>
+							<p className="text-ink-muted text-sm">{tActivity("noChanges")}</p>
 						) : (
 							<div className="space-y-4">
 								{view.changes.length > 0 && (
 									<table className="w-full text-sm">
 										<thead>
-											<tr className="text-left text-[#64748B]">
+											<tr className="text-left text-ink-muted">
 												<th className="py-1 font-medium">
 													{tActivity("before")}
 												</th>
@@ -73,17 +73,14 @@ export function ActivityDetails({
 										</thead>
 										<tbody>
 											{view.changes.map((row) => (
-												<tr
-													key={row.field}
-													className="border-[#F1F5F9] border-t"
-												>
-													<td className="py-2 pr-4 text-[#0F172A]">
-														<span className="text-[#64748B]">
+												<tr key={row.field} className="border-subtle border-t">
+													<td className="py-2 pr-4 text-ink">
+														<span className="text-ink-muted">
 															{row.field}:{" "}
 														</span>
 														{row.before}
 													</td>
-													<td className="py-2 text-[#0F172A]">{row.after}</td>
+													<td className="py-2 text-ink">{row.after}</td>
 												</tr>
 											))}
 										</tbody>
@@ -92,13 +89,13 @@ export function ActivityDetails({
 
 								{view.other.length > 0 && (
 									<dl className="space-y-1 text-sm">
-										<p className="font-medium text-[#64748B]">
+										<p className="font-medium text-ink-muted">
 											{tActivity("otherDetails")}
 										</p>
 										{view.other.map((row) => (
 											<div key={row.key} className="flex justify-between gap-4">
-												<dt className="text-[#64748B]">{row.key}</dt>
-												<dd className="text-[#0F172A]">{row.value}</dd>
+												<dt className="text-ink-muted">{row.key}</dt>
+												<dd className="text-ink">{row.value}</dd>
 											</div>
 										))}
 									</dl>

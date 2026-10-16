@@ -16,8 +16,8 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 	const actions = sellerReturnActions(view.allowedActions);
 	if (!actions.length) return null;
 	return (
-		<section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-semibold text-[#0F172A]">{t("sellerActions")}</h2>
+		<section className="space-y-4 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-semibold text-ink">{t("sellerActions")}</h2>
 			<div className="flex flex-wrap gap-2">
 				{(["pickup", "receive"] as const)
 					.filter((item) => actions.includes(item))
@@ -27,7 +27,7 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 							type="button"
 							disabled={action.isPending}
 							onClick={() => action.mutate({ caseId: view.id, action: item })}
-							className="min-h-11 rounded-xl bg-[#1E40AF] px-4 font-medium text-sm text-white disabled:opacity-50"
+							className="min-h-11 rounded-xl bg-brand px-4 font-medium text-sm text-white disabled:opacity-50"
 						>
 							{t(RETURN_ACTION_LABELS[item])}
 						</button>

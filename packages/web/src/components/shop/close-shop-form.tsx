@@ -33,7 +33,7 @@ export function CloseShopForm({
 		});
 
 	if (!isShopOwner(role)) {
-		return <p className="text-[#64748B] text-sm">{t("closeOwnerOnly")}</p>;
+		return <p className="text-ink-muted text-sm">{t("closeOwnerOnly")}</p>;
 	}
 
 	const onSubmit = handleSubmit(async (values) => {
@@ -49,11 +49,11 @@ export function CloseShopForm({
 	return (
 		<form
 			onSubmit={onSubmit}
-			className="space-y-4 rounded-xl border border-[#fecaca] bg-[#fef2f2] p-5"
+			className="space-y-4 rounded-xl border border-bad-line bg-bad-faint p-5"
 			noValidate
 		>
-			<p className="font-semibold text-[#991b1b]">{t("closeTitle")}</p>
-			<ul className="list-disc space-y-1 pl-5 text-[#7f1d1d] text-sm">
+			<p className="font-semibold text-bad-ink">{t("closeTitle")}</p>
+			<ul className="list-disc space-y-1 pl-5 text-bad-deep text-sm">
 				<li>{t("closeListings")}</li>
 				<li>{t("closeHandle")}</li>
 				<li>{t("closeFinal")}</li>
@@ -61,13 +61,13 @@ export function CloseShopForm({
 			<div className="space-y-1.5">
 				<label
 					htmlFor="close-confirmation"
-					className="block text-[#7f1d1d] text-sm"
+					className="block text-bad-deep text-sm"
 				>
 					{t("closeConfirm", { handle: shop.handle })}
 				</label>
 				<Input
 					id="close-confirmation"
-					className="bg-white"
+					className="bg-surface"
 					autoComplete="off"
 					{...register("confirmation")}
 				/>

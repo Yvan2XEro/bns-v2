@@ -113,10 +113,10 @@ function CountrySelect({
 		>
 			<SelectTrigger
 				aria-label={`${t("country")} : ${labels[selected] ?? selected}`}
-				className="h-full w-auto shrink-0 gap-1 rounded-r-none border-0 border-[#DBEAFE] border-r bg-transparent px-3 shadow-none focus:ring-0"
+				className="h-full w-auto shrink-0 gap-1 rounded-r-none border-0 border-brand-tint border-r bg-transparent px-3 shadow-none focus:ring-0"
 			>
 				<span aria-hidden="true">{flagOf(selected)}</span>
-				<span className="text-[#64748B] text-xs tabular-nums">
+				<span className="text-ink-muted text-xs tabular-nums">
 					+{getCountryCallingCode(selected)}
 				</span>
 			</SelectTrigger>
@@ -126,7 +126,7 @@ function CountrySelect({
 						<span className="flex items-center gap-2">
 							<span aria-hidden="true">{flagOf(country.value)}</span>
 							<span className="flex-1 truncate">{country.label}</span>
-							<span className="text-[#94A3B8] text-xs tabular-nums">
+							<span className="text-ink-faint text-xs tabular-nums">
 								+{getCountryCallingCode(country.value)}
 							</span>
 						</span>
@@ -143,7 +143,7 @@ const PhoneInputContainer = forwardRef<HTMLDivElement, ComponentProps<"div">>(
 			<div
 				ref={ref}
 				className={cn(
-					"flex h-10 w-full items-stretch overflow-hidden rounded-xl border border-[#DBEAFE] bg-[#F8FAFF] transition-all duration-200 focus-within:scale-[1.01] focus-within:border-[#3B82F6] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#3B82F6]/20",
+					"flex h-10 w-full items-stretch overflow-hidden rounded-xl border border-brand-tint bg-canvas transition-all duration-200 focus-within:scale-[1.01] focus-within:border-brand-bright focus-within:bg-surface focus-within:ring-2 focus-within:ring-brand-bright/20",
 					className,
 				)}
 				{...props}

@@ -16,18 +16,18 @@ export function CategoryShortcuts({
 	const t = useTranslations("Nav");
 	if (rubrics.length === 0) return null;
 	const chip =
-		"flex items-center gap-1.5 whitespace-nowrap rounded-full border py-1 pr-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]";
+		"flex items-center gap-1.5 whitespace-nowrap rounded-full border py-1 pr-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line";
 	return (
 		<nav
 			aria-label={t("shortcuts")}
-			className="border-[#E2E8F0] border-b bg-white"
+			className="border-line border-b bg-surface"
 		>
 			<ul className="container mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-2 [scrollbar-width:none] sm:px-6 lg:px-8">
 				{rubrics.map((rubric) => (
 					<li key={rubric.id}>
 						<Link
 							href={categoryHref(rubric.id)}
-							className={`${chip} border-[#E2E8F0] pl-1 text-[#475569] hover:border-[#94A3B8] hover:text-[#0F172A]`}
+							className={`${chip} border-line pl-1 text-ink-mid hover:border-ink-faint hover:text-ink`}
 						>
 							<CategoryIcon
 								category={rubric}
@@ -43,7 +43,7 @@ export function CategoryShortcuts({
 					<li>
 						<Link
 							href={shopsDirectoryHref({ verified: true })}
-							className={`${chip} border-[#BFDBFE] bg-[#EFF6FF] pl-3 font-semibold text-[#1E40AF] hover:border-[#1E40AF]`}
+							className={`${chip} border-brand-tint-strong bg-brand-soft pl-3 font-semibold text-brand hover:border-brand`}
 						>
 							{t("verifiedShops")}
 						</Link>

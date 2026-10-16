@@ -163,29 +163,27 @@ export default async function ProfilePage({ params }: PageProps) {
 			<div className="grid gap-6 lg:grid-cols-3">
 				{/* Seller card */}
 				<div className="lg:col-span-1">
-					<div className="rounded-xl border border-[#E2E8F0] bg-white p-6">
+					<div className="rounded-xl border border-line bg-surface p-6">
 						<div className="flex flex-col items-center text-center">
-							<Avatar className="h-24 w-24 ring-2 ring-[#E2E8F0]">
+							<Avatar className="h-24 w-24 ring-2 ring-line">
 								<AvatarImage src={(user.avatar as { url?: string })?.url} />
-								<AvatarFallback className="bg-[#1E40AF] font-semibold text-2xl text-white">
+								<AvatarFallback className="bg-brand font-semibold text-2xl text-white">
 									{user.name?.charAt(0) || "?"}
 								</AvatarFallback>
 							</Avatar>
-							<h1 className="mt-4 font-bold text-2xl text-[#0F172A]">
-								{user.name}
-							</h1>
+							<h1 className="mt-4 font-bold text-2xl text-ink">{user.name}</h1>
 							{shop && (
 								<div className="mt-2">
 									<LevelBadge badge={shop.badge} />
 								</div>
 							)}
 							{user.location && (
-								<p className="mt-2 flex items-center text-[#64748B] text-sm">
+								<p className="mt-2 flex items-center text-ink-muted text-sm">
 									<MapPin className="mr-1 h-4 w-4 text-[#F59E0B]" />
 									{user.location}
 								</p>
 							)}
-							<p className="mt-2 flex items-center text-[#64748B] text-sm">
+							<p className="mt-2 flex items-center text-ink-muted text-sm">
 								<Calendar className="mr-1 h-4 w-4" />
 								{t("joined", {
 									date: new Date(user.createdAt).toLocaleDateString(),
@@ -194,23 +192,23 @@ export default async function ProfilePage({ params }: PageProps) {
 
 							<div className="mt-4 flex items-center gap-1">
 								<Star className="h-5 w-5 fill-[#F59E0B] text-[#F59E0B]" />
-								<span className="font-semibold text-[#0F172A]">
+								<span className="font-semibold text-ink">
 									{averageRating.toFixed(1)}
 								</span>
-								<span className="text-[#94A3B8]">
+								<span className="text-ink-faint">
 									({t("userReviews", { count: reviews.length })})
 								</span>
 							</div>
 
 							{user.bio && (
-								<p className="mt-4 text-[#64748B] text-sm leading-relaxed">
+								<p className="mt-4 text-ink-muted text-sm leading-relaxed">
 									{user.bio}
 								</p>
 							)}
 
-							<div className="mt-5 w-full border-[#E2E8F0] border-t pt-5">
+							<div className="mt-5 w-full border-line border-t pt-5">
 								<Link href={"/messages?listing="}>
-									<Button className="w-full rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]">
+									<Button className="w-full rounded-xl bg-brand hover:bg-brand-strong">
 										<MessageCircle className="mr-2 h-4 w-4" />
 										{t("message")}
 									</Button>
@@ -229,7 +227,7 @@ export default async function ProfilePage({ params }: PageProps) {
 								<ReportDialog targetType="user" targetId={String(user.id)}>
 									<button
 										type="button"
-										className="inline-flex items-center gap-1 text-[#94A3B8] text-xs hover:text-red-500"
+										className="inline-flex items-center gap-1 text-ink-faint text-xs hover:text-red-500"
 									>
 										<Flag className="h-3 w-3" />
 										{t("reportThisUser")}
@@ -243,21 +241,21 @@ export default async function ProfilePage({ params }: PageProps) {
 				{/* Listings + Reviews */}
 				<div className="space-y-8 lg:col-span-2">
 					<div>
-						<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
+						<h2 className="mb-4 font-bold text-ink text-xl">
 							{t("listingsBy", { name: user.name })}
 						</h2>
 						{listings.length > 0 ? (
 							<ListingGrid listings={listings} />
 						) : (
-							<div className="rounded-xl border border-[#E2E8F0] bg-white py-12 text-center">
-								<p className="text-[#64748B]">{t("noListingsUser")}</p>
+							<div className="rounded-xl border border-line bg-surface py-12 text-center">
+								<p className="text-ink-muted">{t("noListingsUser")}</p>
 							</div>
 						)}
 					</div>
 
 					{reviews.length > 0 && (
 						<div>
-							<h2 className="mb-4 font-bold text-[#0F172A] text-xl">
+							<h2 className="mb-4 font-bold text-ink text-xl">
 								{t("reviewsTitle")}
 							</h2>
 							<div className="space-y-3">
@@ -266,19 +264,19 @@ export default async function ProfilePage({ params }: PageProps) {
 									return (
 										<div
 											key={review.id}
-											className="rounded-xl border border-[#E2E8F0] bg-white p-4"
+											className="rounded-xl border border-line bg-surface p-4"
 										>
 											<div className="flex items-center gap-3">
 												<Avatar className="h-8 w-8">
 													<AvatarImage
 														src={(reviewer?.avatar as { url?: string })?.url}
 													/>
-													<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
+													<AvatarFallback className="bg-brand font-semibold text-white text-xs">
 														{reviewer?.name?.charAt(0) || "?"}
 													</AvatarFallback>
 												</Avatar>
 												<div>
-													<p className="font-medium text-[#0F172A]">
+													<p className="font-medium text-ink">
 														{reviewer?.name || "Unknown"}
 													</p>
 													<div className="flex items-center">
@@ -288,7 +286,7 @@ export default async function ProfilePage({ params }: PageProps) {
 																className={`h-3.5 w-3.5 ${
 																	i < review.rating
 																		? "fill-[#F59E0B] text-[#F59E0B]"
-																		: "text-[#E2E8F0]"
+																		: "text-line"
 																}`}
 															/>
 														))}
@@ -296,7 +294,7 @@ export default async function ProfilePage({ params }: PageProps) {
 												</div>
 											</div>
 											{review.comment && (
-												<p className="mt-2 text-[#64748B] text-sm leading-relaxed">
+												<p className="mt-2 text-ink-muted text-sm leading-relaxed">
 													{review.comment}
 												</p>
 											)}

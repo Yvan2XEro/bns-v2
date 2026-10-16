@@ -102,7 +102,7 @@ export function DeclineDialog({
 						error={errors.reason ? t("reasonRequired") : null}
 					/>
 					<label className="block space-y-1 text-sm">
-						<span className="font-medium text-[#0F172A]">
+						<span className="font-medium text-ink">
 							{reason === NOTE_REQUIRED_REASON ? t("note") : t("noteOptional")}
 						</span>
 						<textarea
@@ -110,7 +110,7 @@ export function DeclineDialog({
 							rows={3}
 							maxLength={500}
 							aria-invalid={Boolean(errors.note)}
-							className="w-full rounded-lg border border-[#E2E8F0] p-3"
+							className="w-full rounded-lg border border-line p-3"
 						/>
 						{errors.note && (
 							<span role="alert" className="block text-red-700">

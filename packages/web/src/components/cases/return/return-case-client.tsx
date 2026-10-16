@@ -45,9 +45,9 @@ export function ReturnCaseClient({
 	if (query.isPending) {
 		return (
 			<main aria-busy="true" className="mx-auto max-w-4xl space-y-4 px-4 py-8">
-				<div className="h-9 w-56 animate-pulse rounded-lg bg-[#E2E8F0]" />
-				<div className="h-40 animate-pulse rounded-2xl bg-[#F1F5F9]" />
-				<div className="h-56 animate-pulse rounded-2xl bg-[#F1F5F9]" />
+				<div className="h-9 w-56 animate-pulse rounded-lg bg-line" />
+				<div className="h-40 animate-pulse rounded-2xl bg-subtle" />
+				<div className="h-56 animate-pulse rounded-2xl bg-subtle" />
 			</main>
 		);
 	}
@@ -100,7 +100,7 @@ export function ReturnCaseClient({
 				<>
 					<Link
 						href="/account/returns"
-						className="inline-flex min-h-11 items-center text-[#1E40AF] text-sm hover:underline"
+						className="inline-flex min-h-11 items-center text-brand text-sm hover:underline"
 					>
 						{t("backToReturns")}
 					</Link>
@@ -108,7 +108,7 @@ export function ReturnCaseClient({
 						<p className="text-sm">
 							<Link
 								href={`/seller/returns/${encodeURIComponent(view.id)}`}
-								className="text-[#1E40AF] hover:underline"
+								className="text-brand hover:underline"
 							>
 								{t("openInWorkspace")}
 							</Link>
@@ -118,49 +118,49 @@ export function ReturnCaseClient({
 			)}
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("orderNumber", { number: view.orderNumber })}
 					</p>
-					<h1 className="mt-1 font-bold text-2xl text-[#0F172A]">
+					<h1 className="mt-1 font-bold text-2xl text-ink">
 						{t("caseTitle")} {view.number}
 					</h1>
 				</div>
-				<span className="rounded-full bg-[#EFF6FF] px-3 py-1.5 font-medium text-[#1E40AF] text-sm">
+				<span className="rounded-full bg-brand-soft px-3 py-1.5 font-medium text-brand text-sm">
 					{t(RETURN_CASE_STATUS_LABELS[view.status])}
 				</span>
 			</header>
 
-			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-				<h2 className="font-semibold text-[#0F172A]">{t("progressTitle")}</h2>
-				<p className="mt-1 text-[#64748B] text-sm">{t(`step.${flow.step}`)}</p>
+			<section className="rounded-2xl border border-line bg-surface p-5">
+				<h2 className="font-semibold text-ink">{t("progressTitle")}</h2>
+				<p className="mt-1 text-ink-muted text-sm">{t(`step.${flow.step}`)}</p>
 				{flow.nextDeadline && (
-					<p className="mt-3 text-[#334155] text-sm">
+					<p className="mt-3 text-ink-soft text-sm">
 						{t("nextDeadline", { date: date(flow.nextDeadline) })}
 					</p>
 				)}
-				<p className="mt-2 text-[#334155] text-sm">
+				<p className="mt-2 text-ink-soft text-sm">
 					{t("returnShippingPayer", {
 						payer: t(RETURN_PAYER_LABELS[flow.returnShippingPaidBy]),
 					})}
 				</p>
 			</section>
 
-			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-				<h2 className="font-semibold text-[#0F172A]">{t("itemsTitle")}</h2>
-				<ul className="mt-3 divide-y divide-[#E2E8F0]">
+			<section className="rounded-2xl border border-line bg-surface p-5">
+				<h2 className="font-semibold text-ink">{t("itemsTitle")}</h2>
+				<ul className="mt-3 divide-y divide-line">
 					{view.items.map((item) => (
 						<li
 							key={item.orderItemId}
 							className="flex justify-between gap-4 py-3 text-sm"
 						>
-							<span className="min-w-0 truncate text-[#334155]">
+							<span className="min-w-0 truncate text-ink-soft">
 								{item.title} × {item.quantity}
 							</span>
-							<span className="shrink-0 text-right text-[#0F172A]">
+							<span className="shrink-0 text-right text-ink">
 								<span className="block font-medium">
 									{formatOrderMoney(item.unitPrice)}
 								</span>
-								<span className="block text-[#64748B] text-xs">
+								<span className="block text-ink-muted text-xs">
 									{t("unitPrice")}
 								</span>
 							</span>
@@ -168,12 +168,12 @@ export function ReturnCaseClient({
 					))}
 				</ul>
 				{view.reasonText && (
-					<p className="mt-3 text-[#64748B] text-sm">{view.reasonText}</p>
+					<p className="mt-3 text-ink-muted text-sm">{view.reasonText}</p>
 				)}
 			</section>
 
-			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-				<h2 className="font-semibold text-[#0F172A]">{t("refundTitle")}</h2>
+			<section className="rounded-2xl border border-line bg-surface p-5">
+				<h2 className="font-semibold text-ink">{t("refundTitle")}</h2>
 				<dl className="mt-3 space-y-2 text-sm">
 					<AmountLine
 						label={t("refundGoods")}
@@ -191,16 +191,16 @@ export function ReturnCaseClient({
 						label={t("refundDeduction")}
 						amount={-view.refund.breakdown.deduction}
 					/>
-					<div className="flex justify-between border-[#E2E8F0] border-t pt-3 font-semibold text-[#0F172A]">
+					<div className="flex justify-between border-line border-t pt-3 font-semibold text-ink">
 						<dt>{t("refundTotal")}</dt>
 						<dd>{formatOrderMoney(view.refund.amount)}</dd>
 					</div>
 				</dl>
 			</section>
 
-			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-				<h2 className="font-semibold text-[#0F172A]">{t("timelineTitle")}</h2>
-				<ol className="mt-4 space-y-4 border-[#CBD5E1] border-l pl-4">
+			<section className="rounded-2xl border border-line bg-surface p-5">
+				<h2 className="font-semibold text-ink">{t("timelineTitle")}</h2>
+				<ol className="mt-4 space-y-4 border-line-strong border-l pl-4">
 					{view.timeline.map((entry, index) => (
 						<li
 							key={`${entry.status}-${entry.at}-${index}`}
@@ -210,12 +210,12 @@ export function ReturnCaseClient({
 								aria-hidden="true"
 								className="-left-[21px] absolute top-1.5 h-2.5 w-2.5 rounded-full bg-[#2563EB]"
 							/>
-							<p className="font-medium text-[#0F172A] text-sm">
+							<p className="font-medium text-ink text-sm">
 								{t(RETURN_CASE_STATUS_LABELS[entry.status])}
 							</p>
-							<p className="text-[#64748B] text-xs">{date(entry.at)}</p>
+							<p className="text-ink-muted text-xs">{date(entry.at)}</p>
 							{entry.note && (
-								<p className="mt-1 text-[#475569] text-sm">{entry.note}</p>
+								<p className="mt-1 text-ink-mid text-sm">{entry.note}</p>
 							)}
 						</li>
 					))}
@@ -225,9 +225,9 @@ export function ReturnCaseClient({
 			{view.allowedActions.some(isBuyerAction) && (
 				<section
 					aria-label={t("actionsTitle")}
-					className="rounded-2xl border border-[#E2E8F0] bg-white p-5"
+					className="rounded-2xl border border-line bg-surface p-5"
 				>
-					<h2 className="font-semibold text-[#0F172A]">{t("actionsTitle")}</h2>
+					<h2 className="font-semibold text-ink">{t("actionsTitle")}</h2>
 					<div className="mt-3 flex flex-wrap gap-2">
 						{view.allowedActions.filter(isBuyerAction).map((item) => (
 							<button
@@ -235,7 +235,7 @@ export function ReturnCaseClient({
 								type="button"
 								disabled={action.isPending}
 								onClick={() => submit(item)}
-								className="min-h-11 rounded-xl border border-[#CBD5E1] px-4 font-medium text-[#1E293B] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+								className="min-h-11 rounded-xl border border-line-strong px-4 font-medium text-[#1E293B] text-sm hover:bg-canvas disabled:opacity-50"
 							>
 								{t(RETURN_ACTION_LABELS[item])}
 							</button>
@@ -261,7 +261,7 @@ export function ReturnCaseClient({
 function AmountLine({ label, amount }: { label: string; amount: number }) {
 	const formatOrderMoney = useOrderMoney();
 	return (
-		<div className="flex justify-between gap-4 text-[#475569]">
+		<div className="flex justify-between gap-4 text-ink-mid">
 			<dt>{label}</dt>
 			<dd className="shrink-0">{formatOrderMoney(amount)}</dd>
 		</div>

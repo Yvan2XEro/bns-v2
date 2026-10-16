@@ -36,7 +36,7 @@ export function CartShopHeader({
 	return (
 		<div className="flex items-center gap-3">
 			<div
-				className={`relative flex ${box} shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#0F172A] font-extrabold text-[#F59E0B] text-sm`}
+				className={`relative flex ${box} shrink-0 items-center justify-center overflow-hidden rounded-xl bg-night font-extrabold text-[#F59E0B] text-sm`}
 				style={
 					brand
 						? { backgroundColor: brand.headerBg, color: brand.headerFg }
@@ -59,13 +59,13 @@ export function CartShopHeader({
 				<div className="flex flex-wrap items-center gap-2">
 					<Link
 						href={`/s/${shop.handle}`}
-						className="font-bold text-[#0F172A] hover:text-[#1E40AF] hover:underline"
+						className="font-bold text-ink hover:text-brand hover:underline"
 					>
 						{shop.name}
 					</Link>
 					<LevelBadge badge={shop.badge} size="sm" />
 				</div>
-				{city ? <p className="text-[#64748B] text-sm">{city}</p> : null}
+				{city ? <p className="text-ink-muted text-sm">{city}</p> : null}
 			</div>
 		</div>
 	);

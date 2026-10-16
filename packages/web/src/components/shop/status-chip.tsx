@@ -4,11 +4,11 @@ import { cn } from "~/lib/utils";
 export type StatusChipKind = "active" | "draft" | "archived" | "low" | "out";
 
 const STYLES: Record<StatusChipKind, string> = {
-	active: "bg-[#dcfce7] text-[#166534]",
-	draft: "bg-[#f1f5f9] text-[#475569]",
-	archived: "bg-[#f1f5f9] text-[#475569]",
-	low: "bg-[#fef3c7] text-[#92400e]",
-	out: "bg-[#fee2e2] text-[#991b1b]",
+	active: "bg-ok-soft text-ok-ink",
+	draft: "bg-subtle text-ink-mid",
+	archived: "bg-subtle text-ink-mid",
+	low: "bg-warn-soft text-warn-ink",
+	out: "bg-bad-soft text-bad-ink",
 };
 
 export function StatusChip({

@@ -27,8 +27,8 @@ export function ShopHero({
 	// stay in normal flow beneath it, so no name length or wrap can reach
 	// back into the banner.
 	return (
-		<section className="border-[#E2E8F0] border-b bg-white">
-			<div className="h-36 w-full bg-[length:18px_18px] bg-[radial-gradient(rgba(255,255,255,0.13)_1px,transparent_1px)] bg-[var(--shop-header-bg,#1E3A8A)] sm:h-48 lg:h-[220px]">
+		<section className="border-line border-b bg-surface">
+			<div className="h-36 w-full bg-[length:18px_18px] bg-[radial-gradient(rgba(255,255,255,0.13)_1px,transparent_1px)] bg-[var(--shop-header-bg,var(--c-brand-strong))] sm:h-48 lg:h-[220px]">
 				{shop.banner?.url && (
 					// biome-ignore lint/performance/noImgElement: banners come from arbitrary storage hosts
 					<img
@@ -41,7 +41,7 @@ export function ShopHero({
 			{shop.banner?.url && (
 				<div
 					aria-hidden="true"
-					className="h-1 bg-[var(--shop-accent,#1E40AF)]"
+					className="h-1 bg-[var(--shop-accent,var(--c-brand))]"
 				/>
 			)}
 			<div
@@ -51,14 +51,14 @@ export function ShopHero({
 					<ShopInitials
 						name={shop.name}
 						logoUrl={shop.logo?.url}
-						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-white bg-[var(--shop-header-bg,#0F172A)] text-3xl text-[var(--shop-header-fg,#F59E0B)] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
+						className="-mt-12 sm:-mt-14 h-24 w-24 rounded-3xl border-[5px] border-white bg-[var(--shop-header-bg,var(--c-ink))] text-3xl text-[var(--shop-header-fg,#F59E0B)] shadow-[0_6px_18px_rgba(15,23,42,0.2)] sm:h-28 sm:w-28 sm:text-4xl"
 					/>
 					<div className="flex min-w-0 flex-1 flex-col gap-4 sm:pt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
 						<div className="min-w-0">
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 								<h1
 									data-shop-title=""
-									className="break-words font-extrabold text-2xl text-[#0F172A] tracking-tight sm:text-[32px] sm:leading-tight"
+									className="break-words font-extrabold text-2xl text-ink tracking-tight sm:text-[32px] sm:leading-tight"
 								>
 									{shop.name}
 								</h1>
@@ -81,7 +81,7 @@ export function ShopHero({
 									type="button"
 									aria-label={t("report")}
 									title={t("report")}
-									className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#64748B] hover:border-red-200 hover:text-red-500"
+									className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line text-ink-muted hover:border-red-200 hover:text-red-500"
 								>
 									<Flag className="h-4 w-4" />
 								</button>

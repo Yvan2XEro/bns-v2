@@ -34,7 +34,7 @@ export function InvoiceClient({
 	const back = (
 		<Link
 			href="/seller/billing"
-			className="inline-flex min-h-11 items-center gap-1.5 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+			className="inline-flex min-h-11 items-center gap-1.5 text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 		>
 			<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 			{t("backToBilling")}
@@ -58,7 +58,7 @@ export function InvoiceClient({
 				{back}
 				<p
 					role="alert"
-					className="rounded-2xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm"
+					className="rounded-2xl border border-line bg-surface p-8 text-center text-ink-muted text-sm"
 				>
 					{t("invoiceNotFound")}
 				</p>
@@ -75,29 +75,29 @@ export function InvoiceClient({
 				href="/seller/billing"
 				reference={invoice.invoiceNumber}
 			/>
-			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-line bg-surface p-5">
 				<div className="space-y-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<h1 className="font-bold text-[#0F172A] text-xl">
+						<h1 className="font-bold text-ink text-xl">
 							{t("invoiceNumber", { number: invoice.invoiceNumber })}
 						</h1>
 						<InvoiceStatusBadge status={invoice.status} />
 					</div>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("periodRange", {
 							start: formatOrderDate(invoice.periodStart, locale),
 							end: formatOrderDate(invoice.periodEnd, locale),
 						})}
 					</p>
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{invoice.paidAt
 							? t("paidAt", { date: formatOrderDate(invoice.paidAt, locale) })
 							: t("dueAt", { date: formatOrderDate(invoice.dueAt, locale) })}
 					</p>
 				</div>
 				<div className="flex flex-col items-end gap-2">
-					<p className="text-[#64748B] text-xs">{t("totalDue")}</p>
-					<p className="font-bold text-2xl text-[#0F172A]">
+					<p className="text-ink-muted text-xs">{t("totalDue")}</p>
+					<p className="font-bold text-2xl text-ink">
 						{formatOrderMoney(invoice.totalDue, locale)}
 					</p>
 					{isPayable(invoice.status) && (
@@ -108,17 +108,14 @@ export function InvoiceClient({
 
 			<section aria-labelledby="invoice-document-title" className="space-y-2">
 				<div className="flex flex-wrap items-center justify-between gap-2">
-					<h2
-						id="invoice-document-title"
-						className="font-semibold text-[#0F172A]"
-					>
+					<h2 id="invoice-document-title" className="font-semibold text-ink">
 						{t("document")}
 					</h2>
 					<a
 						href={documentUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex min-h-11 items-center gap-1.5 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+						className="inline-flex min-h-11 items-center gap-1.5 text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 					>
 						{t("openDocument")}
 						<ExternalLink aria-hidden="true" className="h-4 w-4" />
@@ -128,7 +125,7 @@ export function InvoiceClient({
 					src={documentUrl}
 					title={t("invoiceNumber", { number: invoice.invoiceNumber })}
 					sandbox=""
-					className="h-[70vh] w-full rounded-2xl border border-[#E2E8F0] bg-white"
+					className="h-[70vh] w-full rounded-2xl border border-line bg-surface"
 				/>
 			</section>
 		</div>

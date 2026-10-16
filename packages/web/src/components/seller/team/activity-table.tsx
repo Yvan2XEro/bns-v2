@@ -13,11 +13,11 @@ function TargetCell({ entry }: { entry: ShopActivityView }) {
 	// shop itself) still reads as its kind rather than a bare id; a target
 	// whose page may no longer exist (a deleted product) still gets a link —
 	// that page's own not-found handling is what shows, not a dead link here.
-	if (!href) return <span className="text-[#475569]">{label}</span>;
+	if (!href) return <span className="text-ink-mid">{label}</span>;
 	return (
 		<Link
 			href={href}
-			className="text-[var(--shop-accent-text,#1E40AF)] underline hover:no-underline"
+			className="text-[var(--shop-accent-text,var(--c-brand))] underline hover:no-underline"
 		>
 			{label}
 		</Link>
@@ -28,10 +28,10 @@ function ActorCell({ entry }: { entry: ShopActivityView }) {
 	const t = useTranslations("shopActivity");
 	return (
 		<div>
-			<div className="font-medium text-[#0F172A]">
+			<div className="font-medium text-ink">
 				{entry.actor?.name ?? t("roles.system")}
 			</div>
-			<div className="text-[#94A3B8] text-xs">
+			<div className="text-ink-faint text-xs">
 				{t(`roles.${entry.actorRole}`)}
 			</div>
 		</div>
@@ -56,17 +56,17 @@ export function ActivityTable({
 
 	if (entries.length === 0) {
 		return (
-			<p className="rounded-2xl border border-[#E2E8F0] bg-white p-8 text-center text-[#64748B] text-sm">
+			<p className="rounded-2xl border border-line bg-surface p-8 text-center text-ink-muted text-sm">
 				{tActivity("empty")}
 			</p>
 		);
 	}
 
 	return (
-		<div className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white">
+		<div className="overflow-hidden rounded-2xl border border-line bg-surface">
 			<table className="w-full text-sm">
 				<thead>
-					<tr className="border-[#E2E8F0] border-b bg-[#F8FAFC] text-left text-[#64748B]">
+					<tr className="border-line border-b bg-canvas text-left text-ink-muted">
 						<th className="px-4 py-2 font-medium">
 							{tActivity("column.when")}
 						</th>
@@ -82,17 +82,14 @@ export function ActivityTable({
 				</thead>
 				<tbody>
 					{entries.map((entry) => (
-						<tr
-							key={entry.id}
-							className="border-[#F1F5F9] border-b last:border-0"
-						>
-							<td className="whitespace-nowrap px-4 py-3 text-[#475569]">
+						<tr key={entry.id} className="border-subtle border-b last:border-0">
+							<td className="whitespace-nowrap px-4 py-3 text-ink-mid">
 								{new Date(entry.createdAt).toLocaleString()}
 							</td>
 							<td className="px-4 py-3">
 								<ActorCell entry={entry} />
 							</td>
-							<td className="px-4 py-3 text-[#0F172A]">
+							<td className="px-4 py-3 text-ink">
 								{t(activityLabelKey(entry.action))}
 							</td>
 							<td className="px-4 py-3">
@@ -102,7 +99,7 @@ export function ActivityTable({
 								<button
 									type="button"
 									onClick={() => onOpenEntry(entry)}
-									className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs hover:bg-[#F1F5F9]"
+									className="rounded-lg border border-line px-3 py-1.5 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs hover:bg-subtle"
 								>
 									{tActivity("details")}
 								</button>
@@ -112,12 +109,12 @@ export function ActivityTable({
 				</tbody>
 			</table>
 			{hasNextPage && (
-				<div className="border-[#E2E8F0] border-t p-4 text-center">
+				<div className="border-line border-t p-4 text-center">
 					<button
 						type="button"
 						onClick={onLoadMore}
 						disabled={isFetchingNextPage}
-						className="h-9 rounded-lg border border-[#E2E8F0] px-4 font-medium text-[var(--shop-accent-text,#1E40AF)] text-sm hover:bg-[#F1F5F9] disabled:opacity-50"
+						className="h-9 rounded-lg border border-line px-4 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:bg-subtle disabled:opacity-50"
 					>
 						{tActivity("loadMore")}
 					</button>

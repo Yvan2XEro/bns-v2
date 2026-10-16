@@ -60,10 +60,10 @@ export function ProductVariantsSection({
 		<EditorSection
 			title={t("variantsTitle")}
 			aside={
-				<label className="flex items-center gap-2 text-[#334155] text-sm">
+				<label className="flex items-center gap-2 text-ink-soft text-sm">
 					<input
 						type="checkbox"
-						className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
+						className="h-4 w-4 accent-[var(--shop-accent,var(--c-brand))]"
 						checked={options.length > 0}
 						onChange={(event) =>
 							applyOptions(

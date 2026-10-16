@@ -57,7 +57,7 @@ export function InboxClient({
 	return (
 		<div className="grid h-[calc(100vh-10rem)] min-h-0 grid-cols-1 gap-4 lg:grid-cols-[14rem_20rem_1fr]">
 			<div
-				className={`min-h-0 overflow-y-auto rounded-xl border border-[#E2E8F0] bg-white max-lg:order-first ${
+				className={`min-h-0 overflow-y-auto rounded-xl border border-line bg-surface max-lg:order-first ${
 					selected ? "max-lg:hidden" : ""
 				}`}
 			>
@@ -68,7 +68,7 @@ export function InboxClient({
 				/>
 			</div>
 			<div
-				className={`min-h-0 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white ${
+				className={`min-h-0 overflow-hidden rounded-xl border border-line bg-surface ${
 					selected ? "max-lg:hidden" : ""
 				}`}
 			>
@@ -86,7 +86,7 @@ export function InboxClient({
 				/>
 			</div>
 			<div
-				className={`min-h-0 overflow-hidden rounded-xl border border-[#E2E8F0] bg-white ${
+				className={`min-h-0 overflow-hidden rounded-xl border border-line bg-surface ${
 					!selected ? "max-lg:hidden" : ""
 				}`}
 			>

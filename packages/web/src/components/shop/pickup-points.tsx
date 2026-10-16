@@ -27,7 +27,7 @@ export function PickupPoints({ handle }: { handle: string }) {
 	if (!query.data?.length) return null;
 	return (
 		<section
-			className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-white p-4 text-sm"
+			className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-surface p-4 text-sm"
 			aria-label={t("pickupTitle")}
 		>
 			<h2 className="font-semibold text-slate-900">{t("pickupTitle")}</h2>

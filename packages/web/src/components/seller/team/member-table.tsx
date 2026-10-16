@@ -40,7 +40,7 @@ const ROLE_LABEL_KEY: Record<
 const RESEND_LIMIT = 3;
 
 const ACTION_BUTTON =
-	"rounded-lg p-1.5 hover:bg-[#F1F5F9] focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)]";
+	"rounded-lg p-1.5 hover:bg-subtle focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))]";
 
 function initials(name: string | null): string {
 	const parts = (name ?? "?").trim().split(/\s+/).filter(Boolean);
@@ -90,19 +90,16 @@ export function MemberTable({
 	return (
 		<section
 			aria-labelledby="team-members-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
-			<div className="flex flex-wrap items-baseline justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
-				<h2
-					id="team-members-title"
-					className="font-bold text-[#0F172A] text-base"
-				>
+			<div className="flex flex-wrap items-baseline justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
+				<h2 id="team-members-title" className="font-bold text-base text-ink">
 					{tTeam("members")}
 				</h2>
-				<p className="text-[#64748B] text-[13px]">
+				<p className="text-[13px] text-ink-muted">
 					{tPage("seats", { used, total })}
 					{overage > 0 && (
-						<span className="ml-2 text-[#B45309]">
+						<span className="ml-2 text-warn-ink-soft">
 							{tTeam("overage", { count: overage })}
 						</span>
 					)}
@@ -110,7 +107,7 @@ export function MemberTable({
 			</div>
 			<div className="overflow-x-auto">
 				<table className="w-full min-w-[560px] text-sm">
-					<thead className="bg-[#F8FAFC] text-left text-[#64748B] text-xs">
+					<thead className="bg-canvas text-left text-ink-muted text-xs">
 						<tr>
 							<th className="px-[18px] py-2.5 font-medium">
 								{tPage("colMember")}
@@ -127,7 +124,7 @@ export function MemberTable({
 							</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-[#F1F5F9]">
+					<tbody className="divide-y divide-subtle">
 						{team.members.map((member) => {
 							const actions = memberActions(role, member);
 							const joined = member.joinedAt
@@ -149,11 +146,11 @@ export function MemberTable({
 												<AvatarFallback>{initials(member.name)}</AvatarFallback>
 											</Avatar>
 											<div className="min-w-0">
-												<p className="font-semibold text-[#0F172A]">
+												<p className="font-semibold text-ink">
 													{member.name ?? "—"}
 												</p>
 												{joined && (
-													<p className="text-[#64748B] text-xs">
+													<p className="text-ink-muted text-xs">
 														{tPage("since", { date: joined })}
 													</p>
 												)}
@@ -172,19 +169,19 @@ export function MemberTable({
 										<td className="px-3 py-3">
 											{member.lastActivity ? (
 												<>
-													<p className="text-[#0F172A]">
+													<p className="text-ink">
 														{timeAgo(member.lastActivity.at, locale, {
 															maxDays: 30,
 														})}
 													</p>
-													<p className="text-[#64748B] text-xs">
+													<p className="text-ink-muted text-xs">
 														{tRoot(
 															activityLabelKey(member.lastActivity.action),
 														)}
 													</p>
 												</>
 											) : (
-												<span className="text-[#94A3B8]">—</span>
+												<span className="text-ink-faint">—</span>
 											)}
 										</td>
 									)}
@@ -208,7 +205,7 @@ export function MemberTable({
 													>
 														<MoreVertical
 															aria-hidden="true"
-															className="h-4 w-4 text-[#64748B]"
+															className="h-4 w-4 text-ink-muted"
 														/>
 													</button>
 												</DropdownMenuTrigger>
@@ -251,15 +248,15 @@ export function MemberTable({
 									<td className="px-[18px] py-3">
 										<div className="flex items-center gap-3">
 											<Avatar className="h-[38px] w-[38px]">
-												<AvatarFallback className="bg-[#F1F5F9] text-[#94A3B8]">
+												<AvatarFallback className="bg-subtle text-ink-faint">
 													?
 												</AvatarFallback>
 											</Avatar>
 											<div className="min-w-0">
-												<p className="font-semibold text-[#0F172A]">
+												<p className="font-semibold text-ink">
 													{invitation.maskedTarget}
 												</p>
-												<p className="text-[#64748B] text-xs">
+												<p className="text-ink-muted text-xs">
 													{invitation.invitedByName
 														? tPage("invitedBy", {
 																name: invitation.invitedByName,
@@ -280,9 +277,9 @@ export function MemberTable({
 									</td>
 									{showActivity && (
 										<td className="px-3 py-3">
-											<p className="text-[#94A3B8]">—</p>
+											<p className="text-ink-faint">—</p>
 											{sent && (
-												<p className="text-[#64748B] text-xs">
+												<p className="text-ink-muted text-xs">
 													{tPage("invitedWhen", { when: sent })}
 												</p>
 											)}
@@ -291,7 +288,7 @@ export function MemberTable({
 									<td className="px-3 py-3">
 										<div className="flex flex-col items-start gap-1">
 											<Badge variant="warning">{tPage("statusInvited")}</Badge>
-											<span className="text-[#B45309] text-xs">
+											<span className="text-warn-ink-soft text-xs">
 												{days > 0
 													? tPage("expiresIn", { count: days })
 													: tPage("expiresToday")}
@@ -311,7 +308,7 @@ export function MemberTable({
 													>
 														<MoreVertical
 															aria-hidden="true"
-															className="h-4 w-4 text-[#64748B]"
+															className="h-4 w-4 text-ink-muted"
 														/>
 													</button>
 												</DropdownMenuTrigger>
@@ -344,7 +341,7 @@ export function MemberTable({
 							<tr>
 								<td
 									colSpan={columns}
-									className="px-[18px] py-6 text-center text-[#64748B]"
+									className="px-[18px] py-6 text-center text-ink-muted"
 								>
 									{tTeam("pendingEmpty")}
 								</td>

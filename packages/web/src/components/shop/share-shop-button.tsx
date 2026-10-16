@@ -46,8 +46,8 @@ export function ShareShopButton({
 			onClick={share}
 			className={
 				variant === "outline"
-					? "rounded-lg border-[#E2E8F0] hover:border-[var(--shop-accent-border,#E2E8F0)] hover:text-[var(--shop-accent-text,inherit)]"
-					: "rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					? "rounded-lg border-line hover:border-[var(--shop-accent-border,var(--c-line))] hover:text-[var(--shop-accent-text,inherit)]"
+					: "rounded-lg bg-brand hover:bg-brand-strong"
 			}
 		>
 			{copied ? (

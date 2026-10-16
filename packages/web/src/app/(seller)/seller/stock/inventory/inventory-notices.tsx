@@ -17,7 +17,7 @@ export function InventoryNotices({
 	return (
 		<>
 			{notice && (
-				<p className="rounded-lg bg-[#F0FDF4] px-3 py-2 text-[#166534] text-sm">
+				<p className="rounded-lg bg-ok-faint px-3 py-2 text-ok-ink text-sm">
 					{notice}
 				</p>
 			)}

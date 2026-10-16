@@ -69,10 +69,8 @@ export function ReturnClient({
 	if (!requestId) {
 		return (
 			<div className="mx-auto max-w-md space-y-3 py-10 text-center">
-				<h1 className="font-bold text-[#0F172A] text-lg">
-					{t("missing.title")}
-				</h1>
-				<p className="text-[#64748B] text-sm">{t("missing.body")}</p>
+				<h1 className="font-bold text-ink text-lg">{t("missing.title")}</h1>
+				<p className="text-ink-muted text-sm">{t("missing.body")}</p>
 				<Button asChild variant="outline">
 					<Link href="/seller/verification">{t("backToHub")}</Link>
 				</Button>

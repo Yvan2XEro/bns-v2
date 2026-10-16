@@ -17,7 +17,7 @@ import { PayoutAccountCard } from "./payout-account-card";
 import { PayoutsTable } from "./payouts-table";
 
 const HEADER_BUTTON =
-	"inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)] disabled:cursor-not-allowed disabled:opacity-60";
+	"inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))] disabled:cursor-not-allowed disabled:opacity-60";
 
 const FLOW_STEPS = ["1", "2", "3", "4"] as const;
 
@@ -26,11 +26,11 @@ function MoneyFlow() {
 	return (
 		<section
 			aria-labelledby="money-flow-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
 			<h2
 				id="money-flow-title"
-				className="border-[#F1F5F9] border-b px-[18px] py-3.5 font-bold text-[#0F172A] text-base"
+				className="border-subtle border-b px-[18px] py-3.5 font-bold text-base text-ink"
 			>
 				{tPayments("flowTitle")}
 			</h2>
@@ -41,10 +41,10 @@ function MoneyFlow() {
 							{step}
 						</span>
 						<div>
-							<p className="font-semibold text-[#0F172A] text-sm">
+							<p className="font-semibold text-ink text-sm">
 								{tPayments(`flow.${step}.title`)}
 							</p>
-							<p className="text-[#64748B] text-xs leading-[17px]">
+							<p className="text-ink-muted text-xs leading-[17px]">
 								{tPayments(`flow.${step}.body`)}
 							</p>
 						</div>
@@ -98,10 +98,10 @@ export function PaymentsClient({ shopId }: { shopId: string }) {
 		<div className="space-y-[18px]">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
+					<h1 className="font-bold text-2xl text-ink">
 						{tPayments("seller_title")}
 					</h1>
-					<p className="text-[#64748B] text-sm">{tPage("subtitle")}</p>
+					<p className="text-ink-muted text-sm">{tPage("subtitle")}</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					<button type="button" onClick={exportCsv} className={HEADER_BUTTON}>
@@ -137,7 +137,7 @@ export function PaymentsClient({ shopId }: { shopId: string }) {
 					<MoneyFlow />
 					<Link
 						href="/seller/payments/setup"
-						className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-white px-[18px] py-3.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
+						className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-[18px] py-3.5 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 					>
 						<Settings aria-hidden="true" className="h-4 w-4" />
 						{tPage("setupLink")}

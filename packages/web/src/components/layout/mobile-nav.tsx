@@ -32,6 +32,7 @@ import {
 import { cn } from "~/lib/utils";
 import { AccountLinksList } from "./account-menu";
 import { LocaleSwitcher } from "./locale-switcher";
+import { ThemeSwitcher } from "./theme-switcher";
 
 interface MobileTabBarProps {
 	pathname: string | null;
@@ -48,8 +49,8 @@ interface MobileTabBarProps {
 
 const tabClass = (on: boolean) =>
 	cn(
-		"flex h-full flex-col items-center justify-center gap-0.5 text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] focus-visible:ring-inset",
-		on ? "font-bold text-[#1E40AF]" : "text-[#475569]",
+		"flex h-full flex-col items-center justify-center gap-0.5 text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line focus-visible:ring-inset",
+		on ? "font-bold text-brand" : "text-ink-mid",
 	);
 
 /**
@@ -81,7 +82,7 @@ export function MobileTabBar({
 		<>
 			<nav
 				aria-label={t("tabBar")}
-				className="fixed inset-x-0 bottom-0 z-40 border-[#E2E8F0] border-t bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+				className="fixed inset-x-0 bottom-0 z-40 border-line border-t bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
 			>
 				<ul className="grid h-16 grid-cols-5">
 					<li>
@@ -110,7 +111,7 @@ export function MobileTabBar({
 						<Link
 							href={gatedHref(signedIn, "/create")}
 							aria-current={tab === "publish" ? "page" : undefined}
-							className="flex h-full flex-col items-center justify-center gap-0.5 font-extrabold text-[#0F172A] text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] focus-visible:ring-inset"
+							className="flex h-full flex-col items-center justify-center gap-0.5 font-extrabold text-[10px] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line focus-visible:ring-inset"
 						>
 							<span className="-mt-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#F59E0B] shadow-[0_4px_10px_rgba(245,158,11,0.35)]">
 								<Plus aria-hidden="true" className="h-6 w-6" />
@@ -219,15 +220,15 @@ function Sheet({
 			<DialogPrimitive.Portal>
 				<DialogPrimitive.Content
 					aria-describedby={undefined}
-					className="fixed inset-0 z-50 flex flex-col bg-[#F8FAFC] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:hidden"
+					className="fixed inset-0 z-50 flex flex-col bg-canvas pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:hidden"
 				>
-					<div className="flex h-14 shrink-0 items-center justify-between border-[#E2E8F0] border-b bg-white px-4">
-						<DialogPrimitive.Title className="font-bold font-heading text-[#0F172A] text-lg">
+					<div className="flex h-14 shrink-0 items-center justify-between border-line border-b bg-surface px-4">
+						<DialogPrimitive.Title className="font-bold font-heading text-ink text-lg">
 							{title}
 						</DialogPrimitive.Title>
 						<DialogPrimitive.Close
 							aria-label={t("close")}
-							className="flex h-9 w-9 items-center justify-center rounded-lg text-[#475569] hover:bg-[#F1F5F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+							className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-mid hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 						>
 							<X aria-hidden="true" className="h-5 w-5" />
 						</DialogPrimitive.Close>
@@ -255,7 +256,7 @@ export function CategoriesSheetBody({
 	const [openId, setOpenId] = useState<string | null>(initialRubric);
 	const rubric = rubrics.find((r) => r.id === openId) ?? null;
 	const row =
-		"flex w-full items-center justify-between px-4 py-3 text-left text-[#0F172A] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD] focus-visible:ring-inset";
+		"flex w-full items-center justify-between px-4 py-3 text-left text-ink text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line focus-visible:ring-inset";
 
 	if (rubric) {
 		return (
@@ -263,30 +264,27 @@ export function CategoriesSheetBody({
 				<button
 					type="button"
 					onClick={() => setOpenId(null)}
-					className="mb-3 flex items-center gap-1 rounded font-semibold text-[#1E40AF] text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+					className="mb-3 flex items-center gap-1 rounded font-semibold text-brand text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 				>
 					<ChevronLeft aria-hidden="true" className="h-4 w-4" />
 					{t("backToCategories")}
 				</button>
-				<h3 className="mb-2 px-1 font-bold font-heading text-[#0F172A] text-base">
+				<h3 className="mb-2 px-1 font-bold font-heading text-base text-ink">
 					{rubric.name}
 				</h3>
-				<ul className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
-					<li className="border-[#E2E8F0] border-b">
+				<ul className="overflow-hidden rounded-xl border border-line bg-surface">
+					<li className="border-line border-b">
 						<Link
 							href={categoryHref(rubric.id)}
 							onClick={onNavigate}
-							className={cn(row, "font-semibold text-[#1E40AF]")}
+							className={cn(row, "font-semibold text-brand")}
 						>
 							{t("allOf", { name: rubric.name })}
 							<ChevronRight aria-hidden="true" className="h-4 w-4" />
 						</Link>
 					</li>
 					{rubric.children.map((child) => (
-						<li
-							key={child.id}
-							className="border-[#E2E8F0] border-b last:border-b-0"
-						>
+						<li key={child.id} className="border-line border-b last:border-b-0">
 							<Link
 								href={categoryHref(child.id)}
 								onClick={onNavigate}
@@ -304,7 +302,7 @@ export function CategoriesSheetBody({
 								</span>
 								<ChevronRight
 									aria-hidden="true"
-									className="h-4 w-4 text-[#94A3B8]"
+									className="h-4 w-4 text-ink-faint"
 								/>
 							</Link>
 						</li>
@@ -314,7 +312,7 @@ export function CategoriesSheetBody({
 					<Link
 						href={shopsDirectoryHref({ category: rubric.id })}
 						onClick={onNavigate}
-						className="mt-3 block rounded px-1 font-semibold text-[#1E40AF] text-sm hover:underline"
+						className="mt-3 block rounded px-1 font-semibold text-brand text-sm hover:underline"
 					>
 						{t("shopsOf", { name: rubric.name })}
 					</Link>
@@ -325,12 +323,12 @@ export function CategoriesSheetBody({
 
 	return (
 		<div className="space-y-3">
-			<ul className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+			<ul className="overflow-hidden rounded-xl border border-line bg-surface">
 				{rubrics.length === 0 && (
-					<li className="px-4 py-3 text-[#64748B] text-sm">{t("loading")}</li>
+					<li className="px-4 py-3 text-ink-muted text-sm">{t("loading")}</li>
 				)}
 				{rubrics.map((r) => (
-					<li key={r.id} className="border-[#E2E8F0] border-b last:border-b-0">
+					<li key={r.id} className="border-line border-b last:border-b-0">
 						{r.children.length > 0 ? (
 							<button
 								type="button"
@@ -349,7 +347,7 @@ export function CategoriesSheetBody({
 								</span>
 								<ChevronRight
 									aria-hidden="true"
-									className="h-4 w-4 text-[#94A3B8]"
+									className="h-4 w-4 text-ink-faint"
 								/>
 							</button>
 						) : (
@@ -370,7 +368,7 @@ export function CategoriesSheetBody({
 								</span>
 								<ChevronRight
 									aria-hidden="true"
-									className="h-4 w-4 text-[#94A3B8]"
+									className="h-4 w-4 text-ink-faint"
 								/>
 							</Link>
 						)}
@@ -378,7 +376,7 @@ export function CategoriesSheetBody({
 				))}
 			</ul>
 			{shopsEnabled && (
-				<ul className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+				<ul className="overflow-hidden rounded-xl border border-line bg-surface">
 					<li>
 						<Link
 							href={shopsDirectoryHref({ verified: true })}
@@ -388,7 +386,7 @@ export function CategoriesSheetBody({
 							{t("verifiedShops")}
 							<ChevronRight
 								aria-hidden="true"
-								className="h-4 w-4 text-[#94A3B8]"
+								className="h-4 w-4 text-ink-faint"
 							/>
 						</Link>
 					</li>
@@ -422,8 +420,8 @@ export function AccountSheetBody({
 				<>
 					{userLabel && (
 						<div className="px-1">
-							<p className="font-semibold text-[#0F172A]">{userLabel.name}</p>
-							<p className="text-[#64748B] text-xs">{userLabel.email}</p>
+							<p className="font-semibold text-ink">{userLabel.name}</p>
+							<p className="text-ink-muted text-xs">{userLabel.email}</p>
 						</div>
 					)}
 					<AccountLinksList sections={account} onNavigate={onNavigate} />
@@ -432,45 +430,46 @@ export function AccountSheetBody({
 				<Link
 					href={loginHref(back)}
 					onClick={onNavigate}
-					className="flex h-11 items-center justify-center rounded-lg bg-[#1E40AF] font-semibold text-sm text-white"
+					className="flex h-11 items-center justify-center rounded-lg bg-brand font-semibold text-sm text-white"
 				>
 					{t("logIn")}
 				</Link>
 			)}
 			<section aria-label={t("help")}>
-				<h3 className="mb-1.5 px-1 font-bold text-[#94A3B8] text-[10px] uppercase tracking-widest">
+				<h3 className="mb-1.5 px-1 font-bold text-[10px] text-ink-faint uppercase tracking-widest">
 					{t("help")}
 				</h3>
-				<ul className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+				<ul className="overflow-hidden rounded-xl border border-line bg-surface">
 					{helpLinks().map((link) => (
-						<li
-							key={link.key}
-							className="border-[#E2E8F0] border-b last:border-b-0"
-						>
+						<li key={link.key} className="border-line border-b last:border-b-0">
 							<Link
 								href={link.href}
 								onClick={onNavigate}
-								className="flex items-center justify-between px-4 py-3 text-[#0F172A] text-sm"
+								className="flex items-center justify-between px-4 py-3 text-ink text-sm"
 							>
 								{t(link.key)}
 								<ChevronRight
 									aria-hidden="true"
-									className="h-4 w-4 text-[#94A3B8]"
+									className="h-4 w-4 text-ink-faint"
 								/>
 							</Link>
 						</li>
 					))}
 				</ul>
 			</section>
-			<div className="flex items-center justify-between rounded-xl border border-[#E2E8F0] bg-white px-2">
-				<span className="px-2 text-[#0F172A] text-sm">{t("language")}</span>
+			<div className="flex items-center justify-between rounded-xl border border-line bg-surface px-2">
+				<span className="px-2 text-ink text-sm">{t("language")}</span>
 				<LocaleSwitcher />
+			</div>
+			<div className="flex items-center justify-between rounded-xl border border-line bg-surface px-2 py-1.5">
+				<span className="px-2 text-ink text-sm">{t("theme")}</span>
+				<ThemeSwitcher />
 			</div>
 			{signedIn && (
 				<button
 					type="button"
 					onClick={onLogout}
-					className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white py-3 font-semibold text-[#DC2626] text-sm"
+					className="flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface py-3 font-semibold text-bad text-sm"
 				>
 					<LogOut aria-hidden="true" className="h-4 w-4" />
 					{t("logOut")}

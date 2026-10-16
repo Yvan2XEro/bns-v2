@@ -19,10 +19,10 @@ function HoursSummary({ location }: { location: ShopLocation }) {
 	const tPage = useTranslations("DeliveryPage");
 	const spans = hoursSpans(location.openingHours);
 	return (
-		<dl className="grid grid-cols-2 gap-3 rounded-[10px] bg-[#F8FAFC] px-3 py-2.5 text-[13px] sm:grid-cols-4">
+		<dl className="grid grid-cols-2 gap-3 rounded-[10px] bg-canvas px-3 py-2.5 text-[13px] sm:grid-cols-4">
 			{spans.map((span) => (
 				<div key={span.first}>
-					<dt className="text-[#64748B]">
+					<dt className="text-ink-muted">
 						{span.first === span.last
 							? tDelivery(`day.${span.first}`)
 							: tPage("dayRange", {
@@ -30,7 +30,7 @@ function HoursSummary({ location }: { location: ShopLocation }) {
 									last: tDelivery(`day.${span.last}`),
 								})}
 					</dt>
-					<dd className="whitespace-nowrap font-semibold text-[#0F172A]">
+					<dd className="whitespace-nowrap font-semibold text-ink">
 						{span.hours
 							? tPage("hoursRange", {
 									opens: span.hours.opens,
@@ -42,8 +42,8 @@ function HoursSummary({ location }: { location: ShopLocation }) {
 			))}
 			{location.pickupEnabled && location.preparationHours != null && (
 				<div>
-					<dt className="text-[#64748B]">{tPage("readyIn")}</dt>
-					<dd className="whitespace-nowrap font-semibold text-[#0F172A]">
+					<dt className="text-ink-muted">{tPage("readyIn")}</dt>
+					<dd className="whitespace-nowrap font-semibold text-ink">
 						{tPage("readyInHours", { hours: location.preparationHours })}
 					</dd>
 				</div>
@@ -66,11 +66,11 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 	return (
 		<section
 			aria-labelledby="pickup-points-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
 			<h2
 				id="pickup-points-title"
-				className="border-[#F1F5F9] border-b px-[18px] py-3.5 font-bold text-[#0F172A] text-base"
+				className="border-subtle border-b px-[18px] py-3.5 font-bold text-base text-ink"
 			>
 				{tPage("pickupTitle")}
 			</h2>
@@ -83,7 +83,7 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 					/>
 				)}
 				{locations.isSuccess && locations.data.length === 0 && (
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{tDelivery("locationsEmpty")}
 					</p>
 				)}
@@ -93,23 +93,23 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 						<div key={location.id} className="space-y-3">
 							<div className="flex items-start gap-3">
 								<span
-									className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${location.pickupEnabled ? "bg-[#DCFCE7] text-[#15803D]" : "bg-[#F1F5F9] text-[#64748B]"}`}
+									className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${location.pickupEnabled ? "bg-ok-soft text-ok-ink-soft" : "bg-subtle text-ink-muted"}`}
 								>
 									<Store aria-hidden="true" className="h-5 w-5" />
 								</span>
 								<div className="min-w-0 flex-1">
-									<p className="font-semibold text-[#0F172A]">
+									<p className="font-semibold text-ink">
 										{location.name}
 										{location.isDefaultOrigin && (
-											<span className="ml-2 rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-2 py-0.5 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs">
+											<span className="ml-2 rounded-full bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-2 py-0.5 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs">
 												{tDelivery("defaultOrigin")}
 											</span>
 										)}
 									</p>
-									<p className="text-[#64748B] text-[13px]">
+									<p className="text-[13px] text-ink-muted">
 										{location.landmark} · {districtName(location.district)}
 									</p>
-									<p className="text-[#64748B] text-xs">
+									<p className="text-ink-muted text-xs">
 										{location.pickupEnabled
 											? tDelivery("pickupOn")
 											: tDelivery("pickupOff")}
@@ -123,7 +123,7 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 									<button
 										type="button"
 										onClick={() => setTarget({ location })}
-										className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+										className="font-semibold text-[13px] text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 									>
 										{tDelivery("edit")}
 									</button>
@@ -132,7 +132,7 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 											type="button"
 											disabled={disable.isPending}
 											onClick={() => disable.mutate(location.id)}
-											className="font-semibold text-[#64748B] text-[13px] hover:underline disabled:opacity-50"
+											className="font-semibold text-[13px] text-ink-muted hover:underline disabled:opacity-50"
 										>
 											{tDelivery("disable")}
 										</button>
@@ -149,17 +149,17 @@ export function PickupPointsCard({ shopId }: { shopId: string }) {
 					</p>
 				)}
 				<div className="flex flex-wrap items-center gap-3">
-					<p className="flex flex-1 items-center gap-2 text-[#334155] text-[13px]">
+					<p className="flex flex-1 items-center gap-2 text-[13px] text-ink-soft">
 						<Lock
 							aria-hidden="true"
-							className="h-4 w-4 text-[var(--shop-accent-text,#1E40AF)]"
+							className="h-4 w-4 text-[var(--shop-accent-text,var(--c-brand))]"
 						/>
 						{tPage("pickupCode")}
 					</p>
 					<button
 						type="button"
 						onClick={() => setTarget({ location: null })}
-						className="flex h-9 items-center justify-center gap-1.5 rounded-lg border-[#CBD5E1] border-[1.5px] border-dashed px-4 font-semibold text-[#475569] text-[13px] hover:border-[var(--shop-accent-border,#93C5FD)] sm:w-60"
+						className="flex h-9 items-center justify-center gap-1.5 rounded-lg border-[1.5px] border-line-strong border-dashed px-4 font-semibold text-[13px] text-ink-mid hover:border-[var(--shop-accent-border,var(--c-brand-line))] sm:w-60"
 					>
 						<Plus aria-hidden="true" className="h-4 w-4" />
 						{tDelivery("addLocation")}

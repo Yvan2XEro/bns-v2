@@ -27,7 +27,7 @@ export function NotMeBanner({
 
 	if (confirmed || reportNotMe.isSuccess) {
 		return (
-			<output className="block rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4 text-[#166534] text-sm">
+			<output className="block rounded-2xl border border-ok-line bg-ok-faint p-4 text-ok-ink text-sm">
 				{t("setup_notMeConfirmed")}
 			</output>
 		);
@@ -36,11 +36,11 @@ export function NotMeBanner({
 	return (
 		<div
 			role="alert"
-			className="space-y-2 rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-4 text-sm"
+			className="space-y-2 rounded-2xl border border-bad-line bg-bad-faint p-4 text-sm"
 		>
-			<p className="text-[#7F1D1D]">{t("setup_notMe")}</p>
+			<p className="text-bad-deep">{t("setup_notMe")}</p>
 			{reportNotMe.isError && (
-				<p className="text-[#B91C1C] text-xs">
+				<p className="text-bad-ink-soft text-xs">
 					{resolveErrorMessage(reportNotMe.error, tRoot)}
 				</p>
 			)}
@@ -52,7 +52,7 @@ export function NotMeBanner({
 						onSuccess: () => setConfirmed(true),
 					});
 				}}
-				className="h-10 rounded-lg bg-[#B91C1C] px-4 font-semibold text-sm text-white hover:bg-[#991B1B] disabled:opacity-50"
+				className="h-10 rounded-lg bg-bad-ink-soft px-4 font-semibold text-sm text-white hover:bg-bad-ink disabled:opacity-50"
 			>
 				{t("setup_notMe")}
 			</button>

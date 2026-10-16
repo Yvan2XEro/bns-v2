@@ -29,7 +29,7 @@ export function SectionTitle({
 	return (
 		<h3
 			id={id}
-			className="px-2 pt-5 pb-1.5 font-semibold text-[#64748B] text-xs uppercase tracking-wider"
+			className="px-2 pt-5 pb-1.5 font-semibold text-ink-muted text-xs uppercase tracking-wider"
 		>
 			{t(SECTION_LABEL[section])}
 		</h3>
@@ -37,12 +37,12 @@ export function SectionTitle({
 }
 
 const rowClass =
-	"flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition-colors hover:bg-[#F1F5F9] focus-visible:bg-[#F1F5F9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF] disabled:opacity-70";
+	"flex min-h-14 w-full items-center gap-3 rounded-2xl px-2 py-2 text-left transition-colors hover:bg-subtle focus-visible:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-70";
 
 const TONES = {
-	primary: { icon: "bg-[#DBEAFE] text-[#1E40AF]", label: "text-[#1E40AF]" },
-	warning: { icon: "bg-[#FEF3C7] text-[#92400E]", label: "text-[#92400E]" },
-	neutral: { icon: "bg-[#F1F5F9] text-[#0F172A]", label: "text-[#0F172A]" },
+	primary: { icon: "bg-brand-tint text-brand", label: "text-brand" },
+	warning: { icon: "bg-warn-soft text-warn-ink", label: "text-warn-ink" },
+	neutral: { icon: "bg-subtle text-ink", label: "text-ink" },
 } as const;
 
 export function ActionRow({
@@ -88,12 +88,12 @@ export function ActionRow({
 					{label}
 				</span>
 				{hint ? (
-					<span className="block text-[#64748B] text-[13px]" aria-live="polite">
+					<span className="block text-[13px] text-ink-muted" aria-live="polite">
 						{hint}
 					</span>
 				) : null}
 			</span>
-			{selected ? <Check className="h-5 w-5 shrink-0 text-[#1E40AF]" /> : null}
+			{selected ? <Check className="h-5 w-5 shrink-0 text-brand" /> : null}
 		</button>
 	);
 }
@@ -124,20 +124,20 @@ export function PlaceRow({
 			aria-pressed={selected}
 			className={rowClass}
 		>
-			<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F1F5F9] text-[#64748B]">
+			<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-subtle text-ink-muted">
 				<Icon className="h-[18px] w-[18px]" />
 			</span>
 			<span className="min-w-0 flex-1">
-				<span className="block truncate font-semibold text-[#0F172A] text-[15px]">
+				<span className="block truncate font-semibold text-[15px] text-ink">
 					{place.district ?? place.name}
 				</span>
 				{context ? (
-					<span className="block truncate text-[#64748B] text-[13px]">
+					<span className="block truncate text-[13px] text-ink-muted">
 						{context}
 					</span>
 				) : null}
 			</span>
-			{selected ? <Check className="h-5 w-5 shrink-0 text-[#1E40AF]" /> : null}
+			{selected ? <Check className="h-5 w-5 shrink-0 text-brand" /> : null}
 		</button>
 	);
 }

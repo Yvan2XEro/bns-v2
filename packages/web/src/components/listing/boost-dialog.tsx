@@ -157,7 +157,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 					<Button
 						variant="outline"
 						size="sm"
-						className="gap-1.5 border-[#F59E0B]/40 text-[#92400E] hover:bg-amber-50"
+						className="gap-1.5 border-[#F59E0B]/40 text-warn-ink hover:bg-amber-50"
 					>
 						<Zap className="h-3.5 w-3.5" />
 						Boost
@@ -180,7 +180,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 
 				<div className="space-y-5">
 					{plans.length === 0 ? (
-						<p className="rounded-xl border border-[#E2E8F0] border-dashed p-4 text-center text-[#64748B] text-sm">
+						<p className="rounded-xl border border-line border-dashed p-4 text-center text-ink-muted text-sm">
 							{t("pricesUnavailable")}
 						</p>
 					) : (
@@ -196,7 +196,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 											className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-4 transition-all ${
 												selected
 													? "border-[#F59E0B] bg-amber-50/50 shadow-sm"
-													: "border-[#E2E8F0] hover:border-[#F59E0B]/40 hover:bg-[#FFFBEB]/30"
+													: "border-line hover:border-[#F59E0B]/40 hover:bg-warn-faint/30"
 											}`}
 										>
 											{plan.days === POPULAR_DAYS && (
@@ -209,11 +209,11 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 													className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
 														selected
 															? "border-[#F59E0B] bg-[#F59E0B]"
-															: "border-[#CBD5E1]"
+															: "border-line-strong"
 													}`}
 												>
 													{selected && (
-														<div className="h-2 w-2 rounded-full bg-white" />
+														<div className="h-2 w-2 rounded-full bg-surface" />
 													)}
 												</div>
 												<input
@@ -225,17 +225,17 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 													className="sr-only"
 												/>
 												<div>
-													<p className="font-semibold text-[#0F172A] text-sm">
+													<p className="font-semibold text-ink text-sm">
 														{t(PLAN_LABELS[plan.days])}
 													</p>
-													<p className="text-[#64748B] text-xs">
+													<p className="text-ink-muted text-xs">
 														{t("daysVisibility", { days: plan.days })}
 													</p>
 												</div>
 											</div>
-											<p className="font-bold text-[#0F172A] text-base">
+											<p className="font-bold text-base text-ink">
 												{plan.amount.toLocaleString()}{" "}
-												<span className="font-medium text-[#64748B] text-xs">
+												<span className="font-medium text-ink-muted text-xs">
 													{plan.currency}
 												</span>
 											</p>
@@ -246,7 +246,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 
 							{/* Payment method */}
 							<div className="space-y-2">
-								<p className="font-semibold text-[#0F172A] text-sm">
+								<p className="font-semibold text-ink text-sm">
 									{t("paymentMethod")}
 								</p>
 								<div className="grid grid-cols-2 gap-2">
@@ -269,13 +269,13 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 											activeColor="blue"
 										/>
 									) : (
-										<div className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl border-2 border-[#E2E8F0] border-dashed px-4 py-3 opacity-40">
-											<CreditCard className="h-6 w-6 text-[#64748B]" />
+										<div className="flex cursor-not-allowed flex-col items-center gap-2 rounded-xl border-2 border-line border-dashed px-4 py-3 opacity-40">
+											<CreditCard className="h-6 w-6 text-ink-muted" />
 											<div className="text-center">
-												<p className="font-semibold text-[#0F172A] text-sm">
+												<p className="font-semibold text-ink text-sm">
 													{t("card")}
 												</p>
-												<p className="text-[#94A3B8] text-xs">
+												<p className="text-ink-faint text-xs">
 													{t("cardUnavailable")}
 												</p>
 											</div>
@@ -291,8 +291,8 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 							<Button
 								className={`w-full rounded-xl font-bold shadow-md hover:shadow-lg ${
 									paymentMethod === "card"
-										? "bg-[#1E40AF] text-white hover:bg-[#1E3A8A]"
-										: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-[#0F172A] shadow-amber-500/20"
+										? "bg-brand text-white hover:bg-brand-strong"
+										: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-ink shadow-amber-500/20"
 								}`}
 								onClick={handlePay}
 								disabled={isPending || price === undefined}
@@ -334,26 +334,25 @@ function PaymentMethodCard({
 	const activeBorder =
 		activeColor === "amber"
 			? "border-[#F59E0B] bg-amber-50/50"
-			: "border-[#1E40AF] bg-blue-50/50";
-	const activeIcon =
-		activeColor === "amber" ? "text-[#F59E0B]" : "text-[#1E40AF]";
+			: "border-brand bg-blue-50/50";
+	const activeIcon = activeColor === "amber" ? "text-[#F59E0B]" : "text-brand";
 	const hoverBorder =
 		activeColor === "amber"
 			? "hover:border-[#F59E0B]/40"
-			: "hover:border-[#1E40AF]/40";
+			: "hover:border-brand/40";
 
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-3 transition-all ${
-				active ? activeBorder : `border-[#E2E8F0] ${hoverBorder}`
+				active ? activeBorder : `border-line ${hoverBorder}`
 			}`}
 		>
-			<span className={active ? activeIcon : "text-[#64748B]"}>{icon}</span>
+			<span className={active ? activeIcon : "text-ink-muted"}>{icon}</span>
 			<div className="text-center">
-				<p className="font-semibold text-[#0F172A] text-sm">{label}</p>
-				<p className="text-[#94A3B8] text-xs">{desc}</p>
+				<p className="font-semibold text-ink text-sm">{label}</p>
+				<p className="text-ink-faint text-xs">{desc}</p>
 			</div>
 		</button>
 	);

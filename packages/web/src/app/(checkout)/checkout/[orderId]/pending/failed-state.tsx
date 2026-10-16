@@ -79,14 +79,14 @@ export function FailedState({
 
 	return (
 		<div className="space-y-5 text-center">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("failed_title")}</h1>
-			<p className="text-[#64748B] text-sm">
+			<h1 className="font-bold text-2xl text-ink">{t("failed_title")}</h1>
+			<p className="text-ink-muted text-sm">
 				{t(PAYMENT_CHANNEL_LABELS[channel])}
 			</p>
-			<p className="text-[#334155] text-sm">
+			<p className="text-ink-soft text-sm">
 				{t(PAYMENT_FAILURE_MESSAGES[failureCode])}
 			</p>
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-muted text-sm">
 				{t("failed_attemptsLeft", { attempts: attemptsLeft })}
 			</p>
 
@@ -101,7 +101,7 @@ export function FailedState({
 					{actions.includes("retry") && (
 						<Button
 							type="button"
-							className="min-h-11 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+							className="min-h-11 bg-brand hover:bg-brand-strong"
 							disabled={submitting}
 							onClick={onRetrySame}
 						>
@@ -144,7 +144,7 @@ export function FailedState({
 					/>
 					<Button
 						type="submit"
-						className="min-h-11 w-full bg-[#1E40AF] hover:bg-[#1E3A8A]"
+						className="min-h-11 w-full bg-brand hover:bg-brand-strong"
 						disabled={submitting}
 					>
 						{submitting && (

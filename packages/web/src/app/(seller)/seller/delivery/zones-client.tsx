@@ -44,10 +44,8 @@ export function ZonesClient({ shopId }: { shopId: string }) {
 		<div className="space-y-[18px]">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
-						{tPage("title")}
-					</h1>
-					<p className="text-[#64748B] text-sm">{tPage("subtitle")}</p>
+					<h1 className="font-bold text-2xl text-ink">{tPage("title")}</h1>
+					<p className="text-ink-muted text-sm">{tPage("subtitle")}</p>
 				</div>
 				{deliveryZonesEnabled && (
 					<div className="flex flex-wrap gap-2">
@@ -75,17 +73,14 @@ export function ZonesClient({ shopId }: { shopId: string }) {
 					<div className="min-w-0 space-y-[18px]">
 						<section
 							aria-labelledby="zones-title"
-							className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+							className="overflow-hidden rounded-2xl border border-line bg-surface"
 						>
-							<div className="flex flex-wrap items-baseline justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
-								<h2
-									id="zones-title"
-									className="font-bold text-[#0F172A] text-base"
-								>
+							<div className="flex flex-wrap items-baseline justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
+								<h2 id="zones-title" className="font-bold text-base text-ink">
 									{tDelivery("zonesTitle")}
 								</h2>
 								{launchCities.length > 0 && (
-									<p className="text-[#64748B] text-[13px]">
+									<p className="text-[13px] text-ink-muted">
 										{tPage("openCities", {
 											cities: launchCities.map((c) => c.label).join(", "),
 										})}
@@ -106,14 +101,14 @@ export function ZonesClient({ shopId }: { shopId: string }) {
 								</div>
 							)}
 							{zones.isSuccess && zones.data.length === 0 && (
-								<p className="px-[18px] py-6 text-center text-[#64748B] text-sm">
+								<p className="px-[18px] py-6 text-center text-ink-muted text-sm">
 									{tDelivery("zonesEmpty")}
 								</p>
 							)}
 							{zones.isSuccess && zones.data.length > 0 && (
 								<div className="overflow-x-auto">
 									<table className="w-full min-w-[640px] text-left text-sm">
-										<thead className="bg-[#F8FAFC] text-[#64748B] text-xs">
+										<thead className="bg-canvas text-ink-muted text-xs">
 											<tr>
 												<th className="px-[18px] py-2.5 font-medium">
 													{tPage("colZone")}
@@ -138,7 +133,7 @@ export function ZonesClient({ shopId }: { shopId: string }) {
 												</th>
 											</tr>
 										</thead>
-										<tbody className="divide-y divide-[#F1F5F9]">
+										<tbody className="divide-y divide-subtle">
 											{zones.data.map((zone) => (
 												<ZoneRow
 													key={zone.id}
@@ -165,7 +160,7 @@ export function ZonesClient({ shopId }: { shopId: string }) {
 									{resolveErrorMessage(disable.error, tRoot)}
 								</p>
 							)}
-							<p className="bg-[#F8FAFC] px-[18px] py-[11px] text-[#64748B] text-[13px]">
+							<p className="bg-canvas px-[18px] py-[11px] text-[13px] text-ink-muted">
 								{tPage("zonesFootnote")}
 							</p>
 						</section>

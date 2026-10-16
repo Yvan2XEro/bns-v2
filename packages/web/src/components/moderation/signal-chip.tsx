@@ -7,8 +7,8 @@ import { cn } from "~/lib/utils";
 const TONE_CLASSES: Record<string, string> = {
 	positive: "border-transparent bg-emerald-50 text-emerald-700",
 	negative: "border-transparent bg-red-50 text-red-700",
-	warning: "border-transparent bg-[#FEF3C7] text-[#92400E]",
-	neutral: "border-[#E2E8F0] bg-[#F8FAFC] text-[#475569]",
+	warning: "border-transparent bg-warn-soft text-warn-ink",
+	neutral: "border-line bg-canvas text-ink-mid",
 };
 
 /**

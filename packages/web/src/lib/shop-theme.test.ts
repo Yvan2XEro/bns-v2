@@ -5,24 +5,35 @@ import {
 	BRAND_SWATCHES,
 	dominantColor,
 	normalizeBrandInput,
+	SHOP_THEME_TOKENS,
 	shopTheme,
 	shopThemeVars,
 } from "./shop-theme";
 
 describe("shopThemeVars", () => {
-	test("exposes every light tone as --shop-* and every dark tone as --shop-dark-*", () => {
+	test("exposes every light tone as --shop-light-* and every dark tone as --shop-dark-*", () => {
 		const theme = shopTheme("#0F766E");
 		const vars: Record<string, unknown> = { ...shopThemeVars(theme) };
-		expect(vars["--shop-accent"]).toBe(theme.light.accent);
-		expect(vars["--shop-on-accent"]).toBe(theme.light.onAccent);
-		expect(vars["--shop-accent-text"]).toBe(theme.light.accentText);
-		expect(vars["--shop-accent-soft"]).toBe(theme.light.accentSoft);
-		expect(vars["--shop-header-bg"]).toBe(theme.light.headerBg);
-		expect(vars["--shop-header-fg"]).toBe(theme.light.headerFg);
-		expect(vars["--shop-header-muted"]).toBe(theme.light.headerMuted);
+		expect(vars["--shop-light-accent"]).toBe(theme.light.accent);
+		expect(vars["--shop-light-on-accent"]).toBe(theme.light.onAccent);
+		expect(vars["--shop-light-accent-text"]).toBe(theme.light.accentText);
+		expect(vars["--shop-light-accent-soft"]).toBe(theme.light.accentSoft);
+		expect(vars["--shop-light-header-bg"]).toBe(theme.light.headerBg);
+		expect(vars["--shop-light-header-fg"]).toBe(theme.light.headerFg);
+		expect(vars["--shop-light-header-muted"]).toBe(theme.light.headerMuted);
 		expect(vars["--shop-dark-accent"]).toBe(theme.dark.accent);
 		expect(vars["--shop-dark-header-bg"]).toBe(theme.dark.headerBg);
 		expect(Object.keys(vars)).toHaveLength(14);
+	});
+
+	test("globals.css resolves every --shop-* from the light set, and from the dark one under .dark", async () => {
+		const css = await Bun.file(
+			new URL("../app/globals.css", import.meta.url),
+		).text();
+		for (const token of SHOP_THEME_TOKENS) {
+			expect(css).toContain(`--shop-${token}: var(--shop-light-${token});`);
+			expect(css).toContain(`--shop-${token}: var(--shop-dark-${token});`);
+		}
 	});
 
 	test("every value is a plain hex, so nothing a seller types reaches the style", () => {

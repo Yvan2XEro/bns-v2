@@ -10,12 +10,12 @@ export function Toggle({
 	return (
 		<label
 			htmlFor={id}
-			className="flex min-h-11 cursor-pointer items-center gap-3 text-[#0F172A] text-sm"
+			className="flex min-h-11 cursor-pointer items-center gap-3 text-ink text-sm"
 		>
 			<input
 				id={id}
 				type="checkbox"
-				className="h-5 w-5 rounded border-[#CBD5E1] accent-[var(--shop-accent,#1E40AF)]"
+				className="h-5 w-5 rounded border-line-strong accent-[var(--shop-accent,var(--c-brand))]"
 				{...input}
 			/>
 			{label}
@@ -36,10 +36,8 @@ export function Section({
 	children: ReactNode;
 }) {
 	return (
-		<fieldset className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<legend className="px-1 font-semibold text-[#0F172A] text-sm">
-				{title}
-			</legend>
+		<fieldset className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<legend className="px-1 font-semibold text-ink text-sm">{title}</legend>
 			{children}
 		</fieldset>
 	);

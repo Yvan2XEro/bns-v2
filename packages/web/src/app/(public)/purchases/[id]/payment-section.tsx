@@ -25,21 +25,19 @@ export function PaymentSection({ order }: { order: OrderView }) {
 	const refunding = REFUND_STATUSES.has(order.paymentStatus);
 
 	return (
-		<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-semibold text-[#0F172A]">
-				{t("order_paymentTitle")}
-			</h2>
+		<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-semibold text-ink">{t("order_paymentTitle")}</h2>
 			{order.paymentStatus === "paid" && (
-				<p className="text-[#166534] text-sm">{t("order_paidProtected")}</p>
+				<p className="text-ok-ink text-sm">{t("order_paidProtected")}</p>
 			)}
 			{refunding && (
 				<div className="space-y-1">
-					<h3 className="font-medium text-[#0F172A] text-sm">
+					<h3 className="font-medium text-ink text-sm">
 						{t("order_refundsTitle")}
 					</h3>
 					{/* The 5-7 business-day window is the spec's own commitment, not a
 					    configurable AppSettings value, so it is not read off any config. */}
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("order_refundDelay", { days: "5–7" })}
 					</p>
 				</div>

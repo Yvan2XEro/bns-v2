@@ -36,7 +36,7 @@ export function ReviewPhotos({ photos }: { photos: ReviewPhoto[] }) {
 							type="button"
 							onClick={() => setOpen(index)}
 							aria-label={t("open", { index: index + 1, count })}
-							className="block h-16 w-16 overflow-hidden rounded-lg border border-[#E2E8F0] bg-[#F1F5F9] focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2"
+							className="block h-16 w-16 overflow-hidden rounded-lg border border-line bg-subtle focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))] focus-visible:outline-offset-2"
 						>
 							<img
 								src={photo.url}

@@ -26,7 +26,7 @@ export function ProofPhotoField({
 		<div className="space-y-1.5">
 			<label
 				htmlFor={`photo-${shipmentId}-${kind}`}
-				className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#CBD5E1] px-4 font-medium text-sm"
+				className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-line-strong px-4 font-medium text-sm"
 			>
 				<Camera aria-hidden className="h-4 w-4" />
 				{required ? t("photoRequired") : t("photoOptional")}
@@ -48,7 +48,7 @@ export function ProofPhotoField({
 					}}
 				/>
 			</label>
-			{photoId && <p className="text-[#166534] text-xs">{t("photoAdded")}</p>}
+			{photoId && <p className="text-ok-ink text-xs">{t("photoAdded")}</p>}
 			{upload.isError && (
 				<p role="alert" className="text-red-700 text-xs">
 					{resolveErrorMessage(upload.error, tRoot)}

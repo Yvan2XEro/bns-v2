@@ -305,7 +305,8 @@
 		"tabMessages": "Messages",
 		"tabAccount": "Account",
 		"backToCategories": "All categories",
-		"close": "Close"
+		"close": "Close",
+		"theme": "Theme"
 	},
 	"Footer": {
 		"brandTagline": "The marketplace to buy and sell locally.",
@@ -5407,5 +5408,11 @@
 		"open": "Get",
 		"close": "Close",
 		"installOnComputer": "Install on this computer"
+	},
+	"ThemeSwitcher": {
+		"label": "Theme",
+		"system": "Match device",
+		"light": "Light",
+		"dark": "Dark"
 	}
 }

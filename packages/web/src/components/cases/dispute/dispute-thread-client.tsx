@@ -108,7 +108,7 @@ export function DisputeThreadClient({
 				{t("back")}
 			</Link>
 			{!inWorkspace && view.viewerRole === "seller" ? (
-				<p className="text-[#475569] text-sm">
+				<p className="text-ink-mid text-sm">
 					<Link
 						href={`/seller/disputes/${encodeURIComponent(disputeId)}`}
 						className="font-medium text-[#5B21B6] hover:underline"
@@ -117,33 +117,33 @@ export function DisputeThreadClient({
 					</Link>
 				</p>
 			) : null}
-			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-white p-5">
+			<header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-[#DDD6FE] bg-gradient-to-br from-[#FAF9FF] to-surface p-5">
 				<div className="flex items-start gap-3">
 					<Scale aria-hidden="true" className="mt-1 h-5 w-5 text-[#6D28D9]" />
 					<div>
-						<p className="text-[#64748B] text-sm">
+						<p className="text-ink-muted text-sm">
 							{t("orderNumber", { number: view.orderNumber })}
 						</p>
-						<h1 className="mt-1 font-bold text-2xl text-[#0F172A]">
+						<h1 className="mt-1 font-bold text-2xl text-ink">
 							{t("case", { number: view.number })}
 						</h1>
-						<p className="mt-1 text-[#475569] text-sm">
+						<p className="mt-1 text-ink-mid text-sm">
 							{t(DISPUTE_REASON_LABELS[view.reason])}
 						</p>
 					</div>
 				</div>
-				<span className="rounded-full bg-white px-3 py-1.5 font-semibold text-[#5B21B6] text-sm">
+				<span className="rounded-full bg-surface px-3 py-1.5 font-semibold text-[#5B21B6] text-sm">
 					{t(DISPUTE_STATUS_LABELS[view.status])}
 				</span>
 			</header>
-			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-				<p className="font-semibold text-[#0F172A]">
+			<section className="rounded-2xl border border-line bg-surface p-5">
+				<p className="font-semibold text-ink">
 					{t("amountAtStake", {
 						amount: formatOrderMoney(view.amountAtStake),
 					})}
 				</p>
 				{view.deadlines.respondBy ? (
-					<p className="mt-2 text-[#64748B] text-sm">
+					<p className="mt-2 text-ink-muted text-sm">
 						{t("deadline", {
 							date: new Intl.DateTimeFormat(locale, {
 								dateStyle: "medium",
@@ -166,23 +166,23 @@ export function DisputeThreadClient({
 					</div>
 				) : null}
 			</section>
-			<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
+			<section className="rounded-2xl border border-line bg-surface p-5">
 				<div className="flex items-center gap-2">
 					<MessageSquareText
 						aria-hidden="true"
 						className="h-4 w-4 text-[#6D28D9]"
 					/>
-					<h2 className="font-semibold text-[#0F172A]">{t("messages")}</h2>
+					<h2 className="font-semibold text-ink">{t("messages")}</h2>
 				</div>
 				{view.messages.length ? (
 					<ol className="mt-4 space-y-3">
 						{view.messages.map((entry) => (
-							<li key={entry.id} className="rounded-xl bg-[#F8FAFC] p-4">
-								<p className="whitespace-pre-wrap text-[#334155] text-sm">
+							<li key={entry.id} className="rounded-xl bg-canvas p-4">
+								<p className="whitespace-pre-wrap text-ink-soft text-sm">
 									{entry.redacted ? t("redacted") : entry.body}
 								</p>
 								<time
-									className="mt-2 block text-[#64748B] text-xs"
+									className="mt-2 block text-ink-muted text-xs"
 									dateTime={entry.at}
 								>
 									{new Intl.DateTimeFormat(locale, {
@@ -194,7 +194,7 @@ export function DisputeThreadClient({
 						))}
 					</ol>
 				) : (
-					<p className="mt-4 text-[#64748B] text-sm">{t("noMessages")}</p>
+					<p className="mt-4 text-ink-muted text-sm">{t("noMessages")}</p>
 				)}
 				{groups.conversation.includes("message") ? (
 					<form
@@ -203,7 +203,7 @@ export function DisputeThreadClient({
 					>
 						<label
 							htmlFor="dispute-message"
-							className="block font-medium text-[#334155] text-sm"
+							className="block font-medium text-ink-soft text-sm"
 						>
 							{t("messageLabel")}
 						</label>
@@ -212,7 +212,7 @@ export function DisputeThreadClient({
 							rows={3}
 							maxLength={2000}
 							{...form.register("body")}
-							className="w-full rounded-xl border border-[#CBD5E1] p-3 text-sm focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#DDD6FE]"
+							className="w-full rounded-xl border border-line-strong p-3 text-sm focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#DDD6FE]"
 						/>
 						{form.formState.errors.body ? (
 							<p role="alert" className="text-red-700 text-sm">
@@ -245,8 +245,8 @@ export function DisputeThreadClient({
 				</section>
 			) : null}
 			{available.length ? (
-				<section className="rounded-2xl border border-[#E2E8F0] bg-white p-5">
-					<h2 className="font-semibold text-[#0F172A]">{t("actions")}</h2>
+				<section className="rounded-2xl border border-line bg-surface p-5">
+					<h2 className="font-semibold text-ink">{t("actions")}</h2>
 					<div className="mt-3 flex flex-wrap gap-2">
 						{available.map((name) => (
 							<button
@@ -254,7 +254,7 @@ export function DisputeThreadClient({
 								type="button"
 								disabled={action.isPending}
 								onClick={() => submitAction(name)}
-								className="min-h-11 rounded-xl border border-[#CBD5E1] px-4 font-medium text-[#1E293B] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+								className="min-h-11 rounded-xl border border-line-strong px-4 font-medium text-[#1E293B] text-sm hover:bg-canvas disabled:opacity-50"
 							>
 								{t(name)}
 							</button>

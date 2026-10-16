@@ -51,8 +51,8 @@ export function ThreadMessages({
 							className={cn(
 								"max-w-[70%] rounded-2xl px-4 py-2",
 								fromShop
-									? "rounded-br-md bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
-									: "rounded-bl-md bg-[#F1F5F9] text-[#0F172A]",
+									? "rounded-br-md bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+									: "rounded-bl-md bg-subtle text-ink",
 							)}
 						>
 							{name && (
@@ -71,12 +71,12 @@ export function ThreadMessages({
 						<span className="sr-only">{t("typing")}</span>
 						<div
 							aria-hidden="true"
-							className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-[#F1F5F9] px-4 py-3"
+							className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-subtle px-4 py-3"
 						>
 							{[0, 150, 300].map((delay) => (
 								<span
 									key={delay}
-									className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#94A3B8] motion-reduce:animate-none"
+									className="h-1.5 w-1.5 animate-bounce rounded-full bg-ink-faint motion-reduce:animate-none"
 									style={{ animationDelay: `${delay}ms` }}
 								/>
 							))}

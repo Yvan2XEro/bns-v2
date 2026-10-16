@@ -25,43 +25,43 @@ export function SellerInsightsPreview({
 	if (!allowed || !query.data) return null;
 	const view = query.data;
 	return (
-		<section className="rounded-2xl border border-[var(--shop-accent-border,#BFDBFE)] bg-gradient-to-br from-[var(--shop-accent-soft,#EFF6FF)] to-white p-5">
+		<section className="rounded-2xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-gradient-to-br from-[var(--shop-accent-soft,var(--c-brand-soft))] to-surface p-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<p className="font-bold text-[#0F172A]">{t("title")}</p>
+					<p className="font-bold text-ink">{t("title")}</p>
 					<div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
 						<p>
-							<span className="text-[#64748B]">{t("gmvDelivered")}</span>
+							<span className="text-ink-muted">{t("gmvDelivered")}</span>
 							<br />
-							<strong className="text-[#0F172A]">
+							<strong className="text-ink">
 								{formatOrderMoney(view.totals.current.gmvDelivered, locale)}
 							</strong>
 						</p>
 						<p>
-							<span className="text-[#64748B]">{t("ordersDelivered")}</span>
+							<span className="text-ink-muted">{t("ordersDelivered")}</span>
 							<br />
-							<strong className="text-[#0F172A]">
+							<strong className="text-ink">
 								{view.totals.current.ordersDelivered}
 							</strong>
 						</p>
 						<p>
-							<span className="text-[#64748B]">{t("responseTime")}</span>
+							<span className="text-ink-muted">{t("responseTime")}</span>
 							<br />
-							<strong className="text-[#0F172A]">
+							<strong className="text-ink">
 								{responseLabel(t, view.responseTime.medianBucket)}
 							</strong>
 						</p>
 						<p>
-							<span className="text-[#64748B]">{t("conversion")}</span>
+							<span className="text-ink-muted">{t("conversion")}</span>
 							<br />
-							<strong className="text-[#0F172A]">
+							<strong className="text-ink">
 								{rateLabel(view.funnel.conversion, t)}
 							</strong>
 						</p>
 					</div>
 				</div>
 				<Link
-					className="rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+					className="rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					href="/seller/insights"
 				>
 					{t("open")}
@@ -72,7 +72,7 @@ export function SellerInsightsPreview({
 					{view.actions.slice(0, 2).map((action, index) => (
 						<li key={`${action.type}-${index}`}>
 							<Link
-								className="block rounded-lg border border-[#E2E8F0] bg-white/80 p-3 text-[#334155] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
+								className="block rounded-lg border border-line bg-surface/80 p-3 text-ink-soft text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 								href={action.href}
 							>
 								<InsightActionText action={action} />

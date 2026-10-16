@@ -68,8 +68,8 @@ export function FavoriteButton({
 						? "border border-red-200 bg-red-50 text-red-500"
 						: "bg-red-500 text-white"
 					: showLabel
-						? "border border-[#DBEAFE] bg-white text-[#64748B] hover:border-red-200 hover:text-red-500"
-						: "bg-white/80 text-[#64748B] backdrop-blur-sm hover:bg-white hover:text-red-500",
+						? "border border-brand-tint bg-surface text-ink-muted hover:border-red-200 hover:text-red-500"
+						: "bg-surface/80 text-ink-muted backdrop-blur-sm hover:bg-surface hover:text-red-500",
 				animating && "animate-heart-pop",
 				className,
 			)}

@@ -33,7 +33,7 @@ function OptionCard({
 		<label
 			htmlFor={id}
 			className={`flex min-h-11 cursor-pointer gap-3 rounded-2xl border p-4 ${
-				checked ? "border-[#1E40AF] bg-[#EFF6FF]" : "border-[#E2E8F0]"
+				checked ? "border-brand bg-brand-soft" : "border-line"
 			} ${selectable ? "" : "cursor-not-allowed opacity-60"}`}
 		>
 			<input
@@ -46,7 +46,7 @@ function OptionCard({
 				onChange={onSelect}
 			/>
 			<div className="flex-1 space-y-1">
-				<p className="flex items-center gap-2 font-medium text-[#0F172A]">
+				<p className="flex items-center gap-2 font-medium text-ink">
 					<Icon className="h-4 w-4" />
 					{option.method === "pickup"
 						? t("pickupAtShop")
@@ -54,7 +54,7 @@ function OptionCard({
 							? t("courierDelivery")
 							: t("sellerDelivery")}
 				</p>
-				<p className="flex justify-between text-[#334155] text-sm">
+				<p className="flex justify-between text-ink-soft text-sm">
 					<span>{t("fee")}</span>
 					<span>
 						{option.fee === 0
@@ -62,11 +62,11 @@ function OptionCard({
 							: formatOrderMoney(option.fee, locale)}
 					</span>
 				</p>
-				<p className="text-[#64748B] text-sm">
+				<p className="text-ink-muted text-sm">
 					{t("eta", { eta: option.etaText })}
 				</p>
 				{option.promisedBy ? (
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("promisedBy", {
 							date: new Date(option.promisedBy).toLocaleString(locale),
 						})}
@@ -80,24 +80,26 @@ function OptionCard({
 					</p>
 				) : null}
 				{point && (
-					<div className="mt-2 rounded-xl bg-white p-3 text-sm">
+					<div className="mt-2 rounded-xl bg-surface p-3 text-sm">
 						<p className="flex items-center gap-1 font-medium">
 							<MapPin className="h-4 w-4" />
 							{t("pickupPoint")}
 						</p>
 						<p>{point.address}</p>
 						{point.landmark && (
-							<p className="text-[#64748B]">{point.landmark}</p>
+							<p className="text-ink-muted">{point.landmark}</p>
 						)}
 						{point.hours && (
-							<p className="text-[#64748B]">
+							<p className="text-ink-muted">
 								{t("pickupHours", { hours: point.hours })}
 							</p>
 						)}
 					</div>
 				)}
 				{!selectable && (
-					<p className="text-[#B45309] text-sm">{t("codUnavailableOption")}</p>
+					<p className="text-sm text-warn-ink-soft">
+						{t("codUnavailableOption")}
+					</p>
 				)}
 			</div>
 		</label>
@@ -137,7 +139,7 @@ export function DeliveryOptions({
 		<fieldset disabled={disabled} className="space-y-3 disabled:opacity-60">
 			<legend className="sr-only">{t("deliveryOptions")}</legend>
 			{options.isPending && (
-				<p className="flex items-center gap-2 text-[#64748B] text-sm">
+				<p className="flex items-center gap-2 text-ink-muted text-sm">
 					<LoaderCircle className="h-4 w-4 animate-spin" />
 					{t("loadingOptions")}
 				</p>
@@ -148,7 +150,7 @@ export function DeliveryOptions({
 				</p>
 			)}
 			{options.isSuccess && list.length === 0 && (
-				<p className="text-[#334155] text-sm">{t("noDeliveryOptions")}</p>
+				<p className="text-ink-soft text-sm">{t("noDeliveryOptions")}</p>
 			)}
 			<div className="grid gap-3 sm:grid-cols-2">
 				{list.map((option) => (
@@ -162,7 +164,10 @@ export function DeliveryOptions({
 				))}
 			</div>
 			{options.data?.unavailable.map((option, index) => (
-				<p key={`${option.method}-${index}`} className="text-[#B45309] text-sm">
+				<p
+					key={`${option.method}-${index}`}
+					className="text-sm text-warn-ink-soft"
+				>
 					{t(`deliveryUnavailable.${option.reason}`, {
 						amount: formatOrderMoney(option.minOrderSubtotal ?? 0),
 					})}

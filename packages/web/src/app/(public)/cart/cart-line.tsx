@@ -27,18 +27,16 @@ export function CartLine({
 	const stepper = quantityStepper(line);
 	const quantityId = `cart-quantity-${line.id}`;
 	const stepButton =
-		"inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#DBEAFE] bg-white text-[#0F172A] hover:bg-[#EFF6FF] disabled:pointer-events-none disabled:opacity-40";
+		"inline-flex h-11 w-11 items-center justify-center rounded-xl border border-brand-tint bg-surface text-ink hover:bg-brand-soft disabled:pointer-events-none disabled:opacity-40";
 
 	return (
 		<li
 			className={cn(
-				"flex gap-4 rounded-2xl border bg-white p-4",
-				state === "unavailable"
-					? "border-red-200 bg-red-50/40"
-					: "border-[#E2E8F0]",
+				"flex gap-4 rounded-2xl border bg-surface p-4",
+				state === "unavailable" ? "border-red-200 bg-red-50/40" : "border-line",
 			)}
 		>
-			<div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#F1F5F9]">
+			<div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-subtle">
 				{line.imageUrl ? (
 					<Image
 						src={line.imageUrl}
@@ -51,7 +49,7 @@ export function CartLine({
 						)}
 					/>
 				) : (
-					<div className="flex h-full w-full items-center justify-center text-[#94A3B8]">
+					<div className="flex h-full w-full items-center justify-center text-ink-faint">
 						<ImageOff className="h-6 w-6" aria-hidden />
 					</div>
 				)}
@@ -60,14 +58,12 @@ export function CartLine({
 			<div className="min-w-0 flex-1 space-y-2">
 				<div className="flex items-start justify-between gap-3">
 					<div className="min-w-0">
-						<p className="truncate font-semibold text-[#0F172A]">
-							{line.title}
-						</p>
+						<p className="truncate font-semibold text-ink">{line.title}</p>
 						{line.variantLabel ? (
-							<p className="text-[#64748B] text-sm">{line.variantLabel}</p>
+							<p className="text-ink-muted text-sm">{line.variantLabel}</p>
 						) : null}
 					</div>
-					<p className="shrink-0 font-semibold text-[#0F172A]">
+					<p className="shrink-0 font-semibold text-ink">
 						{formatOrderMoney(line.lineSubtotal, locale)}
 					</p>
 				</div>
@@ -78,7 +74,7 @@ export function CartLine({
 				{state === "price_changed" ? (
 					<p className="text-amber-700 text-sm">
 						{t("priceChanged")}{" "}
-						<span className="text-[#64748B]">
+						<span className="text-ink-muted">
 							{t("priceWas", {
 								price: formatOrderMoney(line.priceAtAdd, locale),
 							})}
@@ -88,7 +84,7 @@ export function CartLine({
 
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
-						<label htmlFor={quantityId} className="text-[#64748B] text-sm">
+						<label htmlFor={quantityId} className="text-ink-muted text-sm">
 							{t("quantity")}
 						</label>
 						<button
@@ -104,7 +100,7 @@ export function CartLine({
 						<output
 							id={quantityId}
 							aria-live="polite"
-							className="min-w-8 text-center font-semibold text-[#0F172A]"
+							className="min-w-8 text-center font-semibold text-ink"
 						>
 							{line.quantity}
 						</output>
@@ -133,11 +129,11 @@ export function CartLine({
 				</div>
 
 				{stepper.atMax ? (
-					<p className="text-[#64748B] text-xs">{t("maxQuantity")}</p>
+					<p className="text-ink-muted text-xs">{t("maxQuantity")}</p>
 				) : state !== "unavailable" &&
 					line.stockLeft !== undefined &&
 					line.stockLeft !== null ? (
-					<p className="text-[#64748B] text-xs">
+					<p className="text-ink-muted text-xs">
 						{t("stockLeft", { count: line.stockLeft })}
 					</p>
 				) : null}

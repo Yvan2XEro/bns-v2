@@ -25,15 +25,13 @@ export function GroupClient({ group }: { group: string }) {
 
 	if (view.isPending) {
 		return (
-			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-[#64748B]" />
+			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-ink-muted" />
 		);
 	}
 	if (view.isError) {
 		return (
 			<div role="alert" className="space-y-3 text-center">
-				<p className="text-[#0F172A]">
-					{resolveErrorMessage(view.error, tRoot)}
-				</p>
+				<p className="text-ink">{resolveErrorMessage(view.error, tRoot)}</p>
 				<Button className="min-h-11" onClick={() => void view.refetch()}>
 					{t("retry")}
 				</Button>
@@ -47,17 +45,17 @@ export function GroupClient({ group }: { group: string }) {
 
 	return (
 		<div className="space-y-6">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("groupTitle")}</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("groupTitle")}</h1>
 
 			{next && nextOrder?.paymentMethod === "mobile_money" ? (
-				<section className="space-y-3 rounded-2xl border border-[#BFDBFE] bg-[#EFF6FF] p-5">
-					<p className="text-[#1E40AF] text-sm">
+				<section className="space-y-3 rounded-2xl border border-brand-tint-strong bg-brand-soft p-5">
+					<p className="text-brand text-sm">
 						{t("stepperPosition", { n: next.position, total: flow.total })}
 					</p>
-					<p className="font-semibold text-[#0F172A]">
+					<p className="font-semibold text-ink">
 						{t("payThisOrder", { orderNumber: next.orderNumber })}
 					</p>
-					<p className="text-[#334155] text-sm">{t("payNoCode")}</p>
+					<p className="text-ink-soft text-sm">{t("payNoCode")}</p>
 					<Button asChild className="min-h-11 w-full">
 						<Link
 							href={`/checkout/${encodeURIComponent(next.orderId)}/pay?g=${encodeURIComponent(group)}`}
@@ -80,21 +78,21 @@ export function GroupClient({ group }: { group: string }) {
 						<li key={order.id}>
 							<Link
 								href={href}
-								className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 hover:border-[#93C5FD]"
+								className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 hover:border-brand-line"
 							>
 								<span className="min-w-0">
-									<span className="block truncate font-semibold text-[#0F172A]">
+									<span className="block truncate font-semibold text-ink">
 										{order.shop.name}
 									</span>
-									<span className="block text-[#64748B] text-sm">
+									<span className="block text-ink-muted text-sm">
 										{order.orderNumber}
 									</span>
 								</span>
 								<span className="shrink-0 text-right">
-									<span className="block font-semibold text-[#0F172A]">
+									<span className="block font-semibold text-ink">
 										{formatOrderMoney(order.total, locale)}
 									</span>
-									<span className="block text-[#64748B] text-xs">
+									<span className="block text-ink-muted text-xs">
 										{t(STATE_KEYS[step.state])}
 									</span>
 								</span>
@@ -104,7 +102,7 @@ export function GroupClient({ group }: { group: string }) {
 				})}
 			</ul>
 
-			<p className="text-[#334155] text-sm">
+			<p className="text-ink-soft text-sm">
 				{t("summaryPaid", { count: flow.summary.paid })} ·{" "}
 				{t("summaryExpired", { count: flow.summary.expired })} ·{" "}
 				{t("summaryPending", { count: flow.summary.pending })}

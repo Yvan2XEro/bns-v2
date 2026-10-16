@@ -49,15 +49,15 @@ export function LocationDialog(props: LocationDialogProps) {
 				<DialogPrimitive.Overlay className="location-overlay fixed inset-0 z-50 bg-[#0F172A]/55 backdrop-blur-[2px]" />
 				<DialogPrimitive.Content
 					aria-describedby={undefined}
-					className="location-sheet sm:-translate-x-1/2 sm:-translate-y-1/2 fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] min-h-[60dvh] flex-col rounded-t-3xl bg-[#F8FAFC] pb-[env(safe-area-inset-bottom)] shadow-2xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-[min(640px,85vh)] sm:min-h-0 sm:w-full sm:max-w-lg sm:rounded-3xl"
+					className="location-sheet sm:-translate-x-1/2 sm:-translate-y-1/2 fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] min-h-[60dvh] flex-col rounded-t-3xl bg-canvas pb-[env(safe-area-inset-bottom)] shadow-2xl sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-[min(640px,85vh)] sm:min-h-0 sm:w-full sm:max-w-lg sm:rounded-3xl"
 				>
-					<div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-[#CBD5E1] sm:hidden" />
+					<div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-line-strong sm:hidden" />
 					<div className="flex items-center justify-between gap-3 px-5 pt-3 pb-1 sm:pt-5">
-						<DialogPrimitive.Title className="font-bold font-heading text-[#0F172A] text-xl">
+						<DialogPrimitive.Title className="font-bold font-heading text-ink text-xl">
 							{props.title ?? t("title")}
 						</DialogPrimitive.Title>
 						<DialogPrimitive.Close
-							className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F5F9] text-[#0F172A] transition-colors hover:bg-[#E2E8F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]"
+							className="flex h-10 w-10 items-center justify-center rounded-full bg-subtle text-ink transition-colors hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
 							aria-label={t("close")}
 						>
 							<X className="h-5 w-5" />
@@ -121,8 +121,8 @@ function LocationDialogBody({
 	return (
 		<>
 			<div className="px-5 pt-3 pb-2">
-				<label className="flex h-12 items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white px-4 transition-colors focus-within:border-[#1E40AF] focus-within:ring-2 focus-within:ring-[#1E40AF]/20">
-					<Search className="h-5 w-5 shrink-0 text-[#94A3B8]" />
+				<label className="flex h-12 items-center gap-3 rounded-2xl border border-line bg-surface px-4 transition-colors focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
+					<Search className="h-5 w-5 shrink-0 text-ink-faint" />
 					<span className="sr-only">{t("searchLabel")}</span>
 					<input
 						type="search"
@@ -130,13 +130,13 @@ function LocationDialogBody({
 						onChange={(e) => setQuery(e.target.value)}
 						placeholder={t("searchPlaceholder")}
 						autoComplete="off"
-						className="h-full min-w-0 flex-1 bg-transparent text-[#0F172A] text-base outline-none placeholder:text-[#94A3B8]"
+						className="h-full min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-ink-faint"
 					/>
 					{search.searching ? (
-						<Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#94A3B8]" />
+						<Loader2 className="h-4 w-4 shrink-0 animate-spin text-ink-faint" />
 					) : null}
 				</label>
-				<p className="min-h-5 pt-2 text-[#64748B] text-sm" aria-live="polite">
+				<p className="min-h-5 pt-2 text-ink-muted text-sm" aria-live="polite">
 					{status}
 				</p>
 			</div>

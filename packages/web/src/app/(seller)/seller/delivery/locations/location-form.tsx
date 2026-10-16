@@ -33,7 +33,7 @@ import { FieldError, Toggle } from "../../settings/orders/form-controls";
 import { HoursGrid } from "./hours-grid";
 
 const SELECT_CLASS =
-	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
+	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint))] bg-canvas px-3 text-ink text-sm";
 
 export function LocationDialog({
 	shopId,

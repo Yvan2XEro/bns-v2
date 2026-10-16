@@ -23,8 +23,8 @@ import {
 const STATUS_TONE_CLASSES: Record<string, string> = {
 	positive: "text-emerald-700",
 	negative: "text-red-700",
-	warning: "text-[#92400E]",
-	neutral: "text-[#64748B]",
+	warning: "text-warn-ink",
+	neutral: "text-ink-muted",
 };
 
 /**
@@ -45,11 +45,11 @@ export function QueueRow({ row }: { row: ReviewerQueueRow }) {
 	const claimable = row.status === "submitted" && !row.assignee;
 
 	return (
-		<li className="flex flex-col gap-2 rounded-xl border border-[#E2E8F0] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+		<li className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
 			<div className="flex flex-wrap items-center gap-2">
 				<Link
 					href={`/moderation/verification/${row.id}`}
-					className="font-semibold text-[#1E40AF] hover:underline"
+					className="font-semibold text-brand hover:underline"
 				>
 					{t("row.shop", { id: row.shopId ?? row.id })}
 				</Link>
@@ -93,7 +93,7 @@ export function QueueRow({ row }: { row: ReviewerQueueRow }) {
 				)}
 				<Link
 					href={`/moderation/verification/${row.id}`}
-					className="font-medium text-[#1E40AF] text-sm hover:underline"
+					className="font-medium text-brand text-sm hover:underline"
 				>
 					{t("row.view")}
 				</Link>

@@ -51,7 +51,7 @@ export function InstallAppButton() {
 				await prompt.userChoice;
 				setPrompt(null);
 			}}
-			className="flex h-10 items-center gap-2 rounded-lg border border-[#CBD5E1] bg-white px-4 font-semibold text-[#0F172A] text-xs transition-colors hover:border-[#1E40AF] hover:text-[#1E40AF]"
+			className="flex h-10 items-center gap-2 rounded-lg border border-line-strong bg-surface px-4 font-semibold text-ink text-xs transition-colors hover:border-brand hover:text-brand"
 		>
 			<MonitorDown aria-hidden="true" className="h-4 w-4" />
 			{t("installOnComputer")}

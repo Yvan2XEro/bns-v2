@@ -10,9 +10,9 @@ import {
 } from "~/lib/verification";
 
 const RUNG_STYLES = {
-	reached: "border-[#DBEAFE] bg-[#EFF6FF]",
-	current: "border-[#93C5FD] bg-white shadow-sm",
-	locked: "border-[#E2E8F0] bg-[#F8FAFC]",
+	reached: "border-brand-tint bg-brand-soft",
+	current: "border-brand-line bg-surface shadow-sm",
+	locked: "border-line bg-canvas",
 } as const;
 
 /**
@@ -28,8 +28,8 @@ export function LevelLadder({
 	const rungs = levelLadder(capabilities);
 
 	return (
-		<div className="rounded-2xl border border-[#DBEAFE] bg-white p-5">
-			<h2 className="font-bold text-[#0F172A] text-lg">{t("ladder.title")}</h2>
+		<div className="rounded-2xl border border-brand-tint bg-surface p-5">
+			<h2 className="font-bold text-ink text-lg">{t("ladder.title")}</h2>
 			<ol className="mt-4 space-y-3">
 				{rungs.map((rung) => {
 					const unlocks =
@@ -46,8 +46,8 @@ export function LevelLadder({
 								className={cn(
 									"mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
 									rung.state === "locked"
-										? "bg-[#E2E8F0] text-[#94A3B8]"
-										: "bg-[#1E40AF] text-white",
+										? "bg-line text-ink-faint"
+										: "bg-brand text-white",
 								)}
 							>
 								{rung.state === "locked" ? (
@@ -59,12 +59,12 @@ export function LevelLadder({
 							<div className="min-w-0 flex-1">
 								<div className="flex flex-wrap items-center gap-2">
 									<LevelBadge badge={badgeForLevel(rung.level)} size="sm" />
-									<span className="font-semibold text-[#0F172A] text-sm">
+									<span className="font-semibold text-ink text-sm">
 										{t(`ladder.state.${rung.state}`)}
 									</span>
 								</div>
 								{unlocks.length > 0 && (
-									<ul className="mt-2 space-y-1 text-[#475569] text-sm">
+									<ul className="mt-2 space-y-1 text-ink-mid text-sm">
 										{unlocks.map((capability) => (
 											<li key={capability}>{t(`unlocks.${capability}`)}</li>
 										))}

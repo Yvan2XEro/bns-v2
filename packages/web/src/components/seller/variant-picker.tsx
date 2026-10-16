@@ -48,7 +48,7 @@ export function toPicked(
 }
 
 const rowClass =
-	"flex w-full items-center justify-between gap-3 rounded-lg border border-[#E2E8F0] px-3 py-2 text-left text-sm hover:border-[var(--shop-accent-border,#93C5FD)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--shop-accent,#1E40AF)]";
+	"flex w-full items-center justify-between gap-3 rounded-lg border border-line px-3 py-2 text-left text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--shop-accent,var(--c-brand))]";
 
 export function VariantPicker({
 	shopId,
@@ -88,7 +88,7 @@ export function VariantPicker({
 				<button
 					type="button"
 					onClick={() => setOpenProduct(null)}
-					className="inline-flex items-center gap-1.5 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+					className="inline-flex items-center gap-1.5 text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 				>
 					<ArrowLeft aria-hidden="true" className="h-4 w-4" />
 					{openProduct.title}
@@ -105,7 +105,7 @@ export function VariantPicker({
 						<span className="truncate">
 							{variantLabel(variant.optionValues, t("defaultVariant"))}
 						</span>
-						<span className="shrink-0 text-[#64748B]">
+						<span className="shrink-0 text-ink-muted">
 							{t("inStock", { count: variant.stockOnHand })}
 						</span>
 					</button>
@@ -119,18 +119,18 @@ export function VariantPicker({
 			<div className="relative">
 				<Search
 					aria-hidden="true"
-					className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]"
+					className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint"
 				/>
 				<input
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
 					aria-label={t("pickPlaceholder")}
 					placeholder={t("pickPlaceholder")}
-					className="h-10 w-full rounded-lg border border-[#E2E8F0] pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]"
+					className="h-10 w-full rounded-lg border border-line pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent-border,var(--c-brand-line))]"
 				/>
 			</div>
 			{!isPending && data?.docs.length === 0 && (
-				<p className="px-1 py-3 text-[#64748B] text-sm">{t("noProduct")}</p>
+				<p className="px-1 py-3 text-ink-muted text-sm">{t("noProduct")}</p>
 			)}
 			{data?.docs.map((product) => (
 				<button
@@ -139,10 +139,8 @@ export function VariantPicker({
 					onClick={() => void choose(product)}
 					className={rowClass}
 				>
-					<span className="truncate font-medium text-[#0F172A]">
-						{product.title}
-					</span>
-					<span className="shrink-0 text-[#64748B]">
+					<span className="truncate font-medium text-ink">{product.title}</span>
+					<span className="shrink-0 text-ink-muted">
 						{product.variantCount > 1
 							? t("variantsCount", { count: product.variantCount })
 							: t("inStock", { count: product.stockOnHand })}

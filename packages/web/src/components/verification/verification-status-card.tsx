@@ -43,12 +43,12 @@ export function VerificationStatusCard({
 		canOpenRequest(view, renewLevel).ok;
 
 	return (
-		<div className="rounded-2xl border border-[#DBEAFE] bg-white p-5">
+		<div className="rounded-2xl border border-brand-tint bg-surface p-5">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<LevelBadge badge={view.capabilities.badge} />
 					{level === 0 && (
-						<span className="text-[#64748B] text-sm">
+						<span className="text-ink-muted text-sm">
 							{t("statusCard.noLevel")}
 						</span>
 					)}
@@ -56,7 +56,7 @@ export function VerificationStatusCard({
 				{renewalOpen && renewLevel && (
 					<Link
 						href={RENEW_HREF[renewLevel]}
-						className="inline-flex h-9 items-center rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+						className="inline-flex h-9 items-center rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 					>
 						{t("statusCard.renewCta")}
 					</Link>
@@ -64,7 +64,7 @@ export function VerificationStatusCard({
 			</div>
 
 			{view.levelExpiresAt && (
-				<p className="mt-3 text-[#64748B] text-sm">
+				<p className="mt-3 text-ink-muted text-sm">
 					{t("statusCard.expiresOn", {
 						date: new Date(view.levelExpiresAt).toLocaleDateString(locale, {
 							day: "numeric",
@@ -76,7 +76,7 @@ export function VerificationStatusCard({
 			)}
 
 			{upcomingRenewal && (
-				<p className="mt-1 text-[#64748B] text-sm">
+				<p className="mt-1 text-ink-muted text-sm">
 					{t("statusCard.renewableFrom", {
 						date: new Date(upcomingRenewal).toLocaleDateString(locale, {
 							day: "numeric",

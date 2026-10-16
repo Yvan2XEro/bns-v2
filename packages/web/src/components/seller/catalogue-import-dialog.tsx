@@ -124,7 +124,7 @@ function ImportBody({
 		const failed = outcomes.filter((outcome) => outcome.error);
 		return (
 			<div className="space-y-4">
-				<p className="rounded-lg bg-[#F0FDF4] px-3 py-2 text-[#166534] text-sm">
+				<p className="rounded-lg bg-ok-faint px-3 py-2 text-ok-ink text-sm">
 					{t("created", { count: created })}
 				</p>
 				{failed.length > 0 && (
@@ -154,7 +154,7 @@ function ImportBody({
 			<div className="flex flex-wrap items-center gap-3">
 				<label
 					htmlFor={fileId}
-					className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
+					className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 				>
 					<Upload aria-hidden="true" className="h-4 w-4" />
 					{fileName ?? t("chooseFile")}
@@ -169,13 +169,13 @@ function ImportBody({
 				<a
 					href={TEMPLATE_HREF}
 					download="modele-catalogue.csv"
-					className="inline-flex items-center gap-1 text-[var(--shop-accent-text,#1E40AF)] text-sm hover:underline"
+					className="inline-flex items-center gap-1 text-[var(--shop-accent-text,var(--c-brand))] text-sm hover:underline"
 				>
 					<Download aria-hidden="true" className="h-4 w-4" />
 					{t("template")}
 				</a>
 			</div>
-			<p className="text-[#64748B] text-xs">{t("columns")}</p>
+			<p className="text-ink-muted text-xs">{t("columns")}</p>
 
 			{parsed && parsed.fileErrors.length > 0 && (
 				<ul
@@ -192,12 +192,12 @@ function ImportBody({
 
 			{parsed && parsed.rows.length > 0 && (
 				<>
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{t("summary", { valid: valid.length, invalid })}
 					</p>
-					<div className="max-h-72 overflow-y-auto rounded-lg border border-[#E2E8F0]">
+					<div className="max-h-72 overflow-y-auto rounded-lg border border-line">
 						<table className="w-full text-sm">
-							<thead className="sticky top-0 bg-[#F8FAFC] text-left text-[#64748B] text-xs uppercase">
+							<thead className="sticky top-0 bg-canvas text-left text-ink-muted text-xs uppercase">
 								<tr>
 									<th className="px-3 py-2 font-semibold">{t("colLine")}</th>
 									<th className="px-3 py-2 font-semibold">{t("colTitle")}</th>
@@ -206,17 +206,15 @@ function ImportBody({
 							</thead>
 							<tbody>
 								{parsed.rows.map((row) => (
-									<tr key={row.line} className="border-[#F1F5F9] border-t">
-										<td className="px-3 py-2 text-[#64748B] tabular-nums">
+									<tr key={row.line} className="border-subtle border-t">
+										<td className="px-3 py-2 text-ink-muted tabular-nums">
 											{row.line}
 										</td>
-										<td className="px-3 py-2 text-[#0F172A]">
-											{row.title || "—"}
-										</td>
+										<td className="px-3 py-2 text-ink">{row.title || "—"}</td>
 										<td
 											className={cn(
 												"px-3 py-2 text-xs",
-												row.input ? "text-[#166534]" : "text-[#991b1b]",
+												row.input ? "text-ok-ink" : "text-bad-ink",
 											)}
 										>
 											{row.input
@@ -250,7 +248,7 @@ function ImportBody({
 					type="button"
 					disabled={valid.length === 0 || importProducts.isPending}
 					onClick={() => void onConfirm()}
-					className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+					className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{importProducts.isPending && (
 						<LoaderCircle

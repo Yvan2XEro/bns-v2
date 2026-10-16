@@ -28,7 +28,7 @@ export function ProtectionSheet({
 				<DialogHeader>
 					<DialogTitle>{t("sheet_title")}</DialogTitle>
 				</DialogHeader>
-				<div className="space-y-3 text-[#334155] text-sm leading-relaxed">
+				<div className="space-y-3 text-ink-soft text-sm leading-relaxed">
 					<p>{t("disclosure_holder")}</p>
 					<p>{t("sheet_release")}</p>
 					<p>{t("sheet_cancelRefund")}</p>

@@ -47,7 +47,7 @@ export function ShopTrustStrip({
 					icon: <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />,
 					label: (
 						<>
-							<strong className="text-[#0F172A]">
+							<strong className="text-ink">
 								{item.rating.toLocaleString(locale, {
 									maximumFractionDigits: 1,
 								})}
@@ -64,7 +64,9 @@ export function ShopTrustStrip({
 				};
 			case "responseTime":
 				return {
-					icon: <Clock className="h-4 w-4 text-[var(--shop-accent,#1E40AF)]" />,
+					icon: (
+						<Clock className="h-4 w-4 text-[var(--shop-accent,var(--c-brand))]" />
+					),
 					label: t(`responseTime.${item.bucket}`),
 					hint: t("responseTimeHint"),
 				};
@@ -76,21 +78,21 @@ export function ShopTrustStrip({
 				};
 			case "memberSince":
 				return {
-					icon: <CalendarDays className="h-4 w-4 text-[#64748B]" />,
+					icon: <CalendarDays className="h-4 w-4 text-ink-muted" />,
 					label: t("memberSince", { year: item.year }),
 					hint: t("memberSinceHint", { year: item.year }),
 				};
 			case "newShop":
 				return {
 					icon: (
-						<Sparkles className="h-4 w-4 text-[var(--shop-accent,#1E40AF)]" />
+						<Sparkles className="h-4 w-4 text-[var(--shop-accent,var(--c-brand))]" />
 					),
 					label: t("newShop"),
 					hint: t("newShopHint"),
 				};
 			case "activeListings":
 				return {
-					icon: <Package className="h-4 w-4 text-[#64748B]" />,
+					icon: <Package className="h-4 w-4 text-ink-muted" />,
 					label: t("activeListings", { count: item.count }),
 					hint: t("activeListingsHint"),
 				};
@@ -100,7 +102,7 @@ export function ShopTrustStrip({
 	return (
 		<ul
 			aria-label={t("label")}
-			className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[#64748B] text-sm"
+			className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-ink-muted text-sm"
 		>
 			{items.map((item) => {
 				const { icon, label, hint } = render(item);
@@ -110,7 +112,7 @@ export function ShopTrustStrip({
 						<button
 							type="button"
 							aria-describedby={id}
-							className="flex cursor-help items-center gap-1 rounded focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2"
+							className="flex cursor-help items-center gap-1 rounded focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))] focus-visible:outline-offset-2"
 						>
 							{icon}
 							<span>{label}</span>
@@ -118,7 +120,7 @@ export function ShopTrustStrip({
 						<span
 							id={id}
 							role="tooltip"
-							className="pointer-events-none absolute top-full left-0 z-30 mt-1.5 hidden w-max max-w-[16rem] rounded-lg bg-[#0F172A] px-3 py-2 text-white text-xs leading-snug shadow-lg group-focus-within:block group-hover:block"
+							className="pointer-events-none absolute top-full left-0 z-30 mt-1.5 hidden w-max max-w-[16rem] rounded-lg bg-night px-3 py-2 text-white text-xs leading-snug shadow-lg group-focus-within:block group-hover:block"
 						>
 							{hint}
 						</span>

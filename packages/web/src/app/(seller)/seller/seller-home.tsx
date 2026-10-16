@@ -112,12 +112,12 @@ function LaunchCard({
 	return (
 		<section
 			aria-labelledby="launch-title"
-			className="rounded-xl border border-[#E2E8F0] bg-white p-5"
+			className="rounded-xl border border-line bg-surface p-5"
 		>
-			<h2 id="launch-title" className="font-bold text-[#0F172A] text-[17px]">
+			<h2 id="launch-title" className="font-bold text-[17px] text-ink">
 				{t("launchTitle")}
 			</h2>
-			<p className="mt-1 text-[#334155] text-sm">{t("launchBody")}</p>
+			<p className="mt-1 text-ink-soft text-sm">{t("launchBody")}</p>
 			<ul className="mt-3 grid gap-2 md:grid-cols-2">
 				{actions.map((action, index) => {
 					const Icon = LAUNCH_ICONS[action];
@@ -126,28 +126,28 @@ function LaunchCard({
 							<TargetLink
 								target={launchTarget(action, facts)}
 								shareMessage={message}
-								className="flex h-full min-h-16 items-center gap-3 rounded-lg border border-[#E2E8F0] p-3 hover:border-[var(--shop-accent-border,#BFDBFE)] hover:bg-[#F8FAFC]"
+								className="flex h-full min-h-16 items-center gap-3 rounded-lg border border-line p-3 hover:border-[var(--shop-accent-border,var(--c-brand-tint-strong))] hover:bg-canvas"
 							>
 								<span
 									className={
 										index === 0
-											? "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#DCFCE7] text-[#166534]"
-											: "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]"
+											? "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-ok-soft text-ok-ink"
+											: "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]"
 									}
 								>
 									<Icon aria-hidden="true" className="h-[18px] w-[18px]" />
 								</span>
 								<span className="min-w-0 flex-1">
-									<span className="block font-semibold text-[#0F172A] text-sm">
+									<span className="block font-semibold text-ink text-sm">
 										{t(`launch.${action}.title`)}
 									</span>
-									<span className="block text-[#64748B] text-xs">
+									<span className="block text-ink-muted text-xs">
 										{t(`launch.${action}.body`)}
 									</span>
 								</span>
 								<ChevronRight
 									aria-hidden="true"
-									className="h-4 w-4 shrink-0 text-[#94A3B8]"
+									className="h-4 w-4 shrink-0 text-ink-faint"
 								/>
 							</TargetLink>
 						</li>
@@ -181,31 +181,28 @@ function TipCard({
 	return (
 		<aside
 			aria-labelledby="seller-tip-title"
-			className="flex flex-col gap-2 rounded-xl border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] p-4"
+			className="flex flex-col gap-2 rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-[var(--shop-accent-soft,var(--c-brand-soft))] p-4"
 		>
-			<span className="inline-flex items-center gap-1.5 font-bold text-[var(--shop-accent-text,#1E40AF)] text-xs uppercase tracking-[0.4px]">
+			<span className="inline-flex items-center gap-1.5 font-bold text-[var(--shop-accent-text,var(--c-brand))] text-xs uppercase tracking-[0.4px]">
 				<Lightbulb aria-hidden="true" className="h-4 w-4" />
 				{t("tipLabel")}
 			</span>
-			<h2
-				id="seller-tip-title"
-				className="font-semibold text-[#0F172A] text-[15px]"
-			>
+			<h2 id="seller-tip-title" className="font-semibold text-[15px] text-ink">
 				{t(`tip.${tip}.title`)}
 			</h2>
-			<p className="text-[#334155] text-sm leading-5">{t(`tip.${tip}.body`)}</p>
+			<p className="text-ink-soft text-sm leading-5">{t(`tip.${tip}.body`)}</p>
 			<div className="flex flex-wrap items-center gap-2 pt-1">
 				<TargetLink
 					target={tipTarget(tip, facts)}
 					shareMessage={message}
-					className="inline-flex h-9 items-center rounded-lg bg-[var(--shop-accent,#1E40AF)] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+					className="inline-flex h-9 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{t(`tip.${tip}.action`)}
 				</TargetLink>
 				<button
 					type="button"
 					onClick={onDismiss}
-					className="h-9 rounded-lg px-3 font-semibold text-[#334155] text-sm hover:bg-white/60"
+					className="h-9 rounded-lg px-3 font-semibold text-ink-soft text-sm hover:bg-white/60"
 				>
 					{t("tipDismiss")}
 				</button>
@@ -219,18 +216,18 @@ export function SellerGuideLink() {
 	return (
 		<Link
 			href="/seller/guide"
-			className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-4 hover:bg-[#F8FAFC]"
+			className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 hover:bg-canvas"
 		>
-			<span className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#F1F5F9] text-[#475569]">
+			<span className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-subtle text-ink-mid">
 				<BookOpen aria-hidden="true" className="h-[18px] w-[18px]" />
 			</span>
 			<span className="min-w-0 flex-1">
-				<span className="block font-semibold text-[#0F172A] text-sm">
+				<span className="block font-semibold text-ink text-sm">
 					{t("title")}
 				</span>
-				<span className="block text-[#64748B] text-xs">{t("entryBody")}</span>
+				<span className="block text-ink-muted text-xs">{t("entryBody")}</span>
 			</span>
-			<ChevronRight aria-hidden="true" className="h-4 w-4 text-[#94A3B8]" />
+			<ChevronRight aria-hidden="true" className="h-4 w-4 text-ink-faint" />
 		</Link>
 	);
 }
@@ -262,8 +259,8 @@ export function SellerHome({
 	if (home.query.isPending) {
 		return (
 			<div className="space-y-4" aria-busy="true">
-				<span className="block h-24 rounded-xl bg-[#F1F5F9] motion-safe:animate-pulse" />
-				<span className="block h-48 rounded-xl bg-[#F1F5F9] motion-safe:animate-pulse" />
+				<span className="block h-24 rounded-xl bg-subtle motion-safe:animate-pulse" />
+				<span className="block h-48 rounded-xl bg-subtle motion-safe:animate-pulse" />
 			</div>
 		);
 	}

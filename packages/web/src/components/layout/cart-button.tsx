@@ -21,11 +21,11 @@ export function CartButton({ className }: { className?: string }) {
 		<Link
 			href="/cart"
 			aria-label={t("cartWithCount", { count })}
-			className={`relative flex h-9 w-9 items-center justify-center rounded-lg text-[#64748B] transition-all duration-200 hover:scale-110 hover:bg-[#F1F5F9] hover:text-[#0F172A] active:scale-95 ${className ?? ""}`}
+			className={`relative flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted transition-all duration-200 hover:scale-110 hover:bg-subtle hover:text-ink active:scale-95 ${className ?? ""}`}
 		>
 			<ShoppingCart aria-hidden="true" className="h-5 w-5" />
 			{count > 0 && (
-				<span className="-top-0.5 -right-0.5 absolute flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F59E0B] px-1 font-bold text-[#0F172A] text-[10px]">
+				<span className="-top-0.5 -right-0.5 absolute flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#F59E0B] px-1 font-bold text-[10px] text-ink">
 					{count > 99 ? "99+" : count}
 				</span>
 			)}

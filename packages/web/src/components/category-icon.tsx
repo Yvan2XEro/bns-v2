@@ -120,7 +120,7 @@ export function CategoryIcon({
 
 	return (
 		<div
-			className={`flex items-center justify-center rounded-full bg-[#EFF6FF] text-[#1E40AF] ${className ?? ""}`}
+			className={`flex items-center justify-center rounded-full bg-brand-soft text-brand ${className ?? ""}`}
 			style={{ width: size, height: size }}
 			{...(decorative
 				? { "aria-hidden": true }

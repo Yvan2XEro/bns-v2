@@ -40,7 +40,7 @@ export function OfferProductPicker({
 			<DialogTrigger asChild>
 				<button
 					type="button"
-					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{children}
 				</button>
@@ -52,7 +52,7 @@ export function OfferProductPicker({
 					<span className="sr-only">{t("searchProduct")}</span>
 					<Search
 						aria-hidden="true"
-						className="absolute top-3 left-3 h-4 w-4 text-[#94A3B8]"
+						className="absolute top-3 left-3 h-4 w-4 text-ink-faint"
 					/>
 					<input
 						type="search"
@@ -60,21 +60,21 @@ export function OfferProductPicker({
 						maxLength={120}
 						onChange={(event) => setSearch(event.target.value)}
 						placeholder={t("searchProduct")}
-						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,#1E40AF)] focus:ring-2 focus:ring-[var(--shop-accent-border,#DBEAFE)]"
+						className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,var(--c-brand))] focus:ring-2 focus:ring-[var(--shop-accent-border,var(--c-brand-tint))]"
 					/>
 				</label>
-				<ul className="max-h-80 divide-y divide-[#F1F5F9] overflow-y-auto">
+				<ul className="max-h-80 divide-y divide-subtle overflow-y-auto">
 					{catalogue.isError ? (
-						<li className="py-3 text-[#64748B] text-sm">{t("pickerError")}</li>
+						<li className="py-3 text-ink-muted text-sm">{t("pickerError")}</li>
 					) : catalogue.data && rows.length === 0 ? (
-						<li className="py-3 text-[#64748B] text-sm">{t("pickerEmpty")}</li>
+						<li className="py-3 text-ink-muted text-sm">{t("pickerEmpty")}</li>
 					) : null}
 					{rows.map((row) => (
 						<li key={row.id}>
 							<Link
 								href={`/seller/resale/products/${encodeURIComponent(row.id)}`}
 								onClick={() => setOpen(false)}
-								className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-[var(--shop-accent-text,#1E40AF)]"
+								className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-[var(--shop-accent-text,var(--c-brand))]"
 							>
 								<span className="min-w-0 truncate font-medium">
 									{row.title}

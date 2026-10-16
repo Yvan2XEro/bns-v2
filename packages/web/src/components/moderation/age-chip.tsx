@@ -16,7 +16,7 @@ export function AgeChip({ age }: { age: RelativeAge | null }) {
 				: t("age.days", { count: age.count });
 
 	return (
-		<span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#F1F5F9] px-2 py-0.5 font-medium text-[#334155] text-[11px]">
+		<span className="inline-flex items-center whitespace-nowrap rounded-full bg-subtle px-2 py-0.5 font-medium text-[11px] text-ink-soft">
 			{label}
 		</span>
 	);

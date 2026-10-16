@@ -27,8 +27,8 @@ export function DeliveryTabs() {
 					className={cn(
 						"flex min-h-11 shrink-0 items-center rounded-lg px-4 font-medium text-sm",
 						pathname === href
-							? "bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]"
-							: "text-[#334155] hover:bg-[#F8FAFC]",
+							? "bg-[var(--shop-accent-soft,var(--c-brand-soft))] text-[var(--shop-accent-text,var(--c-brand))]"
+							: "text-ink-soft hover:bg-canvas",
 					)}
 				>
 					{label}

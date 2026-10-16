@@ -118,7 +118,7 @@ function SupplierHub({ shopId, tab }: { shopId: string; tab: ResaleTab }) {
 						<ViewSwitch view="supplier" />
 						<Link
 							href={`${resaleHref("supplier", "orders")}#resale-rules`}
-							className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC]"
+							className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:bg-canvas"
 						>
 							<ScrollText aria-hidden="true" className="h-4 w-4" />
 							{t("rulesButton")}
@@ -175,10 +175,10 @@ function HubHeader({
 	return (
 		<header className="flex flex-wrap items-end justify-between gap-4">
 			<div className="space-y-1">
-				<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-tight">
+				<h1 className="font-extrabold text-[28px] text-ink tracking-tight">
 					{title}
 				</h1>
-				<p className="text-[#64748B] text-sm">{subtitle}</p>
+				<p className="text-ink-muted text-sm">{subtitle}</p>
 			</div>
 			{actions ? (
 				<div className="flex flex-wrap items-center gap-2.5">{actions}</div>
@@ -192,7 +192,7 @@ function ViewSwitch({ view }: { view: ResaleView }) {
 	return (
 		<nav
 			aria-label={t("viewSwitch")}
-			className="inline-flex rounded-lg border border-[#E2E8F0] bg-white p-1"
+			className="inline-flex rounded-lg border border-line bg-surface p-1"
 		>
 			{(["reseller", "supplier"] as const).map((option) => (
 				<Link
@@ -202,8 +202,8 @@ function ViewSwitch({ view }: { view: ResaleView }) {
 					className={cn(
 						"inline-flex h-8 items-center rounded-md px-3 font-semibold text-sm",
 						option === view
-							? "bg-[#0F172A] text-white"
-							: "text-[#475569] hover:text-[#0F172A]",
+							? "bg-night text-white"
+							: "text-ink-mid hover:text-ink",
 					)}
 				>
 					{t(option === "supplier" ? "viewSupplier" : "viewReseller")}
@@ -227,7 +227,7 @@ function Tabs({
 	return (
 		<nav
 			aria-label={label}
-			className="-mx-4 flex gap-7 overflow-x-auto border-[#E2E8F0] border-b px-4 sm:mx-0 sm:px-0"
+			className="-mx-4 flex gap-7 overflow-x-auto border-line border-b px-4 sm:mx-0 sm:px-0"
 		>
 			{items.map((item) => {
 				const current = item.tab === active;
@@ -239,8 +239,8 @@ function Tabs({
 						className={cn(
 							"-mb-px flex shrink-0 items-center gap-1.5 border-b-2 py-2.5 font-semibold text-[15px]",
 							current
-								? "border-[var(--shop-accent,#1E40AF)] text-[var(--shop-accent-text,#1E40AF)]"
-								: "border-transparent text-[#64748B] hover:text-[#0F172A]",
+								? "border-[var(--shop-accent,var(--c-brand))] text-[var(--shop-accent-text,var(--c-brand))]"
+								: "border-transparent text-ink-muted hover:text-ink",
 						)}
 					>
 						{item.label}
@@ -249,8 +249,8 @@ function Tabs({
 								className={cn(
 									"rounded-full px-1.5 py-px text-xs",
 									current
-										? "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]"
-										: "bg-[#F1F5F9] text-[#64748B]",
+										? "bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]"
+										: "bg-subtle text-ink-muted",
 								)}
 							>
 								{item.count}

@@ -39,7 +39,7 @@ export function InventoryTable({
 	return (
 		<div className="overflow-x-auto">
 			<table className="w-full min-w-[760px] text-sm">
-				<thead className="border-[#E2E8F0] border-b bg-[#F8FAFC] text-left text-[#64748B] text-xs uppercase">
+				<thead className="border-line border-b bg-canvas text-left text-ink-muted text-xs uppercase">
 					<tr>
 						<th className="px-4 py-3 font-semibold">{t("colVariant")}</th>
 						<th className="px-4 py-3 text-right font-semibold">
@@ -72,11 +72,11 @@ export function InventoryTable({
 						return (
 							<tr
 								key={field.id}
-								className="border-[#F1F5F9] border-b last:border-0"
+								className="border-subtle border-b last:border-0"
 							>
 								<td className="px-4 py-2">
 									<div className="flex items-center gap-3">
-										<div className="h-[38px] w-[38px] shrink-0 overflow-hidden rounded-lg bg-[#F1F5F9] print:hidden">
+										<div className="h-[38px] w-[38px] shrink-0 overflow-hidden rounded-lg bg-subtle print:hidden">
 											{row.image && (
 												// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
 												<img
@@ -87,10 +87,8 @@ export function InventoryTable({
 											)}
 										</div>
 										<div className="min-w-0">
-											<p className="font-medium text-[#0F172A]">
-												{row.productTitle}
-											</p>
-											<p className="text-[#94A3B8] text-xs">
+											<p className="font-medium text-ink">{row.productTitle}</p>
+											<p className="text-ink-faint text-xs">
 												{[row.label, row.sku].filter(Boolean).join(" · ")}
 											</p>
 										</div>
@@ -107,8 +105,8 @@ export function InventoryTable({
 										aria-invalid={invalid}
 										{...register(`rows.${index}.counted`)}
 										className={cn(
-											"h-9 w-full rounded-md border px-2 text-right outline-none focus:border-[var(--shop-accent-border,#93C5FD)]",
-											invalid ? "border-red-400 bg-red-50" : "border-[#E2E8F0]",
+											"h-9 w-full rounded-md border px-2 text-right outline-none focus:border-[var(--shop-accent-border,var(--c-brand-line))]",
+											invalid ? "border-red-400 bg-red-50" : "border-line",
 										)}
 									/>
 								</td>
@@ -116,16 +114,16 @@ export function InventoryTable({
 									className={cn(
 										"px-4 py-2 text-right font-semibold",
 										delta === null || delta === 0
-											? "text-[#64748B]"
+											? "text-ink-muted"
 											: delta < 0
-												? "text-[#991b1b]"
-												: "text-[#166534]",
+												? "text-bad-ink"
+												: "text-ok-ink",
 									)}
 								>
 									{delta === null ? "—" : delta > 0 ? `+${delta}` : delta}
 								</td>
 								{showCost && (
-									<td className="px-4 py-2 text-right text-[#64748B]">
+									<td className="px-4 py-2 text-right text-ink-muted">
 										{delta === null || row.cost === null
 											? "—"
 											: formatOrderMoney(delta * row.cost)}
@@ -136,8 +134,8 @@ export function InventoryTable({
 										className={cn(
 											"inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 font-semibold text-xs",
 											counted === null
-												? "bg-[#F1F5F9] text-[#475569]"
-												: "bg-[#DCFCE7] text-[#166534]",
+												? "bg-subtle text-ink-mid"
+												: "bg-ok-soft text-ok-ink",
 										)}
 									>
 										{t(counted === null ? "statusTodo" : "statusCounted")}

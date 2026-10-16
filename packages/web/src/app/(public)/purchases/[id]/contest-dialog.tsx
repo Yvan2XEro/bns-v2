@@ -44,7 +44,7 @@ export function ContestDialog({
 		>
 			<form onSubmit={onSubmit} className="space-y-4" noValidate>
 				{contestBy && (
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("contestWindow", { date: formatOrderDate(contestBy, locale) })}
 					</p>
 				)}

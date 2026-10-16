@@ -30,29 +30,29 @@ export function AmountStrip({ amounts }: { amounts: SellerPaymentAmounts }) {
 
 	return (
 		<section aria-labelledby="amounts-title" className="space-y-3">
-			<h2 id="amounts-title" className="font-semibold text-[#0F172A]">
+			<h2 id="amounts-title" className="font-semibold text-ink">
 				{t("seller_amountsTitle")}
 			</h2>
 			<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
 				{rows.map((row) => (
 					<div
 						key={row.key}
-						className="rounded-2xl border border-[#E2E8F0] bg-white p-4"
+						className="rounded-2xl border border-line bg-surface p-4"
 					>
-						<p className="text-[#64748B] text-xs">{t(LABEL_KEYS[row.key])}</p>
+						<p className="text-ink-muted text-xs">{t(LABEL_KEYS[row.key])}</p>
 						{row.amount === null ? (
-							<p className="mt-1 font-medium text-[#334155] text-sm">
+							<p className="mt-1 font-medium text-ink-soft text-sm">
 								{t("seller_providerSchedule")}
 							</p>
 						) : (
-							<p className="mt-1 font-bold text-[#0F172A] text-lg">
+							<p className="mt-1 font-bold text-ink text-lg">
 								{formatOrderMoney(row.amount, locale)}
 							</p>
 						)}
 					</div>
 				))}
 			</div>
-			<p className="text-[#64748B] text-xs">{t("disclosure_sellerLegend")}</p>
+			<p className="text-ink-muted text-xs">{t("disclosure_sellerLegend")}</p>
 		</section>
 	);
 }

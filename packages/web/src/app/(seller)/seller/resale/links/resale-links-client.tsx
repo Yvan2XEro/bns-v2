@@ -75,10 +75,10 @@ export function ResaleLinksClient({
 			{embedded ? null : (
 				<header className="flex flex-wrap items-end justify-between gap-4">
 					<div>
-						<h1 className="font-bold text-2xl text-[#0F172A]">
+						<h1 className="font-bold text-2xl text-ink">
 							{t(side === "supplier" ? "supplierTitle" : "resellerTitle")}
 						</h1>
-						<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
+						<p className="mt-1 max-w-2xl text-ink-muted text-sm">
 							{t(
 								side === "supplier"
 									? "supplierDescription"
@@ -89,7 +89,7 @@ export function ResaleLinksClient({
 				</header>
 			)}
 			<div className="flex flex-wrap items-center gap-3">
-				<label className="grid gap-1 font-medium text-[#334155] text-sm">
+				<label className="grid gap-1 font-medium text-ink-soft text-sm">
 					<span>{t("filter")}</span>
 					<select
 						value={state.filter}
@@ -106,7 +106,7 @@ export function ResaleLinksClient({
 							)
 								patch({ filter: value as Filter });
 						}}
-						className="h-11 min-w-48 rounded-lg border border-[#CBD5E1] bg-white px-3"
+						className="h-11 min-w-48 rounded-lg border border-line-strong bg-surface px-3"
 					>
 						{(
 							["all", "requested", "approved", "suspended", "revoked"] as const
@@ -139,7 +139,7 @@ export function ResaleLinksClient({
 				/>
 			) : null}
 			{links.data?.docs.length === 0 ? (
-				<p className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center font-medium text-[#475569]">
+				<p className="rounded-2xl border border-line-strong border-dashed bg-surface px-6 py-14 text-center font-medium text-ink-mid">
 					{t("empty")}
 				</p>
 			) : null}
@@ -195,11 +195,11 @@ function LinkCard({
 	const actionClass =
 		"min-h-10 rounded-lg px-3 font-semibold text-sm disabled:opacity-50";
 	return (
-		<article className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+		<article className="space-y-4 rounded-2xl border border-line bg-surface p-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h2 className="font-bold text-[#0F172A]">{link.partnerShop.name}</h2>
-					<p className="mt-1 text-[#64748B] text-sm">
+					<h2 className="font-bold text-ink">{link.partnerShop.name}</h2>
+					<p className="mt-1 text-ink-muted text-sm">
 						{link.partnerShop.handle
 							? `@${link.partnerShop.handle}`
 							: t("shopHandleUnavailable")}
@@ -211,12 +211,12 @@ function LinkCard({
 						) : null}
 					</p>
 				</div>
-				<span className="rounded-full bg-[#FEF3C7] px-3 py-1 font-semibold text-[#92400E] text-xs">
+				<span className="rounded-full bg-warn-soft px-3 py-1 font-semibold text-warn-ink text-xs">
 					{t(`status_${link.status}`)}
 				</span>
 			</div>
 			{link.message ? (
-				<p className="rounded-xl bg-[#F8FAFC] p-3 text-[#475569] text-sm">
+				<p className="rounded-xl bg-canvas p-3 text-ink-mid text-sm">
 					{link.message}
 				</p>
 			) : null}
@@ -239,7 +239,7 @@ function LinkCard({
 				/>
 			</dl>
 			{side === "supplier" ? (
-				<div className="flex flex-wrap gap-2 border-[#E2E8F0] border-t pt-3">
+				<div className="flex flex-wrap gap-2 border-line border-t pt-3">
 					{link.status === "requested" ? (
 						<>
 							<input
@@ -248,7 +248,7 @@ function LinkCard({
 								maxLength={1000}
 								onChange={(event) => setNote(event.target.value)}
 								placeholder={t("decisionNotePlaceholder")}
-								className="h-10 min-w-48 rounded-lg border border-[#CBD5E1] bg-white px-3 text-sm"
+								className="h-10 min-w-48 rounded-lg border border-line-strong bg-surface px-3 text-sm"
 							/>
 							<button
 								type="button"
@@ -286,7 +286,7 @@ function LinkCard({
 									)
 										setReason(value as Reason);
 								}}
-								className="h-10 rounded-lg border border-[#CBD5E1] bg-white px-2 text-sm"
+								className="h-10 rounded-lg border border-line-strong bg-surface px-2 text-sm"
 							>
 								{(
 									[
@@ -308,7 +308,7 @@ function LinkCard({
 								maxLength={1000}
 								onChange={(event) => setNote(event.target.value)}
 								placeholder={t("decisionNotePlaceholder")}
-								className="h-10 min-w-48 rounded-lg border border-[#CBD5E1] bg-white px-3 text-sm"
+								className="h-10 min-w-48 rounded-lg border border-line-strong bg-surface px-3 text-sm"
 							/>
 							<button
 								type="button"
@@ -349,13 +349,13 @@ function LinkCard({
 						</>
 					) : null}
 					{link.status === "revoked" ? (
-						<p className="text-[#64748B] text-sm">{t("revokedHelp")}</p>
+						<p className="text-ink-muted text-sm">{t("revokedHelp")}</p>
 					) : null}
 				</div>
 			) : null}
 			{canCancelResaleRequest(side, link.status) ? (
-				<div className="flex flex-wrap items-center gap-3 border-[#E2E8F0] border-t pt-3">
-					<p className="flex-1 text-[#64748B] text-sm">
+				<div className="flex flex-wrap items-center gap-3 border-line border-t pt-3">
+					<p className="flex-1 text-ink-muted text-sm">
 						{t("pendingRequestHelp")}
 					</p>
 					<button
@@ -379,9 +379,9 @@ function LevelLabel({ level }: { level: number }) {
 
 function Metric({ value, label }: { value: number; label: string }) {
 	return (
-		<div className="rounded-lg bg-[#F8FAFC] p-2">
-			<dt className="text-[#64748B] text-xs">{label}</dt>
-			<dd className="mt-1 font-bold text-[#0F172A]">{value}</dd>
+		<div className="rounded-lg bg-canvas p-2">
+			<dt className="text-ink-muted text-xs">{label}</dt>
+			<dd className="mt-1 font-bold text-ink">{value}</dd>
 		</div>
 	);
 }

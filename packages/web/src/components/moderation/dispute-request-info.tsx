@@ -22,9 +22,9 @@ export function DisputeRequestInfo({
 	const state = infoRequestState(messages);
 
 	return (
-		<section className="space-y-3 rounded-xl border border-[#E2E8F0] bg-white p-4">
-			<h2 className="font-semibold text-[#0F172A]">{t("requestInfo")}</h2>
-			<p className="text-[#64748B] text-sm">
+		<section className="space-y-3 rounded-xl border border-line bg-surface p-4">
+			<h2 className="font-semibold text-ink">{t("requestInfo")}</h2>
+			<p className="text-ink-muted text-sm">
 				{t("infoRequestsUsed", { used: state.used, cap: state.cap })}
 			</p>
 			{state.exhausted ? (
@@ -35,7 +35,7 @@ export function DisputeRequestInfo({
 				<>
 					<select
 						aria-label={t("infoFrom")}
-						className="w-full rounded-lg border border-[#CBD5E1] p-2 text-sm"
+						className="w-full rounded-lg border border-line-strong p-2 text-sm"
 						value={from}
 						onChange={(e) =>
 							setFrom(e.target.value === "buyer" ? "buyer" : "seller")
@@ -48,7 +48,7 @@ export function DisputeRequestInfo({
 						aria-label={t("infoMessage")}
 						rows={3}
 						maxLength={2000}
-						className="w-full rounded-lg border border-[#CBD5E1] p-2 text-sm"
+						className="w-full rounded-lg border border-line-strong p-2 text-sm"
 						value={message}
 						onChange={(e) => setMessage(e.target.value)}
 					/>

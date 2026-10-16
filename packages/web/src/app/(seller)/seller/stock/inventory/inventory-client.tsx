@@ -340,7 +340,7 @@ export function InventoryClient({
 				/>
 			)}
 			{variantsQuery.isSuccess && (
-				<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+				<div className="overflow-hidden rounded-xl border border-line bg-surface">
 					<InventoryTable
 						fields={fields}
 						rows={rows}
@@ -349,8 +349,8 @@ export function InventoryClient({
 						indexes={pageIndexes}
 						showCost={showCost}
 					/>
-					<div className="flex flex-wrap items-center gap-3 border-[#E2E8F0] border-t bg-[#F8FAFC] px-4 py-3 print:hidden">
-						<p className="text-[#64748B] text-xs">
+					<div className="flex flex-wrap items-center gap-3 border-line border-t bg-canvas px-4 py-3 print:hidden">
+						<p className="text-ink-muted text-xs">
 							{ti("footnote", {
 								count: stats.withGap,
 								date: dayLabel(null),
@@ -358,7 +358,7 @@ export function InventoryClient({
 						</p>
 						<div className="flex flex-wrap items-center gap-2 text-sm sm:ml-auto">
 							{visible.length > 0 && (
-								<span className="text-[#64748B]">
+								<span className="text-ink-muted">
 									{ti("range", {
 										from: (page - 1) * PAGE_SIZE + 1,
 										to: (page - 1) * PAGE_SIZE + pageIndexes.length,
@@ -370,7 +370,7 @@ export function InventoryClient({
 								type="button"
 								disabled={page <= 1}
 								onClick={() => patch({ page: page - 1 })}
-								className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 disabled:opacity-40"
+								className="h-9 rounded-lg border border-line bg-surface px-3 disabled:opacity-40"
 							>
 								{ti("previous")}
 							</button>
@@ -378,14 +378,14 @@ export function InventoryClient({
 								type="button"
 								disabled={page >= pageCount}
 								onClick={() => patch({ page: page + 1 })}
-								className="h-9 rounded-lg border border-[#E2E8F0] bg-white px-3 disabled:opacity-40"
+								className="h-9 rounded-lg border border-line bg-surface px-3 disabled:opacity-40"
 							>
 								{ti("next")}
 							</button>
 							<button
 								type="submit"
 								disabled={submitDisabled}
-								className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
+								className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
 							>
 								{stockCount.isPending && (
 									<LoaderCircle

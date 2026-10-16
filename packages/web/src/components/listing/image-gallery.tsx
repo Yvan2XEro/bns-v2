@@ -43,8 +43,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 
 	if (images.length === 0) {
 		return (
-			<div className="flex aspect-[4/3] items-center justify-center bg-[#F1F5F9]">
-				<span className="text-[#94A3B8]">{t("noImages")}</span>
+			<div className="flex aspect-[4/3] items-center justify-center bg-subtle">
+				<span className="text-ink-faint">{t("noImages")}</span>
 			</div>
 		);
 	}
@@ -97,7 +97,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									e.stopPropagation();
 									prev();
 								}}
-								className="-translate-y-1/2 absolute top-1/2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-[#0F172A] shadow backdrop-blur-sm transition-colors hover:bg-white"
+								className="-translate-y-1/2 absolute top-1/2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
 							>
 								<ChevronLeft className="h-5 w-5" />
 							</button>
@@ -107,7 +107,7 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									e.stopPropagation();
 									next();
 								}}
-								className="-translate-y-1/2 absolute top-1/2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-[#0F172A] shadow backdrop-blur-sm transition-colors hover:bg-white"
+								className="-translate-y-1/2 absolute top-1/2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
 							>
 								<ChevronRight className="h-5 w-5" />
 							</button>
@@ -126,8 +126,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 								onClick={() => goTo(i)}
 								className={`relative h-12 overflow-hidden rounded-lg border-2 transition-colors sm:h-[72px] ${
 									i === currentIndex
-										? "border-[#1E40AF]"
-										: "border-transparent hover:border-[#94A3B8]"
+										? "border-brand"
+										: "border-transparent hover:border-ink-faint"
 								}`}
 							>
 								<Image

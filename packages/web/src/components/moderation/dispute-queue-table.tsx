@@ -28,9 +28,9 @@ export function DisputeQueueTable({
 	});
 
 	return (
-		<div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
+		<div className="overflow-x-auto rounded-xl border border-line bg-surface">
 			<table className="w-full text-left text-sm">
-				<thead className="bg-[#F8FAFC] text-[#64748B] text-xs">
+				<thead className="bg-canvas text-ink-muted text-xs">
 					<tr>
 						<th className="px-3 py-2">{t("col.number")}</th>
 						<th className="px-3 py-2">{t("col.reason")}</th>
@@ -46,15 +46,15 @@ export function DisputeQueueTable({
 					{rows.map((row) => {
 						const tone = deadlineTone(row);
 						return (
-							<tr key={row.id} className="border-[#E2E8F0] border-t">
+							<tr key={row.id} className="border-line border-t">
 								<td className="px-3 py-2">
 									<Link
 										href={`/moderation/disputes/${row.id}`}
-										className="font-semibold text-[#1E40AF] hover:underline"
+										className="font-semibold text-brand hover:underline"
 									>
 										{row.number}
 									</Link>
-									<p className="text-[#64748B] text-xs">{row.orderNumber}</p>
+									<p className="text-ink-muted text-xs">{row.orderNumber}</p>
 								</td>
 								<td className="px-3 py-2">
 									{row.reason

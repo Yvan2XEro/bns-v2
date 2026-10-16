@@ -27,7 +27,7 @@ function Changed({ on, children }: { on: boolean; children: ReactNode }) {
 	const t = useTranslations("Checkout");
 	if (!on) return <>{children}</>;
 	return (
-		<span className="rounded bg-[#FEF3C7] px-1 font-semibold text-[#92400E]">
+		<span className="rounded bg-warn-soft px-1 font-semibold text-warn-ink">
 			{children} <span className="ml-1 text-xs">({t("changed")})</span>
 		</span>
 	);
@@ -50,24 +50,24 @@ function SellerCard({
 
 	return (
 		<div className="space-y-2">
-			<p className="font-semibold text-[#64748B] text-xs uppercase tracking-wide">
+			<p className="font-semibold text-ink-muted text-xs uppercase tracking-wide">
 				{t("sellerLabel")}
 			</p>
-			<div className="space-y-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3.5">
+			<div className="space-y-3 rounded-xl border border-line bg-canvas p-3.5">
 				<CartShopHeader shop={shop} size="sm" />
 				{sinceYear ? (
-					<p className="text-[#64748B] text-xs">
+					<p className="text-ink-muted text-xs">
 						{t("sellerSince", { year: String(sinceYear) })}
 					</p>
 				) : null}
 				{address ? (
-					<p className="flex items-start gap-1.5 text-[#334155] text-[13px]">
+					<p className="flex items-start gap-1.5 text-[13px] text-ink-soft">
 						<MapPin aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 						{address}
 					</p>
 				) : null}
 				{reviews > 0 || phone ? (
-					<div className="flex flex-wrap gap-x-4 gap-y-1 text-[#334155] text-[13px]">
+					<div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-soft">
 						{reviews > 0 ? (
 							<span className="inline-flex items-center gap-1.5">
 								<Star
@@ -90,7 +90,7 @@ function SellerCard({
 						) : null}
 					</div>
 				) : null}
-				<p className="text-[#64748B] text-xs leading-relaxed">
+				<p className="text-ink-muted text-xs leading-relaxed">
 					{t("sellerIsShop")}
 				</p>
 			</div>
@@ -160,14 +160,12 @@ export function CheckoutSummary({
 				: t("sellerDelivery");
 
 	return (
-		<aside className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 lg:sticky lg:top-6">
+		<aside className="space-y-4 rounded-2xl border border-line bg-surface p-5 lg:sticky lg:top-6">
 			<div className="flex items-center justify-between gap-3">
-				<h2 className="font-bold text-[#0F172A] text-xl">
-					{t("summaryTitle")}
-				</h2>
+				<h2 className="font-bold text-ink text-xl">{t("summaryTitle")}</h2>
 				<Link
 					href="/cart"
-					className="inline-flex min-h-11 items-center text-[#1E40AF] text-sm underline"
+					className="inline-flex min-h-11 items-center text-brand text-sm underline"
 				>
 					{t("editCart")}
 				</Link>
@@ -184,14 +182,14 @@ export function CheckoutSummary({
 			{previousQuote && quote ? (
 				<div
 					role="alert"
-					className="flex gap-3 rounded-xl border border-[#FCD34D] bg-[#FFFBEB] p-3"
+					className="flex gap-3 rounded-xl border border-[#FCD34D] bg-warn-faint p-3"
 				>
-					<AlertTriangle className="h-5 w-5 shrink-0 text-[#B45309]" />
+					<AlertTriangle className="h-5 w-5 shrink-0 text-warn-ink-soft" />
 					<div>
-						<p className="font-semibold text-[#92400E] text-sm">
+						<p className="font-semibold text-sm text-warn-ink">
 							{t("quoteChanged")}
 						</p>
-						<p className="text-[#92400E] text-xs">{t("quoteChangedBody")}</p>
+						<p className="text-warn-ink text-xs">{t("quoteChangedBody")}</p>
 					</div>
 				</div>
 			) : null}
@@ -199,7 +197,7 @@ export function CheckoutSummary({
 			<ul className="space-y-3">
 				{lines.map((line) => (
 					<li key={line.key} className="flex items-center gap-3">
-						<div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#EFF6FF]">
+						<div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-soft">
 							{line.imageUrl ? (
 								<Image
 									src={line.imageUrl}
@@ -211,15 +209,13 @@ export function CheckoutSummary({
 							) : (
 								<ImageOff
 									aria-hidden="true"
-									className="h-4 w-4 text-[#94A3B8]"
+									className="h-4 w-4 text-ink-faint"
 								/>
 							)}
 						</div>
 						<div className="min-w-0 flex-1 text-sm">
-							<p className="truncate font-semibold text-[#0F172A]">
-								{line.title}
-							</p>
-							<p className="text-[#64748B] text-xs">
+							<p className="truncate font-semibold text-ink">{line.title}</p>
+							<p className="text-ink-muted text-xs">
 								<Changed on={line.changed}>
 									{[
 										line.variantLabel,
@@ -230,24 +226,24 @@ export function CheckoutSummary({
 								</Changed>
 							</p>
 						</div>
-						<p className="whitespace-nowrap font-semibold text-[#0F172A] text-sm">
+						<p className="whitespace-nowrap font-semibold text-ink text-sm">
 							{money(line.lineSubtotal)}
 						</p>
 					</li>
 				))}
 			</ul>
 
-			<dl className="space-y-2 border-[#E2E8F0] border-t pt-3 text-sm">
+			<dl className="space-y-2 border-line border-t pt-3 text-sm">
 				<div className="flex justify-between gap-3">
-					<dt className="text-[#334155]">{t("subtotal")}</dt>
-					<dd className="font-medium text-[#0F172A]">
+					<dt className="text-ink-soft">{t("subtotal")}</dt>
+					<dd className="font-medium text-ink">
 						<Changed on={changed.has("subtotal")}>
 							{money(amounts?.subtotal ?? cart.subtotal)}
 						</Changed>
 					</dd>
 				</div>
 				<div className="flex justify-between gap-3">
-					<dt className="text-[#334155]">
+					<dt className="text-ink-soft">
 						{delivery ? (
 							<Changed on={changed.has("etaText")}>
 								{`${methodLabel(delivery.method)} · ${delivery.etaText}`}
@@ -256,7 +252,7 @@ export function CheckoutSummary({
 							t("deliveryRow")
 						)}
 					</dt>
-					<dd className="text-right font-medium text-[#0F172A]">
+					<dd className="text-right font-medium text-ink">
 						{amounts ? (
 							<Changed on={changed.has("deliveryFee")}>
 								{amounts.deliveryFee === 0
@@ -264,7 +260,7 @@ export function CheckoutSummary({
 									: money(amounts.deliveryFee)}
 							</Changed>
 						) : (
-							<span className="font-normal text-[#64748B]">
+							<span className="font-normal text-ink-muted">
 								{t("deliveryPending")}
 							</span>
 						)}
@@ -274,11 +270,9 @@ export function CheckoutSummary({
 					<ProtectionFeeRow amount={money(amounts.buyerProtectionFee)} />
 				) : null}
 				{amounts ? (
-					<div className="flex items-baseline justify-between gap-3 border-[#E2E8F0] border-t pt-2.5">
-						<dt className="font-bold text-[#0F172A] text-base">
-							{t("totalLabel")}
-						</dt>
-						<dd className="font-extrabold text-2xl text-[#1E40AF]">
+					<div className="flex items-baseline justify-between gap-3 border-line border-t pt-2.5">
+						<dt className="font-bold text-base text-ink">{t("totalLabel")}</dt>
+						<dd className="font-extrabold text-2xl text-brand">
 							<Changed on={changed.has("total")}>
 								{money(amounts.total)}
 							</Changed>
@@ -287,16 +281,16 @@ export function CheckoutSummary({
 				) : null}
 			</dl>
 			{quoting ? (
-				<p className="flex items-center gap-2 text-[#64748B] text-sm">
+				<p className="flex items-center gap-2 text-ink-muted text-sm">
 					<LoaderCircle className="h-4 w-4 animate-spin" />
 					{t("loadingQuote")}
 				</p>
 			) : amounts ? (
-				<p className="text-[#64748B] text-xs">
+				<p className="text-ink-muted text-xs">
 					{mobileMoney ? t("payNowNote") : t("payOnDeliveryNote")}
 				</p>
 			) : (
-				<p className="text-[#64748B] text-xs">{t("totalPending")}</p>
+				<p className="text-ink-muted text-xs">{t("totalPending")}</p>
 			)}
 			{quoteError && !quote ? (
 				<div className="space-y-2">
@@ -316,18 +310,15 @@ export function CheckoutSummary({
 				</div>
 			) : null}
 
-			<div className="flex gap-2.5 rounded-xl bg-[#EFF6FF] p-3">
-				<RotateCcw
-					aria-hidden
-					className="mt-0.5 h-4 w-4 shrink-0 text-[#1E40AF]"
-				/>
+			<div className="flex gap-2.5 rounded-xl bg-brand-soft p-3">
+				<RotateCcw aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
 				<div className="space-y-0.5">
-					<p className="font-bold text-[#0F172A] text-sm">
+					<p className="font-bold text-ink text-sm">
 						{t("withdrawalBoxTitle", {
 							days: withdrawal?.days ?? withdrawalDays,
 						})}
 					</p>
-					<p className="text-[#334155] text-[13px] leading-relaxed">
+					<p className="text-[13px] text-ink-soft leading-relaxed">
 						{t("withdrawalBoxBody")}
 						{withdrawal ? ` ${withdrawal.costs[locale]}` : ""}
 					</p>
@@ -345,14 +336,14 @@ export function CheckoutSummary({
 				/>
 				<label
 					htmlFor="accept-pre-contract"
-					className="text-[#334155] text-sm leading-relaxed"
+					className="text-ink-soft text-sm leading-relaxed"
 				>
 					{t.rich("acceptSalesTerms", {
 						shop: quote?.preContract.seller.name ?? cart.shop?.name ?? "",
 						link: (chunks) => (
 							<a
 								href="#pre-contract"
-								className="font-semibold text-[#1E40AF] underline"
+								className="font-semibold text-brand underline"
 							>
 								{chunks}
 							</a>
@@ -368,7 +359,7 @@ export function CheckoutSummary({
 			) : null}
 			<Button
 				type="button"
-				className="min-h-12 w-full bg-[#1E40AF] font-bold text-base hover:bg-[#1E3A8A]"
+				className="min-h-12 w-full bg-brand font-bold text-base hover:bg-brand-strong"
 				disabled={!canPlace || placing}
 				onClick={onPlace}
 			>

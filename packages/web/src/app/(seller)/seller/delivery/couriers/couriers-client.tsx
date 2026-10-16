@@ -31,16 +31,14 @@ export function CouriersClient({ shopId }: { shopId: string }) {
 
 	return (
 		<div className="space-y-5">
-			<h1 className="font-bold text-2xl text-[#0F172A]">
-				{t("couriersTitle")}
-			</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("couriersTitle")}</h1>
 			<DeliveryTabs />
 			{(!couriersEnabled || !deliveryZonesEnabled) && (
 				<DeliveryUnavailableNotice />
 			)}
 			{couriersEnabled && deliveryZonesEnabled && (
 				<>
-					<p className="text-[#64748B] text-sm">{t("couriersBody")}</p>
+					<p className="text-ink-muted text-sm">{t("couriersBody")}</p>
 					{couriers.isPending && <LoadingRows rows={3} />}
 					{couriers.isError && (
 						<LoadError
@@ -49,7 +47,7 @@ export function CouriersClient({ shopId }: { shopId: string }) {
 						/>
 					)}
 					{couriers.isSuccess && couriers.data.length === 0 && (
-						<p className="rounded-2xl border border-[#E2E8F0] bg-white p-6 text-center text-[#64748B] text-sm">
+						<p className="rounded-2xl border border-line bg-surface p-6 text-center text-ink-muted text-sm">
 							{t("couriersEmpty")}
 						</p>
 					)}
@@ -57,11 +55,11 @@ export function CouriersClient({ shopId }: { shopId: string }) {
 						{couriers.data?.map((courier) => (
 							<li
 								key={courier.id}
-								className="space-y-2 rounded-2xl border border-[#E2E8F0] bg-white p-4 text-sm"
+								className="space-y-2 rounded-2xl border border-line bg-surface p-4 text-sm"
 							>
-								<p className="font-semibold text-[#0F172A]">
+								<p className="font-semibold text-ink">
 									{courier.name}{" "}
-									<span className="font-normal text-[#64748B]">
+									<span className="font-normal text-ink-muted">
 										·{" "}
 										{courier.cities
 											.map(
@@ -71,11 +69,11 @@ export function CouriersClient({ shopId }: { shopId: string }) {
 											.join(", ")}
 									</span>
 								</p>
-								<p className="text-[#334155]">
+								<p className="text-ink-soft">
 									{courier.supportsCod ? t("codYes") : t("codNo")} ·{" "}
 									{t("zonesUsing", { count: usage(courier.id) })}
 								</p>
-								<ul className="space-y-0.5 text-[#334155]">
+								<ul className="space-y-0.5 text-ink-soft">
 									{(courier.tariffs ?? []).map((tariff, index) => (
 										<li
 											key={`${tariff.city}-${tariff.district ?? "city"}-${index}`}

@@ -24,26 +24,26 @@ export function RiderDetails({ view }: { view: RiderLinkView }) {
 		.join(", ");
 
 	return (
-		<section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+		<section className="space-y-4 rounded-2xl border border-line bg-surface p-5">
 			<header>
-				<h1 className="font-bold text-[#0F172A] text-lg">{view.shopName}</h1>
-				<p className="text-[#64748B] text-sm">{view.shipmentNumber}</p>
+				<h1 className="font-bold text-ink text-lg">{view.shopName}</h1>
+				<p className="text-ink-muted text-sm">{view.shipmentNumber}</p>
 			</header>
 			{view.origin.landmark && (
-				<p className="text-[#334155] text-sm">
+				<p className="text-ink-soft text-sm">
 					<span className="font-medium">{t("pickupFrom")}</span>{" "}
 					{view.origin.landmark}
 				</p>
 			)}
 			<div className="space-y-1 text-sm">
-				<p className="font-medium text-[#0F172A]">
+				<p className="font-medium text-ink">
 					{t("deliverTo", { name: destination.recipientFirstName })}
 				</p>
-				<p className="text-[#334155]">{place}</p>
+				<p className="text-ink-soft">{place}</p>
 				{destination.phone && (
 					<a
 						href={`tel:${destination.phone}`}
-						className="inline-flex min-h-12 items-center gap-2 font-semibold text-[#1E40AF]"
+						className="inline-flex min-h-12 items-center gap-2 font-semibold text-brand"
 					>
 						<Phone aria-hidden className="h-5 w-5" /> {t("call")}
 					</a>
@@ -53,18 +53,18 @@ export function RiderDetails({ view }: { view: RiderLinkView }) {
 						href={destination.mapsUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="flex min-h-12 items-center gap-2 font-semibold text-[#1E40AF]"
+						className="flex min-h-12 items-center gap-2 font-semibold text-brand"
 					>
 						<ExternalLink aria-hidden className="h-5 w-5" /> {t("openInMaps")}
 					</a>
 				)}
 			</div>
 			{view.expectedCod !== null && (
-				<p className="rounded-xl bg-[#FFFBEB] p-3 font-semibold text-[#92400E]">
+				<p className="rounded-xl bg-warn-faint p-3 font-semibold text-warn-ink">
 					{t("codDue", { amount: formatOrderMoney(view.expectedCod, locale) })}
 				</p>
 			)}
-			<ul className="space-y-1 text-[#334155] text-sm">
+			<ul className="space-y-1 text-ink-soft text-sm">
 				{view.items.map((item, index) => (
 					<li key={`${item.title}-${index}`}>
 						{t("item", { title: item.title, quantity: item.quantity })}
@@ -72,7 +72,7 @@ export function RiderDetails({ view }: { view: RiderLinkView }) {
 				))}
 			</ul>
 			{view.attempts.length > 0 && (
-				<ul className="space-y-1 text-[#64748B] text-xs">
+				<ul className="space-y-1 text-ink-muted text-xs">
 					{view.attempts.map((attempt) => (
 						<li key={attempt.number}>
 							{t("attemptRow", {

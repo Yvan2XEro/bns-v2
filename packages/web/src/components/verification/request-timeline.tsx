@@ -4,9 +4,9 @@ import { statusToneKey, type TimelineEntry } from "~/lib/verification";
 
 const DOT_STYLES = {
 	positive: "bg-[#047857]",
-	negative: "bg-[#DC2626]",
-	warning: "bg-[#B45309]",
-	neutral: "bg-[#94A3B8]",
+	negative: "bg-bad",
+	warning: "bg-warn-ink-soft",
+	neutral: "bg-ink-faint",
 } as const;
 
 /** One request's history, newest first, exactly as `buildTimeline` built it. */
@@ -26,8 +26,8 @@ export function RequestTimeline({ entries }: { entries: TimelineEntry[] }) {
 						className={cn(
 							"flex items-start gap-3 rounded-xl border p-3",
 							entry.current
-								? "border-[#93C5FD] bg-[#F8FAFC]"
-								: "border-[#E2E8F0] bg-white",
+								? "border-brand-line bg-canvas"
+								: "border-line bg-surface",
 						)}
 					>
 						<span
@@ -39,10 +39,10 @@ export function RequestTimeline({ entries }: { entries: TimelineEntry[] }) {
 						/>
 						<div className="min-w-0 flex-1">
 							<div className="flex flex-wrap items-center justify-between gap-2">
-								<p className="font-semibold text-[#0F172A] text-sm">
+								<p className="font-semibold text-ink text-sm">
 									{t(`timeline.status.${entry.status}`)}
 								</p>
-								<time dateTime={entry.at} className="text-[#64748B] text-xs">
+								<time dateTime={entry.at} className="text-ink-muted text-xs">
 									{new Date(entry.at).toLocaleDateString(locale, {
 										day: "numeric",
 										month: "short",

@@ -142,14 +142,14 @@ export function PurchaseOrderDetailClient({
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div className="flex flex-col gap-1">
 					<div className="flex flex-wrap items-center gap-2.5">
-						<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-tight">
+						<h1 className="font-extrabold text-[28px] text-ink tracking-tight">
 							{order.number}
 						</h1>
-						<span className="rounded-full bg-[var(--shop-accent-soft,#DBEAFE)] px-2.5 py-0.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-xs">
+						<span className="rounded-full bg-[var(--shop-accent-soft,var(--c-brand-tint))] px-2.5 py-0.5 font-semibold text-[var(--shop-accent-text,var(--c-brand))] text-xs">
 							{statusLabels[order.status]}
 						</span>
 					</div>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{[
 							tHub("receivedOn", {
 								date: formatOrderDate(order.sentAt, locale),
@@ -172,7 +172,7 @@ export function PurchaseOrderDetailClient({
 					href={slipUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC]"
+					className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:bg-canvas"
 				>
 					<Printer aria-hidden="true" className="h-4 w-4" />
 					{tHub("printLabel")}
@@ -190,12 +190,10 @@ export function PurchaseOrderDetailClient({
 
 			<div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(17rem,0.8fr)]">
 				<div className="space-y-5">
-					<section className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+					<section className="space-y-4 rounded-2xl border border-line bg-surface p-5">
 						<div className="flex flex-wrap items-center justify-between gap-2">
-							<h2 className="font-bold text-[#0F172A]">
-								{tHub("itemsAndAmounts")}
-							</h2>
-							<span className="rounded-full bg-[#F1F5F9] px-2.5 py-0.5 font-semibold text-[#334155] text-xs">
+							<h2 className="font-bold text-ink">{tHub("itemsAndAmounts")}</h2>
+							<span className="rounded-full bg-subtle px-2.5 py-0.5 font-semibold text-ink-soft text-xs">
 								{tHub(
 									order.paymentMethod === "cod"
 										? "paymentCod"
@@ -203,7 +201,7 @@ export function PurchaseOrderDetailClient({
 								)}
 							</span>
 						</div>
-						<ul className="divide-y divide-[#E2E8F0]">
+						<ul className="divide-y divide-line">
 							{order.items.map((item) => (
 								<li
 									key={
@@ -214,26 +212,26 @@ export function PurchaseOrderDetailClient({
 									className="flex flex-wrap items-center justify-between gap-3 py-3"
 								>
 									<div>
-										<p className="font-semibold text-[#0F172A]">
+										<p className="font-semibold text-ink">
 											{item.title}
-											<span className="font-normal text-[#64748B]">
+											<span className="font-normal text-ink-muted">
 												{" "}
 												×{item.quantity}
 											</span>
 										</p>
-										<p className="mt-1 text-[#64748B] text-sm">
+										<p className="mt-1 text-ink-muted text-sm">
 											{[item.sku, item.variantLabel]
 												.filter(Boolean)
 												.join(" · ")}
 										</p>
 									</div>
 									{side === "supplier" ? (
-										<p className="text-right text-[#334155] text-sm">
+										<p className="text-right text-ink-soft text-sm">
 											<span className="font-semibold">
 												{formatOrderMoney(item.supplierUnitPrice, locale)} ×{" "}
 												{item.quantity}
 											</span>
-											<span className="block text-[#64748B] text-xs">
+											<span className="block text-ink-muted text-xs">
 												{tHub("supplierPriceShort")}
 											</span>
 										</p>
@@ -241,13 +239,13 @@ export function PurchaseOrderDetailClient({
 								</li>
 							))}
 						</ul>
-						<dl className="space-y-2 rounded-xl bg-[#F8FAFC] p-4 text-sm">
+						<dl className="space-y-2 rounded-xl bg-canvas p-4 text-sm">
 							{order.items.map((item) => (
 								<div
 									key={`sale-${typeof item.orderItem === "object" ? item.orderItem.id : item.orderItem}`}
 									className="flex justify-between gap-3"
 								>
-									<dt className="text-[#64748B]">
+									<dt className="text-ink-muted">
 										{item.title} ·{" "}
 										{formatOrderMoney(item.resellerUnitPrice, locale)} ×{" "}
 										{item.quantity}
@@ -261,36 +259,34 @@ export function PurchaseOrderDetailClient({
 								</div>
 							))}
 							<div className="flex justify-between gap-3">
-								<dt className="text-[#64748B]">{tHub("delivery")}</dt>
+								<dt className="text-ink-muted">{tHub("delivery")}</dt>
 								<dd className="font-semibold tabular-nums">
 									{formatOrderMoney(order.deliveryFee, locale)}
 								</dd>
 							</div>
-							<div className="flex justify-between gap-3 border-[#E2E8F0] border-t pt-2">
-								<dt className="font-semibold text-[#0F172A]">
+							<div className="flex justify-between gap-3 border-line border-t pt-2">
+								<dt className="font-semibold text-ink">
 									{order.paymentMethod === "cod"
 										? tHub("collectOnHandover")
 										: tHub("orderTotal")}
 								</dt>
-								<dd className="font-bold text-[#0F172A] tabular-nums">
+								<dd className="font-bold text-ink tabular-nums">
 									{formatOrderMoney(order.collectAmount, locale)}
 								</dd>
 							</div>
 						</dl>
 						{side === "supplier" && order.supplierAmount !== null ? (
 							<div className="space-y-2 text-sm">
-								<h3 className="font-semibold text-[#0F172A]">
-									{tHub("split")}
-								</h3>
+								<h3 className="font-semibold text-ink">{tHub("split")}</h3>
 								<dl className="space-y-1.5">
 									<div className="flex justify-between gap-3">
-										<dt className="text-[#64748B]">{tHub("splitSupplier")}</dt>
+										<dt className="text-ink-muted">{tHub("splitSupplier")}</dt>
 										<dd className="font-semibold tabular-nums">
 											{formatOrderMoney(order.supplierAmount, locale)}
 										</dd>
 									</div>
 									<div className="flex justify-between gap-3">
-										<dt className="text-[#64748B]">{tHub("splitDelivery")}</dt>
+										<dt className="text-ink-muted">{tHub("splitDelivery")}</dt>
 										<dd className="font-semibold tabular-nums">
 											{formatOrderMoney(order.deliveryFee, locale)}
 										</dd>
@@ -298,7 +294,7 @@ export function PurchaseOrderDetailClient({
 									{order.platformCommission !== null &&
 									order.resellerCommission !== null ? (
 										<div className="flex justify-between gap-3">
-											<dt className="text-[#64748B]">
+											<dt className="text-ink-muted">
 												{tHub("splitBilled")}
 												<span className="block text-xs">
 													{tHub("splitBilledNote")}
@@ -317,22 +313,22 @@ export function PurchaseOrderDetailClient({
 						) : null}
 					</section>
 					{order.statusHistory?.length ? (
-						<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-							<h2 className="font-bold text-[#0F172A]">{tHub("timeline")}</h2>
-							<ol className="space-y-3 border-[#E2E8F0] border-l-2 pl-4">
+						<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+							<h2 className="font-bold text-ink">{tHub("timeline")}</h2>
+							<ol className="space-y-3 border-line border-l-2 pl-4">
 								{order.statusHistory.map((entry, index) => (
 									<li
 										key={`${entry.status}-${entry.at}-${index}`}
 										className="text-sm"
 									>
-										<p className="font-semibold text-[#0F172A]">
+										<p className="font-semibold text-ink">
 											{entry.status in statusLabels
 												? statusLabels[
 														entry.status as PurchaseOrderView["status"]
 													]
 												: entry.status}
 										</p>
-										<p className="text-[#64748B] text-xs">
+										<p className="text-ink-muted text-xs">
 											{formatOrderDate(entry.at, locale)}
 										</p>
 									</li>
@@ -344,22 +340,18 @@ export function PurchaseOrderDetailClient({
 
 				<aside className="space-y-4">
 					{side === "supplier" && order.reseller ? (
-						<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-							<h2 className="font-bold text-[#0F172A]">
-								{tHub("resellerCard")}
-							</h2>
+						<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+							<h2 className="font-bold text-ink">{tHub("resellerCard")}</h2>
 							<div className="flex flex-col gap-0.5">
-								<p className="font-semibold text-[#0F172A]">
-									{order.reseller.name}
-								</p>
+								<p className="font-semibold text-ink">{order.reseller.name}</p>
 								{order.reseller.level > 0 ? (
-									<span className="w-fit rounded-full bg-[var(--shop-accent-soft,#DBEAFE)] px-2 py-0.5 font-semibold text-[11px] text-[var(--shop-accent-text,#1E40AF)]">
+									<span className="w-fit rounded-full bg-[var(--shop-accent-soft,var(--c-brand-tint))] px-2 py-0.5 font-semibold text-[11px] text-[var(--shop-accent-text,var(--c-brand))]">
 										{tHub("levelBadge", { level: order.reseller.level })}
 									</span>
 								) : null}
 							</div>
 							{order.reseller.orderNumber ? (
-								<p className="text-[#475569] text-sm">
+								<p className="text-ink-mid text-sm">
 									{order.reseller.orderedAt
 										? tHub("customerOrder", {
 												number: order.reseller.orderNumber,
@@ -371,12 +363,12 @@ export function PurchaseOrderDetailClient({
 								</p>
 							) : null}
 							{order.reseller.phone ? (
-								<p className="text-[#475569] text-sm">
+								<p className="text-ink-mid text-sm">
 									{tHub("resellerContact", { phone: order.reseller.phone })}
 								</p>
 							) : null}
 							{order.reseller.reachable ? (
-								<p className="flex items-center gap-1.5 text-[#475569] text-sm">
+								<p className="flex items-center gap-1.5 text-ink-mid text-sm">
 									<Clock aria-hidden="true" className="h-4 w-4" />
 									{tHub("reachableFromTo", order.reseller.reachable)}
 								</p>
@@ -398,23 +390,23 @@ export function PurchaseOrderDetailClient({
 										onError: () => tab?.close(),
 									});
 								}}
-								className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+								className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 font-semibold text-ink text-sm hover:bg-canvas disabled:opacity-50"
 							>
 								<MessageSquare aria-hidden="true" className="h-4 w-4" />
 								{tHub("writeToReseller")}
 							</button>
 						</section>
 					) : null}
-					<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-						<h2 className="font-bold text-[#0F172A]">{t("recipient")}</h2>
-						<p className="font-medium text-[#334155]">
+					<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+						<h2 className="font-bold text-ink">{t("recipient")}</h2>
+						<p className="font-medium text-ink-soft">
 							{order.delivery.recipientName}
 						</p>
-						<p className="text-[#475569] text-sm">
+						<p className="text-ink-mid text-sm">
 							{t("phone")}: {order.delivery.phone}
 							{order.delivery.phoneMasked ? ` · ${t("phoneMasked")}` : ""}
 						</p>
-						<p className="text-[#475569] text-sm">
+						<p className="text-ink-mid text-sm">
 							{t("address")}:{" "}
 							{[order.delivery.district, order.delivery.city]
 								.filter(Boolean)
@@ -422,7 +414,7 @@ export function PurchaseOrderDetailClient({
 							{order.delivery.landmark ? ` · ${order.delivery.landmark}` : ""}
 						</p>
 						{order.delivery.instructions && (
-							<p className="text-[#64748B] text-sm">
+							<p className="text-ink-muted text-sm">
 								{t("instructions")}: {order.delivery.instructions}
 							</p>
 						)}
@@ -439,9 +431,9 @@ export function PurchaseOrderDetailClient({
 						)}
 					</section>
 
-					<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-						<h2 className="font-bold text-[#0F172A]">{t("deadline")}</h2>
-						<p className="text-[#475569] text-sm">
+					<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+						<h2 className="font-bold text-ink">{t("deadline")}</h2>
+						<p className="text-ink-mid text-sm">
 							{formatOrderDate(order.shipBy ?? order.acceptBy, locale)}
 						</p>
 						{canAccept && (
@@ -451,16 +443,16 @@ export function PurchaseOrderDetailClient({
 								onClick={() =>
 									action.mutate({ purchaseOrderId, action: "accept" })
 								}
-								className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#B45309] px-4 font-semibold text-sm text-white hover:bg-[#92400E] disabled:opacity-50"
+								className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-warn-ink-soft px-4 font-semibold text-sm text-white hover:bg-warn-ink disabled:opacity-50"
 							>
 								<PackageCheck aria-hidden="true" className="h-4 w-4" />
 								{t("acceptAction")}
 							</button>
 						)}
 						{canShip && (
-							<div className="space-y-3 border-[#E2E8F0] border-t pt-3">
+							<div className="space-y-3 border-line border-t pt-3">
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("carrier")}
 									</span>
 									<select
@@ -474,7 +466,7 @@ export function PurchaseOrderDetailClient({
 											)
 												patch({ carrier });
 										}}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									>
 										<option value="own_courier">{t("carrierOwn")}</option>
 										<option value="yango">Yango</option>
@@ -483,7 +475,7 @@ export function PurchaseOrderDetailClient({
 								</label>
 								{state.carrier !== "own_courier" ? (
 									<label className="block space-y-1 text-sm">
-										<span className="font-medium text-[#334155]">
+										<span className="font-medium text-ink-soft">
 											{t("trackingNumber")}
 										</span>
 										<input
@@ -492,12 +484,12 @@ export function PurchaseOrderDetailClient({
 												patch({ trackingNumber: event.target.value })
 											}
 											maxLength={120}
-											className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+											className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 										/>
 									</label>
 								) : null}
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("trackingUrl")}
 									</span>
 									<input
@@ -507,7 +499,7 @@ export function PurchaseOrderDetailClient({
 											patch({ trackingUrl: event.target.value })
 										}
 										maxLength={500}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									/>
 								</label>
 								<button
@@ -529,16 +521,16 @@ export function PurchaseOrderDetailClient({
 											},
 										})
 									}
-									className="min-h-11 w-full rounded-xl bg-[#0F172A] px-4 font-semibold text-sm text-white hover:bg-[#334155] disabled:opacity-50"
+									className="min-h-11 w-full rounded-xl bg-night px-4 font-semibold text-sm text-white hover:bg-ink-soft disabled:opacity-50"
 								>
 									{t("shipAction")}
 								</button>
 							</div>
 						)}
 						{canHandover && (
-							<div className="space-y-3 border-[#E2E8F0] border-t pt-3">
+							<div className="space-y-3 border-line border-t pt-3">
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("handoverCode")}
 									</span>
 									<input
@@ -551,7 +543,7 @@ export function PurchaseOrderDetailClient({
 													.slice(0, 8),
 											})
 										}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									/>
 								</label>
 								<button
@@ -564,16 +556,16 @@ export function PurchaseOrderDetailClient({
 											body: { code: state.handoverCode },
 										})
 									}
-									className="min-h-11 w-full rounded-xl bg-[#0F172A] px-4 font-semibold text-sm text-white hover:bg-[#334155] disabled:opacity-50"
+									className="min-h-11 w-full rounded-xl bg-night px-4 font-semibold text-sm text-white hover:bg-ink-soft disabled:opacity-50"
 								>
 									{t("confirmHandover")}
 								</button>
 							</div>
 						)}
 						{canDeclareDelivered && (
-							<div className="space-y-3 border-[#E2E8F0] border-t pt-3">
+							<div className="space-y-3 border-line border-t pt-3">
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("declareDeliveredNote")}
 									</span>
 									<textarea
@@ -582,7 +574,7 @@ export function PurchaseOrderDetailClient({
 											patch({ deliveryNote: event.target.value })
 										}
 										maxLength={500}
-										className="min-h-20 w-full rounded-lg border border-[#CBD5E1] bg-white p-3"
+										className="min-h-20 w-full rounded-lg border border-line-strong bg-surface p-3"
 									/>
 								</label>
 								<button
@@ -595,16 +587,16 @@ export function PurchaseOrderDetailClient({
 											body: { note: state.deliveryNote.trim() || undefined },
 										})
 									}
-									className="min-h-11 w-full rounded-xl border border-[#CBD5E1] px-4 font-semibold text-[#334155] text-sm hover:bg-[#F8FAFC] disabled:opacity-50"
+									className="min-h-11 w-full rounded-xl border border-line-strong px-4 font-semibold text-ink-soft text-sm hover:bg-canvas disabled:opacity-50"
 								>
 									{t("declareDeliveredAction")}
 								</button>
 							</div>
 						)}
 						{canReportDeliveryFailure && (
-							<div className="space-y-3 border-[#E2E8F0] border-t pt-3">
+							<div className="space-y-3 border-line border-t pt-3">
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("deliveryFailureReason")}
 									</span>
 									<select
@@ -625,7 +617,7 @@ export function PurchaseOrderDetailClient({
 													deliveryFailureReason: value as DeliveryFailureReason,
 												});
 										}}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									>
 										{(
 											[
@@ -644,7 +636,7 @@ export function PurchaseOrderDetailClient({
 									</select>
 								</label>
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("failedDeliveryCost", {
 											max: formatOrderMoney(order.deliveryFee, locale),
 										})}
@@ -659,11 +651,11 @@ export function PurchaseOrderDetailClient({
 													.slice(0, 10),
 											})
 										}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									/>
 								</label>
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("deliveryFailureNote")}
 									</span>
 									<textarea
@@ -672,7 +664,7 @@ export function PurchaseOrderDetailClient({
 											patch({ deliveryFailureNote: event.target.value })
 										}
 										maxLength={500}
-										className="min-h-20 w-full rounded-lg border border-[#CBD5E1] bg-white p-3"
+										className="min-h-20 w-full rounded-lg border border-line-strong bg-surface p-3"
 									/>
 								</label>
 								<button
@@ -701,9 +693,9 @@ export function PurchaseOrderDetailClient({
 							</div>
 						)}
 						{canCancel && (
-							<div className="space-y-3 border-[#E2E8F0] border-t pt-3">
+							<div className="space-y-3 border-line border-t pt-3">
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("cancelReason")}
 									</span>
 									<select
@@ -717,7 +709,7 @@ export function PurchaseOrderDetailClient({
 											)
 												patch({ cancelReason: reason });
 										}}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									>
 										<option value="seller_out_of_stock">
 											{t("reasonOutOfStock")}
@@ -730,7 +722,7 @@ export function PurchaseOrderDetailClient({
 								</label>
 								{state.cancelReason === "seller_other" ? (
 									<label className="block space-y-1 text-sm">
-										<span className="font-medium text-[#334155]">
+										<span className="font-medium text-ink-soft">
 											{t("cancelNote")}
 										</span>
 										<textarea
@@ -740,7 +732,7 @@ export function PurchaseOrderDetailClient({
 											}
 											maxLength={500}
 											required
-											className="min-h-24 w-full rounded-lg border border-[#CBD5E1] bg-white p-3"
+											className="min-h-24 w-full rounded-lg border border-line-strong bg-surface p-3"
 										/>
 									</label>
 								) : null}
@@ -769,9 +761,9 @@ export function PurchaseOrderDetailClient({
 							</div>
 						)}
 						{canReceiveReturn && (
-							<div className="space-y-2 border-[#E2E8F0] border-t pt-3">
+							<div className="space-y-2 border-line border-t pt-3">
 								<label className="block space-y-1 text-sm">
-									<span className="font-medium text-[#334155]">
+									<span className="font-medium text-ink-soft">
 										{t("returnCondition")}
 									</span>
 									<select
@@ -784,7 +776,7 @@ export function PurchaseOrderDetailClient({
 														: "resellable",
 											})
 										}
-										className="h-11 w-full rounded-lg border border-[#CBD5E1] bg-white px-3"
+										className="h-11 w-full rounded-lg border border-line-strong bg-surface px-3"
 									>
 										<option value="resellable">{t("resellable")}</option>
 										<option value="damaged">{t("damaged")}</option>
@@ -800,7 +792,7 @@ export function PurchaseOrderDetailClient({
 											body: { condition: state.condition },
 										})
 									}
-									className="min-h-11 w-full rounded-xl bg-[#0F172A] px-4 font-semibold text-sm text-white hover:bg-[#334155] disabled:opacity-50"
+									className="min-h-11 w-full rounded-xl bg-night px-4 font-semibold text-sm text-white hover:bg-ink-soft disabled:opacity-50"
 								>
 									{t("receiveReturn")}
 								</button>

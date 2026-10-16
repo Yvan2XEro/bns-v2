@@ -127,8 +127,8 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 				<p
 					className={
 						formState.errors.name
-							? "text-[#991B1B] text-xs"
-							: "text-[#94A3B8] text-xs"
+							? "text-bad-ink text-xs"
+							: "text-ink-faint text-xs"
 					}
 				>
 					{t("nameHint")}
@@ -150,7 +150,7 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 					)}
 				/>
 				{formState.errors.handle?.message && (
-					<p className="text-[#991B1B] text-xs">
+					<p className="text-bad-ink text-xs">
 						{formState.errors.handle.message}
 					</p>
 				)}
@@ -173,7 +173,7 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 			</div>
 
 			<fieldset className="space-y-2">
-				<legend className="mb-2 font-medium text-[#0F172A] text-sm">
+				<legend className="mb-2 font-medium text-ink text-sm">
 					{t("categories", { count: selected.length })}
 				</legend>
 				<Controller
@@ -202,14 +202,14 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 				<Button
 					type="submit"
 					disabled={!canSubmit}
-					className="h-12 w-full rounded-xl bg-[#1E40AF] font-semibold text-base hover:bg-[#1E3A8A]"
+					className="h-12 w-full rounded-xl bg-brand font-semibold text-base hover:bg-brand-strong"
 				>
 					{createShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
 					)}
 					{t("submit")}
 				</Button>
-				<p className="text-center text-[#64748B] text-xs">{t("submitHint")}</p>
+				<p className="text-center text-ink-muted text-xs">{t("submitHint")}</p>
 			</div>
 		</form>
 	);

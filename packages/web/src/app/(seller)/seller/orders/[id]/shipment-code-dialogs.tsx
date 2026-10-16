@@ -116,7 +116,7 @@ export function ShipmentDeclareDialog({
 			description={t("declareBody")}
 		>
 			<div className="space-y-4">
-				<p className="rounded-xl bg-[#FFFBEB] p-3 text-[#92400E] text-sm">
+				<p className="rounded-xl bg-warn-faint p-3 text-sm text-warn-ink">
 					{t("declareWarning")}
 				</p>
 				<ProofPhotoField

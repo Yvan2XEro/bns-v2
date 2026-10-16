@@ -60,7 +60,7 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 				return (
 					<fieldset
 						key={item.orderItemId}
-						className="space-y-3 rounded-xl border border-[#E2E8F0] p-4"
+						className="space-y-3 rounded-xl border border-line p-4"
 					>
 						<legend className="font-medium text-sm">
 							{item.title} × {item.quantity}
@@ -90,12 +90,12 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 								{...form.register(`items.${index}.deductionAmount`)}
 								inputMode="numeric"
 								readOnly={view.basis === "non_conformity"}
-								className="mt-1 block min-h-11 w-full rounded-lg border px-2 read-only:bg-[#F1F5F9]"
+								className="mt-1 block min-h-11 w-full rounded-lg border px-2 read-only:bg-subtle"
 								aria-invalid={Boolean(errors?.deductionAmount)}
 							/>
 						</label>
 						{view.basis === "non_conformity" ? (
-							<p className="text-[#64748B] text-sm">
+							<p className="text-ink-muted text-sm">
 								{t("deductionUnavailable")}
 							</p>
 						) : null}
@@ -136,7 +136,7 @@ export function ReturnInspectionForm({ view }: { view: ReturnCaseView }) {
 			<button
 				type="submit"
 				disabled={submit.isPending}
-				className="min-h-11 rounded-xl bg-[#1E40AF] px-4 font-medium text-sm text-white disabled:opacity-50"
+				className="min-h-11 rounded-xl bg-brand px-4 font-medium text-sm text-white disabled:opacity-50"
 			>
 				{t("action.inspect")}
 			</button>

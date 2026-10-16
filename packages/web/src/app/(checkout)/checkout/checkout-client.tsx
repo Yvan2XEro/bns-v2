@@ -51,7 +51,7 @@ function EditLink({ label, onClick }: { label: string; onClick: () => void }) {
 		<button
 			type="button"
 			onClick={onClick}
-			className="min-h-11 font-semibold text-[#1E40AF] text-sm hover:underline"
+			className="min-h-11 font-semibold text-brand text-sm hover:underline"
 		>
 			{label}
 		</button>
@@ -79,33 +79,30 @@ function AddressCard({
 		address.district;
 
 	return (
-		<div className="space-y-3 rounded-xl border-2 border-[#1E40AF] bg-[#EFF6FF] p-4">
+		<div className="space-y-3 rounded-xl border-2 border-brand bg-brand-soft p-4">
 			<div className="flex items-start gap-3">
-				<MapPin
-					aria-hidden
-					className="mt-0.5 h-5 w-5 shrink-0 text-[#1E40AF]"
-				/>
+				<MapPin aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
 				<div className="min-w-0 space-y-0.5">
 					<div className="flex flex-wrap items-center gap-2">
-						<p className="font-bold text-[#0F172A]">
+						<p className="font-bold text-ink">
 							{saved?.label ?? address.recipientName}
 						</p>
 						{saved?.isDefault ? (
-							<span className="rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+							<span className="rounded-full bg-brand-tint px-2 py-0.5 font-semibold text-[11px] text-brand">
 								{tAddr("default")}
 							</span>
 						) : null}
 						{fromLastOrder ? (
-							<span className="rounded-full bg-[#DBEAFE] px-2 py-0.5 font-semibold text-[#1E40AF] text-[11px]">
+							<span className="rounded-full bg-brand-tint px-2 py-0.5 font-semibold text-[11px] text-brand">
 								{t("lastUsedAddress")}
 							</span>
 						) : null}
 					</div>
-					<p className="text-[#0F172A] text-sm">
+					<p className="text-ink text-sm">
 						{district}, {city}
 						{address.landmark ? ` — ${address.landmark}` : ""}
 					</p>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{saved?.label ? `${address.recipientName} · ` : ""}
 						{address.phone}
 					</p>
@@ -130,10 +127,10 @@ function SafetyReminders() {
 		{ icon: KeyRound, text: t("safetyCode") },
 	];
 	return (
-		<ul className="flex flex-col gap-2 rounded-lg bg-[#F8FAFC] px-3.5 py-2.5 text-[#334155] text-[13px] sm:flex-row sm:flex-wrap sm:gap-x-7">
+		<ul className="flex flex-col gap-2 rounded-lg bg-canvas px-3.5 py-2.5 text-[13px] text-ink-soft sm:flex-row sm:flex-wrap sm:gap-x-7">
 			{items.map(({ icon: Icon, text }) => (
 				<li key={text} className="flex items-center gap-1.5">
-					<Icon aria-hidden className="h-4 w-4 shrink-0 text-[#15803D]" />
+					<Icon aria-hidden className="h-4 w-4 shrink-0 text-ok-ink-soft" />
 					{text}
 				</li>
 			))}
@@ -227,17 +224,17 @@ export function CheckoutClient() {
 	]);
 
 	if (!ordersEnabled)
-		return <p className="text-[#334155]">{t("ordersClosed")}</p>;
+		return <p className="text-ink-soft">{t("ordersClosed")}</p>;
 	// Placement empties the cart before the confirmation page has loaded.
 	if (cart.isPending || place.isSuccess) {
 		return (
-			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-[#64748B]" />
+			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-ink-muted" />
 		);
 	}
 	if (!cart.data || cartLinesOf(cart.data).length === 0) {
 		return (
 			<div className="space-y-4 text-center">
-				<p className="text-[#334155]">{t("emptyCart")}</p>
+				<p className="text-ink-soft">{t("emptyCart")}</p>
 				<Button asChild className="min-h-11">
 					<Link href="/cart">{t("goToCart")}</Link>
 				</Button>
@@ -365,10 +362,10 @@ export function CheckoutClient() {
 	return (
 		<div className="space-y-5">
 			<header className="space-y-1">
-				<h1 className="font-extrabold text-[#0F172A] text-[28px] tracking-tight">
+				<h1 className="font-extrabold text-[28px] text-ink tracking-tight">
 					{t("pageTitle")}
 				</h1>
-				<p className="text-[#64748B] text-sm">{t("pageSubtitle")}</p>
+				<p className="text-ink-muted text-sm">{t("pageSubtitle")}</p>
 			</header>
 
 			<div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -414,7 +411,7 @@ export function CheckoutClient() {
 								onSubmit={submitAddress}
 							/>
 						) : (
-							<LoaderCircle className="mx-auto h-5 w-5 animate-spin text-[#64748B]" />
+							<LoaderCircle className="mx-auto h-5 w-5 animate-spin text-ink-muted" />
 						)}
 					</CheckoutSection>
 
@@ -436,7 +433,7 @@ export function CheckoutClient() {
 								onChoose={(option) => chooseOption(option)}
 							/>
 						) : (
-							<p className="text-[#64748B] text-sm">
+							<p className="text-ink-muted text-sm">
 								{t("deliveryNeedsAddress")}
 							</p>
 						)}
@@ -469,7 +466,7 @@ export function CheckoutClient() {
 					{state.quote ? (
 						<div
 							id="pre-contract"
-							className="scroll-mt-24 rounded-2xl border border-[#E2E8F0] bg-white px-5 py-5 sm:px-6"
+							className="scroll-mt-24 rounded-2xl border border-line bg-surface px-5 py-5 sm:px-6"
 						>
 							<PreContractPanel
 								contract={state.quote.preContract}

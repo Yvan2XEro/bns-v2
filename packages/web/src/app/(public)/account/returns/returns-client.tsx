@@ -20,12 +20,12 @@ export function ReturnsClient() {
 	return (
 		<main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6">
 			<header className="flex items-start gap-4">
-				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EFF6FF] text-[#1E40AF]">
+				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
 					<RotateCcw aria-hidden="true" className="h-5 w-5" />
 				</div>
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-					<p className="mt-1 text-[#64748B] text-sm">{t("subtitle")}</p>
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+					<p className="mt-1 text-ink-muted text-sm">{t("subtitle")}</p>
 				</div>
 			</header>
 
@@ -37,7 +37,7 @@ export function ReturnsClient() {
 				/>
 			)}
 			{query.data && query.data.rows.length === 0 && (
-				<div className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white">
+				<div className="rounded-2xl border border-line-strong border-dashed bg-surface">
 					<EmptyState
 						illustration="empty"
 						title={t("emptyTitle")}
@@ -53,7 +53,7 @@ export function ReturnsClient() {
 					aria-label={t("title")}
 					className="space-y-3"
 				>
-					<p className="text-[#64748B] text-sm">
+					<p className="text-ink-muted text-sm">
 						{t("awaitingCount", { count: query.data.awaitingCount })}
 					</p>
 					<ul className="space-y-3">
@@ -61,14 +61,14 @@ export function ReturnsClient() {
 							<li key={row.id}>
 								<Link
 									href={`/returns/${encodeURIComponent(row.id)}`}
-									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition-colors hover:border-[#93C5FD] hover:bg-[#F8FAFC]"
+									className="group flex min-h-20 items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-4 transition-colors hover:border-brand-line hover:bg-canvas"
 								>
 									<div className="min-w-0">
 										<div className="flex flex-wrap items-center gap-2">
-											<span className="font-semibold text-[#0F172A]">
+											<span className="font-semibold text-ink">
 												{row.number}
 											</span>
-											<span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[#475569] text-xs">
+											<span className="rounded-full bg-subtle px-2.5 py-1 text-ink-mid text-xs">
 												{t(RETURN_CASE_STATUS_LABELS[row.status])}
 											</span>
 											{row.overdue && (
@@ -77,20 +77,20 @@ export function ReturnsClient() {
 												</span>
 											)}
 										</div>
-										<p className="mt-1 truncate text-[#64748B] text-sm">
+										<p className="mt-1 truncate text-ink-muted text-sm">
 											{t("orderNumber", { number: row.orderNumber })} ·{" "}
 											{t(RETURN_BASIS_LABELS[row.basis])}
 										</p>
 									</div>
 									<div className="flex shrink-0 items-center gap-3">
-										<span className="hidden text-right text-[#475569] text-sm sm:block">
+										<span className="hidden text-right text-ink-mid text-sm sm:block">
 											{t("refundAmount", {
 												amount: formatOrderMoney(row.refundAmount),
 											})}
 										</span>
 										<ArrowRight
 											aria-label={t("viewCase")}
-											className="h-4 w-4 text-[#64748B] transition-transform group-hover:translate-x-0.5"
+											className="h-4 w-4 text-ink-muted transition-transform group-hover:translate-x-0.5"
 										/>
 									</div>
 								</Link>

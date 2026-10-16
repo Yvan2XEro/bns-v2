@@ -62,9 +62,9 @@ export function DocumentSlot({
 	const message = localError ?? error;
 
 	return (
-		<div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
+		<div className="rounded-xl border border-line bg-surface p-4">
 			<div className="mb-2 flex items-center justify-between gap-2">
-				<span className="font-medium text-[#0F172A] text-sm">
+				<span className="font-medium text-ink text-sm">
 					{label}
 					{required && <span className="ml-1 text-red-500">*</span>}
 				</span>
@@ -108,9 +108,9 @@ export function DocumentSlot({
 					</div>
 				</div>
 			) : document ? (
-				<div className="flex items-center gap-3 rounded-lg bg-[#F8FAFF] px-3 py-2">
-					<FileText className="h-5 w-5 shrink-0 text-[#1E40AF]" />
-					<span className="truncate text-[#0F172A] text-sm">
+				<div className="flex items-center gap-3 rounded-lg bg-canvas px-3 py-2">
+					<FileText className="h-5 w-5 shrink-0 text-brand" />
+					<span className="truncate text-ink text-sm">
 						{document.originalFilename}
 					</span>
 				</div>
@@ -131,8 +131,8 @@ export function DocumentSlot({
 					onClick={() => inputRef.current?.click()}
 					className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-3 py-6 text-center text-sm transition-colors ${
 						dragOver
-							? "border-[#3B82F6] bg-[#EFF6FF]"
-							: "border-[#DBEAFE] bg-[#F8FAFF] text-[#64748B]"
+							? "border-brand-bright bg-brand-soft"
+							: "border-brand-tint bg-canvas text-ink-muted"
 					} disabled:cursor-not-allowed disabled:opacity-50`}
 				>
 					<Upload className="h-5 w-5" aria-hidden="true" />

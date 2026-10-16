@@ -31,7 +31,7 @@ function Stars({ rating }: { rating: number }) {
 					className={
 						n <= Math.round(rating)
 							? "h-4 w-4 fill-[#F59E0B] text-[#F59E0B]"
-							: "h-4 w-4 text-[#CBD5E1]"
+							: "h-4 w-4 text-ink-ghost"
 					}
 				/>
 			))}
@@ -56,13 +56,11 @@ export async function ShopReviews({
 
 	return (
 		<section className="mx-auto max-w-3xl space-y-4">
-			<div className="flex flex-wrap items-center gap-4 rounded-xl border border-[#E2E8F0] bg-white p-5">
-				<h2 className="font-bold text-[#0F172A] text-lg">
-					{t("reviewsTitle")}
-				</h2>
+			<div className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-surface p-5">
+				<h2 className="font-bold text-ink text-lg">{t("reviewsTitle")}</h2>
 				{summary && (
-					<div className="flex items-center gap-2 text-[#64748B] text-sm">
-						<strong className="text-2xl text-[#0F172A]">
+					<div className="flex items-center gap-2 text-ink-muted text-sm">
+						<strong className="text-2xl text-ink">
 							{summary.rating.toLocaleString(locale, {
 								maximumFractionDigits: 1,
 							})}
@@ -71,14 +69,14 @@ export async function ShopReviews({
 						<span>{t("verifiedCount", { count: summary.count })}</span>
 					</div>
 				)}
-				<p className="w-full text-[#64748B] text-sm">{t("reviewsHint")}</p>
+				<p className="w-full text-ink-muted text-sm">{t("reviewsHint")}</p>
 			</div>
 			{!data ? (
-				<p className="rounded-xl border border-[#E2E8F0] bg-white p-6 text-center text-[#64748B] text-sm">
+				<p className="rounded-xl border border-line bg-surface p-6 text-center text-ink-muted text-sm">
 					{t("reviewsUnavailable")}
 				</p>
 			) : data.reviews.length === 0 ? (
-				<p className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center text-[#64748B] text-sm">
+				<p className="rounded-xl border border-line border-dashed bg-surface p-10 text-center text-ink-muted text-sm">
 					{t("noReviews")}
 				</p>
 			) : (
@@ -86,23 +84,23 @@ export async function ShopReviews({
 					{data.reviews.map((review) => (
 						<li
 							key={review.id}
-							className="rounded-xl border border-[#E2E8F0] bg-white p-4"
+							className="rounded-xl border border-line bg-surface p-4"
 						>
 							<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
 								<span className="sr-only">
 									{t("ratingOutOf", { rating: review.rating })}
 								</span>
 								<Stars rating={review.rating} />
-								<span className="font-semibold text-[#0F172A] text-sm">
+								<span className="font-semibold text-ink text-sm">
 									{review.reviewerFirstName ?? t("anonymousBuyer")}
 								</span>
-								<span className="inline-flex items-center gap-1 text-[#15803D] text-xs">
+								<span className="inline-flex items-center gap-1 text-ok-ink-soft text-xs">
 									<BadgeCheck className="h-3.5 w-3.5" />
 									{t("verifiedPurchase")}
 								</span>
 								<time
 									dateTime={review.createdAt}
-									className="ml-auto text-[#94A3B8] text-xs"
+									className="ml-auto text-ink-faint text-xs"
 								>
 									{new Date(review.createdAt).toLocaleDateString(locale, {
 										day: "numeric",
@@ -112,7 +110,7 @@ export async function ShopReviews({
 								</time>
 							</div>
 							{review.comment && (
-								<p className="mt-2 whitespace-pre-wrap break-words text-[#334155] text-sm leading-relaxed">
+								<p className="mt-2 whitespace-pre-wrap break-words text-ink-soft text-sm leading-relaxed">
 									{review.comment}
 								</p>
 							)}
@@ -128,18 +126,18 @@ export async function ShopReviews({
 					{data.page > 1 && (
 						<Link
 							href={pageHref(data.page - 1)}
-							className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
+							className="rounded-lg border border-line bg-surface px-3 py-1.5"
 						>
 							{t("previous")}
 						</Link>
 					)}
-					<span className="text-[#64748B]">
+					<span className="text-ink-muted">
 						{data.page} / {data.totalPages}
 					</span>
 					{data.page < data.totalPages && (
 						<Link
 							href={pageHref(data.page + 1)}
-							className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-1.5"
+							className="rounded-lg border border-line bg-surface px-3 py-1.5"
 						>
 							{t("next")}
 						</Link>

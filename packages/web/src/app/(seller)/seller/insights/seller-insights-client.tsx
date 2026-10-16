@@ -98,18 +98,16 @@ export function SellerInsightsClient({
 		<div className="space-y-[18px] pb-10">
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">
-						{tInsights("title")}
-					</h1>
-					<p className="mt-1 text-[#64748B] text-sm">{tPage("subtitle")}</p>
+					<h1 className="font-bold text-2xl text-ink">{tInsights("title")}</h1>
+					<p className="mt-1 text-ink-muted text-sm">{tPage("subtitle")}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
-					<fieldset className="inline-flex rounded-xl border border-[#E2E8F0] bg-white p-1">
+					<fieldset className="inline-flex rounded-xl border border-line bg-surface p-1">
 						<legend className="sr-only">{tPage("periodLabel")}</legend>
 						{PERIODS.map((item) => (
 							<button
 								aria-pressed={period === item}
-								className={`rounded-lg px-3 py-1.5 font-semibold text-sm ${period === item ? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]" : "text-[#475569] hover:bg-[#F1F5F9]"}`}
+								className={`rounded-lg px-3 py-1.5 font-semibold text-sm ${period === item ? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]" : "text-ink-mid hover:bg-subtle"}`}
 								key={item}
 								onClick={() => setPeriod(item)}
 								type="button"
@@ -122,7 +120,7 @@ export function SellerInsightsClient({
 						type="button"
 						onClick={exportCsv}
 						disabled={!view}
-						className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)] disabled:opacity-60"
+						className="inline-flex h-10 items-center gap-2 rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))] disabled:opacity-60"
 					>
 						<Download aria-hidden="true" className="h-4 w-4" />
 						{tPage("export")}
@@ -133,7 +131,7 @@ export function SellerInsightsClient({
 			{query.isLoading ? (
 				<div
 					aria-live="polite"
-					className="rounded-2xl border bg-white p-8 text-[#64748B]"
+					className="rounded-2xl border bg-surface p-8 text-ink-muted"
 				>
 					{tInsights("loading")}
 				</div>
@@ -144,7 +142,7 @@ export function SellerInsightsClient({
 				>
 					<p className="font-semibold text-red-900">{tInsights("error")}</p>
 					<button
-						className="mt-3 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm"
+						className="mt-3 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm"
 						onClick={() => void query.refetch()}
 						type="button"
 					>
@@ -179,11 +177,9 @@ function StockWatch({ view }: { view: ShopInsightsView }) {
 		return null;
 	}
 	return (
-		<section className="grid gap-[18px] rounded-2xl border border-[#E2E8F0] bg-white p-[18px] lg:grid-cols-2">
+		<section className="grid gap-[18px] rounded-2xl border border-line bg-surface p-[18px] lg:grid-cols-2">
 			<div>
-				<h2 className="font-bold text-[#0F172A] text-base">
-					{tInsights("restock")}
-				</h2>
+				<h2 className="font-bold text-base text-ink">{tInsights("restock")}</h2>
 				{view.stock.restock.length ? (
 					<ul className="mt-2 space-y-2">
 						{view.stock.restock.map((item) => (
@@ -192,25 +188,25 @@ function StockWatch({ view }: { view: ShopInsightsView }) {
 								key={item.variantId}
 							>
 								<Link
-									className="text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+									className="text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 									href={`/seller/catalogue/${encodeURIComponent(item.productId)}`}
 								>
 									{item.productTitle}
 								</Link>
-								<span className="shrink-0 text-[#64748B]">
+								<span className="shrink-0 text-ink-muted">
 									{tInsights("daysOfCover", { days: item.daysOfCover })}
 								</span>
 							</li>
 						))}
 					</ul>
 				) : (
-					<p className="mt-2 text-[#64748B] text-sm">
+					<p className="mt-2 text-ink-muted text-sm">
 						{tInsights("noRestock")}
 					</p>
 				)}
 			</div>
 			<div>
-				<h2 className="font-bold text-[#0F172A] text-base">
+				<h2 className="font-bold text-base text-ink">
 					{tInsights("outOfStock")}
 				</h2>
 				{view.stock.outOfStockWithViews.length ? (
@@ -221,12 +217,12 @@ function StockWatch({ view }: { view: ShopInsightsView }) {
 								key={item.variantId}
 							>
 								<Link
-									className="text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+									className="text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 									href={`/seller/catalogue/${encodeURIComponent(item.productId)}`}
 								>
 									{item.productTitle}
 								</Link>
-								<span className="text-[#64748B]">
+								<span className="text-ink-muted">
 									{number.format(item.views)}{" "}
 									{tInsights("chartViews").toLowerCase()}
 								</span>
@@ -234,7 +230,7 @@ function StockWatch({ view }: { view: ShopInsightsView }) {
 						))}
 					</ul>
 				) : (
-					<p className="mt-2 text-[#64748B] text-sm">
+					<p className="mt-2 text-ink-muted text-sm">
 						{tInsights("noOutOfStock")}
 					</p>
 				)}

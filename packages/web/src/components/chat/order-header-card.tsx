@@ -20,23 +20,18 @@ export function OrderHeaderCard({
 	return (
 		<Link
 			href={card.href}
-			className="flex min-h-11 items-center gap-3 rounded-xl border border-[#DBEAFE] bg-[#EFF6FF] px-3 py-2 text-sm hover:bg-[#DBEAFE]"
+			className="flex min-h-11 items-center gap-3 rounded-xl border border-brand-tint bg-brand-soft px-3 py-2 text-sm hover:bg-brand-tint"
 		>
-			<ShoppingBag
-				aria-hidden="true"
-				className="h-4 w-4 shrink-0 text-[#1E40AF]"
-			/>
-			<span className="min-w-0 flex-1 truncate font-medium text-[#0F172A]">
+			<ShoppingBag aria-hidden="true" className="h-4 w-4 shrink-0 text-brand" />
+			<span className="min-w-0 flex-1 truncate font-medium text-ink">
 				{card.orderNumber
 					? t("orderCardTitle", { orderNumber: card.orderNumber })
 					: t("orderCardUntitled")}
 			</span>
-			<span className="shrink-0 text-[#1E40AF] text-xs">
-				{t("orderCardOpen")}
-			</span>
+			<span className="shrink-0 text-brand text-xs">{t("orderCardOpen")}</span>
 			<ChevronRight
 				aria-hidden="true"
-				className="h-4 w-4 shrink-0 text-[#1E40AF]"
+				className="h-4 w-4 shrink-0 text-brand"
 			/>
 		</Link>
 	);

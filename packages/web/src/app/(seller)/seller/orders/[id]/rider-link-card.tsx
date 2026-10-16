@@ -36,19 +36,19 @@ export function RiderLinkCard({
 	const error = create.error ?? revoke.error;
 
 	return (
-		<div className="space-y-2 rounded-xl border border-[#E2E8F0] p-3 text-sm">
-			<p className="font-medium text-[#0F172A]">
+		<div className="space-y-2 rounded-xl border border-line p-3 text-sm">
+			<p className="font-medium text-ink">
 				{t("linkTitle")} — {t(`linkState.${state}`)}
 			</p>
 			{url && (
 				<div className="space-y-1">
-					<p className="text-[#64748B] text-xs">{t("linkShownOnce")}</p>
+					<p className="text-ink-muted text-xs">{t("linkShownOnce")}</p>
 					<div className="flex items-center gap-2">
 						<input
 							readOnly
 							aria-label={t("linkUrl")}
 							value={url}
-							className="h-10 min-w-0 flex-1 rounded-lg border border-[#CBD5E1] px-3 text-xs"
+							className="h-10 min-w-0 flex-1 rounded-lg border border-line-strong px-3 text-xs"
 						/>
 						<Button
 							variant="outline"

@@ -11,9 +11,9 @@ export function EditorSection({
 	children: ReactNode;
 }) {
 	return (
-		<section className="rounded-xl border border-[#E2E8F0] bg-white p-5">
+		<section className="rounded-xl border border-line bg-surface p-5">
 			<div className="mb-4 flex items-center justify-between gap-3">
-				<h2 className="font-bold text-[#0F172A]">{title}</h2>
+				<h2 className="font-bold text-ink">{title}</h2>
 				{aside}
 			</div>
 			{children}

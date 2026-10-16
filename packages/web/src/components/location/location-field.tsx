@@ -78,17 +78,17 @@ export function LocationField({
 				className={cn(
 					"flex w-full items-center gap-2 text-left text-sm transition-colors focus-visible:outline-none",
 					isHero
-						? "h-14 rounded-[22px] bg-transparent px-4 text-[#0F172A] hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30 sm:h-[62px]"
+						? "h-14 rounded-[22px] bg-transparent px-4 text-ink hover:bg-canvas focus-visible:ring-2 focus-visible:ring-brand/30 sm:h-[62px]"
 						: variant === "bar"
-							? "h-full bg-transparent px-3 font-medium text-[#334155] hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30 focus-visible:ring-inset"
-							: "h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 hover:border-[#94A3B8] focus-visible:border-[#1E40AF] focus-visible:ring-2 focus-visible:ring-[#1E40AF]/20",
-					invalid && !isHero && "border-[#DC2626]",
+							? "h-full bg-transparent px-3 font-medium text-ink-soft hover:bg-canvas focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-inset"
+							: "h-10 rounded-lg border border-line bg-surface px-3 hover:border-ink-faint focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/20",
+					invalid && !isHero && "border-bad",
 				)}
 			>
 				<span
 					className={cn(
 						"flex shrink-0 items-center justify-center rounded-full",
-						isHero ? "h-8 w-8 bg-[#EFF6FF] text-[#2563EB]" : "text-[#94A3B8]",
+						isHero ? "h-8 w-8 bg-brand-soft text-[#2563EB]" : "text-ink-faint",
 					)}
 				>
 					<MapPin className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function LocationField({
 				<span
 					className={cn(
 						"min-w-0 flex-1 truncate",
-						label || browse ? "text-[#0F172A]" : "text-[#94A3B8]",
+						label || browse ? "text-ink" : "text-ink-faint",
 						isHero && label && "font-medium",
 						clearable && label && "pr-6",
 					)}
@@ -104,7 +104,7 @@ export function LocationField({
 					{label || fallback}
 				</span>
 				{clearable && label ? null : (
-					<ChevronDown className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+					<ChevronDown className="h-4 w-4 shrink-0 text-ink-faint" />
 				)}
 			</button>
 			{clearable && label ? (
@@ -112,7 +112,7 @@ export function LocationField({
 					type="button"
 					onClick={() => onChange(null)}
 					aria-label={t("clear")}
-					className="-translate-y-1/2 absolute top-1/2 right-2 flex h-7 w-7 items-center justify-center rounded-full text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#0F172A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]"
+					className="-translate-y-1/2 absolute top-1/2 right-2 flex h-7 w-7 items-center justify-center rounded-full text-ink-faint hover:bg-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
 				>
 					<X className="h-4 w-4" />
 				</button>

@@ -37,7 +37,7 @@ function ActivitySkeleton() {
 	return (
 		<div className="space-y-2">
 			{[0, 1, 2, 3].map((i) => (
-				<div key={i} className="h-12 animate-pulse rounded-xl bg-[#F1F5F9]" />
+				<div key={i} className="h-12 animate-pulse rounded-xl bg-subtle" />
 			))}
 		</div>
 	);
@@ -54,14 +54,14 @@ function ActivityError({
 	return (
 		<div
 			role="alert"
-			className="flex flex-col items-center rounded-2xl border border-[#E2E8F0] bg-white px-6 py-12 text-center"
+			className="flex flex-col items-center rounded-2xl border border-line bg-surface px-6 py-12 text-center"
 		>
-			<WifiOff aria-hidden="true" className="h-8 w-8 text-[#94A3B8]" />
-			<p className="mt-3 font-semibold text-[#0F172A]">{message}</p>
+			<WifiOff aria-hidden="true" className="h-8 w-8 text-ink-faint" />
+			<p className="mt-3 font-semibold text-ink">{message}</p>
 			<button
 				type="button"
 				onClick={onRetry}
-				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 			>
 				{t("retry")}
 			</button>
@@ -91,9 +91,7 @@ export function ActivityClient({ shopId }: { shopId: string }) {
 
 	return (
 		<div className="space-y-5">
-			<h1 className="font-bold text-2xl text-[#0F172A]">
-				{tActivity("title")}
-			</h1>
+			<h1 className="font-bold text-2xl text-ink">{tActivity("title")}</h1>
 
 			<ActivityFilters
 				value={{

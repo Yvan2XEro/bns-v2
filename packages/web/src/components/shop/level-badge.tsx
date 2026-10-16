@@ -10,8 +10,8 @@ const BADGE_ICONS = {
 } as const;
 
 const BADGE_TONES = {
-	phone: "bg-[#f1f5f9] text-[#334155]",
-	identity: "bg-[#eff6ff] text-[#1e40af]",
+	phone: "bg-subtle text-ink-soft",
+	identity: "bg-brand-soft text-brand",
 	business: "bg-[#ecfdf5] text-[#047857]",
 } as const;
 

@@ -46,15 +46,15 @@ export function ReviewClient({ id }: { id: string }) {
 		return (
 			<div
 				role="alert"
-				className="rounded-xl border border-[#E2E8F0] bg-white px-6 py-12 text-center"
+				className="rounded-xl border border-line bg-surface px-6 py-12 text-center"
 			>
-				<p className="font-semibold text-[#0F172A]">
+				<p className="font-semibold text-ink">
 					{resolveErrorMessage(query.error, tRoot)}
 				</p>
 				<button
 					type="button"
 					onClick={() => query.refetch()}
-					className="mt-4 h-10 rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+					className="mt-4 h-10 rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 				>
 					{t("retry")}
 				</button>
@@ -63,7 +63,7 @@ export function ReviewClient({ id }: { id: string }) {
 	}
 
 	if (!query.data) {
-		return <div className="h-96 animate-pulse rounded-2xl bg-[#F1F5F9]" />;
+		return <div className="h-96 animate-pulse rounded-2xl bg-subtle" />;
 	}
 
 	const detail = query.data;
@@ -91,15 +91,15 @@ export function ReviewClient({ id }: { id: string }) {
 		<div className="space-y-6 pb-24">
 			<header className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<h1 className="font-semibold text-[#0F172A] text-xl">{shop.name}</h1>
-					<p className="text-[#64748B] text-sm">
+					<h1 className="font-semibold text-ink text-xl">{shop.name}</h1>
+					<p className="text-ink-muted text-sm">
 						{t("review.header.requestedLevel", {
 							level: request.requestedLevel,
 						})}{" "}
 						· {t(`status.${request.status}`)}
 					</p>
 					{owner && (
-						<p className="text-[#64748B] text-sm">
+						<p className="text-ink-muted text-sm">
 							{owner.name ?? owner.email}
 						</p>
 					)}

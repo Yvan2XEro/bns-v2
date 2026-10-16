@@ -27,27 +27,27 @@ export function ProductDeliverySection({
 				<label className="flex items-start gap-3">
 					<input
 						type="checkbox"
-						className="mt-1 h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
+						className="mt-1 h-4 w-4 accent-[var(--shop-accent,var(--c-brand))]"
 						{...register("codAllowed")}
 					/>
 					<span>
-						<span className="block font-medium text-[#0F172A] text-sm">
+						<span className="block font-medium text-ink text-sm">
 							{t("cod")}
 						</span>
-						<span className="block text-[#64748B] text-xs">{t("codHint")}</span>
+						<span className="block text-ink-muted text-xs">{t("codHint")}</span>
 					</span>
 				</label>
 				<label className="flex items-start gap-3">
 					<input
 						type="checkbox"
-						className="mt-1 h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
+						className="mt-1 h-4 w-4 accent-[var(--shop-accent,var(--c-brand))]"
 						{...register("pickupAllowed")}
 					/>
 					<span>
-						<span className="block font-medium text-[#0F172A] text-sm">
+						<span className="block font-medium text-ink text-sm">
 							{t("pickup")}
 						</span>
-						<span className="block text-[#64748B] text-xs">
+						<span className="block text-ink-muted text-xs">
 							{t("pickupHint")}
 						</span>
 					</span>
@@ -73,7 +73,7 @@ export function ProductDeliverySection({
 							{...register("warrantyMonths")}
 						/>
 						<ProductIssueText issue={issueAt("warrantyMonths")} />
-						<p id="warranty-hint" className="text-[#64748B] text-xs">
+						<p id="warranty-hint" className="text-ink-muted text-xs">
 							{t("warrantyMonthsHint")}
 						</p>
 					</div>

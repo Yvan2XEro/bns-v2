@@ -95,7 +95,7 @@ export default async function HomePage() {
 	return (
 		<div className="flex flex-col">
 			{/* ── Hero (Leboncoin / OLX style: clean, search-focused) ── */}
-			<section className="relative bg-[#1E40AF]">
+			<section className="relative bg-brand dark:bg-brand-tint">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
 
@@ -131,7 +131,7 @@ export default async function HomePage() {
 			</section>
 
 			{/* ── Trust bar (Vinted / Mercari style: social proof strip) ── */}
-			<section className="border-[#DBEAFE] border-b bg-white">
+			<section className="border-brand-tint border-b bg-surface">
 				<div className="container mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-6 px-4 py-4 sm:gap-10 sm:px-6 lg:px-8">
 					{[
 						{
@@ -147,9 +147,9 @@ export default async function HomePage() {
 						},
 					].map((s) => (
 						<div key={s.title} className="flex items-center gap-2 text-sm">
-							<s.icon className="h-4 w-4 text-[#1E40AF]" />
-							<span className="font-semibold text-[#0F172A]">{s.title}</span>
-							<span className="text-[#64748B]">{s.detail}</span>
+							<s.icon className="h-4 w-4 text-brand" />
+							<span className="font-semibold text-ink">{s.title}</span>
+							<span className="text-ink-muted">{s.detail}</span>
 						</div>
 					))}
 				</div>
@@ -157,15 +157,15 @@ export default async function HomePage() {
 
 			{/* ── Categories (Leboncoin style: clean grid with count) ── */}
 			{categories.length > 0 ? (
-				<section className="bg-white py-10">
+				<section className="bg-surface py-10">
 					<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 						<div className="mb-6 flex items-center justify-between">
-							<h2 className="font-bold text-[#0F172A] text-xl">
+							<h2 className="font-bold text-ink text-xl">
 								{t("browseByCategory")}
 							</h2>
 							<Link
 								href="/search"
-								className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
+								className="flex items-center gap-1 font-medium text-brand text-sm hover:underline"
 							>
 								{t("allCategories")}
 								<ChevronRight className="h-4 w-4" />
@@ -181,7 +181,7 @@ export default async function HomePage() {
 									<div className="transition-all duration-200 group-hover:scale-110 group-hover:shadow-blue-500/10 group-hover:shadow-md">
 										<CategoryIcon category={category} size={48} />
 									</div>
-									<span className="text-center font-medium text-[#0F172A] text-xs sm:text-sm">
+									<span className="text-center font-medium text-ink text-xs sm:text-sm">
 										{category.name}
 									</span>
 								</Link>

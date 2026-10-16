@@ -305,7 +305,8 @@
 		"tabMessages": "Messages",
 		"tabAccount": "Compte",
 		"backToCategories": "Toutes les catégories",
-		"close": "Fermer"
+		"close": "Fermer",
+		"theme": "Thème"
 	},
 	"Footer": {
 		"brandTagline": "La marketplace pour acheter et vendre localement.",
@@ -5407,5 +5408,11 @@
 		"open": "Obtenir",
 		"close": "Fermer",
 		"installOnComputer": "Installer sur cet ordinateur"
+	},
+	"ThemeSwitcher": {
+		"label": "Thème",
+		"system": "Comme l'appareil",
+		"light": "Clair",
+		"dark": "Sombre"
 	}
 }

@@ -113,9 +113,9 @@ export function ReviewPanel({
 	});
 
 	return (
-		<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-semibold text-[#0F172A]">{t("reviewShop")}</h2>
-			<p className="text-[#64748B] text-sm">{shopName}</p>
+		<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-semibold text-ink">{t("reviewShop")}</h2>
+			<p className="text-ink-muted text-sm">{shopName}</p>
 			<form onSubmit={onSubmit} className="space-y-4" noValidate>
 				<fieldset>
 					<legend className="mb-2 font-medium text-sm">
@@ -125,7 +125,7 @@ export function ReviewPanel({
 						{RATINGS.map((value) => (
 							<label
 								key={value}
-								className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-[#F59E0B] has-[:checked]:bg-[#FEF3C7]"
+								className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-[#F59E0B] has-[:checked]:bg-warn-soft"
 							>
 								<input
 									type="radio"
@@ -153,7 +153,7 @@ export function ReviewPanel({
 				<div className="space-y-2">
 					<p id={photosId} className="font-medium text-sm">
 						{t("reviewPhotos")}{" "}
-						<span className="font-normal text-[#64748B]">
+						<span className="font-normal text-ink-muted">
 							{t("reviewPhotosHint", { max: REVIEW_PHOTOS_MAX })}
 						</span>
 					</p>
@@ -169,7 +169,7 @@ export function ReviewPanel({
 									type="button"
 									onClick={() => removePhoto(photo.key)}
 									aria-label={t("reviewPhotoRemove", { index: index + 1 })}
-									className="-top-2 -right-2 absolute flex h-6 w-6 items-center justify-center rounded-full bg-[#0F172A] text-white"
+									className="-top-2 -right-2 absolute flex h-6 w-6 items-center justify-center rounded-full bg-night text-white"
 								>
 									<X className="h-3.5 w-3.5" aria-hidden />
 								</button>
@@ -180,7 +180,7 @@ export function ReviewPanel({
 								<button
 									type="button"
 									onClick={() => fileInput.current?.click()}
-									className="flex h-[68px] w-[68px] flex-col items-center justify-center gap-0.5 rounded-[10px] border-[#94A3B8] border-[1.5px] border-dashed text-[#64748B] hover:bg-[#F8FAFC]"
+									className="flex h-[68px] w-[68px] flex-col items-center justify-center gap-0.5 rounded-[10px] border-[1.5px] border-ink-faint border-dashed text-ink-muted hover:bg-canvas"
 								>
 									<Camera className="h-5 w-5" aria-hidden />
 									<span className="font-semibold text-[10px]">

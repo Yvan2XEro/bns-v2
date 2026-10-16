@@ -43,7 +43,7 @@ export function ZoneRow({
 	return (
 		<tr
 			className={cn(
-				selected && "bg-[var(--shop-accent-soft,#EFF6FF)]",
+				selected && "bg-[var(--shop-accent-soft,var(--c-brand-soft))]",
 				!active && "opacity-70",
 			)}
 		>
@@ -51,11 +51,11 @@ export function ZoneRow({
 				<button
 					type="button"
 					onClick={onEdit}
-					className="text-left font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+					className="text-left font-semibold text-ink hover:text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 				>
 					{zone.name}
 				</button>
-				<p className="text-[#64748B] text-xs">
+				<p className="text-ink-muted text-xs">
 					{cityLabel}
 					{!active && ` · ${tDelivery("inactive")}`}
 				</p>
@@ -63,21 +63,21 @@ export function ZoneRow({
 			<td className="max-w-[230px] px-3 py-3 align-top">
 				<div className="flex flex-wrap gap-1">
 					{visible.length === 0 ? (
-						<span className="rounded-md bg-[#F1F5F9] px-[7px] py-0.5 text-[#334155] text-xs">
+						<span className="rounded-md bg-subtle px-[7px] py-0.5 text-ink-soft text-xs">
 							{tDelivery("wholeCity")}
 						</span>
 					) : (
 						visible.map((name) => (
 							<span
 								key={name}
-								className="rounded-md bg-[#F1F5F9] px-[7px] py-0.5 text-[#334155] text-xs"
+								className="rounded-md bg-subtle px-[7px] py-0.5 text-ink-soft text-xs"
 							>
 								{name}
 							</span>
 						))
 					)}
 					{more > 0 && (
-						<span className="px-0.5 py-0.5 text-[#64748B] text-xs">
+						<span className="px-0.5 py-0.5 text-ink-muted text-xs">
 							+{more}
 						</span>
 					)}
@@ -86,12 +86,12 @@ export function ZoneRow({
 			<td
 				className={cn(
 					"whitespace-nowrap px-3 py-3 align-top font-bold tabular-nums",
-					zone.fee === 0 ? "text-[#15803D]" : "text-[#0F172A]",
+					zone.fee === 0 ? "text-ok-ink-soft" : "text-ink",
 				)}
 			>
 				{zone.fee === 0 ? tPage("free") : formatOrderMoney(zone.fee, locale)}
 				{zone.minOrderSubtotal != null && (
-					<p className="font-normal text-[#64748B] text-xs">
+					<p className="font-normal text-ink-muted text-xs">
 						{tDelivery("columnMinimum")}{" "}
 						{formatOrderMoney(zone.minOrderSubtotal, locale)}
 					</p>
@@ -114,7 +114,7 @@ export function ZoneRow({
 						"inline-flex rounded-full px-2.5 py-0.5 font-semibold text-xs",
 						zone.method === "courier"
 							? "bg-[#ECFEFF] text-[#155E75]"
-							: "bg-[#F1F5F9] text-[#334155]",
+							: "bg-subtle text-ink-soft",
 					)}
 				>
 					{zone.method === "courier" && courierName
@@ -122,7 +122,7 @@ export function ZoneRow({
 						: tDelivery(`method.${zone.method}`)}
 				</span>
 				{!(zone.codAllowed ?? true) && (
-					<p className="mt-1 text-[#64748B] text-xs">{tDelivery("codNo")}</p>
+					<p className="mt-1 text-ink-muted text-xs">{tDelivery("codNo")}</p>
 				)}
 			</td>
 			<td className="px-[18px] py-3 text-right align-top">
@@ -131,11 +131,11 @@ export function ZoneRow({
 						<button
 							type="button"
 							aria-label={tPage("zoneActions", { name: zone.name })}
-							className="rounded-lg p-1.5 hover:bg-[#F1F5F9]"
+							className="rounded-lg p-1.5 hover:bg-subtle"
 						>
 							<MoreVertical
 								aria-hidden="true"
-								className="h-4 w-4 text-[#64748B]"
+								className="h-4 w-4 text-ink-muted"
 							/>
 						</button>
 					</DropdownMenuTrigger>

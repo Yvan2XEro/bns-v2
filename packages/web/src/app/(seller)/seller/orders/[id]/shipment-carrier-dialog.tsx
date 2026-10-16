@@ -59,14 +59,14 @@ export function ShipmentCarrierDialog({
 			<div className="space-y-4">
 				<fieldset className="space-y-2">
 					<legend className="sr-only">{t("carrierTitle")}</legend>
-					<label className="flex min-h-11 items-center gap-3 rounded-xl border border-[#E2E8F0] p-3 text-sm">
+					<label className="flex min-h-11 items-center gap-3 rounded-xl border border-line p-3 text-sm">
 						<input
 							type="radio"
 							name="carrier"
 							value="self"
 							checked={choice === "self"}
 							onChange={() => setChoice("self")}
-							className="h-5 w-5 accent-[var(--shop-accent,#1E40AF)]"
+							className="h-5 w-5 accent-[var(--shop-accent,var(--c-brand))]"
 						/>
 						{t("carrierSelf")}
 					</label>
@@ -74,7 +74,7 @@ export function ShipmentCarrierDialog({
 						choices.map(({ courier, tariff }) => (
 							<label
 								key={courier.id}
-								className="flex min-h-11 items-start gap-3 rounded-xl border border-[#E2E8F0] p-3 text-sm"
+								className="flex min-h-11 items-start gap-3 rounded-xl border border-line p-3 text-sm"
 							>
 								<input
 									type="radio"
@@ -82,11 +82,11 @@ export function ShipmentCarrierDialog({
 									value={courier.id}
 									checked={choice === courier.id}
 									onChange={() => setChoice(courier.id)}
-									className="mt-0.5 h-5 w-5 accent-[var(--shop-accent,#1E40AF)]"
+									className="mt-0.5 h-5 w-5 accent-[var(--shop-accent,var(--c-brand))]"
 								/>
 								<span>
 									<span className="block font-medium">{courier.name}</span>
-									<span className="block text-[#64748B] text-xs">
+									<span className="block text-ink-muted text-xs">
 										{tariff
 											? t("carrierTariff", {
 													amount: formatOrderMoney(tariff.amount, locale),
@@ -99,7 +99,7 @@ export function ShipmentCarrierDialog({
 							</label>
 						))}
 					{couriersEnabled && choices.length === 0 && couriers.isSuccess && (
-						<p className="text-[#64748B] text-sm">{t("carrierNone")}</p>
+						<p className="text-ink-muted text-sm">{t("carrierNone")}</p>
 					)}
 				</fieldset>
 				{switchCarrier.isError && (

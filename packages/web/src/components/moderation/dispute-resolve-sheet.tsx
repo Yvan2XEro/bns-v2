@@ -48,7 +48,7 @@ function reducer(state: FormState, patch: Partial<FormState>): FormState {
 }
 
 const field =
-	"w-full rounded-lg border border-[#CBD5E1] p-2 text-sm focus:border-[#1E40AF] focus:outline-none";
+	"w-full rounded-lg border border-line-strong p-2 text-sm focus:border-brand focus:outline-none";
 
 export function DisputeResolveSheet({
 	sheet,
@@ -151,7 +151,7 @@ export function DisputeResolveSheet({
 								preview.reset();
 							}}
 						/>
-						<span className="block text-[#64748B] text-xs">
+						<span className="block text-ink-muted text-xs">
 							{t("refundBounds", {
 								min: formatOrderMoney(guards.bounds.min),
 								max: formatOrderMoney(guards.bounds.max),
@@ -291,13 +291,13 @@ export function DisputeResolveSheet({
 						{t("preview")}
 					</Button>
 					{preview.data ? (
-						<div className="space-y-1 rounded-lg border border-[#E2E8F0] p-3 text-sm">
+						<div className="space-y-1 rounded-lg border border-line p-3 text-sm">
 							<p className="font-semibold">
 								{t("previewRefund", {
 									amount: formatOrderMoney(preview.data.refundAmount),
 								})}
 							</p>
-							<p className="text-[#64748B]">
+							<p className="text-ink-muted">
 								{t("previewBreakdown", {
 									goods: formatOrderMoney(preview.data.breakdown.goods),
 									delivery: formatOrderMoney(

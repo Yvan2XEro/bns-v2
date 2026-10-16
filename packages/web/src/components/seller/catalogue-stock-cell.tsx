@@ -12,10 +12,10 @@ export function CatalogueStockCell({ row }: { row: CatalogueRow }) {
 	const t = useTranslations("Catalogue");
 
 	if (row.variantCount === 0) {
-		return <span className="text-[#94A3B8] text-xs">{t("noVariants")}</span>;
+		return <span className="text-ink-faint text-xs">{t("noVariants")}</span>;
 	}
 	if (!row.trackInventory) {
-		return <span className="text-[#94A3B8] text-xs">{t("notTracked")}</span>;
+		return <span className="text-ink-faint text-xs">{t("notTracked")}</span>;
 	}
 
 	const reserved = Math.max(0, row.stockOnHand - row.available);
@@ -23,10 +23,8 @@ export function CatalogueStockCell({ row }: { row: CatalogueRow }) {
 	return (
 		<div className="flex flex-col gap-0.5">
 			<div className="flex items-center gap-2">
-				<span className="font-bold text-[#0F172A] tabular-nums">
-					{row.available}
-				</span>
-				<span className="text-[#64748B] text-xs">
+				<span className="font-bold text-ink tabular-nums">{row.available}</span>
+				<span className="text-ink-muted text-xs">
 					{t("availableUnit", { count: row.available })}
 				</span>
 				{row.outOfStock ? (
@@ -36,7 +34,7 @@ export function CatalogueStockCell({ row }: { row: CatalogueRow }) {
 				) : null}
 			</div>
 			{reserved > 0 && (
-				<span className="text-[#94A3B8] text-xs">
+				<span className="text-ink-faint text-xs">
 					{t("reservedCount", { count: reserved })}
 				</span>
 			)}

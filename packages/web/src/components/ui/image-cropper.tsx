@@ -73,7 +73,7 @@ export function ImageCropper({
 				<button
 					type="button"
 					onClick={handleConfirm}
-					className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-[#1E40AF] px-4 py-1.5 font-bold text-sm text-white transition-all hover:bg-[#2563EB] active:scale-95"
+					className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-brand px-4 py-1.5 font-bold text-sm text-white transition-all hover:bg-[#2563EB] active:scale-95"
 				>
 					<Check className="h-4 w-4" />
 					Apply
@@ -97,7 +97,7 @@ export function ImageCropper({
 						step={0.01}
 						value={zoom}
 						onChange={(e) => setZoom(Number(e.target.value))}
-						className="h-1 w-28 cursor-pointer appearance-none rounded-full bg-white/20 accent-[#3B82F6] sm:w-40"
+						className="h-1 w-28 cursor-pointer appearance-none rounded-full bg-white/20 accent-brand-bright sm:w-40"
 					/>
 					<button
 						type="button"

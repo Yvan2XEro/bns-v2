@@ -30,18 +30,18 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 	return (
 		<section
 			aria-labelledby="commission-invoices-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
-			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
+			<div className="flex items-center justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
 				<h2
 					id="commission-invoices-title"
-					className="font-bold text-[#0F172A] text-base"
+					className="font-bold text-base text-ink"
 				>
 					{tPage("invoicesTitle")}
 				</h2>
 				<Link
 					href="/seller/billing"
-					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 				>
 					{tPage("allInvoices")}
 				</Link>
@@ -51,13 +51,13 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 					<LoadingRows rows={2} />
 				</div>
 			) : billing.isError ? (
-				<p role="alert" className="px-[18px] py-4 text-[#64748B] text-sm">
+				<p role="alert" className="px-[18px] py-4 text-ink-muted text-sm">
 					{tBilling("loadError")} — {resolveErrorMessage(billing.error, tRoot)}
 				</p>
 			) : (
 				<>
 					{billing.data.invoices.length === 0 ? (
-						<p className="px-[18px] py-6 text-center text-[#64748B] text-sm">
+						<p className="px-[18px] py-6 text-center text-ink-muted text-sm">
 							{tBilling("noInvoices")}
 						</p>
 					) : (
@@ -65,23 +65,23 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 							{billing.data.invoices.slice(0, SHOWN).map((invoice) => (
 								<li
 									key={invoice.id}
-									className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-[#F1F5F9] border-b px-[18px] py-[11px] sm:grid-cols-[minmax(0,1fr)_92px_84px_auto]"
+									className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-subtle border-b px-[18px] py-[11px] sm:grid-cols-[minmax(0,1fr)_92px_84px_auto]"
 								>
 									<div className="flex min-w-0 items-center gap-2.5">
-										<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F1F5F9] text-[#475569]">
+										<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-subtle text-ink-mid">
 											<FileText aria-hidden="true" className="h-4 w-4" />
 										</span>
 										<div className="min-w-0">
 											<Link
 												href={`/seller/billing/${encodeURIComponent(invoice.id)}`}
-												className="font-semibold text-[#0F172A] hover:text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+												className="font-semibold text-ink hover:text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 											>
 												{tBilling("periodRange", {
 													start: formatOrderDate(invoice.periodStart, locale),
 													end: formatOrderDate(invoice.periodEnd, locale),
 												})}
 											</Link>
-											<p className="truncate text-[#64748B] text-xs">
+											<p className="truncate text-ink-muted text-xs">
 												{invoice.invoiceNumber} ·{" "}
 												{tBilling("ordersCount", {
 													count: invoice.ordersCount,
@@ -90,23 +90,23 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 										</div>
 									</div>
 									<div className="hidden text-right sm:block">
-										<p className="text-[#334155] text-[13px] tabular-nums">
+										<p className="text-[13px] text-ink-soft tabular-nums">
 											{formatOrderMoney(invoice.commissionTotal, locale)}
 										</p>
-										<p className="text-[#94A3B8] text-[11px]">
+										<p className="text-[11px] text-ink-faint">
 											{tPage("excludingTax")}
 										</p>
 									</div>
 									<div className="hidden text-right sm:block">
-										<p className="text-[#334155] text-[13px] tabular-nums">
+										<p className="text-[13px] text-ink-soft tabular-nums">
 											{formatOrderMoney(invoice.vatAmount, locale)}
 										</p>
-										<p className="text-[#94A3B8] text-[11px]">
+										<p className="text-[11px] text-ink-faint">
 											{tBilling("vat")}
 										</p>
 									</div>
 									<div className="flex flex-col items-end gap-1">
-										<span className="font-bold text-[#0F172A] text-sm tabular-nums">
+										<span className="font-bold text-ink text-sm tabular-nums">
 											{formatOrderMoney(invoice.totalDue, locale)}
 										</span>
 										<InvoiceStatusBadge status={invoice.status} />
@@ -123,9 +123,9 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 							))}
 						</ul>
 					)}
-					<div className="space-y-2 bg-[#F8FAFC] px-[18px] py-3">
+					<div className="space-y-2 bg-canvas px-[18px] py-3">
 						<div className="flex justify-between gap-3 text-sm">
-							<span className="text-[#64748B]">
+							<span className="text-ink-muted">
 								{tPage("currentPeriod", {
 									start: formatOrderDate(
 										billing.data.currentPeriod.periodStart,
@@ -137,11 +137,11 @@ export function CommissionInvoicesCard({ shopId }: { shopId: string }) {
 									),
 								})}
 							</span>
-							<span className="font-semibold text-[#0F172A] tabular-nums">
+							<span className="font-semibold text-ink tabular-nums">
 								{formatOrderMoney(billing.data.currentPeriod.accrued, locale)}
 							</span>
 						</div>
-						<p className="text-[#64748B] text-xs leading-[17px]">
+						<p className="text-ink-muted text-xs leading-[17px]">
 							{tPage("invoicesExplainer")}
 						</p>
 					</div>

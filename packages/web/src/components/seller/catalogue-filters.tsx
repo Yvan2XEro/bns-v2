@@ -17,7 +17,7 @@ import { cn } from "~/lib/utils";
 import type { CatalogueResponse, Category } from "~/types";
 
 const selectClass =
-	"h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[#334155] text-sm focus:border-[var(--shop-accent-border,#93C5FD)] focus:outline-none";
+	"h-10 rounded-lg border border-line bg-surface px-3 text-ink-soft text-sm focus:border-[var(--shop-accent-border,var(--c-brand-line))] focus:outline-none";
 
 /** Top-level categories, each followed by its direct subcategories. */
 function categoryOptions(categories: Category[]) {
@@ -91,8 +91,8 @@ export function CatalogueFilters({
 							className={cn(
 								"inline-flex h-8 items-center gap-2 rounded-full border px-3 font-medium text-sm",
 								active
-									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-									: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[var(--shop-accent-border,#93C5FD)]",
+									? "border-ink bg-night font-semibold text-white"
+									: "border-line bg-surface text-ink-soft hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
 							)}
 						>
 							{value === "resale" ? tc("resaleTab") : t(`filter.${value}`)}
@@ -100,7 +100,7 @@ export function CatalogueFilters({
 								<span
 									className={cn(
 										"font-bold text-[11px] tabular-nums",
-										active ? "text-[#CBD5E1]" : "text-[#64748B]",
+										active ? "text-ink-ghost" : "text-ink-muted",
 									)}
 								>
 									{count}
@@ -117,7 +117,7 @@ export function CatalogueFilters({
 					</label>
 					<Search
 						aria-hidden="true"
-						className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]"
+						className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint"
 					/>
 					<input
 						id={searchId}
@@ -125,7 +125,7 @@ export function CatalogueFilters({
 						value={query}
 						onChange={(event) => onQueryChange(event.target.value)}
 						placeholder={tc("searchPlaceholder")}
-						className="h-10 w-full rounded-lg border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[var(--shop-accent-border,#93C5FD)] focus:outline-none"
+						className="h-10 w-full rounded-lg border border-line bg-surface pr-3 pl-9 text-sm focus:border-[var(--shop-accent-border,var(--c-brand-line))] focus:outline-none"
 					/>
 				</div>
 				<select

@@ -11,6 +11,7 @@ import { type AppConfig, EMPTY_APP_CONFIG } from "~/lib/app-config";
 import { IOS_APP_ID } from "~/lib/app-stores";
 import { DEFAULT_PHONE_COUNTRY } from "~/lib/phone-input";
 import { serverFetch } from "~/lib/server-api";
+import { THEME_SCRIPT } from "~/lib/theme";
 
 const dmSans = DM_Sans({
 	subsets: ["latin"],
@@ -96,8 +97,13 @@ export default async function RootLayout({
 	};
 
 	return (
-		<html lang={locale}>
+		// The theme script sets `class="dark"` before React hydrates.
+		<html lang={locale} suppressHydrationWarning>
 			<head>
+				<script
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: a fixed, first-party script (lib/theme.ts)
+					dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }}
+				/>
 				<script
 					type="application/ld+json"
 					// biome-ignore lint/security/noDangerouslySetInnerHtml: structured data

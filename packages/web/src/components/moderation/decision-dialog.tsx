@@ -206,7 +206,7 @@ function DecisionForm({
 							{...form.register("sellerMessage")}
 							placeholder={t("review.dialog.sellerMessagePlaceholder")}
 						/>
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-muted text-xs">
 							{t("review.dialog.sellerMessageHint")}
 						</p>
 						{form.formState.errors.sellerMessage && (
@@ -223,20 +223,20 @@ function DecisionForm({
 							{t("review.dialog.noteLabel")}
 						</Label>
 						<Textarea id={`note-${action}`} {...form.register("note")} />
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-muted text-xs">
 							{t("review.dialog.noteHint")}
 						</p>
 					</div>
 				)}
 
 				{checklistBlocksApprove && (
-					<p className="rounded-lg bg-[#FEF3C7] px-3 py-2 text-[#92400E] text-sm">
+					<p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-ink">
 						{t("review.dialog.checklistIncomplete")}
 					</p>
 				)}
 
 				{CONFIRM_ACTIONS.has(action) && (
-					<p className="text-[#64748B] text-xs">
+					<p className="text-ink-muted text-xs">
 						{t("review.dialog.irreversible")}
 					</p>
 				)}

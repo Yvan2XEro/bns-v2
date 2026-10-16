@@ -28,7 +28,7 @@ export function DecisionBar({
 	if (actions.length === 0) return null;
 
 	return (
-		<div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 border-[#E2E8F0] border-t bg-white/95 px-4 py-3 backdrop-blur">
+		<div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 border-line border-t bg-surface/95 px-4 py-3 backdrop-blur">
 			{actions.map((action) => (
 				<Button
 					key={action}

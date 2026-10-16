@@ -39,10 +39,10 @@ export function CartGroups({
 				return (
 					<section key={group.groupKey} className="space-y-3">
 						<div className="flex items-center justify-between gap-3">
-							<h2 className="font-semibold text-[#0F172A]">
+							<h2 className="font-semibold text-ink">
 								<Link
 									href={`/s/${group.fulfillingShop.handle}`}
-									className="hover:text-[#1E40AF] hover:underline"
+									className="hover:text-brand hover:underline"
 								>
 									{tRoot("CheckoutGroup.cartGroupHeading", {
 										shop: group.fulfillingShop.name,
@@ -83,20 +83,20 @@ export function CartGroups({
 								{tRoot("CheckoutGroup.unavailable_other")}
 							</p>
 						) : null}
-						<dl className="space-y-1 rounded-xl bg-[#F8FAFC] px-4 py-3 text-sm">
+						<dl className="space-y-1 rounded-xl bg-canvas px-4 py-3 text-sm">
 							<div className="flex justify-between">
-								<dt className="text-[#64748B]">
+								<dt className="text-ink-muted">
 									{tRoot("CheckoutGroup.groupSubtotal")}
 								</dt>
-								<dd className="font-semibold text-[#0F172A]">
+								<dd className="font-semibold text-ink">
 									{formatOrderMoney(group.subtotal, locale)}
 								</dd>
 							</div>
 							<div className="flex justify-between">
-								<dt className="text-[#64748B]">
+								<dt className="text-ink-muted">
 									{tRoot("CheckoutGroup.groupDelivery")}
 								</dt>
-								<dd className="text-[#64748B]">
+								<dd className="text-ink-muted">
 									{tRoot("CheckoutGroup.deliveryAtCheckout")}
 								</dd>
 							</div>
@@ -108,10 +108,10 @@ export function CartGroups({
 					</section>
 				);
 			})}
-			<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+			<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
 				<div className="flex items-center justify-between">
-					<span className="text-[#64748B]">{tRoot("Cart.subtotal")}</span>
-					<span className="font-bold text-[#0F172A] text-xl">
+					<span className="text-ink-muted">{tRoot("Cart.subtotal")}</span>
+					<span className="font-bold text-ink text-xl">
 						{formatOrderMoney(cart.grandSubtotal, locale)}
 					</span>
 				</div>

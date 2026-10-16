@@ -75,7 +75,7 @@ export function ProductInformationSection({
 					{titleIssue ? (
 						<ProductIssueText issue={titleIssue} />
 					) : (
-						<p className="text-[#94A3B8] text-xs">
+						<p className="text-ink-faint text-xs">
 							{`${title?.length ?? 0} / ${TITLE_MAX}`}
 						</p>
 					)}
@@ -137,7 +137,7 @@ export function ProductInformationSection({
 						{...register("description")}
 					/>
 					<ProductIssueText issue={issueAt("description")} />
-					<p className="text-[#94A3B8] text-xs">
+					<p className="text-ink-faint text-xs">
 						{description?.length ?? 0} /{" "}
 						{DESCRIPTION_MAX.toLocaleString("fr-FR")}
 					</p>

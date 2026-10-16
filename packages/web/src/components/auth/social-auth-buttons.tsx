@@ -68,19 +68,19 @@ const PROVIDERS: Record<
 		label: "Google",
 		Icon: GoogleIcon,
 		className:
-			"border border-[#747775] bg-white text-[#1F1F1F] hover:bg-[#F8FAFF] focus-visible:ring-[#1E40AF]",
+			"border border-[#747775] bg-surface text-[#1F1F1F] hover:bg-canvas focus-visible:ring-brand",
 	},
 	apple: {
 		label: "Apple",
 		Icon: AppleIcon,
 		className:
-			"border border-black bg-black text-white hover:bg-[#1F1F1F] focus-visible:ring-[#1E40AF]",
+			"border border-black bg-black text-white hover:bg-[#1F1F1F] focus-visible:ring-brand",
 	},
 	facebook: {
 		label: "Facebook",
 		Icon: FacebookIcon,
 		className:
-			"border border-[#1877F2] bg-[#1877F2] text-white hover:bg-[#166FE5] focus-visible:ring-[#1E40AF]",
+			"border border-[#1877F2] bg-[#1877F2] text-white hover:bg-[#166FE5] focus-visible:ring-brand",
 	},
 };
 

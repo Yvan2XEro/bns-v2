@@ -302,15 +302,13 @@ describe("categories menu: diagonal tolerance", () => {
 });
 
 describe("shop header colours", () => {
-	test("light by default, dark under prefers-color-scheme", () => {
+	test("light by default, dark under the page's dark theme", () => {
 		const theme = shopTheme("#0E7490");
 		const css = shopHeaderCss(".head", theme);
 		expect(css.startsWith(`.head{--shop-head-bg:${theme.light.headerBg}`)).toBe(
 			true,
 		);
-		expect(css).toContain(
-			`@media (prefers-color-scheme: dark){.head{--shop-head-bg:${theme.dark.headerBg}`,
-		);
+		expect(css).toContain(`.dark .head{--shop-head-bg:${theme.dark.headerBg}`);
 		expect(css).toContain(`--shop-head-accent:${theme.light.accent}`);
 	});
 

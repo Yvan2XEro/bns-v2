@@ -59,12 +59,12 @@ export function AppBanner() {
 	};
 
 	return (
-		<div className="flex items-center gap-3 border-[#E2E8F0] border-b bg-white px-3 py-2 md:hidden">
+		<div className="flex items-center gap-3 border-line border-b bg-surface px-3 py-2 md:hidden">
 			<button
 				type="button"
 				onClick={dismiss}
 				aria-label={t("close")}
-				className="-ml-1 rounded-full p-1.5 text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#475569]"
+				className="-ml-1 rounded-full p-1.5 text-ink-faint hover:bg-subtle hover:text-ink-mid"
 			>
 				<X aria-hidden="true" className="h-4 w-4" />
 			</button>
@@ -73,19 +73,17 @@ export function AppBanner() {
 				alt=""
 				width={40}
 				height={40}
-				className="h-10 w-10 shrink-0 rounded-[10px] border border-[#E2E8F0]"
+				className="h-10 w-10 shrink-0 rounded-[10px] border border-line"
 			/>
 			<div className="min-w-0 flex-1 leading-tight">
-				<p className="truncate font-bold text-[#0F172A] text-sm">
-					{t("title")}
-				</p>
-				<p className="truncate text-[#64748B] text-xs">{t("subtitle")}</p>
+				<p className="truncate font-bold text-ink text-sm">{t("title")}</p>
+				<p className="truncate text-ink-muted text-xs">{t("subtitle")}</p>
 			</div>
 			<a
 				href={storeUrlFor(platform)}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="shrink-0 rounded-full bg-[#1E40AF] px-4 py-1.5 font-bold text-white text-xs hover:bg-[#1E3A8A]"
+				className="shrink-0 rounded-full bg-brand px-4 py-1.5 font-bold text-white text-xs hover:bg-brand-strong"
 			>
 				{t("open")}
 			</a>

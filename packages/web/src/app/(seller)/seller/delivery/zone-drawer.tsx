@@ -86,20 +86,17 @@ export function ZoneDrawer({
 			ref={panel}
 			tabIndex={-1}
 			aria-labelledby="zone-panel-title"
-			className="overflow-hidden rounded-2xl border border-[var(--shop-accent-border,#BFDBFE)] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.14)] outline-none"
+			className="overflow-hidden rounded-2xl border border-[var(--shop-accent-border,var(--c-brand-tint-strong))] bg-surface shadow-[0_12px_32px_rgba(15,23,42,0.14)] outline-none"
 		>
-			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
-				<h2
-					id="zone-panel-title"
-					className="font-bold text-[#0F172A] text-base"
-				>
+			<div className="flex items-center justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
+				<h2 id="zone-panel-title" className="font-bold text-base text-ink">
 					{target.zone ? t("editZone") : t("addZone")}
 				</h2>
 				<button
 					type="button"
 					onClick={onClose}
 					aria-label={t("cancel")}
-					className="rounded-lg p-1 text-[#64748B] hover:bg-[#F1F5F9]"
+					className="rounded-lg p-1 text-ink-muted hover:bg-subtle"
 				>
 					<X aria-hidden="true" className="h-[18px] w-[18px]" />
 				</button>

@@ -35,10 +35,10 @@ const SORT_LABEL = {
 
 export const chipClass = (active: boolean) =>
 	cn(
-		"inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30",
+		"inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30",
 		active
-			? "border-[#BFDBFE] bg-[#DBEAFE] font-semibold text-[#1E40AF]"
-			: "border-[#E2E8F0] bg-white font-medium text-[#334155] hover:border-[#94A3B8]",
+			? "border-brand-tint-strong bg-brand-tint font-semibold text-brand"
+			: "border-line bg-surface font-medium text-ink-soft hover:border-ink-faint",
 	);
 
 export function ChipMenu({
@@ -124,13 +124,13 @@ export function ShopSearchClient({
 	return (
 		<div className="container mx-auto max-w-4xl space-y-4 px-4 py-6 sm:px-6 lg:px-8">
 			<div className="relative">
-				<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-[#94A3B8]" />
+				<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-ink-faint" />
 				<input
 					type="search"
 					value={q}
 					onChange={(event) => setQ(event.target.value)}
 					placeholder={t("shopSearchPlaceholder")}
-					className="h-11 w-full rounded-xl border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm focus:border-[#93C5FD] focus:outline-none"
+					className="h-11 w-full rounded-xl border border-line bg-surface pr-3 pl-9 text-sm focus:border-brand-line focus:outline-none"
 				/>
 			</div>
 
@@ -149,7 +149,7 @@ export function ShopSearchClient({
 							type="button"
 							onClick={() => setCity("")}
 							aria-label={t("shopFilterClearCity", { city })}
-							className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[#BFDBFE]"
+							className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-brand-tint-strong"
 						>
 							<X className="h-3.5 w-3.5" />
 						</button>
@@ -224,13 +224,13 @@ export function ShopSearchClient({
 			{!isPending && !isError && data && (
 				<>
 					<div className="flex items-center justify-between gap-3">
-						<p className="text-[#64748B] text-[13px]">
+						<p className="text-[13px] text-ink-muted">
 							{city
 								? t("shopCountIn", { count: data.total, city })
 								: t("shopCount", { count: data.total })}
 						</p>
 						<DropdownMenu>
-							<DropdownMenuTrigger className="flex items-center gap-1 font-semibold text-[#0F172A] text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1E40AF]/30">
+							<DropdownMenuTrigger className="flex items-center gap-1 font-semibold text-[13px] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30">
 								{t(SORT_LABEL[sort])}
 								<ChevronDown className="h-3.5 w-3.5" />
 							</DropdownMenuTrigger>
@@ -253,7 +253,7 @@ export function ShopSearchClient({
 						</DropdownMenu>
 					</div>
 					{(data.sponsored?.length ?? 0) > 0 && (
-						<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+						<div className="overflow-hidden rounded-xl border border-line bg-surface">
 							{data.sponsored?.map((shop) => (
 								<ShopResultRow
 									key={shop.id}
@@ -265,11 +265,9 @@ export function ShopSearchClient({
 						</div>
 					)}
 					{data.hits.length === 0 && !data.sponsored?.length ? (
-						<div className="rounded-xl border border-[#E2E8F0] border-dashed bg-white p-10 text-center">
-							<p className="font-semibold text-[#0F172A]">
-								{t("noShopsTitle")}
-							</p>
-							<p className="mt-1 text-[#64748B] text-sm">
+						<div className="rounded-xl border border-line border-dashed bg-surface p-10 text-center">
+							<p className="font-semibold text-ink">{t("noShopsTitle")}</p>
+							<p className="mt-1 text-ink-muted text-sm">
 								{!debouncedQ
 									? t("noShopsBody")
 									: city
@@ -285,7 +283,7 @@ export function ShopSearchClient({
 										setLevel(0);
 										setCategory("");
 									}}
-									className="mt-4 h-10 rounded-lg border border-[#E2E8F0] px-4 font-semibold text-sm"
+									className="mt-4 h-10 rounded-lg border border-line px-4 font-semibold text-sm"
 								>
 									{t("clearFilters")}
 								</button>
@@ -293,7 +291,7 @@ export function ShopSearchClient({
 						</div>
 					) : (
 						data.hits.length > 0 && (
-							<div className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+							<div className="overflow-hidden rounded-xl border border-line bg-surface">
 								{data.hits.map((shop) => (
 									<ShopResultRow key={shop.id} shop={shop} query={debouncedQ} />
 								))}

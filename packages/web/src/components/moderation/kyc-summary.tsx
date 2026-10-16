@@ -8,8 +8,8 @@ type Kyc = NonNullable<ReviewerRequestDetail["request"]["kyc"]>;
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
 	return (
 		<div className="flex items-baseline justify-between gap-4 text-sm">
-			<span className="text-[#64748B]">{label}</span>
-			<span className="font-medium text-[#0F172A]">{value ?? "—"}</span>
+			<span className="text-ink-muted">{label}</span>
+			<span className="font-medium text-ink">{value ?? "—"}</span>
 		</div>
 	);
 }
@@ -72,7 +72,7 @@ export function KycSummary({ kyc }: { kyc: Kyc | null | undefined }) {
 						href={kyc.vendorReviewUrl}
 						target="_blank"
 						rel="noreferrer"
-						className="inline-flex items-center gap-1 pt-1 font-medium text-[#1E40AF] text-sm hover:underline"
+						className="inline-flex items-center gap-1 pt-1 font-medium text-brand text-sm hover:underline"
 					>
 						{t("review.kyc.vendorConsole")}
 						<ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />

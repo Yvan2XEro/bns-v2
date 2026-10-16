@@ -44,13 +44,13 @@ export function ShopCategories({
 								"inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 font-medium text-sm",
 								active
 									? "border-[var(--shop-accent-border)] bg-[var(--shop-accent-soft)] text-[var(--shop-accent-text)]"
-									: "border-[#E2E8F0] bg-white text-[#334155]",
+									: "border-line bg-surface text-ink-soft",
 							)}
 						>
 							{item.name}
 							<span
 								className={
-									active ? "text-[var(--shop-accent-text)]" : "text-[#94A3B8]"
+									active ? "text-[var(--shop-accent-text)]" : "text-ink-faint"
 								}
 							>
 								{item.count}
@@ -65,9 +65,9 @@ export function ShopCategories({
 	return (
 		<nav
 			aria-label={t("categories")}
-			className="hidden rounded-xl border border-[#E2E8F0] bg-white px-2.5 py-4 lg:block"
+			className="hidden rounded-xl border border-line bg-surface px-2.5 py-4 lg:block"
 		>
-			<h2 className="mb-2.5 px-1.5 font-bold text-[#0F172A] text-[15px]">
+			<h2 className="mb-2.5 px-1.5 font-bold text-[15px] text-ink">
 				{t("categories")}
 			</h2>
 			{items.map((item) => {
@@ -81,11 +81,11 @@ export function ShopCategories({
 							"flex justify-between gap-3 rounded-lg px-2.5 py-2 text-sm",
 							active
 								? "bg-[var(--shop-accent-soft)] font-semibold text-[var(--shop-accent-text)]"
-								: "text-[#334155] hover:bg-[var(--shop-accent-soft)]",
+								: "text-ink-soft hover:bg-[var(--shop-accent-soft)]",
 						)}
 					>
 						<span className="min-w-0 truncate">{item.name}</span>
-						<span className={active ? undefined : "text-[#94A3B8]"}>
+						<span className={active ? undefined : "text-ink-faint"}>
 							{item.count}
 						</span>
 					</Link>

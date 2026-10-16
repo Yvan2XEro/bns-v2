@@ -26,8 +26,8 @@ export function ResaleOfferedClient({
 		<section className="space-y-6">
 			{embedded ? null : (
 				<header>
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-					<p className="mt-1 max-w-2xl text-[#64748B] text-sm">
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+					<p className="mt-1 max-w-2xl text-ink-muted text-sm">
 						{t("description")}
 					</p>
 				</header>
@@ -48,7 +48,7 @@ export function ResaleOfferedClient({
 				/>
 			) : null}
 			{query.data?.products.length === 0 ? (
-				<p className="rounded-2xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center font-medium text-[#475569]">
+				<p className="rounded-2xl border border-line-strong border-dashed bg-surface px-6 py-14 text-center font-medium text-ink-mid">
 					{t("empty")}
 				</p>
 			) : null}
@@ -56,18 +56,18 @@ export function ResaleOfferedClient({
 				{query.data?.products.map((product) => (
 					<article
 						key={product.productId}
-						className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5"
+						className="space-y-4 rounded-2xl border border-line bg-surface p-5"
 					>
 						<div className="flex flex-wrap items-start justify-between gap-4">
 							<div>
-								<h2 className="font-bold text-[#0F172A]">{product.title}</h2>
-								<p className="mt-1 text-[#64748B] text-sm">
+								<h2 className="font-bold text-ink">{product.title}</h2>
+								<p className="mt-1 text-ink-muted text-sm">
 									{t("productStats", {
 										resellers: product.resellerCount,
 										units: product.unitsDelivered30d,
 									})}
 								</p>
-								<p className="mt-1 text-[#64748B] text-xs">
+								<p className="mt-1 text-ink-muted text-xs">
 									{[
 										product.approvalRequired
 											? tHub("ruleApprovalAll")
@@ -85,7 +85,7 @@ export function ResaleOfferedClient({
 							</div>
 							<Link
 								href={`/seller/resale/products/${encodeURIComponent(product.productId)}`}
-								className="inline-flex min-h-11 items-center rounded-lg bg-[#0F172A] px-4 font-semibold text-sm text-white"
+								className="inline-flex min-h-11 items-center rounded-lg bg-night px-4 font-semibold text-sm text-white"
 							>
 								{t("editProduct")}
 							</Link>
@@ -102,7 +102,7 @@ export function ResaleOfferedClient({
 						) : null}
 						<div className="overflow-x-auto">
 							<table className="w-full min-w-[680px] text-left text-sm">
-								<thead className="border-[#E2E8F0] border-b text-[#64748B]">
+								<thead className="border-line border-b text-ink-muted">
 									<tr>
 										<th className="py-3 pr-4">{t("variant")}</th>
 										<th className="py-3 pr-4">{tHub("supplierStock")}</th>
@@ -114,10 +114,10 @@ export function ResaleOfferedClient({
 								</thead>
 								<tbody>
 									{product.variants.map((variant) => (
-										<tr key={variant.id} className="border-[#F1F5F9] border-b">
+										<tr key={variant.id} className="border-subtle border-b">
 											<th
 												scope="row"
-												className="py-3 pr-4 font-semibold text-[#0F172A]"
+												className="py-3 pr-4 font-semibold text-ink"
 											>
 												{variant.sku || t("defaultVariant")}
 											</th>

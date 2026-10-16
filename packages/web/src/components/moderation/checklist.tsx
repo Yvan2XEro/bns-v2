@@ -34,23 +34,21 @@ export function Checklist({
 							type="button"
 							aria-pressed={checked}
 							onClick={() => onChange({ ...value, [item]: !checked })}
-							className="flex w-full items-center justify-between gap-3 rounded-xl border border-[#DBEAFE] px-3 py-2 text-left text-sm transition-colors hover:bg-[#F8FAFF]"
+							className="flex w-full items-center justify-between gap-3 rounded-xl border border-brand-tint px-3 py-2 text-left text-sm transition-colors hover:bg-canvas"
 						>
-							<span className="text-[#0F172A]">
-								{t(`review.checklist.${item}`)}
-							</span>
+							<span className="text-ink">{t(`review.checklist.${item}`)}</span>
 							<span
 								className={
 									checked
-										? "flex h-5 w-9 items-center rounded-full bg-[#1E40AF] px-0.5"
-										: "flex h-5 w-9 items-center rounded-full bg-[#E2E8F0] px-0.5"
+										? "flex h-5 w-9 items-center rounded-full bg-brand px-0.5"
+										: "flex h-5 w-9 items-center rounded-full bg-line px-0.5"
 								}
 							>
 								<span
 									className={
 										checked
-											? "h-4 w-4 translate-x-4 rounded-full bg-white transition-transform"
-											: "h-4 w-4 translate-x-0 rounded-full bg-white transition-transform"
+											? "h-4 w-4 translate-x-4 rounded-full bg-surface transition-transform"
+											: "h-4 w-4 translate-x-0 rounded-full bg-surface transition-transform"
 									}
 								/>
 							</span>

@@ -40,7 +40,7 @@ export function QueueTabs({
 					<TabsTrigger key={tab.key} value={tab.key}>
 						{t(`tabs.${tab.key}`)}
 						{tab.count !== null && (
-							<span className="ml-1.5 rounded-full bg-[#DBEAFE] px-1.5 font-semibold text-[#1E40AF] text-[10px]">
+							<span className="ml-1.5 rounded-full bg-brand-tint px-1.5 font-semibold text-[10px] text-brand">
 								{tab.count}
 							</span>
 						)}

@@ -27,22 +27,22 @@ export function ShopAbout({
 	return (
 		<aside className="space-y-4">
 			{shop.description && (
-				<div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
-					<h2 className="font-bold text-[#0F172A] text-[15px]">{t("about")}</h2>
-					<p className="mt-2.5 whitespace-pre-wrap break-words text-[#334155] text-sm leading-relaxed">
+				<div className="rounded-xl border border-line bg-surface p-4">
+					<h2 className="font-bold text-[15px] text-ink">{t("about")}</h2>
+					<p className="mt-2.5 whitespace-pre-wrap break-words text-ink-soft text-sm leading-relaxed">
 						{shop.description}
 					</p>
 				</div>
 			)}
 			{categoryNav ??
 				(shop.categories.length > 0 && (
-					<div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
-						<h2 className="font-bold text-[#0F172A]">{t("categories")}</h2>
+					<div className="rounded-xl border border-line bg-surface p-5">
+						<h2 className="font-bold text-ink">{t("categories")}</h2>
 						<div className="mt-3 flex flex-wrap gap-2">
 							{shop.categories.map((category) => (
 								<span
 									key={category.id}
-									className="rounded-full bg-[var(--shop-accent-soft,#EFF6FF)] px-3 py-1 font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs"
+									className="rounded-full bg-[var(--shop-accent-soft,var(--c-brand-soft))] px-3 py-1 font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs"
 								>
 									{category.name}
 								</span>
@@ -51,38 +51,36 @@ export function ShopAbout({
 					</div>
 				))}
 			{full && shop.returnPolicy && (
-				<div className="rounded-xl border border-[#E2E8F0] bg-white p-4">
-					<h2 className="flex items-center gap-2 font-bold text-[#0F172A] text-[15px]">
+				<div className="rounded-xl border border-line bg-surface p-4">
+					<h2 className="flex items-center gap-2 font-bold text-[15px] text-ink">
 						<RotateCcw
 							aria-hidden="true"
-							className="h-4 w-4 text-[var(--shop-accent,#1E40AF)]"
+							className="h-4 w-4 text-[var(--shop-accent,var(--c-brand))]"
 						/>
 						{t("returnPolicyTitle")}
 					</h2>
-					<p className="mt-2.5 whitespace-pre-wrap break-words text-[#334155] text-sm leading-relaxed">
+					<p className="mt-2.5 whitespace-pre-wrap break-words text-ink-soft text-sm leading-relaxed">
 						{shop.returnPolicy}
 					</p>
-					<p className="mt-2 text-[#94A3B8] text-xs">{t("returnPolicyNote")}</p>
+					<p className="mt-2 text-ink-faint text-xs">{t("returnPolicyNote")}</p>
 				</div>
 			)}
 			{full && <LegalBlock legal={shop.legal} verified={shop.legalVerified} />}
 			{full && (
 				<Link
 					href={`/profile/${shop.owner.id}`}
-					className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-5 hover:border-[var(--shop-accent-border,#93C5FD)]"
+					className="flex items-center gap-3 rounded-xl border border-line bg-surface p-5 hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 				>
 					<Avatar className="h-11 w-11">
 						<AvatarImage src={shop.owner.avatar?.url ?? undefined} />
-						<AvatarFallback className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]">
+						<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]">
 							{shop.owner.name.charAt(0)}
 						</AvatarFallback>
 					</Avatar>
 					<div>
-						<p className="text-[#94A3B8] text-xs">{t("ownedBy")}</p>
-						<p className="font-semibold text-[#0F172A] text-sm">
-							{shop.owner.name}
-						</p>
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-faint text-xs">{t("ownedBy")}</p>
+						<p className="font-semibold text-ink text-sm">{shop.owner.name}</p>
+						<p className="text-ink-muted text-xs">
 							{t("memberSince", { date: memberSince })}
 						</p>
 					</div>

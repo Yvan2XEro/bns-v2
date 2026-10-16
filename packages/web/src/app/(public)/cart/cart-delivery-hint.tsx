@@ -41,7 +41,7 @@ export function CartDeliveryHint({
 				}),
 	].filter(Boolean);
 	return (
-		<p className="text-[#64748B] text-xs">
+		<p className="text-ink-muted text-xs">
 			{parts.join(" · ")} · {t("estimateNote")}
 		</p>
 	);

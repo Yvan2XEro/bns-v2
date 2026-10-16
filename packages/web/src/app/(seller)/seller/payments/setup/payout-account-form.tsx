@@ -76,7 +76,7 @@ export function PayoutAccountForm({
 	return (
 		<div className="space-y-3">
 			{hasActiveAccount && (
-				<p className="rounded-lg bg-[#FFFBEB] px-3 py-2 text-[#92400E] text-xs">
+				<p className="rounded-lg bg-warn-faint px-3 py-2 text-warn-ink text-xs">
 					{t("setup_changeNotice", { hours: payoutChangeHoldHours })}
 				</p>
 			)}
@@ -90,7 +90,7 @@ export function PayoutAccountForm({
 					</p>
 				)}
 				{submit.isSuccess && submit.data.nameMatch && (
-					<output className="block rounded-lg bg-[#F0FDF4] px-3 py-2 text-[#166534] text-sm">
+					<output className="block rounded-lg bg-ok-faint px-3 py-2 text-ok-ink text-sm">
 						{t(NAME_MATCH_RESULTS[submit.data.nameMatch])}
 					</output>
 				)}

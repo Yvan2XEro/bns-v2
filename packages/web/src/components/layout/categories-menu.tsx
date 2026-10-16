@@ -242,8 +242,8 @@ export function CategoriesMenu({
 							? "border-transparent bg-[var(--shop-head-accent)] text-[var(--shop-head-on-accent)] focus-visible:ring-[var(--shop-head-fg)]"
 							: "border-white/25 text-[var(--shop-head-fg)] hover:bg-white/10 focus-visible:ring-[var(--shop-head-fg)]"
 						: open
-							? "border-[#1E40AF] bg-[#EFF6FF] text-[#1E40AF] focus-visible:ring-[#93C5FD]"
-							: "border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#94A3B8] focus-visible:ring-[#93C5FD]",
+							? "border-brand bg-brand-soft text-brand focus-visible:ring-brand-line"
+							: "border-line bg-surface text-ink hover:border-ink-faint focus-visible:ring-brand-line",
 				)}
 			>
 				<LayoutGrid aria-hidden="true" className="h-4 w-4" />
@@ -259,7 +259,7 @@ export function CategoriesMenu({
 				<div
 					id={panelId}
 					onKeyDown={onPanelKeyDown}
-					className="absolute inset-x-0 top-full z-50 border-[#E2E8F0] border-y bg-white text-[#0F172A] shadow-[0_12px_24px_rgba(15,23,42,0.08)]"
+					className="absolute inset-x-0 top-full z-50 border-line border-y bg-surface text-ink shadow-[0_12px_24px_rgba(15,23,42,0.08)]"
 				>
 					<nav
 						aria-label={t("allCategories")}
@@ -267,7 +267,7 @@ export function CategoriesMenu({
 					>
 						<ul className="max-h-[70vh] overflow-y-auto py-2 pr-2">
 							{rubrics.length === 0 && (
-								<li className="px-3 py-2 text-[#64748B] text-sm">
+								<li className="px-3 py-2 text-ink-muted text-sm">
 									{t("loading")}
 								</li>
 							)}
@@ -283,10 +283,10 @@ export function CategoriesMenu({
 										onClick={() => close(false)}
 										aria-current={index === active ? "true" : undefined}
 										className={cn(
-											"flex items-center justify-between rounded-lg px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]",
+											"flex items-center justify-between rounded-lg px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line",
 											index === active
-												? "bg-[#EFF6FF] font-semibold text-[#1E40AF]"
-												: "text-[#0F172A] hover:bg-[#F8FAFC]",
+												? "bg-brand-soft font-semibold text-brand"
+												: "text-ink hover:bg-canvas",
 										)}
 									>
 										<span className="flex min-w-0 items-center gap-2.5">
@@ -301,22 +301,22 @@ export function CategoriesMenu({
 										</span>
 										<ChevronRight
 											aria-hidden="true"
-											className="h-4 w-4 text-[#94A3B8]"
+											className="h-4 w-4 text-ink-faint"
 										/>
 									</Link>
 								</li>
 							))}
 							{shopsEnabled && (
-								<li className="mt-1 border-[#E2E8F0] border-t pt-1">
+								<li className="mt-1 border-line border-t pt-1">
 									<Link
 										href={shopsDirectoryHref({})}
 										onClick={() => close(false)}
-										className="flex items-center justify-between rounded-lg px-3 py-2 font-semibold text-[#0F172A] text-sm hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+										className="flex items-center justify-between rounded-lg px-3 py-2 font-semibold text-ink text-sm hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 									>
 										{t("shops")}
 										<ChevronRight
 											aria-hidden="true"
-											className="h-4 w-4 text-[#94A3B8]"
+											className="h-4 w-4 text-ink-faint"
 										/>
 									</Link>
 								</li>
@@ -325,11 +325,11 @@ export function CategoriesMenu({
 
 						<div
 							ref={paneRef}
-							className="min-h-48 border-[#E2E8F0] border-l px-6 py-4"
+							className="min-h-48 border-line border-l px-6 py-4"
 						>
 							{current && (
 								<>
-									<h2 className="mb-2 font-bold font-heading text-[#0F172A] text-base">
+									<h2 className="mb-2 font-bold font-heading text-base text-ink">
 										{current.name}
 									</h2>
 									{current.children.length > 0 && (
@@ -339,7 +339,7 @@ export function CategoriesMenu({
 													<Link
 														href={categoryHref(child.id)}
 														onClick={() => close(false)}
-														className="flex items-center gap-2 rounded px-1 py-1.5 text-[#334155] text-sm hover:text-[#1E40AF] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+														className="flex items-center gap-2 rounded px-1 py-1.5 text-ink-soft text-sm hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 													>
 														<CategoryIcon
 															category={child}
@@ -357,7 +357,7 @@ export function CategoriesMenu({
 									<Link
 										href={categoryHref(current.id)}
 										onClick={() => close(false)}
-										className="mt-3 inline-flex items-center gap-1 rounded px-1 font-semibold text-[#1E40AF] text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+										className="mt-3 inline-flex items-center gap-1 rounded px-1 font-semibold text-brand text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 									>
 										{t("allOf", { name: current.name })}
 										<ChevronRight aria-hidden="true" className="h-4 w-4" />
@@ -405,11 +405,11 @@ function RubricShops({
 	const hits = (shops.data?.hits ?? []).slice(0, 3);
 
 	return (
-		<p className="mt-4 border-[#E2E8F0] border-t pt-3 text-[#475569] text-sm">
+		<p className="mt-4 border-line border-t pt-3 text-ink-mid text-sm">
 			<Link
 				href={shopsDirectoryHref({ category: rubric.id, city })}
 				onClick={onNavigate}
-				className="rounded px-1 font-semibold text-[#0F172A] hover:text-[#1E40AF] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+				className="rounded px-1 font-semibold text-ink hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 			>
 				{city
 					? t("shopsOfIn", { name: rubric.name, city })
@@ -424,7 +424,7 @@ function RubricShops({
 							<Link
 								href={`/s/${shop.handle}`}
 								onClick={onNavigate}
-								className="rounded px-0.5 hover:text-[#1E40AF] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+								className="rounded px-0.5 hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-line"
 							>
 								{shop.name}
 							</Link>

@@ -15,12 +15,12 @@ export function WorkspaceBreadcrumb({
 }) {
 	const t = useTranslations("Seller");
 	return (
-		<nav className="mb-4 text-[#64748B] text-sm">
+		<nav className="mb-4 text-ink-muted text-sm">
 			<Link href={href} className="hover:underline">
 				{t(`nav.${section}`)}
 			</Link>
 			<span className="mx-1.5">›</span>
-			<span className="font-medium text-[#0F172A]">{reference}</span>
+			<span className="font-medium text-ink">{reference}</span>
 		</nav>
 	);
 }

@@ -545,8 +545,8 @@ export function MessagesClient({
 					className={`flex min-h-0 w-full flex-col md:w-1/3 ${selectedConversation ? "hidden md:flex" : ""}`}
 				>
 					<div className="mb-4 flex items-center justify-between">
-						<h2 className="font-bold text-[#0F172A] text-xl">Messages</h2>
-						<div className="flex items-center gap-1.5 text-[#64748B] text-xs">
+						<h2 className="font-bold text-ink text-xl">Messages</h2>
+						<div className="flex items-center gap-1.5 text-ink-muted text-xs">
 							{connectionState === "connected" ? (
 								<Wifi className="h-3.5 w-3.5 text-green-500" />
 							) : (
@@ -568,9 +568,9 @@ export function MessagesClient({
 									<button
 										type="button"
 										key={conv.id}
-										className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-[#F1F5F9] ${
+										className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-subtle ${
 											selectedConversation?.id === conv.id
-												? "border border-[#DBEAFE] bg-[#EFF6FF]"
+												? "border border-brand-tint bg-brand-soft"
 												: ""
 										}`}
 										onClick={() => selectConversation(conv)}
@@ -578,7 +578,7 @@ export function MessagesClient({
 										<div className="relative">
 											<Avatar>
 												<AvatarImage src={header.logoUrl ?? undefined} />
-												<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
+												<AvatarFallback className="bg-brand font-semibold text-white text-xs">
 													{header.title.charAt(0) || "?"}
 												</AvatarFallback>
 											</Avatar>
@@ -588,11 +588,11 @@ export function MessagesClient({
 										</div>
 										<div className="flex-1 overflow-hidden">
 											<div className="flex items-center gap-2">
-												<p className="truncate font-medium text-[#0F172A]">
+												<p className="truncate font-medium text-ink">
 													{header.title || "Unknown"}
 												</p>
 												{chip && (
-													<span className="shrink-0 rounded bg-[#EFF6FF] px-1.5 py-0.5 font-medium text-[#1E40AF] text-[10px]">
+													<span className="shrink-0 rounded bg-brand-soft px-1.5 py-0.5 font-medium text-[10px] text-brand">
 														{t("shopChip")}
 													</span>
 												)}
@@ -603,13 +603,13 @@ export function MessagesClient({
 												)}
 											</div>
 											{conv.lastMessage && (
-												<p className="truncate text-[#64748B] text-sm">
+												<p className="truncate text-ink-muted text-sm">
 													{conv.lastMessage.content}
 												</p>
 											)}
 										</div>
 										{(unreadCounts[conv.id] || 0) > 0 && (
-											<span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1E40AF] px-1.5 font-bold text-[10px] text-white">
+											<span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand px-1.5 font-bold text-[10px] text-white">
 												{unreadCounts[conv.id]}
 											</span>
 										)}
@@ -633,7 +633,7 @@ export function MessagesClient({
 				>
 					{selectedConversation ? (
 						<>
-							<div className="mb-4 flex min-w-0 items-center gap-3 border-[#E2E8F0] border-b pb-4">
+							<div className="mb-4 flex min-w-0 items-center gap-3 border-line border-b pb-4">
 								<Button
 									variant="ghost"
 									size="icon"
@@ -651,7 +651,7 @@ export function MessagesClient({
 											<div className="relative shrink-0">
 												<Avatar>
 													<AvatarImage src={header.logoUrl ?? undefined} />
-													<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
+													<AvatarFallback className="bg-brand font-semibold text-white text-xs">
 														{header.title.charAt(0) || "?"}
 													</AvatarFallback>
 												</Avatar>
@@ -661,22 +661,22 @@ export function MessagesClient({
 											</div>
 											<div className="min-w-0 flex-1">
 												<div className="flex min-w-0 items-center gap-2">
-													<p className="truncate font-medium text-[#0F172A]">
+													<p className="truncate font-medium text-ink">
 														{header.title || t("unknownContact")}
 													</p>
 													{chip && (
-														<span className="shrink-0 rounded bg-[#EFF6FF] px-1.5 py-0.5 font-medium text-[#1E40AF] text-[10px]">
+														<span className="shrink-0 rounded bg-brand-soft px-1.5 py-0.5 font-medium text-[10px] text-brand">
 															{t("shopChip")}
 														</span>
 													)}
 												</div>
 												{header.subtitle && (
-													<p className="truncate text-[#64748B] text-xs">
+													<p className="truncate text-ink-muted text-xs">
 														{header.subtitle}
 													</p>
 												)}
 												{selectedConversation.listing && (
-													<p className="truncate text-[#64748B] text-xs">
+													<p className="truncate text-ink-muted text-xs">
 														Re:{" "}
 														{(selectedConversation.listing as Listing).title}
 													</p>
@@ -693,7 +693,7 @@ export function MessagesClient({
 											className="shrink-0"
 											aria-label={t("conversationMenu")}
 										>
-											<MoreVertical className="h-5 w-5 text-[#64748B]" />
+											<MoreVertical className="h-5 w-5 text-ink-muted" />
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="end">
@@ -714,7 +714,7 @@ export function MessagesClient({
 												<DropdownMenuItem
 													className={
 														blocked
-															? "text-[#64748B]"
+															? "text-ink-muted"
 															: "text-red-600 focus:text-red-600"
 													}
 													onClick={() => handleBlockToggle(other.id)}
@@ -775,10 +775,10 @@ export function MessagesClient({
 											className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
 										>
 											{authorLabel && (
-												<p className="mb-0.5 px-1 font-medium text-[#64748B] text-xs">
+												<p className="mb-0.5 px-1 font-medium text-ink-muted text-xs">
 													{authorLabel.primary}
 													{authorLabel.secondary && (
-														<span className="ml-1 text-[#94A3B8]">
+														<span className="ml-1 text-ink-faint">
 															{authorLabel.secondary === "formerMember"
 																? t("formerMember")
 																: authorLabel.secondary}
@@ -789,8 +789,8 @@ export function MessagesClient({
 											<div
 												className={`max-w-[70%] overflow-hidden ${
 													isOwn
-														? "rounded-2xl rounded-br-md bg-[#1E40AF] text-white"
-														: "rounded-2xl rounded-bl-md bg-[#F1F5F9] text-[#0F172A]"
+														? "rounded-2xl rounded-br-md bg-brand text-white"
+														: "rounded-2xl rounded-bl-md bg-subtle text-ink"
 												}`}
 											>
 												{msgListing && (
@@ -799,7 +799,7 @@ export function MessagesClient({
 														className={`flex items-center gap-2 border-b p-2 transition-colors ${
 															isOwn
 																? "border-white/20 bg-white/10 hover:bg-white/20"
-																: "border-[#E2E8F0] bg-white hover:bg-[#EFF6FF]"
+																: "border-line bg-surface hover:bg-brand-soft"
 														}`}
 													>
 														{msgListing.thumbnailUrl && (
@@ -812,13 +812,13 @@ export function MessagesClient({
 														)}
 														<div className="min-w-0">
 															<p
-																className={`truncate font-semibold text-xs ${isOwn ? "text-white" : "text-[#0F172A]"}`}
+																className={`truncate font-semibold text-xs ${isOwn ? "text-white" : "text-ink"}`}
 															>
 																{msgListing.title}
 															</p>
 															{msgListing.price != null && (
 																<p
-																	className={`text-xs ${isOwn ? "text-white/80" : "text-[#1E40AF]"}`}
+																	className={`text-xs ${isOwn ? "text-white/80" : "text-brand"}`}
 																>
 																	{formatOrderMoney(msgListing.price)}
 																</p>
@@ -830,7 +830,7 @@ export function MessagesClient({
 													<p>{message.content}</p>
 													<p
 														className={`text-xs ${
-															isOwn ? "text-white/70" : "text-[#94A3B8]"
+															isOwn ? "text-white/70" : "text-ink-faint"
 														}`}
 													>
 														{new Date(message.createdAt).toLocaleTimeString(
@@ -850,21 +850,21 @@ export function MessagesClient({
 							</div>
 
 							{getTypingLabel() && (
-								<p className="mb-2 animate-pulse text-[#94A3B8] text-xs">
+								<p className="mb-2 animate-pulse text-ink-faint text-xs">
 									{getTypingLabel()}
 								</p>
 							)}
 
 							{isOtherBlocked(selectedConversation) ? (
-								<div className="flex items-center justify-center gap-2 border-[#E2E8F0] border-t pt-4 text-[#94A3B8] text-sm">
+								<div className="flex items-center justify-center gap-2 border-line border-t pt-4 text-ink-faint text-sm">
 									<Ban className="h-4 w-4" />
 									{t("youBlocked")}
 								</div>
 							) : (
-								<div className="border-[#E2E8F0] border-t pt-3">
+								<div className="border-line border-t pt-3">
 									{attachedListing && (
-										<div className="mb-2 flex items-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-2">
-											<Paperclip className="h-4 w-4 shrink-0 text-[#64748B]" />
+										<div className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-canvas p-2">
+											<Paperclip className="h-4 w-4 shrink-0 text-ink-muted" />
 											{attachedListing.thumbnailUrl && (
 												// biome-ignore lint/performance/noImgElement: thumbnails come from arbitrary storage hosts
 												<img
@@ -874,11 +874,11 @@ export function MessagesClient({
 												/>
 											)}
 											<div className="min-w-0 flex-1">
-												<p className="truncate font-semibold text-[#0F172A] text-xs">
+												<p className="truncate font-semibold text-ink text-xs">
 													{attachedListing.title}
 												</p>
 												{attachedListing.price != null && (
-													<p className="text-[#1E40AF] text-xs">
+													<p className="text-brand text-xs">
 														{formatOrderMoney(attachedListing.price)}
 													</p>
 												)}
@@ -886,7 +886,7 @@ export function MessagesClient({
 											<button
 												type="button"
 												onClick={() => setAttachedListing(null)}
-												className="shrink-0 rounded-full p-1 text-[#94A3B8] hover:text-[#0F172A]"
+												className="shrink-0 rounded-full p-1 text-ink-faint hover:text-ink"
 											>
 												<X className="h-3.5 w-3.5" />
 											</button>
@@ -898,7 +898,7 @@ export function MessagesClient({
 											value={newMessage}
 											onChange={handleInputChange}
 											disabled={connectionState !== "connected"}
-											className="rounded-xl border-[#E2E8F0] focus:border-[#1E40AF] focus:ring-[#1E40AF]"
+											className="rounded-xl border-line focus:border-brand focus:ring-brand"
 										/>
 										<Button
 											type="submit"
@@ -906,7 +906,7 @@ export function MessagesClient({
 											disabled={
 												connectionState !== "connected" || !newMessage.trim()
 											}
-											className="rounded-xl bg-[#1E40AF] text-white hover:bg-[#1E40AF]/90"
+											className="rounded-xl bg-brand text-white hover:bg-brand/90"
 										>
 											<Send className="h-4 w-4" />
 										</Button>

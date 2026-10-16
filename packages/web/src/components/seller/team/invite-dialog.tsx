@@ -120,7 +120,7 @@ export function InviteDialog({
 							<div
 								role="tablist"
 								aria-label={t("inviteTitle")}
-								className="grid grid-cols-2 gap-1 rounded-lg bg-[#F1F5F9] p-1"
+								className="grid grid-cols-2 gap-1 rounded-lg bg-subtle p-1"
 							>
 								{(["phone", "email"] as const).map((option) => (
 									<button
@@ -136,8 +136,8 @@ export function InviteDialog({
 										className={cn(
 											"rounded-md px-3 py-1.5 font-medium text-sm transition-colors",
 											channel === option
-												? "bg-white text-[#0F172A] shadow-sm"
-												: "text-[#64748B]",
+												? "bg-surface text-ink shadow-sm"
+												: "text-ink-muted",
 										)}
 									>
 										{t(option === "phone" ? "channelPhone" : "channelEmail")}
@@ -178,7 +178,7 @@ export function InviteDialog({
 													))}
 												</SelectContent>
 											</Select>
-											<p className="text-[#64748B] text-xs">
+											<p className="text-ink-muted text-xs">
 												{t(
 													field.value === "manager"
 														? "roleManagerDescription"

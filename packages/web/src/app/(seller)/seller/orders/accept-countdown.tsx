@@ -21,10 +21,10 @@ export function AcceptCountdown({ acceptBy }: { acceptBy: string | null }) {
 	const t = useTranslations("SellerOrders");
 	const countdown = acceptCountdown(acceptBy, useMinuteClock());
 
-	if (!countdown) return <span className="text-[#94A3B8]">—</span>;
+	if (!countdown) return <span className="text-ink-faint">—</span>;
 	if (countdown.expired) {
 		return (
-			<span className="font-medium text-[#B91C1C]">
+			<span className="font-medium text-bad-ink-soft">
 				{t("countdownExpired")}
 			</span>
 		);
@@ -34,7 +34,7 @@ export function AcceptCountdown({ acceptBy }: { acceptBy: string | null }) {
 			dateTime={acceptBy ?? undefined}
 			className={cn(
 				"font-medium",
-				countdown.hours < URGENT_HOURS ? "text-[#B45309]" : "text-[#0F172A]",
+				countdown.hours < URGENT_HOURS ? "text-warn-ink-soft" : "text-ink",
 			)}
 		>
 			{t("countdown", { hours: countdown.hours, minutes: countdown.minutes })}

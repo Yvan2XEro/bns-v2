@@ -12,10 +12,10 @@ const ROLE_KEYS = {
 } as const;
 
 const CELL_STYLES: Record<MatrixCell, string> = {
-	full: "bg-[#DCFCE7] text-[#166534]",
+	full: "bg-ok-soft text-ok-ink",
 	limited:
-		"bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
-	none: "bg-[#F1F5F9] text-[#94A3B8]",
+		"bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]",
+	none: "bg-subtle text-ink-faint",
 };
 
 function CellDot({ cell }: { cell: MatrixCell }) {
@@ -40,14 +40,14 @@ export function RoleMatrix() {
 	const t = useTranslations("Team");
 
 	return (
-		<section className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white">
+		<section className="overflow-hidden rounded-xl border border-line bg-surface">
 			<div className="flex items-center justify-between px-4 py-3">
-				<h2 className="font-bold text-[#0F172A]">{t("matrix.title")}</h2>
-				<span className="text-[#64748B] text-xs">{t("matrix.fixed")}</span>
+				<h2 className="font-bold text-ink">{t("matrix.title")}</h2>
+				<span className="text-ink-muted text-xs">{t("matrix.fixed")}</span>
 			</div>
 			<div className="overflow-x-auto">
 				<table className="w-full min-w-[520px] text-sm">
-					<thead className="bg-[#F8FAFC] text-left text-[#64748B] text-xs uppercase">
+					<thead className="bg-canvas text-left text-ink-muted text-xs uppercase">
 						<tr>
 							<th scope="col" className="px-4 py-2 font-semibold">
 								{t("matrix.permission")}
@@ -65,12 +65,12 @@ export function RoleMatrix() {
 					</thead>
 					<tbody>
 						{roleMatrix().map(({ area, cells }) => (
-							<tr key={area} className="border-[#F1F5F9] border-t">
+							<tr key={area} className="border-subtle border-t">
 								<td className="px-4 py-2.5">
-									<p className="font-semibold text-[#0F172A]">
+									<p className="font-semibold text-ink">
 										{t(`matrix.areas.${area}.name`)}
 									</p>
-									<p className="text-[#64748B] text-xs">
+									<p className="text-ink-muted text-xs">
 										{t(`matrix.areas.${area}.detail`)}
 									</p>
 								</td>
@@ -88,7 +88,7 @@ export function RoleMatrix() {
 					</tbody>
 				</table>
 			</div>
-			<div className="flex flex-wrap items-center gap-4 border-[#F1F5F9] border-t px-4 py-3 text-[#64748B] text-xs">
+			<div className="flex flex-wrap items-center gap-4 border-subtle border-t px-4 py-3 text-ink-muted text-xs">
 				{(["full", "limited", "none"] as const).map((cell) => (
 					<span key={cell} className="inline-flex items-center gap-1.5">
 						<CellDot cell={cell} />

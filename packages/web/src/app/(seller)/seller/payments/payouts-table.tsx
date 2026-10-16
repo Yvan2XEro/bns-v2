@@ -28,30 +28,30 @@ export function PayoutsTable({
 	return (
 		<section
 			aria-labelledby="payouts-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
-			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
-				<h2 id="payouts-title" className="font-bold text-[#0F172A] text-base">
+			<div className="flex items-center justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
+				<h2 id="payouts-title" className="font-bold text-base text-ink">
 					{tPayments("seller_payoutsTitle")}
 				</h2>
 				{payouts.length > 0 && (
 					<button
 						type="button"
 						onClick={onExport}
-						className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+						className="font-semibold text-[13px] text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 					>
 						{tPage("export")}
 					</button>
 				)}
 			</div>
 			{payouts.length === 0 ? (
-				<p className="px-6 py-10 text-center text-[#64748B] text-sm">
+				<p className="px-6 py-10 text-center text-ink-muted text-sm">
 					{tPayments("seller_noPayouts")}
 				</p>
 			) : (
 				<div className="overflow-x-auto">
 					<table className="w-full min-w-[640px] text-left text-sm">
-						<thead className="bg-[#F8FAFC] text-[#64748B] text-xs">
+						<thead className="bg-canvas text-ink-muted text-xs">
 							<tr>
 								<th className="px-[18px] py-2.5 font-medium">
 									{tPage("colPayout")}
@@ -79,45 +79,45 @@ export function PayoutsTable({
 								</th>
 							</tr>
 						</thead>
-						<tbody className="divide-y divide-[#F1F5F9]">
+						<tbody className="divide-y divide-subtle">
 							{payouts.map((payout) => (
 								<tr key={payout.id}>
 									<td className="whitespace-nowrap px-[18px] py-3">
 										<Link
 											href={`/seller/payments/payouts/${encodeURIComponent(payout.id)}`}
-											className="font-semibold text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+											className="font-semibold text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 										>
 											{formatOrderDate(payout.date, locale)}
 										</Link>
-										<p className="text-[#64748B] text-xs">
+										<p className="text-ink-muted text-xs">
 											{tPage("orderCount", { count: payout.orderCount })}
 											{payout.destinationMasked
 												? ` · ${payout.destinationMasked}`
 												: ""}
 										</p>
 									</td>
-									<td className="whitespace-nowrap px-3 py-3 text-right text-[#334155] tabular-nums">
+									<td className="whitespace-nowrap px-3 py-3 text-right text-ink-soft tabular-nums">
 										{formatOrderMoney(payout.gross, locale)}
 									</td>
-									<td className="whitespace-nowrap px-3 py-3 text-right text-[#64748B] tabular-nums">
+									<td className="whitespace-nowrap px-3 py-3 text-right text-ink-muted tabular-nums">
 										− {formatOrderMoney(payout.commissionHt, locale)}
 									</td>
-									<td className="whitespace-nowrap px-3 py-3 text-right text-[#64748B] tabular-nums">
+									<td className="whitespace-nowrap px-3 py-3 text-right text-ink-muted tabular-nums">
 										− {formatOrderMoney(payout.vat, locale)}
 									</td>
 									<td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
-										<p className="font-bold text-[#0F172A]">
+										<p className="font-bold text-ink">
 											{formatOrderMoney(payout.amount, locale)}
 										</p>
 										{payout.fee > 0 && (
-											<p className="text-[#64748B] text-xs">
+											<p className="text-ink-muted text-xs">
 												{tPage("providerFee", {
 													amount: formatOrderMoney(payout.fee, locale),
 												})}
 											</p>
 										)}
 									</td>
-									<td className="px-[18px] py-3 text-[#334155]">
+									<td className="px-[18px] py-3 text-ink-soft">
 										{tPayments(PAYOUT_STATUSES[payout.status])}
 									</td>
 								</tr>

@@ -57,16 +57,16 @@ function ShipmentCard({
 	const redelivery = shipment.redelivery;
 
 	return (
-		<article className="space-y-4 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+		<article className="space-y-4 rounded-2xl border border-line bg-surface p-5">
 			<header className="space-y-1">
-				<h2 className="font-semibold text-[#0F172A]">
+				<h2 className="font-semibold text-ink">
 					{tRoot(`Delivery.${trackingHeadlineKey(shipment)}`)}
 				</h2>
-				<p className="text-[#64748B] text-xs">
+				<p className="text-ink-muted text-xs">
 					{t("shipmentNumber", { number: shipment.shipmentNumber })}
 				</p>
 				{shipment.promisedBy && !ENDED.has(shipment.status) && (
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{t("promisedBy", {
 							date: formatDeliveryDate(shipment.promisedBy, locale),
 						})}
@@ -82,7 +82,7 @@ function ShipmentCard({
 				/>
 			) : (
 				etaClock && (
-					<p className="font-semibold text-[#1E40AF] text-sm">
+					<p className="font-semibold text-brand text-sm">
 						{t("eta", { time: etaClock })}
 					</p>
 				)
@@ -91,11 +91,11 @@ function ShipmentCard({
 				!shipment.rider &&
 				isOutForDelivery(shipment.status) &&
 				conversationId && (
-					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F8FAFC] p-3">
-						<p className="text-[#334155] text-sm">{t("shopDelivers")}</p>
+					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-canvas p-3">
+						<p className="text-ink-soft text-sm">{t("shopDelivers")}</p>
 						<Link
 							href={`/messages?conversation=${encodeURIComponent(conversationId)}`}
-							className="inline-flex min-h-11 items-center gap-2 font-medium text-[#1E40AF] text-sm"
+							className="inline-flex min-h-11 items-center gap-2 font-medium text-brand text-sm"
 						>
 							<MessageCircle aria-hidden className="h-4 w-4" />
 							{t("contactShop")}
@@ -103,7 +103,7 @@ function ShipmentCard({
 					</div>
 				)}
 			{redelivery && (
-				<p className="rounded-xl bg-[#EFF6FF] p-3 text-[#1E40AF] text-sm">
+				<p className="rounded-xl bg-brand-soft p-3 text-brand text-sm">
 					{t("redeliveryScheduled", {
 						date: formatDeliveryDate(redelivery.scheduledFor, locale),
 						window: tRoot(`Delivery.window.${redelivery.window}`),
@@ -136,7 +136,7 @@ function ShipmentCard({
 					href={shipment.trackingUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-flex min-h-11 items-center gap-2 font-medium text-[#1E40AF] text-sm"
+					className="inline-flex min-h-11 items-center gap-2 font-medium text-brand text-sm"
 				>
 					<ExternalLink aria-hidden className="h-4 w-4" /> {t("trackingLink")}
 				</a>

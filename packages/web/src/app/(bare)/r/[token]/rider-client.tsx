@@ -16,18 +16,16 @@ export function RiderClient({ token }: { token: string }) {
 	if (delivered) {
 		return (
 			<output className="block space-y-2 py-16 text-center">
-				<h1 className="font-bold text-[#166534] text-xl">
-					{t("deliveredTitle")}
-				</h1>
-				<p className="text-[#475569] text-sm">{t("deliveredBody")}</p>
+				<h1 className="font-bold text-ok-ink text-xl">{t("deliveredTitle")}</h1>
+				<p className="text-ink-mid text-sm">{t("deliveredBody")}</p>
 			</output>
 		);
 	}
 	if (view.isPending) {
 		return (
 			<div className="space-y-3 py-6">
-				<div className="h-24 animate-pulse rounded-2xl bg-[#F1F5F9]" />
-				<div className="h-40 animate-pulse rounded-2xl bg-[#F1F5F9]" />
+				<div className="h-24 animate-pulse rounded-2xl bg-subtle" />
+				<div className="h-40 animate-pulse rounded-2xl bg-subtle" />
 			</div>
 		);
 	}

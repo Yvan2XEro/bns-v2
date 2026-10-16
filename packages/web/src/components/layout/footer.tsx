@@ -8,7 +8,7 @@ export async function Footer() {
 	const t = await getTranslations("Footer");
 
 	return (
-		<footer className="border-[#E2E8F0] border-t bg-white">
+		<footer className="border-line border-t bg-surface">
 			<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 				<div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
 					{/* Brand */}
@@ -21,18 +21,18 @@ export async function Footer() {
 								height={28}
 								className="h-7 w-7 object-contain"
 							/>
-							<span className="font-bold text-[#0F172A] text-base">
+							<span className="font-bold text-base text-ink">
 								Buy<span className="text-[#F59E0B]">&apos;N&apos;</span>Sellem
 							</span>
 						</Link>
-						<p className="mt-3 text-[#64748B] text-sm leading-relaxed">
+						<p className="mt-3 text-ink-muted text-sm leading-relaxed">
 							{t("brandTagline")}
 						</p>
 					</div>
 
 					{/* Marketplace */}
 					<div>
-						<h3 className="mb-3 font-bold text-[#94A3B8] text-xs uppercase tracking-wider">
+						<h3 className="mb-3 font-bold text-ink-faint text-xs uppercase tracking-wider">
 							{t("marketplace")}
 						</h3>
 						<nav className="flex flex-col gap-2">
@@ -44,7 +44,7 @@ export async function Footer() {
 								<Link
 									key={link.label}
 									href={link.href}
-									className="text-[#475569] text-sm hover:text-[#1E40AF]"
+									className="text-ink-mid text-sm hover:text-brand"
 								>
 									{link.label}
 								</Link>
@@ -54,7 +54,7 @@ export async function Footer() {
 
 					{/* Support */}
 					<div>
-						<h3 className="mb-3 font-bold text-[#94A3B8] text-xs uppercase tracking-wider">
+						<h3 className="mb-3 font-bold text-ink-faint text-xs uppercase tracking-wider">
 							{t("support")}
 						</h3>
 						<nav className="flex flex-col gap-2">
@@ -66,7 +66,7 @@ export async function Footer() {
 								<Link
 									key={link.label}
 									href={link.href}
-									className="text-[#475569] text-sm hover:text-[#1E40AF]"
+									className="text-ink-mid text-sm hover:text-brand"
 								>
 									{link.label}
 								</Link>
@@ -76,7 +76,7 @@ export async function Footer() {
 
 					{/* Legal */}
 					<div>
-						<h3 className="mb-3 font-bold text-[#94A3B8] text-xs uppercase tracking-wider">
+						<h3 className="mb-3 font-bold text-ink-faint text-xs uppercase tracking-wider">
 							{t("legal")}
 						</h3>
 						<nav className="flex flex-col gap-2">
@@ -88,7 +88,7 @@ export async function Footer() {
 								<Link
 									key={link.label}
 									href={link.href}
-									className="text-[#475569] text-sm hover:text-[#1E40AF]"
+									className="text-ink-mid text-sm hover:text-brand"
 								>
 									{link.label}
 								</Link>
@@ -98,13 +98,11 @@ export async function Footer() {
 				</div>
 
 				{/* App Download */}
-				<div className="mt-8 border-[#E2E8F0] border-t pt-6">
+				<div className="mt-8 border-line border-t pt-6">
 					<div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
 						<div>
-							<p className="font-semibold text-[#0F172A] text-sm">
-								{t("getApp")}
-							</p>
-							<p className="mt-0.5 text-[#64748B] text-xs">
+							<p className="font-semibold text-ink text-sm">{t("getApp")}</p>
+							<p className="mt-0.5 text-ink-muted text-xs">
 								{t("buyAndSellOnTheGo")}
 							</p>
 						</div>
@@ -114,7 +112,7 @@ export async function Footer() {
 								href={APP_STORE_URL}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex h-10 items-center gap-2 rounded-lg bg-[#0F172A] px-4 transition-opacity hover:opacity-90"
+								className="flex h-10 items-center gap-2 rounded-lg bg-night px-4 transition-opacity hover:opacity-90"
 							>
 								<svg
 									aria-hidden="true"
@@ -137,7 +135,7 @@ export async function Footer() {
 								href={PLAY_STORE_URL}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="flex h-10 items-center gap-2 rounded-lg bg-[#0F172A] px-4 transition-opacity hover:opacity-90"
+								className="flex h-10 items-center gap-2 rounded-lg bg-night px-4 transition-opacity hover:opacity-90"
 							>
 								<svg
 									aria-hidden="true"
@@ -160,8 +158,8 @@ export async function Footer() {
 					</div>
 				</div>
 
-				<div className="mt-6 border-[#E2E8F0] border-t pt-6">
-					<p className="text-center text-[#94A3B8] text-xs">
+				<div className="mt-6 border-line border-t pt-6">
+					<p className="text-center text-ink-faint text-xs">
 						&copy; {new Date().getFullYear()} Buy&apos;N&apos;Sellem.{" "}
 						{t("allRightsReserved")}
 					</p>

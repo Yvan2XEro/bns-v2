@@ -11,7 +11,7 @@ import { excerptAround, highlightSegments } from "./highlight";
 export function SponsoredLabel() {
 	const t = useTranslations("Search");
 	return (
-		<span className="inline-flex h-5 items-center rounded-md border border-[#CBD5E1] bg-[#F8FAFC] px-1.5 font-semibold text-[#475569] text-[11px] uppercase tracking-wide">
+		<span className="inline-flex h-5 items-center rounded-md border border-line-strong bg-canvas px-1.5 font-semibold text-[11px] text-ink-mid uppercase tracking-wide">
 			{t("sponsored")}
 		</span>
 	);
@@ -36,50 +36,50 @@ export function ShopResultRow({
 	return (
 		<Link
 			href={`/s/${shop.handle}`}
-			className="flex items-center gap-3 border-[#F1F5F9] border-b bg-white px-4 py-3 transition-colors last:border-b-0 hover:bg-[#F8FAFC] sm:gap-4"
+			className="flex items-center gap-3 border-subtle border-b bg-surface px-4 py-3 transition-colors last:border-b-0 hover:bg-canvas sm:gap-4"
 		>
 			<ShopInitials
 				name={shop.name}
 				logoUrl={shop.logoUrl}
-				className="h-[52px] w-[52px] rounded-[14px] bg-[#0F172A] text-[#F59E0B] text-[17px]"
+				className="h-[52px] w-[52px] rounded-[14px] bg-night text-[#F59E0B] text-[17px]"
 			/>
 			<div className="flex min-w-0 flex-1 flex-col gap-1">
-				<span className="truncate font-bold font-heading text-[#0F172A] text-base">
+				<span className="truncate font-bold font-heading text-base text-ink">
 					{shop.name}
 				</span>
 				<div className="flex flex-wrap items-center gap-2">
 					{sponsored && <SponsoredLabel />}
 					<LevelBadge badge={shop.badge} size="sm" />
 					{rating ? (
-						<span className="flex items-center gap-1 font-semibold text-[#334155] text-xs">
+						<span className="flex items-center gap-1 font-semibold text-ink-soft text-xs">
 							<Star className="h-3 w-3 fill-[#F59E0B] text-[#F59E0B]" />
 							{rating.value.toLocaleString(locale, {
 								maximumFractionDigits: 1,
 								minimumFractionDigits: 1,
 							})}
-							<span className="font-normal text-[#64748B]">
+							<span className="font-normal text-ink-muted">
 								({rating.count})
 							</span>
 						</span>
 					) : (
-						<span className="font-semibold text-[#64748B] text-xs">
+						<span className="font-semibold text-ink-muted text-xs">
 							{t("shopNew")}
 						</span>
 					)}
 				</div>
-				<span className="flex items-center gap-1 text-[#64748B] text-xs">
+				<span className="flex items-center gap-1 text-ink-muted text-xs">
 					<MapPin className="h-3 w-3 shrink-0 text-[#F59E0B]" />
 					{[shop.city, t("shopProducts", { count: shop.publishedListingCount })]
 						.filter(Boolean)
 						.join(" · ")}
 				</span>
 				{excerpt && (
-					<span className="truncate text-[#334155] text-xs">
+					<span className="truncate text-ink-soft text-xs">
 						{highlightSegments(excerpt, query).map((segment, index) =>
 							segment.match ? (
 								<mark
 									key={index}
-									className="rounded-[3px] bg-[#FEF3C7] px-0.5 font-semibold text-[#0F172A]"
+									className="rounded-[3px] bg-warn-soft px-0.5 font-semibold text-ink"
 								>
 									{segment.text}
 								</mark>
@@ -90,7 +90,7 @@ export function ShopResultRow({
 					</span>
 				)}
 			</div>
-			<span className="flex h-11 shrink-0 items-center rounded-xl border-[#E2E8F0] border-[1.5px] px-3.5 font-semibold text-[#1E40AF] text-sm">
+			<span className="flex h-11 shrink-0 items-center rounded-xl border-[1.5px] border-line px-3.5 font-semibold text-brand text-sm">
 				{t("shopView")}
 			</span>
 		</Link>

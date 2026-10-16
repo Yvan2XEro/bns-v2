@@ -8,7 +8,7 @@ import type { OrderStatus } from "~/types/order";
 export function StatusLabel({ status }: { status: OrderStatus }) {
 	const t = useTranslations("OrderStatus");
 	return (
-		<span className="inline-flex rounded-full bg-[#EFF6FF] px-2.5 py-0.5 font-medium text-[#1E40AF] text-xs">
+		<span className="inline-flex rounded-full bg-brand-soft px-2.5 py-0.5 font-medium text-brand text-xs">
 			{t(statusLabelKey(status, "buyer"))}
 		</span>
 	);

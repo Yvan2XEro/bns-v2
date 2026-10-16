@@ -28,10 +28,10 @@ export function LocaleSwitcher({
 	return (
 		<label
 			className={cn(
-				"relative flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs transition-colors focus-within:ring-2 focus-within:ring-[#93C5FD]",
+				"relative flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs transition-colors focus-within:ring-2 focus-within:ring-brand-line",
 				tone === "dark"
 					? "text-[#CBD5E1] hover:bg-white/5 hover:text-white"
-					: "text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A]",
+					: "text-ink-mid hover:bg-subtle hover:text-ink",
 				className,
 			)}
 		>
@@ -44,12 +44,7 @@ export function LocaleSwitcher({
 				className="cursor-pointer appearance-none bg-transparent pr-1 font-medium outline-none disabled:opacity-50"
 			>
 				{LOCALES.map((code) => (
-					<option
-						key={code}
-						value={code}
-						lang={code}
-						className="text-[#0F172A]"
-					>
+					<option key={code} value={code} lang={code} className="text-ink">
 						{LOCALE_NAMES[code]}
 					</option>
 				))}

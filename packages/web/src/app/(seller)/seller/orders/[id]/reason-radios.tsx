@@ -18,13 +18,11 @@ export function ReasonRadios({
 }) {
 	return (
 		<fieldset className="space-y-2" aria-invalid={Boolean(error)}>
-			<legend className="mb-1 font-medium text-[#0F172A] text-sm">
-				{legend}
-			</legend>
+			<legend className="mb-1 font-medium text-ink text-sm">{legend}</legend>
 			{options.map((option) => (
 				<label
 					key={option.value}
-					className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-[#E2E8F0] px-3 text-sm has-[:checked]:border-[var(--shop-accent,#1E40AF)] has-[:checked]:bg-[var(--shop-accent-soft,#EFF6FF)]"
+					className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3 text-sm has-[:checked]:border-[var(--shop-accent,var(--c-brand))] has-[:checked]:bg-[var(--shop-accent-soft,var(--c-brand-soft))]"
 				>
 					<input
 						type="radio"

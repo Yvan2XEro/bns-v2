@@ -46,7 +46,7 @@ export function BlockUserButton({
 				size="sm"
 				onClick={handleToggle}
 				disabled={isPending}
-				className={isBlocked ? "border-[#E2E8F0] text-[#64748B]" : ""}
+				className={isBlocked ? "border-line text-ink-muted" : ""}
 			>
 				{isBlocked ? (
 					<>
@@ -68,7 +68,7 @@ export function BlockUserButton({
 			type="button"
 			onClick={handleToggle}
 			disabled={isPending}
-			className="rounded-lg p-1.5 text-[#94A3B8] transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+			className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
 			title={isBlocked ? "Unblock user" : "Block user"}
 		>
 			{isBlocked ? (

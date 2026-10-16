@@ -47,14 +47,12 @@ export default async function FavoritesPage() {
 
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-			<h1 className="mb-6 font-bold text-2xl text-[#0F172A]">
-				{t("favorites")}
-			</h1>
+			<h1 className="mb-6 font-bold text-2xl text-ink">{t("favorites")}</h1>
 
 			{listings.length > 0 ? (
 				<ListingGrid listings={listings} favorites={favoriteIds} />
 			) : (
-				<div className="rounded-2xl border-2 border-[#DBEAFE] border-dashed">
+				<div className="rounded-2xl border-2 border-brand-tint border-dashed">
 					<EmptyState
 						illustration="favorites"
 						title={t("noFavoritesYet")}

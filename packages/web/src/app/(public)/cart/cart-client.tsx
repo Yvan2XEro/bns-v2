@@ -107,9 +107,9 @@ export function CartClient({
 		return (
 			<div
 				role="alert"
-				className="rounded-2xl border border-[#E2E8F0] bg-white px-6 py-12 text-center"
+				className="rounded-2xl border border-line bg-surface px-6 py-12 text-center"
 			>
-				<p className="font-semibold text-[#0F172A]">
+				<p className="font-semibold text-ink">
 					{resolveErrorMessage(cart.error, tRoot)}
 				</p>
 				<Button className="mt-4 min-h-11" onClick={() => void cart.refetch()}>
@@ -125,7 +125,7 @@ export function CartClient({
 	return (
 		<div className="space-y-5">
 			{add.isPending && !state.conflict ? (
-				<output className="block text-[#64748B] text-sm">{t("adding")}</output>
+				<output className="block text-ink-muted text-sm">{t("adding")}</output>
 			) : null}
 			{state.actionError ? (
 				<p
@@ -211,19 +211,19 @@ function CartSummary({
 	const ready = canCheckout(cart);
 
 	return (
-		<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
+		<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
 			<div className="flex items-center justify-between">
-				<span className="text-[#64748B]">
+				<span className="text-ink-muted">
 					{t("subtotal")} · {t("itemCount", { count: totals.itemCount })}
 				</span>
-				<span className="font-bold text-[#0F172A] text-xl">
+				<span className="font-bold text-ink text-xl">
 					{formatOrderMoney(totals.subtotal, locale)}
 				</span>
 			</div>
 			{/* No address yet, so no quote: the fee is the next step's to state. */}
 			<div className="flex items-center justify-between text-sm">
-				<span className="text-[#64748B]">{t("deliveryRow")}</span>
-				<span className="text-[#64748B]">{t("deliveryNextStep")}</span>
+				<span className="text-ink-muted">{t("deliveryRow")}</span>
+				<span className="text-ink-muted">{t("deliveryNextStep")}</span>
 			</div>
 			{cart.shop ? (
 				<CartDeliveryHint shopId={cart.shop.id} handle={cart.shop.handle} />
@@ -239,7 +239,7 @@ function CartSummary({
 			{cart.shopOrderable ? null : (
 				<p className="text-red-600 text-sm">{t("shopNotOrderable")}</p>
 			)}
-			<p className="text-[#64748B] text-sm">
+			<p className="text-ink-muted text-sm">
 				{t("summaryNote", { days: withdrawalDays })}
 			</p>
 			{ready ? (

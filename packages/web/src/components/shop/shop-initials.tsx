@@ -18,7 +18,7 @@ export function ShopInitials({
 	return (
 		<div
 			className={cn(
-				"flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#1E40AF] font-bold text-white",
+				"flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand font-bold text-white",
 				className,
 			)}
 		>

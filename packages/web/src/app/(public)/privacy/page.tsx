@@ -16,11 +16,11 @@ export default async function PrivacyPage() {
 	const t = await getTranslations("Privacy");
 
 	return (
-		<div className="min-h-screen bg-[#F8FAFC]">
-			<section className="relative overflow-hidden bg-[#1E40AF] py-12">
+		<div className="min-h-screen bg-canvas">
+			<section className="relative overflow-hidden bg-brand py-12">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
-				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-[#3B82F6]/20 blur-3xl" />
+				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-brand-bright/20 blur-3xl" />
 				<div className="-right-20 absolute bottom-10 h-48 w-48 rounded-full bg-[#F59E0B]/15 blur-3xl" />
 				<div className="container relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
 					<Lock className="mx-auto mb-4 h-10 w-10 text-white/80" />
@@ -30,8 +30,8 @@ export default async function PrivacyPage() {
 			</section>
 
 			<div className="container mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-				<div className="rounded-xl border border-[#E2E8F0] bg-white p-6 sm:p-8">
-					<div className="prose prose-sm max-w-none text-[#475569] [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:font-bold [&_h2]:text-[#0F172A] [&_h2]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:font-semibold [&_h3]:text-[#0F172A] [&_li]:mb-1 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5">
+				<div className="rounded-xl border border-line bg-surface p-6 sm:p-8">
+					<div className="prose prose-sm max-w-none text-ink-mid [&_h2]:mt-8 [&_h2]:mb-3 [&_h2]:font-bold [&_h2]:text-ink [&_h2]:text-lg [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:font-semibold [&_h3]:text-ink [&_li]:mb-1 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5">
 						<h2>{t("infoCollect")}</h2>
 
 						<h3>{t("infoProvide")}</h3>

@@ -56,8 +56,8 @@ export function MessageSellerButton({
 				variant={secondary ? "outline" : "default"}
 				className={
 					secondary
-						? "min-h-11 w-full rounded-lg border-[#E2E8F0] font-semibold text-[#0F172A]"
-						: "w-full rounded-lg bg-[#1E40AF] hover:bg-[#1E3A8A]"
+						? "min-h-11 w-full rounded-lg border-line font-semibold text-ink"
+						: "w-full rounded-lg bg-brand hover:bg-brand-strong"
 				}
 				onClick={onClick}
 				disabled={start.isPending}

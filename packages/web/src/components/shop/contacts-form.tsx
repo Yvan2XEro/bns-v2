@@ -74,7 +74,7 @@ export function ContactsForm({
 
 	return (
 		<form id={formId} onSubmit={onSubmit} className="space-y-4" noValidate>
-			<p className="text-[#64748B] text-sm">{t("contactsHint")}</p>
+			<p className="text-ink-muted text-sm">{t("contactsHint")}</p>
 			<div className="space-y-1.5">
 				<Label htmlFor="contact-phone">{t("contactPhone")}</Label>
 				<Controller
@@ -128,7 +128,7 @@ export function ContactsForm({
 				)}
 			</div>
 			{updateShop.isSuccess && (
-				<p className="text-[#166534] text-sm">{t("saved")}</p>
+				<p className="text-ok-ink text-sm">{t("saved")}</p>
 			)}
 			{formState.errors.root?.message && (
 				<p className="text-red-700 text-sm">{formState.errors.root.message}</p>
@@ -137,7 +137,7 @@ export function ContactsForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || updateShop.isPending}
-					className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="bg-brand hover:bg-brand-strong"
 				>
 					{updateShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

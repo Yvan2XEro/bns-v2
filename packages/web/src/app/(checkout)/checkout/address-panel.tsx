@@ -82,7 +82,7 @@ export function CheckoutAddressPanel({
 
 	if (saved.isPending) {
 		return (
-			<LoaderCircle className="mx-auto h-5 w-5 animate-spin text-[#64748B]" />
+			<LoaderCircle className="mx-auto h-5 w-5 animate-spin text-ink-muted" />
 		);
 	}
 
@@ -202,7 +202,7 @@ export function CheckoutAddressPanel({
 									type="button"
 									variant="ghost"
 									size="sm"
-									className="min-h-11 text-[#1E40AF]"
+									className="min-h-11 text-brand"
 									onClick={() => setMode({ kind: "edit", id: address.id })}
 								>
 									{t("edit")}
@@ -211,7 +211,7 @@ export function CheckoutAddressPanel({
 									type="button"
 									variant="ghost"
 									size="sm"
-									className="min-h-11 text-[#B91C1C]"
+									className="min-h-11 text-bad-ink-soft"
 									disabled={remove.isPending}
 									onClick={() => {
 										if (window.confirm(t("deleteConfirm")))
@@ -242,7 +242,7 @@ export function CheckoutAddressPanel({
 				</Button>
 				<Button
 					type="button"
-					className="min-h-11 flex-1 bg-[#1E40AF] hover:bg-[#1E3A8A]"
+					className="min-h-11 flex-1 bg-brand hover:bg-brand-strong"
 					disabled={!selected}
 					onClick={() =>
 						selected &&

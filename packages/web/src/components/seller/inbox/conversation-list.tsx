@@ -47,7 +47,7 @@ export function ConversationList({
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="border-[#E2E8F0] border-b p-2">
+			<div className="border-line border-b p-2">
 				<Input
 					value={q}
 					onChange={(e) => onQueryChange(e.target.value)}
@@ -72,43 +72,43 @@ export function ConversationList({
 							type="button"
 							onClick={() => onSelect(conversation.id)}
 							className={cn(
-								"flex w-full items-start gap-3 border-[#F1F5F9] border-b px-3 py-3 text-left",
+								"flex w-full items-start gap-3 border-subtle border-b px-3 py-3 text-left",
 								active
-									? "bg-[var(--shop-accent-soft,#EFF6FF)]"
-									: "hover:bg-[#F8FAFC]",
+									? "bg-[var(--shop-accent-soft,var(--c-brand-soft))]"
+									: "hover:bg-canvas",
 							)}
 						>
 							<Avatar className="h-9 w-9 shrink-0">
 								<AvatarImage src={conversation.buyer?.avatarUrl ?? undefined} />
-								<AvatarFallback className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
+								<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 									{conversation.buyer?.name?.charAt(0) ?? "?"}
 								</AvatarFallback>
 							</Avatar>
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center justify-between gap-2">
-									<p className="truncate font-medium text-[#0F172A] text-sm">
+									<p className="truncate font-medium text-ink text-sm">
 										{conversation.buyer?.name ?? t("unassigned")}
 									</p>
 									{conversation.lastMessage && (
-										<span className="shrink-0 text-[#94A3B8] text-xs">
+										<span className="shrink-0 text-ink-faint text-xs">
 											{relativeTime(conversation.lastMessage.at, locale)}
 										</span>
 									)}
 								</div>
 								{conversation.listing && (
-									<p className="truncate text-[#64748B] text-xs">
+									<p className="truncate text-ink-muted text-xs">
 										{conversation.listing.title}
 									</p>
 								)}
 								{conversation.lastMessage && (
-									<p className="truncate text-[#64748B] text-sm">
+									<p className="truncate text-ink-muted text-sm">
 										{conversation.lastMessage.preview}
 									</p>
 								)}
 							</div>
 							<div className="flex shrink-0 flex-col items-end gap-1">
 								{conversation.unreadCount > 0 && (
-									<span className="h-2 w-2 rounded-full bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]" />
+									<span className="h-2 w-2 rounded-full bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]" />
 								)}
 								{conversation.assignee ? (
 									<Avatar
@@ -125,7 +125,7 @@ export function ConversationList({
 										<AvatarImage
 											src={conversation.assignee.avatarUrl ?? undefined}
 										/>
-										<AvatarFallback className="bg-[#94A3B8] text-[9px] text-white">
+										<AvatarFallback className="bg-ink-faint text-[9px] text-white">
 											{conversation.assignee.name?.charAt(0) ?? "?"}
 										</AvatarFallback>
 									</Avatar>
@@ -136,7 +136,7 @@ export function ConversationList({
 				})}
 			</div>
 			{hasNextPage && (
-				<div className="border-[#E2E8F0] border-t p-2">
+				<div className="border-line border-t p-2">
 					<Button
 						type="button"
 						variant="outline"

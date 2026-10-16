@@ -12,14 +12,14 @@ export function TeamLocked() {
 	const t = useTranslations("Team");
 
 	return (
-		<div className="flex flex-col items-center rounded-2xl border border-[#E2E8F0] bg-white px-6 py-12 text-center">
-			<span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F5F9]">
-				<Lock aria-hidden="true" className="h-6 w-6 text-[#94A3B8]" />
+		<div className="flex flex-col items-center rounded-2xl border border-line bg-surface px-6 py-12 text-center">
+			<span className="flex h-12 w-12 items-center justify-center rounded-full bg-subtle">
+				<Lock aria-hidden="true" className="h-6 w-6 text-ink-faint" />
 			</span>
-			<p className="mt-4 max-w-sm text-[#475569] text-sm">{t("locked")}</p>
+			<p className="mt-4 max-w-sm text-ink-mid text-sm">{t("locked")}</p>
 			<Link
 				href="/seller/verification"
-				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 			>
 				{t("lockedCta")}
 			</Link>

@@ -43,8 +43,8 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 	if (purchase.isPending) {
 		return (
 			<div className="mx-auto max-w-3xl space-y-3 px-4 py-8">
-				<div className="h-10 w-64 animate-pulse rounded-xl bg-[#F1F5F9]" />
-				<div className="h-48 animate-pulse rounded-2xl bg-[#F1F5F9]" />
+				<div className="h-10 w-64 animate-pulse rounded-xl bg-subtle" />
+				<div className="h-48 animate-pulse rounded-2xl bg-subtle" />
 			</div>
 		);
 	}
@@ -72,19 +72,19 @@ export function PurchaseClient({ orderId }: { orderId: string }) {
 		<div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
 			<Link
 				href="/purchases"
-				className="inline-flex min-h-11 items-center gap-2 text-[#1E40AF] text-sm"
+				className="inline-flex min-h-11 items-center gap-2 text-brand text-sm"
 			>
 				<ArrowLeft className="h-4 w-4" aria-hidden /> {t("back")}
 			</Link>
 
 			<header className="space-y-2">
 				<div className="flex flex-wrap items-center gap-3">
-					<h1 className="font-bold text-2xl text-[#0F172A]">
+					<h1 className="font-bold text-2xl text-ink">
 						{t("orderNumber", { number: order.orderNumber })}
 					</h1>
 					<StatusLabel status={order.status} />
 				</div>
-				<p className="text-[#64748B] text-sm">
+				<p className="text-ink-muted text-sm">
 					{t("placedOn", {
 						date: formatOrderDate(order.timestamps.placedAt, locale),
 					})}{" "}

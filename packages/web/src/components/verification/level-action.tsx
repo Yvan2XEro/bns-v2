@@ -51,15 +51,15 @@ export function LevelRequestCard({
 		request.status === "draft" || request.status === "needs_info";
 
 	return (
-		<div className="rounded-2xl border border-[#DBEAFE] bg-white p-5">
+		<div className="rounded-2xl border border-brand-tint bg-surface p-5">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<h3 className="font-bold text-[#0F172A] text-base">
+				<h3 className="font-bold text-base text-ink">
 					{t(`requestCard.title.${level}`)}
 				</h3>
 				{resumable && view.enabled && (
 					<Link
 						href={CONTINUE_HREF[level]}
-						className="inline-flex h-9 items-center rounded-lg border border-[#93C5FD] bg-[#EFF6FF] px-4 font-semibold text-[#1E40AF] text-sm hover:bg-[#DBEAFE]"
+						className="inline-flex h-9 items-center rounded-lg border border-brand-line bg-brand-soft px-4 font-semibold text-brand text-sm hover:bg-brand-tint"
 					>
 						{t("requestCard.continue")}
 					</Link>
@@ -105,24 +105,24 @@ export function LevelAction({
 	const labelKey = request?.status === "approved" ? "renew" : "start";
 
 	return (
-		<div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4">
-			<p className="font-medium text-[#0F172A] text-sm">
+		<div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+			<p className="font-medium text-ink text-sm">
 				{t(`action.label.${labelKey}.${level}`)}
 			</p>
 			{allowed ? (
 				<Link
 					href={CONTINUE_HREF[level]}
-					className="inline-flex h-9 items-center rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+					className="inline-flex h-9 items-center rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 				>
 					{t(`action.cta.${labelKey}`)}
 				</Link>
 			) : (
 				<div className="flex items-center gap-2 text-right">
-					<span className="text-[#64748B] text-xs">{reason}</span>
+					<span className="text-ink-muted text-xs">{reason}</span>
 					<button
 						type="button"
 						disabled
-						className="inline-flex h-9 items-center rounded-lg bg-[#E2E8F0] px-4 font-semibold text-[#94A3B8] text-sm"
+						className="inline-flex h-9 items-center rounded-lg bg-line px-4 font-semibold text-ink-faint text-sm"
 					>
 						{t(`action.cta.${labelKey}`)}
 					</button>

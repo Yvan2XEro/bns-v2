@@ -18,7 +18,7 @@ import { type ProductFormState, parseAmount } from "~/lib/product-form";
 import { marginPercent, variantLabel } from "~/lib/variants";
 
 const cell =
-	"h-9 w-full rounded-md border border-[#E2E8F0] px-2 text-right text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]";
+	"h-9 w-full rounded-md border border-line px-2 text-right text-sm outline-none focus:border-[var(--shop-accent-border,var(--c-brand-line))]";
 
 interface VariantTableProps {
 	control: Control<ProductFormState>;
@@ -68,21 +68,21 @@ export function VariantTable({
 		<div className="space-y-3">
 			{rows.length > 1 && (
 				<div className="flex items-center justify-between text-sm">
-					<span className="text-[#64748B]">
+					<span className="text-ink-muted">
 						{t("variantsGenerated", { count: rows.length })}
 					</span>
 					<button
 						type="button"
 						onClick={applyFirstPrice}
-						className="font-semibold text-[var(--shop-accent-text,#1E40AF)]"
+						className="font-semibold text-[var(--shop-accent-text,var(--c-brand))]"
 					>
 						{t("samePrice")}
 					</button>
 				</div>
 			)}
-			<div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
+			<div className="overflow-x-auto rounded-lg border border-line">
 				<table className="w-full min-w-[620px] text-sm">
-					<thead className="bg-[#F8FAFC] text-left text-[#64748B] text-xs">
+					<thead className="bg-canvas text-left text-ink-muted text-xs">
 						<tr>
 							<th className="px-3 py-2 font-semibold">{t("colVariant")}</th>
 							<th className="px-3 py-2 font-semibold">
@@ -110,12 +110,9 @@ export function VariantTable({
 								parseAmount(row.cost),
 							);
 							return (
-								<tr
-									key={row.key}
-									className="border-[#F1F5F9] border-t align-top"
-								>
+								<tr key={row.key} className="border-subtle border-t align-top">
 									<td className="px-3 py-2">
-										<p className="font-semibold text-[#0F172A]">
+										<p className="font-semibold text-ink">
 											{variantLabel(row.optionValues, t("defaultVariant"))}
 										</p>
 										<input
@@ -123,7 +120,7 @@ export function VariantTable({
 											placeholder={t("skuPlaceholder")}
 											aria-label={t("skuPlaceholder")}
 											aria-invalid={Boolean(at("sku"))}
-											className={`mt-1 h-8 w-24 rounded-md border px-2 text-xs uppercase outline-none ${at("sku") ? invalidCell : "border-[#E2E8F0] focus:border-[var(--shop-accent-border,#93C5FD)]"}`}
+											className={`mt-1 h-8 w-24 rounded-md border px-2 text-xs uppercase outline-none ${at("sku") ? invalidCell : "border-line focus:border-[var(--shop-accent-border,var(--c-brand-line))]"}`}
 										/>
 										<ProductIssueText issue={at("sku")} />
 										<input
@@ -137,7 +134,7 @@ export function VariantTable({
 											onKeyDown={(event) => {
 												if (event.key === "Enter") event.preventDefault();
 											}}
-											className={`mt-1 block h-8 w-32 rounded-md border px-2 text-xs tabular-nums outline-none ${at("barcode") ? invalidCell : "border-[#E2E8F0] focus:border-[var(--shop-accent-border,#93C5FD)]"}`}
+											className={`mt-1 block h-8 w-32 rounded-md border px-2 text-xs tabular-nums outline-none ${at("barcode") ? invalidCell : "border-line focus:border-[var(--shop-accent-border,var(--c-brand-line))]"}`}
 										/>
 										<ProductIssueText issue={at("barcode")} />
 									</td>
@@ -164,7 +161,7 @@ export function VariantTable({
 										</td>
 									)}
 									{showCost && (
-										<td className="w-20 px-3 py-2 pt-4 text-right text-[#64748B]">
+										<td className="w-20 px-3 py-2 pt-4 text-right text-ink-muted">
 											{margin === null
 												? "—"
 												: `${margin.toLocaleString(locale, { maximumFractionDigits: 1 })} %`}
@@ -173,12 +170,12 @@ export function VariantTable({
 									<td className="w-32 px-2 py-2">
 										{row.id ? (
 											<div className="pt-2 text-right">
-												<p className="font-semibold text-[#0F172A]">
+												<p className="font-semibold text-ink">
 													{row.stockOnHand ?? 0}
 												</p>
 												<Link
 													href={`/seller/stock?adjust=${row.id}`}
-													className="text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
+													className="text-[var(--shop-accent-text,var(--c-brand))] text-xs hover:underline"
 												>
 													{t("adjust")}
 												</Link>
@@ -223,7 +220,7 @@ export function VariantTable({
 												},
 											})}
 											type="checkbox"
-											className="h-4 w-4 accent-[var(--shop-accent,#1E40AF)]"
+											className="h-4 w-4 accent-[var(--shop-accent,var(--c-brand))]"
 											aria-label={t("colTracked")}
 										/>
 									</td>
@@ -233,7 +230,7 @@ export function VariantTable({
 					</tbody>
 				</table>
 			</div>
-			<div className="flex flex-wrap items-center justify-between gap-2 text-[#64748B] text-xs">
+			<div className="flex flex-wrap items-center justify-between gap-2 text-ink-muted text-xs">
 				<span>
 					{hasNew
 						? t("initialStockNote", { count: units })

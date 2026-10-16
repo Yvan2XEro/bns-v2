@@ -95,14 +95,12 @@ export function FailureDialog({
 						error={errors.reason ? t("reasonRequired") : null}
 					/>
 					<label className="block space-y-1 text-sm">
-						<span className="font-medium text-[#0F172A]">
-							{t("noteOptional")}
-						</span>
+						<span className="font-medium text-ink">{t("noteOptional")}</span>
 						<textarea
 							{...form.register("note")}
 							rows={3}
 							maxLength={500}
-							className="w-full rounded-lg border border-[#E2E8F0] p-3"
+							className="w-full rounded-lg border border-line p-3"
 						/>
 					</label>
 					{errors.root?.message && (

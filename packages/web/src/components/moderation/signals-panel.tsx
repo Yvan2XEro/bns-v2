@@ -11,8 +11,8 @@ type OtherRequests = ReviewerRequestDetail["otherRequests"];
 const STATUS_TONE_CLASSES: Record<string, string> = {
 	positive: "text-emerald-700",
 	negative: "text-red-700",
-	warning: "text-[#92400E]",
-	neutral: "text-[#64748B]",
+	warning: "text-warn-ink",
+	neutral: "text-ink-muted",
 };
 
 /** Signals raised against this request, and the shop's other requests they (or the reviewer) may need to cross-check. */
@@ -44,12 +44,12 @@ export function SignalsPanel({
 								>
 									<SignalChip code={signal.code} />
 									{signal.detail && (
-										<span className="text-[#64748B]">{signal.detail}</span>
+										<span className="text-ink-muted">{signal.detail}</span>
 									)}
 									{relatedId && (
 										<Link
 											href={`/moderation/verification/${relatedId}`}
-											className="font-medium text-[#1E40AF] hover:underline"
+											className="font-medium text-brand hover:underline"
 										>
 											{t("review.signals.viewRelated")}
 										</Link>
@@ -60,8 +60,8 @@ export function SignalsPanel({
 					</ul>
 				)}
 				{otherRequests.length > 0 && (
-					<div className="space-y-2 border-[#E2E8F0] border-t pt-3">
-						<p className="text-[#64748B] text-xs uppercase tracking-wide">
+					<div className="space-y-2 border-line border-t pt-3">
+						<p className="text-ink-muted text-xs uppercase tracking-wide">
 							{t("review.signals.otherRequests")}
 						</p>
 						<ul className="space-y-1.5">
@@ -72,7 +72,7 @@ export function SignalsPanel({
 								>
 									<Link
 										href={`/moderation/verification/${request.id}`}
-										className="font-medium text-[#1E40AF] hover:underline"
+										className="font-medium text-brand hover:underline"
 									>
 										{t("review.signals.levelRequest", {
 											level: request.requestedLevel,

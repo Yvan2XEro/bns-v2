@@ -91,17 +91,17 @@ export function ResaleCatalogueClient({
 
 	return (
 		<div className="space-y-5">
-			<ol className="grid gap-4 rounded-xl border border-[#E2E8F0] bg-white px-[18px] py-3.5 md:grid-cols-3">
+			<ol className="grid gap-4 rounded-xl border border-line bg-surface px-[18px] py-3.5 md:grid-cols-3">
 				{(["1", "2", "3"] as const).map((step) => (
 					<li key={step} className="flex items-start gap-2.5">
 						<span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#EDE9FE] font-extrabold text-[#5B21B6] text-[13px]">
 							{step}
 						</span>
 						<span className="flex flex-col gap-0.5">
-							<span className="font-semibold text-[#0F172A] text-sm">
+							<span className="font-semibold text-ink text-sm">
 								{t(`step${step}Title`)}
 							</span>
-							<span className="text-[#64748B] text-[13px]">
+							<span className="text-[13px] text-ink-muted">
 								{t(`step${step}Body`)}
 							</span>
 						</span>
@@ -118,7 +118,7 @@ export function ResaleCatalogueClient({
 				</p>
 			) : null}
 			{addedTitle ? (
-				<output className="block rounded-lg bg-[#DCFCE7] p-3 font-medium text-[#166534] text-sm">
+				<output className="block rounded-lg bg-ok-soft p-3 font-medium text-ok-ink text-sm">
 					{t("added", { title: addedTitle })}{" "}
 					<Link
 						href={resaleHref("reseller", "resold")}
@@ -149,7 +149,7 @@ export function ResaleCatalogueClient({
 							<span className="sr-only">{tCatalogue("search")}</span>
 							<Search
 								aria-hidden="true"
-								className="absolute top-2.5 left-3 h-4 w-4 text-[#94A3B8]"
+								className="absolute top-2.5 left-3 h-4 w-4 text-ink-faint"
 							/>
 							<input
 								type="search"
@@ -157,7 +157,7 @@ export function ResaleCatalogueClient({
 								onChange={(event) => setSearch(event.target.value)}
 								maxLength={120}
 								placeholder={tCatalogue("search")}
-								className="h-9 w-full rounded-full border border-[#E2E8F0] bg-white pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,#1E40AF)] focus:ring-2 focus:ring-[var(--shop-accent-border,#DBEAFE)]"
+								className="h-9 w-full rounded-full border border-line bg-surface pr-3 pl-9 text-sm outline-none focus:border-[var(--shop-accent,var(--c-brand))] focus:ring-2 focus:ring-[var(--shop-accent-border,var(--c-brand-tint))]"
 							/>
 						</label>
 						{rubrics.length > 0 ? (
@@ -165,8 +165,8 @@ export function ResaleCatalogueClient({
 								className={cn(
 									"inline-flex h-8 items-center rounded-full border px-3 text-[13px]",
 									category
-										? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-										: "border-[#E2E8F0] bg-white font-medium text-[#334155]",
+										? "border-ink bg-night font-semibold text-white"
+										: "border-line bg-surface font-medium text-ink-soft",
 								)}
 							>
 								<span className="sr-only">{t("filterCategory")}</span>
@@ -200,8 +200,8 @@ export function ResaleCatalogueClient({
 								className={cn(
 									"inline-flex h-8 items-center rounded-full border px-3 font-medium text-[13px]",
 									city === option
-										? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-										: "border-[#E2E8F0] bg-white text-[#334155]",
+										? "border-ink bg-night font-semibold text-white"
+										: "border-line bg-surface text-ink-soft",
 								)}
 							>
 								{t("shipsFrom", { city: cityLabel(option) })}
@@ -214,8 +214,8 @@ export function ResaleCatalogueClient({
 							className={cn(
 								"inline-flex h-8 items-center rounded-full border px-3 font-medium text-[13px]",
 								codOnly
-									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-									: "border-[#E2E8F0] bg-white text-[#334155]",
+									? "border-ink bg-night font-semibold text-white"
+									: "border-line bg-surface text-ink-soft",
 							)}
 						>
 							{t("filterCod")}
@@ -223,7 +223,7 @@ export function ResaleCatalogueClient({
 						{supplier ? (
 							<Link
 								href={resaleHref("reseller", "find")}
-								className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#0F172A] bg-[#0F172A] px-3 font-semibold text-[13px] text-white"
+								className="inline-flex h-8 items-center gap-1.5 rounded-full border border-ink bg-night px-3 font-semibold text-[13px] text-white"
 							>
 								{supplierName ?? t("filterSupplier")}
 								<X aria-hidden="true" className="h-3.5 w-3.5" />
@@ -240,7 +240,7 @@ export function ResaleCatalogueClient({
 						/>
 					) : null}
 					{catalogue.data && products.length === 0 ? (
-						<p className="rounded-xl border border-[#CBD5E1] border-dashed bg-white px-6 py-14 text-center font-medium text-[#475569]">
+						<p className="rounded-xl border border-line-strong border-dashed bg-surface px-6 py-14 text-center font-medium text-ink-mid">
 							{search.trim() || codOnly || category || city
 								? tCatalogue("emptySearch")
 								: tCatalogue("empty")}
@@ -300,7 +300,7 @@ export function ResaleCatalogueClient({
 							}
 						/>
 					) : (
-						<div className="rounded-xl border border-[#CBD5E1] border-dashed bg-white p-6 text-center text-[#64748B] text-sm">
+						<div className="rounded-xl border border-line-strong border-dashed bg-surface p-6 text-center text-ink-muted text-sm">
 							{t("panelEmpty")}
 						</div>
 					)}
@@ -346,13 +346,13 @@ function ProductCard({
 	return (
 		<article
 			className={cn(
-				"flex flex-col overflow-hidden rounded-xl bg-white",
+				"flex flex-col overflow-hidden rounded-xl bg-surface",
 				selected
-					? "border-2 border-[var(--shop-accent,#1E40AF)]"
-					: "border border-[#E2E8F0]",
+					? "border-2 border-[var(--shop-accent,var(--c-brand))]"
+					: "border border-line",
 			)}
 		>
-			<div className="relative flex h-[110px] items-center justify-center bg-[#F1F5F9] text-[#475569]">
+			<div className="relative flex h-[110px] items-center justify-center bg-subtle text-ink-mid">
 				{imageUrl ? (
 					<Image
 						src={imageUrl}
@@ -366,9 +366,7 @@ function ProductCard({
 				)}
 			</div>
 			<div className="flex flex-1 flex-col gap-2 p-3">
-				<h2 className="font-semibold text-[#0F172A] text-sm">
-					{product.title}
-				</h2>
+				<h2 className="font-semibold text-ink text-sm">{product.title}</h2>
 				<dl className="grid grid-cols-2 gap-x-2.5 gap-y-1.5 text-xs">
 					<Stat
 						label={t("supplierPrice")}
@@ -405,24 +403,24 @@ function ProductCard({
 						value={t("shopCount", { count: product.resellerCount ?? 0 })}
 					/>
 				</dl>
-				<div className="flex items-center gap-1.5 border-[#F1F5F9] border-t pt-2">
+				<div className="flex items-center gap-1.5 border-subtle border-t pt-2">
 					<span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md bg-[#134E4A] font-extrabold text-[#99F6E4] text-[9px]">
 						{initials(product.supplier.name)}
 					</span>
-					<span className="min-w-0 flex-1 truncate font-semibold text-[#334155] text-xs">
+					<span className="min-w-0 flex-1 truncate font-semibold text-ink-soft text-xs">
 						{product.supplier.name}
 					</span>
 					{product.supplier.level >= 3 ? (
 						<ShieldCheck
 							aria-label={t("levelBadge", { level: product.supplier.level })}
-							className="h-3.5 w-3.5 text-[var(--shop-accent-text,#1E40AF)]"
+							className="h-3.5 w-3.5 text-[var(--shop-accent-text,var(--c-brand))]"
 						/>
 					) : null}
 				</div>
 				<span
 					className={cn(
 						"font-semibold text-[11px]",
-						approved ? "text-[#15803D]" : "text-[#64748B]",
+						approved ? "text-ok-ink-soft" : "text-ink-muted",
 					)}
 				>
 					{levelLocked
@@ -437,12 +435,12 @@ function ProductCard({
 				</span>
 				<div className="mt-auto">
 					{product.inMyShop ? (
-						<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#DCFCE7] font-semibold text-[#166534] text-[13px]">
+						<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-ok-soft font-semibold text-[13px] text-ok-ink">
 							<Check aria-hidden="true" className="h-4 w-4" />
 							{t("inMyShop")}
 						</span>
 					) : levelLocked ? (
-						<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#F1F5F9] px-2 text-center font-semibold text-[#475569] text-[12px]">
+						<span className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-subtle px-2 text-center font-semibold text-[12px] text-ink-mid">
 							<Lock aria-hidden="true" className="h-4 w-4 shrink-0" />
 							{t("levelReserved", { level: product.minResellerLevel ?? 3 })}
 						</span>
@@ -451,7 +449,7 @@ function ProductCard({
 							type="button"
 							disabled={isRequesting || requestPending}
 							onClick={onRequest}
-							className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] font-semibold text-[#0F172A] text-[13px] hover:bg-[#F8FAFC] disabled:opacity-60"
+							className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-line font-semibold text-[13px] text-ink hover:bg-canvas disabled:opacity-60"
 						>
 							<Lock aria-hidden="true" className="h-4 w-4" />
 							{requestPending ? t("requestSent") : t("requestAccess")}
@@ -464,8 +462,8 @@ function ProductCard({
 							className={cn(
 								"flex h-9 w-full items-center justify-center gap-1.5 rounded-lg font-semibold text-[13px]",
 								selected
-									? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
-									: "bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)] hover:bg-[var(--shop-accent-soft,#DBEAFE)]",
+									? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+									: "bg-[var(--shop-accent-soft,var(--c-brand-soft))] text-[var(--shop-accent-text,var(--c-brand))] hover:bg-[var(--shop-accent-soft,var(--c-brand-tint))]",
 							)}
 						>
 							<Repeat aria-hidden="true" className="h-4 w-4" />
@@ -489,13 +487,13 @@ function Stat({
 }) {
 	return (
 		<div className="flex flex-col">
-			<dt className="text-[#64748B]">{label}</dt>
+			<dt className="text-ink-muted">{label}</dt>
 			<dd
 				className={cn(
 					"tabular-nums",
 					strong
-						? "font-bold text-[#0F172A] text-[15px]"
-						: "font-semibold text-[#334155]",
+						? "font-bold text-[15px] text-ink"
+						: "font-semibold text-ink-soft",
 				)}
 			>
 				{value}
@@ -557,16 +555,16 @@ function ResellPanel({
 	return (
 		<section
 			aria-labelledby="resell-panel-title"
-			className="flex flex-col rounded-xl border border-[#E2E8F0] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+			className="flex flex-col rounded-xl border border-line bg-surface shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
 		>
-			<div className="flex items-center justify-between border-[#F1F5F9] border-b px-[18px] py-4">
+			<div className="flex items-center justify-between border-subtle border-b px-[18px] py-4">
 				<h2 id="resell-panel-title" className="font-bold text-base">
 					{t("panelTitle")}
 				</h2>
 				<button
 					type="button"
 					onClick={onClose}
-					className="rounded-md p-1 text-[#64748B] hover:bg-[#F1F5F9]"
+					className="rounded-md p-1 text-ink-muted hover:bg-subtle"
 				>
 					<X aria-hidden="true" className="h-[18px] w-[18px]" />
 					<span className="sr-only">{t("close")}</span>
@@ -590,7 +588,7 @@ function ResellPanel({
 				}}
 			>
 				<div className="flex items-center gap-3">
-					<div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#E2E8F0] text-[#334155]">
+					<div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-line text-ink-soft">
 						{product.imageUrl ? (
 							<Image
 								src={product.imageUrl}
@@ -605,14 +603,14 @@ function ResellPanel({
 					</div>
 					<div className="flex min-w-0 flex-col gap-0.5">
 						<span className="font-semibold">{product.title}</span>
-						<span className="flex flex-wrap items-center gap-1.5 text-[#64748B] text-xs">
+						<span className="flex flex-wrap items-center gap-1.5 text-ink-muted text-xs">
 							{product.supplier.name}
 							<span
 								className={cn(
 									"inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-[11px]",
 									product.supplier.level >= 3
-										? "bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)]"
-										: "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
+										? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+										: "bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]",
 								)}
 							>
 								<ShieldCheck aria-hidden="true" className="h-3 w-3" />
@@ -633,10 +631,10 @@ function ResellPanel({
 								className={cn(
 									"h-8 rounded-full border px-3 font-medium text-xs",
 									variant.id === active.id
-										? "border-[#0F172A] bg-[#0F172A] text-white"
+										? "border-ink bg-night text-white"
 										: submitted && invalid(variant.id)
 											? "border-red-300 text-red-700"
-											: "border-[#E2E8F0] text-[#334155]",
+											: "border-line text-ink-soft",
 								)}
 							>
 								{variantOptionLabel(
@@ -651,15 +649,15 @@ function ResellPanel({
 				<div className="flex flex-col gap-1.5">
 					<label
 						htmlFor="resell-price"
-						className="font-semibold text-[#334155] text-[13px]"
+						className="font-semibold text-[13px] text-ink-soft"
 					>
 						{t("yourPrice")}
 					</label>
-					<div className="flex h-[52px] items-center justify-between gap-2 rounded-[10px] border-2 border-[var(--shop-accent,#1E40AF)] px-3.5">
+					<div className="flex h-[52px] items-center justify-between gap-2 rounded-[10px] border-2 border-[var(--shop-accent,var(--c-brand))] px-3.5">
 						<button
 							type="button"
 							onClick={() => setPrice(Math.max(1, price - 100))}
-							className="rounded p-1 text-[#475569]"
+							className="rounded p-1 text-ink-mid"
 						>
 							<Minus aria-hidden="true" className="h-[18px] w-[18px]" />
 							<span className="sr-only">{t("decrease")}</span>
@@ -676,14 +674,14 @@ function ResellPanel({
 								aria-invalid={submitted && invalid(active.id)}
 								className="w-28 bg-transparent text-right font-extrabold text-[22px] tabular-nums outline-none"
 							/>
-							<span className="font-medium text-[#64748B] text-[13px]">
+							<span className="font-medium text-[13px] text-ink-muted">
 								{currencyCode}
 							</span>
 						</span>
 						<button
 							type="button"
 							onClick={() => setPrice(price + 100)}
-							className="rounded p-1 text-[var(--shop-accent-text,#1E40AF)]"
+							className="rounded p-1 text-[var(--shop-accent-text,var(--c-brand))]"
 						>
 							<Plus aria-hidden="true" className="h-[18px] w-[18px]" />
 							<span className="sr-only">{t("increase")}</span>
@@ -693,7 +691,7 @@ function ResellPanel({
 						role={submitted && invalid(active.id) ? "alert" : undefined}
 						className={cn(
 							"font-semibold text-xs",
-							invalid(active.id) ? "text-red-700" : "text-[#15803D]",
+							invalid(active.id) ? "text-red-700" : "text-ok-ink-soft",
 						)}
 					>
 						{t("minimumAndSuggested", {
@@ -703,7 +701,7 @@ function ResellPanel({
 					</span>
 				</div>
 				{breakdown && typeof active.supplierPrice === "number" ? (
-					<dl className="flex flex-col gap-2 rounded-[10px] bg-[#F8FAFC] px-3.5 py-3 text-sm">
+					<dl className="flex flex-col gap-2 rounded-[10px] bg-canvas px-3.5 py-3 text-sm">
 						<Row
 							label={t("supplierPrice")}
 							value={formatOrderMoney(active.supplierPrice)}
@@ -721,15 +719,15 @@ function ResellPanel({
 							})}
 							value={`− ${formatOrderMoney(breakdown.commission)}`}
 						/>
-						<div className="flex justify-between border-[#E2E8F0] border-t pt-2.5">
-							<dt className="text-[#0F172A]">{t("gainPerSale")}</dt>
-							<dd className="font-bold text-[#0F172A] tabular-nums">
+						<div className="flex justify-between border-line border-t pt-2.5">
+							<dt className="text-ink">{t("gainPerSale")}</dt>
+							<dd className="font-bold text-ink tabular-nums">
 								{formatOrderMoney(breakdown.gain)}
 							</dd>
 						</div>
 					</dl>
 				) : null}
-				<ul className="flex flex-col gap-2 text-[#334155] text-[13px] leading-[18px]">
+				<ul className="flex flex-col gap-2 text-[13px] text-ink-soft leading-[18px]">
 					{[
 						product.handlingHours
 							? t("conditionShips", { hours: product.handlingHours })
@@ -742,7 +740,7 @@ function ResellPanel({
 						<li key={line} className="flex gap-2">
 							<Check
 								aria-hidden="true"
-								className="mt-0.5 h-[15px] w-[15px] shrink-0 text-[#16A34A]"
+								className="mt-0.5 h-[15px] w-[15px] shrink-0 text-ok"
 							/>
 							{line}
 						</li>
@@ -751,11 +749,11 @@ function ResellPanel({
 				<button
 					type="submit"
 					disabled={isCreating}
-					className="h-11 rounded-lg bg-[var(--shop-accent,#1E40AF)] font-semibold text-[15px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,#1E3A8A)] disabled:opacity-60"
+					className="h-11 rounded-lg bg-[var(--shop-accent,var(--c-brand))] font-semibold text-[15px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-60"
 				>
 					{isCreating ? t("adding") : t("addToShop")}
 				</button>
-				<span className="text-center text-[#94A3B8] text-xs">
+				<span className="text-center text-ink-faint text-xs">
 					{t("stockFollows")}
 				</span>
 			</form>
@@ -774,11 +772,11 @@ function Row({
 }) {
 	return (
 		<div className="flex justify-between">
-			<dt className="text-[#64748B]">{label}</dt>
+			<dt className="text-ink-muted">{label}</dt>
 			<dd
 				className={cn(
 					"font-semibold tabular-nums",
-					tone === "good" ? "text-[#15803D]" : "text-[#0F172A]",
+					tone === "good" ? "text-ok-ink-soft" : "text-ink",
 				)}
 			>
 				{value}
@@ -831,15 +829,15 @@ export function TermsAcceptance({
 	t: ReturnType<typeof useTranslations<"SellerResaleCatalogue">>;
 }) {
 	return (
-		<section className="space-y-3 rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-5">
-			<h2 className="font-bold text-[#78350F]">{t("termsTitle")}</h2>
-			<p className="text-[#78350F] text-sm">
+		<section className="space-y-3 rounded-2xl border border-warn-line bg-warn-faint p-5">
+			<h2 className="font-bold text-warn-ink-strong">{t("termsTitle")}</h2>
+			<p className="text-sm text-warn-ink-strong">
 				{t("termsIntro", { version: version ?? "—" })}
 			</p>
 			{isLoading ? (
-				<p className="text-[#78350F] text-sm">{t("termsLoading")}</p>
+				<p className="text-sm text-warn-ink-strong">{t("termsLoading")}</p>
 			) : (
-				<p className="max-h-48 overflow-auto whitespace-pre-wrap text-[#78350F] text-sm">
+				<p className="max-h-48 overflow-auto whitespace-pre-wrap text-sm text-warn-ink-strong">
 					{richText(body) || t("termsUnavailable")}
 				</p>
 			)}
@@ -847,7 +845,7 @@ export function TermsAcceptance({
 				type="button"
 				disabled={!version || isLoading || isPending}
 				onClick={onAccept}
-				className="min-h-11 rounded-xl bg-[#92400E] px-4 font-semibold text-sm text-white disabled:opacity-50"
+				className="min-h-11 rounded-xl bg-warn-ink px-4 font-semibold text-sm text-white disabled:opacity-50"
 			>
 				{isPending ? t("acceptingTerms") : t("acceptTerms")}
 			</button>

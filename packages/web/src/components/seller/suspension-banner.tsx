@@ -34,7 +34,7 @@ export function SuspensionBanner({
 			: null;
 
 	return (
-		<div className="flex items-start gap-3 border-[#fecaca] border-b bg-[#fef2f2] px-6 py-4 text-[#991b1b]">
+		<div className="flex items-start gap-3 border-bad-line border-b bg-bad-faint px-6 py-4 text-bad-ink">
 			<Ban aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
 			<div className="text-sm">
 				<p className="font-semibold">
@@ -43,7 +43,7 @@ export function SuspensionBanner({
 						: t("suspendedIndefinitely")}
 				</p>
 				{reason && <p>{t("suspendedReason", { reason })}</p>}
-				<p className="mt-1 text-[#7f1d1d]">{t("suspendedBody")}</p>
+				<p className="mt-1 text-bad-deep">{t("suspendedBody")}</p>
 			</div>
 		</div>
 	);

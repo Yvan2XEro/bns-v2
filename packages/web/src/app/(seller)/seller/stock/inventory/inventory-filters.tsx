@@ -6,7 +6,7 @@ import { cn } from "~/lib/utils";
 import { FILTERS, type Filter } from "./inventory-table";
 
 const selectClass =
-	"h-10 rounded-lg border border-[#E2E8F0] bg-white px-3 text-[#334155] text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)]";
+	"h-10 rounded-lg border border-line bg-surface px-3 text-ink-soft text-sm outline-none focus:border-[var(--shop-accent-border,var(--c-brand-line))]";
 
 export function InventoryFilters({
 	filter,
@@ -53,7 +53,7 @@ export function InventoryFilters({
 					onQuerySubmit();
 				}}
 				placeholder={t("searchPlaceholder")}
-				className="h-10 min-w-[200px] flex-1 rounded-lg border border-[#E2E8F0] bg-white px-3 text-sm outline-none focus:border-[var(--shop-accent-border,#93C5FD)] sm:max-w-[230px]"
+				className="h-10 min-w-[200px] flex-1 rounded-lg border border-line bg-surface px-3 text-sm outline-none focus:border-[var(--shop-accent-border,var(--c-brand-line))] sm:max-w-[230px]"
 			/>
 			<select
 				aria-label={ti("category")}
@@ -96,15 +96,15 @@ export function InventoryFilters({
 							className={cn(
 								"inline-flex h-8 items-center gap-2 rounded-full border px-3 font-medium text-sm",
 								active
-									? "border-[#0F172A] bg-[#0F172A] font-semibold text-white"
-									: "border-[#E2E8F0] bg-white text-[#334155] hover:border-[var(--shop-accent-border,#93C5FD)]",
+									? "border-ink bg-night font-semibold text-white"
+									: "border-line bg-surface text-ink-soft hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
 							)}
 						>
 							{t(`filter.${value}`)}
 							<span
 								className={cn(
 									"font-bold text-[11px] tabular-nums",
-									active ? "text-[#CBD5E1]" : "text-[#64748B]",
+									active ? "text-ink-ghost" : "text-ink-muted",
 								)}
 							>
 								{counts[value]}

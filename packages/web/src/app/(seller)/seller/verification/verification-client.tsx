@@ -16,7 +16,7 @@ function VerificationSkeleton() {
 	return (
 		<div className="space-y-4">
 			{[0, 1, 2].map((i) => (
-				<div key={i} className="h-24 animate-pulse rounded-2xl bg-[#F1F5F9]" />
+				<div key={i} className="h-24 animate-pulse rounded-2xl bg-subtle" />
 			))}
 		</div>
 	);
@@ -33,14 +33,14 @@ function VerificationError({
 	return (
 		<div
 			role="alert"
-			className="flex flex-col items-center rounded-2xl border border-[#E2E8F0] bg-white px-6 py-12 text-center"
+			className="flex flex-col items-center rounded-2xl border border-line bg-surface px-6 py-12 text-center"
 		>
-			<WifiOff aria-hidden="true" className="h-8 w-8 text-[#94A3B8]" />
-			<p className="mt-3 font-semibold text-[#0F172A]">{message}</p>
+			<WifiOff aria-hidden="true" className="h-8 w-8 text-ink-faint" />
+			<p className="mt-3 font-semibold text-ink">{message}</p>
 			<button
 				type="button"
 				onClick={onRetry}
-				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,#1E3A8A)]"
+				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 			>
 				{t("error.retry")}
 			</button>
@@ -78,7 +78,7 @@ export function VerificationClient({ shopId }: { shopId: string }) {
 
 	return (
 		<div className="space-y-5">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("hub.title")}</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("hub.title")}</h1>
 
 			{!view.enabled && (
 				<output className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">

@@ -20,11 +20,11 @@ function Perk({
 	detail: string | null;
 }) {
 	return (
-		<li className="flex items-start gap-2.5 text-[#334155] text-sm">
-			<span className="mt-0.5 shrink-0 text-[#1E40AF]">{icon}</span>
+		<li className="flex items-start gap-2.5 text-ink-soft text-sm">
+			<span className="mt-0.5 shrink-0 text-brand">{icon}</span>
 			<span className="flex flex-col">
-				<strong className="font-semibold text-[#0F172A]">{title}</strong>
-				{detail && <span className="text-[#64748B] text-[13px]">{detail}</span>}
+				<strong className="font-semibold text-ink">{title}</strong>
+				{detail && <span className="text-[13px] text-ink-muted">{detail}</span>}
 			</span>
 		</li>
 	);
@@ -72,7 +72,7 @@ export function ListingPerks({
 	const icon = "h-[18px] w-[18px]";
 
 	return (
-		<ul className="space-y-3 border-[#E2E8F0] border-t pt-4">
+		<ul className="space-y-3 border-line border-t pt-4">
 			{zoneEstimate && zoneCity && (
 				<Perk
 					icon={<Truck aria-hidden="true" className={icon} />}

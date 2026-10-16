@@ -14,7 +14,7 @@ export function SystemChip({ message }: { message: SystemMessageLike }) {
 
 	return (
 		<div className="flex justify-center">
-			<p className="max-w-[85%] rounded-full bg-[#F1F5F9] px-3 py-1 text-center text-[#475569] text-xs">
+			<p className="max-w-[85%] rounded-full bg-subtle px-3 py-1 text-center text-ink-mid text-xs">
 				{text}
 			</p>
 		</div>

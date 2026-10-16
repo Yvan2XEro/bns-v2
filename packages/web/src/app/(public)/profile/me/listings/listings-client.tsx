@@ -109,16 +109,16 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 				return (
 					<div
 						key={listing.id}
-						className={`group hover:-translate-y-1 relative overflow-hidden rounded-xl border bg-white transition-all duration-300 hover:shadow-black/5 hover:shadow-lg ${
+						className={`group hover:-translate-y-1 relative overflow-hidden rounded-xl border bg-surface transition-all duration-300 hover:shadow-black/5 hover:shadow-lg ${
 							isBoosted
 								? "border-[#F59E0B]/40 ring-1 ring-[#F59E0B]/20"
-								: "border-[#E2E8F0] hover:border-[#93C5FD]"
+								: "border-line hover:border-brand-line"
 						}`}
 					>
 						{/* Image */}
 						<Link
 							href={`/listing/${listing.id}`}
-							className="relative block aspect-[16/10] overflow-hidden bg-[#F1F5F9]"
+							className="relative block aspect-[16/10] overflow-hidden bg-subtle"
 						>
 							{imageUrl ? (
 								<Image
@@ -130,15 +130,15 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 								/>
 							) : (
 								<div className="flex h-full w-full flex-col items-center justify-center gap-1">
-									<ImageIcon className="h-8 w-8 text-[#CBD5E1]" />
-									<span className="text-[#94A3B8] text-xs">{t("noPhoto")}</span>
+									<ImageIcon className="h-8 w-8 text-ink-ghost" />
+									<span className="text-ink-faint text-xs">{t("noPhoto")}</span>
 								</div>
 							)}
 
 							{/* Status overlay */}
 							{listing.status === "sold" && (
 								<div className="absolute inset-0 flex items-center justify-center bg-black/50">
-									<span className="rounded-full bg-white px-3 py-1 font-bold text-[#0F172A] text-xs uppercase">
+									<span className="rounded-full bg-surface px-3 py-1 font-bold text-ink text-xs uppercase">
 										{t("statusSold")}
 									</span>
 								</div>
@@ -158,7 +158,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 										listing.status === "published"
 											? "bg-emerald-500 text-white"
 											: listing.status === "sold"
-												? "bg-[#64748B] text-white"
+												? "bg-ink-muted text-white"
 												: listing.status === "pending"
 													? "bg-blue-100 text-blue-800"
 													: listing.status === "rejected"
@@ -192,13 +192,13 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 						{/* Content */}
 						<div className="p-3.5">
 							<Link href={`/listing/${listing.id}`}>
-								<p className="font-bold text-[#0F172A] text-lg">
+								<p className="font-bold text-ink text-lg">
 									{formattedPrice ?? t("noPrice")}
 								</p>
-								<h3 className="mt-0.5 truncate text-[#334155] text-sm">
+								<h3 className="mt-0.5 truncate text-ink-soft text-sm">
 									{listing.title}
 								</h3>
-								<p className="mt-1 flex items-center gap-1 text-[#94A3B8] text-xs">
+								<p className="mt-1 flex items-center gap-1 text-ink-faint text-xs">
 									<Clock className="h-3 w-3" />
 									{new Date(listing.createdAt).toLocaleDateString()}
 									<span className="mx-1">&middot;</span>
@@ -236,7 +236,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							{isListingActive && expiresAt && daysUntilExpiry !== null && (
 								<p
 									className={`mt-1.5 flex items-center gap-1 font-medium text-xs ${
-										daysUntilExpiry <= 5 ? "text-amber-600" : "text-[#94A3B8]"
+										daysUntilExpiry <= 5 ? "text-amber-600" : "text-ink-faint"
 									}`}
 								>
 									<Timer className="h-3 w-3" />
@@ -249,11 +249,11 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 							)}
 
 							{/* Actions */}
-							<div className="mt-3 flex items-center gap-2 border-[#F1F5F9] border-t pt-3">
+							<div className="mt-3 flex items-center gap-2 border-subtle border-t pt-3">
 								<Link href={`/listing/${listing.id}/edit`} className="flex-1">
 									<button
 										type="button"
-										className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white font-medium text-[#475569] text-xs transition-all hover:border-[#93C5FD] hover:text-[#1E40AF] active:scale-[0.97]"
+										className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-surface font-medium text-ink-mid text-xs transition-all hover:border-brand-line hover:text-brand active:scale-[0.97]"
 									>
 										<Edit className="h-3.5 w-3.5" />
 										{t("actionEdit")}
@@ -263,7 +263,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 									<BoostDialog listingId={listing.id}>
 										<button
 											type="button"
-											className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-[#0F172A] text-xs shadow-sm transition-all hover:shadow-amber-500/15 hover:shadow-md active:scale-[0.97]"
+											className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] font-bold text-ink text-xs shadow-sm transition-all hover:shadow-amber-500/15 hover:shadow-md active:scale-[0.97]"
 										>
 											<Sparkles className="h-3.5 w-3.5" />
 											{t("actionBoost")}
@@ -271,7 +271,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 									</BoostDialog>
 								)}
 								{isBoosted && (
-									<span className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg border border-[#F59E0B]/30 bg-amber-50 font-semibold text-[#92400E] text-xs">
+									<span className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg border border-[#F59E0B]/30 bg-amber-50 font-semibold text-warn-ink text-xs">
 										<Sparkles className="h-3 w-3 text-[#F59E0B]" />
 										{t("boostedBadge")}
 									</span>
@@ -291,7 +291,7 @@ export function MyListingsClient({ listings }: { listings: Listing[] }) {
 									<DropdownMenuTrigger asChild>
 										<button
 											type="button"
-											className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#94A3B8] transition-all hover:border-[#93C5FD] hover:text-[#475569] active:scale-90"
+											className="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-ink-faint transition-all hover:border-brand-line hover:text-ink-mid active:scale-90"
 											disabled={isPending}
 										>
 											{isPending ? (

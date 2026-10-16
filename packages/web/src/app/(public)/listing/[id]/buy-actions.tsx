@@ -42,7 +42,7 @@ function reducer(state: State, patch: Partial<State>): State {
 }
 
 const stepButton =
-	"flex h-full w-8 items-center justify-center text-[#334155] disabled:text-[#94A3B8]";
+	"flex h-full w-8 items-center justify-center text-ink-soft disabled:text-ink-faint";
 
 export function BuyActions({
 	listingId,
@@ -105,7 +105,7 @@ export function BuyActions({
 				{t("quantity")}
 			</span>
 			<div className="flex gap-2.5">
-				<div className="flex h-12 w-28 shrink-0 items-center justify-between rounded-lg border border-[#E2E8F0] px-1 font-semibold text-[#0F172A]">
+				<div className="flex h-12 w-28 shrink-0 items-center justify-between rounded-lg border border-line px-1 font-semibold text-ink">
 					<button
 						type="button"
 						className={stepButton}
@@ -138,7 +138,7 @@ export function BuyActions({
 				    stays reachable through the quieter add below. */}
 				<Button
 					type="button"
-					className="h-12 flex-1 gap-2 bg-[#1E40AF] font-bold text-[15px] hover:bg-[#1E3A8A]"
+					className="h-12 flex-1 gap-2 bg-brand font-bold text-[15px] hover:bg-brand-strong"
 					disabled={!buyable || add.isPending}
 					onClick={() => submit(true)}
 				>
@@ -147,13 +147,11 @@ export function BuyActions({
 				</Button>
 			</div>
 
-			{!buyable && (
-				<p className="text-[#991b1b] text-sm">{t("chooseVariant")}</p>
-			)}
+			{!buyable && <p className="text-bad-ink text-sm">{t("chooseVariant")}</p>}
 
 			<button
 				type="button"
-				className="flex w-full items-center justify-center gap-1.5 font-medium text-[#1E40AF] text-sm hover:underline disabled:opacity-50 disabled:hover:no-underline"
+				className="flex w-full items-center justify-center gap-1.5 font-medium text-brand text-sm hover:underline disabled:opacity-50 disabled:hover:no-underline"
 				disabled={!buyable || add.isPending}
 				onClick={() => submit(false)}
 			>
@@ -162,9 +160,9 @@ export function BuyActions({
 			</button>
 
 			{state.added && (
-				<output className="block text-[#166534] text-sm">
+				<output className="block text-ok-ink text-sm">
 					{t("added")}{" "}
-					<Link href="/cart" className="font-medium text-[#1E40AF] underline">
+					<Link href="/cart" className="font-medium text-brand underline">
 						{t("viewCart")}
 					</Link>
 				</output>

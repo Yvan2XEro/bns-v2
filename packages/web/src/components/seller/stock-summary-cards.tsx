@@ -50,19 +50,19 @@ export function StockSummaryCards({ summary }: { summary: StockSummary }) {
 			{cards.map((card) => (
 				<div
 					key={card.label}
-					className="rounded-xl border border-[#E2E8F0] bg-white px-4 py-3.5"
+					className="rounded-xl border border-line bg-surface px-4 py-3.5"
 				>
-					<p className="text-[#64748B] text-sm">{card.label}</p>
+					<p className="text-ink-muted text-sm">{card.label}</p>
 					<p
 						className={cn(
 							"mt-1 font-bold text-[22px] tabular-nums",
-							card.warn ? "text-[#B45309]" : "text-[#0F172A]",
+							card.warn ? "text-warn-ink-soft" : "text-ink",
 						)}
 					>
 						{card.value}
 					</p>
 					{card.hint && (
-						<p className="mt-1 truncate text-[#94A3B8] text-xs">{card.hint}</p>
+						<p className="mt-1 truncate text-ink-faint text-xs">{card.hint}</p>
 					)}
 				</div>
 			))}

@@ -63,23 +63,21 @@ function ShopSummary({
 			/>
 			<div>
 				<div className="flex items-center justify-center gap-2">
-					<h1 className="font-bold text-[#0F172A] text-xl">
-						{invitation.shop.name}
-					</h1>
+					<h1 className="font-bold text-ink text-xl">{invitation.shop.name}</h1>
 					<LevelBadge badge={invitation.shop.badge} size="sm" />
 				</div>
-				<p className="text-[#64748B] text-sm">@{invitation.shop.handle}</p>
+				<p className="text-ink-muted text-sm">@{invitation.shop.handle}</p>
 			</div>
 			{invitation.inviterFirstName && (
-				<p className="text-[#334155] text-sm">
+				<p className="text-ink-soft text-sm">
 					{t("invitedBy", { name: invitation.inviterFirstName })}
 				</p>
 			)}
-			<div className="rounded-xl bg-[#F8FAFC] px-4 py-2 text-sm">
-				<p className="font-medium text-[#0F172A]">{t(roleLabelKey)}</p>
-				<p className="mt-0.5 text-[#64748B] text-xs">{t(roleDescriptionKey)}</p>
+			<div className="rounded-xl bg-canvas px-4 py-2 text-sm">
+				<p className="font-medium text-ink">{t(roleLabelKey)}</p>
+				<p className="mt-0.5 text-ink-muted text-xs">{t(roleDescriptionKey)}</p>
 			</div>
-			<p className="text-[#94A3B8] text-xs">
+			<p className="text-ink-faint text-xs">
 				{t("expires", { date: expires })}
 			</p>
 		</CardHeader>
@@ -165,7 +163,7 @@ export function InviteClient({ token }: { token: string }) {
 	if (step === "loading") {
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
-				<div className="h-40 w-full max-w-md animate-pulse rounded-2xl bg-[#F1F5F9]" />
+				<div className="h-40 w-full max-w-md animate-pulse rounded-2xl bg-subtle" />
 			</div>
 		);
 	}
@@ -175,8 +173,8 @@ export function InviteClient({ token }: { token: string }) {
 			<div className="flex min-h-[50vh] items-center justify-center px-4">
 				<Card className="w-full max-w-md">
 					<CardContent className="space-y-4 py-8 text-center">
-						<p className="text-[#334155]">{t("invalid")}</p>
-						<Link href="/" className="text-[#1E40AF] text-sm hover:underline">
+						<p className="text-ink-soft">{t("invalid")}</p>
+						<Link href="/" className="text-brand text-sm hover:underline">
 							{tCommon("back")}
 						</Link>
 					</CardContent>
@@ -214,7 +212,7 @@ export function InviteClient({ token }: { token: string }) {
 
 					{step === "mismatch" && (
 						<div className="space-y-3 text-center">
-							<p className="text-[#334155] text-sm">
+							<p className="text-ink-soft text-sm">
 								{t("mismatch", { target: hint.maskedTarget })}
 							</p>
 							<Button asChild className="w-full">
@@ -225,10 +223,10 @@ export function InviteClient({ token }: { token: string }) {
 
 					{step === "verifyPhone" && (
 						<div className="space-y-3">
-							<p className="text-center font-medium text-[#0F172A] text-sm">
+							<p className="text-center font-medium text-ink text-sm">
 								{t("verifyPhone", { shop: invitation.shop.name })}
 							</p>
-							<p className="text-center text-[#64748B] text-xs">
+							<p className="text-center text-ink-muted text-xs">
 								{t("verifyPhoneHint", { target: hint.maskedTarget })}
 							</p>
 							<PhoneVerificationForm onVerified={() => void refreshUser()} />
@@ -268,7 +266,7 @@ export function InviteClient({ token }: { token: string }) {
 
 					{step === "joined" && (
 						<div className="space-y-3 text-center">
-							<p className="text-[#0F172A] text-sm">
+							<p className="text-ink text-sm">
 								{t("joined", { shop: invitation.shop.name })}
 							</p>
 							<Button asChild className="w-full">
@@ -286,7 +284,7 @@ export function InviteClient({ token }: { token: string }) {
 					{step !== "expired" && step !== "responded" && (
 						<a
 							href={`buynsellem://invite/${token}`}
-							className="block text-center text-[#64748B] text-xs underline"
+							className="block text-center text-ink-muted text-xs underline"
 						>
 							{t("openInApp")}
 						</a>
@@ -300,8 +298,8 @@ export function InviteClient({ token }: { token: string }) {
 function Message({ text, homeLabel }: { text: string; homeLabel: string }) {
 	return (
 		<div className="space-y-3 text-center">
-			<p className="text-[#334155] text-sm">{text}</p>
-			<Link href="/" className="text-[#1E40AF] text-sm hover:underline">
+			<p className="text-ink-soft text-sm">{text}</p>
+			<Link href="/" className="text-brand text-sm hover:underline">
 				{homeLabel}
 			</Link>
 		</div>

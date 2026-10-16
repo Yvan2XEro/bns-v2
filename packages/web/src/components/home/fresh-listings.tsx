@@ -74,9 +74,7 @@ export function FreshListings({
 			<div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="mb-6 flex items-center justify-between">
 					<div className="flex items-center gap-3">
-						<h2 className="font-bold text-[#0F172A] text-xl">
-							{t("freshListings")}
-						</h2>
+						<h2 className="font-bold text-ink text-xl">{t("freshListings")}</h2>
 						<span className="flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2.5 py-0.5 font-medium text-[#047857] text-xs">
 							{city && <MapPin className="h-3 w-3" />}
 							{city ?? t("allCitiesPill")}
@@ -84,7 +82,7 @@ export function FreshListings({
 					</div>
 					<Link
 						href={seeAllHref}
-						className="flex items-center gap-1 font-medium text-[#1E40AF] text-sm hover:underline"
+						className="flex items-center gap-1 font-medium text-brand text-sm hover:underline"
 					>
 						{t("seeAll")}
 						<ChevronRight className="h-4 w-4" />
@@ -100,18 +98,18 @@ export function FreshListings({
 						{Array.from({ length: FRESH_COUNT }, (_, index) => (
 							<span
 								key={index}
-								className="block aspect-[3/4] animate-pulse rounded-xl bg-[#F1F5F9]"
+								className="block aspect-[3/4] animate-pulse rounded-xl bg-subtle"
 							/>
 						))}
 					</div>
 				) : listings.length > 0 ? (
 					<ListingGrid listings={listings} favorites={favoriteIds} />
 				) : (
-					<div className="rounded-2xl border-2 border-[#DBEAFE] border-dashed py-16 text-center">
-						<Tag className="mx-auto mb-3 h-10 w-10 text-[#94A3B8]" />
+					<div className="rounded-2xl border-2 border-brand-tint border-dashed py-16 text-center">
+						<Tag className="mx-auto mb-3 h-10 w-10 text-ink-faint" />
 						{city ? (
 							<>
-								<p className="font-medium text-[#0F172A]">
+								<p className="font-medium text-ink">
 									{t("noListingsInCity", { city })}
 								</p>
 								<Button
@@ -124,10 +122,8 @@ export function FreshListings({
 							</>
 						) : (
 							<>
-								<p className="font-medium text-[#0F172A]">
-									{t("noListingsYet")}
-								</p>
-								<p className="mt-1 text-[#64748B] text-sm">{t("beFirst")}</p>
+								<p className="font-medium text-ink">{t("noListingsYet")}</p>
+								<p className="mt-1 text-ink-muted text-sm">{t("beFirst")}</p>
 								<Link href="/create">
 									<Button className="mt-4" variant="accent">
 										{t("postListing")}

@@ -19,7 +19,7 @@ import { useLocaleKey } from "~/lib/use-locale-key";
 import { FieldError, Toggle } from "../settings/orders/form-controls";
 
 const SELECT_CLASS =
-	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
+	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint))] bg-canvas px-3 text-ink text-sm";
 
 function Field({
 	id,
@@ -97,8 +97,8 @@ export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
 			</Field>
 			<fieldset className="space-y-2">
 				<legend className="font-medium text-sm">{t("fieldDistricts")}</legend>
-				<p className="text-[#64748B] text-xs">{t("districtsHelp")}</p>
-				<div className="grid max-h-44 grid-cols-2 gap-x-3 overflow-y-auto rounded-xl border border-[#E2E8F0] p-2">
+				<p className="text-ink-muted text-xs">{t("districtsHelp")}</p>
+				<div className="grid max-h-44 grid-cols-2 gap-x-3 overflow-y-auto rounded-xl border border-line p-2">
 					{(DISTRICTS[city] ?? []).map((d) => (
 						<Toggle
 							key={d.key}
@@ -145,7 +145,7 @@ export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
 						))}
 					</select>
 					{hint && (
-						<p className="text-[#64748B] text-xs">
+						<p className="text-ink-muted text-xs">
 							{t("courierTariff", {
 								amount: formatOrderMoney(hint.amount, locale),
 								min: hint.etaMinHours,
@@ -234,7 +234,7 @@ export function ZoneFields({ form }: { form: UseFormReturn<ZoneFormValues> }) {
 			</fieldset>
 			<Toggle id="zone-cod" label={t("fieldCod")} {...register("codAllowed")} />
 			{!watch("codAllowed") && (
-				<p className="text-[#92400E] text-xs">{t("codOffHint")}</p>
+				<p className="text-warn-ink text-xs">{t("codOffHint")}</p>
 			)}
 			<Toggle
 				id="zone-active"

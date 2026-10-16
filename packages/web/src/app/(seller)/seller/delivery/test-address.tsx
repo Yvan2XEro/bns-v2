@@ -13,7 +13,7 @@ import { unavailableHint } from "~/lib/delivery-zone-form";
 import { useLocaleKey } from "~/lib/use-locale-key";
 
 const SELECT_CLASS =
-	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,#DBEAFE)] bg-[#F8FAFF] px-3 text-[#0F172A] text-sm";
+	"flex h-10 w-full rounded-xl border border-[var(--shop-accent-border,var(--c-brand-tint))] bg-canvas px-3 text-ink text-sm";
 
 /** Asks the quote route what a buyer at this address would be offered; nothing is saved. */
 export function TestAddress({ shopId }: { shopId: string }) {
@@ -29,9 +29,9 @@ export function TestAddress({ shopId }: { shopId: string }) {
 	const amount = Number(subtotal);
 
 	return (
-		<section className="space-y-3 rounded-2xl border border-[#E2E8F0] bg-white p-5">
-			<h2 className="font-semibold text-[#0F172A]">{t("testTitle")}</h2>
-			<p className="text-[#64748B] text-sm">{t("testBody")}</p>
+		<section className="space-y-3 rounded-2xl border border-line bg-surface p-5">
+			<h2 className="font-semibold text-ink">{t("testTitle")}</h2>
+			<p className="text-ink-muted text-sm">{t("testBody")}</p>
 			<div className="grid gap-3 sm:grid-cols-3">
 				<div className="space-y-1.5">
 					<label htmlFor="test-city" className="block font-medium text-sm">
@@ -104,13 +104,13 @@ export function TestAddress({ shopId }: { shopId: string }) {
 			{test.isSuccess && (
 				<div aria-live="polite" className="space-y-2 text-sm">
 					{test.data.options.length === 0 && (
-						<p className="text-[#64748B]">
+						<p className="text-ink-muted">
 							{tRoot("Checkout.noDeliveryOptions")}
 						</p>
 					)}
 					<ul className="space-y-1">
 						{test.data.options.map((option) => (
-							<li key={option.optionId} className="text-[#0F172A]">
+							<li key={option.optionId} className="text-ink">
 								{t(`method.${option.method}`)} ·{" "}
 								{option.fee === 0
 									? tRoot("Checkout.free")
@@ -125,7 +125,10 @@ export function TestAddress({ shopId }: { shopId: string }) {
 					{test.data.unavailable.map((option, index) => {
 						const hint = unavailableHint(option);
 						return (
-							<p key={`${option.method}-${index}`} className="text-[#B45309]">
+							<p
+								key={`${option.method}-${index}`}
+								className="text-warn-ink-soft"
+							>
 								{t(`method.${option.method}`)} —{" "}
 								{tRoot(`Checkout.${hint.key}`, {
 									amount: formatOrderMoney(hint.amount),

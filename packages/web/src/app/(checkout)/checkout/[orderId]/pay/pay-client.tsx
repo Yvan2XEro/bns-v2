@@ -88,7 +88,7 @@ export function PayClient({
 
 	if (purchase.isPending || status.isPending) {
 		return (
-			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-[#64748B]" />
+			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-ink-muted" />
 		);
 	}
 	if (!order) {
@@ -100,7 +100,7 @@ export function PayClient({
 	}
 	if (openIntent) {
 		return (
-			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-[#64748B]" />
+			<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-ink-muted" />
 		);
 	}
 
@@ -141,19 +141,19 @@ export function PayClient({
 	return (
 		<div className="space-y-6">
 			<header className="space-y-1">
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("pay_title")}</h1>
-				<p className="font-semibold text-[#0F172A] text-xl">
+				<h1 className="font-bold text-2xl text-ink">{t("pay_title")}</h1>
+				<p className="font-semibold text-ink text-xl">
 					{formatOrderMoney(order.amounts.total, locale)}
 				</p>
 			</header>
 
 			{!protectedPaymentEnabled && (
-				<p className="text-[#64748B] text-sm">{t("comingSoon")}</p>
+				<p className="text-ink-muted text-sm">{t("comingSoon")}</p>
 			)}
 
 			{protectedPaymentEnabled && (
 				<>
-					<p className="text-[#334155] text-sm">
+					<p className="text-ink-soft text-sm">
 						{t("disclosure_listingBadge", {
 							rate: buyerProtection.bps / 100,
 							min: formatOrderMoney(buyerProtection.min),
@@ -161,7 +161,7 @@ export function PayClient({
 					</p>
 					<button
 						type="button"
-						className="min-h-11 text-[#1E40AF] text-sm underline"
+						className="min-h-11 text-brand text-sm underline"
 						onClick={() => setSheetOpen(true)}
 					>
 						{t("summary_coverLink")}
@@ -197,7 +197,7 @@ export function PayClient({
 						) : (
 							<Button
 								type="submit"
-								className="min-h-12 w-full bg-[#1E40AF] text-base hover:bg-[#1E3A8A]"
+								className="min-h-12 w-full bg-brand text-base hover:bg-brand-strong"
 								disabled={createIntent.isPending}
 							>
 								{createIntent.isPending && (

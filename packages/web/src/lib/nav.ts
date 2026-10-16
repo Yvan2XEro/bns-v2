@@ -398,7 +398,7 @@ function vars(tones: Tones): string | null {
 	return entries.map(([name, value]) => `${name}:${value}`).join(";");
 }
 
-/** The shop header's colour variables, light by default and dark with the system. */
+/** The shop header's colour variables, light by default and dark with the page's theme. */
 export function shopHeaderCss(
 	selector: string,
 	theme: { light: Tones; dark: Tones },
@@ -407,7 +407,5 @@ export function shopHeaderCss(
 	const dark = vars(theme.dark);
 	if (!light) return "";
 	const base = `${selector}{${light}}`;
-	return dark
-		? `${base}@media (prefers-color-scheme: dark){${selector}{${dark}}}`
-		: base;
+	return dark ? `${base}.dark ${selector}{${dark}}` : base;
 }

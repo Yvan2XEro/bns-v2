@@ -33,10 +33,8 @@ export function CourierClient() {
 				role="alert"
 				className="mx-auto max-w-md space-y-2 px-4 py-16 text-center"
 			>
-				<h1 className="font-bold text-[#0F172A] text-xl">
-					{t("notMemberTitle")}
-				</h1>
-				<p className="text-[#475569] text-sm">{t("notMemberBody")}</p>
+				<h1 className="font-bold text-ink text-xl">{t("notMemberTitle")}</h1>
+				<p className="text-ink-mid text-sm">{t("notMemberBody")}</p>
 			</div>
 		);
 	}
@@ -45,7 +43,7 @@ export function CourierClient() {
 
 	return (
 		<div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-			<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
+			<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
 			<nav aria-label={t("tabsLabel")} className="flex gap-1 overflow-x-auto">
 				{COURIER_TABS.map((entry) => (
 					<button
@@ -56,8 +54,8 @@ export function CourierClient() {
 						className={cn(
 							"min-h-11 shrink-0 rounded-lg px-4 font-medium text-sm",
 							tab === entry
-								? "bg-[#EFF6FF] text-[#1E40AF]"
-								: "text-[#334155] hover:bg-[#F8FAFC]",
+								? "bg-brand-soft text-brand"
+								: "text-ink-soft hover:bg-canvas",
 						)}
 					>
 						{t(`tab.${entry}`)}
@@ -72,7 +70,7 @@ export function CourierClient() {
 				/>
 			)}
 			{shipments.isSuccess && rows.length === 0 && (
-				<p className="rounded-2xl border border-[#E2E8F0] bg-white p-6 text-center text-[#64748B] text-sm">
+				<p className="rounded-2xl border border-line bg-surface p-6 text-center text-ink-muted text-sm">
 					{t("empty")}
 				</p>
 			)}

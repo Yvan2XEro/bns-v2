@@ -41,7 +41,7 @@ export function ThreadHeader({
 	}
 
 	return (
-		<div className="flex items-center gap-3 border-[#E2E8F0] border-b p-3">
+		<div className="flex items-center gap-3 border-line border-b p-3">
 			<Button
 				type="button"
 				variant="ghost"
@@ -53,18 +53,18 @@ export function ThreadHeader({
 			</Button>
 			<Avatar className="h-9 w-9 shrink-0">
 				<AvatarImage src={conversation.buyer?.avatarUrl ?? undefined} />
-				<AvatarFallback className="bg-[var(--shop-accent,#1E40AF)] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
+				<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 					{conversation.buyer?.name?.charAt(0) ?? "?"}
 				</AvatarFallback>
 			</Avatar>
 			<div className="min-w-0 flex-1">
-				<p className="truncate font-medium text-[#0F172A] text-sm">
+				<p className="truncate font-medium text-ink text-sm">
 					{conversation.buyer?.name ?? t("unassigned")}
 				</p>
 				{conversation.listing && (
 					<Link
 						href={`/listing/${conversation.listing.id}`}
-						className="truncate text-[var(--shop-accent-text,#1E40AF)] text-xs hover:underline"
+						className="truncate text-[var(--shop-accent-text,var(--c-brand))] text-xs hover:underline"
 					>
 						{conversation.listing.title}
 					</Link>

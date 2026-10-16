@@ -62,7 +62,7 @@ export default async function ReceiptPage({
 			<ReceiptActions orderId={id} html={html} />
 			<article
 				id="order-receipt"
-				className="rounded-2xl border border-[#E2E8F0] bg-white p-6 text-[#111] [&_h1]:mb-4 [&_h1]:font-bold [&_h1]:text-2xl [&_p]:my-1 [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-[#ddd] [&_td]:border-b [&_td]:px-2 [&_td]:py-1 [&_th]:border-[#ddd] [&_th]:border-b [&_th]:px-2 [&_th]:py-1 [&_th]:text-left"
+				className="rounded-2xl border border-line bg-surface p-6 text-[#111] [&_h1]:mb-4 [&_h1]:font-bold [&_h1]:text-2xl [&_p]:my-1 [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-[#ddd] [&_td]:border-b [&_td]:px-2 [&_td]:py-1 [&_th]:border-[#ddd] [&_th]:border-b [&_th]:px-2 [&_th]:py-1 [&_th]:text-left"
 				// biome-ignore lint/security/noDangerouslySetInnerHtml: the API's own receipt, every interpolated value escaped by `renderReceiptHtml`
 				dangerouslySetInnerHTML={{ __html: receiptBody(html) }}
 			/>

@@ -78,16 +78,16 @@ export function BuyBox(props: BuyBoxProps) {
 			<>
 				{asToday}
 				{badge}
-				<div className="mt-4 flex items-start gap-2 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] p-4 text-sm">
+				<div className="mt-4 flex items-start gap-2 rounded-xl border border-warn-line bg-warn-faint p-4 text-sm">
 					<Clock
 						aria-hidden="true"
-						className="mt-0.5 h-4 w-4 shrink-0 text-[#B45309]"
+						className="mt-0.5 h-4 w-4 shrink-0 text-warn-ink-soft"
 					/>
 					<div>
-						<p className="font-semibold text-[#92400E]">
+						<p className="font-semibold text-warn-ink">
 							{t("restrictedTitle")}
 						</p>
-						<p className="text-[#78350F]">{t("restrictedBody")}</p>
+						<p className="text-warn-ink-strong">{t("restrictedBody")}</p>
 					</div>
 				</div>
 				{ask}

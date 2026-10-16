@@ -62,14 +62,14 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 		<Link href={`/listing/${listing.id}`} className="group block">
 			<div
 				className={cn(
-					"hover:-translate-y-1 overflow-hidden rounded-xl bg-white transition-all duration-300 hover:shadow-black/8 hover:shadow-lg",
+					"hover:-translate-y-1 overflow-hidden rounded-xl bg-surface transition-all duration-300 hover:shadow-black/8 hover:shadow-lg",
 					isBoosted
 						? "ring-1 ring-[#F59E0B]/40"
-						: "border border-[#E2E8F0] hover:border-[var(--shop-accent-border,#93C5FD)]",
+						: "border border-line hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
 				)}
 			>
 				{/* Image */}
-				<div className="relative aspect-[4/3] overflow-hidden bg-[#F1F5F9]">
+				<div className="relative aspect-[4/3] overflow-hidden bg-subtle">
 					{imageUrl ? (
 						<Image
 							src={imageUrl}
@@ -80,19 +80,19 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						/>
 					) : (
 						<div className="flex h-full w-full items-center justify-center">
-							<span className="text-[#94A3B8] text-xs">{t("noPhoto")}</span>
+							<span className="text-ink-faint text-xs">{t("noPhoto")}</span>
 						</div>
 					)}
 
 					{/* Top-left badges */}
 					<div className="absolute top-2 left-2 flex flex-col gap-1">
 						{isBoosted && (
-							<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[#0F172A] text-[10px] uppercase">
+							<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[10px] text-ink uppercase">
 								{t("listingFeatured")}
 							</span>
 						)}
 						{conditionLabel && (
-							<span className="rounded bg-white/90 px-1.5 py-0.5 font-semibold text-[#0F172A] text-[10px] shadow-sm backdrop-blur-sm">
+							<span className="rounded bg-surface/90 px-1.5 py-0.5 font-semibold text-[10px] text-ink shadow-sm backdrop-blur-sm">
 								{conditionLabel}
 							</span>
 						)}
@@ -117,9 +117,9 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 				{/* Content */}
 				<div className="p-3">
 					{/* Price (prominent, like Leboncoin/Vinted) */}
-					<p className="font-bold text-[#0F172A] text-lg">
+					<p className="font-bold text-ink text-lg">
 						{isFromPrice && (
-							<span className="font-medium text-[#64748B] text-xs">
+							<span className="font-medium text-ink-muted text-xs">
 								{t("fromPrice")}{" "}
 							</span>
 						)}
@@ -127,12 +127,12 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 					</p>
 
 					{/* Title */}
-					<h3 className="mt-0.5 line-clamp-2 text-[#334155] text-sm">
+					<h3 className="mt-0.5 line-clamp-2 text-ink-soft text-sm">
 						{listing.title}
 					</h3>
 
 					{/* Meta row */}
-					<div className="mt-2 flex items-center justify-between text-[#94A3B8] text-xs">
+					<div className="mt-2 flex items-center justify-between text-ink-faint text-xs">
 						<span className="flex items-center gap-1 truncate">
 							<MapPin className="h-3 w-3 shrink-0" />
 							<span className="truncate">{listing.location}</span>
@@ -143,7 +143,7 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 						</span>
 					</div>
 					{shopName && (
-						<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[var(--shop-accent-text,#1E40AF)] text-xs">
+						<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs">
 							<Store className="h-3 w-3 shrink-0" />
 							<span className="truncate">{shopName}</span>
 							{shopBadge && (

@@ -11,11 +11,11 @@ import { cn } from "~/lib/utils";
 import type { MovementRow } from "~/types";
 
 const TONE_CLASSES: Record<MovementTone, string> = {
-	success: "bg-[#DCFCE7] text-[#166534]",
-	info: "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]",
-	warning: "bg-[#FEF3C7] text-[#92400E]",
-	danger: "bg-[#FEE2E2] text-[#991B1B]",
-	neutral: "bg-[#F1F5F9] text-[#475569]",
+	success: "bg-ok-soft text-ok-ink",
+	info: "bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]",
+	warning: "bg-warn-soft text-warn-ink",
+	danger: "bg-bad-soft text-bad-ink",
+	neutral: "bg-subtle text-ink-mid",
 };
 
 export function MovementsTable({ rows }: { rows: MovementRow[] }) {
@@ -24,9 +24,9 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 	const locale = useLocale();
 
 	return (
-		<div className="overflow-x-auto rounded-xl border border-[#E2E8F0] bg-white">
+		<div className="overflow-x-auto rounded-xl border border-line bg-surface">
 			<table className="w-full min-w-[720px] text-sm">
-				<thead className="border-[#E2E8F0] border-b bg-[#F8FAFC] text-left text-[#64748B] text-xs uppercase">
+				<thead className="border-line border-b bg-canvas text-left text-ink-muted text-xs uppercase">
 					<tr>
 						<th className="px-4 py-3 font-semibold">{t("colDate")}</th>
 						<th className="px-4 py-3 font-semibold">{t("colProduct")}</th>
@@ -42,11 +42,8 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 				</thead>
 				<tbody>
 					{rows.map((row) => (
-						<tr
-							key={row.id}
-							className="border-[#F1F5F9] border-b last:border-0"
-						>
-							<td className="whitespace-nowrap px-4 py-3 text-[#64748B]">
+						<tr key={row.id} className="border-subtle border-b last:border-0">
+							<td className="whitespace-nowrap px-4 py-3 text-ink-muted">
 								{new Date(row.createdAt).toLocaleString(locale, {
 									day: "numeric",
 									month: "short",
@@ -55,10 +52,8 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 								})}
 							</td>
 							<td className="px-4 py-3">
-								<p className="font-medium text-[#0F172A]">
-									{row.product.title}
-								</p>
-								<p className="text-[#94A3B8] text-xs">{row.variant.label}</p>
+								<p className="font-medium text-ink">{row.product.title}</p>
+								<p className="text-ink-faint text-xs">{row.variant.label}</p>
 							</td>
 							<td className="px-4 py-3">
 								<span
@@ -73,15 +68,15 @@ export function MovementsTable({ rows }: { rows: MovementRow[] }) {
 							<td
 								className={cn(
 									"px-4 py-3 text-right font-semibold",
-									availableDelta(row) > 0 ? "text-[#166534]" : "text-[#991b1b]",
+									availableDelta(row) > 0 ? "text-ok-ink" : "text-bad-ink",
 								)}
 							>
 								{signedDelta(availableDelta(row))}
 							</td>
-							<td className="px-4 py-3 text-right text-[#0F172A]">
+							<td className="px-4 py-3 text-right text-ink">
 								{row.stockAfter}
 							</td>
-							<td className="px-4 py-3 text-[#64748B]">
+							<td className="px-4 py-3 text-ink-muted">
 								{[row.note, row.actor?.name].filter(Boolean).join(" · ") || "—"}
 							</td>
 						</tr>

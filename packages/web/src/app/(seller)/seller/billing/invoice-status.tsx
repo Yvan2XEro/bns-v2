@@ -8,11 +8,11 @@ type InvoiceStatus = CommissionInvoiceView["status"];
 
 const TONE: Record<InvoiceStatus, string> = {
 	issued:
-		"bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]",
-	paid: "bg-[#F0FDF4] text-[#166534]",
-	overdue: "bg-[#FEF2F2] text-[#B91C1C]",
-	waived: "bg-[#F1F5F9] text-[#475569]",
-	void: "bg-[#F1F5F9] text-[#475569]",
+		"bg-[var(--shop-accent-soft,var(--c-brand-soft))] text-[var(--shop-accent-text,var(--c-brand))]",
+	paid: "bg-ok-faint text-ok-ink",
+	overdue: "bg-bad-faint text-bad-ink-soft",
+	waived: "bg-subtle text-ink-mid",
+	void: "bg-subtle text-ink-mid",
 };
 
 /** The two states `payInvoice` would open a payment for. */

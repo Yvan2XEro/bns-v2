@@ -124,16 +124,16 @@ export function PhoneVerificationForm({
 		: undefined;
 
 	if (status.isPending) {
-		return <div className="h-24 animate-pulse rounded-xl bg-[#F1F5F9]" />;
+		return <div className="h-24 animate-pulse rounded-xl bg-subtle" />;
 	}
 
 	return (
 		<div className="space-y-4">
 			{showStatusSummary && status.data?.phone && (
-				<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-					<p className="text-[#64748B] text-sm">{t("currentPhone")}</p>
-					<p className="mt-1 font-medium text-[#0F172A]">{status.data.phone}</p>
-					<p className="mt-1 text-[#64748B] text-xs">
+				<div className="rounded-xl border border-line bg-canvas p-4">
+					<p className="text-ink-muted text-sm">{t("currentPhone")}</p>
+					<p className="mt-1 font-medium text-ink">{status.data.phone}</p>
+					<p className="mt-1 text-ink-muted text-xs">
 						{status.data.isPhoneVerified
 							? t("verifiedBadge")
 							: t("notVerifiedBadge")}
@@ -170,13 +170,13 @@ export function PhoneVerificationForm({
 					)}
 				/>
 				{phoneFieldMessage && (
-					<p className="text-[#991B1B] text-xs">{phoneFieldMessage}</p>
+					<p className="text-bad-ink text-xs">{phoneFieldMessage}</p>
 				)}
 				{!pending && (
 					<Button
 						type="submit"
 						disabled={start.isPending}
-						className="h-11 w-full rounded-xl bg-[#1E40AF] font-semibold hover:bg-[#1E3A8A]"
+						className="h-11 w-full rounded-xl bg-brand font-semibold hover:bg-brand-strong"
 					>
 						{start.isPending && (
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

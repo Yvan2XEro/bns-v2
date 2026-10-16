@@ -52,8 +52,8 @@ export function FilterList({
 						className={cn(
 							"flex shrink-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left font-medium text-sm",
 							active
-								? "bg-[var(--shop-accent-soft,#EFF6FF)] text-[var(--shop-accent-text,#1E40AF)]"
-								: "text-[#334155] hover:bg-[#F8FAFC]",
+								? "bg-[var(--shop-accent-soft,var(--c-brand-soft))] text-[var(--shop-accent-text,var(--c-brand))]"
+								: "text-ink-soft hover:bg-canvas",
 						)}
 					>
 						<span>{t(LABEL_KEY[value])}</span>
@@ -61,8 +61,8 @@ export function FilterList({
 							className={cn(
 								"rounded-full px-1.5 text-[11px]",
 								active
-									? "bg-[var(--shop-accent-soft,#DBEAFE)] text-[var(--shop-accent-text,#1E40AF)]"
-									: "bg-[#F1F5F9] text-[#64748B]",
+									? "bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]"
+									: "bg-subtle text-ink-muted",
 							)}
 						>
 							{total}

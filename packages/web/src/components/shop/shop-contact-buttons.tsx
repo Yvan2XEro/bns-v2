@@ -75,7 +75,7 @@ export function ShopContactButtons({
 				<DropdownMenuTrigger asChild>
 					<button
 						type="button"
-						className={`${bar ? "h-11 w-full justify-center" : "h-10"} inline-flex items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2`}
+						className={`${bar ? "h-11 w-full justify-center" : "h-10"} inline-flex items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))] focus-visible:outline-offset-2`}
 					>
 						<MessageSquare className="h-4 w-4" />
 						{t("contact")}
@@ -87,6 +87,7 @@ export function ShopContactButtons({
 					align={bar ? "center" : "end"}
 					side={bar ? "top" : undefined}
 					className="min-w-52 [&_[role=menuitem]:focus]:bg-[var(--shop-accent-soft)] [&_[role=menuitem]:focus]:text-[var(--shop-accent-text)]"
+					data-shop-theme={theme?.brandColor}
 					style={theme ? shopThemeVars(theme) : undefined}
 				>
 					{shopContactChannels(contact).map((channel) => {
@@ -116,7 +117,7 @@ export function ShopContactButtons({
 											rel="noopener noreferrer"
 											className="cursor-pointer"
 										>
-											<MessageCircle className="mr-2 h-4 w-4 text-[#15803D]" />
+											<MessageCircle className="mr-2 h-4 w-4 text-ok-ink-soft" />
 											{t("contactWhatsapp")}
 										</a>
 									</DropdownMenuItem>
@@ -127,7 +128,7 @@ export function ShopContactButtons({
 										<a href={channel.href} className="cursor-pointer">
 											<Phone className="mr-2 h-4 w-4" />
 											<span>{t("contactCall")}</span>
-											<span className="ml-auto pl-3 text-[#64748B] text-xs">
+											<span className="ml-auto pl-3 text-ink-muted text-xs">
 												{channel.phone}
 											</span>
 										</a>

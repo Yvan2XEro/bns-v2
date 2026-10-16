@@ -42,7 +42,7 @@ export function ReturnEvidenceUpload({
 				}}
 			/>
 			{upload.isPending ? (
-				<output className="text-[#64748B] text-sm">
+				<output className="text-ink-muted text-sm">
 					{t("evidenceUploading")}
 				</output>
 			) : null}

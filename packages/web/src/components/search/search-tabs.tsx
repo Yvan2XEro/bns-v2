@@ -32,7 +32,7 @@ export function SearchTabs({
 
 	return (
 		<div className="container mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-			<div className="flex gap-6 border-[#E2E8F0] border-b">
+			<div className="flex gap-6 border-line border-b">
 				{tabs.map((tab) => (
 					<Link
 						key={tab.key}
@@ -40,8 +40,8 @@ export function SearchTabs({
 						className={cn(
 							"-mb-px flex items-center gap-1.5 border-b-2 pb-2 font-semibold text-sm",
 							active === tab.key
-								? "border-[#1E40AF] text-[#1E40AF]"
-								: "border-transparent text-[#64748B] hover:text-[#0F172A]",
+								? "border-brand text-brand"
+								: "border-transparent text-ink-muted hover:text-ink",
 						)}
 					>
 						{tab.label}
@@ -50,8 +50,8 @@ export function SearchTabs({
 								className={cn(
 									"rounded-[10px] px-[7px] py-px font-semibold text-xs tabular-nums",
 									active === tab.key
-										? "bg-[#1E40AF] text-white"
-										: "bg-[#E2E8F0] text-[#64748B]",
+										? "bg-brand text-white"
+										: "bg-line text-ink-muted",
 								)}
 							>
 								{tab.count.toLocaleString(locale)}

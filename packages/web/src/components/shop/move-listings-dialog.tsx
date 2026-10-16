@@ -101,23 +101,23 @@ function MoveListingsBody({
 	return (
 		<>
 			{outcome ? (
-				<p className="rounded-lg bg-[#F0FDF4] px-3 py-2 text-[#166534] text-sm">
+				<p className="rounded-lg bg-ok-faint px-3 py-2 text-ok-ink text-sm">
 					{t("moveDone", {
 						moved: outcome.attached.length,
 						skipped: outcome.skipped.length,
 					})}
 				</p>
 			) : listingsQuery.isPending ? (
-				<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-[#94A3B8]" />
+				<LoaderCircle className="mx-auto h-6 w-6 animate-spin text-ink-faint" />
 			) : listings === null || listings.length === 0 ? (
-				<p className="text-[#64748B] text-sm">{t("moveNone")}</p>
+				<p className="text-ink-muted text-sm">{t("moveNone")}</p>
 			) : (
 				<div className="space-y-3">
 					<label className="flex items-center justify-between text-sm">
 						<span className="flex items-center gap-2">
 							<input
 								type="checkbox"
-								className="h-4 w-4 accent-[#1E40AF]"
+								className="h-4 w-4 accent-brand"
 								checked={all}
 								onChange={(event) =>
 									setSelected(
@@ -129,7 +129,7 @@ function MoveListingsBody({
 							/>
 							{t("selectAll")}
 						</span>
-						<span className="text-[#64748B]">
+						<span className="text-ink-muted">
 							{selected.length} / {listings.length}
 						</span>
 					</label>
@@ -152,10 +152,10 @@ function MoveListingsBody({
 							);
 						})}
 					</ul>
-					<ul className="space-y-1 text-[#334155] text-xs">
+					<ul className="space-y-1 text-ink-soft text-xs">
 						{(["moveKeep", "moveSameLink", "moveStock"] as const).map((key) => (
 							<li key={key} className="flex items-center gap-2">
-								<Check className="h-3.5 w-3.5 text-[#16A34A]" />
+								<Check className="h-3.5 w-3.5 text-ok" />
 								{t(key)}
 							</li>
 						))}
@@ -174,7 +174,7 @@ function MoveListingsBody({
 					<Button
 						onClick={submit}
 						disabled={attachListings.isPending || selected.length === 0}
-						className="bg-[#1E40AF] hover:bg-[#1E3A8A]"
+						className="bg-brand hover:bg-brand-strong"
 					>
 						{attachListings.isPending && (
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

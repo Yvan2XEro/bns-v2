@@ -34,7 +34,7 @@ interface PhotoSlot {
 }
 
 const BUTTON =
-	"min-h-14 w-full rounded-2xl bg-[#1E40AF] px-4 font-bold text-lg text-white disabled:opacity-60";
+	"min-h-14 w-full rounded-2xl bg-brand px-4 font-bold text-lg text-white disabled:opacity-60";
 
 function PhotoInput({
 	id,
@@ -52,7 +52,7 @@ function PhotoInput({
 	return (
 		<label
 			htmlFor={id}
-			className="flex min-h-14 w-full cursor-pointer items-center justify-center rounded-2xl border border-[#CBD5E1] font-semibold"
+			className="flex min-h-14 w-full cursor-pointer items-center justify-center rounded-2xl border border-line-strong font-semibold"
 		>
 			{label}
 			<input
@@ -113,7 +113,7 @@ export function FailureSheet({
 								<input
 									type="radio"
 									value={reason}
-									className="h-6 w-6 accent-[#1E40AF]"
+									className="h-6 w-6 accent-brand"
 									{...register("reason")}
 								/>
 								{tRoot(`Delivery.${FAILURE_REASON_LABELS[reason]}`)}
@@ -127,7 +127,7 @@ export function FailureSheet({
 						<textarea
 							id="rider-note"
 							rows={2}
-							className="w-full rounded-xl border border-[#CBD5E1] p-3 text-base"
+							className="w-full rounded-xl border border-line-strong p-3 text-base"
 							{...register("note")}
 						/>
 						{formState.errors.note && (
@@ -142,7 +142,7 @@ export function FailureSheet({
 						onPick={photo.onPick}
 					/>
 					{photo.stored?.kind === "attempt" && (
-						<p className="text-[#166534] text-sm">{t("photoAdded")}</p>
+						<p className="text-ok-ink text-sm">{t("photoAdded")}</p>
 					)}
 					{error ? (
 						<p role="alert" className="text-red-700 text-sm">
@@ -194,7 +194,7 @@ export function CodeSheet({
 						autoComplete="one-time-code"
 						maxLength={4}
 						aria-label={t("codeLabel")}
-						className="w-full rounded-2xl border border-[#CBD5E1] p-4 text-center font-bold font-mono text-4xl tracking-[0.5em]"
+						className="w-full rounded-2xl border border-line-strong p-4 text-center font-bold font-mono text-4xl tracking-[0.5em]"
 						{...register("code")}
 					/>
 					{formState.errors.code && (
@@ -210,7 +210,7 @@ export function CodeSheet({
 						onPick={photo.onPick}
 					/>
 					{photo.stored?.kind === "handover" && (
-						<p className="text-[#166534] text-sm">{t("photoAdded")}</p>
+						<p className="text-ok-ink text-sm">{t("photoAdded")}</p>
 					)}
 					{error ? (
 						<p role="alert" className="text-red-700 text-sm">

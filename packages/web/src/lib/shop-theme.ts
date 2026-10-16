@@ -34,19 +34,22 @@ const TOKENS: [keyof ShopThemeTones, string][] = [
 ];
 
 /**
- * The shop's colours as CSS variables for `[data-shop-theme]`. `--shop-*` are
- * the light tones: the shop pages draw on fixed white surfaces whatever the
- * system scheme. `--shop-dark-*` ride along, and a surface that does follow
- * the scheme opts into them with `data-shop-scheme="system"` (globals.css).
+ * The shop's colours as CSS variables, both tones: `--shop-light-*` and
+ * `--shop-dark-*`. The element also needs `data-shop-theme`, where
+ * globals.css picks `--shop-*` from one set or the other with the page's
+ * theme — an inline `--shop-*` would outrank that choice.
  */
 export function shopThemeVars(theme: ShopTheme): CSSProperties {
 	const vars: CSSProperties & Record<`--${string}`, string> = {};
 	for (const [key, token] of TOKENS) {
-		vars[`--shop-${token}`] = theme.light[key];
+		vars[`--shop-light-${token}`] = theme.light[key];
 		vars[`--shop-dark-${token}`] = theme.dark[key];
 	}
 	return vars;
 }
+
+/** The `--shop-*` names `[data-shop-theme]` resolves, for globals.css and its test. */
+export const SHOP_THEME_TOKENS = TOKENS.map(([, token]) => token);
 
 /** "#ABCDEF" from what a seller typed: "abcdef", " #abcdef ", or null when it is not a colour. */
 export function normalizeBrandInput(input: string): string | null {

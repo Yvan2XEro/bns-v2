@@ -59,7 +59,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			})}
 		>
 			<h3 className="font-medium">{t("action.refund_proof")}</h3>
-			<p className="text-[#64748B] text-sm">{t("refundProofInstructions")}</p>
+			<p className="text-ink-muted text-sm">{t("refundProofInstructions")}</p>
 			<label className="block text-sm">
 				{t("refundMethod")}
 				<select
@@ -111,7 +111,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			<button
 				type="submit"
 				disabled={submit.isPending}
-				className="min-h-11 rounded-xl bg-[#1E40AF] px-4 font-medium text-sm text-white disabled:opacity-50"
+				className="min-h-11 rounded-xl bg-brand px-4 font-medium text-sm text-white disabled:opacity-50"
 			>
 				{t("action.refund_proof")}
 			</button>

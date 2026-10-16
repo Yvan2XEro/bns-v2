@@ -33,7 +33,7 @@ export function ShipmentPanel({
 	if (!shipments.data || shipments.data.length === 0) return null;
 	return (
 		<section aria-labelledby="shipment-panel-title" className="space-y-3">
-			<h2 id="shipment-panel-title" className="font-semibold text-[#0F172A]">
+			<h2 id="shipment-panel-title" className="font-semibold text-ink">
 				{t("title")}
 			</h2>
 			{shipments.data.map((shipment) => (

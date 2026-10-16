@@ -41,13 +41,11 @@ export function ShopPagePreview({
 	return (
 		<section
 			aria-label={tPreview("title")}
-			className="overflow-hidden rounded-xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-xl border border-line bg-surface"
 		>
-			<div className="flex items-center justify-between gap-3 border-[#E2E8F0] border-b px-[18px] py-3.5">
-				<h2 className="font-bold text-[#0F172A] text-base">
-					{tPreview("title")}
-				</h2>
-				<fieldset className="flex gap-1 rounded-lg bg-[#F1F5F9] p-[3px]">
+			<div className="flex items-center justify-between gap-3 border-line border-b px-[18px] py-3.5">
+				<h2 className="font-bold text-base text-ink">{tPreview("title")}</h2>
+				<fieldset className="flex gap-1 rounded-lg bg-subtle p-[3px]">
 					<legend className="sr-only">{tPreview("device")}</legend>
 					{(["desktop", "mobile"] as const).map((value) => (
 						<button
@@ -58,8 +56,8 @@ export function ShopPagePreview({
 							className={cn(
 								"flex h-7 items-center rounded-md px-2.5 font-semibold text-xs",
 								device === value
-									? "bg-white text-[#1E40AF] shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
-									: "text-[#475569]",
+									? "bg-surface text-brand shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
+									: "text-ink-mid",
 							)}
 						>
 							{tPreview(value)}
@@ -67,23 +65,23 @@ export function ShopPagePreview({
 					))}
 				</fieldset>
 			</div>
-			<div className="bg-[#F1F5F9] p-4">
+			<div className="bg-subtle p-4">
 				<div
 					aria-hidden="true"
-					data-shop-theme={draft.brandColor ?? undefined}
+					data-shop-theme={draft.brandColor ?? ""}
 					style={shopThemeVars(shopTheme(draft.brandColor))}
 					className={cn(
-						"mx-auto overflow-hidden bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)]",
+						"mx-auto overflow-hidden bg-surface shadow-[0_8px_24px_rgba(15,23,42,0.1)]",
 						mobile
-							? "w-[300px] rounded-[22px] border-[#0F172A] border-[6px]"
+							? "w-[300px] rounded-[22px] border-[6px] border-ink"
 							: "rounded-[10px]",
 					)}
 				>
 					{!mobile && (
-						<div className="flex h-[30px] items-center gap-1.5 border-[#E2E8F0] border-b bg-[#F8FAFC] px-2.5">
-							<span className="h-2 w-2 rounded-full bg-[#E2E8F0]" />
-							<span className="h-2 w-2 rounded-full bg-[#E2E8F0]" />
-							<span className="mx-[30px] flex h-[18px] flex-1 items-center justify-center truncate rounded-[5px] border border-[#E2E8F0] bg-white text-[#64748B] text-[11px]">
+						<div className="flex h-[30px] items-center gap-1.5 border-line border-b bg-canvas px-2.5">
+							<span className="h-2 w-2 rounded-full bg-line" />
+							<span className="h-2 w-2 rounded-full bg-line" />
+							<span className="mx-[30px] flex h-[18px] flex-1 items-center justify-center truncate rounded-[5px] border border-line bg-surface text-[11px] text-ink-muted">
 								{url}
 							</span>
 						</div>
@@ -122,7 +120,7 @@ export function ShopPagePreview({
 										<MessageCircle className="h-3.5 w-3.5" />
 										{tPreview("contact")}
 									</span>
-									<span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs">
+									<span className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-line px-3 font-semibold text-ink text-xs">
 										<Share2 className="h-3.5 w-3.5" />
 										{tPreview("share")}
 									</span>
@@ -130,16 +128,16 @@ export function ShopPagePreview({
 							)}
 						</div>
 						<div className="flex flex-wrap items-center gap-2">
-							<span className="break-words font-extrabold text-[#0F172A] text-xl">
+							<span className="break-words font-extrabold text-ink text-xl">
 								{name}
 							</span>
 							<LevelBadge badge={shop.badge} size="sm" />
 						</div>
-						<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[#64748B] text-xs">
+						<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-muted text-xs">
 							{shop.totalReviews > 0 && (
 								<span className="flex items-center gap-1">
 									<Star className="h-3.5 w-3.5 fill-[#F59E0B] text-[#F59E0B]" />
-									<strong className="text-[#0F172A]">
+									<strong className="text-ink">
 										{shop.rating.toLocaleString(locale, {
 											maximumFractionDigits: 1,
 										})}
@@ -158,7 +156,7 @@ export function ShopPagePreview({
 							)}
 						</div>
 						{draft.description.trim() && (
-							<p className="line-clamp-3 text-[#334155] text-[13px] leading-5">
+							<p className="line-clamp-3 text-[13px] text-ink-soft leading-5">
 								{draft.description}
 							</p>
 						)}
@@ -176,7 +174,7 @@ export function ShopPagePreview({
 						)}
 					</div>
 				</div>
-				<p className="mt-3 text-[#64748B] text-xs">{tPreview("shareNote")}</p>
+				<p className="mt-3 text-ink-muted text-xs">{tPreview("shareNote")}</p>
 			</div>
 		</section>
 	);

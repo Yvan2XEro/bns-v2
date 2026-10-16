@@ -11,7 +11,7 @@ export function SectionTabs({
 }) {
 	const pathname = usePathname();
 	return (
-		<div className="mb-6 flex gap-1 border-[#E2E8F0] border-b">
+		<div className="mb-6 flex gap-1 border-line border-b">
 			{tabs.map((tab) => {
 				const active = tab.exact
 					? pathname === tab.href
@@ -24,8 +24,8 @@ export function SectionTabs({
 						className={cn(
 							"px-3 py-2 font-medium text-sm",
 							active
-								? "-mb-px border-[var(--shop-accent,#1E40AF)] border-b-2 text-[var(--shop-accent-text,#1E40AF)]"
-								: "text-[#64748B] hover:text-[#0F172A]",
+								? "-mb-px border-[var(--shop-accent,var(--c-brand))] border-b-2 text-[var(--shop-accent-text,var(--c-brand))]"
+								: "text-ink-muted hover:text-ink",
 						)}
 					>
 						{tab.label}

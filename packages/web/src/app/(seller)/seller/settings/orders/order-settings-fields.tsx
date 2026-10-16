@@ -93,7 +93,7 @@ export function OrderSettingsForm({
 									aria-describedby="delivery-fee-hint"
 									{...register("deliveryFee")}
 								/>
-								<p id="delivery-fee-hint" className="text-[#64748B] text-xs">
+								<p id="delivery-fee-hint" className="text-ink-muted text-xs">
 									{view.cityDefaultFee === null
 										? t("deliveryFeeHintNoCity")
 										: t("deliveryFeeHint", {
@@ -140,7 +140,7 @@ export function OrderSettingsForm({
 						aria-describedby="sales-terms-hint"
 						{...register("salesTermsExtra")}
 					/>
-					<p id="sales-terms-hint" className="text-[#64748B] text-xs">
+					<p id="sales-terms-hint" className="text-ink-muted text-xs">
 						{t("salesTermsHint")}
 					</p>
 					<FieldError>
@@ -160,7 +160,7 @@ export function OrderSettingsForm({
 						{t("save")}
 					</Button>
 					{save.isSuccess && !formState.isDirty && (
-						<output className="text-[#166534] text-sm">{t("saved")}</output>
+						<output className="text-ok-ink text-sm">{t("saved")}</output>
 					)}
 					{errors.root?.message && (
 						<p role="alert" className="text-red-700 text-sm">

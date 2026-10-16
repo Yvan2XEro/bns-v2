@@ -120,7 +120,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 						)}
 						<div className="flex items-center gap-4">
 							<div className="relative">
-								<div className="h-20 w-20 overflow-hidden rounded-full bg-[#F1F5F9]">
+								<div className="h-20 w-20 overflow-hidden rounded-full bg-subtle">
 									{avatarPreview ? (
 										// biome-ignore lint/performance/noImgElement: blob preview URL
 										<img
@@ -129,12 +129,12 @@ export function ProfileEditForm({ user }: { user: User }) {
 											className="h-full w-full object-cover"
 										/>
 									) : (
-										<div className="flex h-full w-full items-center justify-center bg-[#1E40AF] font-semibold text-2xl text-white">
+										<div className="flex h-full w-full items-center justify-center bg-brand font-semibold text-2xl text-white">
 											{user.name?.charAt(0) || "?"}
 										</div>
 									)}
 								</div>
-								<label className="-bottom-1 -right-1 absolute flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-[#1E40AF] text-white shadow-md hover:bg-[#1E3A8A]">
+								<label className="-bottom-1 -right-1 absolute flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-brand text-white shadow-md hover:bg-brand-strong">
 									<Camera className="h-3.5 w-3.5" />
 									<input
 										type="file"
@@ -145,10 +145,10 @@ export function ProfileEditForm({ user }: { user: User }) {
 								</label>
 							</div>
 							<div>
-								<p className="font-medium text-[#0F172A] text-sm">
+								<p className="font-medium text-ink text-sm">
 									{t("profilePhoto")}
 								</p>
-								<p className="text-[#64748B] text-xs">{t("clickToChange")}</p>
+								<p className="text-ink-muted text-xs">{t("clickToChange")}</p>
 							</div>
 						</div>
 						<div className="space-y-2">
@@ -189,7 +189,7 @@ export function ProfileEditForm({ user }: { user: User }) {
 							/>
 						</div>
 
-						<div className="rounded-md border border-[#E2E8F0] bg-[#F8FAFC] p-3 text-[#64748B] text-sm">
+						<div className="rounded-md border border-line bg-canvas p-3 text-ink-muted text-sm">
 							{t("phoneManagedElsewhere")}
 						</div>
 

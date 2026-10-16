@@ -80,12 +80,12 @@ export default async function MyProfilePage() {
 	return (
 		<div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 			<div className="mb-6 flex items-center justify-between">
-				<h1 className="font-bold text-2xl text-[#0F172A]">{t("myProfile")}</h1>
+				<h1 className="font-bold text-2xl text-ink">{t("myProfile")}</h1>
 				<Link href="/settings">
 					<Button
 						variant="outline"
 						size="sm"
-						className="rounded-xl border-[#E2E8F0]"
+						className="rounded-xl border-line"
 					>
 						<Settings className="mr-2 h-4 w-4" />
 						{t("accountSettings")}
@@ -94,11 +94,11 @@ export default async function MyProfilePage() {
 			</div>
 
 			{mine?.shop && (
-				<div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-[#E2E8F0] bg-white px-4 py-3">
+				<div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
 					<LevelBadge badge={mine.shop.badge} />
 					<Link
 						href="/seller/verification"
-						className="font-medium text-[#1E40AF] text-sm hover:underline"
+						className="font-medium text-brand text-sm hover:underline"
 					>
 						{t("increaseLevel")}
 					</Link>
@@ -118,32 +118,32 @@ export default async function MyProfilePage() {
 						</div>
 
 						<div className="space-y-4 lg:col-span-1">
-							<Card className="border-[#E2E8F0]">
+							<Card className="border-line">
 								<CardHeader>
-									<CardTitle className="text-[#0F172A]">
+									<CardTitle className="text-ink">
 										{t("profilePreview")}
 									</CardTitle>
 								</CardHeader>
 								<CardContent>
 									<div className="flex flex-col items-center text-center">
-										<Avatar className="h-24 w-24 ring-2 ring-[#E2E8F0]">
+										<Avatar className="h-24 w-24 ring-2 ring-line">
 											<AvatarImage
 												src={(user.avatar as { url?: string })?.url}
 											/>
-											<AvatarFallback className="bg-[#1E40AF] font-semibold text-2xl text-white">
+											<AvatarFallback className="bg-brand font-semibold text-2xl text-white">
 												{user.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>
-										<h2 className="mt-4 font-bold text-[#0F172A] text-xl">
+										<h2 className="mt-4 font-bold text-ink text-xl">
 											{user.name}
 										</h2>
 										{user.location && (
-											<p className="mt-2 flex items-center text-[#64748B] text-sm">
+											<p className="mt-2 flex items-center text-ink-muted text-sm">
 												<MapPin className="mr-1 h-4 w-4 text-[#F59E0B]" />
 												{user.location}
 											</p>
 										)}
-										<p className="mt-2 flex items-center text-[#64748B] text-sm">
+										<p className="mt-2 flex items-center text-ink-muted text-sm">
 											<Calendar className="mr-1 h-4 w-4" />
 											{t("joined", {
 												date: new Date(user.createdAt).toLocaleDateString(),
@@ -151,15 +151,15 @@ export default async function MyProfilePage() {
 										</p>
 										<div className="mt-4 flex items-center gap-1">
 											<Star className="h-5 w-5 fill-[#F59E0B] text-[#F59E0B]" />
-											<span className="font-semibold text-[#0F172A]">
+											<span className="font-semibold text-ink">
 												{averageRating.toFixed(1)}
 											</span>
-											<span className="text-[#94A3B8]">
+											<span className="text-ink-faint">
 												({t("userReviews", { count: reviews.length })})
 											</span>
 										</div>
 										{user.bio && (
-											<p className="mt-4 text-[#64748B] text-sm leading-relaxed">
+											<p className="mt-4 text-ink-muted text-sm leading-relaxed">
 												{user.bio}
 											</p>
 										)}
@@ -176,16 +176,16 @@ export default async function MyProfilePage() {
 
 							<Link
 								href="/profile/me/searches"
-								className="flex items-center gap-3 rounded-xl border border-[#E2E8F0] bg-white p-4 transition-colors hover:border-[#93C5FD] hover:bg-[#F8FAFC]"
+								className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-brand-line hover:bg-canvas"
 							>
-								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF]">
-									<Bookmark className="h-5 w-5 text-[#1E40AF]" />
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft">
+									<Bookmark className="h-5 w-5 text-brand" />
 								</div>
 								<div>
-									<p className="font-medium text-[#0F172A] text-sm">
+									<p className="font-medium text-ink text-sm">
 										{t("savedSearches")}
 									</p>
-									<p className="text-[#64748B] text-xs">
+									<p className="text-ink-muted text-xs">
 										{t("viewAndManageSearches")}
 									</p>
 								</div>
@@ -195,11 +195,9 @@ export default async function MyProfilePage() {
 				</TabsContent>
 
 				<TabsContent value="listings">
-					<Card className="border-[#E2E8F0]">
+					<Card className="border-line">
 						<CardHeader>
-							<CardTitle className="text-[#0F172A]">
-								{t("listingsTab")}
-							</CardTitle>
+							<CardTitle className="text-ink">{t("listingsTab")}</CardTitle>
 							<CardDescription>{t("manageListings")}</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -213,13 +211,13 @@ export default async function MyProfilePage() {
 											<Link
 												key={listing.id}
 												href={`/listing/${listing.id}`}
-												className="flex items-center justify-between rounded-xl border border-[#E2E8F0] p-4 transition-colors hover:bg-[#F8FAFC]"
+												className="flex items-center justify-between rounded-xl border border-line p-4 transition-colors hover:bg-canvas"
 											>
 												<div>
-													<p className="font-medium text-[#0F172A]">
+													<p className="font-medium text-ink">
 														{listing.title}
 													</p>
-													<p className="text-[#64748B] text-sm">
+													<p className="text-ink-muted text-sm">
 														{formattedPrice ? `${formattedPrice} • ` : ""}
 														{listing.location}
 													</p>
@@ -238,16 +236,16 @@ export default async function MyProfilePage() {
 									})}
 									<Link
 										href="/profile/me/listings"
-										className="block pt-2 text-center font-medium text-[#1E40AF] text-sm hover:underline"
+										className="block pt-2 text-center font-medium text-brand text-sm hover:underline"
 									>
 										{t("viewAllListings")}
 									</Link>
 								</div>
 							) : (
 								<div className="py-8 text-center">
-									<p className="text-[#64748B]">{t("noListingsYet")}</p>
+									<p className="text-ink-muted">{t("noListingsYet")}</p>
 									<Link href="/create">
-										<Button className="mt-3 rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]">
+										<Button className="mt-3 rounded-xl bg-brand hover:bg-brand-strong">
 											{t("createFirstListing")}
 										</Button>
 									</Link>

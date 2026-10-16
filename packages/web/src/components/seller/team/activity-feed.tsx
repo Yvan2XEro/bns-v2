@@ -20,18 +20,15 @@ export function ActivityFeed({ shopId }: { shopId: string }) {
 	return (
 		<section
 			aria-labelledby="team-activity-title"
-			className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white"
+			className="overflow-hidden rounded-2xl border border-line bg-surface"
 		>
-			<div className="flex items-center justify-between gap-2 border-[#F1F5F9] border-b px-[18px] py-3.5">
-				<h2
-					id="team-activity-title"
-					className="font-bold text-[#0F172A] text-base"
-				>
+			<div className="flex items-center justify-between gap-2 border-subtle border-b px-[18px] py-3.5">
+				<h2 id="team-activity-title" className="font-bold text-base text-ink">
 					{tPage("activityTitle")}
 				</h2>
 				<Link
 					href="/seller/team/activity"
-					className="font-semibold text-[13px] text-[var(--shop-accent-text,#1E40AF)] hover:underline"
+					className="font-semibold text-[13px] text-[var(--shop-accent-text,var(--c-brand))] hover:underline"
 				>
 					{tPage("seeAll")}
 				</Link>
@@ -39,18 +36,15 @@ export function ActivityFeed({ shopId }: { shopId: string }) {
 			{query.isPending ? (
 				<div className="space-y-2 p-[18px]">
 					{[0, 1, 2].map((row) => (
-						<div
-							key={row}
-							className="h-9 animate-pulse rounded-lg bg-[#F1F5F9]"
-						/>
+						<div key={row} className="h-9 animate-pulse rounded-lg bg-subtle" />
 					))}
 				</div>
 			) : query.isError ? (
-				<p role="alert" className="px-[18px] py-4 text-[#64748B] text-sm">
+				<p role="alert" className="px-[18px] py-4 text-ink-muted text-sm">
 					{tPage("activityError")}
 				</p>
 			) : entries.length === 0 ? (
-				<p className="px-[18px] py-4 text-[#64748B] text-sm">
+				<p className="px-[18px] py-4 text-ink-muted text-sm">
 					{tActivity("empty")}
 				</p>
 			) : (
@@ -58,22 +52,22 @@ export function ActivityFeed({ shopId }: { shopId: string }) {
 					{entries.map((entry) => (
 						<li
 							key={entry.id}
-							className="border-[#F1F5F9] border-b px-[18px] py-[11px] last:border-0"
+							className="border-subtle border-b px-[18px] py-[11px] last:border-0"
 						>
-							<p className="text-[#334155] text-[13px] leading-[18px]">
-								<strong className="text-[#0F172A]">
+							<p className="text-[13px] text-ink-soft leading-[18px]">
+								<strong className="text-ink">
 									{entry.actor?.name ?? tActivity("roles.system")}
 								</strong>{" "}
 								· {tRoot(activityLabelKey(entry.action))}
 							</p>
-							<p className="text-[#94A3B8] text-xs">
+							<p className="text-ink-faint text-xs">
 								{timeAgo(entry.createdAt, locale, { maxDays: 30 })}
 							</p>
 						</li>
 					))}
 				</ul>
 			)}
-			<p className="bg-[#F8FAFC] px-[18px] py-2.5 text-[#94A3B8] text-xs">
+			<p className="bg-canvas px-[18px] py-2.5 text-ink-faint text-xs">
 				{tPage("activityFootnote")}
 			</p>
 		</section>

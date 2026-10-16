@@ -67,7 +67,7 @@ export function ProductPhotosSection({
 						/>
 					)}
 				/>
-				<p className="text-[#94A3B8] text-xs">{t("photosHint")}</p>
+				<p className="text-ink-faint text-xs">{t("photosHint")}</p>
 				<ProductIssueText issue={issueAt("newImages")} />
 			</div>
 		</EditorSection>

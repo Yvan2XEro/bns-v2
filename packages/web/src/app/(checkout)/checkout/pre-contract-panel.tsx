@@ -14,13 +14,13 @@ function Section({
 	children: ReactNode;
 }) {
 	return (
-		<details className="group rounded-xl border border-[#E2E8F0] px-4">
-			<summary className="flex min-h-11 cursor-pointer items-center font-medium text-[#0F172A]">
+		<details className="group rounded-xl border border-line px-4">
+			<summary className="flex min-h-11 cursor-pointer items-center font-medium text-ink">
 				{title}
 			</summary>
 			<div
 				lang={lang}
-				className="space-y-2 pb-4 text-[#334155] text-sm leading-relaxed"
+				className="space-y-2 pb-4 text-ink-soft text-sm leading-relaxed"
 			>
 				{children}
 			</div>
@@ -49,12 +49,10 @@ export function PreContractPanel({
 	return (
 		<section className="space-y-3">
 			<div className="flex items-center justify-between">
-				<h2 className="font-semibold text-[#0F172A] text-lg">
-					{t("preContract")}
-				</h2>
+				<h2 className="font-semibold text-ink text-lg">{t("preContract")}</h2>
 				<button
 					type="button"
-					className="min-h-11 text-[#1E40AF] text-sm underline"
+					className="min-h-11 text-brand text-sm underline"
 					onClick={() => onLanguage(other)}
 					lang={other}
 				>

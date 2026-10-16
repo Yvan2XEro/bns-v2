@@ -130,7 +130,7 @@ function ShipmentReturnConfirm({
 		<div
 			role="alertdialog"
 			aria-label={t("returnTitle")}
-			className="space-y-2 rounded-xl border border-[#E2E8F0] p-3 text-sm"
+			className="space-y-2 rounded-xl border border-line p-3 text-sm"
 		>
 			<p>{t("returnConfirm")}</p>
 			{action.isError && (

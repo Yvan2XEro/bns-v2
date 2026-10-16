@@ -91,36 +91,34 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 	const totalPages = Math.ceil(total / PER_PAGE);
 
 	return (
-		<div className="min-h-screen bg-[#F8FAFC]">
+		<div className="min-h-screen bg-canvas">
 			{/* Header */}
-			<div className="border-[#E2E8F0] border-b bg-white">
+			<div className="border-line border-b bg-surface">
 				<div className="container mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
 					<Link
 						href="/profile/me"
-						className="mb-4 inline-flex items-center gap-1 text-[#64748B] text-sm transition-colors hover:text-[#1E40AF]"
+						className="mb-4 inline-flex items-center gap-1 text-ink-muted text-sm transition-colors hover:text-brand"
 					>
 						<ArrowLeft className="h-4 w-4" />
 						{t("backToProfile")}
 					</Link>
 					<div className="flex items-start justify-between">
 						<div>
-							<h1 className="font-extrabold text-2xl text-[#0F172A]">
-								{t("title")}
-							</h1>
-							<p className="mt-1 text-[#64748B] text-sm">{t("subtitle")}</p>
+							<h1 className="font-extrabold text-2xl text-ink">{t("title")}</h1>
+							<p className="mt-1 text-ink-muted text-sm">{t("subtitle")}</p>
 						</div>
 						<div className="flex items-center gap-2">
 							<Link href="/profile/me/boosts">
 								<Button
 									variant="outline"
-									className="rounded-xl border-[#E2E8F0] font-bold text-[#64748B] hover:border-[#93C5FD] hover:text-[#1E40AF]"
+									className="rounded-xl border-line font-bold text-ink-muted hover:border-brand-line hover:text-brand"
 								>
 									<Rocket className="mr-2 h-4 w-4" />
 									{t("boostHistory")}
 								</Button>
 							</Link>
 							<Link href="/create">
-								<Button className="rounded-xl bg-[#F59E0B] font-bold text-[#0F172A] shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
+								<Button className="rounded-xl bg-[#F59E0B] font-bold text-ink shadow-amber-500/15 shadow-md hover:bg-[#D97706]">
 									<PlusCircle className="mr-2 h-4 w-4" />
 									{t("newListing")}
 								</Button>
@@ -134,7 +132,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 							{
 								label: t("statTotal"),
 								value: total,
-								color: "bg-[#EFF6FF] text-[#1E40AF]",
+								color: "bg-brand-soft text-brand",
 							},
 							{
 								label: t("statActive"),
@@ -149,7 +147,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 							{
 								label: t("statSold"),
 								value: sold,
-								color: "bg-[#F1F5F9] text-[#64748B]",
+								color: "bg-subtle text-ink-muted",
 							},
 							{
 								label: t("statExpired"),
@@ -189,7 +187,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 									<Link href={`/profile/me/listings?page=${page - 1}`}>
 										<button
 											type="button"
-											className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#475569] transition-all hover:border-[#93C5FD] hover:bg-[#F1F5F9]"
+											className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-mid transition-all hover:border-brand-line hover:bg-subtle"
 										>
 											<ChevronLeft className="h-4 w-4" />
 										</button>
@@ -198,7 +196,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 									<button
 										type="button"
 										disabled
-										className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#CBD5E1]"
+										className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-ghost"
 									>
 										<ChevronLeft className="h-4 w-4" />
 									</button>
@@ -221,7 +219,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 											p === "..." ? (
 												<span
 													key={`ellipsis-${i}`}
-													className="px-1.5 text-[#94A3B8] text-xs"
+													className="px-1.5 text-ink-faint text-xs"
 												>
 													...
 												</span>
@@ -231,8 +229,8 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 														type="button"
 														className={`flex h-9 min-w-[36px] items-center justify-center rounded-lg font-medium text-sm transition-all ${
 															p === page
-																? "bg-[#1E40AF] text-white shadow-blue-500/20 shadow-md"
-																: "border border-[#E2E8F0] bg-white text-[#475569] hover:border-[#93C5FD] hover:bg-[#F1F5F9]"
+																? "bg-brand text-white shadow-blue-500/20 shadow-md"
+																: "border border-line bg-surface text-ink-mid hover:border-brand-line hover:bg-subtle"
 														}`}
 													>
 														{p}
@@ -246,7 +244,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 									<Link href={`/profile/me/listings?page=${page + 1}`}>
 										<button
 											type="button"
-											className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#475569] transition-all hover:border-[#93C5FD] hover:bg-[#F1F5F9]"
+											className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-mid transition-all hover:border-brand-line hover:bg-subtle"
 										>
 											<ChevronRight className="h-4 w-4" />
 										</button>
@@ -255,7 +253,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 									<button
 										type="button"
 										disabled
-										className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#CBD5E1]"
+										className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-ghost"
 									>
 										<ChevronRight className="h-4 w-4" />
 									</button>
@@ -265,20 +263,18 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 					</>
 				) : (
 					/* Empty state */
-					<div className="relative overflow-hidden rounded-2xl border border-[#DBEAFE] bg-white py-16 text-center">
+					<div className="relative overflow-hidden rounded-2xl border border-brand-tint bg-surface py-16 text-center">
 						<div className="pattern-dots absolute inset-0 opacity-50" />
 						<div className="relative">
-							<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE]">
-								<Camera className="h-7 w-7 text-[#1E40AF]" />
+							<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-soft to-brand-tint">
+								<Camera className="h-7 w-7 text-brand" />
 							</div>
-							<h3 className="font-bold text-[#0F172A] text-lg">
-								{t("emptyTitle")}
-							</h3>
-							<p className="mx-auto mt-1 max-w-xs text-[#64748B] text-sm">
+							<h3 className="font-bold text-ink text-lg">{t("emptyTitle")}</h3>
+							<p className="mx-auto mt-1 max-w-xs text-ink-muted text-sm">
 								{t("emptyBody")}
 							</p>
 							<Link href="/create">
-								<Button className="mt-5 rounded-xl bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] px-6 font-bold shadow-blue-500/20 shadow-lg">
+								<Button className="mt-5 rounded-xl bg-gradient-to-r from-brand to-brand-bright px-6 font-bold shadow-blue-500/20 shadow-lg">
 									<PlusCircle className="mr-2 h-4 w-4" />
 									{t("emptyCta")}
 								</Button>

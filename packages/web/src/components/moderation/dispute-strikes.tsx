@@ -23,12 +23,12 @@ export function StrikeRow({
 	const locale = useLocale();
 	const action = useModerationDisputeAction(disputeId);
 	return (
-		<li data-status={strike.status} className="rounded-lg bg-[#F8FAFC] p-2">
+		<li data-status={strike.status} className="rounded-lg bg-canvas p-2">
 			<p>
 				<span className="font-medium">{t(`strikeKind.${strike.kind}`)}</span> ·{" "}
 				{t(`strikeStatus.${strike.status}`)}
 			</p>
-			<p className="text-[#64748B] text-xs">
+			<p className="text-ink-muted text-xs">
 				{t("strikeWeight", { weight: strike.weight })}
 				{strike.expiresAt
 					? ` · ${t("strikeExpires", {
@@ -74,7 +74,7 @@ export function DisputeStrikes({
 }) {
 	const t = useTranslations("ModerationDisputes");
 	return (
-		<section className="space-y-2 rounded-xl border border-[#E2E8F0] bg-white p-4 text-sm">
+		<section className="space-y-2 rounded-xl border border-line bg-surface p-4 text-sm">
 			<h2 className="font-semibold">{t("strikesTitle")}</h2>
 			{strikes.length ? (
 				<ul className="space-y-2">
@@ -88,7 +88,7 @@ export function DisputeStrikes({
 					))}
 				</ul>
 			) : (
-				<p className="text-[#64748B]">{t("noStrikes")}</p>
+				<p className="text-ink-muted">{t("noStrikes")}</p>
 			)}
 		</section>
 	);

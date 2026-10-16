@@ -34,7 +34,7 @@ export function SubmitPanel({
 	const tRoot = useTranslations();
 
 	return (
-		<div className="space-y-2 border-[#E2E8F0] border-t pt-4">
+		<div className="space-y-2 border-line border-t pt-4">
 			{!ready && !formValid && (
 				<div className="space-y-2">
 					<p role="alert" className="text-red-600 text-sm">
@@ -46,7 +46,7 @@ export function SubmitPanel({
 				</div>
 			)}
 			{!ready && formValid && missing.length > 0 && (
-				<p className="text-[#64748B] text-sm">
+				<p className="text-ink-muted text-sm">
 					{t("documents.missing", {
 						kinds: missing.map((kind) => t(`documentKind.${kind}`)).join(", "),
 					})}

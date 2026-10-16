@@ -33,7 +33,7 @@ export default function SettingsPage() {
 	if (authLoading) {
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
-				<Loader2 className="h-8 w-8 animate-spin text-[#1E40AF]" />
+				<Loader2 className="h-8 w-8 animate-spin text-brand" />
 			</div>
 		);
 	}
@@ -144,16 +144,14 @@ export default function SettingsPage() {
 
 	return (
 		<div className="container mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-			<h1 className="mb-6 font-bold text-2xl text-[#0F172A]">
+			<h1 className="mb-6 font-bold text-2xl text-ink">
 				{t("accountSettings")}
 			</h1>
 
 			<div className="space-y-6">
-				<Card className="border-[#E2E8F0]">
+				<Card className="border-line">
 					<CardHeader>
-						<CardTitle className="text-[#0F172A]">
-							{t("changePassword")}
-						</CardTitle>
+						<CardTitle className="text-ink">{t("changePassword")}</CardTitle>
 						<CardDescription>{t("changePasswordDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -203,7 +201,7 @@ export default function SettingsPage() {
 							<Button
 								type="submit"
 								disabled={isChangingPassword}
-								className="rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]"
+								className="rounded-xl bg-brand hover:bg-brand-strong"
 							>
 								{isChangingPassword ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -214,28 +212,22 @@ export default function SettingsPage() {
 					</CardContent>
 				</Card>
 
-				<Card className="border-[#E2E8F0]">
+				<Card className="border-line">
 					<CardHeader>
-						<CardTitle className="text-[#0F172A]">
-							{t("emailAddress")}
-						</CardTitle>
+						<CardTitle className="text-ink">{t("emailAddress")}</CardTitle>
 						<CardDescription>{t("emailDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-							<p className="text-[#64748B] text-sm">{t("currentEmail")}</p>
-							<p className="mt-1 font-medium text-[#0F172A]">
-								{currentUser.email}
-							</p>
+						<div className="rounded-xl border border-line bg-canvas p-4">
+							<p className="text-ink-muted text-sm">{t("currentEmail")}</p>
+							<p className="mt-1 font-medium text-ink">{currentUser.email}</p>
 						</div>
 					</CardContent>
 				</Card>
 
-				<Card id="phone" className="border-[#E2E8F0]">
+				<Card id="phone" className="border-line">
 					<CardHeader>
-						<CardTitle className="text-[#0F172A]">
-							{t("verifyPhoneNumber")}
-						</CardTitle>
+						<CardTitle className="text-ink">{t("verifyPhoneNumber")}</CardTitle>
 						<CardDescription>{t("verifyPhoneDesc")}</CardDescription>
 					</CardHeader>
 					<CardContent>

@@ -18,27 +18,27 @@ export function PhoneRequirement() {
 	const [dialogOpen, setDialogOpen] = useState(false);
 
 	if (isPending) {
-		return <div className="h-16 animate-pulse rounded-xl bg-[#F1F5F9]" />;
+		return <div className="h-16 animate-pulse rounded-xl bg-subtle" />;
 	}
 
 	if (!data?.isPhoneVerified) {
 		return (
-			<div className="rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] p-5">
+			<div className="rounded-xl border border-brand-tint-strong bg-brand-soft p-5">
 				<div className="flex items-start gap-3">
-					<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
-						<Smartphone className="h-5 w-5 text-[#1E40AF]" />
+					<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface">
+						<Smartphone className="h-5 w-5 text-brand" />
 					</div>
 					<div className="space-y-2">
-						<p className="font-semibold text-[#0F172A]">{t("gateTitle")}</p>
-						<p className="text-[#334155] text-sm">{t("gateBody")}</p>
+						<p className="font-semibold text-ink">{t("gateTitle")}</p>
+						<p className="text-ink-soft text-sm">{t("gateBody")}</p>
 						<button
 							type="button"
 							onClick={() => setDialogOpen(true)}
-							className="inline-flex h-10 items-center rounded-lg bg-[#1E40AF] px-4 font-semibold text-sm text-white hover:bg-[#1E3A8A]"
+							className="inline-flex h-10 items-center rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 						>
 							{t("gateCta")}
 						</button>
-						<p className="text-[#64748B] text-xs">{t("gatePrivacy")}</p>
+						<p className="text-ink-muted text-xs">{t("gatePrivacy")}</p>
 					</div>
 				</div>
 				<PhoneVerificationDialog
@@ -51,7 +51,7 @@ export function PhoneRequirement() {
 	}
 
 	return (
-		<p className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3 text-[#166534] text-sm">
+		<p className="rounded-xl border border-ok-line bg-ok-faint px-4 py-3 text-ok-ink text-sm">
 			{t("phoneVerified", { phone: maskPhone(data.phone) })}
 		</p>
 	);

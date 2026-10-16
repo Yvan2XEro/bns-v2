@@ -117,11 +117,11 @@ function ContactForm() {
 	}
 
 	return (
-		<div className="min-h-screen bg-[#F8FAFC]">
-			<section className="relative overflow-hidden bg-[#1E40AF] py-12">
+		<div className="min-h-screen bg-canvas">
+			<section className="relative overflow-hidden bg-brand py-12 dark:bg-brand-tint">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
-				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-[#3B82F6]/20 blur-3xl" />
+				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-brand-bright/20 blur-3xl" />
 				<div className="-right-20 absolute bottom-10 h-48 w-48 rounded-full bg-[#F59E0B]/15 blur-3xl" />
 				<div className="container relative mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
 					<MessageCircle className="mx-auto mb-4 h-10 w-10 text-white/80" />
@@ -133,31 +133,29 @@ function ContactForm() {
 			<div className="container mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
 				<div className="grid gap-8 lg:grid-cols-5">
 					<div className="space-y-4 lg:col-span-2">
-						<h2 className="font-bold text-[#0F172A] text-lg">
-							{t("getInTouch")}
-						</h2>
-						<p className="text-[#64748B] text-sm leading-relaxed">
+						<h2 className="font-bold text-ink text-lg">{t("getInTouch")}</h2>
+						<p className="text-ink-muted text-sm leading-relaxed">
 							{t("responseTime")}
 						</p>
 						<div className="space-y-3 pt-2">
 							{contactInfo.map((info) => (
 								<div key={info.label} className="flex items-start gap-3">
-									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#1E40AF]">
+									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
 										<info.icon className="h-4 w-4" />
 									</div>
 									<div>
-										<p className="font-medium text-[#94A3B8] text-xs">
+										<p className="font-medium text-ink-faint text-xs">
 											{info.label}
 										</p>
 										{info.href ? (
 											<a
 												href={info.href}
-												className="font-medium text-[#0F172A] text-sm hover:text-[#1E40AF]"
+												className="font-medium text-ink text-sm hover:text-brand"
 											>
 												{info.value}
 											</a>
 										) : (
-											<p className="font-medium text-[#0F172A] text-sm">
+											<p className="font-medium text-ink text-sm">
 												{info.value}
 											</p>
 										)}
@@ -168,16 +166,16 @@ function ContactForm() {
 					</div>
 
 					<div className="lg:col-span-3">
-						<div className="rounded-xl border border-[#E2E8F0] bg-white p-6">
+						<div className="rounded-xl border border-line bg-surface p-6">
 							{success ? (
 								<div className="py-8 text-center">
 									<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
 										<MessageCircle className="h-6 w-6 text-emerald-600" />
 									</div>
-									<h3 className="font-bold text-[#0F172A] text-lg">
+									<h3 className="font-bold text-ink text-lg">
 										{t("messageSent")}
 									</h3>
-									<p className="mt-1 text-[#64748B] text-sm">
+									<p className="mt-1 text-ink-muted text-sm">
 										{t("getBackSoon")}
 									</p>
 									<Button
@@ -273,7 +271,7 @@ function ContactForm() {
 									<Button
 										type="submit"
 										disabled={isLoading}
-										className="w-full rounded-xl bg-[#1E40AF] hover:bg-[#1E3A8A]"
+										className="w-full rounded-xl bg-brand hover:bg-brand-strong"
 									>
 										{isLoading ? (
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -41,10 +41,7 @@ function TeamSkeleton() {
 	return (
 		<div className="space-y-3">
 			{[0, 1, 2].map((row) => (
-				<div
-					key={row}
-					className="h-16 animate-pulse rounded-2xl bg-[#F1F5F9]"
-				/>
+				<div key={row} className="h-16 animate-pulse rounded-2xl bg-subtle" />
 			))}
 		</div>
 	);
@@ -86,9 +83,9 @@ export function TeamClient({
 		return (
 			<div
 				role="alert"
-				className="rounded-2xl border border-[#E2E8F0] bg-white px-6 py-12 text-center"
+				className="rounded-2xl border border-line bg-surface px-6 py-12 text-center"
 			>
-				<p className="font-semibold text-[#0F172A]">
+				<p className="font-semibold text-ink">
 					{resolveErrorMessage(team.error, tRoot)}
 				</p>
 				<Button className="mt-4" onClick={() => void team.refetch()}>
@@ -155,8 +152,8 @@ export function TeamClient({
 		<div className="space-y-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h1 className="font-bold text-2xl text-[#0F172A]">{t("title")}</h1>
-					<p className="text-[#64748B] text-sm">
+					<h1 className="font-bold text-2xl text-ink">{t("title")}</h1>
+					<p className="text-ink-muted text-sm">
 						{t("subtitle", {
 							shop: shopName,
 							active: view.activeCount,
@@ -168,7 +165,7 @@ export function TeamClient({
 					{canViewActivity && (
 						<Link
 							href="/seller/team/activity"
-							className="inline-flex h-10 items-center rounded-lg border border-[#E2E8F0] bg-white px-4 font-semibold text-[#0F172A] text-sm hover:border-[var(--shop-accent-border,#93C5FD)]"
+							className="inline-flex h-10 items-center rounded-lg border border-line bg-surface px-4 font-semibold text-ink text-sm hover:border-[var(--shop-accent-border,var(--c-brand-line))]"
 						>
 							{t("fullLog")}
 						</Link>
@@ -182,7 +179,7 @@ export function TeamClient({
 								{t("invite")}
 							</Button>
 							{isFull && (
-								<p className="mt-1 max-w-xs text-[#92400E] text-xs">
+								<p className="mt-1 max-w-xs text-warn-ink text-xs">
 									{t("inviteFull")}
 								</p>
 							)}
