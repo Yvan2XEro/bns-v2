@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { InstallAppButton } from "~/components/app-install/install-app-button";
+import { APP_STORE_URL, PLAY_STORE_URL } from "~/lib/app-stores";
 
 export async function Footer() {
 	const t = await getTranslations("Footer");
@@ -106,9 +108,10 @@ export async function Footer() {
 								{t("buyAndSellOnTheGo")}
 							</p>
 						</div>
-						<div className="flex items-center gap-3">
+						<div className="flex flex-wrap items-center justify-center gap-3">
+							<InstallAppButton />
 							<a
-								href="https://apps.apple.com/app/id6796297640"
+								href={APP_STORE_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex h-10 items-center gap-2 rounded-lg bg-[#0F172A] px-4 transition-opacity hover:opacity-90"
@@ -131,7 +134,7 @@ export async function Footer() {
 								</div>
 							</a>
 							<a
-								href="https://play.google.com/store/apps/details?id=com.buynsellem.mobile"
+								href={PLAY_STORE_URL}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex h-10 items-center gap-2 rounded-lg bg-[#0F172A] px-4 transition-opacity hover:opacity-90"

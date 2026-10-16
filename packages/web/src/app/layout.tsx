@@ -8,6 +8,7 @@ import { AppConfigProvider } from "~/hooks/use-app-config";
 import { AuthProvider } from "~/hooks/use-auth";
 import { ChatProvider } from "~/hooks/use-chat-client";
 import { type AppConfig, EMPTY_APP_CONFIG } from "~/lib/app-config";
+import { IOS_APP_ID } from "~/lib/app-stores";
 import { DEFAULT_PHONE_COUNTRY } from "~/lib/phone-input";
 import { serverFetch } from "~/lib/server-api";
 
@@ -50,6 +51,10 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		site: "@buynsellem",
 	},
+	// Safari on iPhone shows Apple's own "Open in the app / Get" banner.
+	itunes: { appId: IOS_APP_ID },
+	icons: { apple: "/icons/apple-touch-icon.png" },
+	appleWebApp: { title: "BuyNSellem" },
 	robots: {
 		index: true,
 		follow: true,

@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
+import { AppBanner } from "~/components/app-install/app-banner";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
 import { TabBarSpacer } from "~/components/layout/mobile-nav";
@@ -27,6 +28,7 @@ export async function PublicFrame({
 	const categories = await getNavCategories();
 	return (
 		<div className="relative flex min-h-screen flex-col">
+			<AppBanner />
 			<Header
 				novuAppId={process.env.NOVU_APPLICATION_IDENTIFIER}
 				categories={categories}
