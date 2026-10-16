@@ -10,6 +10,7 @@ import {
 	ArrowLeft,
 	Ban,
 	Circle,
+	Inbox,
 	MoreVertical,
 	Paperclip,
 	Send,
@@ -632,11 +633,11 @@ export function MessagesClient({
 				>
 					{selectedConversation ? (
 						<>
-							<div className="mb-4 flex items-center gap-3 border-[#E2E8F0] border-b pb-4">
+							<div className="mb-4 flex min-w-0 items-center gap-3 border-[#E2E8F0] border-b pb-4">
 								<Button
 									variant="ghost"
 									size="icon"
-									className="md:hidden"
+									className="shrink-0 md:hidden"
 									onClick={() => selectConversation(null)}
 								>
 									<ArrowLeft className="h-5 w-5" />
@@ -647,7 +648,7 @@ export function MessagesClient({
 									const other = getOtherParticipant(selectedConversation);
 									return (
 										<>
-											<div className="relative">
+											<div className="relative shrink-0">
 												<Avatar>
 													<AvatarImage src={header.logoUrl ?? undefined} />
 													<AvatarFallback className="bg-[#1E40AF] font-semibold text-white text-xs">
@@ -658,35 +659,27 @@ export function MessagesClient({
 													<Circle className="-bottom-0.5 -right-0.5 absolute h-3 w-3 fill-green-500 text-green-500" />
 												)}
 											</div>
-											<div className="flex-1">
-												<div className="flex items-center gap-2">
-													<p className="font-medium text-[#0F172A]">
-														{header.title || "Unknown"}
+											<div className="min-w-0 flex-1">
+												<div className="flex min-w-0 items-center gap-2">
+													<p className="truncate font-medium text-[#0F172A]">
+														{header.title || t("unknownContact")}
 													</p>
 													{chip && (
-														<span className="rounded bg-[#EFF6FF] px-1.5 py-0.5 font-medium text-[#1E40AF] text-[10px]">
+														<span className="shrink-0 rounded bg-[#EFF6FF] px-1.5 py-0.5 font-medium text-[#1E40AF] text-[10px]">
 															{t("shopChip")}
 														</span>
 													)}
 												</div>
 												{header.subtitle && (
-													<p className="text-[#64748B] text-xs">
+													<p className="truncate text-[#64748B] text-xs">
 														{header.subtitle}
 													</p>
 												)}
 												{selectedConversation.listing && (
-													<p className="text-[#64748B] text-xs">
+													<p className="truncate text-[#64748B] text-xs">
 														Re:{" "}
 														{(selectedConversation.listing as Listing).title}
 													</p>
-												)}
-												{chip && (
-													<Link
-														href={`/seller/messages?conversation=${selectedConversation.id}`}
-														className="text-[#1E40AF] text-xs hover:underline"
-													>
-														{t("openInShopInbox")}
-													</Link>
 												)}
 											</div>
 										</>
@@ -694,11 +687,26 @@ export function MessagesClient({
 								})()}
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button variant="ghost" size="icon">
+										<Button
+											variant="ghost"
+											size="icon"
+											className="shrink-0"
+											aria-label={t("conversationMenu")}
+										>
 											<MoreVertical className="h-5 w-5 text-[#64748B]" />
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="end">
+										{showsShopChip(selectedConversation) && (
+											<DropdownMenuItem asChild>
+												<Link
+													href={`/seller/messages?conversation=${selectedConversation.id}`}
+												>
+													<Inbox className="mr-2 h-4 w-4" />
+													{t("openInShopInbox")}
+												</Link>
+											</DropdownMenuItem>
+										)}
 										{(() => {
 											const other = getOtherParticipant(selectedConversation);
 											const blocked = other ? blockedIds.has(other.id) : false;

@@ -2600,6 +2600,8 @@
 		"switchShop": "Switch shop"
 	},
 	"Messages": {
+		"unknownContact": "Unknown contact",
+		"conversationMenu": "Conversation options",
 		"shopChip": "Shop",
 		"openInShopInbox": "Open in shop inbox",
 		"formerMember": "Former member",
