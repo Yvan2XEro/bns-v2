@@ -2090,20 +2090,8 @@
 		"noShopTitle": "You have no shop yet",
 		"noShopSubtitle": "Open a shop to sell with a page you can share.",
 		"createdToday": "Created today",
-		"welcome": "Welcome, {{name}}",
-		"welcomeBody": "{{shop}} is live. Fill it in a few minutes.",
-		"getStarted": "Getting started",
-		"stepLogo": "Add the logo",
-		"stepLogoBody": "Buyers recognise your shop at a glance",
-		"stepLogoDone": "Done · visible on your page",
-		"stepProduct": "Add a first product",
-		"stepProductBody": "Photos, variants and stock",
 		"stepMove": "Move my listings",
-		"stepMoveBody_one": "{{count}} personal listing to bring in",
-		"stepMoveBody": "{{count}} personal listings to bring in",
-		"stepShare": "Share the link",
-		"stepShareBody": "WhatsApp, Facebook or SMS",
-		"add": "Add",
+		"welcome": "Welcome, {{name}}",
 		"manage": "Manage my shop",
 		"tileCatalogue": "Catalogue",
 		"tileCatalogueBody_one": "{{count}} product · {{drafts}} draft(s)",
@@ -4349,5 +4337,180 @@
 		"valuesCount": "Each option needs 1 to {{max}} values.",
 		"fixStep": "Some fields need your attention before you continue.",
 		"serverRefused": "Some fields were refused. They are highlighted."
+	},
+	"sellerHome": {
+		"metaSetup": "A few steps and your shop is ready to sell",
+		"metaLaunch": "Your shop is ready: let's find your first buyers",
+		"metaActive": "Nothing to handle right now. A good moment to promote your products.",
+		"welcomeBody": "{{shop}} is live. Complete it in a few minutes so buyers trust it.",
+		"checklistTitle": "First steps",
+		"readyTitle": "Your shop is ready",
+		"readyBody": "The essentials are done. These options make your shop even more convincing.",
+		"further": "Going further",
+		"hideChecklist": "Hide this list",
+		"collapsed_one": "Setup: {{count}} step left",
+		"collapsed": "Setup: {{count}} steps left",
+		"locked": "For the owner or a manager",
+		"add": "Add",
+		"part": {
+			"logo": "logo",
+			"banner": "banner",
+			"description": "description"
+		},
+		"step": {
+			"created": {
+				"title": "Shop created",
+				"body": "Your public page already exists",
+				"done": "Your public page already exists"
+			},
+			"profile": {
+				"title": "Complete your profile",
+				"body": "A logo, banner and description build trust",
+				"missing": "Missing: {{parts}}",
+				"done": "Logo, banner and description in place"
+			},
+			"product": {
+				"title": "Publish a first product",
+				"body": "Photos, price and stock: buyers can order",
+				"drafts_one": "{{count}} draft to finish and publish",
+				"drafts": "{{count}} drafts to finish and publish",
+				"done": "Your catalogue is live"
+			},
+			"delivery": {
+				"title": "Choose how you deliver",
+				"body": "Delivery zones or in-store pickup",
+				"done": "Delivery or pickup set up"
+			},
+			"payout": {
+				"title": "Add your payout account",
+				"body": "To receive the money from protected payments",
+				"pending": "Account being checked",
+				"done": "Payout account active"
+			},
+			"verify": {
+				"title": "Verify your identity",
+				"body": "« Identity verified » badge and protected payment",
+				"pending": "Request under review",
+				"done": "Identity verified"
+			},
+			"brand": {
+				"title": "Pick your shop colour",
+				"body": "Your page and seller space in your colours",
+				"done": "Colour picked"
+			},
+			"move": {
+				"title": "Move my listings",
+				"body_one": "{{count}} personal listing to bring into the shop",
+				"body": "{{count}} personal listings to bring into the shop",
+				"done": "Nothing to move"
+			}
+		},
+		"launchTitle": "Land your first sale",
+		"launchBody": "A shop gets visits once people hear about it. Start here:",
+		"launch": {
+			"shareWhatsapp": {
+				"title": "Share on WhatsApp",
+				"body": "Send the link to your contacts and put it in your status"
+			},
+			"boost": {
+				"title": "Boost a product",
+				"body": "It goes « Featured », at the top of results"
+			},
+			"addProducts": {
+				"title": "Add more products",
+				"body": "More products, more chances to be found"
+			},
+			"verify": {
+				"title": "Get your identity verified",
+				"body": "The badge reassures buyers who don't know you yet"
+			},
+			"addWhatsapp": {
+				"title": "Add your WhatsApp number",
+				"body": "Buyers like to ask a question before buying"
+			},
+			"replyFast": {
+				"title": "Reply fast",
+				"body": "Your response time shows on your page"
+			}
+		},
+		"moreShare": "Other ways to share",
+		"shareMessage": "Check out my shop {{shop}} on BuyNSellem: {{url}}",
+		"tipLabel": "Did you know?",
+		"tipDismiss": "Got it",
+		"tip": {
+			"firstPhoto": {
+				"title": "The first photo makes the sale",
+				"body": "Daylight, the whole item, a plain background. Then add close-ups and any defects.",
+				"action": "Open my catalogue"
+			},
+			"whatsappStatus": {
+				"title": "Your WhatsApp status is a shop window",
+				"body": "Post your shop link there: your contacts see it for 24 hours.",
+				"action": "Share on WhatsApp"
+			},
+			"responseTime": {
+				"title": "Buyers see how fast you reply",
+				"body": "It shows on your page. A quick reply reassures buyers who hesitate.",
+				"action": "Open messages"
+			},
+			"boost": {
+				"title": "A boost puts a product forward",
+				"body": "A boosted product shows as « Featured », at the top of results, for the period you pick.",
+				"action": "Boost a product"
+			},
+			"verifiedBadge": {
+				"title": "The « Identity verified » badge reassures",
+				"body": "It also unlocks protected payment, a team and resale.",
+				"action": "Verify my identity"
+			},
+			"brandColor": {
+				"title": "Your shop in your colours",
+				"body": "Pick a colour: it dresses your public page and your seller space.",
+				"action": "Pick a colour"
+			},
+			"resale": {
+				"title": "Sell other shops' products too",
+				"body": "The resale programme adds products from verified suppliers to your catalogue.",
+				"action": "Explore resale"
+			},
+			"stockAlerts": {
+				"title": "Don't miss a sale for lack of stock",
+				"body": "The « Low stock » filter lists what to restock before it runs out.",
+				"action": "See low stock"
+			}
+		}
+	},
+	"sellerGuide": {
+		"title": "Seller guide",
+		"entryBody": "The basics of selling well, in 5 minutes",
+		"intro": "What you need to launch your shop and grow it. Each part leads to the screen it describes.",
+		"helpCenter": "Another question? Open help",
+		"sections": {
+			"setup": {
+				"title": "Set up your shop",
+				"body": "A logo, a banner and a clear description make the first impression. Then publish your products with good photos, a fair price and up-to-date stock, and say how you deliver.",
+				"action": "Open the profile"
+			},
+			"visibility": {
+				"title": "Get noticed",
+				"body": "Share your shop link on WhatsApp, in your groups and your status. A boost puts a product at the top of results. The faster you reply, the more buyers trust you.",
+				"action": "Share my shop"
+			},
+			"orders": {
+				"title": "Handle orders",
+				"body": "Accept an order quickly, prepare it, then mark it shipped: the buyer is told at each step. The dashboard always shows what is waiting for you.",
+				"action": "See orders"
+			},
+			"payments": {
+				"title": "Get paid",
+				"body": "With cash on delivery, you collect at handover. With protected payment, the money reaches your payout account once the order is delivered.",
+				"action": "See payments"
+			},
+			"trust": {
+				"title": "Earn trust",
+				"body": "Each verification level adds a badge to your page: phone, identity, business. Badges reassure buyers and unlock new features.",
+				"action": "See verification"
+			}
+		}
 	}
 }

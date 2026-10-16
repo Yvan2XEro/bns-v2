@@ -2093,20 +2093,8 @@
 		"noShopTitle": "Vous n'avez pas encore de boutique",
 		"noShopSubtitle": "Ouvrez une boutique pour vendre avec une page à partager.",
 		"createdToday": "Créée aujourd'hui",
-		"welcome": "Bienvenue, {{name}}",
-		"welcomeBody": "{{shop}} est en ligne. Remplissez-la en quelques minutes.",
-		"getStarted": "Pour bien démarrer",
-		"stepLogo": "Ajouter le logo",
-		"stepLogoBody": "Les acheteurs reconnaissent votre boutique d'un coup d'œil",
-		"stepLogoDone": "Fait · visible sur votre page",
-		"stepProduct": "Ajouter un premier produit",
-		"stepProductBody": "Photos, variantes et stock",
 		"stepMove": "Transférer mes annonces",
-		"stepMoveBody_one": "{{count}} annonce personnelle à reprendre",
-		"stepMoveBody": "{{count}} annonces personnelles à reprendre",
-		"stepShare": "Partager le lien",
-		"stepShareBody": "WhatsApp, Facebook ou SMS",
-		"add": "Ajouter",
+		"welcome": "Bienvenue, {{name}}",
 		"manage": "Gérer ma boutique",
 		"tileCatalogue": "Catalogue",
 		"tileCatalogueBody_one": "{{count}} produit · {{drafts}} brouillon(s)",
@@ -4352,5 +4340,180 @@
 		"valuesCount": "Chaque option compte de 1 à {{max}} valeurs.",
 		"fixStep": "Certains champs sont à corriger avant de continuer.",
 		"serverRefused": "Certains champs ont été refusés. Ils sont signalés en rouge."
+	},
+	"sellerHome": {
+		"metaSetup": "Quelques étapes et votre boutique est prête à vendre",
+		"metaLaunch": "Votre boutique est prête : allons chercher vos premiers clients",
+		"metaActive": "Rien à traiter pour le moment. Un bon moment pour faire connaître vos produits.",
+		"welcomeBody": "{{shop}} est en ligne. Complétez-la en quelques minutes pour inspirer confiance.",
+		"checklistTitle": "Premiers pas",
+		"readyTitle": "Votre boutique est prête",
+		"readyBody": "L'essentiel est fait. Ces options rendent votre boutique encore plus convaincante.",
+		"further": "Pour aller plus loin",
+		"hideChecklist": "Masquer cette liste",
+		"collapsed_one": "Configuration : {{count}} étape restante",
+		"collapsed": "Configuration : {{count}} étapes restantes",
+		"locked": "À faire par le propriétaire ou un gérant",
+		"add": "Ajouter",
+		"part": {
+			"logo": "le logo",
+			"banner": "la bannière",
+			"description": "la description"
+		},
+		"step": {
+			"created": {
+				"title": "Boutique créée",
+				"body": "Votre page publique existe déjà",
+				"done": "Votre page publique existe déjà"
+			},
+			"profile": {
+				"title": "Compléter le profil",
+				"body": "Logo, bannière et description donnent confiance",
+				"missing": "Il manque {{parts}}",
+				"done": "Logo, bannière et description en place"
+			},
+			"product": {
+				"title": "Publier un premier produit",
+				"body": "Photos, prix et stock : les acheteurs peuvent commander",
+				"drafts_one": "{{count}} brouillon à terminer et publier",
+				"drafts": "{{count}} brouillons à terminer et publier",
+				"done": "Votre catalogue est en ligne"
+			},
+			"delivery": {
+				"title": "Choisir comment livrer",
+				"body": "Zones de livraison ou retrait en boutique",
+				"done": "Livraison ou retrait configuré"
+			},
+			"payout": {
+				"title": "Ajouter le compte de versement",
+				"body": "Pour recevoir l'argent des paiements protégés",
+				"pending": "Compte en cours de vérification",
+				"done": "Compte de versement actif"
+			},
+			"verify": {
+				"title": "Vérifier votre identité",
+				"body": "Badge « Identité vérifiée » et paiement protégé",
+				"pending": "Demande en cours d'examen",
+				"done": "Identité vérifiée"
+			},
+			"brand": {
+				"title": "Choisir la couleur de la boutique",
+				"body": "Votre page et votre espace vendeur à vos couleurs",
+				"done": "Couleur choisie"
+			},
+			"move": {
+				"title": "Transférer mes annonces",
+				"body_one": "{{count}} annonce personnelle à reprendre dans la boutique",
+				"body": "{{count}} annonces personnelles à reprendre dans la boutique",
+				"done": "Rien à transférer"
+			}
+		},
+		"launchTitle": "Décrochez votre première vente",
+		"launchBody": "Une boutique reçoit des visites quand on la fait connaître. Commencez par ici :",
+		"launch": {
+			"shareWhatsapp": {
+				"title": "Partager sur WhatsApp",
+				"body": "Envoyez le lien à vos contacts et mettez-le dans votre statut"
+			},
+			"boost": {
+				"title": "Booster un produit",
+				"body": "Il passe « À la une », en tête des résultats"
+			},
+			"addProducts": {
+				"title": "Ajouter d'autres produits",
+				"body": "Plus de produits, plus de chances d'être trouvé"
+			},
+			"verify": {
+				"title": "Faire vérifier votre identité",
+				"body": "Le badge rassure les acheteurs qui ne vous connaissent pas encore"
+			},
+			"addWhatsapp": {
+				"title": "Ajouter votre numéro WhatsApp",
+				"body": "Les acheteurs aiment poser une question avant d'acheter"
+			},
+			"replyFast": {
+				"title": "Répondre vite",
+				"body": "Votre délai de réponse s'affiche sur votre page"
+			}
+		},
+		"moreShare": "Autres façons de partager",
+		"shareMessage": "Découvrez ma boutique {{shop}} sur BuyNSellem : {{url}}",
+		"tipLabel": "Le saviez-vous ?",
+		"tipDismiss": "J'ai compris",
+		"tip": {
+			"firstPhoto": {
+				"title": "La première photo fait la vente",
+				"body": "Lumière du jour, produit entier, fond simple. Ajoutez ensuite les détails et les éventuels défauts.",
+				"action": "Voir mon catalogue"
+			},
+			"whatsappStatus": {
+				"title": "Votre statut WhatsApp est une vitrine",
+				"body": "Publiez-y le lien de votre boutique : vos contacts le voient pendant 24 heures.",
+				"action": "Partager sur WhatsApp"
+			},
+			"responseTime": {
+				"title": "Les acheteurs voient votre délai de réponse",
+				"body": "Il s'affiche sur votre page. Une réponse rapide rassure ceux qui hésitent.",
+				"action": "Ouvrir les messages"
+			},
+			"boost": {
+				"title": "Un boost met un produit en avant",
+				"body": "Le produit boosté apparaît « À la une », en tête des résultats, pendant la durée choisie.",
+				"action": "Booster un produit"
+			},
+			"verifiedBadge": {
+				"title": "Le badge « Identité vérifiée » rassure",
+				"body": "Il débloque aussi le paiement protégé, l'équipe et la revente.",
+				"action": "Vérifier mon identité"
+			},
+			"brandColor": {
+				"title": "Votre boutique à vos couleurs",
+				"body": "Choisissez une couleur : elle habille votre page publique et votre espace vendeur.",
+				"action": "Choisir une couleur"
+			},
+			"resale": {
+				"title": "Vendez aussi les produits d'autres boutiques",
+				"body": "Le programme de revente ajoute à votre catalogue des produits de fournisseurs vérifiés.",
+				"action": "Découvrir la revente"
+			},
+			"stockAlerts": {
+				"title": "Ne ratez pas une vente faute de stock",
+				"body": "Le filtre « Stock bas » liste les produits à réapprovisionner avant la rupture.",
+				"action": "Voir le stock bas"
+			}
+		}
+	},
+	"sellerGuide": {
+		"title": "Guide du vendeur",
+		"entryBody": "Les bases pour bien vendre, en 5 minutes",
+		"intro": "L'essentiel pour lancer votre boutique et la faire grandir. Chaque partie mène à l'écran concerné.",
+		"helpCenter": "Une autre question ? Ouvrir l'aide",
+		"sections": {
+			"setup": {
+				"title": "Préparer votre boutique",
+				"body": "Un logo, une bannière et une description claire font la première impression. Publiez ensuite vos produits avec de bonnes photos, un prix juste et un stock à jour, puis indiquez comment vous livrez.",
+				"action": "Ouvrir le profil"
+			},
+			"visibility": {
+				"title": "Vous faire connaître",
+				"body": "Partagez le lien de votre boutique sur WhatsApp, dans vos groupes et votre statut. Un boost met un produit en tête des résultats. Plus vous répondez vite, plus les acheteurs vous font confiance.",
+				"action": "Partager ma boutique"
+			},
+			"orders": {
+				"title": "Traiter les commandes",
+				"body": "Acceptez une commande rapidement, préparez-la puis marquez-la expédiée : l'acheteur est informé à chaque étape. Le tableau de bord montre toujours ce qui vous attend.",
+				"action": "Voir les commandes"
+			},
+			"payments": {
+				"title": "Être payé",
+				"body": "Avec le paiement à la livraison, vous encaissez à la remise. Avec le paiement protégé, l'argent arrive sur votre compte de versement une fois la commande livrée.",
+				"action": "Voir les paiements"
+			},
+			"trust": {
+				"title": "Gagner la confiance",
+				"body": "Chaque niveau de vérification ajoute un badge à votre page : téléphone, identité, entreprise. Les badges rassurent les acheteurs et débloquent de nouvelles fonctions.",
+				"action": "Voir la vérification"
+			}
+		}
 	}
 }

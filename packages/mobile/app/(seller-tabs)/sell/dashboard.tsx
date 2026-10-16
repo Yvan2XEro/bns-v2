@@ -12,7 +12,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
+import { SellerChecklistCard } from "@/src/components/shop/SellerChecklistCard";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
+import {
+	SellerGuideLink,
+	SellerLaunchCard,
+	SellerTipCard,
+} from "@/src/components/shop/SellerHomeCards";
 import {
 	HUB_HEADER_BG,
 	SellerHubBar,
@@ -22,12 +28,15 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { SellerTabRootContext } from "@/src/contexts/SellerTabRootContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useSellerHomeActions } from "@/src/hooks/useSellerHomeActions";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { useSellerPayments } from "@/src/hooks/useSellerPayments";
+import { useSellerHome } from "@/src/hooks/useShopOnboarding";
 import { useMyShop } from "@/src/hooks/useShops";
 import { type DashboardTaskKey, dashboardTasks } from "@/src/lib/appMode";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
+import { launchTarget, stepTarget, tipTarget } from "@/src/lib/sellerHome";
 import { sellerPaymentsActionCount } from "@/src/lib/sellerPayments";
 import { showsOrdersTile } from "@/src/lib/sellerTiles";
 import { can } from "@/src/lib/shopRoles";
@@ -63,6 +72,11 @@ function SellerDashboard() {
 	const payments = useSellerPayments(
 		readsPayments ? (shop?.id ?? undefined) : undefined,
 	);
+	const home = useSellerHome(shop?.id);
+	const actions = useSellerHomeActions({
+		name: shop?.name ?? "",
+		handle: shop?.handle ?? "",
+	});
 
 	if (mine.isLoading) {
 		return (
@@ -101,6 +115,21 @@ function SellerDashboard() {
 	});
 	const total = tasks.reduce((sum, task) => sum + task.count, 0);
 	const firstName = user?.name?.split(" ")[0] ?? "";
+	const model = home.model;
+	// Until the facts arrive (or if they cannot), the screen is what it was:
+	// tasks and insights. Guidance is added, never waited on.
+	const stage = model?.stage ?? "active";
+	const meta =
+		total > 0
+			? t("sellerMode.actionsWaiting", { count: total })
+			: !model
+				? t("sellerMode.noActions")
+				: stage === "setup"
+					? t("sellerHome.metaSetup")
+					: stage === "launch"
+						? t("sellerHome.metaLaunch")
+						: t("sellerHome.metaActive");
+	const tipOpen = model?.tip != null ? tipTarget(model.tip, model.facts) : null;
 
 	const taskMeta: Record<
 		DashboardTaskKey,
@@ -176,6 +205,7 @@ function SellerDashboard() {
 						refreshing={mine.isRefetching}
 						onRefresh={() => {
 							void mine.refetch();
+							void home.query.refetch();
 							if (readsOrders) void orders.refetch();
 							if (readsPayments) void payments.refetch();
 						}}
@@ -187,11 +217,7 @@ function SellerDashboard() {
 					<Text style={[styles.hello, { color: c.text }]}>
 						{t("sellerMode.greeting", { name: firstName })}
 					</Text>
-					<Text style={[styles.meta, { color: c.muted }]}>
-						{total > 0
-							? t("sellerMode.actionsWaiting", { count: total })
-							: t("sellerMode.noActions")}
-					</Text>
+					<Text style={[styles.meta, { color: c.muted }]}>{meta}</Text>
 				</View>
 
 				{tasks.length > 0 ? (
@@ -235,13 +261,46 @@ function SellerDashboard() {
 					</View>
 				) : null}
 
-				{role ? (
+				{model && model.mode !== "hidden" ? (
+					<SellerChecklistCard
+						steps={model.steps}
+						mode={model.mode}
+						onStep={(step) => actions.open(stepTarget(step))}
+						onDismiss={home.dismissChecklist}
+					/>
+				) : null}
+
+				{model && model.actions.length > 0 ? (
+					<SellerLaunchCard
+						actions={model.actions}
+						onAction={(action) =>
+							actions.open(launchTarget(action, model.facts))
+						}
+						onMoreShare={actions.shareAny}
+					/>
+				) : null}
+
+				{model?.tip ? (
+					<SellerTipCard
+						tip={model.tip}
+						onOpen={
+							tipOpen && tipOpen.kind !== "none"
+								? () => actions.open(tipOpen)
+								: null
+						}
+						onDismiss={() => model.tip && home.dismissTip(model.tip)}
+					/>
+				) : null}
+
+				{role && stage !== "setup" ? (
 					<SellerInsightsSummary
 						enabled={insightsEnabled}
 						role={role}
 						shopId={shop.id}
 					/>
 				) : null}
+
+				<SellerGuideLink onPress={() => router.push("/seller/guide")} />
 			</ScrollView>
 		</SafeAreaView>
 	);

@@ -33,13 +33,15 @@ import { useShopTheme } from "@/src/components/shop/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useIsSellerTabRoot } from "@/src/contexts/SellerTabRootContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
+import { useSellerHomeActions } from "@/src/hooks/useSellerHomeActions";
 import { useSellerOrders } from "@/src/hooks/useSellerOrders";
 import { useSellerPayments } from "@/src/hooks/useSellerPayments";
+import { useSellerHome } from "@/src/hooks/useShopOnboarding";
 import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
-import { buildChecklistSteps } from "@/src/lib/sellerChecklist";
+import { stepTarget } from "@/src/lib/sellerHome";
 import { sellerPaymentsActionCount } from "@/src/lib/sellerPayments";
 import { showsOrdersTile, visibleSellerTiles } from "@/src/lib/sellerTiles";
 import { shopUrl } from "@/src/lib/shopHandle";
@@ -198,39 +200,13 @@ function SellerHubContent({
 		const url = shopUrl(shop.handle, webUrl);
 		Share.share({ message: `${shop.name}\n${url}`, url });
 	};
-	const productCount = counts.activeProducts + counts.draftProducts;
-	const firstRun = productCount === 0;
 	const createdToday =
 		new Date(shop.createdAt).toDateString() === new Date().toDateString();
-
-	const steps = buildChecklistSteps({
-		hasLogo: Boolean(shop.logo),
-		productCount,
-		personalListings: counts.personalListings,
-	});
-	const stepMeta = {
-		logo: {
-			title: t("seller.stepLogo"),
-			body: shop.logo ? t("seller.stepLogoDone") : t("seller.stepLogoBody"),
-			onPress: () => router.push("/shop/manage"),
-		},
-		product: {
-			title: t("seller.stepProduct"),
-			body: t("seller.stepProductBody"),
-			action: t("seller.add"),
-			onPress: () => router.push("/seller/product/new"),
-		},
-		move: {
-			title: t("seller.stepMove"),
-			body: t("seller.stepMoveBody", { count: counts.personalListings }),
-			onPress: () => router.push("/shop/move-listings"),
-		},
-		share: {
-			title: t("seller.stepShare"),
-			body: t("seller.stepShareBody"),
-			onPress: share,
-		},
-	};
+	// In seller mode the dashboard tab carries the checklist; this screen
+	// shows it only when reached outside the tabs, and only while setting up.
+	const home = useSellerHome(tabRoot ? undefined : shop.id);
+	const homeActions = useSellerHomeActions(shop);
+	const setup = home.model?.stage === "setup" ? home.model : null;
 
 	/**
 	 * Icon, copy and destination for every tile `visibleSellerTiles` can
@@ -449,16 +425,17 @@ function SellerHubContent({
 
 					{role ? (
 						<>
-							{firstRun ? (
+							{setup ? (
 								<SellerChecklistCard
-									badge={shop.badge}
-									createdToday={createdToday}
-									ownerFirstName={
-										shop.owner.name.split(" ")[0] ?? shop.owner.name
-									}
-									shopName={shop.name}
-									steps={steps}
-									stepMeta={stepMeta}
+									steps={setup.steps}
+									mode="full"
+									welcome={{
+										badge: shop.badge,
+										createdToday,
+										firstName: shop.owner.name.split(" ")[0] ?? shop.owner.name,
+										shopName: shop.name,
+									}}
+									onStep={(step) => homeActions.open(stepTarget(step))}
 								/>
 							) : null}
 
