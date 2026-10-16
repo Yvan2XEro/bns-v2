@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
-import { router } from "expo-router";
+import { router, useIsFocused } from "expo-router";
 import { useEffect, useSyncExternalStore } from "react";
 import {
 	APP_MODE_STORAGE_KEY,

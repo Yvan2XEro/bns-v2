@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { NavigationRouteContext } from "@react-navigation/native";
 import { usePathname } from "expo-router";
 import {
 	createContext,
@@ -67,13 +66,13 @@ export function useActiveShopBrandTheme(): ShopTheme | null {
 	return useContext(SellerBrandContext);
 }
 
-const SELLER_ROUTE = /^(seller|shop)\//;
+const SELLER_ROUTE = /^\/(seller|shop)\//;
 
 /** The active shop's theme on a seller screen, null anywhere else. */
 export function useSellerBrandTheme(): ShopTheme | null {
 	const theme = useContext(SellerBrandContext);
 	const inSellerTabs = useContext(SellerAreaContext);
-	const route = useContext(NavigationRouteContext);
+	const pathname = usePathname();
 	if (!theme) return null;
-	return inSellerTabs || SELLER_ROUTE.test(route?.name ?? "") ? theme : null;
+	return inSellerTabs || SELLER_ROUTE.test(pathname ?? "") ? theme : null;
 }
