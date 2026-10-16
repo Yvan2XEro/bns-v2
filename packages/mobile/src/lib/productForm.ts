@@ -258,6 +258,19 @@ export function toProductInput(
 	};
 }
 
+/** One stored image, whichever shape the API sent it in. */
+function toProductImage(
+	entry: NonNullable<ProductDetailResponse["product"]["images"]>[number],
+): ProductImage | null {
+	if ("image" in entry) {
+		const image = entry.image;
+		if (typeof image === "object" && image)
+			return { id: String(image.id), uri: image.url ?? "" };
+		return typeof image === "string" ? { id: image, uri: "" } : null;
+	}
+	return entry.id ? { id: entry.id, uri: entry.url ?? "" } : null;
+}
+
 export function fromProductDetail(
 	detail: ProductDetailResponse,
 ): ProductFormState {
@@ -274,13 +287,7 @@ export function fromProductDetail(
 			product.attributes ?? {},
 		),
 		images: (product.images ?? [])
-			.map((entry) =>
-				typeof entry.image === "object" && entry.image
-					? { id: String(entry.image.id), uri: entry.image.url ?? "" }
-					: typeof entry.image === "string"
-						? { id: entry.image, uri: "" }
-						: null,
-			)
+			.map(toProductImage)
 			.filter((image): image is ProductImage => image !== null),
 		hasVariants: options.length > 0,
 		options,

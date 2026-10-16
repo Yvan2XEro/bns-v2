@@ -433,6 +433,34 @@ describe("wizard step gating", () => {
 });
 
 describe("fromProductDetail", () => {
+	test("keeps the images the product detail route sends as plain media", () => {
+		// GET /api/products/{id}/detail flattens each image to { id, url }; the
+		// editor used to read only `{ image }` rows and showed none of them.
+		const form = fromProductDetail({
+			role: "owner",
+			listing: null,
+			movements: [],
+			product: {
+				id: "p1",
+				shop: "s1",
+				title: "Canapé",
+				category: "c1",
+				images: [
+					{ id: "m1", url: "/api/media/file/a.jpg", thumbnailURL: null },
+					{ id: "m2", url: null },
+				],
+				status: "active",
+				updatedAt: "",
+				createdAt: "",
+			},
+			variants: [],
+		});
+		expect(form.images).toEqual([
+			{ id: "m1", uri: "/api/media/file/a.jpg" },
+			{ id: "m2", uri: "" },
+		]);
+	});
+
 	test("maps variants, options and images back into the form", () => {
 		const form = fromProductDetail({
 			role: "owner",

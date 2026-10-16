@@ -828,7 +828,14 @@ export interface ProductDoc {
 	description?: string | null;
 	category: Category | string;
 	attributes?: Record<string, string | number | boolean> | null;
-	images?: { id?: string; image: Media | string }[];
+	/**
+	 * The raw collection gives `{ image }` rows; the product detail route
+	 * gives the media themselves (`{ id, url }`). Both reach the editor.
+	 */
+	images?: Array<
+		| { id?: string; image: Media | string }
+		| { id: string; url: string | null; thumbnailURL?: string | null }
+	>;
 	status: ProductStatus;
 	options?: { name: string; values: string[] }[];
 	delivery?: {
