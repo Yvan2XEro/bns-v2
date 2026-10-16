@@ -2573,6 +2573,7 @@
 		"locked": "Seuls le propriétaire et les managers peuvent voir le journal d'activité."
 	},
 	"Inbox": {
+		"typing": "En train d’écrire…",
 		"title": "Messagerie",
 		"filterAll": "Toutes",
 		"filterUnassigned": "Non attribuées",
@@ -2600,6 +2601,8 @@
 		"switchShop": "Changer de boutique"
 	},
 	"Messages": {
+		"someone": "Quelqu’un",
+		"isTyping": "{names} est en train d’écrire…",
 		"unknownContact": "Contact inconnu",
 		"conversationMenu": "Options de la conversation",
 		"shopChip": "Boutique",

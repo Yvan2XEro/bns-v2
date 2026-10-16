@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { OrderHeaderCard } from "~/components/chat/order-header-card";
 import { SystemChip } from "~/components/chat/system-chip";
 import { isSystemMessage } from "~/lib/system-message";
@@ -21,11 +22,15 @@ export function ThreadMessages({
 	messages,
 	viewerId,
 	isLoading,
+	typing = false,
 }: {
 	messages: Message[] | undefined;
 	viewerId: string;
 	isLoading: boolean;
+	/** Someone else in the thread is typing. */
+	typing?: boolean;
 }) {
+	const t = useTranslations("Inbox");
 	if (isLoading) return null;
 
 	return (
@@ -60,6 +65,25 @@ export function ThreadMessages({
 					</div>
 				);
 			})}
+			<div aria-live="polite" className="min-h-0">
+				{typing && (
+					<div className="flex justify-start">
+						<span className="sr-only">{t("typing")}</span>
+						<div
+							aria-hidden="true"
+							className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-[#F1F5F9] px-4 py-3"
+						>
+							{[0, 150, 300].map((delay) => (
+								<span
+									key={delay}
+									className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#94A3B8] motion-reduce:animate-none"
+									style={{ animationDelay: `${delay}ms` }}
+								/>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

@@ -531,10 +531,10 @@ export function MessagesClient({
 				const p = selectedConversation?.participants?.find(
 					(u) => String(u.id) === id,
 				);
-				return p?.name || "Someone";
+				return p?.name || t("someone");
 			});
 		if (names.length === 0) return null;
-		return `${names.join(", ")} is typing...`;
+		return t("isTyping", { names: names.join(", ") });
 	}
 
 	return (

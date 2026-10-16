@@ -2573,6 +2573,7 @@
 		"locked": "Only the owner and managers can see the activity log."
 	},
 	"Inbox": {
+		"typing": "Typing…",
 		"title": "Inbox",
 		"filterAll": "All",
 		"filterUnassigned": "Unassigned",
@@ -2600,6 +2601,8 @@
 		"switchShop": "Switch shop"
 	},
 	"Messages": {
+		"someone": "Someone",
+		"isTyping": "{names} is typing…",
 		"unknownContact": "Unknown contact",
 		"conversationMenu": "Conversation options",
 		"shopChip": "Shop",

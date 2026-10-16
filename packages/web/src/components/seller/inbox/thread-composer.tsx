@@ -30,6 +30,7 @@ export function ThreadComposer({ conversationId }: { conversationId: string }) {
 			return;
 		}
 		try {
+			chatClient.stopTyping(conversationId);
 			chatClient.sendMessage({ conversationId, content: values.content });
 			reset();
 		} catch {
@@ -43,7 +44,14 @@ export function ThreadComposer({ conversationId }: { conversationId: string }) {
 			className="flex items-center gap-2 border-[#E2E8F0] border-t p-3"
 		>
 			<Input
-				{...register("content")}
+				{...register("content", {
+					// The SDK stops the indicator itself after 3 s without a keystroke.
+					onChange: (event) => {
+						if (!chatClient) return;
+						if (event.target.value) chatClient.startTyping(conversationId);
+						else chatClient.stopTyping(conversationId);
+					},
+				})}
 				placeholder={t("composerPlaceholder")}
 				aria-label={t("composerPlaceholder")}
 				autoComplete="off"

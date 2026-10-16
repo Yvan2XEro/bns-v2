@@ -11,6 +11,7 @@ import { ThreadMessages } from "./thread-messages";
 import {
 	useConversationMessages,
 	useConversationThreadSocket,
+	useConversationTyping,
 } from "./use-conversation-thread";
 
 export function ThreadPanel({
@@ -30,6 +31,7 @@ export function ThreadPanel({
 	const conversationId = conversation?.id ?? null;
 	const { data: messages, isLoading } = useConversationMessages(conversationId);
 	useConversationThreadSocket(conversationId);
+	const typing = useConversationTyping(conversationId, viewerId);
 	const markRead = useMarkConversationRead();
 	const lastReadIdRef = useRef<string | null>(null);
 
@@ -70,6 +72,7 @@ export function ThreadPanel({
 				messages={messages}
 				viewerId={viewerId}
 				isLoading={isLoading}
+				typing={typing}
 			/>
 			<ThreadComposer conversationId={conversation.id} />
 		</div>
