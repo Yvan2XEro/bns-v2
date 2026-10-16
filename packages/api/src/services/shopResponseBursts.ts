@@ -126,3 +126,26 @@ export function dailyResponseMedians(
 		};
 	});
 }
+
+/**
+ * Reply delays in minutes for the bursts started at or after `since`, for the
+ * public response time: a burst unanswered past the 24 h deadline is
+ * `Infinity`, one still within it is left out.
+ */
+export function responseDelaysSince(
+	messages: readonly ResponseBurstMessage[],
+	since: Date,
+	now: Date,
+): number[] {
+	const delays: number[] = [];
+	for (const { startedAt, respondedAt } of responseBursts(messages)) {
+		if (startedAt < since.getTime()) continue;
+		if (respondedAt === null) {
+			if (now.getTime() >= startedAt + RESPONSE_DEADLINE_MS)
+				delays.push(Number.POSITIVE_INFINITY);
+			continue;
+		}
+		delays.push((respondedAt - startedAt) / 60_000);
+	}
+	return delays;
+}

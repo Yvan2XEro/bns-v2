@@ -1,5 +1,12 @@
 import type { BusinessType } from "../collections/VerificationRequests";
+import { normaliseShopReturnPolicy } from "../contracts/shopReturnPolicy";
 import { isBrandColor } from "../contracts/shopTheme";
+import {
+	isNewShop,
+	SHOP_RESPONSE_TIMES,
+	type ShopResponseTime,
+	type ShopTrust,
+} from "../contracts/shopTrust";
 import type { Category, Media, Shop, User } from "../payload-types";
 import { relationId } from "./relationId";
 import { type ShopCapabilities, shopCapabilities } from "./shopCapabilities";
@@ -65,6 +72,10 @@ export interface PublicShop {
 	rating: number;
 	totalReviews: number;
 	createdAt: string;
+	/** The strip under the name; `contracts/shopTrust.shopTrustItems` picks what shows. */
+	trust: ShopTrust;
+	/** The shop-level default return policy, shown in « À propos ». */
+	returnPolicy: string | null;
 	owner: {
 		id: string;
 		name: string;
@@ -73,6 +84,13 @@ export interface PublicShop {
 		totalReviews: number;
 		memberSince: string;
 	};
+}
+
+function storedResponseTime(shop: Shop): ShopResponseTime | null {
+	const value = shop.trustStats?.responseTime;
+	return value && (SHOP_RESPONSE_TIMES as readonly string[]).includes(value)
+		? value
+		: null;
 }
 
 function toPublicShopLegal(shop: Shop): PublicShopLegal | null {
@@ -147,6 +165,13 @@ export function serializePublicShop(
 		rating: shop.rating ?? 0,
 		totalReviews: shop.totalReviews ?? 0,
 		createdAt: shop.createdAt,
+		trust: {
+			responseTime: storedResponseTime(shop),
+			activeListings: shop.publishedListingCount ?? 0,
+			memberSince: shop.createdAt,
+			isNew: isNewShop(shop.createdAt, shop.totalReviews ?? 0),
+		},
+		returnPolicy: normaliseShopReturnPolicy(shop.returnPolicy),
 		owner: {
 			id: relationId(owner) ?? relationId(shop.owner) ?? "",
 			name: owner?.name ?? "",

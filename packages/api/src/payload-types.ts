@@ -705,6 +705,11 @@ export interface Shop {
     medianResponseHours?: number | null;
     computedAt?: string | null;
   };
+  trustStats?: {
+    responseTime?: ('under_1h' | 'under_3h' | 'same_day' | 'few_days') | null;
+    responseSample?: number | null;
+    computedAt?: string | null;
+  };
   rankingScore?: number | null;
   rankingSignals?: {
     ordersPlaced?: number | null;
@@ -5449,6 +5454,13 @@ export interface ShopsSelect<T extends boolean = true> {
     | {
         medianShipHours?: T;
         medianResponseHours?: T;
+        computedAt?: T;
+      };
+  trustStats?:
+    | T
+    | {
+        responseTime?: T;
+        responseSample?: T;
         computedAt?: T;
       };
   rankingScore?: T;

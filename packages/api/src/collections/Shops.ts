@@ -7,6 +7,7 @@ import {
 	SHOP_RETURN_POLICY_MAX,
 } from "../contracts/shopReturnPolicy";
 import { isBrandColor } from "../contracts/shopTheme";
+import { SHOP_RESPONSE_TIMES } from "../contracts/shopTrust";
 import { createShopEndpoint } from "../endpoints/shops";
 import {
 	assertNotSuspended,
@@ -50,6 +51,7 @@ export const SHOP_SERVICE_FIELDS = [
 	"totalReviews",
 	"stats",
 	"resaleStats",
+	"trustStats",
 	"rankingScore",
 	"rankingSignals",
 ] as const;
@@ -730,6 +732,34 @@ export const Shops: CollectionConfig = {
 						},
 						{
 							name: "medianResponseHours",
+							type: "number",
+							min: 0,
+							admin: { width: "33%" },
+						},
+						{ name: "computedAt", type: "date", admin: { width: "34%" } },
+					],
+				},
+			],
+		},
+		{
+			// The public response time (contracts/shopTrust.ts), refreshed by
+			// the nightly recomputeShopRankings job so a page view never reads
+			// messages. Null below the sample floor.
+			name: "trustStats",
+			type: "group",
+			admin: { readOnly: true },
+			fields: [
+				{
+					type: "row",
+					fields: [
+						{
+							name: "responseTime",
+							type: "select",
+							options: [...SHOP_RESPONSE_TIMES],
+							admin: { width: "33%" },
+						},
+						{
+							name: "responseSample",
 							type: "number",
 							min: 0,
 							admin: { width: "33%" },
