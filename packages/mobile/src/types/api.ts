@@ -187,6 +187,8 @@ export interface Category {
 	/** Use this for displaying the category thumbnail */
 	image?: Media | null;
 	parent?: Category | string | null;
+	/** Seller vocabulary ("bagnole", brands): matched by search suggestions, never shown. */
+	searchAliases?: string | null;
 	active?: boolean;
 	listingType?: ListingCategoryType | null;
 	/** Which core fields the ad form must show. Mirrors the API's resolver. */

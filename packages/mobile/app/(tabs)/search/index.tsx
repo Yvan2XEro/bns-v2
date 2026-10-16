@@ -25,8 +25,14 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { SearchSegments } from "@/src/components/SearchSegments";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
+import {
+	CategorySuggestions,
+	RecentSearches,
+} from "@/src/components/search/SearchSuggestions";
 import { ShopResults } from "@/src/components/shop/ShopResults";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
+import { useCategories } from "@/src/hooks/useListings";
+import { useRecentSearches } from "@/src/hooks/useRecentSearches";
 import { chunkIntoRows, useResponsive } from "@/src/hooks/useResponsive";
 import { useShopSearch } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
@@ -37,6 +43,7 @@ import type {
 	ListingHitMapped,
 	SearchResponse,
 } from "@/src/types/api";
+import { matchCategories } from "../../../../api/src/contracts/searchSuggest";
 
 export default function SearchScreen() {
 	const isDark = useColorScheme() === "dark";
@@ -71,6 +78,9 @@ export default function SearchScreen() {
 		undefined,
 	);
 	const inputRef = useRef<TextInput>(null);
+	const [inputFocused, setInputFocused] = useState(false);
+	const { recent, remember, remove, clear } = useRecentSearches();
+	const { data: categoriesData } = useCategories();
 
 	useFocusEffect(
 		useCallback(() => {
@@ -82,6 +92,14 @@ export default function SearchScreen() {
 		setQuery(text);
 		clearTimeout(debounceRef.current);
 		debounceRef.current = setTimeout(() => setDebouncedQuery(text), 300);
+	};
+
+	const runSearch = (text: string) => {
+		clearTimeout(debounceRef.current);
+		setQuery(text);
+		setDebouncedQuery(text);
+		remember(text);
+		inputRef.current?.blur();
 	};
 
 	// Extraire les attr_* depuis les params URL
@@ -273,13 +291,32 @@ export default function SearchScreen() {
 					width={cardWidth}
 					isFavorite={favoriteIds.has(listing.id)}
 					onToggleFavorite={() => toggleFavorite({ ...listing })}
-					onPress={(id: string) => router.push(`/listing/${id}`)}
+					onPress={(id: string) => {
+						remember(debouncedQuery);
+						router.push(`/listing/${id}`);
+					}}
 				/>
 			))}
 		</View>
 	);
 
 	const hasActiveSearch = !!(debouncedQuery || params.category);
+
+	// Typed text that names a category offers to browse it whole; once one is
+	// chosen, the text would only narrow it again, so it is cleared.
+	const suggestedCategories = params.category
+		? []
+		: matchCategories(categoriesData?.categories ?? [], query);
+	const browseCategory = (id: string) => {
+		remember(query);
+		clearTimeout(debounceRef.current);
+		setQuery("");
+		setDebouncedQuery("");
+		inputRef.current?.blur();
+		router.setParams({ category: id });
+	};
+	const showRecent =
+		inputFocused && query.trim().length === 0 && recent.length > 0;
 
 	return (
 		<SafeAreaView
@@ -320,6 +357,9 @@ export default function SearchScreen() {
 						ref={inputRef}
 						value={query}
 						onChangeText={handleQueryChange}
+						onFocus={() => setInputFocused(true)}
+						onBlur={() => setInputFocused(false)}
+						onSubmitEditing={() => runSearch(query)}
 						placeholder={t("home.searchPlaceholderDetailed")}
 						placeholderTextColor={mutedColor}
 						style={[
@@ -458,8 +498,22 @@ export default function SearchScreen() {
 					</View>
 				)}
 
+				{segment === "listings" && !showRecent && (
+					<CategorySuggestions
+						categories={suggestedCategories}
+						onPick={browseCategory}
+					/>
+				)}
+
 				{/* Results */}
-				{segment === "shops" ? (
+				{showRecent ? (
+					<RecentSearches
+						recent={recent}
+						onPick={runSearch}
+						onRemove={remove}
+						onClear={clear}
+					/>
+				) : segment === "shops" ? (
 					<ShopResults
 						params={shopParams}
 						onClear={() => {

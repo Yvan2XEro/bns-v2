@@ -215,7 +215,11 @@
 		"sponsored": "Sponsored",
 		"noShopsQuery": "No shop sells “{{q}}” in {{city}}. Widen the city.",
 		"noShopsHint": "Try another word or another city.",
-		"everywhere": "any city"
+		"everywhere": "any city",
+		"recentTitle": "Recent searches",
+		"clearRecent": "Clear",
+		"removeRecent": "Remove “{{query}}” from history",
+		"inCategory": "In {{name}}"
 	},
 	"listing": {
 		"call": "Call",

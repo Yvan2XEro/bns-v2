@@ -215,7 +215,11 @@
 		"sponsored": "Sponsorisé",
 		"noShopsQuery": "Aucune boutique ne vend « {{q}} » à {{city}}. Élargissez la ville.",
 		"noShopsHint": "Essayez un autre mot ou une autre ville.",
-		"everywhere": "toutes les villes"
+		"everywhere": "toutes les villes",
+		"recentTitle": "Recherches récentes",
+		"clearRecent": "Effacer",
+		"removeRecent": "Retirer « {{query}} » de l'historique",
+		"inCategory": "Dans {{name}}"
 	},
 	"listing": {
 		"call": "Appeler",
