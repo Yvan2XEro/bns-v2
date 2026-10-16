@@ -63,6 +63,13 @@ export interface SellerPaymentsView {
 	payouts: SellerPayoutRow[];
 	orders: SellerPaymentOrderRow[];
 	holds: PaymentHoldView[];
+	/** Absent from an older API; null when no single rate holds. */
+	rates?: SellerPaymentRates;
+}
+
+export interface SellerPaymentRates {
+	commissionBps: number | null;
+	vatBps: number | null;
 }
 
 export interface SellerPayoutDetail extends SellerPayoutRow {
@@ -86,6 +93,8 @@ export interface PayoutAccountSummary {
 	status: PayoutAccountStatus;
 	activatedAt: string | null;
 	nameMatch?: NameMatchVerdict | null;
+	/** The verified identity's name the verdict compared against. */
+	identityName?: string | null;
 }
 
 export interface PendingPayoutAccountSummary {

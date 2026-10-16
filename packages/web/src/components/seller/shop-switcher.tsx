@@ -1,7 +1,8 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
 	DropdownMenu,
@@ -10,7 +11,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { useMyShops } from "~/hooks/use-my-shops";
-import { ACTIVE_SHOP_COOKIE } from "~/lib/active-shop";
+import { ACTIVE_SHOP_COOKIE, switchShopTarget } from "~/lib/active-shop";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
@@ -20,11 +21,9 @@ function setActiveShopCookie(shopId: string) {
 
 /**
  * The sidebar's dark header, which opens the shop list when the user belongs
- * to more than one shop. Only the inbox reads `ACTIVE_SHOP_COOKIE` today (the
- * rest of the seller space is still keyed off `GET /api/shops/mine`'s single
- * shop), so picking a shop here changes which shop's conversations
- * `/seller/messages` shows — `activeShopId` is the shop that screen is
- * currently resolving to.
+ * to more than one shop. The cookie drives the whole seller space: the layout
+ * and `useMyShop` both ask `GET /api/shops/mine` for it, and the server only
+ * honours it among the caller's own memberships.
  */
 export function ShopSwitcher({
 	activeShopId,
@@ -36,6 +35,8 @@ export function ShopSwitcher({
 }) {
 	const t = useTranslations("Inbox");
 	const router = useRouter();
+	const pathname = usePathname();
+	const queryClient = useQueryClient();
 	const { data: shops } = useMyShops();
 
 	const header =
@@ -48,6 +49,9 @@ export function ShopSwitcher({
 	function select(shopId: string) {
 		if (shopId === activeShopId) return;
 		setActiveShopCookie(shopId);
+		void queryClient.invalidateQueries();
+		const target = switchShopTarget(pathname);
+		if (target !== pathname) router.push(target);
 		router.refresh();
 	}
 

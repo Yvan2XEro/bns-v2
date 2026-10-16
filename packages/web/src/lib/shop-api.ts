@@ -32,6 +32,7 @@ import type {
 	TeamView,
 	VariantDoc,
 } from "~/types";
+import { myShopPath, readActiveShopCookie } from "./active-shop";
 import { ApiError, apiErrorFrom, ERROR_CODES, fallbackFor } from "./apiError";
 import type { BusinessType } from "./verification";
 
@@ -196,7 +197,7 @@ export interface MovementInput {
 }
 
 export const shopApi = {
-	mine: () => request<MyShopResponse>("/api/shops/mine"),
+	mine: () => request<MyShopResponse>(myShopPath(readActiveShopCookie())),
 
 	create: (input: CreateShopInput) =>
 		request<{ shop: PublicShop }>("/api/shops", {
@@ -509,6 +510,12 @@ export const shopApi = {
 		request<{ conversationId: string; created: boolean }>(
 			"/api/conversations/start",
 			{ method: "POST", body: JSON.stringify({ listingId }) },
+		),
+
+	startShopConversation: (shopId: string) =>
+		request<{ conversationId: string; created: boolean }>(
+			"/api/conversations/start",
+			{ method: "POST", body: JSON.stringify({ shopId }) },
 		),
 
 	listMyShops: () => request<MyShopsEntry[]>("/api/me/shops"),

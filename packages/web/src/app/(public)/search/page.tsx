@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { SearchTabs } from "~/components/search/search-tabs";
+import {
+	listingSearchParams,
+	searchTabHrefs,
+	tabCountPaths,
+} from "~/lib/search-tab-counts";
 import { serverFetch } from "~/lib/server-api";
 import { getShopsEnabled } from "~/lib/server-shop";
 import type { Category, Favorite, Listing } from "~/types";
@@ -53,14 +58,8 @@ async function getInitialListings(
 	searchParams: Record<string, string>,
 ): Promise<{ hits: Listing[]; total: number }> {
 	try {
-		const params = new URLSearchParams();
-		if (searchParams.q) params.set("q", searchParams.q);
-		if (searchParams.category) params.set("category", searchParams.category);
-		if (searchParams.minPrice) params.set("minPrice", searchParams.minPrice);
-		if (searchParams.maxPrice) params.set("maxPrice", searchParams.maxPrice);
-		if (searchParams.location) params.set("location", searchParams.location);
+		const params = listingSearchParams(searchParams);
 		if (searchParams.sort) params.set("sort", searchParams.sort);
-		if (searchParams.verified === "1") params.set("minShopLevel", "2");
 
 		const res = await serverFetch(`/api/public/search?${params.toString()}`);
 		if (!res.ok) return { hits: [], total: 0 };
@@ -71,7 +70,7 @@ async function getInitialListings(
 	}
 }
 
-/** Total hits for a search, read with a one-hit page; null when it fails. */
+/** Total hits for a search, read as a count only; null when it fails. */
 async function getTotal(path: string): Promise<number | null> {
 	try {
 		const res = await serverFetch(path);
@@ -119,25 +118,21 @@ export default async function SearchPage({
 	const shopsEnabled = await getShopsEnabled();
 	const tab = shopsEnabled && params.tab === "shops" ? "shops" : "listings";
 
-	const qOnly = params.q ? `&q=${encodeURIComponent(params.q)}` : "";
+	const countPaths = tabCountPaths(params);
+	const tabHrefs = searchTabHrefs(params);
 
 	if (tab === "shops") {
 		const level = shopLevelFrom(params);
-		const shopParams = new URLSearchParams({ limit: "1" });
-		if (params.q) shopParams.set("q", params.q);
-		if (params.city) shopParams.set("city", params.city);
-		if (params.category) shopParams.set("category", params.category);
-		if (level) shopParams.set("minShopLevel", String(level));
 		const [categories, listingsTotal, shopsTotal] = await Promise.all([
 			getCategories(),
-			getTotal(`/api/public/search?limit=1${qOnly}`),
-			getTotal(`/api/public/search/shops?${shopParams.toString()}`),
+			getTotal(countPaths.listings),
+			getTotal(countPaths.shops),
 		]);
 		return (
 			<>
 				<SearchTabs
 					active="shops"
-					q={params.q ?? ""}
+					hrefs={tabHrefs}
 					counts={{ listings: listingsTotal, shops: shopsTotal }}
 				/>
 				<ShopSearchClient
@@ -158,9 +153,7 @@ export default async function SearchPage({
 		getCategories(),
 		getInitialListings(params),
 		getUserFavoriteIds(),
-		shopsEnabled
-			? getTotal(`/api/public/search/shops?limit=1${qOnly}`)
-			: Promise.resolve(null),
+		shopsEnabled ? getTotal(countPaths.shops) : Promise.resolve(null),
 	]);
 
 	return (
@@ -168,7 +161,7 @@ export default async function SearchPage({
 			{shopsEnabled && (
 				<SearchTabs
 					active="listings"
-					q={params.q ?? ""}
+					hrefs={tabHrefs}
 					counts={{ listings: initialData.total, shops: shopsTotal }}
 				/>
 			)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, MapPin, Store, Zap } from "lucide-react";
+import { Clock, MapPin, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -87,9 +87,8 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 					{/* Top-left badges */}
 					<div className="absolute top-2 left-2 flex flex-col gap-1">
 						{isBoosted && (
-							<span className="flex items-center gap-1 rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[10px] text-white uppercase shadow-sm">
-								<Zap className="h-3 w-3" />
-								{t("listingBoosted")}
+							<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[#0F172A] text-[10px] uppercase">
+								{t("listingFeatured")}
 							</span>
 						)}
 						{conditionLabel && (

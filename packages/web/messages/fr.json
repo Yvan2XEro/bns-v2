@@ -101,6 +101,13 @@
 		"acceptSelected": "{count, plural, one {Accepter la commande} other {Accepter les #}}",
 		"bulkAccepted": "{count, plural, one {# commande acceptée} other {# commandes acceptées}}",
 		"bulkFailed": "{count, plural, one {# commande n'a pas pu être acceptée} other {# commandes n'ont pas pu être acceptées}} : {reason}",
+		"declineSelected": "{count, plural, one {Refuser la commande} other {Refuser les #}}",
+		"bulkDeclineTitle": "{count, plural, one {Refuser la commande sélectionnée} other {Refuser # commandes sélectionnées}}",
+		"bulkDeclineBody": "Le même motif et la même note sont envoyés pour chaque commande. Chaque refus est vérifié séparément : une commande qui ne peut plus être refusée est comptée en échec.",
+		"bulkDeclined": "{count, plural, =0 {Aucune commande refusée} one {# refusée} other {# refusées}}",
+		"bulkDeclineFailed": "{count, plural, one {# échec} other {# échecs}} ({reason})",
+		"lineQuantity": "{title} ×{quantity}",
+		"moreLines": "+ {count, plural, one {# autre produit} other {# autres produits}}",
 		"selectAll": "Sélectionner les commandes à accepter",
 		"selectOrder": "Sélectionner la commande {number}",
 		"columnOrder": "Commande",
@@ -507,6 +514,7 @@
 		"expiresIn": "Expire dans {days} jours",
 		"listingExpired": "Expiré",
 		"listingBoosted": "Boosté",
+		"listingFeatured": "À la une",
 		"listingDescription": "Description",
 		"similarListings": "Annonces similaires",
 		"messageSeller": "Envoyer un message",
@@ -783,7 +791,8 @@
 		"allCitiesPill": "Toutes les villes",
 		"noListingsInCity": "Aucune annonce récente à {city}.",
 		"showAllCities": "Voir toutes les villes",
-		"freshError": "Les annonces de {city} n'ont pas pu être chargées"
+		"freshError": "Les annonces de {city} n'ont pas pu être chargées",
+		"freshErrorAll": "Les dernières annonces n'ont pas pu être chargées"
 	},
 	"NotFound": {
 		"title": "Page non trouvée",
@@ -1148,6 +1157,7 @@
 		"tabReviews": "Avis",
 		"tabAbout": "À propos",
 		"contact": "Contacter",
+		"contactMessage": "Écrire à la boutique",
 		"contactWhatsapp": "WhatsApp",
 		"contactCall": "Appeler",
 		"sortLabel": "Trier les annonces",
@@ -1954,7 +1964,8 @@
 		"review": {
 			"self": "Vous ne pouvez pas vous évaluer vous-même.",
 			"duplicate": "Vous avez déjà évalué cet utilisateur.",
-			"noInteraction": "Vous pouvez évaluer un utilisateur seulement après l'avoir contacté."
+			"noInteraction": "Vous pouvez évaluer un utilisateur seulement après l'avoir contacté.",
+			"tooManyPhotos": "Un avis peut contenir 5 photos au maximum."
 		},
 		"moderation": {
 			"accountSuspended": "Votre compte est suspendu. Vous ne pouvez ni publier d'annonce ni envoyer de message pour le moment.",
@@ -2842,6 +2853,14 @@
 		"placeOrderPay": "Commander et payer · {total}",
 		"placeOrderIdle": "Confirmer la commande"
 	},
+	"ReviewPhotos": {
+		"label": "Photos de cet avis",
+		"open": "Ouvrir la photo {index} sur {count}",
+		"viewerTitle": "Photo {index} sur {count}",
+		"close": "Fermer",
+		"previous": "Photo précédente",
+		"next": "Photo suivante"
+	},
 	"Purchases": {
 		"title": "Mes commandes",
 		"tabOpen": "En cours",
@@ -2924,6 +2943,13 @@
 		"reviewSubmit": "Publier mon avis",
 		"reviewSent": "Merci, votre avis est publié",
 		"reviewRatingRequired": "Choisissez une note",
+		"reviewPhotos": "Photos",
+		"reviewPhotosHint": "facultatif · {max} max.",
+		"reviewPhotoAdd": "Ajouter",
+		"reviewPhotoRemove": "Retirer la photo {index}",
+		"reviewPhotoTooMany": "Vous pouvez ajouter {max} photos au maximum.",
+		"reviewPhotoInvalidType": "Seules les images JPEG, PNG ou WebP peuvent être ajoutées.",
+		"reviewPhotoTooLarge": "Chaque photo doit faire moins de {size} Mo.",
 		"confirmCodeTitle": "Confirmez votre commande",
 		"confirmCodeBody": "Saisissez le code à 6 chiffres reçu par SMS.",
 		"confirmCodeLabel": "Code de confirmation",
@@ -3148,6 +3174,9 @@
 		"reinstate": "Rétablir l'accès",
 		"revoke": "Révoquer l'accès",
 		"revokedHelp": "Un accès révoqué ne peut pas être rétabli. Le revendeur doit envoyer une nouvelle demande.",
+		"cancelRequest": "Annuler la demande",
+		"confirmCancelRequest": "Annuler votre demande d'accès à ce fournisseur ? Vous pourrez en envoyer une nouvelle à tout moment.",
+		"pendingRequestHelp": "Le fournisseur n'a pas encore répondu à votre demande.",
 		"confirmDecision": "Confirmer cette décision d'accès ?",
 		"suspensionReason": "Motif de suspension",
 		"suspensionNote": "Note complémentaire (facultative)",
@@ -3960,6 +3989,13 @@
 		"timeline": "Historique du retour"
 	},
 	"Disputes": {
+		"evidenceUnavailable": "Ce justificatif ne peut pas être affiché pour le moment.",
+		"menu": "Options du litige",
+		"openEvidence_file": "Ouvrir le fichier",
+		"openEvidence_image": "Ouvrir la photo",
+		"openEvidence_video": "Ouvrir la vidéo",
+		"refresh": "Actualiser",
+		"stagedEvidence": "Joint à votre prochain message",
 		"openInWorkspace": "Ouvrir dans l'espace vendeur",
 		"title": "Mes litiges",
 		"subtitle": "Suivez les échanges, les échéances et la résolution des problèmes signalés sur vos commandes.",
@@ -4919,6 +4955,9 @@
 		"edit": "Modifier",
 		"setUp": "Configurer",
 		"holderName": "Titulaire du compte",
+		"verifiedIdentityName": "Identité vérifiée",
+		"colCommissionRate": "Commission {rate} (HT)",
+		"colVatRate": "TVA {rate}",
 		"flowTitle": "Comment l'argent circule",
 		"flow": {
 			"1": {
@@ -5022,6 +5061,10 @@
 		"atCost": "au coût",
 		"dormantPrice": "Modifier le prix",
 		"dormantStock": "Voir le stock",
+		"dormantBoost": "Mettre en avant",
+		"dormantLastSaleDays": "Dernière vente il y a {count, plural, one {# jour} other {# jours}}",
+		"dormantLastSaleToday": "Dernière vente aujourd'hui",
+		"dormantNeverSold": "Jamais vendu",
 		"dormantFooter": "Sans vente depuis plus de 30 jours",
 		"dormantTotal": "{amount} immobilisés"
 	},

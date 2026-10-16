@@ -93,3 +93,18 @@ export function insightsCsv(
 		]),
 	]);
 }
+
+export type DormantLastSale =
+	| { kind: "never" }
+	| { kind: "today" }
+	| { kind: "days"; days: number };
+
+/** The server's own count of days; null when an older API sent nothing. */
+export function dormantLastSale(
+	item: NonNullable<ShopInsightsView["stock"]["dormant"]>[number],
+): DormantLastSale | null {
+	if (item.daysSinceLastSale === undefined) return null;
+	if (item.daysSinceLastSale === null) return { kind: "never" };
+	if (item.daysSinceLastSale < 1) return { kind: "today" };
+	return { kind: "days", days: item.daysSinceLastSale };
+}

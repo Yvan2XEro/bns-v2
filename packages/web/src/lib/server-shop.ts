@@ -1,14 +1,19 @@
+import { cookies } from "next/headers";
 import { cache } from "react";
+import { ACTIVE_SHOP_COOKIE, myShopPath } from "~/lib/active-shop";
 import type { VerificationBadge } from "~/lib/verification";
 import type { Category, MyShopResponse, PublicShop } from "~/types";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
 import { DEFAULT_PHONE_COUNTRY } from "./phone-input";
 import { serverGet } from "./server-api";
 
-export const getMyShop = cache(
-	async (): Promise<MyShopResponse | null> =>
-		serverGet<MyShopResponse>("/api/shops/mine"),
-);
+/** The shop the seller space works on: the switcher's cookie when the caller still belongs to it. */
+export const getMyShop = cache(async (): Promise<MyShopResponse | null> => {
+	const cookieStore = await cookies();
+	return serverGet<MyShopResponse>(
+		myShopPath(cookieStore.get(ACTIVE_SHOP_COOKIE)?.value ?? null),
+	);
+});
 
 /**
  * A profile page needs a stranger's shop badge, not just their personal

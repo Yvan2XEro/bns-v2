@@ -7,10 +7,12 @@ import { BlockUserButton } from "~/components/chat/block-user-button";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { ReportDialog } from "~/components/listing/report-dialog";
 import { ReviewForm } from "~/components/listing/review-form";
+import { ReviewPhotos } from "~/components/review/review-photos";
 import { LevelBadge } from "~/components/shop/level-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { getBlockedUsers } from "~/lib/actions";
+import { populatedReviewPhotos } from "~/lib/review-photos";
 import { getAuthUser, serverFetch } from "~/lib/server-api";
 import { getUserShop } from "~/lib/server-shop";
 import type { Listing, Review, User } from "~/types";
@@ -290,6 +292,9 @@ export default async function ProfilePage({ params }: PageProps) {
 													{review.comment}
 												</p>
 											)}
+											<ReviewPhotos
+												photos={populatedReviewPhotos(review.photos)}
+											/>
 										</div>
 									);
 								})}

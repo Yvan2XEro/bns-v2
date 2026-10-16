@@ -3,8 +3,13 @@
 import { useTranslations } from "next-intl";
 import { useReducer } from "react";
 import { LoadError, LoadingRows } from "~/components/seller/load-states";
-import { useDecideResaleLink, useResaleLinks } from "~/hooks/use-resale";
+import {
+	useCancelResaleLinkRequest,
+	useDecideResaleLink,
+	useResaleLinks,
+} from "~/hooks/use-resale";
 import { resolveErrorMessage } from "~/lib/apiError";
+import { canCancelResaleRequest } from "~/lib/resale-hub";
 import type { ResaleLinkListItem } from "../../../../../../../api/src/contracts/resale";
 
 type Side = "supplier" | "reseller";
@@ -37,9 +42,10 @@ export function ResaleLinksClient({
 	});
 	const links = useResaleLinks(shopId, side, state.filter);
 	const decide = useDecideResaleLink(shopId);
+	const cancelRequest = useCancelResaleLinkRequest(shopId);
 	const requestCount =
 		links.data?.docs.filter((link) => link.status === "requested").length ?? 0;
-	const error = links.error ?? decide.error;
+	const error = links.error ?? decide.error ?? cancelRequest.error;
 	const errorMessage = error
 		? resolveErrorMessage(error, tRoot, t("actionFailed"))
 		: null;
@@ -144,8 +150,12 @@ export function ResaleLinksClient({
 						link={link}
 						side={side}
 						t={t}
-						pending={decide.isPending}
+						pending={decide.isPending || cancelRequest.isPending}
 						onAction={(action) => run(link, action)}
+						onCancelRequest={() => {
+							if (window.confirm(t("confirmCancelRequest")))
+								cancelRequest.mutate({ linkId: link.id });
+						}}
 						reason={state.reason}
 						note={state.note}
 						setReason={(reason) => patch({ reason })}
@@ -163,6 +173,7 @@ function LinkCard({
 	t,
 	pending,
 	onAction,
+	onCancelRequest,
 	reason,
 	note,
 	setReason,
@@ -175,6 +186,7 @@ function LinkCard({
 	onAction: (
 		action: "approve" | "decline" | "suspend" | "reinstate" | "revoke",
 	) => void;
+	onCancelRequest: () => void;
 	reason: Reason;
 	note: string;
 	setReason: (reason: Reason) => void;
@@ -339,6 +351,21 @@ function LinkCard({
 					{link.status === "revoked" ? (
 						<p className="text-[#64748B] text-sm">{t("revokedHelp")}</p>
 					) : null}
+				</div>
+			) : null}
+			{canCancelResaleRequest(side, link.status) ? (
+				<div className="flex flex-wrap items-center gap-3 border-[#E2E8F0] border-t pt-3">
+					<p className="flex-1 text-[#64748B] text-sm">
+						{t("pendingRequestHelp")}
+					</p>
+					<button
+						type="button"
+						disabled={pending}
+						onClick={onCancelRequest}
+						className={`${actionClass} border border-red-200 text-red-700`}
+					>
+						{t("cancelRequest")}
+					</button>
 				</div>
 			) : null}
 		</article>

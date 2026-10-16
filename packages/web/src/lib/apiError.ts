@@ -67,6 +67,7 @@ export const ERROR_CODES = {
 	reviewSelf: "review.self",
 	reviewDuplicate: "review.duplicate",
 	reviewNoInteraction: "review.noInteraction",
+	reviewTooManyPhotos: "review.tooManyPhotos",
 
 	accountSuspended: "moderation.accountSuspended",
 	moderationForbidden: "moderation.forbidden",
@@ -323,6 +324,7 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.reviewDuplicate]: "You have already reviewed this user.",
 	[ERROR_CODES.reviewNoInteraction]:
 		"You can review a user only after contacting them.",
+	[ERROR_CODES.reviewTooManyPhotos]: "A review can carry at most 5 photos.",
 	[ERROR_CODES.accountSuspended]:
 		"Your account is suspended. You cannot publish listings or send messages right now.",
 	[ERROR_CODES.moderationForbidden]:

@@ -74,6 +74,16 @@ export function PayoutAccountCard({ shopId }: { shopId: string }) {
 							{account.accountName}
 						</span>
 					</div>
+					{account.identityName && (
+						<div className="flex justify-between gap-3 text-sm">
+							<span className="text-[#64748B]">
+								{tPage("verifiedIdentityName")}
+							</span>
+							<span className="text-right font-semibold text-[#0F172A]">
+								{account.identityName}
+							</span>
+						</div>
+					)}
 					{account.nameMatch && (
 						<p
 							className={`flex items-start gap-1.5 font-semibold text-[13px] ${account.nameMatch === "match" ? "text-[#15803D]" : "text-[#B45309]"}`}

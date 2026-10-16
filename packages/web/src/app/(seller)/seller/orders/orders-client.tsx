@@ -24,15 +24,21 @@ import { can } from "~/lib/shop-roles";
 import { cn } from "~/lib/utils";
 import type { ShopRole } from "~/types";
 import type { OrderListEntry, ShopOrderPage } from "~/types/order";
+import { BulkDeclineDialog } from "./bulk-decline-dialog";
+import type { SellerEndReason } from "./order-forms";
 import {
 	acceptableSelection,
 	areaLabel,
+	type BulkOutcome,
 	type ListTab,
 	PERIODS,
 	type Period,
 	paymentPill,
 	periodSince,
+	refusableSelection,
 	resaleNote,
+	runOneByOne,
+	selectableSelection,
 	statusPill,
 	toCsv,
 } from "./order-list";
@@ -117,7 +123,7 @@ export function OrdersClient({
 
 	useEffect(() => {
 		setSelected((current) => {
-			const keep = acceptableSelection(rows, current, role, now);
+			const keep = selectableSelection(rows, current, role, now);
 			return keep.length === current.size ? current : new Set(keep);
 		});
 	}, [rows, role, now]);
@@ -141,24 +147,20 @@ export function OrdersClient({
 		setSelected(select ? new Set(ids) : new Set());
 	}
 
+	const [declineOpen, setDeclineOpen] = useState(false);
+	const refreshOrders = () => {
+		void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
+		void queryClient.invalidateQueries({
+			queryKey: shopOrdersRootKey(shopId),
+		});
+	};
+	const failureReason = (failures: unknown[]) =>
+		resolveErrorMessage(failures[0], tRoot, tLegacy("actionFailed"));
+
 	const bulkAccept = useMutation({
-		mutationFn: async (ids: string[]) => {
-			const failures: unknown[] = [];
-			for (const id of ids) {
-				try {
-					await apiPost(orderActionPath("accept", id));
-				} catch (error) {
-					failures.push(error);
-				}
-			}
-			return { done: ids.length - failures.length, failures };
-		},
-		onSettled: () => {
-			void queryClient.invalidateQueries({ queryKey: purchasesRootKey() });
-			void queryClient.invalidateQueries({
-				queryKey: shopOrdersRootKey(shopId),
-			});
-		},
+		mutationFn: (ids: string[]) =>
+			runOneByOne(ids, (id) => apiPost(orderActionPath("accept", id))),
+		onSettled: refreshOrders,
 		onSuccess: ({ done, failures }) => {
 			setSelected(new Set());
 			if (done > 0) toast.success(tList("bulkAccepted", { count: done }));
@@ -166,14 +168,37 @@ export function OrdersClient({
 				toast.error(
 					tList("bulkFailed", {
 						count: failures.length,
-						reason: resolveErrorMessage(
-							failures[0],
-							tRoot,
-							tLegacy("actionFailed"),
-						),
+						reason: failureReason(failures),
 					}),
 				);
 			}
+		},
+	});
+
+	const bulkDecline = useMutation({
+		mutationFn: ({
+			ids,
+			input,
+		}: {
+			ids: string[];
+			input: { reason: SellerEndReason; note?: string };
+		}): Promise<BulkOutcome> =>
+			runOneByOne(ids, (id) => apiPost(orderActionPath("decline", id), input)),
+		onSettled: refreshOrders,
+		onSuccess: ({ done, failures }) => {
+			setSelected(new Set());
+			setDeclineOpen(false);
+			const summary = tList("bulkDeclined", { count: done });
+			if (failures.length === 0) {
+				toast.success(summary);
+				return;
+			}
+			toast.error(
+				`${summary}, ${tList("bulkDeclineFailed", {
+					count: failures.length,
+					reason: failureReason(failures),
+				})}`,
+			);
 		},
 	});
 
@@ -250,7 +275,9 @@ export function OrdersClient({
 	].filter(Boolean);
 
 	const tabs: ListTab[] = ["all", ...SHOP_ORDER_TABS];
-	const selectedIds = acceptableSelection(rows, selected, role, now);
+	const selectedIds = selectableSelection(rows, selected, role, now);
+	const acceptIds = acceptableSelection(rows, selected, role, now);
+	const refuseIds = refusableSelection(rows, selected, role);
 	const canProcess = can(role, "orders.process");
 
 	return (
@@ -387,20 +414,44 @@ export function OrdersClient({
 					>
 						{tList("clearSelection")}
 					</button>
-					<button
-						type="button"
-						disabled={bulkAccept.isPending}
-						onClick={() =>
-							bulkAccept.mutate(
-								acceptableSelection(rows, selected, role, new Date()),
-							)
-						}
-						className="inline-flex h-[34px] items-center rounded-lg bg-[#1E40AF] px-3 font-semibold text-[13px] text-white hover:bg-[#1E3A8A] disabled:opacity-50"
-					>
-						{tList("acceptSelected", { count: selectedIds.length })}
-					</button>
+					{refuseIds.length > 0 && (
+						<button
+							type="button"
+							disabled={bulkDecline.isPending || bulkAccept.isPending}
+							onClick={() => setDeclineOpen(true)}
+							className="inline-flex h-[34px] items-center rounded-lg border border-[#FECACA] bg-white px-3 font-semibold text-[#B91C1C] text-[13px] hover:bg-[#FEF2F2] disabled:opacity-50"
+						>
+							{tList("declineSelected", { count: refuseIds.length })}
+						</button>
+					)}
+					{acceptIds.length > 0 && (
+						<button
+							type="button"
+							disabled={bulkAccept.isPending || bulkDecline.isPending}
+							onClick={() =>
+								bulkAccept.mutate(
+									acceptableSelection(rows, selected, role, new Date()),
+								)
+							}
+							className="inline-flex h-[34px] items-center rounded-lg bg-[#1E40AF] px-3 font-semibold text-[13px] text-white hover:bg-[#1E3A8A] disabled:opacity-50"
+						>
+							{tList("acceptSelected", { count: acceptIds.length })}
+						</button>
+					)}
 				</div>
 			)}
+			<BulkDeclineDialog
+				open={declineOpen}
+				count={refuseIds.length}
+				pending={bulkDecline.isPending}
+				onClose={() => setDeclineOpen(false)}
+				onSubmit={(input) =>
+					bulkDecline.mutate({
+						ids: refusableSelection(rows, selected, role),
+						input,
+					})
+				}
+			/>
 
 			{query.isPending && <LoadingRows />}
 			{query.isError && (

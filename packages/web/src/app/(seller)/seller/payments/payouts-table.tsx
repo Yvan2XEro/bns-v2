@@ -5,21 +5,25 @@ import { useTranslations } from "next-intl";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { formatOrderDate } from "~/lib/order-money";
 import { PAYOUT_STATUSES } from "~/lib/payment-status";
+import { rateHeaders } from "~/lib/seller-payments-view";
 import { useLocaleKey } from "~/lib/use-locale-key";
-import type { SellerPayoutRow } from "~/types/payments";
+import type { SellerPaymentRates, SellerPayoutRow } from "~/types/payments";
 
 /** Gross, the commission and VAT taken before sending, and what arrived. */
 export function PayoutsTable({
 	payouts,
+	rates,
 	onExport,
 }: {
 	payouts: readonly SellerPayoutRow[];
+	rates?: SellerPaymentRates;
 	onExport: () => void;
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const tPayments = useTranslations("Payments");
 	const tPage = useTranslations("PaymentsPage");
 	const locale = useLocaleKey();
+	const headers = rateHeaders(rates, locale);
 
 	return (
 		<section
@@ -56,10 +60,16 @@ export function PayoutsTable({
 									{tPage("colGross")}
 								</th>
 								<th className="px-3 py-2.5 text-right font-medium">
-									{tPayments("seller_colCommission")}
+									{headers.commission
+										? tPage("colCommissionRate", {
+												rate: headers.commission,
+											})
+										: tPayments("seller_colCommission")}
 								</th>
 								<th className="px-3 py-2.5 text-right font-medium">
-									{tPayments("seller_colVat")}
+									{headers.vat
+										? tPage("colVatRate", { rate: headers.vat })
+										: tPayments("seller_colVat")}
 								</th>
 								<th className="px-3 py-2.5 text-right font-medium">
 									{tPage("colNetPaid")}

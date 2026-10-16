@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, MapPin, Tag } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useSyncExternalStore } from "react";
 import { ListingGrid } from "~/components/listing/listing-card";
 import { LoadError } from "~/components/seller/load-states";
 import { Button } from "~/components/ui/button";
@@ -16,7 +17,7 @@ import {
 	mixFreshListings,
 } from "./fresh-listings-mix";
 
-async function fetchFreshListings(city: string): Promise<Listing[]> {
+async function fetchFreshListings(city: string | null): Promise<Listing[]> {
 	const paths = freshListingPaths(city);
 	const [boosted, recent] = await Promise.all([
 		// A failed boost read only costs the badged slots.
@@ -28,29 +29,42 @@ async function fetchFreshListings(city: string): Promise<Listing[]> {
 	return mixFreshListings(boosted?.hits ?? [], recent.hits);
 }
 
+const noop = () => () => undefined;
+
 /**
  * "Nouveautés", scoped to the city this browser browses. The server renders
- * every city (it cannot know the preference); a remembered city swaps in its
- * own listings once the page is in the browser.
+ * the city its cookie names (every city without one), so a remembered city
+ * is there on the first paint; only a preference the cookie does not carry
+ * yet swaps in once the page is in the browser.
  */
 export function FreshListings({
+	initialCity,
 	initialListings,
 	favoriteIds,
 }: {
+	/** The city the server rendered for; null for every city. */
+	initialCity: string | null;
 	initialListings: Listing[];
 	favoriteIds: string[];
 }) {
 	const t = useTranslations("Home");
 	const { browsePlace, setBrowsePlace } = usePlacePreferences();
-	const city = browsePlace?.name ?? null;
+	// The stored preference only exists in the browser: until hydration ends,
+	// render what the server rendered so the two agree.
+	const hydrated = useSyncExternalStore(
+		noop,
+		() => true,
+		() => false,
+	);
+	const city = hydrated ? (browsePlace?.name ?? null) : initialCity;
 	const scoped = useQuery({
 		queryKey: ["home", "fresh", city],
-		queryFn: () => fetchFreshListings(city ?? ""),
-		enabled: city !== null,
+		queryFn: () => fetchFreshListings(city),
+		initialData: city === initialCity ? initialListings : undefined,
 		staleTime: 60_000,
 		retry: false,
 	});
-	const listings = city ? scoped.data : initialListings;
+	const listings = scoped.data;
 	const seeAllHref = city
 		? `/search?location=${encodeURIComponent(city)}`
 		: "/search";
@@ -76,9 +90,9 @@ export function FreshListings({
 						<ChevronRight className="h-4 w-4" />
 					</Link>
 				</div>
-				{city && scoped.isError ? (
+				{scoped.isError ? (
 					<LoadError
-						title={t("freshError", { city })}
+						title={city ? t("freshError", { city }) : t("freshErrorAll")}
 						onRetry={() => scoped.refetch()}
 					/>
 				) : !listings ? (

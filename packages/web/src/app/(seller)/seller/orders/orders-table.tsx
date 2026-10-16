@@ -12,7 +12,14 @@ import { cn } from "~/lib/utils";
 import type { ShopRole } from "~/types";
 import type { OrderListEntry } from "~/types/order";
 import { AcceptCountdown } from "./accept-countdown";
-import { areaLabel, placedWhen, type RowAction, rowAction } from "./order-list";
+import {
+	areaLabel,
+	isSelectable,
+	itemLines,
+	placedWhen,
+	type RowAction,
+	rowAction,
+} from "./order-list";
 import { PaymentPill, ResalePill, StatusPill } from "./order-pills";
 
 const ACTION_BUTTON =
@@ -89,6 +96,36 @@ function PlacedLabel({ placedAt, now }: { placedAt: string; now: Date }) {
 	return <span className="text-[#94A3B8] text-xs">{text}</span>;
 }
 
+function ItemLinesText({ row }: { row: OrderListEntry }) {
+	const t = useTranslations("SellerOrderList");
+	const summary = itemLines(row);
+	if (!summary) {
+		return (
+			<span>
+				{t("itemLine", { title: row.firstItemTitle, count: row.itemCount })}
+			</span>
+		);
+	}
+	return (
+		<span className="flex flex-col">
+			{summary.lines.map((line, index) => (
+				<span
+					// biome-ignore lint/suspicious/noArrayIndexKey: two lines can share a title
+					key={index}
+					className="max-w-[260px] truncate"
+				>
+					{t("lineQuantity", { title: line.title, quantity: line.quantity })}
+				</span>
+			))}
+			{summary.more > 0 && (
+				<span className="text-[#64748B] text-xs">
+					{t("moreLines", { count: summary.more })}
+				</span>
+			)}
+		</span>
+	);
+}
+
 /**
  * The seller's order queue. A row's quick action posts to the same order
  * route the order page's action bar does, through the same hooks; which
@@ -115,7 +152,7 @@ export function OrdersTable({
 	const t = useTranslations("SellerOrderList");
 	const locale = useLocale() === "en" ? "en" : "fr";
 	const selectable = rows
-		.filter((row) => rowAction(row, role, now) === "accept")
+		.filter((row) => isSelectable(row, role, now))
 		.map((row) => row.id);
 	const allSelected =
 		selectable.length > 0 && selectable.every((id) => selected.has(id));
@@ -173,7 +210,7 @@ export function OrdersTable({
 								)}
 							>
 								<td className="w-9 px-4 py-3">
-									{action === "accept" && (
+									{isSelectable(row, role, now) && (
 										<input
 											type="checkbox"
 											aria-label={t("selectOrder", { number: row.orderNumber })}
@@ -219,12 +256,7 @@ export function OrdersTable({
 											)}
 										</span>
 										<div className="flex min-w-0 flex-col gap-0.5">
-											<span>
-												{t("itemLine", {
-													title: row.firstItemTitle,
-													count: row.itemCount,
-												})}
-											</span>
+											<ItemLinesText row={row} />
 											<ResalePill row={row} />
 										</div>
 									</div>

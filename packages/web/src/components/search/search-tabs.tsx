@@ -4,27 +4,27 @@ import { cn } from "~/lib/utils";
 
 export function SearchTabs({
 	active,
-	q,
+	hrefs,
 	counts,
 }: {
 	active: "listings" | "shops";
-	q: string;
+	/** Each tab's link, carrying the filters both tabs share. */
+	hrefs: { listings: string; shops: string };
 	/** A count the server could not read is left off rather than shown as 0. */
 	counts?: { listings: number | null; shops: number | null };
 }) {
 	const t = useTranslations("Search");
 	const locale = useLocale();
-	const query = q ? `q=${encodeURIComponent(q)}` : "";
 	const tabs = [
 		{
 			key: "listings" as const,
-			href: `/search${query ? `?${query}` : ""}`,
+			href: hrefs.listings,
 			label: t("tabListings"),
 			count: counts?.listings ?? null,
 		},
 		{
 			key: "shops" as const,
-			href: `/search?tab=shops${query ? `&${query}` : ""}`,
+			href: hrefs.shops,
 			label: t("tabShops"),
 			count: counts?.shops ?? null,
 		},

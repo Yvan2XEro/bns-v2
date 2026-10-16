@@ -3,20 +3,27 @@
 import { useTranslations } from "next-intl";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import { formatOrderDate } from "~/lib/order-money";
-import { sellerOrderRows } from "~/lib/seller-payments-view";
+import { rateHeaders, sellerOrderRows } from "~/lib/seller-payments-view";
 import { useLocaleKey } from "~/lib/use-locale-key";
-import type { SellerPaymentOrderRow } from "~/types/payments";
+import type {
+	SellerPaymentOrderRow,
+	SellerPaymentRates,
+} from "~/types/payments";
 import { OrderStatusLabel } from "./order-status-label";
 
 export function OrderBreakdown({
 	orders,
+	rates,
 }: {
 	orders: readonly SellerPaymentOrderRow[];
+	rates?: SellerPaymentRates;
 }) {
 	const formatOrderMoney = useOrderMoney();
 	const t = useTranslations("Payments");
+	const tPage = useTranslations("PaymentsPage");
 	const locale = useLocaleKey();
 	const rows = sellerOrderRows(orders);
+	const headers = rateHeaders(rates, locale);
 
 	if (rows.length === 0) return null;
 
@@ -35,9 +42,15 @@ export function OrderBreakdown({
 								{t("seller_colDelivery")}
 							</th>
 							<th className="px-4 py-2 font-medium">
-								{t("seller_colCommission")}
+								{headers.commission
+									? tPage("colCommissionRate", { rate: headers.commission })
+									: t("seller_colCommission")}
 							</th>
-							<th className="px-4 py-2 font-medium">{t("seller_colVat")}</th>
+							<th className="px-4 py-2 font-medium">
+								{headers.vat
+									? tPage("colVatRate", { rate: headers.vat })
+									: t("seller_colVat")}
+							</th>
 							<th className="px-4 py-2 font-medium">{t("seller_colNet")}</th>
 							<th className="px-4 py-2 font-medium">{t("seller_colStatus")}</th>
 							<th className="px-4 py-2 font-medium">

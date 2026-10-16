@@ -53,7 +53,7 @@ export type RowAction = "accept" | "ship";
 
 function offered(
 	row: Pick<OrderListEntry, "status">,
-	action: "accept" | "ship",
+	action: "accept" | "ship" | "decline",
 	role: ShopRole | null,
 ): boolean {
 	const permission = ORDER_ACTION_PERMISSIONS[action];
@@ -100,6 +100,95 @@ export function acceptableSelection(
 			(row) => selected.has(row.id) && rowAction(row, role, now) === "accept",
 		)
 		.map((row) => row.id);
+}
+
+/**
+ * A row the shop may still decline: `DECLINABLE_STATUSES` (placed, confirmed,
+ * paid) with `orders.process`. Declining has no deadline, so a placed order
+ * or one past its acceptance clock can still be refused.
+ */
+export function isRefusable(
+	row: Pick<OrderListEntry, "status">,
+	role: ShopRole | null,
+): boolean {
+	return offered(row, "decline", role);
+}
+
+type SelectableRow = Pick<
+	OrderListEntry,
+	"id" | "status" | "acceptBy" | "hasShipment"
+>;
+
+/** A row gets a checkbox when the selection bar can do something with it. */
+export function isSelectable(
+	row: SelectableRow,
+	role: ShopRole | null,
+	now: Date,
+): boolean {
+	return rowAction(row, role, now) === "accept" || isRefusable(row, role);
+}
+
+export function selectableSelection(
+	rows: ReadonlyArray<SelectableRow>,
+	selected: ReadonlySet<string>,
+	role: ShopRole | null,
+	now: Date,
+): string[] {
+	return rows
+		.filter((row) => selected.has(row.id) && isSelectable(row, role, now))
+		.map((row) => row.id);
+}
+
+export function refusableSelection(
+	rows: ReadonlyArray<SelectableRow>,
+	selected: ReadonlySet<string>,
+	role: ShopRole | null,
+): string[] {
+	return rows
+		.filter((row) => selected.has(row.id) && isRefusable(row, role))
+		.map((row) => row.id);
+}
+
+export interface BulkOutcome {
+	done: number;
+	failures: unknown[];
+}
+
+/**
+ * One request per order, in sequence: each order goes through its own route
+ * so the server judges every transition and permission, and one failure
+ * never stops the rest.
+ */
+export async function runOneByOne(
+	ids: readonly string[],
+	run: (id: string) => Promise<unknown>,
+): Promise<BulkOutcome> {
+	const failures: unknown[] = [];
+	for (const id of ids) {
+		try {
+			await run(id);
+		} catch (error) {
+			failures.push(error);
+		}
+	}
+	return { done: ids.length - failures.length, failures };
+}
+
+export interface ItemLines {
+	lines: { title: string; quantity: number }[];
+	/** Lines not shown. */
+	more: number;
+}
+
+/** "title ×2" per line; null when the API did not send lines. */
+export function itemLines(
+	row: Pick<OrderListEntry, "lines" | "lineCount">,
+	shown = 2,
+): ItemLines | null {
+	if (!row.lines || row.lines.length === 0) return null;
+	const lines = row.lines.slice(0, shown);
+	const total = Math.max(row.lineCount ?? row.lines.length, row.lines.length);
+	return { lines, more: total - lines.length };
 }
 
 export type StatusPill =

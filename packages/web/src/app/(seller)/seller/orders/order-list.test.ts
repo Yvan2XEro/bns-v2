@@ -5,11 +5,17 @@ import {
 	areaLabel,
 	csvCell,
 	isListTab,
+	isRefusable,
+	isSelectable,
+	itemLines,
 	paymentPill,
 	periodSince,
 	placedWhen,
+	refusableSelection,
 	resaleNote,
 	rowAction,
+	runOneByOne,
+	selectableSelection,
 	statusPill,
 	toCsv,
 } from "./order-list";
@@ -187,5 +193,84 @@ describe("CSV export", () => {
 
 	test("joins lines with CRLF", () => {
 		expect(toCsv(["a", "b"], [[1, "x,y"]])).toBe('a,b\r\n1,"x,y"');
+	});
+});
+
+describe("bulk refuse (W2)", () => {
+	test("placed, confirmed and paid orders are refusable with orders.process", () => {
+		for (const status of ["placed", "confirmed", "paid"] as const) {
+			expect(isRefusable(row({ status }), "staff")).toBe(true);
+		}
+		for (const status of ["accepted", "shipped", "delivered"] as const) {
+			expect(isRefusable(row({ status }), "owner")).toBe(false);
+		}
+		expect(isRefusable(row(), null)).toBe(false);
+	});
+
+	test("a placed order or one past its deadline still gets a checkbox", () => {
+		expect(isSelectable(row({ status: "placed" }), "owner", NOW)).toBe(true);
+		expect(
+			isSelectable(row({ acceptBy: "2026-09-15T08:00:00.000Z" }), "owner", NOW),
+		).toBe(true);
+		expect(isSelectable(row({ status: "accepted" }), "owner", NOW)).toBe(false);
+	});
+
+	test("the bar splits the selection between what can be accepted and refused", () => {
+		const rows = [
+			row({ id: "a", status: "confirmed" }),
+			row({ id: "b", status: "placed" }),
+			row({ id: "c", status: "accepted" }),
+		];
+		const selected = new Set(["a", "b", "c"]);
+		expect(selectableSelection(rows, selected, "owner", NOW)).toEqual([
+			"a",
+			"b",
+		]);
+		expect(refusableSelection(rows, selected, "owner")).toEqual(["a", "b"]);
+		expect(acceptableSelection(rows, selected, "owner", NOW)).toEqual(["a"]);
+	});
+
+	test("runs every order even when one fails, and counts both", async () => {
+		const seen: string[] = [];
+		const outcome = await runOneByOne(["a", "b", "c"], async (id) => {
+			seen.push(id);
+			if (id === "b") throw new Error("nope");
+		});
+		expect(seen).toEqual(["a", "b", "c"]);
+		expect(outcome.done).toBe(2);
+		expect(outcome.failures).toHaveLength(1);
+	});
+});
+
+describe("item lines (W24)", () => {
+	test("shows each line with its own quantity and counts the rest", () => {
+		expect(
+			itemLines(
+				row({
+					lineCount: 4,
+					lines: [
+						{ title: "Robe", quantity: 2 },
+						{ title: "Foulard", quantity: 1 },
+						{ title: "Sac", quantity: 1 },
+					],
+				}),
+			),
+		).toEqual({
+			lines: [
+				{ title: "Robe", quantity: 2 },
+				{ title: "Foulard", quantity: 1 },
+			],
+			more: 2,
+		});
+	});
+
+	test("one line of two units is one line", () => {
+		expect(
+			itemLines(row({ lineCount: 1, lines: [{ title: "Robe", quantity: 2 }] })),
+		).toEqual({ lines: [{ title: "Robe", quantity: 2 }], more: 0 });
+	});
+
+	test("an API without lines falls back to the old summary", () => {
+		expect(itemLines(row())).toBeNull();
 	});
 });

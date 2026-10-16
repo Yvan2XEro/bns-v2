@@ -101,6 +101,13 @@
 		"acceptSelected": "{count, plural, one {Accept the order} other {Accept all #}}",
 		"bulkAccepted": "{count, plural, one {# order accepted} other {# orders accepted}}",
 		"bulkFailed": "{count, plural, one {# order could not be accepted} other {# orders could not be accepted}}: {reason}",
+		"declineSelected": "{count, plural, one {Decline the order} other {Decline all #}}",
+		"bulkDeclineTitle": "{count, plural, one {Decline the selected order} other {Decline # selected orders}}",
+		"bulkDeclineBody": "The same reason and note are sent for every order. Each decline is checked on its own: an order that can no longer be declined counts as a failure.",
+		"bulkDeclined": "{count, plural, =0 {No order declined} one {# declined} other {# declined}}",
+		"bulkDeclineFailed": "{count, plural, one {# failure} other {# failures}} ({reason})",
+		"lineQuantity": "{title} ×{quantity}",
+		"moreLines": "+ {count, plural, one {# more product} other {# more products}}",
 		"selectAll": "Select the orders to accept",
 		"selectOrder": "Select order {number}",
 		"columnOrder": "Order",
@@ -507,6 +514,7 @@
 		"expiresIn": "Expires in {days} days",
 		"listingExpired": "Expired",
 		"listingBoosted": "Boosted",
+		"listingFeatured": "Featured",
 		"listingDescription": "Description",
 		"similarListings": "Similar listings",
 		"messageSeller": "Message seller",
@@ -783,7 +791,8 @@
 		"allCitiesPill": "All cities",
 		"noListingsInCity": "No recent listings in {city}.",
 		"showAllCities": "Show all cities",
-		"freshError": "Listings in {city} could not be loaded"
+		"freshError": "Listings in {city} could not be loaded",
+		"freshErrorAll": "The latest listings could not be loaded"
 	},
 	"NotFound": {
 		"title": "Page not found",
@@ -1148,6 +1157,7 @@
 		"tabReviews": "Reviews",
 		"tabAbout": "About",
 		"contact": "Contact",
+		"contactMessage": "Message the shop",
 		"contactWhatsapp": "WhatsApp",
 		"contactCall": "Call",
 		"sortLabel": "Sort listings",
@@ -1954,7 +1964,8 @@
 		"review": {
 			"self": "You cannot review yourself.",
 			"duplicate": "You have already reviewed this user.",
-			"noInteraction": "You can review a user only after contacting them."
+			"noInteraction": "You can review a user only after contacting them.",
+			"tooManyPhotos": "A review can carry at most 5 photos."
 		},
 		"moderation": {
 			"accountSuspended": "Your account is suspended. You cannot publish listings or send messages right now.",
@@ -2842,6 +2853,14 @@
 		"placeOrderPay": "Order and pay · {total}",
 		"placeOrderIdle": "Confirm the order"
 	},
+	"ReviewPhotos": {
+		"label": "Photos from this review",
+		"open": "Open photo {index} of {count}",
+		"viewerTitle": "Photo {index} of {count}",
+		"close": "Close",
+		"previous": "Previous photo",
+		"next": "Next photo"
+	},
 	"Purchases": {
 		"title": "My orders",
 		"tabOpen": "Ongoing",
@@ -2924,6 +2943,13 @@
 		"reviewSubmit": "Publish my review",
 		"reviewSent": "Thank you, your review is published",
 		"reviewRatingRequired": "Choose a rating",
+		"reviewPhotos": "Photos",
+		"reviewPhotosHint": "optional · {max} max.",
+		"reviewPhotoAdd": "Add",
+		"reviewPhotoRemove": "Remove photo {index}",
+		"reviewPhotoTooMany": "You can add up to {max} photos.",
+		"reviewPhotoInvalidType": "Only JPEG, PNG or WebP images can be added.",
+		"reviewPhotoTooLarge": "Each photo must be under {size} MB.",
 		"confirmCodeTitle": "Confirm your order",
 		"confirmCodeBody": "Enter the 6-digit code we sent you by SMS.",
 		"confirmCodeLabel": "Confirmation code",
@@ -3148,6 +3174,9 @@
 		"reinstate": "Reinstate access",
 		"revoke": "Revoke access",
 		"revokedHelp": "Revoked access cannot be restored. The reseller must request access again.",
+		"cancelRequest": "Cancel request",
+		"confirmCancelRequest": "Cancel your access request to this supplier? You can send a new one at any time.",
+		"pendingRequestHelp": "The supplier has not answered your request yet.",
 		"confirmDecision": "Apply this access decision?",
 		"suspensionReason": "Suspension reason",
 		"suspensionNote": "Additional note (optional)",
@@ -3960,6 +3989,13 @@
 		"timeline": "Return timeline"
 	},
 	"Disputes": {
+		"evidenceUnavailable": "This evidence cannot be shown right now.",
+		"menu": "Dispute options",
+		"openEvidence_file": "Open file",
+		"openEvidence_image": "Open photo",
+		"openEvidence_video": "Open video",
+		"refresh": "Refresh",
+		"stagedEvidence": "Attached to your next message",
 		"openInWorkspace": "Open in the seller workspace",
 		"title": "My disputes",
 		"subtitle": "Follow the discussion, deadlines and outcome of reported order problems.",
@@ -4919,6 +4955,9 @@
 		"edit": "Edit",
 		"setUp": "Set up",
 		"holderName": "Account holder",
+		"verifiedIdentityName": "Verified identity",
+		"colCommissionRate": "Commission {rate} (excl. VAT)",
+		"colVatRate": "VAT {rate}",
 		"flowTitle": "How the money flows",
 		"flow": {
 			"1": {
@@ -5022,6 +5061,10 @@
 		"atCost": "at cost",
 		"dormantPrice": "Edit the price",
 		"dormantStock": "See stock",
+		"dormantBoost": "Boost",
+		"dormantLastSaleDays": "Last sale {count, plural, one {# day} other {# days}} ago",
+		"dormantLastSaleToday": "Last sale today",
+		"dormantNeverSold": "Never sold",
 		"dormantFooter": "No sale for over 30 days",
 		"dormantTotal": "{amount} tied up"
 	},

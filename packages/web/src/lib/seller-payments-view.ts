@@ -2,6 +2,7 @@ import type {
 	PaymentHoldView,
 	SellerPaymentAmounts,
 	SellerPaymentOrderRow,
+	SellerPaymentRates,
 } from "~/types/payments";
 import {
 	HOLD_CATEGORY_DESCRIPTIONS,
@@ -73,4 +74,31 @@ export function holdRows(holds: readonly PaymentHoldView[]): HoldRow[] {
 		descriptionKey: HOLD_CATEGORY_DESCRIPTIONS[hold.reasonCategory],
 		until: hold.until,
 	}));
+}
+
+/** "19,25 %" / "19.25%" from basis points; null when the API names no rate. */
+export function formatRateBps(
+	bps: number | null | undefined,
+	locale: "fr" | "en",
+): string | null {
+	if (typeof bps !== "number" || !Number.isFinite(bps) || bps < 0) return null;
+	return new Intl.NumberFormat(locale === "en" ? "en-GB" : "fr-FR", {
+		style: "percent",
+		maximumFractionDigits: 2,
+	}).format(bps / 10_000);
+}
+
+export interface RateHeaders {
+	commission: string | null;
+	vat: string | null;
+}
+
+export function rateHeaders(
+	rates: SellerPaymentRates | undefined,
+	locale: "fr" | "en",
+): RateHeaders {
+	return {
+		commission: formatRateBps(rates?.commissionBps, locale),
+		vat: formatRateBps(rates?.vatBps, locale),
+	};
 }

@@ -1,5 +1,11 @@
 import { type Place, placeKey } from "../../../api/src/contracts/places";
 import type { User } from "../../../api/src/payload-types";
+import {
+	browseCityCookie,
+	browseCityCookieValue,
+	browseCityOf,
+	readBrowseCity,
+} from "./browse-city-cookie";
 
 /**
  * The places this browser remembers.
@@ -133,8 +139,24 @@ function storage(): Storage | null {
 	}
 }
 
+/** Keeps the server-readable cookie in step with the stored preference. */
+function syncBrowseCityCookie(prefs: PlacePreferences): void {
+	if (typeof document === "undefined") return;
+	try {
+		const city = browseCityOf(prefs);
+		const current = readBrowseCity(browseCityCookieValue(document.cookie));
+		if (current !== city) document.cookie = browseCityCookie(city);
+	} catch {
+		// Cookies blocked: the home keeps its client-side swap.
+	}
+}
+
 export function getPreferences(): PlacePreferences {
-	snapshot ??= parsePreferences(storage()?.getItem(STORAGE_KEY) ?? null);
+	if (!snapshot) {
+		snapshot = parsePreferences(storage()?.getItem(STORAGE_KEY) ?? null);
+		// A preference stored before the cookie existed reaches it here.
+		syncBrowseCityCookie(snapshot);
+	}
 	return snapshot;
 }
 
@@ -167,6 +189,7 @@ export function updatePreferences(
 	} catch {
 		// Private mode or a full quota: the in-memory copy still holds.
 	}
+	syncBrowseCityCookie(next);
 	for (const listener of listeners) listener();
 	return next;
 }

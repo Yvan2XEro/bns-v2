@@ -3,7 +3,10 @@ import type { MyShopsEntry, TeamMemberView, TeamView } from "~/types";
 import {
 	ACTIVE_SHOP_COOKIE,
 	assignableMembers,
+	myShopPath,
+	readActiveShopCookie,
 	resolveActiveShop,
+	switchShopTarget,
 } from "./active-shop";
 
 const shop = (id: string): MyShopsEntry => ({
@@ -93,5 +96,48 @@ describe("assignableMembers", () => {
 
 	test("an undefined team is an empty list, not a crash", () => {
 		expect(assignableMembers(undefined, "manager", "u-mgr")).toEqual([]);
+	});
+});
+
+describe("shop switching (W22)", () => {
+	test("asks the API for the preferred shop", () => {
+		expect(myShopPath(null)).toBe("/api/shops/mine");
+		expect(myShopPath("s 2")).toBe("/api/shops/mine?shopId=s%202");
+	});
+
+	test("reads the switcher cookie among others", () => {
+		expect(readActiveShopCookie("a=1; bns_active_shop=s-2; b=3")).toBe("s-2");
+		expect(readActiveShopCookie("a=1")).toBeNull();
+		expect(readActiveShopCookie("")).toBeNull();
+		expect(readActiveShopCookie("bns_active_shop=%E0%A4")).toBeNull();
+	});
+
+	test("stays on the same page when it holds no record of the old shop", () => {
+		expect(switchShopTarget("/seller")).toBe("/seller");
+		expect(switchShopTarget("/seller/orders")).toBe("/seller/orders");
+		expect(switchShopTarget("/seller/stock/inventory")).toBe(
+			"/seller/stock/inventory",
+		);
+		expect(switchShopTarget("/seller/catalogue/new")).toBe(
+			"/seller/catalogue/new",
+		);
+	});
+
+	test("leaves a record page for its section", () => {
+		expect(switchShopTarget("/seller/orders/abc")).toBe("/seller/orders");
+		expect(switchShopTarget("/seller/catalogue/p1")).toBe("/seller/catalogue");
+		expect(switchShopTarget("/seller/payments/payouts/x")).toBe(
+			"/seller/payments",
+		);
+		expect(switchShopTarget("/seller/resale/products/x")).toBe(
+			"/seller/resale",
+		);
+		expect(switchShopTarget("/seller/verification/identity/return")).toBe(
+			"/seller/verification",
+		);
+	});
+
+	test("anything outside the seller space lands on its home", () => {
+		expect(switchShopTarget("/s/akwa")).toBe("/seller");
 	});
 });

@@ -1,6 +1,7 @@
 import { BadgeCheck, Star } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { ReviewPhotos } from "~/components/review/review-photos";
 import { serverFetch } from "~/lib/server-api";
 import type { ShopRatingDisplay } from "~/lib/shop-rating";
 import {
@@ -8,7 +9,7 @@ import {
 	shopReviewsRequest,
 } from "../../../../../../api/src/contracts/publicShopReviews";
 
-async function getReviews(
+export async function getShopReviews(
 	shopId: string,
 	page: number,
 ): Promise<PublicShopReviewPage | null> {
@@ -39,23 +40,18 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export async function ShopReviews({
-	shopId,
-	page,
+	data,
 	rating,
 	locale,
 	pageHref,
 }: {
-	shopId: string;
-	page: number;
+	data: PublicShopReviewPage | null;
 	/** Only the shop's own verified-purchase rating is summarised here, never the owner's. */
 	rating: ShopRatingDisplay | null;
 	locale: string;
 	pageHref: (page: number) => string;
 }) {
-	const [t, data] = await Promise.all([
-		getTranslations("ShopPage"),
-		getReviews(shopId, page),
-	]);
+	const t = await getTranslations("ShopPage");
 	const summary = rating?.source === "shop" ? rating : null;
 
 	return (
@@ -119,6 +115,9 @@ export async function ShopReviews({
 								<p className="mt-2 whitespace-pre-wrap break-words text-[#334155] text-sm leading-relaxed">
 									{review.comment}
 								</p>
+							)}
+							{review.photos.length > 0 && (
+								<ReviewPhotos photos={review.photos} />
 							)}
 						</li>
 					))}

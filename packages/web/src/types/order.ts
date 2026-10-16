@@ -408,6 +408,10 @@ export interface OrderListEntry {
 	} | null;
 	/** Shop role: a shipment exists, so shipping happens on the order page. */
 	hasShipment?: boolean;
+	/** Shop role: order lines, as opposed to `itemCount`'s units. */
+	lineCount?: number;
+	/** Shop role: the first lines in line order. */
+	lines?: { title: string; quantity: number }[];
 	deliveryFailureReason?: string | null;
 }
 

@@ -200,3 +200,15 @@ export function supplierStockState(
 		? { kind: "in_stock" }
 		: { kind: "count", count: total };
 }
+
+/** Only the reseller, and only while the supplier has not answered. */
+export function canCancelResaleRequest(
+	side: "supplier" | "reseller",
+	status: string,
+): boolean {
+	return side === "reseller" && status === "requested";
+}
+
+export function resaleLinkCancelPath(shopId: string, linkId: string): string {
+	return `/api/shops/${encodeURIComponent(shopId)}/resale-links/${encodeURIComponent(linkId)}/cancel`;
+}

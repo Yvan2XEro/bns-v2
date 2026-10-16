@@ -1,6 +1,14 @@
 "use client";
 
-import { ChevronDown, MessageCircle, MessageSquare, Phone } from "lucide-react";
+import {
+	ChevronDown,
+	Loader2,
+	MessageCircle,
+	MessageSquare,
+	Phone,
+	Send,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
 	DropdownMenu,
@@ -8,74 +16,123 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { useAuth } from "~/hooks/use-auth";
+import { useStartShopConversation } from "~/hooks/use-shop-inbox";
+import { resolveErrorMessage } from "~/lib/apiError";
+import { shopContactChannels } from "~/lib/shop-contact";
 import { type ShopTheme, shopThemeVars } from "~/lib/shop-theme";
 import type { PublicShop } from "~/types";
 
-function digits(phone: string): string {
-	return phone.replace(/[^\d]/g, "");
+function goToSignIn() {
+	window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
 }
 
 /**
- * One "Contacter" button whose menu lists only the business channels the shop
- * filled. A shop conversation still needs a listing (`/api/conversations/start`),
- * so there is no "write to the shop" entry here yet.
+ * One "Contacter" button: writing to the shop in the app first, then only the
+ * business channels the shop filled.
  */
 export function ShopContactButtons({
+	shopId,
 	contact,
 	theme,
 }: {
+	shopId: string;
 	contact: PublicShop["contact"];
 	theme?: ShopTheme;
 }) {
 	const t = useTranslations("ShopPage");
-	if (!contact.whatsapp && !contact.phone) return null;
+	const tErrors = useTranslations();
+	const router = useRouter();
+	const { user, isLoading } = useAuth();
+	const start = useStartShopConversation();
+
+	function writeToShop() {
+		if (!isLoading && !user) {
+			goToSignIn();
+			return;
+		}
+		start.mutate(shopId, {
+			onSuccess: ({ conversationId }) => {
+				router.push(`/messages?conversation=${conversationId}`);
+			},
+			onError: (error) => {
+				if (error.status === 401) goToSignIn();
+			},
+		});
+	}
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<button
-					type="button"
-					className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2"
+		<div className="inline-flex flex-col gap-1">
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<button
+						type="button"
+						className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--shop-accent,#1E40AF)] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,#1E40AF)] focus-visible:outline-offset-2"
+					>
+						<MessageSquare className="h-4 w-4" />
+						{t("contact")}
+						<ChevronDown className="h-4 w-4 opacity-80" />
+					</button>
+				</DropdownMenuTrigger>
+				{/* Portalled out of the shop's scope, so it carries the colours itself. */}
+				<DropdownMenuContent
+					align="end"
+					className="min-w-52 [&_[role=menuitem]:focus]:bg-[var(--shop-accent-soft)] [&_[role=menuitem]:focus]:text-[var(--shop-accent-text)]"
+					style={theme ? shopThemeVars(theme) : undefined}
 				>
-					<MessageSquare className="h-4 w-4" />
-					{t("contact")}
-					<ChevronDown className="h-4 w-4 opacity-80" />
-				</button>
-			</DropdownMenuTrigger>
-			{/* Portalled out of the shop's scope, so it carries the colours itself. */}
-			<DropdownMenuContent
-				align="end"
-				className="min-w-52 [&_[role=menuitem]:focus]:bg-[var(--shop-accent-soft)] [&_[role=menuitem]:focus]:text-[var(--shop-accent-text)]"
-				style={theme ? shopThemeVars(theme) : undefined}
-			>
-				{contact.whatsapp && (
-					<DropdownMenuItem asChild>
-						<a
-							href={`https://wa.me/${digits(contact.whatsapp)}`}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="cursor-pointer"
-						>
-							<MessageCircle className="mr-2 h-4 w-4 text-[#15803D]" />
-							{t("contactWhatsapp")}
-						</a>
-					</DropdownMenuItem>
-				)}
-				{contact.phone && (
-					<DropdownMenuItem asChild>
-						<a
-							href={`tel:${contact.phone.replace(/\s/g, "")}`}
-							className="cursor-pointer"
-						>
-							<Phone className="mr-2 h-4 w-4" />
-							<span>{t("contactCall")}</span>
-							<span className="ml-auto pl-3 text-[#64748B] text-xs">
-								{contact.phone}
-							</span>
-						</a>
-					</DropdownMenuItem>
-				)}
-			</DropdownMenuContent>
-		</DropdownMenu>
+					{shopContactChannels(contact).map((channel) => {
+						switch (channel.kind) {
+							case "message":
+								return (
+									<DropdownMenuItem
+										key="message"
+										onSelect={writeToShop}
+										disabled={start.isPending}
+										className="cursor-pointer"
+									>
+										{start.isPending ? (
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										) : (
+											<Send className="mr-2 h-4 w-4" />
+										)}
+										{t("contactMessage")}
+									</DropdownMenuItem>
+								);
+							case "whatsapp":
+								return (
+									<DropdownMenuItem key="whatsapp" asChild>
+										<a
+											href={channel.href}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="cursor-pointer"
+										>
+											<MessageCircle className="mr-2 h-4 w-4 text-[#15803D]" />
+											{t("contactWhatsapp")}
+										</a>
+									</DropdownMenuItem>
+								);
+							default:
+								return (
+									<DropdownMenuItem key="call" asChild>
+										<a href={channel.href} className="cursor-pointer">
+											<Phone className="mr-2 h-4 w-4" />
+											<span>{t("contactCall")}</span>
+											<span className="ml-auto pl-3 text-[#64748B] text-xs">
+												{channel.phone}
+											</span>
+										</a>
+									</DropdownMenuItem>
+								);
+						}
+					})}
+				</DropdownMenuContent>
+			</DropdownMenu>
+			{start.isError && start.error.status !== 401 && (
+				<p role="alert" className="max-w-52 text-red-500 text-xs">
+					{resolveErrorMessage(start.error, tErrors)}
+				</p>
+			)}
+		</div>
 	);
 }

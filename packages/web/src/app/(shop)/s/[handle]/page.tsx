@@ -24,7 +24,7 @@ import { shopRating } from "~/lib/shop-rating";
 import { shopUrl } from "~/lib/shop-url";
 import type { Category, Listing } from "~/types";
 import { ShopCategories } from "./shop-categories";
-import { ShopReviews } from "./shop-reviews";
+import { getShopReviews, ShopReviews } from "./shop-reviews";
 import { ShopSortSelect } from "./shop-sort-select";
 import { ShopTabs } from "./shop-tabs";
 
@@ -170,8 +170,8 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 	const sort = parseShopSort(sortParam);
 	const onListings = tab === "listings";
 	const noListings = { hits: [] as Listing[], total: 0 };
-	const [locale, t, listings, categoryCounts, categoryTree] = await Promise.all(
-		[
+	const [locale, t, listings, categoryCounts, categoryTree, reviews] =
+		await Promise.all([
 			getLocale(),
 			getTranslations("Shop"),
 			onListings
@@ -179,8 +179,10 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 				: noListings,
 			onListings ? getShopCategoryCounts(shop.id) : null,
 			onListings ? getCategoryTree() : new Map<string, CategoryNode>(),
-		],
-	);
+			// Read on every tab: its `total` is the "Avis" count, so the tab
+			// never promises more reviews than the list can show.
+			getShopReviews(shop.id, tab === "reviews" ? page : 1),
+		]);
 	const named = categoryCounts
 		? groupedCounts(categoryCounts.counts, categoryTree)
 		: [];
@@ -243,15 +245,14 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
 					<ShopTabs
 						active={tab}
 						hrefFor={tabHref}
-						reviewCount={shop.totalReviews}
+						reviewCount={reviews?.total ?? 0}
 					/>
 				}
 			/>
 			{tab === "reviews" && (
 				<div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 					<ShopReviews
-						shopId={shop.id}
-						page={page}
+						data={reviews}
 						rating={rating}
 						locale={locale}
 						pageHref={pageHref}

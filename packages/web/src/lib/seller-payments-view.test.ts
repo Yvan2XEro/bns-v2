@@ -6,7 +6,9 @@ import type {
 } from "~/types/payments";
 import {
 	amountStripRows,
+	formatRateBps,
 	holdRows,
+	rateHeaders,
 	sellerOrderRows,
 } from "./seller-payments-view";
 
@@ -107,5 +109,27 @@ describe("holdRows", () => {
 			"holdCategory_review",
 			"holdCategory_operations",
 		]);
+	});
+});
+
+describe("rate headers (W33)", () => {
+	const plain = (text: string | null) => text?.replace(/\s/g, " ") ?? null;
+
+	test("formats the API's basis points per locale", () => {
+		expect(plain(formatRateBps(800, "fr"))).toBe("8 %");
+		expect(plain(formatRateBps(1925, "fr"))).toBe("19,25 %");
+		expect(formatRateBps(1925, "en")).toBe("19.25%");
+	});
+
+	test("names no rate when the API has none", () => {
+		expect(formatRateBps(null, "fr")).toBeNull();
+		expect(rateHeaders(undefined, "en")).toEqual({
+			commission: null,
+			vat: null,
+		});
+		expect(rateHeaders({ commissionBps: null, vatBps: 1925 }, "en")).toEqual({
+			commission: null,
+			vat: "19.25%",
+		});
 	});
 });

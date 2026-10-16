@@ -4,8 +4,10 @@ import { ArrowRight, Eye, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { BoostDialog } from "~/components/listing/boost-dialog";
 import { useOrderMoney } from "~/hooks/use-order-money";
 import {
+	dormantLastSale,
 	formatMinutes,
 	type MeterTone,
 	meterFill,
@@ -600,6 +602,25 @@ export function TopProductsCard({ view }: { view: ShopInsightsView }) {
 	);
 }
 
+function DormantLastSaleText({
+	item,
+}: {
+	item: NonNullable<ShopInsightsView["stock"]["dormant"]>[number];
+}) {
+	const tPage = useTranslations("InsightsPage");
+	const lastSale = dormantLastSale(item);
+	if (!lastSale) return null;
+	return (
+		<p className="text-[#94A3B8] text-xs">
+			{lastSale.kind === "days"
+				? tPage("dormantLastSaleDays", { count: lastSale.days })
+				: lastSale.kind === "today"
+					? tPage("dormantLastSaleToday")
+					: tPage("dormantNeverSold")}
+		</p>
+	);
+}
+
 export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 	const tPage = useTranslations("InsightsPage");
 	const formatOrderMoney = useOrderMoney();
@@ -629,6 +650,7 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 								<p className="text-[#64748B] text-xs">
 									{tPage("dormantLine", { count: item.available })}
 								</p>
+								<DormantLastSaleText item={item} />
 							</div>
 							<div className="text-right">
 								<p className="font-bold text-[#0F172A] tabular-nums">
@@ -637,6 +659,16 @@ export function DormantStockCard({ view }: { view: ShopInsightsView }) {
 								<p className="text-[#94A3B8] text-[11px]">{tPage("atCost")}</p>
 							</div>
 							<div className="flex gap-2">
+								{item.boostListingId && (
+									<BoostDialog listingId={item.boostListingId}>
+										<button
+											type="button"
+											className="inline-flex h-8 items-center rounded-lg border border-[#FDE68A] bg-[#FFFBEB] px-3 font-semibold text-[#92400E] text-xs hover:border-[#F59E0B]"
+										>
+											{tPage("dormantBoost")}
+										</button>
+									</BoostDialog>
+								)}
 								<Link
 									href={`/seller/catalogue/${encodeURIComponent(item.productId)}`}
 									className="inline-flex h-8 items-center rounded-lg border border-[#E2E8F0] px-3 font-semibold text-[#0F172A] text-xs hover:border-[#93C5FD]"

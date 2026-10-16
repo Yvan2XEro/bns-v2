@@ -1,4 +1,5 @@
 import { ChevronRight, MessageSquare, Shield, Truck } from "lucide-react";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CategoryIcon } from "~/components/category-icon";
@@ -9,6 +10,7 @@ import {
 } from "~/components/home/fresh-listings-mix";
 import { PREVIEW_TILES, VerifiedShops } from "~/components/home/verified-shops";
 import { HomeSearchBar } from "~/components/home-search-bar";
+import { BROWSE_CITY_COOKIE, readBrowseCity } from "~/lib/browse-city-cookie";
 import { serverFetch } from "~/lib/server-api";
 import { getShopsEnabled } from "~/lib/server-shop";
 import type { Category, Favorite, Listing, ShopSearchHit } from "~/types";
@@ -39,9 +41,9 @@ async function getListings(path: string): Promise<Listing[]> {
 	}
 }
 
-/** Every city: the browsing city is a browser preference the client applies. */
-async function getFreshListings(): Promise<Listing[]> {
-	const paths = freshListingPaths(null);
+/** The remembered browsing city when its cookie is set, else every city. */
+async function getFreshListings(city: string | null): Promise<Listing[]> {
+	const paths = freshListingPaths(city);
 	const [boosted, recent] = await Promise.all([
 		getListings(paths.boosted),
 		getListings(paths.recent),
@@ -79,10 +81,13 @@ async function getUserFavoriteIds(): Promise<string[]> {
 
 export default async function HomePage() {
 	const t = await getTranslations("Home");
+	const browseCity = readBrowseCity(
+		(await cookies()).get(BROWSE_CITY_COOKIE)?.value,
+	);
 	const [categories, freshListings, favoriteIds, verifiedShops] =
 		await Promise.all([
 			getCategories(),
-			getFreshListings(),
+			getFreshListings(browseCity),
 			getUserFavoriteIds(),
 			getVerifiedShops(),
 		]);
@@ -189,6 +194,7 @@ export default async function HomePage() {
 			<VerifiedShops shops={verifiedShops} />
 
 			<FreshListings
+				initialCity={browseCity}
 				initialListings={freshListings}
 				favoriteIds={favoriteIds}
 			/>

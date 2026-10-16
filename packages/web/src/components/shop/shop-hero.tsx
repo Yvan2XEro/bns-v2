@@ -97,6 +97,7 @@ export function ShopHero({
 						</div>
 						<div className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-1">
 							<ShopContactButtons
+								shopId={shop.id}
 								contact={shop.contact}
 								theme={shopTheme(shop.brandColor)}
 							/>

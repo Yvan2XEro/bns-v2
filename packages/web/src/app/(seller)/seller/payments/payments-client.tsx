@@ -133,9 +133,13 @@ export function PaymentsClient({ shopId }: { shopId: string }) {
 
 			<div className="grid items-start gap-[18px] xl:grid-cols-[minmax(0,1fr)_380px]">
 				<div className="min-w-0 space-y-[18px]">
-					<PayoutsTable payouts={view.payouts} onExport={exportCsv} />
+					<PayoutsTable
+						payouts={view.payouts}
+						rates={view.rates}
+						onExport={exportCsv}
+					/>
 					<CommissionInvoicesCard shopId={shopId} />
-					<OrderBreakdown orders={view.orders} />
+					<OrderBreakdown orders={view.orders} rates={view.rates} />
 				</div>
 				<div className="space-y-[18px]">
 					<PayoutAccountCard shopId={shopId} />

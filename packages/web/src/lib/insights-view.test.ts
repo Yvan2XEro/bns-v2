@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	dormantLastSale,
 	formatMinutes,
 	meterFill,
 	meterTone,
@@ -42,5 +43,31 @@ describe("weeklyChange", () => {
 
 	test("has nothing to say without a base", () => {
 		expect(weeklyChange([week(0), week(125)])).toBeNull();
+	});
+});
+
+describe("dormant last sale (W35)", () => {
+	const item = {
+		productId: "p",
+		productTitle: "P",
+		available: 1,
+		costValue: 0,
+	};
+
+	test("reads the server's day count", () => {
+		expect(dormantLastSale({ ...item, daysSinceLastSale: 42 })).toEqual({
+			kind: "days",
+			days: 42,
+		});
+		expect(dormantLastSale({ ...item, daysSinceLastSale: 0 })).toEqual({
+			kind: "today",
+		});
+	});
+
+	test("never sold is not the same as unknown", () => {
+		expect(dormantLastSale({ ...item, daysSinceLastSale: null })).toEqual({
+			kind: "never",
+		});
+		expect(dormantLastSale(item)).toBeNull();
 	});
 });

@@ -5,10 +5,12 @@ import type {
 	SupplierResaleProduct,
 } from "../../../api/src/contracts/resale";
 import {
+	canCancelResaleRequest,
 	pricesAtMinimum,
 	resaleEarnings,
 	resaleGain,
 	resaleHref,
+	resaleLinkCancelPath,
 	resaleRules,
 	resoldCounts,
 	resolveResaleTab,
@@ -224,5 +226,19 @@ describe("supplierStockState", () => {
 		expect(supplierStockState([3, 4])).toEqual({ kind: "count", count: 7 });
 		expect(supplierStockState([0])).toEqual({ kind: "count", count: 0 });
 		expect(supplierStockState([6, 7])).toEqual({ kind: "in_stock" });
+	});
+});
+
+describe("cancelling a resale request (W36)", () => {
+	it("is the reseller's, on a pending request only", () => {
+		expect(canCancelResaleRequest("reseller", "requested")).toBe(true);
+		expect(canCancelResaleRequest("reseller", "approved")).toBe(false);
+		expect(canCancelResaleRequest("supplier", "requested")).toBe(false);
+	});
+
+	it("posts to the reseller shop's own link route", () => {
+		expect(resaleLinkCancelPath("s 1", "l/1")).toBe(
+			"/api/shops/s%201/resale-links/l%2F1/cancel",
+		);
 	});
 });

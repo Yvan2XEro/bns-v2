@@ -2,7 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "~/lib/apiError";
-import type { SupplierResaleSettingsInput } from "~/lib/resale-hub";
+import {
+	resaleLinkCancelPath,
+	type SupplierResaleSettingsInput,
+} from "~/lib/resale-hub";
 import { apiGet, apiPatch, apiPost } from "~/lib/shop-api";
 import type {
 	CreateResaleListingInput,
@@ -97,6 +100,23 @@ export function useDecideResaleLink(shopId: string) {
 			queryClient.invalidateQueries({
 				queryKey: ["shops", shopId, "resale-links"],
 			}),
+	});
+}
+
+export function useCancelResaleLinkRequest(shopId: string) {
+	const queryClient = useQueryClient();
+	return useMutation<unknown, ApiError, { linkId: string }>({
+		mutationFn: ({ linkId }) => apiPost(resaleLinkCancelPath(shopId, linkId)),
+		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({
+					queryKey: ["shops", shopId, "resale-links"],
+				}),
+				queryClient.invalidateQueries({
+					queryKey: ["shops", shopId, "resale-catalogue"],
+				}),
+			]);
+		},
 	});
 }
 

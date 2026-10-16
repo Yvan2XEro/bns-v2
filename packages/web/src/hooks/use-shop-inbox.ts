@@ -105,3 +105,13 @@ export function useStartConversation() {
 		mutationFn: (listingId: string) => shopApi.startConversation(listingId),
 	});
 }
+
+export function useStartShopConversation() {
+	return useMutation<
+		{ conversationId: string; created: boolean },
+		ApiError,
+		string
+	>({
+		mutationFn: (shopId: string) => shopApi.startShopConversation(shopId),
+	});
+}
