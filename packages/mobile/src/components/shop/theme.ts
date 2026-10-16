@@ -1,4 +1,6 @@
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { sellerBrandPalette } from "./brandTones";
+import { useSellerBrandTheme } from "./sellerBrand";
 
 export interface ShopPalette {
 	isDark: boolean;
@@ -25,9 +27,17 @@ export interface ShopPalette {
 	neutralText: string;
 }
 
-/** One palette for every shop and seller screen, matching DesignSystem.dc.html. */
+/**
+ * One palette for every shop and seller screen, matching DesignSystem.dc.html.
+ * On a seller screen of a shop that picked a colour, `primary` and
+ * `primarySoft` are that colour's.
+ */
 export function useShopTheme(): ShopPalette {
 	const isDark = useColorScheme() === "dark";
+	const brand = useSellerBrandTheme();
+	const branded = brand
+		? sellerBrandPalette(brand, isDark ? "dark" : "light")
+		: null;
 	return {
 		isDark,
 		bg: isDark ? "#0b1120" : "#f8fafc",
@@ -40,6 +50,7 @@ export function useShopTheme(): ShopPalette {
 		border: isDark ? "#1e3a5f" : "#e2e8f0",
 		primary: isDark ? "#3b82f6" : "#1e40af",
 		primarySoft: isDark ? "#172554" : "#dbeafe",
+		...branded,
 		sell: "#f59e0b",
 		success: "#16a34a",
 		successSoft: isDark ? "#052e16" : "#dcfce7",

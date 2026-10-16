@@ -56,6 +56,7 @@ export const ERROR_CODES = {
 	categoryNotFound: "listing.categoryNotFound",
 	uploadTooLarge: "upload.tooLarge",
 	uploadInvalidType: "upload.invalidType",
+	photoLimit: "media.photoLimit",
 
 	contactIncomplete: "contact.incomplete",
 	contactPhoneUnavailable: "contact.phoneUnavailable",
@@ -314,6 +315,7 @@ const FALLBACKS: Record<string, string> = {
 	[ERROR_CODES.categoryNotFound]: "This category is no longer available.",
 	[ERROR_CODES.uploadTooLarge]: "This file is too large.",
 	[ERROR_CODES.uploadInvalidType]: "This file type is not supported.",
+	[ERROR_CODES.photoLimit]: "You have reached the number of photos included.",
 	[ERROR_CODES.contactIncomplete]: "Please fill in every field.",
 	[ERROR_CODES.contactPhoneUnavailable]:
 		"This seller has not shared a phone number.",

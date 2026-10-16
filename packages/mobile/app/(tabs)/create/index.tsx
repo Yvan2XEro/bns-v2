@@ -28,8 +28,10 @@ import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
+import { PhotoLimitNote } from "@/src/components/ui/PhotoLimitNote";
 import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import {
 	CATEGORIES_QUERY_KEY,
@@ -63,6 +65,7 @@ import {
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
 import { isSuspended } from "@/src/lib/moderation";
+import { canAddPhoto } from "@/src/lib/photoLimit";
 import type { Place } from "@/src/lib/places";
 import { useUserLocation } from "@/src/lib/useUserLocation";
 import { listingIssueStep } from "../../../../api/src/contracts/listingValidation";
@@ -80,9 +83,6 @@ const DURATIONS = [30, 60, 90];
  * from the title and shown on every step that can change it.
  */
 type StepId = "attributes" | "describe" | "details" | "photos" | "review";
-
-/** Maximum number of images a listing can carry (enforced server-side too). */
-const MAX_LISTING_IMAGES = 3;
 
 interface UploadedImage {
 	id: string; // Payload media document ID
@@ -137,6 +137,7 @@ export default function CreateScreen() {
 	const didPrefillLocationRef = useRef(false);
 	const [step, setStep] = useState<StepId>("describe");
 	const [form, setForm] = useState<FormData>(createEmptyForm);
+	const { photosIncluded } = useAppConfig();
 
 	// Owned by the wizard rather than by a step: the category drives which steps
 	// exist, the header, and the guess made from the title.
@@ -200,8 +201,9 @@ export default function CreateScreen() {
 		() =>
 			listingDraftIssues(form, categoryAttributes, {
 				applicableTags: applicableTagIds,
+				photoLimit: photosIncluded,
 			}),
-		[form, categoryAttributes, applicableTagIds],
+		[form, categoryAttributes, applicableTagIds, photosIncluded],
 	);
 	const [attempted, setAttempted] = useState(false);
 	const [refused, setRefused] = useState<{
@@ -681,6 +683,7 @@ export default function CreateScreen() {
 							onNext={goNext}
 							gate={stepGate}
 							colors={colors}
+							photoLimit={photosIncluded}
 						/>
 					)}
 					{currentStep === "review" && (
@@ -1349,7 +1352,7 @@ function attributeIssueMessage(
 
 // ─── Photos Step ───────────────────────────────────────────────────────────────
 
-function PhotosStep({ form, setForm, onNext, gate, colors }: any) {
+function PhotosStep({ form, setForm, onNext, gate, colors, photoLimit }: any) {
 	const { bg, cardBg, textColor, mutedColor, primary, border, isDark } = colors;
 	const { t } = useTranslation();
 	// Whether a photo is mandatory is the category's call, not this screen's.
@@ -1357,6 +1360,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors }: any) {
 		.required;
 	const { showAlert, showError, showWarning } = useAlert();
 	const [uploading, setUploading] = useState(false);
+	const full = !canAddPhoto(form.images.length, photoLimit);
 
 	const pickImage = async (fromCamera: boolean) => {
 		try {
@@ -1428,11 +1432,8 @@ function PhotosStep({ form, setForm, onNext, gate, colors }: any) {
 	};
 
 	const showPicker = () => {
-		if (form.images.length >= MAX_LISTING_IMAGES) {
-			showWarning(
-				t("create.limitReached"),
-				t("create.limitReachedMsg", { count: MAX_LISTING_IMAGES }),
-			);
+		if (full) {
+			showWarning(t("create.limitReached"), t("photoLimit.moreSoon"));
 			return;
 		}
 		showAlert(t("create.addPhotoTitle"), t("create.addPhotoSource"), [
@@ -1460,7 +1461,7 @@ function PhotosStep({ form, setForm, onNext, gate, colors }: any) {
 				{t("create.stepPhotosTitle")}
 			</Text>
 			<Text style={[styles.stepSub, { color: mutedColor }]}>
-				{t("create.stepPhotosHint", { count: MAX_LISTING_IMAGES })}
+				{t("create.stepPhotosHint", { count: photoLimit })}
 			</Text>
 
 			{/* Tip card */}
@@ -1514,38 +1515,43 @@ function PhotosStep({ form, setForm, onNext, gate, colors }: any) {
 					</View>
 				))}
 
-				{form.images.length < MAX_LISTING_IMAGES && (
-					<Pressable
-						style={[
-							styles.addPhotoBtn,
-							{
-								backgroundColor: isDark ? "#162032" : "#f0f7ff",
-								borderColor: primary,
-							},
-						]}
-						onPress={showPicker}
-						disabled={uploading}
-					>
-						{uploading ? (
-							<ActivityIndicator color={primary} />
-						) : (
-							<>
-								<View
-									style={[
-										styles.addIconCircle,
-										{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
-									]}
-								>
-									<Ionicons name="add" size={24} color={primary} />
-								</View>
-								<Text style={[styles.addPhotoText, { color: primary }]}>
-									{t("create.addPhoto")}
-								</Text>
-							</>
-						)}
-					</Pressable>
-				)}
+				<Pressable
+					style={[
+						styles.addPhotoBtn,
+						{
+							backgroundColor: isDark ? "#162032" : "#f0f7ff",
+							borderColor: primary,
+						},
+						full && { opacity: 0.4 },
+					]}
+					onPress={showPicker}
+					disabled={uploading || full}
+					accessibilityState={{ disabled: uploading || full }}
+				>
+					{uploading ? (
+						<ActivityIndicator color={primary} />
+					) : (
+						<>
+							<View
+								style={[
+									styles.addIconCircle,
+									{ backgroundColor: isDark ? "#1e3a5f" : "#dbeafe" },
+								]}
+							>
+								<Ionicons name="add" size={24} color={primary} />
+							</View>
+							<Text style={[styles.addPhotoText, { color: primary }]}>
+								{t("create.addPhoto")}
+							</Text>
+						</>
+					)}
+				</Pressable>
 			</View>
+			<PhotoLimitNote
+				count={form.images.length}
+				limit={photoLimit}
+				color={mutedColor}
+			/>
 
 			{photosRequired && form.images.length === 0 && (
 				<Text style={[styles.photoRequired, { color: "#ef4444" }]}>

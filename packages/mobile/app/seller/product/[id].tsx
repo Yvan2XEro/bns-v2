@@ -22,6 +22,7 @@ import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { StepSegments } from "@/src/components/ui/StepSegments";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useProductSubmit } from "@/src/hooks/useProductSubmit";
 import { useMyShop, useProductDetail } from "@/src/hooks/useShops";
 import { resolveErrorMessage } from "@/src/lib/apiError";
@@ -98,9 +99,17 @@ export default function ProductScreen() {
 	);
 	const role = creating ? mine.data?.role : detail.data?.role;
 	const canManageCost = canSeeCost(role);
+	const { photosIncluded } = useAppConfig();
+	const savedPhotoCount = creating
+		? null
+		: (detail.data?.product.images?.length ?? 0);
 	const formIssues = useMemo(
-		() => productFormIssues(form, attributes),
-		[form, attributes],
+		() =>
+			productFormIssues(form, attributes, {
+				limit: photosIncluded,
+				previousCount: savedPhotoCount,
+			}),
+		[form, attributes, photosIncluded, savedPhotoCount],
 	);
 	const visibleIssues = useMemo(
 		() => [

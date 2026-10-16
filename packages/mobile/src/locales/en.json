@@ -2279,7 +2279,7 @@
 		"step2Title": "Variants, prices and stock",
 		"step3Title": "Review and publish",
 		"photos": "Photos",
-		"photosCount": "{{count}} of {{max}} · the first one is the cover",
+		"photosCount": "{{count}} / {{max}} photos · the first one is the cover",
 		"cover": "Cover",
 		"addPhoto": "Add",
 		"titleLabel": "Product title",
@@ -4316,6 +4316,10 @@
 		"unavailable_shop_inactive": "This shop is not taking orders right now.",
 		"unavailable_other": "This group cannot be ordered right now."
 	},
+	"photoLimit": {
+		"count": "{{count}} / {{max}} photos",
+		"moreSoon": "More photos coming soon as an option"
+	},
 	"formIssues": {
 		"barcode": "Invalid barcode: 8, 12, 13 or 14 digits (EAN or UPC), check digit included.",
 		"invalid": "This value was refused. Please check it.",
@@ -4325,6 +4329,7 @@
 		"text": "Enter text.",
 		"option": "Choose one of the proposed values.",
 		"maxItems": "At most {{max}}.",
+		"photoLimit": "At most {{max}} photos. Remove one to add another.",
 		"count": "Between {{min}} and {{max}}.",
 		"duplicate": "Already used elsewhere in this form.",
 		"taken": "Already used by another product of your shop.",

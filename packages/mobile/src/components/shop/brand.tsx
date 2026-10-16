@@ -36,6 +36,16 @@ export function useShopBrand(): ShopBrand {
 	);
 }
 
+/** The shop's tones inside a `ShopBrandProvider`, null outside one: for shared components that keep their own colours elsewhere. */
+export function useShopBrandIfAny(): ShopBrand | null {
+	const theme = useContext(ShopBrandContext);
+	const scheme = useColorScheme() === "dark" ? "dark" : "light";
+	return useMemo(
+		() => (theme ? brandTones(theme, scheme) : null),
+		[theme, scheme],
+	);
+}
+
 /** Tones for one shop outside any provider, e.g. a seller card on a listing. */
 export function useBrandFor(brandColor: string | null | undefined): ShopBrand {
 	const scheme = useColorScheme() === "dark" ? "dark" : "light";

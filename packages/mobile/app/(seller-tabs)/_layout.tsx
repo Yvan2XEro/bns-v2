@@ -8,6 +8,11 @@ import { HapticTab } from "@/components/haptic-tab";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
+import { sellerBrandPalette } from "@/src/components/shop/brandTones";
+import {
+	SellerAreaContext,
+	useActiveShopBrandTheme,
+} from "@/src/components/shop/sellerBrand";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useChatClient } from "@/src/contexts/ChatContext";
 import { useActiveShop } from "@/src/hooks/useActiveShop";
@@ -57,6 +62,7 @@ export default function SellerTabLayout() {
 	const { mode, hydrated } = useStoredAppMode();
 	const membership = useHasShopMembership();
 	const resolved = hydrated ? resolveAppMode(mode, membership) : "pending";
+	const brand = useActiveShopBrandTheme();
 
 	// Lost the last membership (or signed out): back to buyer mode for good.
 	const lostMembership =
@@ -69,93 +75,99 @@ export default function SellerTabLayout() {
 	if (resolved === "pending") return <LoadingScreen />;
 	if (resolved === "buyer") return <Redirect href="/(tabs)/home" />;
 
-	const activeColor = isDark ? "#3b82f6" : "#1e40af";
+	const activeColor = brand
+		? sellerBrandPalette(brand, isDark ? "dark" : "light").primary
+		: isDark
+			? "#3b82f6"
+			: "#1e40af";
 	const bgColor = isDark ? "#0b1120" : "#ffffff";
 	const borderColor = isDark ? "#1e3a5f" : "#e2e8f0";
 
 	return (
-		<Tabs
-			screenOptions={{
-				tabBarActiveTintColor: activeColor,
-				tabBarInactiveTintColor: "#94a3b8",
-				headerShown: false,
-				tabBarButton: HapticTab,
-				tabBarStyle: {
-					backgroundColor: bgColor,
-					borderTopColor: borderColor,
-					borderTopWidth: 1,
-					paddingTop: 10,
-					paddingBottom: Math.max(insets.bottom, 6),
-					height: 68 + insets.bottom,
-				},
-				tabBarLabelStyle: {
-					fontSize: 10,
-					fontFamily: Fonts.bodySemibold,
-					marginBottom: 4,
-				},
-			}}
-		>
-			<Tabs.Screen
-				name="sell/dashboard"
-				options={{
-					title: t("sellerMode.tabs.dashboard"),
-					tabBarIcon: ({ color, focused }) => (
-						<TabIcon
-							name="grid-outline"
-							focusedName="grid"
-							color={color}
-							focused={focused}
-						/>
-					),
+		<SellerAreaContext.Provider value={true}>
+			<Tabs
+				screenOptions={{
+					tabBarActiveTintColor: activeColor,
+					tabBarInactiveTintColor: "#94a3b8",
+					headerShown: false,
+					tabBarButton: HapticTab,
+					tabBarStyle: {
+						backgroundColor: bgColor,
+						borderTopColor: borderColor,
+						borderTopWidth: 1,
+						paddingTop: 10,
+						paddingBottom: Math.max(insets.bottom, 6),
+						height: 68 + insets.bottom,
+					},
+					tabBarLabelStyle: {
+						fontSize: 10,
+						fontFamily: Fonts.bodySemibold,
+						marginBottom: 4,
+					},
 				}}
-			/>
-			<Tabs.Screen
-				name="sell/orders"
-				options={{
-					title: t("sellerMode.tabs.orders"),
-					tabBarIcon: ({ color, focused }) => (
-						<OrdersTabIcon color={color} focused={focused} />
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="sell/catalogue"
-				options={{
-					title: t("sellerMode.tabs.catalogue"),
-					tabBarIcon: ({ color, focused }) => (
-						<TabIcon
-							name="cube-outline"
-							focusedName="cube"
-							color={color}
-							focused={focused}
-						/>
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="sell/inbox"
-				options={{
-					title: t("sellerMode.tabs.messages"),
-					tabBarIcon: ({ color, focused }) => (
-						<InboxTabIcon color={color} focused={focused} />
-					),
-				}}
-			/>
-			<Tabs.Screen
-				name="sell/shop"
-				options={{
-					title: t("sellerMode.tabs.shop"),
-					tabBarIcon: ({ color, focused }) => (
-						<TabIcon
-							name="storefront-outline"
-							focusedName="storefront"
-							color={color}
-							focused={focused}
-						/>
-					),
-				}}
-			/>
-		</Tabs>
+			>
+				<Tabs.Screen
+					name="sell/dashboard"
+					options={{
+						title: t("sellerMode.tabs.dashboard"),
+						tabBarIcon: ({ color, focused }) => (
+							<TabIcon
+								name="grid-outline"
+								focusedName="grid"
+								color={color}
+								focused={focused}
+							/>
+						),
+					}}
+				/>
+				<Tabs.Screen
+					name="sell/orders"
+					options={{
+						title: t("sellerMode.tabs.orders"),
+						tabBarIcon: ({ color, focused }) => (
+							<OrdersTabIcon color={color} focused={focused} />
+						),
+					}}
+				/>
+				<Tabs.Screen
+					name="sell/catalogue"
+					options={{
+						title: t("sellerMode.tabs.catalogue"),
+						tabBarIcon: ({ color, focused }) => (
+							<TabIcon
+								name="cube-outline"
+								focusedName="cube"
+								color={color}
+								focused={focused}
+							/>
+						),
+					}}
+				/>
+				<Tabs.Screen
+					name="sell/inbox"
+					options={{
+						title: t("sellerMode.tabs.messages"),
+						tabBarIcon: ({ color, focused }) => (
+							<InboxTabIcon color={color} focused={focused} />
+						),
+					}}
+				/>
+				<Tabs.Screen
+					name="sell/shop"
+					options={{
+						title: t("sellerMode.tabs.shop"),
+						tabBarIcon: ({ color, focused }) => (
+							<TabIcon
+								name="storefront-outline"
+								focusedName="storefront"
+								color={color}
+								focused={focused}
+							/>
+						),
+					}}
+				/>
+			</Tabs>
+		</SellerAreaContext.Provider>
 	);
 }
 

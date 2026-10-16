@@ -4,6 +4,10 @@ import { api } from "@/src/lib/api";
 import { setMarket } from "@/src/lib/market";
 import type { LaunchCityOption } from "@/src/types/order";
 import type { MarketConfig } from "../../../api/src/contracts/marketConfig";
+import {
+	normalizePhotoLimit,
+	PHOTO_LIMIT,
+} from "../../../api/src/contracts/photoLimit";
 
 /** `AppSettings.payments.buyerProtection`, mirrored from web's own `useAppConfig`. */
 export interface BuyerProtectionConfig {
@@ -40,6 +44,8 @@ export interface AppConfig {
 	resalePrepaidEnabled: boolean;
 	/** Rate, minimum and maximum for the buyer protection fee. */
 	buyerProtection: BuyerProtectionConfig;
+	/** Photos a listing or a product may carry (admin setting); the API refuses more. */
+	photosIncluded: number;
 	/** Absent from an API that predates markets; money and phone then use the M9 fallbacks. */
 	market?: MarketConfig;
 }
@@ -67,6 +73,7 @@ const DEFAULT: AppConfig = {
 	resaleEnabled: false,
 	resalePrepaidEnabled: false,
 	buyerProtection: { bps: 300, min: 100, max: 15_000 },
+	photosIncluded: PHOTO_LIMIT.default,
 };
 
 const AppConfigContext = createContext<AppConfig>(DEFAULT);
@@ -79,7 +86,11 @@ export function AppConfigProvider({ children }: { children: React.ReactNode }) {
 		queryFn: async () => {
 			const raw = await api.get<Partial<AppConfig>>("/api/public/config");
 			setMarket(raw.market);
-			return { ...DEFAULT, ...raw };
+			return {
+				...DEFAULT,
+				...raw,
+				photosIncluded: normalizePhotoLimit(raw.photosIncluded),
+			};
 		},
 		staleTime: Number.POSITIVE_INFINITY,
 		retry: 3,

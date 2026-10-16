@@ -1,4 +1,5 @@
 import {
+	contrast,
 	isBrandColor,
 	type ShopTheme,
 	type ShopThemeTones,
@@ -48,4 +49,43 @@ export function parseBrandColorInput(
 	return isBrandColor(withHash)
 		? { ok: true, value: withHash.toUpperCase() }
 		: { ok: false };
+}
+
+const WHITE = "#FFFFFF";
+const INK = "#0F172A";
+
+function mixHex(a: string, b: string, weightOfB: number): string {
+	const rgb = (hex: string) => {
+		const n = Number.parseInt(hex.slice(1), 16);
+		return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+	};
+	const x = rgb(a);
+	const y = rgb(b);
+	return `#${x
+		.map((c, i) =>
+			Math.round(c + (y[i] - c) * weightOfB)
+				.toString(16)
+				.padStart(2, "0"),
+		)
+		.join("")
+		.toUpperCase()}`;
+}
+
+/**
+ * The seller screens' `primary` in the shop's colour. It fills buttons under
+ * white text and colours links on the page, so it is the shop's text tone
+ * darkened until white reads on it (4.5:1 in light, 3:1 in dark, the platform
+ * blue's own compromise there).
+ */
+export function sellerBrandPalette(
+	theme: ShopTheme,
+	scheme: "light" | "dark",
+): { primary: string; primarySoft: string } {
+	const tones = scheme === "dark" ? theme.dark : theme.light;
+	const target = scheme === "dark" ? 3 : 4.5;
+	let primary = tones.accentText;
+	for (let step = 1; step <= 20 && contrast(primary, WHITE) < target; step++) {
+		primary = mixHex(tones.accentText, INK, step / 20);
+	}
+	return { primary, primarySoft: tones.accentSoft };
 }

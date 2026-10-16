@@ -64,7 +64,6 @@ export interface ProductFormState {
 	warrantyMonths: string;
 }
 
-export const MAX_PRODUCT_IMAGES = PRODUCT_LIMITS.imagesMax;
 export const MAX_OPTIONS = PRODUCT_LIMITS.optionsMax;
 
 /**
@@ -334,6 +333,12 @@ export function fromProductDetail(
 export function productFormIssues(
 	state: ProductFormState,
 	attributes: ListingAttribute[],
+	photos: {
+		/** `photosIncluded` from the public config. */
+		limit?: number;
+		/** The saved product's photo count: an edit may keep more than the limit, not add. */
+		previousCount?: number | null;
+	} = {},
 ): FieldIssue[] {
 	const input = toProductInput(state, attributes);
 	const body = {
@@ -361,7 +366,13 @@ export function productFormIssues(
 	if (state.hasVariants && cleanOptions(state.options).length === 0) {
 		add({ path: "options", rule: "required" });
 	}
-	for (const issue of productInputIssues(body, { attributes })) add(issue);
+	for (const issue of productInputIssues(body, {
+		attributes,
+		photoLimit: photos.limit,
+		previousImageCount: photos.previousCount,
+	})) {
+		add(issue);
+	}
 	return issues;
 }
 

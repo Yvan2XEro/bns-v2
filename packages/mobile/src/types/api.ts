@@ -1522,6 +1522,8 @@ export interface MyShopsEntry {
 	name: string;
 	handle: string;
 	logoUrl: string | null;
+	/** Absent from an API that predates it. */
+	brandColor?: string | null;
 	role: ShopRole;
 	capabilities: ShopCapabilities;
 	inboxUnread: number;

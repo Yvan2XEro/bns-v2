@@ -19,10 +19,13 @@ import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
 import { CityPicker } from "@/src/components/CityPicker";
+import { FieldIssueText } from "@/src/components/seller/FieldIssueText";
 import { PublishInShopToggle } from "@/src/components/shop/PublishInShopToggle";
 import { TagPicker } from "@/src/components/TagPicker";
 import { FieldIssueList } from "@/src/components/ui/FieldIssueList";
+import { PhotoLimitNote } from "@/src/components/ui/PhotoLimitNote";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useCategoryTags } from "@/src/hooks/useCategoryTags";
 import { CATEGORIES_STALE_TIME_MS } from "@/src/hooks/useListings";
 import { useResponsive } from "@/src/hooks/useResponsive";
@@ -30,7 +33,11 @@ import { useMyShop } from "@/src/hooks/useShops";
 import { api } from "@/src/lib/api";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { pruneTagIds } from "@/src/lib/categoryTags";
-import { type FieldIssue, serverFieldIssues } from "@/src/lib/formIssues";
+import {
+	type FieldIssue,
+	issueAt,
+	serverFieldIssues,
+} from "@/src/lib/formIssues";
 import { useTranslation } from "@/src/lib/i18n";
 import {
 	type AttributeIssue,
@@ -48,13 +55,11 @@ import {
 	serializeAttributeValues,
 } from "@/src/lib/listingForm";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
+import { canAddPhoto } from "@/src/lib/photoLimit";
 import type { Place } from "@/src/lib/places";
 import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const DURATIONS = [30, 60, 90];
-
-/** Maximum number of images a listing can carry (enforced server-side too). */
-const MAX_LISTING_IMAGES = 3;
 
 type ImageItem = { id: string; uri: string };
 
@@ -306,6 +311,7 @@ export default function EditListingScreen() {
 	const queryClient = useQueryClient();
 	const { showSuccess, showError, showAlert, showWarning } = useAlert();
 	const { t } = useTranslation();
+	const { photosIncluded } = useAppConfig();
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -473,7 +479,9 @@ export default function EditListingScreen() {
 			? listing.images.length
 			: 0,
 		applicableTags: applicableTagIds,
+		photoLimit: photosIncluded,
 	});
+	const photosFull = !canAddPhoto(images.length, photosIncluded);
 	const draftKey = JSON.stringify(draft);
 	const [attempted, setAttempted] = useState(false);
 	const [refused, setRefused] = useState<{
@@ -565,11 +573,8 @@ export default function EditListingScreen() {
 	};
 
 	const showImagePicker = () => {
-		if (images.length >= MAX_LISTING_IMAGES) {
-			showWarning(
-				t("edit.limitReached"),
-				t("edit.limitReachedMsg", { count: MAX_LISTING_IMAGES }),
-			);
+		if (photosFull) {
+			showWarning(t("edit.limitReached"), t("photoLimit.moreSoon"));
 			return;
 		}
 		showAlert(t("edit.addPhotoTitle"), t("edit.addPhotoSource"), [
@@ -721,7 +726,7 @@ export default function EditListingScreen() {
 					{...sharedSection}
 				>
 					<Text style={[styles.hint, { color: mutedColor }]}>
-						{t("edit.photosHint", { count: MAX_LISTING_IMAGES })}
+						{t("edit.photosHint", { count: photosIncluded })}
 					</Text>
 					<ScrollView
 						horizontal
@@ -752,32 +757,38 @@ export default function EditListingScreen() {
 								</Pressable>
 							</View>
 						))}
-						{images.length < MAX_LISTING_IMAGES && (
-							<Pressable
-								onPress={showImagePicker}
-								disabled={uploading}
-								style={[
-									styles.addImageBtn,
-									{ backgroundColor: inputBg, borderColor },
-								]}
-							>
-								{uploading ? (
-									<ActivityIndicator color={primaryColor} />
-								) : (
-									<>
-										<Ionicons
-											name="camera-outline"
-											size={24}
-											color={mutedColor}
-										/>
-										<Text style={[styles.addImageText, { color: mutedColor }]}>
-											{t("edit.addPhoto")}
-										</Text>
-									</>
-								)}
-							</Pressable>
-						)}
+						<Pressable
+							onPress={showImagePicker}
+							disabled={uploading || photosFull}
+							accessibilityState={{ disabled: uploading || photosFull }}
+							style={[
+								styles.addImageBtn,
+								{ backgroundColor: inputBg, borderColor },
+								photosFull && { opacity: 0.4 },
+							]}
+						>
+							{uploading ? (
+								<ActivityIndicator color={primaryColor} />
+							) : (
+								<>
+									<Ionicons
+										name="camera-outline"
+										size={24}
+										color={mutedColor}
+									/>
+									<Text style={[styles.addImageText, { color: mutedColor }]}>
+										{t("edit.addPhoto")}
+									</Text>
+								</>
+							)}
+						</Pressable>
 					</ScrollView>
+					<PhotoLimitNote
+						count={images.length}
+						limit={photosIncluded}
+						color={mutedColor}
+					/>
+					<FieldIssueText issue={issueAt(visibleIssues, "images")} />
 				</SectionCard>
 
 				{/* ── Détails ── */}

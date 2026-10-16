@@ -12,17 +12,19 @@ import {
 import { Fonts } from "@/constants/theme";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useAlert } from "@/src/contexts/AlertContext";
+import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { api } from "@/src/lib/api";
 import { useTranslation } from "@/src/lib/i18n";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
-import {
-	MAX_PRODUCT_IMAGES,
-	type ProductFormState,
-} from "@/src/lib/productForm";
+import { photoLimitStatus } from "@/src/lib/photoLimit";
+import type { ProductFormState } from "@/src/lib/productForm";
 import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
 import { formStyles as f } from "./formStyles";
 
-/** Photo grid: capture/pick, upload, cover marker, remove. Up to `MAX_PRODUCT_IMAGES`. */
+/**
+ * Photo grid: capture/pick, upload, cover marker, remove. Up to the admin's
+ * `photosIncluded`; a product saved with more keeps them and can only remove.
+ */
 export function ProductPhotosCard({
 	form,
 	setForm,
@@ -34,6 +36,8 @@ export function ProductPhotosCard({
 	const { t } = useTranslation();
 	const { showError, showAlert } = useAlert();
 	const [uploading, setUploading] = useState(false);
+	const { photosIncluded } = useAppConfig();
+	const photos = photoLimitStatus(form.images.length, photosIncluded);
 
 	const pick = async (fromCamera: boolean) => {
 		const permission = fromCamera
@@ -48,17 +52,14 @@ export function ProductPhotosCard({
 			: await ImagePicker.launchImageLibraryAsync({
 					mediaTypes: ["images"],
 					allowsMultipleSelection: true,
-					selectionLimit: MAX_PRODUCT_IMAGES - form.images.length,
+					selectionLimit: photos.remaining,
 					quality: 0.85,
 				});
 		if (result.canceled) return;
 
 		setUploading(true);
 		try {
-			for (const asset of result.assets.slice(
-				0,
-				MAX_PRODUCT_IMAGES - form.images.length,
-			)) {
+			for (const asset of result.assets.slice(0, photos.remaining)) {
 				const base = `product_${Date.now()}`;
 				const data = await createMediaUploadFormData(asset, {
 					defaultBaseName: base,
@@ -96,7 +97,7 @@ export function ProductPhotosCard({
 				<Text style={[f.counter, { color: c.muted }]}>
 					{t("product.photosCount", {
 						count: form.images.length,
-						max: MAX_PRODUCT_IMAGES,
+						max: photos.max,
 					})}
 				</Text>
 			</View>
@@ -129,27 +130,36 @@ export function ProductPhotosCard({
 						</Pressable>
 					</View>
 				))}
-				{form.images.length < MAX_PRODUCT_IMAGES ? (
-					<Pressable
-						onPress={addPhoto}
-						disabled={uploading}
-						style={[styles.photo, styles.add, { borderColor: c.border }]}
-						accessibilityRole="button"
-						accessibilityLabel={t("product.addPhoto")}
-					>
-						{uploading ? (
-							<ActivityIndicator color={c.primary} />
-						) : (
-							<>
-								<Ionicons name="camera-outline" size={20} color={c.primary} />
-								<Text style={[f.hint, { color: c.primary }]}>
-									{t("product.addPhoto")}
-								</Text>
-							</>
-						)}
-					</Pressable>
-				) : null}
+				<Pressable
+					onPress={addPhoto}
+					disabled={uploading || photos.full}
+					style={[
+						styles.photo,
+						styles.add,
+						{ borderColor: c.border },
+						photos.full && { opacity: 0.4 },
+					]}
+					accessibilityRole="button"
+					accessibilityLabel={t("product.addPhoto")}
+					accessibilityState={{ disabled: uploading || photos.full }}
+				>
+					{uploading ? (
+						<ActivityIndicator color={c.primary} />
+					) : (
+						<>
+							<Ionicons name="camera-outline" size={20} color={c.primary} />
+							<Text style={[f.hint, { color: c.primary }]}>
+								{t("product.addPhoto")}
+							</Text>
+						</>
+					)}
+				</Pressable>
 			</View>
+			{photos.full ? (
+				<Text style={[f.hint, { color: c.muted, marginTop: 8 }]}>
+					{t("photoLimit.moreSoon")}
+				</Text>
+			) : null}
 		</View>
 	);
 }

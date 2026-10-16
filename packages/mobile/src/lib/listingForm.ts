@@ -607,6 +607,8 @@ export function listingDraftIssues(
 	attributes: ListingAttribute[],
 	options: {
 		previousImageCount?: number;
+		/** `photosIncluded` from the public config. */
+		photoLimit?: number;
 		/** Ids of the tags the category gets; null until they are loaded. */
 		applicableTags?: readonly string[] | null;
 	} = {},
@@ -641,6 +643,7 @@ export function listingDraftIssues(
 		preset: preset.fields,
 		attributes,
 		previousImageCount: options.previousImageCount,
+		photoLimit: options.photoLimit,
 		tags: options.applicableTags ?? null,
 	})) {
 		if (!issues.some((known) => known.path === issue.path)) issues.push(issue);

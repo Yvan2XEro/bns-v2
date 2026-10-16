@@ -45,6 +45,7 @@ import {
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
+import { SellerBrandProvider } from "@/src/components/shop/sellerBrand";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
 import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
@@ -391,321 +392,344 @@ function RootLayoutNav() {
 
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-			<Stack>
-				<Stack.Screen name="onboarding" options={{ headerShown: false }} />
-				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-				<Stack.Screen name="(seller-tabs)" options={{ headerShown: false }} />
-				<Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="listing/[id]/edit"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/edit-profile"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/favorites"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/listings"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="account/boosts" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="account/overview"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/searches"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="account/notifications"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="profile/[userId]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="s/[handle]" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="shop/create"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen name="shop/manage" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="shop/settings/[section]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="shop/move-listings"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen name="seller/index" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="seller/verification/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/verification/identity"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/verification/return"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/verification/business"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/catalogue"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/stock-adjust"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/product/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="auth/login"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="auth/register"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="auth/forgot-password"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="filters"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="boost/[listingId]"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="report"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="messages/[conversationId]"
-					options={{ headerShown: false, animation: "slide_from_right" }}
-				/>
-				<Stack.Screen
-					name="moderation/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/disputes/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/disputes/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/listing/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/report/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/user/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/shop/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/verification/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="settings" options={{ headerShown: false }} />
-				<Stack.Screen name="security" options={{ headerShown: false }} />
-				<Stack.Screen name="contact" options={{ headerShown: false }} />
-				<Stack.Screen name="help" options={{ headerShown: false }} />
-				<Stack.Screen name="safety" options={{ headerShown: false }} />
-				<Stack.Screen name="terms" options={{ headerShown: false }} />
-				<Stack.Screen name="privacy" options={{ headerShown: false }} />
+			<SellerBrandProvider>
+				<Stack>
+					<Stack.Screen name="onboarding" options={{ headerShown: false }} />
+					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+					<Stack.Screen name="(seller-tabs)" options={{ headerShown: false }} />
+					<Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="listing/[id]/edit"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/edit-profile"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/favorites"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/listings"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/boosts"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/overview"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/searches"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/notifications"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="profile/[userId]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="s/[handle]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="shop/create"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen name="shop/manage" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="shop/settings/[section]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="shop/move-listings"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen name="seller/index" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="seller/verification/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/verification/identity"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/verification/return"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/verification/business"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/catalogue"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/stock-adjust"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/product/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/login"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/register"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="auth/forgot-password"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="filters"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="boost/[listingId]"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="report"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="messages/[conversationId]"
+						options={{ headerShown: false, animation: "slide_from_right" }}
+					/>
+					<Stack.Screen
+						name="moderation/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/disputes/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/disputes/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/listing/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/report/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/user/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/shop/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/verification/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="settings" options={{ headerShown: false }} />
+					<Stack.Screen name="security" options={{ headerShown: false }} />
+					<Stack.Screen name="contact" options={{ headerShown: false }} />
+					<Stack.Screen name="help" options={{ headerShown: false }} />
+					<Stack.Screen name="safety" options={{ headerShown: false }} />
+					<Stack.Screen name="terms" options={{ headerShown: false }} />
+					<Stack.Screen name="privacy" options={{ headerShown: false }} />
 
-				{/* P3 team: four tasks each built a screen and reported its
+					{/* P3 team: four tasks each built a screen and reported its
 				    registration rather than editing this file, because four
 				    concurrent writers to one route table is how a wave loses
 				    work. Added here in one edit. */}
-				<Stack.Screen name="invite/[token]" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="seller/team/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/team/invite"
-					options={{ presentation: "modal", headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/team/[memberId]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="seller/activity" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="seller/inbox/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/inbox/[conversationId]"
-					options={{ headerShown: false, animation: "slide_from_right" }}
-				/>
+					<Stack.Screen
+						name="invite/[token]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/team/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/team/invite"
+						options={{ presentation: "modal", headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/team/[memberId]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/activity"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/inbox/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/inbox/[conversationId]"
+						options={{ headerShown: false, animation: "slide_from_right" }}
+					/>
 
-				{/* Screens that draw their own header (SellerHeader, ModerationScreen):
+					{/* Screens that draw their own header (SellerHeader, ModerationScreen):
 				    the stack's default one would stack the raw route path on top.
 				    `src/lib/routeRegistry.test.ts` fails when a new screen is missed. */}
-				<Stack.Screen name="seller/insights" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="seller/resale/catalogue"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/resale/offered"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/resale/finance"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/resale/purchase-orders/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/resale/purchase-orders/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/risk/[id]"
-					options={{ headerShown: false }}
-				/>
+					<Stack.Screen
+						name="seller/insights"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/catalogue"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/offered"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/finance"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/purchase-orders/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/resale/purchase-orders/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/risk/[id]"
+						options={{ headerShown: false }}
+					/>
 
-				{/* P4 orders. Checkout's own layout covers its four steps. */}
-				<Stack.Screen name="cart" options={{ headerShown: false }} />
-				<Stack.Screen name="checkout" options={{ headerShown: false }} />
-				<Stack.Screen name="purchases/index" options={{ headerShown: false }} />
-				<Stack.Screen name="disputes/[id]" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="account/disputes"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="account/returns" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="account/addresses"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="returns/[id]" options={{ headerShown: false }} />
-				<Stack.Screen name="purchases/[id]" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="purchases/group/[group]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="purchases/[id]/problem"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="purchases/[id]/withdrawal"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/orders/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/returns/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/orders/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/orders/[id]/handover"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/billing/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/billing/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/order-settings"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="moderation/order/[id]"
-					options={{ headerShown: false }}
-				/>
+					{/* P4 orders. Checkout's own layout covers its four steps. */}
+					<Stack.Screen name="cart" options={{ headerShown: false }} />
+					<Stack.Screen name="checkout" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="purchases/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="disputes/[id]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="account/disputes"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/returns"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="account/addresses"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="returns/[id]" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="purchases/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="purchases/group/[group]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="purchases/[id]/problem"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="purchases/[id]/withdrawal"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/orders/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/returns/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/orders/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/orders/[id]/handover"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/billing/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/billing/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/order-settings"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="moderation/order/[id]"
+						options={{ headerShown: false }}
+					/>
 
-				{/* P5 payments (Task 29). checkout/[orderId]/pay and
+					{/* P5 payments (Task 29). checkout/[orderId]/pay and
 				    checkout/[orderId]/pending need no entry of their own — they
 				    resolve to the existing "checkout" root above. */}
-				<Stack.Screen
-					name="seller/payments/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/payments/setup"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/payments/payouts/[id]"
-					options={{ headerShown: false }}
-				/>
+					<Stack.Screen
+						name="seller/payments/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/payments/setup"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/payments/payouts/[id]"
+						options={{ headerShown: false }}
+					/>
 
-				{/* P7 delivery: settings, tracking reschedule, shipment, rider, courier. */}
-				<Stack.Screen
-					name="purchases/[id]/reschedule"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/delivery/index"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/delivery/zone/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/delivery/locations"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/delivery/location/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen
-					name="seller/shipment/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="rider/index" options={{ headerShown: false }} />
-				<Stack.Screen
-					name="rider/shipment/[id]"
-					options={{ headerShown: false }}
-				/>
-				<Stack.Screen name="courier/index" options={{ headerShown: false }} />
-			</Stack>
+					{/* P7 delivery: settings, tracking reschedule, shipment, rider, courier. */}
+					<Stack.Screen
+						name="purchases/[id]/reschedule"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/index"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/zone/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/locations"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/delivery/location/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen
+						name="seller/shipment/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="rider/index" options={{ headerShown: false }} />
+					<Stack.Screen
+						name="rider/shipment/[id]"
+						options={{ headerShown: false }}
+					/>
+					<Stack.Screen name="courier/index" options={{ headerShown: false }} />
+				</Stack>
+			</SellerBrandProvider>
 
 			<StatusBar style="auto" />
 		</ThemeProvider>

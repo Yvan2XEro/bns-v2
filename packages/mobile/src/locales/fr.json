@@ -2282,7 +2282,7 @@
 		"step2Title": "Variantes, prix et stock",
 		"step3Title": "Vérifier et publier",
 		"photos": "Photos",
-		"photosCount": "{{count}} sur {{max}} · la première sert de couverture",
+		"photosCount": "{{count}} / {{max}} photos · la première sert de couverture",
 		"cover": "Couverture",
 		"addPhoto": "Ajouter",
 		"titleLabel": "Titre du produit",
@@ -4319,6 +4319,10 @@
 		"unavailable_shop_inactive": "Cette boutique n'accepte plus de commandes pour le moment.",
 		"unavailable_other": "Ce groupe ne peut pas être commandé pour le moment."
 	},
+	"photoLimit": {
+		"count": "{{count}} / {{max}} photos",
+		"moreSoon": "Photos supplémentaires bientôt disponibles en option"
+	},
 	"formIssues": {
 		"barcode": "Code-barres invalide : 8, 12, 13 ou 14 chiffres (EAN ou UPC), dernier chiffre de contrôle compris.",
 		"invalid": "Cette valeur a été refusée. Vérifiez-la.",
@@ -4328,6 +4332,7 @@
 		"text": "Saisissez un texte.",
 		"option": "Choisissez l’une des valeurs proposées.",
 		"maxItems": "{{max}} au maximum.",
+		"photoLimit": "{{max}} photos au maximum. Retirez-en une pour en ajouter une autre.",
 		"count": "Entre {{min}} et {{max}}.",
 		"duplicate": "Déjà utilisé ailleurs dans ce formulaire.",
 		"taken": "Déjà utilisé par un autre produit de votre boutique.",

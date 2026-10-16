@@ -16,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useShopBrandIfAny } from "@/src/components/shop/brand";
 import { parseDate } from "@/src/lib/formatDate";
 import i18n from "@/src/lib/i18n";
 import {
@@ -112,6 +113,8 @@ export function ListingCard({
 	const conditionLabel = conditionKey ? i18n.t(conditionKey) : null;
 	const age = timeAgo(listing.createdAt);
 	const shopName = listingShopName(listing);
+	// On a shop's page the card takes the shop's colour, as on web.
+	const shopAccent = useShopBrandIfAny()?.accentText ?? "#1e40af";
 
 	// Colors — matches web palette exactly
 	const cardBg = isDark ? "#1e293b" : "#ffffff";
@@ -279,8 +282,15 @@ export function ListingCard({
 
 					{shopName ? (
 						<View style={styles.shopRow}>
-							<Ionicons name="storefront-outline" size={11} color="#1e40af" />
-							<Text style={styles.shopText} numberOfLines={1}>
+							<Ionicons
+								name="storefront-outline"
+								size={11}
+								color={shopAccent}
+							/>
+							<Text
+								style={[styles.shopText, { color: shopAccent }]}
+								numberOfLines={1}
+							>
 								{shopName}
 							</Text>
 						</View>
@@ -436,7 +446,6 @@ const styles = StyleSheet.create({
 	shopText: {
 		fontSize: 11,
 		fontFamily: Fonts.bodySemibold,
-		color: "#1e40af",
 		flexShrink: 1,
 	},
 });
