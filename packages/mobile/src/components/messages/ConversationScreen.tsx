@@ -57,7 +57,7 @@ function buyerIdOf(conv: Conversation | undefined): string | null {
 	return typeof conv.buyer === "string" ? conv.buyer : conv.buyer.id;
 }
 
-function buyerNameOf(conv: Conversation | undefined): string | null {
+export function buyerNameOf(conv: Conversation | undefined): string | null {
 	return conv?.buyer && typeof conv.buyer === "object" ? conv.buyer.name : null;
 }
 
@@ -115,7 +115,8 @@ export interface ConversationScreenProps {
 	 * screen renders its own (buyer, listing, assignee chip, status) instead
 	 * of this one, which assumes a 1:1 personal chat.
 	 */
-	renderHeader?: () => ReactNode;
+	/** Gets the conversation once loaded, so a custom header reads the same data. */
+	renderHeader?: (conv: Conversation | undefined) => ReactNode;
 	/**
 	 * Fired whenever the loaded message list's last item changes, so a caller
 	 * tracking the shop inbox's `lastReadAt` can mark the conversation read
@@ -267,11 +268,15 @@ export function ConversationScreen({
 
 	// Tell the caller about the latest message — the shop inbox uses this to
 	// mark the conversation read through its own HTTP contract.
+	// Keyed on the last message id alone: a caller passing a fresh callback
+	// each render (and re-rendering from what the callback does) must not
+	// re-fire it — that looped into "Maximum update depth exceeded".
+	const onLatestRef = useRef(onLatestMessage);
+	onLatestRef.current = onLatestMessage;
+	const lastMessageId = messages.at(-1)?.id;
 	useEffect(() => {
-		if (messages.length === 0) return;
-		const last = messages[messages.length - 1];
-		if (last?.id) onLatestMessage?.(last.id);
-	}, [messages, onLatestMessage]);
+		if (lastMessageId) onLatestRef.current?.(lastMessageId);
+	}, [lastMessageId]);
 
 	// Socket: join conversation, listen for events
 	useEffect(() => {
@@ -670,7 +675,7 @@ export function ConversationScreen({
 			style={[styles.safe, { backgroundColor: bg }]}
 		>
 			{renderHeader ? (
-				renderHeader()
+				renderHeader(conv)
 			) : (
 				<View
 					style={[

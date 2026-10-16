@@ -3,7 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { ConversationScreen } from "@/src/components/messages/ConversationScreen";
+import {
+	buyerNameOf,
+	ConversationScreen,
+} from "@/src/components/messages/ConversationScreen";
 import { AssigneeSheet } from "@/src/components/shop/inbox/AssigneeSheet";
 import { ConversationHeader } from "@/src/components/shop/inbox/ConversationHeader";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -18,7 +21,18 @@ import { useShopTeam } from "@/src/hooks/useShopTeam";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { useTranslation } from "@/src/lib/i18n";
-import type { InboxConversationView, InboxPage } from "@/src/types/api";
+import type {
+	Conversation,
+	InboxConversationView,
+	InboxPage,
+} from "@/src/types/api";
+
+/** The thread's listing title from the conversation itself, when it was opened from one. */
+function listingTitleOf(conv: Conversation | undefined): string | null {
+	return conv?.listing && typeof conv.listing === "object"
+		? conv.listing.title
+		: null;
+}
 
 /**
  * Opening a conversation from the list hands us a cache that already holds
@@ -124,10 +138,10 @@ export default function SellerInboxConversationScreen() {
 			<ConversationScreen
 				conversationId={conversationId}
 				onLatestMessage={handleLatestMessage}
-				renderHeader={() => (
+				renderHeader={(conv) => (
 					<ConversationHeader
-						buyerName={cached?.buyer?.name ?? null}
-						listingTitle={cached?.listing?.title ?? null}
+						buyerName={cached?.buyer?.name ?? buyerNameOf(conv)}
+						listingTitle={cached?.listing?.title ?? listingTitleOf(conv)}
 						assignee={assignee}
 						status={status}
 						onAssigneePress={() => setSheetOpen(true)}
