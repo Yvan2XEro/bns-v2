@@ -7,7 +7,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AnimatedPressable } from "@/src/components/AnimatedPressable";
-import { EmptyState } from "@/src/components/EmptyState";
 import { SuspensionBanner } from "@/src/components/moderation/SuspensionBanner";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { LevelBadge } from "@/src/components/shop/LevelBadge";
@@ -130,7 +129,7 @@ export default function AccountScreen() {
 	// Opened from the seller Boutique tab, the row offers the way back instead.
 	const inSellerMode = useStoredAppMode().mode === "seller";
 	const { showConfirm } = useAlert();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const pathname = usePathname();
 
 	const notificationReady = useNotificationReady();
@@ -144,6 +143,22 @@ export default function AccountScreen() {
 	const accentBg = isDark ? "#111827" : "#eef2ff";
 
 	if (!user) {
+		const goLogin = () =>
+			router.push({
+				pathname: "/auth/login",
+				params: getAuthModalParams(pathname),
+			});
+		const goRegister = () =>
+			router.push({
+				pathname: "/auth/register",
+				params: getAuthModalParams(pathname),
+			});
+		const cardStyle = [
+			styles.sectionCard,
+			{ backgroundColor: cardBg, borderColor: isDark ? "#1e3a5f" : "#e2e8f0" },
+		];
+		const language =
+			i18n.language?.slice(0, 2) === "en" ? "English" : "Français";
 		return (
 			<SafeAreaView
 				edges={["top"]}
@@ -162,37 +177,134 @@ export default function AccountScreen() {
 						{t("account.myAccount")}
 					</Text>
 				</View>
-				<View style={[styles.contentWrap, { backgroundColor: bg }]}>
-					<EmptyState
-						icon="person-outline"
-						title={t("account.signIn")}
-						subtitle={t("account.signInPrompt")}
-						ctaLabel={t("account.signIn")}
-						onCta={() =>
-							router.push({
-								pathname: "/auth/login",
-								params: getAuthModalParams(pathname),
-							})
-						}
-					/>
-					<View style={styles.registerRow}>
-						<Text style={[styles.registerText, { color: mutedColor }]}>
-							{t("account.noAccountQ")}{" "}
-						</Text>
-						<Pressable
-							onPress={() =>
-								router.push({
-									pathname: "/auth/register",
-									params: getAuthModalParams(pathname),
-								})
-							}
+				<ScrollView
+					style={[styles.contentWrap, { backgroundColor: bg }]}
+					contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
+					showsVerticalScrollIndicator={false}
+				>
+					{/* The invitation: what an account unlocks, then the two ways in. */}
+					<View style={styles.section}>
+						<View
+							style={[
+								styles.guestCard,
+								{
+									backgroundColor: isDark ? "#13213f" : "#1e40af",
+								},
+							]}
 						>
-							<Text style={[styles.registerLink, { color: primaryColor }]}>
-								{t("account.createAccount")}
+							<Text style={styles.guestTitle}>{t("account.guestTitle")}</Text>
+							<Text style={styles.guestPrompt}>
+								{t("account.signInPrompt")}
 							</Text>
-						</Pressable>
+							{(
+								[
+									["heart-outline", t("account.guestPerkFavorites")],
+									["chatbubbles-outline", t("account.guestPerkMessages")],
+									["cube-outline", t("account.guestPerkOrders")],
+								] as const
+							).map(([icon, label]) => (
+								<View key={icon} style={styles.guestPerk}>
+									<Ionicons name={icon} size={16} color="#bfdbfe" />
+									<Text style={styles.guestPerkText}>{label}</Text>
+								</View>
+							))}
+							<View style={styles.guestActions}>
+								<Pressable
+									onPress={goLogin}
+									accessibilityRole="button"
+									style={[styles.guestPrimary, { backgroundColor: "#f59e0b" }]}
+								>
+									<Text style={styles.guestPrimaryText}>
+										{t("account.signIn")}
+									</Text>
+								</Pressable>
+								<Pressable
+									onPress={goRegister}
+									accessibilityRole="button"
+									style={styles.guestSecondary}
+								>
+									<Text style={styles.guestSecondaryText}>
+										{t("account.createAccount")}
+									</Text>
+								</Pressable>
+							</View>
+						</View>
 					</View>
-				</View>
+
+					{/* Everything below works without an account. */}
+					<View style={styles.section}>
+						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
+							{t("account.sectionPreferences")}
+						</Text>
+						<View style={cardStyle}>
+							<MenuItem
+								icon="language-outline"
+								label={t("settings.language")}
+								sublabel={language}
+								onPress={() => router.push("/settings")}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
+								icon="contrast-outline"
+								label={t("settings.theme")}
+								onPress={() => router.push("/settings")}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
+								icon="settings-outline"
+								label={t("account.settings")}
+								onPress={() => router.push("/settings")}
+								isDark={isDark}
+								borderColor="transparent"
+							/>
+						</View>
+					</View>
+
+					<View style={styles.section}>
+						<Text style={[styles.sectionLabel, { color: mutedColor }]}>
+							{t("account.sectionSupport")}
+						</Text>
+						<View style={cardStyle}>
+							<MenuItem
+								icon="help-circle-outline"
+								label={t("account.help")}
+								onPress={() => router.push("/help")}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
+								icon="shield-checkmark-outline"
+								label={t("account.safety")}
+								onPress={() => router.push("/safety")}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
+								icon="mail-outline"
+								label={t("account.contact")}
+								onPress={() => router.push("/contact")}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
+								icon="document-text-outline"
+								label={t("account.terms")}
+								onPress={() => router.push("/terms")}
+								isDark={isDark}
+								borderColor={borderColor}
+							/>
+							<MenuItem
+								icon="lock-closed-outline"
+								label={t("account.privacy")}
+								onPress={() => router.push("/privacy")}
+								isDark={isDark}
+								borderColor="transparent"
+							/>
+						</View>
+					</View>
+				</ScrollView>
 			</SafeAreaView>
 		);
 	}
@@ -634,6 +746,44 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
+	guestCard: { borderRadius: 22, padding: 20, gap: 10 },
+	guestTitle: { color: "#ffffff", fontFamily: Fonts.displayBold, fontSize: 22 },
+	guestPrompt: {
+		color: "#dbeafe",
+		fontFamily: Fonts.body,
+		fontSize: 14,
+		lineHeight: 20,
+		marginBottom: 4,
+	},
+	guestPerk: { flexDirection: "row", alignItems: "center", gap: 10 },
+	guestPerkText: { color: "#eff6ff", fontFamily: Fonts.body, fontSize: 14 },
+	guestActions: { flexDirection: "row", gap: 10, marginTop: 10 },
+	guestPrimary: {
+		flex: 1,
+		height: 46,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	guestPrimaryText: {
+		color: "#0f172a",
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+	},
+	guestSecondary: {
+		flex: 1,
+		height: 46,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+		borderWidth: 1,
+		borderColor: "rgba(255,255,255,0.35)",
+	},
+	guestSecondaryText: {
+		color: "#ffffff",
+		fontFamily: Fonts.bodySemibold,
+		fontSize: 15,
+	},
 	safe: { flex: 1 },
 
 	/* ── No-user header ── */

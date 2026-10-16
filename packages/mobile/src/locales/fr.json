@@ -520,6 +520,11 @@
 		"systemOrderOpen": "Voir la commande"
 	},
 	"account": {
+		"guestTitle": "Bienvenue sur BuyNSellem",
+		"guestPerkFavorites": "Vos favoris et recherches enregistrées",
+		"guestPerkMessages": "La messagerie avec les vendeurs",
+		"guestPerkOrders": "Le suivi de vos commandes",
+		"sectionPreferences": "PRÉFÉRENCES",
 		"title": "Mon compte",
 		"myAccount": "Mon Compte",
 		"editProfile": "Modifier le profil",
@@ -1228,6 +1233,9 @@
 		"upload": {
 			"tooLarge": "Ce fichier est trop volumineux.",
 			"invalidType": "Ce type de fichier n'est pas pris en charge."
+		},
+		"media": {
+			"photoLimit": "Vous avez atteint le nombre de photos incluses."
 		},
 		"contact": {
 			"incomplete": "Veuillez remplir tous les champs.",

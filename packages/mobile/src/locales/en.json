@@ -472,6 +472,11 @@
 		"systemOrderOpen": "View order"
 	},
 	"account": {
+		"guestTitle": "Welcome to BuyNSellem",
+		"guestPerkFavorites": "Your favourites and saved searches",
+		"guestPerkMessages": "Messages with sellers",
+		"guestPerkOrders": "Tracking your orders",
+		"sectionPreferences": "PREFERENCES",
 		"title": "Account",
 		"myAccount": "My Account",
 		"editProfile": "Edit Profile",
@@ -1225,6 +1230,9 @@
 		"upload": {
 			"tooLarge": "This file is too large.",
 			"invalidType": "This file type is not supported."
+		},
+		"media": {
+			"photoLimit": "You have reached the number of photos included."
 		},
 		"contact": {
 			"incomplete": "Please fill in every field.",
