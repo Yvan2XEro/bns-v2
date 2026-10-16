@@ -56,6 +56,7 @@ import {
 	responseIssues,
 	webListingIssues,
 } from "~/lib/listing-issues";
+import { mediaUploadForm } from "~/lib/media-upload";
 import { hasListingPrice } from "~/lib/price";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import type { Category } from "~/types";
@@ -464,13 +465,9 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 		try {
 			const imageIds: string[] = [];
 			for (const image of images) {
-				const fd = new FormData();
-				fd.append("file", image);
-				fd.append(
-					"_payload",
-					JSON.stringify({
-						alt: image.name.replace(/\.[^.]+$/, "") || "listing image",
-					}),
+				const fd = await mediaUploadForm(
+					image,
+					image.name.replace(/\.[^.]+$/, "") || "listing image",
 				);
 				const uploadRes = await fetch("/api/media", {
 					method: "POST",

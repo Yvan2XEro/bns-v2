@@ -35,6 +35,7 @@ import type {
 import { myShopPath, readActiveShopCookie } from "./active-shop";
 import { ApiError, apiErrorFrom, ERROR_CODES, fallbackFor } from "./apiError";
 import { browserContentLocale, withContentLocale } from "./content-locale";
+import { mediaUploadForm } from "./media-upload";
 import type { BusinessType } from "./verification";
 
 /**
@@ -397,12 +398,9 @@ export const shopApi = {
 
 	/** Uploads one image to the media collection and returns its id. */
 	uploadMedia: async (file: File, alt: string): Promise<string> => {
-		const form = new FormData();
-		form.append("file", file);
-		form.append("_payload", JSON.stringify({ alt: alt || "image" }));
 		const data = await request<{ doc?: { id: string }; id?: string }>(
 			"/api/media",
-			{ method: "POST", body: form },
+			{ method: "POST", body: await mediaUploadForm(file, alt) },
 		);
 		const id = data.doc?.id ?? data.id;
 		if (!id) throw apiErrorFrom(500, {});

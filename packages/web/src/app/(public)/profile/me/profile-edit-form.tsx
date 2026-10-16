@@ -17,6 +17,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { updateProfile } from "~/lib/actions";
+import { mediaUploadForm } from "~/lib/media-upload";
 import type { User } from "~/types";
 
 export function ProfileEditForm({ user }: { user: User }) {
@@ -61,10 +62,8 @@ export function ProfileEditForm({ user }: { user: User }) {
 			let avatarId: string | undefined;
 
 			if (avatarFile) {
-				const fd = new FormData();
-				fd.append("file", avatarFile);
-				fd.append("_payload", JSON.stringify({ alt: user.name || "avatar" }));
 				try {
+					const fd = await mediaUploadForm(avatarFile, user.name || "avatar");
 					const uploadRes = await fetch("/api/media", {
 						method: "POST",
 						body: fd,

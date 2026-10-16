@@ -109,9 +109,14 @@ L'app garde son comportement sur ces points ; ne pas les rouvrir sans
   acceptables pour un aperçu léger ; passer à un fournisseur de tuiles avant
   un trafic important (`address-map-preview.tsx`).
 - Prochain build natif (EAS) requis : `@react-native-community/netinfo`
-  (bandeau hors ligne) et `react-native-document-scanner-plugin` (prise de vue
-  des documents). Ne pas publier de `eas update` vers une app sans ces modules.
+  (bandeau hors ligne), `react-native-document-scanner-plugin` (prise de vue
+  des documents) et `expo-image-manipulator` (photos réduites avant envoi ;
+  sans lui l'app envoie l'original, que l'API réduit). Ne pas publier de `eas update` vers une app sans ces modules.
 
+- Photos envoyées avant l'ajout des tailles réduites (octobre 2026) : pas de
+  miniature, les apps affichent l'original. Pas de rattrapage automatique :
+  régénérer un fichier dans Payload supprime l'ancien, dont l'adresse est
+  figée dans les commandes et l'index de recherche.
 - Avis avec photos : les fichiers envoyés ne gardent pas leur auteur, donc
   l'API vérifie qu'une photo jointe existe et est une image, mais pas qu'elle
   a été envoyée par l'auteur de l'avis. Les fichiers restent lisibles par

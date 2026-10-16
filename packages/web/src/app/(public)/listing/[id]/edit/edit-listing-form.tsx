@@ -46,6 +46,7 @@ import {
 	webListingIssues,
 } from "~/lib/listing-issues";
 import { listingShopId } from "~/lib/listing-shop";
+import { mediaUploadForm } from "~/lib/media-upload";
 import { asFallbackTranslator, translateOr } from "~/lib/translate-or";
 import { cn } from "~/lib/utils";
 import type { Category, Listing, Media } from "~/types";
@@ -302,13 +303,9 @@ export function EditListingForm({
 			// Upload new images
 			const newImageIds: string[] = [];
 			for (const image of newImages) {
-				const fd = new FormData();
-				fd.append("file", image);
-				fd.append(
-					"_payload",
-					JSON.stringify({
-						alt: image.name.replace(/\.[^.]+$/, "") || "listing image",
-					}),
+				const fd = await mediaUploadForm(
+					image,
+					image.name.replace(/\.[^.]+$/, "") || "listing image",
 				);
 				const uploadRes = await fetch("/api/media", {
 					method: "POST",
