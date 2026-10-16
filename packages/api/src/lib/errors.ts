@@ -271,6 +271,8 @@ export const ERROR_CODES = {
 	deliveryLocationInvalid: "delivery.locationInvalid",
 	deliveryLocationLimitReached: "delivery.locationLimitReached",
 	deliveryNoActiveOption: "delivery.noActiveOption",
+	addressNotFound: "address.notFound",
+	addressLimitReached: "address.limitReached",
 	shipmentNotFound: "shipment.notFound",
 	shipmentInvalidTransition: "shipment.invalidTransition",
 	shipmentMaxAttemptsReached: "shipment.maxAttemptsReached",
@@ -647,6 +649,9 @@ const FALLBACKS: Record<ErrorCode, string> = {
 		"Check the pickup location and its coordinates.",
 	[ERROR_CODES.deliveryLocationLimitReached]:
 		"This shop has reached its pickup location limit.",
+	[ERROR_CODES.addressNotFound]: "This address could not be found.",
+	[ERROR_CODES.addressLimitReached]:
+		"You have reached the saved address limit. Delete one before adding another.",
 	[ERROR_CODES.deliveryNoActiveOption]:
 		"No delivery or pickup option is currently available for this address.",
 	[ERROR_CODES.shipmentNotFound]: "This shipment could not be found.",

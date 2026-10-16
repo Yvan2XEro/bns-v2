@@ -132,6 +132,7 @@ export async function applyCourierEvent(
 					occurredAt: event.occurredAt.toISOString(),
 					providerEventId: event.providerEventId,
 				},
+				...(event.eta ? { courierEta: event.eta.toISOString() } : {}),
 			},
 		});
 		await appendShipmentEvent(req, shipment, {
@@ -230,6 +231,7 @@ export async function applyCourierEvent(
 			...(event.rider
 				? { rider: { ...transition.shipment.rider, ...event.rider } }
 				: {}),
+			...(event.eta ? { courierEta: event.eta.toISOString() } : {}),
 			...(event.codCollectedAmount !== undefined
 				? {
 						codCollection: {

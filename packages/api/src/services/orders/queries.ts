@@ -4,6 +4,7 @@ import {
 	type OrderViewer,
 	requireOrderAudience,
 } from "../../access/orderAccess";
+import { OUT_FOR_DELIVERY } from "../../contracts/shipments";
 import { ERROR_CODES } from "../../lib/errors";
 import { timezoneOfOrder } from "../../lib/markets";
 import type { ContractSnapshot } from "../../lib/orderContract";
@@ -417,6 +418,39 @@ async function loadReturnCaseNumbers(
 	return numbers;
 }
 
+/** The earliest live courier ETA per order, for the page's orders out for delivery. */
+async function loadLiveEtas(
+	payload: Payload,
+	rows: readonly Order[],
+): Promise<Map<string, string>> {
+	const etas = new Map<string, string>();
+	const ids = rows
+		.filter((row) => row.status === "shipped")
+		.map((row) => String(row.id));
+	if (ids.length === 0) return etas;
+	const result = await payload.find({
+		collection: "shipments",
+		where: {
+			and: [
+				{ order: { in: ids } },
+				{ status: { in: [...OUT_FOR_DELIVERY] } },
+				{ courierEta: { exists: true } },
+			],
+		},
+		depth: 0,
+		pagination: false,
+		overrideAccess: true,
+	});
+	for (const shipment of result.docs) {
+		const orderId = relationId(shipment.order);
+		const eta = shipment.courierEta;
+		if (!orderId || !eta) continue;
+		const known = etas.get(orderId);
+		if (!known || Date.parse(eta) < Date.parse(known)) etas.set(orderId, eta);
+	}
+	return etas;
+}
+
 /** `hasReviewedShop` for a whole page: the shops this buyer has already reviewed. */
 async function loadReviewedShops(
 	payload: Payload,
@@ -468,7 +502,7 @@ export async function listBuyerOrders(
 	const rows = result.docs as Order[];
 	const shopIds = rows.map((row) => relationId(row.shop) ?? "");
 	// Depth 1 resolves each card's logo with the page's one shop read.
-	const [itemsByOrder, shops, returnCaseNumbers, reviewedShops] =
+	const [itemsByOrder, shops, returnCaseNumbers, reviewedShops, liveEtas] =
 		await Promise.all([
 			loadItemsByOrder(
 				payload,
@@ -477,6 +511,7 @@ export async function listBuyerOrders(
 			loadShops(payload, shopIds, undefined, 1),
 			loadReturnCaseNumbers(payload, rows),
 			loadReviewedShops(payload, user.id, shopIds),
+			loadLiveEtas(payload, rows),
 		]);
 
 	return {
@@ -495,6 +530,7 @@ export async function listBuyerOrders(
 					buyerHasReviewedShop: reviewedShops.has(shopId),
 					shopLogoUrl: toMediaRef(shop?.logo)?.url ?? null,
 					shopBadge: shop ? shopCapabilities(shop).badge : null,
+					liveEta: liveEtas.get(String(row.id)) ?? null,
 				},
 			);
 		}),

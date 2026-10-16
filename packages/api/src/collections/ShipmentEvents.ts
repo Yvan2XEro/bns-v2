@@ -23,6 +23,7 @@ export const SHIPMENT_EVENT_TYPES = [
 	"shipment.cod_remittance_declared",
 	"shipment.cod_remittance_confirmed",
 	"shipment.cod_remittance_disputed",
+	"shipment.rider_phone_revealed",
 ] as const;
 
 export const ShipmentEvents: CollectionConfig = {

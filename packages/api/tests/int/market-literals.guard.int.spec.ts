@@ -33,7 +33,7 @@ const ALLOW: Array<[string, string, (string | string[])?]> = [
 	["api/src/lib/orderSettings.ts", SHIM, 'key: "'],
 	["api/src/lib/paymentSettings.ts", "DEFAULT_MARKETS: the P5 seed constant the migration references", '"XAF"'],
 	["api/src/lib/boostPricing.ts", "boost amounts: parked per-market-amounts user gate"],
-	["api/src/services/checkout.ts", "DELIVERY_PHONE_PATTERN: seed source, row == constant pinned by checkout-form-parity", "+2376"],
+	["api/src/lib/addressRules.ts", "DELIVERY_PHONE_PATTERN: seed source, row == constant pinned by checkout-form-parity", "+2376"],
 	["api/src/lib/orderFormat.ts", "formatXaf: CM formatter for SMS/chat/receipts, pinned by order-format-parity; remove with the compat release", "FCFA"],
 	["api/src/lib/commissionInvoiceDocument.ts", `pre-snapshot documents are XAF (${LEGACY_CM})`, '!== "XAF"'],
 	["api/src/services/paymentBackfill.ts", `one-shot backfill of ${LEGACY_CM}`, '"XAF"'],

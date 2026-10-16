@@ -292,6 +292,7 @@ describe("courier webhook application", () => {
 			occurredAt: new Date("2026-10-04T12:00:00.000Z"),
 			providerEventId: "evt-unmapped",
 			type: "shipment.provider-added-state",
+			eta: new Date("2026-10-04T12:40:00.000Z"),
 		};
 
 		const result = await withTransaction(payload, (req) =>
@@ -306,6 +307,7 @@ describe("courier webhook application", () => {
 				status: null,
 				providerEventId: "evt-unmapped",
 			},
+			courierEta: "2026-10-04T12:40:00.000Z",
 		});
 	});
 

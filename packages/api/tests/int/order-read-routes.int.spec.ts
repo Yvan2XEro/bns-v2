@@ -648,7 +648,12 @@ describe("the wire shape, through the real routes", () => {
 				returnCaseNumber: null,
 				reviewable: false,
 			},
-			arrival: { method: "seller_delivery", etaText: "", promisedBy: null },
+			arrival: {
+				method: "seller_delivery",
+				etaText: "",
+				promisedBy: null,
+				liveEta: null,
+			},
 			shopLogoUrl: null,
 			shopBadge: "identity",
 			paymentMethod: "cod",
@@ -865,6 +870,44 @@ describe("GET /api/orders — the buyer's own purchase list", () => {
 			{ id: "r-1", reviewer: BUYER_A, shop: "s-1", rating: 5 },
 		];
 		expect((await read(reviewed)).actionSubject.reviewable).toBe(false);
+	});
+
+	it("carries the earliest live courier ETA only for an order out for delivery", async () => {
+		const payload = seed();
+		payload.store.shipments = [
+			{
+				id: "sh-1",
+				order: "o-shipped",
+				status: "in_transit",
+				courierEta: "2026-10-16T14:40:00.000Z",
+			},
+			{
+				id: "sh-2",
+				order: "o-shipped",
+				status: "picked_up",
+				courierEta: "2026-10-16T14:10:00.000Z",
+			},
+			{
+				id: "sh-3",
+				order: "o-shipped",
+				status: "delivered",
+				courierEta: "2026-10-16T13:00:00.000Z",
+			},
+			{
+				id: "sh-4",
+				order: "o-delivered",
+				status: "in_transit",
+				courierEta: "2026-10-16T12:00:00.000Z",
+			},
+		];
+		asUser(payload, BUYER_A);
+		const { GET } = await import("../../src/app/(frontend)/api/orders/route");
+		const body = await (await GET(get("/x?role=buyer"))).json();
+		const row = (id: string) =>
+			body.docs.find((d: { id: string }) => d.id === id);
+		expect(row("o-shipped").arrival.liveEta).toBe("2026-10-16T14:10:00.000Z");
+		expect(row("o-delivered").arrival.liveEta).toBeNull();
+		expect(row("o-placed").arrival.liveEta).toBeNull();
 	});
 });
 

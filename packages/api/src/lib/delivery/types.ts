@@ -77,6 +77,8 @@ export interface CourierStatusSnapshot {
 	status: ShipmentStatus | null;
 	occurredAt: Date;
 	rider?: { name: string; phone?: string; vehicle?: string };
+	/** The provider's arrival estimate for the parcel, when it gives one. */
+	eta?: Date;
 	attempt?: { reason: FailureReason; note?: string };
 	proof?: {
 		podUrl?: string;

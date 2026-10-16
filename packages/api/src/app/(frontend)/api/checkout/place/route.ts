@@ -2,6 +2,7 @@ import { z } from "zod";
 import { clientIp } from "@/lib/clientIp";
 import { ERROR_CODES, errorResponse } from "@/lib/errors";
 import { handleServiceError, readBody, requireUser } from "@/lib/shopRoute";
+import { saveCheckoutAddress } from "@/services/addresses";
 import { placeCheckoutResponse } from "@/services/checkout";
 
 // Shape only, same discipline as `/api/checkout/quote`: every business rule
@@ -19,6 +20,11 @@ const bodySchema = z.object({
 	// Analytics, not a business rule: an unknown value falls back to the
 	// service's default rather than refusing an order over its own label.
 	source: z.enum(["web", "ios", "android"]).optional().catch(undefined),
+	// « Enregistrer cette adresse »: best effort after placement, never a refusal.
+	saveAddress: z
+		.object({ label: z.string().optional() })
+		.optional()
+		.catch(undefined),
 });
 
 export async function POST(request: Request) {
@@ -38,7 +44,14 @@ export async function POST(request: Request) {
 				source: body.data.source,
 			},
 		);
-		return Response.json(placed);
+		if (!body.data.saveAddress) return Response.json(placed);
+		const saved = await saveCheckoutAddress(
+			ctx.payload,
+			ctx.user,
+			body.data.address,
+			body.data.saveAddress.label,
+		);
+		return Response.json({ ...placed, savedAddressId: saved?.id ?? null });
 	} catch (error) {
 		return handleServiceError("checkout:place", error);
 	}

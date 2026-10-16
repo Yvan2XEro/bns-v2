@@ -191,6 +191,7 @@ describe("shipment audience projections", () => {
 				terminalAt: null,
 			},
 			rider: null,
+			eta: null,
 			attempts: [
 				{ number: 1, reason: "absent", at: "2026-10-01T10:00:00.000Z" },
 			],
@@ -229,7 +230,9 @@ describe("shipment audience projections", () => {
 			{
 				...shipment,
 				status: "in_transit",
-				rider: { name: "Rider One", phone: "+237600000099" },
+				carrier: "courier",
+				rider: { name: "Rider One", phone: "+237600000099", vehicle: "Moto" },
+				courierEta: "2026-10-01T14:40:00.000Z",
 			},
 			{ id: "buyer-1", role: "user" },
 		);
@@ -238,8 +241,12 @@ describe("shipment audience projections", () => {
 		}
 		expect(inTransitView.rider).toEqual({
 			firstName: "Rider",
-			phone: "+237600000099",
+			vehicle: "Moto",
+			kind: "courier",
+			canCall: true,
 		});
+		expect(inTransitView.eta).toBe("2026-10-01T14:40:00.000Z");
+		expect(JSON.stringify(inTransitView)).not.toContain("+237600000099");
 		const retryView = await shipmentViewFor(
 			payload,
 			{
@@ -259,8 +266,11 @@ describe("shipment audience projections", () => {
 		}
 		expect(retryView.rider).toEqual({
 			firstName: "Rider",
-			phone: "+237600000099",
+			vehicle: null,
+			kind: "shop",
+			canCall: false,
 		});
+		expect(retryView.eta).toBeNull();
 		const deliveredView = await shipmentViewFor(
 			payload,
 			{

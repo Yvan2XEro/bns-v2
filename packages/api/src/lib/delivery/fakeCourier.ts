@@ -46,6 +46,7 @@ const webhookEventSchema = z.object({
 			vehicle: z.string().optional(),
 		})
 		.optional(),
+	eta: z.coerce.date().optional(),
 	attempt: z
 		.object({
 			reason: z.enum(FAILURE_REASONS),

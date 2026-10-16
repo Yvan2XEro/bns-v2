@@ -191,6 +191,12 @@ export const Shipments: CollectionConfig = {
 			],
 		},
 		{
+			// The provider's latest arrival estimate; written by courier events only.
+			name: "courierEta",
+			type: "date",
+			admin: { readOnly: true, date: { pickerAppearance: "dayAndTime" } },
+		},
+		{
 			type: "row",
 			fields: [
 				{

@@ -6,12 +6,13 @@ import {
 } from "../../access/orderAccess";
 import { isModerator } from "../../access/roles";
 import { can, resolveShopRole } from "../../access/shopRoles";
-import type {
-	BuyerShipmentView,
-	CourierShipmentView,
-	ShipmentProofView,
-	ShipmentView,
-	ShopShipmentView,
+import {
+	type BuyerShipmentView,
+	type CourierShipmentView,
+	isOutForDelivery,
+	type ShipmentProofView,
+	type ShipmentView,
+	type ShopShipmentView,
 } from "../../contracts/shipments";
 import { ERROR_CODES } from "../../lib/errors";
 import { createSignedDocumentUrl } from "../../lib/privateFiles";
@@ -30,17 +31,17 @@ function activeRider(shipment: Shipment): BuyerShipmentView["rider"] {
 			shipment.redelivery.rescheduleBy &&
 			Date.parse(shipment.redelivery.rescheduleBy) > Date.now(),
 	);
-	if (
-		shipment.status !== "picked_up" &&
-		shipment.status !== "in_transit" &&
-		!scheduledRetry
-	) {
-		return null;
-	}
+	if (!isOutForDelivery(shipment.status) && !scheduledRetry) return null;
 	const name = shipment.rider?.name?.trim();
-	const phone = shipment.rider?.phone;
-	if (!name || !phone) return null;
-	return { firstName: name.split(/\s+/)[0] ?? name, phone };
+	if (!name) return null;
+	return {
+		firstName: name.split(/\s+/)[0] ?? name,
+		vehicle: shipment.rider?.vehicle?.trim() || null,
+		kind: shipment.carrier === "courier" ? "courier" : "shop",
+		canCall:
+			isOutForDelivery(shipment.status) &&
+			Boolean(shipment.rider?.phone?.trim()),
+	};
 }
 
 function rescheduleView(shipment: Shipment): BuyerShipmentView["redelivery"] {
@@ -302,6 +303,9 @@ async function buyerShipmentView(
 			terminalAt,
 		},
 		rider: activeRider(shipment),
+		eta: isOutForDelivery(shipment.status)
+			? (shipment.courierEta ?? null)
+			: null,
 		attempts: (shipment.attempts ?? []).map((attempt) => ({
 			number: attempt.number,
 			reason: attempt.reason ?? "other",

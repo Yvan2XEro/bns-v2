@@ -1142,6 +1142,7 @@ describe("serializeOrderListEntry: the whole row, field for field", () => {
 			method: "pickup",
 			etaText: "24-48h",
 			promisedBy: "2026-01-12T17:00:00.000Z",
+			liveEta: null,
 		});
 		expect(findHashLeak(row)).toBeNull();
 		expect(JSON.stringify(row).includes("+237600000012")).toBe(false);

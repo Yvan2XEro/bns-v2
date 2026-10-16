@@ -4,6 +4,7 @@ import { mongooseAdapter } from "@payloadcms/db-mongodb";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
 import { buildConfig } from "payload";
 import sharp from "sharp";
+import { Addresses } from "./collections/Addresses";
 import { BlockedUsers } from "./collections/BlockedUsers";
 import { BoostPayments } from "./collections/BoostPayments";
 import { BuyerFeeInvoiceFiles } from "./collections/BuyerFeeInvoiceFiles";
@@ -301,6 +302,7 @@ export default buildConfig({
 		ShipmentEvents,
 		DeliveryProofs,
 		SavedSearches,
+		Addresses,
 		BlockedUsers,
 		Tags,
 		ModerationLog,

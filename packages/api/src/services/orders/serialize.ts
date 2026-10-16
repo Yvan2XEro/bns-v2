@@ -247,6 +247,8 @@ export interface OrderListEntryView {
 		method: OrderDeliveryView["method"];
 		etaText: string;
 		promisedBy: string | null;
+		/** The courier's live estimate while a parcel is out for delivery ("Arrivée vers 15:40"). */
+		liveEta: string | null;
 	};
 	/** Shop queue only: a buyer's own list has no use for the recipient, the accept clock or the tier. */
 	recipientName?: string;
@@ -297,6 +299,7 @@ export interface BuyerListRowSources {
 	buyerHasReviewedShop: boolean;
 	shopLogoUrl?: string | null;
 	shopBadge?: ShopCapabilities["badge"];
+	liveEta?: string | null;
 }
 
 /** What a list row needs from outside its own `orders` document. */
@@ -812,6 +815,7 @@ export function serializeOrderListEntry(
 			method: order.delivery.method ?? "seller_delivery",
 			etaText: order.delivery.etaText ?? "",
 			promisedBy: order.delivery.promisedBy ?? null,
+			liveEta: buyerSources.liveEta ?? null,
 		};
 		entry.shopLogoUrl = buyerSources.shopLogoUrl ?? null;
 		entry.shopBadge = buyerSources.shopBadge ?? null;

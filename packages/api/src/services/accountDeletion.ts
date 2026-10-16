@@ -702,6 +702,12 @@ async function runDeletionCascade(
 		),
 		req,
 	);
+	await deleteByIds(
+		payload,
+		"addresses",
+		await findAllIds(payload, "addresses", { user: { equals: userId } }, req),
+		req,
+	);
 
 	await retainPaymentRecords(payload, userId, req);
 

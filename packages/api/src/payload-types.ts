@@ -95,6 +95,7 @@ export interface Config {
     'shipment-events': ShipmentEvent;
     'delivery-proofs': DeliveryProof;
     'saved-searches': SavedSearch;
+    addresses: Address;
     'blocked-users': BlockedUser;
     tags: Tag;
     'moderation-log': ModerationLog;
@@ -183,6 +184,7 @@ export interface Config {
     'shipment-events': ShipmentEventsSelect<false> | ShipmentEventsSelect<true>;
     'delivery-proofs': DeliveryProofsSelect<false> | DeliveryProofsSelect<true>;
     'saved-searches': SavedSearchesSelect<false> | SavedSearchesSelect<true>;
+    addresses: AddressesSelect<false> | AddressesSelect<true>;
     'blocked-users': BlockedUsersSelect<false> | BlockedUsersSelect<true>;
     tags: TagsSelect<false> | TagsSelect<true>;
     'moderation-log': ModerationLogSelect<false> | ModerationLogSelect<true>;
@@ -1664,6 +1666,7 @@ export interface Shipment {
   };
   trackingCode?: string | null;
   trackingUrl?: string | null;
+  courierEta?: string | null;
   zone?: (string | null) | DeliveryZone;
   pickupLocation?: (string | null) | ShopLocation;
   origin:
@@ -2810,7 +2813,8 @@ export interface ShipmentEvent {
     | 'shipment.provider_status'
     | 'shipment.cod_remittance_declared'
     | 'shipment.cod_remittance_confirmed'
-    | 'shipment.cod_remittance_disputed';
+    | 'shipment.cod_remittance_disputed'
+    | 'shipment.rider_phone_revealed';
   statusFrom?: string | null;
   statusTo?: string | null;
   actorType?:
@@ -2870,6 +2874,30 @@ export interface SavedSearch {
   url: string;
   alertEnabled?: boolean | null;
   lastCheckedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "addresses".
+ */
+export interface Address {
+  id: string;
+  user: string | User;
+  label?: string | null;
+  recipientName: string;
+  phone: string;
+  city: string;
+  district: string;
+  districtOther?: string | null;
+  landmark?: string | null;
+  instructions?: string | null;
+  gps?: {
+    lat?: number | null;
+    lng?: number | null;
+    accuracyMeters?: number | null;
+  };
+  isDefault?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -4120,6 +4148,10 @@ export interface PayloadLockedDocument {
         value: string | SavedSearch;
       } | null)
     | ({
+        relationTo: 'addresses';
+        value: string | Address;
+      } | null)
+    | ({
         relationTo: 'blocked-users';
         value: string | BlockedUser;
       } | null)
@@ -5071,6 +5103,7 @@ export interface ShipmentsSelect<T extends boolean = true> {
       };
   trackingCode?: T;
   trackingUrl?: T;
+  courierEta?: T;
   zone?: T;
   pickupLocation?: T;
   origin?: T;
@@ -5241,6 +5274,31 @@ export interface SavedSearchesSelect<T extends boolean = true> {
   url?: T;
   alertEnabled?: T;
   lastCheckedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "addresses_select".
+ */
+export interface AddressesSelect<T extends boolean = true> {
+  user?: T;
+  label?: T;
+  recipientName?: T;
+  phone?: T;
+  city?: T;
+  district?: T;
+  districtOther?: T;
+  landmark?: T;
+  instructions?: T;
+  gps?:
+    | T
+    | {
+        lat?: T;
+        lng?: T;
+        accuracyMeters?: T;
+      };
+  isDefault?: T;
   updatedAt?: T;
   createdAt?: T;
 }

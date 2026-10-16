@@ -2,19 +2,25 @@ import type { Payload, PayloadRequest } from "payload";
 import { ORDER_SERVICE_CONTEXT } from "../collections/Orders";
 import type { QuoteSummaryLine } from "../contracts/checkoutGroup";
 import { conditionLabelOf } from "../contracts/conditionAttribute";
+import {
+	deliveryAddressIssue,
+	normalizedDeliveryAddress,
+} from "../contracts/deliveryAddress";
 import type {
 	DeliveryMethod,
 	UnavailableOption,
 } from "../contracts/deliveryQuote";
 import { queueSearchEvent } from "../hooks/searchEvents";
 import { resolveSuspension } from "../hooks/suspensionGuard";
+import {
+	DELIVERY_PHONE_PATTERN,
+	marketAddressRules,
+} from "../lib/addressRules";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { type LaunchCityKey, launchCitySeedRows } from "../lib/launchCities";
 import {
 	getShopMarketCities,
-	isMarketCityKey,
-	isMarketDistrictKey,
 	type MarketCity,
 	marketCityKeyOf,
 } from "../lib/marketCities";
@@ -312,34 +318,7 @@ export interface DeliveryAddress {
 	gps: { lat: number; lng: number; accuracyMeters: number | null } | null;
 }
 
-/** A Cameroonian mobile: the confirmation and handover codes travel by SMS
- * to this number, and a landline would leave them undeliverable. Both
- * clients hold the same pattern (`checkout-form-parity.int.spec.ts`). */
-export const DELIVERY_PHONE_PATTERN = /^\+2376\d{8}$/;
-
-function normalizeAddressPhone(raw: string): string {
-	const trimmed = raw.trim().replace(/[\s-]/g, "");
-	if (trimmed.startsWith("00")) return `+${trimmed.slice(2)}`;
-	if (trimmed.startsWith("+")) return trimmed;
-	return `+${trimmed}`;
-}
-
-function numberField(
-	record: Record<string, unknown>,
-	key: string,
-): number | null {
-	const value = record[key];
-	return typeof value === "number" ? value : null;
-}
-
-function gpsOf(value: unknown): DeliveryAddress["gps"] {
-	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-	const record = value as Record<string, unknown>;
-	const lat = numberField(record, "lat");
-	const lng = numberField(record, "lng");
-	if (lat === null || lng === null) return null;
-	return { lat, lng, accuracyMeters: numberField(record, "accuracyMeters") };
-}
+export { DELIVERY_PHONE_PATTERN };
 
 function addressInvalid(field: string): never {
 	throw new CheckoutError(ERROR_CODES.checkoutAddressInvalid, 400, undefined, {
@@ -350,70 +329,24 @@ function addressInvalid(field: string): never {
 /**
  * Every field the Orders collection's `delivery` group stores, checked
  * against the same bounds that collection declares — `checkout.addressInvalid`
- * names the field path so a client can highlight it.
+ * names the field path so a client can highlight it. The rules themselves
+ * are `contracts/deliveryAddress.ts`'s.
  */
 export function parseDeliveryAddress(
 	raw: CheckoutAddressInput,
 	method: DeliveryMethod,
 	cities: readonly MarketCity[] = launchCitySeedRows("seed"),
 ): DeliveryAddress {
-	const recipientName =
-		typeof raw.recipientName === "string" ? raw.recipientName.trim() : "";
-	if (recipientName.length < 2 || recipientName.length > 60) {
-		addressInvalid("delivery.recipientName");
-	}
-
-	const phone =
-		typeof raw.phone === "string" ? normalizeAddressPhone(raw.phone) : "";
-	if (!DELIVERY_PHONE_PATTERN.test(phone)) addressInvalid("delivery.phone");
-
-	const cityRaw = typeof raw.city === "string" ? raw.city : "";
-	if (!isMarketCityKey(cities, cityRaw)) addressInvalid("delivery.city");
+	const record = raw as Record<string, unknown>;
+	const issue = deliveryAddressIssue(
+		record,
+		method,
+		marketAddressRules(cities),
+	);
+	if (issue) addressInvalid(`delivery.${issue}`);
+	const address = normalizedDeliveryAddress(record);
 	// The Orders select still enumerates the launch keys; retyped with it.
-	const city = cityRaw as LaunchCityKey;
-
-	const district = typeof raw.district === "string" ? raw.district : "";
-	if (!district || !isMarketDistrictKey(cities, city, district)) {
-		addressInvalid("delivery.district");
-	}
-
-	const districtOtherRaw =
-		typeof raw.districtOther === "string" ? raw.districtOther.trim() : "";
-	if (district === `${city}.other`) {
-		if (districtOtherRaw.length < 2 || districtOtherRaw.length > 60) {
-			addressInvalid("delivery.districtOther");
-		}
-	}
-
-	const landmarkRaw =
-		typeof raw.landmark === "string" ? raw.landmark.trim() : "";
-	if (method !== "pickup") {
-		if (landmarkRaw.length < 5 || landmarkRaw.length > 200) {
-			addressInvalid("delivery.landmark");
-		}
-	} else if (
-		landmarkRaw &&
-		(landmarkRaw.length < 5 || landmarkRaw.length > 200)
-	) {
-		addressInvalid("delivery.landmark");
-	}
-
-	const instructionsRaw =
-		typeof raw.instructions === "string" ? raw.instructions : "";
-	if (instructionsRaw.length > 300) addressInvalid("delivery.instructions");
-
-	const gps = gpsOf(raw.gps);
-
-	return {
-		recipientName,
-		phone,
-		city,
-		district,
-		districtOther: district === `${city}.other` ? districtOtherRaw : null,
-		landmark: landmarkRaw || null,
-		instructions: instructionsRaw || null,
-		gps,
-	};
+	return { ...address, city: address.city as LaunchCityKey };
 }
 
 export interface QuoteSummaryItem {
