@@ -141,7 +141,20 @@ describe("GET /api/public/config", () => {
 			intercityEnabled: false,
 			resaleEnabled: false,
 			resalePrepaidEnabled: false,
+			photosIncluded: 3,
 		});
+	});
+
+	it("serves the admin's photo limit, clamped to the hard ceiling", async () => {
+		const { GET } = await import(
+			"../../src/app/(frontend)/api/public/config/route"
+		);
+		findGlobal.mockResolvedValue({ media: { photosIncluded: 5 } });
+		expect(await (await GET()).json()).toMatchObject({ photosIncluded: 5 });
+		findGlobal.mockResolvedValue({ media: { photosIncluded: 40 } });
+		expect(await (await GET()).json()).toMatchObject({ photosIncluded: 10 });
+		findGlobal.mockRejectedValue(new Error("down"));
+		expect(await (await GET()).json()).toMatchObject({ photosIncluded: 3 });
 	});
 
 	it("serves the PHOTON_URL override to the place pickers", async () => {

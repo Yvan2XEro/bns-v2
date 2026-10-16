@@ -16,10 +16,10 @@ import {
 	relationIds,
 } from "../contracts/listingTags";
 import {
-	LISTING_LIMITS,
 	listingPriceIssue,
 	normalizeListingPrice,
 } from "../contracts/listingValidation";
+import { photoLimitIssue } from "../contracts/photoLimit";
 import { queueShopRecount } from "../hooks/shopListingCount";
 import {
 	assertNotSuspended,
@@ -30,6 +30,7 @@ import { tagsForCategory } from "../lib/categoryTags";
 import { getDeliverySettings } from "../lib/deliverySettings";
 import { ERROR_CODES } from "../lib/errors";
 import { getListingFormPreset } from "../lib/listingFormPreset";
+import { getPhotosIncluded } from "../lib/mediaSettings";
 import {
 	type IsListingOrderableInput,
 	isListingOrderable,
@@ -42,15 +43,32 @@ import { CodedAPIError } from "../lib/serviceError";
 import { isNotificationProviderConfigured } from "../services/notificationProvider";
 import { recordShopActivity } from "../services/shopActivity";
 
-/** Maximum number of images a listing can carry. */
-const MAX_LISTING_IMAGES = LISTING_LIMITS.imagesMax;
-
 /** A refusal Payload answers with `errors[0].data.errors[].path`, which both clients map onto their fields. */
 function fieldError(path: string, message: string): ValidationError {
 	return new ValidationError({
 		collection: "listings",
 		errors: [{ path, message }],
 	});
+}
+
+/**
+ * A ValidationError on `images` that also carries `media.photoLimit` and the
+ * limit, so a client can both pin it to the photos and name the code.
+ */
+function photoLimitError(max: number): ValidationError {
+	const error = fieldError(
+		"images",
+		`A listing can carry at most ${max} photos.`,
+	);
+	const errors = error.data.errors.map((entry) => ({
+		...entry,
+		rule: "photoLimit",
+		params: { max },
+	}));
+	Object.assign(error, {
+		data: { ...error.data, errors, code: ERROR_CODES.photoLimit, limit: max },
+	});
+	return error;
 }
 
 /**
@@ -395,23 +413,27 @@ export const Listings: CollectionConfig = {
 
 				const isProductListing = productService || Boolean(nextProduct);
 
-				// Cap the image count without stranding listings created before the
-				// limit existed: reject only when this write would *increase* the
-				// count past the maximum. Legacy listings stay editable, their owners
-				// can still delete images, and system writes that merely carry the
-				// existing array through are unaffected.
+				// Cap the photo count (the admin's `media.photosIncluded`) without
+				// stranding listings saved before the limit existed or before it was
+				// lowered: reject only when this write would *increase* the count
+				// past it. Legacy listings stay editable, their owners can still
+				// delete photos, and system writes that merely carry the existing
+				// array through never read the setting.
 				if (Array.isArray(data.images) && !isProductListing) {
-					const previous = Array.isArray(originalDoc?.images)
-						? originalDoc.images.length
-						: 0;
-					const isGrowing =
-						operation === "create" || data.images.length > previous;
-
-					if (data.images.length > MAX_LISTING_IMAGES && isGrowing) {
-						throw fieldError(
-							"images",
-							`A listing can carry at most ${MAX_LISTING_IMAGES} images.`,
+					const count = data.images.length;
+					const previous =
+						operation === "create"
+							? null
+							: Array.isArray(originalDoc?.images)
+								? originalDoc.images.length
+								: 0;
+					if (count > 1 && (previous === null || count > previous)) {
+						const issue = photoLimitIssue(
+							count,
+							previous,
+							await getPhotosIncluded(req.payload),
 						);
+						if (issue) throw photoLimitError(Number(issue.params?.max));
 					}
 				}
 
@@ -744,7 +766,7 @@ export const Listings: CollectionConfig = {
 			type: "array",
 			// Deliberately no `maxRows`. Field validation runs on every write, and
 			// Payload merges the full document into `data`, so a legacy listing with
-			// more than MAX_LISTING_IMAGES rows would fail *any* update — including
+			// more photos than the admin's limit would fail *any* update — including
 			// system ones like boost activation and the expiry crons. The limit is
 			// enforced in beforeChange instead, which can tell growth from a
 			// pre-existing count.

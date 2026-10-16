@@ -3,6 +3,7 @@ import {
 	attributeValueIssues,
 } from "./categoryAttributes";
 import type { FieldIssue } from "./formIssues";
+import { PHOTO_LIMIT, photoLimitIssue } from "./photoLimit";
 
 /**
  * Every rule `POST /api/shops/:id/products` and `PATCH /api/products/:id`
@@ -17,7 +18,7 @@ export const PRODUCT_LIMITS = {
 	titleMin: 3,
 	titleMax: 120,
 	descriptionMax: 5000,
-	imagesMax: 10,
+	imagesMax: PHOTO_LIMIT.ceiling,
 	optionsMax: 3,
 	optionNameMax: 30,
 	optionValueMax: 30,
@@ -271,6 +272,10 @@ function checkVariants(
 export interface ProductValidationContext {
 	/** The chosen category's attribute definitions, when the caller has them. */
 	attributes?: readonly AttributeRuleDef[] | null;
+	/** `photosIncluded` from the public config; the photo-count rule runs only when given. */
+	photoLimit?: number | null;
+	/** The saved product's photo count on an edit: keeping more than the limit is allowed, adding is not. */
+	previousImageCount?: number | null;
 }
 
 export function productInputIssues(
@@ -308,6 +313,16 @@ export function productInputIssues(
 				rule: "maxItems",
 				params: { max: PRODUCT_LIMITS.imagesMax },
 			});
+		} else if (
+			context.photoLimit !== undefined &&
+			context.photoLimit !== null
+		) {
+			const issue = photoLimitIssue(
+				ids.size,
+				context.previousImageCount,
+				context.photoLimit,
+			);
+			if (issue) issues.push(issue);
 		}
 	}
 

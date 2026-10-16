@@ -3,6 +3,7 @@ import { can } from "../access/shopRoles";
 import { PRODUCT_SERVICE_CONTEXT } from "../collections/Products";
 import { NOT_ARCHIVED } from "../collections/ProductVariants";
 import type { FieldIssue } from "../contracts/formIssues";
+import { photoLimitIssue } from "../contracts/photoLimit";
 import {
 	normalizeBarcode,
 	PRODUCT_STATUS_VALUES,
@@ -10,6 +11,7 @@ import {
 } from "../contracts/productValidation";
 import { validateListingAttributes } from "../hooks/validation";
 import { ERROR_CODES } from "../lib/errors";
+import { getPhotosIncluded } from "../lib/mediaSettings";
 import { isRecord } from "../lib/payments/types";
 import { deriveListingData, listingStatusFor } from "../lib/productListing";
 import { relationId } from "../lib/relationId";
@@ -73,6 +75,32 @@ function failWith(issues: FieldIssue[], status = 400): never {
 		status,
 		issues.map((issue) => `${issue.path}: ${issue.rule}`).join("; "),
 		{ issues },
+	);
+}
+
+/**
+ * The admin's photo limit. `previousCount` is the saved product's on an
+ * edit: a product above the limit keeps its photos and can lose some, but
+ * cannot gain one. Products the listing move creates do not come through
+ * here, so a moved listing keeps every photo it had.
+ */
+async function assertPhotoLimit(
+	payload: Payload,
+	count: number,
+	previousCount: number | null,
+): Promise<void> {
+	if (count <= 1 || (previousCount !== null && count <= previousCount)) return;
+	const issue = photoLimitIssue(
+		count,
+		previousCount,
+		await getPhotosIncluded(payload),
+	);
+	if (!issue) return;
+	throw new ServiceError(
+		ERROR_CODES.photoLimit,
+		400,
+		`images: at most ${issue.params?.max} photos.`,
+		{ issues: [issue], limit: issue.params?.max },
 	);
 }
 
@@ -655,6 +683,7 @@ export async function createProduct(
 	raw: Record<string, unknown>,
 ): Promise<{ product: Product; variants: ProductVariant[] }> {
 	const input = parseProductInput(raw);
+	await assertPhotoLimit(payload, input.images.length, null);
 
 	return withTransaction(
 		payload,
@@ -735,6 +764,11 @@ export async function updateProduct(
 				writable: true,
 				req,
 			});
+			await assertPhotoLimit(
+				payload,
+				input.images.length,
+				product.images?.length ?? 0,
+			);
 			// `catalogue.edit` covers changing a product; taking it out of the
 			// catalogue is the separate, staff-excluded lever.
 			const archiving =

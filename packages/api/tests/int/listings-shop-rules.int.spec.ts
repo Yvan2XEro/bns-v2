@@ -176,7 +176,7 @@ describe("product listing derived fields", () => {
 		expect(result.images).toHaveLength(6);
 	});
 
-	it("keeps the three-image cap for classified listings", async () => {
+	it("keeps the default three-photo limit for classified listings", async () => {
 		const images = Array.from({ length: 4 }, (_, i) => ({ image: `m-${i}` }));
 		await expect(
 			beforeChange({
@@ -188,10 +188,11 @@ describe("product listing derived fields", () => {
 		).rejects.toMatchObject({
 			status: 400,
 			data: {
+				code: "media.photoLimit",
 				errors: [
 					{
 						path: "images",
-						message: expect.stringMatching(/at most 3 images/),
+						message: expect.stringMatching(/at most 3 photos/),
 					},
 				],
 			},

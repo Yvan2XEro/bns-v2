@@ -7125,6 +7125,12 @@ export interface AppSetting {
     enabled?: boolean | null;
     maxPerUser?: number | null;
   };
+  media?: {
+    /**
+     * Photos a seller can add to a classified listing or a shop product (at most 10). Content that already has more keeps its photos but cannot add any. Extra photos will become a paid option.
+     */
+    photosIncluded?: number | null;
+  };
   verification: {
     /**
      * Off: clients hide verification entry points and the seller write routes return verification.disabled. Existing requests stay readable, reviewers keep deciding, and the retention job keeps running.
@@ -7499,6 +7505,11 @@ export interface AppSettingsSelect<T extends boolean = true> {
     | {
         enabled?: T;
         maxPerUser?: T;
+      };
+  media?:
+    | T
+    | {
+        photosIncluded?: T;
       };
   verification?:
     | T

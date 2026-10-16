@@ -1,4 +1,5 @@
 import type { GlobalConfig } from "payload";
+import { PHOTO_LIMIT } from "../contracts/photoLimit";
 import {
 	CASE_GATE_IDS,
 	DISPUTE_DEFAULTS,
@@ -232,6 +233,32 @@ export const AppSettings: GlobalConfig = {
 					defaultValue: 1,
 					min: 1,
 					max: 10,
+				},
+			],
+		},
+		{
+			name: "media",
+			type: "group",
+			label: "Photos",
+			fields: [
+				{
+					name: "photosIncluded",
+					type: "number",
+					label: "Photos per listing or product",
+					defaultValue: PHOTO_LIMIT.default,
+					min: PHOTO_LIMIT.min,
+					max: PHOTO_LIMIT.ceiling,
+					validate: (value: unknown) =>
+						value === null ||
+						value === undefined ||
+						(Number.isInteger(value) &&
+							(value as number) >= PHOTO_LIMIT.min &&
+							(value as number) <= PHOTO_LIMIT.ceiling) ||
+						`A whole number from ${PHOTO_LIMIT.min} to ${PHOTO_LIMIT.ceiling}.`,
+					admin: {
+						step: 1,
+						description: `Photos a seller can add to a classified listing or a shop product (at most ${PHOTO_LIMIT.ceiling}). Content that already has more keeps its photos but cannot add any. Extra photos will become a paid option.`,
+					},
 				},
 			],
 		},

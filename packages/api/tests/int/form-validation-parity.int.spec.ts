@@ -30,7 +30,7 @@ import {
 	productIssueStep,
 } from "../../src/contracts/productValidation";
 import { ServiceError } from "../../src/lib/serviceError";
-import { parseProductInput } from "../../src/services/products";
+import { createProduct, parseProductInput } from "../../src/services/products";
 import { fakePayload } from "./helpers/fakePayload";
 
 /**
@@ -228,6 +228,89 @@ describe("product rules: the service refuses exactly what the shared rules repor
 	});
 });
 
+describe("photo limit: the forms refuse what the service refuses", () => {
+	const photos = (n: number) => Array.from({ length: n }, (_, i) => `m${i}`);
+	const payload = (photosIncluded: number) =>
+		fakePayload(
+			{
+				users: [{ id: "u-1" }],
+				categories: [{ id: "cat-1", name: "Phones" }],
+				shops: [{ id: "s-1", status: "active", owner: "u-1", level: 2 }],
+				"shop-members": [
+					{
+						id: "m-1",
+						shop: "s-1",
+						user: "u-1",
+						role: "owner",
+						status: "active",
+					},
+				],
+				products: [],
+				"product-variants": [],
+				"stock-movements": [],
+				listings: [],
+			},
+			{ globals: { "app-settings": { media: { photosIncluded } } } },
+		);
+
+	it.each([
+		[3, 3, true],
+		[3, 4, false],
+		[5, 5, true],
+		[5, 6, false],
+		[1, 2, false],
+	])("limit %i, %i photos: accepted %s by both", async (limit, count, ok) => {
+		const body = { ...valid, images: photos(count) };
+		const issues = productInputIssues(body, { photoLimit: limit });
+		const refusal = await createProduct(
+			payload(limit),
+			{ id: "u-1" },
+			"s-1",
+			body,
+		)
+			.then(() => null)
+			.catch((error) => error);
+		expect(issues.length === 0).toBe(ok);
+		if (ok) {
+			expect(refusal).toBeNull();
+			return;
+		}
+		expect(refusal).toMatchObject({
+			code: "media.photoLimit",
+			status: 400,
+			details: { issues, limit },
+		});
+	});
+
+	it("both clients read the refusal back onto the photos", () => {
+		const issues = productInputIssues(
+			{ ...valid, images: photos(4) },
+			{ photoLimit: 3 },
+		);
+		expect(
+			issuesFromErrorBody({
+				code: "media.photoLimit",
+				details: { issues, limit: 3 },
+			}),
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 3 } }]);
+		expect(productIssueStep("images")).toBe("info");
+		expect(listingIssueStep("images")).toBe("photos");
+	});
+
+	it("an edit above the limit may keep its photos, not add one", () => {
+		const body = { ...valid, images: photos(6) };
+		expect(
+			productInputIssues(body, { photoLimit: 3, previousImageCount: 6 }),
+		).toEqual([]);
+		expect(
+			productInputIssues(
+				{ ...valid, images: photos(7) },
+				{ photoLimit: 3, previousImageCount: 6 },
+			).map((issue) => issue.rule),
+		).toEqual(["photoLimit"]);
+	});
+});
+
 describe("barcode rule", () => {
 	it("accepts EAN-8, UPC-A, EAN-13 and GTIN-14 with a valid check digit", () => {
 		for (const code of [
@@ -303,6 +386,28 @@ describe("one rule module, every caller", () => {
 			"the listings hook",
 			"../../src/collections/Listings.ts",
 			"listingValidation",
+		],
+		["the listings hook", "../../src/collections/Listings.ts", "photoLimit"],
+		["the product service", "../../src/services/products.ts", "photoLimit"],
+		[
+			"the web photo picker",
+			"../../../web/src/components/listing/image-picker.tsx",
+			"photoLimit",
+		],
+		[
+			"the web app config",
+			"../../../web/src/hooks/use-app-config.tsx",
+			"photoLimit",
+		],
+		[
+			"the mobile photo helpers",
+			"../../../mobile/src/lib/photoLimit.ts",
+			"photoLimit",
+		],
+		[
+			"the mobile app config",
+			"../../../mobile/src/contexts/AppConfigContext.tsx",
+			"photoLimit",
 		],
 		[
 			"the attribute check",
@@ -454,13 +559,29 @@ describe("classified listing rules", () => {
 		const four = Array.from({ length: 4 }, (_, i) => ({ image: `m${i}` }));
 		expect(
 			listingInputIssues({ ...body, images: four }, { preset: product }),
-		).toEqual([{ path: "images", rule: "maxItems", params: { max: 3 } }]);
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 3 } }]);
 		expect(
 			listingInputIssues(
 				{ ...body, images: four },
 				{ preset: product, previousImageCount: 5 },
 			),
 		).toEqual([]);
+	});
+
+	it("follows the photo limit the public config serves", () => {
+		const four = Array.from({ length: 4 }, (_, i) => ({ image: `m${i}` }));
+		expect(
+			listingInputIssues(
+				{ ...body, images: four },
+				{ preset: product, photoLimit: 5 },
+			),
+		).toEqual([]);
+		expect(
+			listingInputIssues(
+				{ ...body, images: four },
+				{ preset: product, photoLimit: 2, previousImageCount: 3 },
+			),
+		).toEqual([{ path: "images", rule: "photoLimit", params: { max: 2 } }]);
 	});
 });
 

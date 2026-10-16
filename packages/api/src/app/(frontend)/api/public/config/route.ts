@@ -8,6 +8,7 @@ import { getPayload, type Payload } from "payload";
 import { resolveEnabledOAuthProviders } from "@/auth/oauth/enabledProviders";
 import { listConfiguredOAuthProviders } from "@/auth/oauth/providers";
 import type { MarketConfig } from "@/contracts/marketConfig";
+import { normalizePhotoLimit, PHOTO_LIMIT } from "@/contracts/photoLimit";
 import { BOOST_PRICING } from "@/lib/boostPricing";
 import { getDisputeSettings, isDisputesOpen } from "@/lib/caseSettings";
 import { getDeliverySettings } from "@/lib/deliverySettings";
@@ -50,6 +51,7 @@ export async function GET(request?: Request) {
 	let intercityEnabled = false;
 	let resaleEnabled = false;
 	let resalePrepaidEnabled = false;
+	let photosIncluded: number = PHOTO_LIMIT.default;
 	let payloadRef: Payload | undefined;
 
 	try {
@@ -57,6 +59,7 @@ export async function GET(request?: Request) {
 		payloadRef = payload;
 		const settings = await payload.findGlobal({ slug: "app-settings" });
 		insightsEnabled = settings.insights?.enabled ?? false;
+		photosIncluded = normalizePhotoLimit(settings.media?.photosIncluded);
 		const deliverySettings = await getDeliverySettings(payload);
 		const resaleSettings = await getResaleSettings(payload);
 		resaleEnabled = resaleSettings.enabled;
@@ -230,6 +233,8 @@ export async function GET(request?: Request) {
 		intercityEnabled,
 		resaleEnabled,
 		resalePrepaidEnabled,
+		// Photos a listing or a product may carry; the API refuses more.
+		photosIncluded,
 		...(market ? { market } : {}),
 	});
 }

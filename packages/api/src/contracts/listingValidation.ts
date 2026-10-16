@@ -4,6 +4,7 @@ import {
 } from "./categoryAttributes";
 import type { FieldIssue } from "./formIssues";
 import { listingTagIssues } from "./listingTags";
+import { PHOTO_LIMIT, photoLimitIssue } from "./photoLimit";
 
 /**
  * The rules a classified listing (`POST`/`PATCH /api/listings`) is held to.
@@ -13,9 +14,9 @@ import { listingTagIssues } from "./listingTags";
  * "photos: required" on write (see the `images` field in
  * `collections/Listings.ts`), but a form that shows the asterisk must not
  * let the seller past it either. The item's condition is a category
- * attribute, checked with the others.
+ * attribute, checked with the others. The photo count follows the admin
+ * setting through `photoLimitIssue`, the same rule shop products follow.
  */
-export const LISTING_LIMITS = { imagesMax: 3 } as const;
 
 export interface ListingFieldPreset {
 	enabled: boolean;
@@ -80,8 +81,10 @@ export function listingPriceIssue(
 export interface ListingValidationContext {
 	preset?: ListingPresetFields | null;
 	attributes?: readonly AttributeRuleDef[] | null;
-	/** Growing past the image cap is refused; a legacy listing already over it is not. */
+	/** Growing past the photo limit is refused; a legacy listing already over it is not. */
 	previousImageCount?: number;
+	/** `photosIncluded` from the public config; the default limit when absent. */
+	photoLimit?: number | null;
 	/** Ids of the tags that apply to the chosen category, once the form has loaded them. */
 	tags?: readonly string[] | null;
 }
@@ -116,16 +119,12 @@ export function listingInputIssues(
 	}
 
 	const images = Array.isArray(body.images) ? body.images.length : 0;
-	if (
-		images > LISTING_LIMITS.imagesMax &&
-		images > (context.previousImageCount ?? 0)
-	) {
-		issues.push({
-			path: "images",
-			rule: "maxItems",
-			params: { max: LISTING_LIMITS.imagesMax },
-		});
-	}
+	const photoIssue = photoLimitIssue(
+		images,
+		context.previousImageCount,
+		context.photoLimit ?? PHOTO_LIMIT.default,
+	);
+	if (photoIssue) issues.push(photoIssue);
 	if (preset?.photos?.enabled && preset.photos.required && images === 0) {
 		issues.push({ path: "images", rule: "required" });
 	}
