@@ -359,7 +359,7 @@ function ListingRow({
 	t: Translate;
 	c: ReturnType<typeof useModerationTheme>;
 }) {
-	const thumb = resolveListingImageUrl(listing.images?.[0]);
+	const thumb = resolveListingImageUrl(listing.images?.[0], "thumbnail");
 	const seller = nameOf(listing.seller);
 
 	return (

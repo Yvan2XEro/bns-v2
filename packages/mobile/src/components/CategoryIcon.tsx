@@ -10,7 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 const TINT_LIGHT = { bg: "#f1f5f9", icon: "#475569" };
 const TINT_DARK = { bg: "#1e293b", icon: "#94a3b8" };
@@ -73,7 +73,9 @@ export function CategoryIcon({
 				{category.image?.url ? (
 					<Image
 						source={{
-							uri: resolveImageUrl(category.image.url) ?? category.image.url,
+							uri:
+								resolveListingImageUrl(category.image, "thumbnail") ??
+								category.image.url,
 						}}
 						style={{ width: size * 0.55, height: size * 0.55 }}
 						contentFit="contain"

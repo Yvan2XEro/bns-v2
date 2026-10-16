@@ -103,7 +103,7 @@ export function ListingCard({
 
 	// Resolve image URL — handles both { url } and { image: { url } } shapes
 	// and rewrites localhost origins to the configured API host
-	const imageUrl = resolveListingImageUrl(listing.images?.[0]);
+	const imageUrl = resolveListingImageUrl(listing.images?.[0], "thumbnail");
 	const photoCount = listing.images?.length ?? 0;
 	const conditionValue = listingConditionValue(listing.attributes);
 	const conditionKey =

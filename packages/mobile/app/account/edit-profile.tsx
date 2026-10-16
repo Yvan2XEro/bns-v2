@@ -26,7 +26,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { createMediaUploadFormData } from "@/src/lib/mediaUpload";
-import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 
 function getErrorMessage(error: unknown, fallback: string): string {
 	// `error instanceof Error` was always true for a failed request, so the
@@ -202,7 +202,9 @@ export default function EditProfileScreen() {
 						<Image
 							source={{
 								uri:
-									avatarUri ?? resolveImageUrl(user?.avatar?.url) ?? undefined,
+									avatarUri ??
+									resolveListingImageUrl(user?.avatar, "thumbnail") ??
+									undefined,
 							}}
 							style={styles.avatar}
 							contentFit="cover"

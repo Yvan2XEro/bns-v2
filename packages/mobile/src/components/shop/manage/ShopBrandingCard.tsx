@@ -17,7 +17,7 @@ import { useUpdateShop } from "@/src/hooks/useShops";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import { pickAndUploadImage } from "@/src/lib/pickAndUpload";
-import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type { MyShop } from "@/src/types/api";
 
 /** Banner across the top with the logo set on it; each uploads on tap. */
@@ -54,7 +54,7 @@ export function ShopBrandingCard({
 		}
 	};
 
-	const bannerUri = resolveImageUrl(shop.banner?.url ?? null);
+	const bannerUri = resolveListingImageUrl(shop.banner, "medium");
 
 	return (
 		<View>

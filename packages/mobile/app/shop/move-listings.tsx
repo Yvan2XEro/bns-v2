@@ -144,7 +144,7 @@ export default function MoveListingsScreen() {
 					}) => {
 						const active = selected.has(item.id);
 						const last = index === docs.length - 1;
-						const uri = resolveListingImageUrl(item.images?.[0]);
+						const uri = resolveListingImageUrl(item.images?.[0], "thumbnail");
 						return (
 							<Pressable
 								onPress={() => toggle(item.id)}

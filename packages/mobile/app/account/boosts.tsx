@@ -106,7 +106,7 @@ function BoostCard({
 	const { t, i18n } = useTranslation();
 	const STATUS_CONFIG = getStatusConfig(t);
 	const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.pending;
-	const imgUrl = resolveListingImageUrl(item.listing?.images?.[0]);
+	const imgUrl = resolveListingImageUrl(item.listing?.images?.[0], "thumbnail");
 	const durationLabel = formatDuration(item.durationDays, t);
 	const dateRange = formatDateRange(item.createdAt, item.durationDays);
 	const isActive =

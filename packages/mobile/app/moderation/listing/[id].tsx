@@ -104,7 +104,7 @@ export default function ModerateListingScreen() {
 								contentContainerStyle={{ gap: 8 }}
 							>
 								{data.images.map((entry) => {
-									const uri = resolveListingImageUrl(entry);
+									const uri = resolveListingImageUrl(entry, "medium");
 									if (!uri) return null;
 									return (
 										<Image

@@ -401,7 +401,9 @@ export default function ListingDetail() {
 									}}
 								>
 									<Image
-										source={{ uri: resolveListingImageUrl(img) ?? undefined }}
+										source={{
+											uri: resolveListingImageUrl(img, "medium") ?? undefined,
+										}}
 										style={{ width, height: galleryHeight }}
 										contentFit="cover"
 										placeholder={{ blurhash: "LGF5?xYk^6#M@-5c,1J5@[or[Q6." }}

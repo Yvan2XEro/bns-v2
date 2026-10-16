@@ -12,7 +12,7 @@ import { StockChip } from "@/src/components/shop/StockChip";
 import { useShopTheme } from "@/src/components/shop/theme";
 import { useTranslation } from "@/src/lib/i18n";
 import { formatPrice, formatPriceRange } from "@/src/lib/market";
-import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import type { CatalogueRow } from "@/src/types/api";
 
 export function CatalogueRowItem({
@@ -30,9 +30,7 @@ export function CatalogueRowItem({
 }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
-	const uri = resolveImageUrl(
-		row.image?.thumbnailURL ?? row.image?.url ?? null,
-	);
+	const uri = resolveListingImageUrl(row.image, "thumbnail");
 	const price =
 		row.priceMin === null
 			? "—"

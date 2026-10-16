@@ -519,12 +519,12 @@ export default function HomeScreen() {
 						onPress={() => router.push("/(tabs)/account")}
 						style={[styles.avatarBtn, { backgroundColor: cardBg, borderColor }]}
 					>
-						{(user as any)?.avatar?.url ? (
+						{user?.avatar?.url ? (
 							<Image
 								source={{
 									uri:
-										resolveImageUrl((user as any).avatar.url) ??
-										(user as any).avatar.url,
+										resolveListingImageUrl(user.avatar, "thumbnail") ??
+										user.avatar.url,
 								}}
 								style={styles.avatar}
 								contentFit="cover"
@@ -799,8 +799,10 @@ export default function HomeScreen() {
 											<Image
 												source={{
 													uri:
-														resolveListingImageUrl(listing.images?.[0]) ??
-														undefined,
+														resolveListingImageUrl(
+															listing.images?.[0],
+															"thumbnail",
+														) ?? undefined,
 												}}
 												style={[
 													styles.featuredImage,

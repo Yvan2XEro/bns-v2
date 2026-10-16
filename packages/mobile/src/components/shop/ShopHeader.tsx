@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Fonts } from "@/constants/theme";
 import { useAppConfig } from "@/src/contexts/AppConfigContext";
 import { useTranslation } from "@/src/lib/i18n";
-import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { shopUrlLabel } from "@/src/lib/shopHandle";
 import { shopTrustStrip, trustItemText } from "@/src/lib/shopStorefront";
 import type { PublicShop } from "@/src/types/api";
@@ -29,7 +29,7 @@ export function ShopHeader({
 	const brand = useShopBrand();
 	const { t } = useTranslation();
 	const { webUrl } = useAppConfig();
-	const banner = resolveImageUrl(shop.banner?.url ?? null);
+	const banner = resolveListingImageUrl(shop.banner, "medium");
 	const bodyY = useRef(0);
 	const nameBox = useRef<{ y: number; height: number } | null>(null);
 	const report = () => {

@@ -214,7 +214,7 @@ export default function MyListingsScreen() {
 	];
 
 	const renderItem = ({ item }: { item: any }) => {
-		const imgUrl = resolveListingImageUrl(item.images?.[0]);
+		const imgUrl = resolveListingImageUrl(item.images?.[0], "thumbnail");
 		const isBoosted = !!(
 			item.boostedUntil && new Date(item.boostedUntil) > new Date()
 		);

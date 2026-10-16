@@ -26,7 +26,7 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { formatDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
-import { resolveImageUrl } from "@/src/lib/resolveImageUrl";
+import { resolveListingImageUrl } from "@/src/lib/resolveImageUrl";
 import { courierSpaceTarget } from "@/src/lib/riderShipment";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
@@ -337,7 +337,9 @@ export default function AccountScreen() {
 							{user.avatar?.url ? (
 								<Image
 									source={{
-										uri: resolveImageUrl(user.avatar?.url) ?? user.avatar?.url,
+										uri:
+											resolveListingImageUrl(user.avatar, "thumbnail") ??
+											user.avatar?.url,
 									}}
 									style={styles.avatar}
 									contentFit="cover"
