@@ -17,11 +17,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { CallSellerButton } from "@/src/components/CallSellerButton";
 import { EmptyState } from "@/src/components/EmptyState";
 import { ListingCard } from "@/src/components/ListingCard";
 import { BuyBox } from "@/src/components/order/BuyBox";
 import { DeliveryEstimates } from "@/src/components/order/DeliveryEstimates";
-import { PhoneReveal } from "@/src/components/PhoneReveal";
 import { ReviewStars } from "@/src/components/ReviewStars";
 import { ShopSellerCard } from "@/src/components/shop/ShopSellerCard";
 import { useAlert } from "@/src/contexts/AlertContext";
@@ -723,7 +723,6 @@ export default function ListingDetail() {
 								</View>
 								<Ionicons name="chevron-forward" size={16} color={mutedColor} />
 							</View>
-							{!isOwner && <PhoneReveal listingId={id} />}
 						</Pressable>
 					)}
 
@@ -813,6 +812,17 @@ export default function ListingDetail() {
 				]}
 			>
 				<View style={[styles.actionButtons, centeredContent]}>
+					{!isOwner && id ? (
+						<CallSellerButton
+							listingId={id}
+							style={[
+								styles.callBtn,
+								{ backgroundColor: cardBg, borderColor, borderWidth: 1.5 },
+							]}
+							textStyle={styles.editBtnText}
+							color={textColor}
+						/>
+					) : null}
 					{!isOwner && (
 						<Pressable
 							onPress={handleMessage}
@@ -1133,6 +1143,15 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 	},
 	editBtnText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	callBtn: {
+		width: 118,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 6,
+		borderRadius: 14,
+		paddingVertical: 14,
+	},
 	lightboxOverlay: {
 		flex: 1,
 		backgroundColor: "rgba(0,0,0,0.95)",

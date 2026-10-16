@@ -17,13 +17,28 @@ import { useTranslation } from "@/src/lib/i18n";
 import { phoneExample } from "@/src/lib/market";
 import type { MyShop } from "@/src/types/api";
 
-/** Name, description, city, categories and the three contact fields — one `PATCH`, one Save. */
+export type ProfileSection =
+	| "name"
+	| "description"
+	| "city"
+	| "categories"
+	| "contacts";
+
+/**
+ * One profile field (or the contacts group) on its own settings screen. The
+ * whole profile still saves through the same single `PATCH`, the other fields
+ * carrying their current values.
+ */
 export function ShopProfileCard({
 	shop,
 	readOnly,
+	section,
+	onSaved,
 }: {
 	shop: MyShop;
 	readOnly: boolean;
+	section: ProfileSection;
+	onSaved?: () => void;
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -34,7 +49,7 @@ export function ShopProfileCard({
 		categories: picked,
 		submit,
 		isPending,
-	} = useUpdateShopForm(shop);
+	} = useUpdateShopForm(shop, { onSaved });
 	const inputStyle = [
 		f.input,
 		{ color: c.text, backgroundColor: c.input, borderColor: c.border },
@@ -46,153 +61,169 @@ export function ShopProfileCard({
 			<View
 				style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}
 			>
-				<Text style={[f.sectionTitle, { color: c.text }]}>
-					{t("shop.profileTitle")}
-				</Text>
-				<Text style={[f.label, { color: c.body }]}>{t("shop.nameLabel")}</Text>
-				<Controller
-					control={form.control}
-					name="name"
-					render={({ field }) => (
-						<TextInput
-							value={field.value}
-							editable={!disabled}
-							onChangeText={field.onChange}
-							onBlur={field.onBlur}
-							maxLength={60}
-							accessibilityLabel={t("shop.nameLabel")}
-							style={inputStyle}
+				{section === "name" ? (
+					<>
+						<Text style={[f.label, { color: c.body }]}>
+							{t("shop.nameLabel")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="name"
+							render={({ field }) => (
+								<TextInput
+									value={field.value}
+									editable={!disabled}
+									onChangeText={field.onChange}
+									onBlur={field.onBlur}
+									maxLength={60}
+									accessibilityLabel={t("shop.nameLabel")}
+									style={inputStyle}
+								/>
+							)}
 						/>
-					)}
-				/>
-				<View style={f.labelRow}>
-					<Text style={[f.label, { color: c.body }]}>
-						{t("shop.descriptionLabel")}
-					</Text>
-					<Text style={[f.counter, { color: c.muted }]}>
-						{description.length} / 1 000
-					</Text>
-				</View>
-				<Controller
-					control={form.control}
-					name="description"
-					render={({ field }) => (
-						<TextInput
-							value={field.value}
-							editable={!disabled}
-							onChangeText={field.onChange}
-							onBlur={field.onBlur}
-							maxLength={1000}
-							multiline
-							accessibilityLabel={t("shop.descriptionLabel")}
-							style={[...inputStyle, f.multiline]}
+						{form.formState.errors.name ? (
+							<Text style={f.error}>{t("shop.nameInvalid")}</Text>
+						) : null}
+					</>
+				) : null}
+				{section === "description" ? (
+					<>
+						<View style={f.labelRow}>
+							<Text style={[f.label, { color: c.body }]}>
+								{t("shop.descriptionLabel")}
+							</Text>
+							<Text style={[f.counter, { color: c.muted }]}>
+								{description.length} / 1 000
+							</Text>
+						</View>
+						<Controller
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<TextInput
+									value={field.value}
+									editable={!disabled}
+									onChangeText={field.onChange}
+									onBlur={field.onBlur}
+									maxLength={1000}
+									multiline
+									accessibilityLabel={t("shop.descriptionLabel")}
+									style={[...inputStyle, f.multiline]}
+								/>
+							)}
 						/>
-					)}
-				/>
-				<Text style={[f.label, { color: c.body }]}>{t("shop.cityLabel")}</Text>
-				<Controller
-					control={form.control}
-					name="city"
-					render={({ field }) => (
-						<CityPicker
-							value={field.value}
-							onSelect={field.onChange}
-							onClear={() => field.onChange(null)}
-							inputBg={c.input}
-							borderColor={c.border}
-							textColor={c.text}
-							mutedColor={c.muted}
+					</>
+				) : null}
+				{section === "city" ? (
+					<>
+						<Text style={[f.label, { color: c.body }]}>
+							{t("shop.cityLabel")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="city"
+							render={({ field }) => (
+								<CityPicker
+									value={field.value}
+									onSelect={field.onChange}
+									onClear={() => field.onChange(null)}
+									inputBg={c.input}
+									borderColor={c.border}
+									textColor={c.text}
+									mutedColor={c.muted}
+								/>
+							)}
 						/>
-					)}
-				/>
-				<Text style={[f.label, { color: c.body }]}>
-					{t("shop.categoriesLabel")} · {picked.length}/5
-				</Text>
-				<Controller
-					control={form.control}
-					name="categories"
-					render={({ field }) => (
-						<CategoryChips
-							categories={categories.data?.categories ?? []}
-							value={field.value}
-							onChange={field.onChange}
+					</>
+				) : null}
+				{section === "categories" ? (
+					<>
+						<Text style={[f.label, { color: c.body }]}>
+							{t("shop.categoriesLabel")} · {picked.length}/5
+						</Text>
+						<Controller
+							control={form.control}
+							name="categories"
+							render={({ field }) => (
+								<CategoryChips
+									categories={categories.data?.categories ?? []}
+									value={field.value}
+									onChange={field.onChange}
+								/>
+							)}
 						/>
-					)}
-				/>
-			</View>
-
-			<View
-				style={[f.card, { backgroundColor: c.card, borderColor: c.border }]}
-			>
-				<Text style={[f.sectionTitle, { color: c.text }]}>
-					{t("shop.contactsTitle")}
-				</Text>
-				<Text style={[f.label, { color: c.body }]}>
-					{t("shop.contactPhone")}
-				</Text>
-				<Controller
-					control={form.control}
-					name="phone"
-					render={({ field }) => (
-						<TextInput
-							value={field.value}
-							editable={!disabled}
-							onChangeText={field.onChange}
-							onBlur={field.onBlur}
-							keyboardType="phone-pad"
-							placeholder={phoneExample()}
-							placeholderTextColor={c.muted}
-							accessibilityLabel={t("shop.contactPhone")}
-							style={inputStyle}
+					</>
+				) : null}
+				{section === "contacts" ? (
+					<>
+						<Text style={[f.label, { color: c.body }]}>
+							{t("shop.contactPhone")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="phone"
+							render={({ field }) => (
+								<TextInput
+									value={field.value}
+									editable={!disabled}
+									onChangeText={field.onChange}
+									onBlur={field.onBlur}
+									keyboardType="phone-pad"
+									placeholder={phoneExample()}
+									placeholderTextColor={c.muted}
+									accessibilityLabel={t("shop.contactPhone")}
+									style={inputStyle}
+								/>
+							)}
 						/>
-					)}
-				/>
-				<Text style={[f.label, { color: c.body }]}>
-					{t("shop.contactWhatsapp")}
-				</Text>
-				<Controller
-					control={form.control}
-					name="whatsapp"
-					render={({ field }) => (
-						<TextInput
-							value={field.value}
-							editable={!disabled}
-							onChangeText={field.onChange}
-							onBlur={field.onBlur}
-							keyboardType="phone-pad"
-							placeholder={phoneExample()}
-							placeholderTextColor={c.muted}
-							accessibilityLabel={t("shop.contactWhatsapp")}
-							style={inputStyle}
+						<Text style={[f.label, { color: c.body }]}>
+							{t("shop.contactWhatsapp")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="whatsapp"
+							render={({ field }) => (
+								<TextInput
+									value={field.value}
+									editable={!disabled}
+									onChangeText={field.onChange}
+									onBlur={field.onBlur}
+									keyboardType="phone-pad"
+									placeholder={phoneExample()}
+									placeholderTextColor={c.muted}
+									accessibilityLabel={t("shop.contactWhatsapp")}
+									style={inputStyle}
+								/>
+							)}
 						/>
-					)}
-				/>
-				<Text style={[f.label, { color: c.body }]}>
-					{t("shop.contactEmail")}
-				</Text>
-				<Controller
-					control={form.control}
-					name="email"
-					render={({ field }) => (
-						<TextInput
-							value={field.value}
-							editable={!disabled}
-							onChangeText={field.onChange}
-							onBlur={field.onBlur}
-							keyboardType="email-address"
-							autoCapitalize="none"
-							accessibilityLabel={t("shop.contactEmail")}
-							style={inputStyle}
+						<Text style={[f.label, { color: c.body }]}>
+							{t("shop.contactEmail")}
+						</Text>
+						<Controller
+							control={form.control}
+							name="email"
+							render={({ field }) => (
+								<TextInput
+									value={field.value}
+									editable={!disabled}
+									onChangeText={field.onChange}
+									onBlur={field.onBlur}
+									keyboardType="email-address"
+									autoCapitalize="none"
+									accessibilityLabel={t("shop.contactEmail")}
+									style={inputStyle}
+								/>
+							)}
 						/>
-					)}
-				/>
-				{form.formState.errors.email ? (
-					<Text style={f.error}>{t("shop.contactEmailInvalid")}</Text>
-				) : (
-					<Text style={[f.hint, { color: c.muted }]}>
-						{t("shop.contactsHint")}
-					</Text>
-				)}
+						{form.formState.errors.email ? (
+							<Text style={f.error}>{t("shop.contactEmailInvalid")}</Text>
+						) : (
+							<Text style={[f.hint, { color: c.muted }]}>
+								{t("shop.contactsHint")}
+							</Text>
+						)}
+					</>
+				) : null}
 			</View>
 
 			<Pressable

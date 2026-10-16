@@ -9,6 +9,8 @@ import {
 	levelLadder,
 } from "@/src/lib/verification";
 import type { ShopCapabilities } from "@/src/types/api";
+import type { VerificationRequirement } from "../../../../api/src/contracts/verificationRequirements";
+import { RequirementList } from "./RequirementList";
 
 /**
  * The three levels on a rail, each with what it unlocks; the next one to
@@ -17,8 +19,11 @@ import type { ShopCapabilities } from "@/src/types/api";
  */
 export function LevelLadder({
 	capabilities,
+	requirements,
 }: {
 	capabilities: ShopCapabilities;
+	/** What the next level asks for, shown inside its framed rung. */
+	requirements?: VerificationRequirement[];
 }) {
 	const c = useShopTheme();
 	const { t } = useTranslation();
@@ -93,6 +98,9 @@ export function LevelLadder({
 							<Text style={[styles.benefit, { color: c.muted }]}>
 								{t(`verification.ladder.benefit.${rung.level}`)}
 							</Text>
+							{isNext && requirements ? (
+								<RequirementList requirements={requirements} />
+							) : null}
 						</View>
 					</View>
 				);

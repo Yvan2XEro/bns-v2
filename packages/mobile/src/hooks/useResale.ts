@@ -80,7 +80,11 @@ export function useAcceptResaleTerms(shopId: string) {
 export function useRequestResaleLink(shopId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (input: { supplierShop: string; acceptTermsVersion: string }) =>
+		mutationFn: (input: {
+			supplierShop: string;
+			acceptTermsVersion: string;
+			productId?: string;
+		}) =>
 			api.post(`/api/shops/${encodeURIComponent(shopId)}/resale-links`, input),
 		onSuccess: async () =>
 			queryClient.invalidateQueries({

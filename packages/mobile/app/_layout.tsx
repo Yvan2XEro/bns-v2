@@ -44,6 +44,7 @@ import {
 } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
+import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
 import { NotificationReadyContext } from "@/src/contexts/NotificationReadyContext";
@@ -208,6 +209,7 @@ export default function RootLayout() {
 												<PushTokenRegistrar />
 												<PushNotificationHandler />
 												<RootLayoutNav />
+												<OfflineBanner />
 											</AlertProvider>
 										</ChatProvider>
 									</NovuWrapper>
@@ -421,6 +423,10 @@ function RootLayoutNav() {
 					options={{ presentation: "modal", headerShown: false }}
 				/>
 				<Stack.Screen name="shop/manage" options={{ headerShown: false }} />
+				<Stack.Screen
+					name="shop/settings/[section]"
+					options={{ headerShown: false }}
+				/>
 				<Stack.Screen
 					name="shop/move-listings"
 					options={{ presentation: "modal", headerShown: false }}

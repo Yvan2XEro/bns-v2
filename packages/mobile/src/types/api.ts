@@ -7,6 +7,7 @@
  *  • /api/public/*   → custom Next.js routes, own response shapes (see below)
  *  • /api/{collection}/* → Payload REST — standard PayloadPage<T> shape
  */
+import type { VerificationRequirement } from "../../../api/src/contracts/verificationRequirements";
 import type {
 	ConnectedAccountStatus,
 	HoldCategory,
@@ -675,6 +676,8 @@ export interface MyShop extends PublicShop {
 	status: ShopStatus;
 	handleChangedAt: string | null;
 	nextHandleChangeAt: string | null;
+	/** The default a new product's return policy starts from. */
+	returnPolicy?: string | null;
 	/** Absent from the public shape — a visitor reads only `level` and `badge`. */
 	capabilities: ShopCapabilities;
 	suspension: {
@@ -1213,6 +1216,8 @@ export interface ShopVerificationResponse {
 		level: 2 | 3;
 		unlocks: Array<keyof ShopCapabilities>;
 		eligible: boolean;
+		/** Optional: an API older than the requirements list omits it. */
+		requirements?: VerificationRequirement[];
 	} | null;
 	cooldownUntil: string | null;
 }

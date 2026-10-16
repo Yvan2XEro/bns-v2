@@ -58,12 +58,15 @@ export function LevelSection({
 	isOwner,
 	pendingLevel,
 	onStart,
+	actionInFooter = false,
 }: {
 	view: ShopVerificationResponse;
 	level: 2 | 3;
 	isOwner: boolean;
 	pendingLevel: 2 | 3 | null;
 	onStart: (level: 2 | 3) => void;
+	/** The screen's fixed bottom button already offers this level's start or continue. */
+	actionInFooter?: boolean;
 }) {
 	const c = useShopTheme();
 	const { t, i18n } = useTranslation();
@@ -104,7 +107,7 @@ export function LevelSection({
 				</View>
 			) : null}
 
-			{resumable ? (
+			{resumable && !actionInFooter ? (
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel={t("verification.requestCard.continue")}
@@ -120,43 +123,45 @@ export function LevelSection({
 				</Pressable>
 			) : null}
 
-			<View style={styles.actionRow}>
-				<Text style={[styles.actionLabel, { color: c.text }]}>
-					{t(`verification.action.label.${labelKey}.${level}`)}
-				</Text>
-				{allowed ? (
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel={ctaLabel}
-						disabled={isPending}
-						onPress={() => onStart(level)}
-						style={[
-							styles.cta,
-							{ backgroundColor: c.primary, opacity: isPending ? 0.6 : 1 },
-						]}
-					>
-						{isPending ? (
-							<ActivityIndicator color="#ffffff" size="small" />
-						) : (
-							<Text style={styles.ctaLabel}>{ctaLabel}</Text>
-						)}
-					</Pressable>
-				) : (
-					<View style={styles.reasonWrap}>
-						<Text style={[styles.reason, { color: c.muted }]}>{reason}</Text>
-						<View
+			{allowed && actionInFooter ? null : (
+				<View style={styles.actionRow}>
+					<Text style={[styles.actionLabel, { color: c.text }]}>
+						{t(`verification.action.label.${labelKey}.${level}`)}
+					</Text>
+					{allowed ? (
+						<Pressable
 							accessibilityRole="button"
 							accessibilityLabel={ctaLabel}
-							accessibilityState={{ disabled: true }}
-							style={[styles.ctaDisabled, { backgroundColor: c.neutralSoft }]}
+							disabled={isPending}
+							onPress={() => onStart(level)}
+							style={[
+								styles.cta,
+								{ backgroundColor: c.primary, opacity: isPending ? 0.6 : 1 },
+							]}
 						>
-							<Text style={[styles.ctaDisabledLabel, { color: c.muted }]}>
-								{ctaLabel}
-							</Text>
+							{isPending ? (
+								<ActivityIndicator color="#ffffff" size="small" />
+							) : (
+								<Text style={styles.ctaLabel}>{ctaLabel}</Text>
+							)}
+						</Pressable>
+					) : (
+						<View style={styles.reasonWrap}>
+							<Text style={[styles.reason, { color: c.muted }]}>{reason}</Text>
+							<View
+								accessibilityRole="button"
+								accessibilityLabel={ctaLabel}
+								accessibilityState={{ disabled: true }}
+								style={[styles.ctaDisabled, { backgroundColor: c.neutralSoft }]}
+							>
+								<Text style={[styles.ctaDisabledLabel, { color: c.muted }]}>
+									{ctaLabel}
+								</Text>
+							</View>
 						</View>
-					</View>
-				)}
-			</View>
+					)}
+				</View>
+			)}
 		</View>
 	);
 }

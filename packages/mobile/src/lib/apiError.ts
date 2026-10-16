@@ -216,6 +216,7 @@ export const ERROR_CODES = {
 	resaleNotEnabled: "resale.notEnabled",
 	resaleSupplierNotEligible: "resale.supplierNotEligible",
 	resaleResellerNotEligible: "resale.resellerNotEligible",
+	resaleResellerLevelTooLow: "resale.resellerLevelTooLow",
 	resaleLinkInactive: "resale.linkInactive",
 	resaleLinkRequired: "resale.linkRequired",
 	resaleOwnProduct: "resale.ownProduct",
@@ -555,6 +556,8 @@ const FALLBACKS: Record<string, string> = {
 		"This shop does not meet the requirements to supply resale products.",
 	[ERROR_CODES.resaleResellerNotEligible]:
 		"This shop does not meet the requirements to resell products.",
+	[ERROR_CODES.resaleResellerLevelTooLow]:
+		"This product is reserved for shops of a higher verification level.",
 	[ERROR_CODES.resaleOwnProduct]:
 		"These shops cannot be linked because they share an owner or member.",
 	[ERROR_CODES.resaleLinkInactive]:

@@ -46,7 +46,10 @@ function defaultValues(shop: MyShop): ShopProfileFormValues {
  * same manager-or-owner access `can(role, "settings.edit")` grants (unlike
  * the address and close-shop forms, this one is not owner-gated).
  */
-export function useUpdateShopForm(shop: MyShop) {
+export function useUpdateShopForm(
+	shop: MyShop,
+	options: { onSaved?: () => void } = {},
+) {
 	const { t } = useTranslation();
 	const { showSuccess, showError } = useAlert();
 	const updateShop = useUpdateShop(shop.id);
@@ -85,6 +88,7 @@ export function useUpdateShopForm(shop: MyShop) {
 				onSuccess: () => {
 					submittingRef.current = false;
 					showSuccess(t("shop.savedTitle"), t("shop.savedMessage"));
+					options.onSaved?.();
 				},
 				onError: (error) => {
 					submittingRef.current = false;

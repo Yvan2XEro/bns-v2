@@ -102,7 +102,11 @@ export default function ResaleCatalogueScreen() {
 		const version = terms.data?.version;
 		if (!version) return;
 		requestLink.mutate(
-			{ supplierShop: product.supplier.id, acceptTermsVersion: version },
+			{
+				supplierShop: product.supplier.id,
+				acceptTermsVersion: version,
+				productId: product.productId,
+			},
 			{
 				onSuccess: () =>
 					Alert.alert(
@@ -402,7 +406,19 @@ function CatalogueProductCard({
 					) : null}
 				</View>
 			</View>
-			{mustRequest ? (
+			{product.levelLocked ? (
+				<View
+					style={[styles.lockedNotice, { backgroundColor: c.input }]}
+					accessibilityRole="text"
+				>
+					<Ionicons name="lock-closed-outline" size={16} color={c.muted} />
+					<Text style={[styles.body, { color: c.body }]}>
+						{t("sellerResale.levelReserved", {
+							level: product.minResellerLevel ?? 3,
+						})}
+					</Text>
+				</View>
+			) : mustRequest ? (
 				<Pressable
 					disabled={isPending || product.linkStatus === "requested"}
 					onPress={onRequest}
@@ -519,6 +535,14 @@ function VariantPrice({
 }
 
 const styles = StyleSheet.create({
+	lockedNotice: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+	},
 	safe: { flex: 1 },
 	spinner: { marginTop: 28 },
 	search: {

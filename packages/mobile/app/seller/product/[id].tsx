@@ -6,6 +6,7 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -69,6 +70,20 @@ export default function ProductScreen() {
 		},
 		[],
 	);
+
+	// A new product starts from the shop's default return policy, once.
+	const returnPolicyPrefilled = useRef(false);
+	const defaultReturnPolicy = shop?.returnPolicy;
+	useEffect(() => {
+		if (!creating || !shop || returnPolicyPrefilled.current) return;
+		returnPolicyPrefilled.current = true;
+		if (!defaultReturnPolicy) return;
+		setForm((current) =>
+			current.returnPolicy
+				? current
+				: { ...current, returnPolicy: defaultReturnPolicy },
+		);
+	}, [creating, shop, defaultReturnPolicy]);
 
 	useEffect(() => {
 		if (!creating && detail.data && !loaded) {

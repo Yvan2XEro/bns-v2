@@ -166,6 +166,56 @@ export default function ShopScreen() {
 	const whatsapp = whatsappLink(shop.contact.whatsapp);
 	const phone = telLink(shop.contact.phone);
 
+	const loadedShop = shop;
+	function renderShopItem(item: Item) {
+		if (item.kind === "review") {
+			return <ShopReviewCard review={item.review} />;
+		}
+		if (item.kind === "about") {
+			return (
+				<View style={{ gap: 16 }}>
+					{loadedShop.description ? (
+						<View style={{ gap: 4 }}>
+							<Text style={[styles.section, { color: c.text }]}>
+								{t("shop.aboutDescription")}
+							</Text>
+							<Text style={[styles.body, { color: c.body }]}>
+								{loadedShop.description}
+							</Text>
+						</View>
+					) : null}
+					<LegalBlock
+						legal={loadedShop.legal}
+						verified={loadedShop.legalVerified}
+					/>
+					<PickupPoints handle={loadedShop.handle} />
+					<DeliveryCities shopId={loadedShop.id} />
+				</View>
+			);
+		}
+		return (
+			<View style={[styles.row, { gap: gutter }]}>
+				{item.listings.map((listing) => (
+					<ListingCard
+						key={listing.id}
+						listing={{
+							...listing,
+							price: listing.price ?? undefined,
+							isBoosted: Boolean(
+								listing.boostedUntil &&
+									new Date(listing.boostedUntil) > new Date(),
+							),
+						}}
+						width={cardWidth}
+						isFavorite={favoriteIds.has(listing.id)}
+						onToggleFavorite={() => toggleFavorite({ ...listing })}
+						onPress={(id) => router.push(`/listing/${id}`)}
+					/>
+				))}
+			</View>
+		);
+	}
+
 	return (
 		<ShopBrandProvider brandColor={shop.brandColor}>
 			<View style={[styles.root, { backgroundColor: c.bg }]}>
@@ -195,10 +245,9 @@ export default function ShopScreen() {
 						item.kind === "review" ? item.review.id : `${item.kind}-${index}`
 					}
 					getItemType={(item) => item.kind}
-					contentContainerStyle={{
-						padding: 16,
-						paddingBottom: insets.bottom + 24,
-					}}
+					// No horizontal padding here: the banner runs edge to edge and
+					// to the top; everything under it is inset by PAGE_GUTTER.
+					contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
 					onEndReached={() =>
 						tab !== "about" &&
 						active.hasNextPage &&
@@ -272,78 +321,37 @@ export default function ShopScreen() {
 									) : null}
 								</View>
 							) : null}
-							<ShopTabs
-								active={tab}
-								onChange={setTab}
-								reviewCount={reviewTotal}
-							/>
-							{tab === "listings" ? (
-								<Text style={[styles.section, { color: c.text }]}>
-									{t("shop.listingsTitle", {
-										count: shop.publishedListingCount,
-									})}
-								</Text>
-							) : null}
-							{tab === "reviews" ? (
-								<View style={{ gap: 4 }}>
+							<View style={styles.inset}>
+								<ShopTabs
+									active={tab}
+									onChange={setTab}
+									reviewCount={reviewTotal}
+								/>
+								{tab === "listings" ? (
 									<Text style={[styles.section, { color: c.text }]}>
-										{t("shop.reviewsTitle")}
+										{t("shop.listingsTitle", {
+											count: shop.publishedListingCount,
+										})}
 									</Text>
-									<Text style={[styles.hint, { color: c.muted }]}>
-										{t("shop.reviewsHint")}
-									</Text>
-								</View>
-							) : null}
+								) : null}
+								{tab === "reviews" ? (
+									<View style={{ gap: 4 }}>
+										<Text style={[styles.section, { color: c.text }]}>
+											{t("shop.reviewsTitle")}
+										</Text>
+										<Text style={[styles.hint, { color: c.muted }]}>
+											{t("shop.reviewsHint")}
+										</Text>
+									</View>
+								) : null}
+							</View>
 						</View>
 					}
-					renderItem={({ item }) => {
-						if (item.kind === "review") {
-							return <ShopReviewCard review={item.review} />;
-						}
-						if (item.kind === "about") {
-							return (
-								<View style={{ gap: 16 }}>
-									{shop.description ? (
-										<View style={{ gap: 4 }}>
-											<Text style={[styles.section, { color: c.text }]}>
-												{t("shop.aboutDescription")}
-											</Text>
-											<Text style={[styles.body, { color: c.body }]}>
-												{shop.description}
-											</Text>
-										</View>
-									) : null}
-									<LegalBlock
-										legal={shop.legal}
-										verified={shop.legalVerified}
-									/>
-									<PickupPoints handle={shop.handle} />
-									<DeliveryCities shopId={shop.id} />
-								</View>
-							);
-						}
-						return (
-							<View style={[styles.row, { gap: gutter }]}>
-								{item.listings.map((listing) => (
-									<ListingCard
-										key={listing.id}
-										listing={{
-											...listing,
-											price: listing.price ?? undefined,
-											isBoosted: Boolean(
-												listing.boostedUntil &&
-													new Date(listing.boostedUntil) > new Date(),
-											),
-										}}
-										width={cardWidth}
-										isFavorite={favoriteIds.has(listing.id)}
-										onToggleFavorite={() => toggleFavorite({ ...listing })}
-										onPress={(id) => router.push(`/listing/${id}`)}
-									/>
-								))}
-							</View>
-						);
-					}}
+					renderItem={({ item }) => (
+						<View style={{ paddingHorizontal: PAGE_GUTTER }}>
+							{renderShopItem(item)}
+						</View>
+					)}
 					ListEmptyComponent={
 						active.isLoading ? (
 							<ActivityIndicator
@@ -392,6 +400,8 @@ export default function ShopScreen() {
 	);
 }
 
+const PAGE_GUTTER = 16;
+
 const styles = StyleSheet.create({
 	root: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
@@ -434,7 +444,8 @@ const styles = StyleSheet.create({
 	reportText: { fontSize: 13, fontFamily: Fonts.body },
 	hint: { fontSize: 13, fontFamily: Fonts.body, lineHeight: 18 },
 	body: { fontSize: 15, fontFamily: Fonts.body, lineHeight: 21 },
-	contactRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16 },
+	contactRow: { flexDirection: "row", gap: 10, paddingHorizontal: PAGE_GUTTER },
+	inset: { paddingHorizontal: PAGE_GUTTER, gap: 16 },
 	primaryBtn: {
 		flex: 1,
 		flexDirection: "row",

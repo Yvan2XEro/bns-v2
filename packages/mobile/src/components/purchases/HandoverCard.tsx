@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -17,9 +18,10 @@ import { useShopTheme } from "../shop/theme";
 import { FieldError, purchaseText } from "./ui";
 
 /**
- * The plaintext code exists only in the SMS sent at shipping and in the
- * answer to a regeneration, so the large digits appear once the buyer
- * regenerates; before that, the card says where the code went.
+ * The API stores only a salted hash of the code, so there is nothing to fetch
+ * back: the buyer asks for a fresh one, sent by SMS through the regenerate
+ * route and its three-per-order budget. That route's answer also carries the
+ * new code; it stays hidden behind a tap so it is never on screen by default.
  */
 export function HandoverCard({
 	order,
@@ -33,6 +35,7 @@ export function HandoverCard({
 	const regenerate = useRegenerateHandoverCode(order.id);
 	const code = regenerate.data?.code;
 	const state = handoverCardState(order, actions, code);
+	const [revealed, setRevealed] = useState(false);
 
 	return (
 		<View style={[styles.card, { borderColor: c.isDark ? c.border : INK }]}>
@@ -42,7 +45,20 @@ export function HandoverCard({
 				<Text style={styles.sms}>{t("purchases.handoverAlsoSms")}</Text>
 			</View>
 
-			{state.showCode && code ? (
+			{state.showCode && code && !revealed ? (
+				<>
+					<Text style={styles.body}>{t("purchases.handoverResent")}</Text>
+					<Pressable
+						onPress={() => setRevealed(true)}
+						accessibilityRole="button"
+						style={styles.regenerate}
+					>
+						<Text style={styles.regenerateText}>
+							{t("purchases.handoverReveal")}
+						</Text>
+					</Pressable>
+				</>
+			) : state.showCode && code ? (
 				<View
 					style={styles.digits}
 					accessibilityLiveRegion="polite"
@@ -60,7 +76,7 @@ export function HandoverCard({
 
 			<View style={styles.warningRow}>
 				<Ionicons name="warning-outline" size={16} color={AMBER} />
-				<Text style={styles.warning}>{t("purchases.handoverBody")}</Text>
+				<Text style={styles.warning}>{t("purchases.handoverWarning")}</Text>
 			</View>
 
 			{state.locked ? (
@@ -86,7 +102,10 @@ export function HandoverCard({
 
 			{state.canRegenerate ? (
 				<Pressable
-					onPress={() => regenerate.mutate()}
+					onPress={() => {
+						setRevealed(false);
+						regenerate.mutate();
+					}}
 					disabled={regenerate.isPending}
 					accessibilityRole="button"
 					style={styles.regenerate}
@@ -95,7 +114,7 @@ export function HandoverCard({
 						<ActivityIndicator color="#fff" />
 					) : (
 						<Text style={styles.regenerateText}>
-							{t("purchases.handoverRegenerate")}
+							{t("purchases.handoverResendSms")}
 						</Text>
 					)}
 				</Pressable>

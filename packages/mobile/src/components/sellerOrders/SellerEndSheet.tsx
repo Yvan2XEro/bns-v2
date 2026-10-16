@@ -5,6 +5,7 @@ import {
 	useDeclineOrder,
 	useSellerCancelOrder,
 } from "@/src/hooks/useOrderActions";
+import { useSellerOrder } from "@/src/hooks/useSellerOrders";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
 import {
@@ -14,6 +15,7 @@ import {
 	sellerEndBody,
 	sellerEndSchema,
 } from "@/src/lib/sellerOrders";
+import { DeclineRecap } from "./DeclineRecap";
 import { FieldError, NoteField, ReasonPicker, SheetButton } from "./FormBits";
 import { OrderSheet } from "./OrderSheet";
 
@@ -37,6 +39,10 @@ export function SellerEndSheet({
 	const decline = useDeclineOrder(orderId, shopId);
 	const cancel = useSellerCancelOrder(orderId, shopId);
 	const mutation = mode === "decline" ? decline : cancel;
+	const recap = useSellerOrder(
+		shopId,
+		mode === "decline" && visible && orderId ? orderId : undefined,
+	);
 	const form = useForm<SellerEndValues>({
 		resolver: zodResolver(sellerEndSchema),
 		defaultValues: EMPTY,
@@ -71,11 +77,14 @@ export function SellerEndSheet({
 			}
 			subtitle={
 				mode === "decline"
-					? t("sellerOrders.declineBody")
+					? t("sellerOrders.declineFinal")
 					: t("sellerOrders.cancelBody")
 			}
 			onClose={onClose}
 		>
+			{mode === "decline" ? (
+				<DeclineRecap order={recap.data} loading={recap.isLoading} />
+			) : null}
 			<Controller
 				control={form.control}
 				name="reason"

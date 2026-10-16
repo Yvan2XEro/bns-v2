@@ -1,9 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
 	ActivityIndicator,
-	Pressable,
 	RefreshControl,
 	ScrollView,
 	StyleSheet,
@@ -23,6 +21,7 @@ import { ConfirmCodeCard } from "@/src/components/purchases/ConfirmCodeCard";
 import { ConfirmReceiptSheet } from "@/src/components/purchases/ConfirmReceiptSheet";
 import { ContestSheet } from "@/src/components/purchases/ContestSheet";
 import { HandoverCard } from "@/src/components/purchases/HandoverCard";
+import { OrderHelpBar } from "@/src/components/purchases/OrderHelpBar";
 import { OrderProgress } from "@/src/components/purchases/OrderProgress";
 import { PaymentSection } from "@/src/components/purchases/PaymentSection";
 import { PurchaseStatusPill } from "@/src/components/purchases/PurchaseRow";
@@ -61,7 +60,6 @@ export default function PurchaseScreen() {
 			params: { id: order?.id ?? id },
 		});
 	const contestHere = config.disputesEnabled && has("contest_delivery");
-	const proofShown = shipments.some((view) => view.proof !== null);
 	const sheetProps = (name: PurchaseSheet) => ({
 		visible: sheet === name && has(name),
 		onClose: () => setSheet(null),
@@ -144,19 +142,6 @@ export default function PurchaseScreen() {
 							onContest={contestHere ? reportProblem : undefined}
 						/>
 					))}
-					{contestHere && !proofShown ? (
-						<Pressable
-							accessibilityRole="button"
-							onPress={reportProblem}
-							style={[styles.link, { borderColor: c.border }]}
-						>
-							<Ionicons name="warning-outline" size={18} color={c.primary} />
-							<Text style={[styles.linkText, { color: c.primary }]}>
-								{t("purchases.reportProblem")}
-							</Text>
-						</Pressable>
-					) : null}
-
 					{has("confirm_code") || has("resend_code") ? (
 						<ConfirmCodeCard
 							orderId={order.id}
@@ -175,29 +160,20 @@ export default function PurchaseScreen() {
 						<ReviewPanel orderId={order.id} shopName={order.shop.name} />
 					) : null}
 
-					{order.conversationId ? (
-						<Pressable
-							onPress={() => router.push(`/messages/${order.conversationId}`)}
-							accessibilityRole="button"
-							accessibilityLabel={t("purchases.openConversation")}
-							style={[styles.link, { borderColor: c.border }]}
-						>
-							<Ionicons
-								name="chatbubbles-outline"
-								size={18}
-								color={c.primary}
-							/>
-							<Text style={[styles.linkText, { color: c.primary }]}>
-								{t("purchases.openConversation")}
-							</Text>
-						</Pressable>
-					) : null}
-
 					<PaymentSection order={order} />
 					<PurchaseSummary order={order} />
 					<Timeline entries={order.timeline} />
 				</ScrollView>
 			)}
+
+			{order && !purchase.isError ? (
+				<OrderHelpBar
+					canReportProblem={contestHere}
+					onReportProblem={reportProblem}
+					shopId={order.shop?.id}
+					conversationId={order.conversationId}
+				/>
+			) : null}
 
 			{order ? (
 				<>
@@ -220,14 +196,4 @@ const styles = StyleSheet.create({
 	heading: { flexDirection: "row", alignItems: "center", gap: 8 },
 	pill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
 	pillText: { fontSize: 11, fontFamily: Fonts.bodySemibold },
-	link: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 8,
-		minHeight: 44,
-		borderRadius: 12,
-		borderWidth: 1,
-	},
-	linkText: { fontSize: 15, fontFamily: Fonts.bodySemibold },
 });

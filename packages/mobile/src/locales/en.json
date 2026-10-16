@@ -8,6 +8,7 @@
 		"favorites": "Favorites"
 	},
 	"common": {
+		"offlineBanner": "Offline",
 		"continue": "Continue",
 		"search": "Search",
 		"filter": "Filter",
@@ -190,6 +191,7 @@
 		"everywhere": "any city"
 	},
 	"listing": {
+		"call": "Call",
 		"price": "Price",
 		"title": "Title",
 		"description": "Description",
@@ -1385,6 +1387,7 @@
 			"notEnabled": "This product is not enabled for resale.",
 			"supplierNotEligible": "This shop does not meet the requirements to supply resale products.",
 			"resellerNotEligible": "This shop does not meet the requirements to resell products.",
+			"resellerLevelTooLow": "This product is reserved for shops of a higher verification level.",
 			"ownProduct": "These shops cannot be linked because they share an owner or member.",
 			"linkInactive": "This resale link is inactive. Ask the supplier to restore it before reselling.",
 			"linkRequired": "Request and receive supplier approval before reselling this product.",
@@ -1995,7 +1998,19 @@
 		"view": "View",
 		"productsCount_one": "{{count}} product",
 		"productsCount": "{{count}} products",
-		"niuInvalid": "Enter 14 letters or digits, exactly as shown on your NIU certificate."
+		"niuInvalid": "Enter 14 letters or digits, exactly as shown on your NIU certificate.",
+		"logo": "Logo",
+		"settingsRows": {
+			"name": "Name",
+			"categories": "Categories",
+			"categoriesValue": "{{names}} · {{count}}/{{max}}",
+			"categoriesMore": "{{names}} +{{extra}} · {{count}}/{{max}}",
+			"pageTitle": "Shop page",
+			"colorDefault": "App colour",
+			"empty": "Not set",
+			"dangerTitle": "Danger zone",
+			"unavailable": "This setting isn't available"
+		}
 	},
 	"seller": {
 		"space": "Seller space",
@@ -2454,6 +2469,29 @@
 			"legal_representative_id": "Legal representative's ID",
 			"mandate": "Mandate",
 			"other": "Other document"
+		},
+		"requirements": {
+			"title": "Documents required",
+			"item": {
+				"identity_document": "Identity document (national ID card, passport or residence permit)",
+				"selfie": "Verification selfie",
+				"business_details": "Business legal details",
+				"registration_document": "RCCM extract or entrepreneur's declaration"
+			},
+			"status": {
+				"missing": "To provide",
+				"provided": "Provided",
+				"in_review": "Under review",
+				"approved": "Approved",
+				"rejected": "Declined"
+			}
+		},
+		"footer": {
+			"start": {
+				"2": "Verify my identity",
+				"3": "Verify my business"
+			},
+			"continue": "Continue my request"
 		}
 	},
 	"team": {
@@ -2815,6 +2853,12 @@
 		"payOnDelivery": "{{amount}} to pay on delivery"
 	},
 	"purchases": {
+		"handoverResendSms": "Resend the code by SMS",
+		"handoverResent": "A new code has been sent to you by SMS.",
+		"handoverReveal": "Show the code",
+		"handoverWarning": "Only give this code to the courier, when the parcel is handed over",
+		"helpProblem": "A problem?",
+		"helpMessageShop": "Message the shop",
 		"title": "My orders",
 		"tabOpen": "Ongoing",
 		"tabDelivered": "Delivered",
@@ -3065,7 +3109,15 @@
 		"photoAdded": "Photo added",
 		"photoRemove": "Remove the photo",
 		"photoFailed": "The photo could not be uploaded",
-		"done": "Done"
+		"done": "Done",
+		"declineFinal": "This can't be undone",
+		"declineEffects": {
+			"refund": "{{buyer}} is refunded in full ({{amount}}).",
+			"nothingPaid": "Nothing has been paid yet, so there is no refund.",
+			"notified": "{{buyer}} is told in the app and by notification.",
+			"stock": "The reserved items go back into your stock.",
+			"rate": "This refusal counts in the shop's cancellation rate. Above {{threshold}}% of orders received (from {{min}} orders), an alert shows in your insights."
+		}
 	},
 	"billing": {
 		"title": "Billing",
@@ -3221,6 +3273,19 @@
 		"noAction": "No action is available at this status."
 	},
 	"disputes": {
+		"evidenceSection": "Photo or video evidence",
+		"evidenceCount": "{{count}} of {{max}}",
+		"addEvidenceMedia": "Add",
+		"evidenceRejected_type": "This file type is not accepted. Add a photo or an MP4 or MOV video.",
+		"evidenceRejected_size": "This file is too large: 10 MB at most for a photo, 50 MB for a video.",
+		"evidenceRejected_limit": "You can attach at most {{max}} files.",
+		"evidenceFileN": "File {{n}}",
+		"uploadFailedTitle": "Report created, some files were not sent",
+		"uploadFailedBody": "Your case exists. {{count}} file(s) could not be sent: try again, or remove them.",
+		"retryUploads": "Retry sending",
+		"openCase": "View the case",
+		"removeEvidence": "Remove this file",
+		"uploadingEvidence": "Sending evidence…",
 		"menu": "Dispute options",
 		"refresh": "Refresh",
 		"stagedEvidence": "Attached to your next message",
@@ -3543,6 +3608,7 @@
 		}
 	},
 	"sellerResale": {
+		"levelReserved": "Reserved for level {{level}} shops",
 		"title": "Resale orders",
 		"offeredTitle": "Offered products",
 		"offeredStats": "{{resellers}} resellers · {{units}} units delivered in 30 days",

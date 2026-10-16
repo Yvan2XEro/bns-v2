@@ -19,12 +19,14 @@ import {
 	canOpenRequest,
 	canSubmit,
 	checklistComplete,
+	footerAction,
 	levelLadder,
 	missingKinds,
 	POLL_INTERVAL_MS,
 	POLL_TIMEOUT_MS,
 	publicShopBadge,
 	requiredKinds,
+	requirementLabelKey,
 	shouldKeepPolling,
 	showsLevelSection,
 	statusToneKey,
@@ -138,6 +140,41 @@ describe("businessRequestAction", () => {
 		expect(
 			businessRequestAction(baseView({ capabilities: level2, enabled: false })),
 		).toBe("blocked");
+	});
+});
+
+describe("footerAction", () => {
+	test("starts the next level for its owner when the level card would", () => {
+		expect(footerAction(baseView(), true)).toEqual({
+			level: 2,
+			kind: "start",
+		});
+		expect(footerAction(baseView(), false)).toBeNull();
+		expect(footerAction(baseView({ enabled: false }), true)).toBeNull();
+	});
+	test("continues a draft or a request sent back for more", () => {
+		const view = baseView({
+			requests: { level2: baseRequest({ status: "needs_info" }), level3: null },
+		});
+		expect(footerAction(view, true)).toEqual({ level: 2, kind: "continue" });
+	});
+	test("offers nothing while the request is under review or there is no next level", () => {
+		const view = baseView({
+			requests: { level2: baseRequest({ status: "in_review" }), level3: null },
+		});
+		expect(footerAction(view, true)).toBeNull();
+		expect(footerAction(baseView({ nextLevel: null }), true)).toBeNull();
+	});
+});
+
+describe("requirementLabelKey", () => {
+	test("reuses the document-kind labels and names the other items", () => {
+		expect(requirementLabelKey("niu_certificate")).toBe(
+			"verification.documentKind.niu_certificate",
+		);
+		expect(requirementLabelKey("selfie")).toBe(
+			"verification.requirements.item.selfie",
+		);
 	});
 });
 

@@ -1,8 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useReducer } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+	ActivityIndicator,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+import {
+	SafeAreaView,
+	useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
 import { EmptyState } from "@/src/components/EmptyState";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
@@ -14,7 +24,11 @@ import { useMyShop } from "@/src/hooks/useShops";
 import { useShopVerification } from "@/src/hooks/useVerification";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
-import { showsLevelSection } from "@/src/lib/verification";
+import {
+	type FooterAction,
+	footerAction,
+	showsLevelSection,
+} from "@/src/lib/verification";
 
 // `as never`: expo-router's generated route types lag behind these two
 // screens, which land from sibling tasks in this same wave (see the other
@@ -64,6 +78,8 @@ export default function VerificationHubScreen() {
 		router.push(CONTINUE_HREF[level]);
 	}, []);
 
+	const footer = query.data ? footerAction(query.data, role === "owner") : null;
+
 	const isLoading = myShop.isPending || (Boolean(shop?.id) && query.isPending);
 	const isError = myShop.isError || (Boolean(shop?.id) && query.isError);
 
@@ -97,7 +113,12 @@ export default function VerificationHubScreen() {
 			) : null}
 
 			{!isLoading && !isError && query.data ? (
-				<ScrollView contentContainerStyle={styles.content}>
+				<ScrollView
+					contentContainerStyle={[
+						styles.content,
+						footer ? styles.contentWithFooter : null,
+					]}
+				>
 					{!query.data.enabled ? (
 						<View
 							accessibilityRole="alert"
@@ -115,7 +136,10 @@ export default function VerificationHubScreen() {
 					) : null}
 
 					<VerificationStatusCard view={query.data} />
-					<LevelLadder capabilities={query.data.capabilities} />
+					<LevelLadder
+						capabilities={query.data.capabilities}
+						requirements={query.data.nextLevel?.requirements}
+					/>
 
 					{showsLevelSection(query.data, 2) ? (
 						<LevelSection
@@ -124,6 +148,7 @@ export default function VerificationHubScreen() {
 							isOwner={role === "owner"}
 							pendingLevel={state.pendingLevel}
 							onStart={onStart}
+							actionInFooter={footer?.level === 2}
 						/>
 					) : null}
 					{showsLevelSection(query.data, 3) ? (
@@ -133,11 +158,68 @@ export default function VerificationHubScreen() {
 							isOwner={role === "owner"}
 							pendingLevel={state.pendingLevel}
 							onStart={onStart}
+							actionInFooter={footer?.level === 3}
 						/>
 					) : null}
 				</ScrollView>
 			) : null}
+
+			{!isLoading && !isError && footer ? (
+				<HubFooter
+					action={footer}
+					pending={state.pendingLevel === footer.level}
+					onPress={() => onStart(footer.level)}
+				/>
+			) : null}
 		</SafeAreaView>
+	);
+}
+
+function HubFooter({
+	action,
+	pending,
+	onPress,
+}: {
+	action: FooterAction;
+	pending: boolean;
+	onPress: () => void;
+}) {
+	const c = useShopTheme();
+	const { t } = useTranslation();
+	const insets = useSafeAreaInsets();
+	const label =
+		action.kind === "continue"
+			? t("verification.footer.continue")
+			: t(`verification.footer.start.${action.level}`);
+	return (
+		<View
+			style={[
+				styles.footer,
+				{
+					backgroundColor: c.card,
+					borderTopColor: c.border,
+					paddingBottom: Math.max(insets.bottom, 12),
+				},
+			]}
+		>
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel={label}
+				accessibilityState={{ disabled: pending, busy: pending }}
+				disabled={pending}
+				onPress={onPress}
+				style={[
+					styles.footerBtn,
+					{ backgroundColor: c.primary, opacity: pending ? 0.6 : 1 },
+				]}
+			>
+				{pending ? (
+					<ActivityIndicator color="#ffffff" size="small" />
+				) : (
+					<Text style={styles.footerLabel}>{label}</Text>
+				)}
+			</Pressable>
+		</View>
 	);
 }
 
@@ -183,6 +265,28 @@ function HubError({
 const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	content: { padding: 16, gap: 14, paddingBottom: 40 },
+	contentWithFooter: { paddingBottom: 110 },
+	footer: {
+		position: "absolute",
+		left: 0,
+		right: 0,
+		bottom: 0,
+		paddingHorizontal: 16,
+		paddingTop: 12,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	footerBtn: {
+		minHeight: 50,
+		borderRadius: 14,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 20,
+	},
+	footerLabel: {
+		color: "#ffffff",
+		fontSize: 15,
+		fontFamily: Fonts.bodySemibold,
+	},
 	skeletonBlock: { height: 96, borderRadius: 16 },
 	errorWrap: {
 		flex: 1,

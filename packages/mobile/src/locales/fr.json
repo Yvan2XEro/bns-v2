@@ -8,6 +8,7 @@
 		"favorites": "Favoris"
 	},
 	"common": {
+		"offlineBanner": "Hors ligne",
 		"continue": "Continuer",
 		"search": "Rechercher",
 		"filter": "Filtrer",
@@ -190,6 +191,7 @@
 		"everywhere": "toutes les villes"
 	},
 	"listing": {
+		"call": "Appeler",
 		"price": "Prix",
 		"title": "Titre",
 		"description": "Description",
@@ -1388,6 +1390,7 @@
 			"notEnabled": "Ce produit n'est pas disponible à la revente.",
 			"supplierNotEligible": "Cette boutique ne remplit pas les conditions pour fournir des produits en revente.",
 			"resellerNotEligible": "Cette boutique ne remplit pas les conditions pour revendre des produits.",
+			"resellerLevelTooLow": "Ce produit est réservé aux boutiques d'un niveau de vérification supérieur.",
 			"ownProduct": "Ces boutiques ne peuvent pas être liées, car elles partagent un propriétaire ou un membre.",
 			"linkInactive": "Ce lien de revente est inactif. Demandez au fournisseur de le rétablir avant de revendre.",
 			"linkRequired": "Demandez et obtenez l'accord du fournisseur avant de revendre ce produit.",
@@ -1998,7 +2001,19 @@
 		"newShop": "Nouvelle",
 		"view": "Voir",
 		"productsCount_one": "{{count}} produit",
-		"productsCount": "{{count}} produits"
+		"productsCount": "{{count}} produits",
+		"logo": "Logo",
+		"settingsRows": {
+			"name": "Nom",
+			"categories": "Catégories",
+			"categoriesValue": "{{names}} · {{count}}/{{max}}",
+			"categoriesMore": "{{names}} +{{extra}} · {{count}}/{{max}}",
+			"pageTitle": "Page de la boutique",
+			"colorDefault": "Couleur de l'application",
+			"empty": "Non renseigné",
+			"dangerTitle": "Zone sensible",
+			"unavailable": "Ce réglage n'est pas disponible"
+		}
 	},
 	"seller": {
 		"space": "Espace vendeur",
@@ -2457,6 +2472,29 @@
 			"legal_representative_id": "Pièce d'identité du représentant légal",
 			"mandate": "Mandat",
 			"other": "Autre document"
+		},
+		"requirements": {
+			"title": "Documents demandés",
+			"item": {
+				"identity_document": "Pièce d'identité (carte nationale, passeport ou carte de séjour)",
+				"selfie": "Selfie de vérification",
+				"business_details": "Informations légales de l'entreprise",
+				"registration_document": "RCCM ou déclaration d'entreprenant"
+			},
+			"status": {
+				"missing": "À fournir",
+				"provided": "Fourni",
+				"in_review": "En examen",
+				"approved": "Validé",
+				"rejected": "Refusé"
+			}
+		},
+		"footer": {
+			"start": {
+				"2": "Vérifier mon identité",
+				"3": "Vérifier mon entreprise"
+			},
+			"continue": "Continuer ma demande"
 		}
 	},
 	"team": {
@@ -2818,6 +2856,12 @@
 		"payOnDelivery": "{{amount}} à payer à la livraison"
 	},
 	"purchases": {
+		"handoverResendSms": "Renvoyer le code par SMS",
+		"handoverResent": "Un nouveau code vous a été envoyé par SMS.",
+		"handoverReveal": "Afficher le code",
+		"handoverWarning": "Ne donnez ce code qu'au livreur, à la remise du colis",
+		"helpProblem": "Un problème ?",
+		"helpMessageShop": "Écrire à la boutique",
 		"title": "Mes commandes",
 		"tabOpen": "En cours",
 		"tabDelivered": "Livrées",
@@ -3068,7 +3112,15 @@
 		"photoAdded": "Photo ajoutée",
 		"photoRemove": "Retirer la photo",
 		"photoFailed": "La photo n'a pas pu être envoyée",
-		"done": "C'est fait"
+		"done": "C'est fait",
+		"declineFinal": "Action définitive",
+		"declineEffects": {
+			"refund": "{{buyer}} est remboursé·e intégralement ({{amount}}).",
+			"nothingPaid": "Rien n'a encore été payé : il n'y a pas de remboursement.",
+			"notified": "{{buyer}} est prévenu·e dans l'app et par notification.",
+			"stock": "Les articles réservés reviennent dans votre stock.",
+			"rate": "Ce refus compte dans le taux d'annulation de la boutique. Au-delà de {{threshold}} % des commandes reçues (dès {{min}} commandes), une alerte s'affiche dans vos statistiques."
+		}
 	},
 	"billing": {
 		"title": "Facturation",
@@ -3224,6 +3276,19 @@
 		"noAction": "Aucune action possible à ce statut."
 	},
 	"disputes": {
+		"evidenceSection": "Preuves photos ou vidéo",
+		"evidenceCount": "{{count}} sur {{max}}",
+		"addEvidenceMedia": "Ajouter",
+		"evidenceRejected_type": "Ce type de fichier n'est pas accepté. Ajoutez une photo ou une vidéo MP4 ou MOV.",
+		"evidenceRejected_size": "Ce fichier est trop lourd : 10 Mo au plus pour une photo, 50 Mo pour une vidéo.",
+		"evidenceRejected_limit": "Vous pouvez joindre au plus {{max}} fichiers.",
+		"evidenceFileN": "Fichier {{n}}",
+		"uploadFailedTitle": "Signalement créé, des fichiers n'ont pas été envoyés",
+		"uploadFailedBody": "Votre dossier existe. {{count}} fichier(s) n'ont pas pu être envoyés : réessayez, ou retirez-les.",
+		"retryUploads": "Réessayer l'envoi",
+		"openCase": "Voir le dossier",
+		"removeEvidence": "Retirer ce fichier",
+		"uploadingEvidence": "Envoi des preuves…",
 		"menu": "Options du litige",
 		"refresh": "Actualiser",
 		"stagedEvidence": "Joint à votre prochain message",
@@ -3546,6 +3611,7 @@
 		}
 	},
 	"sellerResale": {
+		"levelReserved": "Réservé aux boutiques de niveau {{level}}",
 		"title": "Commandes de revente",
 		"offeredTitle": "Produits proposés",
 		"offeredStats": "{{resellers}} revendeur(s) · {{units}} unités livrées en 30 jours",

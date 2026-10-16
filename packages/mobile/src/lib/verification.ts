@@ -9,6 +9,7 @@
  * decide; these functions only let a screen render without waiting on a round trip.
  */
 
+import type { VerificationRequirementKey } from "../../../api/src/contracts/verificationRequirements";
 import type {
 	BadgeLevel,
 	BusinessType,
@@ -152,6 +153,44 @@ export function canOpenRequest(
 	}
 
 	return { ok: true };
+}
+
+const DOCUMENT_KIND_KEYS: readonly string[] = [
+	"rccm_extract",
+	"entreprenant_declaration",
+	"niu_certificate",
+	"legal_representative_id",
+	"mandate",
+];
+
+/** A document kind reuses the label the upload slots already show. */
+export function requirementLabelKey(key: VerificationRequirementKey): string {
+	return DOCUMENT_KIND_KEYS.includes(key)
+		? `verification.documentKind.${key}`
+		: `verification.requirements.item.${key}`;
+}
+
+export type FooterAction = { level: 2 | 3; kind: "start" | "continue" };
+
+/**
+ * The fixed bottom button acts on the next level only, and only when that
+ * level's own card would offer the same start or continue: the card keeps
+ * explaining why when it cannot.
+ */
+export function footerAction(
+	view: ShopVerificationResponse,
+	isOwner: boolean,
+): FooterAction | null {
+	const level = view.nextLevel?.level;
+	if (!level || !isOwner) return null;
+	const request = level === 2 ? view.requests.level2 : view.requests.level3;
+	if (
+		view.enabled &&
+		(request?.status === "draft" || request?.status === "needs_info")
+	) {
+		return { level, kind: "continue" };
+	}
+	return canOpenRequest(view, level).ok ? { level, kind: "start" } : null;
 }
 
 /**

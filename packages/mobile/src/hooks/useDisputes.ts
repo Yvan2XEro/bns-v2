@@ -66,19 +66,26 @@ export interface DisputeEvidenceAsset {
 	mimeType: string | null;
 }
 
+export function uploadDisputeEvidence(
+	disputeId: string,
+	asset: DisputeEvidenceAsset,
+	kind: "photo" | "video" | "document" = "photo",
+) {
+	const file = new File(asset.uri);
+	const formData = new FormData();
+	formData.append("file", file, asset.fileName?.trim() || file.name);
+	formData.append("kind", kind);
+	return api.upload<{ id: string; kind: string }>(
+		`/api/disputes/${encodeURIComponent(disputeId)}/evidence`,
+		formData,
+	);
+}
+
 export function useUploadDisputeEvidence(id: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (asset: DisputeEvidenceAsset) => {
-			const file = new File(asset.uri);
-			const formData = new FormData();
-			formData.append("file", file, asset.fileName?.trim() || file.name);
-			formData.append("kind", "photo");
-			return api.upload<{ id: string; kind: string }>(
-				`/api/disputes/${encodeURIComponent(id)}/evidence`,
-				formData,
-			);
-		},
+		mutationFn: (asset: DisputeEvidenceAsset) =>
+			uploadDisputeEvidence(id, asset),
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({ queryKey: disputeDetailKey(id) });
 		},
@@ -94,6 +101,24 @@ export function useSubmitDispute(id: string) {
 				{},
 			),
 		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: buyerDisputesKey }),
+				queryClient.invalidateQueries({ queryKey: disputeDetailKey(id) }),
+			]);
+		},
+	});
+}
+
+/** `useSubmitDispute` for a case whose id is only known after it is opened. */
+export function useSubmitOpenedDispute() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) =>
+			api.post<{ id: string; status: string }>(
+				`/api/disputes/${encodeURIComponent(id)}/submit`,
+				{},
+			),
+		onSuccess: async (_data, id) => {
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: buyerDisputesKey }),
 				queryClient.invalidateQueries({ queryKey: disputeDetailKey(id) }),
