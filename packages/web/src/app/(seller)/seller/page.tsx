@@ -2,18 +2,13 @@ import { BadgeCheck, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { FirstRunChecklist } from "~/components/seller/first-run-checklist";
 import { SectionTabs } from "~/components/seller/section-tabs";
 import { ShareShopButton } from "~/components/shop/share-shop-button";
 import { serverGet } from "~/lib/server-api";
 import { getMyShop } from "~/lib/server-shop";
 import { can } from "~/lib/shop-roles";
-import {
-	DashboardSubtitle,
-	RecentOrders,
-	SellerTodayCards,
-	WeekStats,
-} from "./today-cards";
+import { SellerHome } from "./seller-home";
+import { DashboardSubtitle } from "./today-cards";
 
 export default async function SellerDashboardPage() {
 	const [mine, config, tSeller, tDash] = await Promise.all([
@@ -98,23 +93,14 @@ export default async function SellerDashboardPage() {
 				)}
 			</div>
 
-			{!suspended && <SellerTodayCards {...pending} />}
-
 			{!suspended && (
-				<FirstRunChecklist
-					hasLogo={Boolean(shop.logo)}
-					productCount={counts.activeProducts + counts.draftProducts}
-					personalListings={counts.personalListings}
+				<SellerHome
 					handle={shop.handle}
-				/>
-			)}
-
-			{(showOrders || nudgeLevel3) && (
-				<div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-					{showOrders ? <RecentOrders shopId={shop.id} /> : <div />}
-					<div className="flex flex-col gap-4">
-						{showOrders && <WeekStats shopId={shop.id} />}
-						{nudgeLevel3 && (
+					name={shop.name}
+					pending={pending}
+					showOrders={showOrders}
+					aside={
+						nudgeLevel3 ? (
 							<section className="flex flex-col gap-2 rounded-xl border border-[var(--shop-accent-border,#BFDBFE)] bg-[var(--shop-accent-soft,#EFF6FF)] p-4">
 								<span className="inline-flex items-center gap-1 self-start rounded-full bg-[var(--shop-accent-soft,#DBEAFE)] py-[3px] pr-[9px] pl-1.5 font-semibold text-[var(--shop-accent-text,#1E40AF)] text-xs">
 									<BadgeCheck
@@ -136,9 +122,9 @@ export default async function SellerDashboardPage() {
 									{tDash("level3Action")}
 								</Link>
 							</section>
-						)}
-					</div>
-				</div>
+						) : null
+					}
+				/>
 			)}
 		</div>
 	);

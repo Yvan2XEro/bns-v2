@@ -37,6 +37,10 @@ export const productDetailKey = (shopId: string, productId: string) =>
 export const verificationKey = (shopId: string) =>
 	[...shopScopeKey(shopId), "verification"] as const;
 
+/** The facts the seller home's stage and checklist are read from. */
+export const shopOnboardingKey = (shopId: string) =>
+	[...shopScopeKey(shopId), "onboarding"] as const;
+
 /**
  * Reviewer keys are not shop-scoped: the queue spans shops, and invalidating
  * it on a decision must not depend on knowing which shop the request belonged

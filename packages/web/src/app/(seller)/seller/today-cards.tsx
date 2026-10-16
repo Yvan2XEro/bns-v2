@@ -39,7 +39,7 @@ function usePending(
 	};
 }
 
-type PendingProps = {
+export type PendingProps = {
 	shopId: string;
 	canViewOrders: boolean;
 	canReply: boolean;
@@ -71,7 +71,10 @@ export function DashboardSubtitle(props: PendingProps) {
 	);
 }
 
-export function SellerTodayCards(props: PendingProps) {
+export function SellerTodayCards({
+	hideWhenEmpty = false,
+	...props
+}: PendingProps & { hideWhenEmpty?: boolean }) {
 	const tDash = useTranslations("SellerDashboard");
 	const pending = usePending(
 		props.shopId,
@@ -79,6 +82,9 @@ export function SellerTodayCards(props: PendingProps) {
 		props.canReply,
 		props.lowStock,
 	);
+	const work =
+		pending.toAccept + pending.toShip + pending.lowStock + pending.unread;
+	if (hideWhenEmpty && (!pending.ready || work === 0)) return null;
 
 	const cards = [
 		...(pending.orders
