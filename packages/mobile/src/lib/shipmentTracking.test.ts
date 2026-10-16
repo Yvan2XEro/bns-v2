@@ -179,9 +179,14 @@ describe("showRiderCard", () => {
 });
 
 describe("purchaseLiveArrival", () => {
-	test("shows the courier's ETA as a Douala clock only while shipped", () => {
+	test("shows the courier's ETA in the viewer's clock only while shipped", () => {
 		const arrival = { liveEta: "2026-10-16T14:40:00.000Z" };
-		expect(purchaseLiveArrival({ status: "shipped", arrival })).toBe("15:40");
+		const clock = new Intl.DateTimeFormat("en-GB", {
+			hour: "2-digit",
+			minute: "2-digit",
+			hourCycle: "h23",
+		}).format(new Date(arrival.liveEta));
+		expect(purchaseLiveArrival({ status: "shipped", arrival })).toBe(clock);
 		expect(purchaseLiveArrival({ status: "delivered", arrival })).toBeNull();
 		expect(
 			purchaseLiveArrival({ status: "shipped", arrival: { liveEta: null } }),

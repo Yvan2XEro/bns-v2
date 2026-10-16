@@ -418,9 +418,15 @@ describe("purchaseArrival", () => {
 			promisedBy: "2026-09-20T17:00:00.000Z",
 			liveEta: "2026-09-20T14:40:00.000Z",
 		};
+		// Read in the viewer's own clock, so the expected value is too.
+		const clock = new Intl.DateTimeFormat("en-GB", {
+			hour: "2-digit",
+			minute: "2-digit",
+			hourCycle: "h23",
+		}).format(new Date(arrival.liveEta));
 		expect(purchaseArrival({ ...base, arrival }, [])).toEqual({
 			kind: "live",
-			clock: "15:40",
+			clock,
 		});
 		expect(
 			purchaseArrival({ ...base, status: "accepted", arrival }, []),
