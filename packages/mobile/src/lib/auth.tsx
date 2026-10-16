@@ -36,6 +36,8 @@ interface AuthContextType {
 		provider: SocialAuthProvider,
 		redirectTo?: string,
 	) => Promise<void>;
+	/** Exchanges a social-login transfer token once, whoever gets it first. */
+	completeOAuth: (transferToken: string) => Promise<void>;
 	register: (name: string, email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshUser: () => Promise<void>;
@@ -46,6 +48,14 @@ interface AuthContextType {
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+/**
+ * A transfer token is single-use, and both the login screen (awaiting the
+ * browser session) and the callback route (opened by the same deep link, or
+ * on its own when Android relaunched the app meanwhile) may hold it: whichever
+ * asks first exchanges it, the other awaits the same exchange.
+ */
+const oauthExchanges = new Map<string, Promise<void>>();
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
@@ -197,12 +207,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			throw new Error("Missing mobile OAuth transfer token");
 		}
 
-		const data = await api.post<LoginResponse>(
-			"/api/public/auth/oauth/mobile/exchange",
-			{ transferToken },
-		);
+		await completeOAuth(transferToken);
+	};
 
-		await applyAuthenticatedSession(data);
+	const completeOAuth = (transferToken: string): Promise<void> => {
+		const pending = oauthExchanges.get(transferToken);
+		if (pending) return pending;
+		const exchange = api
+			.post<LoginResponse>("/api/public/auth/oauth/mobile/exchange", {
+				transferToken,
+			})
+			.then((data) => applyAuthenticatedSession(data));
+		oauthExchanges.set(transferToken, exchange);
+		return exchange;
 	};
 
 	const register = async (
@@ -294,6 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		isLoading,
 		login,
 		loginWithProvider,
+		completeOAuth,
 		register,
 		logout,
 		refreshUser,

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fonts } from "@/constants/theme";
@@ -10,12 +10,14 @@ import { useTranslation } from "@/src/lib/i18n";
 
 export default function AuthCallbackScreen() {
 	const isDark = useColorScheme() === "dark";
-	const { isLoading, user } = useAuth();
+	const { isLoading, user, completeOAuth } = useAuth();
 	const { t } = useTranslation();
 	const params = useLocalSearchParams<{
 		oauthError?: string;
 		redirect?: string;
+		transferToken?: string;
 	}>();
+	const exchangeFailed = useRef(false);
 	const redirectTo = getSafeAuthRedirect(params.redirect);
 
 	const bg = isDark ? "#0b1120" : "#f8fafc";
@@ -23,8 +25,23 @@ export default function AuthCallbackScreen() {
 	const mutedColor = isDark ? "#94a3b8" : "#64748b";
 	const primaryColor = isDark ? "#3b82f6" : "#1e40af";
 
+	// The deep link carries the transfer token. The login screen normally
+	// exchanges it, but after a relaunch nobody else will: exchange it here
+	// (shared with the login screen, so never twice).
 	useEffect(() => {
-		if (isLoading) return;
+		const transferToken = params.transferToken;
+		if (typeof transferToken !== "string" || !transferToken) return;
+		completeOAuth(transferToken).catch(() => {
+			exchangeFailed.current = true;
+			router.replace({
+				pathname: "/auth/login",
+				params: { oauthError: t("auth.loginFailedTitle") },
+			});
+		});
+	}, [params.transferToken, completeOAuth, t]);
+
+	useEffect(() => {
+		if (isLoading || exchangeFailed.current) return;
 
 		if (user) {
 			router.replace(redirectTo);

@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSyncExternalStore } from "react";
+import { useIsFocused } from "@react-navigation/native";
+import { router } from "expo-router";
+import { useEffect, useSyncExternalStore } from "react";
 import {
 	APP_MODE_STORAGE_KEY,
 	type AppMode,
@@ -67,4 +69,22 @@ export function useHasShopMembership() {
 		// but keep the stored mode for the next launch.
 		known: myShops.data !== undefined,
 	};
+}
+
+let launchModeApplied = false;
+
+/**
+ * Opens the seller tabs once per launch when the user left the app in seller
+ * mode. Called from the buyer home and only acted on while that tab is the
+ * screen on show, so a deep link opened over it (the social-login callback,
+ * a shared listing) is never pulled away.
+ */
+export function useApplyLaunchMode() {
+	const { mode, hydrated } = useStoredAppMode();
+	const focused = useIsFocused();
+	useEffect(() => {
+		if (launchModeApplied || !hydrated || !focused) return;
+		launchModeApplied = true;
+		if (mode === "seller") router.replace("/(seller-tabs)/sell/dashboard");
+	}, [mode, hydrated, focused]);
 }

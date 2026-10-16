@@ -44,6 +44,7 @@ import { LocationCard } from "@/src/components/location/LocationCard";
 import { SearchField } from "@/src/components/SearchBar";
 import { SkeletonCard } from "@/src/components/SkeletonCard";
 import { useNotificationReady } from "@/src/contexts/NotificationReadyContext";
+import { useApplyLaunchMode } from "@/src/hooks/useAppMode";
 import { useFavoriteActions } from "@/src/hooks/useFavorites";
 import {
 	CATEGORIES_QUERY_KEY,
@@ -92,6 +93,7 @@ function NotificationBell({
 const darkIcon = require("@/assets/icon2-dark.png");
 const lightIcon = require("@/assets/icon2.png");
 export default function HomeScreen() {
+	useApplyLaunchMode();
 	const isDark = useColorScheme() === "dark";
 	const { t } = useTranslation();
 	const insets = useSafeAreaInsets();
