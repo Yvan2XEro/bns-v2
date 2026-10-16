@@ -10,6 +10,7 @@ import type {
 	DeliveryMethod,
 	UnavailableOption,
 } from "../contracts/deliveryQuote";
+import { mediaUrl } from "../contracts/media";
 import { queueSearchEvent } from "../hooks/searchEvents";
 import { resolveSuspension } from "../hooks/suspensionGuard";
 import {
@@ -460,14 +461,6 @@ function toQuoteAddress(address: DeliveryAddress): QuoteAddress {
 	};
 }
 
-function mediaUrlOf(value: unknown): string | null {
-	if (value && typeof value === "object" && "url" in value) {
-		const url = (value as { url?: unknown }).url;
-		return typeof url === "string" ? url : null;
-	}
-	return null;
-}
-
 function variantLabelOf(variant: ProductVariant | null): string {
 	const values = variant?.optionValues;
 	if (!values || typeof values !== "object" || Array.isArray(values)) return "";
@@ -541,7 +534,7 @@ async function buildSummaryItems(
 						: null,
 					listing?.attributes,
 				),
-				imageUrl: mediaUrlOf(firstImage),
+				imageUrl: mediaUrl(firstImage, "thumbnail"),
 				unitPrice,
 				quantity: line.quantity,
 				lineSubtotal: unitPrice * line.quantity,

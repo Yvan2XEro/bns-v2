@@ -1,4 +1,5 @@
 import type { BusinessType } from "../collections/VerificationRequests";
+import { mediaUrl } from "../contracts/media";
 import { normaliseShopReturnPolicy } from "../contracts/shopReturnPolicy";
 import { isBrandColor } from "../contracts/shopTheme";
 import {
@@ -249,12 +250,12 @@ export function toShopSearchHit(input: unknown): ShopSearchHit {
 				typeof doc.levelExpiresAt === "string" ? doc.levelExpiresAt : null,
 		}).badge,
 		publishedListingCount: Number(doc.publishedListingCount ?? 0),
-		logoUrl: str(doc.logoUrl) ?? str(logo?.url),
+		logoUrl: str(doc.logoUrl) ?? mediaUrl(logo, "thumbnail"),
 		ownerRating: Number(doc.ownerRating ?? owner?.rating ?? 0),
 		ownerReviews: Number(doc.ownerReviews ?? owner?.totalReviews ?? 0),
 		rating: Number(doc.rating ?? 0),
 		totalReviews: Number(doc.totalReviews ?? 0),
 		createdAt: String(doc.createdAt ?? ""),
-		bannerUrl: str(doc.bannerUrl) ?? str(banner?.url),
+		bannerUrl: str(doc.bannerUrl) ?? mediaUrl(banner, "medium"),
 	};
 }

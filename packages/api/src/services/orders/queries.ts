@@ -4,6 +4,7 @@ import {
 	type OrderViewer,
 	requireOrderAudience,
 } from "../../access/orderAccess";
+import { mediaUrl } from "../../contracts/media";
 import { OUT_FOR_DELIVERY } from "../../contracts/shipments";
 import { ERROR_CODES } from "../../lib/errors";
 import { timezoneOfOrder } from "../../lib/markets";
@@ -15,7 +16,6 @@ import {
 	TAB_STATUSES,
 } from "../../lib/orderFormat";
 import { renderReceiptHtml } from "../../lib/orderReceipt";
-import { toMediaRef } from "../../lib/publicShop";
 import { relationId } from "../../lib/relationId";
 import { ServiceError } from "../../lib/serviceError";
 import { shopCapabilities } from "../../lib/shopCapabilities";
@@ -197,7 +197,7 @@ async function loadOrderShop(
 		id: shop.id,
 		name: shop.name,
 		handle: shop.handle,
-		logoUrl: toMediaRef(shop.logo)?.url ?? null,
+		logoUrl: mediaUrl(shop.logo, "thumbnail"),
 		city: shop.location?.city ?? null,
 		phone: shop.contact?.phone ?? null,
 	};
@@ -528,7 +528,7 @@ export async function listBuyerOrders(
 						? (returnCaseNumbers.get(caseId) ?? null)
 						: null,
 					buyerHasReviewedShop: reviewedShops.has(shopId),
-					shopLogoUrl: toMediaRef(shop?.logo)?.url ?? null,
+					shopLogoUrl: mediaUrl(shop?.logo, "thumbnail"),
 					shopBadge: shop ? shopCapabilities(shop).badge : null,
 					liveEta: liveEtas.get(String(row.id)) ?? null,
 				},

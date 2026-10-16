@@ -2,6 +2,7 @@ import type { Payload, PayloadRequest } from "payload";
 import { isSuspended } from "../access/roles";
 import { can, resolveShopRole } from "../access/shopRoles";
 import { INBOX_SERVICE_CONTEXT } from "../collections/Conversations";
+import { mediaUrl } from "../contracts/media";
 import { ERROR_CODES } from "../lib/errors";
 import {
 	INBOX_FILTERS,
@@ -46,12 +47,8 @@ export interface InboxPage {
 	totals: Record<InboxFilter, number>;
 }
 
-const avatarOf = (user: User | undefined | null): string | null => {
-	const avatar = user?.avatar;
-	return avatar && typeof avatar === "object" && "url" in avatar
-		? ((avatar.url as string | null) ?? null)
-		: null;
-};
+const avatarOf = (user: User | undefined | null): string | null =>
+	mediaUrl(user?.avatar, "thumbnail");
 
 const preview = (content: string): string =>
 	content.length > 120 ? `${content.slice(0, 120)}...` : content;
@@ -270,7 +267,7 @@ async function loadListings(
 				{
 					id: String(doc.id),
 					title: String(doc.title ?? ""),
-					thumbnailUrl: first?.image?.thumbnailURL ?? first?.image?.url ?? null,
+					thumbnailUrl: mediaUrl(first?.image, "thumbnail"),
 				},
 			];
 		}),

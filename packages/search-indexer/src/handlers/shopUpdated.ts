@@ -48,7 +48,13 @@ export function transformShop(
 			typeof shop.levelExpiresAt === "string" ? shop.levelExpiresAt : null,
 		publishedListingCount: Number(shop.publishedListingCount ?? 0),
 		createdAt: String(shop.createdAt ?? ""),
-		logoUrl: typeof logo?.url === "string" ? logo.url : null,
+		// The 480px WebP copy when the upload has one (API contracts/media.ts).
+		logoUrl:
+			typeof logo?.thumbnailURL === "string" && logo.thumbnailURL
+				? logo.thumbnailURL
+				: typeof logo?.url === "string"
+					? logo.url
+					: null,
 		ownerRating: Number(owner?.rating ?? 0),
 		ownerReviews: Number(owner?.totalReviews ?? 0),
 		rating: Number(shop.rating ?? 0),

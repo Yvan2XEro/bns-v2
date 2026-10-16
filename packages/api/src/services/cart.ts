@@ -7,6 +7,7 @@ import type {
 	SplitCartGroup,
 	SplitCartView,
 } from "../contracts/checkoutGroup";
+import { mediaUrl } from "../contracts/media";
 import { isBrandColor } from "../contracts/shopTheme";
 import { ERROR_CODES, type ErrorCode } from "../lib/errors";
 import { launchCityKeyOf } from "../lib/launchCities";
@@ -276,9 +277,7 @@ export async function revalidateCartLines(
 }
 
 function firstImageUrl(listing: Listing | null): string | null {
-	const image = listing?.images?.[0]?.image;
-	if (!image || typeof image !== "object") return null;
-	return typeof image.url === "string" && image.url ? image.url : null;
+	return mediaUrl(listing?.images?.[0]?.image, "thumbnail");
 }
 
 /**
@@ -448,7 +447,7 @@ async function shopHeaderOf(
 		};
 	let logoUrl: string | null = null;
 	if (shop.logo && typeof shop.logo === "object") {
-		logoUrl = shop.logo.url ?? null;
+		logoUrl = mediaUrl(shop.logo, "thumbnail");
 	} else if (typeof shop.logo === "string") {
 		const media = await payload
 			.findByID({
@@ -459,7 +458,7 @@ async function shopHeaderOf(
 				req,
 			})
 			.catch(() => null);
-		logoUrl = media?.url ?? null;
+		logoUrl = mediaUrl(media, "thumbnail");
 	}
 	return {
 		logoUrl,

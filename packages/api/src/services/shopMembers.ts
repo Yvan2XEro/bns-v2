@@ -3,6 +3,7 @@ import { isSuspended } from "../access/roles";
 import { can, resolveShopRole, type ShopRole } from "../access/shopRoles";
 import { INBOX_SERVICE_CONTEXT } from "../collections/Conversations";
 import { INBOX_NOTIFICATION_PREFERENCES } from "../collections/ShopMembers";
+import { mediaUrl } from "../contracts/media";
 import { isBrandColor } from "../contracts/shopTheme";
 import { queueMembershipChange } from "../hooks/membershipEvents";
 import { ERROR_CODES } from "../lib/errors";
@@ -225,12 +226,8 @@ async function usersById(
 	return new Map(result.docs.map((doc) => [String(doc.id), doc as User]));
 }
 
-const avatarOf = (user: User | undefined): string | null => {
-	const avatar = user?.avatar;
-	return avatar && typeof avatar === "object" && "url" in avatar
-		? ((avatar.url as string | null) ?? null)
-		: null;
-};
+const avatarOf = (user: User | undefined): string | null =>
+	mediaUrl(user?.avatar, "thumbnail");
 
 function memberView(
 	row: ShopMember,
@@ -448,10 +445,7 @@ export async function listMyShops(
 			shopId,
 			name: String(shop.name),
 			handle: String(shop.handle),
-			logoUrl:
-				logo && typeof logo === "object" && "url" in logo
-					? ((logo.url as string | null) ?? null)
-					: null,
+			logoUrl: mediaUrl(logo, "thumbnail"),
 			brandColor: isBrandColor(shop.brandColor) ? shop.brandColor : null,
 			role,
 			capabilities: shopCapabilities(shop, now),
@@ -1024,10 +1018,7 @@ export async function lookupInvitation(
 		shop: {
 			name: String(shop.name),
 			handle: String(shop.handle),
-			logoUrl:
-				logo && typeof logo === "object" && "url" in logo
-					? ((logo.url as string | null) ?? null)
-					: null,
+			logoUrl: mediaUrl(logo, "thumbnail"),
 			badge: shopCapabilities(shop, now).badge,
 		},
 		role: invitation.role as "manager" | "staff",
