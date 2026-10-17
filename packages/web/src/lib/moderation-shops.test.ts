@@ -3,6 +3,7 @@ import en from "~/../messages/en.json";
 import fr from "~/../messages/fr.json";
 import {
 	canActOnShop,
+	canReleaseHold,
 	HOLD_REASON_LABELS,
 	holdBody,
 	lastLiftedAt,
@@ -183,6 +184,14 @@ describe("payout bodies", () => {
 		expect(
 			holdBody({ reason: "moderation", untilDays: 9, note: "" }),
 		).toBeNull();
+	});
+
+	test("a hold is released by the rank the API asks for, the suspension's never", () => {
+		expect(canReleaseHold("moderation", false)).toBe(true);
+		expect(canReleaseHold("dispute_open", false)).toBe(true);
+		expect(canReleaseHold("fraud_signal", false)).toBe(false);
+		expect(canReleaseHold("fraud_signal", true)).toBe(true);
+		expect(canReleaseHold("shop_suspended", true)).toBe(false);
 	});
 
 	test("a note is trimmed, dropped when empty and refused past 1,000 characters", () => {

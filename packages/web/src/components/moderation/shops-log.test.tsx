@@ -231,8 +231,35 @@ describe("ShopSheet", () => {
 		expect(html).toContain("Orange Money");
 		expect(html).toContain("Approve");
 		expect(html).toContain("Fraud signal");
-		expect(html).toContain("Release");
 		expect(html).toContain("Hold payouts");
+	});
+
+	test("a hold offers its release only to the rank the API lets lift it", () => {
+		const release = '">Release</button>';
+		const withHold = (
+			reason: "fraud_signal" | "moderation" | "shop_suspended",
+		) => {
+			const base = sheet();
+			const [hold] = base.payments.holds;
+			if (!hold) throw new Error("fixture hold missing");
+			return {
+				...base,
+				payments: { ...base.payments, holds: [{ ...hold, reason }] },
+			};
+		};
+		const admin = { id: "a1", role: "admin" };
+		expect(
+			render(<ShopSheet sheet={withHold("fraud_signal")} viewer={moderator} />),
+		).not.toContain(release);
+		expect(
+			render(<ShopSheet sheet={withHold("fraud_signal")} viewer={admin} />),
+		).toContain(release);
+		expect(
+			render(<ShopSheet sheet={withHold("moderation")} viewer={moderator} />),
+		).toContain(release);
+		expect(
+			render(<ShopSheet sheet={withHold("shop_suspended")} viewer={admin} />),
+		).not.toContain(release);
 	});
 
 	test("a suspended shop offers the lift, with the restore choice once opened", () => {

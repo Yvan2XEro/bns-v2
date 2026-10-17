@@ -18,6 +18,7 @@ import {
 import { REPORT_STATUS_LABELS } from "~/lib/moderation-reports";
 import {
 	canActOnShop,
+	canReleaseHold,
 	HOLD_DURATIONS,
 	HOLD_REASON_LABELS,
 	holdBody,
@@ -192,7 +193,7 @@ export function ShopSheet({
 				</div>
 				<aside className="mt-5 min-w-0 space-y-5 lg:sticky lg:top-6 lg:mt-0">
 					<SuspensionCard sheet={sheet} viewer={viewer} canAct={canAct} />
-					<PaymentsCard sheet={sheet} />
+					<PaymentsCard sheet={sheet} isAdmin={viewer.role === "admin"} />
 				</aside>
 			</div>
 		</div>
@@ -744,7 +745,13 @@ function LiftForm({ shopId, onDone }: { shopId: string; onDone: () => void }) {
 	);
 }
 
-function PaymentsCard({ sheet }: { sheet: ModerationShopSheet }) {
+function PaymentsCard({
+	sheet,
+	isAdmin,
+}: {
+	sheet: ModerationShopSheet;
+	isAdmin: boolean;
+}) {
 	const t = useTranslations("ModerationConsole");
 	const tPay = useTranslations("Payments");
 	const money = useOrderMoney();
@@ -828,6 +835,7 @@ function PaymentsCard({ sheet }: { sheet: ModerationShopSheet }) {
 								key={hold.id}
 								shopId={sheet.shop.id}
 								hold={hold}
+								canRelease={canReleaseHold(hold.reason, isAdmin)}
 								onDone={setDone}
 							/>
 						))}
@@ -1018,10 +1026,13 @@ function PendingAccount({
 function HoldRow({
 	shopId,
 	hold,
+	canRelease,
 	onDone,
 }: {
 	shopId: string;
 	hold: ShopSheetHold;
+	/** The API refuses the rest: the suspension's own hold, and admin-only reasons to a moderator. */
+	canRelease: boolean;
 	onDone: (text: string) => void;
 }) {
 	const t = useTranslations("ModerationConsole");
@@ -1051,14 +1062,16 @@ function HoldRow({
 					</p>
 				) : null}
 			</div>
-			<PayoutDecision
-				shopId={shopId}
-				body={{ action: "release", holdId: hold.id }}
-				label={t("shop.releaseHold")}
-				confirmText={t("shop.releaseHoldConfirm")}
-				doneText={t("shop.releaseHoldDone")}
-				onDone={onDone}
-			/>
+			{canRelease ? (
+				<PayoutDecision
+					shopId={shopId}
+					body={{ action: "release", holdId: hold.id }}
+					label={t("shop.releaseHold")}
+					confirmText={t("shop.releaseHoldConfirm")}
+					doneText={t("shop.releaseHoldDone")}
+					onDone={onDone}
+				/>
+			) : null}
 		</li>
 	);
 }

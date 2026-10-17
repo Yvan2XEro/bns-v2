@@ -319,6 +319,31 @@ export const MANUAL_HOLD_REASONS: readonly PayoutHoldReason[] = [
 	"payout_failed_repeatedly",
 ];
 
+/**
+ * Mirrors the API's `HOLD_RELEASE_RANK`: a moderator lifts the holds staff
+ * place for a case, only an administrator the fraud and money ones, and the
+ * suspension's own hold lifts with the suspension alone.
+ */
+const HOLD_RELEASE_RANK: Partial<
+	Record<PayoutHoldReason, "moderator" | "admin">
+> = {
+	moderation: "moderator",
+	dispute_open: "moderator",
+	return_open: "moderator",
+	fraud_signal: "admin",
+	reconciliation_mismatch: "admin",
+	payout_failed_repeatedly: "admin",
+	payout_account_changed: "admin",
+};
+
+export function canReleaseHold(
+	reason: PayoutHoldReason,
+	isAdmin: boolean,
+): boolean {
+	const rank = HOLD_RELEASE_RANK[reason];
+	return rank === "moderator" || (rank === "admin" && isAdmin);
+}
+
 export const HOLD_DURATIONS: (number | null)[] = [7, 14, 30, null];
 
 export const PAYOUT_ORIGIN_LABELS: Record<
