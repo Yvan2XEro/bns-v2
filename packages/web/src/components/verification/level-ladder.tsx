@@ -47,7 +47,7 @@ export function LevelLadder({
 									"mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
 									rung.state === "locked"
 										? "bg-line text-ink-faint"
-										: "bg-brand text-white",
+										: "bg-brand-fill text-white",
 								)}
 							>
 								{rung.state === "locked" ? (

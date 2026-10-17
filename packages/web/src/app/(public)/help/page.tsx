@@ -100,7 +100,7 @@ export default async function HelpPage() {
 
 	return (
 		<div className="min-h-screen bg-canvas">
-			<section className="relative overflow-hidden bg-brand py-12">
+			<section className="relative overflow-hidden bg-brand-fill py-12">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
 				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-brand-bright/20 blur-3xl" />
@@ -120,7 +120,7 @@ export default async function HelpPage() {
 							href={cat.href}
 							className="group flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all hover:border-brand-line hover:shadow-md"
 						>
-							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand transition-colors group-hover:bg-brand group-hover:text-white">
+							<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand transition-colors group-hover:bg-brand-fill group-hover:text-white">
 								<cat.icon className="h-5 w-5" />
 							</div>
 							<div>
@@ -154,7 +154,7 @@ export default async function HelpPage() {
 					<p className="mt-1 text-ink-muted text-sm">{t("supportTeam")}</p>
 					<Link
 						href="/contact"
-						className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 font-semibold text-sm text-white transition-colors hover:bg-brand-strong"
+						className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-fill px-6 py-2.5 font-semibold text-sm text-white transition-colors hover:bg-brand-strong"
 					>
 						<MessageCircle className="h-4 w-4" />
 						{t("contactUs")}

@@ -17,7 +17,7 @@ export default async function PrivacyPage() {
 
 	return (
 		<div className="min-h-screen bg-canvas">
-			<section className="relative overflow-hidden bg-brand py-12">
+			<section className="relative overflow-hidden bg-brand-fill py-12">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
 				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-brand-bright/20 blur-3xl" />

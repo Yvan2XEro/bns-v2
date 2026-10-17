@@ -27,7 +27,7 @@ export function SellerReturnActions({ view }: { view: ReturnCaseView }) {
 							type="button"
 							disabled={action.isPending}
 							onClick={() => action.mutate({ caseId: view.id, action: item })}
-							className="min-h-11 rounded-xl bg-brand px-4 font-medium text-sm text-white disabled:opacity-50"
+							className="min-h-11 rounded-xl bg-brand-fill px-4 font-medium text-sm text-white disabled:opacity-50"
 						>
 							{t(RETURN_ACTION_LABELS[item])}
 						</button>

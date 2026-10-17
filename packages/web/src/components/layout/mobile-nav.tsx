@@ -430,7 +430,7 @@ export function AccountSheetBody({
 				<Link
 					href={loginHref(back)}
 					onClick={onNavigate}
-					className="flex h-11 items-center justify-center rounded-lg bg-brand font-semibold text-sm text-white"
+					className="flex h-11 items-center justify-center rounded-lg bg-brand-fill font-semibold text-sm text-white"
 				>
 					{t("logIn")}
 				</Link>

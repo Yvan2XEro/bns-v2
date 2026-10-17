@@ -462,7 +462,7 @@ function ProductCard({
 							className={cn(
 								"flex h-9 w-full items-center justify-center gap-1.5 rounded-lg font-semibold text-[13px]",
 								selected
-									? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+									? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 									: "bg-[var(--shop-accent-soft,var(--c-brand-soft))] text-[var(--shop-accent-text,var(--c-brand))] hover:bg-[var(--shop-accent-soft,var(--c-brand-tint))]",
 							)}
 						>
@@ -609,7 +609,7 @@ function ResellPanel({
 								className={cn(
 									"inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-[11px]",
 									product.supplier.level >= 3
-										? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+										? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 										: "bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]",
 								)}
 							>
@@ -749,7 +749,7 @@ function ResellPanel({
 				<button
 					type="submit"
 					disabled={isCreating}
-					className="h-11 rounded-lg bg-[var(--shop-accent,var(--c-brand))] font-semibold text-[15px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-60"
+					className="h-11 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] font-semibold text-[15px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-60"
 				>
 					{isCreating ? t("adding") : t("addToShop")}
 				</button>

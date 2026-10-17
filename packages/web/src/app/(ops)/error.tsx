@@ -12,7 +12,7 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
 			<button
 				type="button"
 				onClick={reset}
-				className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 font-medium text-sm text-white transition-colors hover:bg-brand-strong"
+				className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-fill px-5 py-2.5 font-medium text-sm text-white transition-colors hover:bg-brand-strong"
 			>
 				<RefreshCw className="h-4 w-4" />
 				{t("retry")}

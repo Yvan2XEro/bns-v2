@@ -68,7 +68,7 @@ function RowActionButton({
 			className={cn(
 				ACTION_BUTTON,
 				action === "accept"
-					? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					: "border border-line bg-surface text-ink hover:bg-canvas",
 			)}
 		>

@@ -218,7 +218,7 @@ export default async function SavedSearchesPage() {
 							<Link href="/search">
 								<button
 									type="button"
-									className="mt-5 rounded-xl bg-gradient-to-r from-brand to-brand-bright px-6 py-2.5 font-bold text-sm text-white shadow-blue-500/20 shadow-lg"
+									className="mt-5 rounded-xl bg-gradient-to-r from-brand-fill to-brand-bright px-6 py-2.5 font-bold text-sm text-white shadow-blue-500/20 shadow-lg"
 								>
 									<Search className="mr-2 inline h-4 w-4" />
 									{t("emptyCta")}

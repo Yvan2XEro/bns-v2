@@ -227,7 +227,7 @@ function Editor({
 						type="button"
 						disabled={save.isPending || blocked}
 						onClick={() => submit(draft)}
-						className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
+						className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 					>
 						{save.isPending ? t("saving") : t("save")}
 					</button>
@@ -289,7 +289,7 @@ function Editor({
 							<p className="text-[13px] text-ink-muted">{t("offerBody")}</p>
 						</div>
 						{view.eligible ? (
-							<span className="inline-flex items-center gap-1 rounded-full bg-[var(--shop-accent,var(--c-brand))] px-2.5 py-1 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-xs">
+							<span className="inline-flex items-center gap-1 rounded-full bg-[var(--shop-accent,var(--c-brand-fill))] px-2.5 py-1 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 								<ShieldCheck aria-hidden="true" className="h-3.5 w-3.5" />
 								{t("businessVerified")}
 							</span>
@@ -809,7 +809,7 @@ function Toggle({
 			className={cn(
 				"relative inline-block h-6 w-10 shrink-0 rounded-full transition-colors disabled:opacity-50",
 				checked
-					? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+					? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 					: "bg-line-strong",
 			)}
 		>

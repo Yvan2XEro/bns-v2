@@ -50,7 +50,7 @@ export default async function ListingNotFound() {
 					<div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
 						<Button
 							asChild
-							className="rounded-xl bg-brand hover:bg-brand-strong"
+							className="rounded-xl bg-brand-fill hover:bg-brand-strong"
 						>
 							<Link href="/search">
 								<Search className="mr-2 h-4 w-4" />

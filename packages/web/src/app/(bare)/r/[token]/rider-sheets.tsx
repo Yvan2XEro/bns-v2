@@ -34,7 +34,7 @@ interface PhotoSlot {
 }
 
 const BUTTON =
-	"min-h-14 w-full rounded-2xl bg-brand px-4 font-bold text-lg text-white disabled:opacity-60";
+	"min-h-14 w-full rounded-2xl bg-brand-fill px-4 font-bold text-lg text-white disabled:opacity-60";
 
 function PhotoInput({
 	id,

@@ -73,7 +73,7 @@ export function ShopAbout({
 				>
 					<Avatar className="h-11 w-11">
 						<AvatarImage src={shop.owner.avatar?.url ?? undefined} />
-						<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]">
+						<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]">
 							{shop.owner.name.charAt(0)}
 						</AvatarFallback>
 					</Avatar>

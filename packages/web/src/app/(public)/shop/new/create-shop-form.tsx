@@ -202,7 +202,7 @@ export function CreateShopForm({ categories }: { categories: Category[] }) {
 				<Button
 					type="submit"
 					disabled={!canSubmit}
-					className="h-12 w-full rounded-xl bg-brand font-semibold text-base hover:bg-brand-strong"
+					className="h-12 w-full rounded-xl bg-brand-fill font-semibold text-base hover:bg-brand-strong"
 				>
 					{createShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

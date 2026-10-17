@@ -118,7 +118,7 @@ export function AuthStatusIcon({ children }: { children: ReactNode }) {
 
 /** Primary submit button in the auth style. */
 export const AUTH_SUBMIT =
-	"h-12 w-full rounded-2xl bg-gradient-to-r from-brand to-[#2563EB] font-semibold text-[15px] shadow-[0_8px_20px_-8px_rgba(30,64,175,0.55)] hover:shadow-[0_10px_24px_-8px_rgba(30,64,175,0.6)]";
+	"h-12 w-full rounded-2xl bg-gradient-to-r from-brand-fill to-[#2563EB] font-semibold text-[15px] shadow-[0_8px_20px_-8px_rgba(30,64,175,0.55)] hover:shadow-[0_10px_24px_-8px_rgba(30,64,175,0.6)]";
 
 export const AUTH_LINK =
 	"rounded font-medium text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-bright";

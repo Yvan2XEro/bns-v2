@@ -50,7 +50,7 @@ export function SearchTabs({
 								className={cn(
 									"rounded-[10px] px-[7px] py-px font-semibold text-xs tabular-nums",
 									active === tab.key
-										? "bg-brand text-white"
+										? "bg-brand-fill text-white"
 										: "bg-line text-ink-muted",
 								)}
 							>

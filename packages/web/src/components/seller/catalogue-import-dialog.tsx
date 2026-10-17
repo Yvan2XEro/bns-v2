@@ -248,7 +248,7 @@ function ImportBody({
 					type="button"
 					disabled={valid.length === 0 || importProducts.isPending}
 					onClick={() => void onConfirm()}
-					className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{importProducts.isPending && (
 						<LoaderCircle

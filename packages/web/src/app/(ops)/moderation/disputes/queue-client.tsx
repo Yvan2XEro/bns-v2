@@ -132,7 +132,7 @@ export function QueueClient() {
 					<button
 						type="button"
 						onClick={() => void queue.refetch()}
-						className="mt-4 h-10 rounded-lg bg-brand px-4 font-semibold text-sm text-white"
+						className="mt-4 h-10 rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white"
 					>
 						{t("retry")}
 					</button>

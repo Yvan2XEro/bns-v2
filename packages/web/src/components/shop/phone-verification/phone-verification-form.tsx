@@ -176,7 +176,7 @@ export function PhoneVerificationForm({
 					<Button
 						type="submit"
 						disabled={start.isPending}
-						className="h-11 w-full rounded-xl bg-brand font-semibold hover:bg-brand-strong"
+						className="h-11 w-full rounded-xl bg-brand-fill font-semibold hover:bg-brand-strong"
 					>
 						{start.isPending && (
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

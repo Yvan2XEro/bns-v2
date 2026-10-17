@@ -117,7 +117,7 @@ export function HandleForm({
 					!formState.isValid ||
 					status !== "available"
 				}
-				className="bg-brand hover:bg-brand-strong"
+				className="bg-brand-fill hover:bg-brand-strong"
 			>
 				{changeHandle.isPending && (
 					<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

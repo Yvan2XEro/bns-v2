@@ -147,7 +147,7 @@ export function WeeklySalesCard({ view }: { view: ShopInsightsView }) {
 									className={cn(
 										"w-full max-w-[54px] rounded-t-md",
 										isLast
-											? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+											? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 											: "bg-[var(--shop-accent-border,var(--c-brand-tint-strong))]",
 									)}
 									style={{
@@ -235,7 +235,7 @@ export function FunnelCard({ view }: { view: ShopInsightsView }) {
 				),
 			}),
 			color:
-				"bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]",
+				"bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]",
 		},
 	];
 

@@ -180,7 +180,7 @@ export function ProfileForm({
 						previewUrl={field.value.url}
 						shape="banner"
 						placeholder={
-							<div className="pattern-dots-light h-full w-full bg-brand" />
+							<div className="pattern-dots-light h-full w-full bg-brand-fill" />
 						}
 						onUploaded={(id, url) => field.onChange({ id, url })}
 						onRemove={() => field.onChange({ id: null, url: null })}
@@ -271,7 +271,7 @@ export function ProfileForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || updateShop.isPending}
-					className="bg-brand hover:bg-brand-strong"
+					className="bg-brand-fill hover:bg-brand-strong"
 				>
 					{updateShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

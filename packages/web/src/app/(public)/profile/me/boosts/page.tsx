@@ -163,7 +163,7 @@ export default async function BoostPaymentHistoryPage() {
 							<Link href="/profile/me/listings">
 								<button
 									type="button"
-									className="mt-5 rounded-xl bg-gradient-to-r from-brand to-brand-bright px-6 py-2.5 font-bold text-white shadow-blue-500/20 shadow-lg"
+									className="mt-5 rounded-xl bg-gradient-to-r from-brand-fill to-brand-bright px-6 py-2.5 font-bold text-white shadow-blue-500/20 shadow-lg"
 								>
 									{t("emptyCta")}
 								</button>

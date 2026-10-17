@@ -56,7 +56,7 @@ export function VerificationStatusCard({
 				{renewalOpen && renewLevel && (
 					<Link
 						href={RENEW_HREF[renewLevel]}
-						className="inline-flex h-9 items-center rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
+						className="inline-flex h-9 items-center rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 					>
 						{t("statusCard.renewCta")}
 					</Link>

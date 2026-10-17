@@ -197,7 +197,7 @@ export function PayClient({
 						) : (
 							<Button
 								type="submit"
-								className="min-h-12 w-full bg-brand text-base hover:bg-brand-strong"
+								className="min-h-12 w-full bg-brand-fill text-base hover:bg-brand-strong"
 								disabled={createIntent.isPending}
 							>
 								{createIntent.isPending && (

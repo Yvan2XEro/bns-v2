@@ -359,7 +359,7 @@ export function CheckoutSummary({
 			) : null}
 			<Button
 				type="button"
-				className="min-h-12 w-full bg-brand font-bold text-base hover:bg-brand-strong"
+				className="min-h-12 w-full bg-brand-fill font-bold text-base hover:bg-brand-strong"
 				disabled={!canPlace || placing}
 				onClick={onPlace}
 			>

@@ -264,7 +264,7 @@ function RequestsCard({ shopId }: { shopId: string }) {
 									className={cn(
 										"w-fit rounded-full px-2 py-0.5 font-semibold text-[11px]",
 										link.partnerShop.level >= 3
-											? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+											? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 											: link.partnerShop.level === 2
 												? "bg-[var(--shop-accent-soft,var(--c-brand-tint))] text-[var(--shop-accent-text,var(--c-brand))]"
 												: "bg-subtle text-ink-soft",
@@ -293,7 +293,7 @@ function RequestsCard({ shopId }: { shopId: string }) {
 							onClick={() =>
 								decide.mutate({ linkId: link.id, action: "approve" })
 							}
-							className="h-[34px] flex-1 rounded-lg bg-[var(--shop-accent,var(--c-brand))] font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
+							className="h-[34px] flex-1 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
 						>
 							{t("approve")}
 						</button>

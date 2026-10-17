@@ -82,7 +82,7 @@ function Pager({
 					className={cn(
 						linkClass,
 						page === current
-							? "border-brand bg-brand text-white"
+							? "border-brand bg-brand-fill text-white"
 							: "border-line bg-surface text-ink hover:border-ink-faint",
 					)}
 				>

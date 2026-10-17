@@ -129,12 +129,12 @@ export function ProfileEditForm({ user }: { user: User }) {
 											className="h-full w-full object-cover"
 										/>
 									) : (
-										<div className="flex h-full w-full items-center justify-center bg-brand font-semibold text-2xl text-white">
+										<div className="flex h-full w-full items-center justify-center bg-brand-fill font-semibold text-2xl text-white">
 											{user.name?.charAt(0) || "?"}
 										</div>
 									)}
 								</div>
-								<label className="-bottom-1 -right-1 absolute flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-brand text-white shadow-md hover:bg-brand-strong">
+								<label className="-bottom-1 -right-1 absolute flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-brand-fill text-white shadow-md hover:bg-brand-strong">
 									<Camera className="h-3.5 w-3.5" />
 									<input
 										type="file"

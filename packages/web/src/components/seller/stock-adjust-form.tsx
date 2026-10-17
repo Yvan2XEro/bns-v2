@@ -190,7 +190,7 @@ export function StockAdjustForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || recordMovement.isPending}
-					className="flex-1 bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					className="flex-1 bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{recordMovement.isPending && (
 						<LoaderCircle

@@ -138,7 +138,7 @@ export function BuyActions({
 				    stays reachable through the quieter add below. */}
 				<Button
 					type="button"
-					className="h-12 flex-1 gap-2 bg-brand font-bold text-[15px] hover:bg-brand-strong"
+					className="h-12 flex-1 gap-2 bg-brand-fill font-bold text-[15px] hover:bg-brand-strong"
 					disabled={!buyable || add.isPending}
 					onClick={() => submit(true)}
 				>

@@ -334,7 +334,7 @@ export function AddressStep({
 				<Button
 					type="submit"
 					disabled={pending}
-					className="min-h-11 flex-1 bg-brand hover:bg-brand-strong"
+					className="min-h-11 flex-1 bg-brand-fill hover:bg-brand-strong"
 				>
 					{submitLabel ?? t("continue")}
 				</Button>

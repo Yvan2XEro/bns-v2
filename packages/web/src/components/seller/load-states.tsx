@@ -36,7 +36,7 @@ export function LoadError({
 			<button
 				type="button"
 				onClick={onRetry}
-				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+				className="mt-4 h-10 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 			>
 				{t("retry")}
 			</button>

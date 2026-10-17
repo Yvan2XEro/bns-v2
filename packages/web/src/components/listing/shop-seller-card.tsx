@@ -44,7 +44,7 @@ export function ShopSellerCard({
 				<ShopInitials
 					name={shop.name}
 					logoUrl={shopLogoUrl(shop)}
-					className="h-14 w-14 rounded-[14px] bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] text-base"
+					className="h-14 w-14 rounded-[14px] bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] text-base"
 				/>
 				<div className="min-w-0 space-y-1">
 					<div className="flex flex-wrap items-center gap-2">

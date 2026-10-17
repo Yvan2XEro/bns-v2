@@ -432,7 +432,7 @@ export function OrdersClient({
 									acceptableSelection(rows, selected, role, new Date()),
 								)
 							}
-							className="inline-flex h-[34px] items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
+							className="inline-flex h-[34px] items-center rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))] disabled:opacity-50"
 						>
 							{tList("acceptSelected", { count: acceptIds.length })}
 						</button>

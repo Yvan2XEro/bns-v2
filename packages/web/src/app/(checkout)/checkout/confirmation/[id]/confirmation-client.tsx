@@ -103,7 +103,7 @@ export function ConfirmationClient({
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button
 					asChild
-					className="min-h-11 flex-1 bg-brand hover:bg-brand-strong"
+					className="min-h-11 flex-1 bg-brand-fill hover:bg-brand-strong"
 				>
 					<Link href={`/purchases/${encodeURIComponent(order.id)}`}>
 						{t("viewOrder")}

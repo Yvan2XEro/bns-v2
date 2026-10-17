@@ -229,7 +229,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 														type="button"
 														className={`flex h-9 min-w-[36px] items-center justify-center rounded-lg font-medium text-sm transition-all ${
 															p === page
-																? "bg-brand text-white shadow-blue-500/20 shadow-md"
+																? "bg-brand-fill text-white shadow-blue-500/20 shadow-md"
 																: "border border-line bg-surface text-ink-mid hover:border-brand-line hover:bg-subtle"
 														}`}
 													>
@@ -274,7 +274,7 @@ export default async function MyListingsPage({ searchParams }: PageProps) {
 								{t("emptyBody")}
 							</p>
 							<Link href="/create">
-								<Button className="mt-5 rounded-xl bg-gradient-to-r from-brand to-brand-bright px-6 font-bold shadow-blue-500/20 shadow-lg">
+								<Button className="mt-5 rounded-xl bg-gradient-to-r from-brand-fill to-brand-bright px-6 font-bold shadow-blue-500/20 shadow-lg">
 									<PlusCircle className="mr-2 h-4 w-4" />
 									{t("emptyCta")}
 								</Button>

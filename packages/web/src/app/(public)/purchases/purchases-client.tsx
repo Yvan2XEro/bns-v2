@@ -180,7 +180,9 @@ export function PurchasesClient() {
 						aria-selected={tab === key}
 						onClick={() => setTab(key)}
 						className={`min-h-11 rounded-xl px-4 font-medium text-sm ${
-							tab === key ? "bg-brand text-white" : "bg-brand-soft text-brand"
+							tab === key
+								? "bg-brand-fill text-white"
+								: "bg-brand-soft text-brand"
 						}`}
 					>
 						{t(PURCHASE_TAB_LABEL_KEYS[key])}

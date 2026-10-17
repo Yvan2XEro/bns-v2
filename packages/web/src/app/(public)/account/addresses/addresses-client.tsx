@@ -60,7 +60,7 @@ export function AddressesClient() {
 				{list.data && !editing ? (
 					<Button
 						type="button"
-						className="min-h-11 bg-brand hover:bg-brand-strong"
+						className="min-h-11 bg-brand-fill hover:bg-brand-strong"
 						disabled={full}
 						onClick={() => {
 							save.reset();

@@ -118,7 +118,7 @@ function ContactForm() {
 
 	return (
 		<div className="min-h-screen bg-canvas">
-			<section className="relative overflow-hidden bg-brand py-12 dark:bg-brand-tint">
+			<section className="relative overflow-hidden bg-brand-fill py-12 dark:bg-brand-tint">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
 				<div className="-left-20 absolute top-10 h-60 w-60 rounded-full bg-brand-bright/20 blur-3xl" />
@@ -271,7 +271,7 @@ function ContactForm() {
 									<Button
 										type="submit"
 										disabled={isLoading}
-										className="w-full rounded-xl bg-brand hover:bg-brand-strong"
+										className="w-full rounded-xl bg-brand-fill hover:bg-brand-strong"
 									>
 										{isLoading ? (
 											<Loader2 className="mr-2 h-4 w-4 animate-spin" />

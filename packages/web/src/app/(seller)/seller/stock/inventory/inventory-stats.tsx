@@ -47,7 +47,7 @@ export function InventoryStats({
 				</p>
 				<div className="h-2 overflow-hidden rounded bg-line">
 					<div
-						className="h-2 bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+						className="h-2 bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 						style={{ width: `${progress}%` }}
 					/>
 				</div>

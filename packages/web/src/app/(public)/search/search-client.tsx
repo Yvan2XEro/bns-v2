@@ -441,7 +441,7 @@ export function SearchClient({
 									onClick={() => toggleTag(tag.slug)}
 									className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition-colors ${
 										active
-											? "border-brand bg-brand text-white"
+											? "border-brand bg-brand-fill text-white"
 											: "border-line bg-surface text-ink-mid hover:border-brand/50"
 									}`}
 								>
@@ -564,7 +564,7 @@ export function SearchClient({
 						<SlidersHorizontal className="h-4 w-4" />
 						{t("filters")}
 						{activeFilterCount > 0 && (
-							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand font-bold text-[10px] text-white">
+							<span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-fill font-bold text-[10px] text-white">
 								{activeFilterCount}
 							</span>
 						)}
@@ -642,7 +642,7 @@ export function SearchClient({
 									<Button
 										onClick={handleSaveSearch}
 										disabled={saveStatus === "saving" || saveStatus === "saved"}
-										className="rounded-lg bg-brand hover:bg-brand-strong"
+										className="rounded-lg bg-brand-fill hover:bg-brand-strong"
 									>
 										{saveStatus === "saving" ? (
 											t("saving")

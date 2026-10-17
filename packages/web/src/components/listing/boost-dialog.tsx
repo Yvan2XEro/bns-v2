@@ -291,7 +291,7 @@ export function BoostDialog({ listingId, children }: BoostDialogProps) {
 							<Button
 								className={`w-full rounded-xl font-bold shadow-md hover:shadow-lg ${
 									paymentMethod === "card"
-										? "bg-brand text-white hover:bg-brand-strong"
+										? "bg-brand-fill text-white hover:bg-brand-strong"
 										: "bg-gradient-to-r from-[#F59E0B] to-[#FBBF24] text-ink shadow-amber-500/20"
 								}`}
 								onClick={handlePay}

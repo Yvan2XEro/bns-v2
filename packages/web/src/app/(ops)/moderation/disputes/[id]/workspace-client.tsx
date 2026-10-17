@@ -51,7 +51,7 @@ export function WorkspaceClient({ id }: { id: string }) {
 				<button
 					type="button"
 					onClick={() => void query.refetch()}
-					className="mt-4 h-10 rounded-lg bg-brand px-4 text-sm text-white"
+					className="mt-4 h-10 rounded-lg bg-brand-fill px-4 text-sm text-white"
 				>
 					{t("retry")}
 				</button>

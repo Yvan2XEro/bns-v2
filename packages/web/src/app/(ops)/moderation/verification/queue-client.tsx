@@ -156,7 +156,7 @@ export function QueueClient() {
 					<button
 						type="button"
 						onClick={retry}
-						className="mt-4 h-10 rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
+						className="mt-4 h-10 rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 					>
 						{t("retry")}
 					</button>

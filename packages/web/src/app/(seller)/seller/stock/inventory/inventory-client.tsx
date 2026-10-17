@@ -385,7 +385,7 @@ export function InventoryClient({
 							<button
 								type="submit"
 								disabled={submitDisabled}
-								className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
+								className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-50"
 							>
 								{stockCount.isPending && (
 									<LoaderCircle

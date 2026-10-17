@@ -80,7 +80,7 @@ export function ConversationList({
 						>
 							<Avatar className="h-9 w-9 shrink-0">
 								<AvatarImage src={conversation.buyer?.avatarUrl ?? undefined} />
-								<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
+								<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 									{conversation.buyer?.name?.charAt(0) ?? "?"}
 								</AvatarFallback>
 							</Avatar>
@@ -108,7 +108,7 @@ export function ConversationList({
 							</div>
 							<div className="flex shrink-0 flex-col items-end gap-1">
 								{conversation.unreadCount > 0 && (
-									<span className="h-2 w-2 rounded-full bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]" />
+									<span className="h-2 w-2 rounded-full bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]" />
 								)}
 								{conversation.assignee ? (
 									<Avatar

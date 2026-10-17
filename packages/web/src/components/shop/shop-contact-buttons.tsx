@@ -75,7 +75,7 @@ export function ShopContactButtons({
 				<DropdownMenuTrigger asChild>
 					<button
 						type="button"
-						className={`${bar ? "h-11 w-full justify-center" : "h-10"} inline-flex items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))] focus-visible:outline-offset-2`}
+						className={`${bar ? "h-11 w-full justify-center" : "h-10"} inline-flex items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-[18px] font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-[var(--shop-accent,var(--c-brand))] focus-visible:outline-offset-2`}
 					>
 						<MessageSquare className="h-4 w-4" />
 						{t("contact")}

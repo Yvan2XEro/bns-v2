@@ -607,7 +607,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 													(seller.avatar as { url?: string })?.url || undefined
 												}
 											/>
-											<AvatarFallback className="bg-brand font-semibold text-sm text-white">
+											<AvatarFallback className="bg-brand-fill font-semibold text-sm text-white">
 												{seller.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>

@@ -130,7 +130,7 @@ export default async function MyProfilePage() {
 											<AvatarImage
 												src={(user.avatar as { url?: string })?.url}
 											/>
-											<AvatarFallback className="bg-brand font-semibold text-2xl text-white">
+											<AvatarFallback className="bg-brand-fill font-semibold text-2xl text-white">
 												{user.name?.charAt(0) || "?"}
 											</AvatarFallback>
 										</Avatar>
@@ -245,7 +245,7 @@ export default async function MyProfilePage() {
 								<div className="py-8 text-center">
 									<p className="text-ink-muted">{t("noListingsYet")}</p>
 									<Link href="/create">
-										<Button className="mt-3 rounded-xl bg-brand hover:bg-brand-strong">
+										<Button className="mt-3 rounded-xl bg-brand-fill hover:bg-brand-strong">
 											{t("createFirstListing")}
 										</Button>
 									</Link>

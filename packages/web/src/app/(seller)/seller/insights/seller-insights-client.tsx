@@ -107,7 +107,7 @@ export function SellerInsightsClient({
 						{PERIODS.map((item) => (
 							<button
 								aria-pressed={period === item}
-								className={`rounded-lg px-3 py-1.5 font-semibold text-sm ${period === item ? "bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]" : "text-ink-mid hover:bg-subtle"}`}
+								className={`rounded-lg px-3 py-1.5 font-semibold text-sm ${period === item ? "bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]" : "text-ink-mid hover:bg-subtle"}`}
 								key={item}
 								onClick={() => setPeriod(item)}
 								type="button"
@@ -142,7 +142,7 @@ export function SellerInsightsClient({
 				>
 					<p className="font-semibold text-red-900">{tInsights("error")}</p>
 					<button
-						className="mt-3 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm"
+						className="mt-3 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm"
 						onClick={() => void query.refetch()}
 						type="button"
 					>

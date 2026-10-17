@@ -167,7 +167,7 @@ export default async function ProfilePage({ params }: PageProps) {
 						<div className="flex flex-col items-center text-center">
 							<Avatar className="h-24 w-24 ring-2 ring-line">
 								<AvatarImage src={(user.avatar as { url?: string })?.url} />
-								<AvatarFallback className="bg-brand font-semibold text-2xl text-white">
+								<AvatarFallback className="bg-brand-fill font-semibold text-2xl text-white">
 									{user.name?.charAt(0) || "?"}
 								</AvatarFallback>
 							</Avatar>
@@ -208,7 +208,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
 							<div className="mt-5 w-full border-line border-t pt-5">
 								<Link href={"/messages?listing="}>
-									<Button className="w-full rounded-xl bg-brand hover:bg-brand-strong">
+									<Button className="w-full rounded-xl bg-brand-fill hover:bg-brand-strong">
 										<MessageCircle className="mr-2 h-4 w-4" />
 										{t("message")}
 									</Button>
@@ -271,7 +271,7 @@ export default async function ProfilePage({ params }: PageProps) {
 													<AvatarImage
 														src={(reviewer?.avatar as { url?: string })?.url}
 													/>
-													<AvatarFallback className="bg-brand font-semibold text-white text-xs">
+													<AvatarFallback className="bg-brand-fill font-semibold text-white text-xs">
 														{reviewer?.name?.charAt(0) || "?"}
 													</AvatarFallback>
 												</Avatar>

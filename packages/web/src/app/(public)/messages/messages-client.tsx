@@ -578,7 +578,7 @@ export function MessagesClient({
 										<div className="relative">
 											<Avatar>
 												<AvatarImage src={header.logoUrl ?? undefined} />
-												<AvatarFallback className="bg-brand font-semibold text-white text-xs">
+												<AvatarFallback className="bg-brand-fill font-semibold text-white text-xs">
 													{header.title.charAt(0) || "?"}
 												</AvatarFallback>
 											</Avatar>
@@ -609,7 +609,7 @@ export function MessagesClient({
 											)}
 										</div>
 										{(unreadCounts[conv.id] || 0) > 0 && (
-											<span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand px-1.5 font-bold text-[10px] text-white">
+											<span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-fill px-1.5 font-bold text-[10px] text-white">
 												{unreadCounts[conv.id]}
 											</span>
 										)}
@@ -651,7 +651,7 @@ export function MessagesClient({
 											<div className="relative shrink-0">
 												<Avatar>
 													<AvatarImage src={header.logoUrl ?? undefined} />
-													<AvatarFallback className="bg-brand font-semibold text-white text-xs">
+													<AvatarFallback className="bg-brand-fill font-semibold text-white text-xs">
 														{header.title.charAt(0) || "?"}
 													</AvatarFallback>
 												</Avatar>
@@ -789,7 +789,7 @@ export function MessagesClient({
 											<div
 												className={`max-w-[70%] overflow-hidden ${
 													isOwn
-														? "rounded-2xl rounded-br-md bg-brand text-white"
+														? "rounded-2xl rounded-br-md bg-brand-fill text-white"
 														: "rounded-2xl rounded-bl-md bg-subtle text-ink"
 												}`}
 											>
@@ -906,7 +906,7 @@ export function MessagesClient({
 											disabled={
 												connectionState !== "connected" || !newMessage.trim()
 											}
-											className="rounded-xl bg-brand text-white hover:bg-brand/90"
+											className="rounded-xl bg-brand-fill text-white hover:bg-brand-fill/90"
 										>
 											<Send className="h-4 w-4" />
 										</Button>

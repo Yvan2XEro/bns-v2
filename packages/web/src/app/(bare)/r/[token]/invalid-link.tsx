@@ -20,7 +20,7 @@ export function RiderProblem({
 				<button
 					type="button"
 					onClick={onRetry}
-					className="min-h-12 rounded-xl bg-brand px-6 font-semibold text-white"
+					className="min-h-12 rounded-xl bg-brand-fill px-6 font-semibold text-white"
 				>
 					{t("retry")}
 				</button>

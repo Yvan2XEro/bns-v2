@@ -404,7 +404,7 @@ export function GroupCheckout({
 				</Button>
 				<Button
 					type="button"
-					className="min-h-12 flex-1 bg-brand text-base hover:bg-brand-strong"
+					className="min-h-12 flex-1 bg-brand-fill text-base hover:bg-brand-strong"
 					disabled={nothingToPlace || !accepted || busy}
 					onClick={onPlace}
 				>

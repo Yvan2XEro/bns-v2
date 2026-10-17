@@ -73,7 +73,7 @@ export function ImageCropper({
 				<button
 					type="button"
 					onClick={handleConfirm}
-					className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-brand px-4 py-1.5 font-bold text-sm text-white transition-all hover:bg-[#2563EB] active:scale-95"
+					className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-brand-fill px-4 py-1.5 font-bold text-sm text-white transition-all hover:bg-[#2563EB] active:scale-95"
 				>
 					<Check className="h-4 w-4" />
 					Apply

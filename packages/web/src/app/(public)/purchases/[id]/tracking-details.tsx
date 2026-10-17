@@ -63,7 +63,7 @@ export function RiderCard({
 						type="button"
 						onClick={onCall}
 						disabled={reveal.isPending}
-						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-4 font-semibold text-sm text-white disabled:opacity-70"
+						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white disabled:opacity-70"
 					>
 						{reveal.isPending ? (
 							<Loader2 aria-hidden className="h-4 w-4 animate-spin" />

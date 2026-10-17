@@ -61,7 +61,7 @@ export function SellerInsightsPreview({
 					</div>
 				</div>
 				<Link
-					className="rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					className="rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 py-2 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					href="/seller/insights"
 				>
 					{t("open")}

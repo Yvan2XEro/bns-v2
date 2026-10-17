@@ -121,7 +121,7 @@ export function ProductEditorHeader({
 						<Button
 							type="submit"
 							disabled={pending}
-							className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+							className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							{spinner}
 							{t("save")}
@@ -151,7 +151,7 @@ export function ProductEditorHeader({
 							type="button"
 							onClick={() => onSubmitAs("active")}
 							disabled={pending}
-							className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+							className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							{spinner}
 							{t("publish")}

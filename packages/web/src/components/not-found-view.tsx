@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { EmptyState } from "~/components/empty-state";
 
 const PRIMARY =
-	"inline-flex items-center rounded-xl bg-brand px-5 py-2.5 font-medium text-sm text-white transition-colors hover:bg-brand-strong";
+	"inline-flex items-center rounded-xl bg-brand-fill px-5 py-2.5 font-medium text-sm text-white transition-colors hover:bg-brand-strong";
 const SECONDARY =
 	"inline-flex items-center rounded-xl border border-line bg-surface px-5 py-2.5 font-medium text-ink text-sm transition-colors hover:bg-canvas";
 

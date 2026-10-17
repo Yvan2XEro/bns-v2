@@ -41,7 +41,7 @@ export function ShopHero({
 			{shop.banner?.url && (
 				<div
 					aria-hidden="true"
-					className="h-1 bg-[var(--shop-accent,var(--c-brand))]"
+					className="h-1 bg-[var(--shop-accent,var(--c-brand-fill))]"
 				/>
 			)}
 			<div

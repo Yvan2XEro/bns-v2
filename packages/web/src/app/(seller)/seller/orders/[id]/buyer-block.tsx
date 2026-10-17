@@ -70,7 +70,7 @@ export function BuyerBlock({ order }: { order: OrderView }) {
 				{tel && (
 					<a
 						href={tel}
-						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+						className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 					>
 						<Phone aria-hidden="true" className="h-4 w-4" />
 						{t("callBuyer")}

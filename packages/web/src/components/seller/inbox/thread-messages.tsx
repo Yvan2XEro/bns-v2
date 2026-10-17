@@ -51,7 +51,7 @@ export function ThreadMessages({
 							className={cn(
 								"max-w-[70%] rounded-2xl px-4 py-2",
 								fromShop
-									? "rounded-br-md bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)]"
+									? "rounded-br-md bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)]"
 									: "rounded-bl-md bg-subtle text-ink",
 							)}
 						>

@@ -137,7 +137,7 @@ export function ContactsForm({
 				<Button
 					type="submit"
 					disabled={!formState.isValid || updateShop.isPending}
-					className="bg-brand hover:bg-brand-strong"
+					className="bg-brand-fill hover:bg-brand-strong"
 				>
 					{updateShop.isPending && (
 						<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

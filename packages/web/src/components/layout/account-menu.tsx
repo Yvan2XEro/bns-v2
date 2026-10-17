@@ -30,7 +30,7 @@ export function UserAvatar({
 	return (
 		<Avatar className={cn("h-7 w-7", className)}>
 			<AvatarImage src={(user.avatar as { url?: string } | null)?.url} alt="" />
-			<AvatarFallback className="bg-brand font-semibold text-white text-xs">
+			<AvatarFallback className="bg-brand-fill font-semibold text-white text-xs">
 				{user.name?.charAt(0)}
 			</AvatarFallback>
 		</Avatar>

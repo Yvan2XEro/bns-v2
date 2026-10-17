@@ -13,7 +13,7 @@ export default function SellerError({ reset }: { reset: () => void }) {
 				<button
 					type="button"
 					onClick={reset}
-					className="inline-flex items-center gap-2 rounded-xl bg-[var(--shop-accent,var(--c-brand))] px-5 py-2.5 font-medium text-[var(--shop-on-accent,#FFFFFF)] text-sm transition-colors hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					className="inline-flex items-center gap-2 rounded-xl bg-[var(--shop-accent,var(--c-brand-fill))] px-5 py-2.5 font-medium text-[var(--shop-on-accent,#FFFFFF)] text-sm transition-colors hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					<RefreshCw className="h-4 w-4" />
 					{t("Seller.errorRetry")}

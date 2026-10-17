@@ -242,7 +242,7 @@ export function CheckoutAddressPanel({
 				</Button>
 				<Button
 					type="button"
-					className="min-h-11 flex-1 bg-brand hover:bg-brand-strong"
+					className="min-h-11 flex-1 bg-brand-fill hover:bg-brand-strong"
 					disabled={!selected}
 					onClick={() =>
 						selected &&

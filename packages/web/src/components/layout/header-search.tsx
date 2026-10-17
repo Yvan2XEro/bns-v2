@@ -112,7 +112,7 @@ export function HeaderSearch({ shop, compact = false }: HeaderSearchProps) {
 						"flex w-9 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
 						shop
 							? "bg-[var(--shop-head-accent)] text-[var(--shop-head-on-accent)] focus-visible:ring-[var(--shop-head-accent)]"
-							: "bg-brand text-white hover:bg-brand-strong focus-visible:ring-brand",
+							: "bg-brand-fill text-white hover:bg-brand-strong focus-visible:ring-brand",
 					)}
 				>
 					<Search aria-hidden="true" className="h-4 w-4" />

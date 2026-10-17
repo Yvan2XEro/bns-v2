@@ -102,7 +102,7 @@ export function CodeEntry({
 					</div>
 					<Button
 						type="submit"
-						className="min-h-11 w-full bg-brand hover:bg-brand-strong"
+						className="min-h-11 w-full bg-brand-fill hover:bg-brand-strong"
 						disabled={confirm.isPending}
 					>
 						{confirm.isPending && (

@@ -415,7 +415,7 @@ function BelowMinimumBanner({
 				type="button"
 				disabled={pending}
 				onClick={onFix}
-				className="inline-flex h-[34px] items-center whitespace-nowrap rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-60"
+				className="inline-flex h-[34px] items-center whitespace-nowrap rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-3 font-semibold text-[13px] text-[var(--shop-on-accent,#FFFFFF)] disabled:opacity-60"
 			>
 				{target !== null
 					? t("raiseTo", { amount: formatOrderMoney(target) })
@@ -461,7 +461,7 @@ function SuppliersCard({ shopId }: { shopId: string }) {
 								{link.partnerShop.name}
 							</span>
 							{link.partnerShop.level ? (
-								<span className="w-fit rounded-full bg-[var(--shop-accent,var(--c-brand))] px-2 py-0.5 font-semibold text-[11px] text-[var(--shop-on-accent,#FFFFFF)]">
+								<span className="w-fit rounded-full bg-[var(--shop-accent,var(--c-brand-fill))] px-2 py-0.5 font-semibold text-[11px] text-[var(--shop-on-accent,#FFFFFF)]">
 									{t("levelBadge", { level: link.partnerShop.level })}
 								</span>
 							) : null}

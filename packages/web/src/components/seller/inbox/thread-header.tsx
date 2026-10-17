@@ -53,7 +53,7 @@ export function ThreadHeader({
 			</Button>
 			<Avatar className="h-9 w-9 shrink-0">
 				<AvatarImage src={conversation.buyer?.avatarUrl ?? undefined} />
-				<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand))] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
+				<AvatarFallback className="bg-[var(--shop-accent,var(--c-brand-fill))] text-[var(--shop-on-accent,#FFFFFF)] text-xs">
 					{conversation.buyer?.name?.charAt(0) ?? "?"}
 				</AvatarFallback>
 			</Avatar>

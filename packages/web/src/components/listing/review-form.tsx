@@ -116,7 +116,7 @@ export function ReviewForm({ reviewedUserId, onSuccess }: ReviewFormProps) {
 				type="submit"
 				disabled={isLoading || rating === 0}
 				size="sm"
-				className="rounded-lg bg-brand hover:bg-brand-strong"
+				className="rounded-lg bg-brand-fill hover:bg-brand-strong"
 			>
 				{isLoading && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
 				{t("reviewSubmit")}

@@ -23,7 +23,7 @@ export function CheckoutSection({
 				<span
 					aria-hidden
 					className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold text-sm ${
-						done ? "bg-brand text-white" : "bg-brand-soft text-brand"
+						done ? "bg-brand-fill text-white" : "bg-brand-soft text-brand"
 					}`}
 				>
 					{done ? <Check className="h-4 w-4" /> : number}

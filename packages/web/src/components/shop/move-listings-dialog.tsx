@@ -174,7 +174,7 @@ function MoveListingsBody({
 					<Button
 						onClick={submit}
 						disabled={attachListings.isPending || selected.length === 0}
-						className="bg-brand hover:bg-brand-strong"
+						className="bg-brand-fill hover:bg-brand-strong"
 					>
 						{attachListings.isPending && (
 							<LoaderCircle className="mr-2 h-4 w-4 animate-spin" />

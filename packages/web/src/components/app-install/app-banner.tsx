@@ -83,7 +83,7 @@ export function AppBanner() {
 				href={storeUrlFor(platform)}
 				target="_blank"
 				rel="noopener noreferrer"
-				className="shrink-0 rounded-full bg-brand px-4 py-1.5 font-bold text-white text-xs hover:bg-brand-strong"
+				className="shrink-0 rounded-full bg-brand-fill px-4 py-1.5 font-bold text-white text-xs hover:bg-brand-strong"
 			>
 				{t("open")}
 			</a>

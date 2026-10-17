@@ -95,7 +95,7 @@ export default async function HomePage() {
 	return (
 		<div className="flex flex-col">
 			{/* ── Hero (Leboncoin / OLX style: clean, search-focused) ── */}
-			<section className="relative bg-brand dark:bg-brand-tint">
+			<section className="relative bg-brand-fill dark:bg-brand-tint">
 				<div className="pattern-dots-light absolute inset-0" />
 				<div className="pattern-diagonal absolute inset-0" />
 

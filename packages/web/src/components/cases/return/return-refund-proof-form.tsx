@@ -111,7 +111,7 @@ export function ReturnRefundProofForm({ view }: { view: ReturnCaseView }) {
 			<button
 				type="submit"
 				disabled={submit.isPending}
-				className="min-h-11 rounded-xl bg-brand px-4 font-medium text-sm text-white disabled:opacity-50"
+				className="min-h-11 rounded-xl bg-brand-fill px-4 font-medium text-sm text-white disabled:opacity-50"
 			>
 				{t("action.refund_proof")}
 			</button>

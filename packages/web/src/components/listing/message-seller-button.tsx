@@ -57,7 +57,7 @@ export function MessageSellerButton({
 				className={
 					secondary
 						? "min-h-11 w-full rounded-lg border-line font-semibold text-ink"
-						: "w-full rounded-lg bg-brand hover:bg-brand-strong"
+						: "w-full rounded-lg bg-brand-fill hover:bg-brand-strong"
 				}
 				onClick={onClick}
 				disabled={start.isPending}

@@ -41,7 +41,7 @@ interface EmptyStateProps {
 }
 
 const CTA =
-	"inline-flex items-center rounded-xl bg-brand px-7 py-3 font-semibold text-sm text-white transition-colors hover:bg-brand-strong";
+	"inline-flex items-center rounded-xl bg-brand-fill px-7 py-3 font-semibold text-sm text-white transition-colors hover:bg-brand-strong";
 
 export function EmptyState({
 	illustration = "empty",

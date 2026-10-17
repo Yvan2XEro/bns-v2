@@ -112,7 +112,7 @@ export function LevelAction({
 			{allowed ? (
 				<Link
 					href={CONTINUE_HREF[level]}
-					className="inline-flex h-9 items-center rounded-lg bg-brand px-4 font-semibold text-sm text-white hover:bg-brand-strong"
+					className="inline-flex h-9 items-center rounded-lg bg-brand-fill px-4 font-semibold text-sm text-white hover:bg-brand-strong"
 				>
 					{t(`action.cta.${labelKey}`)}
 				</Link>

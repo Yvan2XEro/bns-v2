@@ -100,7 +100,7 @@ function StepRow({ step, index }: { step: SetupStep; index: number | null }) {
 				{mark}
 				{text}
 				{inline && (
-					<span className="inline-flex h-9 items-center gap-1 rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm">
+					<span className="inline-flex h-9 items-center gap-1 rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm">
 						<Plus aria-hidden="true" className="h-4 w-4" />
 						{t("add")}
 					</span>
@@ -180,7 +180,7 @@ export function SetupChecklist({
 				className="mt-3 h-1.5 overflow-hidden rounded-full bg-line"
 			>
 				<div
-					className="h-1.5 rounded-full bg-[var(--shop-accent,var(--c-brand))]"
+					className="h-1.5 rounded-full bg-[var(--shop-accent,var(--c-brand-fill))]"
 					style={{ width: `${percent}%` }}
 				/>
 			</div>

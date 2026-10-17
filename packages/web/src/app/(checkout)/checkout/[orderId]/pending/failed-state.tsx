@@ -101,7 +101,7 @@ export function FailedState({
 					{actions.includes("retry") && (
 						<Button
 							type="button"
-							className="min-h-11 bg-brand hover:bg-brand-strong"
+							className="min-h-11 bg-brand-fill hover:bg-brand-strong"
 							disabled={submitting}
 							onClick={onRetrySame}
 						>
@@ -144,7 +144,7 @@ export function FailedState({
 					/>
 					<Button
 						type="submit"
-						className="min-h-11 w-full bg-brand hover:bg-brand-strong"
+						className="min-h-11 w-full bg-brand-fill hover:bg-brand-strong"
 						disabled={submitting}
 					>
 						{submitting && (

@@ -15,7 +15,7 @@ export function CatalogueEmpty() {
 					<>
 						<Link
 							href="/seller/catalogue/new"
-							className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+							className="inline-flex h-10 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-4 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 						>
 							{t("add")}
 						</Link>

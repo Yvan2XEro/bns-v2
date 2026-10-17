@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatDeliveryDate, type TrackingStep } from "~/lib/shipment-tracking";
 
 const DOT: Record<TrackingStep["state"], string> = {
-	done: "bg-brand text-white",
+	done: "bg-brand-fill text-white",
 	current: "border-2 border-brand bg-surface text-brand",
 	upcoming: "border border-line-strong bg-surface text-ink-faint",
 	stopped: "bg-bad-soft text-bad-ink-soft",

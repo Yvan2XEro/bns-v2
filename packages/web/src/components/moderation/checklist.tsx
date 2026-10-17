@@ -40,7 +40,7 @@ export function Checklist({
 							<span
 								className={
 									checked
-										? "flex h-5 w-9 items-center rounded-full bg-brand px-0.5"
+										? "flex h-5 w-9 items-center rounded-full bg-brand-fill px-0.5"
 										: "flex h-5 w-9 items-center rounded-full bg-line px-0.5"
 								}
 							>

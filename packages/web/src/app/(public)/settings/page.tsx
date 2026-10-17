@@ -201,7 +201,7 @@ export default function SettingsPage() {
 							<Button
 								type="submit"
 								disabled={isChangingPassword}
-								className="rounded-xl bg-brand hover:bg-brand-strong"
+								className="rounded-xl bg-brand-fill hover:bg-brand-strong"
 							>
 								{isChangingPassword ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />

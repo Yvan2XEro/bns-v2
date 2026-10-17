@@ -195,7 +195,7 @@ function TipCard({
 				<TargetLink
 					target={tipTarget(tip, facts)}
 					shareMessage={message}
-					className="inline-flex h-9 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand))] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
+					className="inline-flex h-9 items-center rounded-lg bg-[var(--shop-accent,var(--c-brand-fill))] px-3 font-semibold text-[var(--shop-on-accent,#FFFFFF)] text-sm hover:bg-[var(--shop-accent-hover,var(--c-brand-strong))]"
 				>
 					{t(`tip.${tip}.action`)}
 				</TargetLink>

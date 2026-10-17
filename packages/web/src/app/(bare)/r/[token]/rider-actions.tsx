@@ -25,7 +25,7 @@ import { CodeSheet, FailureSheet, PhotoSheet } from "./rider-sheets";
 
 const ICONS = { picked_up: Check, attempt: X, handover: Hash, photo: Camera };
 const TONES = {
-	primary: "bg-brand text-white",
+	primary: "bg-brand-fill text-white",
 	danger: "bg-bad-ink-soft text-white",
 	neutral: "border border-line-strong bg-surface text-ink",
 };
