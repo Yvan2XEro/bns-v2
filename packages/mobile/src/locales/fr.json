@@ -166,7 +166,8 @@
 		"enableLocationSub": "Découvrez les annonces autour de vous",
 		"noNearby": "Aucune annonce dans un rayon de 50 km",
 		"recentListingsIn": "Annonces récentes à {{city}}",
-		"noListingsIn": "Aucune annonce à {{city}} pour le moment."
+		"noListingsIn": "Aucune annonce à {{city}} pour le moment.",
+		"showMore": "Afficher plus d’annonces"
 	},
 	"search": {
 		"title": "Rechercher",

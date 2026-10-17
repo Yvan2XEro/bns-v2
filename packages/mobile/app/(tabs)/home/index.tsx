@@ -63,6 +63,7 @@ import {
 import { useUserLocation } from "@/src/lib/useUserLocation";
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
+const RECENT_PAGE = 20;
 
 // ─── Notification bell ────────────────────────────────────────────────────────
 // Isolated component so useCounts (from @novu/react-native) runs inside
@@ -321,19 +322,31 @@ export default function HomeScreen() {
 		staleTime: CATEGORIES_STALE_TIME_MS,
 	});
 
+	// The feed goes on past the first twenty: "Show more" loads the next page
+	// on demand, so a slow connection only pays for what is looked at.
 	const {
 		data: recentData,
 		isLoading: recentLoading,
 		isError: recentError,
 		refetch: refetchRecent,
-	} = useQuery({
+		fetchNextPage: fetchMoreRecent,
+		hasNextPage: hasMoreRecent,
+		isFetchingNextPage: loadingMoreRecent,
+	} = useInfiniteQuery({
 		queryKey: ["listings", "recent", browseCity],
-		queryFn: () =>
+		queryFn: ({ pageParam }: { pageParam: number }) =>
 			api.get<{ hits: any[]; total: number }>(
-				`/api/public/search?limit=20&sort=newest&offset=0${
+				`/api/public/search?limit=${RECENT_PAGE}&sort=newest&offset=${pageParam}${
 					browseCity ? `&location=${encodeURIComponent(browseCity)}` : ""
 				}`,
 			),
+		initialPageParam: 0,
+		getNextPageParam: (last, pages) => {
+			const loaded = pages.reduce((n, page) => n + (page.hits?.length ?? 0), 0);
+			return (last.hits?.length ?? 0) === RECENT_PAGE && loaded < last.total
+				? loaded
+				: undefined;
+		},
 	});
 	const { data: featuredData } = useQuery({
 		queryKey: ["listings", "featured"],
@@ -364,9 +377,7 @@ export default function HomeScreen() {
 	const categories = (categoriesData?.categories ?? [])
 		.filter(Boolean)
 		.filter((cat: any) => !!cat?.id && !!cat?.name);
-	const rawHits = Array.isArray(recentData)
-		? recentData
-		: (recentData?.hits ?? []);
+	const rawHits = (recentData?.pages ?? []).flatMap((page) => page.hits ?? []);
 	const homeListings = rawHits.filter(Boolean).map((l: any) => ({
 		...l,
 		isBoosted: !!(l.boostedUntil && new Date(l.boostedUntil) > new Date()),
@@ -928,6 +939,25 @@ export default function HomeScreen() {
 									))}
 								</View>
 							)}
+							{hasMoreRecent && (
+								<Pressable
+									onPress={() => void fetchMoreRecent()}
+									disabled={loadingMoreRecent}
+									accessibilityRole="button"
+									style={[
+										styles.moreBtn,
+										{ backgroundColor: cardBg, borderColor },
+									]}
+								>
+									{loadingMoreRecent ? (
+										<ActivityIndicator color={primaryColor} />
+									) : (
+										<Text style={[styles.seeAll, { color: primaryColor }]}>
+											{t("home.showMore")}
+										</Text>
+									)}
+								</Pressable>
+							)}
 						</View>
 					</View>
 
@@ -1167,6 +1197,14 @@ const styles = StyleSheet.create({
 		fontSize: 26,
 		fontFamily: Fonts.displayExtrabold,
 		letterSpacing: -0.5,
+	},
+	moreBtn: {
+		marginTop: 12,
+		minHeight: 44,
+		borderRadius: 12,
+		borderWidth: 1,
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	bellBtn: {
 		width: 36,

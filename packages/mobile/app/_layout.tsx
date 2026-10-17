@@ -46,6 +46,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { LoadingScreen } from "@/src/components/LoadingScreen";
 import { MonitoringBridge } from "@/src/components/MonitoringBridge";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
+import { QueryPersistence } from "@/src/components/QueryPersistence";
 import { SellerBrandProvider } from "@/src/components/shop/sellerBrand";
 import { AlertProvider } from "@/src/contexts/AlertContext";
 import { ChatProvider } from "@/src/contexts/ChatContext";
@@ -134,6 +135,9 @@ const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
 			staleTime: 5 * 60 * 1000,
+			// Kept an hour, not five minutes, so what was seen is still there
+			// to persist and to show offline after leaving a screen.
+			gcTime: 60 * 60 * 1000,
 			retry: 2,
 		},
 	},
@@ -223,6 +227,7 @@ export default function RootLayout() {
 												<RootLayoutNav />
 												<OfflineBanner />
 												<MonitoringBridge />
+												<QueryPersistence />
 											</AlertProvider>
 										</ChatProvider>
 									</NovuWrapper>

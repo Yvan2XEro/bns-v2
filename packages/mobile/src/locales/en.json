@@ -166,7 +166,8 @@
 		"enableLocationSub": "Discover listings around you",
 		"noNearby": "No listings within 50 km",
 		"recentListingsIn": "Recent listings in {{city}}",
-		"noListingsIn": "No listings in {{city}} yet."
+		"noListingsIn": "No listings in {{city}} yet.",
+		"showMore": "Show more listings"
 	},
 	"search": {
 		"title": "Search",

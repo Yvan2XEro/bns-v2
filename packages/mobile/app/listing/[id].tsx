@@ -20,6 +20,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CallSellerButton } from "@/src/components/CallSellerButton";
 import { CartHeaderButton } from "@/src/components/CartHeaderButton";
 import { EmptyState } from "@/src/components/EmptyState";
+import { ImageViewer } from "@/src/components/ImageViewer";
 import { ListingCard } from "@/src/components/ListingCard";
 import { BuyBox } from "@/src/components/order/BuyBox";
 import { DeliveryEstimates } from "@/src/components/order/DeliveryEstimates";
@@ -37,6 +38,7 @@ import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { isOwnShop } from "@/src/lib/buyBox";
+import { findCachedListing } from "@/src/lib/cachedListing";
 import { withContentLocale } from "@/src/lib/contentLocale";
 import { formatDate, parseDate } from "@/src/lib/formatDate";
 import { useTranslation } from "@/src/lib/i18n";
@@ -109,7 +111,7 @@ export default function ListingDetail() {
 	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
-	const { width, height, isTablet, centeredContent } = useResponsive();
+	const { width, isTablet, centeredContent } = useResponsive();
 	// Gallery keeps a sane aspect instead of a 1024×300 letterbox on iPad.
 	const galleryHeight = isTablet
 		? Math.min(560, Math.round(width * 0.55))
@@ -136,6 +138,9 @@ export default function ListingDetail() {
 				withContentLocale(`/api/listings/${id}?depth=2`),
 			),
 		enabled: !!id,
+		// Opens on what the list already showed instead of a blank spinner.
+		placeholderData: () =>
+			id ? findCachedListing<ListingDetailDoc>(queryClient, id) : undefined,
 	});
 
 	const { mutate: trackListingView } = useMutation({
@@ -937,63 +942,14 @@ export default function ListingDetail() {
 					)}
 				</View>
 			</View>
-			<Modal
+			<ImageViewer
+				uris={images
+					.map((image) => resolveListingImageUrl(image))
+					.filter((uri): uri is string => Boolean(uri))}
+				index={lightboxIdx}
 				visible={lightboxVisible}
-				transparent
-				animationType="fade"
-				onRequestClose={() => setLightboxVisible(false)}
-			>
-				<View style={styles.lightboxOverlay}>
-					<Pressable
-						style={[styles.lightboxClose, { top: safeTop + 12 }]}
-						onPress={() => setLightboxVisible(false)}
-					>
-						<Ionicons name="close" size={24} color="#fff" />
-					</Pressable>
-					<ScrollView
-						style={{ flex: 1 }}
-						contentContainerStyle={styles.lightboxContent}
-						maximumZoomScale={4}
-						minimumZoomScale={1}
-						showsVerticalScrollIndicator={false}
-						showsHorizontalScrollIndicator={false}
-						centerContent
-					>
-						<Image
-							source={{
-								uri: resolveListingImageUrl(images[lightboxIdx]) ?? undefined,
-							}}
-							style={[styles.lightboxImg, { width, height: height * 0.8 }]}
-							contentFit="contain"
-						/>
-					</ScrollView>
-					{images.length > 1 && (
-						<View
-							style={[styles.lightboxNav, { paddingBottom: safeBottom + 16 }]}
-						>
-							<Pressable
-								onPress={() =>
-									setLightboxIdx((i) => (i === 0 ? images.length - 1 : i - 1))
-								}
-								style={styles.lightboxNavBtn}
-							>
-								<Ionicons name="chevron-back" size={28} color="#fff" />
-							</Pressable>
-							<Text style={styles.lightboxCounter}>
-								{lightboxIdx + 1} / {images.length}
-							</Text>
-							<Pressable
-								onPress={() =>
-									setLightboxIdx((i) => (i === images.length - 1 ? 0 : i + 1))
-								}
-								style={styles.lightboxNavBtn}
-							>
-								<Ionicons name="chevron-forward" size={28} color="#fff" />
-							</Pressable>
-						</View>
-					)}
-				</View>
-			</Modal>
+				onClose={() => setLightboxVisible(false)}
+			/>
 		</View>
 	);
 }
@@ -1228,49 +1184,5 @@ const styles = StyleSheet.create({
 		gap: 6,
 		borderRadius: 14,
 		paddingVertical: 14,
-	},
-	lightboxOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0,0,0,0.95)",
-		justifyContent: "center",
-	},
-	lightboxClose: {
-		position: "absolute",
-		// `top` is applied inline from the safe-area insets.
-		right: 16,
-		zIndex: 10,
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		backgroundColor: "rgba(255,255,255,0.15)",
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	lightboxContent: {
-		flex: 1,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	lightboxImg: {},
-	lightboxNav: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		paddingHorizontal: 16,
-		// paddingBottom is applied inline from the safe-area insets.
-		paddingTop: 12,
-	},
-	lightboxNavBtn: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
-		backgroundColor: "rgba(255,255,255,0.15)",
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	lightboxCounter: {
-		color: "#fff",
-		fontSize: 14,
-		fontFamily: Fonts.bodySemibold,
 	},
 });
