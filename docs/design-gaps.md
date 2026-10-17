@@ -62,12 +62,6 @@ les restes précis.
 |---|-------|----------|-----------------|------|
 | W20 | Mes achats | « Arrivée vers 15:40 » sur la carte | Affiché dès qu'un transporteur envoie une heure d'arrivée ; l'intégration Yango réelle ne l'envoie pas encore | Données |
 
-### Vendeur
-
-| # | Écran | Maquette | App aujourd'hui | Type |
-|---|-------|----------|-----------------|------|
-| W38 | Modération web | Console complète : file d'attente, signalements, risques, boutiques, journal, détail à droite | Vérifications et litiges seulement (le reste dans l'admin Payload et l'app) | Fonction |
-
 ## Décisions prises (octobre 2026)
 
 L'app garde son comportement sur ces points ; ne pas les rouvrir sans
@@ -90,6 +84,7 @@ L'app garde son comportement sur ces points ; ne pas les rouvrir sans
 | W35 | Pas d'action « Vendre en lot » | Les lots sont une fonction produit à part entière (prix groupé, stock combiné, commande), à reprendre si les vendeurs la demandent |
 | W25 | Le stock du fournisseur reste plafonné pour le revendeur (chiffre exact jusqu'à 10, sinon « En stock ») | Le stock exact d'un fournisseur est une information commerciale ; le code-barres, lui, est livré |
 | W37 | Pas d'aperçu A6 du bon de livraison dans la page du bon de commande | L'étiquette imprimable existe déjà dans un onglet dédié |
+| W38 | Console de modération sans éditeur de règles de détection, sans « Écrire au vendeur », sans tuile des marges de revente retenues, sans catégories de risque par domaine ni tableau « Déclaré et extrait » | Aucune donnée ni route derrière : les règles sont dans le code, la modération n'a pas de messagerie vers le vendeur, les marges sont masquées aux modérateurs, et aucune extraction automatique des documents n'est stockée |
 
 ## Écrans pas encore comparés
 

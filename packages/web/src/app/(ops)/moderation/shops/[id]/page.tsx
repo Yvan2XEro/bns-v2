@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { SectionPlaceholder } from "~/components/moderation/section-placeholder";
+import { ShopSheetClient } from "./shop-sheet-client";
 
 export const metadata: Metadata = { title: "Shop sheet" };
 
-/** Placeholder until Lot 4 builds the shop sheet; the queue's payout-account panel links here. */
-export default function ShopSheetPage() {
-	return (
-		<Suspense>
-			<SectionPlaceholder section="shop" />
-		</Suspense>
-	);
+export default async function ShopSheetPage({
+	params,
+}: {
+	params: Promise<{ id: string }>;
+}) {
+	const { id } = await params;
+	return <ShopSheetClient id={id} />;
 }

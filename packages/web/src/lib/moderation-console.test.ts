@@ -50,10 +50,6 @@ describe("every console label resolves in both locales", () => {
 			"severity.medium",
 			"severity.low",
 			...QUEUE_TYPE_ORDER.map((type) => `panel.open.${type}`),
-			...["shops", "shop", "log"].flatMap((s) => [
-				`placeholder.${s}.title`,
-				`placeholder.${s}.subtitle`,
-			]),
 		],
 	};
 	for (const [name, keys] of Object.entries(families))

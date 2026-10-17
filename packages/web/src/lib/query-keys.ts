@@ -77,6 +77,11 @@ export const moderationConsoleKeys = {
 		["moderation", "console", "risk-flags", tab] as const,
 	riskFlag: (id: string) => ["moderation", "console", "risk-flag", id] as const,
 	riskStats: ["moderation", "console", "risk-stats"] as const,
+	shops: (filters: { q?: string; status?: string }) =>
+		["moderation", "console", "shops", filters] as const,
+	shop: (id: string) => ["moderation", "console", "shop", id] as const,
+	log: (filters: Record<string, string>) =>
+		["moderation", "console", "log", filters] as const,
 };
 
 export const caseKeys = {
