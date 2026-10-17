@@ -644,7 +644,18 @@
 		"badgeNew": "New",
 		"badgeLikeNew": "Like new",
 		"askShop": "Ask the shop a question",
-		"metaNotFound": "Listing not found"
+		"metaNotFound": "Listing not found",
+		"share": "Share",
+		"linkCopied": "Link copied",
+		"shareOnWhatsApp": "Share on WhatsApp",
+		"whatsapp": "WhatsApp",
+		"whatsappAbout": "Hello, is your listing \"{title}\" on BuyNSellem still available? {url}",
+		"callNumber": "Call {phone}",
+		"safetyShopTip1": "Pay only on BuyNSellem: protected payment or cash on delivery",
+		"safetyShopTip2": "Never pay a seller outside the platform",
+		"safetyShopTip3": "Check the parcel before you give your handover code",
+		"barOrder": "Order",
+		"barContact": "Contact the seller"
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -3807,7 +3818,8 @@
 		"perkPickup": "Pickup at the shop · free",
 		"perkCodDetail": "Cash or mobile money at handover",
 		"perkWithdrawal": "Right of withdrawal: {days} days",
-		"perkWithdrawalDetail": "From receipt · return at your cost, unless the item does not match"
+		"perkWithdrawalDetail": "From receipt · return at your cost, unless the item does not match",
+		"outOfStock": "This option is sold out. Choose another one."
 	},
 	"Payments": {
 		"accountStatus_active": "Active",

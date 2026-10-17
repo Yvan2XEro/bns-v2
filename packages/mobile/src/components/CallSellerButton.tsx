@@ -17,20 +17,24 @@ import { useAuth } from "@/src/lib/auth";
 import { getAuthModalParams } from "@/src/lib/authRedirect";
 import { phoneDialUrl, sellerHasNoPhone } from "@/src/lib/callSeller";
 import { useTranslation } from "@/src/lib/i18n";
+import { whatsappChatUrl } from "../../../api/src/contracts/whatsapp";
 
 /**
  * "Appeler" goes through the protected reveal (`POST …/contact-phone`: login,
- * rate limit, reveal log) and dials the number it answers. The reveal is a
- * mutation, so a second tap dials the number already in hand instead of
- * counting another reveal.
+ * rate limit, reveal log), then offers a call or a WhatsApp chat — where most
+ * buyers and sellers actually talk. The reveal is a mutation, so a second tap
+ * reuses the number already in hand instead of counting another reveal.
  */
 export function CallSellerButton({
 	listingId,
 	style,
 	textStyle,
 	color,
+	whatsappMessage,
 }: {
 	listingId: string;
+	/** Prefilled in the WhatsApp chat offered next to the call. */
+	whatsappMessage?: string;
 	style: StyleProp<ViewStyle>;
 	textStyle: StyleProp<TextStyle>;
 	color: string;
@@ -38,7 +42,7 @@ export function CallSellerButton({
 	const { user } = useAuth();
 	const pathname = usePathname();
 	const { t } = useTranslation();
-	const { showError } = useAlert();
+	const { showError, showAlert } = useAlert();
 	const reveal = useRevealContactPhone(listingId);
 	const [unavailable, setUnavailable] = useState(false);
 
@@ -50,6 +54,21 @@ export function CallSellerButton({
 		);
 	};
 
+	const contact = (phone: string) => {
+		const whatsapp = whatsappChatUrl(phone, whatsappMessage);
+		if (!whatsapp) return dial(phone);
+		showAlert(t("listing.contactBy"), phone, [
+			{ text: t("listing.call"), onPress: () => dial(phone) },
+			{
+				text: t("listing.whatsapp"),
+				onPress: () => {
+					Linking.openURL(whatsapp).catch(() => dial(phone));
+				},
+			},
+			{ text: t("common.cancel"), style: "cancel" },
+		]);
+	};
+
 	const onPress = () => {
 		if (!user) {
 			router.push({
@@ -58,9 +77,9 @@ export function CallSellerButton({
 			});
 			return;
 		}
-		if (reveal.data?.phone) return dial(reveal.data.phone);
+		if (reveal.data?.phone) return contact(reveal.data.phone);
 		reveal.mutate(undefined, {
-			onSuccess: ({ phone }) => dial(phone),
+			onSuccess: ({ phone }) => contact(phone),
 			onError: (error) => {
 				if (sellerHasNoPhone(error)) setUnavailable(true);
 				showError(t("listing.callSeller"), resolveErrorMessage(error, t));

@@ -1,3 +1,5 @@
+export { whatsappShareUrl } from "../../../api/src/contracts/whatsapp";
+
 import type {
 	LaunchActionKey,
 	SellerGuideSection,
@@ -93,8 +95,3 @@ export const GUIDE_TARGETS: Record<SellerGuideSection, SellerHomeTarget> = {
 	payments: route("/seller/payments"),
 	trust: route("/seller/verification"),
 };
-
-/** Opens WhatsApp (app or web) with the message prefilled. */
-export function whatsappShareUrl(message: string): string {
-	return `https://wa.me/?text=${encodeURIComponent(message)}`;
-}

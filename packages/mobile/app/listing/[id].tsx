@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	Modal,
@@ -207,6 +207,24 @@ export default function ListingDetail() {
 		shopId: listingShop?.id ?? null,
 		memberOf: (myShops ?? []).map((entry) => entry.shopId),
 	});
+	const scrollRef = useRef<ScrollView>(null);
+	const contentY = useRef(0);
+	const buyBoxY = useRef(0);
+	// A shop product the viewer can buy: the bar's main action is ordering.
+	const canOrder =
+		Boolean(productId) &&
+		listing?.orderable !== false &&
+		!ownShop &&
+		Boolean(listingShop) &&
+		!listingShop?.ordersRestrictedAt;
+	const priceLabel =
+		summary?.priceMin != null &&
+		summary.priceMax != null &&
+		summary.priceMax !== summary.priceMin
+			? formatPriceRange(summary.priceMin, summary.priceMax, i18n.language)
+			: listing?.price
+				? formatPrice(listing.price, i18n.language)
+				: null;
 
 	// Attribute slugs are meaningless to a buyer ("fuel_type"); the readable
 	// name, type, unit and section all live on the category, so join the two.
@@ -378,6 +396,7 @@ export default function ListingDetail() {
 			</View>
 
 			<ScrollView
+				ref={scrollRef}
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={{ paddingBottom: actionBarInset }}
 			>
@@ -470,21 +489,14 @@ export default function ListingDetail() {
 				{/* Content — capped + centred on tablets so text stays readable */}
 				<View
 					style={[styles.content, { backgroundColor: bg }, centeredContent]}
+					onLayout={(e) => {
+						contentY.current = e.nativeEvent.layout.y;
+					}}
 				>
 					{/* Price, title, chips, meta — straight on the sheet, no card */}
 					<View style={styles.hero}>
 						<Text style={[styles.price, { color: primaryColor }]}>
-							{summary?.priceMin != null &&
-							summary.priceMax != null &&
-							summary.priceMax !== summary.priceMin
-								? formatPriceRange(
-										summary.priceMin,
-										summary.priceMax,
-										i18n.language,
-									)
-								: listing.price
-									? formatPrice(listing.price, i18n.language)
-									: t("listing.priceOnRequest")}
+							{priceLabel ?? t("listing.priceOnRequest")}
 						</Text>
 						<Text style={[styles.title, { color: textColor }]}>
 							{listing.title}
@@ -546,22 +558,28 @@ export default function ListingDetail() {
 							listingProduct && listingShop && !listingShop.ordersRestrictedAt,
 						)}
 					/>
-					<BuyBox
-						listingId={id}
-						product={listingProduct}
-						shop={
-							listingShop
-								? {
-										id: listingShop.id,
-										restricted: Boolean(listingShop.ordersRestrictedAt),
-									}
-								: null
-						}
-						orderable={listing.orderable}
-						ownShop={ownShop}
-						productAvailable={summary?.available ?? null}
-						signedIn={Boolean(user)}
-					/>
+					<View
+						onLayout={(e) => {
+							buyBoxY.current = e.nativeEvent.layout.y;
+						}}
+					>
+						<BuyBox
+							listingId={id}
+							product={listingProduct}
+							shop={
+								listingShop
+									? {
+											id: listingShop.id,
+											restricted: Boolean(listingShop.ordersRestrictedAt),
+										}
+									: null
+							}
+							orderable={listing.orderable}
+							ownShop={ownShop}
+							productAvailable={summary?.available ?? null}
+							signedIn={Boolean(user)}
+						/>
+					</View>
 					{/* Description */}
 					<View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
 						<Text style={[styles.sectionTitle, { color: textColor }]}>
@@ -744,8 +762,12 @@ export default function ListingDetail() {
 							size={13}
 							color={mutedColor}
 						/>
+						{/* A shop product is paid through the platform: "no advance"
+						    would contradict its own pay button. */}
 						<Text style={[styles.safetyStripText, { color: mutedColor }]}>
-							{t("listing.safetyTips.strip")}
+							{productId
+								? t("listing.safetyTips.stripShop")
+								: t("listing.safetyTips.strip")}
 						</Text>
 					</View>
 
@@ -818,9 +840,32 @@ export default function ListingDetail() {
 				]}
 			>
 				<View style={[styles.actionButtons, centeredContent]}>
-					{!isOwner && id ? (
+					{!isOwner && canOrder ? (
+						<Pressable
+							onPress={() =>
+								scrollRef.current?.scrollTo({
+									y: Math.max(0, contentY.current + buyBoxY.current - 12),
+									animated: true,
+								})
+							}
+							accessibilityRole="button"
+							style={[styles.msgBtn, { backgroundColor: primaryColor }]}
+						>
+							<Ionicons name="bag-handle-outline" size={18} color="#fff" />
+							<Text style={styles.msgBtnText} numberOfLines={1}>
+								{priceLabel
+									? t("listing.orderAction", { price: priceLabel })
+									: t("listing.barOrder")}
+							</Text>
+						</Pressable>
+					) : null}
+					{!isOwner && id && !canOrder ? (
 						<CallSellerButton
 							listingId={id}
+							whatsappMessage={t("listing.whatsappAbout", {
+								title: listing?.title ?? "",
+								url: `${webUrl ?? ""}/listing/${id}`,
+							})}
 							style={[
 								styles.callBtn,
 								{ backgroundColor: cardBg, borderColor, borderWidth: 1.5 },
@@ -833,24 +878,41 @@ export default function ListingDetail() {
 						<Pressable
 							onPress={handleMessage}
 							disabled={startConversation.isPending}
+							accessibilityRole="button"
+							accessibilityLabel={
+								listingShop
+									? t("listing.messageShop")
+									: t("listing.contactSeller")
+							}
 							style={[
-								styles.msgBtn,
-								{
-									backgroundColor: primaryColor,
-									opacity: startConversation.isPending ? 0.7 : 1,
-								},
+								// With an order button beside it, messaging steps back to
+								// a square secondary action.
+								canOrder ? styles.callBtnSquare : styles.msgBtn,
+								canOrder
+									? { backgroundColor: cardBg, borderColor, borderWidth: 1.5 }
+									: { backgroundColor: primaryColor },
+								{ opacity: startConversation.isPending ? 0.7 : 1 },
 							]}
 						>
 							{startConversation.isPending ? (
-								<ActivityIndicator size="small" color="#fff" />
+								<ActivityIndicator
+									size="small"
+									color={canOrder ? textColor : "#fff"}
+								/>
 							) : (
-								<Ionicons name="chatbubble-outline" size={18} color="#fff" />
+								<Ionicons
+									name="chatbubble-outline"
+									size={18}
+									color={canOrder ? textColor : "#fff"}
+								/>
 							)}
-							<Text style={styles.msgBtnText}>
-								{listingShop
-									? t("listing.messageShop")
-									: t("listing.contactSeller")}
-							</Text>
+							{!canOrder && (
+								<Text style={styles.msgBtnText}>
+									{listingShop
+										? t("listing.messageShop")
+										: t("listing.contactSeller")}
+								</Text>
+							)}
 						</Pressable>
 					)}
 					{isOwner && (
@@ -1149,6 +1211,13 @@ const styles = StyleSheet.create({
 		paddingVertical: 14,
 	},
 	editBtnText: { fontSize: 15, fontFamily: Fonts.displayBold },
+	callBtnSquare: {
+		width: 52,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 14,
+		paddingVertical: 14,
+	},
 	callBtn: {
 		width: 118,
 		flexDirection: "row",

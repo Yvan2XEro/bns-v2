@@ -248,7 +248,8 @@
 			"tip1": "Meet in a safe, public place to complete transactions.",
 			"tip2": "Never share your bank details or transfer money in advance.",
 			"tip3": "Inspect the item thoroughly before making any payment.",
-			"strip": "Public place · Check before paying · No advance payment"
+			"strip": "Public place · Check before paying · No advance payment",
+			"stripShop": "Pay on BuyNSellem · Never outside the platform · Check the parcel before the code"
 		},
 		"attributes": "Details",
 		"sellerInfo": "Seller Info",
@@ -289,7 +290,12 @@
 		"daysAgo": "{{count}} days ago",
 		"featured": "Featured",
 		"priceOnRequest": "On request",
-		"messageShop": "Message the shop"
+		"messageShop": "Message the shop",
+		"contactBy": "Contact the seller",
+		"whatsapp": "WhatsApp",
+		"whatsappAbout": "Hello, is your listing \"{{title}}\" on BuyNSellem still available? {{url}}",
+		"barOrder": "Order",
+		"orderAction": "Order · {{price}}"
 	},
 	"create": {
 		"title": "Post a Listing",

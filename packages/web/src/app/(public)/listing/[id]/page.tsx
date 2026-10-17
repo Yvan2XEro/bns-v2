@@ -23,7 +23,10 @@ import { ListingGrid } from "~/components/listing/listing-card";
 import { MessageSellerButton } from "~/components/listing/message-seller-button";
 import { PhoneReveal } from "~/components/listing/phone-reveal";
 import { ReportDialog } from "~/components/listing/report-dialog";
-import { ShareButton } from "~/components/listing/share-button";
+import {
+	ShareButton,
+	WhatsAppShareButton,
+} from "~/components/listing/share-button";
 import { ShopSellerCard } from "~/components/listing/shop-seller-card";
 import { ViewTracker } from "~/components/listing/view-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
@@ -46,6 +49,7 @@ import { timeAgo } from "~/lib/time-ago";
 import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
 import { DeliveryEstimates } from "./delivery-estimates";
+import { ListingActionBar } from "./listing-action-bar";
 
 export const revalidate = 3600;
 
@@ -396,12 +400,14 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<h1 className="font-bold text-2xl text-ink">
 										{listing.title}
 									</h1>
-									{/* A shop product's price sits in the buy box, as in the design. */}
-									{!productId && (
-										<p className="mt-1 font-bold text-2xl text-brand">
-											{priceRange ?? formattedPrice ?? t("noPrice")}
-										</p>
-									)}
+									{/* On a large screen a shop product's price sits in the buy
+									    box beside the photos; below it, the box comes after the
+									    description, so the price stays under the title. */}
+									<p
+										className={`mt-1 font-bold text-2xl text-brand ${productId ? "lg:hidden" : ""}`}
+									>
+										{priceRange ?? formattedPrice ?? t("noPrice")}
+									</p>
 								</div>
 								<div className="flex gap-2">
 									<FavoriteButton
@@ -409,6 +415,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 										initialFavorite={isFavorited}
 										className="h-9 w-9 rounded-lg border border-line"
 									/>
+									<WhatsAppShareButton title={listing.title} />
 									<ShareButton title={listing.title} />
 								</div>
 							</div>
@@ -532,7 +539,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 							{/* Buy box first, as in the design: price, variants and the
 							    order action sit at the top of the column, above the seller. */}
 							{productId && (
-								<div className="rounded-xl border border-line bg-surface p-[22px]">
+								<div
+									id="buy-box"
+									className="scroll-mt-24 rounded-xl border border-line bg-surface p-[22px]"
+								>
 									<BuyBox
 										listingId={String(listing.id)}
 										productId={productId}
@@ -630,7 +640,10 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<p className="text-ink-muted text-sm">{t("unknownSeller")}</p>
 								)}
 
-								<div className="mt-5 flex flex-col gap-2">
+								<div
+									id="contact-seller"
+									className="mt-5 flex scroll-mt-24 flex-col gap-2"
+								>
 									{isOwner && (
 										<Link
 											href={`/listing/${listing.id}/edit`}
@@ -669,6 +682,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									{!isOwner && seller && (
 										<PhoneReveal
 											listingId={String(listing.id)}
+											listingTitle={listing.title}
 											signedIn={Boolean(authUser)}
 										/>
 									)}
@@ -687,10 +701,22 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 									<Shield className="h-4 w-4 text-brand" />
 									{t("safetyTips")}
 								</div>
+								{/* A shop product is paid through the platform, so "never
+								    send money in advance" would contradict its pay button. */}
 								<ul className="mt-2 space-y-1 text-ink-muted text-xs">
-									<li>{t("safetyTip1")}</li>
-									<li>{t("safetyTip2")}</li>
-									<li>{t("safetyTip3")}</li>
+									{productId ? (
+										<>
+											<li>{t("safetyShopTip1")}</li>
+											<li>{t("safetyShopTip2")}</li>
+											<li>{t("safetyShopTip3")}</li>
+										</>
+									) : (
+										<>
+											<li>{t("safetyTip1")}</li>
+											<li>{t("safetyTip2")}</li>
+											<li>{t("safetyTip3")}</li>
+										</>
+									)}
 								</ul>
 							</div>
 
@@ -712,6 +738,18 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 						</div>
 					</div>
 				</div>
+
+				{!isOwner &&
+					!ownShop &&
+					isActive &&
+					!isExpired &&
+					(productId || seller) && (
+						<ListingActionBar
+							price={priceRange ?? formattedPrice ?? null}
+							action={productId ? "order" : "contact"}
+							targetId={productId ? "buy-box" : "contact-seller"}
+						/>
+					)}
 
 				{/* Similar Listings */}
 				{similarListings.length > 0 && (

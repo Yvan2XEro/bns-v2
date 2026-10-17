@@ -254,7 +254,8 @@
 			"tip1": "Rencontrez le vendeur dans un lieu public et sécurisé pour finaliser la transaction.",
 			"tip2": "Ne communiquez jamais vos coordonnées bancaires et n'effectuez pas de virement à l'avance.",
 			"tip3": "Inspectez soigneusement l'article avant tout paiement.",
-			"strip": "Lieu public · Vérifiez avant paiement · Pas d'avance"
+			"strip": "Lieu public · Vérifiez avant paiement · Pas d'avance",
+			"stripShop": "Payez sur BuyNSellem · Jamais hors plateforme · Vérifiez le colis avant le code"
 		},
 		"attributes": "Caractéristiques",
 		"characteristics": "Caractéristiques",
@@ -292,7 +293,12 @@
 		"yes": "Oui",
 		"no": "Non",
 		"distanceKm": "À {{km}} km",
-		"messageShop": "Écrire à la boutique"
+		"messageShop": "Écrire à la boutique",
+		"contactBy": "Contacter le vendeur",
+		"whatsapp": "WhatsApp",
+		"whatsappAbout": "Bonjour, votre annonce « {{title}} » sur BuyNSellem est-elle toujours disponible ? {{url}}",
+		"barOrder": "Commander",
+		"orderAction": "Commander · {{price}}"
 	},
 	"create": {
 		"title": "Publier une annonce",

@@ -1,3 +1,5 @@
+export { whatsappShareUrl } from "../../../api/src/contracts/whatsapp";
+
 import type { Href } from "expo-router";
 import type {
 	LaunchActionKey,
@@ -95,8 +97,3 @@ export const GUIDE_TARGETS: Record<SellerGuideSection, SellerHomeTarget> = {
 	payments: route("/seller/payments"),
 	trust: route("/seller/verification"),
 };
-
-/** A link that opens WhatsApp with the message prefilled, on any device. */
-export function whatsappShareUrl(message: string): string {
-	return `https://wa.me/?text=${encodeURIComponent(message)}`;
-}

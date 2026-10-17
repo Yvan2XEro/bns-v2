@@ -644,7 +644,18 @@
 		"badgeNew": "Neuf",
 		"badgeLikeNew": "Comme neuf",
 		"askShop": "Poser une question à la boutique",
-		"metaNotFound": "Annonce introuvable"
+		"metaNotFound": "Annonce introuvable",
+		"share": "Partager",
+		"linkCopied": "Lien copié",
+		"shareOnWhatsApp": "Partager sur WhatsApp",
+		"whatsapp": "WhatsApp",
+		"whatsappAbout": "Bonjour, votre annonce « {title} » sur BuyNSellem est-elle toujours disponible ? {url}",
+		"callNumber": "Appeler le {phone}",
+		"safetyShopTip1": "Payez uniquement sur BuyNSellem : paiement protégé ou à la livraison",
+		"safetyShopTip2": "Ne réglez jamais un vendeur en dehors de la plateforme",
+		"safetyShopTip3": "Vérifiez le colis avant de donner votre code de remise",
+		"barOrder": "Commander",
+		"barContact": "Contacter le vendeur"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -3807,7 +3818,8 @@
 		"perkPickup": "Retrait en boutique · gratuit",
 		"perkCodDetail": "Espèces ou mobile money à la remise",
 		"perkWithdrawal": "Droit de rétractation : {days} jours",
-		"perkWithdrawalDetail": "À compter de la réception · retour à vos frais, sauf article non conforme"
+		"perkWithdrawalDetail": "À compter de la réception · retour à vos frais, sauf article non conforme",
+		"outOfStock": "Cette option est épuisée. Choisissez-en une autre."
 	},
 	"Payments": {
 		"accountStatus_active": "Actif",

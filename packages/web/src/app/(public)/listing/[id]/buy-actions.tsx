@@ -62,6 +62,13 @@ export function BuyActions({
 	const add = useAddCartItem();
 	const [state, patch] = useReducer(reducer, initialState);
 	const buyable = variant !== null && isVariantInStock(variant);
+	// Only a tracked stock of ten or fewer is disclosed: that is the cap.
+	const maxQuantity =
+		typeof variant?.availableCount === "number" ? variant.availableCount : null;
+	const quantity =
+		maxQuantity !== null
+			? Math.max(1, Math.min(state.quantity, maxQuantity))
+			: state.quantity;
 
 	function send(
 		request: AddToCartRequest & { replace?: boolean },
@@ -90,7 +97,7 @@ export function BuyActions({
 		const request = {
 			listingId,
 			variantId: variant.id,
-			quantity: state.quantity,
+			quantity,
 		};
 		if (!signedIn) {
 			router.push(signInToAddHref(request));
@@ -111,8 +118,8 @@ export function BuyActions({
 						className={stepButton}
 						aria-label={t("decrease")}
 						aria-controls={quantityId}
-						disabled={state.quantity <= 1}
-						onClick={() => patch({ quantity: state.quantity - 1 })}
+						disabled={quantity <= 1}
+						onClick={() => patch({ quantity: quantity - 1 })}
 					>
 						<Minus aria-hidden="true" className="h-4 w-4" />
 					</button>
@@ -122,14 +129,15 @@ export function BuyActions({
 						aria-live="polite"
 						className="min-w-6 text-center"
 					>
-						{state.quantity}
+						{quantity}
 					</output>
 					<button
 						type="button"
 						className={stepButton}
 						aria-label={t("increase")}
 						aria-controls={quantityId}
-						onClick={() => patch({ quantity: state.quantity + 1 })}
+						disabled={maxQuantity !== null && quantity >= maxQuantity}
+						onClick={() => patch({ quantity: quantity + 1 })}
 					>
 						<Plus aria-hidden="true" className="h-4 w-4" />
 					</button>
@@ -147,7 +155,12 @@ export function BuyActions({
 				</Button>
 			</div>
 
-			{!buyable && <p className="text-bad-ink text-sm">{t("chooseVariant")}</p>}
+			{/* A hint, not an error: nothing was attempted yet. */}
+			{!buyable && (
+				<p className="text-ink-muted text-sm">
+					{variant ? t("outOfStock") : t("chooseVariant")}
+				</p>
+			)}
 
 			<button
 				type="button"
