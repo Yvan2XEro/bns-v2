@@ -79,6 +79,8 @@ export interface RiskFlagQueueItem {
 	resolution: RiskResolution;
 	resolutionNote: string | null;
 	reviewedAt: string | null;
+	/** The moderator holding the flag, if claimed. */
+	assignedTo: string | null;
 }
 
 export interface RiskFlagQueuePage {

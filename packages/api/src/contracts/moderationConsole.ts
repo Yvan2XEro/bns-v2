@@ -133,3 +133,32 @@ export interface ModerationLogResponse {
 	items: ModerationLogRow[];
 	nextCursor: string | null;
 }
+
+export type {
+	RiskAutoEffect,
+	RiskEvidenceRow,
+	RiskFlagDecisionInput,
+	RiskFlagDetail,
+	RiskFlagQueueItem,
+	RiskFlagQueuePage,
+	RiskModerationHistoryEntry,
+	RiskResolution,
+	RiskSeverity,
+	RiskStatus,
+} from "../types/riskModeration";
+
+/** `/api/moderation/risk-flags/stats`: the risk console's tab counts and KPI tiles. */
+export interface RiskFlagStats {
+	open: number;
+	openBySubject: Record<RiskSubjectType, number>;
+	/** Open flags scoring `highScoreThreshold` or more. */
+	highScore: number;
+	highScoreThreshold: number;
+	/** Open flags that put an automatic payout hold on their shop. */
+	payoutHeld: number;
+	/** Flags marked reviewed: out of the open list, still decidable for 30 days. */
+	reviewed: number;
+	/** Flags reviewed, dismissed or actioned in the last 30 days, by their current status. */
+	decidedLast30Days: number;
+	dismissedLast30Days: number;
+}

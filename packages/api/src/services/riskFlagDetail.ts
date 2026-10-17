@@ -38,6 +38,7 @@ export function toRiskFlagQueueItem(flag: RiskFlag): RiskFlagQueueItem {
 		resolution: flag.resolution ?? "none",
 		resolutionNote: flag.resolutionNote ?? null,
 		reviewedAt: flag.reviewedAt ?? null,
+		assignedTo: relationId(flag.assignedTo),
 	};
 }
 

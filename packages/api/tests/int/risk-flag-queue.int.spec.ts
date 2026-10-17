@@ -31,6 +31,7 @@ describe("risk flag moderation queue", () => {
 					...flag("f1", 80, "high"),
 					subjectLabel: "Phone •••• 1234",
 					evidence: { rawHash: "secret-hash", refusedDeliveries: 3 },
+					assignedTo: "moderator-1",
 				},
 			],
 		});
@@ -44,6 +45,7 @@ describe("risk flag moderation queue", () => {
 			signal: "orders.dispute_ratio",
 			severity: "high",
 			score: 80,
+			assignedTo: "moderator-1",
 		});
 		expect(item).not.toHaveProperty("subjectKey");
 		expect(item).not.toHaveProperty("evidence");
