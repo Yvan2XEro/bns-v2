@@ -2961,6 +2961,7 @@ export interface ModerationLog {
     | 'risk_flag.review'
     | 'risk_flag.dismiss'
     | 'risk_flag.action'
+    | 'risk_flag.assign'
     | 'review.photo_remove';
   targetType:
     | 'listing'

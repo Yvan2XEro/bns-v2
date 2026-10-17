@@ -1,5 +1,8 @@
 import type { Payload, Where } from "payload";
 import { z } from "zod";
+import { ERROR_CODES } from "../lib/errors";
+import { relationId } from "../lib/relationId";
+import { withTransaction } from "../lib/transactions";
 import type { RiskFlag } from "../payload-types";
 import type {
 	RiskSeverity,
@@ -7,6 +10,12 @@ import type {
 	RiskStatus,
 	RiskSubjectType,
 } from "../types/riskModeration";
+import {
+	type Actor,
+	assertModerator,
+	ModerationError,
+	writeLog,
+} from "./moderation";
 import { toRiskFlagQueueItem } from "./riskFlagDetail";
 
 const PAGE_SIZE = 50;
@@ -133,4 +142,66 @@ export async function getRiskFlagQueue(
 		nextCursor:
 			ordered.length > PAGE_SIZE && lastFlag ? cursorFor(lastFlag) : null,
 	};
+}
+
+/**
+ * Takes an open flag for the caller. Never a takeover: a flag someone else
+ * holds is refused, and the write is conditioned on the flag still being
+ * open and unassigned so two racing claims cannot both land.
+ */
+export async function claimRiskFlag(
+	payload: Payload,
+	actor: Actor,
+	flagId: string,
+): Promise<RiskFlag> {
+	assertModerator(actor);
+	return withTransaction(
+		payload,
+		async (req) => {
+			const flag = await req.payload
+				.findByID({
+					collection: "risk-flags",
+					id: flagId,
+					depth: 0,
+					overrideAccess: true,
+					req,
+				})
+				.catch(() => null);
+			if (!flag)
+				throw new ModerationError(ERROR_CODES.moderationTargetNotFound, 404);
+			if (flag.status !== "open")
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			const holder = relationId(flag.assignedTo);
+			if (holder === actor.id) return flag;
+			if (holder)
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			const updated: unknown = await req.payload.db.updateOne({
+				collection: "risk-flags",
+				where: {
+					and: [
+						{ id: { equals: flagId } },
+						{ status: { equals: "open" } },
+						{ assignedTo: { exists: false } },
+					],
+				},
+				data: { assignedTo: actor.id },
+				req,
+			});
+			if (!updated)
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			await writeLog(
+				req.payload,
+				{
+					actor,
+					action: "risk_flag.assign",
+					targetType: "risk-flag",
+					targetId: flagId,
+					metadata: { assignedTo: actor.id },
+				},
+				req,
+			);
+			return { ...flag, assignedTo: actor.id };
+		},
+		{ user: actor },
+	);
 }

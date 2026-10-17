@@ -35,6 +35,7 @@ export const MODERATION_ACTIONS = [
 	"risk_flag.review",
 	"risk_flag.dismiss",
 	"risk_flag.action",
+	"risk_flag.assign",
 	"review.photo_remove",
 ] as const;
 

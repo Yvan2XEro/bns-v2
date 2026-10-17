@@ -400,6 +400,7 @@ export async function assignDispute(
 	payload: Payload,
 	actor: Actor,
 	disputeId: string,
+	options: { expectUnassigned?: boolean } = {},
 ): Promise<Dispute> {
 	assertModerator(actor);
 	return withTransaction(payload, async (req) => {
@@ -408,13 +409,34 @@ export async function assignDispute(
 			!OPEN_STATUSES.includes(dispute.status as (typeof OPEN_STATUSES)[number])
 		)
 			throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
-		const updated = await req.payload.update({
-			collection: "disputes",
-			id: disputeId,
-			req,
-			overrideAccess: true,
-			data: { assignedTo: actor.id },
-		});
+		let updated: Dispute;
+		if (options.expectUnassigned) {
+			// "Take next" must never steal a case: the write only lands while the
+			// case is still open and nobody holds it.
+			const claimed: unknown = await req.payload.db.updateOne({
+				collection: "disputes",
+				where: {
+					and: [
+						{ id: { equals: disputeId } },
+						{ status: { in: OPEN_STATUSES } },
+						{ assignedTo: { exists: false } },
+					],
+				},
+				data: { assignedTo: actor.id },
+				req,
+			});
+			if (!claimed)
+				throw new ModerationError(ERROR_CODES.moderationInvalidTransition, 409);
+			updated = { ...dispute, assignedTo: actor.id };
+		} else {
+			updated = await req.payload.update({
+				collection: "disputes",
+				id: disputeId,
+				req,
+				overrideAccess: true,
+				data: { assignedTo: actor.id },
+			});
+		}
 		await writeLog(
 			req.payload,
 			{
