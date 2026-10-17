@@ -7,6 +7,7 @@ import {
 	type ListingAttachment,
 } from "@bns/chat-client";
 import {
+	AlertCircle,
 	ArrowLeft,
 	Ban,
 	Circle,
@@ -21,7 +22,7 @@ import {
 	X,
 } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { OrderHeaderCard } from "~/components/chat/order-header-card";
 import { SystemChip } from "~/components/chat/system-chip";
@@ -124,6 +125,7 @@ export function MessagesClient({
 }: MessagesClientProps) {
 	const { token } = useAuth();
 	const t = useTranslations("Messages");
+	const locale = useLocale();
 	const formatOrderMoney = useOrderMoney();
 	const myShops = useMyShops();
 	const markRead = useMarkConversationRead();
@@ -132,6 +134,8 @@ export function MessagesClient({
 		useState<ConversationWithDetails | null>(preSelectedConversation);
 	const [messages, setMessages] = useState<Message[]>(initialMessages);
 	const [newMessage, setNewMessage] = useState("");
+	// tempIds of own messages the chat service refused; kept on screen to retry.
+	const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
 	const [connectionState, setConnectionState] =
 		useState<ConnectionState>("disconnected");
 	const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
@@ -261,8 +265,8 @@ export function MessagesClient({
 		});
 
 		client.on("message:failed", ({ tempId }) => {
-			// Remove failed optimistic message
-			setMessages((prev) => prev.filter((m) => m.id !== tempId));
+			// Keep the text on screen, marked as not sent, so it can be retried.
+			setFailedIds((prev) => new Set(prev).add(tempId));
 		});
 
 		client.on("typing", (event) => {
@@ -397,29 +401,43 @@ export function MessagesClient({
 		setAttachedListing(null);
 		chatRef.current.stopTyping(convId);
 
-		try {
-			const tempId = chatRef.current.sendMessage({
-				conversationId: convId,
+		// Offline, the chat client keeps the message and sends it on reconnect.
+		const tempId = chatRef.current.sendMessage({
+			conversationId: convId,
+			content,
+			...(listing ? { listing: listing.id } : {}),
+		});
+		setMessages((prev) => [
+			...prev,
+			{
+				id: tempId,
+				conversation: convId,
+				sender: user.id as unknown as User | string,
 				content,
-				...(listing ? { listing: listing.id } : {}),
-			});
-			// Add optimistic message immediately
-			setMessages((prev) => [
-				...prev,
-				{
-					id: tempId,
-					conversation: convId,
-					sender: user.id as unknown as User | string,
-					content,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-					...(listing ? { listing } : {}),
-				} as Message,
-			]);
-		} catch {
-			setNewMessage(content);
-			setAttachedListing(listing);
-		}
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+				...(listing ? { listing } : {}),
+			} as Message,
+		]);
+	}
+
+	function retryMessage(message: Message) {
+		const client = chatRef.current;
+		if (!client) return;
+		const tempId = String(message.id);
+		const listing = (message as Message & { listing?: ListingAttachment })
+			.listing;
+		setFailedIds((prev) => {
+			const next = new Set(prev);
+			next.delete(tempId);
+			return next;
+		});
+		client.sendMessage({
+			conversationId: String(message.conversation),
+			content: message.content,
+			tempId,
+			...(listing ? { listing: listing.id } : {}),
+		});
 	}
 
 	function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -545,15 +563,17 @@ export function MessagesClient({
 					className={`flex min-h-0 w-full flex-col md:w-1/3 ${selectedConversation ? "hidden md:flex" : ""}`}
 				>
 					<div className="mb-4 flex items-center justify-between">
-						<h2 className="font-bold text-ink text-xl">Messages</h2>
-						<div className="flex items-center gap-1.5 text-ink-muted text-xs">
+						<h2 className="font-bold text-ink text-xl">{t("title")}</h2>
+						<output className="flex items-center gap-1.5 text-ink-muted text-xs">
 							{connectionState === "connected" ? (
-								<Wifi className="h-3.5 w-3.5 text-green-500" />
+								<Wifi aria-hidden className="h-3.5 w-3.5 text-green-500" />
 							) : (
-								<WifiOff className="h-3.5 w-3.5 text-red-500" />
+								<WifiOff aria-hidden className="h-3.5 w-3.5 text-red-500" />
 							)}
-							{connectionState}
-						</div>
+							{connectionState === "connected"
+								? t("connection_connected")
+								: t("connection_connecting")}
+						</output>
 					</div>
 					<div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
 						{conversations.length > 0 ? (
@@ -589,7 +609,7 @@ export function MessagesClient({
 										<div className="flex-1 overflow-hidden">
 											<div className="flex items-center gap-2">
 												<p className="truncate font-medium text-ink">
-													{header.title || "Unknown"}
+													{header.title || t("unknownContact")}
 												</p>
 												{chip && (
 													<span className="shrink-0 rounded bg-brand-soft px-1.5 py-0.5 font-medium text-[10px] text-brand">
@@ -834,15 +854,29 @@ export function MessagesClient({
 														}`}
 													>
 														{new Date(message.createdAt).toLocaleTimeString(
-															[],
+															locale,
 															{
 																hour: "2-digit",
 																minute: "2-digit",
 															},
 														)}
+														{isOwn &&
+															!failedIds.has(String(message.id)) &&
+															chatRef.current?.isPending(String(message.id)) &&
+															` · ${t("sending")}`}
 													</p>
 												</div>
 											</div>
+											{isOwn && failedIds.has(String(message.id)) && (
+												<button
+													type="button"
+													onClick={() => retryMessage(message)}
+													className="mt-1 flex items-center gap-1 px-1 font-medium text-red-600 text-xs hover:underline dark:text-red-400"
+												>
+													<AlertCircle aria-hidden className="h-3.5 w-3.5" />
+													{t("notSent")}
+												</button>
+											)}
 										</div>
 									);
 								})}
@@ -886,26 +920,31 @@ export function MessagesClient({
 											<button
 												type="button"
 												onClick={() => setAttachedListing(null)}
+												aria-label={t("removeAttachment")}
 												className="shrink-0 rounded-full p-1 text-ink-faint hover:text-ink"
 											>
 												<X className="h-3.5 w-3.5" />
 											</button>
 										</div>
 									)}
+									{connectionState !== "connected" && (
+										<p className="mb-2 text-ink-muted text-xs">
+											{t("connection_disconnected")}
+										</p>
+									)}
 									<form onSubmit={sendMessage} className="flex gap-2">
 										<Input
 											placeholder={t("typeMessage")}
+											aria-label={t("typeMessage")}
 											value={newMessage}
 											onChange={handleInputChange}
-											disabled={connectionState !== "connected"}
 											className="rounded-xl border-line focus:border-brand focus:ring-brand"
 										/>
 										<Button
 											type="submit"
 											size="icon"
-											disabled={
-												connectionState !== "connected" || !newMessage.trim()
-											}
+											disabled={!newMessage.trim()}
+											aria-label={t("send")}
 											className="rounded-xl bg-brand-fill text-white hover:bg-brand-fill/90"
 										>
 											<Send className="h-4 w-4" />

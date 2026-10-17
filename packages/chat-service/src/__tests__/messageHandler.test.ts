@@ -5,8 +5,23 @@ let rateLimitCounter = 0;
 let rateLimitIncrementCalls = 0;
 let rateLimitExpireCalls = 0;
 
+const sentStore = new Map<string, string>();
+
 const mockRedis = {
 	send: mock((command: string, args: string[]) => {
+		if (command === "SET") {
+			const [key, value] = args as [string, string];
+			if (args.includes("NX") && sentStore.has(key))
+				return Promise.resolve(null);
+			sentStore.set(key, value);
+			return Promise.resolve("OK");
+		}
+		if (command === "GET")
+			return Promise.resolve(sentStore.get(args[0] as string) ?? null);
+		if (command === "DEL") {
+			sentStore.delete(args[0] as string);
+			return Promise.resolve(1);
+		}
 		if (command !== "EVAL")
 			throw new Error(`Unexpected Redis command: ${command}`);
 		rateLimitIncrementCalls++;
@@ -44,6 +59,7 @@ import { registerMessageHandlers } from "../messageHandler.ts";
 const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
+	sentStore.clear();
 	rateLimitCounter = 0;
 	rateLimitIncrementCalls = 0;
 	rateLimitExpireCalls = 0;
@@ -154,6 +170,70 @@ describe("message:send", () => {
 		expect(confirmed).toBeDefined();
 		expect(confirmed?.data.tempId).toBe("temp-1");
 		expect(confirmed?.data.message.id).toBe("msg-1");
+	});
+
+	test("a resent tempId is confirmed again without a second message", async () => {
+		const { socket, io, handlers, socketEmitted } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "user-1");
+
+		let posts = 0;
+		globalThis.fetch = mockFetch((_url, opts) => {
+			if (opts?.method === "POST") {
+				posts++;
+				return Promise.resolve(
+					new Response(
+						JSON.stringify({
+							doc: {
+								id: "msg-r",
+								conversation: "conv-1",
+								sender: "user-1",
+								content: "Again",
+								createdAt: "2026-03-08T10:00:00Z",
+							},
+						}),
+						{ status: 201 },
+					),
+				);
+			}
+			return Promise.resolve(new Response("OK", { status: 200 }));
+		});
+
+		const handler = handlers.get("message:send")!;
+		const payload = {
+			conversationId: "conv-1",
+			content: "Again",
+			tempId: "t-r",
+		};
+		handler(payload);
+		await new Promise((r) => setTimeout(r, 50));
+		await handler(payload);
+
+		expect(posts).toBe(1);
+		const confirmations = socketEmitted.filter(
+			(e) => e.event === "message:confirmed",
+		);
+		expect(confirmations).toHaveLength(2);
+		expect(confirmations[1]?.data.message.id).toBe("msg-r");
+	});
+
+	test("a send that failed can be retried with the same tempId", async () => {
+		const { socket, io, handlers } = createMockSocketAndIo();
+		registerMessageHandlers(io as never, socket as never, "user-1");
+
+		let posts = 0;
+		globalThis.fetch = mockFetch(() => {
+			posts++;
+			return Promise.resolve(new Response("down", { status: 500 }));
+		});
+
+		const handler = handlers.get("message:send")!;
+		const payload = { conversationId: "conv-1", content: "x", tempId: "t-f" };
+		handler(payload);
+		await new Promise((r) => setTimeout(r, 50));
+		handler(payload);
+		await new Promise((r) => setTimeout(r, 50));
+
+		expect(posts).toBe(2);
 	});
 
 	test("emits message:failed when conversationId is missing and tempId provided", async () => {

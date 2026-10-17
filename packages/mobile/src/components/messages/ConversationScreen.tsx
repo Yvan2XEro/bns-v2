@@ -24,7 +24,6 @@ import { useChatClient } from "@/src/contexts/ChatContext";
 import { useIsBlocked, useToggleBlock } from "@/src/hooks/useBlockedUsers";
 import { useResponsive } from "@/src/hooks/useResponsive";
 import { api } from "@/src/lib/api";
-import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useAuth } from "@/src/lib/auth";
 import {
 	conversationHeader,
@@ -316,10 +315,16 @@ export function ConversationScreen({
 			});
 		};
 
-		const onFailed = ({ tempId }: any) => {
+		// Kept on screen, marked as not sent, so the text can be retried.
+		const onFailed = ({ tempId }: { tempId: string }) => {
 			queryClient.setQueryData(["messages", conversationId], (old: any) => {
 				if (!old) return old;
-				return { ...old, docs: old.docs.filter((m: any) => m.id !== tempId) };
+				return {
+					...old,
+					docs: old.docs.map((m: any) =>
+						m.id === tempId ? { ...m, failed: true } : m,
+					),
+				};
 			});
 		};
 
@@ -397,6 +402,18 @@ export function ConversationScreen({
 	};
 
 	const [sending, setSending] = useState(false);
+	const [chatConnected, setChatConnected] = useState(
+		() => chatClient?.isConnected() ?? false,
+	);
+	useEffect(() => {
+		if (!chatClient) return;
+		setChatConnected(chatClient.isConnected());
+		const onChange = (state: string) => setChatConnected(state === "connected");
+		chatClient.on("connection:change", onChange);
+		return () => {
+			chatClient.off("connection:change", onChange);
+		};
+	}, [chatClient]);
 
 	function sendMessage() {
 		const content = text.trim();
@@ -409,42 +426,58 @@ export function ConversationScreen({
 		if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 		chatClient.stopTyping(conversationId);
 
-		try {
-			const tempId = chatClient.sendMessage({
-				conversationId,
-				content,
-				...(listing ? { listing: listing.id } : {}),
-			});
-			// Add optimistic message to query cache
-			queryClient.setQueryData(["messages", conversationId], (old: any) => {
-				if (!old) return old;
-				return {
-					...old,
-					docs: [
-						...old.docs,
-						{
-							id: tempId,
-							conversationId,
-							sender: user.id,
-							content,
-							createdAt: new Date().toISOString(),
-							...(listing ? { listing } : {}),
-						},
-					],
-				};
-			});
-			queryClient.invalidateQueries({ queryKey: ["conversations"] });
-		} catch (err: any) {
-			setText(content);
-			setAttachedListing(listing);
-			showError(t("common.error"), resolveErrorMessage(err, t));
-		} finally {
-			setSending(false);
-		}
+		// Offline, the chat client keeps the message and sends it on reconnect.
+		const tempId = chatClient.sendMessage({
+			conversationId,
+			content,
+			...(listing ? { listing: listing.id } : {}),
+		});
+		queryClient.setQueryData(["messages", conversationId], (old: any) => {
+			if (!old) return old;
+			return {
+				...old,
+				docs: [
+					...old.docs,
+					{
+						id: tempId,
+						conversationId,
+						sender: user.id,
+						content,
+						createdAt: new Date().toISOString(),
+						...(listing ? { listing } : {}),
+					},
+				],
+			};
+		});
+		queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		setSending(false);
+	}
+
+	function retryMessage(item: {
+		id: string;
+		content: string;
+		listing?: { id: string };
+	}) {
+		if (!chatClient || !conversationId) return;
+		queryClient.setQueryData(["messages", conversationId], (old: any) => {
+			if (!old) return old;
+			return {
+				...old,
+				docs: old.docs.map((m: any) =>
+					m.id === item.id ? { ...m, failed: false } : m,
+				),
+			};
+		});
+		chatClient.sendMessage({
+			conversationId,
+			content: item.content,
+			tempId: item.id,
+			...(item.listing ? { listing: item.listing.id } : {}),
+		});
 	}
 
 	const formatTime = (dateStr: string) =>
-		new Date(dateStr).toLocaleTimeString("fr-FR", {
+		new Date(dateStr).toLocaleTimeString(i18n.language, {
 			hour: "2-digit",
 			minute: "2-digit",
 		});
@@ -464,7 +497,7 @@ export function ConversationScreen({
 				? t("messages.today")
 				: msgDate === yesterday
 					? t("messages.yesterday")
-					: new Date(item.createdAt).toLocaleDateString("fr-FR");
+					: new Date(item.createdAt).toLocaleDateString(i18n.language);
 
 		if (isSystemMessage(item)) {
 			return (
@@ -645,9 +678,31 @@ export function ConversationScreen({
 									{isRead ? " ✓✓" : " ✓"}
 								</Text>
 							)}
+							{isMe &&
+								!item.failed &&
+								chatClient?.isPending(String(item.id)) && (
+									<Ionicons
+										name="time-outline"
+										size={12}
+										color="rgba(255,255,255,0.7)"
+										accessibilityLabel={t("messages.sending")}
+										style={{ marginLeft: 4 }}
+									/>
+								)}
 						</View>
 					</View>
 				</View>
+				{isMe && item.failed && (
+					<Pressable
+						onPress={() => retryMessage(item)}
+						accessibilityRole="button"
+						hitSlop={8}
+						style={styles.failedRow}
+					>
+						<Ionicons name="alert-circle" size={14} color="#dc2626" />
+						<Text style={styles.failedText}>{t("messages.notSent")}</Text>
+					</Pressable>
+				)}
 			</>
 		);
 	};
@@ -890,47 +945,56 @@ export function ConversationScreen({
 							</Pressable>
 						</View>
 					) : (
-						<View style={[styles.inputBar, centeredContent]}>
-							<TextInput
-								value={text}
-								onChangeText={handleTextChange}
-								placeholder={t("messages.writePlaceholder")}
-								placeholderTextColor={mutedColor}
-								style={[
-									styles.msgInput,
-									{
-										color: textColor,
-										backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
-										borderColor,
-									},
-								]}
-								multiline
-								maxLength={1000}
-							/>
-							<Pressable
-								onPress={() => text.trim() && sendMessage()}
-								disabled={!text.trim() || sending}
-								style={[
-									styles.sendBtn,
-									{
-										backgroundColor: text.trim()
-											? primaryColor
-											: isDark
-												? "#1e293b"
-												: "#e2e8f0",
-									},
-								]}
-							>
-								{sending ? (
-									<ActivityIndicator size="small" color="#fff" />
-								) : (
-									<Ionicons
-										name="send"
-										size={18}
-										color={text.trim() ? "#fff" : mutedColor}
-									/>
-								)}
-							</Pressable>
+						<View style={centeredContent}>
+							{!chatConnected && (
+								<Text style={[styles.offlineHint, { color: mutedColor }]}>
+									{t("messages.queuedOffline")}
+								</Text>
+							)}
+							<View style={[styles.inputBar, centeredContent]}>
+								<TextInput
+									value={text}
+									onChangeText={handleTextChange}
+									placeholder={t("messages.writePlaceholder")}
+									placeholderTextColor={mutedColor}
+									style={[
+										styles.msgInput,
+										{
+											color: textColor,
+											backgroundColor: isDark ? "#0b1120" : "#f1f5f9",
+											borderColor,
+										},
+									]}
+									multiline
+									maxLength={1000}
+								/>
+								<Pressable
+									onPress={() => text.trim() && sendMessage()}
+									accessibilityRole="button"
+									accessibilityLabel={t("messages.send")}
+									disabled={!text.trim() || sending}
+									style={[
+										styles.sendBtn,
+										{
+											backgroundColor: text.trim()
+												? primaryColor
+												: isDark
+													? "#1e293b"
+													: "#e2e8f0",
+										},
+									]}
+								>
+									{sending ? (
+										<ActivityIndicator size="small" color="#fff" />
+									) : (
+										<Ionicons
+											name="send"
+											size={18}
+											color={text.trim() ? "#fff" : mutedColor}
+										/>
+									)}
+								</Pressable>
+							</View>
 						</View>
 					)}
 				</View>
@@ -1023,6 +1087,21 @@ const styles = StyleSheet.create({
 	},
 	bubbleTime: { fontSize: 10, fontFamily: Fonts.body },
 	readTick: { fontSize: 11, fontFamily: Fonts.bodySemibold },
+	failedRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		alignSelf: "flex-end",
+		gap: 4,
+		marginTop: -2,
+		marginBottom: 6,
+		paddingHorizontal: 16,
+	},
+	failedText: {
+		fontSize: 12,
+		color: "#dc2626",
+		fontFamily: Fonts.bodySemibold,
+	},
+	offlineHint: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 6 },
 	inputWrapper: { borderTopWidth: 1 },
 	attachBar: {
 		flexDirection: "row",

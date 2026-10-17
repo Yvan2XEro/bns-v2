@@ -473,7 +473,10 @@
 		"system_order_delivery_failed": "Delivery of order {{orderNumber}} failed.",
 		"system_order_withdrawal_requested": "The customer asked to withdraw from order {{orderNumber}}.",
 		"system_order_completed": "Order {{orderNumber}} completed.",
-		"systemOrderOpen": "View order"
+		"systemOrderOpen": "View order",
+		"sending": "Sending…",
+		"notSent": "Not sent · tap to retry",
+		"queuedOffline": "Offline · your messages will go out when the network is back"
 	},
 	"account": {
 		"guestTitle": "Welcome to BuyNSellem",

@@ -521,7 +521,10 @@
 		"system_order_delivery_failed": "La livraison de la commande {{orderNumber}} a échoué.",
 		"system_order_withdrawal_requested": "Le client a demandé à se rétracter pour la commande {{orderNumber}}.",
 		"system_order_completed": "Commande {{orderNumber}} terminée.",
-		"systemOrderOpen": "Voir la commande"
+		"systemOrderOpen": "Voir la commande",
+		"sending": "Envoi…",
+		"notSent": "Non envoyé · toucher pour réessayer",
+		"queuedOffline": "Hors ligne · vos messages partiront au retour du réseau"
 	},
 	"account": {
 		"guestTitle": "Bienvenue sur BuyNSellem",

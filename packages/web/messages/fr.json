@@ -2667,7 +2667,15 @@
 		"deleteConfirm": "Supprimer cette conversation ? Cette action est définitive et tous les messages seront perdus.",
 		"cancel": "Annuler",
 		"deleting": "Suppression…",
-		"delete": "Supprimer"
+		"delete": "Supprimer",
+		"title": "Messages",
+		"connection_connected": "Connecté",
+		"connection_connecting": "Connexion…",
+		"connection_disconnected": "Hors ligne · vos messages partiront au retour du réseau",
+		"sending": "Envoi…",
+		"notSent": "Non envoyé · toucher pour réessayer",
+		"send": "Envoyer",
+		"removeAttachment": "Retirer l’annonce jointe"
 	},
 	"OrderStatus": {
 		"status_placed_buyer": "Commande transmise",

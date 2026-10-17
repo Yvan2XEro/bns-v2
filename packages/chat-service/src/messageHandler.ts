@@ -52,6 +52,52 @@ async function checkRateLimit(userId: string): Promise<boolean> {
 	return count <= RATE_LIMIT_MAX;
 }
 
+// A client resends what it had not seen confirmed once it reconnects, so the
+// same tempId can arrive twice: the first claims it, a repeat is answered
+// with the stored confirmation or dropped while the first is still in flight.
+const SENT_TTL_SECONDS = 86_400;
+const sentKey = (userId: string, tempId: string) =>
+	`chat:sent:${userId}:${tempId}`;
+
+type SendClaim = { claimed: true } | { claimed: false; confirmed?: unknown };
+
+async function claimSend(userId: string, tempId: string): Promise<SendClaim> {
+	const redis = getRedis();
+	const key = sentKey(userId, tempId);
+	const set: unknown = await redis.send("SET", [
+		key,
+		"pending",
+		"NX",
+		"EX",
+		String(SENT_TTL_SECONDS),
+	]);
+	if (set !== null) return { claimed: true };
+	const stored: unknown = await redis.send("GET", [key]);
+	if (typeof stored !== "string" || stored === "pending")
+		return { claimed: false };
+	try {
+		return { claimed: false, confirmed: JSON.parse(stored) };
+	} catch {
+		return { claimed: false };
+	}
+}
+
+function settleSend(userId: string, tempId: string, confirmed: unknown) {
+	const key = sentKey(userId, tempId);
+	const write =
+		confirmed === null
+			? getRedis().send("DEL", [key])
+			: getRedis().send("SET", [
+					key,
+					JSON.stringify(confirmed),
+					"EX",
+					String(SENT_TTL_SECONDS),
+				]);
+	write.catch((err: unknown) =>
+		console.error("[chat] Failed to settle a send:", err),
+	);
+}
+
 async function fetchListingAttachment(
 	listingId: string,
 	token: string,
@@ -148,10 +194,24 @@ export function registerMessageHandlers(
 			return;
 		}
 
+		if (tempId) {
+			const claim = await claimSend(userId, tempId);
+			if (!claim.claimed) {
+				if (claim.confirmed)
+					socket.emit("message:confirmed", {
+						tempId,
+						message: claim.confirmed,
+					});
+				return;
+			}
+		}
+
 		const allowed = await checkRateLimit(userId);
 		if (!allowed) {
-			if (tempId)
+			if (tempId) {
+				settleSend(userId, tempId, null);
 				socket.emit("message:failed", { tempId, error: "Rate limit exceeded" });
+			}
 			return;
 		}
 
@@ -193,6 +253,7 @@ export function registerMessageHandlers(
 
 				// Confirm to sender with real message id
 				if (tempId) {
+					settleSend(userId, tempId, msgPayload);
 					socket.emit("message:confirmed", { tempId, message: msgPayload });
 				}
 
@@ -269,6 +330,7 @@ export function registerMessageHandlers(
 					}),
 				);
 				if (tempId) {
+					settleSend(userId, tempId, null);
 					socket.emit("message:failed", {
 						tempId,
 						error: "Failed to send message",
