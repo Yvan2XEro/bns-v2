@@ -18,6 +18,8 @@ export interface ListingSearchParams {
 	 * same contract as `ShopSearchParams.minShopLevel` in `use-shop-search.ts`.
 	 */
 	minShopLevel?: number;
+	/** Only listings bought on the platform: protected payment or cash on delivery. */
+	orderable?: boolean;
 	attributes?: Record<string, string>;
 	lat?: number;
 	lng?: number;
@@ -55,6 +57,7 @@ function searchPath(params: ListingSearchParams, offset: number): string {
 		sort: params.sort,
 		tags: params.tags,
 		minShopLevel: params.minShopLevel,
+		orderable: params.orderable ? 1 : undefined,
 		lat: params.lat,
 		lng: params.lng,
 		radius: params.lat != null ? params.radius : undefined,

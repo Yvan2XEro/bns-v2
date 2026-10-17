@@ -67,6 +67,14 @@ export const checkSearchAlertsTask: TaskConfig<"checkSearchAlerts"> = {
 					if (filters.location) {
 						where.push({ location: { like: filters.location as string } });
 					}
+					// Saved as the search URL carries them: comma-separated slugs.
+					const tagSlugs =
+						typeof filters.tags === "string"
+							? filters.tags.split(",").filter(Boolean)
+							: [];
+					if (tagSlugs.length > 0) {
+						where.push({ "tags.slug": { in: tagSlugs } });
+					}
 
 					const matches = await req.payload.find({
 						collection: "listings",

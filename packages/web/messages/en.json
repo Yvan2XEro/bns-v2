@@ -467,7 +467,7 @@
 		"tabListings": "Listings",
 		"tabShops": "Shops",
 		"shopSearchPlaceholder": "Find a shop",
-		"allCities": "All cities",
+		"allCities": "Search every city",
 		"shopCount": "{count, plural, =0 {No shops} one {# shop} other {# shops}}",
 		"shopCountIn": "{count, plural, =0 {No shops} one {# shop} other {# shops}} in {city}",
 		"shopSearchError": "Shop search is unavailable",
@@ -502,7 +502,10 @@
 		"shopNew": "New",
 		"shopProducts": "{count, plural, =0 {No products} one {# product} other {# products}}",
 		"resultCount": "{count, plural, one {<b>#</b> result} other {<b>#</b> results}}",
-		"savedSearchDefault": "My search"
+		"savedSearchDefault": "My search",
+		"orderableOnly": "Buy online (protected payment or cash on delivery)",
+		"relevance": "Relevance",
+		"notifyMe": "Tell me about new listings"
 	},
 	"LocationPicker": {
 		"title": "Choose a location",
@@ -678,7 +681,8 @@
 		"breadcrumbHome": "Home",
 		"breadcrumbSearch": "Search",
 		"previousPhoto": "Previous photo",
-		"nextPhoto": "Next photo"
+		"nextPhoto": "Next photo",
+		"orderableBadge": "Buy online"
 	},
 	"CreateListing": {
 		"category": "Category",

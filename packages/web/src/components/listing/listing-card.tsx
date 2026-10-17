@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, MapPin, Store } from "lucide-react";
+import { Clock, MapPin, ShieldCheck, Store } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -92,6 +92,14 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 							{isBoosted && (
 								<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[#0F172A] text-[10px] uppercase">
 									{t("listingFeatured")}
+								</span>
+							)}
+							{listing.orderable && (
+								// Bought on the platform — protected payment or cash on
+								// delivery — rather than arranged with a stranger.
+								<span className="flex items-center gap-1 rounded bg-surface/90 px-1.5 py-0.5 font-semibold text-[10px] text-ok-ink shadow-sm backdrop-blur-sm">
+									<ShieldCheck aria-hidden className="h-3 w-3" />
+									{t("orderableBadge")}
 								</span>
 							)}
 							{conditionLabel && (

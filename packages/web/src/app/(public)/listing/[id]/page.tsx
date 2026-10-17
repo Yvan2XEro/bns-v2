@@ -1,6 +1,5 @@
 import {
 	AlertTriangle,
-	ArrowLeft,
 	Clock,
 	Eye,
 	Flag,
@@ -16,6 +15,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { BackToResults } from "~/components/listing/back-to-results";
 import { BoostDialog } from "~/components/listing/boost-dialog";
 import { BoostStatusBanner } from "~/components/listing/boost-status-banner";
 import { FavoriteButton } from "~/components/listing/favorite-button";
@@ -352,13 +352,7 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 			{/* Breadcrumb */}
 			<div className="border-line border-b bg-surface">
 				<div className="container mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 text-ink-muted text-sm sm:px-6 lg:px-8">
-					<Link
-						href="/search"
-						className="flex items-center gap-1 hover:text-brand"
-					>
-						<ArrowLeft className="h-4 w-4" />
-						{t("backToResults")}
-					</Link>
+					<BackToResults label={t("backToResults")} />
 					{parentCategory && (
 						<>
 							<span>/</span>

@@ -467,7 +467,7 @@
 		"tabListings": "Annonces",
 		"tabShops": "Boutiques",
 		"shopSearchPlaceholder": "Rechercher une boutique",
-		"allCities": "Toutes les villes",
+		"allCities": "Chercher dans toutes les villes",
 		"shopCount": "{count, plural, =0 {Aucune boutique} one {# boutique} other {# boutiques}}",
 		"shopCountIn": "{count, plural, =0 {Aucune boutique} one {# boutique} other {# boutiques}} à {city}",
 		"shopSearchError": "La recherche de boutiques est indisponible",
@@ -502,7 +502,10 @@
 		"shopNew": "Nouvelle",
 		"shopProducts": "{count, plural, =0 {Aucun produit} one {# produit} other {# produits}}",
 		"resultCount": "{count, plural, one {<b>#</b> résultat} other {<b>#</b> résultats}}",
-		"savedSearchDefault": "Ma recherche"
+		"savedSearchDefault": "Ma recherche",
+		"orderableOnly": "Achat en ligne (paiement protégé ou à la livraison)",
+		"relevance": "Pertinence",
+		"notifyMe": "Me prévenir des nouvelles annonces"
 	},
 	"LocationPicker": {
 		"title": "Choisir une localisation",
@@ -678,7 +681,8 @@
 		"breadcrumbHome": "Accueil",
 		"breadcrumbSearch": "Recherche",
 		"previousPhoto": "Photo précédente",
-		"nextPhoto": "Photo suivante"
+		"nextPhoto": "Photo suivante",
+		"orderableBadge": "Achat en ligne"
 	},
 	"CreateListing": {
 		"category": "Catégorie",

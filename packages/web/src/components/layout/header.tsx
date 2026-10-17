@@ -255,9 +255,13 @@ export function Header({ novuAppId, categories, shop }: HeaderProps) {
 					</div>
 				</div>
 
-				<div className="container mx-auto max-w-7xl px-4 pb-2 sm:px-6 md:hidden">
-					<HeaderSearch shop={shop} compact />
-				</div>
+				{/* The home's hero has its own search: two bars stacked on a phone
+				    pushed the listings below the fold. */}
+				{pathname !== "/" && (
+					<div className="container mx-auto max-w-7xl px-4 pb-2 sm:px-6 md:hidden">
+						<HeaderSearch shop={shop} compact />
+					</div>
+				)}
 			</header>
 
 			{shortcuts && (

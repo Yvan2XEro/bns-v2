@@ -37,6 +37,7 @@ import {
 import { useCurrencyCode } from "~/hooks/use-order-money";
 import { saveSearch } from "~/lib/actions";
 import { scopedTagSlugs } from "~/lib/category-tags";
+import { rememberSearch } from "~/lib/last-search";
 import type { Category, CategoryAttribute, Listing } from "~/types";
 import {
 	type Place,
@@ -100,6 +101,7 @@ export function SearchClient({
 		sort: initialParams.sort || "newest",
 		tags: initialParams.tags || "",
 		verified: initialParams.verified === "1" ? "1" : "",
+		orderable: initialParams.orderable === "1" ? "1" : "",
 	});
 
 	// Typed prices apply when the field is left or Enter is pressed: one
@@ -164,6 +166,7 @@ export function SearchClient({
 			// against live shop data after hydration — so it is never
 			// re-filtered client-side here; this only forwards the intent.
 			minShopLevel: filters.verified === "1" ? 2 : undefined,
+			orderable: filters.orderable === "1" || undefined,
 			attributes: attributeFilters,
 			lat: nearMe && geoCoords ? geoCoords.lat : undefined,
 			lng: nearMe && geoCoords ? geoCoords.lng : undefined,
@@ -173,6 +176,10 @@ export function SearchClient({
 		[filters, attributeFilters, nearMe, geoCoords, geoRadius],
 	);
 	const debouncedSearchParams = useDebouncedValue(searchParams, 300);
+	// The listing page's "Back to results" returns here, filters and all.
+	useEffect(() => {
+		rememberSearch(`${window.location.pathname}${window.location.search}`);
+	}, [debouncedSearchParams]);
 
 	const {
 		data: searchData,
@@ -207,6 +214,7 @@ export function SearchClient({
 			params.set("sort", filters.sort);
 		if (filters.category && filters.tags) params.set("tags", filters.tags);
 		if (filters.verified) params.set("verified", filters.verified);
+		if (filters.orderable) params.set("orderable", filters.orderable);
 		for (const [key, value] of Object.entries(attributeFilters)) {
 			if (value) params.set(`attr_${key}`, value);
 		}
@@ -226,6 +234,11 @@ export function SearchClient({
 				maxPrice: filters.maxPrice,
 				location: filters.location,
 				sort: filters.sort,
+				// Kept with the search so the alert and the reopened link match
+				// what the buyer was looking at.
+				...(filters.category && filters.tags ? { tags: filters.tags } : {}),
+				...(filters.verified ? { verified: true } : {}),
+				...(filters.orderable ? { orderable: true } : {}),
 				attributes: attributeFilters,
 			},
 			url: buildSearchUrl(),
@@ -310,6 +323,7 @@ export function SearchClient({
 			sort: "newest",
 			tags: "",
 			verified: "",
+			orderable: "",
 		});
 		setAttributeFilters({});
 		setPriceDraft({ minPrice: "", maxPrice: "" });
@@ -325,6 +339,7 @@ export function SearchClient({
 			filters.location ||
 			filters.tags ||
 			filters.verified ||
+			filters.orderable ||
 			nearMe ||
 			Object.values(attributeFilters).some(Boolean)
 		);
@@ -450,6 +465,17 @@ export function SearchClient({
 						className="h-4 w-4 rounded border-[#D1D5DB] text-brand focus:ring-brand-bright/20"
 					/>
 					<span className="text-ink-soft">{t("verifiedShopsOnly")}</span>
+				</label>
+				<label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-canvas">
+					<input
+						type="checkbox"
+						checked={filters.orderable === "1"}
+						onChange={(e) =>
+							updateFilter("orderable", e.target.checked ? "1" : "")
+						}
+						className="h-4 w-4 rounded border-[#D1D5DB] text-brand focus:ring-brand-bright/20"
+					/>
+					<span className="text-ink-soft">{t("orderableOnly")}</span>
 				</label>
 			</div>
 
@@ -578,6 +604,9 @@ export function SearchClient({
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
+							{filters.q && (
+								<SelectItem value="relevance">{t("relevance")}</SelectItem>
+							)}
 							<SelectItem value="newest">{t("newest")}</SelectItem>
 							<SelectItem value="oldest">{t("oldest")}</SelectItem>
 							<SelectItem value="price_asc">{t("priceAsc")}</SelectItem>
@@ -745,6 +774,32 @@ export function SearchClient({
 								title={t("noResults")}
 								subtitle={t("tryDifferentKeywords")}
 							/>
+							{/* Nothing today may be something tomorrow: offer the alert,
+							    and the wider net when a city is narrowing it. */}
+							<div className="mt-4 flex flex-wrap justify-center gap-2">
+								<button
+									type="button"
+									onClick={() => {
+										setSaveName(filters.q || t("savedSearchDefault"));
+										setSaveStatus("idle");
+										setSaveError("");
+										setSaveDialogOpen(true);
+									}}
+									className="inline-flex items-center gap-1.5 rounded-lg bg-brand-fill px-4 py-2 font-semibold text-sm text-white hover:bg-brand-strong"
+								>
+									<Bookmark aria-hidden className="h-4 w-4" />
+									{t("notifyMe")}
+								</button>
+								{filters.location && (
+									<button
+										type="button"
+										onClick={() => updateFilter("location", "")}
+										className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-4 py-2 font-medium text-ink text-sm hover:bg-canvas"
+									>
+										{t("allCities")}
+									</button>
+								)}
+							</div>
 							{hasActiveFilters() && (
 								<button
 									type="button"

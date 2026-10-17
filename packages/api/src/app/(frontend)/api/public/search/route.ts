@@ -570,6 +570,10 @@ export async function GET(request: Request) {
 	}
 
 	switch (sortParam) {
+		// The index's own ranking — typo tolerance, word proximity, matched
+		// attribute — instead of a date order laid over it.
+		case "relevance":
+			break;
 		case "oldest":
 			sort.push("createdAt:asc");
 			break;
