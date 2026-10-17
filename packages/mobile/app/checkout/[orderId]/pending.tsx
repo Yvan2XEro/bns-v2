@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
+	Linking,
 	Pressable,
 	ScrollView,
 	Text,
@@ -22,6 +23,7 @@ import { usePurchase } from "@/src/hooks/usePurchases";
 import { ERROR_CODES, resolveErrorMessage } from "@/src/lib/apiError";
 import { newIdempotencyKey } from "@/src/lib/checkoutFlow";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { availableActions } from "@/src/lib/orderActions";
 import {
 	codFallbackOffered,
@@ -37,6 +39,10 @@ import {
 	PAYMENT_CHANNEL_INSTRUCTIONS,
 	PAYMENT_FAILURE_MESSAGES,
 } from "@/src/lib/paymentStatus";
+import {
+	MOBILE_MONEY_USSD,
+	ussdDialUrl,
+} from "../../../../api/src/contracts/mobileMoney";
 
 /**
  * The one screen every payment state renders through: checking, pending
@@ -56,7 +62,7 @@ export default function CheckoutPendingScreen() {
 	}>();
 	const { orderId, channel, phone, instructions } = params;
 	const c = useShopTheme();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const status = usePaymentStatus(orderId);
 	const createIntent = useCreatePaymentIntent(orderId);
 	const purchase = usePurchase(orderId);
@@ -213,12 +219,36 @@ export default function CheckoutPendingScreen() {
 								time: formatCountdown(secondsUntil(intent.expiresAt, now)),
 							})}
 						</Text>
+						{purchase.data ? (
+							// The exact amount the operator's prompt will show, to check
+							// before typing the PIN.
+							<Text style={[formStyles.sectionTitle, { color: c.text }]}>
+								{t("payments.pending_amount", {
+									amount: formatPrice(
+										purchase.data.amounts.total,
+										i18n.language,
+									),
+								})}
+							</Text>
+						) : null}
 						<Text style={[formStyles.label, { color: c.body }]}>
 							{t("payments.pending_providerInstructions")}
 						</Text>
 						<Text style={[formStyles.hint, { color: c.body }]}>
 							{instructions || t(PAYMENT_CHANNEL_INSTRUCTIONS[intent.channel])}
 						</Text>
+						<CheckoutButton
+							label={t("payments.pending_dialMenu", {
+								code: MOBILE_MONEY_USSD[intent.channel],
+							})}
+							variant="outline"
+							icon="keypad-outline"
+							onPress={() =>
+								void Linking.openURL(ussdDialUrl(intent.channel)).catch(
+									() => undefined,
+								)
+							}
+						/>
 						{canResendNow ? (
 							<Pressable
 								onPress={() => void resend()}

@@ -4059,7 +4059,9 @@
 		"money_heldTitle": "Held by the payment provider",
 		"money_releaseTitle": "Paid to the shop after delivery",
 		"money_refundTitle": "Refunded if the order doesn't go through",
-		"pay_mobileMoney": "Mobile money"
+		"pay_mobileMoney": "Mobile money",
+		"pending_amount": "Amount to approve: {{amount}}",
+		"pending_dialMenu": "Open the approval menu ({{code}})"
 	},
 	"delivery": {
 		"statusBuyer": {

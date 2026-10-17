@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { type ComponentProps, useState } from "react";
+import { type ComponentProps, useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Pressable,
@@ -35,6 +35,7 @@ import {
 } from "@/src/lib/paymentFlow";
 import type { PaymentChannel } from "@/src/lib/paymentStatus";
 import { PAYMENT_CHANNEL_LABELS } from "@/src/lib/paymentStatus";
+import { operatorFromPhone } from "../../../../api/src/contracts/mobileMoney";
 
 const CHANNELS: readonly PaymentChannel[] = ["cm.mtn", "cm.orange"];
 
@@ -62,6 +63,24 @@ export default function CheckoutPayScreen() {
 		router.canGoBack() ? router.back() : router.replace("/(tabs)/account");
 
 	const data = order.data;
+
+	// The delivery number is usually the one that pays: prefilled once, with
+	// its operator picked from the prefix. Both stay editable.
+	const deliveryPhone = data?.delivery?.phone;
+	const deliveryMasked = data?.delivery?.phoneMasked;
+	useEffect(() => {
+		if (!deliveryPhone || deliveryMasked) return;
+		setPhone((current) => current || phoneFromTyping(deliveryPhone));
+		setChannel((current) => current ?? operatorFromPhone(deliveryPhone));
+	}, [deliveryPhone, deliveryMasked]);
+
+	const onPhoneChange = (text: string) => {
+		const next = phoneFromTyping(text);
+		setPhone(next);
+		const operator = operatorFromPhone(next);
+		if (operator) setChannel(operator);
+	};
+
 	const canPay =
 		channel !== null && isMarketPhone(phone) && !createIntent.isPending;
 
@@ -249,7 +268,7 @@ export default function CheckoutPayScreen() {
 						<Ionicons name="call-outline" size={18} color={c.muted} />
 						<TextInput
 							value={phone}
-							onChangeText={(text) => setPhone(phoneFromTyping(text))}
+							onChangeText={onPhoneChange}
 							keyboardType="phone-pad"
 							autoComplete="tel"
 							placeholder={phoneExample()}
