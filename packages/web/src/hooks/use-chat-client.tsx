@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatClient } from "@bns/chat-client";
+import type { ChatClient } from "@bns/chat-client";
 import {
 	createContext,
 	type ReactNode,
@@ -41,13 +41,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 			return;
 		}
 
-		const client = new ChatClient({ url: chatUrl, token });
-		clientRef.current = client;
-		client.connect();
-		setChatClient(client);
+		// Loaded here rather than imported: socket.io is only worth its weight
+		// to a signed-in visitor, and most page views are anonymous.
+		let client: ChatClient | null = null;
+		let cancelled = false;
+		import("@bns/chat-client").then(({ ChatClient }) => {
+			if (cancelled) return;
+			client = new ChatClient({ url: chatUrl, token });
+			clientRef.current = client;
+			client.connect();
+			setChatClient(client);
+		});
 
 		return () => {
-			client.disconnect();
+			cancelled = true;
+			client?.disconnect();
 			clientRef.current = null;
 			setChatClient(null);
 		};

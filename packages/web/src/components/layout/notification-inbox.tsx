@@ -1,12 +1,11 @@
 "use client";
 
-import { type BellRenderer, Inbox } from "@novu/nextjs";
 import { Bell } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useAuth } from "~/hooks/use-auth";
 import { cn } from "~/lib/utils";
 
-type UnreadCount = Parameters<BellRenderer>[0];
+const NovuInbox = lazy(() => import("./novu-inbox"));
 
 interface NotificationInboxProps {
 	applicationIdentifier: string;
@@ -46,11 +45,6 @@ function HeaderBell({
 	);
 }
 
-function unreadTotal(unread: UnreadCount): number {
-	if (typeof unread === "number") return unread;
-	return unread?.total ?? 0;
-}
-
 export function NotificationInbox({
 	applicationIdentifier,
 	label,
@@ -68,31 +62,19 @@ export function NotificationInbox({
 			.catch(console.error);
 	}, [user]);
 
-	if (!user || !subscriberHash)
-		return <HeaderBell label={label} tone={tone} count={0} />;
+	const bell = (count: number) => (
+		<HeaderBell label={label} tone={tone} count={count} />
+	);
+	if (!user || !subscriberHash) return bell(0);
 
 	return (
-		<Inbox
-			applicationIdentifier={applicationIdentifier}
-			subscriberId={user.id}
-			subscriberHash={subscriberHash}
-			renderBell={(unread) => (
-				<HeaderBell label={label} tone={tone} count={unreadTotal(unread)} />
-			)}
-			appearance={{
-				variables: {
-					colorPrimary: "#1E40AF",
-					colorPrimaryForeground: "#ffffff",
-					colorSecondary: "#f1f5f9",
-					colorSecondaryForeground: "#1E40AF",
-					colorCounter: "#dc2626",
-					colorCounterForeground: "#ffffff",
-					colorBackground: "#ffffff",
-					colorForeground: "#0f172a",
-					colorNeutral: "#e2e8f0",
-					fontSize: "14px",
-				},
-			}}
-		/>
+		<Suspense fallback={bell(0)}>
+			<NovuInbox
+				applicationIdentifier={applicationIdentifier}
+				subscriberId={user.id}
+				subscriberHash={subscriberHash}
+				renderBell={bell}
+			/>
+		</Suspense>
 	);
 }
