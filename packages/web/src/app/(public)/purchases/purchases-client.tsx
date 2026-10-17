@@ -210,7 +210,14 @@ export function PurchasesClient() {
 				</div>
 			)}
 
-			{nothingYet && <EmptyState illustration="empty" title={t("empty")} />}
+			{nothingYet && (
+				<EmptyState
+					illustration="empty"
+					title={t("empty")}
+					ctaLabel={t("emptyCta")}
+					ctaHref="/search"
+				/>
+			)}
 			{purchases.isSuccess && !nothingYet && entries.length === 0 && (
 				<p className="text-ink-muted">{t("tabEmpty")}</p>
 			)}

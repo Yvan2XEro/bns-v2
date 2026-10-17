@@ -123,6 +123,18 @@ export function ListingCard({
 	return (
 		<Pressable
 			onPress={() => onPress(listing.id)}
+			// One summary instead of a dozen fragments read one by one.
+			accessibilityRole="link"
+			accessibilityLabel={[
+				listing.title,
+				listing.price
+					? formatPrice(listing.price, i18n.language)
+					: i18n.t("listing.priceOnRequest"),
+				listing.location,
+				shopName,
+			]
+				.filter(Boolean)
+				.join(", ")}
 			onPressIn={() => {
 				cardScale.value = withSpring(0.97, PRESS_SPRING);
 			}}
@@ -197,6 +209,11 @@ export function ListingCard({
 						onPress={handleFavorite}
 						hitSlop={10}
 						style={styles.favWrap}
+						accessibilityRole="button"
+						accessibilityLabel={
+							isFavorite ? i18n.t("listing.saved") : i18n.t("listing.save")
+						}
+						accessibilityState={{ selected: isFavorite }}
 					>
 						<Animated.View
 							style={[

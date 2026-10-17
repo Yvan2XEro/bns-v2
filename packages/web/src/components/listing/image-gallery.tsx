@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ImageGalleryProps {
 	images: string[];
@@ -24,6 +24,9 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 	const [lightboxOpen, setLightboxOpen] = useState(false);
 	const [lightboxIdx, setLightboxIdx] = useState(0);
 	const [zoomed, setZoomed] = useState(false);
+	// Swiping the main photo on a phone, as every marketplace app does.
+	const touchStartX = useRef<number | null>(null);
+	const swiped = useRef(false);
 
 	useEffect(() => {
 		if (!lightboxOpen) return;
@@ -68,11 +71,36 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 	return (
 		<>
 			<div>
-				<div className="relative aspect-[4/3]">
+				<div
+					className="relative aspect-[4/3] touch-pan-y"
+					onTouchStart={(e) => {
+						touchStartX.current = e.touches[0]?.clientX ?? null;
+						swiped.current = false;
+					}}
+					onTouchEnd={(e) => {
+						const start = touchStartX.current;
+						const end = e.changedTouches[0]?.clientX;
+						touchStartX.current = null;
+						if (start === null || end === undefined || images.length < 2)
+							return;
+						const dx = end - start;
+						if (Math.abs(dx) < 40) return;
+						swiped.current = true;
+						if (dx < 0) next();
+						else prev();
+					}}
+				>
 					<button
 						type="button"
 						className="block h-full w-full cursor-zoom-in"
-						onClick={() => openLightbox(currentIndex)}
+						onClick={() => {
+							// The tap that ends a swipe is not a request to zoom.
+							if (swiped.current) {
+								swiped.current = false;
+								return;
+							}
+							openLightbox(currentIndex);
+						}}
 						aria-label={t("viewFullSize")}
 					>
 						<Image
@@ -98,7 +126,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									e.stopPropagation();
 									prev();
 								}}
-								className="-translate-y-1/2 absolute top-1/2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
+								aria-label={t("previousPhoto")}
+								className="-translate-y-1/2 absolute top-1/2 left-2 flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
 							>
 								<ChevronLeft className="h-5 w-5" />
 							</button>
@@ -108,7 +137,8 @@ export function ImageGallery({ images, title, isBoosted }: ImageGalleryProps) {
 									e.stopPropagation();
 									next();
 								}}
-								className="-translate-y-1/2 absolute top-1/2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
+								aria-label={t("nextPhoto")}
+								className="-translate-y-1/2 absolute top-1/2 right-2 flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-ink shadow backdrop-blur-sm transition-colors hover:bg-surface"
 							>
 								<ChevronRight className="h-5 w-5" />
 							</button>

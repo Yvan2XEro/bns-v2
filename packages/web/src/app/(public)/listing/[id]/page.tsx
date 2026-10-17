@@ -272,7 +272,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 				"@type": "Offer",
 				price: listing.price,
 				...(market && { priceCurrency: market.currency.code }),
-				availability: "https://schema.org/InStock",
+				// Search engines must not list an expired or sold-out item as buyable.
+				availability:
+					isActive && !isExpired && summary?.available !== false
+						? "https://schema.org/InStock"
+						: "https://schema.org/OutOfStock",
 				url: canonical,
 				...(shop
 					? {
@@ -673,13 +677,13 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 											{t("currentlyBoosted")}
 										</div>
 									)}
-									{!isOwner && !productId && (
+									{!isOwner && !productId && isActive && !isExpired && (
 										<MessageSellerButton
 											listingId={String(listing.id)}
 											signedIn={Boolean(authUser)}
 										/>
 									)}
-									{!isOwner && seller && (
+									{!isOwner && seller && isActive && !isExpired && (
 										<PhoneReveal
 											listingId={String(listing.id)}
 											listingTitle={listing.title}

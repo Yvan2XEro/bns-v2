@@ -42,7 +42,7 @@ function reducer(state: State, patch: Partial<State>): State {
 }
 
 const stepButton =
-	"flex h-full w-8 items-center justify-center text-ink-soft disabled:text-ink-faint";
+	"flex h-full w-10 items-center justify-center text-ink-soft disabled:text-ink-faint";
 
 export function BuyActions({
 	listingId,
@@ -112,7 +112,7 @@ export function BuyActions({
 				{t("quantity")}
 			</span>
 			<div className="flex gap-2.5">
-				<div className="flex h-12 w-28 shrink-0 items-center justify-between rounded-lg border border-line px-1 font-semibold text-ink">
+				<div className="flex h-12 w-32 shrink-0 items-center justify-between rounded-lg border border-line px-1 font-semibold text-ink">
 					<button
 						type="button"
 						className={stepButton}

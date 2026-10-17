@@ -78,12 +78,16 @@ function NotificationBell({
 	borderColor: string;
 	mutedColor: string;
 }) {
+	const { t } = useTranslation();
 	const { counts } = useCounts({ filters: [{ read: false }] });
 	const unseenCount = counts?.[0]?.count ?? 0;
 
 	return (
 		<Pressable
 			onPress={() => router.push("/account/notifications")}
+			hitSlop={4}
+			accessibilityRole="button"
+			accessibilityLabel={t("notifications.title")}
 			style={[styles.bellBtn, { backgroundColor: cardBg, borderColor }]}
 		>
 			<Ionicons name="notifications-outline" size={18} color={mutedColor} />
@@ -524,6 +528,9 @@ export default function HomeScreen() {
 
 					<Pressable
 						onPress={() => router.push("/(tabs)/account")}
+						hitSlop={4}
+						accessibilityRole="button"
+						accessibilityLabel={t("account.title")}
 						style={[styles.avatarBtn, { backgroundColor: cardBg, borderColor }]}
 					>
 						{user?.avatar?.url ? (

@@ -59,101 +59,104 @@ export function ListingCard({ listing, isFavorite }: ListingCardProps) {
 				: null;
 
 	return (
-		<Link href={`/listing/${listing.id}`} className="group block">
-			<div
-				className={cn(
-					"hover:-translate-y-1 overflow-hidden rounded-xl bg-surface transition-all duration-300 hover:shadow-black/8 hover:shadow-lg",
-					isBoosted
-						? "ring-1 ring-[#F59E0B]/40"
-						: "border border-line hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
-				)}
-			>
-				{/* Image */}
-				<div className="relative aspect-[4/3] overflow-hidden bg-subtle">
-					{imageUrl ? (
-						<Image
-							src={imageUrl}
-							alt={listing.title}
-							fill
-							className="object-cover transition-transform duration-300 group-hover:scale-105"
-							sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-						/>
-					) : (
-						<div className="flex h-full w-full items-center justify-center">
-							<span className="text-ink-faint text-xs">{t("noPhoto")}</span>
-						</div>
+		// The heart is a sibling of the link, not inside it: a button nested in
+		// a link is invalid and reads as one control to a screen reader.
+		<div className="group relative">
+			<Link href={`/listing/${listing.id}`} className="block">
+				<div
+					className={cn(
+						"group-hover:-translate-y-1 overflow-hidden rounded-xl bg-surface transition-all duration-300 group-hover:shadow-black/8 group-hover:shadow-lg",
+						isBoosted
+							? "ring-1 ring-[#F59E0B]/40"
+							: "border border-line group-hover:border-[var(--shop-accent-border,var(--c-brand-line))]",
 					)}
-
-					{/* Top-left badges */}
-					<div className="absolute top-2 left-2 flex flex-col gap-1">
-						{isBoosted && (
-							<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[#0F172A] text-[10px] uppercase">
-								{t("listingFeatured")}
-							</span>
+				>
+					{/* Image */}
+					<div className="relative aspect-[4/3] overflow-hidden bg-subtle">
+						{imageUrl ? (
+							<Image
+								src={imageUrl}
+								alt={listing.title}
+								fill
+								className="object-cover transition-transform duration-300 group-hover:scale-105"
+								sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+							/>
+						) : (
+							<div className="flex h-full w-full items-center justify-center">
+								<span className="text-ink-faint text-xs">{t("noPhoto")}</span>
+							</div>
 						)}
-						{conditionLabel && (
-							<span className="rounded bg-surface/90 px-1.5 py-0.5 font-semibold text-[10px] text-ink shadow-sm backdrop-blur-sm">
-								{conditionLabel}
-							</span>
-						)}
-					</div>
 
-					{/* Favorite */}
-					<div className="absolute top-2 right-2">
-						<FavoriteButton
-							listingId={listing.id}
-							initialFavorite={isFavorite}
-						/>
-					</div>
-
-					{/* Image count */}
-					{imageCount > 1 && (
-						<div className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 font-medium text-[10px] text-white">
-							{t("photoCount", { count: imageCount })}
-						</div>
-					)}
-				</div>
-
-				{/* Content */}
-				<div className="p-3">
-					{/* Price (prominent, like Leboncoin/Vinted) */}
-					<p className="font-bold text-ink text-lg">
-						{isFromPrice && (
-							<span className="font-medium text-ink-muted text-xs">
-								{t("fromPrice")}{" "}
-							</span>
-						)}
-						{formattedPrice ?? t("noPrice")}
-					</p>
-
-					{/* Title */}
-					<h3 className="mt-0.5 line-clamp-2 text-ink-soft text-sm">
-						{listing.title}
-					</h3>
-
-					{/* Meta row */}
-					<div className="mt-2 flex items-center justify-between text-ink-faint text-xs">
-						<span className="flex items-center gap-1 truncate">
-							<MapPin className="h-3 w-3 shrink-0" />
-							<span className="truncate">{listing.location}</span>
-						</span>
-						<span className="flex shrink-0 items-center gap-1">
-							<Clock className="h-3 w-3" />
-							{timeAgo(listing.createdAt, locale)}
-						</span>
-					</div>
-					{shopName && (
-						<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs">
-							<Store className="h-3 w-3 shrink-0" />
-							<span className="truncate">{shopName}</span>
-							{shopBadge && (
-								<LevelBadge badge={shopBadge} size="sm" className="shrink-0" />
+						{/* Top-left badges */}
+						<div className="absolute top-2 left-2 flex flex-col gap-1">
+							{isBoosted && (
+								<span className="flex items-center gap-[3px] rounded bg-[#F59E0B] px-1.5 py-0.5 font-bold text-[#0F172A] text-[10px] uppercase">
+									{t("listingFeatured")}
+								</span>
 							)}
+							{conditionLabel && (
+								<span className="rounded bg-surface/90 px-1.5 py-0.5 font-semibold text-[10px] text-ink shadow-sm backdrop-blur-sm">
+									{conditionLabel}
+								</span>
+							)}
+						</div>
+
+						{/* Image count */}
+						{imageCount > 1 && (
+							<div className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 font-medium text-[10px] text-white">
+								{t("photoCount", { count: imageCount })}
+							</div>
+						)}
+					</div>
+
+					{/* Content */}
+					<div className="p-3">
+						{/* Price (prominent, like Leboncoin/Vinted) */}
+						<p className="font-bold text-ink text-lg">
+							{isFromPrice && (
+								<span className="font-medium text-ink-muted text-xs">
+									{t("fromPrice")}{" "}
+								</span>
+							)}
+							{formattedPrice ?? t("noPrice")}
 						</p>
-					)}
+
+						{/* Title */}
+						<h3 className="mt-0.5 line-clamp-2 text-ink-soft text-sm">
+							{listing.title}
+						</h3>
+
+						{/* Meta row */}
+						<div className="mt-2 flex items-center justify-between text-ink-faint text-xs">
+							<span className="flex items-center gap-1 truncate">
+								<MapPin className="h-3 w-3 shrink-0" />
+								<span className="truncate">{listing.location}</span>
+							</span>
+							<span className="flex shrink-0 items-center gap-1">
+								<Clock className="h-3 w-3" />
+								{timeAgo(listing.createdAt, locale)}
+							</span>
+						</div>
+						{shopName && (
+							<p className="mt-1.5 flex items-center gap-1.5 truncate font-medium text-[var(--shop-accent-text,var(--c-brand))] text-xs">
+								<Store className="h-3 w-3 shrink-0" />
+								<span className="truncate">{shopName}</span>
+								{shopBadge && (
+									<LevelBadge
+										badge={shopBadge}
+										size="sm"
+										className="shrink-0"
+									/>
+								)}
+							</p>
+						)}
+					</div>
 				</div>
+			</Link>
+			<div className="group-hover:-translate-y-1 absolute top-2 right-2 transition-all duration-300">
+				<FavoriteButton listingId={listing.id} initialFavorite={isFavorite} />
 			</div>
-		</Link>
+		</div>
 	);
 }
 

@@ -661,7 +661,9 @@
 		"photoCount": "{count, plural, one {# photo} other {# photos}}",
 		"viewCount": "{count, plural, one {# view} other {# views}}",
 		"breadcrumbHome": "Home",
-		"breadcrumbSearch": "Search"
+		"breadcrumbSearch": "Search",
+		"previousPhoto": "Previous photo",
+		"nextPhoto": "Next photo"
 	},
 	"CreateListing": {
 		"category": "Category",
@@ -776,7 +778,8 @@
 		"clickHeartToSave": "Click the heart icon on listings to save them here",
 		"browseListings": "Browse listings",
 		"save": "Save",
-		"saved": "Saved"
+		"saved": "Saved",
+		"saveFailed": "Couldn’t save, try again"
 	},
 	"Home": {
 		"heroTitle": "Buy & Sell Locally",
@@ -3105,7 +3108,8 @@
 		"arrivalPromised": "Expected by {date}",
 		"arrivalEta": "Estimated delivery: {eta}",
 		"arrivalLive": "Arriving around {time}",
-		"returnUntil": "Returnable until {date}"
+		"returnUntil": "Returnable until {date}",
+		"emptyCta": "Browse listings"
 	},
 	"SellerResale": {
 		"title": "Resale purchase orders",

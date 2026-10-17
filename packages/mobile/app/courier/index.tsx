@@ -12,6 +12,7 @@ import { EmptyState } from "@/src/components/EmptyState";
 import { SheetButton } from "@/src/components/sellerOrders/FormBits";
 import { SellerHeader } from "@/src/components/shop/SellerHeader";
 import { useShopTheme } from "@/src/components/shop/theme";
+import { useAlert } from "@/src/contexts/AlertContext";
 import {
 	type CourierShipmentRow,
 	useAssignCourierRider,
@@ -21,16 +22,19 @@ import {
 } from "@/src/hooks/useRiderShipments";
 import { resolveErrorMessage } from "@/src/lib/apiError";
 import { useTranslation } from "@/src/lib/i18n";
+import { formatPrice } from "@/src/lib/market";
 import { groupRiderRows } from "@/src/lib/riderShipment";
 
 function AssignRider({ row }: { row: CourierShipmentRow }) {
 	const { t } = useTranslation();
+	const c = useShopTheme();
+	const { showConfirm } = useAlert();
 	const riders = useCourierRiders(row.courierId);
 	const assign = useAssignCourierRider(row.id);
 	return (
 		<View style={{ gap: 8 }}>
 			{riders.data?.length === 0 ? (
-				<Text>{t("shipmentPanel.noRiders")}</Text>
+				<Text style={{ color: c.muted }}>{t("shipmentPanel.noRiders")}</Text>
 			) : null}
 			{(riders.data ?? []).map((member) => {
 				const user = typeof member.user === "object" ? member.user : null;
@@ -41,12 +45,21 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 						tone="secondary"
 						label={user?.name ?? userId}
 						pending={assign.isPending}
-						onPress={() => assign.mutate(userId)}
+						// One tap away from sending someone across town: confirm first.
+						onPress={() =>
+							showConfirm(
+								t("shipmentPanel.assignRider"),
+								t("shipmentPanel.assignConfirm", {
+									name: user?.name ?? userId,
+								}),
+								() => assign.mutate(userId),
+							)
+						}
 					/>
 				);
 			})}
 			{assign.error ? (
-				<Text accessibilityRole="alert">
+				<Text accessibilityRole="alert" style={{ color: c.danger }}>
 					{resolveErrorMessage(assign.error, t)}
 				</Text>
 			) : null}
@@ -55,7 +68,8 @@ function AssignRider({ row }: { row: CourierShipmentRow }) {
 }
 
 function DispatcherRow({ row }: { row: CourierShipmentRow }) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const { showConfirm } = useAlert();
 	const [assigning, setAssigning] = useState(false);
 	const remitted = useDeclareRemitted(row.id);
 	const canAssign = row.status === "pending" || row.status === "failed";
@@ -76,7 +90,21 @@ function DispatcherRow({ row }: { row: CourierShipmentRow }) {
 				<SheetButton
 					label={t("shipmentPanel.declareRemitted")}
 					pending={remitted.isPending}
-					onPress={() => remitted.mutate(undefined)}
+					// Declaring cash handed over is final: the amount is stated first.
+					onPress={() =>
+						showConfirm(
+							t("shipmentPanel.declareRemitted"),
+							t("shipmentPanel.remitConfirm", {
+								amount: formatPrice(
+									row.codCollection?.collectedAmount ??
+										row.codCollection?.expectedAmount ??
+										0,
+									i18n.language,
+								),
+							}),
+							() => remitted.mutate(undefined),
+						)
+					}
 				/>
 			) : null}
 		</CourierRow>

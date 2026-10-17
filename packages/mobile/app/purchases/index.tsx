@@ -58,8 +58,12 @@ export default function PurchasesScreen() {
 	const pages = purchases.data?.pages ?? [];
 	const all = pages.flatMap((page) => page.docs);
 	const entries = all.filter((entry) => purchaseTab(entry.status) === tab);
+	// Counted from the pages loaded so far: shown only once they are all in,
+	// so a tab never claims fewer orders than the buyer has.
 	const countOf = (key: PurchaseTab) =>
-		all.filter((entry) => purchaseTab(entry.status) === key).length;
+		purchases.hasNextPage
+			? undefined
+			: all.filter((entry) => purchaseTab(entry.status) === key).length;
 	const items = withGroupHeaders(entries);
 	const nothingYet =
 		purchases.isSuccess &&
@@ -97,7 +101,12 @@ export default function PurchasesScreen() {
 					onCta={() => void purchases.refetch()}
 				/>
 			) : nothingYet ? (
-				<EmptyState illustration="empty" title={t("purchases.empty")} />
+				<EmptyState
+					illustration="empty"
+					title={t("purchases.empty")}
+					ctaLabel={t("purchases.emptyCta")}
+					onCta={() => router.push("/(tabs)/search")}
+				/>
 			) : (
 				<FlashList
 					data={items}

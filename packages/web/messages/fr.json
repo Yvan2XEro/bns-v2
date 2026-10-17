@@ -661,7 +661,9 @@
 		"photoCount": "{count, plural, one {# photo} other {# photos}}",
 		"viewCount": "{count, plural, one {# vue} other {# vues}}",
 		"breadcrumbHome": "Accueil",
-		"breadcrumbSearch": "Recherche"
+		"breadcrumbSearch": "Recherche",
+		"previousPhoto": "Photo précédente",
+		"nextPhoto": "Photo suivante"
 	},
 	"CreateListing": {
 		"category": "Catégorie",
@@ -776,7 +778,8 @@
 		"clickHeartToSave": "Cliquez sur le cœur des annonces pour les sauvegarder ici",
 		"browseListings": "Parcourir les annonces",
 		"save": "Sauvegarder",
-		"saved": "Sauvegardé"
+		"saved": "Sauvegardé",
+		"saveFailed": "Impossible d’enregistrer, réessayez"
 	},
 	"Home": {
 		"heroTitle": "Acheter & Vendre Localement",
@@ -3105,7 +3108,8 @@
 		"arrivalPromised": "Livraison prévue au plus tard le {date}",
 		"arrivalEta": "Livraison estimée : {eta}",
 		"arrivalLive": "Arrivée vers {time}",
-		"returnUntil": "Retour possible jusqu'au {date}"
+		"returnUntil": "Retour possible jusqu'au {date}",
+		"emptyCta": "Découvrir les annonces"
 	},
 	"SellerResale": {
 		"title": "Commandes fournisseurs",
