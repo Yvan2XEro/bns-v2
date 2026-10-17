@@ -168,6 +168,44 @@ Smaller items worth folding into Lot A:
 - **Mobile cart**: delete without undo, quantity changes not optimistic, one
   `busy` flag blocks the whole cart (`cart.tsx:47`, `useCart.ts:67-80`).
 
+## Status (2026-10-17, end of day)
+
+Lots A to E are implemented on `dev`, one commit per item or group, each
+with its tests, type-checks and the web build and Android bundle green.
+What remains or differs from the proposal:
+
+- **A8, mobile:** already right in the code. Accept is filled and the action
+  card sits near the top, so nothing changed. On web the actions now come first
+  below `lg`, and refusing reads as a red link.
+- **A9:** delivered with Lot B (success screen on mobile, "sent" banner on web).
+- **A11, brand spelling:** left as it is. Web's `siteName` and the payments and
+  disputes copy (byte-identical across clients) say "Buy'N'Sellem", while other
+  strings say "BuyNSellem". Pick one and it is a find-and-replace across both
+  clients.
+- **A11, literal-string lint in the mobile keys test:** not added.
+- **Lot B, web photos:** files cannot be kept in the browser, so a resumed draft
+  asks for its photos again (the banner says so).
+- **Lot C, home feed:** "Show more" pages through the recent listings, rather
+  than infinite scroll inside the sectioned home.
+- **Lot C, web cards:** the original `url` is kept. `next/image` already
+  resizes it, so it was not worth changing.
+- **Lot E, delivery and cash-on-delivery chips and filters:** neither is in the
+  search index. What shipped is **Buy online** (`orderable`: protected payment
+  or cash on delivery), a badge plus a filter on web and mobile. Separate
+  delivery and COD filters need the indexer to carry the shop's order settings
+  and a reindex.
+- **Lot E, the home's in-place search on mobile:** still there for the filters
+  sheet's return and the category chips. The field itself now opens the full
+  search screen.
+- **D8, a/r keys and the seller's language:** shortcuts cover navigation, take
+  next and help, but not approve and reject, which open dialogs with required
+  fields. Message templates follow the moderator's language, because the
+  seller's language is not on the request.
+- **Measuring:** `listing_started`, `listing_published` and `message_failed`
+  join the funnel events, to compare against before and after once PostHog is
+  configured.
+- **Big bets:** untouched. Each needs a product decision first.
+
 ## Big bets (decide separately)
 
 1. **Phone-number sign-in with an SMS/WhatsApp code.** Today: e-mail +
