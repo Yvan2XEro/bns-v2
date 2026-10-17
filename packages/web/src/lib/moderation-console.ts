@@ -231,6 +231,21 @@ export function isSelected(
 	return selection?.type === item.type && selection.id === item.id;
 }
 
+/**
+ * The open item: from the loaded pages, or the one "take next" just claimed,
+ * which may sit beyond them or outside the active type filter.
+ */
+export function selectedQueueItem<T extends QueueSelection>(
+	items: readonly T[],
+	selection: QueueSelection | null,
+	taken: T | null = null,
+): T | null {
+	if (!selection) return null;
+	const loaded = items.find((item) => isSelected(item, selection));
+	if (loaded) return loaded;
+	return taken && isSelected(taken, selection) ? taken : null;
+}
+
 export interface QueueFilters {
 	type?: ModerationQueueType;
 	mine?: boolean;
@@ -291,8 +306,9 @@ export function handledHref(
 	const param = encodeURIComponent(selectionParam(item));
 	switch (item.type) {
 		case "report":
-		case "listing":
 			return `/moderation/reports?item=${param}`;
+		case "listing":
+			return `/moderation/reports?tab=listings&item=${param}`;
 		case "risk":
 			return `/moderation/risk?item=${param}`;
 		case "payoutAccount":

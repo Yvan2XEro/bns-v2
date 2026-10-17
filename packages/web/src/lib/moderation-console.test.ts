@@ -17,10 +17,12 @@ import {
 	parseSelection,
 	QUEUE_TYPE_LABELS,
 	QUEUE_TYPE_ORDER,
+	type QueueSelection,
 	queueQuery,
 	REPORT_REASON_LABELS,
 	RISK_SIGNAL_LABELS,
 	sectionCount,
+	selectedQueueItem,
 	selectionParam,
 	TARGET_TYPE_LABELS,
 	targetLabel,
@@ -198,7 +200,7 @@ describe("where a row opens", () => {
 			"/moderation/reports?item=report%3Aa",
 		);
 		expect(handledHref({ type: "listing", id: "b", shopId: "s" })).toBe(
-			"/moderation/reports?item=listing%3Ab",
+			"/moderation/reports?tab=listings&item=listing%3Ab",
 		);
 		expect(handledHref({ type: "risk", id: "c", shopId: null })).toBe(
 			"/moderation/risk?item=risk%3Ac",
@@ -209,6 +211,21 @@ describe("where a row opens", () => {
 		expect(
 			handledHref({ type: "payoutAccount", id: "p", shopId: null }),
 		).toBeNull();
+	});
+
+	test("the item take-next claimed stays open beyond the loaded pages", () => {
+		const loaded: QueueSelection[] = [{ type: "report", id: "r1" }];
+		const taken: QueueSelection = { type: "risk", id: "k9" };
+		expect(selectedQueueItem(loaded, { type: "report", id: "r1" })).toBe(
+			loaded[0] ?? null,
+		);
+		expect(selectedQueueItem(loaded, { type: "risk", id: "k9" }, taken)).toBe(
+			taken,
+		);
+		expect(selectedQueueItem(loaded, { type: "risk", id: "k8" }, taken)).toBe(
+			null,
+		);
+		expect(selectedQueueItem(loaded, null, taken)).toBe(null);
 	});
 
 	test("only verifications, disputes and risk flags can be taken", () => {

@@ -24,13 +24,14 @@ import { resolveErrorMessage } from "~/lib/apiError";
 import {
 	consoleHref,
 	isAssignable,
-	isSelected,
 	parseQueueFilters,
 	QUEUE_TYPE_LABELS,
 	QUEUE_TYPE_ORDER,
+	selectedQueueItem,
 	typeCount,
 	workspaceHref,
 } from "~/lib/moderation-console";
+import type { ModerationQueueItem } from "../../../../../api/src/contracts/moderationConsole";
 
 export function QueueClient() {
 	const t = useTranslations("ModerationConsole");
@@ -50,13 +51,12 @@ export function QueueClient() {
 	const takeNext = useTakeNextQueueItem();
 	const claim = useClaimRiskFlag();
 	const [nothingLeft, setNothingLeft] = useState(false);
+	const [taken, setTaken] = useState<ModerationQueueItem | null>(null);
 
 	const items = queue.data?.pages.flatMap((page) => page.items) ?? [];
 	const truncated = queue.data?.pages.some((page) => page.truncated) ?? false;
 	const total = all.data?.pages[0]?.total;
-	const selected = selection
-		? (items.find((item) => isSelected(item, selection)) ?? null)
-		: null;
+	const selected = selectedQueueItem(items, selection, taken);
 
 	const onTakeNext = () => {
 		setNothingLeft(false);
@@ -68,7 +68,10 @@ export function QueueClient() {
 				}
 				const workspace = workspaceHref(item);
 				if (workspace) router.push(workspace);
-				else select(item);
+				else {
+					setTaken(item);
+					select(item);
+				}
 			},
 		});
 	};
