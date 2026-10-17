@@ -50,6 +50,12 @@ import {
 import { createCategorySuggester } from "~/lib/category-suggest";
 import { keepApplicableTags } from "~/lib/category-tags";
 import {
+	clearListingDraft,
+	type ListingDraft,
+	loadListingDraft,
+	saveListingDraft,
+} from "~/lib/listing-draft";
+import {
 	type FieldIssue,
 	firstListingIssueStep,
 	issuesOnStep,
@@ -88,6 +94,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 	const [step, setStep] = useState(0);
 
 	const [isLoading, setIsLoading] = useState(false);
+	const [submitError, setSubmitError] = useState<string | null>(null);
 
 	const {
 		data: myShop,
@@ -231,6 +238,16 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			label: t("describe"),
 			description: t("describeDesc"),
 		},
+		// Photos right after the title: the seller has the thing in hand.
+		...(photosField.enabled
+			? [
+					{
+						id: "photos" as const,
+						label: t("photos"),
+						description: t("photosDesc"),
+					},
+				]
+			: []),
 		// Only categories that ask something get the step; the rest never see it.
 		...(attributes.length > 0
 			? [
@@ -246,15 +263,6 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			label: t("details"),
 			description: isProduct ? t("detailsDesc") : t("detailsDescGeneric"),
 		},
-		...(photosField.enabled
-			? [
-					{
-						id: "photos" as const,
-						label: t("photos"),
-						description: t("photosDesc"),
-					},
-				]
-			: []),
 		{ id: "review", label: t("review"), description: t("reviewDesc") },
 	];
 	const currentStep = STEPS[Math.min(step, STEPS.length - 1)];
@@ -461,6 +469,7 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 			return;
 		}
 		setIsLoading(true);
+		setSubmitError(null);
 
 		try {
 			const imageIds: string[] = [];
@@ -524,16 +533,110 @@ export function CreateListingForm({ categories }: { categories: Category[] }) {
 				return;
 			}
 			const listing = await res.json();
-			router.push(`/listing/${listing.doc?.id || listing.id}`);
+			submittedRef.current = true;
+			clearListingDraft();
+			// The listing page greets its new owner with a share moment.
+			router.push(`/listing/${listing.doc?.id || listing.id}?sent=1`);
 		} catch {
-			alert(tListing("failedToCreate"));
+			setSubmitError(tListing("failedToCreate"));
 		} finally {
 			setIsLoading(false);
 		}
 	}
 
+	// The draft as it would be resumed: text, category, answers and tags.
+	const draft: ListingDraft = {
+		categoryId: selectedCategory?.id ?? null,
+		title: formData.title,
+		description: formData.description,
+		price: formData.price,
+		location: formData.location,
+		duration,
+		attributeValues,
+		tags: selectedTags,
+	};
+	const draftJson = JSON.stringify(draft);
+	const draftWorthKeeping =
+		Boolean(draft.title.trim() || draft.description.trim() || draft.price) ||
+		images.length > 0;
+	const submittedRef = useRef(false);
+
+	const [resumable, setResumable] = useState<ListingDraft | null>(null);
+	useEffect(() => {
+		setResumable(loadListingDraft());
+	}, []);
+	useEffect(() => {
+		// Nothing is written over a saved draft until the seller has answered.
+		if (resumable || submittedRef.current) return;
+		const timer = setTimeout(
+			() => saveListingDraft(JSON.parse(draftJson) as ListingDraft),
+			500,
+		);
+		return () => clearTimeout(timer);
+	}, [draftJson, resumable]);
+	useEffect(() => {
+		if (!draftWorthKeeping) return;
+		const warn = (event: BeforeUnloadEvent) => {
+			if (submittedRef.current) return;
+			event.preventDefault();
+		};
+		window.addEventListener("beforeunload", warn);
+		return () => window.removeEventListener("beforeunload", warn);
+	}, [draftWorthKeeping]);
+
+	function resumeDraft(saved: ListingDraft) {
+		setResumable(null);
+		setFormData({
+			title: saved.title,
+			description: saved.description,
+			price: saved.price,
+			location: saved.location,
+		});
+		setDuration(saved.duration);
+		const category = categories.find((c) => c.id === saved.categoryId) ?? null;
+		if (category) {
+			categoryChosenRef.current = true;
+			applyCategory(category);
+			setAttributeValues(saved.attributeValues);
+		}
+		setSelectedTags(saved.tags);
+	}
+
 	return (
 		<div className="space-y-6">
+			{resumable && (
+				<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-tint bg-brand-soft p-4">
+					<div>
+						<p className="font-semibold text-ink">{t("resumeTitle")}</p>
+						<p className="text-ink-muted text-sm">
+							{t("resumeBody", { title: resumable.title || "…" })}
+						</p>
+					</div>
+					<div className="flex gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								clearListingDraft();
+								setResumable(null);
+							}}
+						>
+							{t("resumeDiscard")}
+						</Button>
+						<Button type="button" onClick={() => resumeDraft(resumable)}>
+							{t("resumeConfirm")}
+						</Button>
+					</div>
+				</div>
+			)}
+			{submitError && (
+				<p
+					role="alert"
+					className="rounded-lg bg-red-50 px-3 py-2 text-red-700 text-sm dark:bg-red-950/40 dark:text-red-300"
+				>
+					{submitError}
+				</p>
+			)}
 			{/* Stepper */}
 			<div className="flex items-center justify-between">
 				{STEPS.map((s, i) => (

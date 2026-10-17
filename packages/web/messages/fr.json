@@ -692,7 +692,15 @@
 		"clearCategory": "Retirer la catégorie",
 		"characteristics": "Caractéristiques",
 		"characteristicsDesc": "Les précisions que les acheteurs utilisent pour filtrer.",
-		"allCategories": "Toutes les catégories"
+		"allCategories": "Toutes les catégories",
+		"resumeTitle": "Reprendre votre annonce ?",
+		"resumeBody": "Vous aviez commencé « {title} » dans ce navigateur. Les photos sont à ajouter à nouveau.",
+		"resumeConfirm": "Reprendre",
+		"resumeDiscard": "Recommencer",
+		"sentTitle": "Annonce envoyée !",
+		"sentBody": "Elle est en cours de vérification et sera en ligne dès qu’elle sera validée.",
+		"sentShare": "Partager sur WhatsApp",
+		"sentAnother": "Publier une autre annonce"
 	},
 	"Profile": {
 		"myProfile": "Mon profil",

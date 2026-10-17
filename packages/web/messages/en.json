@@ -692,7 +692,15 @@
 		"clearCategory": "Remove the category",
 		"characteristics": "Characteristics",
 		"characteristicsDesc": "The details buyers use to filter.",
-		"allCategories": "All categories"
+		"allCategories": "All categories",
+		"resumeTitle": "Pick up your listing?",
+		"resumeBody": "You had started \"{title}\" in this browser. Photos need adding again.",
+		"resumeConfirm": "Pick up",
+		"resumeDiscard": "Start over",
+		"sentTitle": "Listing sent!",
+		"sentBody": "It is being reviewed and goes live as soon as it is approved.",
+		"sentShare": "Share on WhatsApp",
+		"sentAnother": "Post another listing"
 	},
 	"Profile": {
 		"myProfile": "My Profile",

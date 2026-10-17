@@ -15,6 +15,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Suspense } from "react";
 import { BoostDialog } from "~/components/listing/boost-dialog";
 import { BoostStatusBanner } from "~/components/listing/boost-status-banner";
 import { FavoriteButton } from "~/components/listing/favorite-button";
@@ -50,6 +51,7 @@ import type { Listing, Tag, User } from "~/types";
 import { BuyBox } from "./buy-box";
 import { DeliveryEstimates } from "./delivery-estimates";
 import { ListingActionBar } from "./listing-action-bar";
+import { SentBanner } from "./sent-banner";
 
 export const revalidate = 3600;
 
@@ -384,6 +386,11 @@ export default async function ListingPage({ params, searchParams }: PageProps) {
 
 			<div className="container mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 				<BoostStatusBanner status={boostStatus} />
+				{isOwner && (
+					<Suspense fallback={null}>
+						<SentBanner title={listing.title} />
+					</Suspense>
+				)}
 				<div className="grid gap-6 lg:grid-cols-5">
 					{/* Left: images + details (3 cols) */}
 					<div className="lg:col-span-3">
