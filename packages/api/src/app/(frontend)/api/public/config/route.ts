@@ -15,6 +15,7 @@ import { getDeliverySettings } from "@/lib/deliverySettings";
 import { LAUNCH_CITIES } from "@/lib/launchCities";
 import { getMarketCities } from "@/lib/marketCities";
 import { getMarkets, marketIsOpen } from "@/lib/markets";
+import { monitoringConfig } from "@/lib/monitoring";
 import { getOrderSettings } from "@/lib/orderSettings";
 import {
 	getPaymentSettings,
@@ -235,6 +236,8 @@ export async function GET(request?: Request) {
 		resalePrepaidEnabled,
 		// Photos a listing or a product may carry; the API refuses more.
 		photosIncluded,
+		// Sentry and PostHog: public send-only keys, set on the API alone.
+		monitoring: monitoringConfig(),
 		...(market ? { market } : {}),
 	});
 }

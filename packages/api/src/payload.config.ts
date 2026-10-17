@@ -139,6 +139,7 @@ import {
 import { afterCollectionsReady } from "./lib/migrationsReady";
 import { registerConfiguredAdapters } from "./lib/payments/registerAdapters";
 import { registerResaleAdjuster } from "./lib/resale";
+import { reportServerError } from "./lib/serverErrors";
 import { migrations } from "./migrations";
 import { buildStoragePlugins } from "./plugins/storage";
 import { registerShipmentOrderEvents } from "./services/delivery/shipments";
@@ -353,6 +354,20 @@ export default buildConfig({
 		ReconciliationMismatches,
 	],
 	globals: [AppSettings],
+	hooks: {
+		// Payload answers its own errors; only the unexpected ones reach Sentry.
+		afterError: [
+			({ error, req }) => {
+				const status =
+					"status" in error && typeof error.status === "number"
+						? error.status
+						: 500;
+				if (status >= 500) {
+					void reportServerError(error, { path: req.pathname ?? null });
+				}
+			},
+		],
+	},
 	// Only the category labels are localised. French is the default: a read
 	// with no locale, and an English label nobody has written, get the French.
 	localization: {

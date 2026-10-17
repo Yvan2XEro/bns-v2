@@ -35,3 +35,22 @@ export async function register(): Promise<void> {
 		payload.logger.error({ err: error, msg: "[boot] boot tasks crashed" });
 	});
 }
+
+/**
+ * Errors thrown by route handlers, server components and middleware, filed
+ * with Sentry when `SENTRY_DSN` is set. Payload's own API answers its errors
+ * itself; those reach Sentry through the `afterError` hook instead.
+ */
+export async function onRequestError(
+	error: unknown,
+	request: { path: string; method: string },
+	context: { routePath: string; routeType: string },
+): Promise<void> {
+	if (process.env.NEXT_RUNTIME !== "nodejs") return;
+	const { reportServerError } = await import("./lib/serverErrors");
+	await reportServerError(error, {
+		method: request.method,
+		route: context.routePath,
+		type: context.routeType,
+	});
+}
