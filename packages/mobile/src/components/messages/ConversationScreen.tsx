@@ -31,6 +31,7 @@ import {
 } from "@/src/lib/conversationView";
 import i18n, { useTranslation } from "@/src/lib/i18n";
 import { formatPrice } from "@/src/lib/market";
+import { askForPushInContext } from "@/src/lib/notifications";
 import { isSystemMessage } from "@/src/lib/systemMessage";
 import type {
 	Conversation,
@@ -451,6 +452,8 @@ export function ConversationScreen({
 		});
 		queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		setSending(false);
+		// The answer comes by push: a first message sent is when to ask.
+		void askForPushInContext();
 	}
 
 	function retryMessage(item: {

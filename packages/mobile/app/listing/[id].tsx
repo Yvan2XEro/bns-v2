@@ -6,7 +6,6 @@ import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
-	Modal,
 	Pressable,
 	ScrollView,
 	Share,

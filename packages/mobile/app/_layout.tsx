@@ -293,7 +293,8 @@ function NovuWrapper({ children }: { children: React.ReactNode }) {
 }
 
 // ─── PushTokenRegistrar ───────────────────────────────────────────────────────
-// Requests push permission and syncs the Expo token with Novu once per session.
+// Syncs the Expo token with Novu once per session when push is already
+// allowed. Asking is left to the moment it helps (`askForPushInContext`).
 
 function PushTokenRegistrar() {
 	const { user } = useAuth();
@@ -304,7 +305,7 @@ function PushTokenRegistrar() {
 		if (registeredRef.current === user.id) return;
 		registeredRef.current = user.id;
 
-		registerForPushNotificationsAsync().then((token) => {
+		registerForPushNotificationsAsync({ ask: false }).then((token) => {
 			if (token) syncPushTokenWithBackend(token);
 		});
 	}, [user]);

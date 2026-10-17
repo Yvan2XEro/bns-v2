@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
 import { track } from "@/src/lib/monitoring";
+import { askForPushInContext } from "@/src/lib/notifications";
 import type { DeliveryQuote } from "../../../api/src/contracts/deliveryQuote";
 import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 import { api } from "../lib/api";
@@ -81,6 +82,8 @@ export function usePlaceOrder() {
 				payment_method: input.paymentMethod,
 				split: false,
 			});
+			// The order's progress arrives by push: now is when that is worth asking.
+			void askForPushInContext();
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
 			if (input.saveAddress)

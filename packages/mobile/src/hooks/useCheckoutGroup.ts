@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import { track } from "@/src/lib/monitoring";
+import { askForPushInContext } from "@/src/lib/notifications";
 import type { CheckoutGroupView } from "../../../api/src/contracts/checkoutGroup";
 import { ANALYTICS_EVENTS } from "../../../api/src/contracts/monitoring";
 import { api } from "../lib/api";
@@ -70,6 +71,8 @@ export function useSplitPlace() {
 				payment_method: input.paymentMethod,
 				split: true,
 			});
+			// The order's progress arrives by push: now is when that is worth asking.
+			void askForPushInContext();
 			queryClient.invalidateQueries({ queryKey: cartKey });
 			queryClient.invalidateQueries({ queryKey: purchasesRootKey });
 			if (input.saveAddress)
