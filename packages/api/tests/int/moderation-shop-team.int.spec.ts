@@ -235,3 +235,60 @@ describe("GET /api/moderation/shops/{id} — Team section", () => {
 		expect(body.team.length).toBe(4);
 	});
 });
+
+describe("GET /api/moderation/shops/{id} — strikes", () => {
+	it("carries the shop's standing: every strike, newest first, and the weight of the active unexpired ones", async () => {
+		const payload = seed();
+		const day = 86_400_000;
+		payload.store["shop-strikes"] = [
+			{
+				id: "k-old",
+				shop: "s-1",
+				kind: "dispute_lost",
+				weight: 1,
+				status: "active",
+				expiresAt: new Date(Date.now() + 30 * day).toISOString(),
+				sourceType: "dispute",
+				createdAt: new Date(Date.now() - 10 * day).toISOString(),
+			},
+			{
+				id: "k-new",
+				shop: "s-1",
+				kind: "dispute_lost",
+				weight: 2,
+				status: "active",
+				expiresAt: new Date(Date.now() + 60 * day).toISOString(),
+				sourceType: "dispute",
+				createdAt: new Date(Date.now() - day).toISOString(),
+			},
+			{
+				id: "k-revoked",
+				shop: "s-1",
+				kind: "dispute_lost",
+				weight: 3,
+				status: "revoked",
+				expiresAt: new Date(Date.now() + 60 * day).toISOString(),
+				sourceType: "dispute",
+				createdAt: new Date(Date.now() - 5 * day).toISOString(),
+			},
+			{
+				id: "k-other-shop",
+				shop: "s-2",
+				kind: "dispute_lost",
+				weight: 1,
+				status: "active",
+				expiresAt: new Date(Date.now() + 60 * day).toISOString(),
+				sourceType: "dispute",
+				createdAt: new Date(Date.now() - day).toISOString(),
+			},
+		];
+		withAuth(payload, { id: "u-mod", role: "moderator" });
+		const res = await callRoute(payload);
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.standing.activeWeight).toBe(3);
+		expect(
+			body.standing.strikes.map((strike: { id: string }) => strike.id),
+		).toEqual(["k-new", "k-revoked", "k-old"]);
+	});
+});

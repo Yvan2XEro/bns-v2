@@ -8,6 +8,7 @@ export type ReportTargetType = Report["targetType"];
 export type RiskSignal = RiskFlag["signal"];
 export type RiskSubjectType = RiskFlag["subjectType"];
 export type ModerationLogAction = ModerationLog["action"];
+export type ModerationLogTargetType = ModerationLog["targetType"];
 
 export interface ModerationSummary {
 	pendingListings: number;

@@ -14,6 +14,7 @@ import {
 	unsuspendShop,
 } from "@/services/moderation";
 import { recentShopActivity } from "@/services/shopActivity";
+import { shopStanding } from "@/services/strikes";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -81,7 +82,7 @@ async function shopTeamMembers(
 	}));
 }
 
-/** Shop sheet: identity, owner, counts, reports against the shop or its listings, history. */
+/** Shop sheet: identity, owner, counts, reports against the shop or its listings, history, strikes. */
 export async function GET(request: Request, { params }: Params) {
 	const ctx = await requireModerator(request);
 	if (ctx instanceof Response) return ctx;
@@ -141,6 +142,7 @@ export async function GET(request: Request, { params }: Params) {
 			team,
 			rawActivity,
 			payments,
+			standing,
 		] = await Promise.all([
 			ctx.payload.count({
 				collection: "products",
@@ -180,6 +182,7 @@ export async function GET(request: Request, { params }: Params) {
 			shopTeamMembers(ctx.payload, id),
 			recentShopActivity(ctx.payload, id, SHOP_TEAM_ACTIVITY_LIMIT),
 			shopPaymentsSheet(ctx.payload, String(id)),
+			shopStanding(ctx.payload, String(id)),
 		]);
 
 		// A moderator reviewing a shop has no business reading its margins: the
@@ -230,6 +233,7 @@ export async function GET(request: Request, { params }: Params) {
 			team,
 			activity,
 			payments,
+			standing,
 		});
 	} catch (error) {
 		return handleModerationError("shops:get", error);
